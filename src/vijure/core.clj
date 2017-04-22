@@ -6936,9 +6936,9 @@
 
 ;; Execute a command in Normal mode.
 
-(defn- #_oparg_C normal-cmd [#_oparg_C oap, #_boolean toplevel]
+(defn- #_[window_C oparg_C] normal-cmd [#_window_C win, #_oparg_C oap, #_boolean toplevel]
     ;; toplevel: true when called from main()
-    (let [o'curswant (:w_curswant @curwin)
+    (let [o'curswant (:w_curswant win)
           #_cmdarg_C ca (assoc (NEW_cmdarg_C) :oap oap)
           ;; Use a count remembered from before entering an operator.
           ;; After typing "3d" we return from normal-cmd() and come back here,
@@ -7021,38 +7021,39 @@
           ;; Find the command character in the table of commands.
           ;; For CTRL-W we already got nchar when looking for a count.
           ca (if ctrl_w (assoc ca :cmdchar Ctrl_W :nchar c) (assoc ca :cmdchar c))
-          ca (let [#_int idx (find--command (:cmdchar ca))]
+          [win ca]
+            (let [#_int idx (find--command (:cmdchar ca))]
                 (cond (< idx 0)
-                    (clearopbeep ca) ;; Not a known command: beep.
+                    [win (clearopbeep ca)] ;; Not a known command: beep.
 
                 (and (text-locked) (flag? (:cmd_flags (... nv_cmds idx)) NV_NCW))
                     ;; This command is not allowed while editing a cmdline: beep.
-                    (do (text-locked-msg) (clearopbeep ca))
+                    (do (text-locked-msg) [win (clearopbeep ca)])
 
                 :else
                     ;; In Visual/Select mode, a few keys are handled in a special way.
-                    (let-when [[ca idx abort]
-                            (if @VIsual_active
-                                (do ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-                                    (when (and @km_stopsel (flag? (:cmd_flags (... nv_cmds idx)) NV_STS) (non-flag? @mod_mask MOD_MASK_SHIFT))
-                                        (swap! curwin end-visual-mode)
-                                        (redraw-curbuf-later INVERTED))
+                    (let-when [[win ca idx ?]
+                            (when' @VIsual_active => [win ca idx nil]
+                                ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
+                                (let [win (when' (and @km_stopsel (flag? (:cmd_flags (... nv_cmds idx)) NV_STS) (non-flag? @mod_mask MOD_MASK_SHIFT)) => win
+                                            (let [win (end-visual-mode win)]
+                                                (redraw-curbuf-later INVERTED)
+                                                win)
+                                        )]
                                     ;; Keys that work different when 'keymodel' contains "startsel".
-                                    (if @km_startsel
+                                    (when' @km_startsel => [win ca idx nil]
                                         (if (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
                                             (let [ca (unshift-special ca) idx (find--command (:cmdchar ca))]
                                                 (if (< idx 0) ;; Just in case.
-                                                    [(clearopbeep ca) idx :abort]
-                                                    [ca idx nil]
+                                                    [win (clearopbeep ca) idx :abort]
+                                                    [win ca idx nil]
                                                 ))
                                             (do (when (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
                                                     (swap! mod_mask & (bit-not MOD_MASK_SHIFT)))
-                                                [ca idx nil]
-                                            ))
-                                        [ca idx nil]
-                                    ))
-                                [ca idx nil])
-                    ] (not abort) => ca
+                                                [win ca idx nil])
+                                        ))
+                                ))
+                    ] (not ?) => [win ca]
 
                         ;; Get an additional character if we need one.
                         (let [[ca idx]
@@ -7151,33 +7152,33 @@
                             (if (== (:nchar ca) ESC)
                                 (do (when (and (zero? @restart_edit) (goto-im))
                                         (reset! restart_edit (byte \a)))
-                                    (clearop ca))
+                                    [win (clearop ca)])
 
                                 (let [_ (when (!= (:cmdchar ca) K_IGNORE)
                                             (reset! msg_didout false) ;; don't scroll screen up for normal command
                                             (reset! msg_col 0))
-                                      o'cursor (:w_cursor @curwin) ;; remember where cursor was
+                                      o'cursor (:w_cursor win) ;; remember where cursor was
                                       ;; When 'keymodel' contains "startsel", some keys start Select/Visual mode.
-                                      [ca idx]
+                                      [win ca idx]
                                         (cond (or @VIsual_active (not @km_startsel))
-                                            [ca idx]
+                                            [win ca idx]
                                         (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
-                                            (let [_ (swap! curwin start-selection) ca (unshift-special ca)] [ca (find--command (:cmdchar ca))])
+                                            (let [win (start-selection win) ca (unshift-special ca)] [win ca (find--command (:cmdchar ca))])
                                         (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
-                                            (do (swap! curwin start-selection)
+                                            (let [win (start-selection win)]
                                                 (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
-                                                [ca idx])
+                                                [win ca idx])
                                         :else
-                                            [ca idx])
+                                            [win ca idx])
                                       ;; Execute the command!  ;; Call the command function found in the commands table.
                                       ca (assoc ca :arg (:cmd_arg (... nv_cmds idx)))
-                                      [_ ca] ((:cmd_func (... nv_cmds idx)) @curwin, ca) _ (reset! curwin _)
+                                      [win ca] ((:cmd_func (... nv_cmds idx)) win, ca)
                                       ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
                                       ca (if (and (not @finish_op) (== (:op_type (:oap ca)) OP_NOP) (or (< idx 0) (non-flag? (:cmd_flags (... nv_cmds idx)) NV_KEEPREG)))
                                             (clearop ca)
                                             ca)
                                       ;; If an operation is pending, handle it...
-                                      [_ ca] (do-pending-operator @curwin, ca, o'curswant) _ (reset! curwin _)]
+                                      [win ca] (do-pending-operator win, ca, o'curswant)]
 
                                     ;; Wait for a moment when a message is displayed that will be overwritten by the mode message.
                                     ;; In Visual mode and with "^O" in Insert mode, a short message will be overwritten by the mode message.  Wait a bit, until a key is hit.
@@ -7186,19 +7187,19 @@
                                     ;; Also wait a bit after an error message, e.g. for "^O:".
                                     ;; Don't redraw the screen, it would remove the message.
 
-                                    (when (and (or (and @p_smd
-                                                        (or (!= @restart_edit 0)
-                                                            (and @VIsual_active (== (:lnum o'cursor) (:lnum (:w_cursor @curwin))) (== (:col o'cursor) (:col (:w_cursor @curwin)))))
-                                                        (or @clear_cmdline @redraw_cmdline)
-                                                        (or @msg_didout (and @msg_didany @msg_scroll))
-                                                        (not @msg_nowait)
-                                                        @keyTyped)
-                                                   (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display)))
-                                               (== (:regname (:oap ca)) 0)
-                                               (non-flag? (:retval ca) CA_COMMAND_BUSY)
-                                               (stuff-empty)
-                                               (not @did_wait_return)
-                                               (== (:op_type (:oap ca)) OP_NOP))
+                                    (when' (and (or (and @p_smd
+                                                         (or (!= @restart_edit 0)
+                                                             (and @VIsual_active (== (:lnum o'cursor) (:lnum (:w_cursor win))) (== (:col o'cursor) (:col (:w_cursor win)))))
+                                                         (or @clear_cmdline @redraw_cmdline)
+                                                         (or @msg_didout (and @msg_didany @msg_scroll))
+                                                         (not @msg_nowait)
+                                                         @keyTyped)
+                                                    (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display)))
+                                                (== (:regname (:oap ca)) 0)
+                                                (non-flag? (:retval ca) CA_COMMAND_BUSY)
+                                                (stuff-empty)
+                                                (not @did_wait_return)
+                                                (== (:op_type (:oap ca)) OP_NOP)) => [win ca]
                                         ;; Draw the cursor with the right shape here.
                                         (let [o'State @State _ (when (non-zero? @restart_edit) (reset! State INSERT))]
                                             ;; If need to redraw and there is a "keep_msg", redraw before the delay.
@@ -7210,17 +7211,18 @@
                                                     (reset! keep_msg kmsg)
                                                     (msg-attr kmsg, @keep_msg_attr)
                                                 ))
-                                            (swap! curwin setcursor)
-                                            (cursor-on)
-                                            (out-flush)
-                                            (when (or @msg_scroll @emsg_on_display)
-                                                (ui-delay 1000, true)) ;; wait at least one second
-                                            (ui-delay 3000, false)     ;; wait up to three seconds
-                                            (reset! State o'State)
-                                            (reset! msg_scroll false)
-                                            (reset! emsg_on_display false)
-                                        ))
-                                    ca)
+                                            (let [win (setcursor win)]
+                                                (cursor-on)
+                                                (out-flush)
+                                                (when (or @msg_scroll @emsg_on_display)
+                                                    (ui-delay 1000, true)) ;; wait at least one second
+                                                (ui-delay 3000, false)     ;; wait up to three seconds
+                                                (reset! State o'State)
+                                                (reset! msg_scroll false)
+                                                (reset! emsg_on_display false)
+                                                [win ca]
+                                            ))
+                                    ))
                             ))
                     ))
             )]
@@ -7232,37 +7234,39 @@
         ;; Redraw the cursor with another shape if we were in Operator-pending mode or did a replace command.
         (when (or o'finish_op (== (:cmdchar ca) (byte \r)))
             (ui-cursor-shape)) ;; may show different cursor shape
-        (when (and (== (:op_type (:oap ca)) OP_NOP) (zero? (:regname (:oap ca))) (!= (:cmdchar ca) K_CURSORHOLD))
-            (swap! curwin clear-showcmd))
-        (swap! curwin checkpcmark) ;; check if we moved since setting pcmark
-        (let [ca (assoc ca :searchbuf nil)]
-            (swap! curwin update :w_cursor mb-adjust-pos)
-            (when (and @(:wo_scb (:w_options @curwin)) toplevel)
-                (swap! curwin validate-cursor) ;; may need to update "w_leftcol"
-                (swap! curwin do-check-scrollbind true))
-            (when (and @(:wo_crb (:w_options @curwin)) toplevel)
-                (swap! curwin validate-cursor) ;; may need to update "w_leftcol"
-                (do-check-cursorbind))
-            ;; May restart edit(), if we got here with CTRL-O in Insert mode
-            ;; (but not if still inside a mapping that started in Visual mode).
-            ;; May switch from Visual to Select mode after CTRL-O command.
-            (when (and (== (:op_type (:oap ca)) OP_NOP)
-                       (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1))
-                       (non-flag? (:retval ca) CA_COMMAND_BUSY)
-                       (stuff-empty)
-                       (zero? (:regname (:oap ca))))
-                (when (== @restart_VIsual_select 1)
-                    (reset! VIsual_select true)
-                    (showmode)
-                    (reset! restart_VIsual_select 0))
-                (when (and (non-zero? @restart_edit) (not @VIsual_active))
-                    (let [[_ ?] (edit? @curwin, @restart_edit, false, 1)] (reset! curwin _))
-                ))
+        (let [win (when' (and (== (:op_type (:oap ca)) OP_NOP) (zero? (:regname (:oap ca))) (!= (:cmdchar ca) K_CURSORHOLD)) => win
+                    (clear-showcmd win))
+              win (checkpcmark win) ;; check if we moved since setting pcmark
+              ca (assoc ca :searchbuf nil)
+              win (update win :w_cursor mb-adjust-pos)
+              win (when' (and @(:wo_scb (:w_options win)) toplevel) => win
+                    (let [win (validate-cursor win)] ;; may need to update "w_leftcol"
+                        (do-check-scrollbind win, true)
+                    ))
+              win (when' (and @(:wo_crb (:w_options win)) toplevel) => win
+                    (let [win (validate-cursor win)] ;; may need to update "w_leftcol"
+                        (do-check-cursorbind)
+                    ))
+              ;; May restart edit(), if we got here with CTRL-O in Insert mode
+              ;; (but not if still inside a mapping that started in Visual mode).
+              ;; May switch from Visual to Select mode after CTRL-O command.
+              win (when' (and (== (:op_type (:oap ca)) OP_NOP)
+                            (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1))
+                            (non-flag? (:retval ca) CA_COMMAND_BUSY)
+                            (stuff-empty)
+                            (zero? (:regname (:oap ca)))) => win
+                    (when (== @restart_VIsual_select 1)
+                        (reset! VIsual_select true)
+                        (showmode)
+                        (reset! restart_VIsual_select 0))
+                    (when' (and (non-zero? @restart_edit) (not @VIsual_active)) => win
+                        (let [[win _] (edit? win, @restart_edit, false, 1)] win))
+                )]
             (when (== @restart_VIsual_select 2)
                 (reset! restart_VIsual_select 1))
             ;; Save count before an operator for next time.
             (reset! opcount (:opcount ca))
-            (:oap ca)
+            [win (:oap ca)]
         )
     ))
 
@@ -41327,58 +41331,61 @@
 ;; Main loop: execute Normal mode commands until exiting Vim.
 ;; Also used to handle commands in the command-line window, until the window is closed.
 
-(defn- #_void main-loop [#_boolean cmdwin]
+(defn- #_window_C main-loop [#_window_C win, #_boolean cmdwin]
     ;; cmdwin: true when working in the command-line window
-    (let [#_oparg_C oa (NEW_oparg_C)]                       ;; operator arguments
-        (loop-when oa (or (not cmdwin) (zero? @cmdwin_result))
-            (when (stuff-empty)
-                (when @need_wait_return                     ;; if wait-return() still needed ...
-                    (swap! curwin wait-return FALSE))       ;; ... call it now
-                (when (and @need_start_insertmode (goto-im) (not @VIsual_active))
-                    (reset! need_start_insertmode false)
-                    (stuff-string (u8 "i"))                 ;; start insert mode next
-                ))
-            ;; Reset "got_int" now that we got back to the main loop.
-            ;; Except when inside a ":g/pat/cmd" command, then the "got_int" needs to abort the ":g" command.
-            ;; For ":g/pat/vi" we reset "got_int" when used once.
-            ;; When used a second time we go back to Ex mode and abort the ":g" command.
-            (when @got_int
-                (vgetc) ;; flush all buffers
-                (reset! got_int false))
-            (reset! msg_scroll false)
-            ;; If skip redraw is set (for ":" in wait-return()), don't redraw now.
-            ;; If there is nothing in the stuff_buffer or do_redraw is true, update cursor and redraw.
-            (cond @skip_redraw
-                (reset! skip_redraw false)
-            (or @do_redraw (stuff-empty))
-                (do ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
-                    (swap! curwin update-topline)
-                    (swap! curwin validate-cursor)
-                    (cond
-                        @VIsual_active (update-curbuf INVERTED)    ;; update inverted part
-                        (non-zero? @must_redraw) (update-screen 0)
-                        (or @redraw_cmdline @clear_cmdline) (showmode))
-                    (redraw-statuslines)
-                    ;; display message after redraw
-                    (when (some? @keep_msg)
-                        ;; msg-attr-keep() will set "keep_msg" to null, must free the string here.
-                        ;; Don't reset "keep_msg", msg-attr-keep() uses it to check for duplicates.
-                        (msg-attr @keep_msg, @keep_msg_attr))
-                    (reset! emsg_on_display false)    ;; can delete error message now
-                    (reset! did_emsg false)
-                    (reset! msg_didany false)         ;; reset lines_left in msg-start()
-                    (swap! curwin showruler false)
-                    (swap! curwin setcursor)
-                    (cursor-on)
-                    (reset! do_redraw false)
-                ))
-            ;; Update "w_curswant" if "w_set_curswant" has been set.
-            ;; Postponed until here to avoid computing "w_virtcol" too often.
-            (swap! curwin update-curswant)
-            ;; Get and execute a normal mode command.
-            (recur (normal-cmd oa, true))
-        ))
-    nil)
+    (let [#_oparg_C oa (NEW_oparg_C)]                                   ;; operator arguments
+        (loop-when [[win oa] [win oa]] (or (not cmdwin) (zero? @cmdwin_result)) => win
+            (let [win (when' (stuff-empty) => win
+                        (let [win (when' @need_wait_return => win       ;; if wait-return() still needed ...
+                                    (wait-return win, FALSE)            ;; ... call it now
+                                )]
+                            (when (and @need_start_insertmode (goto-im) (not @VIsual_active))
+                                (reset! need_start_insertmode false)
+                                (stuff-string (u8 "i")))                ;; start insert mode next
+                            win
+                        ))
+                  ;; Reset "got_int" now that we got back to the main loop.
+                  ;; Except when inside a ":g/pat/cmd" command, then the "got_int" needs to abort the ":g" command.
+                  ;; For ":g/pat/vi" we reset "got_int" when used once.
+                  ;; When used a second time we go back to Ex mode and abort the ":g" command.
+                  _ (when @got_int
+                        (vgetc) ;; flush all buffers
+                        (reset! got_int false))
+                  _ (reset! msg_scroll false)
+                  ;; If "skip_redraw" is set (for ":" in wait-return()), don't redraw now.
+                  ;; If there is nothing in the stuff buffer or "do_redraw" is true, update cursor and redraw.
+                  win (cond @skip_redraw
+                        (do (reset! skip_redraw false)
+                            win)
+                    (or @do_redraw (stuff-empty))
+                        ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
+                        (let [win (-> win (update-topline) (validate-cursor))]
+                            (cond
+                                @VIsual_active (update-curbuf INVERTED) ;; update inverted part
+                                (non-zero? @must_redraw) (update-screen 0)
+                                (or @redraw_cmdline @clear_cmdline) (showmode))
+                            (redraw-statuslines)
+                            ;; display message after redraw
+                            (when (some? @keep_msg)
+                                ;; Don't reset "keep_msg", msg-attr-keep() uses it to check for duplicates.
+                                (msg-attr @keep_msg, @keep_msg_attr))
+                            (reset! emsg_on_display false)              ;; can delete error message now
+                            (reset! did_emsg false)
+                            (reset! msg_didany false)                   ;; reset lines_left in msg-start()
+                            (let [win (-> win (showruler false) (setcursor))]
+                                (cursor-on)
+                                (reset! do_redraw false)
+                                win
+                            ))
+                    :else
+                        win)
+                  ;; Update "w_curswant" if "w_set_curswant" has been set.
+                  ;; Postponed until here to avoid computing "w_virtcol" too often.
+                  win (update-curswant win)]
+                ;; Get and execute a normal mode command.
+                (recur (normal-cmd win, oa, true))
+            ))
+    ))
 
 ;; Exit properly.
 (defn- #_void getout [#_int exitval]
@@ -41494,6 +41501,6 @@
 
     ;; Call the main command loop.  This never returns.
 
-    (main-loop false)
+    (swap! curwin main-loop false)
 
     #_nil 0)
