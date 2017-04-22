@@ -997,14 +997,11 @@
 (final int WSP_ABOVE       64)      ;; put new window above/left
 
 ;; "flags" values for option-setting functions.
-;; When OPT_GLOBAL and OPT_LOCAL are both missing, set both local and global
-;; values, get local value.
+;; When OPT_GLOBAL and OPT_LOCAL are both missing,
+;; set both local and global values, get local value.
 
-(final int OPT_FREE        1)       ;; free old value if it was allocated
 (final int OPT_GLOBAL      2)       ;; use global value
 (final int OPT_LOCAL       4)       ;; use local value
-(final int OPT_WINONLY     16)      ;; only set window-local options
-(final int OPT_NOWIN       32)      ;; don't set window-local options
 
 ;; Magic chars used in confirm dialog strings.
 (final byte DLG_BUTTON_SEP  \newline)
@@ -2760,8 +2757,8 @@
     CMD_rightbelow 83,
     CMD_substitute 84,
     CMD_set 85,
-    CMD_setglobal 86,
-    CMD_setlocal 87,
+
+
     CMD_silent 88,
     CMD_smagic 89,
     CMD_smap 90,
@@ -7609,7 +7606,7 @@
         ;; Set all the options (except the terminal options) to their default value.
         ;; Also set the global value for local options.
 
-;       set_options_default(0);
+;       set_options_default();
 
 ;       check_buf_options(@curbuf);
 ;       check_win_options(@curwin);
@@ -7640,21 +7637,17 @@
 ;; Set an option to its default value.
 ;; This does not take care of side effects!
 
-(defn- #_void set_option_default [#_int opt_idx, #_int opt_flags]
-    ;; opt_flags: OPT_FREE, OPT_LOCAL and/or OPT_GLOBAL
+(defn- #_void set_option_default [#_int opt_idx]
     (§
-;       boolean both = (opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0;
-
-;       Object varp = get_varp_scope(vimoptions[opt_idx], both ? OPT_LOCAL : opt_flags);
-;       long flags = vimoptions[opt_idx].@flags;
-
+;       Object varp = get_varp_scope(vimoptions[opt_idx], OPT_LOCAL);
 ;       if (varp != null)       ;; skip hidden option, nothing to do for it
 ;       {
+;           long flags = vimoptions[opt_idx].@flags;
+
 ;           if ((flags & P_STRING) != 0)
 ;           {
-                ;; Use set_string_option_direct() for local options to handle freeing and allocating the value.
 ;               if (vimoptions[opt_idx].indir != PV_NONE)
-;                   set_string_option_direct(null, opt_idx, (Bytes)vimoptions[opt_idx].def_val, opt_flags);
+;                   set_string_option_direct(null, opt_idx, (Bytes)vimoptions[opt_idx].def_val);
 ;               else
 ;                   ((Bytes[])varp)[0] = (Bytes)vimoptions[opt_idx].def_val;
 ;           }
@@ -7665,29 +7658,24 @@
 ;               else
 ;               {
 ;                   ((long[])varp)[0] = (long)vimoptions[opt_idx].def_val;
-                    ;; May also set global value for local option.
-;                   if (both)
-;                       ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((long[])varp)[0];
+;                   ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((long[])varp)[0];
 ;               }
 ;           }
 ;           else    ;; P_BOOL
 ;           {
 ;               ((boolean[])varp)[0] = (boolean)vimoptions[opt_idx].def_val;
-                ;; May also set global value for local option.
-;               if (both)
-;                   ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
+;               ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
 ;           }
 ;       }
     ))
 
 ;; Set all options (except terminal options) to their default value.
 
-(defn- #_void set_options_default [#_int opt_flags]
-    ;; opt_flags: OPT_FREE, OPT_LOCAL and/or OPT_GLOBAL
+(defn- #_void set_options_default []
     (§
 ;       for (int i = 0; !istermoption(vimoptions[i]); i++)
 ;           if ((vimoptions[i].@flags & P_NODEFAULT) == 0)
-;               set_option_default(i, opt_flags);
+;               set_option_default(i);
 
         ;; The 'scroll' option must be computed for all windows.
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
@@ -7724,7 +7712,7 @@
 ;       set_number_default(u8("scroll"), @Rows >>> 1);
 ;       int idx = findoption(u8("scroll"));
 ;       if (0 <= idx && (vimoptions[idx].@flags & P_WAS_SET) == 0)
-;           set_option_default(idx, OPT_LOCAL);
+;           set_option_default(idx);
 ;       comp_col();
 
         ;; 'window' is only for backwards compatibility with Vi.
@@ -7741,7 +7729,7 @@
 ;       idx = findoption(u8("bg"));
 ;       if (0 <= idx && (vimoptions[idx].@flags & P_WAS_SET) == 0 && term_bg_default().at(0) == (byte)'d')
 ;       {
-;           set_string_option_direct(null, idx, u8("dark"), OPT_FREE);
+;           set_string_option_direct(null, idx, u8("dark"));
             ;; don't mark it as set, when starting the GUI it may be changed again
 ;           vimoptions[idx].@flags &= ~P_WAS_SET;
 ;       }
@@ -7762,24 +7750,15 @@
 
 ;; Parse 'arg' for option settings.
 ;;
-;; 'arg' may be ioBuff, but only when no errors can be present
-;; and option does not need to be expanded with option_expand().
-;; "opt_flags":
-;; 0 for ":set"
-;; OPT_GLOBAL   for ":setglobal"
-;; OPT_LOCAL    for ":setlocal"
-;; OPT_WINONLY  to only set window-local options
-;; OPT_NOWIN    to skip setting window-local options
-;;
 ;; returns false if an error is detected, true otherwise
 
-(defn- #_boolean do_set [#_Bytes arg, #_int opt_flags]
+(defn- #_boolean do_set [#_Bytes arg]
     ;; arg: option string (may be written to!)
     (§
 ;       boolean did_show = false;       ;; already showed one value
 ;       if (arg.at(0) == NUL)
 ;       {
-;           showoptions(0, opt_flags);
+;           showoptions(0);
 ;           did_show = true;
 ;       }
 ;       else
@@ -7804,17 +7783,17 @@
 ;                   {
 ;                       arg = arg.plus(1);
                         ;; Only for :set command set global value of local options.
-;                       set_options_default(OPT_FREE | opt_flags);
+;                       set_options_default();
 ;                   }
 ;                   else
 ;                   {
-;                       showoptions(1, opt_flags);
+;                       showoptions(1);
 ;                       did_show = true;
 ;                   }
 ;               }
 ;               else if (STRNCMP(arg, u8("termcap"), 7) == 0)
 ;               {
-;                   showoptions(2, opt_flags);
+;                   showoptions(2);
 ;                   show_termcodes();
 ;                   did_show = true;
 ;                   arg = arg.plus(7);
@@ -7936,7 +7915,7 @@
 ;                           }
 
 ;                           flags = vimoptions[opt_idx].@flags;
-;                           varp = get_varp_scope(vimoptions[opt_idx], opt_flags);
+;                           varp = get_varp_scope(vimoptions[opt_idx], 0);
 ;                       }
 ;                       else
 ;                       {
@@ -7952,15 +7931,6 @@
 ;                               key_name.be(1, (byte)(key & 0xff));
 ;                           }
 ;                       }
-
-                        ;; Skip all options that are not window-local
-                        ;; (used when showing an already loaded buffer in a window).
-;                       if ((opt_flags & OPT_WINONLY) != 0 && (opt_idx < 0 || vimoptions[opt_idx].var != VAR_WIN))
-;                           break skip;
-
-                        ;; Skip all options that are window-local (used for :vimgrep).
-;                       if ((opt_flags & OPT_NOWIN) != 0 && 0 <= opt_idx && vimoptions[opt_idx].var == VAR_WIN)
-;                           break skip;
 
 ;                       if (vim_strchr(u8("?=:!&<"), nextchar) != null)
 ;                       {
@@ -7994,7 +7964,7 @@
 ;                           }
 ;                           if (0 <= opt_idx)
 ;                           {
-;                               showoneopt(vimoptions[opt_idx], opt_flags);
+;                               showoneopt(vimoptions[opt_idx]);
 ;                           }
 ;                           else
 ;                           {
@@ -8048,7 +8018,7 @@
 ;                                       value = (prefix != 0);
 ;                               }
 
-;                               errmsg = set_bool_option(opt_idx, (boolean[])varp, value, opt_flags);
+;                               errmsg = set_bool_option(opt_idx, (boolean[])varp, value);
 ;                           }
 ;                           else                                ;; numeric or string
 ;                           {
@@ -8112,7 +8082,7 @@
 ;                                   if (removing)
 ;                                       value = ((long[])varp)[0] - value;
 
-;                                   errmsg = set_num_option(opt_idx, (long[])varp, value, errbuf, errbuf.size(), opt_flags);
+;                                   errmsg = set_num_option(opt_idx, (long[])varp, value, errbuf, errbuf.size());
 ;                               }
 ;                               else if (0 <= opt_idx)                  ;; string
 ;                               {
@@ -8337,7 +8307,7 @@
 ;                                   ((Bytes[])varp)[0] = newval;
 
                                     ;; Handle side effects, and set the global value for ":set" on local options.
-;                                   errmsg = did_set_string_option(opt_idx, (Bytes[])varp, oldval, errbuf, opt_flags);
+;                                   errmsg = did_set_string_option(opt_idx, (Bytes[])varp, oldval, errbuf);
 
                                     ;; If error detected, print the error message.
 ;                                   if (errmsg != null)
@@ -8369,7 +8339,7 @@
 ;                           }
 
 ;                           if (0 <= opt_idx)
-;                               did_set_option(opt_idx, opt_flags, !prepending && !adding && !removing);
+;                               vimoptions[opt_idx].@flags |= P_WAS_SET;
 ;                       }
 ;                   }
 
@@ -8425,15 +8395,6 @@
 ;       }
 
 ;       return true;
-    ))
-
-;; Call this when an option has been given a new value through a user command.
-;; Sets the P_WAS_SET flag.
-
-(defn- #_void did_set_option [#_int opt_idx, #_int opt_flags, #_boolean new_value]
-    ;; new_value: value was replaced completely
-    (§
-;       vimoptions[opt_idx].@flags |= P_WAS_SET;
     ))
 
 (defn- #_Bytes illegal_char [#_Bytes errbuf, #_int c]
@@ -8536,10 +8497,8 @@
 ;; Set a string option to a new value (without checking the effect).
 ;; If ("opt_idx" == -1) "name" is used, otherwise "opt_idx" is used.
 
-(defn- #_void set_string_option_direct [#_Bytes name, #_int opt_idx, #_Bytes val, #_int opt_flags]
-    ;; opt_flags: OPT_FREE, OPT_LOCAL and/or OPT_GLOBAL
+(defn- #_void set_string_option_direct [#_Bytes name, #_int opt_idx, #_Bytes val]
     (§
-;       boolean both = (opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0;
 ;       int idx = opt_idx;
 
 ;       if (idx == -1)                      ;; use name
@@ -8556,12 +8515,10 @@
 ;       if (vimoptions[idx].var == null)       ;; can't set hidden option
 ;           return;
 
-;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[idx], both ? OPT_LOCAL : opt_flags);
+;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[idx], OPT_LOCAL);
 ;       varp[0] = STRDUP(val);
 
-        ;; For buffer/window local option may also set the global value.
-;       if (both)
-;           set_string_option_global(idx, varp);
+;       set_string_option_global(idx, varp);
     ))
 
 ;; Set global value for string option when it's a local option.
@@ -8589,20 +8546,19 @@
 ;; Set a string option to a new value, and handle the effects.
 ;; Returns null on success or error message on error.
 
-(defn- #_Bytes set_string_option [#_int opt_idx, #_Bytes value, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
+(defn- #_Bytes set_string_option [#_int opt_idx, #_Bytes value]
     (§
 ;       if (vimoptions[opt_idx].var == null)   ;; don't set hidden option
 ;           return null;
 
-;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[opt_idx], (opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0 ? OPT_LOCAL : opt_flags);
+;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[opt_idx], OPT_LOCAL);
 
 ;       Bytes oldval = varp[0];
 ;       varp[0] = STRDUP(value);
 
-;       Bytes r = did_set_string_option(opt_idx, varp, oldval, null, opt_flags);
+;       Bytes r = did_set_string_option(opt_idx, varp, oldval, null);
 ;       if (r == null)
-;           did_set_option(opt_idx, opt_flags, true);
+;           vimoptions[opt_idx].@flags |= P_WAS_SET;
 
 ;       return r;
     ))
@@ -8610,12 +8566,11 @@
 ;; Handle string options that need some action to perform when changed.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes did_set_string_option [#_int opt_idx, #_Bytes* varp, #_Bytes oldval, #_Bytes errbuf, #_int opt_flags]
+(defn- #_Bytes did_set_string_option [#_int opt_idx, #_Bytes* varp, #_Bytes oldval, #_Bytes errbuf]
     ;; opt_idx: index in vimoptions[] table
     ;; varp: pointer to the option variable
     ;; oldval: previous value of the option
     ;; errbuf: buffer for errors, or null
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
     (§
 ;       Bytes errmsg = null;
 ;       boolean did_chartab = false;
@@ -8957,9 +8912,8 @@
 ;           if (varp == p_hl)
 ;               highlight_changed();
 ;       }
-;       else if ((opt_flags & OPT_LOCAL) == 0 && opt_flags != OPT_GLOBAL)
+;       else
 ;       {
-            ;; May set global value for local option.
 ;           set_string_option_global(opt_idx, varp);
 ;       }
 
@@ -9231,18 +9185,15 @@
 ;; Set the value of a boolean option, and take care of side effects.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes set_bool_option [#_int opt_idx, #_boolean* varp, #_boolean value, #_int opt_flags]
+(defn- #_Bytes set_bool_option [#_int opt_idx, #_boolean* varp, #_boolean value]
     ;; opt_idx: index in vimoptions[] table
     ;; varp: pointer to the option variable
     ;; value: new value
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
     (§
 ;       boolean old_value = varp[0];
 ;       varp[0] = value;                    ;; set the new value
 
-        ;; May set global value for local option.
-;       if ((opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0)
-;           ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = value;
+;       ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = value;
 
         ;; Handle side effects of changing a bool option.
 
@@ -9327,13 +9278,12 @@
 ;; Set the value of a number option, and take care of side effects.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes set_num_option [#_int opt_idx, #_long* varp, #_long value, #_Bytes errbuf, #_int errbuflen, #_int opt_flags]
+(defn- #_Bytes set_num_option [#_int opt_idx, #_long* varp, #_long value, #_Bytes errbuf, #_int errbuflen]
     ;; opt_idx: index in vimoptions[] table
     ;; varp: pointer to the option variable
     ;; value: new value
     ;; errbuf: buffer for error messages
     ;; errbuflen: length of "errbuf"
-    ;; opt_flags: OPT_LOCAL and OPT_GLOBAL
     (§
 ;       Bytes errmsg = null;
 ;       long old_value = varp[0];
@@ -9577,8 +9527,7 @@
 ;           errmsg = e_positive;
 ;           @p_tm = 0;
 ;       }
-;       if ((@curwin.w_onebuf_opt.@wo_scr <= 0 || (@curwin.w_height < @curwin.w_onebuf_opt.@wo_scr && 0 < @curwin.w_height))
-;               && @full_screen)
+;       if ((@curwin.w_onebuf_opt.@wo_scr <= 0 || (@curwin.w_height < @curwin.w_onebuf_opt.@wo_scr && 0 < @curwin.w_height)) && @full_screen)
 ;       {
 ;           if (varp == @curwin.w_onebuf_opt.wo_scr)
 ;           {
@@ -9648,9 +9597,7 @@
 ;           @p_ss = 0;
 ;       }
 
-        ;; May set global value for local option.
-;       if ((opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0)
-;           ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = varp[0];
+;       ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = varp[0];
 
 ;       vimoptions[opt_idx].@flags |= P_WAS_SET;
 
@@ -9744,57 +9691,12 @@
 ;       return opt_idx;
     ))
 
-;; Get the value for an option.
-;;
-;; Returns:
-;; Number or Toggle option: 1, numval[0] gets value.
-;;           String option: 0, stringval[0] gets allocated string.
-;; Hidden Number or Toggle option: -1.
-;;           hidden String option: -2.
-;;                 unknown option: -3.
-
-(defn- #_int get_option_value [#_Bytes name, #_long* numval, #_Bytes* stringval, #_int opt_flags]
-    ;; stringval: null when only checking existence
-    (§
-;       int opt_idx = findoption(name);
-;       if (opt_idx < 0)                ;; unknown option
-;           return -3;
-
-;       Object varp = get_varp_scope(vimoptions[opt_idx], opt_flags);
-
-;       if ((vimoptions[opt_idx].@flags & P_STRING) != 0)
-;       {
-;           if (varp == null)           ;; hidden option
-;               return -2;
-;           if (stringval != null)
-;               stringval[0] = STRDUP(((Bytes[])varp)[0]);
-;           return 0;
-;       }
-
-;       if (varp == null)               ;; hidden option
-;           return -1;
-
-;       if ((vimoptions[opt_idx].@flags & P_NUM) != 0)
-;           numval[0] = ((long[])varp)[0];
-;       else
-;       {
-            ;; Special case: 'modified' is "b_changed".
-;           if (varp == @curbuf.b_changed)
-;               numval[0] = bufIsChanged(@curbuf) ? TRUE : FALSE;
-;           else
-;               numval[0] = ((int[])varp)[0];
-;       }
-
-;       return 1;
-    ))
-
 ;; Set the value of option "name".
 ;; Use "string" for string options, use "number" for other options.
 ;;
 ;; Returns null on success or error message on error.
 
-(defn- #_Bytes set_option_value [#_Bytes name, #_long number, #_Bytes string, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL or 0 (both)
+(defn- #_Bytes set_option_value [#_Bytes name, #_long number, #_Bytes string]
     (§
 ;       int opt_idx = findoption(name);
 ;       if (opt_idx < 0)
@@ -9806,9 +9708,9 @@
 ;       long flags = vimoptions[opt_idx].@flags;
 
 ;       if ((flags & P_STRING) != 0)
-;           return set_string_option(opt_idx, string, opt_flags);
+;           return set_string_option(opt_idx, string);
 
-;       Object varp = get_varp_scope(vimoptions[opt_idx], opt_flags);
+;       Object varp = get_varp_scope(vimoptions[opt_idx], 0);
 ;       if (varp != null)   ;; hidden option is not changed
 ;       {
 ;           if (number == 0 && string != null)
@@ -9828,9 +9730,9 @@
 ;           }
 
 ;           if ((flags & P_NUM) != 0)
-;               return set_num_option(opt_idx, (long[])varp, number, null, 0, opt_flags);
+;               return set_num_option(opt_idx, (long[])varp, number, null, 0);
 ;           else
-;               return set_bool_option(opt_idx, (boolean[])varp, (number != 0), opt_flags);
+;               return set_bool_option(opt_idx, (boolean[])varp, (number != 0));
 ;       }
 
 ;       return null;
@@ -9888,8 +9790,7 @@
 ;; if 'all' == 1: show all normal options
 ;; if 'all' == 2: show all terminal options
 
-(defn- #_void showoptions [#_int all, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
+(defn- #_void showoptions [#_int all]
     (§
 ;       final int INC = 20, GAP = 3;
 
@@ -9898,10 +9799,6 @@
         ;; Highlight title.
 ;       if (all == 2)
 ;           msg_puts_title(u8("\n--- Terminal codes ---"));
-;       else if ((opt_flags & OPT_GLOBAL) != 0)
-;           msg_puts_title(u8("\n--- Global option values ---"));
-;       else if ((opt_flags & OPT_LOCAL) != 0)
-;           msg_puts_title(u8("\n--- Local option values ---"));
 ;       else
 ;           msg_puts_title(u8("\n--- Options ---"));
 
@@ -9918,14 +9815,7 @@
 ;           {
 ;               boolean isterm = istermoption(vimoptions[i]);
 
-;               Object varp = null;
-;               if (opt_flags != 0)
-;               {
-;                   if (vimoptions[i].indir != PV_NONE && !isterm)
-;                       varp = get_varp_scope(vimoptions[i], opt_flags);
-;               }
-;               else
-;                   varp = get_varp(vimoptions[i], false);
+;               Object varp = get_varp(vimoptions[i], false);
 
 ;               if (varp != null
 ;                       && ((all == 2 && isterm)
@@ -9937,7 +9827,7 @@
 ;                       len = 1;            ;; a toggle option fits always
 ;                   else
 ;                   {
-;                       option_value2string(vimoptions[i], opt_flags);
+;                       option_value2string(vimoptions[i]);
 ;                       len = STRLEN(vimoptions[i].fullname) + mb_string2cells(@nameBuff, -1) + 1;
 ;                   }
 ;                   if ((len <= INC - GAP && run == 1) || (INC - GAP < len && run == 2))
@@ -9967,7 +9857,7 @@
 ;               for (int i = row; i < item_count; i += rows)
 ;               {
 ;                   @msg_col = col;                      ;; make columns
-;                   showoneopt(items[i], opt_flags);
+;                   showoneopt(items[i]);
 ;                   col += INC;
 ;               }
 ;               out_flush();
@@ -9995,15 +9885,14 @@
 ;; showoneopt: show the value of one option
 ;; must not be called with a hidden option!
 
-(defn- #_void showoneopt [#_vimoption_C v, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL or OPT_GLOBAL
+(defn- #_void showoneopt [#_vimoption_C v]
     (§
 ;       boolean save_silent = @silent_mode;
 
 ;       @silent_mode = false;
 ;       @info_message = true;
 
-;       Object varp = get_varp_scope(v, opt_flags);
+;       Object varp = get_varp_scope(v, 0);
 
 ;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !bufIsChanged(@curbuf) : !((boolean[])varp)[0]))
 ;           msg_puts(u8("no"));
@@ -10014,7 +9903,7 @@
 ;       {
 ;           msg_putchar('=');
             ;; put value string in nameBuff
-;           option_value2string(v, opt_flags);
+;           option_value2string(v);
 ;           msg_outtrans(@nameBuff);
 ;       }
 
@@ -10306,10 +10195,9 @@
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
 ;; Must not be called with a hidden option!
 
-(defn- #_void option_value2string [#_vimoption_C v, #_int opt_flags]
-    ;; opt_flags: OPT_GLOBAL and/or OPT_LOCAL
+(defn- #_void option_value2string [#_vimoption_C v]
     (§
-;       Object varp = get_varp_scope(v, opt_flags);
+;       Object varp = get_varp_scope(v, 0);
 
 ;       if ((v.@flags & P_NUM) != 0)
 ;       {
@@ -17271,13 +17159,7 @@
 
 (defn- #_void ex_set [#_exarg_C eap]
     (§
-;       int flags = 0;
-
-;       if (eap.cmdidx == CMD_setlocal)
-;           flags = OPT_LOCAL;
-;       else if (eap.cmdidx == CMD_setglobal)
-;           flags = OPT_GLOBAL;
-;       do_set(eap.arg, flags);
+;       do_set(eap.arg);
     ))
 
 ;; ":nohlsearch"
@@ -31081,7 +30963,7 @@
 ;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen), mlen - @typebuf.tb_maplen);
 
 ;                               del_typebuf(mlen, 0);               ;; remove the chars
-;                               set_option_value(u8("paste"), !@p_paste ? TRUE : FALSE, null, 0);
+;                               set_option_value(u8("paste"), !@p_paste ? TRUE : FALSE, null);
 ;                               if ((@State & INSERT) == 0)
 ;                               {
 ;                                   @msg_col = 0;
@@ -67021,7 +66903,7 @@
 ;       else
 ;           nr_colors.be(0, NUL);
 
-;       set_string_option_direct(u8("t_Co"), -1, nr_colors, OPT_FREE);
+;       set_string_option_direct(u8("t_Co"), -1, nr_colors);
     ))
 
 (final Bytes* key_names
@@ -67115,7 +66997,7 @@
 ;                   out_flush();
 ;                   ui_delay(2000L, true);
 ;               }
-;               set_string_option_direct(u8("term"), -1, term, OPT_FREE);
+;               set_string_option_direct(u8("term"), -1, term);
 ;               libc.fflush(stderr);
 ;           }
 ;           out_flush();
@@ -67171,7 +67053,7 @@
 
 ;           if (ttym != null)
 ;           {
-;               set_option_value(u8("ttym"), 0L, ttym, 0);
+;               set_option_value(u8("ttym"), 0L, ttym);
                 ;; Reset the WAS_SET flag, 'ttymouse' can be set to "xterm2" in check_termcode().
 ;               reset_option_was_set(u8("ttym"));
 ;           }
@@ -67321,7 +67203,7 @@
 ;       if (term == null || term.at(0) == NUL)
 ;           term = DEFAULT_TERM;
 
-;       set_string_option_direct(u8("term"), -1, term, OPT_FREE);
+;       set_string_option_direct(u8("term"), -1, term);
 
         ;; Set the default terminal name.
 ;       set_string_default(u8("term"), term);
@@ -68763,7 +68645,7 @@
 ;                           {
                                 ;; Setting the option causes a screen redraw.
                                 ;; Do that right away if possible, keeping any messages.
-;                               set_option_value(u8("ambw"), 0L, aw, 0);
+;                               set_option_value(u8("ambw"), 0L, aw);
 ;                               redraw_asap(CLEAR);
 ;                           }
 ;                       }
@@ -68796,7 +68678,7 @@
 ;                           {
                                 ;; if xterm version >= 95 use mouse dragging
 ;                               if (95 <= extra)
-;                                   set_option_value(u8("ttym"), 0L, u8("xterm2"), 0);
+;                                   set_option_value(u8("ttym"), 0L, u8("xterm2"));
 ;                           }
 
                             ;; if xterm version >= 141 try to get termcap codes
@@ -82711,8 +82593,8 @@
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
+    
+    
         (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
