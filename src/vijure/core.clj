@@ -38286,191 +38286,128 @@
 
 ;; Exchange current and next window.
 
-(defn- #_window_C win-exchange [#_window_C win', #_long Prenum]
-    (reset! curwin win')
-    (§
-        (when (== @lastwin @firstwin)        ;; just one window
-            (beep-flush)
-            ((ß RETURN) @curwin)
-        )
+(defn- #_window_C win-exchange [#_window_C win, #_long Prenum]
+    (if (== @lastwin @firstwin) ;; just one window
+        (do (beep-flush) win)
+        ;; Find window to exchange with.
+        (let-when [#_frame_C f1
+                (cond (non-zero? Prenum)
+                    (loop-when-recur [f1 (:fr_child (:fr_parent (:w_frame win))) Prenum (dec Prenum)] (and (some? f1) (< 0 Prenum)) [(:fr_next f1) (dec Prenum)] => f1)
+                (some? (:fr_next (:w_frame win)))
+                    (:fr_next (:w_frame win)) ;; Swap with next.
+                :else
+                    (:fr_prev (:w_frame win)) ;; Swap last window in row/col with previous.
+                )
+              ;; We can only exchange a window with another window, not with a frame containing windows.
+        ] (and (some? f1) (some? (:fr_win f1)) (!= (:fr_win f1) win)) => win
 
-        ;; find window to exchange with
-
-        ((ß frame_C fr1 =) (cond (non-zero? Prenum)
-        (do
-            (loop-when-recur [fr1 (:fr_child (:fr_parent (:w_frame @curwin))) Prenum (dec Prenum)] (and (some? fr1) (< 0 Prenum)) [(:fr_next fr1) (dec Prenum)] => fr1)
-        )
-        (some? (:fr_next (:w_frame @curwin)))    ;; Swap with next.
-        (do
-            (:fr_next (:w_frame @curwin))
-        )
-        :else    ;; Swap last window in row/col with previous.
-        (do
-            (:fr_prev (:w_frame @curwin))
-        )))
-
-        ;; We can only exchange a window with another window, not with a frame containing windows.
-        (if (or (nil? fr1) (nil? (:fr_win fr1)) (== (:fr_win fr1) @curwin))
-            ((ß RETURN) @curwin)
-        )
-
-        ((ß window_C wp =) (:fr_win fr1))
-
-        ;; 1. remove curwin from the list.  Remember after which window it was in wp2
-        ;; 2. insert curwin before wp in the list
-        ;; if wp != wp2
-        ;;    3. remove wp from the list
-        ;;    4. insert wp after wp2
-        ;; 5. exchange the status line height and vsep width.
-
-        ((ß window_C wp2 =) (:w_prev @curwin))
-        ((ß frame_C fr2 =) (:fr_prev (:w_frame @curwin)))
-        (when (!= (:w_prev wp) @curwin)
-            (win-remove @curwin)
-            (frame-remove (:w_frame @curwin))
-            (win-append (:w_prev wp), @curwin)
-            (frame-insert fr1, (:w_frame @curwin))
-        )
-        (when (!= wp wp2)
-            (win-remove wp)
-            (frame-remove (:w_frame wp))
-            (win-append wp2, wp)
-            (if (nil? fr2)
-                (frame-insert (:fr_child (:fr_parent (:w_frame wp))), (:w_frame wp))
-                (frame-append fr2, (:w_frame wp)))
-        )
-
-        ((ß int temp =) (:w_status_height @curwin))
-        (swap! curwin assoc :w_status_height (:w_status_height wp))
-        ((ß wp =) (assoc wp :w_status_height temp))
-        ((ß temp =) (:w_vsep_width @curwin))
-        (swap! curwin assoc :w_vsep_width (:w_vsep_width wp))
-        ((ß wp =) (assoc wp :w_vsep_width temp))
-
-        ;; If the windows are not in the same frame, exchange the sizes to avoid
-        ;; messing up the window layout.  Otherwise fix the frame sizes.
-        (cond (!= (:fr_parent (:w_frame @curwin)) (:fr_parent (:w_frame wp)))
-        (do
-            ((ß temp =) (:w_height @curwin))
-            (swap! curwin assoc :w_height (:w_height wp))
-            ((ß wp =) (assoc wp :w_height temp))
-            ((ß temp =) (:w_width @curwin))
-            (swap! curwin assoc :w_width (:w_width wp))
-            ((ß wp =) (assoc wp :w_width temp))
-        )
-        :else
-        (do
-            (swap! curwin frame-fix-height)
-            ((ß wp =) (frame-fix-height wp))
-            (swap! curwin frame-fix-width)
-            ((ß wp =) (frame-fix-width wp))
-        ))
-
-        (win-comp-pos)                 ;; recompute window positions
-
-        (swap! curwin win-enter wp)
-        (swap! curwin redraw-later CLEAR)
-        @curwin
+            ;; 1. remove "win" from the list, remember after which window it was in "wp2"
+            ;; 2. insert "win" before "w1" in the list
+            ;; if "w1" != "wp2"
+            ;;    3. remove "w1" from the list
+            ;;    4. insert "w1" after "wp2"
+            ;; 5. exchange the status line height and vsep width
+            (let [#_window_C w1 (:fr_win f1) #_window_C w2 (:w_prev win) #_frame_C f2 (:fr_prev (:w_frame win))]
+                (when (!= (:w_prev w1) win)
+                    (win-remove win)
+                    (frame-remove (:w_frame win))
+                    (win-append (:w_prev w1), win)
+                    (frame-insert f1, (:w_frame win)))
+                (when (!= w1 w2)
+                    (win-remove w1)
+                    (frame-remove (:w_frame w1))
+                    (win-append w2, w1)
+                    (if (nil? f2)
+                        (frame-insert (:fr_child (:fr_parent (:w_frame w1))), (:w_frame w1))
+                        (frame-append f2, (:w_frame w1))
+                    ))
+                (let [swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
+                      [win w1] (-> [win w1] (swp- :w_status_height) (swp- :w_vsep_width))
+                      ;; If the windows are not in the same frame, exchange the sizes to avoid
+                      ;; messing up the window layout.  Otherwise fix the frame sizes.
+                      fix- #(-> % (frame-fix-height) (frame-fix-width))
+                      [win w1]
+                        (if (!= (:fr_parent (:w_frame win)) (:fr_parent (:w_frame w1)))
+                            (-> [win w1] (swp- :w_height) (swp- :w_width))
+                            [(fix- win) (fix- w1)]
+                        )]
+                    (win-comp-pos) ;; recompute window positions
+                    (-> win (win-enter w1) (redraw-later CLEAR)))
+            ))
     ))
 
 ;; Rotate windows:
 ;; if upwards true, the second window becomes the first one,
 ;; if upwards false, the first window becomes the second one.
 
-(defn- #_window_C win-rotate [#_window_C win', #_boolean upwards, #_int count]
-    (reset! curwin win')
-    (§
-        (when (== @firstwin @lastwin)            ;; nothing to do
-            (beep-flush)
-            ((ß RETURN) @curwin)
-        )
-
+(defn- #_window_C win-rotate [#_window_C win, #_boolean upwards, #_int count]
+    (if (== @firstwin @lastwin) ;; nothing to do
+        (do (beep-flush) win)
         ;; Check if all frames in this row/col have one window.
-        (loop-when-recur [#_frame_C fr (:fr_child (:fr_parent (:w_frame @curwin)))] (some? fr) [(:fr_next fr)]
-            (when (nil? (:fr_win fr))
-                (emsg (u8 "E443: Cannot rotate when another window is split"))
-                ((ß RETURN) @curwin)
-            )
+        (let-when [? (loop-when [#_frame_C fr (:fr_child (:fr_parent (:w_frame win)))] (some? fr) => true
+                        (recur-if (some? (:fr_win fr)) [(:fr_next fr)] => (do (emsg (u8 "E443: Cannot rotate when another window is split")) false))
+                    )] ? => win
+
+            (loop-when count (< 0 count)
+                (let [[#_window_C w1 #_window_C w2]
+                        (if upwards
+                            ;; first window becomes last window ;; remove first window/frame from the list
+                            (let [#_frame_C fr (:fr_child (:fr_parent (:w_frame win)))
+                                  w1 (:fr_win fr)
+                                  _ (win-remove w1)
+                                  _ (frame-remove fr)
+                                  ;; find last frame and append removed window/frame after it
+                                  fr (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr)]
+                                (win-append (:fr_win fr), w1)
+                                (frame-append fr, (:w_frame w1))
+                                [w1 (:fr_win fr)] ;; previously last window
+                            )
+                            ;; last window becomes first window ;; find last window/frame in the list and remove it
+                            (let [#_frame_C fr (loop-when-recur [fr (:w_frame win)] (some? (:fr_next fr)) [(:fr_next fr)] => fr)
+                                  w1 (:fr_win fr) w2 (:w_prev w1)] ;; will become last window
+                                (win-remove w1)
+                                (frame-remove fr)
+                                ;; append the removed window/frame before the first in the list
+                                (win-append (:w_prev (:fr_win (:fr_child (:fr_parent fr)))), w1)
+                                (frame-insert (:fr_child (:fr_parent fr)), fr)
+                                [w1 w2]
+                            ))
+                      swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
+                      fix- #(-> % (frame-fix-height) (frame-fix-width))
+                      ;; exchange status height and vsep width of old and new last window
+                      [w1 w2] (-> [w1 w2] (swp- :w_status_height) (swp- :w_vsep_width))
+                      [w1 w2] [(fix- w1) (fix- w2)]]
+                    ;; recompute "w_winrow" and "w_wincol" for all windows
+                    (win-comp-pos)
+                    (recur (dec count))
+                ))
+            (redraw-later win, CLEAR)
         )
-
-        (loop-when count (< 0 count)
-            (ß window_C wp1, wp2)
-
-            (cond upwards            ;; first window becomes last window
-            (do
-                ;; remove first window/frame from the list
-                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame @curwin))))
-                ((ß wp1 =) (:fr_win fr))
-                (win-remove wp1)
-                (frame-remove fr)
-
-                ;; find last frame and append removed window/frame after it
-                ((ß fr =) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr))
-                (win-append (:fr_win fr), wp1)
-                (frame-append fr, (:w_frame wp1))
-
-                ((ß wp2 =) (:fr_win fr))   ;; previously last window
-            )
-            :else                    ;; last window becomes first window
-            (do
-                ;; find last window/frame in the list and remove it
-                ((ß frame_C fr =) (loop-when-recur [fr (:w_frame @curwin)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
-                ((ß wp1 =) (:fr_win fr))
-                ((ß wp2 =) (:w_prev wp1))   ;; will become last window
-                (win-remove wp1)
-                (frame-remove fr)
-
-                ;; append the removed window/frame before the first in the list
-                (win-append (:w_prev (:fr_win (:fr_child (:fr_parent fr)))), wp1)
-                (frame-insert (:fr_child (:fr_parent fr)), fr)
-            ))
-
-            ;; exchange status height and vsep width of old and new last window
-            ((ß int n =) (:w_status_height wp2))
-            ((ß wp2.w_status_height =) (:w_status_height wp1))
-            ((ß wp1.w_status_height =) n)
-            ((ß wp1 =) (frame-fix-height wp1))
-            ((ß wp2 =) (frame-fix-height wp2))
-
-            ((ß n =) (:w_vsep_width wp2))
-            ((ß wp2.w_vsep_width =) (:w_vsep_width wp1))
-            ((ß wp1.w_vsep_width =) n)
-            ((ß wp1 =) (frame-fix-width wp1))
-            ((ß wp2 =) (frame-fix-width wp2))
-
-            ;; recompute "w_winrow" and "w_wincol" for all windows
-            (win-comp-pos)
-            (recur (dec count))
-        )
-
-        (swap! curwin redraw-later CLEAR)
-        @curwin
     ))
 
 ;; Move the current window to the very top/bottom/left/right of the screen.
 
-(defn- #_window_C win-totop [#_window_C win', #_int size, #_int flags]
-    (reset! curwin win')
-    (if (== @lastwin @firstwin)
-        (beep-flush)
-        (let [#_int height (:w_height @curwin) a'dir (atom (int))]
-            ;; Remove the window and frame from the tree of frames.
-            (winframe-remove @curwin, a'dir)
-            (win-remove @curwin)
-            (last-status false)         ;; may need to remove last status line
-            (win-comp-pos)              ;; recompute window positions
-
-            ;; Split a window on the desired side and put the window there.
-            (swap! curwin win-split-ins size, flags, @curwin, @a'dir)
-            (when (non-flag? flags WSP_VERT)
-                (swap! curwin win-setheight height)
-                (when @p_ea
-                    (swap! curwin win-equal nil, true, (byte \v))))
-        ))
-    @curwin)
+(defn- #_window_C win-totop [#_window_C win, #_int size, #_int flags]
+    (if (== @lastwin @firstwin)     ;; nothing to do
+        (do (beep-flush) win)
+        (let [#_int height (:w_height win) a'dir (atom (int))
+              ;; Remove the window and frame from the tree of frames.
+              _ (winframe-remove win, a'dir)
+              _ (win-remove win)
+              _ (last-status false) ;; may need to remove last status line
+              _ (win-comp-pos)      ;; recompute window positions
+              ;; Split a window on the desired side and put the window there.
+              win (win-split-ins win, size, flags, win, @a'dir)]
+            (when' (non-flag? flags WSP_VERT) => win
+                (let [win (win-setheight win, height)]
+                    (when' @p_ea => win
+                        (win-equal win, nil, true, (byte \v))
+                    ))
+            ))
+    ))
 
 ;; Make all windows the same height.
-;; 'win'' will soon be the current window, make sure it has enough rows.
+;; "win'" will soon be the current window, make sure it has enough rows.
 
 (defn- #_window_C win-equal [#_window_C win, #_window_C win', #_boolean current, #_int dir]
     ;; win': pointer to current window to be or null
@@ -39526,20 +39463,13 @@
         )
     ))
 
-;; Remove window 'win' from the window list and free the structure.
+;; Remove window "win" from the window list and free the structure.
 
 (defn- #_void win-free [#_window_C win]
-    (§
-        (when (== @prevwin win)
-            (reset! prevwin nil))
-
-        ((ß win =) (win-free-lines win))
-
-        ((ß win =) (redraw-later win, SOME_VALID))
-
-        (win-remove win)
-        nil
-    ))
+    (when (== @prevwin win)
+        (reset! prevwin nil))
+    (-> win (win-free-lines) (redraw-later SOME_VALID) (win-remove))
+    nil)
 
 ;; Append window "win" in the window list after window "after".
 
