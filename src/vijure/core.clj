@@ -120,6 +120,9 @@
     ([x] (eos! x 0))
     ([x y] (.be x y, NUL)))
 
+(defn- plus [x y] (.plus x y))
+(defn- minus [x y] (.minus x y))
+
 (defn- #_int alphaOrd [#_int x] (- x (if (< x (byte \a)) (byte \A) (byte \a))))
 (defn- #_int lowerOrd [#_int x] (- x (byte \a)))
 (defn- #_int upperOrd [#_int x] (- x (byte \A)))
@@ -3496,16 +3499,18 @@
 
 (defn- #_void hit-return-msg []
     (let [#_boolean save_p_more @p_more]
-
         (reset! p_more false)             ;; don't want see this message when scrolling back
+
         (if @msg_didout             ;; start on a new line
             (msg-putchar (byte \newline)))
         (if @got_int
             (msg-puts (u8 "Interrupt: ")))
 
         (msg-puts-attr (u8 "Press ENTER or type command to continue"), (hl-attr HLF_R))
+
         (if (not (msg-use-printf))
             (msg-clr-eos))
+
         (reset! p_more save_p_more)
         nil
     ))
@@ -3668,7 +3673,7 @@
 
         (screen-puts-len s, len, @msg_row, @msg_col, attr)
 
-        (reset! msg_col (+ @msg_col cells))
+        (swap! msg_col + cells)
         (when (<= (int @Cols) @msg_col)
             (reset! msg_col 0)
             (swap! msg_row inc)
@@ -4061,7 +4066,7 @@
         ;; output postponed text
         (reset! msg_didout true)          ;; remember that line is not empty
         (screen-puts-len t_s, (BDIFF s, t_s), @msg_row, @msg_col, attr)
-        (reset! msg_col (+ @msg_col t_col))
+        (swap! msg_col + t_col)
         ((ß t_col =) 0)
         ;; If the string starts with a composing character,
         ;; don't increment the column position for it.
@@ -4411,8 +4416,8 @@
 (defn- #_boolean msg-check-screen []
     (if (and @full_screen (screen-valid false))
         (do
-            (reset! msg_row (min @msg_row (dec (int @Rows))))
-            (reset! msg_col (min @msg_col (dec (int @Cols))))
+            (swap! msg_row min (dec (int @Rows)))
+            (swap! msg_col min (dec (int @Cols)))
             true
         )
         false
@@ -5974,161 +5979,57 @@
                 (reset! sc_col @ru_col))
         )
         (when @p_sc
-            (reset! sc_col (+ @sc_col SHOWCMD_COLS))
+            (swap! sc_col + SHOWCMD_COLS)
             (if (or (not @p_ru) last_has_status)       ;; no need for separating space
                 (swap! sc_col inc))
         )
-        (reset! sc_col (- (int @Cols) @sc_col))
-        (reset! ru_col (- (int @Cols) @ru_col))
-        (if (<= @sc_col 0)            ;; screen too narrow, will become a mess
-            (reset! sc_col 1))
-        (when (<= @ru_col 0)
-            (reset! ru_col 1)
-        )
+        (swap! sc_col #(max 1 (- (int @Cols) %)))
+        (swap! ru_col #(max 1 (- (int @Cols) %)))
         nil
     ))
 
 ;; Get pointer to option variable.
 
 (defn- #_Object get-varp [#_vimoption_C v]
-    (§
-        ((ß SWITCH) (:indir v)
-            ((ß CASE) PV_BRI)
-            (do
-                ((ß RETURN) (:wo_bri (:w_options @curwin)))
-            )
-            ((ß CASE) PV_BRIOPT)
-            (do
-                ((ß RETURN) (:wo_briopt (:w_options @curwin)))
-            )
-            ((ß CASE) PV_CC)
-            (do
-                ((ß RETURN) (:wo_cc (:w_options @curwin)))
-            )
-            ((ß CASE) PV_COCU)
-            (do
-                ((ß RETURN) (:wo_cocu (:w_options @curwin)))
-            )
-            ((ß CASE) PV_COLE)
-            (do
-                ((ß RETURN) (:wo_cole (:w_options @curwin)))
-            )
-            ((ß CASE) PV_CRBIND)
-            (do
-                ((ß RETURN) (:wo_crb (:w_options @curwin)))
-            )
-            ((ß CASE) PV_CUC)
-            (do
-                ((ß RETURN) (:wo_cuc (:w_options @curwin)))
-            )
-            ((ß CASE) PV_CUL)
-            (do
-                ((ß RETURN) (:wo_cul (:w_options @curwin)))
-            )
-            ((ß CASE) PV_LBR)
-            (do
-                ((ß RETURN) (:wo_lbr (:w_options @curwin)))
-            )
-            ((ß CASE) PV_NU)
-            (do
-                ((ß RETURN) (:wo_nu (:w_options @curwin)))
-            )
-            ((ß CASE) PV_NUW)
-            (do
-                ((ß RETURN) (:wo_nuw (:w_options @curwin)))
-            )
-            ((ß CASE) PV_RNU)
-            (do
-                ((ß RETURN) (:wo_rnu (:w_options @curwin)))
-            )
-            ((ß CASE) PV_SCBIND)
-            (do
-                ((ß RETURN) (:wo_scb (:w_options @curwin)))
-            )
-            ((ß CASE) PV_SCROLL)
-            (do
-                ((ß RETURN) (:wo_scr (:w_options @curwin)))
-            )
-            ((ß CASE) PV_WFH)
-            (do
-                ((ß RETURN) (:wo_wfh (:w_options @curwin)))
-            )
-            ((ß CASE) PV_WFW)
-            (do
-                ((ß RETURN) (:wo_wfw (:w_options @curwin)))
-            )
-            ((ß CASE) PV_WRAP)
-            (do
-                ((ß RETURN) (:wo_wrap (:w_options @curwin)))
-            )
+    (let [wops (:w_options @curwin)]
+        (condp == (:indir v)
+            PV_BRI    (:wo_bri wops)
+            PV_BRIOPT (:wo_briopt wops)
+            PV_CC     (:wo_cc wops)
+            PV_COCU   (:wo_cocu wops)
+            PV_COLE   (:wo_cole wops)
+            PV_CRBIND (:wo_crb wops)
+            PV_CUC    (:wo_cuc wops)
+            PV_CUL    (:wo_cul wops)
+            PV_LBR    (:wo_lbr wops)
+            PV_NU     (:wo_nu wops)
+            PV_NUW    (:wo_nuw wops)
+            PV_RNU    (:wo_rnu wops)
+            PV_SCBIND (:wo_scb wops)
+            PV_SCROLL (:wo_scr wops)
+            PV_WFH    (:wo_wfh wops)
+            PV_WFW    (:wo_wfw wops)
+            PV_WRAP   (:wo_wrap wops)
 
-            ((ß CASE) PV_AI)
-            (do
-                ((ß RETURN) (:b_p_ai @curbuf))
-            )
-            ((ß CASE) PV_CI)
-            (do
-                ((ß RETURN) (:b_p_ci @curbuf))
-            )
-            ((ß CASE) PV_CINW)
-            (do
-                ((ß RETURN) (:b_p_cinw @curbuf))
-            )
-            ((ß CASE) PV_ET)
-            (do
-                ((ß RETURN) (:b_p_et @curbuf))
-            )
-            ((ß CASE) PV_ISK)
-            (do
-                ((ß RETURN) (:b_p_isk @curbuf))
-            )
-            ((ß CASE) PV_KP)
-            (do
-                ((ß RETURN) (:b_p_kp @curbuf))
-            )
-            ((ß CASE) PV_MOD)
-            (do
-                ((ß RETURN) (:b_changed @curbuf))
-            )
-            ((ß CASE) PV_MPS)
-            (do
-                ((ß RETURN) (:b_p_mps @curbuf))
-            )
-            ((ß CASE) PV_NF)
-            (do
-                ((ß RETURN) (:b_p_nf @curbuf))
-            )
-            ((ß CASE) PV_PI)
-            (do
-                ((ß RETURN) (:b_p_pi @curbuf))
-            )
-            ((ß CASE) PV_QE)
-            (do
-                ((ß RETURN) (:b_p_qe @curbuf))
-            )
-            ((ß CASE) PV_SI)
-            (do
-                ((ß RETURN) (:b_p_si @curbuf))
-            )
-            ((ß CASE) PV_STS)
-            (do
-                ((ß RETURN) (:b_p_sts @curbuf))
-            )
-            ((ß CASE) PV_SW)
-            (do
-                ((ß RETURN) (:b_p_sw @curbuf))
-            )
-            ((ß CASE) PV_TS)
-            (do
-                ((ß RETURN) (:b_p_ts @curbuf))
-            )
-            ((ß CASE) PV_UL)
-            (do
-                ((ß RETURN) (:b_p_ul @curbuf))
-            )
+            PV_AI     (:b_p_ai @curbuf)
+            PV_CI     (:b_p_ci @curbuf)
+            PV_CINW   (:b_p_cinw @curbuf)
+            PV_ET     (:b_p_et @curbuf)
+            PV_ISK    (:b_p_isk @curbuf)
+            PV_KP     (:b_p_kp @curbuf)
+            PV_MOD    (:b_changed @curbuf)
+            PV_MPS    (:b_p_mps @curbuf)
+            PV_NF     (:b_p_nf @curbuf)
+            PV_PI     (:b_p_pi @curbuf)
+            PV_QE     (:b_p_qe @curbuf)
+            PV_SI     (:b_p_si @curbuf)
+            PV_STS    (:b_p_sts @curbuf)
+            PV_SW     (:b_p_sw @curbuf)
+            PV_TS     (:b_p_ts @curbuf)
+            PV_UL     (:b_p_ul @curbuf)
+
+            (:var v)
         )
-
-        (:var v)
     ))
 
 ;; Copy options from one window to another.
@@ -6329,7 +6230,7 @@
 
 (defn- #_long get-sts-value []
     (let [sts @(:b_p_sts @curbuf)]
-        (if (< sts 0) (get-sw-value @curbuf) sts)
+        (if (neg? sts) (get-sw-value @curbuf) sts)
     ))
 
 ;; Check matchpairs option for "*initc".
@@ -6634,8 +6535,8 @@
 ;; not ^?       ^?
 
 (defn- #_void ex-fixdel [#_exarg_C _eap]
-    (let [#_Bytes p (find-termcode (u8 "kb"))]
-        (add-termcode (u8 "kD"), (if (and (non-nil? p) (== (.at p 0) DEL)) CTRL_H_STR DEL_STR))
+    (let [#_Bytes code (find-termcode (u8 "kb"))]
+        (add-termcode (u8 "kD"), (if (and (non-nil? code) (== (.at code 0) DEL)) CTRL_H_STR DEL_STR))
         nil
     ))
 
@@ -6809,7 +6710,7 @@
 
             (cond (== (.at cmd 0) (byte \g))
             (do
-                (reset! do__all (not @do__all))
+                (swap! do__all not)
             )
             (== (.at cmd 0) (byte \n))
             (do
@@ -6817,7 +6718,7 @@
             )
             (== (.at cmd 0) (byte \e))
             (do
-                (reset! do__error (not @do__error))
+                (swap! do__error not)
             )
             (== (.at cmd 0) (byte \r))       ;; use last used regexp
             (do
@@ -7478,7 +7379,7 @@
             ((ß int i =) @msg_scrolled)
             (reset! msg_scrolled 0)               ;; avoid wait-return message
             (gotocmdline true)
-            (reset! msg_scrolled (+ @msg_scrolled i))
+            (swap! msg_scrolled + i)
             (redrawcmdprompt)
             (set-cmdspos)
 ;       }
@@ -8473,9 +8374,9 @@
             ;; Also backup the cursor position.
             ((ß i =) (mb-ptr2cells (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
             ((ß @ccline.cmdspos =) (- (:cmdspos @ccline) i))
-            (reset! msg_col (- @msg_col i))
+            (swap! msg_col - i)
             (when (< @msg_col 0)
-                (reset! msg_col (+ @msg_col (int @Cols)))
+                (swap! msg_col + (int @Cols))
                 (swap! msg_row dec)
             )
         )
@@ -9158,7 +9059,7 @@
                 ;; The msg-start() above clears msg_didout.  The wait-return we do here
                 ;; should not overwrite the command that may be shown before doing that.
 
-                (reset! msg_didout (| @msg_didout msg_didout_before_start))
+                (swap! msg_didout | msg_didout_before_start)
                 (wait-return FALSE)
             ))
         )
@@ -10164,7 +10065,7 @@
 
         ;; Set all scrollbind windows to the same topline.
 
-        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (reset! curwin (:w_next @curwin)))
+        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (swap! curwin :w_next))
             (when @(:wo_scb (:w_options @curwin))
                 ((ß long y =) (- topline (:w_topline @curwin)))
                 (if (< 0 y)
@@ -10503,7 +10404,7 @@
                     )
                     (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
                     (do
-                        (reset! mod_mask (& @mod_mask (bit-not MOD_MASK_SHIFT)))
+                        (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
                     ))
                 )
             )
@@ -10677,7 +10578,7 @@
                 (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
                 (do
                     (start-selection)
-                    (reset! mod_mask (& @mod_mask (bit-not MOD_MASK_SHIFT)))
+                    (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
                 ))
             )
 
@@ -11925,7 +11826,7 @@
     (cursor-off)
 
     (let [#_int len (STRLEN showcmd_buf)]
-        (if (non-zero? len)
+        (if (pos? len)
             (screen-puts showcmd_buf, (dec (int @Rows)), @sc_col, 0))
         ;; clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
         (screen-puts (.plus (u8 "          ") len), (dec (int @Rows)), (+ @sc_col len), 0)
@@ -11999,7 +11900,7 @@
         ;; loop through the scrollbound windows and scroll accordingly
 
         (reset! VIsual_select (reset! VIsual_active false))
-        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (reset! curwin (:w_next @curwin)))
+        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (swap! curwin :w_next))
             ;; skip original window and windows with 'noscrollbind'
             (when (and (!= @curwin old_curwin) @(:wo_scb (:w_options @curwin)))
                 ;; do the vertical scroll
@@ -15235,8 +15136,8 @@
 ;; CTRL-\ in Normal mode.
 
 (defn- #_void nv-normal [#_cmdarg_C cap]
-    (let [nchar @(:nchar cap)]
-        (cond (or (== nchar Ctrl_N) (== nchar Ctrl_G))
+    (let [key @(:nchar cap)]
+        (cond (or (== key Ctrl_N) (== key Ctrl_G))
         (do
             (clearop (:oap cap))
             (if (and (non-zero? @restart_edit) @mode_displayed)
@@ -15249,7 +15150,7 @@
                 (redraw-curbuf-later INVERTED)
             )
             ;; CTRL-\ CTRL-G restarts Insert mode when 'insertmode' is set.
-            (if (and (== nchar Ctrl_G) @p_im)
+            (if (and (== key Ctrl_G) @p_im)
                 (reset! restart_edit (byte \a)))
         )
         :else
@@ -15541,15 +15442,13 @@
 ;; Handle the CTRL-U and CTRL-D commands.
 
 (defn- #_void nv-halfpage [#_cmdarg_C cap]
-    (let [cursor (:lnum (:w_cursor @curwin)) count (:ml_line_count (:b_ml @curbuf))]
-        (cond (or (and (== (:cmdchar cap) Ctrl_U) (== cursor 1)) (and (== (:cmdchar cap) Ctrl_D) (== cursor count)))
-        (do
-            (clearopbeep (:oap cap))
+    (let [key (:cmdchar cap) lnum (:lnum (:w_cursor @curwin)) last (:ml_line_count (:b_ml @curbuf))]
+        (cond
+            (or (and (== key Ctrl_U) (== lnum 1)) (and (== key Ctrl_D) (== lnum last)))
+                (clearopbeep (:oap cap))
+            (not (checkclearop (:oap cap)))
+                (halfpage (== key Ctrl_D), (:count0 cap))
         )
-        (not (checkclearop (:oap cap)))
-        (do
-            (halfpage (== (:cmdchar cap) Ctrl_D), (:count0 cap))
-        ))
         nil
     ))
 
@@ -20427,7 +20326,6 @@
 
 (defn- #_void add-num-buff [#_buffheader_C buf, #_long n]
     (let [#_Bytes number (Bytes. 32)]
-
 ;%%     (.sprintf libC number, (u8 "%ld"), n)
         (add-buff buf, number, -1)
         nil
@@ -20707,16 +20605,16 @@
                 (cond (== (.at @redo_sp 0) KB_SPECIAL)   ;; special key or escaped KB_SPECIAL
                 (do
                     ((ß c =) (toSpecial (.at @redo_sp 1), (.at @redo_sp 2)))
-                    (reset! redo_sp (.plus @redo_sp 3))
+                    (swap! redo_sp plus 3)
                 )
                 :else
                 (do
                     ((ß c =) (char_u (.at @redo_sp 0)))
-                    (reset! redo_sp (.plus @redo_sp 1))
+                    (swap! redo_sp plus 1)
                 ))
 
                 (when (and (eos? @redo_sp) (non-nil? (:bb_next @redo_bp)))
-                    (reset! redo_bp (:bb_next @redo_bp))
+                    (swap! redo_bp :bb_next)
                     (reset! redo_sp (:bb_str @redo_bp))
                 )
 
@@ -20962,7 +20860,7 @@
 
         ;; Remember how many chars were last recorded.
         (if @Recording
-            (reset! last_recorded_len (+ @last_recorded_len len))
+            (swap! last_recorded_len + len)
         )
 
         (dotimes [#_int i len]
@@ -22657,7 +22555,7 @@
             (reset! pc_col (:w_wincol @curwin))
             (reset! pc_status PC_STATUS_UNSET)
 
-            (reset! pc_col (+ @pc_col (:w_wcol @curwin)))
+            (swap! pc_col + (:w_wcol @curwin))
             (if (mb-lefthalve @pc_row, @pc_col)
                 (reset! pc_status PC_STATUS_LEFT))
 
@@ -23647,7 +23545,7 @@
         )
 
         (when (<= @replace_stack_len @replace_stack_nr)
-            (reset! replace_stack_len (+ @replace_stack_len 50))
+            (swap! replace_stack_len + 50)
             ((ß Bytes p =) (Bytes. @replace_stack_len))
             (if (non-nil? @replace_stack)
                 (BCOPY p, @replace_stack, @replace_stack_nr))
@@ -24022,7 +23920,7 @@
             (when (< 0 (ß --count[0]))       ;; repeat what was typed
                 ;; Vi repeats the insert without replacing characters.
                 (if (non-nil? (vim-strbyte @p_cpo, CPO_REPLCNT))
-                    (reset! State (& @State (bit-not REPLACE_FLAG)))
+                    (swap! State & (bit-not REPLACE_FLAG))
                 )
 
                 (start-redo-ins)
@@ -26696,21 +26594,21 @@
 
                 ((ß CASE) (Magic (byte \Z)))
                 (do
-                    (reset! regflags (| @regflags RF_ICOMBINE))
+                    (swap! regflags | RF_ICOMBINE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
 
                 ((ß CASE) (Magic (byte \c)))
                 (do
-                    (reset! regflags (| @regflags RF_ICASE))
+                    (swap! regflags | RF_ICASE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
 
                 ((ß CASE) (Magic (byte \C)))
                 (do
-                    (reset! regflags (| @regflags RF_NOICASE))
+                    (swap! regflags | RF_NOICASE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
@@ -27478,12 +27376,12 @@
                                     ((ß ret =) (regnode RE_MARK))
                                     (cond (== ret JUST_CALC_SIZE)
                                     (do
-                                        (reset! regsize (+ @regsize 2))
+                                        (swap! regsize + 2)
                                     )
                                     :else
                                     (do
-                                        (.be (reset! regcode (.plus @regcode 1)) -1, c)
-                                        (.be (reset! regcode (.plus @regcode 1)) -1, cmp)
+                                        (.be (swap! regcode plus 1) -1, c)
+                                        (.be (swap! regcode plus 1) -1, cmp)
                                     ))
                                     (ß BREAK)
                                 )
@@ -27503,14 +27401,14 @@
                                     ))
                                     (cond (== ret JUST_CALC_SIZE)
                                     (do
-                                        (reset! regsize (+ @regsize 5))
+                                        (swap! regsize + 5)
                                     )
                                     :else
                                     (do
                                         ;; put the number and the optional
                                         ;; comparator after the opcode
-                                        (reset! regcode (re-put-long @regcode, n))
-                                        (.be (reset! regcode (.plus @regcode 1)) -1, cmp)
+                                        (swap! regcode re-put-long n)
+                                        (.be (swap! regcode plus 1) -1, cmp)
                                     ))
                                     (ß BREAK)
                                 ))
@@ -27553,7 +27451,7 @@
             (cond (== (.at @regparse 0) (byte \^))       ;; Complement of range.
             (do
                 ((ß ret =) (regnode (+ ANYBUT extra)))
-                (reset! regparse (.plus @regparse 1))
+                (swap! regparse plus 1)
             )
             :else
             (do
@@ -27563,13 +27461,13 @@
             ;; At the start ']' and '-' mean the literal character.
             (when (or (== (.at @regparse 0) (byte \])) (== (.at @regparse 0) (byte \-)))
                 ((ß startc =) (.at @regparse 0))
-                (regc (.at (reset! regparse (.plus @regparse 1)) -1))
+                (regc (.at (swap! regparse plus 1) -1))
             )
 
             (while (and (non-eos? @regparse) (!= (.at @regparse 0) (byte \])))
                 (cond (== (.at @regparse 0) (byte \-))
                 (do
-                    (reset! regparse (.plus @regparse 1))
+                    (swap! regparse plus 1)
                     ;; The '-' is not used for a range at the end and after or before a '\n'.
                     (cond (or (== (.at @regparse 0) (byte \])) (eos? @regparse) (== startc -1) (and (== (.at @regparse 0) (byte \\)) (== (.at @regparse 1) (byte \n))))
                     (do
@@ -27630,7 +27528,7 @@
 
                 (and (== (.at @regparse 0) (byte \\)) (not @reg_cpo_bsl) (or (non-nil? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (non-nil? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
                 (do
-                    (reset! regparse (.plus @regparse 1))
+                    (swap! regparse plus 1)
                     (cond (== (.at @regparse 0) (byte \n))
                     (do
                         ;; '\n' in range: also match NL
@@ -27643,7 +27541,7 @@
                             )
                             ;; else: must have had a \n already
                         )
-                        (reset! regparse (.plus @regparse 1))
+                        (swap! regparse plus 1)
                         ((ß startc =) -1)
                     )
                     (or (== (.at @regparse 0) (byte \d)) (== (.at @regparse 0) (byte \o)) (== (.at @regparse 0) (byte \x)) (== (.at @regparse 0) (byte \u)) (== (.at @regparse 0) (byte \U)))
@@ -27655,7 +27553,7 @@
                     )
                     :else
                     (do
-                        ((ß startc =) (backslash-trans (.at (reset! regparse (.plus @regparse 1)) -1)))
+                        ((ß startc =) (backslash-trans (.at (swap! regparse plus 1) -1)))
                         (regc startc)
                     ))
                 )
@@ -27687,7 +27585,7 @@
                                 :else
                                 (do
                                     ;; literal '[', allow [[-x] as a range
-                                    ((ß startc =) (.at (reset! regparse (.plus @regparse 1)) -1))
+                                    ((ß startc =) (.at (swap! regparse plus 1) -1))
                                     (regc startc)
                                 ))
                             ))
@@ -27819,7 +27717,7 @@
                         ((ß startc =) -1)        ;; composing chars
                     )
                     (while (<= 0 (ß --len))
-                        (regc (.at (reset! regparse (.plus @regparse 1)) -1))
+                        (regc (.at (swap! regparse plus 1) -1))
                     )
                 ))
             )
@@ -27907,18 +27805,10 @@
 
 (defn- #_Bytes regnode [#_int op]
     (let [#_Bytes ret @regcode]
-
-        (cond (== ret JUST_CALC_SIZE)
-        (do
-            (reset! regsize (+ @regsize 3))
+        (if (== ret JUST_CALC_SIZE)
+            (swap! regsize + 3)
+            (-> (swap! regcode plus 3) (.be -3, op) (eos! -2) (eos! -1))       ;; Null "next" pointer.
         )
-        :else
-        (do
-            (.be (reset! regcode (.plus @regcode 1)) -1, op)
-            (.be (reset! regcode (.plus @regcode 1)) -1, NUL)           ;; Null "next" pointer.
-            (.be (reset! regcode (.plus @regcode 1)) -1, NUL)
-        ))
-
         ret
     ))
 
@@ -27927,7 +27817,7 @@
 (defn- #_void regc [#_int b]
     (if (== @regcode JUST_CALC_SIZE)
         (swap! regsize inc)
-        (.be (reset! regcode (.plus @regcode 1)) -1, b)
+        (.be (swap! regcode plus 1) -1, b)
     )
     nil)
 
@@ -27935,8 +27825,8 @@
 
 (defn- #_void regmbc [#_int c]
     (if (== @regcode JUST_CALC_SIZE)
-        (swap! regsize #(+ % (utf-char2len c)))
-        (reset! regcode (.plus @regcode (utf-char2bytes c, @regcode))))
+        (swap! regsize + (utf-char2len c))
+        (swap! regcode #(.plus % (utf-char2bytes c, %))))
     nil)
 
 ;; Insert an operator in front of already-emitted operand.
@@ -27945,22 +27835,18 @@
 
 (defn- #_void reginsert [#_int op, #_Bytes opnd]
     (§
-        (when (== @regcode JUST_CALC_SIZE)
-            (reset! regsize (+ @regsize 3))
-            ((ß RETURN) nil)
+        (if (== @regcode JUST_CALC_SIZE)
+            (swap! regsize + 3)
+            (do
+                ((ß Bytes src =) @regcode)
+                ((ß Bytes dst =) (swap! regcode plus 3))
+                (while (BLT opnd, src)
+                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
+                )
+                ;; Op node, where operand used to be.
+                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+            )
         )
-
-        ((ß Bytes src =) @regcode)
-        (reset! regcode (.plus @regcode 3))
-        ((ß Bytes dst =) @regcode)
-        (while (BLT opnd, src)
-            (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-        )
-
-        ((ß Bytes place =) opnd) ;; Op node, where operand used to be.
-        (.be ((ß place =) (.plus place 1)) -1, op)
-        (.be ((ß place =) (.plus place 1)) -1, NUL)
-        (eos! place)
         nil
     ))
 
@@ -27969,23 +27855,19 @@
 
 (defn- #_void reginsert-nr [#_int op, #_long val, #_Bytes opnd]
     (§
-        (when (== @regcode JUST_CALC_SIZE)
-            (reset! regsize (+ @regsize 7))
-            ((ß RETURN) nil)
+        (if (== @regcode JUST_CALC_SIZE)
+            (swap! regsize + 7)
+            (do
+                ((ß Bytes src =) @regcode)
+                ((ß Bytes dst =) (swap! regcode plus 7))
+                (while (BLT opnd, src)
+                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
+                )
+                ;; Op node, where operand used to be.
+                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+                (re-put-long (.plus opnd 3), val)
+            )
         )
-
-        ((ß Bytes src =) @regcode)
-        (reset! regcode (.plus @regcode 7))
-        ((ß Bytes dst =) @regcode)
-        (while (BLT opnd, src)
-            (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-        )
-
-        ((ß Bytes place =) opnd) ;; Op node, where operand used to be.
-        (.be ((ß place =) (.plus place 1)) -1, op)
-        (.be ((ß place =) (.plus place 1)) -1, NUL)
-        (.be ((ß place =) (.plus place 1)) -1, NUL)
-        ((ß place =) (re-put-long place, val))
         nil
     ))
 
@@ -27997,82 +27879,70 @@
 
 (defn- #_void reginsert-limits [#_int op, #_long minval, #_long maxval, #_Bytes opnd]
     (§
-        (when (== @regcode JUST_CALC_SIZE)
-            (reset! regsize (+ @regsize 11))
-            ((ß RETURN) nil)
+        (if (== @regcode JUST_CALC_SIZE)
+            (swap! regsize + 11)
+            (do
+                ((ß Bytes src =) @regcode)
+                ((ß Bytes dst =) (swap! regcode plus 11))
+                (while (BLT opnd, src)
+                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
+                )
+                ;; Op node, where operand used to be.
+                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+                (regtail opnd, (-> (.plus opnd 3) (re-put-long minval) (re-put-long maxval)))
+            )
         )
-
-        ((ß Bytes src =) @regcode)
-        (reset! regcode (.plus @regcode 11))
-        ((ß Bytes dst =) @regcode)
-        (while (BLT opnd, src)
-            (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-        )
-
-        ((ß Bytes place =) opnd) ;; Op node, where operand used to be.
-        (.be ((ß place =) (.plus place 1)) -1, op)
-        (.be ((ß place =) (.plus place 1)) -1, NUL)
-        (.be ((ß place =) (.plus place 1)) -1, NUL)
-        ((ß place =) (re-put-long place, minval))
-        ((ß place =) (re-put-long place, maxval))
-        (regtail opnd, place)
         nil
     ))
 
 ;; Write a long as four bytes at "p" and return pointer to the next char.
 
 (defn- #_Bytes re-put-long [#_Bytes p, #_long val]
-    (§
-        (.be ((ß p =) (.plus p 1)) -1, (byte (& (>>> val 24) 0xff)))
-        (.be ((ß p =) (.plus p 1)) -1, (byte (& (>>> val 16) 0xff)))
-        (.be ((ß p =) (.plus p 1)) -1, (byte (& (>>> val  8) 0xff)))
-        (.be ((ß p =) (.plus p 1)) -1, (byte (&      val     0xff)))
-        p
-    ))
+    (.be p 0, (byte (& (>>> val 24) 0xff)))
+    (.be p 1, (byte (& (>>> val 16) 0xff)))
+    (.be p 2, (byte (& (>>> val  8) 0xff)))
+    (.be p 3, (byte (&      val     0xff)))
+    (.plus p 4))
 
 ;; Set the next-pointer at the end of a node chain.
 
 (defn- #_void regtail [#_Bytes p, #_Bytes val]
     (§
-        (if (== p JUST_CALC_SIZE)
-            ((ß RETURN) nil)
-        )
-
-        ;; Find last node.
-        ((ß Bytes scan =) p)
-        (while true
-            ((ß Bytes temp =) (regnext scan))
-            (if (nil? temp)
-                (ß BREAK)
+        (when-not (== p JUST_CALC_SIZE)
+            ;; Find last node.
+            ((ß Bytes scan =) p)
+            (while true
+                ((ß Bytes temp =) (regnext scan))
+                (if (nil? temp)
+                    (ß BREAK)
+                )
+                ((ß scan =) temp)
             )
-            ((ß scan =) temp)
-        )
 
-        ((ß int offset =) (if (== (re-op scan) BACK) (BDIFF scan, val) (BDIFF val, scan)))
-        ;; When the offset uses more than 16 bits it can no longer fit in the two bytes available.
-        ;; Use a global flag to avoid having to check return values in too many places.
-        (cond (< 0xffff offset)
-        (do
-            (reset! reg_toolong true)
+            ((ß int offset =) (if (== (re-op scan) BACK) (BDIFF scan, val) (BDIFF val, scan)))
+            ;; When the offset uses more than 16 bits it can no longer fit in the two bytes available.
+            ;; Use a global flag to avoid having to check return values in too many places.
+            (cond (< 0xffff offset)
+            (do
+                (reset! reg_toolong true)
+            )
+            :else
+            (do
+                (.be scan 1, (byte (& (>>> offset 8) 0xff)))
+                (.be scan 2, (byte (&      offset    0xff)))
+            ))
         )
-        :else
-        (do
-            (.be scan 1, (byte (& (>>> offset 8) 0xff)))
-            (.be scan 2, (byte (&      offset    0xff)))
-        ))
         nil
     ))
 
 ;; Like regtail, on item after a BRANCH; nop if none.
 
 (defn- #_void regoptail [#_Bytes p, #_Bytes val]
-    (§
+    (let [op (re-op p)]
         ;; When op is neither BRANCH nor BRACE_COMPLEX0-9, it is "operandless".
-        (when (or (nil? p) (== p JUST_CALC_SIZE) (and (!= (re-op p) BRANCH) (or (< (re-op p) BRACE_COMPLEX) (< (+ BRACE_COMPLEX 9) (re-op p)))))
-            ((ß RETURN) nil)
+        (when-not (or (nil? p) (== p JUST_CALC_SIZE) (and (!= op BRANCH) (or (< op BRACE_COMPLEX) (< (+ BRACE_COMPLEX 9) op))))
+            (regtail (operand p), val)
         )
-
-        (regtail (operand p), val)
         nil
     ))
 
@@ -28136,7 +28006,7 @@
                 (do
                     ;; magic when 'magic' is on
                     (if (<= MAGIC_ON @reg_magic)
-                        (reset! curchr (Magic @curchr)))
+                        (swap! curchr Magic))
                     (ß BREAK)
                 )
 
@@ -28155,7 +28025,7 @@
                 ((ß CASE) (byte \>))
                 ((ß CASE) (byte \#))       ;; future ext.
                 ((ß CASE) (byte \"))       ;; future ext. """
-                ((ß CASE) (byte \'))      ;; future ext.
+                ((ß CASE) (byte \'))       ;; future ext.
                 ((ß CASE) (byte \,))       ;; future ext.
                 ((ß CASE) (byte \-))       ;; future ext.
                 ((ß CASE) (byte \:))       ;; future ext.
@@ -28165,7 +28035,7 @@
                 (do
                     ;; magic only after "\v"
                     (if (== @reg_magic MAGIC_ALL)
-                        (reset! curchr (Magic @curchr)))
+                        (swap! curchr Magic))
                     (ß BREAK)
                 )
 
@@ -28237,12 +28107,12 @@
                         (reset! curchr -1)
                         (reset! prev_at_start @at_start)
                         (reset! at_start false)   ;; be able to say "/\*ptr"
-                        (reset! regparse (.plus @regparse 1))
+                        (swap! regparse plus 1)
                         (swap! after_slash inc)
                         (peekchr)
-                        (reset! regparse (.minus @regparse 1))
+                        (swap! regparse minus 1)
                         (swap! after_slash dec)
-                        (reset! curchr (toggle-Magic @curchr))
+                        (swap! curchr toggle-Magic)
                     )
                     (non-nil? (vim-strchr REGEXP_ABBR, c))
                     (do
@@ -28346,7 +28216,7 @@
             )
 ;           nr <<= 4;
             ((ß nr =) (| nr (hex2nr c)))
-            (reset! regparse (.plus @regparse 1))
+            (swap! regparse plus 1)
         )
 
         (if (zero? i)
@@ -28371,7 +28241,7 @@
             )
             ((ß nr =) (* nr 10))
             ((ß nr =) (+ nr (- c (byte \0))))
-            (reset! regparse (.plus @regparse 1))
+            (swap! regparse plus 1)
             (reset! curchr -1)    ;; no longer valid
         )
 
@@ -28401,7 +28271,7 @@
             )
 ;           nr <<= 3;
             ((ß nr =) (| nr (hex2nr c)))
-            (reset! regparse (.plus @regparse 1))
+            (swap! regparse plus 1)
         )
 
         (if (zero? i)
@@ -28418,7 +28288,7 @@
     (§
         ((ß int nr =) -1)
 
-        ((ß SWITCH) (.at (reset! regparse (.plus @regparse 1)) -1)
+        ((ß SWITCH) (.at (swap! regparse plus 1) -1)
             ((ß CASE) (byte \d))
             (do
                 ((ß nr =) (getdecchrs))
@@ -28447,7 +28317,7 @@
         )
         (when (< nr 0)
             ;; If getting the number fails be backwards compatible: the character is a backslash.
-            (reset! regparse (.minus @regparse 1))
+            (swap! regparse minus 1)
             ((ß nr =) (byte \\))
         )
 
@@ -28465,14 +28335,14 @@
 
         (when (== (.at @regparse 0) (byte \-))
             ;; starts with '-', so reverse the range later
-            (reset! regparse (.plus @regparse 1))
+            (swap! regparse plus 1)
             ((ß reverse =) true)
         )
         ((ß Bytes first_char =) @regparse)
 ;       { Bytes[] __ = { @regparse }; minval[0] = getdigits(__); @regparse = __[0]; }
         (cond (== (.at @regparse 0) (byte \,))                       ;; there is a comma
         (do
-            (cond (asc-isdigit (.at (reset! regparse (.plus @regparse 1)) 0))
+            (cond (asc-isdigit (.at (swap! regparse plus 1) 0))
             (do
 ;               Bytes[] __ = { @regparse }; maxval[0] = getdigits(__); @regparse = __[0];
             )
@@ -28490,7 +28360,7 @@
             ((ß maxval[0] =) MAX_LIMIT)                      ;; it was \{} or \{-}
         ))
         (if (== (.at @regparse 0) (byte \\))
-            (reset! regparse (.plus @regparse 1)))                ;; allow either \{...} or \{...\}
+            (swap! regparse plus 1))                ;; allow either \{...} or \{...\}
         (when (!= (.at @regparse 0) (byte \}))
             (.sprintf libC @ioBuff, (u8 "E554: Syntax error in %s{...}"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
 
@@ -29184,7 +29054,7 @@
                 )
                 (and @reg_line_lbr (with-nl op) (== (.at @reginput 0) (byte \newline)))
                 (do
-                    (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput)))
+                    (swap! reginput #(.plus % (us-ptr2len-cc %)))
                 )
                 :else
                 (do
@@ -29334,7 +29204,7 @@
                             ;; ANY does not match new lines.
                             (if (== c NUL)
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29342,7 +29212,7 @@
                         (do
                             (if (not (vim-isIDc c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29350,7 +29220,7 @@
                         (do
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isIDc c)))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29358,7 +29228,7 @@
                         (do
                             (if (not (us-iswordp @reginput, @reg_buf))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29366,7 +29236,7 @@
                         (do
                             (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput, @reg_buf)))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29374,7 +29244,7 @@
                         (do
                             (if (not (vim-isfilec c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29382,7 +29252,7 @@
                         (do
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfilec c)))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29390,7 +29260,7 @@
                         (do
                             (if (not (vim-isprintc (us-ptr2char @reginput)))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29398,7 +29268,7 @@
                         (do
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc (us-ptr2char @reginput))))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29406,7 +29276,7 @@
                         (do
                             (if (not (vim-iswhite c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29414,7 +29284,7 @@
                         (do
                             (if (or (== c NUL) (vim-iswhite c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29422,7 +29292,7 @@
                         (do
                             (if (not (ri-digit c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29430,7 +29300,7 @@
                         (do
                             (if (or (== c NUL) (ri-digit c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29438,7 +29308,7 @@
                         (do
                             (if (not (ri-hex c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29446,7 +29316,7 @@
                         (do
                             (if (or (== c NUL) (ri-hex c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29454,7 +29324,7 @@
                         (do
                             (if (not (ri-octal c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29462,7 +29332,7 @@
                         (do
                             (if (or (== c NUL) (ri-octal c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29470,7 +29340,7 @@
                         (do
                             (if (not (ri-word c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29478,7 +29348,7 @@
                         (do
                             (if (or (== c NUL) (ri-word c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29486,7 +29356,7 @@
                         (do
                             (if (not (ri-head c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29494,7 +29364,7 @@
                         (do
                             (if (or (== c NUL) (ri-head c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29502,7 +29372,7 @@
                         (do
                             (if (not (ri-alpha c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29510,7 +29380,7 @@
                         (do
                             (if (or (== c NUL) (ri-alpha c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29518,7 +29388,7 @@
                         (do
                             (if (not (ri-lower c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29526,7 +29396,7 @@
                         (do
                             (if (or (== c NUL) (ri-lower c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29534,7 +29404,7 @@
                         (do
                             (if (not (ri-upper c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29542,7 +29412,7 @@
                         (do
                             (if (or (== c NUL) (ri-upper c))
                                 ((ß status =) RA_NOMATCH)
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput))))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %))))
                             (ß BREAK)
                         )
 
@@ -29582,7 +29452,7 @@
                                     ((ß status =) RA_NOMATCH)
                                 )
                                 (if (!= status RA_NOMATCH)
-                                    (reset! reginput (.plus @reginput (... len 0))))
+                                    (swap! reginput plus (... len 0)))
                             ))
                             (ß BREAK)
                         )
@@ -29600,7 +29470,7 @@
                             )
                             :else
                             (do
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput)))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %)))
                             ))
                             (ß BREAK)
                         )
@@ -29647,7 +29517,7 @@
                                 )
                             ))
 
-                            (reset! reginput (.plus @reginput len))
+                            (swap! reginput plus len)
                             (ß BREAK)
                         )
 
@@ -29655,7 +29525,7 @@
                         (do
                             ;; Skip composing characters.
                             (while (utf-iscomposing (us-ptr2char @reginput))
-                                (reset! reginput (.plus @reginput (us-ptr2len @reginput)))
+                                (swap! reginput #(.plus % (us-ptr2len %)))
                             )
                             (ß BREAK)
                         )
@@ -29878,7 +29748,7 @@
                             ))
 
                             ;; Matched the backref, skip over it.
-                            (reset! reginput (.plus @reginput (... len 0)))
+                            (swap! reginput plus (... len 0))
                             (ß BREAK)
                         )
 
@@ -29899,7 +29769,7 @@
 ; %%                            ((ß int[] len =) (ß { STRLEN(@re_extmatch_in.matches[no]) }))
                                 (if (non-zero? (cstrncmp (... (:matches @re_extmatch_in) no), @reginput, len))
                                     ((ß status =) RA_NOMATCH)
-                                    (reset! reginput (.plus @reginput (... len 0))))
+                                    (swap! reginput plus (... len 0)))
                             )
                             :else
                             (do
@@ -30167,7 +30037,7 @@
                             )
                             @reg_line_lbr
                             (do
-                                (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput)))
+                                (swap! reginput #(.plus % (us-ptr2len-cc %)))
                             )
                             :else
                             (do
@@ -30527,7 +30397,7 @@
                                     )
                                     :else
                                     (do
-                                        (reset! reginput (.minus @reginput (us-ptr-back @regline, @reginput)))
+                                        (swap! reginput #(.minus % (us-ptr-back @regline, %)))
                                     ))
                                 )
                                 :else
@@ -31056,7 +30926,7 @@
                     (while (and (< count maxcount) (or (and (eos? scan) (<= @reglnum @reg_maxline) (not @reg_line_lbr) (nil? @reg_match)) (and (== (.at scan 0) (byte \newline)) @reg_line_lbr)))
                         (ß count++)
                         (if @reg_line_lbr
-                            (reset! reginput (.plus @reginput (us-ptr2len-cc @reginput)))
+                            (swap! reginput #(.plus % (us-ptr2len-cc %)))
                             (reg-nextline))
                         ((ß scan =) @reginput)
                         (if @got_int
@@ -31291,11 +31161,8 @@
 ;; Return true if current position is equal to saved position.
 
 (defn- #_boolean reg-save-equal [#_regsave_C save]
-    (§
-        (if (nil? @reg_match)
-            ((ß RETURN) (and (== @reglnum (:lnum (:rs_pos save))) (BEQ @reginput, (.plus @regline (:col (:rs_pos save))))))
-        )
-
+    (if (nil? @reg_match)
+        (let [pos (:rs_pos save)] (and (== @reglnum (:lnum pos)) (BEQ @reginput, (.plus @regline (:col pos)))))
         (BEQ @reginput, (:rs_ptr save))
     ))
 
@@ -31321,24 +31188,16 @@
 
 ;; Save the sub-expressions before attempting a match.
 (defn- #_Bytes save-se [#_save_se_C savep, #_lpos_C posp, #_Bytes pp]
-    (§
-        (if (nil? @reg_match)
-            (save-se-multi savep, posp)
-            ((ß pp =) (save-se-one savep, pp))
-        )
-
-        pp
+    (if (nil? @reg_match)
+        (do (save-se-multi savep, posp) pp)
+        (save-se-one savep, pp)
     ))
 
 ;; After a failed match restore the sub-expressions.
 (defn- #_Bytes restore-se [#_save_se_C savep, #_lpos_C posp, #_Bytes pp]
-    (§
-        (if (nil? @reg_match)
-            (COPY-lpos posp, (:se_pos savep))
-            ((ß pp =) (:se_ptr savep))
-        )
-
-        pp
+    (if (nil? @reg_match)
+        (do (COPY-lpos posp, (:se_pos savep)) pp)
+        (:se_ptr savep)
     ))
 
 ;; Compare a number with the operand of RE_LNUM, RE_COL or RE_VCOL.
@@ -31802,7 +31661,7 @@
                     )
                     (when (and had_backslash backslash)
                         ;; Backslashes will be consumed, need to double them.
-                        (reset! eval_result (vim-strsave-escaped @eval_result, (u8 "\\")))
+                        (swap! eval_result vim-strsave-escaped (u8 "\\"))
                     )
 
                     ((ß dst =) (.plus dst (STRLEN @eval_result)))
@@ -32550,7 +32409,7 @@
 ;; Called when running above the estimated number of states.
 
 (defn- #_void grow-post-array [#_int more]
-    (reset! post_array (Arrays/copyOf @post_array, (+ (:length @post_array) more)))
+    (swap! post_array #(Arrays/copyOf %, (+ (:length %) more)))
     nil)
 
 ;; Search between "start" and "end" and try to recognize a character class in expanded form.
@@ -33359,7 +33218,7 @@
                     (when (== extra NFA_ADD_NL)
                         (emc1 NFA_NEWL)
                         (emc1 NFA_OR)
-                        (reset! regflags (| @regflags RF_HASNL))
+                        (swap! regflags | RF_HASNL)
                     )
                     (ß BREAK)
                 )
@@ -33375,7 +33234,7 @@
                     (do
                         ;; In buffer text "\n" matches the end of a line.
                         (emc1 NFA_NEWL)
-                        (reset! regflags (| @regflags RF_HASNL))
+                        (swap! regflags | RF_HASNL)
                     ))
                     (ß BREAK)
                 )
@@ -33732,7 +33591,7 @@
                     (emc1 result)
                 ))
                 (reset! regparse endp)
-                (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                (swap! regparse #(.plus % (us-ptr2len-cc %)))
                 ((ß RETURN) true)
             )
 
@@ -33744,7 +33603,7 @@
             (cond (== (.at @regparse 0) (byte \^))                   ;; negated range
             (do
                 ((ß negated =) true)
-                (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                (swap! regparse #(.plus % (us-ptr2len-cc %)))
                 (emc1 NFA_START_NEG_COLL)
             )
             :else
@@ -33755,7 +33614,7 @@
                 ((ß startc =) (byte \-))
                 (emc1 startc)
                 (emc1 NFA_CONCAT)
-                (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                (swap! regparse #(.plus % (us-ptr2len-cc %)))
             )
             ;; Emit the OR branches for each character in the [].
             ((ß boolean emit_range =) false)
@@ -33881,7 +33740,7 @@
                 (when (and (== (.at @regparse 0) (byte \-)) (!= oldstartc -1))
                     ((ß emit_range =) true)
                     ((ß startc =) oldstartc)
-                    (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                    (swap! regparse #(.plus % (us-ptr2len-cc %)))
                     (ß CONTINUE)           ;; reading the end of the range
                 )
 
@@ -33891,7 +33750,7 @@
                 ;; Posix doesn't recognize backslash at all.
 
                 (when (and (== (.at @regparse 0) (byte \\)) (not @reg_cpo_bsl) (BLE (.plus @regparse 1), endp) (or (non-nil? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (non-nil? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
-                    (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                    (swap! regparse #(.plus % (us-ptr2len-cc %)))
 
                     (cond (== (.at @regparse 0) (byte \n))
                     (do
@@ -33902,7 +33761,7 @@
                         ;; TODO(RE) This needs more testing.
                         ((ß startc =) (coll-get-char))
                         ((ß got_coll_char =) true)
-                        (reset! regparse (.minus @regparse (us-ptr-back old_regparse, @regparse)))
+                        (swap! regparse #(.minus % (us-ptr-back old_regparse, %)))
                     )
                     :else
                     (do
@@ -33988,10 +33847,10 @@
                     ))
                 ))
 
-                (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+                (swap! regparse #(.plus % (us-ptr2len-cc %)))
             )
 
-            (reset! regparse (.minus @regparse (us-ptr-back old_regparse, @regparse)))
+            (swap! regparse #(.minus % (us-ptr-back old_regparse, %)))
             (when (== (.at @regparse 0) (byte \-))       ;; if last, '-' is just a char
                 (emc1 (byte \-))
                 (emc1 NFA_CONCAT)
@@ -33999,7 +33858,7 @@
 
             ;; skip the trailing ]
             (reset! regparse endp)
-            (reset! regparse (.plus @regparse (us-ptr2len-cc @regparse)))
+            (swap! regparse #(.plus % (us-ptr2len-cc %)))
 
             ;; Mark end of the collection.
             (if negated
@@ -34309,21 +34168,21 @@
 
                 ((ß CASE) (Magic (byte \Z)))
                 (do
-                    (reset! regflags (| @regflags RF_ICOMBINE))
+                    (swap! regflags | RF_ICOMBINE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
 
                 ((ß CASE) (Magic (byte \c)))
                 (do
-                    (reset! regflags (| @regflags RF_ICASE))
+                    (swap! regflags | RF_ICASE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
 
                 ((ß CASE) (Magic (byte \C)))
                 (do
-                    (reset! regflags (| @regflags RF_NOICASE))
+                    (swap! regflags | RF_NOICASE)
                     (skipchr-keepstart)
                     (ß BREAK)
                 )
@@ -36809,8 +36668,8 @@
                 )
                 (cond (<= (:val state) (BDIFF @reginput, @regline))
                 (do
-                    (reset! reginput (.minus @reginput (:val state)))
-                    (reset! reginput (.minus @reginput (us-head-off @regline, @reginput)))
+                    (swap! reginput minus (:val state))
+                    (swap! reginput #(.minus % (us-head-off @regline, %)))
                 )
                 :else
                 (do
@@ -38349,7 +38208,7 @@
             ;; Advance to the next character, or advance to the next line, or finish.
             (cond (non-zero? clen)
             (do
-                (reset! reginput (.plus @reginput clen))
+                (swap! reginput plus clen)
             )
             (or go_to_nextline (and (non-nil? @nfa_endp) (nil? @reg_match) (< @reglnum (:lnum (:se_pos @nfa_endp)))))
             (do
@@ -39465,7 +39324,7 @@
             )
 ;       } while (0 < --count && found);     ;; stop after count matches or no match
 
-        (reset! called_emsg (| @called_emsg save_called_emsg))
+        (swap! called_emsg | save_called_emsg)
 
         (when (not found)             ;; did not find it
             (cond @got_int
@@ -39619,7 +39478,7 @@
                     ((ß Bytes p =) (skip-regexp pat, dirc, @p_magic, strcopy))
                     (when (BNE (... strcopy 0), ps)
                         ;; made a copy of "pat" to change "\?" to "?"
-                        (reset! searchcmdlen (+ @searchcmdlen (- (STRLEN pat) (STRLEN (... strcopy 0)))))
+                        (swap! searchcmdlen + (- (STRLEN pat) (STRLEN (... strcopy 0))))
                         ((ß pat =) (... strcopy 0))
                         ((ß searchstr =) (... strcopy 0))
                     )
@@ -39666,7 +39525,7 @@
                     )
 
                     ;; compute length of search command for get-address()
-                    (reset! searchcmdlen (+ @searchcmdlen (BDIFF p, pat)))
+                    (swap! searchcmdlen + (BDIFF p, pat))
 
                     ((ß pat =) p)                        ;; put "pat" after search command
                 )
@@ -39877,9 +39736,9 @@
                 (reset! sc__last_t_cmd t_cmd)
                 (reset! sc__bytelen (utf-char2bytes c, sc__bytes))
                 (when (non-zero? (:ncharC1 cap))
-                    (reset! sc__bytelen (+ @sc__bytelen (utf-char2bytes (:ncharC1 cap), (.plus sc__bytes @sc__bytelen))))
+                    (swap! sc__bytelen #(+ % (utf-char2bytes (:ncharC1 cap), (.plus sc__bytes %))))
                     (if (non-zero? (:ncharC2 cap))
-                        (reset! sc__bytelen (+ @sc__bytelen (utf-char2bytes (:ncharC2 cap), (.plus sc__bytes @sc__bytelen))))
+                        (swap! sc__bytelen #(+ % (utf-char2bytes (:ncharC2 cap), (.plus sc__bytes %))))
                     )
                 )
             )
@@ -41690,7 +41549,7 @@
             )
         )
 
-        (reset! called_emsg (| @called_emsg save_called_emsg))
+        (swap! called_emsg | save_called_emsg)
 
         result
     ))
@@ -42485,10 +42344,10 @@
 
 (defn- #_int lbr-chartabsize [#_Bytes line, #_Bytes s, #_int col]
     ;; line: start of the line
-    (let [options (:w_options @curwin)] (cond
-        (or @(:wo_lbr options) (non-eos? @p_sbr) @(:wo_bri options))
+    (let [wops (:w_options @curwin)] (cond
+        (or @(:wo_lbr wops) (non-eos? @p_sbr) @(:wo_bri wops))
             (win-lbr-chartabsize @curwin, (if (nil? line) s line), s, col, nil)
-        @(:wo_wrap options)
+        @(:wo_wrap wops)
             (win-nolbr-chartabsize @curwin, s, col, nil)
         :else
             (win-buf-chartabsize @curwin, @curbuf, s, col)
@@ -48936,10 +48795,7 @@
 ;; This uses ASCII lower-to-upper case translation, language independent.
 
 (defn- #_Bytes vim-strsave-up [#_Bytes s]
-    (let [#_Bytes p (STRDUP s)]
-        (vim-strup p)
-        p
-    ))
+    (let [s (STRDUP s)] (vim-strup s) s))
 
 ;; copy a space a number of times
 
@@ -49935,7 +49791,7 @@
 
         (if (nil? (vim-strbyte @p_cpo, CPO_UNDO))
             (reset! undo_undoes true)
-            (reset! undo_undoes (not @undo_undoes)))
+            (swap! undo_undoes not))
 
         (u-doit count)
         nil
@@ -50396,8 +50252,8 @@
                 ((ß @curbuf.b_op_end.lnum =) (+ top newsize))
             ))
 
-            (reset! u_newcount (+ @u_newcount newsize))
-            (reset! u_oldcount (+ @u_oldcount oldsize))
+            (swap! u_newcount + newsize)
+            (swap! u_oldcount + oldsize)
             ((ß uep.ue_size =) oldsize)
             ((ß uep.ue_array =) newarray)
             ((ß uep.ue_bot =) (+ top newsize 1))
@@ -50497,7 +50353,7 @@
         (if (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
             (swap! u_newcount dec))
 
-        (reset! u_oldcount (- @u_oldcount @u_newcount))
+        (swap! u_oldcount - @u_newcount)
 
         (ß Bytes msgstr)
         (cond (== @u_oldcount -1)
@@ -51806,7 +51662,7 @@
         ;; need to make space for more entries
 
         (when (== @tc_len @tc_max_len)
-            (reset! tc_max_len (+ @tc_max_len 20))
+            (swap! tc_max_len + 20)
             ((ß termcode_C[] new_tc =) (ARRAY-termcode @tc_max_len))
             (dotimes [#_int i @tc_len]
                 (COPY-termcode (... new_tc i), (... @termcodes i))
@@ -52299,7 +52155,7 @@
             ((ß maxlen =) @inbufcount)
         )
         (BCOPY buf, inbuf, maxlen)
-        (reset! inbufcount (- @inbufcount maxlen))
+        (swap! inbufcount - maxlen)
         (if (non-zero? @inbufcount)
             (BCOPY inbuf, 0, inbuf, maxlen, @inbufcount))
         maxlen
@@ -52333,10 +52189,10 @@
             )
             :else
             (do
-                (reset! fib__restlen (- @fib__restlen unconverted))
+                (swap! fib__restlen - unconverted)
                 (BCOPY @fib__rest, 0, @fib__rest, unconverted, @fib__restlen)
             ))
-            (reset! inbufcount (+ @inbufcount unconverted))
+            (swap! inbufcount + unconverted)
         )
         :else
         (do
@@ -61183,8 +61039,8 @@
 ;; Redraw when w_cline_row changes and 'relativenumber' or 'cursorline' is set.
 
 (defn- #_void redraw-for-cursorline [#_window_C wp]
-    (let [options (:w_options wp)]
-        (when (and (or @(:wo_rnu options) @(:wo_cul options)) (non-flag? (:w_valid wp) VALID_CROW))
+    (let [wops (:w_options wp)]
+        (when (and (or @(:wo_rnu wops) @(:wo_cul wops)) (non-flag? (:w_valid wp) VALID_CROW))
             (redraw-win-later wp, SOME_VALID)
         )
         nil
@@ -61647,8 +61503,8 @@
 ;; fold column and sign column (these don't move when scrolling horizontally).
 
 (defn- #_int win-col-off [#_window_C wp]
-    (let [options (:w_options wp)]
-        (+ (if (or @(:wo_nu options) @(:wo_rnu options)) (+ (number-width wp) 1) 0) (if (or (zero? @cmdwin_type) (!= wp @curwin)) 0 1))
+    (let [wops (:w_options wp)]
+        (+ (if (or @(:wo_nu wops) @(:wo_rnu wops)) (inc (number-width wp)) 0) (if (or (zero? @cmdwin_type) (!= wp @curwin)) 0 1))
     ))
 
 (defn- #_int curwin-col-off []
@@ -61658,11 +61514,8 @@
 ;; It's 8 if 'number' or 'relativenumber' is on and 'n' is in 'cpoptions'.
 
 (defn- #_int win-col-off2 [#_window_C wp]
-    (let [options (:w_options wp)]
-        (if (and (or @(:wo_nu options) @(:wo_rnu options)) (non-nil? (vim-strbyte @p_cpo, CPO_NUMCOL)))
-            (+ (number-width wp) 1)
-            0
-        )
+    (let [wops (:w_options wp)]
+        (if (and (or @(:wo_nu wops) @(:wo_rnu wops)) (non-nil? (vim-strbyte @p_cpo, CPO_NUMCOL))) (inc (number-width wp)) 0)
     ))
 
 (defn- #_int curwin-col-off2 []
@@ -62605,7 +62458,7 @@
         ;; loop through the cursorbound windows
 
         (reset! VIsual_select (reset! VIsual_active false))
-        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (reset! curwin (:w_next @curwin)))
+        ((ß FOR) (ß (reset! curwin @firstwin) (non-nil? @curwin) (swap! curwin :w_next))
             ;; skip original window  and windows with 'noscrollbind'
             (when (and (!= @curwin old_curwin) @(:wo_crb (:w_options @curwin)))
                 ((ß @curwin.w_cursor.lnum =) line)
