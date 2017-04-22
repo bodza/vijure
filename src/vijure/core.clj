@@ -1,7 +1,7 @@
 (ns vijure.core
     (:refer-clojure :exclude [boolean byte short int long])
     (:require [org.baznex.imports :refer [import-static]])
-    (:import [java.util Arrays Comparator])
+    (:import [java.util Arrays])
     (:gen-class))
 
 (org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes})
@@ -41,7 +41,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info fmark fragnode frame lpos match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
 
@@ -1484,35 +1484,6 @@
 ;       bh1.bh_space = bh0.bh_space;
     ))
 
-;; This needs to be saved for recursive commands, put them in a structure for easy manipulation.
-
-(class! #_final cmdmod_C
-    [
-        (field int          split)              ;; flags for win_split()
-        (field boolean      keepmarks)          ;; true when ":keepmarks" was used
-        (field boolean      keepjumps)          ;; true when ":keepjumps" was used
-        (field boolean      lockmarks)          ;; true when ":lockmarks" was used
-        (field boolean      keeppatterns)       ;; true when ":keeppatterns" was used
-    ])
-
-(defn- #_void ZER0_cmdmod [#_cmdmod_C cm]
-    (§
-;       cm.split = 0;
-;       cm.keepmarks = false;
-;       cm.keepjumps = false;
-;       cm.lockmarks = false;
-;       cm.keeppatterns = false;
-    ))
-
-(defn- #_void COPY_cmdmod [#_cmdmod_C cm1, #_cmdmod_C cm0]
-    (§
-;       cm1.split = cm0.split;
-;       cm1.keepmarks = cm0.keepmarks;
-;       cm1.keepjumps = cm0.keepjumps;
-;       cm1.lockmarks = cm0.lockmarks;
-;       cm1.keeppatterns = cm0.keeppatterns;
-    ))
-
 ;; things used in memline.c
 
 ;; 'ml_flags':
@@ -1990,10 +1961,8 @@
     NOSPC           0x010,   ;; no spaces allowed in the extra part
     DFLALL          0x020,   ;; default file range is 1,$
     NEEDARG         0x080,   ;; argument required
-    REGSTR          0x200,   ;; allow "x for register designation
     COUNT           0x400,   ;; allow count in argument, after command
     ZEROR          0x1000,   ;; zero line number allowed
-    USECTRLV       0x2000,   ;; do not remove CTRL-V from argument
     NOTADR         0x4000,   ;; number before command is not an address
     CMDWIN       0x100000,   ;; allowed in cmdline window
 
@@ -2005,49 +1974,17 @@
     ADDR_WINDOWS        1)
 
 (final int
-    CMD_aboveleft 0,
-    CMD_ascii 1,
-    CMD_belowright 2,
-    CMD_botright 3,
-    CMD_close 4,
-    CMD_delmarks 5,
-    CMD_digraphs 6,
-    CMD_earlier 7,
-    CMD_fixdel 8,
-    CMD_history 9,
-    CMD_keepmarks 10,
-    CMD_keepjumps 11,
-    CMD_keeppatterns 12,
-    CMD_later 13,
-    CMD_leftabove 14,
-    CMD_lockmarks 15,
-    CMD_nohlsearch 16,
-    CMD_only 17,
-    CMD_put 18,
-    CMD_redo 19,
-    CMD_redraw 20,
-    CMD_redrawstatus 21,
-    CMD_resize 22,
-    CMD_retab 23,
-    CMD_rightbelow 24,
-    CMD_substitute 25,
-    CMD_set 26,
-    CMD_split 27,
-    CMD_stop 28,
-    CMD_startinsert 29,
-    CMD_startgreplace 30,
-    CMD_startreplace 31,
-    CMD_stopinsert 32,
-    CMD_suspend 33,
-    CMD_syncbind 34,
-    CMD_topleft 35,
-    CMD_undo 36,
-    CMD_undojoin 37,
-    CMD_undolist 38,
-    CMD_vertical 39,
-    CMD_vsplit 40,
+    CMD_close 0,
+    CMD_fixdel 1,
+    CMD_only 2,
+    CMD_retab 3,
+    CMD_substitute 4,
+    CMD_set 5,
+    CMD_stop 6,
+    CMD_suspend 7,
+    CMD_syncbind 8,
 
-    CMD_SIZE 41)     ;; MUST be after all real commands!
+    CMD_SIZE 9)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2375,14 +2312,8 @@
                                     ;; Used by vgetorpeek() to decide when to call u_sync()
 (atom! boolean  ins_at_eol)         ;; put cursor after eol when restarting edit after CTRL-O
 
-(atom! cmdmod_C cmdmod      (§_cmdmod_C))   ;; Ex command modifiers
-
-(atom! int      msg_silent)                 ;; don't print messages
-(atom! int      emsg_silent)                ;; don't print error messages
-
 (atom! Bytes    ioBuff)                             ;; sprintf's are done in this buffer, size is IOSIZE
 (atom! Bytes    nameBuff)                           ;; file names are expanded in this buffer, size is MAXPATHL
-(final Bytes    msg_buf     (Bytes. MSG_BUF_LEN))   ;; small buffer for messages
 
 (atom! int      redrawingDisabled)          ;; When non-zero, postpone redrawing.
 
@@ -2418,9 +2349,6 @@
 (atom! reg_extmatch_C re_extmatch_out)      ;; Set by vim_regexec()
                                                         ;; to store \z\(...\) matches
 
-(atom! boolean  undo_off)                   ;; undo switched off for now
-(atom! int      global_busy)                ;; set when :global is executing
-(atom! boolean  listcmd_busy)               ;; set when :argdo, :windo or :bufdo is executing
 (atom! boolean  need_start_insertmode)      ;; start insert mode soon
 (atom! Bytes    last_cmdline)               ;; last command line (for ":)
 (atom! Bytes    repeat_cmdline)             ;; command line for "."
@@ -2579,35 +2507,14 @@
 
 ;;; ============================================================================================== VimG
 
-;; Struct for various parameters passed between main() and other functions.
-(class! #_final mparm_C
-    [
-        (field int      argc)
-        (field Bytes*   argv)
-
-        (field boolean  stdout_isatty)          ;; is stdout a terminal?
-        (field Bytes    term)                   ;; specified terminal name
-    ])
-
 (defn #_int _main [#_int argc, #_Bytes* argv]
     (§
 ;       @starttime = libC._time();
-
-;       mparm_C params = §_mparm_C();
-        ;; Many variables are in "params" so that we can pass them to invoked
-        ;; functions without a lot of arguments.  "argc" and "argv" are also
-        ;; copied, so that they can be changed.
-;       params.argc = argc;
-;       params.argv = argv;
 
         ;; Allocate space for the generic buffers (needed for set_init_1() and emsg2()).
 
 ;       @ioBuff = new Bytes(IOSIZE);
 ;       @nameBuff = new Bytes(MAXPATHL);
-
-        ;; Check if we have an interactive window.
-
-;       params.stdout_isatty = mch_output_isatty();
 
         ;; Allocate the first window and buffer.
         ;; Can't do anything without it, exit when it fails.
@@ -2629,11 +2536,7 @@
 
 ;       mch_init();
 
-        ;; Print a warning if stdout is not a terminal.
-
-;       check_tty(params);
-
-;       termcapinit(params.term);               ;; set terminal name and get terminal capabilities (will set full_screen)
+;       termcapinit();               ;; set terminal name and get terminal capabilities (will set full_screen)
 ;       screen_start();                         ;; don't know where cursor is now
 
         ;; Set the default values for the options that use Rows and Columns.
@@ -2665,8 +2568,7 @@
         ;; When done something that is not allowed or error message call wait_return.
         ;; This must be done before starttermcap(), because it may switch to another screen.
         ;; It must be done after settmode(TMODE_RAW), because we want to react on a single key stroke.
-        ;; Call settmode and starttermcap here, so the T_KS and T_TI may be defined
-        ;; by termcapinit and redefined in .exrc.
+        ;; Call settmode and starttermcap here, so the T_KS and T_TI may be defined by termcapinit().
 
 ;       settmode(TMODE_RAW);
 
@@ -2852,24 +2754,6 @@
 ;       windgoto((int)@Rows - 1, 0);
 
 ;       mch_exit(exitval);
-    ))
-
-;; Print a warning if stdout is not a terminal.
-;; When starting in Ex mode and commands come from a file, set Silent mode.
-
-(defn- #_void check_tty [#_mparm_C parmp]
-    (§
-;       boolean input_isatty = mch_input_isatty();  ;; is active input a terminal?
-
-;       if (!parmp.stdout_isatty || !input_isatty)
-;       {
-;           if (!parmp.stdout_isatty)
-;               libC.fprintf(stderr, u8("Vim: Warning: Output is not to a terminal\n"));
-;           if (!input_isatty)
-;               libC.fprintf(stderr, u8("Vim: Warning: Input is not from a terminal\n"));
-;           out_flush();
-;           ui_delay(2000, true);
-;       }
     ))
 
 ;;; ============================================================================================== VimH
@@ -3261,20 +3145,6 @@
 ;       return false;
     ))
 
-;; Check_win checks whether we have an interactive stdout.
-
-(defn- #_boolean mch_output_isatty []
-    (§
-;       return (libc.isatty(1) != 0);
-    ))
-
-;; Return true if the input comes from a terminal, false otherwise.
-
-(defn- #_boolean mch_input_isatty []
-    (§
-;       return (libc.isatty(@read_cmd_fd) != 0);
-    ))
-
 ;; Return true if "name" looks like some xterm name.
 
 (defn- #_boolean vim_is_xterm [#_Bytes name]
@@ -3426,12 +3296,14 @@
         ;; TIOCGSIZE but don't have a struct ttysize.
 
 ;       {
-;           winsize_C ws = new winsize_C();
 ;           int fd = 1;
 
             ;; When stdout is not a tty, use stdin for the ioctl().
 ;           if (libc.isatty(fd) == 0 && libc.isatty(@read_cmd_fd) != 0)
 ;               fd = @read_cmd_fd;
+
+;           winsize_C ws = new winsize_C();
+
 ;           if (libc.ioctl(fd, TIOCGWINSZ, ws) == 0)
 ;           {
 ;               rows = ws.ws_row();
@@ -3643,7 +3515,7 @@
 ;       Bytes buf = null;
 
         ;; May truncate message to avoid a hit-return prompt.
-;       if ((!@msg_scroll && !@need_wait_return && @msg_silent == 0) || force)
+;       if ((!@msg_scroll && !@need_wait_return) || force)
 ;       {
 ;           int room;
 ;           int len = mb_string2cells(s, -1);
@@ -3773,22 +3645,6 @@
 
 ;       if (@emsg_off == 0)
 ;       {
-            ;; When using ":silent! cmd" ignore error messages.
-            ;; But do write it to the redirection file.
-
-;           if (@emsg_silent != 0)
-;           {
-;               msg_start();
-;               redir_write(s, -1);
-;               return true;
-;           }
-
-            ;; Reset msg_silent, an error causes messages to be switched back on.
-;           @msg_silent = 0;
-
-;           if (@global_busy != 0)           ;; break :global command
-;               @global_busy++;
-
 ;           if (@p_eb)
 ;               beep_flush();               ;; also includes flush_buffers()
 ;           else
@@ -3877,18 +3733,15 @@
 ;       if (redraw == TRUE)
 ;           @must_redraw = CLEAR;
 
-        ;; If using ":silent cmd", don't wait for a return.
-        ;; Also don't set need_wait_return to do it later.
-;       if (@msg_silent != 0)
-;           return;
-
         ;; When inside vgetc(), we can't wait for a typed character at all.
         ;; With the global command (and some others) we only need one return at
         ;; the end.  Adjust cmdline_row to avoid the next message overwriting the last one.
 
 ;       if (0 < @vgetc_busy)
 ;           return;
+
 ;       @need_wait_return = true;
+
 ;       if (@no_wait_return != 0)
 ;       {
 ;           @cmdline_row = @msg_row;
@@ -3930,7 +3783,7 @@
 ;               boolean save_Recording = @Recording;
 ;               @Recording = false;
 ;               c = safe_vgetc();
-;               if (had_got_int && @global_busy == 0)
+;               if (had_got_int)
 ;                   @got_int = false;
 ;               --@no_mapping;
 ;               --@allow_keys;
@@ -4045,7 +3898,7 @@
 
 (defn- #_void set_keep_msg [#_Bytes s, #_int attr]
     (§
-;       if (s != null && @msg_silent == 0)
+;       if (s != null)
 ;           @keep_msg = STRDUP(s);
 ;       else
 ;           @keep_msg = null;
@@ -4059,10 +3912,7 @@
     (§
 ;       boolean did_return = false;
 
-;       if (@msg_silent == 0)
-;       {
-;           @keep_msg = null;                    ;; don't display old message now
-;       }
+;       @keep_msg = null;                    ;; don't display old message now
 
 ;       if (@need_clr_eos)
 ;       {
@@ -4083,13 +3933,12 @@
 ;           did_return = true;
 ;           @cmdline_row = @msg_row;
 ;       }
+
 ;       if (!@msg_didany || @lines_left < 0)
 ;           msg_starthere();
-;       if (@msg_silent == 0)
-;       {
-;           @msg_didout = false;                 ;; no output on current line yet
-;           cursor_off();
-;       }
+
+;       @msg_didout = false;                 ;; no output on current line yet
+;       cursor_off();
     ))
 
 ;; Note that the current msg position is where messages start.
@@ -4259,11 +4108,6 @@
 
 (defn- #_void msg_puts_attr_len [#_Bytes str, #_int maxlen, #_int attr]
     (§
-        ;; Don't print anything when using ":silent cmd".
-
-;       if (@msg_silent != 0)
-;           return;
-
         ;; When writing something to the screen after it has scrolled, requires
         ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
         ;; after some prompt, and then outputting something without scrolling
@@ -4962,8 +4806,7 @@
 
 (defn- #_void msg_clr_eos []
     (§
-;       if (@msg_silent == 0)
-;           msg_clr_eos_force();
+;       msg_clr_eos_force();
     ))
 
 ;; Clear from current message position to end of screen.
@@ -5034,10 +4877,6 @@
 
 (defn- #_void give_warning [#_Bytes message, #_boolean hl]
     (§
-        ;; Don't do this for ":silent".
-;       if (@msg_silent != 0)
-;           return;
-
         ;; Don't want a hit-enter prompt here.
 ;       @no_wait_return++;
 
@@ -6136,21 +5975,6 @@
 ;       varp[0] = STRDUP(val);
     ))
 
-;; Set a string option to a new value, and handle the effects.
-;; Returns null on success or error message on error.
-
-(defn- #_Bytes set_string_option [#_int opt_idx, #_Bytes value]
-    (§
-;       vimoption_C v = vimoptions[opt_idx];
-
-;       Bytes[] varp = (Bytes[])get_varp(v);
-
-;       Bytes oldval = varp[0];
-;       varp[0] = STRDUP(value);
-
-;       return did_set_string_option(opt_idx, varp, oldval, null);
-    ))
-
 ;; Handle string options that need some action to perform when changed.
 ;; Returns null for success, or an error message for an error.
 
@@ -6995,51 +6819,6 @@
 ;       return -1;
     ))
 
-;; Set the value of option "name".
-;; Use "string" for string options, use "number" for other options.
-;;
-;; Returns null on success or error message on error.
-
-(defn- #_Bytes set_option_value [#_Bytes name, #_long number, #_Bytes string]
-    (§
-;       int opt_idx = findoption(name);
-;       if (opt_idx < 0)
-;       {
-;           emsg2(u8("E355: Unknown option: %s"), name);
-;           return null;
-;       }
-
-;       long flags = vimoptions[opt_idx].flags;
-
-;       if ((flags & P_STRING) != 0)
-;           return set_string_option(opt_idx, string);
-
-;       Object varp = get_varp(vimoptions[opt_idx]);
-
-;       if (number == 0 && string != null)
-;       {
-;           int idx;
-
-            ;; Either we are given a string or we are setting option to zero.
-;           for (idx = 0; string.at(idx) == (byte)'0'; idx++)
-                ;
-;           if (string.at(idx) != NUL || idx == 0)
-;           {
-                ;; There's another character after zeros or the string is empty.
-                ;; In both cases, we are trying to set a num option using a string.
-;               emsg3(u8("E521: Number required: &%s = '%s'"), name, string);
-;               return null;        ;; do nothing as we hit an error
-;           }
-;       }
-
-;       if ((flags & P_NUM) != 0)
-;           return set_num_option(opt_idx, (long[])varp, number, null, 0);
-;       else
-;           return set_bool_option(opt_idx, (boolean[])varp, (number != 0));
-
-;       return null;
-    ))
-
 (defn- #_Bytes get_highlight_default []
     (§
 ;       int i = findoption(u8("hl"));
@@ -7649,7 +7428,7 @@
 
 ;; ":ascii" and "ga".
 
-(defn- #_void ex_ascii [#_exarg_C _eap]
+(defn- #_void do_ascii []
     (§
 ;       int[] cc = new int[MAX_MCO];
 
@@ -7890,11 +7669,10 @@
 ;       COPY_pos(old_cursor, @curwin.w_cursor);
 
 ;       Bytes cmd = eap.arg;
-;       if (@global_busy == 0)
-;       {
-;           @sub_nsubs = 0;
-;           @sub_nlines = 0;
-;       }
+
+;       @sub_nsubs = 0;
+;       @sub_nlines = 0;
+
 ;       long start_nsubs = @sub_nsubs;
 
 ;       int which_pat;
@@ -8012,8 +7790,7 @@
 ;               do_sub_msg(false);
 ;           }
 
-;           if (!@cmdmod.keeppatterns)
-;               save_re_pat(RE_SUBST, pat, @p_magic);
+;           save_re_pat(RE_SUBST, pat, @p_magic);
                 ;; put pattern in history
 ;           add_to_history(HIST_SEARCH, pat, NUL);
 
@@ -8503,17 +8280,14 @@
 ;           @curbuf.b_op_end.lnum = line2;
 ;           @curbuf.b_op_start.col = @curbuf.b_op_end.col = 0;
 
-;           if (@global_busy == 0)
-;           {
-;               if (endcolumn)
-;                   coladvance(MAXCOL);
-;               else
-;                   beginline(BL_WHITE | BL_FIX);
+;           if (endcolumn)
+;               coladvance(MAXCOL);
+;           else
+;               beginline(BL_WHITE | BL_FIX);
 
-;               do_sub_msg(@do__count);
-;           }
+;           do_sub_msg(@do__count);
 ;       }
-;       else if (@global_busy == 0)
+;       else
 ;       {
 ;           if (@got_int)                ;; interrupted
 ;               emsg(e_interr);
@@ -8525,7 +8299,6 @@
     ))
 
 ;; Give message for number of substitutions.
-;; Can also be used after a ":global" command.
 ;; Return true if a message was given.
 
 (defn- #_boolean do_sub_msg [#_boolean count_only]
@@ -8536,9 +8309,9 @@
         ;; - command was typed by user, or number of changed lines > 'report'
         ;; - giving messages is not disabled by 'lazyredraw'
 
-;       if (((@p_report < @sub_nsubs && (@keyTyped || 1 < @sub_nlines || @p_report < 1)) || count_only)
-;               && messaging())
+;       if (((@p_report < @sub_nsubs && (@keyTyped || 1 < @sub_nlines || @p_report < 1)) || count_only) && messaging())
 ;       {
+;           Bytes msg_buf = new Bytes(MSG_BUF_LEN);
 ;           if (@got_int)
 ;               STRCPY(msg_buf, u8("(Interrupted) "));
 ;           else
@@ -8760,8 +8533,7 @@
 
 ;           if ((c == Ctrl_C || c == @intr_char)
 ;                   && firstc != '@'
-;                   && !break_ctrl_c
-;                   && @global_busy == 0)
+;                   && !break_ctrl_c)
 ;               @got_int = false;
 
             ;; free old command line when finished moving around in the history list
@@ -8954,8 +8726,6 @@
 
 ;                       case Ctrl_HAT:
 ;                       {
-;                           
-;                           ui_cursor_shape();      ;; may show different cursor shape
 ;                           break cmdline_not_changed;
 ;                       }
 
@@ -8971,13 +8741,6 @@
 ;                           @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
 ;                           redrawcmd();
 ;                           break cmdline_changed;
-;                       }
-
-;                       case Ctrl_Y:
-;                       {
-                            ;; Copy the modeless selection, if there is one.
-;                           
-;                           break;
 ;                       }
 
 ;                       case ESC:       ;; get here when ESC typed twice
@@ -9038,11 +8801,6 @@
 ;                           }
 ;                           redrawcmd();
 ;                           break cmdline_changed;
-;                       }
-
-;                       case Ctrl_D:
-;                       {
-;                           break;      ;; Use ^D as normal char instead
 ;                       }
 
 ;                       case K_RIGHT:
@@ -9119,11 +8877,6 @@
 ;                           @ccline.cmdpos = @ccline.cmdlen;
 ;                           set_cmdspos_cursor();
 ;                           break cmdline_not_changed;
-;                       }
-
-;                       case Ctrl_A:        ;; all matches
-;                       {
-;                           break;
 ;                       }
 
 ;                       case Ctrl_L:
@@ -9317,11 +9070,6 @@
 ;                           break cmdline_not_changed;
 ;                       }
 
-;                       case Ctrl__:        ;; CTRL-_: switch language mode
-;                       {
-;                           break;
-;                       }
-
 ;                       default:
 ;                       {
 ;                           if (c == @intr_char)
@@ -9363,7 +9111,6 @@
                 ;; Jump to cmdline_not_changed when a character has been read but the command
                 ;; line did not change.  Then we only search and redraw if something changed in the past.
                 ;; Jump to cmdline_changed when the command line did change.
-                ;; (Sorry for the goto's, I know it is ugly).
 
 ;               if (!incsearch_postponed)
 ;                   continue;
@@ -9845,8 +9592,7 @@
     ;; remcr: remove trailing CR
     (§
         ;; check for valid regname; also accept special characters for CTRL-R in the command line
-;       if (regname != Ctrl_F && regname != Ctrl_P && regname != Ctrl_W && regname != Ctrl_A
-;               && !valid_yank_reg(regname, false))
+;       if (regname != Ctrl_F && regname != Ctrl_P && regname != Ctrl_W && regname != Ctrl_A && !valid_yank_reg(regname, false))
 ;           return false;
 
         ;; A register containing CTRL-R can cause an endless loop.
@@ -10030,15 +9776,6 @@
 ;       return HIST_SEARCH;     ;; must be '?' or '/'
     ))
 
-;; Table of history names.
-;; These names are used in :history and various hist...() functions.
-;; It is sufficient to give the significant prefix of a history name.
-
-(final Bytes* history_names
-    [
-        (u8 "cmd"), (u8 "search"), (u8 "expr"), (u8 "input"), null
-    ])
-
 ;; init_history() - Initialize the command line history.
 ;; Also used to re-allocate the history when the size changes.
 
@@ -10151,28 +9888,6 @@
 ;       return false;
     ))
 
-;; Convert history name (from table above) to its HIST_ equivalent.
-;; When "name" is empty, return "cmd" history.
-;; Returns -1 for unknown history name.
-
-(defn- #_int get_histtype [#_Bytes name]
-    (§
-;       int len = STRLEN(name);
-
-        ;; No argument: use current history.
-;       if (len == 0)
-;           return hist_char2type(@ccline.cmdfirstc);
-
-;       for (int i = 0; history_names[i] != null; i++)
-;           if (STRNCASECMP(name, history_names[i], len) == 0)
-;               return i;
-
-;       if (vim_strbyte(u8(":=@?/"), name.at(0)) != null && name.at(1) == NUL)
-;           return hist_char2type(name.at(0));
-
-;       return -1;
-    ))
-
 (atom! int      last_maptick -1)      ;; last seen maptick
 
 ;; Add the given string to the given history.  If the string is already in the
@@ -10182,9 +9897,6 @@
     ;; sep: separator character used (search hist)
     (§
 ;       if (@hislen == 0)            ;; no history
-;           return;
-
-;       if (@cmdmod.keeppatterns && histype == HIST_SEARCH)
 ;           return;
 
         ;; Searches inside the same mapping overwrite each other, so that only
@@ -10221,133 +9933,6 @@
 ;           hisptr.hisnum = ++@hisnum[histype];
 ;           if (histype == HIST_SEARCH)
 ;               @last_maptick = @maptick;
-;       }
-    ))
-
-;; Get indices "num1,num2" that specify a range within a list (not a range of
-;; text lines in a buffer!) from a string.  Used for ":history" and ":clist".
-;; Returns true if parsed successfully, otherwise false.
-
-(defn- #_boolean get_list_range [#_Bytes* str, #_int* num1, #_int* num2]
-    (§
-;       boolean first = false;
-
-;       str[0] = skipwhite(str[0]);
-;       if (str[0].at(0) == (byte)'-' || asc_isdigit(str[0].at(0)))     ;; parse "from" part of range
-;       {
-;           int[] len = new int[1];
-;           long[] num = new long[1];
-;           vim_str2nr(str[0], null, len, FALSE, FALSE, num);
-;           str[0] = str[0].plus(len[0]);
-;           num1[0] = (int)num[0];
-;           first = true;
-;       }
-;       str[0] = skipwhite(str[0]);
-;       if (str[0].at(0) == (byte)',')                  ;; parse "to" part of range
-;       {
-;           str[0] = skipwhite(str[0].plus(1));
-;           int[] len = new int[1];
-;           long[] num = new long[1];
-;           vim_str2nr(str[0], null, len, FALSE, FALSE, num);
-;           if (0 < len[0])
-;           {
-;               num2[0] = (int)num[0];
-;               str[0] = skipwhite(str[0].plus(len[0]));
-;           }
-;           else if (!first)                ;; no number given at all
-;               return false;
-;       }
-;       else if (first)                     ;; only one number given
-;           num2[0] = num1[0];
-
-;       return true;
-    ))
-
-;; :history command - print a history
-
-(defn- #_void ex_history [#_exarg_C eap]
-    (§
-;       int histype1 = HIST_CMD;
-;       int histype2 = HIST_CMD;
-;       int[] hisidx1 = { 1 };
-;       int[] hisidx2 = { -1 };
-
-;       Bytes arg = eap.arg;
-
-;       if (@hislen == 0)
-;       {
-;           msg(u8("'history' option is zero"));
-;           return;
-;       }
-
-;       Bytes[] end = new Bytes[1];
-;       if (!(asc_isdigit(arg.at(0)) || arg.at(0) == (byte)'-' || arg.at(0) == (byte)','))
-;       {
-;           end[0] = arg;
-;           while (asc_isalpha(end[0].at(0)) || vim_strbyte(u8(":=@>/?"), end[0].at(0)) != null)
-;               end[0] = end[0].plus(1);
-;           byte save_end = end[0].at(0);
-;           end[0].be(0, NUL);
-;           histype1 = get_histtype(arg);
-;           if (histype1 == -1)
-;           {
-;               if (STRNCASECMP(arg, u8("all"), STRLEN(arg)) == 0)
-;               {
-;                   histype1 = 0;
-;                   histype2 = HIST_COUNT-1;
-;               }
-;               else
-;               {
-;                   end[0].be(0, save_end);
-;                   emsg(e_trailing);
-;                   return;
-;               }
-;           }
-;           else
-;               histype2 = histype1;
-;           end[0].be(0, save_end);
-;       }
-;       else
-;           end[0] = arg;
-;       if (!get_list_range(end, hisidx1, hisidx2) || end[0].at(0) != NUL)
-;       {
-;           emsg(e_trailing);
-;           return;
-;       }
-
-;       for ( ; !@got_int && histype1 <= histype2; ++histype1)
-;       {
-;           STRCPY(@ioBuff, u8("\n      #  "));
-;           STRCAT(STRCAT(@ioBuff, history_names[histype1]), u8(" history"));
-;           msg_puts_title(@ioBuff);
-;           int idx = @hisidx[histype1];
-;           histentry_C[] hist = @history[histype1];
-;           int j = hisidx1[0];
-;           if (j < 0)
-;               j = (@hislen < -j) ? 0 : hist[(@hislen+j+idx+1) % @hislen].hisnum;
-;           int k = hisidx2[0];
-;           if (k < 0)
-;               k = (@hislen < -k) ? 0 : hist[(@hislen+k+idx+1) % @hislen].hisnum;
-;           if (0 <= idx && j <= k)
-;               for (int i = idx + 1; !@got_int; i++)
-;               {
-;                   if (i == @hislen)
-;                       i = 0;
-;                   if (hist[i].hisstr != null && j <= hist[i].hisnum && hist[i].hisnum <= k)
-;                   {
-;                       msg_putchar('\n');
-;                       libC.sprintf(@ioBuff, u8("%c%6d  "), (i == idx) ? (byte)'>' : (byte)' ', hist[i].hisnum);
-;                       if ((int)@Columns - 10 < mb_string2cells(hist[i].hisstr, -1))
-;                           trunc_string(hist[i].hisstr, @ioBuff.plus(STRLEN(@ioBuff)),
-;                               (int)@Columns - 10, IOSIZE - STRLEN(@ioBuff));
-;                       else
-;                           STRCAT(@ioBuff, hist[i].hisstr);
-;                       msg_outtrans(@ioBuff);
-;                       out_flush();
-;                   }
-;                   if (i == idx)
-;                       break;
-;               }
 ;       }
     ))
 
@@ -10616,7 +10201,6 @@
     (§
 ;       Bytes errormsg = null;         ;; error message
 ;       boolean save_msg_scroll = @msg_scroll;
-;       int save_msg_silent = -1;
 ;       int did_esilent = 0;
 
 ;       exarg_C ea = §_exarg_C();     ;; Ex command arguments
@@ -10626,12 +10210,6 @@
         ;; When the last file has not been edited :q has to be typed twice.
 ;       if (@quitmore != 0)
 ;           --@quitmore;
-
-        ;; Reset command modifiers.  They are restored when returning, for recursive calls.
-
-;       cmdmod_C save_cmdmod = §_cmdmod_C();
-;       COPY_cmdmod(save_cmdmod, @cmdmod);
-;       ZER0_cmdmod(@cmdmod);
 
 ;       doend:
 ;       {
@@ -10665,107 +10243,7 @@
 ;                   p[0] = skipwhite(skipdigits(p[0]));
 ;               switch (p[0].at(0))
 ;               {
-                    ;; When adding an entry, also modify cmd_exists().
-;                   case 'a':
-;                   {
-;                       if (checkforcmd(p, u8("aboveleft"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_ABOVE;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'b':
-;                   {
-;                       if (checkforcmd(p, u8("belowright"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_BELOW;
-;                           continue;
-;                       }
-;                       if (checkforcmd(p, u8("botright"), 2))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_BOT;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'k':
-;                   {
-;                       if (checkforcmd(p, u8("keepmarks"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.keepmarks = true;
-;                           continue;
-;                       }
-;                       if (checkforcmd(p, u8("keeppatterns"), 5))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.keeppatterns = true;
-;                           continue;
-;                       }
-;                       if (checkforcmd(p, u8("keepjumps"), 5))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.keepjumps = true;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'l':
-;                   {
-;                       if (checkforcmd(p, u8("lockmarks"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.lockmarks = true;
-;                           continue;
-;                       }
-;                       if (checkforcmd(p, u8("leftabove"), 5))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_ABOVE;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'r':
-;                   {
-;                       if (checkforcmd(p, u8("rightbelow"), 6))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_BELOW;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 't':
-;                   {
-;                       if (checkforcmd(p, u8("topleft"), 2))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_TOP;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'v':
-;                   {
-;                       if (checkforcmd(p, u8("vertical"), 4))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.split |= WSP_VERT;
-;                           continue;
-;                       }
-;                       break;
-;                   }
+;                   
 ;               }
 ;               break;
 ;           }
@@ -11018,20 +10496,17 @@
 ;           {
                 ;; If the range is backwards, ask for confirmation and, if given,
                 ;; swap ea.line1 & ea.line2 so it's forwards again.
-                ;; When global command is busy, don't ask, will fail below.
 
-;               if (@global_busy == 0 && ea.line2 < ea.line1)
+;               if (ea.line2 < ea.line1)
 ;               {
-;                   if (@msg_silent == 0)
+;                   if (sourcing)
 ;                   {
-;                       if (sourcing)
-;                       {
-;                           errormsg = u8("E493: Backwards range given");
-;                           break doend;
-;                       }
-;                       if (ask_yesno(u8("Backwards range given, OK to swap"), false) != 'y')
-;                           break doend;
+;                       errormsg = u8("E493: Backwards range given");
+;                       break doend;
 ;                   }
+;                   if (ask_yesno(u8("Backwards range given, OK to swap"), false) != 'y')
+;                       break doend;
+
 ;                   lnum = ea.line1;
 ;                   ea.line1 = ea.line2;
 ;                   ea.line2 = lnum;
@@ -11061,24 +10536,6 @@
 ;                   case ADDR_WINDOWS:
 ;                       ea.line2 = current_win_nr(null);
 ;                       break;
-;               }
-;           }
-
-            ;; accept numbered register only when no count allowed (:put)
-;           if ((ea.argt & REGSTR) != 0
-;                   && ea.arg.at(0) != NUL
-;                   && !((ea.argt & COUNT) != 0 && asc_isdigit(ea.arg.at(0))))
-;           {
-;               if (valid_yank_reg(ea.arg.at(0), (ea.cmdidx != CMD_put)))
-;               {
-;                   ea.regname = (ea.arg = ea.arg.plus(1)).at(-1);
-                    ;; for '=' register: accept the rest of the line as an expression
-;                   if (ea.arg.at(-1) == (byte)'=' && ea.arg.at(0) != NUL)
-;                   {
-;                       set_expr_line(STRDUP(ea.arg));
-;                       ea.arg = ea.arg.plus(STRLEN(ea.arg));
-;                   }
-;                   ea.arg = skipwhite(ea.arg);
 ;               }
 ;           }
 
@@ -11136,18 +10593,7 @@
                     ;; Commands that handle '|' themselves.  Check: A command should
                     ;; either have the TRLBAR flag, appear in this list or appear in
                     ;; the list at ":help :bar".
-;                   case CMD_aboveleft:
-;                   case CMD_belowright:
-;                   case CMD_botright:
-;                   case CMD_keepjumps:
-;                   case CMD_keepmarks:
-;                   case CMD_keeppatterns:
-;                   case CMD_leftabove:
-;                   case CMD_lockmarks:
-;                   case CMD_rightbelow:
 ;                   case CMD_substitute:
-;                   case CMD_topleft:
-;                   case CMD_vertical:
 ;                       break;
 
 ;                   default:
@@ -11186,48 +10632,10 @@
 ;           emsg(errormsg);
 ;       }
 
-;       COPY_cmdmod(@cmdmod, save_cmdmod);
-
-;       if (save_msg_silent != -1)
-;       {
-            ;; Messages could be enabled for a serious error,
-            ;; need to check if the counters don't become negative.
-;           if (!@did_emsg || save_msg_silent < @msg_silent)
-;               @msg_silent = save_msg_silent;
-;           @emsg_silent -= did_esilent;
-;           if (@emsg_silent < 0)
-;               @emsg_silent = 0;
-            ;; Restore msg_scroll, it's set by file I/O commands,
-            ;; even when no message is actually displayed.
-;           @msg_scroll = save_msg_scroll;
-;       }
-
 ;       if (ea.nextcmd != null && ea.nextcmd.at(0) == NUL)      ;; not really a next command
 ;           ea.nextcmd = null;
 
 ;       return ea.nextcmd;
-    ))
-
-;; Check for an Ex command with optional tail.
-;; If there is a match advance "pp" to the argument and return true.
-
-(defn- #_boolean checkforcmd [#_Bytes* pp, #_Bytes cmd, #_int len]
-    ;; pp: start of command
-    ;; cmd: name of command
-    ;; len: required length
-    (§
-;       int i;
-
-;       for (i = 0; cmd.at(i) != NUL; i++)
-;           if (cmd.at(i) != pp[0].at(i))
-;               break;
-;       if (len <= i && !asc_isalpha(pp[0].at(i)))
-;       {
-;           pp[0] = skipwhite(pp[0].plus(i));
-;           return true;
-;       }
-
-;       return false;
     ))
 
 ;; Append "cmd" to the error message in ioBuff.
@@ -11708,65 +11116,6 @@
 ;       shell_resized();        ;; may have resized window
     ))
 
-;; Command modifier used in a wrong way.
-
-(defn- #_void ex_wrongmodifier [#_exarg_C eap]
-    (§
-;       eap.errmsg = e_invcmd;
-    ))
-
-;; :split [[+command] file]     split window with current or new file
-;; :vsplit [[+command] file]    split window vertically with current or new file
-
-(defn- #_void ex_splitview [#_exarg_C eap]
-    (§
-;       if (win_split((0 < eap.addr_count) ? (int)eap.line2 : 0, (eap.cmd.at(0) == (byte)'v') ? WSP_VERT : 0) != false)
-;       {
-                ;; Reset 'scrollbind' when editing another file,
-                ;; but keep it when doing ":split" without arguments.
-;           if (eap.arg.at(0) != NUL)
-;           {
-;               @curwin.w_options.@wo_scb = false;
-;               @curwin.w_options.@wo_crb = false;
-;           }
-;           else
-;               do_check_scrollbind(false);
-;       }
-    ))
-
-;; ":resize".
-;; set, increment or decrement current window height
-
-(defn- #_void ex_resize [#_exarg_C eap]
-    (§
-;       window_C wp = @curwin;
-
-;       if (0 < eap.addr_count)
-;       {
-;           int n = (int)eap.line2;
-;           for (wp = @firstwin; wp.w_next != null && 0 < --n; wp = wp.w_next)
-                ;
-;       }
-
-;       int n = libC.atoi(eap.arg);
-;       if ((@cmdmod.split & WSP_VERT) != 0)
-;       {
-;           if (eap.arg.at(0) == (byte)'-' || eap.arg.at(0) == (byte)'+')
-;               n += @curwin.w_width;
-;           else if (n == 0 && eap.arg.at(0) == NUL)   ;; default is very wide
-;               n = 9999;
-;           win_setwidth_win(n, wp);
-;       }
-;       else
-;       {
-;           if (eap.arg.at(0) == (byte)'-' || eap.arg.at(0) == (byte)'+')
-;               n += @curwin.w_height;
-;           else if (n == 0 && eap.arg.at(0) == NUL)   ;; default is very wide
-;               n = 9999;
-;           win_setheight_win(n, wp);
-;       }
-    ))
-
 ;; ":syncbind" forces all 'scrollbind' windows to have the same relative offset.
 
 (defn- #_void ex_syncbind [#_exarg_C _eap]
@@ -11845,166 +11194,11 @@
 ;       }
     ))
 
-;; ":put".
-
-(defn- #_void ex_put [#_exarg_C eap]
-    (§
-            ;; ":0put" works like ":1put!".
-;       if (eap.line2 == 0)
-;       {
-;           eap.line2 = 1;
-;           eap.forceit = true;
-;       }
-;       @curwin.w_cursor.lnum = eap.line2;
-;       do_put(eap.regname, eap.forceit ? BACKWARD : FORWARD, 1, PUT_LINE|PUT_CURSLINE);
-    ))
-
-;; ":undo".
-
-(defn- #_void ex_undo [#_exarg_C eap]
-    (§
-;       if (eap.addr_count == 1)    ;; :undo 123
-;           undo_time(eap.line2, false, true);
-;       else
-;           u_undo(1);
-    ))
-
-;; ":redo".
-
-(defn- #_void ex_redo [#_exarg_C _eap]
-    (§
-;       u_redo(1);
-    ))
-
-;; ":earlier" and ":later".
-
-(defn- #_void ex_later [#_exarg_C eap]
-    (§
-;       long count = 0;
-;       boolean sec = false;
-;       Bytes p = eap.arg;
-
-;       if (p.at(0) == NUL)
-;           count = 1;
-;       else if (asc_isdigit(p.at(0)))
-;       {
-;           { Bytes[] __ = { p }; count = getdigits(__); p = __[0]; }
-;           switch (p.at(0))
-;           {
-;               case 's': p = p.plus(1); sec = true; break;
-;               case 'm': p = p.plus(1); sec = true; count *= 60; break;
-;               case 'h': p = p.plus(1); sec = true; count *= 60 * 60; break;
-;               case 'd': p = p.plus(1); sec = true; count *= 24 * 60 * 60; break;
-;           }
-;       }
-
-;       if (p.at(0) != NUL)
-;           emsg2(e_invarg2, eap.arg);
-;       else
-;           undo_time((eap.cmdidx == CMD_earlier) ? -count : count, sec, false);
-    ))
-
-;; ":redraw": force redraw
-
-(defn- #_void ex_redraw [#_exarg_C eap]
-    (§
-;       int r = @redrawingDisabled;
-;       boolean p = @p_lz;
-
-;       @redrawingDisabled = 0;
-;       @p_lz = false;
-;       update_topline();
-;       update_screen(eap.forceit ? CLEAR : @VIsual_active ? INVERTED : 0);
-;       @redrawingDisabled = r;
-;       @p_lz = p;
-
-            ;; Reset msg_didout, so that a message that's there is overwritten.
-;       @msg_didout = false;
-;       @msg_col = 0;
-
-            ;; No need to wait after an intentional redraw.
-;       @need_wait_return = false;
-
-;       out_flush();
-    ))
-
-;; ":redrawstatus": force redraw of status line(s)
-
-(defn- #_void ex_redrawstatus [#_exarg_C eap]
-    (§
-;       int r = @redrawingDisabled;
-;       boolean p = @p_lz;
-
-;       @redrawingDisabled = 0;
-;       @p_lz = false;
-;       if (eap.forceit)
-;           status_redraw_all();
-;       else
-;           status_redraw_curbuf();
-;       update_screen(@VIsual_active ? INVERTED : 0);
-;       @redrawingDisabled = r;
-;       @p_lz = p;
-;       out_flush();
-    ))
-
-;; ":startinsert", ":startreplace" and ":startgreplace"
-
-(defn- #_void ex_startinsert [#_exarg_C eap]
-    (§
-;       if (eap.forceit)
-;       {
-;           coladvance(MAXCOL);
-;           @curwin.w_curswant = MAXCOL;
-;           @curwin.w_set_curswant = false;
-;       }
-
-            ;; Ignore the command when already in Insert mode.  Inserting an
-            ;; expression register that invokes a function can do this.
-;       if ((@State & INSERT) != 0)
-;           return;
-
-;       if (eap.cmdidx == CMD_startinsert)
-;           @restart_edit = 'a';
-;       else if (eap.cmdidx == CMD_startreplace)
-;           @restart_edit = 'R';
-;       else
-;           @restart_edit = 'V';
-
-;       if (!eap.forceit)
-;       {
-;           if (eap.cmdidx == CMD_startinsert)
-;               @restart_edit = 'i';
-;           @curwin.w_curswant = 0;  ;; avoid MAXCOL
-;       }
-    ))
-
-;; ":stopinsert"
-
-(defn- #_void ex_stopinsert [#_exarg_C _eap]
-    (§
-;       @restart_edit = 0;
-;       @stop_insert_mode = true;
-    ))
-
-(defn- #_void ex_digraphs [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) != NUL)
-;           putdigraph(eap.arg);
-;       else
-;           listdigraphs();
-    ))
+;; ":set"
 
 (defn- #_void ex_set [#_exarg_C eap]
     (§
 ;       do_set(eap.arg);
-    ))
-
-;; ":nohlsearch"
-
-(defn- #_void ex_nohlsearch [#_exarg_C _eap]
-    (§
-;       @no_hlsearch = true;
-;       redraw_all_later(SOME_VALID);
     ))
 
 ;;; ============================================================================================== VimJ
@@ -12532,12 +11726,10 @@
             ;; In Visual mode, it's more important to keep the Visual area updated
             ;; than keeping a message (e.g. from a /pat search).
             ;; Only do this if the command was typed, not from a mapping.
-            ;; Don't wait when emsg_silent is non-zero.
             ;; Also wait a bit after an error message, e.g. for "^O:".
             ;; Don't redraw the screen, it would remove the message.
 
 ;           if (((@p_smd
-;                           && @msg_silent == 0
 ;                           && (@restart_edit != 0
 ;                               || (@VIsual_active
 ;                                   && old_pos.lnum == @curwin.w_cursor.lnum
@@ -12552,7 +11744,6 @@
 ;                   && oap.regname == 0
 ;                   && (ca.retval & CA_COMMAND_BUSY) == 0
 ;                   && stuff_empty()
-;                   && @emsg_silent == 0
 ;                   && !@did_wait_return
 ;                   && oap.op_type == OP_NOP)
 ;           {
@@ -13684,7 +12875,7 @@
 
 (defn- #_boolean add_to_showcmd [#_int c]
     (§
-;       if (!@p_sc || @msg_silent != 0)
+;       if (!@p_sc)
 ;           return false;
 
 ;       if (@showcmd_visual)
@@ -15927,7 +15118,7 @@
 ;               if (cap.arg == 0)
                         ;; start Select mode when 'selectmode' contains "cmd"
 ;                   may_start_select('c');
-;               if (@p_smd && @msg_silent == 0)
+;               if (@p_smd)
 ;                   @redraw_cmdline = true;      ;; show visual mode later
 
                     ;; For V and ^V, we multiply the number of lines even if there was only one.
@@ -16025,7 +15216,7 @@
         ;; Check for redraw after changing the state.
 ;       conceal_check_cursor_line();
 
-;       if (@p_smd && @msg_silent == 0)
+;       if (@p_smd)
 ;           @redraw_cmdline = true;  ;; show visual mode later
 
         ;; Only need to redraw this line, unless still need to redraw
@@ -16413,7 +15604,7 @@
                 ;;       It is displayed in decimal, hex, and octal.
 
 ;           case 'a':
-;               ex_ascii(null);
+;               do_ascii();
 ;               break;
 
                 ;; "g8": Display the bytes used for the UTF-8 character under the cursor.
@@ -17758,7 +16949,7 @@
             ;;  3. Divvy into TABs & spp
             ;;  4. Construct new string
 
-;           total += bd.pre_whitesp;    ;; all virtual WS upto & incl a split TAB
+;           total += bd.pre_whitesp;    ;; all virtual WS upto & incl. a split TAB
 ;           int ws_vcol = bd.start_vcol - bd.pre_whitesp;
 ;           if (bd.startspaces != 0)
 ;               bd.textstart = bd.textstart.plus(us_ptr2len_cc(bd.textstart));
@@ -18054,19 +17245,11 @@
 ;           return NUL;
 
 ;       if (new_line.at(0) == NUL)
-        ; ;; use previous line
+            ; ;; use previous line
 ;       else
-;           set_expr_line(new_line);
+;           @expr_line = new_line;
 
 ;       return '=';
-    ))
-
-;; Set the expression for the '=' register.
-;; Argument must be an allocated string.
-
-(defn- #_void set_expr_line [#_Bytes new_line]
-    (§
-;       @expr_line = new_line;
     ))
 
 (atom! int __nested)
@@ -18094,7 +17277,7 @@
     ))
 
 ;; Check if 'regname' is a valid name of a yank register.
-;; Note: There is no check for 0 (default register), caller should do this
+;; Note: There is no check for 0 (default register), caller should do this.
 
 (defn- #_boolean valid_yank_reg [#_int regname, #_boolean writing]
     ;; writing: if true check for writable registers
@@ -18740,18 +17923,10 @@
                 ;; confirmation before doing the delete.  This is crude, but simple.
                 ;; And it avoids doing a delete of something we can't put back if we want.
 
-;               if (!did_yank)
+;               if (!did_yank && ask_yesno(u8("cannot yank; delete anyway"), true) != 'y')
 ;               {
-;                   int msg_silent_save = @msg_silent;
-
-;                   @msg_silent = 0;     ;; must display the prompt
-;                   int n = ask_yesno(u8("cannot yank; delete anyway"), true);
-;                   @msg_silent = msg_silent_save;
-;                   if (n != 'y')
-;                   {
-;                       emsg(e_abort);
-;                       return false;
-;                   }
+;                   emsg(e_abort);
+;                   return false;
 ;               }
 ;           }
 
@@ -19866,31 +19041,6 @@
 ;       copy_spaces(pnew, bd.endspaces);
 ;       pnew = pnew.plus(bd.endspaces);
 ;       pnew.be(0, NUL);
-    ))
-
-;; Make a copy of the y_current register to register "reg".
-
-(defn- #_void copy_yank_reg [#_yankreg_C reg]
-    (§
-;       yankreg_C curr = @y_current;
-
-;       @y_current = reg;
-;       COPY_yankreg(@y_current, curr);
-;       @y_current.y_array = new Bytes[@y_current.y_size];
-
-;       for (int i = 0; i < @y_current.y_size; i++)
-;       {
-;           Bytes s = STRDUP(curr.y_array[i]);
-;           if (s == null)
-;           {
-;               @y_current.y_array = null;
-;               @y_current.y_size = 0;
-;               break;
-;           }
-;           @y_current.y_array[i] = s;
-;       }
-
-;       @y_current = curr;
     ))
 
 ;; Put contents of register "regname" into the text.
@@ -21330,10 +20480,6 @@
 
 (defn- #_void setpcmark []
     (§
-        ;; for :global the mark is set only once
-;       if (@global_busy != 0 || @listcmd_busy || @cmdmod.keepjumps)
-;           return;
-
 ;       COPY_pos(@curwin.w_prev_pcmark, @curwin.w_pcmark);
 ;       COPY_pos(@curwin.w_pcmark, @curwin.w_cursor);
 
@@ -21468,38 +20614,9 @@
 ;       else if (c == ']')                          ;; to end of previous operator
 ;           posp = buf.b_op_end;
 ;       else if (c == '{' || c == '}')              ;; to previous/next paragraph
-;       {
-;           boolean slcb = @listcmd_busy;
-
-;           pos_C pos = §_pos_C();
-;           COPY_pos(pos, @curwin.w_cursor);
-;           @listcmd_busy = true;                    ;; avoid that '' is changed
-;           oparg_C oa = §_oparg_C();
-;           boolean b;
-;           { boolean[] __ = { oa.inclusive }; b = findpar(__, (c == '}') ? FORWARD : BACKWARD, 1, NUL, false); oa.inclusive = __[0]; }
-;           if (b)
-;           {
-;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
-;               posp = @_1_pos_copy;
-;           }
-;           COPY_pos(@curwin.w_cursor, pos);
-;           @listcmd_busy = slcb;
-;       }
+;           
 ;       else if (c == '(' || c == ')')              ;; to previous/next sentence
-;       {
-;           boolean slcb = @listcmd_busy;
-
-;           pos_C pos = §_pos_C();
-;           COPY_pos(pos, @curwin.w_cursor);
-;           @listcmd_busy = true;                    ;; avoid that '' is changed
-;           if (findsent(c == ')' ? FORWARD : BACKWARD, 1))
-;           {
-;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
-;               posp = @_1_pos_copy;
-;           }
-;           COPY_pos(@curwin.w_cursor, pos);
-;           @listcmd_busy = slcb;
-;       }
+;           
 ;       else if (c == '<' || c == '>')              ;; start/end of visual area
 ;       {
 ;           pos_C startp = buf.b_visual.vi_start;
@@ -21629,77 +20746,6 @@
 ;       buf.b_changelistlen = 0;
     ))
 
-;; ":delmarks[!] [marks]"
-
-(defn- #_void ex_delmarks [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) == NUL && eap.forceit)
-                ;; clear all marks
-;           clrallmarks(@curbuf);
-;       else if (eap.forceit)
-;           emsg(e_invarg);
-;       else if (eap.arg.at(0) == NUL)
-;           emsg(e_argreq);
-;       else
-;       {
-                ;; clear specified marks only
-;           for (Bytes p = eap.arg; p.at(0) != NUL; p = p.plus(1))
-;           {
-;               boolean lower = asc_islower(p.at(0));
-;               boolean digit = asc_isdigit(p.at(0));
-;               if (lower || digit || asc_isupper(p.at(0)))
-;               {
-;                   int from, to;
-;                   if (p.at(1) == (byte)'-')
-;                   {
-                            ;; clear range of marks
-;                       from = p.at(0);
-;                       to = p.at(2);
-;                       if (!(lower ? asc_islower(p.at(2)) : (digit ? asc_isdigit(p.at(2)) : asc_isupper(p.at(2)))) || to < from)
-;                       {
-;                           emsg2(e_invarg2, p);
-;                           return;
-;                       }
-;                       p = p.plus(2);
-;                   }
-;                   else
-                            ;; clear one lower case mark
-;                       from = to = p.at(0);
-
-;                   for (int i = from; i <= to; i++)
-;                   {
-;                       if (lower)
-;                           @curbuf.b_namedm[i - 'a'].lnum = 0;
-;                       else
-;                       {
-;                           int n;
-;                           if (digit)
-;                               n = i - '0' + NMARKS;
-;                           else
-;                               n = i - 'A';
-
-;                           namedfm[n].mark.lnum = 0;
-;                       }
-;                   }
-;               }
-;               else
-;                   switch (p.at(0))
-;                   {
-;                       case '"': @curbuf.b_last_cursor.lnum = 0; break;
-;                       case '^': @curbuf.b_last_insert.lnum = 0; break;
-;                       case '.': @curbuf.b_last_change.lnum = 0; break;
-;                       case '[': @curbuf.b_op_start.lnum    = 0; break;
-;                       case ']': @curbuf.b_op_end.lnum      = 0; break;
-;                       case '<': @curbuf.b_visual.vi_start.lnum = 0; break;
-;                       case '>': @curbuf.b_visual.vi_end.lnum   = 0; break;
-;                       case ' ': break;
-;                       default:  emsg2(e_invarg2, p);
-;                               return;
-;                   }
-;           }
-;       }
-    ))
-
 (defn- #_long one_adjust [#_long add, #_long line1, #_long line2, #_long amount, #_long amount_after]
     (§
 ;       if (line1 <= add && add <= line2)
@@ -21748,35 +20794,32 @@
 ;       if (line2 < line1 && amount_after == 0)                ;; nothing to do
 ;           return;
 
-;       if (!@cmdmod.lockmarks)
+        ;; named marks, lower case and upper case
+;       for (int i = 0; i < NMARKS; i++)
 ;       {
-            ;; named marks, lower case and upper case
-;           for (int i = 0; i < NMARKS; i++)
-;           {
-;               @curbuf.b_namedm[i].lnum = one_adjust(@curbuf.b_namedm[i].lnum, line1, line2, amount, amount_after);
-;               namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
-;           }
-;           for (int i = NMARKS; i < NMARKS + EXTRA_MARKS; i++)
-;               namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
-
-            ;; last Insert position
-;           @curbuf.b_last_insert.lnum = one_adjust(@curbuf.b_last_insert.lnum, line1, line2, amount, amount_after);
-
-            ;; last change position
-;           @curbuf.b_last_change.lnum = one_adjust(@curbuf.b_last_change.lnum, line1, line2, amount, amount_after);
-
-            ;; last cursor position, if it was set
-;           if (!eqpos(@curbuf.b_last_cursor, @mark_initpos))
-;               @curbuf.b_last_cursor.lnum = one_adjust(@curbuf.b_last_cursor.lnum, line1, line2, amount, amount_after);
-
-            ;; list of change positions
-;           for (int i = 0; i < @curbuf.b_changelistlen; i++)
-;               @curbuf.b_changelist[i].lnum = one_adjust_nodel(@curbuf.b_changelist[i].lnum, line1, line2, amount, amount_after);
-
-            ;; Visual area.
-;           @curbuf.b_visual.vi_start.lnum = one_adjust_nodel(@curbuf.b_visual.vi_start.lnum, line1, line2, amount, amount_after);
-;           @curbuf.b_visual.vi_end.lnum = one_adjust_nodel(@curbuf.b_visual.vi_end.lnum, line1, line2, amount, amount_after);
+;           @curbuf.b_namedm[i].lnum = one_adjust(@curbuf.b_namedm[i].lnum, line1, line2, amount, amount_after);
+;           namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
 ;       }
+;       for (int i = NMARKS; i < NMARKS + EXTRA_MARKS; i++)
+;           namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
+
+        ;; last Insert position
+;       @curbuf.b_last_insert.lnum = one_adjust(@curbuf.b_last_insert.lnum, line1, line2, amount, amount_after);
+
+        ;; last change position
+;       @curbuf.b_last_change.lnum = one_adjust(@curbuf.b_last_change.lnum, line1, line2, amount, amount_after);
+
+        ;; last cursor position, if it was set
+;       if (!eqpos(@curbuf.b_last_cursor, @mark_initpos))
+;           @curbuf.b_last_cursor.lnum = one_adjust(@curbuf.b_last_cursor.lnum, line1, line2, amount, amount_after);
+
+        ;; list of change positions
+;       for (int i = 0; i < @curbuf.b_changelistlen; i++)
+;           @curbuf.b_changelist[i].lnum = one_adjust_nodel(@curbuf.b_changelist[i].lnum, line1, line2, amount, amount_after);
+
+        ;; Visual area.
+;       @curbuf.b_visual.vi_start.lnum = one_adjust_nodel(@curbuf.b_visual.vi_start.lnum, line1, line2, amount, amount_after);
+;       @curbuf.b_visual.vi_end.lnum = one_adjust_nodel(@curbuf.b_visual.vi_end.lnum, line1, line2, amount, amount_after);
 
         ;; previous context mark
 ;       @curwin.w_pcmark.lnum = one_adjust(@curwin.w_pcmark.lnum, line1, line2, amount, amount_after);
@@ -21792,11 +20835,10 @@
 
 ;       for (window_C win = @firstwin; win != null; win = win.w_next)
 ;       {
-;           if (!@cmdmod.lockmarks)
-                ;; Marks in the jumplist.  When deleting lines, this may create
-                ;; duplicate marks in the jumplist, they will be removed later.
-;               for (int i = 0; i < win.w_jumplistlen; i++)
-;                   win.w_jumplist[i].mark.lnum = one_adjust_nodel(win.w_jumplist[i].mark.lnum, line1, line2, amount, amount_after);
+            ;; Marks in the jumplist.  When deleting lines, this may create
+            ;; duplicate marks in the jumplist, they will be removed later.
+;           for (int i = 0; i < win.w_jumplistlen; i++)
+;               win.w_jumplist[i].mark.lnum = one_adjust_nodel(win.w_jumplist[i].mark.lnum, line1, line2, amount, amount_after);
 
             ;; the displayed Visual area
 ;           if (win.w_old_cursor_lnum != 0)
@@ -21863,7 +20905,7 @@
 
 (defn- #_void mark_col_adjust [#_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
     (§
-;       if ((col_amount == 0 && lnum_amount == 0) || @cmdmod.lockmarks)
+;       if (col_amount == 0 && lnum_amount == 0)
 ;           return; ;; nothing to do
 
         ;; named marks, lower case and upper case
@@ -22918,21 +21960,6 @@
 ;       return vgetorpeek(false);
     ))
 
-;; Like vpeekc(), but don't allow mapping.  Do allow checking for terminal codes.
-
-(defn- #_int vpeekc_nomap []
-    (§
-;       int c;
-
-;       @no_mapping++;
-;       @allow_keys++;
-;       c = vpeekc();
-;       --@no_mapping;
-;       --@allow_keys;
-
-;       return c;
-    ))
-
 ;; Call vpeekc() without causing anything to be mapped.
 ;; Return true if a character is available, false otherwise.
 
@@ -23321,7 +22348,7 @@
         ;;   if we return an ESC to exit insert mode, the message is deleted;
         ;;   if we don't return an ESC, but deleted the message before, redisplay it.
 
-;       if (advance && @p_smd && @msg_silent == 0 && (@State & INSERT) != 0)
+;       if (advance && @p_smd && (@State & INSERT) != 0)
 ;       {
 ;           if (c == ESC && !mode_deleted && @no_mapping == 0 && @mode_displayed)
 ;           {
@@ -23373,8 +22400,6 @@
 ;           cursor_on();
 ;           out_flush();
 ;       }
-
-;       @undo_off = false;                           ;; restart undo now
 
 ;       int len = 0;
 ;       boolean retesc = false;                     ;; return ESC with gotint
@@ -23697,7 +22722,7 @@
         ;; actually changing anything.  It's put after the mode, if any.
 
 ;       int i = 0;
-;       if (@p_smd && @msg_silent == 0)
+;       if (@p_smd)
 ;           i = showmode();
 
 ;       ui_cursor_shape();          ;; may show different cursor shape
@@ -25664,8 +24689,7 @@
 ;           @curwin.w_set_curswant = true;
 
         ;; Remember the last Insert position in the '^ mark.
-;       if (!@cmdmod.keepjumps)
-;           COPY_pos(@curbuf.b_last_insert, @curwin.w_cursor);
+;       COPY_pos(@curbuf.b_last_insert, @curwin.w_cursor);
 
         ;; The cursor should end up on the last inserted character.
         ;; Don't do it for CTRL-O, unless past the end of the line.
@@ -27301,7 +26325,6 @@
 (atom! long*    brace_min       10)         ;; minimums for complex brace repeats
 (atom! long*    brace_max       10)         ;; maximums for complex brace repeats
 (atom! int*     brace_count     10)         ;; current counts for complex brace repeats
-(atom! boolean  had_eol)                    ;; true when EOL found by vim_regcomp()
 (atom! boolean  one_exactly)                ;; only do one char for EXACTLY
 
 (atom! int      reg_magic)                  ;; magicness of the pattern:
@@ -28226,15 +27249,6 @@
 ;       @regsize = 0;
 ;       @reg_toolong = false;
 ;       @regflags = 0;
-;       @had_eol = false;
-    ))
-
-;; Check if during the previous call to vim_regcomp the EOL item "$" has been found.
-;; This is messy, but it works fine.
-
-(defn- #_boolean vim_regcomp_had_eol []
-    (§
-;       return @had_eol;
     ))
 
 ;; Parse regular expression, i.e. main body or parenthesized thing.
@@ -28685,7 +27699,6 @@
 
 ;               case Magic('$'):
 ;                   ret = regnode(EOL);
-;                   @had_eol = true;
 ;                   break;
 
 ;               case Magic('<'):
@@ -28707,7 +27720,6 @@
 ;                   if (c == '$')           ;; "\_$" is end-of-line
 ;                   {
 ;                       ret = regnode(EOL);
-;                       @had_eol = true;
 ;                       break;
 ;                   }
 
@@ -34560,7 +33572,6 @@
 
 ;               case Magic('$'):
 ;                   emc1(NFA_EOL);
-;                   @had_eol = true;
 ;                   break;
 
 ;               case Magic('<'):
@@ -34589,7 +33600,6 @@
 ;                   if (c == '$')       ;; "\_$" is end-of-line
 ;                   {
 ;                       emc1(NFA_EOL);
-;                       @had_eol = true;
 ;                       break;
 ;                   }
 
@@ -40111,7 +39121,7 @@
         ;; Save the currently used pattern in the appropriate place,
         ;; unless the pattern should not be remembered.
 
-;       if ((options & SEARCH_KEEP) == 0 && !@cmdmod.keeppatterns)
+;       if ((options & SEARCH_KEEP) == 0)
 ;       {
             ;; search or global command
 ;           if (pat_save == RE_SEARCH || pat_save == RE_BOTH)
@@ -40757,7 +39767,7 @@
 ;                   pat = p;                        ;; put "pat" after search command
 ;               }
 
-;               if ((options & SEARCH_ECHO) != 0 && messaging() && @msg_silent == 0)
+;               if ((options & SEARCH_ECHO) != 0 && messaging())
 ;               {
 ;                   Bytes p;
 ;                   if (searchstr.at(0) == NUL)
@@ -40920,7 +39930,7 @@
 ;           @curwin.w_set_curswant = true;
 ;       }
 
-;       if ((options & SEARCH_KEEP) != 0 || @cmdmod.keeppatterns)
+;       if ((options & SEARCH_KEEP) != 0)
 ;           COPY_soffset(@spats[0].sp_off, old_off);
 
 ;       return retval;
@@ -44090,17 +43100,6 @@
 ;       return c - '0';
     ))
 
-;; Convert two hex characters to a byte.
-;; Return -1 if one of the characters is not hex.
-
-(defn- #_int hexhex2nr [#_Bytes p]
-    (§
-;       if (!asc_isxdigit(p.at(0)) || !asc_isxdigit(p.at(1)))
-;           return -1;
-
-;       return (hex2nr(p.at(0)) << 4) + hex2nr(p.at(1));
-    ))
-
 ;;; ============================================================================================== VimR
 
 ;; digraph.c: code for digraphs -------------------------------------------------------------------
@@ -44111,9 +43110,6 @@
         (field byte     char2)
         (field int      result)
     ])
-
-;; digraphs added by the user
-(atom! digr_C* user_digraphs    0)
 
 (defn- #_final #_digr_C digr [#_"/*byte*/char" char1, #_"/*byte*/char" char2, #_int result]
     (§
@@ -45555,30 +44551,13 @@
 ;       if (is_special(char1) || is_special(char2))
 ;           return char2;
 
-        ;; Search user digraphs first.
-
-;       for (int i = 0; i < @user_digraphs.ga_len; i++)
-;       {
-;           digr_C dp = @user_digraphs.ga_data[i];
-;           if ((int)dp.char1 == char1 && (int)dp.char2 == char2)
+;       digr_C[] dgs = digraphdefault;
+;       for (int i = 0; i < dgs.length; i++)
+;           if ((int)dgs[i].char1 == char1 && (int)dgs[i].char2 == char2)
 ;           {
-;               retval = dp.result;
+;               retval = dgs[i].result;
 ;               break;
 ;           }
-;       }
-
-        ;; Search default digraphs.
-
-;       if (retval == 0)
-;       {
-;           digr_C[] dgs = digraphdefault;
-;           for (int i = 0; i < dgs.length; i++)
-;               if ((int)dgs[i].char1 == char1 && (int)dgs[i].char2 == char2)
-;               {
-;                   retval = dgs[i].result;
-;                   break;
-;               }
-;       }
 
 ;       if (retval == 0)            ;; digraph deleted or not found
 ;       {
@@ -45604,123 +44583,6 @@
 ;           return char2;
 
 ;       return retval;
-    ))
-
-;; Add the digraphs in the argument to the digraph table.
-;; Format: {c1}{c2} char {c1}{c2} char ...
-
-(defn- #_void putdigraph [#_Bytes s]
-    (§
-;       while (s.at(0) != NUL)
-;       {
-;           s = skipwhite(s);
-;           if (s.at(0) == NUL)
-;               return;
-;           byte char1 = (s = s.plus(1)).at(-1);
-;           byte char2 = (s = s.plus(1)).at(-1);
-;           if (char2 == NUL)
-;           {
-;               emsg(e_invarg);
-;               return;
-;           }
-;           if (char1 == ESC || char2 == ESC)
-;           {
-;               emsg(u8("E104: Escape not allowed in digraph"));
-;               return;
-;           }
-;           s = skipwhite(s);
-;           if (!asc_isdigit(s.at(0)))
-;           {
-;               emsg(e_number_exp);
-;               return;
-;           }
-
-;           int n;
-;           { Bytes[] __ = { s }; n = (int)getdigits(__); s = __[0]; }
-;           int i;
-
-            ;; If the digraph already exists, replace the result.
-;           for (i = 0; i < @user_digraphs.ga_len; i++)
-;           {
-;               digr_C dp = @user_digraphs.ga_data[i];
-;               if (dp.char1 == char1 && dp.char2 == char2)
-;               {
-;                   dp.result = n;
-;                   break;
-;               }
-;           }
-
-            ;; Add a new digraph to the table.
-;           if (i == @user_digraphs.ga_len)
-;           {
-;               @user_digraphs.ga_grow(1);
-
-;               digr_C dp = @user_digraphs.ga_data[@user_digraphs.ga_len++] = §_digr_C();
-;               dp.char1 = char1;
-;               dp.char2 = char2;
-;               dp.result = n;
-;           }
-;       }
-    ))
-
-(defn- #_void listdigraphs []
-    (§
-;       msg_putchar('\n');
-
-;       digr_C[] dgs = digraphdefault;
-;       for (int i = 0; i < dgs.length && !@got_int; i++)
-;       {
-;           digr_C tmp = §_digr_C();
-
-            ;; May need to convert the result to 'encoding'.
-;           tmp.char1 = dgs[i].char1;
-;           tmp.char2 = dgs[i].char2;
-;           tmp.result = getexactdigraph(tmp.char1, tmp.char2, false);
-;           if (tmp.result != 0 && tmp.result != tmp.char2)
-;               printdigraph(tmp);
-;           ui_breakcheck();
-;       }
-
-;       for (int i = 0; i < @user_digraphs.ga_len && !@got_int; i++)
-;       {
-;           digr_C dp = @user_digraphs.ga_data[i];
-;           printdigraph(dp);
-;           ui_breakcheck();
-;       }
-
-;       @must_redraw = CLEAR;    ;; clear screen, because some digraphs may be wrong,
-                                ;; in which case we messed up "screenLines"
-    ))
-
-(defn- #_void printdigraph [#_digr_C dp]
-    (§
-;       int list_width = 13;
-
-;       if (dp.result != 0)
-;       {
-;           if ((int)@Columns - list_width < @msg_col)
-;               msg_putchar('\n');
-;           if (@msg_col != 0)
-;               while (@msg_col % list_width != 0)
-;                   msg_putchar(' ');
-
-;           Bytes buf = new Bytes(30);
-
-;           Bytes p = buf;
-;           (p = p.plus(1)).be(-1, dp.char1);
-;           (p = p.plus(1)).be(-1, dp.char2);
-;           (p = p.plus(1)).be(-1, (byte)' ');
-
-            ;; add a space to draw a composing char on
-;           if (utf_iscomposing(dp.result))
-;               (p = p.plus(1)).be(-1, (byte)' ');
-;           p = p.plus(utf_char2bytes(dp.result, p));
-
-;           if (mb_char2cells(dp.result) == 1)
-;               (p = p.plus(1)).be(-1, (byte)' ');
-;           vim_snprintf(p, buf.size() - BDIFF(p, buf), u8(" %3d"), dp.result);
-;           msg_outtrans(buf);
-;       }
     ))
 
 ;; mbyte.c: Code specifically for handling multi-byte characters.
@@ -48776,7 +47638,7 @@
         ;; If we're in Insert or Replace mode and 'showmatch' is set,
         ;; then briefly show the match for right parens and braces.
 
-;       if (@p_sm && (@State & INSERT) != 0 && @msg_silent == 0)
+;       if (@p_sm && (@State & INSERT) != 0)
 ;       {
 ;           showmatch(us_ptr2char(buf));
 ;       }
@@ -49111,7 +47973,6 @@
 ;; "lnume" the first line below the changed lines (BEFORE the change).
 ;; When only inserting lines, "lnum" and "lnume" are equal.
 ;; Takes care of calling changed() and updating b_mod_*.
-;; Careful: may trigger autocommands that reload the buffer.
 
 (defn- #_void changed_lines [#_long lnum, #_int col, #_long lnume, #_long xtra]
     ;; lnum: first line with change
@@ -49157,7 +48018,6 @@
 
 ;; Common code for when a change is was made.
 ;; See changed_lines() for the arguments.
-;; Careful: may trigger autocommands that reload the buffer.
 
 (defn- #_void changed_common [#_long lnum, #_int col, #_long lnume, #_long xtra]
     (§
@@ -49165,7 +48025,6 @@
 ;       changed();
 
         ;; set the '. mark
-;       if (!@cmdmod.keepjumps)
 ;       {
 ;           @curbuf.b_last_change.lnum = lnum;
 ;           @curbuf.b_last_change.col = col;
@@ -49454,13 +48313,13 @@
 
 (defn- #_void msgmore [#_long n]
     (§
-;       if (@global_busy != 0            ;; no messages now, wait until global is finished
-;               || !messaging())        ;; 'lazyredraw' set, don't do messages now
+;       if (!messaging())        ;; 'lazyredraw' set, don't do messages now
 ;           return;
 
         ;; We don't want to overwrite another important message, but do overwrite
         ;; a previous "more lines" or "fewer lines" message, so that "5dd" and
         ;; then "put" reports the last action.
+
 ;       if (@keep_msg != null && !@keep_msg_more)
 ;           return;
 
@@ -49472,6 +48331,7 @@
 
 ;       if (@p_report < pn)
 ;       {
+;           Bytes msg_buf = new Bytes(MSG_BUF_LEN);
 ;           if (pn == 1)
 ;           {
 ;               if (0 < n)
@@ -49500,38 +48360,18 @@
 
 (defn- #_void beep_flush []
     (§
-;       if (@emsg_silent == 0)
-;       {
-;           flush_buffers(false);
-;           vim_beep();
-;       }
+;       flush_buffers(false);
+;       vim_beep();
     ))
 
 ;; give a warning for an error
 
 (defn- #_void vim_beep []
     (§
-;       if (@emsg_silent == 0)
-;       {
-;           if (@p_vb)
-;               out_str(@T_VB);
-;           else
-;               out_char(BELL);
-;       }
-    ))
-
-;; Concatenate two strings and return the result in allocated memory.
-
-(defn- #_Bytes concat_str [#_Bytes str1, #_Bytes str2]
-    (§
-;       int len = STRLEN(str1);
-
-;       Bytes dest = new Bytes(len + STRLEN(str2) + 1);
-
-;       STRCPY(dest, str1);
-;       STRCPY(dest.plus(len), str2);
-
-;       return dest;
+;       if (@p_vb)
+;           out_str(@T_VB);
+;       else
+;           out_char(BELL);
     ))
 
 (defn- #_void prepare_to_exit []
@@ -50667,45 +49507,6 @@
 ;       return key__name;
     ))
 
-;; Try translating a <> name at (*srcp)[] to dst[].
-;; Return the number of characters added to dst[], zero for no match.
-;; If there is a match, srcp is advanced to after the <> name.
-;; dst[] must be big enough to hold the result (up to six characters)!
-
-(defn- #_int trans_special [#_Bytes* srcp, #_Bytes dst, #_boolean keycode]
-    ;; keycode: prefer key code, e.g. K_DEL instead of DEL
-    (§
-;       int dlen = 0;
-
-;       int[] modifiers = { 0 };
-;       int key = find_special_key(srcp, modifiers, keycode, false);
-;       if (key == 0)
-;           return 0;
-
-        ;; Put the appropriate modifier in a string.
-;       if (modifiers[0] != 0)
-;       {
-;           dst.be(dlen++, KB_SPECIAL);
-;           dst.be(dlen++, KS_MODIFIER);
-;           dst.be(dlen++, modifiers[0]);
-;       }
-
-;       if (is_special(key))
-;       {
-;           dst.be(dlen++, KB_SPECIAL);
-;           dst.be(dlen++, KEY2TERMCAP0(key));
-;           dst.be(dlen++, KEY2TERMCAP1(key));
-;       }
-;       else if (!keycode)
-;           dlen += utf_char2bytes(key, dst.plus(dlen));
-;       else if (keycode)
-;           dlen = BDIFF(add_char2buf(key, dst.plus(dlen)), dst);
-;       else
-;           dst.be(dlen++, key);
-
-;       return dlen;
-    ))
-
 ;; Try translating a <> name at (*srcp)[], return the key and modifiers.
 ;; srcp is advanced to after the <> name.
 ;; returns 0 if there is no match.
@@ -50921,21 +49722,6 @@
 ;       return @State;
     ))
 
-;; Sort an array of strings.
-
-;   static final Comparator<Bytes> sort__compare = new Comparator<Bytes>()
-;   {
-;       public int compare(Bytes s1, Bytes s2)
-;       {
-;           return STRCMP(s1, s2);
-;       }
-;   };
-
-(defn- #_void sort_strings [#_Bytes* files, #_int count]
-    (§
-;       Arrays.sort(files, 0, count, sort__compare);
-    ))
-
 ;; Print an error message with one or two "%s" and one or two string arguments.
 ;; This is not in message.c to avoid a warning for prototypes.
 
@@ -51054,7 +49840,6 @@
 (atom! int      lastmark)
 
 ;; Save the current line for both the "u" and "U" command.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns true or false.
 
 (defn- #_boolean u_save_cursor []
@@ -51064,14 +49849,10 @@
 
 ;; Save the lines between "top" and "bot" for both the "u" and "U" command.
 ;; "top" may be 0 and bot may be curbuf.b_ml.ml_line_count + 1.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u_save [#_long top, #_long bot]
     (§
-;       if (@undo_off)
-;           return true;
-
 ;       if (@curbuf.b_ml.ml_line_count < top || bot <= top || @curbuf.b_ml.ml_line_count + 1 < bot)
 ;           return false;   ;; rely on caller to do error messages
 
@@ -51083,40 +49864,28 @@
 
 ;; Save the line "lnum" (used by ":s" and "~" command).
 ;; The line is replaced, so the new bottom line is lnum + 1.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u_savesub [#_long lnum]
     (§
-;       if (@undo_off)
-;           return true;
-
 ;       return u_savecommon(lnum - 1, lnum + 1, lnum + 1, false);
     ))
 
 ;; A new line is inserted before line "lnum" (used by :s command).
 ;; The line is inserted, so the new bottom line is lnum + 1.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u_inssub [#_long lnum]
     (§
-;       if (@undo_off)
-;           return true;
-
 ;       return u_savecommon(lnum - 1, lnum, lnum + 1, false);
     ))
 
 ;; Save the lines "lnum" - "lnum" + nlines (used by delete command).
 ;; The lines are deleted, so the new bottom line is lnum, unless the buffer becomes empty.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u_savedel [#_long lnum, #_long nlines]
     (§
-;       if (@undo_off)
-;           return true;
-
 ;       return u_savecommon(lnum - 1, lnum + nlines, (nlines == @curbuf.b_ml.ml_line_count) ? 2 : lnum, false);
     ))
 
@@ -51148,7 +49917,6 @@
 ;; "bot" is the line below the last changed line.
 ;; "newbot" is the new bottom line.  Use zero when not known.
 ;; "reload" is true when saving for a buffer reload.
-;; Careful: may trigger autocommands that reload the buffer.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u_savecommon [#_long top, #_long bot, #_long newbot, #_boolean reload]
@@ -51981,8 +50749,7 @@
     ;; did_undo: just did an undo
     ;; absolute: used ":undo N"
     (§
-;       if (@global_busy != 0            ;; no messages now, wait until global is finished
-;               || !messaging())        ;; 'lazyredraw' set, don't do messages now
+;       if (!messaging())        ;; 'lazyredraw' set, don't do messages now
 ;           return;
 
 ;       if ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0)
@@ -52062,92 +50829,6 @@
 ;       }
     ))
 
-;; ":undolist": List the leafs of the undo tree
-
-(defn- #_void ex_undolist [#_exarg_C _eap]
-    (§
-;       int changes = 1;
-
-            ;; 1: walk the tree to find all leafs, put the info in "ga".
-            ;; 2: sort the lines
-            ;; 3: display the list
-
-;       int mark = ++@lastmark;
-;       int nomark = ++@lastmark;
-
-;       Growing<Bytes> ga = new Growing<Bytes>(Bytes.class, 20);
-
-;       for (u_header_C uhp = @curbuf.b_u_oldhead; uhp != null; )
-;       {
-;           if (uhp.uh_prev.ptr == null && uhp.uh_walk != nomark && uhp.uh_walk != mark)
-;           {
-;               vim_snprintf(@ioBuff, IOSIZE, u8("%6ld %7ld  "), uhp.uh_seq, changes);
-;               u_add_time(@ioBuff.plus(STRLEN(@ioBuff)), IOSIZE - STRLEN(@ioBuff), uhp.uh_time);
-
-;               ga.ga_grow(1);
-;               ga.ga_data[ga.ga_len++] = STRDUP(@ioBuff);
-;           }
-
-;           uhp.uh_walk = mark;
-
-                ;; go down in the tree if we haven't been there
-;           if (uhp.uh_prev.ptr != null
-;                   && uhp.uh_prev.ptr.uh_walk != nomark
-;                   && uhp.uh_prev.ptr.uh_walk != mark)
-;           {
-;               uhp = uhp.uh_prev.ptr;
-;               changes++;
-;           }
-                ;; go to alternate branch if we haven't been there
-;           else if (uhp.uh_alt_next.ptr != null
-;                   && uhp.uh_alt_next.ptr.uh_walk != nomark
-;                   && uhp.uh_alt_next.ptr.uh_walk != mark)
-;           {
-;               uhp = uhp.uh_alt_next.ptr;
-;           }
-                ;; go up in the tree if we haven't been there and we are at the start of alternate branches
-;           else if (uhp.uh_next.ptr != null && uhp.uh_alt_prev.ptr == null
-;                   && uhp.uh_next.ptr.uh_walk != nomark
-;                   && uhp.uh_next.ptr.uh_walk != mark)
-;           {
-;               uhp = uhp.uh_next.ptr;
-;               --changes;
-;           }
-;           else
-;           {
-                    ;; need to backtrack; mark this node as done
-;               uhp.uh_walk = nomark;
-;               if (uhp.uh_alt_prev.ptr != null)
-;                   uhp = uhp.uh_alt_prev.ptr;
-;               else
-;               {
-;                   uhp = uhp.uh_next.ptr;
-;                   --changes;
-;               }
-;           }
-;       }
-
-;       if (ga.ga_len == 0)
-;           msg(u8("Nothing to undo"));
-;       else
-;       {
-;           sort_strings(ga.ga_data, ga.ga_len);
-
-;           msg_start();
-;           msg_puts_attr(u8("number changes  when               saved"), hl_attr(HLF_T));
-;           for (int i = 0; i < ga.ga_len && !@got_int; i++)
-;           {
-;               msg_putchar('\n');
-;               if (@got_int)
-;                   break;
-;               msg_puts(ga.ga_data[i]);
-;           }
-;           msg_end();
-
-;           ga.ga_clear();
-;       }
-    ))
-
 ;; Put the timestamp of an undo header in "buf[buflen]" in a nice format.
 
 (defn- #_void u_add_time [#_Bytes buf, #_int buflen, #_long seconds]
@@ -52164,29 +50845,6 @@
 ;       }
 ;       else
 ;           vim_snprintf(buf, buflen, u8("%ld seconds ago"), libC._time() - seconds);
-    ))
-
-;; ":undojoin": continue adding to the last entry list
-
-(defn- #_void ex_undojoin [#_exarg_C _eap]
-    (§
-;       if (@curbuf.b_u_newhead == null)
-;           return;                             ;; nothing changed before
-;       if (@curbuf.b_u_curhead != null)
-;       {
-;           emsg(u8("E790: undojoin is not allowed after undo"));
-;           return;
-;       }
-;       if (!@curbuf.b_u_synced)
-;           return;                             ;; already unsynced
-;       if (get_undolevel() < 0)
-;           return;                             ;; no entries, nothing to do
-;       else
-;       {
-                ;; Go back to the last entry.
-;           @curbuf.b_u_curhead = @curbuf.b_u_newhead;
-;           @curbuf.b_u_synced = false;          ;; no entries, nothing to do
-;       }
     ))
 
 ;; Get pointer to last added entry.
@@ -52339,13 +50997,9 @@
 ;; Implementation of the "U" command.
 ;; Differentiation from vi: "U" can be undone with the next "U".
 ;; We also allow the cursor to be in another line.
-;; Careful: may trigger autocommands that reload the buffer.
 
 (defn- #_void u_undoline []
     (§
-;       if (@undo_off)
-;           return;
-
 ;       if (@curbuf.b_u_line_ptr == null || @curbuf.b_ml.ml_line_count < @curbuf.b_u_line_lnum)
 ;       {
 ;           beep_flush();
@@ -52563,23 +51217,6 @@
 ;       }
     ))
 
-;; Set number of colors.
-;; Store it as a number in t_colors.
-;; Store it as a string in T_CCO (using nr_colors[]).
-
-(defn- #_void set_color_count [#_int nr]
-    (§
-;       @t_colors = nr;
-
-;       Bytes nr_colors = new Bytes(20);
-;       if (1 < @t_colors)
-;           libC.sprintf(nr_colors, u8("%d"), @t_colors);
-;       else
-;           nr_colors.be(0, NUL);
-
-;       set_string_option_direct(u8("t_Co"), nr_colors);
-    ))
-
 ;; Set terminal options for terminal "term".
 ;; Return true if terminal 'term' was found in a termcap, false otherwise.
 ;;
@@ -52609,7 +51246,6 @@
 ;           }
 ;           term = DEFAULT_TERM;
 ;           libC.fprintf(stderr, u8("defaulting to '%s'\r\n"), term);
-;           if (@emsg_silent == 0)
 ;           {
 ;               screen_start();         ;; don't know where cursor is now
 ;               out_flush();
@@ -52707,17 +51343,10 @@
     ))
 
 ;; Set the terminal name and initialize the terminal options.
-;; If "name" is null or empty, get the terminal name from the environment.
-;; If that fails, use the default terminal name.
 
-(defn- #_void termcapinit [#_Bytes name]
+(defn- #_void termcapinit []
     (§
-;       if (name != null && name.at(0) == NUL)
-;           name = null;        ;; empty name is equal to no name
-
-;       Bytes term = name;
-;       if (term == null)
-;           term = libC.getenv(u8("TERM"));
+;       Bytes term = libC.getenv(u8("TERM"));
 ;       if (term == null || term.at(0) == NUL)
 ;           term = DEFAULT_TERM;
 
@@ -54431,65 +53060,6 @@
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;           if (@curbuf == buf)
 ;               redraw_win_later(wp, type);
-    ))
-
-;; Redraw as soon as possible.  When the command line is not scrolled
-;; redraw right away and restore what was on the command line.
-;; Return a code indicating what happened.
-
-(defn- #_int redraw_asap [#_int type]
-    (§
-;       int ret = 0;
-
-;       redraw_later(type);
-;       if (@msg_scrolled != 0 || (@State != NORMAL && @State != NORMAL_BUSY))
-;           return ret;
-
-        ;; Allocate space to save the text displayed in the command line area.
-;       int rows = (int)@Rows - @cmdline_row;
-;       Bytes slis = new Bytes(rows * (int)@Columns);
-;       int[] sats = new int[rows * (int)@Columns];
-
-;       int[] sluc = new int[rows * (int)@Columns];
-;       int[][] smco = new int[MAX_MCO][];
-;       for (int i = 0; i < @p_mco; i++)
-;           smco[i] = new int[rows * (int)@Columns];
-
-        ;; Save the text displayed in the command line area.
-;       for (int r = 0; r < rows; r++)
-;       {
-;           int off = @lineOffset[@cmdline_row + r];
-
-;           BCOPY(slis, r * (int)@Columns, @screenLines, off, (int)@Columns);
-;           ACOPY(sats, r * (int)@Columns, @screenAttrs, off, (int)@Columns);
-;           ACOPY(sluc, r * (int)@Columns, @screenLinesUC, off, (int)@Columns);
-;           for (int i = 0; i < @p_mco; i++)
-;               ACOPY(smco[i], r * (int)@Columns, @screenLinesC[i], off, (int)@Columns);
-;       }
-
-;       update_screen(0);
-;       ret = 3;
-
-;       if (@must_redraw == 0)
-;       {
-;           int off = BDIFF(@current_ScreenLine, @screenLines);
-
-            ;; Restore the text displayed in the command line area.
-;           for (int r = 0; r < rows; r++)
-;           {
-;               BCOPY(@current_ScreenLine, 0, slis, r * (int)@Columns, (int)@Columns);
-;               ACOPY(@screenAttrs, off, sats, r * (int)@Columns, (int)@Columns);
-;               ACOPY(@screenLinesUC, off, sluc, r * (int)@Columns, (int)@Columns);
-;               for (int i = 0; i < @p_mco; i++)
-;                   ACOPY(@screenLinesC[i], off, smco[i], r * (int)@Columns, (int)@Columns);
-;               screen_line(@cmdline_row + r, 0, (int)@Columns, (int)@Columns, false);
-;           }
-;           ret = 4;
-;       }
-
-;       setcursor();
-
-;       return ret;
     ))
 
 ;; Changed something in the current window, at buffer line "lnum", that
@@ -57279,18 +55849,6 @@
 ;           }
     ))
 
-;; mark all status lines of the current buffer for redraw
-
-(defn- #_void status_redraw_curbuf []
-    (§
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_status_height != 0)
-;           {
-;               wp.w_redr_status = true;
-;               redraw_later(VALID);
-;           }
-    ))
-
 ;; Redraw all status lines that need to be redrawn.
 
 (defn- #_void redraw_statuslines []
@@ -58254,7 +56812,7 @@
 
 (defn- #_void check_for_delay [#_boolean check_msg_scroll]
     (§
-;       if ((@emsg_on_display || (check_msg_scroll && @msg_scroll)) && !@did_wait_return && @emsg_silent == 0)
+;       if ((@emsg_on_display || (check_msg_scroll && @msg_scroll)) && !@did_wait_return)
 ;       {
 ;           out_flush();
 ;           ui_delay(1000, true);
@@ -59290,14 +57848,14 @@
     (§
 ;       int length = 0;
 
-;       boolean do_mode = ((@p_smd && @msg_silent == 0) && ((@State & INSERT) != 0 || @restart_edit != 0 || @VIsual_active));
+;       boolean do_mode = (@p_smd && ((@State & INSERT) != 0 || @restart_edit != 0 || @VIsual_active));
 ;       if (do_mode || @Recording)
 ;       {
             ;; Don't show mode right now, when not redrawing or inside a mapping.
             ;; Call char_avail() only when we are going to show something, because
             ;; it takes a bit of time.
 
-;           if (!redrawing() || (char_avail() && !@keyTyped) || @msg_silent != 0)
+;           if (!redrawing() || (char_avail() && !@keyTyped))
 ;           {
 ;               @redraw_cmdline = true;              ;; show mode later
 ;               return 0;
@@ -59371,7 +57929,7 @@
 ;           @msg_col = 0;
 ;           @need_wait_return = nwr_save;    ;; never ask for hit-return for this
 ;       }
-;       else if (@clear_cmdline && @msg_silent == 0)
+;       else if (@clear_cmdline)
             ;; Clear the whole command line.  Will reset "clear_cmdline".
 ;           msg_clr_cmdline();
 
@@ -59698,37 +58256,6 @@
 ;               win_split((int)Prenum, WSP_VERT);
 ;               break;
 
-            ;; split current window and edit alternate file
-;           case Ctrl_HAT:
-;           case '^':
-;               if (@cmdwin_type != 0)
-;               {
-;                   emsg(e_cmdwin);
-;                   break;
-;               }
-;               reset_VIsual_and_resel();
-;               cmd_with_count(u8("split #"), cbuf, cbuf.size(), Prenum);
-;               do_cmdline_cmd(cbuf);
-;               break;
-
-            ;; open new window
-;           case Ctrl_N:
-;           case 'n':
-;               if (@cmdwin_type != 0)
-;               {
-;                   emsg(e_cmdwin);
-;                   break;
-;               }
-;               reset_VIsual_and_resel();
-;               if (Prenum != 0)
-                    ;; window height
-;                   vim_snprintf(cbuf, cbuf.size() - 5, u8("%ld"), Prenum);
-;               else
-;                   cbuf.be(0, NUL);
-;               STRCAT(cbuf, u8("new"));
-;               do_cmdline_cmd(cbuf);
-;               break;
-
             ;; quit current window
 ;           case Ctrl_Q:
 ;           case 'q':
@@ -60044,8 +58571,6 @@
 
 (defn- #_boolean win_split [#_int size, #_int flags]
     (§
-        ;; Add flags from ":vertical", ":topleft" and ":botright".
-;       flags |= @cmdmod.split;
 ;       if ((flags & WSP_TOP) != 0 && (flags & WSP_BOT) != 0)
 ;       {
 ;           emsg(u8("E442: Can't split topleft and botright at the same time"));
@@ -65187,47 +63712,15 @@
 
 (final cmdname_C* cmdnames
     [
-        (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "ascii"),         ex_ascii,            CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
-        (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-        (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "startreplace"),  ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
-        (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
-        (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
     ])
 
 ;;; ============================================================================================== VimZ
