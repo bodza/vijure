@@ -41234,143 +41234,101 @@
                         (let [[#_int c #_int mb_c #_boolean mb_utf8] ;; decoded multi-byte character ;; screen char is UTF-8 char
                         ]
                                 (cond (< 0 @a'n_extra)
-                                    (let [[c mb_c mb_utf8]
-                                            (cond (!= @a'c_extra NUL)
-                                                (if (< 1 (utf-char2len c))
-                                                    (do (aset u8cc 0 0) [0xc0 @a'c_extra true])
-                                                    [@a'c_extra @a'c_extra false])
-                                            :else
-                                                (let [#_int mb_l (us-ptr2len-cc @a'p_extra)
-                                                      ;; If the UTF-8 character is more than one byte, decode it into "mb_c".
-                                                      [c mb_c mb_utf8 mb_l]
-                                                        (cond
-                                                            (< @a'n_extra mb_l) (let [c (.at @a'p_extra 0)] [c c false 1])
-                                                            (< 1 mb_l)          [0xc0 (us-ptr2char-cc @a'p_extra, u8cc) true mb_l]
-                                                            :else               (let [c (.at @a'p_extra 0)] [c c false mb_l]))
-                                                      mb_l (if (zero? mb_l) 1 mb_l)] ;; at the NUL at end-of-line
-                                                    ;; If a double-width char doesn't fit, display a '>' in the last column.
-                                                    (if (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
-                                                        (do (reset! a'multi_attr (hl-attr HLF_AT))
-                                                            ;; put the pointer back to output the double-width
-                                                            ;; character at the start of the next line
-                                                            (reset! a'n_extra (inc @a'n_extra))
-                                                            [(byte \>) (byte \>) false])
-                                                        (do (reset! a'n_extra (- @a'n_extra (dec mb_l)))
-                                                            (reset! a'p_extra (.plus @a'p_extra mb_l))
-                                                            [c mb_c mb_utf8])
-                                                    ))
-                                            )]
-                                        (reset! a'n_extra (dec @a'n_extra))
-                                        [c mb_c mb_utf8]
-                                    )
+                                    (if (!= @a'c_extra NUL)
+                                        (do (reset! a'n_extra (dec @a'n_extra))
+                                            (if (< 1 (utf-char2len c))
+                                                (do (aset u8cc 0 0) [0xc0 @a'c_extra true])
+                                                [@a'c_extra @a'c_extra false]
+                                            ))
+                                        (let [#_int l (us-ptr2len-cc @a'p_extra)
+                                              ;; If the UTF-8 character is more than one byte, decode it into "mb_c".
+                                              [c mb_c mb_utf8 l]
+                                                (cond
+                                                    (< @a'n_extra l) (let [c (.at @a'p_extra 0)] [c c false 1])
+                                                    (< 1 l)          [0xc0 (us-ptr2char-cc @a'p_extra, u8cc) true l]
+                                                    :else            (let [c (.at @a'p_extra 0)] [c c false l]))
+                                                l (if (zero? l) 1 l)] ;; at the NUL at end-of-line
+                                            ;; If a double-width char doesn't fit, display a '>' in the last column.
+                                            (if (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
+                                                (do (reset! a'multi_attr (hl-attr HLF_AT))
+                                                    [(byte \>) (byte \>) false])
+                                                (do (reset! a'n_extra (- @a'n_extra l))
+                                                    (reset! a'p_extra (.plus @a'p_extra l))
+                                                    [c mb_c mb_utf8]
+                                                ))
+                                        ))
                                 :else ;; Get a character from the line itself.
-                                    (let [#_int mb_l (us-ptr2len-cc @a's)
+                                    (let [#_int l (us-ptr2len-cc @a's)
                                           ;; If the UTF-8 character is more than one byte, decode it into "mb_c".
                                           [c mb_c mb_utf8]
-                                            (if (< 1 mb_l)
+                                            (if (< 1 l)
                                                 (let [c (.at @a's 0) mb_c (us-ptr2char-cc @a's, u8cc)
-                                                      ;; Overlong encoded ASCII or ASCII with composing char
-                                                      ;; is displayed normally, except a NUL.
+                                                      ;; Overlong encoded ASCII or ASCII with composing char is displayed normally, except a NUL.
                                                       c (if (< mb_c 0x80) mb_c c)
-                                                      ;; At start of the line we can have a composing char.
-                                                      ;; Draw it as a space with a composing char.
+                                                      ;; At start of the line we can have a composing char.  Draw it as a space with a composing char.
                                                       mb_c (if (utf-iscomposing mb_c)
                                                             (loop-when-recur [i (dec @screen_mco)] (< 0 i) [(dec i)] => (do (aset u8cc 0 mb_c) (byte \space))
                                                                 (aset u8cc i (aget u8cc (dec i))))
                                                             mb_c
                                                         )]
                                                     [c mb_c true])
-                                                (let [c (.at @a's 0)] [c c false])
+                                                (let [c (.at @a's 0)] [c c false]))
+                                          [c mb_c mb_utf8]
+                                            (if (or (and (== l 1) (<= 0x80 c)) (and (<= 1 l) (zero? mb_c)) (and (< 1 l) (not (vim-isprintc mb_c))))
+                                                ;; Illegal UTF-8 byte: display as <xx>.  Non-BMP character: display as ? or fullwidth ?.
+                                                (let [_ (transchar-hex s_extra, mb_c) s s_extra c (.at s 0)
+                                                      [mb_c s] (let [__ (atom (#_Bytes object s))] [(us-ptr2char-adv __, true) @__])]
+                                                    (reset! a'n_extra (STRLEN s))
+                                                    (reset! a'p_extra s)
+                                                    (reset! a'c_extra NUL)
+                                                    (when (and (zero? @a'area_attr) (zero? @a'search_attr))
+                                                        (reset! a'n_attr (inc @a'n_extra))
+                                                        (reset! a'extra_attr (hl-attr HLF_8))
+                                                        (reset! a'saved_attr2 @a'char_attr)) ;; save current attr
+                                                    [c mb_c (<= 0x80 c)])
+                                                [c mb_c mb_utf8])
+                                          l (if (zero? l) 1 l) ;; at the NUL at end-of-line
+                                          ;; If a double-width char doesn't fit, display a '>' in the last column.
+                                          [c mb_c mb_utf8 l]
+                                            (if (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
+                                                ;; Put pointer back so the character will be displayed at the start of the next line.
+                                                (do (reset! a's (.minus @a's 1))
+                                                    (reset! a'multi_attr (hl-attr HLF_AT))
+                                                    [(byte \>) (byte \>) false 1])
+                                                (do (when (non-eos? @a's)
+                                                        (reset! a's (.plus @a's (dec l))))
+                                                    [c mb_c mb_utf8 l]
+                                                ))
+                                          _ (reset! a's (.plus @a's 1))
+                                          ;; If a double-width char doesn't fit at the left side, display a '<' in the first column.
+                                          ;; Don't do this for unprintable characters.
+                                          [c mb_c mb_utf8]
+                                            (if (and (< 0 @a'n_skip) (< 1 l) (zero? @a'n_extra))
+                                                (do (reset! a'n_extra 1)
+                                                    (reset! a'c_extra MB_FILLER_CHAR)
+                                                    (when (and (zero? @a'area_attr) (zero? @a'search_attr))
+                                                        (reset! a'n_attr (inc @a'n_extra))
+                                                        (reset! a'extra_attr (hl-attr HLF_AT))
+                                                        (reset! a'saved_attr2 @a'char_attr)) ;; save current attr
+                                                    [(byte \space) (byte \space) false])
+                                                [c mb_c mb_utf8])
+                                          ;; Found last space before word: check for line break.
+                                          c (if (and wo_lbr (... @breakat_flags (char_u (byte c))) (not (... @breakat_flags (char_u (.at @a's 0)))))
+                                                (let [#_int i (us-head-off @a'line, (.minus @a's 1)) #_Bytes p (.minus @a's (inc i)) ts @(:b_p_ts @curbuf)]
+                                                    ;; TODO: is passing 'p' for start of the line OK?
+                                                    (reset! a'n_extra (dec (win-lbr-chartabsize win, @a'line, p, @a'vcol, nil)))
+                                                    (reset! a'n_extra (if (and (== c TAB) (< (:w_width win) (+ @a'n_extra @a'col))) (- ts (% @a'vcol ts) 1) @a'n_extra))
+                                                    (reset! a'c_extra (if (< 0 i) MB_FILLER_CHAR (byte \space)))
+                                                    (if (vim-iswhite c)
+                                                        (do (when (== c TAB) ;; See "Tab alignment" below.
+                                                                (reset! a'n_extra (+ @a'n_extra @a'vcol_off))
+                                                                (reset! a'vcol (- @a'vcol @a'vcol_off))
+                                                                (reset! a'vcol_off 0))
+                                                            (byte \space))
+                                                        c
+                                                    ))
+                                                c
                                             )]
-
-                                        (cond (or (and (== mb_l 1) (<= 0x80 c)) (and (<= 1 mb_l) (zero? mb_c)) (and (< 1 mb_l) (not (vim-isprintc mb_c))))
-                                        (do
-                                            ;; Illegal UTF-8 byte: display as <xx>.
-                                            ;; Non-BMP character : display as ? or fullwidth ?.
-
-                                            (transchar-hex s_extra, mb_c)
-
-                                            ((ß @a'p_extra =) s_extra)
-                                            ((ß c =) (.at @a'p_extra 0))
-                                            (let [__ (atom (#_Bytes object @a'p_extra))]
-                                                ((ß mb_c =) (us-ptr2char-adv __, true))
-                                                ((ß @a'p_extra =) @__))
-                                            ((ß mb_utf8 =) (<= 0x80 c))
-                                            ((ß @a'n_extra =) (STRLEN @a'p_extra))
-                                            ((ß @a'c_extra =) NUL)
-                                            (when (and (zero? @a'area_attr) (zero? @a'search_attr))
-                                                ((ß @a'n_attr =) (inc @a'n_extra))
-                                                ((ß @a'extra_attr =) (hl-attr HLF_8))
-                                                ((ß @a'saved_attr2 =) @a'char_attr)    ;; save current attr
-                                            )
-                                        )
-                                        (zero? mb_l)                 ;; at the NUL at end-of-line
-                                        (do
-                                            ((ß mb_l =) 1)
-                                        ))
-
-                                        ;; If a double-width char doesn't fit, display a '>' in the last column;
-                                        ;; the character is displayed at the start of the next line.
-                                        (cond (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
-                                        (do
-                                            ((ß c =) (byte \>))
-                                            ((ß mb_c =) c)
-                                            ((ß mb_utf8 =) false)
-                                            ((ß mb_l =) 1)
-                                            ((ß @a'multi_attr =) (hl-attr HLF_AT))
-                                            ;; Put pointer back so that the character will be
-                                            ;; displayed at the start of the next line.
-                                            ((ß @a's =) (.minus @a's 1))
-                                        )
-                                        (non-eos? @a's)
-                                        (do
-                                            ((ß @a's =) (.plus @a's (dec mb_l)))
-                                        ))
-
-                                        ;; If a double-width char doesn't fit at the left side, display a '<'
-                                        ;; in the first column.  Don't do this for unprintable characters.
-                                        (when (and (< 0 @a'n_skip) (< 1 mb_l) (zero? @a'n_extra))
-                                            ((ß @a'n_extra =) 1)
-                                            ((ß @a'c_extra =) MB_FILLER_CHAR)
-                                            ((ß c =) (byte \space))
-                                            (when (and (zero? @a'area_attr) (zero? @a'search_attr))
-                                                ((ß @a'n_attr =) (inc @a'n_extra))
-                                                ((ß @a'extra_attr =) (hl-attr HLF_AT))
-                                                ((ß @a'saved_attr2 =) @a'char_attr)    ;; save current attr
-                                            )
-                                            ((ß mb_c =) c)
-                                            ((ß mb_utf8 =) false)
-                                            ((ß mb_l =) 1)
-                                        )
-
-                                        ((ß @a's =) (.plus @a's 1))
-
-                                        (when wo_lbr
-                                            ;; Get syntax attribute, unless still at the start of the line
-                                            ;; (double-wide char that doesn't fit).
-                                            ((ß int v =) (BDIFF @a's, @a'line))
-
-                                            ;; Found last space before word: check for line break.
-
-                                            (when (and wo_lbr (... @breakat_flags (char_u (byte c))) (not (... @breakat_flags (char_u (.at @a's 0)))))
-                                                ((ß int mb_off =) (us-head-off @a'line, (.minus @a's 1)))
-                                                ((ß Bytes p =) (.minus @a's (inc mb_off)))
-
-                                                ;; TODO: is passing 'p' for start of the line OK?
-                                                ((ß @a'n_extra =) (dec (win-lbr-chartabsize win, @a'line, p, @a'vcol, nil)))
-                                                ((ß @a'n_extra =) (if (and (== c TAB) (< (:w_width win) (+ @a'n_extra @a'col))) (- (int @(:b_p_ts @curbuf)) (% @a'vcol (int @(:b_p_ts @curbuf))) 1) @a'n_extra))
-
-                                                ((ß @a'c_extra =) (if (< 0 mb_off) MB_FILLER_CHAR (byte \space)))
-                                                (when (vim-iswhite c)
-                                                    (when (== c TAB)       ;; See "Tab alignment" below.
-                                                        ((ß @a'n_extra =) (+ @a'n_extra @a'vcol_off))
-                                                        ((ß @a'vcol =) (- @a'vcol @a'vcol_off))
-                                                        ((ß @a'vcol_off =) 0)
-                                                    )
-                                                    ((ß c =) (byte \space))
-                                                )
-                                            )
-                                        )
 
                                         ;; Handling of non-printable characters.
 
