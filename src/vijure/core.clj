@@ -2913,47 +2913,25 @@
 ;; Return true when size could be determined, false otherwise.
 
 (defn- #_boolean mch-get-shellsize []
-    (§
-        ((ß long rows =) 0)
-        ((ß long cols =) 0)
-
-        ;; 1. try using an ioctl.  It is the most accurate method.
-;       {
-            ((ß int fd =) 1)
-
-            ;; When stdout is not a tty, use stdin for the ioctl().
-            ((ß fd =) (if (and (== (.isatty libc fd) 0) (!= (.isatty libc @read_cmd_fd) 0)) @read_cmd_fd fd))
-
-            ((ß winsize_C ws =) (new winsize_C))
-
-            (when (== (.ioctl libc fd, TIOCGWINSZ, ws) 0)
-                ((ß rows =) (.ws_row ws))
-                ((ß cols =) (.ws_col ws))
-            )
-;       }
-
-        ;; 2. get size from environment
-
-        (when (or (zero? cols) (zero? rows))
-            (ß Bytes p)
-            (if (some? ((ß p =) (.getenv libC (u8 "LINES"))))
-                ((ß rows =) (.atoi libC p))
-            )
-            (if (some? ((ß p =) (.getenv libC (u8 "COLUMNS"))))
-                ((ß cols =) (.atoi libC p))
-            )
-        )
-
-        ;; 4. If everything fails, use the old values
-
-        (if (or (<= cols 0) (<= rows 0))
-            ((ß RETURN) false)
-        )
-
-        (reset! Rows rows)
-        (reset! Cols cols)
-        (limit-screen-size)
-        true
+    (§ let [#_long rows 0 #_long cols 0
+          ;; 1.  Try using an ioctl().  It is the most accurate method.
+          #_int fd 1
+          ;; When stdout is not a tty, use stdin for the ioctl().
+          fd (if (and (zero? (.isatty libc fd)) (non-zero? (.isatty libc @read_cmd_fd))) @read_cmd_fd fd)
+          [rows cols] (let [#_winsize_C ws (new winsize_C)] (if (zero? (.ioctl libc fd, TIOCGWINSZ, ws)) [(.ws_row ws) (.ws_col ws)] [rows cols]))
+          ;; 2.  Get size from environment.
+          [rows cols] (if (or (zero? cols) (zero? rows))
+                            (let [#_Bytes p (.getenv libC (u8 "LINES"))   rows (if (some? p) (.atoi libC p) rows)
+                                          p (.getenv libC (u8 "COLUMNS")) cols (if (some? p) (.atoi libC p) cols)]
+                            [rows cols]) [rows cols])
+        ] ;; 4.  If everything fails, use the old values.
+        (and (< 0 cols) (< 0 rows)
+            (do
+                (reset! Rows rows)
+                (reset! Cols cols)
+                (limit-screen-size)
+                true
+            ))
     ))
 
 ;; Try to set the window size to Rows and Cols.
@@ -6890,38 +6868,30 @@
 ;; Give message for number of substitutions.
 ;; Return true if a message was given.
 
-(defn- #_boolean do-sub-msg [#_boolean count_only]
-    ;; count_only: used 'n' flag for ":s"
-    (§
-        ;; Only report substitutions when:
-        ;; - more than 'report' substitutions
-        ;; - command was typed by user, or number of changed lines > 'report'
-        ;; - giving messages is not disabled by 'lazyredraw'
-
-        (when (and (or (and (< @p_report @sub_nsubs) (or @keyTyped (< 1 @sub_nlines) (< @p_report 1))) count_only) (messaging))
-            ((ß Bytes msg_buf =) (Bytes. MSG_BUF_LEN))
+(defn- #_boolean do-sub-msg [#_boolean count_only] ;; count_only: used 'n' flag for ":s"
+    ;; Only report substitutions when:
+    ;; - more than 'report' substitutions
+    ;; - command was typed by user, or number of changed lines > 'report'
+    ;; - giving messages is not disabled by 'lazyredraw'
+    (cond (and (or (and (< @p_report @sub_nsubs) (or @keyTyped (< 1 @sub_nlines) (< @p_report 1))) count_only) (messaging))
+        (let [#_Bytes buf (Bytes. MSG_BUF_LEN)]
             (if @got_int
-                (STRCPY msg_buf, (u8 "(Interrupted) "))
-                (eos! msg_buf)
+                (STRCPY buf, (u8 "(Interrupted) "))
+                (eos! buf)
             )
-            (if (== @sub_nsubs 1)
-                (vim_snprintf_add msg_buf, MSG_BUF_LEN, (u8 "%s"), (if count_only (u8 "1 match") (u8 "1 substitution")))
-                (vim_snprintf_add msg_buf, MSG_BUF_LEN, (if count_only (u8 "%ld matches") (u8 "%ld substitutions")), @sub_nsubs)
+            (§ if (== @sub_nsubs 1)
+                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (if count_only (u8 "1 match") (u8 "1 substitution")))
+                (vim_snprintf_add buf, MSG_BUF_LEN, (if count_only (u8 "%ld matches") (u8 "%ld substitutions")), @sub_nsubs)
             )
-            (if (== @sub_nlines 1)
-                (vim_snprintf_add msg_buf, MSG_BUF_LEN, (u8 "%s"), (u8 " on 1 line"))
-                (vim_snprintf_add msg_buf, MSG_BUF_LEN, (u8 " on %ld lines"), @sub_nlines)
+            (§ if (== @sub_nlines 1)
+                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (u8 " on 1 line"))
+                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 " on %ld lines"), @sub_nlines)
             )
-            (when (msg msg_buf)
-                ;; save message to display it after redraw
-                (set-keep-msg msg_buf, 0)
-            )
-            ((ß RETURN) true)
-        )
-        (when @got_int
-            (emsg e_interr)
-            ((ß RETURN) true)
-        )
+            (when (msg buf) (set-keep-msg buf, 0)) ;; save message to display it after redraw
+            true)
+    @got_int
+        (do (emsg e_interr) true)
+    :else
         false
     ))
 
@@ -11017,49 +10987,26 @@
 ;; Return true if output has been written (and setcursor() has been called).
 
 (defn- #_boolean add-to-showcmd [#_int c]
-    (§
-        (if (not @p_sc)
-            ((ß RETURN) false)
-        )
-
-        (when @showcmd_visual
-            (eos! showcmd_buf)
-            (reset! showcmd_visual false)
-        )
-
-        ;; Ignore keys that are scrollbar updates and mouse clicks.
-        (when (is-special c)
-            (loop-when-recur [#_int i 0] (!= (... ignore_showcmd i) 0) [(inc i)]
-                (if (== (... ignore_showcmd i) c)
-                    ((ß RETURN) false)
-                )
-            )
-        )
-
-        ((ß Bytes p =) (transchar c))
-        (if (at? p (byte \space))
-            (STRCPY p, (u8 "<20>")))
-
-        ((ß int old_len =) (STRLEN showcmd_buf))
-        ((ß int extra_len =) (STRLEN p))
-        ((ß int overflow =) (- (+ old_len extra_len) SHOWCMD_COLS))
-        (if (< 0 overflow)
-            (BCOPY showcmd_buf, 0, showcmd_buf, overflow, (inc (- old_len overflow))))
-        (STRCAT showcmd_buf, p)
-
-        (if (char-avail)
-            ((ß RETURN) false)
-        )
-
-        (display-showcmd)
-
-        true
+    (and @p_sc
+        (do
+            (when @showcmd_visual (eos! showcmd_buf) (reset! showcmd_visual false))
+            ;; Ignore keys that are scrollbar updates and mouse clicks.
+            (let-when [_ (when (is-special c) (loop-when [#_int i 0] (!= (... ignore_showcmd i) 0) (recur-if (!= (... ignore_showcmd i) c) [(inc i)] => false)))] (nil? _) => _
+                (let [#_Bytes p (transchar c)]
+                    (when (at? p (byte \space))
+                        (STRCPY p, (u8 "<20>")))
+                    (let [#_int olen (STRLEN showcmd_buf) #_int elen (STRLEN p) #_int overflow (- (+ olen elen) SHOWCMD_COLS)]
+                        (when (< 0 overflow)
+                            (BCOPY showcmd_buf, 0, showcmd_buf, overflow, (inc (- olen overflow))))
+                        (STRCAT showcmd_buf, p)
+                    ))
+                (and (not (char-avail)) (do (display-showcmd) true))
+            ))
     ))
 
 (defn- #_void add-to-showcmd-c [#_int c]
     (when (not (add-to-showcmd c))
-        (setcursor)
-    )
+        (setcursor))
     nil)
 
 ;; Delete 'len' characters from the end of the shown command.
@@ -11067,35 +11014,30 @@
 (defn- #_void del-from-showcmd [#_int len]
     (when @p_sc
         (let [#_int old_len (STRLEN showcmd_buf) len (min len old_len)]
-            (eos! showcmd_buf (- old_len len))
-        )
+            (eos! showcmd_buf (- old_len len)))
         (when (not (char-avail))
-            (display-showcmd)
-        )
-    )
+            (display-showcmd)))
     nil)
 
-;; push-showcmd() and pop-showcmd() are used when waiting for the user
-;; to type something and there is a partial mapping.
+;; push-showcmd() and pop-showcmd() are used when waiting for
+;; the user to type something and there is a partial mapping.
 
 (defn- #_void push-showcmd []
     (when @p_sc
-        (STRCPY old_showcmd_buf, showcmd_buf)
-    )
+        (STRCPY old_showcmd_buf, showcmd_buf))
     nil)
 
 (defn- #_void pop-showcmd []
     (when @p_sc
         (STRCPY showcmd_buf, old_showcmd_buf)
-        (display-showcmd)
-    )
+        (display-showcmd))
     nil)
 
 (defn- #_void display-showcmd []
     (cursor-off)
 
     (let [#_int len (STRLEN showcmd_buf)]
-        (if (pos? len)
+        (when (pos? len)
             (screen-puts showcmd_buf, (dec @Rows), @sc_col, 0))
         ;; clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
         (screen-puts (.plus (u8 "          ") len), (dec @Rows), (+ @sc_col len), 0)
@@ -11124,7 +11066,7 @@
         (do
             ;; Synchronize other windows, as necessary according to 'scrollbind'.
             (when (or (!= (:w_topline @curwin) @scr_old_topline) (!= (:w_leftcol @curwin) @scr_old_leftcol))
-                (check-scrollbind (- (:w_topline @curwin) @scr_old_topline), (long (- (:w_leftcol @curwin) @scr_old_leftcol)))
+                (check-scrollbind (- (:w_topline @curwin) @scr_old_topline), (- (:w_leftcol @curwin) @scr_old_leftcol))
             )
         )
         (some? (vim-strchr @p_sbo, (byte \j))) ;; jump flag set in 'scrollopt'
@@ -11357,47 +11299,32 @@
 ;; Scroll "count" lines up or down, and redraw.
 
 (defn- #_void scroll-redraw [#_boolean up, #_long count]
-    (§
-        ((ß long prev_topline =) (:w_topline @curwin))
-        ((ß long prev_lnum =) (:lnum (:w_cursor @curwin)))
-
+    (let [#_long prev_topline (:w_topline @curwin) #_long prev_lnum (:lnum (:w_cursor @curwin))]
         (if up
             (scrollup count)
             (scrolldown count))
         (when (non-zero? @p_so)
-            ;; Adjust the cursor position for 'scrolloff'.  Mark w_topline as valid,
-            ;; otherwise the screen jumps back at the end of the file.
+            ;; Adjust the cursor position for 'scrolloff'.
+            ;; Mark w_topline as valid, otherwise the screen jumps back at the end of the file.
             (cursor-correct)
             (check-cursor-moved @curwin)
             (swap! curwin update :w_valid | VALID_TOPLINE)
-
-            ;; If moved back to where we were, at least move the cursor, otherwise
-            ;; we get stuck at one position.  Don't move the cursor up if the
-            ;; first line of the buffer is already on the screen.
+            ;; If moved back to where we were, at least move the cursor, otherwise we get stuck at one position.
+            ;; Don't move the cursor up if the first line of the buffer is already on the screen.
             (loop-when [] (== (:w_topline @curwin) prev_topline)
-                (cond up
-                (do
-                    (if (or (< prev_lnum (:lnum (:w_cursor @curwin))) (not (cursor-down 1, false)))
-                        (ß BREAK)
-                    )
-                )
-                :else
-                (do
-                    (if (or (< (:lnum (:w_cursor @curwin)) prev_lnum) (== prev_topline 1) (not (cursor-up 1, false)))
-                        (ß BREAK)
-                    )
-                ))
-                ;; Mark w_topline as valid, otherwise the screen jumps back at the end of the file.
-                (check-cursor-moved @curwin)
-                (swap! curwin update :w_valid | VALID_TOPLINE)
-                (recur)
-            )
-        )
-        (if (!= (:lnum (:w_cursor @curwin)) prev_lnum)
+                (let-when [_ (if up
+                                (if (or (< prev_lnum (:lnum (:w_cursor @curwin))) (not (cursor-down 1, false))) :_)
+                                (if (or (< (:lnum (:w_cursor @curwin)) prev_lnum) (== prev_topline 1) (not (cursor-up 1, false))) :_)
+                            )] (nil? _)
+                    ;; Mark w_topline as valid, otherwise the screen jumps back at the end of the file.
+                    (check-cursor-moved @curwin)
+                    (swap! curwin update :w_valid | VALID_TOPLINE)
+                    (recur))
+            ))
+        (when (!= (:lnum (:w_cursor @curwin)) prev_lnum)
             (coladvance (:w_curswant @curwin)))
-        (redraw-win-later @curwin, VALID)
-        nil
-    ))
+        (redraw-win-later @curwin, VALID))
+    nil)
 
 ;; Commands that start with "z".
 
@@ -14611,48 +14538,23 @@
 ;; If regname is 0 and reading, use previous register.
 
 (defn- #_void get-yank-register [#_int regname, #_boolean writing]
-    (§
-        (reset! y_append false)
-
-        (when (and (or (zero? regname) (== regname (byte \"))) (not writing) (some? @y_previous))    ;; """
-            (reset! y_current @y_previous)
-            ((ß RETURN) nil)
-        )
-
-        ((ß int i =) regname)
-        (cond (asc-isdigit i)
-        (do
-            ((ß i =) (- i (byte \0)))
-        )
-        (asc-islower i)
-        (do
-            ((ß i =) (+ (lowerOrd i) 10))
-        )
-        (asc-isupper i)
-        (do
-            ((ß i =) (+ (upperOrd i) 10))
-            (reset! y_append true)
-        )
-        (== regname (byte \-))
-        (do
-            ((ß i =) DELETION_REGISTER)
-        )
-        (and (not writing) (== regname (byte \~)))
-        (do
-            ((ß i =) TILDE_REGISTER)
-        )
-        :else                ;; not 0-9, a-z, A-Z or '-': use register 0
-        (do
-            ((ß i =) 0)
+    (reset! y_append false)
+    (if (and (or (zero? regname) (== regname (byte \"))) (not writing) (some? @y_previous))    ;; """
+        (reset! y_current @y_previous)
+        (let [#_int i regname
+              i (cond
+                    (asc-isdigit i) (- i (byte \0))
+                    (asc-islower i) (+ (lowerOrd i) 10)
+                    (asc-isupper i) (do (reset! y_append true) (+ (upperOrd i) 10))
+                    (== regname (byte \-)) DELETION_REGISTER
+                    (and (not writing) (== regname (byte \~))) TILDE_REGISTER
+                    :else 0 ;; not 0-9, a-z, A-Z or '-': use register 0
+                )]
+            (reset! y_current (... y_regs i))
+            (when writing        ;; remember the register we write into for do-put()
+                (reset! y_previous @y_current))
         ))
-
-        (reset! y_current (... y_regs i))
-
-        (when writing        ;; remember the register we write into for do-put()
-            (reset! y_previous @y_current)
-        )
-        nil
-    ))
+    nil)
 
 ;; Obtain the contents of a "normal" register.  The register is made empty.
 ;; The returned pointer has allocated memory, use put-register() later.
