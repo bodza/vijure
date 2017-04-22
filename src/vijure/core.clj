@@ -9879,59 +9879,57 @@
 
 ;; Move cursor to mark.
 
-(defn- #_[window_C cmdarg_C] nv-cursormark [#_window_C win, #_cmdarg_C cap, #_boolean flag, #_pos_C pos]
-    (let [cap (if (check-mark pos)
-                (do (when (any == (:cmdchar cap) (byte \') (byte \`) (byte \[) (byte \]))
-                        (swap! curwin setpcmark))
-                    (swap! curwin assoc :w_cursor pos)
-                    (if flag
-                        (swap! curwin beginline (| BL_WHITE BL_FIX))
-                        (swap! curwin check-cursor))
-                    cap)
-                (clearop cap))
+(defn- #_[window_C cmdarg_C] nv-cursormark [#_window_C win, #_cmdarg_C cap, #_boolean flag, #_pos_C pos]
+    (let [[win cap]
+            (if (check-mark pos)
+                (let [win (if (any == (:cmdchar cap) (byte \') (byte \`) (byte \[) (byte \])) (setpcmark win) win)
+                      win (assoc win :w_cursor pos)
+                      win (if flag (beginline win, (| BL_WHITE BL_FIX)) (check-cursor win))]
+                    [win cap])
+                [win (clearop cap)])
           cap (update cap :oap assoc :motion_type (if flag MLINE MCHAR))
           cap (if (== (:cmdchar cap) (byte \`)) (update cap :oap assoc :use_reg_one true) cap)
           cap (update cap :oap assoc :inclusive false)] ;; ignored if not MCHAR
-        (swap! curwin assoc :w_set_curswant true)
-        cap
+        [(assoc win :w_set_curswant true) cap]
     ))
 
 (final Bytes visop_trans (u8 "YyDdCcxdXdAAIIrr"))
 
 ;; Handle commands that are operators in Visual mode.
 
-(defn- #_[window_C cmdarg_C] v-visop [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] v-visop [#_window_C win, #_cmdarg_C cap]
     ;; Uppercase means linewise, except in block mode, then "D" deletes, and "C" replaces till EOL.
-    (when (asc-isupper (:cmdchar cap))
-        (cond (!= @VIsual_mode Ctrl_V)
-        (do
-            (reset! VIsual_mode_orig @VIsual_mode)
-            (reset! VIsual_mode (byte \V))
-        )
-        (any == (:cmdchar cap) (byte \C) (byte \D))
-        (do
-            (swap! curwin assoc :w_curswant MAXCOL)
-        ))
-    )
-    (nv-operator (update cap :cmdchar #(.at (vim-strchr visop_trans, %) 1))))
+    (let [win (if (asc-isupper (:cmdchar cap))
+                (cond (!= @VIsual_mode Ctrl_V)
+                    (do (reset! VIsual_mode_orig @VIsual_mode)
+                        (reset! VIsual_mode (byte \V))
+                        win)
+                (any == (:cmdchar cap) (byte \C) (byte \D))
+                    (assoc win :w_curswant MAXCOL)
+                :else
+                    win)
+                win
+            )]
+        (nv-operator win, (update cap :cmdchar #(.at (vim-strchr visop_trans, %) 1)))
+    ))
 
 ;; "s" and "S" commands.
 
-(defn- #_[window_C cmdarg_C] nv-subst [#_window_C win, #_cmdarg_C cap]
-    (if @VIsual_active  ;; "vs" and "vS" are the same as "vc"
+(defn- #_[window_C cmdarg_C] nv-subst [#_window_C win, #_cmdarg_C cap]
+    (if @VIsual_active ;; "vs" and "vS" are the same as "vc"
         (do (when (== (:cmdchar cap) (byte \S))
                 (reset! VIsual_mode_orig @VIsual_mode)
                 (reset! VIsual_mode (byte \V)))
-            (nv-operator (assoc cap :cmdchar (byte \c))))
-        (nv-optrans cap)
+            (nv-operator win, (assoc cap :cmdchar (byte \c))))
+        (nv-optrans win, cap)
     ))
 
 ;; Abbreviated commands.
 
-(defn- #_[window_C cmdarg_C] nv-abbrev [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-abbrev [#_window_C win, #_cmdarg_C cap]
     (let [cap (if (any == (:cmdchar cap) K_DEL K_KDEL) (assoc cap :cmdchar (byte \x)) cap)] ;; DEL key behaves like 'x'
         ;; in Visual mode these commands are operators
-        (if @VIsual_active (v-visop cap) (nv-optrans cap))
+        (if @VIsual_active (v-visop win, cap) (nv-optrans win, cap))
     ))
 
 (final Bytes* #_"[/*8*/]" optrans_ar
@@ -9945,65 +9943,62 @@
 
 ;; Translate a command into another command.
 
-(defn- #_[window_C cmdarg_C] nv-optrans [#_window_C win, #_cmdarg_C cap]
-    (let [cap (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-optrans [#_window_C win, #_cmdarg_C cap]
+    (let [[win cap]
+            (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
                 (if (and (== (:cmdchar cap) (byte \D)) (some? (vim-strbyte @p_cpo, CPO_HASH)))
                     ;; In Vi "2D" doesn't delete the next line.
                     ;; Can't translate it either, because "2." should also not use the count.
-                    (let [cap (-> cap (update :oap assoc :op_start (:w_cursor win) :op_type OP_DELETE) (assoc :count1 1) (nv-dollar))]
+                    (let [[win cap] (nv-dollar win, (-> cap (update :oap assoc :op_start (:w_cursor win) :op_type OP_DELETE) (assoc :count1 1)))]
                         (reset! finish_op true)
                         (reset-redo)
                         (append-redo-char (byte \D))
-                        cap)
-                    (do
-                        (when (non-zero? (:count0 cap))
+                        [win cap])
+                    (do (when (non-zero? (:count0 cap))
                             (stuff-num (:count0 cap)))
                         (stuff-string (... optrans_ar (BDIFF (vim-strchr optrans_str, (:cmdchar cap)), optrans_str)))
-                        cap
-                    ))
-            )]
-        (assoc cap :opcount 0)
+                        [win cap])
+                ))]
+        [win (assoc cap :opcount 0)]
     ))
 
 ;; "'" and "`" commands.  Also for "g'" and "g`".
 ;; cap.arg is TRUE for "'" and "g'".
 
-(defn- #_[window_C cmdarg_C] nv-gomark [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-gomark [#_window_C win, #_cmdarg_C cap]
     (let [#_int c (if (== (:cmdchar cap) (byte \g)) (:extra_char cap) (:nchar cap))
-          cap (nv-cursormark cap, (non-zero? (:arg cap)), (getmark c, (== (:op_type (:oap cap)) OP_NOP)))]
+          [win cap] (nv-cursormark win, cap, (non-zero? (:arg cap)), (getmark c, (== (:op_type (:oap cap)) OP_NOP)))]
         ;; May need to clear the coladd that a mark includes.
-        (when-not (virtual-active)
-            (swap! curwin assoc-in [:w_cursor :coladd] 0))
-        cap
+        [(if-not (virtual-active) (assoc-in win [:w_cursor :coladd] 0) win) cap]
     ))
 
 ;; Handle CTRL-O, CTRL-I, "g;" and "g," commands.
 
-(defn- #_[window_C cmdarg_C] nv-pcmark [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-        (let [[_ #_pos_C pos] (if (== (:cmdchar cap) (byte \g)) (movechangelist win, (:count1 cap)) (movemark win, (:count1 cap))) _ (reset! curwin _)]
+(defn- #_[window_C cmdarg_C] nv-pcmark [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+        (let [[win #_pos_C pos] (if (== (:cmdchar cap) (byte \g)) (movechangelist win, (:count1 cap)) (movemark win, (:count1 cap)))]
             (if (some? pos)
-                (nv-cursormark cap, false, pos)
+                (nv-cursormark win, cap, false, pos)
                 (if (== (:cmdchar cap) (byte \g))
                     (do (emsg (cond
                             (zero? (:b_changelistlen @curbuf)) (u8 "E664: changelist is empty")
                             (< (:count1 cap) 0) (u8 "E662: At start of changelist")
                             :else (u8 "E663: At end of changelist")
                         ))
-                        cap)
-                    (clearopbeep cap))
+                        [win cap])
+                    [win (clearopbeep cap)])
             ))
     ))
 
 ;; Handle '"' command.
 
-(defn- #_[window_C cmdarg_C] nv-regname [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-regname [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
         (let [cap (if (== (:nchar cap) (byte \=)) (assoc cap :nchar (get-expr-register)) cap)]
             (if (and (!= (:nchar cap) NUL) (valid-yank-reg (:nchar cap), false))
-                (as-> (update cap :oap assoc :regname (:nchar cap)) cap
-                      (assoc cap :opcount (:count0 cap))) ;; remember count before '"'
-                (clearopbeep cap)
+                [win (as-> (update cap :oap assoc :regname (:nchar cap)) cap
+                      (assoc cap :opcount (:count0 cap)))] ;; remember count before '"'
+                [win (clearopbeep cap)]
             ))
     ))
 
@@ -10011,95 +10006,76 @@
 ;; Also for "gh", "gH" and "g^H" commands: Always start Select mode, cap.arg is TRUE.
 ;; Handle CTRL-Q just like CTRL-V.
 
-(defn- #_[window_C cmdarg_C] nv-visual [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-visual [#_window_C win, #_cmdarg_C cap]
     (let [cap (if (== (:cmdchar cap) Ctrl_Q) (assoc cap :cmdchar Ctrl_V) cap)]
         ;; 'v', 'V' and CTRL-V can be used while an operator is pending to make it characterwise, linewise, or blockwise
-        (if (!= (:op_type (:oap cap)) OP_NOP)
-            (do
-                (reset! finish_op false)      ;; operator doesn't finish now but later
-                (update cap :oap assoc :motion_force (:cmdchar cap))
-            )
-            (do
-                (reset! VIsual_select (non-zero? (:arg cap)))
-                (cond @VIsual_active      ;; change Visual mode
-                (do
-                    (if (== @VIsual_mode (:cmdchar cap))     ;; stop visual mode
-                        (swap! curwin end-visual-mode)
-                        (do
-                            (reset! VIsual_mode (:cmdchar cap))
-                            (showmode)
-                        ))
-                    (redraw-curbuf-later INVERTED)      ;; update the inversion
-                    cap
-                )
-                :else                    ;; start Visual mode
-                (do
-                    (check-visual-highlight)
-                    (cond (and (< 0 (:count0 cap)) (!= @resel_VIsual_mode NUL))
-                    (do
-                        (reset! VIsual_cursor (:w_cursor win)) ;; use previously selected part
-                        (reset! VIsual_active true)
-                        (reset! VIsual_reselect true)
-
-                        (if (zero? (:arg cap))
-                            (may-start-select (byte \c))) ;; start Select mode when 'selectmode' contains "cmd"
-                        (if @p_smd
-                            (reset! redraw_cmdline true))      ;; show visual mode later
-
-                        ;; For V and ^V, we multiply the number of lines even if there was only one.
-                        (when (or (!= @resel_VIsual_mode (byte \v)) (< 1 @resel_VIsual_lmax))
-                            (swap! curwin update-in [:w_cursor :lnum] #(min (+ % (dec (* @resel_VIsual_lmax (:count0 cap)))) (line-count @curbuf))))
-
-                        (reset! VIsual_mode @resel_VIsual_mode)
-
-                        (when (== @VIsual_mode (byte \v))
-                            (swap! curwin assoc :w_curswant (if (<= @resel_VIsual_lmax 1)
-                                                                (do (swap! curwin validate-virtcol) (dec (+ (:w_virtcol win) (* @resel_VIsual_vcol (:count0 cap)))))
-                                                                @resel_VIsual_vcol))
-                            (swap! curwin coladvance (:w_curswant win))
-                        )
-
-                        (cond (== @resel_VIsual_vcol MAXCOL)
-                        (do
-                            (swap! curwin assoc :w_curswant MAXCOL)
-                            (swap! curwin coladvance MAXCOL)
-                        )
-                        (== @VIsual_mode Ctrl_V)
-                        (do
-                            (swap! curwin assoc :w_curswant (do (swap! curwin validate-virtcol) (dec (+ (:w_virtcol win) (* @resel_VIsual_vcol (:count0 cap))))))
-                            (swap! curwin coladvance (:w_curswant win))
-                        )
+        (cond (!= (:op_type (:oap cap)) OP_NOP)
+            (do (reset! finish_op false)                                    ;; operator doesn't finish now but later
+                [win (update cap :oap assoc :motion_force (:cmdchar cap))])
+        :else
+            (do (reset! VIsual_select (non-zero? (:arg cap)))
+                (cond @VIsual_active                                        ;; change Visual mode
+                    (let [win (if (== @VIsual_mode (:cmdchar cap))          ;; stop visual mode
+                                (end-visual-mode win)
+                                (do (reset! VIsual_mode (:cmdchar cap)) (showmode) win)
+                            )]
+                        (redraw-curbuf-later INVERTED)                      ;; update the inversion
+                        [win cap])
+                :else                                                       ;; start Visual mode
+                    (do (check-visual-highlight)
+                        (cond (and (< 0 (:count0 cap)) (!= @resel_VIsual_mode NUL))
+                            (do (reset! VIsual_cursor (:w_cursor win))      ;; use previously selected part
+                                (reset! VIsual_active true)
+                                (reset! VIsual_reselect true)
+                                (when (zero? (:arg cap))
+                                    (may-start-select (byte \c)))           ;; start Select mode when 'selectmode' contains "cmd"
+                                (when @p_smd
+                                    (reset! redraw_cmdline true))           ;; show visual mode later
+                                ;; For V and ^V, we multiply the number of lines even if there was only one.
+                                (let [win (if (or (!= @resel_VIsual_mode (byte \v)) (< 1 @resel_VIsual_lmax))
+                                            (update-in win [:w_cursor :lnum] #(min (+ % (dec (* @resel_VIsual_lmax (:count0 cap)))) (line-count @curbuf)))
+                                            win)
+                                      _ (reset! VIsual_mode @resel_VIsual_mode)
+                                      win (if (== @VIsual_mode (byte \v))
+                                            (let [[win ?]
+                                                    (if (<= @resel_VIsual_lmax 1)
+                                                        (let [win (validate-virtcol win)]
+                                                            [win (dec (+ (:w_virtcol win) (* @resel_VIsual_vcol (:count0 cap))))])
+                                                        [win @resel_VIsual_vcol]
+                                                    )]
+                                                (-> win (assoc :w_curswant ?) (coladvance ?)))
+                                            win)
+                                      win (cond (== @resel_VIsual_vcol MAXCOL)
+                                            (-> win (assoc :w_curswant MAXCOL) (coladvance MAXCOL))
+                                        (== @VIsual_mode Ctrl_V)
+                                            (let [win (validate-virtcol win) ? (dec (+ (:w_virtcol win) (* @resel_VIsual_vcol (:count0 cap))))]
+                                                (-> win (assoc :w_curswant ?) (coladvance ?)))
+                                        :else
+                                            (assoc win :w_set_curswant true)
+                                        )]
+                                    (redraw-curbuf-later INVERTED)          ;; show the inversion
+                                    [win cap]
+                                ))
                         :else
-                            (swap! curwin assoc :w_set_curswant true)
-                        )
-
-                        (redraw-curbuf-later INVERTED)      ;; show the inversion
-                        cap
-                    )
-                    :else
-                    (do
-                        (if (zero? (:arg cap))
-                            (may-start-select (byte \c))) ;; start Select mode when 'selectmode' contains "cmd"
-
-                        (swap! curwin n-start-visual-mode (:cmdchar cap))
-
-                        (let [cap (if (and (!= @VIsual_mode (byte \V)) (at? @p_sel (byte \e))) (update cap :count1 inc) cap)]   ;; include one more char
-                            (if (< 0 (:count0 cap))
-                                (let [cap (update cap :count1 dec)]
-                                    (if (< 0 (:count1 cap)) ;; with a count select that many characters or lines
-                                        (cond
-                                            (any == @VIsual_mode (byte \v) Ctrl_V) (nv-right cap)
-                                            (== @VIsual_mode (byte \V)) (nv-down cap)
-                                            :else cap
-                                        )
-                                        cap
+                            (do (when (zero? (:arg cap))
+                                    (may-start-select (byte \c))) ;; start Select mode when 'selectmode' contains "cmd"
+                                (let [win (n-start-visual-mode win, (:cmdchar cap))
+                                      cap (if (and (!= @VIsual_mode (byte \V)) (at? @p_sel (byte \e))) (update cap :count1 inc) cap)] ;; include one more char
+                                    (if (< 0 (:count0 cap))
+                                        (let [cap (update cap :count1 dec)]
+                                            (if (< 0 (:count1 cap)) ;; with a count select that many characters or lines
+                                                (cond
+                                                    (any == @VIsual_mode (byte \v) Ctrl_V) (nv-right win, cap)
+                                                    (== @VIsual_mode (byte \V)) (nv-down win, cap)
+                                                    :else [win cap]
+                                                )
+                                                [win cap]
+                                            ))
+                                        [win cap]
                                     ))
-                                cap
                             ))
                     ))
-                ))
-            )
-        )
+            ))
     ))
 
 ;; Start selection for Shift-movement keys.
@@ -10140,389 +10116,382 @@
 
 ;; CTRL-W: Window commands
 
-(defn- #_[window_C cmdarg_C] nv-window [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-window [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
         (do-window (:nchar cap), (:count0 cap), NUL)
-        cap
+        [win cap]
     ))
 
 ;; CTRL-Z: Suspend
 
-(defn- #_[window_C cmdarg_C] nv-suspend [#_window_C win, #_cmdarg_C cap]
-    (let [cap (clearop cap)]
-        (when @VIsual_active
-            (swap! curwin end-visual-mode)) ;; stop Visual mode
+(defn- #_[window_C cmdarg_C] nv-suspend [#_window_C win, #_cmdarg_C cap]
+    (let [cap (clearop cap) win (if @VIsual_active (end-visual-mode win) win)] ;; stop Visual mode
         (do-cmdline-cmd (u8 "st"))
-        cap
+        [win cap]
     ))
 
 ;; Commands starting with "g".
 
-(defn- #_[window_C cmdarg_C] nv-g-cmd [#_window_C win, #_cmdarg_C cap]
-    (let [win @curwin [_ cap]
-            (condp ==? (:nchar cap)
-                ;; "gR": Enter virtual replace mode.
+(defn- #_[window_C cmdarg_C] nv-g-cmd [#_window_C win, #_cmdarg_C cap]
+    (condp ==? (:nchar cap)
+        ;; "gR": Enter virtual replace mode.
 
-                (byte \R)
-                    (nv-Replace win, (assoc cap :arg TRUE))
+        (byte \R)
+            (nv-Replace win, (assoc cap :arg TRUE))
 
-                (byte \r)
-                    (nv-vreplace win, cap)
+        (byte \r)
+            (nv-vreplace win, cap)
 
-                (byte \&)
-                    (do (do-cmdline-cmd (u8 "%s//~/&")) [win cap])
+        (byte \&)
+            (do (do-cmdline-cmd (u8 "%s//~/&")) [win cap])
 
-                ;; "gv": Reselect the previous Visual area.
-                ;;       If Visual already active, exchange previous and current Visual area.
+        ;; "gv": Reselect the previous Visual area.
+        ;;       If Visual already active, exchange previous and current Visual area.
 
-                (byte \v)
-                    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
-                        (let [vi (:b_visual @curbuf) lmax (line-count @curbuf)]
-                            (cond (or (zero? (:lnum (:vi_start vi))) (< lmax (:lnum (:vi_start vi))) (zero? (:lnum (:vi_end vi))))
-                                (do (beep-flush) [win cap])
-                            :else
-                                (let [[win tpos] ;; Set "w_cursor" to the start of the Visual area, "tpos" to the end.
-                                        (cond @VIsual_active
-                                            (let [? @VIsual_mode
-                                                  _ (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
-                                                  _ (swap! curbuf assoc-in [:b_visual :vi_mode] ?)
-                                                  ? (:w_curswant win)
-                                                  win (assoc win :w_curswant (:vi_curswant (:b_visual @curbuf)))
-                                                  _ (swap! curbuf assoc-in [:b_visual :vi_curswant] ?)
-                                                  tpos (:vi_end (:b_visual @curbuf))
-                                                  _ (swap! curbuf assoc-in [:b_visual :vi_end] (:w_cursor win))
-                                                  win (assoc win :w_cursor (:vi_start (:b_visual @curbuf)))
-                                                  _ (swap! curbuf assoc-in [:b_visual :vi_start] @VIsual_cursor)]
-                                                [win tpos])
-                                        :else
-                                            (let [_ (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
-                                                  win (assoc win :w_curswant (:vi_curswant (:b_visual @curbuf)))
-                                                  tpos (:vi_end (:b_visual @curbuf))
-                                                  win (assoc win :w_cursor (:vi_start (:b_visual @curbuf)))]
-                                                [win tpos])
-                                        )]
-                                    (reset! VIsual_active true)
-                                    (reset! VIsual_reselect true)
-                                    ;; Set "VIsual_cursor" to the start and "w_cursor" to the end of the Visual area.
-                                    ;; Make sure they are on an existing character.
-                                    (let [win (check-cursor win)
-                                          _ (reset! VIsual_cursor (:w_cursor win))
-                                          win (assoc win :w_cursor tpos)
-                                          win (check-cursor win)
-                                          win (update-topline win)]
-                                        ;; Normal "g" command: start Select mode when 'selectmode' contains "cmd".
-                                        ;; K_SELECT: always start Select mode.
-                                        (if (non-zero? (:arg cap))
-                                            (reset! VIsual_select true)
-                                            (may-start-select (byte \c)))
-                                        (redraw-curbuf-later INVERTED)
-                                        (showmode)
-                                        [win cap]
-                                    ))
-                            )))
-
-                ;; "gV": Don't reselect the previous Visual area after a Select mode mapping of menu.
-
-                (byte \V)
-                    (do (reset! VIsual_reselect false) [win cap])
-
-                ;; "gh":  start Select mode.
-                ;; "gH":  start Select line mode.
-                ;; "g^H": start Select block mode.
-
-               [K_BS (byte \h) (byte \H) Ctrl_H]
-                    (let [cap (if (== (:nchar cap) K_BS) (assoc cap :nchar Ctrl_H) cap)
-                          cap (assoc cap :cmdchar (+ (:nchar cap) (- (byte \v) (byte \h))) :arg TRUE)]
-                        (nv-visual win, cap))
-
-                ;; "gn", "gN" visually select next/previous search match
-                ;; "gn" selects next match
-                ;; "gN" selects previous match
-
-               [(byte \N) (byte \n)]
-                    (let [? (current-search (:count1 cap), (== (:nchar cap) (byte \n)))]
-                        [win (if (not ?) (clearopbeep cap) cap)])
-
-                ;; "gj" and "gk" two new funny movement keys -- up and down movement based on *screen* line rather than *file* line.
-
-               [(byte \j) K_DOWN]
-                    (let [[win cap ?] ;; with 'nowrap' it works just like the normal "j" command
-                            (if (not @(:wo_wrap (:w_options win)))
-                                (let [cap (update cap :oap assoc :motion_type MLINE)
-                                      [win ?] (cursor-down? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
-                                    [win cap ?])
-                                (nv-screengo win, cap, FORWARD, (:count1 cap))
-                            )]
-                        [win (if (not ?) (clearopbeep cap) cap)])
-
-               [(byte \k) K_UP]
-                    (let [[win cap ?] ;; with 'nowrap' it works just like the normal "k" command
-                            (if (not @(:wo_wrap (:w_options win)))
-                                (let [cap (update cap :oap assoc :motion_type MLINE)
-                                      [win ?] (cursor-up? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
-                                    [win cap ?])
-                                (nv-screengo win, cap, BACKWARD, (:count1 cap))
-                            )]
-                        [win (if (not ?) (clearopbeep cap) cap)])
-
-                ;; "gJ": join two lines without inserting a space.
-
-                (byte \J)
-                    (nv-join win, cap)
-
-                ;; "g0", "g^" and "g$": Like "0", "^" and "$" but for screen lines.
-                ;; "gm": middle of "g0" and "g$".
-
-               [(byte \0) (byte \^) (byte \m) K_HOME K_KHOME]
-                    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)
-                          wrap? @(:wo_wrap (:w_options win))
-                          [win i]
-                            (if (and wrap? (non-zero? (:w_width win)))
-                                (let [width1 (- (:w_width win) (win-col-off win)) width2 (+ width1 (win-col-off2 win))
-                                      win (validate-virtcol win)]
-                                    [win (if (and (<= width1 (:w_virtcol win)) (< 0 width2)) (+ (* (/ (- (:w_virtcol win) width1) width2) width2) width1) 0)])
-                                [win (:w_leftcol win)])
-                          ;; Go to the middle of the screen line.
-                          ;; When 'number' or 'relativenumber' is on and lines are wrapping, the middle can be more to the left.
-                          i (if (== (:nchar cap) (byte \m)) (+ i (/ (+ (- (:w_width win) (win-col-off win)) (if (and wrap? (< 0 i)) (win-col-off2 win) 0)) 2)) i)
-                          win (coladvance win, i)
-                          win (if (== (:nchar cap) (byte \^))
-                                (loop-when win (vim-iswhite (gchar-cursor win)) => win
-                                    (let [[win ?] (oneright? win)] (recur-if ? win => win)))
-                                win
-                            )]
-                        [(assoc win :w_set_curswant true) cap])
-
-                ;; "g_": to the last non-blank character in the line or <count> lines downward.
-
-                (byte \_)
-                    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
-                          win (assoc win :w_curswant MAXCOL)
-                          [win ?] (cursor-down? win, (dec (:count1 cap)), (== (:op_type (:oap cap)) OP_NOP))]
-                        (if (not ?)
-                            [win (clearopbeep cap)]
-                            (let [s (ml-get (:lnum (:w_cursor win))) i (:col (:w_cursor win))
-                                  ;; In Visual mode we may end up after the line.
-                                  i (if (and (< 0 i) (eos? s i)) (dec i) i)
-                                  ;; Decrease the cursor column until it's on a non-blank.
-                                  win (loop-when-recur i (and (< 0 i) (vim-iswhite (.at s i))) (dec i) => (assoc-in win [:w_cursor :col] i))
-                                  win (assoc win :w_set_curswant true)]
-                                (adjust-for-sel win, cap))
-                        ))
-
-               [(byte \$) K_END K_KEND]
-                    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
-                          wrap? @(:wo_wrap (:w_options win)) off (win-col-off win)]
-                        (if (and wrap? (non-zero? (:w_width win)))
-                            (let [win (assoc win :w_curswant MAXCOL)] ;; so we stay at the end
-                                (cond (== (:count1 cap) 1)
-                                    (let [width1 (- (:w_width win) off) width2 (+ width1 (win-col-off2 win))
-                                          win (validate-virtcol win)
-                                          i (+ (dec width1) (if (<= width1 (:w_virtcol win)) (* (inc (/ (- (:w_virtcol win) width1) width2)) width2) 0))
-                                          win (coladvance win, i)
-                                          ;; Make sure we stick in this column.
-                                          win (validate-virtcol win)
-                                          win (assoc win :w_curswant (:w_virtcol win) :w_set_curswant false)
-                                          ;; Check for landing on a character that got split at the end of the line.
-                                          ;; We do not want to advance to the next screen line.
-                                          win (if (and (< 0 (:col (:w_cursor win))) wrap? (< i (:w_virtcol win)))
-                                                (update-in win [:w_cursor :col] dec)
-                                                win
-                                            )]
-                                        [win cap])
+        (byte \v)
+            (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+                (let [vi (:b_visual @curbuf) lmax (line-count @curbuf)]
+                    (cond (or (zero? (:lnum (:vi_start vi))) (< lmax (:lnum (:vi_start vi))) (zero? (:lnum (:vi_end vi))))
+                        (do (beep-flush) [win cap])
+                    :else
+                        (let [[win tpos] ;; Set "w_cursor" to the start of the Visual area, "tpos" to the end.
+                                (cond @VIsual_active
+                                    (let [? @VIsual_mode
+                                          _ (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
+                                          _ (swap! curbuf assoc-in [:b_visual :vi_mode] ?)
+                                          ? (:w_curswant win)
+                                          win (assoc win :w_curswant (:vi_curswant (:b_visual @curbuf)))
+                                          _ (swap! curbuf assoc-in [:b_visual :vi_curswant] ?)
+                                          tpos (:vi_end (:b_visual @curbuf))
+                                          _ (swap! curbuf assoc-in [:b_visual :vi_end] (:w_cursor win))
+                                          win (assoc win :w_cursor (:vi_start (:b_visual @curbuf)))
+                                          _ (swap! curbuf assoc-in [:b_visual :vi_start] @VIsual_cursor)]
+                                        [win tpos])
                                 :else
-                                    (let [[win cap ?] (nv-screengo win, cap, FORWARD, (dec (:count1 cap)))]
-                                        [win (if (not ?) (clearopbeep cap) cap)])
-                                ))
-                            (let [i (dec (- (+ (:w_leftcol win) (:w_width win)) off))
+                                    (let [_ (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
+                                          win (assoc win :w_curswant (:vi_curswant (:b_visual @curbuf)))
+                                          tpos (:vi_end (:b_visual @curbuf))
+                                          win (assoc win :w_cursor (:vi_start (:b_visual @curbuf)))]
+                                        [win tpos])
+                                )]
+                            (reset! VIsual_active true)
+                            (reset! VIsual_reselect true)
+                            ;; Set "VIsual_cursor" to the start and "w_cursor" to the end of the Visual area.
+                            ;; Make sure they are on an existing character.
+                            (let [win (check-cursor win)
+                                  _ (reset! VIsual_cursor (:w_cursor win))
+                                  win (assoc win :w_cursor tpos)
+                                  win (check-cursor win)
+                                  win (update-topline win)]
+                                ;; Normal "g" command: start Select mode when 'selectmode' contains "cmd".
+                                ;; K_SELECT: always start Select mode.
+                                (if (non-zero? (:arg cap))
+                                    (reset! VIsual_select true)
+                                    (may-start-select (byte \c)))
+                                (redraw-curbuf-later INVERTED)
+                                (showmode)
+                                [win cap]
+                            ))
+                    )))
+
+        ;; "gV": Don't reselect the previous Visual area after a Select mode mapping of menu.
+
+        (byte \V)
+            (do (reset! VIsual_reselect false) [win cap])
+
+        ;; "gh":  start Select mode.
+        ;; "gH":  start Select line mode.
+        ;; "g^H": start Select block mode.
+
+       [K_BS (byte \h) (byte \H) Ctrl_H]
+            (let [cap (if (== (:nchar cap) K_BS) (assoc cap :nchar Ctrl_H) cap)
+                  cap (assoc cap :cmdchar (+ (:nchar cap) (- (byte \v) (byte \h))) :arg TRUE)]
+                (nv-visual win, cap))
+
+        ;; "gn", "gN" visually select next/previous search match
+        ;; "gn" selects next match
+        ;; "gN" selects previous match
+
+       [(byte \N) (byte \n)]
+            (let [? (current-search (:count1 cap), (== (:nchar cap) (byte \n)))]
+                [win (if (not ?) (clearopbeep cap) cap)])
+
+        ;; "gj" and "gk" two new funny movement keys -- up and down movement based on *screen* line rather than *file* line.
+
+       [(byte \j) K_DOWN]
+            (let [[win cap ?] ;; with 'nowrap' it works just like the normal "j" command
+                    (if (not @(:wo_wrap (:w_options win)))
+                        (let [cap (update cap :oap assoc :motion_type MLINE)
+                              [win ?] (cursor-down? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
+                            [win cap ?])
+                        (nv-screengo win, cap, FORWARD, (:count1 cap))
+                    )]
+                [win (if (not ?) (clearopbeep cap) cap)])
+
+       [(byte \k) K_UP]
+            (let [[win cap ?] ;; with 'nowrap' it works just like the normal "k" command
+                    (if (not @(:wo_wrap (:w_options win)))
+                        (let [cap (update cap :oap assoc :motion_type MLINE)
+                              [win ?] (cursor-up? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
+                            [win cap ?])
+                        (nv-screengo win, cap, BACKWARD, (:count1 cap))
+                    )]
+                [win (if (not ?) (clearopbeep cap) cap)])
+
+        ;; "gJ": join two lines without inserting a space.
+
+        (byte \J)
+            (nv-join win, cap)
+
+        ;; "g0", "g^" and "g$": Like "0", "^" and "$" but for screen lines.
+        ;; "gm": middle of "g0" and "g$".
+
+       [(byte \0) (byte \^) (byte \m) K_HOME K_KHOME]
+            (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)
+                  wrap? @(:wo_wrap (:w_options win))
+                  [win i]
+                    (if (and wrap? (non-zero? (:w_width win)))
+                        (let [width1 (- (:w_width win) (win-col-off win)) width2 (+ width1 (win-col-off2 win))
+                              win (validate-virtcol win)]
+                            [win (if (and (<= width1 (:w_virtcol win)) (< 0 width2)) (+ (* (/ (- (:w_virtcol win) width1) width2) width2) width1) 0)])
+                        [win (:w_leftcol win)])
+                  ;; Go to the middle of the screen line.
+                  ;; When 'number' or 'relativenumber' is on and lines are wrapping, the middle can be more to the left.
+                  i (if (== (:nchar cap) (byte \m)) (+ i (/ (+ (- (:w_width win) (win-col-off win)) (if (and wrap? (< 0 i)) (win-col-off2 win) 0)) 2)) i)
+                  win (coladvance win, i)
+                  win (if (== (:nchar cap) (byte \^))
+                        (loop-when win (vim-iswhite (gchar-cursor win)) => win
+                            (let [[win ?] (oneright? win)] (recur-if ? win => win)))
+                        win
+                    )]
+                [(assoc win :w_set_curswant true) cap])
+
+        ;; "g_": to the last non-blank character in the line or <count> lines downward.
+
+        (byte \_)
+            (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
+                  win (assoc win :w_curswant MAXCOL)
+                  [win ?] (cursor-down? win, (dec (:count1 cap)), (== (:op_type (:oap cap)) OP_NOP))]
+                (if (not ?)
+                    [win (clearopbeep cap)]
+                    (let [s (ml-get (:lnum (:w_cursor win))) i (:col (:w_cursor win))
+                          ;; In Visual mode we may end up after the line.
+                          i (if (and (< 0 i) (eos? s i)) (dec i) i)
+                          ;; Decrease the cursor column until it's on a non-blank.
+                          win (loop-when-recur i (and (< 0 i) (vim-iswhite (.at s i))) (dec i) => (assoc-in win [:w_cursor :col] i))
+                          win (assoc win :w_set_curswant true)]
+                        (adjust-for-sel win, cap))
+                ))
+
+       [(byte \$) K_END K_KEND]
+            (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
+                  wrap? @(:wo_wrap (:w_options win)) off (win-col-off win)]
+                (if (and wrap? (non-zero? (:w_width win)))
+                    (let [win (assoc win :w_curswant MAXCOL)] ;; so we stay at the end
+                        (cond (== (:count1 cap) 1)
+                            (let [width1 (- (:w_width win) off) width2 (+ width1 (win-col-off2 win))
+                                  win (validate-virtcol win)
+                                  i (+ (dec width1) (if (<= width1 (:w_virtcol win)) (* (inc (/ (- (:w_virtcol win) width1) width2)) width2) 0))
                                   win (coladvance win, i)
                                   ;; Make sure we stick in this column.
                                   win (validate-virtcol win)
-                                  win (assoc win :w_curswant (:w_virtcol win) :w_set_curswant false)]
-                                [win cap])
-                        ))
-
-                ;; "g*" and "g#", like "*" and "#" but without using "\<" and "\>"
-
-               [(byte \*) (byte \#) (char_u POUND)] ;; pound sign (sometimes equal to '#')
-                    (nv-ident win, cap)
-
-                ;; ge and gE: go back to end of word
-
-               [(byte \e) (byte \E)]
-                    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
-                          win (assoc win :w_set_curswant true)
-                          [win ?] (bckend-word? win, (:count1 cap), (== (:nchar cap) (byte \E)), false)]
-                        [win (if (not ?) (clearopbeep cap) cap)])
-
-                ;; "g CTRL-G": display info about cursor position.
-
-                Ctrl_G
-                    [(cursor-pos-info win) cap]
-
-                ;; "gi": start Insert at the last position.
-
-                (byte \i)
-                    (let [win (if (non-zero? (:lnum (:b_last_insert @curbuf)))
-                                (let [win (assoc win :w_cursor (:b_last_insert @curbuf))
-                                      win (check-cursor-lnum win)
-                                      i (STRLEN (ml-get (:lnum (:w_cursor win)))) j (- (:col (:w_cursor win)) i)]
-                                    (if (< 0 j)
-                                        (let [win (if (virtual-active) (update-in win [:w_cursor :coladd] + j) win)]
-                                            (assoc-in win [:w_cursor :col] i))
+                                  win (assoc win :w_curswant (:w_virtcol win) :w_set_curswant false)
+                                  ;; Check for landing on a character that got split at the end of the line.
+                                  ;; We do not want to advance to the next screen line.
+                                  win (if (and (< 0 (:col (:w_cursor win))) wrap? (< i (:w_virtcol win)))
+                                        (update-in win [:w_cursor :col] dec)
                                         win
-                                    ))
-                                win
-                            )]
-                        (nv-edit win, (assoc cap :cmdchar (byte \i))))
-
-                ;; "gI": Start insert in column 1.
-
-                (byte \I)
-                    (let [win (beginline win, 0) [cap ?] (checkclearopq? cap)]
-                        [win (if (not ?) (invoke-edit cap, false, (byte \g), false) cap)])
-
-                ;; "g'm" and "g`m": jump to mark without setting pcmark.
-
-                (byte \')
-                    (nv-gomark win, (assoc cap :arg TRUE))
-
-                (byte \`)
-                    (nv-gomark win, cap)
-
-                ;; "gs": Goto sleep.
-
-                (byte \s)
-                    (do (do-sleep (* (:count1 cap) 1000)) [win cap])
-
-                ;; "ga": Display the ascii value of the character under the cursor.
-                ;;       It is displayed in decimal, hex, and octal.
-
-                (byte \a)
-                    (do (do-ascii win) [win cap])
-
-                ;; "g8": Display the bytes used for the UTF-8 character under the cursor.
-                ;;       It is displayed in hex.
-                ;; "8g8" finds illegal byte sequence.
-
-                (byte \8)
-                    [(if (== (:count0 cap) 8) (utf-find-illegal win) (do (show-utf8 win) win)) cap]
-
-                (byte \<)
-                    [(show-sb-text win) cap]
-
-                ;; "gg": Goto the first line in file.
-                ;;       With a count it goes to that line number like for "G".
-
-                (byte \g)
-                    (nv-goto win, (assoc cap :arg FALSE))
-
-                ;; Two-character operators:
-                ;;  "gq"    Format text.
-                ;;  "gw"    Format text and keep cursor position.
-                ;;  "g~"    Toggle the case of the text.
-                ;;  "gu"    Change text to lower case.
-                ;;  "gU"    Change text to upper case.
-                ;;  "g?"    rot13 encoding
-                ;;  "g@"    call 'operatorfunc'
-
-               [(byte \q) (byte \w)]
-                    (let [cap (assoc-in cap [:oap :cursor_start] (:w_cursor win))]
-                        (nv-operator win, cap))
-
-               [(byte \~) (byte \u) (byte \U) (byte \?) (byte \@)]
-                    (nv-operator win, cap)
-
-                ;; "gP" and "gp": same as "P" and "p" but leave cursor just after new text.
-
-               [(byte \p) (byte \P)]
-                    (nv-put win, cap)
-
-                (byte \,)
-                    (nv-pcmark win, cap)
-
-                (byte \;)
-                    (nv-pcmark win, (update cap :count1 -))
-
-                ;; "g+" and "g-": undo or redo along the timeline.
-
-               [(byte \+) (byte \-)]
-                    (let [[cap ?] (checkclearopq? cap)]
-                        (when (not ?)
-                            (undo-time (if (== (:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false))
+                                    )]
+                                [win cap])
+                        :else
+                            (let [[win cap ?] (nv-screengo win, cap, FORWARD, (dec (:count1 cap)))]
+                                [win (if (not ?) (clearopbeep cap) cap)])
+                        ))
+                    (let [i (dec (- (+ (:w_leftcol win) (:w_width win)) off))
+                          win (coladvance win, i)
+                          ;; Make sure we stick in this column.
+                          win (validate-virtcol win)
+                          win (assoc win :w_curswant (:w_virtcol win) :w_set_curswant false)]
                         [win cap])
+                ))
 
-                K_IGNORE
-                    [win cap]
+        ;; "g*" and "g#", like "*" and "#" but without using "\<" and "\>"
 
-                [win (clearopbeep cap)]
-            )]
-        (reset! curwin _)
-        cap
+       [(byte \*) (byte \#) (char_u POUND)] ;; pound sign (sometimes equal to '#')
+            (nv-ident win, cap)
+
+        ;; ge and gE: go back to end of word
+
+       [(byte \e) (byte \E)]
+            (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true)
+                  win (assoc win :w_set_curswant true)
+                  [win ?] (bckend-word? win, (:count1 cap), (== (:nchar cap) (byte \E)), false)]
+                [win (if (not ?) (clearopbeep cap) cap)])
+
+        ;; "g CTRL-G": display info about cursor position.
+
+        Ctrl_G
+            [(cursor-pos-info win) cap]
+
+        ;; "gi": start Insert at the last position.
+
+        (byte \i)
+            (let [win (if (non-zero? (:lnum (:b_last_insert @curbuf)))
+                        (let [win (assoc win :w_cursor (:b_last_insert @curbuf))
+                              win (check-cursor-lnum win)
+                              i (STRLEN (ml-get (:lnum (:w_cursor win)))) j (- (:col (:w_cursor win)) i)]
+                            (if (< 0 j)
+                                (let [win (if (virtual-active) (update-in win [:w_cursor :coladd] + j) win)]
+                                    (assoc-in win [:w_cursor :col] i))
+                                win
+                            ))
+                        win
+                    )]
+                (nv-edit win, (assoc cap :cmdchar (byte \i))))
+
+        ;; "gI": Start insert in column 1.
+
+        (byte \I)
+            (let [win (beginline win, 0) [cap ?] (checkclearopq? cap)]
+                [win (if (not ?) (invoke-edit cap, false, (byte \g), false) cap)])
+
+        ;; "g'm" and "g`m": jump to mark without setting pcmark.
+
+        (byte \')
+            (nv-gomark win, (assoc cap :arg TRUE))
+
+        (byte \`)
+            (nv-gomark win, cap)
+
+        ;; "gs": Goto sleep.
+
+        (byte \s)
+            (do (do-sleep (* (:count1 cap) 1000)) [win cap])
+
+        ;; "ga": Display the ascii value of the character under the cursor.
+        ;;       It is displayed in decimal, hex, and octal.
+
+        (byte \a)
+            (do (do-ascii win) [win cap])
+
+        ;; "g8": Display the bytes used for the UTF-8 character under the cursor.
+        ;;       It is displayed in hex.
+        ;; "8g8" finds illegal byte sequence.
+
+        (byte \8)
+            [(if (== (:count0 cap) 8) (utf-find-illegal win) (do (show-utf8 win) win)) cap]
+
+        (byte \<)
+            [(show-sb-text win) cap]
+
+        ;; "gg": Goto the first line in file.
+        ;;       With a count it goes to that line number like for "G".
+
+        (byte \g)
+            (nv-goto win, (assoc cap :arg FALSE))
+
+        ;; Two-character operators:
+        ;;  "gq"    Format text.
+        ;;  "gw"    Format text and keep cursor position.
+        ;;  "g~"    Toggle the case of the text.
+        ;;  "gu"    Change text to lower case.
+        ;;  "gU"    Change text to upper case.
+        ;;  "g?"    rot13 encoding
+        ;;  "g@"    call 'operatorfunc'
+
+       [(byte \q) (byte \w)]
+            (let [cap (assoc-in cap [:oap :cursor_start] (:w_cursor win))]
+                (nv-operator win, cap))
+
+       [(byte \~) (byte \u) (byte \U) (byte \?) (byte \@)]
+            (nv-operator win, cap)
+
+        ;; "gP" and "gp": same as "P" and "p" but leave cursor just after new text.
+
+       [(byte \p) (byte \P)]
+            (nv-put win, cap)
+
+        (byte \,)
+            (nv-pcmark win, cap)
+
+        (byte \;)
+            (nv-pcmark win, (update cap :count1 -))
+
+        ;; "g+" and "g-": undo or redo along the timeline.
+
+       [(byte \+) (byte \-)]
+            (let [[cap ?] (checkclearopq? cap)]
+                (when (not ?)
+                    (undo-time (if (== (:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false))
+                [win cap])
+
+        K_IGNORE
+            [win cap]
+
+        [win (clearopbeep cap)]
     ))
 
 ;; Handle "o" and "O" commands.
 
-(defn- #_[window_C cmdarg_C] n-opencmd [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-        (let [lnum (:lnum (:w_cursor win)) back (== (:cmdchar cap) (byte \O)) fore (== (:cmdchar cap) (byte \o))]
-            (if (and (u-save (- lnum (if back 1 0)), (+ lnum (if fore 1 0))) (let [[_ ?] (open-line? win, (if back BACKWARD FORWARD), 0, 0)] (reset! curwin _) ?))
-                ;; When '#' is in 'cpoptions', ignore the count.
-                (let [cap (if (some? (vim-strbyte @p_cpo, CPO_HASH)) (assoc cap :count1 1) cap)]
-                    (invoke-edit cap, false, (:cmdchar cap), true))
-                cap
+(defn- #_[window_C cmdarg_C] n-opencmd [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+        (let-when [lnum (:lnum (:w_cursor win)) back (== (:cmdchar cap) (byte \O)) fore (== (:cmdchar cap) (byte \o))
+              [win ?]
+                (if (u-save (- lnum (if back 1 0)), (+ lnum (if fore 1 0)))
+                    (open-line? win, (if back BACKWARD FORWARD), 0, 0)
+                    [win false]
+                )] ? => [win cap]
+
+            ;; When '#' is in 'cpoptions', ignore the count.
+            (let [cap (if (some? (vim-strbyte @p_cpo, CPO_HASH)) (assoc cap :count1 1) cap)]
+                [win (invoke-edit cap, false, (:cmdchar cap), true)]
             ))
     ))
 
 ;; "." command: redo last change.
 
-(defn- #_[window_C cmdarg_C] nv-dot [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-dot [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
         ;; If "restart_edit" is true, the last but one command is repeated instead of the last command (inserting text).
         ;; This is used for CTRL-O <.> in insert mode.
-        (if (not (start-redo win, (:count0 cap), (and (non-zero? @restart_edit) (not @arrow_used))))
-            (clearopbeep cap)
-            cap
-        )
+        (let [? (start-redo win, (:count0 cap), (and (non-zero? @restart_edit) (not @arrow_used)))]
+            [win (if (not ?) (clearopbeep cap) cap)])
     ))
 
 ;; CTRL-R: undo undo
 
-(defn- #_[window_C cmdarg_C] nv-redo [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-redo [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
         (u-redo (:count1 cap))
-        (swap! curwin assoc :w_set_curswant true)
-        cap
+        [(assoc win :w_set_curswant true) cap]
     ))
 
 ;; Handle "U" command.
 
-(defn- #_[window_C cmdarg_C] nv-Undo [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-Undo [#_window_C win, #_cmdarg_C cap]
     ;; In Visual mode and typing "gUU" triggers an operator.
     (cond (or (== (:op_type (:oap cap)) OP_UPPER) @VIsual_active)
-        (nv-operator (assoc cap :cmdchar (byte \g) :nchar (byte \U))) ;; translate "gUU" to "gUgU"
+        (nv-operator win, (assoc cap :cmdchar (byte \g) :nchar (byte \U))) ;; translate "gUU" to "gUgU"
     :else
-        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-            (swap! curwin u-undoline)
-            (swap! curwin assoc :w_set_curswant true)
-            cap)
+        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+            [(-> win (u-undoline) (assoc :w_set_curswant true)) cap])
     ))
 
 ;; '~' command: If tilde is not an operator and Visual is off: swap case of a single character.
 
-(defn- #_[window_C cmdarg_C] nv-tilde [#_window_C win, #_cmdarg_C cap]
-    (if (or @p_to @VIsual_active (== (:op_type (:oap cap)) OP_TILDE)) (nv-operator cap) (n-swapchar cap)))
+(defn- #_[window_C cmdarg_C] nv-tilde [#_window_C win, #_cmdarg_C cap]
+    (if (or @p_to @VIsual_active (== (:op_type (:oap cap)) OP_TILDE)) (nv-operator win, cap) (n-swapchar win, cap)))
 
 ;; Handle an operator command.
 ;; The actual work is done by do-pending-operator().
 
-(defn- #_[window_C cmdarg_C] nv-operator [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-operator [#_window_C win, #_cmdarg_C cap]
     (let [#_int op_type (get-op-type (:cmdchar cap), (:nchar cap))]
         (cond (== op_type (:op_type (:oap cap))) ;; double operator works on lines
-            (nv-lineop cap)
+            (nv-lineop win, cap)
         :else
-            (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-                (update cap :oap assoc :op_start (:w_cursor win) :op_type op_type)
+            (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+                [win (update cap :oap assoc :op_start (:w_cursor win) :op_type op_type)]
             ))
     ))
 
@@ -10534,58 +10503,54 @@
 ;; are really an alternate form of "d_" and "y_".  It does accept a count, so
 ;; "d3_" works to delete 3 lines.
 
-(defn- #_[window_C cmdarg_C] nv-lineop [#_window_C win, #_cmdarg_C cap]
-    (let [cap (update cap :oap assoc :motion_type MLINE) motion_force (:motion_force (:oap cap)) op_type (:op_type (:oap cap))]
-        (cond (not (let [[_ ?] (cursor-down? win, (dec (:count1 cap)), (== op_type OP_NOP))] (reset! curwin _) ?))
-            (clearopbeep cap)
+(defn- #_[window_C cmdarg_C] nv-lineop [#_window_C win, #_cmdarg_C cap]
+    (let [cap (update cap :oap assoc :motion_type MLINE) motion_force (:motion_force (:oap cap)) op_type (:op_type (:oap cap))
+          [win ?] (cursor-down? win, (dec (:count1 cap)), (== op_type OP_NOP))]
+        (cond (not ?)
+            [win (clearopbeep cap)]
         ;; only with linewise motions
         (or (and (== op_type OP_DELETE) (!= motion_force (byte \v)) (!= motion_force Ctrl_V)) (== op_type OP_LSHIFT) (== op_type OP_RSHIFT))
-            (do (swap! curwin beginline (| BL_SOL BL_FIX)) cap)
-        (!= op_type OP_YANK)        ;; 'Y' does not move cursor
-            (do (swap! curwin beginline (| BL_WHITE BL_FIX)) cap)
+            [(beginline win, (| BL_SOL BL_FIX)) cap]
+        (!= op_type OP_YANK) ;; 'Y' does not move cursor
+            [(beginline win, (| BL_WHITE BL_FIX)) cap]
         :else
-            cap
+            [win cap]
         )
     ))
 
 ;; <Home> command.
 
-(defn- #_[window_C cmdarg_C] nv-home [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-home [#_window_C win, #_cmdarg_C cap]
     ;; CTRL-HOME is like "gg"
-    (let [cap (if (flag? @mod_mask MOD_MASK_CTRL) (nv-goto cap) (nv-pipe (assoc cap :count0 1)))]
-        (reset! ins_at_eol false)     ;; don't move cursor past eol (only necessary in a one-character line)
-        cap
+    (let [[win cap] (if (flag? @mod_mask MOD_MASK_CTRL) (nv-goto win, cap) (nv-pipe win, (assoc cap :count0 1)))]
+        (reset! ins_at_eol false) ;; don't move cursor past eol (only necessary in a one-character line)
+        [win cap]
     ))
 
 ;; "|" command.
 
-(defn- #_[window_C cmdarg_C] nv-pipe [#_window_C win, #_cmdarg_C cap]
-    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false) col (max 0 (dec (:count0 cap)))]
-        (swap! curwin beginline 0)
-        (swap! curwin coladvance col)
+(defn- #_[window_C cmdarg_C] nv-pipe [#_window_C win, #_cmdarg_C cap]
+    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false) col (max 0 (dec (:count0 cap)))
+          win (-> win (beginline 0) (coladvance col))]
         ;; Keep curswant at the column where we wanted to go,
         ;; not where we ended; differs if line is too short.
-        (swap! curwin assoc :w_curswant col :w_set_curswant false)
-        cap
+        [(assoc win :w_curswant col, :w_set_curswant false) cap]
     ))
 
 ;; Handle back-word command "b" and "B".
 ;; cap.arg is 1 for "B"
 
-(defn- #_[window_C cmdarg_C] nv-bck-word [#_window_C win, #_cmdarg_C cap]
-    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)]
-        (swap! curwin assoc :w_set_curswant true)
-        (if (not (let [[_ ?] (bck-word? win, (:count1 cap), (non-zero? (:arg cap)), false)] (reset! curwin _) ?))
-            (clearopbeep cap)
-            cap
-        )
+(defn- #_[window_C cmdarg_C] nv-bck-word [#_window_C win, #_cmdarg_C cap]
+    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false) win (assoc win :w_set_curswant true)
+          [win ?] (bck-word? win, (:count1 cap), (non-zero? (:arg cap)), false)]
+        [win (if (not ?) (clearopbeep cap) cap)]
     ))
 
 ;; Handle word motion commands "e", "E", "w" and "W".
 ;; cap.arg is TRUE for "E" and "W".
 
-(defn- #_[window_C cmdarg_C] nv-wordcmd [#_window_C win, #_cmdarg_C cap]
-    (let-when [win @curwin end? (any == (:cmdchar cap) (byte \e) (byte \E))
+(defn- #_[window_C cmdarg_C] nv-wordcmd [#_window_C win, #_cmdarg_C cap]
+    (let-when [end? (any == (:cmdchar cap) (byte \e) (byte \E))
           ;; set inclusive for the "E" and "e" command
           cap (update cap :oap assoc :motion_type MCHAR :inclusive end?)
           ;; "cw" and "cW" are special
@@ -10610,7 +10575,7 @@
                     :else
                         __
                     ))
-            )] (some? _) => (do (reset! curwin win) cap)
+            )] (some? _) => [win cap]
 
         (let [o'cursor (:w_cursor win) win (assoc win :w_set_curswant true)
               [win ?]
@@ -10619,13 +10584,11 @@
                     (fwd-word? win, (:count1 cap), (non-zero? (:arg cap)), (!= (:op_type (:oap cap)) OP_NOP)))
               ;; Don't leave the cursor on the NUL past the end of line.
               ;; Unless we didn't move it forward.
-              [win cap] (if (ltpos o'cursor, (:w_cursor win)) (adjust-cursor win, cap) [win cap])
-              [win cap]
-                (if (and (not ?) (== (:op_type (:oap cap)) OP_NOP))
-                    [win (clearopbeep cap)]
-                    (adjust-for-sel win, cap)
-                )]
-            (do (reset! curwin win) cap))
+              [win cap] (if (ltpos o'cursor, (:w_cursor win)) (adjust-cursor win, cap) [win cap])]
+            (if (and (not ?) (== (:op_type (:oap cap)) OP_NOP))
+                [win (clearopbeep cap)]
+                (adjust-for-sel win, cap)
+            ))
     ))
 
 ;; Used after a movement command: if the cursor ends up on the NUL after the end of the line,
@@ -10641,11 +10604,11 @@
 ;; "0" and "^" commands.
 ;; cap.arg is the argument for beginline().
 
-(defn- #_[window_C cmdarg_C] nv-beginline [#_window_C win, #_cmdarg_C cap]
-    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)]
-        (swap! curwin beginline (:arg cap))
+(defn- #_[window_C cmdarg_C] nv-beginline [#_window_C win, #_cmdarg_C cap]
+    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)
+          win (beginline win, (:arg cap))]
         (reset! ins_at_eol false) ;; don't move cursor past eol (only necessary in a one-character line)
-        cap
+        [win cap]
     ))
 
 ;; In exclusive Visual mode, may include the last character.
@@ -10679,48 +10642,47 @@
 
 ;; SELECT key in Normal or Visual mode: end of Select mode mapping.
 
-(defn- #_[window_C cmdarg_C] nv-select [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-select [#_window_C win, #_cmdarg_C cap]
     (cond
-        @VIsual_active (do (reset! VIsual_select true) cap)
-        @VIsual_reselect (nv-g-cmd (assoc cap :nchar (byte \v) :arg TRUE)) ;; fake "gv" command
-        :else cap
+        @VIsual_active   (do (reset! VIsual_select true) [win cap])
+        @VIsual_reselect (nv-g-cmd win, (assoc cap :nchar (byte \v) :arg TRUE)) ;; fake "gv" command
+        :else            [win cap]
     ))
 
 ;; "G", "gg", CTRL-END, CTRL-HOME.
 ;; cap.arg is TRUE for "G".
 
-(defn- #_[window_C cmdarg_C] nv-goto [#_window_C win, #_cmdarg_C cap]
-    (let [lmax (line-count @curbuf) lnum (if (zero? (:arg cap)) 1 lmax) cap (assoc-in cap [:oap :motion_type] MLINE)]
-        (swap! curwin setpcmark)
-        (let [lnum (if (non-zero? (:count0 cap)) (:count0 cap) lnum)] ;; when a count is given, use it instead of the default lnum
-            (swap! curwin assoc-in [:w_cursor :lnum] (max 1 (min lnum lmax)))
-            (swap! curwin beginline (| BL_SOL BL_FIX)))
-        cap
+(defn- #_[window_C cmdarg_C] nv-goto [#_window_C win, #_cmdarg_C cap]
+    (let [lmax (line-count @curbuf) lnum (if (zero? (:arg cap)) 1 lmax) cap (assoc-in cap [:oap :motion_type] MLINE)
+          win (setpcmark win)]
+        (let [lnum (if (non-zero? (:count0 cap)) (:count0 cap) lnum) ;; when a count is given, use it instead of the default lnum
+              win (assoc-in win [:w_cursor :lnum] (max 1 (min lnum lmax)))]
+            [(beginline win, (| BL_SOL BL_FIX)) cap]
+        )
     ))
 
 ;; CTRL-\ in Normal mode.
 
-(defn- #_[window_C cmdarg_C] nv-normal [#_window_C win, #_cmdarg_C cap]
-    (let-when [key (:nchar cap)] (any == key Ctrl_N Ctrl_G) => (clearopbeep cap)
+(defn- #_[window_C cmdarg_C] nv-normal [#_window_C win, #_cmdarg_C cap]
+    (let-when [key (:nchar cap)] (any == key Ctrl_N Ctrl_G) => [win (clearopbeep cap)]
         (when (and (non-zero? @restart_edit) @mode_displayed)
-            (reset! clear_cmdline true))        ;; unshow mode later
+            (reset! clear_cmdline true)) ;; unshow mode later
         (reset! restart_edit 0)
         (when (non-zero? @cmdwin_type)
             (reset! cmdwin_result Ctrl_C))
-        (when @VIsual_active
-            (swap! curwin end-visual-mode)      ;; stop Visual
-            (redraw-curbuf-later INVERTED))
-        ;; CTRL-\ CTRL-G restarts Insert mode when 'insertmode' is set.
-        (when (and (== key Ctrl_G) @p_im)
-            (reset! restart_edit (byte \a)))
-        (clearop cap)
+        (let [win (if @VIsual_active (let [win (end-visual-mode win)] (redraw-curbuf-later INVERTED) win) win)] ;; stop Visual
+            ;; CTRL-\ CTRL-G restarts Insert mode when 'insertmode' is set.
+            (when (and (== key Ctrl_G) @p_im)
+                (reset! restart_edit (byte \a)))
+            [win (clearop cap)]
+        )
     ))
 
 ;; ESC in Normal mode: beep, but don't flush buffers.
 ;; Don't even beep if we are canceling a command.
 
-(defn- #_[window_C cmdarg_C] nv-esc [#_window_C win, #_cmdarg_C cap]
-    (let [no_reason (and (== (:op_type (:oap cap)) OP_NOP) (== (:opcount cap) 0) (== (:count0 cap) 0) (zero? (:regname (:oap cap))) (not @p_im))
+(defn- #_[window_C cmdarg_C] nv-esc [#_window_C win, #_cmdarg_C cap]
+    (let-when [no_reason (and (== (:op_type (:oap cap)) OP_NOP) (== (:opcount cap) 0) (== (:count0 cap) 0) (zero? (:regname (:oap cap))) (not @p_im))
           ? (or (zero? (:arg cap)) ;; false for CTRL-C
                 (do (when (and (zero? @restart_edit) (zero? @cmdwin_type) (not @VIsual_active) no_reason)
                         (msg (u8 "Type  :quit<Enter>  to exit Vim")))
@@ -10728,54 +10690,60 @@
                         (reset! restart_edit 0))
                     (or (zero? @cmdwin_type)
                         (do (reset! cmdwin_result K_IGNORE) (reset! got_int false) false))
-                ))]
-        (if ?
-            (do (cond @VIsual_active
-                    (do (swap! curwin end-visual-mode)              ;; stop Visual
-                        (swap! curwin check-cursor-col)             ;; make sure cursor is not beyond EOL
-                        (swap! curwin assoc :w_set_curswant true)
-                        (redraw-curbuf-later INVERTED))
-                    no_reason (beep))
-                ;; When 'insertmode' is set, return to Insert mode afterwards.
-                (when (and (zero? @restart_edit) (goto-im))
-                    (reset! restart_edit (byte \a)))
-                (clearop cap))
-            cap)
+                ))
+    ] ? => [win cap]
+
+        (let [win (if @VIsual_active ;; stop Visual ;; make sure cursor is not beyond EOL
+                    (let [win (-> win (end-visual-mode) (check-cursor-col) (assoc :w_set_curswant true))]
+                        (redraw-curbuf-later INVERTED)
+                        win)
+                    (do (when no_reason (beep)) win)
+                )]
+            ;; When 'insertmode' is set, return to Insert mode afterwards.
+            (when (and (zero? @restart_edit) (goto-im))
+                (reset! restart_edit (byte \a)))
+            [win (clearop cap)]
+        )
     ))
 
 ;; Handle "A", "a", "I", "i" and <Insert> commands.
 
-(defn- #_[window_C cmdarg_C] nv-edit [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-edit [#_window_C win, #_cmdarg_C cap]
     (let [cap (if (any == (:cmdchar cap) K_INS K_KINS) (assoc cap :cmdchar (byte \i)) cap)] ;; <Insert> is equal to "i"
         ;; in Visual mode "A" and "I" are an operator
         (cond (and @VIsual_active (any == (:cmdchar cap) (byte \A) (byte \I)))
-            (v-visop cap)
+            (v-visop win, cap)
         ;; in Visual mode and after an operator "a" and "i" are for text objects
         (and (any == (:cmdchar cap) (byte \a) (byte \i)) (or (!= (:op_type (:oap cap)) OP_NOP) @VIsual_active))
-            (nv-object cap)
+            (nv-object win, cap)
         :else
-            (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+            (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
                 ;; Pretend Insert mode here to allow the cursor on the character past the end of the line.
-                (let [cola- #(let [_ @State] (reset! State INSERT) (swap! curwin coladvance %) (reset! State _)) curl (ml-get-cursor win)]
-                    (condp == (:cmdchar cap)
-                        (byte \A) ;; "A"ppend after the line
-                            (do (swap! curwin assoc :w_set_curswant true)
-                                (if (== @ve_flags VE_ALL)
-                                    (cola- MAXCOL)
-                                    (swap! curwin update-in [:w_cursor :col] + (STRLEN curl))
+                (let [cola- (fn [win i] (let [o'State @State _ (reset! State INSERT) win (coladvance win, i) _ (reset! State o'State)] win))
+                      curl (ml-get-cursor win)
+                      win (condp == (:cmdchar cap)
+                            (byte \A) ;; "A"ppend after the line
+                                (let [win (assoc win :w_set_curswant true)]
+                                    (if (== @ve_flags VE_ALL)
+                                        (cola- win, MAXCOL)
+                                        (update-in win [:w_cursor :col] + (STRLEN curl))
+                                    ))
+                            (byte \I) ;; "I"nsert before the first non-blank
+                                (beginline win, (if (nil? (vim-strbyte @p_cpo, CPO_INSEND)) BL_WHITE (| BL_WHITE BL_FIX)))
+                            (byte \a) ;; "a"ppend is like "i"nsert on the next character
+                                ;; Increment "coladd" when in virtual space, increment the column otherwise, also to append after an unprintable char.
+                                (cond (and (virtual-active) (or (< 0 (:coladd (:w_cursor win))) (eos? curl) (at? curl TAB)))
+                                    (update-in win [:w_cursor :coladd] inc)
+                                (non-eos? curl)
+                                    (inc-cursor win, false)
+                                :else
+                                    win
                                 ))
-                        (byte \I) ;; "I"nsert before the first non-blank
-                            (swap! curwin beginline (if (nil? (vim-strbyte @p_cpo, CPO_INSEND)) BL_WHITE (| BL_WHITE BL_FIX)))
-                        (byte \a) ;; "a"ppend is like "i"nsert on the next character
-                            ;; Increment "coladd" when in virtual space, increment the column otherwise, also to append after an unprintable char.
-                            (cond (and (virtual-active) (or (< 0 (:coladd (:w_cursor win))) (eos? curl) (at? curl TAB)))
-                                (swap! curwin update-in [:w_cursor :coladd] inc)
-                            (non-eos? curl)
-                                (swap! curwin inc-cursor false)
-                            ))
-                    (when (and (non-zero? (:coladd (:w_cursor win))) (!= (:cmdchar cap) (byte \A)))
-                        (cola- (getviscol win)))
-                    (invoke-edit cap, false, (:cmdchar cap), false))
+                      win (if (and (non-zero? (:coladd (:w_cursor win))) (!= (:cmdchar cap) (byte \A)))
+                            (cola- win, (getviscol win))
+                            win
+                        )]
+                    [win (invoke-edit cap, false, (:cmdchar cap), false)])
             ))
     ))
 
@@ -10797,7 +10765,7 @@
 
 ;; "a" or "i" while an operator is pending or in Visual mode: object motion.
 
-(defn- #_[window_C cmdarg_C] nv-object [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-object [#_window_C win, #_cmdarg_C cap]
     ;; make sure (), [], {} and <> are in 'matchpairs'
     (let [o'mps @(:b_p_mps @curbuf) _ (reset! (:b_p_mps @curbuf) (u8 "(:),{:},[:],<:>"))
           ;; "ax" = an object: include white space ;; "ix" = inner object: exclude white space
@@ -10822,72 +10790,68 @@
             )]
         (reset! (:b_p_mps @curbuf) o'mps)
         (let [cap (if (not ok?) (clearopbeep cap) cap)]
-            (swap! curwin adjust-cursor-col)
-            (swap! curwin assoc :w_set_curswant true)
-            cap
+            [(-> win (adjust-cursor-col) (assoc :w_set_curswant true)) cap]
         )
     ))
 
 ;; "q" command: Start/stop recording.
 ;; "q:", "q/", "q?": edit command-line in command-line window.
 
-(defn- #_[window_C cmdarg_C] nv-record [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-record [#_window_C win, #_cmdarg_C cap]
     (cond (== (:op_type (:oap cap)) OP_FORMAT)
-        (nv-operator (assoc cap :cmdchar (byte \g) :nchar (byte \q))) ;; "gqq" is the same as "gqgq": format line
+        (nv-operator win, (assoc cap :cmdchar (byte \g) :nchar (byte \q))) ;; "gqq" is the same as "gqgq": format line
     :else
-        (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+        (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
             (let [nchar (:nchar cap)]
                 (cond (any == nchar (byte \:) (byte \/) (byte \?))
-                    (do (stuff-char nchar) (stuff-char K_CMDWIN) cap)
+                    (do (stuff-char nchar) (stuff-char K_CMDWIN) [win cap])
                 ;; (stop) recording into a named register, unless executing a register
                 (and (not @execReg) (not (do-record nchar)))
-                    (clearopbeep cap)
+                    [win (clearopbeep cap)]
                 :else
-                    cap)
+                    [win cap])
             ))
     ))
 
 ;; Handle the "@r" command.
 
-(defn- #_[window_C cmdarg_C] nv-at [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-at [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
         (cond (and (== (:nchar cap) (byte \=)) (== (get-expr-register) NUL))
-            cap
+            [win cap]
         :else
-            (loop-when cap (and (< 0 (:count1 cap)) (not @got_int)) => cap
+            (loop-when cap (and (< 0 (:count1 cap)) (not @got_int)) => [win cap]
                 (if (do-execreg (:nchar cap))
                     (do (slow-breakcheck) (recur (update cap :count1 dec)))
-                    (clearopbeep cap)
+                    [win (clearopbeep cap)]
                 ))
         )
     ))
 
 ;; Handle the CTRL-U and CTRL-D commands.
 
-(defn- #_[window_C cmdarg_C] nv-halfpage [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-halfpage [#_window_C win, #_cmdarg_C cap]
     (let [key (:cmdchar cap) lnum (:lnum (:w_cursor win)) lmax (line-count @curbuf)]
         (cond (or (and (== key Ctrl_U) (== lnum 1)) (and (== key Ctrl_D) (== lnum lmax)))
-            (clearopbeep cap)
+            [win (clearopbeep cap)]
         :else
-            (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-                (swap! curwin halfpage (== key Ctrl_D), (:count0 cap))
-                cap
+            (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+                [(halfpage win, (== key Ctrl_D), (:count0 cap)) cap]
             ))
     ))
 
 ;; Handle "J" or "gJ" command.
 
-(defn- #_[window_C cmdarg_C] nv-join [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-join [#_window_C win, #_cmdarg_C cap]
     (cond @VIsual_active ;; join the visual lines
-        (nv-operator cap)
+        (nv-operator win, cap)
     :else
-        (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+        (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
             (let [cap (update cap :count0 max 2)] ;; default for join is two lines!
                 (if (<= (dec (+ (:lnum (:w_cursor win)) (:count0 cap))) (line-count @curbuf))
                     (do (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
-                        (swap! curwin do-join (:count0 cap), (== (:nchar cap) NUL), true, true)
-                        cap)
-                    (clearopbeep cap) ;; beyond last line
+                        [(do-join win, (:count0 cap), (== (:nchar cap) NUL), true, true) cap])
+                    [win (clearopbeep cap)] ;; beyond last line
                 )
             )
         )
@@ -11283,13 +11247,13 @@
             (let-when [n (:line_count oap)] (< @p_report n)
                 (let [#_Bytes s (if (== (:op_type oap) OP_RSHIFT) (u8 ">") (u8 "<"))]
                     (cond (== n 1)
-;%%                     (if (== amount 1)
-;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed 1 time"), s)
-;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed %d times"), s, amount))
+                        (if (== amount 1)
+                            (ß .sprintf libC @ioBuff, (u8 "1 line %sed 1 time"), s)
+                            (ß .sprintf libC @ioBuff, (u8 "1 line %sed %d times"), s, amount))
                     :else
-;%%                     (if (== amount 1)
-;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), n, s)
-;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), n, s, amount))
+                        (if (== amount 1)
+                            (ß .sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), n, s)
+                            (ß .sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), n, s, amount))
                     )
                     (msg @ioBuff)
                 ))
