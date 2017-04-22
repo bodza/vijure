@@ -929,7 +929,6 @@
 (final int FM_SKIPCOMM     0x08)    ;; skip comments
 
 ;; Values for action argument for do_buffer().
-(final int DOBUF_GOTO      0)       ;; go to specified buffer
 (final int DOBUF_UNLOAD    2)       ;; unload specified buffer(s)
 (final int DOBUF_WIPE      4)       ;; delete specified buffer(s) really
 
@@ -2317,7 +2316,6 @@
         (field int          b_nwindows)         ;; nr of windows open on this buffer
 
         (field int          b_flags)            ;; various BF_ flags
-        (field boolean      b_closing)          ;; buffer is being closed, don't let autocommands close it too
 
         (field int          b_fnum)             ;; buffer number for this file.
 
@@ -3644,11 +3642,6 @@
 (final int SIGNAL_BLOCK    -1)
 (final int SIGNAL_UNBLOCK  -2)
 
-;; flags for buf_freeall()
-(final int BFA_DEL         1)       ;; buffer is going to be deleted
-(final int BFA_WIPE        2)       ;; buffer is going to be wiped out
-(final int BFA_KEEP_UNDO   4)       ;; do not free undo information
-
 ;; direction for nv_mousescroll() and ins_mousescroll()
 (final int MSCR_DOWN       0)       ;; DOWN must be false
 (final int MSCR_UP         1)
@@ -3659,17 +3652,9 @@
 (final int KEYLEN_PART_MAP -2)      ;; keylen value for incomplete mapping
 (final int KEYLEN_REMOVED  9999)    ;; keylen value for removed sequence
 
-;; Option types for various functions in option.c.
-(final int SREQ_GLOBAL     0)       ;; Request global option
-(final int SREQ_WIN        1)       ;; Request window-local option
-(final int SREQ_BUF        2)       ;; Request buffer-local option
-
 ;; Flags for get_reg_contents().
 (final int GREG_NO_EXPR    1)       ;; Do not allow expression register
 (final int GREG_EXPR_SRC   2)       ;; Return expression itself for "=" register
-
-;; Character used as separated in autoload function/variable names.
-(final byte AUTOLOAD_CHAR \#)
 
 ;; Position comparisons
 
@@ -10634,14 +10619,14 @@
 
 (defn- #_void buf_copy_options [#_buffer_C buf, #_int flags]
     (§
+        ;; Don't do anything if the buffer is invalid.
+
+;       if (buf == null)
+;           return;
+
 ;       boolean should_copy = true;
 ;       Bytes save_p_isk = null;
 ;       boolean did_isk = false;
-
-        ;; Don't do anything if the buffer is invalid.
-
-;       if (buf == null || !buf_valid(buf))
-;           return;
 
         ;; Skip this when the option defaults have not been set yet.
         ;; Happens when main() allocates the first buffer.
@@ -11608,37 +11593,12 @@
 
 ;       if (buf != @curbuf)
 ;       {
-            ;; Be careful: The autocommands may delete any buffer and
-            ;; change the current buffer.
-            ;; - If the buffer we are going to edit is deleted, give up.
-            ;; - If the current buffer is deleted, prefer to load the new
-            ;;   buffer when loading a buffer is required.  This avoids
-            ;;   loading another buffer which then must be closed again.
-            ;; - If we ended up in the new buffer already, need to skip
-            ;;   a few things, set auto_buf.
-
-;           if (!buf_valid(buf))                ;; new buffer has been deleted
-;           {
-;               delbuf_msg(null);
-;               return false;
-;           }
-;           if (@got_int)                     ;; autocmds may abort script processing
-;               return false;
-
 ;           buf_copy_options(buf, BCO_ENTER);
 
             ;; close the link to the current buffer
 ;           u_sync(false);
 ;           close_buffer(null, @curbuf, 0, false);
 
-;           if (@got_int)                 ;; autocmds may abort script processing
-;               return false;
-            ;; Be careful again, like above.
-;           if (!buf_valid(buf))            ;; new buffer has been deleted
-;           {
-;               delbuf_msg(null);
-;               return false;
-;           }
 ;           if (buf == @curbuf)              ;; already in new buffer
 ;               auto_buf = true;
 ;           else
@@ -11673,10 +11633,7 @@
 
 ;       if (!auto_buf)
 ;       {
-            ;; Set cursor and init window before reading the file and executing autocommands.
-            ;; This allows for the autocommands to position the cursor.
-
-;           curwin_init();
+;           win_init_empty(@curwin);
 
             ;; Careful: open_buffer() and apply_autocmds() may change the current buffer and window.
 
@@ -13644,12 +13601,12 @@
 
 ;                       case K_MIDDLEDRAG:
 ;                       case K_MIDDLERELEASE:
-;                           break cmdline_not_changed;          ;; Ignore mouse
+;                           break cmdline_not_changed;          ;; Ignore mouse.
 
 ;                       case K_MIDDLEMOUSE:
 ;                       {
 ;                           if (!mouse_has(MOUSE_COMMAND))
-;                               break cmdline_not_changed;      ;; Ignore mouse
+;                               break cmdline_not_changed;      ;; Ignore mouse.
 ;                           if (@clip_star.available)
 ;                               cmdline_paste('*', true, true);
 ;                           else
@@ -15642,8 +15599,8 @@
 ;       COPY_cmdline_info(@ccline, save_cli);
 ;       @cmdwin_type = 0;
 
-        ;; Safety check: The old window or buffer was deleted: It's a bug when this happens!
-;       if (!win_valid(old_curwin) || !buf_valid(old_curbuf))
+        ;; Safety check: The old window was deleted: It's a bug when this happens!
+;       if (!win_valid(old_curwin))
 ;       {
 ;           @cmdwin_result = Ctrl_C;
 ;           emsg(u8("E199: Active window or buffer deleted"));
@@ -15708,9 +15665,7 @@
 ;           win_goto(old_curwin);
 ;           win_close(wp, true);
 
-            ;; win_close() may have already wiped the buffer when 'bh' is set to 'wipe'
-;           if (buf_valid(bp))
-;               close_buffer(null, bp, DOBUF_WIPE, false);
+;           close_buffer(null, bp, DOBUF_WIPE, false);
 
             ;; Restore window sizes.
 ;           win_size_restore(winsizes);
@@ -15722,42 +15677,6 @@
 ;       setmouse();
 
 ;       return @cmdwin_result;
-    ))
-
-;; Used for commands that either take a simple command string argument, or:
-;;      cmd << endmarker
-;;        {script}
-;;      endmarker
-;; Returns a pointer to allocated memory with {script} or null.
-
-(defn- #_Bytes script_get [#_exarg_C eap, #_Bytes cmd]
-    (§
-;       if (cmd.at(0) != (byte)'<' || cmd.at(1) != (byte)'<' || eap.getline == null)
-;           return null;
-
-;       barray_C ba = new barray_C(0x400);
-
-;       Bytes dot = u8(".");
-
-;       Bytes end_pattern;
-;       if (cmd.at(2) != NUL)
-;           end_pattern = skipwhite(cmd.plus(2));
-;       else
-;           end_pattern = dot;
-
-;       for ( ; ; )
-;       {
-;           Bytes line = eap.getline(NUL, eap.cookie, 0);
-
-;           if (line == null || STRCMP(end_pattern, line) == 0)
-;               break;
-
-;           ba_concat(ba, line);
-;           ba_append(ba, (byte)'\n');
-;       }
-;       ba_append(ba, NUL);
-
-;       return new Bytes(ba.ba_data);
     ))
 
 ;; ex_docmd.c: functions for executing an Ex command line -----------------------------------------
@@ -16045,25 +15964,6 @@
 ;       }
 
 ;       return nr;
-    ))
-
-;; Function called for command which is Not Implemented.  NI!
-
-(defn- #_void ex_ni [#_exarg_C eap]
-    (§
-;       if (!eap.skip)
-;           eap.errmsg = u8("E319: Sorry, the command is not available in this version");
-    ))
-
-;; Function called for script command which is Not Implemented.  NI!
-;; Skips over ":perl <<EOF" constructs.
-
-(defn- #_void ex_script_ni [#_exarg_C eap]
-    (§
-;       if (!eap.skip)
-;           ex_ni(eap);
-;       else
-;           script_get(eap, eap.arg);
     ))
 
 ;; Execute one Ex command.
@@ -16504,9 +16404,6 @@
 ;               break doend;
 ;           }
 
-            ;; set when Not Implemented
-;           boolean ni = (cmdnames[ea.cmdidx].cmd_func == ex_ni || cmdnames[ea.cmdidx].cmd_func == ex_script_ni);
-
             ;; forced commands
 ;           if (p.at(0) == (byte)'!' && ea.cmdidx != CMD_substitute && ea.cmdidx != CMD_smagic && ea.cmdidx != CMD_snomagic)
 ;           {
@@ -16532,7 +16429,7 @@
 ;                   break doend;
 ;               }
 
-;               if (!ni && (ea.argt & RANGE) == 0 && 0 < ea.addr_count)
+;               if ((ea.argt & RANGE) == 0 && 0 < ea.addr_count)
 ;               {
                     ;; no range allowed
 ;                   errormsg = e_norange;
@@ -16540,7 +16437,7 @@
 ;               }
 ;           }
 
-;           if (!ni && (ea.argt & BANG) == 0 && ea.forceit) ;; no <!> allowed
+;           if ((ea.argt & BANG) == 0 && ea.forceit) ;; no <!> allowed
 ;           {
 ;               errormsg = e_nobang;
 ;               break doend;
@@ -16549,7 +16446,7 @@
             ;; Don't complain about the range if it is not used
             ;; (could happen if line_count is accidentally set to 0).
 
-;           if (!ea.skip && !ni)
+;           if (!ea.skip)
 ;           {
                 ;; If the range is backwards, ask for confirmation and, if given,
                 ;; swap ea.line1 & ea.line2 so it's forwards again.
@@ -16660,7 +16557,7 @@
 ;               long n;
 ;               { Bytes[] __ = { ea.arg }; n = getdigits(__); ea.arg = __[0]; }
 ;               ea.arg = skipwhite(ea.arg);
-;               if (n <= 0 && !ni && (ea.argt & ZEROR) == 0)
+;               if (n <= 0 && (ea.argt & ZEROR) == 0)
 ;               {
 ;                   errormsg = e_zerocount;
 ;                   break doend;
@@ -16689,13 +16586,13 @@
 ;           if ((ea.argt & EXFLAGS) != 0)
 ;               get_flags(ea);
                                                         ;; no arguments allowed
-;           if (!ni && (ea.argt & EXTRA) == 0 && ea.arg.at(0) != NUL && ea.arg.at(0) != (byte)'"')
+;           if ((ea.argt & EXTRA) == 0 && ea.arg.at(0) != NUL && ea.arg.at(0) != (byte)'"')
 ;           {
 ;               errormsg = e_trailing;
 ;               break doend;
 ;           }
 
-;           if (!ni && (ea.argt & NEEDARG) != 0 && ea.arg.at(0) == NUL)
+;           if ((ea.argt & NEEDARG) != 0 && ea.arg.at(0) == NUL)
 ;           {
 ;               errormsg = e_argreq;
 ;               break doend;
@@ -17437,11 +17334,6 @@
 ;       else
 ;           wp = @curwin;
 
-            ;; Refuse to quit when locked or when the buffer in the last window
-            ;; is being closed (can only happen in autocommands).
-;       if (wp.w_buffer.b_nwindows == 1 && wp.w_buffer.b_closing)
-;           return;
-
             ;; If there are more files or windows we won't exit.
 
 ;       if (only_one_window())
@@ -17479,11 +17371,6 @@
 ;           text_locked_msg();
 ;           return;
 ;       }
-
-            ;; Refuse to quit when locked or when the buffer in the last window
-            ;; is being closed (can only happen in autocommands).
-;       if (@curbuf.b_nwindows == 1 && @curbuf.b_closing)
-;           return;
 
 ;       @exiting = true;
 ;       if (eap.forceit || !check_changed_any(false))
@@ -18444,10 +18331,6 @@
 
 ;                   if (win_valid(wp))
 ;                       win_enter(wp, true);
-
-                    ;; Paranoia: did autocmds wipe out the buffer with changes?
-;                   if (!buf_valid(buf))
-;                       return true;
 
 ;                   break;
 ;               }
@@ -57264,10 +57147,6 @@
 ;;
 ;; Instead of storing file names all over the place, each file name is
 ;; stored in the buffer list.  It can be referenced by a number.
-;;
-;; The current implementation remembers all file names ever used.
-
-(final Bytes e_auabort (u8 "E855: Autocommands caused command to abort"))
 
 ;; Open current buffer, that is: open the memfile and read the file into memory.
 ;; Return false for failure, true otherwise.
@@ -57337,7 +57216,6 @@
 ;; It can be:
 ;; 0                    buffer becomes hidden
 ;; DOBUF_UNLOAD         buffer is unloaded
-;; DOBUF_DELETE         buffer is unloaded and removed from buffer list
 ;; DOBUF_WIPE           buffer is unloaded and really deleted
 ;; When doing all but the first one on the current buffer, the caller should
 ;; get a new buffer very soon!
@@ -57366,41 +57244,23 @@
         ;; When the buffer is no longer in a window, trigger BufWinLeave.
 ;       if (buf.b_nwindows == 1)
 ;       {
-;           buf.b_closing = true;
-;           if (!buf_valid(buf))
-;           {
-                ;; Autocommands deleted the buffer.
-;               emsg(e_auabort);
-;               return;
-;           }
-;           buf.b_closing = false;
 ;           if (abort_if_last && one_window())
 ;           {
                 ;; Autocommands made this the only window.
-;               emsg(e_auabort);
+;               emsg(e_auabort);
 ;               return;
 ;           }
 
             ;; When the buffer becomes hidden, but is not unloaded, trigger BufHidden.
 ;           if (!unload_buf)
 ;           {
-;               buf.b_closing = true;
-;               if (!buf_valid(buf))
-;               {
-                    ;; Autocommands deleted the buffer.
-;                   emsg(e_auabort);
-;                   return;
-;               }
-;               buf.b_closing = false;
 ;               if (abort_if_last && one_window())
 ;               {
                     ;; Autocommands made this the only window.
-;                   emsg(e_auabort);
+;                   emsg(e_auabort);
 ;                   return;
 ;               }
 ;           }
-;           if (@got_int)     ;; autocmds may abort script processing
-;               return;
 ;       }
 
 ;       int nwindows = buf.b_nwindows;
@@ -57413,33 +57273,16 @@
 ;       if (0 < buf.b_nwindows || !unload_buf)
 ;           return;
 
-        ;; Remember if we are closing the current buffer.  Restore the number of
-        ;; windows, so that autocommands in buf_freeall() don't get confused.
-;       boolean is_curbuf = (buf == @curbuf);
 ;       buf.b_nwindows = nwindows;
 
-;       buf_freeall(buf, BFA_DEL + (wipe_buf ? BFA_WIPE : 0));
+;       buf_freeall(buf);
 ;       if (win_valid(win) && win.w_buffer == buf)
 ;           win.w_buffer = null;    ;; make sure we don't use the buffer now
-
-        ;; Autocommands may have deleted the buffer.
-;       if (!buf_valid(buf))
-;           return;
-;       if (@got_int)             ;; autocmds may abort script processing
-;           return;
 
         ;; Autocommands may have opened or closed windows for this buffer.
         ;; Decrement the count for the close we do here.
 ;       if (0 < buf.b_nwindows)
 ;           --buf.b_nwindows;
-
-        ;; It's possible that autocommands change curbuf to the one being deleted.
-        ;; This might cause the previous curbuf to be deleted unexpectedly.
-        ;; But in some cases it's OK to delete the curbuf, because a new one is
-        ;; obtained anyway.  Therefore only return if curbuf changed to the deleted buffer.
-
-;       if (buf == @curbuf && !is_curbuf)
-;           return;
 
         ;; Remove the buffer from the list.
 
@@ -57453,13 +57296,12 @@
 ;               @lastbuf = buf.b_prev;
 ;           else
 ;               buf.b_next.b_prev = buf.b_prev;
-;           free_buffer(buf);
+
+;           free_buffer_stuff(buf);
 ;       }
 ;       else
 ;       {
-            ;; Free all internal variables and reset option values
-            ;; to make ":bdel" compatible with Vim 5.7.
-;           free_buffer_stuff(buf, true);
+;           free_buffer_stuff(buf);
 
             ;; Make it look like a new buffer.
 ;           buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
@@ -57481,69 +57323,26 @@
 ;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
     ))
 
-;; buf_freeall() - free all things allocated for a buffer that are related to the file.
-;; flags:
-;;  BFA_DEL        buffer is going to be deleted
-;;  BFA_WIPE       buffer is going to be wiped out
-;;  BFA_KEEP_UNDO  do not free undo information
+;; Free all things allocated for a buffer that are related to the file.
 
-(defn- #_void buf_freeall [#_buffer_C buf, #_int flags]
+(defn- #_void buf_freeall [#_buffer_C buf]
     (§
-;       boolean is_curbuf = (buf == @curbuf);
-
-;       buf.b_closing = true;
-;       if (!buf_valid(buf))            ;; autocommands may delete the buffer
-;           return;
-;       if ((flags & BFA_DEL) != 0)
-;       {
-;           if (!buf_valid(buf))        ;; autocommands may delete the buffer
-;               return;
-;       }
-;       if ((flags & BFA_WIPE) != 0)
-;       {
-;           if (!buf_valid(buf))        ;; autocommands may delete the buffer
-;               return;
-;       }
-;       buf.b_closing = false;
-;       if (@got_int)                 ;; autocommands may abort script processing
-;           return;
-
-        ;; It's possible that autocommands change curbuf to the one being deleted.
-        ;; This might cause curbuf to be deleted unexpectedly.  But in some cases
-        ;; it's OK to delete the curbuf, because a new one is obtained anyway.
-        ;; Therefore only return if curbuf changed to the deleted buffer.
-
-;       if (buf == @curbuf && !is_curbuf)
-;           return;
-
 ;       ml_close(buf);                  ;; close the memline/memfile
 ;       buf.b_ml.ml_line_count = 0;     ;; no lines in buffer
-;       if ((flags & BFA_KEEP_UNDO) == 0)
-;       {
-;           u_blockfree(buf);           ;; free the memory allocated for undo
-;           u_clearall(buf);            ;; reset all undo information
-;       }
+
+;       u_blockfree(buf);           ;; free the memory allocated for undo
+;       u_clearall(buf);            ;; reset all undo information
+
 ;       buf.b_flags &= ~BF_READERR;     ;; a read error is no longer relevant
-    ))
-
-;; Free a buffer structure and the things it contains related to the buffer
-;; itself (not the file, that must have been done already).
-
-(defn- #_void free_buffer [#_buffer_C buf]
-    (§
-;       free_buffer_stuff(buf, true);
     ))
 
 ;; Free stuff in the buffer for ":bdel" and when wiping out the buffer.
 
-(defn- #_void free_buffer_stuff [#_buffer_C buf, #_boolean free_options]
-    ;; free_options: free options as well
+(defn- #_void free_buffer_stuff [#_buffer_C buf]
     (§
-;       if (free_options)
-;       {
-;           clear_wininfo(buf);                             ;; including window-local options
-;           free_buf_options(buf);
-;       }
+;       clear_wininfo(buf);                             ;; including window-local options
+;       free_buf_options(buf);
+
 ;       map_clear_int(buf, MAP_ALL_MODES, true, false);     ;; clear local mappings
 ;       map_clear_int(buf, MAP_ALL_MODES, true, true);      ;; clear local abbrevs
     ))
@@ -57569,28 +57368,19 @@
 ;       long old_tw = @curbuf.@b_p_tw;
 
 ;       setpcmark();
-;       buflist_altfpos(@curwin);                    ;; remember curpos
+
+;       buflist_setfpos(@curbuf, @curwin, @curwin.w_cursor.lnum, @curwin.w_cursor.col, true);   ;; remember curpos
 
         ;; Don't restart Select mode after switching to another buffer.
 ;       @VIsual_reselect = false;
 
-        ;; close_windows() may change curbuf
-;       buffer_C prevbuf = @curbuf;
-
-;       if (buf_valid(prevbuf) && !@got_int)
-;       {
-;           window_C previouswin = @curwin;
-;           if (prevbuf == @curbuf)
-;               u_sync(false);
-;           close_buffer(prevbuf == @curwin.w_buffer ? @curwin : null, prevbuf, (!@cmdmod.hide && !bufIsChanged(prevbuf)) ? DOBUF_UNLOAD : 0, false);
-;           if (@curwin != previouswin && win_valid(previouswin))
-                ;; autocommands changed curwin, Grr!
-;               @curwin = previouswin;
-;       }
+;       u_sync(false);
+;       close_buffer(@curbuf == @curwin.w_buffer ? @curwin : null, @curbuf, (!@cmdmod.hide && !bufIsChanged(@curbuf)) ? DOBUF_UNLOAD : 0, false);
 
         ;; An autocommand may have deleted "buf", already entered it
         ;; (e.g., when it did ":bunload") or aborted the script processing!
         ;; If curwin.w_buffer is null, enter_buffer() will make it valid again
+
 ;       if ((buf_valid(buf) && buf != @curbuf && !@got_int) || @curwin.w_buffer == null)
 ;       {
 ;           enter_buffer(buf);
@@ -57600,8 +57390,8 @@
     ))
 
 ;; Enter a new current buffer.
-;; Old curbuf must have been abandoned already!  This also means "curbuf" may
-;; be pointing to freed memory.
+;; Old curbuf must have been abandoned already!
+;; This also means "curbuf" may be pointing to freed memory.
 
 (defn- #_void enter_buffer [#_buffer_C buf]
     (§
@@ -57868,14 +57658,6 @@
 ;           return wip.wi_fpos;
 ;       else
 ;           return @no_position;
-    ))
-
-;; Set alternate cursor position for the current buffer and window "win".
-;; Also save the local window option values.
-
-(defn- #_void buflist_altfpos [#_window_C win]
-    (§
-;       buflist_setfpos(@curbuf, win, win.w_cursor.lnum, win.w_cursor.col, true);
     ))
 
 ;; Print info about the current buffer.
@@ -65112,40 +64894,30 @@
 ;;
 ;; Most often called through changed_bytes() and changed_lines(),
 ;; which also mark the area of the display to be redrawn.
-;;
-;; Careful: may trigger autocommands that reload the buffer.
 
 (defn- #_void changed []
     (§
 ;       if (!@curbuf.@b_changed)
 ;       {
-;           changed_int();
+;           @curbuf.@b_changed = true;
+;           ml_setflags(@curbuf);
+;           check_status(@curbuf);
 ;       }
 ;       @curbuf.b_changedtick++;
-    ))
-
-;; Internal part of changed(), no user interaction.
-
-(defn- #_void changed_int []
-    (§
-;       @curbuf.@b_changed = true;
-;       ml_setflags(@curbuf);
-;       check_status(@curbuf);
     ))
 
 ;; Changed bytes within a single line for the current buffer.
 ;; - marks the windows on this buffer to be redisplayed
 ;; - marks the buffer changed by calling changed()
 ;; - invalidates cached values
-;; Careful: may trigger autocommands that reload the buffer.
 
 (defn- #_void changed_bytes [#_long lnum, #_int col]
     (§
-;       changedOneline(@curbuf, lnum);
+;       changed_one_line(@curbuf, lnum);
 ;       changed_common(lnum, col, lnum + 1, 0L);
     ))
 
-(defn- #_void changedOneline [#_buffer_C buf, #_long lnum]
+(defn- #_void changed_one_line [#_buffer_C buf, #_long lnum]
     (§
 ;       if (buf.b_mod_set)
 ;       {
@@ -83447,18 +83219,10 @@
 ;       newp.w_prev_fraction_row = oldp.w_prev_fraction_row;
 ;       copy_jumplist(oldp, newp);
 
-;       win_init_some(newp, oldp);
-
-;       check_colorcolumn(newp);
-    ))
-
-;; Initialize window "newp" from window "old".
-;; Only the essential things are copied.
-
-(defn- #_void win_init_some [#_window_C newp, #_window_C oldp]
-    (§
         ;; copy options from existing window
 ;       win_copy_options(oldp, newp);
+
+;       check_colorcolumn(newp);
     ))
 
 ;; Check if "win" is a pointer to an existing window.
@@ -83485,54 +83249,6 @@
 ;           count++;
 
 ;       return count;
-    ))
-
-;; Make "count" windows on the screen.
-;; Return actual number of windows on the screen.
-;; Must be called when there is just one window, filling the whole screen
-;; (excluding the command line).
-
-(defn- #_int make_windows [#_int count, #_boolean vertical]
-    ;; vertical: split windows vertically if true
-    (§
-;       int maxcount;
-;       if (vertical)
-;       {
-            ;; Each windows needs at least 'winminwidth' lines and a separator column.
-;           maxcount = (@curwin.w_width + @curwin.w_vsep_width - (int)(@p_wiw - @p_wmw)) / ((int)@p_wmw + 1);
-;       }
-;       else
-;       {
-            ;; Each window needs at least 'winminheight' lines and a status line.
-;           maxcount = (@curwin.w_height + @curwin.w_status_height - (int)(@p_wh - @p_wmh)) / ((int)@p_wmh + STATUS_HEIGHT);
-;       }
-
-;       if (maxcount < 2)
-;           maxcount = 2;
-;       if (maxcount < count)
-;           count = maxcount;
-
-        ;; add status line now, otherwise first window will be too big
-
-;       if (1 < count)
-;           last_status(true);
-
-;       int todo;
-        ;; todo is number of windows left to create
-;       for (todo = count - 1; 0 < todo; --todo)
-;           if (vertical)
-;           {
-;               if (win_split(@curwin.w_width - (@curwin.w_width - todo) / (todo + 1) - 1, WSP_VERT | WSP_ABOVE) == false)
-;                   break;
-;           }
-;           else
-;           {
-;               if (win_split(@curwin.w_height - (@curwin.w_height - todo * STATUS_HEIGHT) / (todo + 1) - STATUS_HEIGHT, WSP_ABOVE) == false)
-;                   break;
-;           }
-
-        ;; return actual number of windows
-;       return (count - todo);
     ))
 
 ;; Exchange current and next window
@@ -84127,7 +83843,7 @@
 ;           return false;
 ;       }
 
-;       if (win.w_closing || (win.w_buffer != null && win.w_buffer.b_closing))
+;       if (win.w_closing)
 ;           return false; ;; window is already being closed
 
         ;; When closing the last window in a tab page first go to another tab page
@@ -84209,7 +83925,7 @@
 ;           win_comp_pos();
 ;       if (close_curwin)
 ;       {
-;           win_enter_ext(wp, false, true, true, true);
+;           win_enter_ext(wp, false, true);
 ;       }
 
         ;; If last window has a status line now and we don't want one,
@@ -84890,14 +84606,6 @@
 ;           emsg(u8("E445: Other window contains changes"));
     ))
 
-;; Init the current window "curwin".
-;; Called when a new file is being edited.
-
-(defn- #_void curwin_init []
-    (§
-;       win_init_empty(@curwin);
-    ))
-
 (defn- #_void win_init_empty [#_window_C wp]
     (§
 ;       redraw_win_later(wp, NOT_VALID);
@@ -84925,7 +84633,8 @@
 
 ;       @curwin.w_buffer = @curbuf;
 ;       @curbuf.b_nwindows = 1;          ;; there is one window
-;       curwin_init();                  ;; init current window
+
+;       win_init_empty(@curwin);
 
 ;       @curwin.w_frame = newFrame(@curwin);
 
@@ -85104,36 +84813,19 @@
 
 (defn- #_void win_enter [#_window_C wp, #_boolean undo_sync]
     (§
-;       win_enter_ext(wp, undo_sync, false, true, true);
+;       win_enter_ext(wp, undo_sync, false);
     ))
 
 ;; Make window wp the current window.
 ;; Can be called with "curwin_invalid" true, which means that curwin has just
 ;; been closed and isn't valid.
 
-(defn- #_void win_enter_ext [#_window_C wp, #_boolean undo_sync, #_boolean curwin_invalid, #_boolean trigger_enter_autocmds, #_boolean trigger_leave_autocmds]
+(defn- #_void win_enter_ext [#_window_C wp, #_boolean undo_sync, #_boolean curwin_invalid]
     (§
 ;       boolean other_buffer = false;
 
 ;       if (wp == @curwin && !curwin_invalid)        ;; nothing to do
 ;           return;
-
-;       if (!curwin_invalid && trigger_leave_autocmds)
-;       {
-            ;; Be careful: If autocommands delete the window, return now.
-
-;           if (wp.w_buffer != @curbuf)
-;           {
-;               other_buffer = true;
-;               if (!win_valid(wp))
-;                   return;
-;           }
-;           if (!win_valid(wp))
-;               return;
-            ;; autocmds may abort script processing
-;           if (@got_int)
-;               return;
-;       }
 
         ;; sync undo before leaving the current buffer
 ;       if (undo_sync && @curbuf != wp.w_buffer)
