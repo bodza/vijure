@@ -1662,8 +1662,6 @@
     [
         (field long         ml_line_count)      ;; number of lines in the buffer
 
-        (field data_block_C ml_data)
-
         (field int          ml_flags)
     ])
 
@@ -9434,7 +9432,7 @@
 ;       for (extra = 0, l = line1; l <= line2; l++)
 ;       {
 ;           Bytes str = STRDUP(ml_get(l + extra));
-;           ml_append(dest + l - line1, str, 0);
+;           ml_append(dest + l - line1, str);
 ;           if (dest < line1)
 ;               extra++;
 ;       }
@@ -9534,9 +9532,8 @@
 ;       @curwin.w_cursor.lnum = n;
 ;       while (line1 <= line2)
 ;       {
-            ;; need to use STRDUP() because the line will be unlocked within ml_append()
 ;           Bytes p = STRDUP(ml_get(line1));
-;           ml_append(@curwin.w_cursor.lnum, p, 0);
+;           ml_append(@curwin.w_cursor.lnum, p);
             ;; situation 2: skip already copied lines
 ;           if (line1 == n)
 ;               line1 = @curwin.w_cursor.lnum;
@@ -9691,7 +9688,7 @@
 ;               theline.be(0, NUL);
 
 ;           did_undo = true;
-;           ml_append(lnum, theline, 0);
+;           ml_append(lnum, theline);
 ;           appended_lines_mark(lnum, 1L);
 
 ;           lnum++;
@@ -10530,7 +10527,7 @@
 ;                               if (u_inssub(lnum) == true)     ;; prepare for undo
 ;                               {
 ;                                   p1.be(0, NUL);                  ;; truncate up to the CR
-;                                   ml_append(lnum - 1, new_start, BDIFF(p1, new_start) + 1);
+;                                   ml_append(lnum - 1, new_start);
 ;                                   mark_adjust(lnum + 1, MAXLNUM, 1L, 0L);
 ;                                   if (@do__ask)
 ;                                       appended_lines(lnum - 1, 1L);
@@ -22650,7 +22647,7 @@
 ;               ml_replace(@curwin.w_cursor.lnum, newp);
 ;               if (after_p != null)
 ;               {
-;                   ml_append(@curwin.w_cursor.lnum++, after_p, 0);
+;                   ml_append(@curwin.w_cursor.lnum++, after_p);
 ;                   appended_lines_mark(@curwin.w_cursor.lnum, 1L);
 ;                   oap.op_end.lnum++;
 ;               }
@@ -23587,7 +23584,7 @@
 ;                       break theend;
 
 ;                   Bytes p = STRDUP(ml_get_cursor());
-;                   ml_append(@curwin.w_cursor.lnum, p, 0);
+;                   ml_append(@curwin.w_cursor.lnum, p);
 ;                   p = STRNDUP(ml_get_curline(), @curwin.w_cursor.col);
 ;                   ml_replace(@curwin.w_cursor.lnum, p);
 ;                   nr_lines++;
@@ -23705,7 +23702,7 @@
                     ;; add a new line
 ;                   if (@curbuf.b_ml.ml_line_count < @curwin.w_cursor.lnum)
 ;                   {
-;                       if (!ml_append(@curbuf.b_ml.ml_line_count, u8(""), 1))
+;                       if (!ml_append(@curbuf.b_ml.ml_line_count, u8("")))
 ;                           break;
 ;                       nr_lines++;
 ;                   }
@@ -23903,7 +23900,7 @@
 ;                           STRCPY(newp, y_array[y_size - 1]);
 ;                           STRCAT(newp, p);
                             ;; insert second line
-;                           ml_append(lnum, newp, 0);
+;                           ml_append(lnum, newp);
 
 ;                           Bytes oldp = ml_get(lnum);
 ;                           newp = new Bytes(col[0] + yanklen + 1);
@@ -23919,7 +23916,7 @@
 
 ;                       for ( ; i < y_size; i++)
 ;                       {
-;                           if ((y_type != MCHAR || i < y_size - 1) && !ml_append(lnum, y_array[i], 0))
+;                           if ((y_type != MCHAR || i < y_size - 1) && !ml_append(lnum, y_array[i]))
 ;                               break error;
 ;                           lnum++;
 ;                           nr_lines++;
@@ -48482,32 +48479,7 @@
 ;       return (p.at(0) == NUL);
     ))
 
-;; memline.c: Contains the functions for appending, deleting and changing the
-;; text lines.  The memfile functions are used to store the information in
-;; blocks of memory.
-
-(final int MEMFILE_PAGE_SIZE 4096)  ;; default page size
-
-;; The text of the lines is at the end of the block.  The text of the first line
-;; in the block is put at the end, the text of the second line in front of it,
-;; etc.  Thus the order of the lines is the opposite of the line number.
-
-(class! #_final data_block_C
-    [
-        (field int      db_txt_start)   ;; byte where text starts
-        (field int      db_txt_end)     ;; byte just after data block
-        (field int*     db_index)       ;; index for start of line (*union* db_text)
-                                        ;; followed by empty space upto db_txt_start
-        (field Bytes    db_text)        ;; followed by the text in the lines until end of page
-    ])
-
-;; The low bits of db_index hold the actual index.
-;; The topmost bit is used for the global command to be able to mark a line.
-;; This method is not clean, but otherwise there would be at least one extra byte used for each line.
-;; The mark has to be in this place to keep it with the correct line
-;; when other lines are inserted or deleted.
-
-(final int INDEX_SIZE      4)     ;; size of one db_index entry
+;; memline.c: Contains the functions for appending, deleting and changing the text lines.
 
 ;; Open a new memline.
 
@@ -48518,27 +48490,12 @@
 ;       ml.ml_flags = ML_EMPTY;
 ;       ml.ml_line_count = 1;
 
-        ;; Allocate first data block and create an empty line 1.
+        ;; Create an empty line 1.
 
-;       data_block_C dp = §_data_block_C();
-
-;       dp.db_txt_start = MEMFILE_PAGE_SIZE;
-;       dp.db_txt_end = MEMFILE_PAGE_SIZE;
-;       dp.db_index = new int[MEMFILE_PAGE_SIZE / INDEX_SIZE];
-;       dp.db_text = new Bytes(MEMFILE_PAGE_SIZE);
-
-;       dp.db_index[0] = --dp.db_txt_start;     ;; at end of block
-;       dp.db_text.be(dp.db_txt_start, NUL);      ;; empty line
-
-;       ml.ml_data = dp;
+        %% insert @0 u8("")
 
 ;       return ml;
     ))
-
-;; NOTE: The pointer returned by the ml_get_*() functions only remains valid until the next call!
-;;  line1 = ml_get(1);
-;;  line2 = ml_get(2);  // line1 is now invalid!
-;; Make a copy of the line if necessary.
 
 ;; Return a pointer to a (read-only copy of a) line.
 ;;
@@ -48586,9 +48543,7 @@
 ;       if (lnum <= 0)                      ;; pretend line 0 is line 1
 ;           lnum = 1;
 
-;       data_block_C dp = buf.b_ml.ml_data;
-
-;       return dp.db_text.plus(dp.db_index[(int)(lnum - 1)]);
+        %% return @(lnum - 1)
     ))
 
 ;; Append a line after lnum (may be 0 to insert a line in front of the file).
@@ -48599,56 +48554,17 @@
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean ml_append [#_long lnum, #_Bytes line, #_int len]
+(defn- #_boolean ml_append [#_long lnum, #_Bytes line]
     ;; lnum: append after this line (can be 0)
     ;; line: text of the new line
-    ;; len: length of new line, including NUL, or 0
     (§
 ;       if (@curbuf.b_ml.ml_line_count < lnum) ;; lnum out of range
 ;           return false;
 
-;       if (len == 0)
-;           len = STRLEN(line) + 1;                ;; space needed for the text
-
-;       int db_idx;                                         ;; index for lnum in data block
-;       if (lnum == 0)                                      ;; got line one instead, correct db_idx
-;           db_idx = -1;                                    ;; careful, it is negative!
-;       else
-;           db_idx = (int)(lnum - 1);
-
-        ;; get line count before the insertion
-;       int line_count = (int)@curbuf.b_ml.ml_line_count;               ;; number of indexes in current block
+        %% insert @lnum STRDUP(line)
 
 ;       @curbuf.b_ml.ml_line_count++;
 ;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
-
-;       data_block_C dp = @curbuf.b_ml.ml_data;
-
-        ;; Insert new line in existing data block, or in data block allocated above.
-
-;       dp.db_txt_start -= len;
-
-        ;; move the text of the lines that follow to the front
-        ;; adjust the indexes of the lines that follow
-
-;       if (db_idx + 1 < line_count)                    ;; if there are following lines
-;       {
-            ;; 'over' is the start of the previous line.
-            ;; This will become the character just after the new line.
-
-;           int from = dp.db_txt_start + len;
-;           int over = (db_idx < 0) ? dp.db_txt_end : dp.db_index[db_idx];
-;           BCOPY(dp.db_text, dp.db_txt_start, dp.db_text, from, over - from);
-;           for (int i = line_count; db_idx < --i; )
-;               dp.db_index[i + 1] = dp.db_index[i] - len;
-;           dp.db_index[db_idx + 1] = over - len;
-;       }
-;       else                                            ;; add line at the end
-;           dp.db_index[db_idx + 1] = dp.db_txt_start;
-
-        ;; copy the text into the block
-
-;       BCOPY(dp.db_text, dp.db_index[db_idx + 1], line, 0, len);
 
 ;       return true;
     ))
@@ -48665,40 +48581,9 @@
 ;       if (lnum == 0 || line == null)           ;; just checking...
 ;           return false;
 
+        %% replace @(lnum - 1) STRDUP(line)
+
 ;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
-
-;       data_block_C dp = @curbuf.b_ml.ml_data;
-
-;       int idx = (int)(lnum - 1);
-;       int start = dp.db_index[idx];
-;       int old_len;
-;       if (idx == 0)                               ;; line is last in block
-;           old_len = dp.db_txt_end - start;
-;       else                                        ;; text of previous line follows
-;           old_len = dp.db_index[idx - 1] - start;
-;       int new_len = STRLEN(line) + 1;
-;       int extra = new_len - old_len;              ;; negative if lines gets smaller
-
-        ;; if new line fits in data block, replace directly
-
-        ;; if the length changes and there are following lines
-;       int count = (int)@curbuf.b_ml.ml_line_count;
-;       if (extra != 0 && idx < count - 1)
-;       {
-            ;; move text of following lines
-;           BCOPY(dp.db_text, dp.db_txt_start - extra, dp.db_text, dp.db_txt_start, start - dp.db_txt_start);
-
-            ;; adjust pointers of this and following lines
-;           for (int i = idx + 1; i < count; i++)
-;               dp.db_index[i] -= extra;
-;       }
-;       dp.db_index[idx] -= extra;
-
-        ;; adjust free space
-;       dp.db_txt_start -= extra;
-
-        ;; copy new line into the data block
-;       BCOPY(dp.db_text, start - extra, line, 0, new_len);
 
 ;       return true;
     ))
@@ -48722,40 +48607,16 @@
 ;           if (message)
 ;               set_keep_msg(no_lines_msg, 0);
 
-            ;; FEAT_BYTEOFF already handled in there, don't worry 'bout it below.
-;           boolean b = ml_replace(1, u8(""));
+            %% replace @0 u8("")
+
 ;           @curbuf.b_ml.ml_flags |= ML_EMPTY;
 
-;           return b;
+;           return true;
 ;       }
 
-;       data_block_C dp = @curbuf.b_ml.ml_data;
-
-        ;; compute line count before the delete; number of entries in block
-;       int count = (int)@curbuf.b_ml.ml_line_count;
-;       int idx = (int)(lnum - 1);
+        %% delete @(lnum - 1)
 
 ;       --@curbuf.b_ml.ml_line_count;
-
-;       int line_start = dp.db_index[idx];
-;       int line_size;
-;       if (idx == 0)                           ;; first line in block, text at the end
-;           line_size = dp.db_txt_end - line_start;
-;       else
-;           line_size = dp.db_index[idx - 1] - line_start;
-
-        ;; delete the text by moving the next lines forwards
-
-;       int text_start = dp.db_txt_start;
-;       BCOPY(dp.db_text, text_start + line_size, dp.db_text, text_start, line_start - text_start);
-
-        ;; delete the index by moving the next indexes backwards
-        ;; Adjust the indexes for the text movement.
-
-;       for (int i = idx; i < count - 1; i++)
-;           dp.db_index[i] = dp.db_index[i + 1] + line_size;
-
-;       dp.db_txt_start += line_size;
 
 ;       return true;
     ))
@@ -54383,7 +54244,7 @@
 ;           boolean did_append;
 ;           if ((@State & VREPLACE_FLAG) == 0 || @orig_line_count <= old_cursor.lnum)
 ;           {
-;               if (!ml_append(@curwin.w_cursor.lnum, p_extra, 0))
+;               if (!ml_append(@curwin.w_cursor.lnum, p_extra))
 ;                   break theend;
                 ;; Postpone calling changed_lines(), because it would mess up folding with markers.
 ;               mark_adjust(@curwin.w_cursor.lnum + 1, MAXLNUM, 1L, 0L);
@@ -57962,7 +57823,7 @@
 ;               if (empty_buffer && lnum == 0)
 ;                   ml_replace(1, uep.ue_array[i]);
 ;               else
-;                   ml_append(lnum, uep.ue_array[i], 0);
+;                   ml_append(lnum, uep.ue_array[i]);
 ;           }
 
             ;; adjust marks
