@@ -12371,132 +12371,92 @@
 
 ;; Cursor right commands.
 
-(defn- #_cmdarg_C nv-right [#_cmdarg_C cap]
-    (§
-        (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
-            ;; <C-Right> and <S-Right> move a word or WORD right
-            (if (flag? @mod_mask MOD_MASK_CTRL)
-                ((ß cap.arg =) TRUE)
-            )
-            ((ß cap =) (nv-wordcmd cap))
-            ((ß RETURN) nil)
+(defn- #_cmdarg_C nv-right [#_cmdarg_C cap]
+    (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
+        (let [cap (if (flag? @mod_mask MOD_MASK_CTRL) (assoc cap :arg TRUE) cap)] ;; <C-Right> and <S-Right> move a word or WORD right
+            (nv-wordcmd cap)
         )
-
-        ((ß cap.oap.motion_type =) MCHAR)
-        ((ß cap.oap.inclusive =) false)
-        ((ß boolean past_line =) (and @VIsual_active (not-at? @p_sel (byte \o))))
-
-        ;; In virtual edit mode, there's no such thing as "past_line",
-        ;; as lines are (theoretically) infinitely long.
-
-        (if (virtual-active)
-            ((ß past_line =) false)
-        )
-
-        (loop-when-recur [#_long n (:count1 cap)] (< 0 n) [(dec n)]
-            (cond (or (and (not past_line) (not (oneright))) (and past_line (eos? (ml-get-cursor))))
-            (do
-                ;;    <Space> wraps to next line if 'whichwrap' has 's'.
-                ;;        'l' wraps to next line if 'whichwrap' has 'l'.
-                ;; CURS_RIGHT wraps to next line if 'whichwrap' has '>'.
-
-                (when (and (or (and (== (:cmdchar cap) (byte \space)) (some? (vim-strchr @p_ww, (byte \s)))) (and (== (:cmdchar cap) (byte \l)) (some? (vim-strchr @p_ww, (byte \l)))) (and (== (:cmdchar cap) K_RIGHT) (some? (vim-strchr @p_ww, (byte \>))))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
-                    ;; When deleting we also count the NL as a character.
-                    ;; Set cap.oap.inclusive when last char in the line is
-                    ;; included, move to next line after that
-                    (cond (and (!= (:op_type (:oap cap)) OP_NOP) (not (:inclusive (:oap cap))) (not (lineempty (:lnum (:w_cursor @curwin)))))
+        ;; In virtual edit mode, there's no such thing as "past_line", as lines are (theoretically) infinitely long.
+        (let [#_boolean past_line (and @VIsual_active (not-at? @p_sel (byte \o)) (not (virtual-active)))]
+            (loop-when [cap (update cap :oap assoc :motion_type MCHAR :inclusive false) n (:count1 cap)] (< 0 n) => cap
+                (if (and (or past_line (oneright)) (or (not past_line) (non-eos? (ml-get-cursor))))
                     (do
-                        ((ß cap.oap.inclusive =) true)
+                        (when past_line
+                            (swap! curwin assoc :w_set_curswant true)
+                            (if (virtual-active)
+                                (oneright)
+                                (swap! curwin update-in [:w_cursor :col] + (us-ptr2len-cc (ml-get-cursor)))
+                            )
+                        )
+                        (recur cap (dec n))
                     )
-                    :else
-                    (do
-                        (swap! curwin assoc-in [:w_cursor :lnum] (inc (:lnum (:w_cursor @curwin))))
-                        (swap! curwin assoc-in [:w_cursor :col] 0)
-                        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                        (swap! curwin assoc :w_set_curswant true)
-                        ((ß cap.oap.inclusive =) false)
-                    ))
-                    (ß CONTINUE)
-                )
-                (cond (== (:op_type (:oap cap)) OP_NOP)
-                (do
-                    ;; Only beep and flush if not moved at all.
-                    (if (== n (:count1 cap))
-                        (beep-flush))
-                )
-                :else
-                (do
-                    (if (not (lineempty (:lnum (:w_cursor @curwin))))
-                        ((ß cap.oap.inclusive =) true)
+                    ;;    <Space> wraps to next line if 'whichwrap' has 's'.
+                    ;;        'l' wraps to next line if 'whichwrap' has 'l'.
+                    ;; CURS_RIGHT wraps to next line if 'whichwrap' has '>'.
+                    (if (and (or (and (== (:cmdchar cap) (byte \space)) (some? (vim-strchr @p_ww, (byte \s))))
+                                 (and (== (:cmdchar cap) (byte \l))     (some? (vim-strchr @p_ww, (byte \l))))
+                                 (and (== (:cmdchar cap) K_RIGHT)       (some? (vim-strchr @p_ww, (byte \>)))))
+                             (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
+                        ;; When deleting we also count the NL as a character.
+                        ;; Set cap.oap.inclusive when last char in the line is included, move to next line after that.
+                        (let [_ (and (!= (:op_type (:oap cap)) OP_NOP) (not (:inclusive (:oap cap))) (not (lineempty (:lnum (:w_cursor @curwin)))))
+                              cap (update cap :oap assoc :inclusive _)]
+                            (when-not _
+                                (swap! curwin update :w_cursor #(assoc % :lnum (inc (:lnum %)) :col 0 :coladd 0))
+                                (swap! curwin assoc :w_set_curswant true)
+                            )
+                            (recur cap (dec n))
+                        )
+                        (if (== (:op_type (:oap cap)) OP_NOP)
+                            (do
+                                (when (== n (:count1 cap)) (beep-flush)) ;; only beep and flush if not moved at all
+                                cap
+                            )
+                            (if (not (lineempty (:lnum (:w_cursor @curwin))))
+                                (update cap :oap assoc :inclusive true)
+                                cap
+                            )
+                        )
                     )
-                ))
-                (ß BREAK)
-            )
-            past_line
-            (do
-                (swap! curwin assoc :w_set_curswant true)
-                (if (virtual-active)
-                    (oneright)
-                    (swap! curwin assoc-in [:w_cursor :col] (+ (:col (:w_cursor @curwin)) (us-ptr2len-cc (ml-get-cursor))))
                 )
             ))
-        )
-        nil
     ))
 
 ;; Cursor left commands.
-;;
-;; Returns true when operator end should not be adjusted.
 
-(defn- #_cmdarg_C nv-left [#_cmdarg_C cap]
-    (§
-        (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
-            ;; <C-Left> and <S-Left> move a word or WORD left
-            (if (flag? @mod_mask MOD_MASK_CTRL)
-                ((ß cap.arg =) 1)
-            )
-            ((ß cap =) (nv-bck-word cap))
-            ((ß RETURN) nil)
+(defn- #_void skip-cc! [] (let-when [#_Bytes s (ml-get-cursor)] (non-eos? s) (swap! curwin update-in [:w_cursor :col] + (us-ptr2len-cc s))) nil)
+
+(defn- #_cmdarg_C nv-left [#_cmdarg_C cap]
+    (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
+        (let [cap (if (flag? @mod_mask MOD_MASK_CTRL) (assoc cap :arg 1) cap)] ;; <C-Left> and <S-Left> move a word or WORD left
+            (nv-bck-word cap)
         )
-
-        ((ß cap.oap.motion_type =) MCHAR)
-        ((ß cap.oap.inclusive =) false)
-
-        (loop-when-recur [#_long n (:count1 cap)] (< 0 n) [(dec n)]
-            (when (not (oneleft))
+        (loop-when [cap (update cap :oap assoc :motion_type MCHAR :inclusive false) n (:count1 cap)] (< 0 n) => cap
+            (if (oneleft)
+                (recur cap (dec n))
                 ;; <BS> and <Del> wrap to previous line if 'whichwrap' has 'b'.
                 ;;           'h' wraps to previous line if 'whichwrap' has 'h'.
                 ;;     CURS_LEFT wraps to previous line if 'whichwrap' has '<'.
-
-                (cond (and (or (and (or (== (:cmdchar cap) K_BS) (== (:cmdchar cap) Ctrl_H)) (some? (vim-strchr @p_ww, (byte \b)))) (or (and (== (:cmdchar cap) (byte \h)) (some? (vim-strchr @p_ww, (byte \h)))) (and (== (:cmdchar cap) K_LEFT) (some? (vim-strchr @p_ww, (byte \<)))))) (< 1 (:lnum (:w_cursor @curwin))))
-                (do
-                    (swap! curwin assoc-in [:w_cursor :lnum] (dec (:lnum (:w_cursor @curwin))))
-                    (coladvance MAXCOL)
-                    (swap! curwin assoc :w_set_curswant true)
-
-                    ;; When the NL before the first char has to be deleted we
-                    ;; put the cursor on the NUL after the previous line.
-                    ;; This is a very special case, be careful!
-                    ;; Don't adjust op_end now, otherwise it won't work.
-                    (when (and (or (== (:op_type (:oap cap)) OP_DELETE) (== (:op_type (:oap cap)) OP_CHANGE)) (not (lineempty (:lnum (:w_cursor @curwin)))))
-                        ((ß Bytes cp =) (ml-get-cursor))
-
-                        (if (non-eos? cp)
-                            (swap! curwin assoc-in [:w_cursor :col] (+ (:col (:w_cursor @curwin)) (us-ptr2len-cc cp)))
+                (if (and (or (and (or (== (:cmdchar cap) K_BS) (== (:cmdchar cap) Ctrl_H)) (some? (vim-strchr @p_ww, (byte \b))))
+                             (or (and (== (:cmdchar cap) (byte \h))                        (some? (vim-strchr @p_ww, (byte \h))))
+                                 (and (== (:cmdchar cap) K_LEFT)                           (some? (vim-strchr @p_ww, (byte \<))))))
+                         (< 1 (:lnum (:w_cursor @curwin))))
+                    (do
+                        (swap! curwin update-in [:w_cursor :lnum] dec)
+                        (coladvance MAXCOL)
+                        (swap! curwin assoc :w_set_curswant true)
+                        ;; When the NL before the first char has to be deleted we put the cursor on the NUL after the previous line.
+                        ;; This is a very special case, be careful!  Don't adjust op_end now, otherwise it won't work.
+                        (let [_ (and (or (== (:op_type (:oap cap)) OP_DELETE) (== (:op_type (:oap cap)) OP_CHANGE)) (not (lineempty (:lnum (:w_cursor @curwin)))))
+                              cap (if _ (do (skip-cc!) (update cap :retval | CA_NO_ADJ_OP_END)) cap)]
+                            (recur cap (dec n))
                         )
-                        ((ß cap.retval =) (| (:retval cap) CA_NO_ADJ_OP_END))
                     )
-                    (ß CONTINUE)
-                )
-                ;; Only beep and flush if not moved at all.
-                (and (== (:op_type (:oap cap)) OP_NOP) (== n (:count1 cap)))
-                (do
-                    (beep-flush)
-                ))
-                (ß BREAK)
-            )
-        )
-        nil
+                    (do
+                        (when (and (== (:op_type (:oap cap)) OP_NOP) (== n (:count1 cap))) (beep-flush)) ;; only beep and flush if not moved at all
+                        cap
+                    ))
+            ))
     ))
 
 ;; Cursor up commands.
@@ -12557,47 +12517,30 @@
 ;; Implementation of '?' and '/' commands.
 ;; If cap.arg is TRUE, don't set PC mark.
 
-(defn- #_cmdarg_C nv-search [#_cmdarg_C cap]
-    (§
-        ((ß oparg_C oap =) (:oap cap))
-
-        (when (and (== (:cmdchar cap) (byte \?)) (== (:op_type (:oap cap)) OP_ROT13))
-            ;; Translate "g??" to "g?g?".
-            ((ß cap.cmdchar =) (byte \g))
-            ((ß cap.nchar =) (byte \?))
-            ((ß cap =) (nv-operator cap))
-            ((ß RETURN) nil)
+(defn- #_cmdarg_C nv-search [#_cmdarg_C cap]
+    (if (and (== (:cmdchar cap) (byte \?)) (== (:op_type (:oap cap)) OP_ROT13))
+        (nv-operator (assoc cap :cmdchar (byte \g) :nchar (byte \?))) ;; translate "g??" to "g?g?"
+        (let [cap (assoc cap :searchbuf (getcmdline (:cmdchar cap), (:count1 cap)))]
+            (if (some? (:searchbuf cap))
+                (normal-search cap, (:cmdchar cap), (:searchbuf cap), (if (zero? (:arg cap)) SEARCH_MARK 0))
+                (clearop (:oap cap))
+            )
+            cap
         )
-
-        ((ß cap.searchbuf =) (getcmdline (:cmdchar cap), (:count1 cap)))
-
-        (when (nil? (:searchbuf cap))
-            (clearop oap)
-            ((ß RETURN) nil)
-        )
-
-        (normal-search cap, (byte (:cmdchar cap)), (:searchbuf cap), (if (non-zero? (:arg cap)) 0 SEARCH_MARK))
-        nil
     ))
 
 ;; Handle "N" and "n" commands.
 ;; cap.arg is SEARCH_REV for "N", 0 for "n".
 
-(defn- #_cmdarg_C nv-next [#_cmdarg_C cap]
-    (§
-        ((ß pos_C old =) (NEW_pos_C))
-        (COPY-pos old, (:w_cursor @curwin))
-        ((ß int i =) (normal-search cap, NUL, nil, (| SEARCH_MARK (:arg cap))))
-
-        (when (and (== i 1) (eqpos old, (:w_cursor @curwin)))
-            ;; Avoid getting stuck on the current cursor position, which can
-            ;; happen when an offset is given and the cursor is on the last char
-            ;; in the buffer: Repeat with count + 1.
-            ((ß cap.count1 =) (+ (:count1 cap) 1))
-            (normal-search cap, NUL, nil, (| SEARCH_MARK (:arg cap)))
-            ((ß cap.count1 =) (- (:count1 cap) 1))
+(defn- #_cmdarg_C nv-next [#_cmdarg_C cap]
+    (let [#_pos_C cold (:w_cursor @curwin) #_int i (normal-search cap, NUL, nil, (| SEARCH_MARK (:arg cap)))]
+        (if (and (== i 1) (eqpos cold, (:w_cursor @curwin)))
+            ;; Avoid getting stuck on the current cursor position, which can happen when an offset is given
+            ;; and the cursor is on the last char in the buffer: Repeat with count + 1.
+            (let [cap (update cap :count1 inc) _ (normal-search cap, NUL, nil, (| SEARCH_MARK (:arg cap))) cap (update cap :count1 dec)]
+                cap)
+            cap
         )
-        nil
     ))
 
 ;; Search for "pat" in direction "dirc" ('/' or '?', 0 for repeat).
@@ -12796,12 +12739,9 @@
         (ß int had_ctrl_v)
         (cond (== (:nchar cap) Ctrl_V)
         (do
-            ((ß had_ctrl_v =) Ctrl_V)
             ((ß cap.nchar =) (get-literal))
             ;; Don't redo a multibyte character with CTRL-V.
-            (if (< DEL (:nchar cap))
-                ((ß had_ctrl_v =) NUL)
-            )
+            ((ß had_ctrl_v =) (if (< DEL (:nchar cap)) NUL Ctrl_V))
         )
         :else
         (do
@@ -12819,14 +12759,7 @@
             (if @got_int
                 (reset-VIsual))
             (when (!= had_ctrl_v NUL)
-                (cond (== (:nchar cap) (byte \return))
-                (do
-                    ((ß cap.nchar =) -1)
-                )
-                (== (:nchar cap) (byte \newline))
-                (do
-                    ((ß cap.nchar =) -2)
-                ))
+                ((ß cap.nchar =) (cond (== (:nchar cap) (byte \return)) -1 (== (:nchar cap) (byte \newline)) -2 :else (:nchar cap)))
             )
             ((ß cap =) (nv-operator cap))
             ((ß RETURN) nil)
@@ -12840,8 +12773,8 @@
             (cond (== (gchar) NUL)
             (do
                 ;; Add extra space and put the cursor on the first one.
-                (coladvance-force (int (+ (getviscol) (:count1 cap))))
-                (swap! curwin assoc-in [:w_cursor :col] (- (:col (:w_cursor @curwin)) (:count1 cap)))
+                (coladvance-force (+ (getviscol) (:count1 cap)))
+                (swap! curwin update-in [:w_cursor :col] - (:count1 cap))
             )
             (== (gchar) TAB)
             (do
@@ -12850,8 +12783,7 @@
         )
 
         ;; Abort if not enough characters to replace.
-        ((ß Bytes ptr =) (ml-get-cursor))
-        (when (or (< (STRLEN ptr) (:count1 cap)) (< (us-charlen ptr) (:count1 cap)))
+        (let-when [#_Bytes s (ml-get-cursor)] (or (< (STRLEN s) (:count1 cap)) (< (us-charlen s) (:count1 cap)))
             (clearopbeep (:oap cap))
             ((ß RETURN) nil)
         )
@@ -12896,45 +12828,28 @@
 
             (swap! curbuf assoc :b_op_start (:w_cursor @curwin))
 
-;           {
-                ((ß int old_State =) @State)
-
-                (if (non-zero? (:ncharC1 cap))
-                    (appendCharToRedobuff (:ncharC1 cap)))
-                (if (non-zero? (:ncharC2 cap))
-                    (appendCharToRedobuff (:ncharC2 cap)))
-
-                ;; This is slow, but it handles replacing a single-byte with a
-                ;; multi-byte and the other way around.  Also handles adding
-                ;; composing characters for utf-8.
-                (loop-when-recur [#_long n (:count1 cap)] (< 0 n) [(dec n)]
+            (let [_ @State]
+                (when (non-zero? (:ncharC1 cap)) (appendCharToRedobuff (:ncharC1 cap)))
+                (when (non-zero? (:ncharC2 cap)) (appendCharToRedobuff (:ncharC2 cap)))
+                ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
+                ;; Also handles adding composing characters for utf-8.
+                (loop-when-recur [n (:count1 cap)] (< 0 n) [(dec n)]
                     (reset! State REPLACE)
-                    (cond (or (== (:nchar cap) Ctrl_E) (== (:nchar cap) Ctrl_Y))
-                    (do
-                        ((ß int c =) (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1))))
-                        (cond (!= c NUL)
-                        (do
-                            (ins-char c)
-                        )
-                        :else
-                        (do
-                            ;; will be decremented further down
-                            (swap! curwin assoc-in [:w_cursor :col] (inc (:col (:w_cursor @curwin))))
-                        ))
-                    )
-                    :else
-                    (do
+                    (if (or (== (:nchar cap) Ctrl_E) (== (:nchar cap) Ctrl_Y))
+                        (let [#_int c (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1)))]
+                            (if (!= c NUL)
+                                (ins-char c)
+                                (swap! curwin update-in [:w_cursor :col] inc) ;; will be decremented further down
+                            ))
                         (ins-char (:nchar cap))
-                    ))
-                    (reset! State old_State)
-                    (if (non-zero? (:ncharC1 cap))
-                        (ins-char (:ncharC1 cap)))
-                    (if (non-zero? (:ncharC2 cap))
-                        (ins-char (:ncharC2 cap)))
+                    )
+                    (reset! State _)
+                    (when (non-zero? (:ncharC1 cap)) (ins-char (:ncharC1 cap)))
+                    (when (non-zero? (:ncharC2 cap)) (ins-char (:ncharC2 cap)))
                 )
-;           }
+            )
 
-            (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))      ;; cursor on the last replaced char
+            (swap! curwin update-in [:w_cursor :col] dec)      ;; cursor on the last replaced char
 
             ;; If the character on the left of the current cursor
             ;; is a multi-byte character, move two characters left.
