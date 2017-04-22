@@ -14292,6 +14292,7 @@
 (atom! int __tc)
 
 ;; Get a character:
+;;
 ;; 1. from the stuffbuffer
 ;;      This is used for abbreviated commands like "D" -> "d$".
 ;;      Also used to redo a command for ".".
@@ -14304,8 +14305,8 @@
 ;;
 ;; If "advance" is true (vgetc()):
 ;;      Really get the character.
-;;      keyTyped is set to true in the case the user typed the key.
-;;      keyStuffed is true if the character comes from the stuff buffer.
+;;      "keyTyped" is set to true in the case the user typed the key.
+;;      "keyStuffed" is true if the character comes from the stuff buffer.
 ;; If "advance" is false (vpeekc()):
 ;;      Just look whether there is a character available.
 ;;
@@ -14333,248 +14334,220 @@
             (start-stuff)
             (when advance
                 (reset! execReg false))
-            (let [a'timedout (atom (boolean false))       ;; waited for more than 1 second for mapping to complete
-                  a'mode_deleted (atom (boolean false))   ;; set when mode has been deleted
+            (let [a'timedout (atom (boolean false))     ;; waited for more than 1 second for mapping to complete
+                  a'mode_deleted (atom (boolean false)) ;; set when mode has been deleted
                   #_int c (loop []
-                    ;; get a character: 1. from the stuffbuffer
+                    ;; Get a character: 1. from the stuffbuffer.
                     (let [c (if (non-zero? @typeahead_char)
                                 (let [c @typeahead_char] (when advance (reset! typeahead_char 0)) c)
                                 (char_u (read-readbuffers advance)))
                           c (if (and (!= c NUL) (not @got_int))
                                 (do (when advance
                                         ;; keyTyped = false;
-                                        ;; When the command that stuffed something was typed,
-                                        ;; behave like the stuffed command was typed;
+                                        ;; When the command that stuffed something was typed, behave like the stuffed command was typed;
                                         ;; needed e.g. for CTRL-W CTRl-] to open a fold.
                                         (reset! keyStuffed true))
                                     c)
-                                ;; Loop until we either find a matching mapped key,
-                                ;; or we are sure that it is not a mapped key.
+                                ;; Loop until we either find a matching mapped key or we are sure that it is not a mapped key.
                                 ;; If a mapped key sequence is found, we go back to the start to try re-mapping.
                                 (loop []
-                                    (ui-breakcheck)            ;; check for CTRL-C
+                                    (ui-breakcheck) ;; check for CTRL-C
                                     (cond @got_int
                                         (let [#_int len (inchar (:tb_buf @typebuf), (dec (:tb_buflen @typebuf)), 0, (:tb_change_cnt @typebuf)) ;; flush all input
-                                              ;; If inchar() returns true (script file was active)
-                                              ;; or we are inside a mapping, get out of insert mode.
+                                              ;; If inchar() returns true (script file was active) or we are inside a mapping, get out of insert mode.
                                               ;; Otherwise we behave like having gotten a CTRL-C.
-                                              ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
+                                              ;; As a result, typing CTRL-C in insert mode will really insert a CTRL-C.
                                               c (if (and (non-zero? len) (flag? @State (+ INSERT CMDLINE))) ESC Ctrl_C)]
-                                            (flush-buffers true)        ;; flush all typeahead
+                                            (flush-buffers true) ;; flush all typeahead
                                             (when advance
                                                 ;; Also record this character, it might be needed to get out of Insert mode.
                                                 (.be (:tb_buf @typebuf) 0, c)
                                                 (gotchars (:tb_buf @typebuf), 1))
                                             c)
                                     :else
-
-                                        (§
-                                            ((ß int keylen =) (if (< 0 (:tb_len @typebuf))
-                                                ;; When no matching mapping found or found a non-matching mapping
-                                                ;; that matches at least what the matching mapping matched:
-                                                ;; Check if we have a terminal code, when:
-                                                ;; - mapping is allowed,
-                                                ;; - keys have not been mapped,
-                                                ;; - and when not timed out.
-                                                (let [keylen
-                                                        (if (and (or (zero? @no_mapping) (non-zero? @allow_keys)) (not @a'timedout))
-                                                            (let [keylen (check-termcode nil, 0, nil)]
-                                                                ;; When getting a partial match, but the last characters were not typed,
-                                                                ;; don't wait for a typed character to complete the termcode.
-                                                                ;; This helps a lot when a ":normal" command ends in an ESC.
-                                                                (if (and (< keylen 0) (zero? (:tb_len @typebuf))) 0 keylen))
-                                                            0)]
-                                                    (cond (zero? keylen)        ;; no matching terminal code
-                                                        ;; get a character: 2. from the typeahead buffer
-                                                        (let [c (& (.at (:tb_buf @typebuf) (:tb_off @typebuf)) 0xff)]
-                                                            (when advance    ;; remove chars from tb_buf
-                                                                (reset! keyTyped true)
-                                                                ;; write char to script file(s)
-                                                                (gotchars (.plus (:tb_buf @typebuf) (:tb_off @typebuf)), 1)
-                                                                (del-typebuf 1))
-                                                            (ß BREAK)          ;; got character, break for loop
-                                                        )
-                                                    (< 0 keylen)         ;; full matching terminal code
-                                                        (ß CONTINUE)           ;; try mapping again
-                                                    :else
-                                                        ;; Partial match: get some more characters.
-                                                        KEYLEN_PART_KEY
-                                                    ))
-                                                0
-                                            ))
-
-                                            ;; get a character: 3. from the user - handle <Esc> in Insert mode
-
-                                            ;; Special case: if we get an <ESC> in insert mode and there are no more
-                                            ;; characters at once, we pretend to go out of insert mode.  This prevents
-                                            ;; the one second delay after typing an <ESC>.  If we get something after
-                                            ;; all, we may have to redisplay the mode.  That the cursor is in the wrong
-                                            ;; place does not matter.
-
-                                            ((ß int len =) 0)
-                                            ((ß int new_wcol =) (:w_wcol @curwin))
-                                            ((ß int new_wrow =) (:w_wrow @curwin))
-                                            (when (and advance (== (:tb_len @typebuf) 1) (at? (:tb_buf @typebuf) (:tb_off @typebuf) ESC) (zero? @no_mapping) (flag? @State INSERT) (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout)) (zero? ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25, (:tb_change_cnt @typebuf)))))
-                                                (when @mode_displayed
-                                                    (unshowmode true)
-                                                    (reset! a'mode_deleted true))
-                                                (swap! curwin validate-cursor)
-                                                ((ß int o'wcol =) (:w_wcol @curwin))
-                                                ((ß int o'wrow =) (:w_wrow @curwin))
-
-                                                ;; move cursor left, if possible
-                                                (when (non-zero? (:col (:w_cursor @curwin)))
-                                                    ((ß int col =) 0)
-                                                    (cond (< 0 (:w_wcol @curwin))
-                                                    (do
-                                                        (cond @did_ai
-                                                        (do
-                                                            ;; We are expecting to truncate the trailing white-space,
-                                                            ;; so find the last non-white character.
-                                                            (reset! curwin assoc :w_wcol 0)
-                                                            ((ß Bytes s =) (ml-get (:lnum (:w_cursor @curwin))))
-                                                            (loop-when-recur [#_int vcol 0 #_int i 0] (< i (:col (:w_cursor @curwin))) [(+ vcol (lbr-chartabsize s, (.plus s i), vcol)) (+ i (us-ptr2len-cc s, i))]
-                                                                (when (not (vim-iswhite (.at s i)))
-                                                                    (swap! curwin assoc :w_wcol vcol))
-                                                            )
-                                                            (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
-                                                            (swap! curwin update :w_wcol % (:w_width @curwin))
-                                                            (swap! curwin update :w_wcol + (win-col-off @curwin))
-                                                            ((ß col =) 0)        ;; no correction needed
-                                                        )
+                                        (let-when [[#_int keylen ?]
+                                                (if (< 0 (:tb_len @typebuf))
+                                                    ;; When no matching mapping found or found a non-matching mapping
+                                                    ;; that matches at least what the matching mapping matched:
+                                                    ;; Check if we have a terminal code, when:
+                                                    ;; - mapping is allowed,
+                                                    ;; - keys have not been mapped,
+                                                    ;; - and when not timed out.
+                                                    (let [keylen
+                                                            (if (and (or (zero? @no_mapping) (non-zero? @allow_keys)) (not @a'timedout))
+                                                                (let [keylen (check-termcode nil, 0, nil)]
+                                                                    ;; When getting a partial match, but the last characters were not typed,
+                                                                    ;; don't wait for a typed character to complete the termcode.
+                                                                    ;; This helps a lot when a ":normal" command ends in an ESC.
+                                                                    (if (and (< keylen 0) (zero? (:tb_len @typebuf))) 0 keylen))
+                                                                0)]
+                                                        (cond (zero? keylen)                ;; no matching terminal code
+                                                            ;; Get a character: 2. from the typeahead buffer.
+                                                            (let [c (& (.at (:tb_buf @typebuf) (:tb_off @typebuf)) 0xff)]
+                                                                (when advance               ;; remove chars from tb_buf
+                                                                    (reset! keyTyped true)
+                                                                    ;; write char to script file(s)
+                                                                    (gotchars (.plus (:tb_buf @typebuf) (:tb_off @typebuf)), 1)
+                                                                    (del-typebuf 1))
+                                                                [nil :break])               ;; got character, break for loop
+                                                        (< 0 keylen)                        ;; full matching terminal code
+                                                            [nil :recur]                    ;; try mapping again
                                                         :else
-                                                        (do
-                                                            (swap! curwin update :w_wcol dec)
-                                                            ((ß col =) (dec (:col (:w_cursor @curwin))))
+                                                            ;; Partial match: get some more characters.
+                                                            [KEYLEN_PART_KEY nil]
                                                         ))
-                                                    )
-                                                    (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
-                                                    (do
-                                                        (swap! curwin update :w_wrow dec)
-                                                        (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
-                                                        ((ß col =) (dec (:col (:w_cursor @curwin))))
+                                                    [0 nil]
+                                                )] (not ?) => (if (== ? :recur) (recur) c)
+
+                                            ;; Get a character: 3. from the user - handle <Esc> in Insert mode.
+
+                                            ;; Special case: if we get an <ESC> in Insert mode and there are no more characters
+                                            ;; at once, we pretend to go out of Insert mode.  This prevents the one second delay
+                                            ;; after typing an <ESC>.  If we get something after all, we may have to redisplay
+                                            ;; the mode.  That the cursor is in the wrong place does not matter.
+                                            (let [a'len (atom (int 0))
+                                                  [#_int new_wcol #_int new_wrow]
+                                                    (if (and advance
+                                                             (== (:tb_len @typebuf) 1) (at? (:tb_buf @typebuf) (:tb_off @typebuf) ESC) (zero? @no_mapping) (flag? @State INSERT)
+                                                             (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout))
+                                                             (zero? (reset! a'len (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25,
+                                                                                          (:tb_change_cnt @typebuf)))))
+                                                        (let [_ (when @mode_displayed (unshowmode true) (reset! a'mode_deleted true))
+                                                              _ (swap! curwin validate-cursor) o'wcol (:w_wcol @curwin) o'wrow (:w_wrow @curwin)
+                                                              ;; move cursor left, if possible
+                                                              _ (when (non-zero? (:col (:w_cursor @curwin)))
+                                                                    (let [#_int col
+                                                                            (cond (< 0 (:w_wcol @curwin))
+                                                                                (if @did_ai
+                                                                                    ;; We are expecting to truncate the trailing white-space,
+                                                                                    ;; so find the last non-white character.
+                                                                                    (let [_ (reset! curwin assoc :w_wcol 0) #_Bytes s (ml-get (:lnum (:w_cursor @curwin)))]
+                                                                                        (loop-when [#_int vcol 0 #_int i 0] (< i (:col (:w_cursor @curwin)))
+                                                                                            (when (not (vim-iswhite (.at s i)))
+                                                                                                (swap! curwin assoc :w_wcol vcol))
+                                                                                            (recur (+ vcol (lbr-chartabsize s, (.plus s i), vcol)) (+ i (us-ptr2len-cc s, i))))
+                                                                                        (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
+                                                                                        (swap! curwin update :w_wcol % (:w_width @curwin))
+                                                                                        (swap! curwin update :w_wcol + (win-col-off @curwin))
+                                                                                        0) ;; no correction needed
+                                                                                    (do
+                                                                                        (swap! curwin update :w_wcol dec)
+                                                                                        (dec (:col (:w_cursor @curwin)))
+                                                                                    ))
+                                                                            (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
+                                                                                (do
+                                                                                    (swap! curwin update :w_wrow dec)
+                                                                                    (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
+                                                                                    (dec (:col (:w_cursor @curwin))))
+                                                                            :else
+                                                                                0
+                                                                            )]
+
+                                                                        (when (and (< 0 col) (< 0 (:w_wcol @curwin)))
+                                                                            ;; Correct when the cursor is on the right halve of a double-wide character.
+                                                                            (let [#_Bytes s (ml-get (:lnum (:w_cursor @curwin))) col (- col (us-head-off s, (.plus s col)))]
+                                                                                (when (< 1 (us-ptr2cells s, col))
+                                                                                    (swap! curwin update :w_wcol dec))
+                                                                            ))
+                                                                    ))
+                                                              _ (swap! curwin setcursor)
+                                                              _ (out-flush)
+                                                              new_wcol (:w_wcol @curwin) new_wrow (:w_wrow @curwin)]
+                                                            (swap! curwin assoc :w_wcol o'wcol :w_wrow o'wrow)
+                                                            [new_wcol new_wrow])
+                                                        [(:w_wcol @curwin) (:w_wrow @curwin)]
+                                                    )]
+                                                (if (< @a'len 0)
+                                                    (recur) ;; end of input script reached
+
+                                                    (do (swap! typebuf update :tb_len + @a'len)
+                                                        ;; buffer full, don't map
+                                                        (if (<= MAXMAPLEN (:tb_len @typebuf))
+                                                            (do (reset! a'timedout true)
+                                                                (recur))
+
+                                                            ;; Get a character: 3. from the user - update display.
+
+                                                            ;; In Insert mode a screen update is skipped when characters are still available.
+                                                            ;; But when those available characters are part of a mapping, and we are going
+                                                            ;; to do a blocking wait here.  Need to update the screen to display the changed
+                                                            ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
+                                                            ;; because there was something in the input buffer (e.g. termresponse).
+                                                            (let [_ (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance
+                                                                               (non-zero? @must_redraw) (not @need_wait_return))
+                                                                        (update-screen 0)
+                                                                        (swap! curwin setcursor)) ;; put cursor back where it belongs
+                                                                  ;; If we have a partial match (and are going to wait for more input from the user),
+                                                                  ;; show the partially matched characters to the user with showcmd.
+                                                                  [#_int i #_int c1]
+                                                                    (if (and (< 0 (:tb_len @typebuf)) advance)
+                                                                        (let [[i c1]
+                                                                                (if (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
+                                                                                    ;; this looks nice when typing a dead character map
+                                                                                    (let [c1 (if (and (flag? @State INSERT)
+                                                                                                      (== (mb-ptr2cells (:tb_buf @typebuf),
+                                                                                                                        (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
+                                                                                                (let [_ (swap! curwin edit-putchar (.at (:tb_buf @typebuf)
+                                                                                                                                        (dec (+ (:tb_off @typebuf)
+                                                                                                                                                (:tb_len @typebuf)))), false)
+                                                                                                      _ (swap! curwin setcursor)] ;; put cursor back where it belongs
+                                                                                                    1)
+                                                                                                0)
+                                                                                          ;; need to use the col and row from above here
+                                                                                          o'wcol (:w_wcol @curwin) o'wrow (:w_wrow @curwin)
+                                                                                          _ (swap! curwin assoc :w_wcol new_wcol :w_wrow new_wrow)
+                                                                                          _ (push-showcmd)
+                                                                                          i (if (< SHOWCMD_COLS (:tb_len @typebuf)) (- (:tb_len @typebuf) SHOWCMD_COLS) 0)
+                                                                                          i (loop-when-recur i (< i (:tb_len @typebuf)) (inc i) => i
+                                                                                                (add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i))))
+                                                                                          _ (swap! curwin assoc :w_wcol o'wcol :w_wrow o'wrow)]
+                                                                                        [i c1])
+                                                                                    [0 0]
+                                                                                )]
+                                                                            ;; this looks nice when typing a dead character map
+                                                                            (if (and (flag? @State CMDLINE)
+                                                                                     (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
+                                                                                (do (putcmdline (.at (:tb_buf @typebuf) (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))), false)
+                                                                                    [i 1])
+                                                                                [i c1]
+                                                                            ))
+                                                                        [0 0])
+                                                                  ;; Get a character: 3. from the user - get it.
+                                                                  #_int wait_tb_len (:tb_len @typebuf)]
+                                                                (reset! a'len (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))),
+                                                                                      (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1),
+                                                                                      (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))),
+                                                                                      (:tb_change_cnt @typebuf)))
+                                                                (when (non-zero? i)
+                                                                    (pop-showcmd))
+                                                                (when (== c1 1)
+                                                                    (when (flag? @State INSERT)
+                                                                        (swap! curwin edit-unputchar))
+                                                                    (if (flag? @State CMDLINE)
+                                                                        (unputcmdline)
+                                                                        (swap! curwin setcursor) ;; put cursor back where it belongs
+                                                                    ))
+                                                                (cond (< @a'len 0) ;; end of input script reached
+                                                                    (recur)
+                                                                (< 0 @a'len) ;; no character available
+                                                                    (do (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
+                                                                            (swap! typebuf update :tb_len inc))
+                                                                        (recur))
+                                                                advance
+                                                                    (do (when (< 0 wait_tb_len) ;; timed out
+                                                                            (reset! a'timedout true))
+                                                                        (recur))
+                                                                :else
+                                                                    NUL)
+                                                            ))
                                                     ))
-
-                                                    (when (and (< 0 col) (< 0 (:w_wcol @curwin)))
-                                                        ;; Correct when the cursor is on the right halve of a double-wide character.
-                                                        ((ß Bytes s =) (ml-get (:lnum (:w_cursor @curwin))))
-                                                        ((ß col =) (- col (us-head-off s, (.plus s col))))
-                                                        (when (< 1 (us-ptr2cells s, col))
-                                                            (swap! curwin update :w_wcol dec))
-                                                    )
-                                                )
-                                                (swap! curwin setcursor)
-                                                (out-flush)
-                                                ((ß new_wcol =) (:w_wcol @curwin))
-                                                ((ß new_wrow =) (:w_wrow @curwin))
-                                                (swap! curwin assoc :w_wcol o'wcol)
-                                                (swap! curwin assoc :w_wrow o'wrow)
-                                            )
-
-                                            (if (< len 0)
-                                                (ß CONTINUE)   ;; end of input script reached
-                                            )
-
-                                            (swap! typebuf update :tb_len + len)
-
-                                            ;; buffer full, don't map
-                                            (when (<= MAXMAPLEN (:tb_len @typebuf))
-                                                (reset! a'timedout true)
-                                                (ß CONTINUE)
-                                            )
-
-                                            ;; get a character: 3. from the user - update display
-
-                                            ;; In insert mode a screen update is skipped when characters are still available.
-                                            ;; But when those available characters are part of a mapping, and we are going
-                                            ;; to do a blocking wait here.  Need to update the screen to display the changed
-                                            ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
-                                            ;; because there was something in the input buffer (e.g., termresponse).
-
-                                            (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance (non-zero? @must_redraw) (not @need_wait_return))
-                                                (update-screen 0)
-                                                (swap! curwin setcursor)            ;; put cursor back where it belongs
-                                            )
-
-                                            ;; If we have a partial match (and are going to wait for more input from the user),
-                                            ;; show the partially matched characters to the user with showcmd.
-
-                                            ((ß int i =) 0)
-                                            ((ß int c1 =) 0)
-                                            (when (and (< 0 (:tb_len @typebuf)) advance)
-                                                (when (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
-                                                    ;; this looks nice when typing a dead character map
-                                                    (when (and (flag? @State INSERT) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
-                                                        (swap! curwin edit-putchar (.at (:tb_buf @typebuf) (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))), false)
-                                                        (swap! curwin setcursor)    ;; put cursor back where it belongs
-                                                        ((ß c1 =) 1)
-                                                    )
-                                                    ;; need to use the col and row from above here
-                                                    ((ß int o'wcol =) (:w_wcol @curwin))
-                                                    ((ß int o'wrow =) (:w_wrow @curwin))
-                                                    (swap! curwin assoc :w_wcol new_wcol)
-                                                    (swap! curwin assoc :w_wrow new_wrow)
-                                                    (push-showcmd)
-                                                    ((ß i =) (if (< SHOWCMD_COLS (:tb_len @typebuf)) (- (:tb_len @typebuf) SHOWCMD_COLS) i))
-                                                    ((ß i =) (loop-when-recur i (< i (:tb_len @typebuf)) (inc i) => i
-                                                        (add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i)))
-                                                    ))
-                                                    (swap! curwin assoc :w_wcol o'wcol)
-                                                    (swap! curwin assoc :w_wrow o'wrow)
-                                                )
-
-                                                ;; this looks nice when typing a dead character map
-                                                (when (and (flag? @State CMDLINE) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
-                                                    (putcmdline (.at (:tb_buf @typebuf) (dec (+ (@typebuf.tb_off) (@typebuf.tb_len)))), false)
-                                                    ((ß c1 =) 1)
-                                                )
-                                            )
-
-                                            ;; get a character: 3. from the user - get it
-
-                                            ((ß int wait_tb_len =) (:tb_len @typebuf))
-                                            ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1), (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))), (:tb_change_cnt @typebuf)))
-
-                                            (if (non-zero? i)
-                                                (pop-showcmd))
-                                            (when (== c1 1)
-                                                (if (flag? @State INSERT)
-                                                    (swap! curwin edit-unputchar))
-                                                (if (flag? @State CMDLINE)
-                                                    (unputcmdline)
-                                                    (swap! curwin setcursor))            ;; put cursor back where it belongs
-                                            )
-
-                                            (if (< len 0)
-                                                (ß CONTINUE)                   ;; end of input script reached
-                                            )
-
-                                            (cond (zero? len)                   ;; no character available
-                                            (do
-                                                (when (not advance)
-                                                    ((ß c =) NUL)
-                                                    (ß BREAK)
-                                                )
-                                                (when (< 0 wait_tb_len)        ;; timed out
-                                                    (reset! a'timedout true)
-                                                    (ß CONTINUE)
-                                                )
-                                            )
-                                            :else
-                                            (do
-                                                (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
-                                                    (swap! typebuf update :tb_len inc))
                                             ))
-
-                                            (recur)
-                                        )
-
                                     ))
                             )]
-                        (recur-if (or (< c 0) (and advance (== c NUL))) [] => c)   ;; if advance is false don't loop on NULs
+                        (recur-if (or (< c 0) (and advance (== c NUL))) [] => c) ;; if advance is false, don't loop on NULs
                     ))]
                 ;; The "INSERT" message is taken care of here:
-                ;;   if we return an ESC to exit insert mode, the message is deleted;
+                ;;   if we return an ESC to exit Insert mode, the message is deleted;
                 ;;   if we don't return an ESC, but deleted the message before, redisplay it.
                 (when (and advance @p_smd (flag? @State INSERT))
                     (cond (and (== c ESC) (not @a'mode_deleted) (zero? @no_mapping) @mode_displayed)
