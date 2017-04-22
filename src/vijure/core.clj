@@ -28,6 +28,9 @@
         `(loop [~@x] (if ~y (do ~@w ~@z) ~_))))]
             (defmacro loop-if [x y & w] (l' x y nil w))
             (defmacro loop-if-recur [x y z & w] (l' x y z w)))
+(defmacro recur-if [y z & w]
+    (let [z (cond (vector? z) `(recur ~@z) (non-nil? z) `(recur ~z)) _ (if (= '=> (first w)) (second w))]
+        `(if ~y ~z ~_)))
 
 (def- % rem)
 
@@ -6214,49 +6217,25 @@
 ;; When "switchit" is true, swap the direction.
 
 (defn- #_void find-mps-values [#_int' a'initc, #_int' a'findc, #_boolean' a'backwards, #_boolean switchit]
-    (§
-        ((ß Bytes ptr =) @(:b_p_mps @curbuf))
-        (while (non-eos? ptr)
-            (ß Bytes prev)
-
-            (when (== (us-ptr2char ptr) @a'initc)
-                (cond switchit
-                (do
-                    (reset! a'findc @a'initc)
-                    (reset! a'initc (us-ptr2char (.plus ptr (+ (us-ptr2len-cc ptr) 1))))
-                    (reset! a'backwards true)
+    (loop-if [#_Bytes s @(:b_p_mps @curbuf)] (non-eos? s)
+        (if (== (us-ptr2char s) @a'initc)
+            (let [c (us-ptr2char (.plus s (inc (us-ptr2len-cc s))))]
+                (if switchit
+                    (do (reset! a'findc @a'initc) (reset! a'initc c) (reset! a'backwards true))
+                    (do (reset! a'findc c) (reset! a'backwards false)))
+            )
+            (let [c (us-ptr2char s) s (.plus s (inc (us-ptr2len-cc s)))]
+                (if (== (us-ptr2char s) @a'initc)
+                    (if switchit
+                        (do (reset! a'findc @a'initc) (reset! a'initc c) (reset! a'backwards false))
+                        (do (reset! a'findc c) (reset! a'backwards true)))
+                    (let [s (.plus s (us-ptr2len-cc s)) s (if (at? s (byte \,)) (.plus s 1) s)]
+                        (recur s)
+                    )
                 )
-                :else
-                (do
-                    (reset! a'findc (us-ptr2char (.plus ptr (+ (us-ptr2len-cc ptr) 1))))
-                    (reset! a'backwards false)
-                ))
-                ((ß RETURN) nil)
             )
-            ((ß prev =) ptr)
-            ((ß ptr =) (.plus ptr (+ (us-ptr2len-cc ptr) 1)))
-            (when (== (us-ptr2char ptr) @a'initc)
-                (cond switchit
-                (do
-                    (reset! a'findc @a'initc)
-                    (reset! a'initc (us-ptr2char prev))
-                    (reset! a'backwards false)
-                )
-                :else
-                (do
-                    (reset! a'findc (us-ptr2char prev))
-                    (reset! a'backwards true)
-                ))
-                ((ß RETURN) nil)
-            )
-            ((ß ptr =) (.plus ptr (us-ptr2len-cc ptr)))
-
-            (if (at? ptr (byte \,))
-                ((ß ptr =) (.plus ptr 1))
-            )
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; This is called when 'breakindentopt' is changed and when a window is initialized.
 
@@ -6371,31 +6350,6 @@
         nil
     ))
 
-;; Get the length of the current line, excluding trailing white space.
-
-(defn- #_int linelen [#_boolean* has_tab]
-    (§
-        ;; find the first non-blank character
-        ((ß Bytes line =) (ml-get-curline))
-        ((ß Bytes first =) (skipwhite line))
-
-        ;; find the character after the last non-blank character
-        (ß Bytes last)
-        ((ß FOR) (ß ((ß last =) (.plus first (STRLEN first))) (and (BLT first, last) (vim-iswhite (.at last -1))) ((ß last =) (.minus last 1)))
-            ;
-        )
-
-        ((ß byte save =) (.at last 0))
-        (eos! last)
-        ((ß int len =) (linetabsize line))        ;; get line length
-        (if (non-nil? has_tab)                ;; check for embedded TAB
-            ((ß has_tab[0] =) (non-nil? (vim-strrchr first, TAB)))
-        )
-        (.be last 0, save)
-
-        len
-    ))
-
 ;; ":retab".
 
 (defn- #_void ex-retab [#_exarg_C eap]
@@ -6472,7 +6426,7 @@
                                 (BCOPY new_line, ptr, start_col))
                             (BCOPY new_line, (+ start_col len), ptr, col, (+ (- old_len col) 1))
                             ((ß ptr =) (.plus new_line start_col))
-                            ((ß FOR) (ß ((ß col =) 0) (< col len) ((ß col =) (inc col)))
+                            (dotimes [col len]
                                 (.be ptr col, (if (< col num_tabs) TAB (byte \space)))
                             )
                             (ml-replace lnum, new_line)
@@ -7038,7 +6992,7 @@
                                     ((ß lnum =) (inc lnum))
                                     ((ß line2 =) (inc line2))
                                     ;; move the cursor to the new line, like Vi
-                                    (swap! curwin assoc-in [:w_cursor :lnum] (inc (:lnum (:w_cursor @curwin))))
+                                    (swap! curwin update-in [:w_cursor :lnum] inc)
                                     ;; copy the rest
                                     (BCOPY new_start, 0, p1, 1, (+ (STRLEN p1, 1) 1))
                                     ((ß p1 =) (.minus new_start 1))
@@ -7095,7 +7049,7 @@
                                 (if (not (u-savedel lnum, nmatch_tl))
                                     (ß BREAK)
                                 )
-                                ((ß FOR) (ß ((ß i =) 0) (< i nmatch_tl) ((ß i =) (inc i)))
+                                (dotimes [_ nmatch_tl]
                                     (ml-delete lnum, false)
                                 )
                                 (mark-adjust lnum, (- (+ lnum nmatch_tl) 1), MAXLNUM, (- nmatch_tl))
@@ -7872,37 +7826,22 @@
                                     ;; adding the history entry vs the one used now.
                                     ;; First loop: count length.
                                     ;; Second loop: copy the characters.
-                                    (loop-if-recur [#_int round 0] (<= round 1) [(inc round)]
-                                        ((ß int len =) 0)
-
-                                        ((ß FOR) (ß (ß #_"/*int */"i = 0) (non-eos? p i) ((ß i =) (inc i)))
-                                            ;; Replace old sep with new sep, unless it is escaped.
-                                            (cond (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                            (do
-                                                (if (< 0 round)
-                                                    (.be (:cmdbuff @ccline) len, firstc)
-                                                )
-                                            )
-                                            :else
-                                            (do
-                                                ;; Escape new sep, unless it is already escaped.
-                                                (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                                    (if (< 0 round)
-                                                        (.be (:cmdbuff @ccline) len, (byte \\))
-                                                    )
-                                                    ((ß len =) (inc len))
-                                                )
-                                                (if (< 0 round)
-                                                    (.be (:cmdbuff @ccline) len, (.at p i))
-                                                )
-                                            ))
-                                            ((ß len =) (inc len))
-                                        )
-
-                                        (if (< 0 round)
-                                            (eos! (:cmdbuff @ccline) len)
-                                            (alloc-cmdbuff len))
-                                    )
+                                    (dotimes [round 2]
+                                        (let [n (loop-if-recur [n 0 i 0] (non-eos? p i) [(inc n) (inc i)] => n
+                                                    (if (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                        ;; Replace old sep with new sep, unless it is escaped.
+                                                        (if (< 0 round) (.be (:cmdbuff @ccline) n, firstc))
+                                                        (do
+                                                            ;; Escape new sep, unless it is already escaped.
+                                                            (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                                (if (< 0 round) (.be (:cmdbuff @ccline) n, (byte \\)))
+                                                                ((ß n =) (inc n))
+                                                            )
+                                                            (if (< 0 round) (.be (:cmdbuff @ccline) n, (.at p i)))
+                                                        ))
+                                                )]
+                                            (if (< 0 round) (eos! (:cmdbuff @ccline) n) (alloc-cmdbuff n))
+                                        ))
                                 )
                                 :else
                                 (do
@@ -8163,34 +8102,21 @@
 ;; Compute the screen position for the cursor on the command line.
 
 (defn- #_void set-cmdspos-cursor []
-    (§
-        (set-cmdspos)
-        (ß int m)
-        (cond @keyTyped
-        (do
-            ((ß m =) (* (int @Cols) (int @Rows)))
-            (if (< m 0)      ;; overflow, Cols or Rows at weird value
-                ((ß m =) MAXCOL)
-            )
-        )
-        :else
-        (do
-            ((ß m =) MAXCOL)
-        ))
-        ((ß FOR) (ß ((ß int i =) 0) (and (< i (:cmdlen @ccline)) (< i (:cmdpos @ccline))) ((ß i =) (inc i)))
-            ((ß int c =) (cmdline-charsize i))
-            ;; Count ">" for double-wide multi-byte char that doesn't fit.
-            (correct-cmdspos i, c)
-            ;; If the cmdline doesn't fit, show cursor on last visible char.
-            ;; Don't move the cursor itself, so we can still append.
-            (when (<= m (swap! ccline update :cmdspos + c))
-                (swap! ccline update :cmdspos - c)
-                (ß BREAK)
-            )
-            ((ß i =) (+ i (dec (us-ptr2len-cc (.plus (:cmdbuff @ccline) i)))))
-        )
-        nil
-    ))
+    (set-cmdspos)
+    (let [#_int m (if @keyTyped (let [m (* (int @Cols) (int @Rows))] (if (< m 0) MAXCOL m)) MAXCOL)]
+        (loop-if [#_int i 0] (and (< i (:cmdlen @ccline)) (< i (:cmdpos @ccline)))
+            (let [#_int c (cmdline-charsize i)]
+                ;; Count ">" for double-wide multi-byte char that doesn't fit.
+                (correct-cmdspos i, c)
+                ;; If the cmdline doesn't fit, show cursor on last visible char.
+                ;; Don't move the cursor itself, so we can still append.
+                (when (< (+ (:cmdspos @ccline) c) m)
+                    (swap! ccline update :cmdspos + c)
+                    (recur (+ i (us-ptr2len-cc (.plus (:cmdbuff @ccline) i))))
+                )
+            ))
+    )
+    nil)
 
 ;; Check if the character at "idx", which is "cells" wide, is a multi-byte
 ;; character that doesn't fit, so that a ">" must be displayed.
@@ -8336,18 +8262,7 @@
             (reset! msg_no_more false)
         )
 
-        (ß int m)
-        (cond @keyTyped
-        (do
-            ((ß m =) (* (int @Cols) (int @Rows)))
-            (if (< m 0)      ;; overflow, Cols or Rows at weird value
-                ((ß m =) MAXCOL)
-            )
-        )
-        :else
-        (do
-            ((ß m =) MAXCOL)
-        ))
+        ((ß int m =) (if @keyTyped (let [m (* (int @Cols) (int @Rows))] (if (< m 0) MAXCOL m)) MAXCOL))
 
         ((ß FOR) (ß ((ß i =) 0) (< i len) ((ß i =) (inc i)))
             ((ß c =) (cmdline-charsize (:cmdpos @ccline)))
@@ -12527,39 +12442,40 @@
 ;; Returns false if more than one line selected.
 
 (defn- #_boolean get-visual-text [#_cmdarg_C cap, #_Bytes' a'pp, #_int' a'lenp]
-    ;; pp: return: start of selected text
-    ;; lenp: return: length of selected text
-    (§
-        (if (!= @VIsual_mode (byte \V))
-            (unadjust-for-sel))
-        (when (!= (:lnum @VIsual) (:lnum (:w_cursor @curwin)))
+    (if (!= @VIsual_mode (byte \V))
+        (unadjust-for-sel))
+
+    (if (!= (:lnum @VIsual) (:lnum (:w_cursor @curwin)))
+        (do
             (if (non-nil? cap)
                 (clearopbeep (:oap cap)))
-            ((ß RETURN) false)
+            false
         )
-        (cond (== @VIsual_mode (byte \V))
         (do
-            (reset! a'pp (ml-get-curline))
-            (reset! a'lenp (STRLEN @a'pp))
-        )
-        :else
-        (do
-            (cond (ltpos (:w_cursor @curwin), @VIsual)
+            (cond (== @VIsual_mode (byte \V))
             (do
-                (reset! a'pp (ml-get-pos (:w_cursor @curwin)))
-                (reset! a'lenp (+ (- (:col @VIsual) (:col (:w_cursor @curwin))) 1))
+                (reset! a'pp (ml-get-curline))
+                (reset! a'lenp (STRLEN @a'pp))
             )
             :else
             (do
-                (reset! a'pp (ml-get-pos @VIsual))
-                (reset! a'lenp (+ (- (:col (:w_cursor @curwin)) (:col @VIsual)) 1))
-            ))
+                (cond (ltpos (:w_cursor @curwin), @VIsual)
+                (do
+                    (reset! a'pp (ml-get-pos (:w_cursor @curwin)))
+                    (reset! a'lenp (inc (- (:col @VIsual) (:col (:w_cursor @curwin)))))
+                )
+                :else
+                (do
+                    (reset! a'pp (ml-get-pos @VIsual))
+                    (reset! a'lenp (inc (- (:col (:w_cursor @curwin)) (:col @VIsual))))
+                ))
 
-            ;; Correct the length to include the whole last character.
-            (reset! a'lenp (+ @a'lenp (- (us-ptr2len-cc (.plus @a'pp (- @a'lenp 1))) 1)))
-        ))
-        (reset-VIsual-and-resel)
-        true
+                ;; Correct the length to include the whole last character.
+                (reset! a'lenp (+ @a'lenp (dec (us-ptr2len-cc (.plus @a'pp (dec @a'lenp))))))
+            ))
+            (reset-VIsual-and-resel)
+            true
+        )
     ))
 
 ;; Handle scrolling command 'H', 'L' and 'M'.
@@ -27596,9 +27512,9 @@
     (reset! prevchr_len (if (at? @regparse (byte \\)) 1 0))
     (when (non-eos? @regparse @prevchr_len)
         ;; exclude composing chars that us-ptr2len-cc does include
-        (swap! prevchr_len #(+ % (us-ptr2len (.plus @regparse %))))
+        (swap! prevchr_len #(+ % (us-ptr2len @regparse %)))
     )
-    (swap! regparse #(.plus % @prevchr_len))
+    (swap! regparse plus @prevchr_len)
     (reset! prev_at_start @at_start)
     (reset! at_start false)
     (reset! prevprevchr @prevchr)
@@ -27612,9 +27528,7 @@
 
 (defn- #_void skipchr-keepstart []
     (let [#_boolean as @prev_at_start, #_int pr @prevchr, #_int prpr @prevprevchr]
-
         (skipchr)
-
         (reset! at_start as)
         (reset! prevchr pr)
         (reset! prevprevchr prpr)
@@ -27637,7 +27551,7 @@
     (reset! prev_at_start false)
 
     ;; Backup "regparse", so that it's at the same position as before the getchr().
-    (swap! regparse #(.minus % @prevchr_len))
+    (swap! regparse minus @prevchr_len)
     nil)
 
 ;; Get and return the value of the hex string at the current position.
@@ -28908,7 +28822,7 @@
                                 ;; When only a composing char is given match at any
                                 ;; position where that composing char appears.
                                 ((ß status =) RA_NOMATCH)
-                                (loop-if-recur [#_int i 0] (non-eos? @reginput i) [(+ i (us-ptr2len (.plus @reginput i)))]
+                                (loop-if-recur [#_int i 0] (non-eos? @reginput i) [(+ i (us-ptr2len @reginput i))]
                                     ((ß int inpc =) (us-ptr2char (.plus @reginput i)))
                                     (cond (not (utf-iscomposing inpc))
                                     (do
@@ -30906,11 +30820,11 @@
                 )
                 magic
                 (do
-                    (BCOPY p, 0, p, 1, (+ (STRLEN p, 1) 1))   ;; remove '~'
+                    (BCOPY p, 0, p, 1, (inc (STRLEN p, 1)))   ;; remove '~'
                 )
                 :else
                 (do
-                    (BCOPY p, 0, p, 2, (+ (STRLEN p, 2) 1))   ;; remove '\~'
+                    (BCOPY p, 0, p, 2, (inc (STRLEN p, 2)))   ;; remove '\~'
                 ))
                 ((ß p =) (.minus p 1))
             )
@@ -30919,7 +30833,7 @@
                 (if (and (at? p (byte \\)) (non-eos? p 1))        ;; skip escaped characters
                     ((ß p =) (.plus p 1))
                 )
-                ((ß p =) (.plus p (- (us-ptr2len-cc p) 1)))
+                ((ß p =) (.plus p (dec (us-ptr2len-cc p))))
             ))
         )
 
@@ -31216,7 +31130,7 @@
                         (utf-char2bytes @a'cc, dst))
                     ((ß dst =) (.plus dst (- (utf-char2len @a'cc) 1)))
 
-                    ((ß int clen =) (us-ptr2len (.minus src 1)))
+                    ((ß int clen =) (us-ptr2len src -1))
 
                     ;; If the character length is shorter than "totlen",
                     ;; there are composing characters; copy them as-is.
@@ -31227,7 +31141,6 @@
                     )
 
                     ((ß src =) (.plus src (dec totlen)))
-
                     ((ß dst =) (.plus dst 1))
                 )
                 :else
@@ -39769,7 +39682,7 @@
 
         ;; 'matchpairs' is "x:y,x:y"
         (loop-if-recur [#_Bytes p @(:b_p_mps @curbuf)] (non-eos? p) [(.plus p 1)]
-            ((ß p =) (.plus p (+ (us-ptr2len-cc p) 1)))
+            ((ß p =) (.plus p (inc (us-ptr2len-cc p))))
             (if (== (us-ptr2char p) c)
                 (ß BREAK)
             )
@@ -44132,7 +44045,7 @@
         ;; Only accept a composing char when the first char isn't illegal.
         ((ß int i =) (us-ptr2len p))
         (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len (.plus p i)))))
+            ((ß FOR) (ß (ß int cc) (and (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len p i))))
                 ((ß pcc[j++] =) cc)
                 (if (== j MAX_MCO)
                     (ß BREAK)
@@ -44196,21 +44109,17 @@
 ;; Returns 0 for "".
 ;; Returns 1 for an illegal byte sequence.
 
-(defn- #_int us-ptr2len [#_Bytes p]
-    (§
-        (if (eos? p)
-            ((ß RETURN) 0)
-        )
-
-        ((ß int len =) (us-byte2len (.at p 0), false))
-        (loop-if-recur [#_int i 1] (< i len) [(inc i)]
-            (if (!= (& (char_u (.at p i)) 0xc0) 0x80)
-                ((ß RETURN) 1)
+(defn- us-ptr2len
+    ([s] (us-ptr2len s 0))
+    ([s i]
+        (if (eos? s i)
+            0
+            (let [n (us-byte2len (.at s i), false)]
+                (loop-if [i (inc i)] (< i n) => n
+                    (recur-if (== (& (char_u (.at s i)) 0xc0) 0x80) [(inc i)] => 1)
+                )
             )
-        )
-
-        len
-    ))
+        )))
 
 ;; Get the length of UTF-8 byte sequence "p[size]".
 ;; Does not include any following composing characters.
@@ -44261,7 +44170,7 @@
 
         (while (and (<= 0x80 (char_u (.at p len))) (utf-iscomposing (us-ptr2char (.plus p len))))
             ;; Skip over composing char.
-            ((ß len =) (+ len (us-ptr2len (.plus p len))))
+            ((ß len =) (+ len (us-ptr2len p len)))
         )
 
         len
@@ -45421,7 +45330,7 @@
                     (STRCPY (.plus @ioBuff rlen), (u8 "+ "))
                     ((ß rlen =) (+ rlen 2))
                 )
-                ((ß clen =) (us-ptr2len (.plus p i)))
+                ((ß clen =) (us-ptr2len p i))
             )
             ;; NUL is stored as NL
             (.sprintf libC (.plus @ioBuff rlen), (u8 "%02x "), (if (at? p i NL) NUL (.at p i)))
@@ -46738,7 +46647,7 @@
 ;               do
 ;               {
                     ((ß col =) n)
-                    ((ß count =) (us-ptr2len (.plus oldp n)))
+                    ((ß count =) (us-ptr2len oldp n))
                     ((ß n =) (+ n count))
 ;               } while (utf-iscomposing(us-ptr2char(oldp.plus(n))));
                 ((ß fixpos =) false)
