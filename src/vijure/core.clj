@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage do-check-cursorbind restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -1002,7 +1002,6 @@
 (atom! boolean p_ru)        ;; 'ruler'
 (atom! long    p_sj)        ;; 'scrolljump'
 (atom! long    p_so)        ;; 'scrolloff'
-(atom! Bytes   p_sbo)       ;; 'scrollopt'
 (atom! Bytes   p_sel)       ;; 'selection'
 (atom! Bytes   p_slm)       ;; 'selectmode'
 (atom! boolean p_sr)        ;; 'shiftround'
@@ -1067,14 +1066,12 @@
 ;; "indir" values for window-local options.
 
 (final int
-    WV_CRBIND  3,
     WV_BRI     4,
     WV_BRIOPT  5,
     WV_LBR     6,
     WV_NU      7,
     WV_RNU     8,
     WV_NUW     9,
-    WV_SCBIND 12,
     WV_SCROLL 13,
     WV_CUC    14,
     WV_CUL    15,
@@ -1105,7 +1102,7 @@
         (field int      col)        ;; column number
     ])
 
-(final lpos_C LPOS-1 (->lpos_C -1 -1))
+(final lpos_C LPOS-1 (new lpos_C -1 -1))
 
 (defn- #_lpos_C* ARRAY-lpos [#_int n]
     (vec (repeatedly n NEW_lpos_C)))
@@ -1266,14 +1263,12 @@
         (atom' boolean wo_bri)                 ;; 'breakindent'
         (atom' Bytes   wo_briopt EMPTY_OPTION) ;; 'breakindentopt'
         (atom' Bytes   wo_cc     EMPTY_OPTION) ;; 'colorcolumn'
-        (atom' boolean wo_crb)                 ;; 'cursorbind'
         (atom' boolean wo_cuc)                 ;; 'cursorcolumn'
         (atom' boolean wo_cul)                 ;; 'cursorline'
         (atom' boolean wo_lbr)                 ;; 'linebreak'
         (atom' boolean wo_nu)                  ;; 'number'
         (atom' long    wo_nuw)                 ;; 'numberwidth'
         (atom' boolean wo_rnu)                 ;; 'relativenumber'
-        (atom' boolean wo_scb)                 ;; 'scrollbind'
         (atom' long    wo_scr)                 ;; 'scroll'
         (atom' boolean wo_wfh)                 ;; 'winfixheight'
         (atom' boolean wo_wfw)                 ;; 'winfixwidth'
@@ -1534,7 +1529,7 @@
 
         (field frame_C      w_frame)            ;; frame containing this window
 
-        (field pos_C        w_cursor            (->pos_C 1 0 0)) ;; cursor position in buffer
+        (field pos_C        w_cursor            (new pos_C 1 0 0)) ;; cursor position in buffer
         (field int          w_curswant)         ;; column we'd like to be at: used to try to stay in the same column for up/down cursor motions
         (field boolean      w_set_curswant)     ;; if set, update "w_curswant" the next time through cursupdate() to the current virtual column
 
@@ -1635,12 +1630,10 @@
         (field int          w_p_brishift)       ;; additional shift for breakindent
         (field boolean      w_p_brisbr)         ;; sbr in 'briopt'
 
-        (field long         w_scbind_pos)
-
         ;; "w_prev_pcmark" is used to check whether we really did jump to a new line after setting "w_pcmark".
         ;; If not, we revert to using the previous "w_pcmark".
 
-        (field pos_C        w_pcmark            (->pos_C 1 0 0)) ;; previous context mark
+        (field pos_C        w_pcmark            (new pos_C 1 0 0)) ;; previous context mark
         (field pos_C        w_prev_pcmark       (NEW_pos_C))  ;; previous "w_pcmark"
 
         ;; the jumplist contains old cursor positions
@@ -1742,9 +1735,8 @@
     CMD_set 5,
     CMD_stop 6,
     CMD_suspend 7,
-    CMD_syncbind 8,
 
-    CMD_SIZE 9)     ;; MUST be after all real commands!
+    CMD_SIZE 8)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -1956,13 +1948,6 @@
 ;; Used when 'backspace' is 0, to avoid backspacing over autoindent.
 
 (atom! int      ai_col)
-
-;; This flag is set after a ":syncbind" to let the check-scrollbind() function
-;; know that it should not attempt to perform scrollbinding due to the scroll
-;; that was a result of the ":syncbind." (Otherwise, check-scrollbind() will
-;; undo some of the work done by ":syncbind.")  -ralston
-
-(atom! boolean  did_syncbind)
 
 ;; This flag is set when a smart indent has been performed.
 ;; When the next typed character is a '{' the inserted tab will be deleted again.
@@ -2184,29 +2169,29 @@
 
 (final signalinfo_C* signal_info
     [
-; %%    (->signalinfo_C SIGHUP,    (u8 "HUP"),      true ),
-; %%    (->signalinfo_C SIGQUIT,   (u8 "QUIT"),     true ),
-; %%    (->signalinfo_C SIGILL,    (u8 "ILL"),      true ),
-; %%    (->signalinfo_C SIGTRAP,   (u8 "TRAP"),     true ),
-; %%    (->signalinfo_C SIGABRT,   (u8 "ABRT"),     true ),
-; %%    (->signalinfo_C SIGFPE,    (u8 "FPE"),      true ),
-; %%    (->signalinfo_C SIGBUS,    (u8 "BUS"),      true ),
-; %%    (->signalinfo_C SIGSEGV,   (u8 "SEGV"),     true ),
-; %%    (->signalinfo_C SIGSYS,    (u8 "SYS"),      true ),
-; %%    (->signalinfo_C SIGALRM,   (u8 "ALRM"),     false),
-; %%    (->signalinfo_C SIGTERM,   (u8 "TERM"),     true ),
-; %%    (->signalinfo_C SIGVTALRM, (u8 "VTALRM"),   true ),
-; %%    (->signalinfo_C SIGPROF,   (u8 "PROF"),     true ),
-; %%    (->signalinfo_C SIGXCPU,   (u8 "XCPU"),     true ),
-; %%    (->signalinfo_C SIGXFSZ,   (u8 "XFSZ"),     true ),
-; %%    (->signalinfo_C SIGUSR1,   (u8 "USR1"),     true ),
-; %%    (->signalinfo_C SIGUSR2,   (u8 "USR2"),     true ),
-; %%    (->signalinfo_C SIGINT,    (u8 "INT"),      false),
-; %%    (->signalinfo_C SIGWINCH,  (u8 "WINCH"),    false),
-; %%    (->signalinfo_C SIGTSTP,   (u8 "TSTP"),     false),
-; %%    (->signalinfo_C SIGPIPE,   (u8 "PIPE"),     false),
+; %%    (new signalinfo_C SIGHUP,    (u8 "HUP"),      true ),
+; %%    (new signalinfo_C SIGQUIT,   (u8 "QUIT"),     true ),
+; %%    (new signalinfo_C SIGILL,    (u8 "ILL"),      true ),
+; %%    (new signalinfo_C SIGTRAP,   (u8 "TRAP"),     true ),
+; %%    (new signalinfo_C SIGABRT,   (u8 "ABRT"),     true ),
+; %%    (new signalinfo_C SIGFPE,    (u8 "FPE"),      true ),
+; %%    (new signalinfo_C SIGBUS,    (u8 "BUS"),      true ),
+; %%    (new signalinfo_C SIGSEGV,   (u8 "SEGV"),     true ),
+; %%    (new signalinfo_C SIGSYS,    (u8 "SYS"),      true ),
+; %%    (new signalinfo_C SIGALRM,   (u8 "ALRM"),     false),
+; %%    (new signalinfo_C SIGTERM,   (u8 "TERM"),     true ),
+; %%    (new signalinfo_C SIGVTALRM, (u8 "VTALRM"),   true ),
+; %%    (new signalinfo_C SIGPROF,   (u8 "PROF"),     true ),
+; %%    (new signalinfo_C SIGXCPU,   (u8 "XCPU"),     true ),
+; %%    (new signalinfo_C SIGXFSZ,   (u8 "XFSZ"),     true ),
+; %%    (new signalinfo_C SIGUSR1,   (u8 "USR1"),     true ),
+; %%    (new signalinfo_C SIGUSR2,   (u8 "USR2"),     true ),
+; %%    (new signalinfo_C SIGINT,    (u8 "INT"),      false),
+; %%    (new signalinfo_C SIGWINCH,  (u8 "WINCH"),    false),
+; %%    (new signalinfo_C SIGTSTP,   (u8 "TSTP"),     false),
+; %%    (new signalinfo_C SIGPIPE,   (u8 "PIPE"),     false),
 
-        (->signalinfo_C -1,        (u8 "Unknown!"), false)
+        (new signalinfo_C -1,        (u8 "Unknown!"), false)
     ])
 
 ;; Write s[len] to the screen.
@@ -3358,14 +3343,12 @@
 ;; The WV_ values are defined in option.h.
 
 (final int
-    PV_CRBIND (| WV_CRBIND PV_WIN),
     PV_BRI    (| WV_BRI    PV_WIN),
     PV_BRIOPT (| WV_BRIOPT PV_WIN),
     PV_LBR    (| WV_LBR    PV_WIN),
     PV_NU     (| WV_NU     PV_WIN),
     PV_RNU    (| WV_RNU    PV_WIN),
     PV_NUW    (| WV_NUW    PV_WIN),
-    PV_SCBIND (| WV_SCBIND PV_WIN),
     PV_SCROLL (| WV_SCROLL PV_WIN),
     PV_CUC    (| WV_CUC    PV_WIN),
     PV_CUL    (| WV_CUL    PV_WIN),
@@ -3404,13 +3387,13 @@
 (final int P_CURSWANT      0x2000000)   ;; update curswant required; not needed when there is a redraw flag
 
 (defn- #_vimoption_C bool-opt [#_Bytes fname, #_Bytes sname, #_long flags, #_"/*boolean[]*/Object" var, #_int indir, #_boolean def]
-    (->vimoption_C fname, sname, (| P_BOOL flags), var, indir, def))
+    (new vimoption_C fname, sname, (| P_BOOL flags), var, indir, def))
 
 (defn- #_vimoption_C long-opt [#_Bytes fname, #_Bytes sname, #_long flags, #_"/*long[]*/Object" var, #_int indir, #_long def]
-    (->vimoption_C fname, sname, (| P_NUM flags), var, indir, def))
+    (new vimoption_C fname, sname, (| P_NUM flags), var, indir, def))
 
 (defn- #_vimoption_C utf8-opt [#_Bytes fname, #_Bytes sname, #_long flags, #_"/*Bytes[]*/Object" var, #_int indir, #_Bytes def]
-    (->vimoption_C fname, sname, (| P_STRING flags), var, indir, def))
+    (new vimoption_C fname, sname, (| P_STRING flags), var, indir, def))
 
 ;; vimoptions[] are initialized here.
 ;;
@@ -3430,7 +3413,6 @@
         (utf8-opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     nil,         PV_CC,     (u8 "")),
         (bool-opt (u8 "copyindent"),     (u8 "ci"),        0,                           nil,         PV_CI,      false),
         (utf8-opt (u8 "cpoptions"),      (u8 "cpo"),    (| P_RALL P_FLAGLIST),          p_cpo,       0,          CPO_VIM),
-        (bool-opt (u8 "cursorbind"),     (u8 "crb"),       0,                           nil,         PV_CRBIND,  false),
         (bool-opt (u8 "cursorcolumn"),   (u8 "cuc"),       P_RWIN,                      nil,         PV_CUC,     false),
         (bool-opt (u8 "cursorline"),     (u8 "cul"),       P_RWIN,                      nil,         PV_CUL,     false),
         (bool-opt (u8 "delcombine"),     (u8 "deco"),      0,                           p_deco,      0,          false),
@@ -3477,10 +3459,8 @@
         (long-opt (u8 "report"),          nil,             0,                           p_report,    0,          2),
         (bool-opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        0,          false),
         (long-opt (u8 "scroll"),         (u8 "scr"),       0,                           nil,         PV_SCROLL,  1),
-        (bool-opt (u8 "scrollbind"),     (u8 "scb"),       0,                           nil,         PV_SCBIND,  false),
         (long-opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        0,          1),
         (long-opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        0,          0),
-        (utf8-opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       0,         (u8 "ver,jump")),
         (utf8-opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       0,         (u8 "inclusive")),
         (utf8-opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       0,         (u8 "")),
         (bool-opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        0,          false),
@@ -3523,13 +3503,12 @@
     ])
 
 (final Bytes*
-    p_nf_values     [ (u8 "octal"), (u8 "hex"), (u8 "alpha"), nil ],
-    p_sel_values    [ (u8 "inclusive"), (u8 "exclusive"), (u8 "old"), nil ],
-    p_slm_values    [ (u8 "key"), (u8 "cmd"), nil ],
-    p_km_values     [ (u8 "startsel"), (u8 "stopsel"), nil ],
-    p_scbopt_values [ (u8 "ver"), (u8 "hor"), (u8 "jump"), nil ],
-    p_ead_values    [ (u8 "both"), (u8 "ver"), (u8 "hor"), nil ],
-    p_bs_values     [ (u8 "indent"), (u8 "eol"), (u8 "start"), nil ])
+    p_nf_values  [ (u8 "octal"), (u8 "hex"), (u8 "alpha"), nil ],
+    p_sel_values [ (u8 "inclusive"), (u8 "exclusive"), (u8 "old"), nil ],
+    p_slm_values [ (u8 "key"), (u8 "cmd"), nil ],
+    p_km_values  [ (u8 "startsel"), (u8 "stopsel"), nil ],
+    p_ead_values [ (u8 "both"), (u8 "ver"), (u8 "hor"), nil ],
+    p_bs_values  [ (u8 "indent"), (u8 "eol"), (u8 "start"), nil ])
 
 ;; Initialize the options, first part.
 ;;
@@ -3788,9 +3767,6 @@
                 (:b_p_nf @curbuf) ;; 'nrformats'
                     [win (when-not (check-opt-strings @varp, p_nf_values, true) e_invarg)]
 
-                p_sbo ;; 'scrollopt'
-                    [win (when-not (check-opt-strings @p_sbo, p_scbopt_values, true) e_invarg)]
-
                 (:b_p_mps @curbuf) ;; 'matchpairs'
                     (let [? (loop-when [#_Bytes s @varp] (non-eos? s)
                                 (let [s (.plus s (us-ptr2len-cc s))
@@ -3926,12 +3902,6 @@
 
             (== varp p_hls)                                     ;; when 'hlsearch' is set or reset, reset "no_hlsearch"
                 (do (reset! no_hlsearch false) win)
-
-            (== varp (:wo_scb (:w_options win)))                ;; when 'scrollbind' is set, snapshot current position to avoid a jump at the end of normal-cmd()
-                (when' @varp => win
-                    (let [win (do-check-scrollbind win, false)]
-                        (assoc win :w_scbind_pos (:w_topline win))
-                    ))
 
             (== varp (:wo_wrap (:w_options win)))               ;; when 'wrap' is set, set "w_leftcol" to zero
                 (when' @varp => win
@@ -4206,14 +4176,12 @@
             PV_BRI    (:wo_bri wops)
             PV_BRIOPT (:wo_briopt wops)
             PV_CC     (:wo_cc wops)
-            PV_CRBIND (:wo_crb wops)
             PV_CUC    (:wo_cuc wops)
             PV_CUL    (:wo_cul wops)
             PV_LBR    (:wo_lbr wops)
             PV_NU     (:wo_nu wops)
             PV_NUW    (:wo_nuw wops)
             PV_RNU    (:wo_rnu wops)
-            PV_SCBIND (:wo_scb wops)
             PV_SCROLL (:wo_scr wops)
             PV_WFH    (:wo_wfh wops)
             PV_WFW    (:wo_wfw wops)
@@ -4253,14 +4221,12 @@
     (reset! (:wo_bri win)            @(:wo_bri won))
     (reset! (:wo_briopt win) (STRDUP @(:wo_briopt won)))
     (reset! (:wo_cc win)     (STRDUP @(:wo_cc won)))
-    (reset! (:wo_crb win)            @(:wo_crb won))
     (reset! (:wo_cuc win)            @(:wo_cuc won))
     (reset! (:wo_cul win)            @(:wo_cul won))
     (reset! (:wo_lbr win)            @(:wo_lbr won))
     (reset! (:wo_nu win)             @(:wo_nu won))
     (reset! (:wo_nuw win)            @(:wo_nuw won))
     (reset! (:wo_rnu win)            @(:wo_rnu won))
-    (reset! (:wo_scb win)            @(:wo_scb won))
     ;; 'scroll' is omitted as it depends on window height
     ;; 'winfixheight' ... ?
     ;; 'winfixwidth' ... ?
@@ -6684,7 +6650,7 @@
                                             (if skip
                                                 [lnum (.plus s 1)]
                                                 ;; When search follows another address, start from there.  ;; Start the search just like for the above do-search().
-                                                (let [#_pos_C pos (->pos_C (if (!= lnum MAXLNUM) lnum (:lnum (:w_cursor @curwin))) (if (at? s (byte \?)) 0 MAXCOL) 0)
+                                                (let [#_pos_C pos (new pos_C (if (!= lnum MAXLNUM) lnum (:lnum (:w_cursor @curwin))) (if (at? s (byte \?)) 0 MAXCOL) 0)
                                                       [pos #_int sm1] (searchit? pos, (if (at? s (byte \?)) BACKWARD FORWARD), (u8 ""), 1, SEARCH_MSG, i, 0, nil)]
                                                     (if (non-zero? sm1)
                                                         [(:lnum pos) s]
@@ -6791,42 +6757,6 @@
     (redraw-later-clear)
     (shell-resized)        ;; may have resized window
     eap)
-
-;; ":syncbind" forces all 'scrollbind' windows to have the same relative offset.
-
-(defn- #_exarg_C ex-syncbind [#_exarg_C _eap]
-    (let [#_window_C win' @curwin #_long lnum' (:lnum (:w_cursor @curwin))]
-        (swap! curwin setpcmark)
-        (let [lmax (line-count @curbuf) #_long topline ;; determine max topline
-                (if @(:wo_scb (:w_options @curwin))
-                    (loop-when [t (:w_topline @curwin) #_window_C w @firstwin] (some? w) => (max 1 t)
-                        (recur (if @(:wo_scb (:w_options w)) (min t (- lmax @p_so)) t) (:w_next w)))	;; red?
-                    1
-                )]
-            ;; Set all scrollbind windows to the same topline.
-            (loop-when-recur (reset! curwin @firstwin) (some? @curwin) (swap! curwin :w_next)
-                (when @(:wo_scb (:w_options @curwin))
-                    (let [#_long y (- topline (:w_topline @curwin))]
-                        (if (< 0 y)
-                            (swap! curwin scrollup y)
-                            (swap! curwin scrolldown (- y)))
-                    )
-                    (swap! curwin assoc :w_scbind_pos topline)
-                    (swap! curwin redraw-later VALID)
-                    (swap! curwin cursor-correct)
-                    (swap! curwin assoc :w_redr_status true)
-                )
-            )
-        )
-        (reset! curwin win')
-        (when @(:wo_scb (:w_options @curwin))
-            (reset! did_syncbind true)
-            (swap! curwin checkpcmark)
-            (when (!= lnum' (:lnum (:w_cursor @curwin)))
-                (ins-typebuf (-> (Bytes. 2) (.be 0, Ctrl_O) (eos! 1)))
-            ))
-        _eap
-    ))
 
 ;; Sleep for "msec" milliseconds, but keep checking for a CTRL-C every second.
 
@@ -7239,14 +7169,6 @@
               win (checkpcmark win) ;; check if we moved since setting pcmark
               ca (assoc ca :searchbuf nil)
               win (update win :w_cursor mb-adjust-pos)
-              win (when' (and @(:wo_scb (:w_options win)) toplevel) => win
-                    (let [win (validate-cursor win)] ;; may need to update "w_leftcol"
-                        (do-check-scrollbind win, true)
-                    ))
-              win (when' (and @(:wo_crb (:w_options win)) toplevel) => win
-                    (let [win (validate-cursor win)] ;; may need to update "w_leftcol"
-                        (do-check-cursorbind)
-                    ))
               ;; May restart edit(), if we got here with CTRL-O in Insert mode
               ;; (but not if still inside a mapping that started in Visual mode).
               ;; May switch from Visual to Select mode after CTRL-O command.
@@ -8012,83 +7934,6 @@
         (screen-puts (.plus (u8 "          ") len), (dec @Rows), (+ @sc_col len), 0)
         (reset! showcmd_is_clear (zero? len)))
     (setcursor win)) ;; put cursor back where it belongs
-
-(atom! window_C scr_old_curwin)
-(atom! long scr_old_topline)
-(atom! int scr_old_leftcol)
-
-;; When "check" is false, prepare for commands that scroll the window.
-;; When "check" is true, take care of scroll-binding after the window has scrolled.
-;; Called from normal-cmd() and edit().
-
-(defn- #_window_C do-check-scrollbind [#_window_C win, #_boolean check]
-    (let [win (if (and check @(:wo_scb (:w_options win)))
-                (do (cond @did_syncbind
-                    (do
-                        ;; If a ":syncbind" command was just used, don't scroll, only reset the values.
-                        (reset! did_syncbind false)
-                    )
-                    (== win @scr_old_curwin)
-                    (do
-                        ;; Synchronize other windows, as necessary according to 'scrollbind'.
-                        (when (or (!= (:w_topline win) @scr_old_topline) (!= (:w_leftcol win) @scr_old_leftcol))
-                            (check-scrollbind (- (:w_topline win) @scr_old_topline), (- (:w_leftcol win) @scr_old_leftcol)))
-                    )
-                    (some? (vim-strchr @p_sbo, (byte \j))) ;; jump flag set in 'scrollopt'
-                    (do
-                        ;; When switching between windows, make sure that the relative vertical offset is valid for the new window.
-                        ;; The relative offset is invalid whenever another 'scrollbind' window has scrolled to a point that would
-                        ;; force the current window to scroll past the beginning or end of its buffer.  When the resync is performed,
-                        ;; some of the other 'scrollbind' windows may need to jump so that the current window's relative position
-                        ;; is visible on-screen.
-                        (check-scrollbind (- (:w_topline win) (:w_scbind_pos win)), 0)
-                    ))
-                    (assoc win :w_scbind_pos (:w_topline win)))
-                win
-            )]
-        (reset! scr_old_curwin win)
-        (reset! scr_old_topline (:w_topline win))
-        (reset! scr_old_leftcol (:w_leftcol win))
-        win
-    ))
-
-;; Synchronize any windows that have "scrollbind" set,
-;; based on the number of rows by which the current window has changed.
-
-(defn- #_void check-scrollbind [#_long topline_diff, #_long leftcol_diff]
-    (let [o'curwin @curwin o'VIsual_select @VIsual_select o'VIsual_active @VIsual_active
-          #_int tgt_leftcol (:w_leftcol @curwin)
-          ;; check 'scrollopt' string for vertical and horizontal scroll options
-          #_boolean want_ver (and (some? (vim-strchr @p_sbo, (byte \v))) (!= topline_diff 0))
-          #_boolean want_hor (and (some? (vim-strchr @p_sbo, (byte \h))) (or (!= leftcol_diff 0) (!= topline_diff 0)))
-          lmax (line-count @curbuf)]
-        ;; loop through the scrollbound windows and scroll accordingly
-        (reset! VIsual_select (reset! VIsual_active false))
-        (loop-when-recur (reset! curwin @firstwin) (some? @curwin) (swap! curwin :w_next)
-            ;; skip original window and windows with 'noscrollbind'
-            (when (and (!= @curwin o'curwin) @(:wo_scb (:w_options @curwin)))
-                ;; do the vertical scroll
-                (when want_ver
-                    (swap! curwin update :w_scbind_pos + topline_diff)
-                    (let [#_long topline (max 1 (min (:w_scbind_pos @curwin) lmax))
-                          #_long y (- topline (:w_topline @curwin))]
-                        (if (< 0 y)
-                            (swap! curwin scrollup y)
-                            (swap! curwin scrolldown (- y)))
-                        (swap! curwin redraw-later VALID)
-                        (swap! curwin cursor-correct)
-                        (swap! curwin assoc :w_redr_status true)
-                    ))
-                ;; do the horizontal scroll
-                (when (and want_hor (!= (:w_leftcol @curwin) tgt_leftcol))
-                    (swap! curwin assoc :w_leftcol tgt_leftcol)
-                    (swap! curwin leftcol-changed))
-            ))
-        ;; reset current-window
-        (reset! VIsual_select o'VIsual_select)
-        (reset! VIsual_active o'VIsual_active)
-        (reset! curwin o'curwin))
-    nil)
 
 ;; Command character that's ignored.
 ;; Used for CTRL-Q and CTRL-S to avoid problems with terminals that use xon/xoff.
@@ -9477,7 +9322,7 @@
         ;; "gN" selects previous match
 
        [(byte \N) (byte \n)]
-            (let [? (current-search (:count1 cap), (== (:nchar cap) (byte \n)))]
+            (let [[win ?] (current-search? win, (:count1 cap), (== (:nchar cap) (byte \n)))]
                 [win (if (not ?) (clearopbeep cap) cap)])
 
         ;; "gj" and "gk" two new funny movement keys -- up and down movement based on *screen* line rather than *file* line.
@@ -10199,169 +10044,169 @@
 
 (final nv_cmd_C* nv_cmds
     [
-        (->nv_cmd_C NUL,              nv-error,       0,                      0               ),
-        (->nv_cmd_C Ctrl_A,           nv-addsub,      0,                      0               ),
-        (->nv_cmd_C Ctrl_B,           nv-page,        NV_STS,                 BACKWARD        ),
-        (->nv_cmd_C Ctrl_C,           nv-esc,         0,                      TRUE            ),
-        (->nv_cmd_C Ctrl_D,           nv-halfpage,    0,                      0               ),
-        (->nv_cmd_C Ctrl_E,           nv-scroll-line, 0,                      TRUE            ),
-        (->nv_cmd_C Ctrl_F,           nv-page,        NV_STS,                 FORWARD         ),
-        (->nv_cmd_C Ctrl_G,           nv-ctrlg,       0,                      0               ),
-        (->nv_cmd_C Ctrl_H,           nv-ctrlh,       0,                      0               ),
-        (->nv_cmd_C Ctrl_I,           nv-pcmark,      0,                      0               ),
-        (->nv_cmd_C NL,               nv-down,        0,                      FALSE           ),
-        (->nv_cmd_C Ctrl_K,           nv-error,       0,                      0               ),
-        (->nv_cmd_C Ctrl_L,           nv-clear,       0,                      0               ),
-        (->nv_cmd_C Ctrl_M,           nv-down,        0,                      TRUE            ),
-        (->nv_cmd_C Ctrl_N,           nv-down,        NV_STS,                 FALSE           ),
-        (->nv_cmd_C Ctrl_O,           nv-ctrlo,       0,                      0               ),
-        (->nv_cmd_C Ctrl_P,           nv-up,          NV_STS,                 FALSE           ),
-        (->nv_cmd_C Ctrl_Q,           nv-visual,      0,                      FALSE           ),
-        (->nv_cmd_C Ctrl_R,           nv-redo,        0,                      0               ),
-        (->nv_cmd_C Ctrl_S,           nv-ignore,      0,                      0               ),
-        (->nv_cmd_C Ctrl_T,           nv-error,       0,                      0               ),
-        (->nv_cmd_C Ctrl_U,           nv-halfpage,    0,                      0               ),
-        (->nv_cmd_C Ctrl_V,           nv-visual,      0,                      FALSE           ),
-        (->nv_cmd_C (int \V),         nv-visual,      0,                      FALSE           ),
-        (->nv_cmd_C (int \v),         nv-visual,      0,                      FALSE           ),
-        (->nv_cmd_C Ctrl_W,           nv-window,      0,                      0               ),
-        (->nv_cmd_C Ctrl_X,           nv-addsub,      0,                      0               ),
-        (->nv_cmd_C Ctrl_Y,           nv-scroll-line, 0,                      FALSE           ),
-        (->nv_cmd_C Ctrl_Z,           nv-suspend,     0,                      0               ),
-        (->nv_cmd_C ESC,              nv-esc,         0,                      FALSE           ),
-        (->nv_cmd_C Ctrl_BSL,         nv-normal,      NV_NCH_ALW,             0               ),
-        (->nv_cmd_C Ctrl_RSB,         nv-error,       0,                      0               ),
-        (->nv_cmd_C Ctrl_HAT,         nv-error,       0,                      0               ),
-        (->nv_cmd_C Ctrl__,           nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \space),     nv-right,       0,                      0               ),
-        (->nv_cmd_C (int \!),         nv-operator,    0,                      0               ),
-        (->nv_cmd_C (int \"),         nv-regname,  (| NV_NCH_NOP NV_KEEPREG), 0               ),    ;; """
-        (->nv_cmd_C (int \#),         nv-ident,       0,                      0               ),
-        (->nv_cmd_C (int \$),         nv-dollar,      0,                      0               ),
-        (->nv_cmd_C (int \%),         nv-percent,     0,                      0               ),
-        (->nv_cmd_C (int \&),         nv-optrans,     0,                      0               ),
-        (->nv_cmd_C (int \'),         nv-gomark,      NV_NCH_ALW,             TRUE            ),
-        (->nv_cmd_C (int \(),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \)),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \*),         nv-ident,       0,                      0               ),
-        (->nv_cmd_C (int \+),         nv-down,        0,                      TRUE            ),
-        (->nv_cmd_C (int \,),         nv-csearch,     0,                      TRUE            ),
-        (->nv_cmd_C (int \-),         nv-up,          0,                      TRUE            ),
-        (->nv_cmd_C (int \.),         nv-dot,         NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \/),         nv-search,      0,                      FALSE           ),
-        (->nv_cmd_C (int \0),         nv-beginline,   0,                      0               ),
-        (->nv_cmd_C (int \1),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \2),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \3),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \4),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \5),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \6),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \7),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \8),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \9),         nv-ignore,      0,                      0               ),
-        (->nv_cmd_C (int \:),         nv-colon,       0,                      0               ),
-        (->nv_cmd_C (int \;),         nv-csearch,     0,                      FALSE           ),
-        (->nv_cmd_C (int \<),         nv-operator,    NV_RL,                  0               ),
-        (->nv_cmd_C (int \=),         nv-operator,    0,                      0               ),
-        (->nv_cmd_C (int \>),         nv-operator,    NV_RL,                  0               ),
-        (->nv_cmd_C (int \?),         nv-search,      0,                      FALSE           ),
-        (->nv_cmd_C (int \@),         nv-at,          NV_NCH_NOP,             FALSE           ),
-        (->nv_cmd_C (int \A),         nv-edit,        0,                      0               ),
-        (->nv_cmd_C (int \B),         nv-bck-word,    0,                      1               ),
-        (->nv_cmd_C (int \C),         nv-abbrev,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \D),         nv-abbrev,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \E),         nv-wordcmd,     0,                      TRUE            ),
-        (->nv_cmd_C (int \F),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    BACKWARD        ),
-        (->nv_cmd_C (int \G),         nv-goto,        0,                      TRUE            ),
-        (->nv_cmd_C (int \H),         nv-scroll,      0,                      0               ),
-        (->nv_cmd_C (int \I),         nv-edit,        0,                      0               ),
-        (->nv_cmd_C (int \J),         nv-join,        0,                      0               ),
-        (->nv_cmd_C (int \K),         nv-ident,       0,                      0               ),
-        (->nv_cmd_C (int \L),         nv-scroll,      0,                      0               ),
-        (->nv_cmd_C (int \M),         nv-scroll,      0,                      0               ),
-        (->nv_cmd_C (int \N),         nv-next,        0,                      SEARCH_REV      ),
-        (->nv_cmd_C (int \O),         nv-open,        0,                      0               ),
-        (->nv_cmd_C (int \P),         nv-put,         0,                      0               ),
-        (->nv_cmd_C (int \Q),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \R),         nv-Replace,     0,                      FALSE           ),
-        (->nv_cmd_C (int \S),         nv-subst,       NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \T),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    BACKWARD        ),
-        (->nv_cmd_C (int \U),         nv-Undo,        0,                      0               ),
-        (->nv_cmd_C (int \W),         nv-wordcmd,     0,                      TRUE            ),
-        (->nv_cmd_C (int \X),         nv-abbrev,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \Y),         nv-abbrev,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \Z),         nv-Zet,      (| NV_NCH_NOP NV_NCW),     0               ),
-        (->nv_cmd_C (int \[),         nv-brackets,    NV_NCH_ALW,             BACKWARD        ),
-        (->nv_cmd_C (int \\),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \]),         nv-brackets,    NV_NCH_ALW,             FORWARD         ),
-        (->nv_cmd_C (int \^),         nv-beginline,   0,                   (| BL_WHITE BL_FIX)),
-        (->nv_cmd_C (int \_),         nv-lineop,      0,                      0               ),
-        (->nv_cmd_C (int \`),         nv-gomark,      NV_NCH_ALW,             FALSE           ),
-        (->nv_cmd_C (int \a),         nv-edit,        NV_NCH,                 0               ),
-        (->nv_cmd_C (int \b),         nv-bck-word,    0,                      0               ),
-        (->nv_cmd_C (int \c),         nv-operator,    0,                      0               ),
-        (->nv_cmd_C (int \d),         nv-operator,    0,                      0               ),
-        (->nv_cmd_C (int \e),         nv-wordcmd,     0,                      FALSE           ),
-        (->nv_cmd_C (int \f),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    FORWARD         ),
-        (->nv_cmd_C (int \g),         nv-g-cmd,       NV_NCH_ALW,             FALSE           ),
-        (->nv_cmd_C (int \h),         nv-left,        NV_RL,                  0               ),
-        (->nv_cmd_C (int \i),         nv-edit,        NV_NCH,                 0               ),
-        (->nv_cmd_C (int \j),         nv-down,        0,                      FALSE           ),
-        (->nv_cmd_C (int \k),         nv-up,          0,                      FALSE           ),
-        (->nv_cmd_C (int \l),         nv-right,       NV_RL,                  0               ),
-        (->nv_cmd_C (int \m),         nv-mark,        NV_NCH_NOP,             0               ),
-        (->nv_cmd_C (int \n),         nv-next,        0,                      0               ),
-        (->nv_cmd_C (int \o),         nv-open,        0,                      0               ),
-        (->nv_cmd_C (int \p),         nv-put,         0,                      0               ),
-        (->nv_cmd_C (int \q),         nv-record,      NV_NCH,                 0               ),
-        (->nv_cmd_C (int \r),         nv-replace,  (| NV_NCH_NOP NV_LANG),    0               ),
-        (->nv_cmd_C (int \s),         nv-subst,       NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \t),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    FORWARD         ),
-        (->nv_cmd_C (int \u),         nv-undo,        0,                      0               ),
-        (->nv_cmd_C (int \w),         nv-wordcmd,     0,                      FALSE           ),
-        (->nv_cmd_C (int \x),         nv-abbrev,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C (int \y),         nv-operator,    0,                      0               ),
-        (->nv_cmd_C (int \z),         nv-zet,         NV_NCH_ALW,             0               ),
-        (->nv_cmd_C (int \{),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \|),         nv-pipe,        0,                      0               ),
-        (->nv_cmd_C (int \}),         nv-error,       0,                      0               ),
-        (->nv_cmd_C (int \~),         nv-tilde,       0,                      0               ),
+        (new nv_cmd_C NUL,              nv-error,       0,                      0               ),
+        (new nv_cmd_C Ctrl_A,           nv-addsub,      0,                      0               ),
+        (new nv_cmd_C Ctrl_B,           nv-page,        NV_STS,                 BACKWARD        ),
+        (new nv_cmd_C Ctrl_C,           nv-esc,         0,                      TRUE            ),
+        (new nv_cmd_C Ctrl_D,           nv-halfpage,    0,                      0               ),
+        (new nv_cmd_C Ctrl_E,           nv-scroll-line, 0,                      TRUE            ),
+        (new nv_cmd_C Ctrl_F,           nv-page,        NV_STS,                 FORWARD         ),
+        (new nv_cmd_C Ctrl_G,           nv-ctrlg,       0,                      0               ),
+        (new nv_cmd_C Ctrl_H,           nv-ctrlh,       0,                      0               ),
+        (new nv_cmd_C Ctrl_I,           nv-pcmark,      0,                      0               ),
+        (new nv_cmd_C NL,               nv-down,        0,                      FALSE           ),
+        (new nv_cmd_C Ctrl_K,           nv-error,       0,                      0               ),
+        (new nv_cmd_C Ctrl_L,           nv-clear,       0,                      0               ),
+        (new nv_cmd_C Ctrl_M,           nv-down,        0,                      TRUE            ),
+        (new nv_cmd_C Ctrl_N,           nv-down,        NV_STS,                 FALSE           ),
+        (new nv_cmd_C Ctrl_O,           nv-ctrlo,       0,                      0               ),
+        (new nv_cmd_C Ctrl_P,           nv-up,          NV_STS,                 FALSE           ),
+        (new nv_cmd_C Ctrl_Q,           nv-visual,      0,                      FALSE           ),
+        (new nv_cmd_C Ctrl_R,           nv-redo,        0,                      0               ),
+        (new nv_cmd_C Ctrl_S,           nv-ignore,      0,                      0               ),
+        (new nv_cmd_C Ctrl_T,           nv-error,       0,                      0               ),
+        (new nv_cmd_C Ctrl_U,           nv-halfpage,    0,                      0               ),
+        (new nv_cmd_C Ctrl_V,           nv-visual,      0,                      FALSE           ),
+        (new nv_cmd_C (int \V),         nv-visual,      0,                      FALSE           ),
+        (new nv_cmd_C (int \v),         nv-visual,      0,                      FALSE           ),
+        (new nv_cmd_C Ctrl_W,           nv-window,      0,                      0               ),
+        (new nv_cmd_C Ctrl_X,           nv-addsub,      0,                      0               ),
+        (new nv_cmd_C Ctrl_Y,           nv-scroll-line, 0,                      FALSE           ),
+        (new nv_cmd_C Ctrl_Z,           nv-suspend,     0,                      0               ),
+        (new nv_cmd_C ESC,              nv-esc,         0,                      FALSE           ),
+        (new nv_cmd_C Ctrl_BSL,         nv-normal,      NV_NCH_ALW,             0               ),
+        (new nv_cmd_C Ctrl_RSB,         nv-error,       0,                      0               ),
+        (new nv_cmd_C Ctrl_HAT,         nv-error,       0,                      0               ),
+        (new nv_cmd_C Ctrl__,           nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \space),     nv-right,       0,                      0               ),
+        (new nv_cmd_C (int \!),         nv-operator,    0,                      0               ),
+        (new nv_cmd_C (int \"),         nv-regname,  (| NV_NCH_NOP NV_KEEPREG), 0               ),    ;; """
+        (new nv_cmd_C (int \#),         nv-ident,       0,                      0               ),
+        (new nv_cmd_C (int \$),         nv-dollar,      0,                      0               ),
+        (new nv_cmd_C (int \%),         nv-percent,     0,                      0               ),
+        (new nv_cmd_C (int \&),         nv-optrans,     0,                      0               ),
+        (new nv_cmd_C (int \'),         nv-gomark,      NV_NCH_ALW,             TRUE            ),
+        (new nv_cmd_C (int \(),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \)),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \*),         nv-ident,       0,                      0               ),
+        (new nv_cmd_C (int \+),         nv-down,        0,                      TRUE            ),
+        (new nv_cmd_C (int \,),         nv-csearch,     0,                      TRUE            ),
+        (new nv_cmd_C (int \-),         nv-up,          0,                      TRUE            ),
+        (new nv_cmd_C (int \.),         nv-dot,         NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \/),         nv-search,      0,                      FALSE           ),
+        (new nv_cmd_C (int \0),         nv-beginline,   0,                      0               ),
+        (new nv_cmd_C (int \1),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \2),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \3),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \4),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \5),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \6),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \7),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \8),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \9),         nv-ignore,      0,                      0               ),
+        (new nv_cmd_C (int \:),         nv-colon,       0,                      0               ),
+        (new nv_cmd_C (int \;),         nv-csearch,     0,                      FALSE           ),
+        (new nv_cmd_C (int \<),         nv-operator,    NV_RL,                  0               ),
+        (new nv_cmd_C (int \=),         nv-operator,    0,                      0               ),
+        (new nv_cmd_C (int \>),         nv-operator,    NV_RL,                  0               ),
+        (new nv_cmd_C (int \?),         nv-search,      0,                      FALSE           ),
+        (new nv_cmd_C (int \@),         nv-at,          NV_NCH_NOP,             FALSE           ),
+        (new nv_cmd_C (int \A),         nv-edit,        0,                      0               ),
+        (new nv_cmd_C (int \B),         nv-bck-word,    0,                      1               ),
+        (new nv_cmd_C (int \C),         nv-abbrev,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \D),         nv-abbrev,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \E),         nv-wordcmd,     0,                      TRUE            ),
+        (new nv_cmd_C (int \F),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    BACKWARD        ),
+        (new nv_cmd_C (int \G),         nv-goto,        0,                      TRUE            ),
+        (new nv_cmd_C (int \H),         nv-scroll,      0,                      0               ),
+        (new nv_cmd_C (int \I),         nv-edit,        0,                      0               ),
+        (new nv_cmd_C (int \J),         nv-join,        0,                      0               ),
+        (new nv_cmd_C (int \K),         nv-ident,       0,                      0               ),
+        (new nv_cmd_C (int \L),         nv-scroll,      0,                      0               ),
+        (new nv_cmd_C (int \M),         nv-scroll,      0,                      0               ),
+        (new nv_cmd_C (int \N),         nv-next,        0,                      SEARCH_REV      ),
+        (new nv_cmd_C (int \O),         nv-open,        0,                      0               ),
+        (new nv_cmd_C (int \P),         nv-put,         0,                      0               ),
+        (new nv_cmd_C (int \Q),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \R),         nv-Replace,     0,                      FALSE           ),
+        (new nv_cmd_C (int \S),         nv-subst,       NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \T),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    BACKWARD        ),
+        (new nv_cmd_C (int \U),         nv-Undo,        0,                      0               ),
+        (new nv_cmd_C (int \W),         nv-wordcmd,     0,                      TRUE            ),
+        (new nv_cmd_C (int \X),         nv-abbrev,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \Y),         nv-abbrev,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \Z),         nv-Zet,      (| NV_NCH_NOP NV_NCW),     0               ),
+        (new nv_cmd_C (int \[),         nv-brackets,    NV_NCH_ALW,             BACKWARD        ),
+        (new nv_cmd_C (int \\),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \]),         nv-brackets,    NV_NCH_ALW,             FORWARD         ),
+        (new nv_cmd_C (int \^),         nv-beginline,   0,                   (| BL_WHITE BL_FIX)),
+        (new nv_cmd_C (int \_),         nv-lineop,      0,                      0               ),
+        (new nv_cmd_C (int \`),         nv-gomark,      NV_NCH_ALW,             FALSE           ),
+        (new nv_cmd_C (int \a),         nv-edit,        NV_NCH,                 0               ),
+        (new nv_cmd_C (int \b),         nv-bck-word,    0,                      0               ),
+        (new nv_cmd_C (int \c),         nv-operator,    0,                      0               ),
+        (new nv_cmd_C (int \d),         nv-operator,    0,                      0               ),
+        (new nv_cmd_C (int \e),         nv-wordcmd,     0,                      FALSE           ),
+        (new nv_cmd_C (int \f),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    FORWARD         ),
+        (new nv_cmd_C (int \g),         nv-g-cmd,       NV_NCH_ALW,             FALSE           ),
+        (new nv_cmd_C (int \h),         nv-left,        NV_RL,                  0               ),
+        (new nv_cmd_C (int \i),         nv-edit,        NV_NCH,                 0               ),
+        (new nv_cmd_C (int \j),         nv-down,        0,                      FALSE           ),
+        (new nv_cmd_C (int \k),         nv-up,          0,                      FALSE           ),
+        (new nv_cmd_C (int \l),         nv-right,       NV_RL,                  0               ),
+        (new nv_cmd_C (int \m),         nv-mark,        NV_NCH_NOP,             0               ),
+        (new nv_cmd_C (int \n),         nv-next,        0,                      0               ),
+        (new nv_cmd_C (int \o),         nv-open,        0,                      0               ),
+        (new nv_cmd_C (int \p),         nv-put,         0,                      0               ),
+        (new nv_cmd_C (int \q),         nv-record,      NV_NCH,                 0               ),
+        (new nv_cmd_C (int \r),         nv-replace,  (| NV_NCH_NOP NV_LANG),    0               ),
+        (new nv_cmd_C (int \s),         nv-subst,       NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \t),         nv-csearch,  (| NV_NCH_ALW NV_LANG),    FORWARD         ),
+        (new nv_cmd_C (int \u),         nv-undo,        0,                      0               ),
+        (new nv_cmd_C (int \w),         nv-wordcmd,     0,                      FALSE           ),
+        (new nv_cmd_C (int \x),         nv-abbrev,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C (int \y),         nv-operator,    0,                      0               ),
+        (new nv_cmd_C (int \z),         nv-zet,         NV_NCH_ALW,             0               ),
+        (new nv_cmd_C (int \{),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \|),         nv-pipe,        0,                      0               ),
+        (new nv_cmd_C (int \}),         nv-error,       0,                      0               ),
+        (new nv_cmd_C (int \~),         nv-tilde,       0,                      0               ),
 
         ;; pound sign
-        (->nv_cmd_C (char_u POUND),   nv-ident,       0,                      0               ),
-        (->nv_cmd_C K_IGNORE,         nv-ignore,      NV_KEEPREG,             0               ),
-        (->nv_cmd_C K_NOP,            nv-nop,         0,                      0               ),
-        (->nv_cmd_C K_INS,            nv-edit,        0,                      0               ),
-        (->nv_cmd_C K_KINS,           nv-edit,        0,                      0               ),
-        (->nv_cmd_C K_BS,             nv-ctrlh,       0,                      0               ),
-        (->nv_cmd_C K_UP,             nv-up,       (| NV_SSS NV_STS),         FALSE           ),
-        (->nv_cmd_C K_S_UP,           nv-page,        NV_SS,                  BACKWARD        ),
-        (->nv_cmd_C K_DOWN,           nv-down,     (| NV_SSS NV_STS),         FALSE           ),
-        (->nv_cmd_C K_S_DOWN,         nv-page,        NV_SS,                  FORWARD         ),
-        (->nv_cmd_C K_LEFT,           nv-left,     (| NV_SSS NV_STS NV_RL),   0               ),
-        (->nv_cmd_C K_S_LEFT,         nv-bck-word, (| NV_SS NV_RL),           0               ),
-        (->nv_cmd_C K_C_LEFT,         nv-bck-word, (| NV_SSS NV_RL NV_STS),   1               ),
-        (->nv_cmd_C K_RIGHT,          nv-right,    (| NV_SSS NV_STS NV_RL),   0               ),
-        (->nv_cmd_C K_S_RIGHT,        nv-wordcmd,  (| NV_SS NV_RL),           FALSE           ),
-        (->nv_cmd_C K_C_RIGHT,        nv-wordcmd,  (| NV_SSS NV_RL NV_STS),   TRUE            ),
-        (->nv_cmd_C K_PAGEUP,         nv-page,     (| NV_SSS NV_STS),         BACKWARD        ),
-        (->nv_cmd_C K_KPAGEUP,        nv-page,     (| NV_SSS NV_STS),         BACKWARD        ),
-        (->nv_cmd_C K_PAGEDOWN,       nv-page,     (| NV_SSS NV_STS),         FORWARD         ),
-        (->nv_cmd_C K_KPAGEDOWN,      nv-page,     (| NV_SSS NV_STS),         FORWARD         ),
-        (->nv_cmd_C K_END,            nv-end,      (| NV_SSS NV_STS),         FALSE           ),
-        (->nv_cmd_C K_KEND,           nv-end,      (| NV_SSS NV_STS),         FALSE           ),
-        (->nv_cmd_C K_S_END,          nv-end,         NV_SS,                  FALSE           ),
-        (->nv_cmd_C K_C_END,          nv-end,      (| NV_SSS NV_STS),         TRUE            ),
-        (->nv_cmd_C K_HOME,           nv-home,     (| NV_SSS NV_STS),         0               ),
-        (->nv_cmd_C K_KHOME,          nv-home,     (| NV_SSS NV_STS),         0               ),
-        (->nv_cmd_C K_S_HOME,         nv-home,        NV_SS,                  0               ),
-        (->nv_cmd_C K_C_HOME,         nv-goto,     (| NV_SSS NV_STS),         FALSE           ),
-        (->nv_cmd_C K_DEL,            nv-abbrev,      0,                      0               ),
-        (->nv_cmd_C K_KDEL,           nv-abbrev,      0,                      0               ),
-        (->nv_cmd_C K_UNDO,           nv-kundo,       0,                      0               ),
-        (->nv_cmd_C K_SELECT,         nv-select,      0,                      0               ),
-        (->nv_cmd_C K_DROP,           nv-drop,        NV_STS,                 0               ),
-        (->nv_cmd_C K_CURSORHOLD,     nv-cursorhold,  NV_KEEPREG,             0               ),
+        (new nv_cmd_C (char_u POUND),   nv-ident,       0,                      0               ),
+        (new nv_cmd_C K_IGNORE,         nv-ignore,      NV_KEEPREG,             0               ),
+        (new nv_cmd_C K_NOP,            nv-nop,         0,                      0               ),
+        (new nv_cmd_C K_INS,            nv-edit,        0,                      0               ),
+        (new nv_cmd_C K_KINS,           nv-edit,        0,                      0               ),
+        (new nv_cmd_C K_BS,             nv-ctrlh,       0,                      0               ),
+        (new nv_cmd_C K_UP,             nv-up,       (| NV_SSS NV_STS),         FALSE           ),
+        (new nv_cmd_C K_S_UP,           nv-page,        NV_SS,                  BACKWARD        ),
+        (new nv_cmd_C K_DOWN,           nv-down,     (| NV_SSS NV_STS),         FALSE           ),
+        (new nv_cmd_C K_S_DOWN,         nv-page,        NV_SS,                  FORWARD         ),
+        (new nv_cmd_C K_LEFT,           nv-left,     (| NV_SSS NV_STS NV_RL),   0               ),
+        (new nv_cmd_C K_S_LEFT,         nv-bck-word, (| NV_SS NV_RL),           0               ),
+        (new nv_cmd_C K_C_LEFT,         nv-bck-word, (| NV_SSS NV_RL NV_STS),   1               ),
+        (new nv_cmd_C K_RIGHT,          nv-right,    (| NV_SSS NV_STS NV_RL),   0               ),
+        (new nv_cmd_C K_S_RIGHT,        nv-wordcmd,  (| NV_SS NV_RL),           FALSE           ),
+        (new nv_cmd_C K_C_RIGHT,        nv-wordcmd,  (| NV_SSS NV_RL NV_STS),   TRUE            ),
+        (new nv_cmd_C K_PAGEUP,         nv-page,     (| NV_SSS NV_STS),         BACKWARD        ),
+        (new nv_cmd_C K_KPAGEUP,        nv-page,     (| NV_SSS NV_STS),         BACKWARD        ),
+        (new nv_cmd_C K_PAGEDOWN,       nv-page,     (| NV_SSS NV_STS),         FORWARD         ),
+        (new nv_cmd_C K_KPAGEDOWN,      nv-page,     (| NV_SSS NV_STS),         FORWARD         ),
+        (new nv_cmd_C K_END,            nv-end,      (| NV_SSS NV_STS),         FALSE           ),
+        (new nv_cmd_C K_KEND,           nv-end,      (| NV_SSS NV_STS),         FALSE           ),
+        (new nv_cmd_C K_S_END,          nv-end,         NV_SS,                  FALSE           ),
+        (new nv_cmd_C K_C_END,          nv-end,      (| NV_SSS NV_STS),         TRUE            ),
+        (new nv_cmd_C K_HOME,           nv-home,     (| NV_SSS NV_STS),         0               ),
+        (new nv_cmd_C K_KHOME,          nv-home,     (| NV_SSS NV_STS),         0               ),
+        (new nv_cmd_C K_S_HOME,         nv-home,        NV_SS,                  0               ),
+        (new nv_cmd_C K_C_HOME,         nv-goto,     (| NV_SSS NV_STS),         FALSE           ),
+        (new nv_cmd_C K_DEL,            nv-abbrev,      0,                      0               ),
+        (new nv_cmd_C K_KDEL,           nv-abbrev,      0,                      0               ),
+        (new nv_cmd_C K_UNDO,           nv-kundo,       0,                      0               ),
+        (new nv_cmd_C K_SELECT,         nv-select,      0,                      0               ),
+        (new nv_cmd_C K_DROP,           nv-drop,        NV_STS,                 0               ),
+        (new nv_cmd_C K_CURSORHOLD,     nv-cursorhold,  NV_KEEPREG,             0               ),
     ])
 
 ;; ops.c: implementation of op-shift, op-delete, op-tilde, op-change, op-yank, do-put and do-join
@@ -11343,7 +11188,7 @@
                                             ;; If the range starts in virtual space, count the initial "coladd" offset as part of "startspaces".
                                             (let [[win bd #_int n] ;; number of extra chars required
                                                     (if (and (!= @virtual_op FALSE) (:is_short bd) (eos? (:textstart bd)))
-                                                        (let [#_pos_C vpos (->pos_C (:lnum (:w_cursor win)) 0 0)
+                                                        (let [#_pos_C vpos (new pos_C (:lnum (:w_cursor win)) 0 0)
                                                               [win vpos] (getvpos win, vpos, (:start_vcol oap))
                                                               bd (update bd :startspaces + (:coladd vpos))]
                                                             [win bd (:startspaces bd)])
@@ -11751,7 +11596,7 @@
                                   win (loop-when [win win #_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) => (check-cursor win)
                                         (let [#_block_def_C bd (block-prep oap, false, lnum, true)
                                               win (when' (or (not (:is_short bd)) (!= @virtual_op FALSE)) => win
-                                                    (let [#_pos_C vpos (->pos_C lnum 0 0)
+                                                    (let [#_pos_C vpos (new pos_C lnum 0 0)
                                                           ;; If the block starts in virtual space, count the initial "coladd" offset as part of "startspaces".
                                                           [win vpos] (if (:is_short bd) (getvpos win, vpos, (:start_vcol oap)) [win vpos])
                                                           #_Bytes p (ml-get lnum)
@@ -11795,7 +11640,7 @@
                          (or (not (:is_VIsual oap)) (at? @p_sel (byte \o))) (not (:block_mode oap)) (< 1 y'lines))
                     [(dec y'lines) MLINE (dec y'end)]
                     [y'lines y'type y'end])
-              #_yankreg_C reg (->yankreg_C (Bytes* y'lines) y'lines y'type 0)
+              #_yankreg_C reg (new yankreg_C (Bytes* y'lines) y'lines y'type 0)
               reg (if (:block_mode oap) ;; Visual block mode.
                     (let [#_int n (- (:end_vcol oap) (:start_vcol oap)) n (if (and (== (:w_curswant win) MAXCOL) (< 0 n)) (dec n) n)]
                         (assoc reg :y_type MBLOCK :y_width n))
@@ -11880,7 +11725,7 @@
                             (if (== regname (byte \=))
                                 ;; For the = register we need to split the string at NL characters.
                                 ;; Loop twice: count the number of lines, then save them.
-                                (loop [reg (->yankreg_C nil 0 MCHAR 0)]
+                                (loop [reg (new yankreg_C nil 0 MCHAR 0)]
                                     (let [reg (loop-when [reg reg #_Bytes s @a'content] (some? s) => reg
                                                 (let-when [reg (if (some? (:y_array reg)) (assoc-in reg [:y_array (:y_size reg)] s) reg)
                                                       reg (update reg :y_size inc)
@@ -11894,7 +11739,7 @@
                                             )]
                                         (if (some? (:y_array reg)) reg (recur (assoc reg :y_array (Bytes* (:y_size reg)) :y_size 0)))
                                     ))
-                                (->yankreg_C [ @a'content ] 1 MCHAR 0)) ;; use fake one-line yank register
+                                (new yankreg_C [ @a'content ] 1 MCHAR 0)) ;; use fake one-line yank register
                             (let [#_int y (get-yank-register regname, false)]
                                 (... @y_regs y)
                             ))
@@ -12055,7 +11900,7 @@
                                                     (swap! curbuf changed-lines lnum, 0, (:lnum (:w_cursor win)), @a'nr_lines)
                                                     ;; Set '[ and '] marks.
                                                     (swap! curbuf assoc :b_op_start (assoc (:w_cursor win) :lnum lnum))
-                                                    (swap! curbuf assoc :b_op_end (->pos_C (dec (:lnum (:w_cursor win))) (dec (+ (:textcol bd) @a'totlen)) 0))
+                                                    (swap! curbuf assoc :b_op_end (new pos_C (dec (:lnum (:w_cursor win))) (dec (+ (:textcol bd) @a'totlen)) 0))
                                                     (if (flag? flags PUT_CURSEND)
                                                         (let [win (assoc win :w_cursor (update (:b_op_end @curbuf) :col inc))]
                                                             ;; in Insert mode we might be after the NUL, correct for that
@@ -12843,7 +12688,7 @@
             add
     ))
 
-(atom! pos_C mark_initpos (->pos_C 1, 0, 0))
+(atom! pos_C mark_initpos (new pos_C 1, 0, 0))
 
 ;; Adjust marks between "line1" and "line2" (inclusive) to move "amount" lines.
 ;;
@@ -14240,8 +14085,6 @@
                                           ;; Redraw the display when no characters are waiting.
                                           ;; Also shows mode, ruler and positions cursor.
                                           win (ins-redraw win, true)
-                                          win (if @(:wo_scb (:w_options win)) (do-check-scrollbind win, true) win)
-                                          _ (when @(:wo_crb (:w_options win)) (do-check-cursorbind))
                                           win (update-curswant win)
                                           _ (reset! a'old_topline (:w_topline win))
                                           ;; Get a character for Insert mode.  Ignore K_IGNORE.
@@ -18102,7 +17945,7 @@
 ;; Save the current parse state, so that it can be restored and parsing starts in the same state again.
 
 (defn- #_parse_state_C save-parse-state []
-    (->parse_state_C @regparse @prevchr_len @curchr @prevchr @prevprevchr @nextchr @at_start @prev_at_start @regnpar))
+    (new parse_state_C @regparse @prevchr_len @curchr @prevchr @prevprevchr @nextchr @at_start @prev_at_start @regnpar))
 
 ;; Restore a previously saved parse state.
 
@@ -18735,11 +18578,11 @@
         )
 
         (when (neg? (:lnum (... (:r_startpos @reg_match) 0)))
-            (swap! reg_match assoc-in [:r_startpos 0] (->lpos_C 0 col))
+            (swap! reg_match assoc-in [:r_startpos 0] (new lpos_C 0 col))
         )
         (cond (neg? (:lnum (... (:r_endpos @reg_match) 0)))
         (do
-            (swap! reg_match assoc-in [:r_endpos 0] (->lpos_C @reglnum (BDIFF @reginput, @regline)))
+            (swap! reg_match assoc-in [:r_endpos 0] (new lpos_C @reglnum (BDIFF @reginput, @regline)))
         )
         :else
         (do
@@ -19042,7 +18885,7 @@
                             (do
                                 ((ß rip =) (assoc rip :ri_no no))
                                 ((ß rip =) (assoc rip :ri_sesave (... (:r_startpos @reg_match) no)))
-                                (swap! reg_match assoc-in [:r_startpos no] (->lpos_C @reglnum (BDIFF @reginput, @regline)))
+                                (swap! reg_match assoc-in [:r_startpos no] (new lpos_C @reglnum (BDIFF @reginput, @regline)))
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK) status
@@ -19077,7 +18920,7 @@
                             (do
                                 ((ß rip =) (assoc rip :ri_no no))
                                 ((ß rip =) (assoc rip :ri_sesave (... (:r_endpos @reg_match) no)))
-                                (swap! reg_match assoc-in [:r_endpos no] (->lpos_C @reglnum (BDIFF @reginput, @regline)))
+                                (swap! reg_match assoc-in [:r_endpos no] (new lpos_C @reglnum (BDIFF @reginput, @regline)))
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK) status
@@ -20066,54 +19909,54 @@
 ;; 0xfb20 - 0xfb4f
 (final decomp_C* decomp_table
     [
-        (->decomp_C  0x5e2,     0,     0)   ;; 0xfb20   alt ayin
-        (->decomp_C  0x5d0,     0,     0)   ;; 0xfb21   alt alef
-        (->decomp_C  0x5d3,     0,     0)   ;; 0xfb22   alt dalet
-        (->decomp_C  0x5d4,     0,     0)   ;; 0xfb23   alt he
-        (->decomp_C  0x5db,     0,     0)   ;; 0xfb24   alt kaf
-        (->decomp_C  0x5dc,     0,     0)   ;; 0xfb25   alt lamed
-        (->decomp_C  0x5dd,     0,     0)   ;; 0xfb26   alt mem-sofit
-        (->decomp_C  0x5e8,     0,     0)   ;; 0xfb27   alt resh
-        (->decomp_C  0x5ea,     0,     0)   ;; 0xfb28   alt tav
-        (->decomp_C (int \+),   0,     0)   ;; 0xfb29   alt plus
-        (->decomp_C  0x5e9, 0x5c1,     0)   ;; 0xfb2a   shin+shin-dot
-        (->decomp_C  0x5e9, 0x5c2,     0)   ;; 0xfb2b   shin+sin-dot
-        (->decomp_C  0x5e9, 0x5c1, 0x5bc)   ;; 0xfb2c   shin+shin-dot+dagesh
-        (->decomp_C  0x5e9, 0x5c2, 0x5bc)   ;; 0xfb2d   shin+sin-dot+dagesh
-        (->decomp_C  0x5d0, 0x5b7,     0)   ;; 0xfb2e   alef+patah
-        (->decomp_C  0x5d0, 0x5b8,     0)   ;; 0xfb2f   alef+qamats
-        (->decomp_C  0x5d0, 0x5b4,     0)   ;; 0xfb30   alef+hiriq
-        (->decomp_C  0x5d1, 0x5bc,     0)   ;; 0xfb31   bet+dagesh
-        (->decomp_C  0x5d2, 0x5bc,     0)   ;; 0xfb32   gimel+dagesh
-        (->decomp_C  0x5d3, 0x5bc,     0)   ;; 0xfb33   dalet+dagesh
-        (->decomp_C  0x5d4, 0x5bc,     0)   ;; 0xfb34   he+dagesh
-        (->decomp_C  0x5d5, 0x5bc,     0)   ;; 0xfb35   vav+dagesh
-        (->decomp_C  0x5d6, 0x5bc,     0)   ;; 0xfb36   zayin+dagesh
-        (->decomp_C 0xfb37,     0,     0)   ;; 0xfb37 - UNUSED
-        (->decomp_C  0x5d8, 0x5bc,     0)   ;; 0xfb38   tet+dagesh
-        (->decomp_C  0x5d9, 0x5bc,     0)   ;; 0xfb39   yud+dagesh
-        (->decomp_C  0x5da, 0x5bc,     0)   ;; 0xfb3a   kaf sofit+dagesh
-        (->decomp_C  0x5db, 0x5bc,     0)   ;; 0xfb3b   kaf+dagesh
-        (->decomp_C  0x5dc, 0x5bc,     0)   ;; 0xfb3c   lamed+dagesh
-        (->decomp_C 0xfb3d,     0,     0)   ;; 0xfb3d - UNUSED
-        (->decomp_C  0x5de, 0x5bc,     0)   ;; 0xfb3e   mem+dagesh
-        (->decomp_C 0xfb3f,     0,     0)   ;; 0xfb3f - UNUSED
-        (->decomp_C  0x5e0, 0x5bc,     0)   ;; 0xfb40   nun+dagesh
-        (->decomp_C  0x5e1, 0x5bc,     0)   ;; 0xfb41   samech+dagesh
-        (->decomp_C 0xfb42,     0,     0)   ;; 0xfb42 - UNUSED
-        (->decomp_C  0x5e3, 0x5bc,     0)   ;; 0xfb43   pe sofit+dagesh
-        (->decomp_C  0x5e4, 0x5bc,     0)   ;; 0xfb44   pe+dagesh
-        (->decomp_C 0xfb45,     0,     0)   ;; 0xfb45 - UNUSED
-        (->decomp_C  0x5e6, 0x5bc,     0)   ;; 0xfb46   tsadi+dagesh
-        (->decomp_C  0x5e7, 0x5bc,     0)   ;; 0xfb47   qof+dagesh
-        (->decomp_C  0x5e8, 0x5bc,     0)   ;; 0xfb48   resh+dagesh
-        (->decomp_C  0x5e9, 0x5bc,     0)   ;; 0xfb49   shin+dagesh
-        (->decomp_C  0x5ea, 0x5bc,     0)   ;; 0xfb4a   tav+dagesh
-        (->decomp_C  0x5d5, 0x5b9,     0)   ;; 0xfb4b   vav+holam
-        (->decomp_C  0x5d1, 0x5bf,     0)   ;; 0xfb4c   bet+rafe
-        (->decomp_C  0x5db, 0x5bf,     0)   ;; 0xfb4d   kaf+rafe
-        (->decomp_C  0x5e4, 0x5bf,     0)   ;; 0xfb4e   pe+rafe
-        (->decomp_C  0x5d0, 0x5dc,     0)   ;; 0xfb4f   alef-lamed
+        (new decomp_C  0x5e2,     0,     0)   ;; 0xfb20   alt ayin
+        (new decomp_C  0x5d0,     0,     0)   ;; 0xfb21   alt alef
+        (new decomp_C  0x5d3,     0,     0)   ;; 0xfb22   alt dalet
+        (new decomp_C  0x5d4,     0,     0)   ;; 0xfb23   alt he
+        (new decomp_C  0x5db,     0,     0)   ;; 0xfb24   alt kaf
+        (new decomp_C  0x5dc,     0,     0)   ;; 0xfb25   alt lamed
+        (new decomp_C  0x5dd,     0,     0)   ;; 0xfb26   alt mem-sofit
+        (new decomp_C  0x5e8,     0,     0)   ;; 0xfb27   alt resh
+        (new decomp_C  0x5ea,     0,     0)   ;; 0xfb28   alt tav
+        (new decomp_C (int \+),   0,     0)   ;; 0xfb29   alt plus
+        (new decomp_C  0x5e9, 0x5c1,     0)   ;; 0xfb2a   shin+shin-dot
+        (new decomp_C  0x5e9, 0x5c2,     0)   ;; 0xfb2b   shin+sin-dot
+        (new decomp_C  0x5e9, 0x5c1, 0x5bc)   ;; 0xfb2c   shin+shin-dot+dagesh
+        (new decomp_C  0x5e9, 0x5c2, 0x5bc)   ;; 0xfb2d   shin+sin-dot+dagesh
+        (new decomp_C  0x5d0, 0x5b7,     0)   ;; 0xfb2e   alef+patah
+        (new decomp_C  0x5d0, 0x5b8,     0)   ;; 0xfb2f   alef+qamats
+        (new decomp_C  0x5d0, 0x5b4,     0)   ;; 0xfb30   alef+hiriq
+        (new decomp_C  0x5d1, 0x5bc,     0)   ;; 0xfb31   bet+dagesh
+        (new decomp_C  0x5d2, 0x5bc,     0)   ;; 0xfb32   gimel+dagesh
+        (new decomp_C  0x5d3, 0x5bc,     0)   ;; 0xfb33   dalet+dagesh
+        (new decomp_C  0x5d4, 0x5bc,     0)   ;; 0xfb34   he+dagesh
+        (new decomp_C  0x5d5, 0x5bc,     0)   ;; 0xfb35   vav+dagesh
+        (new decomp_C  0x5d6, 0x5bc,     0)   ;; 0xfb36   zayin+dagesh
+        (new decomp_C 0xfb37,     0,     0)   ;; 0xfb37 - UNUSED
+        (new decomp_C  0x5d8, 0x5bc,     0)   ;; 0xfb38   tet+dagesh
+        (new decomp_C  0x5d9, 0x5bc,     0)   ;; 0xfb39   yud+dagesh
+        (new decomp_C  0x5da, 0x5bc,     0)   ;; 0xfb3a   kaf sofit+dagesh
+        (new decomp_C  0x5db, 0x5bc,     0)   ;; 0xfb3b   kaf+dagesh
+        (new decomp_C  0x5dc, 0x5bc,     0)   ;; 0xfb3c   lamed+dagesh
+        (new decomp_C 0xfb3d,     0,     0)   ;; 0xfb3d - UNUSED
+        (new decomp_C  0x5de, 0x5bc,     0)   ;; 0xfb3e   mem+dagesh
+        (new decomp_C 0xfb3f,     0,     0)   ;; 0xfb3f - UNUSED
+        (new decomp_C  0x5e0, 0x5bc,     0)   ;; 0xfb40   nun+dagesh
+        (new decomp_C  0x5e1, 0x5bc,     0)   ;; 0xfb41   samech+dagesh
+        (new decomp_C 0xfb42,     0,     0)   ;; 0xfb42 - UNUSED
+        (new decomp_C  0x5e3, 0x5bc,     0)   ;; 0xfb43   pe sofit+dagesh
+        (new decomp_C  0x5e4, 0x5bc,     0)   ;; 0xfb44   pe+dagesh
+        (new decomp_C 0xfb45,     0,     0)   ;; 0xfb45 - UNUSED
+        (new decomp_C  0x5e6, 0x5bc,     0)   ;; 0xfb46   tsadi+dagesh
+        (new decomp_C  0x5e7, 0x5bc,     0)   ;; 0xfb47   qof+dagesh
+        (new decomp_C  0x5e8, 0x5bc,     0)   ;; 0xfb48   resh+dagesh
+        (new decomp_C  0x5e9, 0x5bc,     0)   ;; 0xfb49   shin+dagesh
+        (new decomp_C  0x5ea, 0x5bc,     0)   ;; 0xfb4a   tav+dagesh
+        (new decomp_C  0x5d5, 0x5b9,     0)   ;; 0xfb4b   vav+holam
+        (new decomp_C  0x5d1, 0x5bf,     0)   ;; 0xfb4c   bet+rafe
+        (new decomp_C  0x5db, 0x5bf,     0)   ;; 0xfb4d   kaf+rafe
+        (new decomp_C  0x5e4, 0x5bf,     0)   ;; 0xfb4e   pe+rafe
+        (new decomp_C  0x5d0, 0x5dc,     0)   ;; 0xfb4f   alef-lamed
     ])
 
 (defn- #_void mb-decompose [#_int c, #_int' a'c1, #_int' a'c2, #_int' a'c3]
@@ -22155,7 +21998,7 @@
 ;; Initialize a frag_C struct and return it.
 
 (defn- #_frag_C alloc-frag [#_nfa_state_C start, #_fragnode_C out]
-    (->frag_C start out))
+    (new frag_C start out))
 
 ;; Create singleton list containing just outp.
 
@@ -22202,7 +22045,7 @@
     ])
 
 (defn- #_nfa_stack_C new-nfa-stack [#_int n]
-    (->nfa_stack_C (frag_C* n) 0 n))
+    (new nfa_stack_C (frag_C* n) 0 n))
 
 ;; Push an item onto the stack.
 
@@ -22770,7 +22613,7 @@
 
 (defn- #_regsubs_C new-regsubs []
     (let [_ (vec (repeat NSUBEXP LPOS-1))]
-        (->regsubs_C 0 _ _)
+        (new regsubs_C 0 _ _)
     ))
 
 ;; nfa_pim_C stores a Postponed Invisible Match.
@@ -23118,8 +22961,8 @@
                     ((ß subs =) (assoc subs :in_use (inc x)))
                 ))
                 ((ß subs =) (if (== off -1)
-                    (assoc-in subs [:rs_start x] (->lpos_C (inc @reglnum) 0))
-                    (assoc-in subs [:rs_start x] (->lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
+                    (assoc-in subs [:rs_start x] (new lpos_C (inc @reglnum) 0))
+                    (assoc-in subs [:rs_start x] (new lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
                 ((ß subs =) (addstate nfl, (.out0 state), subs, pim, off))
@@ -23152,8 +22995,8 @@
                 ((ß subs =) (update subs :in_use max (inc x)))
                 ((ß lpos_C o'end =) (... (:rs_end subs) x))
                 ((ß subs =) (if (== off -1)
-                    (assoc-in subs [:rs_end x] (->lpos_C (inc @reglnum) 0))
-                    (assoc-in subs [:rs_end x] (->lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
+                    (assoc-in subs [:rs_end x] (new lpos_C (inc @reglnum) 0))
+                    (assoc-in subs [:rs_end x] (new lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
                 ((ß subs =) (addstate nfl, (.out0 state), subs, pim, off))
@@ -23323,7 +23166,7 @@
                 (when (any == (:c state) NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
                     ;; The recursive match must end at the current position.
                     ;; When "pim" is not null, it specifies the current position.
-                    (let [endp (if (some? pim) (:np_end_pos pim) (->lpos_C @reglnum, (BDIFF @reginput, @regline)))]
+                    (let [endp (if (some? pim) (:np_end_pos pim) (new lpos_C @reglnum, (BDIFF @reginput, @regline)))]
                         ;; Go back the specified number of bytes, or as far as the start of
                         ;; the previous line, to try matching "\@<=" or not matching "\@<!".
                         ;; This is very inefficient, limit the number of bytes if possible.
@@ -23520,8 +23363,8 @@
                     )]
                 ;; check that no composing char follows
                 (if (and match (not (utf-iscomposing (us-ptr2char @regline, (+ @a'col n2)))))
-                    (do (swap! reg_match assoc-in [:r_startpos 0] (->lpos_C @reglnum @a'col))
-                        (swap! reg_match assoc-in [:r_endpos 0] (->lpos_C @reglnum (+ @a'col n2)))
+                    (do (swap! reg_match assoc-in [:r_startpos 0] (new lpos_C @reglnum @a'col))
+                        (swap! reg_match assoc-in [:r_endpos 0] (new lpos_C @reglnum (+ @a'col n2)))
                         1)
                     (do ;; Try finding regstart after the current match.
                         (swap! a'col + (utf-char2len regstart)) ;; skip regstart
@@ -23565,7 +23408,7 @@
         ;; Inline optimized code for addstate(thislist, start, m, 0) if we know it's the first MOPEN.
         (cond toplevel
         (do
-            ((ß m.rs_start[0] =) (->lpos_C @reglnum (BDIFF @reginput, @regline)))
+            ((ß m.rs_start[0] =) (new lpos_C @reglnum (BDIFF @reginput, @regline)))
             ((ß m =) (assoc m :in_use 1))
             (addstate thislist, (.out0 start), m, nil, 0)
         )
@@ -24663,12 +24506,12 @@
         )
 
         (when (neg? (:lnum (... (:r_startpos @reg_match) 0)))
-            (swap! reg_match assoc-in [:r_startpos 0] (->lpos_C 0 col))
+            (swap! reg_match assoc-in [:r_startpos 0] (new lpos_C 0 col))
         )
         (cond (neg? (:lnum (... (:r_endpos @reg_match) 0)))
         (do
             ;; pattern has a \ze but it didn't match, use current end
-            (swap! reg_match assoc-in [:r_endpos 0] (->lpos_C @reglnum (BDIFF @reginput, @regline)))
+            (swap! reg_match assoc-in [:r_endpos 0] (new lpos_C @reglnum (BDIFF @reginput, @regline)))
         )
         :else
         (do
@@ -26557,80 +26400,78 @@
 ;; Find next search match under cursor, cursor at end.
 ;; Used while an operator is pending, and in Visual mode.
 
-(defn- #_boolean current-search [#_long count, #_boolean forward]
-    (let [#_pos_C save_VIsual @VIsual_cursor
-          o'p_ws @p_ws _ (reset! p_ws false)]           ;; wrapping should not occur
-        ;; Correct cursor when 'selection' is exclusive.
-        (when (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual_cursor, (:w_cursor @curwin)))
-            (swap! curwin dec-cursor false))
-        (let-when [o'cursor (:w_cursor @curwin)         ;; position of the cursor at beginning
-              [#_pos_C start_pos #_pos_C pos]           ;; position before/after the pattern
-                (if @VIsual_active ;; make sure, searching further will extend the match
-                    [@VIsual_cursor ((if forward incl decl) o'cursor)]
-                    [o'cursor o'cursor])
-              ;; Is the pattern zero-width?
-              #_int one_char (is-one-char (:pat (... @spats @last_idx)), true)
-        ] (!= one_char -1) => (do (reset! p_ws o'p_ws) false) ;; pattern not found
+(defn- #_[window_C boolean] current-search? [#_window_C win, #_long count, #_boolean forward]
+    (let-when [o'visual @VIsual_cursor o'p_ws @p_ws _ (reset! p_ws false)   ;; wrapping should not occur
+          ;; Correct cursor when 'selection' is exclusive.
+          win (when' (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual_cursor, (:w_cursor win))) => win
+                (dec-cursor win, false))
+          o'cursor (:w_cursor win)                                          ;; position of the cursor at beginning
+          [#_pos_C start_pos #_pos_C pos]                                   ;; position before/after the pattern
+            (if @VIsual_active                                              ;; make sure, searching further will extend the match
+                [@VIsual_cursor ((if forward incl decl) o'cursor)]
+                [o'cursor o'cursor])
+          ;; Is the pattern zero-width?
+          #_int one_char (is-one-char win, (:pat (... @spats @last_idx)), true)
+    ] (!= one_char -1) => (do (reset! p_ws o'p_ws) [win false])             ;; pattern not found
 
-            ;; The trick is to first search backwards and then search forward again,
-            ;; so that a match at the current cursor position will be correctly captured.
-            (let-when [pos
-                (loop-when [pos pos #_int round 0] (< round 2) => pos
-                    (let-when [#_boolean dir (if forward (non-zero? round) (zero? round))
-                          #_int flags (if (and (not dir) (zero? one_char)) SEARCH_END 0)
-                          [pos #_int sm1]
-                            (searchit? pos, (if dir FORWARD BACKWARD), (:pat (... @spats @last_idx)), (if (non-zero? round) count 1), (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
-                            ;; First search may fail, but then start searching from the beginning of
-                            ;; the file (cursor might be on the search match) except when Visual mode
-                            ;; is active, so that extending the visual selection works.
-                          pos (cond (non-zero? sm1)
-                                pos
-                            (zero? round)
-                                (cond forward           ;; try again from start of buffer
-                                    (NEW_pos_C)
-                                :else                   ;; try again from end of buffer
-                                (let [lmax (line-count @curbuf)]
-                                    ;; searching backwards, so set pos to last line and col
-                                    (assoc pos :lnum lmax :col (STRLEN (ml-get lmax)))
-                                ))
-                            :else   ;; not found, abort
-                                (do (swap! curwin assoc :w_cursor o'cursor)
-                                    (when @VIsual_active
-                                        (reset! VIsual_cursor save_VIsual))
-                                    nil)
-                            )] (some? pos) => nil
-                        (reset! p_ws o'p_ws)
-                        (recur pos (inc round))
-                    ))
-            ] (some? pos) => (do (reset! p_ws o'p_ws) false)
+        ;; The trick is to first search backwards and then search forward again,
+        ;; so that a match at the current cursor position will be correctly captured.
+        (let-when [[win pos]
+            (loop-when [win win pos pos #_int round 0] (< round 2) => [win pos]
+                (let-when [#_boolean dir (if forward (non-zero? round) (zero? round))
+                      #_int flags (if (and (not dir) (zero? one_char)) SEARCH_END 0)
+                      [pos #_int sm1]
+                        (searchit? pos, (if dir FORWARD BACKWARD), (:pat (... @spats @last_idx)), (if (non-zero? round) count 1), (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
+                        ;; First search may fail, but then start searching from the beginning of
+                        ;; the file (cursor might be on the search match) except when Visual mode
+                        ;; is active, so that extending the visual selection works.
+                      [win pos]
+                        (cond (non-zero? sm1)
+                            [win pos]
+                        (zero? round)
+                            (let [pos (if forward
+                                        (NEW_pos_C)                         ;; try again from start of buffer
+                                        (let [lmax (line-count @curbuf)]    ;; try again from end of buffer
+                                            (assoc pos :lnum lmax :col (STRLEN (ml-get lmax))))
+                                    )]
+                                [win pos])
+                        :else                                               ;; not found, abort
+                            (let [win (assoc win :w_cursor o'cursor)]
+                                (when @VIsual_active
+                                    (reset! VIsual_cursor o'visual))
+                                [win nil])
+                        )] (some? pos) => [win nil]
 
-                (let [start_pos pos
-                      #_int flags (if forward SEARCH_END 0)
-                      ;; Check again from the current cursor position,
-                      ;; since the next match might actually be only one char wide.
-                      one_char (is-one-char (:pat (... @spats @last_idx)), false)
-                      ;; Move to match, except for zero-width matches,
-                      ;; in which case, we are already on the next match.
-                      pos (if (== one_char FALSE)
-                            (let [[pos _] (searchit? pos, (if forward FORWARD BACKWARD), (:pat (... @spats @last_idx)), 0, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)] pos)
-                            pos
-                        )]
-                    (when (not @VIsual_active)
+                    (reset! p_ws o'p_ws)
+                    (recur win pos (inc round))
+                ))
+        ] (some? pos) => (do (reset! p_ws o'p_ws) [win false])
+
+            (let [start_pos pos
+                  #_int flags (if forward SEARCH_END 0)
+                  ;; Check again from the current cursor position,
+                  ;; since the next match might actually be only one char wide.
+                  one_char (is-one-char win, (:pat (... @spats @last_idx)), false)
+                  ;; Move to match, except for zero-width matches,
+                  ;; in which case, we are already on the next match.
+                  pos (when' (== one_char FALSE) => pos
+                        (let [[pos _] (searchit? pos, (if forward FORWARD BACKWARD), (:pat (... @spats @last_idx)), 0, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)] pos))
+                  _ (when (not @VIsual_active)
                         (reset! VIsual_cursor start_pos))
-                    (swap! curwin assoc :w_cursor pos)
-                    (reset! VIsual_active true)
-                    (reset! VIsual_mode (byte \v))
-                    (when @VIsual_active	;; %% true!
-                        (redraw-curbuf-later INVERTED)  ;; update the inversion
-                        (when (at? @p_sel (byte \e))
-                            (cond ;; Correction for exclusive selection depends on the direction.
-                                (and      forward  (ltoreq @VIsual_cursor, (:w_cursor @curwin))) (swap! curwin inc-cursor false)
-                                (and (not forward) (ltoreq (:w_cursor @curwin), @VIsual_cursor)) (swap! VIsual_cursor incp)
-                            )))
-                    (may-start-select (byte \c))
-                    (redraw-curbuf-later INVERTED)
-                    (showmode)
-                    true)
+                  win (assoc win :w_cursor pos)
+                  _ (reset! VIsual_active true)
+                  _ (reset! VIsual_mode (byte \v))
+                  _ (redraw-curbuf-later INVERTED)                          ;; update the inversion
+                  win (when' (at? @p_sel (byte \e)) => win
+                        (cond ;; Correction for exclusive selection depends on the direction.
+                            (and      forward  (ltoreq @VIsual_cursor, (:w_cursor win))) (inc-cursor win, false)
+                            (and (not forward) (ltoreq (:w_cursor win), @VIsual_cursor)) (do (swap! VIsual_cursor incp) win)
+                            :else win)
+                    )]
+                (may-start-select (byte \c))
+                (redraw-curbuf-later INVERTED)
+                (showmode)
+                [win true]
             ))
     ))
 
@@ -26638,10 +26479,10 @@
 ;; If move is true, check from the beginning of the buffer, else from the current cursor position.
 ;; Returns TRUE, FALSE or -1 for failure.
 
-(defn- #_int is-one-char [#_Bytes pattern, #_boolean move]
+(defn- #_int is-one-char [#_window_C win, #_Bytes pattern, #_boolean move]
     (let-when [o'called_emsg @called_emsg
                [matcher ?] (search-regcomp? nil, pattern, RE_SEARCH, RE_SEARCH, SEARCH_KEEP)] ? => -1
-        (let [[pos flags] (if move [(NEW_pos_C) 0] [(:w_cursor @curwin) SEARCH_START]) ;; accept a match at the cursor position
+        (let [[pos flags] (if move [(NEW_pos_C) 0] [(:w_cursor win) SEARCH_START]) ;; accept a match at the cursor position
               [pos sm1] (searchit? pos, FORWARD, (:pat (... @spats @last_idx)), 1, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
               one? (if (non-zero? sm1)
                     ;; Zero-width pattern should match somewhere, then we can check if start and end are in the same position.
@@ -30526,7 +30367,7 @@
                             ;; Illegal means that there are not enough trail bytes or too many of them (overlong sequence).
                             (let [n (us-ptr2len s, i)]
                                 (if (and (<= 0x80 (char_u (.at s i))) (or (== n 1) (!= (utf-char2len (us-ptr2char s, i)) n)))
-                                    (assoc win :w_cursor (->pos_C lnum i 0))
+                                    (assoc win :w_cursor (new pos_C lnum i 0))
                                     (recur (+ i n))
                                 ))
                         )] (nil? win') => win'
@@ -32152,15 +31993,15 @@
 
 (final modmasktable_C* mod_mask_table
     [
-        (->modmasktable_C MOD_MASK_ALT,         MOD_MASK_ALT,    (byte \M)),
-        (->modmasktable_C MOD_MASK_META,        MOD_MASK_META,   (byte \T)),
-        (->modmasktable_C MOD_MASK_CTRL,        MOD_MASK_CTRL,   (byte \C)),
-        (->modmasktable_C MOD_MASK_SHIFT,       MOD_MASK_SHIFT,  (byte \S)),
-        (->modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_2CLICK, (byte \2)),
-        (->modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_3CLICK, (byte \3)),
-        (->modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_4CLICK, (byte \4)),
+        (new modmasktable_C MOD_MASK_ALT,         MOD_MASK_ALT,    (byte \M)),
+        (new modmasktable_C MOD_MASK_META,        MOD_MASK_META,   (byte \T)),
+        (new modmasktable_C MOD_MASK_CTRL,        MOD_MASK_CTRL,   (byte \C)),
+        (new modmasktable_C MOD_MASK_SHIFT,       MOD_MASK_SHIFT,  (byte \S)),
+        (new modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_2CLICK, (byte \2)),
+        (new modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_3CLICK, (byte \3)),
+        (new modmasktable_C MOD_MASK_MULTI_CLICK, MOD_MASK_4CLICK, (byte \4)),
         ;; 'A' must be the last one
-        (->modmasktable_C MOD_MASK_ALT,         MOD_MASK_ALT,    (byte \A))
+        (new modmasktable_C MOD_MASK_ALT,         MOD_MASK_ALT,    (byte \A))
     ])
 
 ;; Shifted key terminal codes and their unshifted equivalent.
@@ -32237,94 +32078,94 @@
 
 (final key_name_C* key_names_table
     [
-        (->key_name_C (int \space),     (u8 "Space")           ),
-        (->key_name_C TAB,              (u8 "Tab")             ),
-        (->key_name_C K_TAB,            (u8 "Tab")             ),
-        (->key_name_C NL,               (u8 "NL")              ),
-        (->key_name_C NL,               (u8 "NewLine")         ),  ;; alternative name
-        (->key_name_C NL,               (u8 "LineFeed")        ),  ;; alternative name
-        (->key_name_C NL,               (u8 "LF")              ),  ;; alternative name
-        (->key_name_C CAR,              (u8 "CR")              ),
-        (->key_name_C CAR,              (u8 "Return")          ),  ;; alternative name
-        (->key_name_C CAR,              (u8 "Enter")           ),  ;; alternative name
-        (->key_name_C K_BS,             (u8 "BS")              ),
-        (->key_name_C K_BS,             (u8 "BackSpace")       ),  ;; alternative name
-        (->key_name_C ESC,              (u8 "Esc")             ),
-        (->key_name_C (int \|),         (u8 "Bar")             ),
-        (->key_name_C (int \\),         (u8 "Bslash")          ),
-        (->key_name_C K_DEL,            (u8 "Del")             ),
-        (->key_name_C K_DEL,            (u8 "Delete")          ),  ;; alternative name
-        (->key_name_C K_KDEL,           (u8 "kDel")            ),
-        (->key_name_C K_UP,             (u8 "Up")              ),
-        (->key_name_C K_DOWN,           (u8 "Down")            ),
-        (->key_name_C K_LEFT,           (u8 "Left")            ),
-        (->key_name_C K_RIGHT,          (u8 "Right")           ),
-        (->key_name_C K_XUP,            (u8 "xUp")             ),
-        (->key_name_C K_XDOWN,          (u8 "xDown")           ),
-        (->key_name_C K_XLEFT,          (u8 "xLeft")           ),
-        (->key_name_C K_XRIGHT,         (u8 "xRight")          ),
+        (new key_name_C (int \space),     (u8 "Space")           ),
+        (new key_name_C TAB,              (u8 "Tab")             ),
+        (new key_name_C K_TAB,            (u8 "Tab")             ),
+        (new key_name_C NL,               (u8 "NL")              ),
+        (new key_name_C NL,               (u8 "NewLine")         ),  ;; alternative name
+        (new key_name_C NL,               (u8 "LineFeed")        ),  ;; alternative name
+        (new key_name_C NL,               (u8 "LF")              ),  ;; alternative name
+        (new key_name_C CAR,              (u8 "CR")              ),
+        (new key_name_C CAR,              (u8 "Return")          ),  ;; alternative name
+        (new key_name_C CAR,              (u8 "Enter")           ),  ;; alternative name
+        (new key_name_C K_BS,             (u8 "BS")              ),
+        (new key_name_C K_BS,             (u8 "BackSpace")       ),  ;; alternative name
+        (new key_name_C ESC,              (u8 "Esc")             ),
+        (new key_name_C (int \|),         (u8 "Bar")             ),
+        (new key_name_C (int \\),         (u8 "Bslash")          ),
+        (new key_name_C K_DEL,            (u8 "Del")             ),
+        (new key_name_C K_DEL,            (u8 "Delete")          ),  ;; alternative name
+        (new key_name_C K_KDEL,           (u8 "kDel")            ),
+        (new key_name_C K_UP,             (u8 "Up")              ),
+        (new key_name_C K_DOWN,           (u8 "Down")            ),
+        (new key_name_C K_LEFT,           (u8 "Left")            ),
+        (new key_name_C K_RIGHT,          (u8 "Right")           ),
+        (new key_name_C K_XUP,            (u8 "xUp")             ),
+        (new key_name_C K_XDOWN,          (u8 "xDown")           ),
+        (new key_name_C K_XLEFT,          (u8 "xLeft")           ),
+        (new key_name_C K_XRIGHT,         (u8 "xRight")          ),
 
-        (->key_name_C K_F1,             (u8 "F1")              ),
-        (->key_name_C K_F2,             (u8 "F2")              ),
-        (->key_name_C K_F3,             (u8 "F3")              ),
-        (->key_name_C K_F4,             (u8 "F4")              ),
-        (->key_name_C K_F5,             (u8 "F5")              ),
-        (->key_name_C K_F6,             (u8 "F6")              ),
-        (->key_name_C K_F7,             (u8 "F7")              ),
-        (->key_name_C K_F8,             (u8 "F8")              ),
-        (->key_name_C K_F9,             (u8 "F9")              ),
-        (->key_name_C K_F10,            (u8 "F10")             ),
+        (new key_name_C K_F1,             (u8 "F1")              ),
+        (new key_name_C K_F2,             (u8 "F2")              ),
+        (new key_name_C K_F3,             (u8 "F3")              ),
+        (new key_name_C K_F4,             (u8 "F4")              ),
+        (new key_name_C K_F5,             (u8 "F5")              ),
+        (new key_name_C K_F6,             (u8 "F6")              ),
+        (new key_name_C K_F7,             (u8 "F7")              ),
+        (new key_name_C K_F8,             (u8 "F8")              ),
+        (new key_name_C K_F9,             (u8 "F9")              ),
+        (new key_name_C K_F10,            (u8 "F10")             ),
 
-        (->key_name_C K_F11,            (u8 "F11")             ),
-        (->key_name_C K_F12,            (u8 "F12")             ),
+        (new key_name_C K_F11,            (u8 "F11")             ),
+        (new key_name_C K_F12,            (u8 "F12")             ),
 
-        (->key_name_C K_XF1,            (u8 "xF1")             ),
-        (->key_name_C K_XF2,            (u8 "xF2")             ),
-        (->key_name_C K_XF3,            (u8 "xF3")             ),
-        (->key_name_C K_XF4,            (u8 "xF4")             ),
+        (new key_name_C K_XF1,            (u8 "xF1")             ),
+        (new key_name_C K_XF2,            (u8 "xF2")             ),
+        (new key_name_C K_XF3,            (u8 "xF3")             ),
+        (new key_name_C K_XF4,            (u8 "xF4")             ),
 
-        (->key_name_C K_HELP,           (u8 "Help")            ),
-        (->key_name_C K_UNDO,           (u8 "Undo")            ),
-        (->key_name_C K_INS,            (u8 "Insert")          ),
-        (->key_name_C K_INS,            (u8 "Ins")             ),  ;; alternative name
-        (->key_name_C K_KINS,           (u8 "kInsert")         ),
-        (->key_name_C K_HOME,           (u8 "Home")            ),
-        (->key_name_C K_KHOME,          (u8 "kHome")           ),
-        (->key_name_C K_XHOME,          (u8 "xHome")           ),
-        (->key_name_C K_ZHOME,          (u8 "zHome")           ),
-        (->key_name_C K_END,            (u8 "End")             ),
-        (->key_name_C K_KEND,           (u8 "kEnd")            ),
-        (->key_name_C K_XEND,           (u8 "xEnd")            ),
-        (->key_name_C K_ZEND,           (u8 "zEnd")            ),
-        (->key_name_C K_PAGEUP,         (u8 "PageUp")          ),
-        (->key_name_C K_PAGEDOWN,       (u8 "PageDown")        ),
-        (->key_name_C K_KPAGEUP,        (u8 "kPageUp")         ),
-        (->key_name_C K_KPAGEDOWN,      (u8 "kPageDown")       ),
+        (new key_name_C K_HELP,           (u8 "Help")            ),
+        (new key_name_C K_UNDO,           (u8 "Undo")            ),
+        (new key_name_C K_INS,            (u8 "Insert")          ),
+        (new key_name_C K_INS,            (u8 "Ins")             ),  ;; alternative name
+        (new key_name_C K_KINS,           (u8 "kInsert")         ),
+        (new key_name_C K_HOME,           (u8 "Home")            ),
+        (new key_name_C K_KHOME,          (u8 "kHome")           ),
+        (new key_name_C K_XHOME,          (u8 "xHome")           ),
+        (new key_name_C K_ZHOME,          (u8 "zHome")           ),
+        (new key_name_C K_END,            (u8 "End")             ),
+        (new key_name_C K_KEND,           (u8 "kEnd")            ),
+        (new key_name_C K_XEND,           (u8 "xEnd")            ),
+        (new key_name_C K_ZEND,           (u8 "zEnd")            ),
+        (new key_name_C K_PAGEUP,         (u8 "PageUp")          ),
+        (new key_name_C K_PAGEDOWN,       (u8 "PageDown")        ),
+        (new key_name_C K_KPAGEUP,        (u8 "kPageUp")         ),
+        (new key_name_C K_KPAGEDOWN,      (u8 "kPageDown")       ),
 
-        (->key_name_C K_KPLUS,          (u8 "kPlus")           ),
-        (->key_name_C K_KMINUS,         (u8 "kMinus")          ),
-        (->key_name_C K_KDIVIDE,        (u8 "kDivide")         ),
-        (->key_name_C K_KMULTIPLY,      (u8 "kMultiply")       ),
-        (->key_name_C K_KENTER,         (u8 "kEnter")          ),
-        (->key_name_C K_KPOINT,         (u8 "kPoint")          ),
+        (new key_name_C K_KPLUS,          (u8 "kPlus")           ),
+        (new key_name_C K_KMINUS,         (u8 "kMinus")          ),
+        (new key_name_C K_KDIVIDE,        (u8 "kDivide")         ),
+        (new key_name_C K_KMULTIPLY,      (u8 "kMultiply")       ),
+        (new key_name_C K_KENTER,         (u8 "kEnter")          ),
+        (new key_name_C K_KPOINT,         (u8 "kPoint")          ),
 
-        (->key_name_C K_K0,             (u8 "k0")              ),
-        (->key_name_C K_K1,             (u8 "k1")              ),
-        (->key_name_C K_K2,             (u8 "k2")              ),
-        (->key_name_C K_K3,             (u8 "k3")              ),
-        (->key_name_C K_K4,             (u8 "k4")              ),
-        (->key_name_C K_K5,             (u8 "k5")              ),
-        (->key_name_C K_K6,             (u8 "k6")              ),
-        (->key_name_C K_K7,             (u8 "k7")              ),
-        (->key_name_C K_K8,             (u8 "k8")              ),
-        (->key_name_C K_K9,             (u8 "k9")              ),
+        (new key_name_C K_K0,             (u8 "k0")              ),
+        (new key_name_C K_K1,             (u8 "k1")              ),
+        (new key_name_C K_K2,             (u8 "k2")              ),
+        (new key_name_C K_K3,             (u8 "k3")              ),
+        (new key_name_C K_K4,             (u8 "k4")              ),
+        (new key_name_C K_K5,             (u8 "k5")              ),
+        (new key_name_C K_K6,             (u8 "k6")              ),
+        (new key_name_C K_K7,             (u8 "k7")              ),
+        (new key_name_C K_K8,             (u8 "k8")              ),
+        (new key_name_C K_K9,             (u8 "k9")              ),
 
-        (->key_name_C (int \<),         (u8 "lt")              ),
+        (new key_name_C (int \<),         (u8 "lt")              ),
 
-        (->key_name_C K_DROP,           (u8 "Drop")            ),
-        (->key_name_C K_ZERO,           (u8 "Nul")             ),
+        (new key_name_C K_DROP,           (u8 "Drop")            ),
+        (new key_name_C K_ZERO,           (u8 "Nul")             ),
 
-        (->key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
+        (new key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
     ])
 
 ;; Check if there is a special key code for "key" that includes the modifiers specified.
@@ -33609,84 +33450,84 @@
 
 (final btcap_C* xterm_tcaps
     [
-        (->btcap_C KS_NAME,      (u8 "xterm")                ),
+        (new btcap_C KS_NAME,      (u8 "xterm")                ),
 
-        (->btcap_C KS_CE,        (u8 "\033[K")               ),
-        (->btcap_C KS_AL,        (u8 "\033[L")               ),
-        (->btcap_C KS_CAL,       (u8 "\033[%p1%dL")          ),
-        (->btcap_C KS_DL,        (u8 "\033[M")               ),
-        (->btcap_C KS_CDL,       (u8 "\033[%p1%dM")          ),
-        (->btcap_C KS_CS,        (u8 "\033[%i%p1%d;%p2%dr")  ),
-        (->btcap_C KS_CL,        (u8 "\033[H\033[2J")        ),
-        (->btcap_C KS_CD,        (u8 "\033[J")               ),
-        (->btcap_C KS_ME,        (u8 "\033[m")               ),
-        (->btcap_C KS_MR,        (u8 "\033[7m")              ),
-        (->btcap_C KS_MD,        (u8 "\033[1m")              ),
-        (->btcap_C KS_UE,        (u8 "\033[m")               ),
-        (->btcap_C KS_US,        (u8 "\033[4m")              ),
-        (->btcap_C KS_MS,        (u8 "y")                    ),
-        (->btcap_C KS_UT,        (u8 "y")                    ),
-        (->btcap_C KS_LE,        (u8 "\b")                   ),
-        (->btcap_C KS_CM,        (u8 "\033[%i%p1%d;%p2%dH")  ),
-        (->btcap_C KS_SR,        (u8 "\033M")                ),
-        (->btcap_C KS_CRI,       (u8 "\033[%p1%dC")          ),
-        (->btcap_C KS_KS,        (u8 "\033[?1h\033=")        ),
-        (->btcap_C KS_KE,        (u8 "\033[?1l\033>")        ),
-        (->btcap_C KS_TI,        (u8 "\0337\033[?47h")       ),
-        (->btcap_C KS_TE,        (u8 "\033[2J\033[?47l\0338")),
-        (->btcap_C KS_CWS,       (u8 "\033[8;%p1%d;%p2%dt")  ),
+        (new btcap_C KS_CE,        (u8 "\033[K")               ),
+        (new btcap_C KS_AL,        (u8 "\033[L")               ),
+        (new btcap_C KS_CAL,       (u8 "\033[%p1%dL")          ),
+        (new btcap_C KS_DL,        (u8 "\033[M")               ),
+        (new btcap_C KS_CDL,       (u8 "\033[%p1%dM")          ),
+        (new btcap_C KS_CS,        (u8 "\033[%i%p1%d;%p2%dr")  ),
+        (new btcap_C KS_CL,        (u8 "\033[H\033[2J")        ),
+        (new btcap_C KS_CD,        (u8 "\033[J")               ),
+        (new btcap_C KS_ME,        (u8 "\033[m")               ),
+        (new btcap_C KS_MR,        (u8 "\033[7m")              ),
+        (new btcap_C KS_MD,        (u8 "\033[1m")              ),
+        (new btcap_C KS_UE,        (u8 "\033[m")               ),
+        (new btcap_C KS_US,        (u8 "\033[4m")              ),
+        (new btcap_C KS_MS,        (u8 "y")                    ),
+        (new btcap_C KS_UT,        (u8 "y")                    ),
+        (new btcap_C KS_LE,        (u8 "\b")                   ),
+        (new btcap_C KS_CM,        (u8 "\033[%i%p1%d;%p2%dH")  ),
+        (new btcap_C KS_SR,        (u8 "\033M")                ),
+        (new btcap_C KS_CRI,       (u8 "\033[%p1%dC")          ),
+        (new btcap_C KS_KS,        (u8 "\033[?1h\033=")        ),
+        (new btcap_C KS_KE,        (u8 "\033[?1l\033>")        ),
+        (new btcap_C KS_TI,        (u8 "\0337\033[?47h")       ),
+        (new btcap_C KS_TE,        (u8 "\033[2J\033[?47l\0338")),
+        (new btcap_C KS_CWS,       (u8 "\033[8;%p1%d;%p2%dt")  ),
 
-        (->btcap_C K_UP,         (u8 "\033O*A")              ),
-        (->btcap_C K_DOWN,       (u8 "\033O*B")              ),
-        (->btcap_C K_RIGHT,      (u8 "\033O*C")              ),
-        (->btcap_C K_LEFT,       (u8 "\033O*D")              ),
+        (new btcap_C K_UP,         (u8 "\033O*A")              ),
+        (new btcap_C K_DOWN,       (u8 "\033O*B")              ),
+        (new btcap_C K_RIGHT,      (u8 "\033O*C")              ),
+        (new btcap_C K_LEFT,       (u8 "\033O*D")              ),
         ;; An extra set of cursor keys for vt100 mode.
-        (->btcap_C K_XUP,        (u8 "\033[1;*A")            ),
-        (->btcap_C K_XDOWN,      (u8 "\033[1;*B")            ),
-        (->btcap_C K_XRIGHT,     (u8 "\033[1;*C")            ),
-        (->btcap_C K_XLEFT,      (u8 "\033[1;*D")            ),
+        (new btcap_C K_XUP,        (u8 "\033[1;*A")            ),
+        (new btcap_C K_XDOWN,      (u8 "\033[1;*B")            ),
+        (new btcap_C K_XRIGHT,     (u8 "\033[1;*C")            ),
+        (new btcap_C K_XLEFT,      (u8 "\033[1;*D")            ),
         ;; An extra set of function keys for vt100 mode.
-        (->btcap_C K_XF1,        (u8 "\033O*P")              ),
-        (->btcap_C K_XF2,        (u8 "\033O*Q")              ),
-        (->btcap_C K_XF3,        (u8 "\033O*R")              ),
-        (->btcap_C K_XF4,        (u8 "\033O*S")              ),
-        (->btcap_C K_F1,         (u8 "\033[11;*~")           ),
-        (->btcap_C K_F2,         (u8 "\033[12;*~")           ),
-        (->btcap_C K_F3,         (u8 "\033[13;*~")           ),
-        (->btcap_C K_F4,         (u8 "\033[14;*~")           ),
-        (->btcap_C K_F5,         (u8 "\033[15;*~")           ),
-        (->btcap_C K_F6,         (u8 "\033[17;*~")           ),
-        (->btcap_C K_F7,         (u8 "\033[18;*~")           ),
-        (->btcap_C K_F8,         (u8 "\033[19;*~")           ),
-        (->btcap_C K_F9,         (u8 "\033[20;*~")           ),
-        (->btcap_C K_F10,        (u8 "\033[21;*~")           ),
-        (->btcap_C K_F11,        (u8 "\033[23;*~")           ),
-        (->btcap_C K_F12,        (u8 "\033[24;*~")           ),
-        (->btcap_C K_S_TAB,      (u8 "\033[Z")               ),
-        (->btcap_C K_HELP,       (u8 "\033[28;*~")           ),
-        (->btcap_C K_UNDO,       (u8 "\033[26;*~")           ),
-        (->btcap_C K_INS,        (u8 "\033[2;*~")            ),
-        (->btcap_C K_HOME,       (u8 "\033[1;*H")            ),
-     ;; (->btcap_C K_S_HOME,     (u8 "\033O2H")              ),
-     ;; (->btcap_C K_C_HOME,     (u8 "\033O5H")              ),
-        (->btcap_C K_KHOME,      (u8 "\033[1;*~")            ),
-        (->btcap_C K_XHOME,      (u8 "\033O*H")              ),      ;; other Home
-        (->btcap_C K_ZHOME,      (u8 "\033[7;*~")            ),      ;; other Home
-        (->btcap_C K_END,        (u8 "\033[1;*F")            ),
-     ;; (->btcap_C K_S_END,      (u8 "\033O2F")              ),
-     ;; (->btcap_C K_C_END,      (u8 "\033O5F")              ),
-        (->btcap_C K_KEND,       (u8 "\033[4;*~")            ),
-        (->btcap_C K_XEND,       (u8 "\033O*F")              ),      ;; other End
-        (->btcap_C K_ZEND,       (u8 "\033[8;*~")            ),
-        (->btcap_C K_PAGEUP,     (u8 "\033[5;*~")            ),
-        (->btcap_C K_PAGEDOWN,   (u8 "\033[6;*~")            ),
-        (->btcap_C K_KPLUS,      (u8 "\033O*k")              ),      ;; keypad plus
-        (->btcap_C K_KMINUS,     (u8 "\033O*m")              ),      ;; keypad minus
-        (->btcap_C K_KDIVIDE,    (u8 "\033O*o")              ),      ;; keypad /
-        (->btcap_C K_KMULTIPLY,  (u8 "\033O*j")              ),      ;; keypad *
-        (->btcap_C K_KENTER,     (u8 "\033O*M")              ),      ;; keypad Enter
-        (->btcap_C K_KPOINT,     (u8 "\033O*n")              ),      ;; keypad .
-        (->btcap_C K_KDEL,       (u8 "\033[3;*~")            ),      ;; keypad Del
+        (new btcap_C K_XF1,        (u8 "\033O*P")              ),
+        (new btcap_C K_XF2,        (u8 "\033O*Q")              ),
+        (new btcap_C K_XF3,        (u8 "\033O*R")              ),
+        (new btcap_C K_XF4,        (u8 "\033O*S")              ),
+        (new btcap_C K_F1,         (u8 "\033[11;*~")           ),
+        (new btcap_C K_F2,         (u8 "\033[12;*~")           ),
+        (new btcap_C K_F3,         (u8 "\033[13;*~")           ),
+        (new btcap_C K_F4,         (u8 "\033[14;*~")           ),
+        (new btcap_C K_F5,         (u8 "\033[15;*~")           ),
+        (new btcap_C K_F6,         (u8 "\033[17;*~")           ),
+        (new btcap_C K_F7,         (u8 "\033[18;*~")           ),
+        (new btcap_C K_F8,         (u8 "\033[19;*~")           ),
+        (new btcap_C K_F9,         (u8 "\033[20;*~")           ),
+        (new btcap_C K_F10,        (u8 "\033[21;*~")           ),
+        (new btcap_C K_F11,        (u8 "\033[23;*~")           ),
+        (new btcap_C K_F12,        (u8 "\033[24;*~")           ),
+        (new btcap_C K_S_TAB,      (u8 "\033[Z")               ),
+        (new btcap_C K_HELP,       (u8 "\033[28;*~")           ),
+        (new btcap_C K_UNDO,       (u8 "\033[26;*~")           ),
+        (new btcap_C K_INS,        (u8 "\033[2;*~")            ),
+        (new btcap_C K_HOME,       (u8 "\033[1;*H")            ),
+     ;; (new btcap_C K_S_HOME,     (u8 "\033O2H")              ),
+     ;; (new btcap_C K_C_HOME,     (u8 "\033O5H")              ),
+        (new btcap_C K_KHOME,      (u8 "\033[1;*~")            ),
+        (new btcap_C K_XHOME,      (u8 "\033O*H")              ),      ;; other Home
+        (new btcap_C K_ZHOME,      (u8 "\033[7;*~")            ),      ;; other Home
+        (new btcap_C K_END,        (u8 "\033[1;*F")            ),
+     ;; (new btcap_C K_S_END,      (u8 "\033O2F")              ),
+     ;; (new btcap_C K_C_END,      (u8 "\033O5F")              ),
+        (new btcap_C K_KEND,       (u8 "\033[4;*~")            ),
+        (new btcap_C K_XEND,       (u8 "\033O*F")              ),      ;; other End
+        (new btcap_C K_ZEND,       (u8 "\033[8;*~")            ),
+        (new btcap_C K_PAGEUP,     (u8 "\033[5;*~")            ),
+        (new btcap_C K_PAGEDOWN,   (u8 "\033[6;*~")            ),
+        (new btcap_C K_KPLUS,      (u8 "\033O*k")              ),      ;; keypad plus
+        (new btcap_C K_KMINUS,     (u8 "\033O*m")              ),      ;; keypad minus
+        (new btcap_C K_KDIVIDE,    (u8 "\033O*o")              ),      ;; keypad /
+        (new btcap_C K_KMULTIPLY,  (u8 "\033O*j")              ),      ;; keypad *
+        (new btcap_C K_KENTER,     (u8 "\033O*M")              ),      ;; keypad Enter
+        (new btcap_C K_KPOINT,     (u8 "\033O*n")              ),      ;; keypad .
+        (new btcap_C K_KDEL,       (u8 "\033[3;*~")            ),      ;; keypad Del
     ])
 
 (atom! boolean need_gather)                     ;; need to fill termleader[]
@@ -34120,13 +33961,9 @@
                     (swap! curwin invalidate-botline)
 
                     ;; We only redraw when it's needed:
-                    ;; - While at the more prompt or executing an external command, don't redraw, but position the cursor.
                     ;; - While editing the command line, only redraw that.
                     ;; - Otherwise, redraw right now, and position the cursor.
                     ;; Always need to call update-screen() or screen-alloc(), to make sure Rows/Cols and the size of screenLines[] is correct!
-
-                    (when @(:wo_scb (:w_options @curwin))
-                        (swap! curwin do-check-scrollbind true))
 
                     (cond (flag? @State CMDLINE)
                     (do
@@ -35639,7 +35476,7 @@
                         (getvcol win, (:w_cursor win), a'fromcol, nil, nil)
                         (reset! a'fromcol 0))
                     (if (== lnum (+ (:lnum (:w_cursor win)) @search_match_lines))
-                        (getvcol win, (->pos_C lnum @search_match_endcol 0), a'tocol, nil, nil)
+                        (getvcol win, (new pos_C lnum @search_match_endcol 0), a'tocol, nil, nil)
                         (reset! a'tocol MAXCOL))
                     ;; Do at least one character; happens when past end of line.
                     (when (== @a'fromcol @a'tocol)
@@ -39749,7 +39586,6 @@
         (win-append after, win)
         (-> win
             (assoc :w_width @Cols)
-            (assoc :w_scbind_pos 1)
             ;; We won't calculate "w_fraction" until resizing the window.
             (assoc :w_prev_fraction_row -1)
         )
@@ -40173,8 +40009,8 @@
         ] _ => win ;; Recursive call already changed the size, bail out here to avoid the following to mess things up.
 
             (let [win (assoc win :w_height height, :w_skipcol 0)
-                  win ;; Don't change "w_topline" when height is zero.  Don't set "w_topline" when 'scrollbind' is set and this isn't the current window.
-                    (if (and (< 0 height) (or (not @(:wo_scb (:w_options win))) (== win @curwin)))
+                  win ;; Don't change "w_topline" when height is zero.
+                    (if (< 0 height)
                         ;; Find a value for "w_topline" that shows the cursor at the same relative position in the window as before (more or less).
                         (let [#_long lnum (max 1 (:lnum (:w_cursor win))) ;; can happen when starting up
                               win (assoc win :w_wrow (/ (+ (dec (* (:w_fraction win) height)) (/ FRACTION_MULT 2)) FRACTION_MULT))
@@ -40474,8 +40310,7 @@
         (if (zero? (:w_height win))
             (let [cln (:lnum (:w_cursor win))]
                 (-> win (assoc :w_topline cln, :w_botline cln)
-                        (update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
-                        (assoc :w_scbind_pos 1)))
+                        (update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)))
             (let-when [win (check-cursor-moved win)] (non-flag? (:w_valid win) VALID_TOPLINE) => win
                 (let [o'topline (:w_topline win)
                       [#_boolean check_botline win]
@@ -40483,8 +40318,7 @@
                             ;; If the buffer is empty, always set topline to 1.
                             [false (let [win (if (!= (:w_topline win) 1) (redraw-later win, NOT_VALID) win)]
                                 (-> win (assoc :w_topline 1, :w_botline 2)
-                                        (update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
-                                        (assoc :w_scbind_pos 1))
+                                        (update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP))
                                 )]
                             ;; If the cursor is above or near the top of the window,
                             ;; scroll the window to show the line the cursor is in, with 'scrolloff' context:
@@ -40510,7 +40344,7 @@
                                                     (and (<= (- (:w_botline win) @p_so) cln)
                                                         ;; Cursor is (a few lines) above botline, check if there are 'scrolloff' window lines below the cursor.
                                                         ;; If not, need to scroll.
-                                                        (let [n (loop-when [n (:w_empty_rows win) loff (->lineoff_C cln 0)] (< (:lnum loff) (:w_botline win)) => n
+                                                        (let [n (loop-when [n (:w_empty_rows win) loff (new lineoff_C cln 0)] (< (:lnum loff) (:w_botline win)) => n
                                                                     (let [n (+ n (:height loff))] (recur-if (< n @p_so) [n (botline-forw loff, win)] => n))
                                                                 )]
                                                             (< n @p_so)
@@ -40552,7 +40386,7 @@
 (defn- #_boolean check-top-offset [#_window_C win]
     (and (< (:lnum (:w_cursor win)) (+ (:w_topline win) @p_so))
         ;; Count the visible screen lines above the cursor line.
-        (loop-when [n 0 loff (->lineoff_C (:lnum (:w_cursor win)) 0)] (< n @p_so) => false
+        (loop-when [n 0 loff (new lineoff_C (:lnum (:w_cursor win)) 0)] (< n @p_so) => false
             (let [loff (topline-back loff, win)] ;; Stop when included a line above the window.
                 (recur-if (<= (:w_topline win) (:lnum loff)) [(+ n (:height loff)) loff] => true)
             ))
@@ -40953,7 +40787,7 @@
                 (let [win (assoc win :w_topline (inc cln) :w_botline (inc cln))
                       win (let [[win #_int used]
                                 (loop-when [win win used 0] (< 1 (:w_topline win)) => [win used]
-                                    (let [loff (topline-back (->lineoff_C (:w_topline win) 0), win)]
+                                    (let [loff (topline-back (new lineoff_C (:w_topline win) 0), win)]
                                         (if (or (== (:height loff) MAXCOL) (< (:w_height win) (+ used (:height loff))))
                                             [win used]
                                             (recur (assoc win :w_topline (:lnum loff)) (+ used (:height loff)))
@@ -40975,7 +40809,7 @@
                   ;; - at least 'so' lines below the cursor
                   ;; - lines between botline and cursor have been counted
                   [used done]
-                    (loop-when [#_int extra 0, used used, done done, loff (->lineoff_C cln 0), boff (->lineoff_C cln 0)] (< 1 (:lnum loff)) => [used done]
+                    (loop-when [#_int extra 0, used used, done done, loff (new lineoff_C cln 0), boff (new lineoff_C cln 0)] (< 1 (:lnum loff)) => [used done]
                         ;; Stop when scrolled nothing or at least "min_sj", found "extra" context for 'scrolloff' and counted all lines below the window.
                         (if (and (or (and (or (<= done 0) (<= min_sj done)) (<= @p_so extra)) (< lmax (inc (:lnum boff)))) (<= (:lnum loff) (:w_botline win)))
                             [used done]
@@ -41010,7 +40844,7 @@
                 (< (:w_height win) used)                        ;; more than a screenfull, don't scroll but redraw
                     used
                 :else                                           ;; scroll minimal number of lines
-                    (loop-when [boff (->lineoff_C (dec (:w_topline win)) 0) #_int i 0 n 0] (and (< i done) (< (:lnum boff) (:w_botline win)))
+                    (loop-when [boff (new lineoff_C (dec (:w_topline win)) 0) #_int i 0 n 0] (and (< i done) (< (:lnum boff) (:w_botline win)))
                             => (if (< i done) 9999 n)           ;; below "w_botline", don't scroll
                         (let [boff (botline-forw boff, win)]
                             (recur boff (+ i (:height boff)) (inc n)))
@@ -41031,7 +40865,7 @@
 (defn- #_window_C scroll-cursor-halfway [#_window_C win, #_boolean atend]
     (let [cln (:lnum (:w_cursor win)) lmax (line-count @curbuf)
           #_long topline
-            (loop-when [#_int above 0, #_int below 0, loff (->lineoff_C cln 0), boff (->lineoff_C cln 0), #_int used (plines win, cln, true), topline cln] (< 1 topline) => topline
+            (loop-when [#_int above 0, #_int below 0, loff (new lineoff_C cln 0), boff (new lineoff_C cln 0), #_int used (plines win, cln, true), topline cln] (< 1 topline) => topline
                 (let-when [[below boff used :as _]
                         (if (<= below above)         ;; add a line below the cursor first
                             (if (< (:lnum boff) lmax)
@@ -41175,7 +41009,7 @@
 ;;  l3                             etc.
 
 (defn- #_lineoff_C get-scroll-overlap [#_window_C win, #_long lnum, #_int dir]
-    (let [#_int min_height (- (:w_height win) 2)         #_lineoff_C loff (->lineoff_C lnum (plines win, lnum, true))          #_int h1 (:height loff)]
+    (let [#_int min_height (- (:w_height win) 2)         #_lineoff_C loff (new lineoff_C lnum (plines win, lnum, true))        #_int h1 (:height loff)]
         (if (< min_height h1)
             loff ;; no overlap
             (let [#_lineoff_C over0 loff                 loff (if (< 0 dir) (botline-forw loff, win) (topline-back loff, win)) #_int h2 (:height loff)]
@@ -41260,32 +41094,6 @@
         )
     ))
 
-(defn- #_void do-check-cursorbind []
-    (let [cursor (:w_cursor @curwin) curswant (:w_curswant @curwin) set_curswant (:w_set_curswant @curwin)
-          o'curwin @curwin o'VIsual_select @VIsual_select o'VIsual_active @VIsual_active]
-        (reset! VIsual_select (reset! VIsual_active false))
-        ;; loop through the cursorbound windows
-        (loop-when-recur (reset! curwin @firstwin) (some? @curwin) (swap! curwin :w_next)
-            ;; skip original window and windows with 'noscrollbind'
-            (when (and (!= @curwin o'curwin) @(:wo_crb (:w_options @curwin)))
-                (swap! curwin assoc :w_cursor cursor, :w_curswant curswant, :w_set_curswant set_curswant)
-                ;; Make sure the cursor is in a valid position.
-                ;; Temporarily set "restart_edit" to allow the cursor to be beyond the EOL.
-                (let [_ @restart_edit] (reset! restart_edit TRUE) (swap! curwin check-cursor) (reset! restart_edit _))
-                ;; Correct cursor for multi-byte character.
-                (swap! curwin update :w_cursor mb-adjust-pos)
-                (swap! curwin redraw-later VALID)
-                ;; Only scroll when 'scrollbind' hasn't done this.
-                (when (not @(:wo_scb (:w_options @curwin)))
-                    (swap! curwin update-topline))
-                (swap! curwin assoc :w_redr_status true)
-            ))
-        ;; reset current-window
-        (reset! VIsual_select o'VIsual_select)
-        (reset! VIsual_active o'VIsual_active)
-        (reset! curwin o'curwin))
-    nil)
-
 ;;; ============================================================================================== VimX
 
 ;; Reset the cterm colors to what they were before Vim was started,
@@ -41315,15 +41123,14 @@
 
 (final cmdname_C* cmdnames
     [
-        (->cmdname_C (u8 "close"),         ex-close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "fixdel"),        ex-fixdel,           CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "only"),          ex-only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-        (->cmdname_C (u8 "retab"),         ex-retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "substitute"),    ex-sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "set"),           ex-set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "stop"),          ex-stop,          (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "suspend"),       ex-stop,          (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "syncbind"),      ex-syncbind,         0,                                                         ADDR_LINES),
+        (new cmdname_C (u8 "close"),      ex-close,  (| BANG RANGE NOTADR COUNT CMDWIN), ADDR_WINDOWS),
+        (new cmdname_C (u8 "fixdel"),     ex-fixdel,    CMDWIN,                          ADDR_LINES  ),
+        (new cmdname_C (u8 "only"),       ex-only,   (| BANG NOTADR RANGE COUNT),        ADDR_WINDOWS),
+        (new cmdname_C (u8 "retab"),      ex-retab,  (| RANGE DFLALL BANG WORD1 CMDWIN), ADDR_LINES  ),
+        (new cmdname_C (u8 "substitute"), ex-sub,    (| RANGE EXTRA CMDWIN),             ADDR_LINES  ),
+        (new cmdname_C (u8 "set"),        ex-set,    (| EXTRA CMDWIN),                   ADDR_LINES  ),
+        (new cmdname_C (u8 "stop"),       ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
+        (new cmdname_C (u8 "suspend"),    ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
     ])
 
 ;;; ============================================================================================== VimG
