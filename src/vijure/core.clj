@@ -920,11 +920,6 @@
 (final int GETF_ALT        0x02)    ;; jumping to alternate file (not buf num)
 (final int GETF_SWITCH     0x04)    ;; respect 'switchbuf' settings when jumping
 
-;; Values for buflist_new() flags.
-(final int BLN_CURBUF      1)       ;; may re-use curbuf for new buffer
-(final int BLN_LISTED      2)       ;; put new buffer in buffer list
-(final int BLN_DUMMY       4)       ;; allocating dummy buffer
-
 ;; Values for in_cinkeys().
 (final int KEY_OPEN_FORW   0x101)
 (final int KEY_OPEN_BACK   0x102)
@@ -1502,7 +1497,6 @@
 (atom! Bytes   p_km)        ;; 'keymodel'
 (atom! Bytes   p_lispwords) ;; 'lispwords'
 (atom! long    p_ls)        ;; 'laststatus'
-(atom! long    p_stal)      ;; 'showtabline'
 (atom! Bytes   p_lcs)       ;; 'listchars'
 (atom! boolean p_lz)        ;; 'lazyredraw'
 (atom! boolean p_magic)     ;; 'magic'
@@ -1545,16 +1539,6 @@
 (atom! Bytes   p_tal)       ;; 'tabline'
 (atom! boolean p_spr)       ;; 'splitright'
 (atom! boolean p_sol)       ;; 'startofline'
-(atom! Bytes   p_swb)       ;; 'switchbuf'
-
-(final int
-    SWB_USEOPEN 0x001,
-    SWB_USETAB  0x002,
-    SWB_SPLIT   0x004,
-    SWB_NEWTAB  0x008)
-(atom! int    swb_flags)
-(final Bytes* p_swb_values [ (u8 "useopen"), (u8 "usetab"), (u8 "split"), (u8 "newtab"), null ])
-
 (atom! boolean p_terse)     ;; 'terse'
 (atom! boolean p_to)        ;; 'tildeop'
 (atom! boolean p_timeout)   ;; 'timeout'
@@ -2171,7 +2155,6 @@
     [
         (field boolean      hide)               ;; true when ":hide" was used
         (field int          split)              ;; flags for win_split()
-        (field int          tab)                ;; > 0 when ":tab" was used
         (field boolean      keepalt)            ;; true when ":keepalt" was used
         (field boolean      keepmarks)          ;; true when ":keepmarks" was used
         (field boolean      keepjumps)          ;; true when ":keepjumps" was used
@@ -2183,7 +2166,6 @@
     (§
 ;       cm.hide = false;
 ;       cm.split = 0;
-;       cm.tab = 0;
 ;       cm.keepalt = false;
 ;       cm.keepmarks = false;
 ;       cm.keepjumps = false;
@@ -2195,7 +2177,6 @@
     (§
 ;       cm1.hide = cm0.hide;
 ;       cm1.split = cm0.split;
-;       cm1.tab = cm0.tab;
 ;       cm1.keepalt = cm0.keepalt;
 ;       cm1.keepmarks = cm0.keepmarks;
 ;       cm1.keepjumps = cm0.keepjumps;
@@ -2464,10 +2445,6 @@
 
         (field int          b_flags)            ;; various BF_ flags
         (field boolean      b_closing)          ;; buffer is being closed, don't let autocommands close it too
-
-        ;; b_ffname has the full path of the file (null for no name).
-
-        (field Bytes        b_ffname)           ;; full path file name
 
         (field int          b_fnum)             ;; buffer number for this file.
 
@@ -3833,7 +3810,6 @@
 
 (atom! int      postponed_split)            ;; for CTRL-W CTRL-] command
 (atom! int      postponed_split_flags)      ;; args for win_split()
-(atom! int      postponed_split_tab)        ;; cmdmod.tab
 (atom! int      replace_offset)             ;; offset for replace_push()
 
 (final Bytes    escape_chars (u8 " \t\\\"|")) ;; need backslash in cmd line
@@ -3907,38 +3883,25 @@
     e_backslash       (u8 "E10: \\ should be followed by /, ? or &"),
     e_cmdwin          (u8 "E11: Invalid in command-line window; <CR> executes, CTRL-C quits"),
     e_curdir          (u8 "E12: Command not allowed from exrc/vimrc in current dir"),
-    e_exists          (u8 "E13: File exists (add ! to override)"),
     e_internal        (u8 "E473: Internal error"),
     e_interr          (u8 "Interrupted"),
     e_invaddr         (u8 "E14: Invalid address"),
     e_invarg          (u8 "E474: Invalid argument"),
     e_invarg2         (u8 "E475: Invalid argument: %s"),
-    e_invexpr2        (u8 "E15: Invalid expression: %s"),
     e_invrange        (u8 "E16: Invalid range"),
     e_invcmd          (u8 "E476: Invalid command"),
-    e_isadir2         (u8 "E17: \"%s\" is a directory"),
     e_markinval       (u8 "E19: Mark has invalid line number"),
     e_marknotset      (u8 "E20: Mark not set"),
     e_modifiable      (u8 "E21: Cannot make changes, 'modifiable' is off"),
-    e_nesting         (u8 "E22: Scripts nested too deep"),
-    e_noalt           (u8 "E23: No alternate file"),
     e_noabbr          (u8 "E24: No such abbreviation"),
     e_nobang          (u8 "E477: No ! allowed"),
-    e_nogroup         (u8 "E28: No such highlight group name: %s"),
     e_noinstext       (u8 "E29: No inserted text yet"),
     e_nolastcmd       (u8 "E30: No previous command line"),
     e_nomap           (u8 "E31: No such mapping"),
-    e_nomatch         (u8 "E479: No match"),
-    e_nomatch2        (u8 "E480: No match: %s"),
-    e_noname          (u8 "E32: No file name"),
     e_nopresub        (u8 "E33: No previous substitute regular expression"),
-    e_noprev          (u8 "E34: No previous command"),
     e_noprevre        (u8 "E35: No previous regular expression"),
     e_norange         (u8 "E481: No range allowed"),
     e_noroom          (u8 "E36: Not enough room"),
-    e_notcreate       (u8 "E482: Can't create file %s"),
-    e_notmp           (u8 "E483: Can't get temp file name"),
-    e_notopen         (u8 "E484: Can't open file %s"),
     e_nowrtmsg        (u8 "E37: No write since last change (add ! to override)"),
     e_nowrtmsg_nobang (u8 "E37: No write since last change"),
     e_null            (u8 "E38: Null argument"),
@@ -3948,30 +3911,21 @@
     e_prev_dir        (u8 "E459: Cannot go back to previous directory"),
     e_re_damg         (u8 "E43: Damaged match string"),
     e_re_corr         (u8 "E44: Corrupted regexp program"),
-    e_readonly        (u8 "E45: 'readonly' option is set (add ! to override)"),
-    e_readonlyvar     (u8 "E46: Cannot change read-only variable \"%s\""),
-    e_readonlysbx     (u8 "E794: Cannot set variable in the sandbox: \"%s\""),
     e_sandbox         (u8 "E48: Not allowed in sandbox"),
     e_secure          (u8 "E523: Not allowed here"),
     e_screenmode      (u8 "E359: Screen mode setting not supported"),
     e_scroll          (u8 "E49: Invalid scroll size"),
     e_toocompl        (u8 "E74: Command too complex"),
-    e_longname        (u8 "E75: Name too long"),
     e_toomsbra        (u8 "E76: Too many ["),
-    e_toomany         (u8 "E77: Too many file names"),
     e_trailing        (u8 "E488: Trailing characters"),
     e_umark           (u8 "E78: Unknown mark"),
     e_winheight       (u8 "E591: 'winheight' cannot be smaller than 'winminheight'"),
     e_winwidth        (u8 "E592: 'winwidth' cannot be smaller than 'winminwidth'"),
-    e_write           (u8 "E80: Error while writing"),
     e_zerocount       (u8 "Zero count"),
     e_intern2         (u8 "E685: Internal error: %s"),
     e_maxmempat       (u8 "E363: pattern uses more memory than 'maxmempattern'"),
     e_emptybuf        (u8 "E749: empty buffer"),
-    e_nobufnr         (u8 "E86: Buffer %ld does not exist"),
-
-    e_invalpat        (u8 "E682: Invalid search pattern or delimiter"),
-    e_bufloaded       (u8 "E139: File is loaded in another buffer"))
+    e_nobufnr         (u8 "E86: Buffer %ld does not exist"))
 
 ;; For undo we need to know the lowest time possible.
 (atom! long starttime)
@@ -4103,8 +4057,8 @@
 
         ;; Allocate space for the generic buffers (needed for set_init_1() and emsg2()).
 
-;       if ((@ioBuff = new Bytes(IOSIZE)) == null || (@nameBuff = new Bytes(MAXPATHL)) == null)
-;           mch_exit(0);
+;       @ioBuff = new Bytes(IOSIZE);
+;       @nameBuff = new Bytes(MAXPATHL);
 
 ;       clip_init(false);                       ;; initialise clipboard stuff
 
@@ -4115,8 +4069,7 @@
         ;; Allocate the first window and buffer.
         ;; Can't do anything without it, exit when it fails.
 
-;       if (win_alloc_first() == false)
-;           mch_exit(0);
+;       win_alloc_first();
 
 ;       init_yank();                            ;; init yank buffers
 
@@ -8994,7 +8947,6 @@
         (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        PV_NONE,    false),
         (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        PV_NONE,    false),
         (bool_opt (u8 "showmode"),       (u8 "smd"),       0,                           p_smd,       PV_NONE,    true),
-        (long_opt (u8 "showtabline"),    (u8 "stal"),      P_RALL,                      p_stal,      PV_NONE,    1#_L),
         (long_opt (u8 "sidescroll"),     (u8 "ss"),        0,                           p_ss,        PV_NONE,    0#_L),
         (long_opt (u8 "sidescrolloff"),  (u8 "siso"),      P_RBUF,                      p_siso,      PV_NONE,    0#_L),
         (bool_opt (u8 "smartcase"),      (u8 "scs"),       0,                           p_scs,       PV_NONE,    false),
@@ -9004,7 +8956,6 @@
         (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        PV_NONE,    false),
         (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       PV_NONE,    false),
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
-        (utf8_opt (u8 "switchbuf"),      (u8 "swb"),    (| P_COMMA P_NODUP),            p_swb,       PV_NONE,   (u8 "")),
         (utf8_opt (u8 "tabline"),        (u8 "tal"),       P_RALL,                      p_tal,       PV_NONE,   (u8 "")),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
@@ -9210,7 +9161,7 @@
 ;               set_option_default(i, opt_flags);
 
         ;; The 'scroll' option must be computed for all windows.
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;               win_comp_scroll(wp);
 
@@ -10546,13 +10497,6 @@
 ;               errmsg = e_invarg;
 ;       }
 
-        ;; 'switchbuf'
-;       else if (varp == p_swb)
-;       {
-;           if (opt_strings_flags(@p_swb, p_swb_values, swb_flags, true) != true)
-;               errmsg = e_invarg;
-;       }
-
         ;; 'display'
 ;       else if (varp == p_dy)
 ;       {
@@ -11193,12 +11137,6 @@
 ;           last_status(false);
 ;       }
 
-        ;; (re)set tab page line
-;       else if (varp == p_stal)
-;       {
-;           shell_new_rows();       ;; recompute window positions and heights
-;       }
-
         ;; 'shiftwidth' or 'tabstop'
 ;       else if (varp == @curbuf.b_p_sw || varp == @curbuf.b_p_ts)
 ;       {
@@ -11298,7 +11236,7 @@
 ;               @curbuf.@b_p_tw = 0;
 ;           }
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                   check_colorcolumn(wp);
 ;       }
@@ -13128,15 +13066,13 @@
 ;       if (oldwin != null)
 ;           buflist_altfpos(oldwin);
 
-;       buffer_C buf = buflist_new(null, 0L, BLN_CURBUF | BLN_LISTED);
+;       buffer_C buf = newBuffer(0L);
 
         ;; autocommands may change curwin and curbuf
 ;       if (oldwin != null)
 ;           oldwin = @curwin;
 ;       old_curbuf = @curbuf;
 
-;       if (buf == null)
-;           return false;
 ;       boolean oldbuf;             ;; true if using existing buffer
 ;       if (buf.b_ml.ml_mfp == null)            ;; no memfile yet
 ;       {
@@ -13164,7 +13100,7 @@
         ;; Make the (new) buffer the one used by the current window.
         ;; If the old buffer becomes unused, free it if ECMD_HIDE is false.
         ;; If the current buffer was empty and has no file name, curbuf
-        ;; is returned by buflist_new(), nothing to do here.
+        ;; is returned by newBuffer(), nothing to do here.
 
 ;       if (buf != @curbuf)
 ;       {
@@ -17363,9 +17299,6 @@
 ;       iarray_C winsizes = new iarray_C(1);
 ;       win_size_save(winsizes);
 
-        ;; don't use a new tab page
-;       @cmdmod.tab = 0;
-
         ;; Create a window for the command-line buffer.
 ;       if (win_split((int)@p_cwh, WSP_BOT) == false)
 ;       {
@@ -18093,20 +18026,6 @@
 ;       {
 ;           nr++;
 ;           if (wp == win)
-;               break;
-;       }
-
-;       return nr;
-    ))
-
-(defn- #_int current_tab_nr [#_tabpage_C tab]
-    (§
-;       int nr = 0;
-
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
-;       {
-;           nr++;
-;           if (tp == tab)
 ;               break;
 ;       }
 
@@ -18938,7 +18857,7 @@
 ;                   while (BLT(ea.arg, p) && vim_iswhite(p.at(-1)))
 ;                       p = p.minus(1);
 ;               }
-;               ea.line2 = buflist_findpat(ea.arg, p, (ea.argt & BUFUNL) != 0, false);
+;               ea.line2 = buflist_findpat(ea.arg, p);
 ;               if (ea.line2 < 0)       ;; failed
 ;                   break doend;
 ;               ea.addr_count = 1;
@@ -19986,7 +19905,7 @@
 ;       else if (!text_locked() && !curbuf_locked())
 ;       {
 ;           if (eap.addr_count == 0)
-;               ex_win_close(eap.forceit, @curwin, null);
+;               ex_win_close(eap.forceit, @curwin);
 ;           else
 ;           {
 ;               window_C win;
@@ -19996,15 +19915,14 @@
 ;                       break;
 ;               if (win == null)
 ;                   win = @lastwin;
-;               ex_win_close(eap.forceit, win, null);
+;               ex_win_close(eap.forceit, win);
 ;           }
 ;       }
     ))
 
 ;; Close window "win" and take care of handling closing the last window for a modified buffer.
 
-(defn- #_void ex_win_close [#_boolean forceit, #_window_C win, #_tabpage_C tp]
-    ;; tp: null or the tab page "win" is in
+(defn- #_void ex_win_close [#_boolean forceit, #_window_C win]
     (§
 ;       buffer_C buf = win.w_buffer;
 
@@ -20016,48 +19934,7 @@
 ;       }
 
         ;; free buffer when not hiding it or when it's a scratch buffer
-;       if (tp == null)
-;           win_close(win, !need_hide && !@cmdmod.hide);
-;       else
-;           win_close_othertab(win, !need_hide && !@cmdmod.hide, tp);
-    ))
-
-;; Close the current tab page.
-
-(defn- #_void tabpage_close [#_boolean forceit]
-    (§
-        ;; First close all the windows but the current one.
-        ;; If that worked then close the last window in this tab, that will close it.
-;       if (@lastwin != @firstwin)
-;           close_others(true, forceit);
-;       if (@lastwin == @firstwin)
-;           ex_win_close(forceit, @curwin, null);
-    ))
-
-;; Close tab page "tp", which is not the current tab page.
-;; Note that autocommands may make "tp" invalid.
-;; Also takes care of the tab pages line disappearing when closing the last-but-one tab page.
-
-(defn- #_void tabpage_close_other [#_tabpage_C tp, #_boolean forceit]
-    (§
-;       int h = tabline_height();
-
-        ;; Limit to 1000 windows, autocommands may add a window while we close one.
-        ;; OK, so I'm paranoid...
-;       for (int done = 0; ++done < 1000; )
-;       {
-;           window_C wp = tp.tp_firstwin;
-;           ex_win_close(forceit, wp, tp);
-
-            ;; Autocommands may delete the tab page under our fingers and
-            ;; we may fail to close a window with a modified buffer.
-;           if (!valid_tabpage(tp) || tp.tp_firstwin == wp)
-;               break;
-;       }
-
-;       @redraw_tabline = true;
-;       if (h != tabline_height())
-;           shell_new_rows();
+;       win_close(win, !need_hide && !@cmdmod.hide);
     ))
 
 ;; ":only".
@@ -20506,10 +20383,8 @@
 ;       {
                 ;; Pass flags on for ":vertical wincmd ]".
 ;           @postponed_split_flags = @cmdmod.split;
-;           @postponed_split_tab = @cmdmod.tab;
 ;           do_window(eap.arg.at(0), (0 < eap.addr_count) ? eap.line2 : 0L, xchar);
 ;           @postponed_split_flags = 0;
-;           @postponed_split_tab = 0;
 ;       }
     ))
 
@@ -21662,7 +21537,7 @@
 ;               bufnum = add_bufnum(bufnrs, bufnum, wp.w_buffer.b_fnum);
 
         ;; buf in other tab
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;           if (tp != @curtab)
 ;               for (window_C wp = tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                   bufnum = add_bufnum(bufnrs, bufnum, wp.w_buffer.b_fnum);
@@ -21713,12 +21588,12 @@
             ;; Try to find a window that contains the buffer.
 ;           if (buf != @curbuf)
 ;           {
-;               for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;               for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;                   for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                       if (wp.w_buffer == buf)
 ;                       {
 ;                           goto_tabpage_win(tp, wp);
-                            ;; Paranoia: did autocms wipe out the buffer with changes?
+                            ;; Paranoia: did autocmds wipe out the buffer with changes?
 ;                           if (!buf_valid(buf))
 ;                               return retval;
 ;                           break buf_found;
@@ -21731,19 +21606,6 @@
 ;           set_curbuf(buf, DOBUF_GOTO);
 
 ;       return retval;
-    ))
-
-;; Return false if there is no file name, true if there is one.
-;; Give error message for false.
-
-(defn- #_boolean check_fname []
-    (§
-;       if (@curbuf.b_ffname == null)
-;       {
-;           emsg(e_noname);
-;           return false;
-;       }
-;       return true;
     ))
 
 ;;; ============================================================================================== VimK
@@ -23423,70 +23285,6 @@
 ;       if (!is_click[0])
 ;           jump_flags |= MOUSE_FOCUS | MOUSE_DID_MOVE;
 
-        ;; Check for clicking in the tab page line.
-;       if (@mouse_row == 0 && 0 < @firstwin.w_winrow)
-;       {
-;           if (is_drag[0])
-;           {
-;               if (@in_tab_line)
-;               {
-;                   int c1 = @tabPageIdxs[@mouse_col];
-;                   tabpage_move(c1 <= 0 ? 9999 : c1 - 1);
-;               }
-;               return false;
-;           }
-
-            ;; click in a tab selects that tab page
-;           if (is_click[0] && @cmdwin_type == 0 && @mouse_col < (int)@Columns)
-;           {
-;               @in_tab_line = true;
-;               int c1 = @tabPageIdxs[@mouse_col];
-;               if (0 <= c1)
-;               {
-;                   if ((@mod_mask & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK)
-;                   {
-                        ;; double click opens new page
-;                       end_visual_mode();
-;                       tabpage_new();
-;                       tabpage_move(c1 == 0 ? 9999 : c1 - 1);
-;                   }
-;                   else
-;                   {
-                        ;; Go to specified tab page, or next one if not clicking on a label.
-;                       goto_tabpage(c1);
-
-                        ;; It's like clicking on the status line of a window.
-;                       if (@curwin != old_curwin)
-;                           end_visual_mode();
-;                   }
-;               }
-;               else if (c1 < 0)
-;               {
-;                   tabpage_C tp;
-
-                    ;; Close the current or specified tab page.
-;                   if (c1 == -999)
-;                       tp = @curtab;
-;                   else
-;                       tp = find_tabpage(-c1);
-;                   if (tp == @curtab)
-;                   {
-;                       if (@first_tabpage.tp_next != null)
-;                           tabpage_close(false);
-;                   }
-;                   else if (tp != null)
-;                       tabpage_close_other(tp, false);
-;               }
-;           }
-;           return true;
-;       }
-;       else if (is_drag[0] && @in_tab_line)
-;       {
-;           int c1 = @tabPageIdxs[@mouse_col];
-;           tabpage_move(c1 <= 0 ? 9999 : c1 - 1);
-;           return false;
-;       }
-
         ;; When 'mousemodel' is "popup" or "popup_setpos", translate mouse events:
         ;; right button up   -> pop-up menu
         ;; shift-left button -> right button
@@ -24534,16 +24332,8 @@
     (§
 ;       if (!checkclearop(cap.oap))
 ;       {
-;           if ((@mod_mask & MOD_MASK_CTRL) != 0)
-;           {
-                    ;; <C-PageUp>: tab page back; <C-PageDown>: tab page forward
-;               if (cap.arg == BACKWARD)
-;                   goto_tabpage(-(int)cap.count1);
-;               else
-;                   goto_tabpage((int)cap.count0);
-;           }
-;           else
-;           onepage(cap.arg, cap.count1);
+;           if ((@mod_mask & MOD_MASK_CTRL) == 0)
+;               onepage(cap.arg, cap.count1);
 ;       }
     ))
 
@@ -27331,16 +27121,6 @@
 ;               nv_pcmark(cap);
 ;               break;
 
-;           case 't':
-;               if (!checkclearop(oap))
-;                   goto_tabpage((int)cap.count0);
-;               break;
-
-;           case 'T':
-;               if (!checkclearop(oap))
-;                   goto_tabpage(-(int)cap.count1);
-;               break;
-
                 ;; "g+" and "g-": undo or redo along the timeline.
 
 ;           case '+':
@@ -29501,14 +29281,9 @@
 ;       switch (regname)
 ;       {
 ;           case '%':                                       ;; file name
-;               if (errmsg)
-;                   check_fname();                          ;; will give emsg if not set
-;               argp[0] = null;
-;               return true;
-
 ;           case '#':                                       ;; alternate file name
-;               argp[0] = getaltfname(errmsg);              ;; may give emsg if not set
-;               return true;
+;               argp[0] = null;
+;               return false;
 
 ;           case '=':                                       ;; result of expression
 ;               argp[0] = get_expr_line();
@@ -33716,40 +33491,7 @@
 
 (defn- #_void fname2fnum [#_xfmark_C fm]
     (§
-;       if (fm.fname != null)
-;       {
-;           vim_strncpy(@nameBuff, fm.fname, MAXPATHL - 1);
-
-            ;; buflist_new() will call fmarks_check_names()
-;           buflist_new(@nameBuff, 1, 0);
-;       }
-    ))
-
-;; Check all file marks for a name that matches the file name in buf.
-;; May replace the name with an fnum.
-;; Used for marks that come from the .viminfo file.
-
-(defn- #_void fmarks_check_names [#_buffer_C buf]
-    (§
-;       Bytes name = buf.b_ffname;
-;       if (name != null)
-;       {
-;           for (int i = 0; i < NMARKS + EXTRA_MARKS; i++)
-;               fmarks_check_one(namedfm[i], name, buf);
-
-;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;               for (int i = 0; i < wp.w_jumplistlen; i++)
-;                   fmarks_check_one(wp.w_jumplist[i], name, buf);
-;       }
-    ))
-
-(defn- #_void fmarks_check_one [#_xfmark_C fm, #_Bytes name, #_buffer_C buf]
-    (§
-;       if (fm.fmark.fnum == 0 && fm.fname != null && STRCMP(name, fm.fname) == 0)
-;       {
-;           fm.fmark.fnum = buf.b_fnum;
-;           fm.fname = null;
-;       }
+        
     ))
 
 ;; Check a if a position from a mark is valid.
@@ -33814,7 +33556,7 @@
 ;       if (fmark.fnum == @curbuf.b_fnum)    ;; current buffer
 ;           return mark_line(fmark.mark, lead_len);
 
-;       return buflist_nr2name(fmark.fnum, false);
+;       return null;
     ))
 
 ;; Return the line at mark "mp".  Truncate to fit in window.
@@ -34158,7 +33900,7 @@
 
         ;; Adjust items in all windows related to the current buffer.
 
-;       for (tabpage_C tab = @first_tabpage; tab != null; tab = tab.tp_next)
+;       for (tabpage_C tab = @first_tabpage; tab != null; tab = null)
 ;           for (window_C win = (tab == @curtab) ? @firstwin : tab.tp_firstwin; win != null; win = win.w_next)
 ;           {
 ;               if (!@cmdmod.lockmarks)
@@ -41618,27 +41360,19 @@
     (§
 ;       undisplay_dollar();
 
-;       if ((@mod_mask & MOD_MASK_CTRL) != 0)
+;       if ((@mod_mask & MOD_MASK_CTRL) == 0)
 ;       {
-            ;; <C-PageUp>: tab page back
-;           if (@first_tabpage.tp_next != null)
+;           pos_C tpos = §_pos_C();
+;           COPY_pos(tpos, @curwin.w_cursor);
+
+;           if (onepage(BACKWARD, 1L) == true)
 ;           {
-;               start_arrow(@curwin.w_cursor);
-;               goto_tabpage(-1);
+;               start_arrow(tpos);
+;               @can_cindent = true;
 ;           }
-;           return;
+;           else
+;               vim_beep();
 ;       }
-
-;       pos_C tpos = §_pos_C();
-;       COPY_pos(tpos, @curwin.w_cursor);
-
-;       if (onepage(BACKWARD, 1L) == true)
-;       {
-;           start_arrow(tpos);
-;           @can_cindent = true;
-;       }
-;       else
-;           vim_beep();
     ))
 
 (defn- #_void ins_down [#_boolean startcol]
@@ -41668,27 +41402,19 @@
     (§
 ;       undisplay_dollar();
 
-;       if ((@mod_mask & MOD_MASK_CTRL) != 0)
+;       if ((@mod_mask & MOD_MASK_CTRL) == 0)
 ;       {
-            ;; <C-PageDown>: tab page forward
-;           if (@first_tabpage.tp_next != null)
+;           pos_C tpos = §_pos_C();
+;           COPY_pos(tpos, @curwin.w_cursor);
+
+;           if (onepage(FORWARD, 1L) == true)
 ;           {
-;               start_arrow(@curwin.w_cursor);
-;               goto_tabpage(0);
+;               start_arrow(tpos);
+;               @can_cindent = true;
 ;           }
-;           return;
+;           else
+;               vim_beep();
 ;       }
-
-;       pos_C tpos = §_pos_C();
-;       COPY_pos(tpos, @curwin.w_cursor);
-
-;       if (onepage(FORWARD, 1L) == true)
-;       {
-;           start_arrow(tpos);
-;           @can_cindent = true;
-;       }
-;       else
-;           vim_beep();
     ))
 
 (defn- #_void ins_drop []
@@ -59523,22 +59249,7 @@
 
 (defn- #_void set_mtime [#_buffer_C buf]
     (§
-;       if (buf.b_ffname != null)
-;       {
-;           stat_C st = new stat_C();
-;           if (0 <= libC.stat(buf.b_ffname, st))
-;           {
-;               buf_store_time(buf, st);
-;               buf.b_mtime_read = buf.b_mtime;
-;           }
-;           else
-;           {
-;               buf.b_mtime = 0;
-;               buf.b_mtime_read = 0;
-;               buf.b_orig_size = 0;
-;               buf.b_orig_mode = 0;
-;           }
-;       }
+        
     ))
 
 ;; NOTE: The pointer returned by the ml_get_*() functions only remains valid until the next call!
@@ -61094,13 +60805,6 @@
 ;       boolean[] retval = { true };
 ;       long old_tw = @curbuf.@b_p_tw;
 
-        ;; The 'readonly' flag is only set when BF_NEVERLOADED is being reset.
-        ;; When re-entering the same buffer, it should not change, because the
-        ;; user may have reset the flag by hand.
-
-;       if (@readonlymode && @curbuf.b_ffname != null && (@curbuf.b_flags & BF_NEVERLOADED) != 0)
-;           @curbuf.@b_p_ro = true;
-
 ;       if (ml_open(@curbuf) == false)
 ;       {
             ;; There MUST be a memfile, otherwise we can't do anything.
@@ -61132,15 +60836,6 @@
 
         ;; mark cursor position as being invalid
 ;       @curwin.w_valid = 0;
-
-;       if (@curbuf.b_ffname != null)
-;       {
-;           retval[0] = readfile(@curbuf.b_ffname, null, 0, 0, MAXLNUM, eap, flags | READ_NEW);
-;       }
-;       else if (read_stdin)
-;       {
-            
-;       }
 
         ;; if first time loading this buffer, init b_chartab[]
 ;       if ((@curbuf.b_flags & BF_NEVERLOADED) != 0)
@@ -61283,8 +60978,7 @@
 ;           return;
 
         ;; Always remove the buffer when there is no file name.
-;       if (buf.b_ffname == null)
-;           del_buf = true;
+;       del_buf = true;
 
         ;; Remember if we are closing the current buffer.  Restore the number of
         ;; windows, so that autocommands in buf_freeall() don't get confused.
@@ -61318,7 +61012,6 @@
 
 ;       if (wipe_buf)
 ;       {
-;           buf.b_ffname = null;
 ;           if (buf.b_prev == null)
 ;               @firstbuf = buf.b_next;
 ;           else
@@ -61447,12 +61140,10 @@
 ;; do_bufdel() - delete or unload buffer(s)
 ;;
 ;; addr_count == 0: ":bdel" - delete current buffer
-;; addr_count == 1: ":N bdel" or ":bdel N [N ..]" - first delete
-;;                  buffer "end_bnr", then any other arguments.
+;; addr_count == 1: ":N bdel" or ":bdel N [N ..]" - first delete buffer "end_bnr", then any other arguments.
 ;; addr_count == 2: ":N,N bdel" - delete buffers in range
 ;;
-;; command can be DOBUF_UNLOAD (":bunload"), DOBUF_WIPE (":bwipeout") or
-;; DOBUF_DEL (":bdel")
+;; command can be DOBUF_UNLOAD (":bunload"), DOBUF_WIPE (":bwipeout") or DOBUF_DEL (":bdel")
 ;;
 ;; Returns error message or null
 
@@ -61508,7 +61199,7 @@
 ;                   if (!asc_isdigit(arg.at(0)))
 ;                   {
 ;                       Bytes p = skiptowhite_esc(arg);
-;                       bnr = buflist_findpat(arg, p, command == DOBUF_WIPE, false);
+;                       bnr = buflist_findpat(arg, p);
 ;                       if (bnr < 0)            ;; failed
 ;                           break;
 ;                       arg = p;
@@ -61719,7 +61410,7 @@
 
 ;           while (buf == @curbuf
 ;                      && !(@curwin.w_closing || @curwin.w_buffer.b_closing)
-;                      && (@firstwin != @lastwin || @first_tabpage.tp_next != null))
+;                      && (@firstwin != @lastwin || null != null))
 ;           {
 ;               if (win_close(@curwin, false) == false)
 ;                   break;
@@ -61834,14 +61525,6 @@
 
 ;       if (action == DOBUF_SPLIT)      ;; split window first
 ;       {
-            ;; If 'switchbuf' contains "useopen": jump to first window containing
-            ;; "buf" if one exists.
-;           if ((@swb_flags & SWB_USEOPEN) != 0 && buf_jump_open_win(buf) != null)
-;               return true;
-            ;; If 'switchbuf' contains "usetab": jump to first window in any tab
-            ;; page containing "buf" if one exists.
-;           if ((@swb_flags & SWB_USETAB) != 0 && buf_jump_open_tab(buf) != null)
-;               return true;
 ;           if (win_split(0, 0) == false)
 ;               return false;
 ;       }
@@ -61982,133 +61665,69 @@
 
 ;; functions for dealing with the buffer list
 
-;; Add a file name to the buffer list.  Return a pointer to the buffer.
-;; If the same file name already exists return a pointer to that buffer.
-;; If it does not exist, or if fname == null, a new entry is created.
-;; If (flags & BLN_CURBUF) is true, may use current buffer.
-;; If (flags & BLN_LISTED) is true, add new buffer to buffer list.
-;; If (flags & BLN_DUMMY) is true, don't count it as a real buffer.
 ;; This is the ONLY way to create a new buffer.
 
 (atom! int  top_file_num 1)       ;; highest file number
 
-(defn- #_buffer_C buflist_new [#_Bytes _ffname, #_long lnum, #_int flags]
+(defn- #_buffer_C newBuffer [#_long lnum]
     ;; lnum: preferred cursor line
-    ;; flags: BLN_ defines
     (§
-        ;; If the current buffer has no name and no contents, use the current buffer.
-        ;; Otherwise: Need to allocate a new buffer structure.
-        ;;
-        ;; This is the ONLY place where a new buffer structure is allocated!
+;       buffer_C buf = §_buffer_C();
 
-;       buffer_C buf = null;
-;       if ((flags & BLN_CURBUF) != 0
-;               && @curbuf != null
-;               && @curbuf.b_ffname == null
-;               && @curbuf.b_nwindows <= 1
-;               && (@curbuf.b_ml.ml_mfp == null || bufempty()))
-;       {
-;           buf = @curbuf;
-            ;; It's like this buffer is deleted.  Watch out for autocommands that
-            ;; change curbuf!  If that happens, allocate a new buffer anyway.
-;           if (aborting())         ;; autocmds may abort script processing
-;               return null;
-;       }
-;       if (buf != @curbuf || @curbuf == null)
-;       {
-;           buf = §_buffer_C();
-
-;           buf.b_ml = §_memline_C();
-;           buf.b_namedm = ARRAY_pos(NMARKS);
-;           buf.b_visual = §_visualinfo_C();
-;           buf.b_last_cursor = §_pos_C();
-;           buf.b_last_insert = §_pos_C();
-;           buf.b_last_change = §_pos_C();
-;           buf.b_changelist = ARRAY_pos(JUMPLISTSIZE);
-;           buf.b_chartab = new int[8];
-;           buf.b_maphash = new mapblock_C[256][1];
-;           buf.b_op_start = §_pos_C();
-;           buf.b_op_start_orig = §_pos_C();
-;           buf.b_op_end = §_pos_C();
-;       }
+;       buf.b_ml = §_memline_C();
+;       buf.b_namedm = ARRAY_pos(NMARKS);
+;       buf.b_visual = §_visualinfo_C();
+;       buf.b_last_cursor = §_pos_C();
+;       buf.b_last_insert = §_pos_C();
+;       buf.b_last_change = §_pos_C();
+;       buf.b_changelist = ARRAY_pos(JUMPLISTSIZE);
+;       buf.b_chartab = new int[8];
+;       buf.b_maphash = new mapblock_C[256][1];
+;       buf.b_op_start = §_pos_C();
+;       buf.b_op_start_orig = §_pos_C();
+;       buf.b_op_end = §_pos_C();
 
 ;       clear_wininfo(buf);
 ;       buf.b_wininfo = §_wininfo_C();
 
-;       if (buf == @curbuf)
+        ;; Put new buffer at the end of the buffer list.
+
+;       buf.b_next = null;
+;       if (@firstbuf == null)           ;; buffer list is empty
 ;       {
-            ;; free all things allocated for this buffer
-;           buf_freeall(buf, 0);
-;           if (buf != @curbuf)              ;; autocommands deleted the buffer!
-;               return null;
-;           if (aborting())                 ;; autocmds may abort script processing
-;               return null;
-;           free_buffer_stuff(buf, false);  ;; delete local variables et al.
-
-            ;; Init the options.
-;           buf.b_p_initialized = false;
-;           buf_copy_options(buf, BCO_ENTER);
+;           buf.b_prev = null;
+;           @firstbuf = buf;
 ;       }
-;       else
+;       else                            ;; append new buffer at end of list
 ;       {
-            ;; put new buffer at the end of the buffer list
-
-;           buf.b_next = null;
-;           if (@firstbuf == null)           ;; buffer list is empty
-;           {
-;               buf.b_prev = null;
-;               @firstbuf = buf;
-;           }
-;           else                            ;; append new buffer at end of list
-;           {
-;               @lastbuf.b_next = buf;
-;               buf.b_prev = @lastbuf;
-;           }
-;           @lastbuf = buf;
-
-;           buf.b_fnum = @top_file_num++;
-;           if (@top_file_num < 0)           ;; wrap around (may cause duplicates)
-;           {
-;               emsg(u8("W14: Warning: List of file names overflow"));
-;               if (@emsg_silent == 0)
-;               {
-;                   out_flush();
-;                   ui_delay(3000L, true);  ;; make sure it is noticed
-;               }
-;               @top_file_num = 1;
-;           }
-
-            ;; Always copy the options from the current buffer.
-
-;           buf_copy_options(buf, BCO_ALWAYS);
+;           @lastbuf.b_next = buf;
+;           buf.b_prev = @lastbuf;
 ;       }
+;       @lastbuf = buf;
+
+;       buf.b_fnum = @top_file_num++;
+;       if (@top_file_num < 0)           ;; wrap around (may cause duplicates)
+;       {
+;           emsg(u8("W14: Warning: List of file names overflow"));
+;           if (@emsg_silent == 0)
+;           {
+;               out_flush();
+;               ui_delay(3000L, true);  ;; make sure it is noticed
+;           }
+;           @top_file_num = 1;
+;       }
+
+        ;; Always copy the options from the current buffer.
+
+;       buf_copy_options(buf, BCO_ALWAYS);
 
 ;       buf.b_wininfo.wi_fpos.lnum = lnum;
 ;       buf.b_wininfo.wi_win = @curwin;
 
 ;       buf.b_u_synced = true;
 ;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
-;       if ((flags & BLN_DUMMY) != 0)
-;           buf.b_flags |= BF_DUMMY;
 ;       buf_clear_file(buf);
 ;       clrallmarks(buf);                           ;; clear marks
-;       fmarks_check_names(buf);                    ;; check file marks for this file
-
-;       if ((flags & BLN_DUMMY) == 0)
-;       {
-            ;; Tricky: these autocommands may change the buffer list.  They could
-            ;; also split the window with re-using the one empty buffer.  This may
-            ;; result in unexpectedly losing the empty buffer.
-;           if (!buf_valid(buf))
-;               return null;
-;           if ((flags & BLN_LISTED) != 0)
-;           {
-;               if (!buf_valid(buf))
-;                   return null;
-;           }
-;           if (aborting())         ;; autocmds may abort script processing
-;               return null;
-;       }
 
 ;       return buf;
     ))
@@ -62157,12 +61776,11 @@
 ;; Return fnum of the found buffer.
 ;; Return < 0 for error.
 
-(defn- #_int buflist_findpat [#_Bytes pattern, #_Bytes pattern_end, #_boolean unlisted, #_boolean curtab_only]
+(defn- #_int buflist_findpat [#_Bytes pattern, #_Bytes pattern_end]
     ;; pattern_end: pointer to first char after pattern
-    ;; unlisted: find unlisted buffers
-    ;; curtab_only: find buffers in current tab only
     (§
 ;       int match = -1;
+
 ;       if (BEQ(pattern_end, pattern.plus(1)) && (pattern.at(0) == (byte)'%' || pattern.at(0) == (byte)'#'))
 ;       {
 ;           if (pattern.at(0) == (byte)'%')
@@ -62171,100 +61789,12 @@
 ;               match = @curwin.w_alt_fnum;
 ;       }
 
-        ;; Try four ways of matching a listed buffer:
-        ;; attempt == 0: without '^' or '$' (at any position)
-        ;; attempt == 1: with '^' at start (only at position 0)
-        ;; attempt == 2: with '$' at end (only match at end)
-        ;; attempt == 3: with '^' at start and '$' at end (only full match)
-        ;; Repeat this for finding an unlisted buffer if there was no matching listed buffer.
-
-;       else
-;       {
-;           Bytes pat = file_pat_to_reg_pat(pattern, pattern_end, null);
-;           if (pat == null)
-;               return -1;
-;           Bytes patend = pat.plus(STRLEN(pat) - 1);
-;           boolean toggledollar = (BLT(pat, patend) && patend.at(0) == (byte)'$');
-
-            ;; First try finding a listed buffer.
-            ;; If not found and "unlisted" is true, try finding an unlisted buffer.
-;           boolean find_listed = true;
-;           for ( ; ; )
-;           {
-;               for (int attempt = 0; attempt <= 3; attempt++)
-;               {
-;                   regmatch_C regmatch = §_regmatch_C();
-
-                    ;; may add '^' and '$'
-;                   if (toggledollar)
-;                       patend.be(0, (attempt < 2) ? NUL : (byte)'$');    ;; add/remove '$'
-;                   Bytes p = pat;
-;                   if (p.at(0) == (byte)'^' && (attempt & 1) == 0)        ;; add/remove '^'
-;                       p = p.plus(1);
-
-;                   regmatch.regprog = vim_regcomp(p, @p_magic ? RE_MAGIC : 0);
-;                   if (regmatch.regprog == null)
-;                       return -1;
-
-;                   for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;                       if (find_listed && buflist_match(regmatch, buf, false) != null)
-;                       {
-;                           if (curtab_only)
-;                           {
-                                ;; Ignore the match if the buffer is not open in the current tab.
-;                               window_C wp;
-;                               for (wp = @firstwin; wp != null; wp = wp.w_next)
-;                                   if (wp.w_buffer == buf)
-;                                       break;
-;                               if (wp == null)
-;                                   continue;
-;                           }
-;                           if (0 <= match)         ;; already found a match
-;                           {
-;                               match = -2;
-;                               break;
-;                           }
-;                           match = buf.b_fnum;     ;; remember first match
-;                       }
-
-;                   if (0 <= match)                 ;; found one match
-;                       break;
-;               }
-
-                ;; Only search for unlisted buffers if there was no match with a listed buffer.
-;               if (!unlisted || !find_listed || match != -1)
-;                   break;
-;               find_listed = false;
-;           }
-;       }
-
 ;       if (match == -2)
 ;           emsg2(u8("E93: More than one match for %s"), pattern);
 ;       else if (match < 0)
 ;           emsg2(u8("E94: No matching buffer for %s"), pattern);
+
 ;       return match;
-    ))
-
-;; Check for a match on the file name for buffer "buf" with regprog "prog".
-
-(defn- #_Bytes buflist_match [#_regmatch_C rmp, #_buffer_C buf, #_boolean ignore_case]
-    (§
-;       return fname_match(rmp, buf.b_ffname, ignore_case);
-    ))
-
-;; Try matching the regexp in "prog" with file name "name".
-;; Return "name" when there is a match, null when not.
-
-(defn- #_Bytes fname_match [#_regmatch_C rmp, #_Bytes name, #_boolean ignore_case]
-    (§
-;       if (name != null)
-;       {
-;           rmp.rm_ic = ignore_case;
-;           if (vim_regexec(rmp, name, 0))
-;               return name;
-;       }
-
-;       return null;
     ))
 
 ;; find file in buffer list by number
@@ -62279,19 +61809,6 @@
 ;               return buf;
 
 ;       return null;
-    ))
-
-;; Get name of file 'n' in the buffer list.
-;; When the file has no name an empty string is returned.
-;; Returns a pointer to allocated memory, of null when failed.
-
-(defn- #_Bytes buflist_nr2name [#_int n, #_boolean fullname]
-    (§
-;       buffer_C buf = buflist_findnr(n);
-;       if (buf == null)
-;           return null;
-
-;       return STRDUP(fullname ? buf.b_ffname : null);
     ))
 
 ;; Set the "lnum" and "col" for the buffer "buf" and the current window.
@@ -62441,7 +61958,6 @@
 (defn- #_void buf_name_changed [#_buffer_C buf]
     (§
 ;       status_redraw_all();            ;; status lines need to be redrawn
-;       fmarks_check_names(buf);        ;; check named file marks
 ;       ml_timestamp(buf);              ;; reset timestamp
     ))
 
@@ -63317,7 +62833,6 @@
     (§
 ;       boolean split_ret = true;
 ;       int open_wins = 0;
-;       int had_tab = @cmdmod.tab;
 
             ;; Maximum number of windows to open.
 ;       int count;
@@ -63338,37 +62853,25 @@
             ;; Close superfluous windows (two windows for the same buffer).
             ;; Also close windows that are not full-width.
 
-;       if (0 < had_tab)
-;           goto_tabpage_tp(@first_tabpage, true, true);
-;       for ( ; ; )
+;       tabpage_C tpnext = null;
+
+;       for (window_C wp = @firstwin, wpnext; wp != null; wp = wpnext)
 ;       {
-;           tabpage_C tpnext = @curtab.tp_next;
-
-;           for (window_C wp = @firstwin, wpnext; wp != null; wp = wpnext)
+;           wpnext = wp.w_next;
+;           if ((1 < wp.w_buffer.b_nwindows
+;                   || ((@cmdmod.split & WSP_VERT) != 0
+;                       ? wp.w_height + wp.w_status_height < @Rows - @p_ch - tabline_height()
+;                       : wp.w_width != (int)@Columns))
+;               && @firstwin != @lastwin
+;               && !(wp.w_closing || wp.w_buffer.b_closing))
 ;           {
-;               wpnext = wp.w_next;
-;               if ((1 < wp.w_buffer.b_nwindows
-;                       || ((@cmdmod.split & WSP_VERT) != 0
-;                           ? wp.w_height + wp.w_status_height < @Rows - @p_ch - tabline_height()
-;                           : wp.w_width != (int)@Columns)
-;                       || (0 < had_tab && wp != @firstwin)
-;                       ) && @firstwin != @lastwin
-;                       && !(wp.w_closing || wp.w_buffer.b_closing))
-;               {
-;                   win_close(wp, false);
-;                   wpnext = @firstwin;          ;; just in case an autocommand does
-                                                    ;; something strange with windows
-;                   tpnext = @first_tabpage;     ;; start all over...
-;                   open_wins = 0;
-;               }
-;               else
-;                   open_wins++;
+;               win_close(wp, false);
+;               wpnext = @firstwin;          ;; just in case an autocommand does something strange with windows
+;               tpnext = @first_tabpage;     ;; start all over...
+;               open_wins = 0;
 ;           }
-
-                ;; Without the ":tab" modifier only do the current tab page.
-;           if (had_tab == 0 || tpnext == null)
-;               break;
-;           goto_tabpage_tp(tpnext, true, true);
+;           else
+;               open_wins++;
 ;       }
 
             ;; Go through the buffer list.  When a buffer doesn't have a window yet,
@@ -63385,24 +62888,14 @@
 ;               continue;
 
 ;           window_C wp;
-;           if (had_tab != 0)
-;           {
-                    ;; With the ":tab" modifier don't move the window.
-;               if (0 < buf.b_nwindows)
-;                   wp = @lastwin;       ;; buffer has a window, skip it
-;               else
-;                   wp = null;
-;           }
-;           else
-;           {
-                    ;; Check if this buffer already has a window.
-;               for (wp = @firstwin; wp != null; wp = wp.w_next)
-;                   if (wp.w_buffer == buf)
-;                       break;
-                    ;; If the buffer already has a window, move it.
-;               if (wp != null)
-;                   win_move_after(wp, @curwin);
-;           }
+
+                ;; Check if this buffer already has a window.
+;           for (wp = @firstwin; wp != null; wp = wp.w_next)
+;               if (wp.w_buffer == buf)
+;                   break;
+                ;; If the buffer already has a window, move it.
+;           if (wp != null)
+;               win_move_after(wp, @curwin);
 
 ;           if (wp == null && split_ret == true)
 ;           {
@@ -63430,9 +62923,6 @@
                 ;; Autocommands deleted the buffer or aborted script processing!!!
 ;           if (aborting())
 ;               break;
-                ;; When ":tab" was used open a new tab for a new window repeatedly.
-;           if (0 < had_tab && tabpage_index(null) <= 10)
-;               @cmdmod.tab = 9999;
 ;       }
 
 ;       win_enter(@firstwin, false);         ;; back to first window
@@ -70794,7 +70284,7 @@
 ;                       @curbuf.b_changelistlen = JUMPLISTSIZE - 1;
 ;                       for (int i = 0; i < JUMPLISTSIZE - 1; i++)
 ;                           COPY_pos(@curbuf.b_changelist[i], @curbuf.b_changelist[i + 1]);
-;                       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;                       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;                           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                           {
                                 ;; Correct position in changelist for other windows on this buffer.
@@ -70802,7 +70292,7 @@
 ;                                   --wp.w_changelistidx;
 ;                           }
 ;                   }
-;                   for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;                   for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;                       for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                       {
                             ;; For other windows, if the position in the changelist is at the end,
@@ -70818,7 +70308,7 @@
 ;           @curwin.w_changelistidx = @curbuf.b_changelistlen;
 ;       }
 
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;           {
 ;               if (wp.w_buffer == @curbuf)
@@ -76833,160 +76323,6 @@
 ;               return true;
 ;       }
 ;       return false;
-    ))
-
-;; Convert the given pattern "pat" which has shell style wildcards in it,
-;; into a regular expression, and return the result in allocated memory.
-;; If there is a directory path separator to be matched, then true is put
-;; in "allow_dirs", otherwise false is put there.
-;; Handle backslashes before special characters, like "\*" and "\ ".
-
-(defn- #_Bytes file_pat_to_reg_pat [#_Bytes pat, #_Bytes pat_end, #_boolean* allow_dirs]
-    ;; pat_end: first char after pattern or null
-    ;; allow_dirs: result passed back out in here
-    (§
-;       if (allow_dirs != null)
-;           allow_dirs[0] = false;
-;       if (pat_end == null)
-;           pat_end = pat.plus(STRLEN(pat));
-
-;       int size = 2;               ;; '^' at start, '$' at end
-
-;       for (Bytes p = pat; BLT(p, pat_end); p = p.plus(1))
-;       {
-;           switch (p.at(0))
-;           {
-;               case '*':
-;               case '.':
-;               case ',':
-;               case '{':
-;               case '}':
-;               case '~':
-;                   size += 2;      ;; extra backslash
-;                   break;
-
-;               default:
-;                   size++;
-;                   break;
-;           }
-;       }
-
-;       Bytes reg_pat = new Bytes(size + 1);
-
-;       int i = 0;
-
-;       if (pat.at(0) == (byte)'*')
-;       {
-;           while (pat.at(0) == (byte)'*' && BLT(pat, pat_end.minus(1)))
-;               pat = pat.plus(1);
-;       }
-;       else
-;           reg_pat.be(i++, (byte)'^');
-
-;       boolean add_dollar = true;
-
-;       Bytes endp = pat_end.minus(1);
-;       if (endp.at(0) == (byte)'*')
-;       {
-;           while (0 < BDIFF(endp, pat) && endp.at(0) == (byte)'*')
-;               endp = endp.minus(1);
-;           add_dollar = false;
-;       }
-
-;       int nested = 0;
-;       for (Bytes p = pat; p.at(0) != NUL && 0 <= nested && BLE(p, endp); p = p.plus(1))
-;       {
-;           switch (p.at(0))
-;           {
-;               case '*':
-;                   reg_pat.be(i++, (byte)'.');
-;                   reg_pat.be(i++, (byte)'*');
-;                   while (p.at(1) == (byte)'*')    ;; "**" matches like "*"
-;                       p = p.plus(1);
-;                   break;
-
-;               case '.':
-;               case '~':
-;                   reg_pat.be(i++, (byte)'\\');
-;                   reg_pat.be(i++, p.at(0));
-;                   break;
-
-;               case '?':
-;                   reg_pat.be(i++, (byte)'.');
-;                   break;
-
-;               case '\\':
-;                   if (p.at(1) == NUL)
-;                       break;
-                    ;; Undo escaping from expandEscape():
-                    ;; foo\?bar -> foo?bar
-                    ;; foo\%bar -> foo%bar
-                    ;; foo\,bar -> foo,bar
-                    ;; foo\ bar -> foo bar
-                    ;; Don't unescape \, * and others that are also special in a regexp.
-                    ;; An escaped { must be unescaped since we use magic not verymagic.
-                    ;; Use "\\\{n,m\}"" to get "\{n,m}".
-
-;                   if ((p = p.plus(1)).at(0) == (byte)'?')
-;                       reg_pat.be(i++, (byte)'?');
-;                   else if (p.at(0) == (byte)',' || p.at(0) == (byte)'%' || p.at(0) == (byte)'#' || p.at(0) == (byte)' ' || p.at(0) == (byte)'{' || p.at(0) == (byte)'}')
-;                       reg_pat.be(i++, p.at(0));
-;                   else if (p.at(0) == (byte)'\\' && p.at(1) == (byte)'\\' && p.at(2) == (byte)'{')
-;                   {
-;                       reg_pat.be(i++, (byte)'\\');
-;                       reg_pat.be(i++, (byte)'{');
-;                       p = p.plus(2);
-;                   }
-;                   else
-;                   {
-;                       if (allow_dirs != null && vim_ispathsep(p.at(0)))
-;                           allow_dirs[0] = true;
-;                       reg_pat.be(i++, (byte)'\\');
-;                       reg_pat.be(i++, p.at(0));
-;                   }
-;                   break;
-
-;               case '{':
-;                   reg_pat.be(i++, (byte)'\\');
-;                   reg_pat.be(i++, (byte)'(');
-;                   nested++;
-;                   break;
-
-;               case '}':
-;                   reg_pat.be(i++, (byte)'\\');
-;                   reg_pat.be(i++, (byte)')');
-;                   --nested;
-;                   break;
-
-;               case ',':
-;                   if (nested != 0)
-;                   {
-;                       reg_pat.be(i++, (byte)'\\');
-;                       reg_pat.be(i++, (byte)'|');
-;                   }
-;                   else
-;                       reg_pat.be(i++, (byte)',');
-;                   break;
-
-;               default:
-;                   if (allow_dirs != null && vim_ispathsep(p.at(0)))
-;                       allow_dirs[0] = true;
-;                   reg_pat.be(i++, p.at(0));
-;                   break;
-;           }
-;       }
-;       if (add_dollar)
-;           reg_pat.be(i++, (byte)'$');
-;       reg_pat.be(i, NUL);
-;       if (nested != 0)
-;       {
-;           if (nested < 0)
-;               emsg(u8("E219: Missing {."));
-;           else
-;               emsg(u8("E220: Missing }."));
-;           reg_pat = null;
-;       }
-;       return reg_pat;
     ))
 
 ;; Version of read() that retries when interrupted by EINTR (possibly by a SIGWINCH).
@@ -87368,7 +86704,7 @@
             ;; If anything fails, make "screenLines" null, so we don't do anything!
             ;; Continuing with the old "screenLines" may result in a crash, because the size is wrong.
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                   win_free_lines(wp);
 ;           if (@aucmd_win != null)
@@ -87386,7 +86722,7 @@
 ;           boolean[] lwrs = new boolean[(int)@Rows];
 ;           short[] tpis = new short[(int)@Columns];
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                   win_alloc_lines(wp);
 ;           if (@aucmd_win != null && @aucmd_win.w_lines == null)
@@ -88537,7 +87873,7 @@
 ;       }
 ;       else
 ;       {
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;               tabcount++;
 
 ;           int tabwidth = ((int)@Columns - 1 + tabcount / 2) / tabcount;
@@ -88547,7 +87883,7 @@
 ;           int attr = attr_nosel;
 ;           tabcount = 0;
 ;           int scol = 0;
-;           for (tabpage_C tp = @first_tabpage; tp != null && col < (int)@Columns - 4; tp = tp.tp_next)
+;           for (tabpage_C tp = @first_tabpage; tp != null && col < (int)@Columns - 4; tp = null)
 ;           {
 ;               scol = col;
 
@@ -88632,7 +87968,7 @@
 ;           screen_fill(0, 1, col, (int)@Columns, c, c, attr_fill);
 
             ;; Put an "X" for closing the current tab if there are several.
-;           if (@first_tabpage.tp_next != null)
+;           if (null != null)
 ;           {
 ;               screen_putchar('X', 0, (int)@Columns - 1, attr_nosel);
 ;               @tabPageIdxs[(int)@Columns - 1] = -999;
@@ -89095,29 +88431,6 @@
 ;               win_goto_hor(false, Prenum1);
 ;               break;
 
-            ;; move window to new tab page
-;           case 'T':
-;               if (one_window())
-;                   msg(m_onlyone);
-;               else
-;               {
-;                   tabpage_C oldtab = @curtab;
-
-                    ;; First create a new tab with the window,
-                    ;; then go back to the old tab and close the window there.
-;                   window_C wp = @curwin;
-;                   if (win_new_tabpage((int)Prenum) == true && valid_tabpage(oldtab))
-;                   {
-;                       tabpage_C newtab = @curtab;
-;                       goto_tabpage_tp(oldtab, true, true);
-;                       if (@curwin == wp)
-;                           win_close(@curwin, false);
-;                       if (valid_tabpage(newtab))
-;                           goto_tabpage_tp(newtab, true, true);
-;                   }
-;               }
-;               break;
-
             ;; cursor to top-left window
 ;           case 't':
 ;           case Ctrl_T:
@@ -89391,10 +88704,6 @@
 
 (defn- #_boolean win_split [#_int size, #_int flags]
     (§
-        ;; When the ":tab" modifier was used open a new tab page instead.
-;       if (may_open_tabpage() == true)
-;           return true;
-
         ;; Add flags from ":vertical", ":topleft" and ":botright".
 ;       flags |= @cmdmod.split;
 ;       if ((flags & WSP_TOP) != 0 && (flags & WSP_BOT) != 0)
@@ -90554,7 +89863,7 @@
         ;; Also check windows in other tab pages.
 ;       for (tabpage_C tp = @first_tabpage, nexttp; tp != null; tp = nexttp)
 ;       {
-;           nexttp = tp.tp_next;
+;           nexttp = null;
 ;           if (tp != @curtab)
 ;               for (window_C wp = tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;                   if (wp.w_buffer == buf && !(wp.w_closing || wp.w_buffer.b_closing))
@@ -90580,7 +89889,7 @@
 
 (defn- #_boolean last_window []
     (§
-;       return (one_window() && @first_tabpage.tp_next == null);
+;       return (one_window() && null == null);
     ))
 
 ;; Return true if there is only one window other than "aucmd_win" in the current tab page.
@@ -90638,7 +89947,7 @@
 ;; Close window "win".  Only works for the current tab page.
 ;; If "free_buf" is true related buffer may be unloaded.
 ;;
-;; Called by :quit, :close, :xit, :wq and findtag().
+;; Called by :quit, :close, :xit and :wq.
 ;; Returns false when the window was not closed.
 
 (defn- #_boolean win_close [#_window_C win, #_boolean free_buf]
@@ -90775,7 +90084,7 @@
 
         ;; Careful: Autocommands may have closed the tab page or made it the current tab page.
 ;       tabpage_C ptp;
-;       for (ptp = @first_tabpage; ptp != null && ptp != tp; ptp = ptp.tp_next)
+;       for (ptp = @first_tabpage; ptp != null && ptp != tp; ptp = null)
         ;
 ;       if (ptp == null || tp == @curtab)
 ;           return;
@@ -90787,33 +90096,26 @@
 ;       if (wp == null)
 ;           return;
 
-;       boolean free_tp = false;
-
         ;; When closing the last window in a tab page remove the tab page.
 ;       if (tp == null ? @firstwin == @lastwin : tp.tp_firstwin == tp.tp_lastwin)
 ;       {
 ;           if (tp == @first_tabpage)
-;               @first_tabpage = tp.tp_next;
+;               @first_tabpage = null;
 ;           else
 ;           {
-;               for (ptp = @first_tabpage; ptp != null && ptp.tp_next != tp; ptp = ptp.tp_next)
+;               for (ptp = @first_tabpage; ptp != null && null != tp; ptp = null)
                 ;
 ;               if (ptp == null)
 ;               {
 ;                   emsg2(e_intern2, u8("win_close_othertab()"));
 ;                   return;
 ;               }
-;               ptp.tp_next = tp.tp_next;
 ;           }
-;           free_tp = true;
 ;       }
 
         ;; Free the memory used for the window.
 ;       int[] dir = new int[1];
 ;       win_free_mem(win, dir, tp);
-
-;       if (free_tp)
-;           free_tabpage(tp);
     ))
 
 ;; Free the memory used for a window.
@@ -91007,12 +90309,12 @@
 (defn- #_tabpage_C alt_tabpage []
     (§
         ;; Use the next tab page if possible.
-;       if (@curtab.tp_next != null)
-;           return @curtab.tp_next;
+;       if (null != null)
+;           return null;
 
 ;       tabpage_C tp;
         ;; Find the last but one tab page.
-;       for (tp = @first_tabpage; tp.tp_next != @curtab; tp = tp.tp_next)
+;       for (tp = @first_tabpage; null != @curtab; tp = null)
         ;
 ;       return tp;
     ))
@@ -91535,36 +90837,27 @@
 
 ;; Allocate the first window and put an empty buffer in it.
 ;; Called from main().
-;; Return false when something goes wrong (out of memory).
 
-(defn- #_boolean win_alloc_first []
+(defn- #_void win_alloc_first []
     (§
-;       if (win_alloc_firstwin(null) == false)
-;           return false;
+;       win_alloc_firstwin(null);
 
 ;       @first_tabpage = newTabpage();
 ;       @first_tabpage.tp_topframe = @topframe;
 ;       @curtab = @first_tabpage;
-
-;       return true;
     ))
 
-;; Allocate the first window or the first window in a new tab page.
+;; Allocate the first window.
 ;; When "oldwin" is null create an empty buffer for it.
 ;; When "oldwin" is not null copy info from it to the new window.
-;; Return false when something goes wrong (out of memory).
 
-(defn- #_boolean win_alloc_firstwin [#_window_C oldwin]
+(defn- #_void win_alloc_firstwin [#_window_C oldwin]
     (§
 ;       @curwin = newWindow(null, false);
 
 ;       if (oldwin == null)
 ;       {
-            ;; Very first window,
-            ;; need to create an empty buffer for it and initialize from scratch.
-;           @curbuf = buflist_new(null, 1L, BLN_LISTED);
-;           if (@curbuf == null)
-;               return false;
+;           @curbuf = newBuffer(1L);
 
 ;           @curwin.w_buffer = @curbuf;
 ;           @curbuf.b_nwindows = 1;          ;; there is one window
@@ -91586,8 +90879,6 @@
 ;       @topframe.fr_width = (int)@Columns;
 ;       @topframe.fr_height = (int)(@Rows - @p_ch);
 ;       @topframe.fr_win = @curwin;
-
-;       return true;
     ))
 
 ;; Create a frame for window "wp".
@@ -91625,123 +90916,17 @@
 ;       return tp;
     ))
 
-(defn- #_void free_tabpage [#_tabpage_C tp]
-    (§
-        
-    ))
-
-;; Create a new Tab page with one window.
-;; It will edit the current buffer, like after ":split".
-;; When "after" is 0 put it just after the current Tab page.
-;; Otherwise put it just before tab page "after".
-;; Return false or true.
-
-(defn- #_boolean win_new_tabpage [#_int after]
-    (§
-;       tabpage_C tp = @curtab;
-
-;       tabpage_C newtp = newTabpage();
-
-        ;; Remember the current windows in this Tab page.
-;       if (leave_tabpage(@curbuf, true) == false)
-;           return false;
-
-;       @curtab = newtp;
-
-        ;; Create a new empty window.
-;       if (win_alloc_firstwin(tp.tp_curwin) == true)
-;       {
-            ;; Make the new Tab page the new topframe.
-;           if (after == 1)
-;           {
-                ;; New tab page becomes the first one.
-;               newtp.tp_next = @first_tabpage;
-;               @first_tabpage = newtp;
-;           }
-;           else
-;           {
-;               if (0 < after)
-;               {
-                    ;; Put new tab page before tab page "after".
-;                   int n = 2;
-;                   for (tp = @first_tabpage; tp.tp_next != null && n < after; tp = tp.tp_next)
-;                       n++;
-;               }
-;               newtp.tp_next = tp.tp_next;
-;               tp.tp_next = newtp;
-;           }
-;           win_init_size();
-;           @firstwin.w_winrow = tabline_height();
-;           win_comp_scroll(@curwin);
-
-;           newtp.tp_topframe = @topframe;
-;           last_status(false);
-
-;           redraw_all_later(CLEAR);
-
-;           return true;
-;       }
-
-        ;; Failed, get back the previous Tab page.
-;       enter_tabpage(@curtab, @curbuf, true, true);
-;       return false;
-    ))
-
-;; Open a new tab page if ":tab cmd" was used.  It will edit the same buffer,
-;; like with ":split".
-;; Returns true if a new tab page was created, false otherwise.
-
-(defn- #_boolean may_open_tabpage []
-    (§
-;       int n = (@cmdmod.tab == 0) ? @postponed_split_tab : @cmdmod.tab;
-;       if (n != 0)
-;       {
-;           @cmdmod.tab = 0;     ;; reset it to avoid doing it twice
-;           @postponed_split_tab = 0;
-;           return win_new_tabpage(n);
-;       }
-
-;       return false;
-    ))
-
 ;; Return true when "tpc" points to a valid tab page.
 
 (defn- #_boolean valid_tabpage [#_tabpage_C tpc]
     (§
 ;       tabpage_C tp;
 
-;       for (tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tp = @first_tabpage; tp != null; tp = null)
 ;           if (tp == tpc)
 ;               return true;
 
 ;       return false;
-    ))
-
-;; Find tab page "n" (first one is 1).  Returns null when not found.
-
-(defn- #_tabpage_C find_tabpage [#_int n]
-    (§
-;       tabpage_C tp;
-;       int i = 1;
-
-;       for (tp = @first_tabpage; tp != null && i != n; tp = tp.tp_next)
-;           i++;
-
-;       return tp;
-    ))
-
-;; Get index of tab page "tp".  First one has index 1.
-;; When not found returns number of tab pages plus one.
-
-(defn- #_int tabpage_index [#_tabpage_C ftp]
-    (§
-;       tabpage_C tp;
-;       int i = 1;
-
-;       for (tp = @first_tabpage; tp != null && tp != ftp; tp = tp.tp_next)
-;           i++;
-
-;       return i;
     ))
 
 ;; Prepare for leaving the current tab page.
@@ -91812,70 +90997,6 @@
 ;       redraw_all_later(CLEAR);
     ))
 
-;; Go to tab page "n".  For ":tab N" and "Ngt".
-;; When "n" is 9999 go to the last tab page.
-
-(defn- #_void goto_tabpage [#_int n]
-    (§
-;       if (text_locked())
-;       {
-            ;; Not allowed when editing the command line.
-;           if (@cmdwin_type != 0)
-;               emsg(e_cmdwin);
-;           else
-;               emsg(e_secure);
-;           return;
-;       }
-
-        ;; If there is only one it can't work.
-;       if (@first_tabpage.tp_next == null)
-;       {
-;           if (1 < n)
-;               beep_flush();
-;           return;
-;       }
-
-;       tabpage_C tp = null;	// %% anno dunno
-
-;       if (n == 0)
-;       {
-            ;; No count, go to next tab page, wrap around end.
-;           if (@curtab.tp_next == null)
-;               tp = @first_tabpage;
-;           else
-;               tp = @curtab.tp_next;
-;       }
-;       else if (n < 0)
-;       {
-            ;; "gT": go to previous tab page, wrap around end.  "N gT" repeats this N times.
-;           tabpage_C ttp = @curtab;
-;           for (int i = n; i < 0; i++)
-;           {
-;               for (tp = @first_tabpage; tp.tp_next != ttp && tp.tp_next != null; tp = tp.tp_next)
-                ;
-;               ttp = tp;
-;           }
-;       }
-;       else if (n == 9999)
-;       {
-            ;; Go to last tab page.
-;           for (tp = @first_tabpage; tp.tp_next != null; tp = tp.tp_next)
-            ;
-;       }
-;       else
-;       {
-            ;; Go to tab page "n".
-;           tp = find_tabpage(n);
-;           if (tp == null)
-;           {
-;               beep_flush();
-;               return;
-;           }
-;       }
-
-;       goto_tabpage_tp(tp, true, true);
-    ))
-
 ;; Go to tabpage "tp".
 ;; Only trigger *Enter autocommands when trigger_enter_autocmds is true.
 ;; Only trigger *Leave autocommands when trigger_leave_autocmds is true.
@@ -91904,48 +91025,6 @@
 
 ;       if (@curtab == tp && win_valid(wp))
 ;           win_enter(wp, true);
-    ))
-
-;; Move the current tab page to before tab page "nr".
-
-(defn- #_void tabpage_move [#_int nr]
-    (§
-;       if (@first_tabpage.tp_next == null)
-;           return;
-
-;       int n = nr;
-
-        ;; Remove the current tab page from the list of tab pages.
-;       if (@curtab == @first_tabpage)
-;           @first_tabpage = @curtab.tp_next;
-;       else
-;       {
-;           tabpage_C tp;
-;           for (tp = @first_tabpage; tp != null; tp = tp.tp_next)
-;               if (tp.tp_next == @curtab)
-;                   break;
-;           if (tp == null) ;; "cannot happen"
-;               return;
-;           tp.tp_next = @curtab.tp_next;
-;       }
-
-        ;; Re-insert it at the specified position.
-;       if (n <= 0)
-;       {
-;           @curtab.tp_next = @first_tabpage;
-;           @first_tabpage = @curtab;
-;       }
-;       else
-;       {
-;           tabpage_C tp;
-;           for (tp = @first_tabpage; tp.tp_next != null && 1 < n; tp = tp.tp_next)
-;               --n;
-;           @curtab.tp_next = tp.tp_next;
-;           tp.tp_next = @curtab;
-;       }
-
-        ;; Need to redraw the tabline.  Tab page contents doesn't change.
-;       @redraw_tabline = true;
     ))
 
 ;; Go to another window.
@@ -92162,53 +91241,6 @@
 ;           win_setwidth((int)@p_wiw);
 
 ;       setmouse();                 ;; in case jumped to/from help buffer
-    ))
-
-;; Jump to the first open window that contains buffer "buf", if one exists.
-;; Returns a pointer to the window found, otherwise null.
-
-(defn- #_window_C buf_jump_open_win [#_buffer_C buf]
-    (§
-;       window_C wp = null;
-
-;       if (@curwin.w_buffer == buf)
-;           wp = @curwin;
-;       else
-;           for (wp = @firstwin; wp != null; wp = wp.w_next)
-;               if (wp.w_buffer == buf)
-;                   break;
-;       if (wp != null)
-;           win_enter(wp, false);
-
-;       return wp;
-    ))
-
-;; Jump to the first open window in any tab page that contains buffer "buf", if one exists.
-;; Returns a pointer to the window found, otherwise null.
-
-(defn- #_window_C buf_jump_open_tab [#_buffer_C buf]
-    (§
-;       window_C wp = buf_jump_open_win(buf);
-
-;       if (wp != null)
-;           return wp;
-
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
-;           if (tp != @curtab)
-;           {
-;               for (wp = tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   if (wp.w_buffer == buf)
-;                       break;
-;               if (wp != null)
-;               {
-;                   goto_tabpage_win(tp, wp);
-;                   if (@curwin != wp)
-;                       wp = null;  ;; something went wrong
-;                   break;
-;               }
-;           }
-
-;       return wp;
     ))
 
 ;; Allocate a window structure and link it in the window list when "hidden" is false.
@@ -93400,12 +92432,7 @@
 
 (defn- #_int tabline_height []
     (§
-;       switch ((int)@p_stal)
-;       {
-;           case 0: return 0;
-;           case 1: return (@first_tabpage.tp_next != null) ? 1 : 0;
-;       }
-;       return 1;
+;       return (null != null) ? 1 : 0;
     ))
 
 ;; Check if the "://" of a URL is at the pointer, return URL_SLASH.
@@ -93477,7 +92504,7 @@
 
 ;       int total = 0;
 
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;       {
 ;           int n = frame_minheight(tp.tp_topframe, null);
 ;           if (total < n)
@@ -93497,7 +92524,7 @@
 ;       int count = 0;
 
         ;; If there is another tab page there always is another window.
-;       if (@first_tabpage.tp_next != null)
+;       if (null != null)
 ;           return false;
 
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
@@ -93513,7 +92540,7 @@
 
 (defn- #_void check_lnums [#_boolean do_curwin]
     (§
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
+;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
 ;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
 ;               if ((do_curwin || wp != @curwin) && wp.w_buffer == @curbuf)
 ;               {
