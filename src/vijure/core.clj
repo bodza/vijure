@@ -3520,7 +3520,7 @@
 (defn- #_window_C set-init-1 [#_window_C win]
     ;; Set all the options (except the terminal options) to their default value.
     ;; Also set the global value for local options.
-    (set-options-default)
+    (set-options-default win)
     (let [win (didset-options win)]
         (fill-breakat-flags)
         (init-chartab true)
@@ -3531,23 +3531,23 @@
 ;; Set an option to its default value.
 ;; This does not take care of side effects!
 
-(defn- #_void set-option-default [#_vimoption_C v]
-    (let [#_Object' varp (get-varp v)]
+(defn- #_void set-option-default [#_window_C win, #_vimoption_C v]
+    (let [#_Object' varp (get-varp win, v)]
         (cond
-            (flag? (:flags v) P_STRING)                                                      (reset! varp (STRDUP (#_Bytes object (:def_val v))))
-            (flag? (:flags v) P_NUM) (if (== (:indir v) PV_SCROLL) (win-comp-scroll @curwin) (reset! varp (long (:def_val v))))
-            (flag? (:flags v) P_BOOL)                                                        (reset! varp (boolean (:def_val v)))
+            (flag? (:flags v) P_STRING)                                                  (reset! varp (STRDUP (#_Bytes object (:def_val v))))
+            (flag? (:flags v) P_NUM) (if (== (:indir v) PV_SCROLL) (win-comp-scroll win) (reset! varp (long (:def_val v))))
+            (flag? (:flags v) P_BOOL)                                                    (reset! varp (boolean (:def_val v)))
         ))
     nil)
 
 ;; Set all options (except terminal options) to their default value.
 
-(defn- #_void set-options-default []
+(defn- #_void set-options-default [#_window_C win]
     (doseq [#_vimoption_C v vimoptions]
-        (set-option-default v))
+        (set-option-default win, v))
     ;; The 'scroll' option must be computed for all windows.
-    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-        (win-comp-scroll win))
+    (loop-when-recur [#_window_C w @firstwin] (some? w) [(:w_next w)]
+        (win-comp-scroll w))
     nil)
 
 ;; Parse "arg" for option settings.
@@ -3588,7 +3588,7 @@
                                             [arg nil])
                                 ] (not ?) => [win arg ?]
 
-                                    (let [#_Object' varp (get-varp v)]
+                                    (let [#_Object' varp (get-varp win, v)]
                                         (cond (or (== nextchar (byte \?)) (and (== prefix 1) (nil? (vim-strchr (u8 "=:&<"), nextchar)) (non-flag? (:flags v) P_BOOL)))
                                             (do ;; print value
                                                 (if @a'did_show
@@ -3596,7 +3596,7 @@
                                                     (do (gotocmdline true)          ;; cursor at status line
                                                         (reset! a'did_show true)    ;; remember that we did a line
                                                     ))
-                                                (showoneopt v)
+                                                (showoneopt win, v)
                                                 [win arg (when (and (!= nextchar (byte \?)) (!= nextchar NUL) (not (vim-iswhite afterchar))) e_trailing)])
 
                                         (flag? (:flags v) P_BOOL)
@@ -4112,9 +4112,9 @@
 
 ;; Show the value of one option.
 
-(defn- #_void showoneopt [#_vimoption_C v]
+(defn- #_void showoneopt [#_window_C win, #_vimoption_C v]
     (reset! info_message true)
-    (let [#_Object' varp (get-varp v)]
+    (let [#_Object' varp (get-varp win, v)]
         (if (and (flag? (:flags v) P_BOOL) (not (boolean @varp)))
             (msg-puts (u8 "no"))
             (msg-puts (u8 "  ")))
@@ -4162,8 +4162,8 @@
 
 ;; Get pointer to option variable.
 
-(defn- #_Object' get-varp [#_vimoption_C v]
-    (let [wops (:w_options @curwin)]
+(defn- #_Object' get-varp [#_window_C win, #_vimoption_C v]
+    (let [wops (:w_options win)]
         (condp == (:indir v)
             PV_BRI    (:wo_bri wops)
             PV_BRIOPT (:wo_briopt wops)
@@ -16446,7 +16446,7 @@
 
 ;       public long regexec_multi(matcher_C matcher, long lnum, int col, long nsec)
 ;       {
-; %%        ((ß RETURN) (bt-regexec-multi matcher, lnum, col, nsec))
+; %%        ((ß RETURN) (bt-regexec-multi matcher, lnum, col, nsec, @curwin))
 ;       }
 ;   };
 
@@ -16459,7 +16459,7 @@
 
 ;       public long regexec_multi(matcher_C matcher, long lnum, int col, long nsec)
 ;       {
-; %%        ((ß RETURN) (nfa-regexec-multi matcher, lnum, col, nsec))
+; %%        ((ß RETURN) (nfa-regexec-multi matcher, lnum, col, nsec, @curwin))
 ;       }
 ;   };
 
@@ -18327,7 +18327,7 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long bt-regexec-multi [#_matcher_C matcher, #_long lnum, #_int col, #_long nsec]
+(defn- #_long bt-regexec-multi [#_matcher_C matcher, #_long lnum, #_int col, #_long nsec, #_window_C win]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
@@ -18432,7 +18432,7 @@
                 ((ß int c =) (us-ptr2char @regline, col))
                 (cond (or (== (:regstart prog) NUL) (== (:regstart prog) c) (and @ireg_icase (or (== (utf-fold (:regstart prog)) (utf-fold c)) (and (< c 255) (< (:regstart prog) 255) (== (utf-tolower (:regstart prog)) (utf-tolower c))))))
                 (do
-                    ((ß retval =) (bt-regtry prog, col))
+                    ((ß retval =) (bt-regtry prog, col, win))
                 )
                 :else
                 (do
@@ -18461,7 +18461,7 @@
                         (ß BREAK)
                     )
 
-                    ((ß retval =) (bt-regtry prog, col))
+                    ((ß retval =) (bt-regtry prog, col, win))
                     (if (< 0 retval)
                         (ß BREAK)
                     )
@@ -18513,12 +18513,12 @@
 ;; Try match of "prog" with at regline[col].
 ;; Returns 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long bt-regtry [#_bt_regprog_C prog, #_int col]
+(defn- #_long bt-regtry [#_bt_regprog_C prog, #_int col, #_window_C win]
     (§
         (reset! reginput (.plus @regline col))
         (cleanup-subexpr)
 
-        (if (not (bt-regmatch (.plus (:program prog) 1)))
+        (if (not (bt-regmatch (.plus (:program prog) 1), win))
             ((ß RETURN) 0)
         )
 
@@ -18545,12 +18545,12 @@
 
 ;; Return true if the current reginput position matches the Visual area.
 
-(defn- #_boolean reg-match-visual []
+(defn- #_boolean reg-match-visual [#_window_C win]
     (if (zero? (:lnum @VIsual_cursor))
         false
         (let-when [[#_pos_C top #_pos_C bot #_int mode]
                 (if @VIsual_active
-                    (let [v @VIsual_cursor c (:w_cursor @curwin) m @VIsual_mode]
+                    (let [v @VIsual_cursor c (:w_cursor win) m @VIsual_mode]
                         (if (ltpos v, c) [v c m] [c v m]))
                     (let [v (:b_visual @curbuf) s (:vi_start v) e (:vi_end v) m (:vi_mode v)]
                         (if (ltpos s, e) [s e m] [e s m])
@@ -18565,13 +18565,13 @@
                              (or (!= lnum (:lnum bot)) (< col (+ (:col bot) (if (not-at? @p_sel (byte \e)) 1 0))))
                         ))
                 Ctrl_V
-                    (let [a's1 (atom (int)) a'e1 (atom (int)) _ (getvvcol @curwin, top, a's1, nil, a'e1)
-                          a's2 (atom (int)) a'e2 (atom (int)) _ (getvvcol @curwin, bot, a's2, nil, a'e2)]
+                    (let [a's1 (atom (int)) a'e1 (atom (int)) _ (getvvcol win, top, a's1, nil, a'e1)
+                          a's2 (atom (int)) a'e2 (atom (int)) _ (getvvcol win, bot, a's2, nil, a'e2)]
                         (reset! a's1 (min @a's1 @a's2))
                         (reset! a'e1 (max @a'e2 @a'e1))
                         (when (or (== (:col top) MAXCOL) (== (:col bot) MAXCOL))
                             (reset! a'e1 MAXCOL))
-                        (let [#_int cols (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))]
+                        (let [#_int cols (win-linetabsize win, @regline, (BDIFF @reginput, @regline))]
                             (<= @a's1 cols (- @a'e1 (if (at? @p_sel (byte \e)) 1 0)))
                         ))
                 true
@@ -18610,7 +18610,7 @@
 ;; Returns false when there is no match.
 ;; Leaves "reginput" and "reglnum" in an undefined state!
 
-(defn- #_boolean bt-regmatch [#_Bytes scan]
+(defn- #_boolean bt-regmatch [#_Bytes scan, #_window_C win]
     ;; scan: Current node.
     (§
         (ß int status)                 ;; one of the RA_ values above
@@ -18656,10 +18656,10 @@
                         BT_EOF  (if (or (!= @reglnum @reg_lmax) (!= c NUL))                             RA_NIL status)
 
                         BT_CURSOR ;; compare the cursor position to the match position
-                            (if (or (!= (+ @reglnum @reg_lmin) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NIL status)
+                            (if (or (!= (+ @reglnum @reg_lmin) (:lnum (:w_cursor win))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor win)))) RA_NIL status)
 
                         BT_MARK ;; compare the mark position to the match position
-                            (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark @curwin, mark)]
+                            (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark win, mark)]
                                 (if (or (nil? pos) (< (:lnum pos) 1)
                                         (if (== (:lnum pos) (+ @reglnum @reg_lmin))
                                             (if (== (:col pos) (BDIFF @reginput, @regline))
@@ -18670,11 +18670,11 @@
                                 ))
 
                         BT_VISUAL
-                            (if (not (reg-match-visual)) RA_NIL status)
+                            (if (not (reg-match-visual win)) RA_NIL status)
 
-                        BT_LNUM (if (not (re-num-cmp (+ @reglnum @reg_lmin), scan))                                                 RA_NIL status)
-                        BT_COL  (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                      RA_NIL status)
-                        BT_VCOL (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
+                        BT_LNUM (if (not (re-num-cmp (+ @reglnum @reg_lmin), scan))                                             RA_NIL status)
+                        BT_COL  (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                  RA_NIL status)
+                        BT_VCOL (if (not (re-num-cmp (inc (win-linetabsize win, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
 
                         BT_BOW ;; \<word; reginput points to w
                             (if (== c NUL) ;; can't match at end of line
@@ -23103,7 +23103,7 @@
 ;; Recursively call nfa-regmatch().
 ;; "pim" is null or contains info about a Postponed Invisible Match (start position).
 
-(defn- #_[nfa_regprog_C int] recursive-regmatch [#_nfa_regprog_C prog, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C submatch, #_regsubs_C m]
+(defn- #_[nfa_regprog_C int] recursive-regmatch [#_nfa_regprog_C prog, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C submatch, #_regsubs_C m, #_window_C win]
     (let [o'reglnum @reglnum o'reginput_col (BDIFF @reginput, @regline) o'nfa_match @nfa_match o'nfa_listid @nfa_listid o'nfa_endp @nfa_endp]
         (when (some? pim) ;; start at the position where the postponed match was
             (reset! reginput (.plus @regline (:col (:np_end_pos pim)))))
@@ -23155,7 +23155,7 @@
               ;; Call nfa-regmatch() to check if the current concat matches at this position.
               ;; The concat ends with the node NFA_END_INVISIBLE.
               _ (reset! nfa_endp endp)
-              #_int ? (nfa-regmatch prog, (.out0 state), submatch, m)
+              #_int ? (nfa-regmatch prog, (.out0 state), submatch, m, win)
               prog
                 (if (some? o'listids)
                     (nfa-restore-listids prog, o'listids)
@@ -23328,7 +23328,7 @@
 ;; When there is a match "submatch" contains the positions.
 ;; Note: Caller must ensure that: start != null.
 
-(defn- #_int nfa-regmatch [#_nfa_regprog_C prog, #_nfa_state_C start, #_regsubs_C submatch, #_regsubs_C m]
+(defn- #_int nfa-regmatch [#_nfa_regprog_C prog, #_nfa_state_C start, #_regsubs_C submatch, #_regsubs_C m, #_window_C win]
     (§
         ((ß boolean toplevel =) (== (:c start) NFA_MOPEN))
 
@@ -23471,7 +23471,7 @@
 
                                 ;; First try matching the invisible match, then what follows.
 
-                                ((ß [prog #_int result] =) (recursive-regmatch prog, (:th_state thread), nil, submatch, m))
+                                ((ß [prog #_int result] =) (recursive-regmatch prog, (:th_state thread), nil, submatch, m, win))
                                 (when (== result NFA_TOO_EXPENSIVE)
                                     (reset! nfa_match result)
                                     ((ß RETURN) @nfa_match)
@@ -23537,7 +23537,7 @@
                             (copy-sub-off m, (:th_subs thread))
 
                             ;; First try matching the pattern.
-                            ((ß [prog #_int result] =) (recursive-regmatch prog, (:th_state thread), nil, submatch, m))
+                            ((ß [prog #_int result] =) (recursive-regmatch prog, (:th_state thread), nil, submatch, m, win))
                             (when (== result NFA_TOO_EXPENSIVE)
                                 (reset! nfa_match result)
                                 ((ß RETURN) @nfa_match)
@@ -24223,7 +24223,7 @@
                                 ((ß int ts =) (max 4 (int @(:b_p_ts @curbuf))))
                                 ((ß result =) (< (* (:val (:th_state thread)) ts) col))
                             )
-                            ((ß result =) (if (not result) (nfa-re-num-cmp (:val (:th_state thread)), op, (inc (long (win-linetabsize @curwin, @regline, col)))) result))
+                            ((ß result =) (if (not result) (nfa-re-num-cmp (:val (:th_state thread)), op, (inc (long (win-linetabsize win, @regline, col)))) result))
                             (when result
                                 ((ß add_here =) true)
                                 ((ß add_state =) (.. thread state (out0)))
@@ -24233,7 +24233,7 @@
 
                        [NFA_MARK NFA_MARK_GT NFA_MARK_LT]
                         (do
-                            ((ß pos_C pos =) (getmark @curwin, (:val (:th_state thread))))
+                            ((ß pos_C pos =) (getmark win, (:val (:th_state thread))))
 
                             ;; Compare the mark position to the match position.
                             ((ß boolean result =) (and (some? pos) (< 0 (:lnum pos)) (if (== (:lnum pos) (+ @reglnum @reg_lmin)) (if (== (:col pos) (BDIFF @reginput, @regline)) (== (:c (:th_state thread)) NFA_MARK) (if (< (:col pos) (BDIFF @reginput, @regline)) (== (:c (:th_state thread)) NFA_MARK_GT) (== (:c (:th_state thread)) NFA_MARK_LT))) (if (< (:lnum pos) (+ @reglnum @reg_lmin)) (== (:c (:th_state thread)) NFA_MARK_GT) (== (:c (:th_state thread)) NFA_MARK_LT)))))
@@ -24246,7 +24246,7 @@
 
                         NFA_CURSOR
                         (do
-                            ((ß boolean result =) (and (== (+ @reglnum @reg_lmin) (:lnum (:w_cursor @curwin))) (== (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))))
+                            ((ß boolean result =) (and (== (+ @reglnum @reg_lmin) (:lnum (:w_cursor win))) (== (BDIFF @reginput, @regline) (:col (:w_cursor win)))))
                             (when result
                                 ((ß add_here =) true)
                                 ((ß add_state =) (.. thread state (out0)))
@@ -24256,7 +24256,7 @@
 
                         NFA_VISUAL
                         (do
-                            ((ß boolean result =) (reg-match-visual))
+                            ((ß boolean result =) (reg-match-visual win))
                             (when result
                                 ((ß add_here =) true)
                                 ((ß add_state =) (.. thread state (out0)))
@@ -24301,7 +24301,7 @@
                             (ß int result)
                             (cond (== (:np_result pim) NFA_PIM_TODO)
                             (do
-                                ((ß [prog result] =) (recursive-regmatch prog, (:np_state pim), pim, submatch, m))
+                                ((ß [prog result] =) (recursive-regmatch prog, (:np_state pim), pim, submatch, m, win))
                                 ((ß pim =) (assoc pim :np_result (if (!= result FALSE) NFA_PIM_MATCH NFA_PIM_NOMATCH)))
                                 ;; for \@! and \@<! it is a match when the result is false
                                 (when (!= (!= result FALSE) (any == (:c (:np_state pim)) NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
@@ -24426,7 +24426,7 @@
 ;; Try match of "prog" with at regline[col].
 ;; Returns <= 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long nfa-regtry [#_nfa_regprog_C prog, #_int col, #_long nsec]
+(defn- #_long nfa-regtry [#_nfa_regprog_C prog, #_int col, #_long nsec, #_window_C win]
     ;; nsec: timeout limit or 0
     (§
         (reset! reginput (.plus @regline col))
@@ -24435,7 +24435,7 @@
 
         ((ß regsubs_C subs =) (new-regsubs))
 
-        ((ß int result =) (nfa-regmatch prog, (:start prog), subs, (new-regsubs)))
+        ((ß int result =) (nfa-regmatch prog, (:start prog), subs, (new-regsubs), win))
         (cond (== result FALSE)
         (do
             ((ß RETURN) 0)
@@ -24571,7 +24571,7 @@
 ;;
 ;; FIXME if this behavior is not compatible.
 
-(defn- #_long nfa-regexec-multi [#_matcher_C matcher, #_long lnum, #_int col, #_long nsec]
+(defn- #_long nfa-regexec-multi [#_matcher_C matcher, #_long lnum, #_int col, #_long nsec, #_window_C win]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
@@ -24653,7 +24653,7 @@
             ((ß state.lastlist[1] =) 0)
         )
 
-        ((ß long retval =) (nfa-regtry prog, @a'col, nsec))
+        ((ß long retval =) (nfa-regtry prog, @a'col, nsec, win))
 
         ((ß nfa_regengine.expr =) nil)
 
