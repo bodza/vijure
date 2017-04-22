@@ -1257,17 +1257,6 @@
 
 ;; option.h: definition of global variables for settable options
 
-;; Default values for "b_p_ff" 'fileformat'.
-(final Bytes FF_DOS       (u8 "dos"))
-(final Bytes FF_MAC       (u8 "mac"))
-(final Bytes FF_UNIX      (u8 "unix"))
-
-;; end-of-line style
-(final int EOL_UNKNOWN    -1)       ;; not defined yet
-(final int EOL_UNIX       0)        ;; NL
-(final int EOL_DOS        1)        ;; CR NL
-(final int EOL_MAC        2)        ;; CR
-
 ;; Formatting options for "p_fo" 'formatoptions'.
 (final byte
     FO_WRAP         \t,
@@ -1506,7 +1495,6 @@
 
 (atom! Bytes   p_ead)       ;; 'eadirection'
 (atom! boolean p_ea)        ;; 'equalalways'
-(atom! Bytes   p_ep)        ;; 'equalprg'
 (atom! boolean p_eb)        ;; 'errorbells'
 (atom! boolean p_ek)        ;; 'esckeys'
 (atom! boolean p_fs)        ;; 'fsync'
@@ -1639,7 +1627,7 @@
 
     BV_BIN    2,
 
-    BV_BOMB   4,
+
     BV_CI     5,
     BV_CIN    6,
     BV_CINK   7,
@@ -1647,12 +1635,12 @@
     BV_CINW   9,
     BV_CM    10,
     BV_COM   11,
-    BV_EOL   12,
-    BV_EP    13,
+
+
     BV_ET    14,
 
 
-    BV_FF    17,
+
     BV_FLP   18,
     BV_FO    19,
 
@@ -2631,16 +2619,13 @@
         (field boolean      b_p_ai_nopaste)     ;; "b_p_ai" saved for paste mode
         (atom' boolean      b_p_ci)             ;; 'copyindent'
         (atom' boolean      b_p_bin)            ;; 'binary'
-        (atom' boolean      b_p_bomb)           ;; 'bomb'
         (atom' boolean      b_p_cin)            ;; 'cindent'
         (atom' Bytes        b_p_cino)           ;; 'cinoptions'
         (atom' Bytes        b_p_cink)           ;; 'cinkeys'
         (atom' Bytes        b_p_cinw)           ;; 'cinwords'
         (atom' Bytes        b_p_com)            ;; 'comments'
-        (atom' boolean      b_p_eol)            ;; 'endofline'
         (atom' boolean      b_p_et)             ;; 'expandtab'
         (field boolean      b_p_et_nobin)       ;; "b_p_et" saved for binary mode
-        (atom' Bytes        b_p_ff)             ;; 'fileformat'
         (atom' Bytes        b_p_fo)             ;; 'formatoptions'
         (atom' Bytes        b_p_flp)            ;; 'formatlistpat'
         (atom' boolean      b_p_inf)            ;; 'infercase'
@@ -2667,7 +2652,6 @@
         (field long         b_p_wm_nopaste)     ;; "b_p_wm" saved for paste mode
 
         ;; local values for options which are normally global
-        (atom' Bytes        b_p_ep)             ;; 'equalprg' local value
         (atom' long         b_p_ul)             ;; 'undolevels' local value
         (atom' boolean      b_p_udf)            ;; 'undofile'
         (atom' Bytes        b_p_lw)             ;; 'lispwords' local value
@@ -2713,10 +2697,7 @@
 
 ; %%    (field long         b_no_eol_lnum)      ;; non-zero lnum when last line of next binary write should not have an end-of-line
 
-; %%    (field boolean      b_start_eol)        ;; last line had eol when it was read
-; %%    (field int          b_start_ffc)        ;; first char of 'ff' when edit started
 ; %%    (field int          b_bad_char)         ;; "++bad=" argument when edit started or 0
-; %%    (field boolean      b_start_bomb)       ;; 'bomb' when it was read
 
 ; %%    (field boolean      b_did_warn)         ;; set to true if user has been warned on first change of a read-only file
 
@@ -8819,7 +8800,7 @@
 
     PV_BIN  16386,    ;; opt_buf(BV_BIN),
 
-    PV_BOMB 16388,    ;; opt_buf(BV_BOMB),
+
     PV_CI   16389,    ;; opt_buf(BV_CI),
     PV_CIN  16390,    ;; opt_buf(BV_CIN),
     PV_CINK 16391,    ;; opt_buf(BV_CINK),
@@ -8827,12 +8808,12 @@
     PV_CINW 16393,    ;; opt_buf(BV_CINW),
     PV_CM   20490,    ;; opt_both(opt_buf(BV_CM)),
     PV_COM  16395,    ;; opt_buf(BV_COM),
-    PV_EOL  16396,    ;; opt_buf(BV_EOL),
-    PV_EP   20493,    ;; opt_both(opt_buf(BV_EP)),
+
+
     PV_ET   16398,    ;; opt_buf(BV_ET),
 
 
-    PV_FF   16401,    ;; opt_buf(BV_FF),
+
     PV_FLP  16402,    ;; opt_buf(BV_FLP),
     PV_FO   16403,    ;; opt_buf(BV_FO),
 
@@ -8900,16 +8881,13 @@
 
 (atom! boolean p_ai)
 (atom! boolean p_bin)
-(atom! boolean p_bomb)
 (atom! boolean p_ci)
 (atom! boolean p_cin)
 (atom! Bytes   p_cink)
 (atom! Bytes   p_cino)
 (atom! Bytes   p_cinw)
 (atom! Bytes   p_com)
-(atom! boolean p_eol)
 (atom! boolean p_et)
-(atom! Bytes   p_ff)
 (atom! Bytes   p_fo)
 (atom! Bytes   p_flp)
 (atom! long    p_iminsert)
@@ -9040,7 +9018,6 @@
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "binary"),         (u8 "bin"),       P_RSTAT,                     p_bin,       PV_BIN,     false),
-        (bool_opt (u8 "bomb"),            null,            P_RSTAT,                     p_bomb,      PV_BOMB,    false),
         (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   PV_NONE,   (u8 " \t!@*-+;:,./?")),
         (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      VAR_WIN,     PV_BRI,     false),
         (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     VAR_WIN,     PV_BRIOPT, (u8 "")),
@@ -9066,13 +9043,10 @@
         (bool_opt (u8 "digraph"),        (u8 "dg"),        0,                           p_dg,        PV_NONE,    false),
         (utf8_opt (u8 "display"),        (u8 "dy"),     (| P_COMMA P_RALL P_NODUP),     p_dy,        PV_NONE,   (u8 "")),
         (utf8_opt (u8 "eadirection"),    (u8 "ead"),       0,                           p_ead,       PV_NONE,   (u8 "both")),
-        (bool_opt (u8 "endofline"),      (u8 "eol"),       P_RSTAT,                     p_eol,       PV_EOL,     true),
         (bool_opt (u8 "equalalways"),    (u8 "ea"),        P_RALL,                      p_ea,        PV_NONE,    true),
-        (utf8_opt (u8 "equalprg"),       (u8 "ep"),        P_SECURE,                    p_ep,        PV_EP,     (u8 "")),
         (bool_opt (u8 "errorbells"),     (u8 "eb"),        0,                           p_eb,        PV_NONE,    false),
         (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        PV_NONE,    true),
         (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           p_et,        PV_ET,      false),
-        (utf8_opt (u8 "fileformat"),     (u8 "ff"),     (| P_RSTAT P_CURSWANT),         p_ff,        PV_FF,     (u8 "unix")),
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       PV_NONE,   (u8 "vert:|,fold:-")),
         (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
         (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
@@ -9276,7 +9250,6 @@
     p_ambw_values   [ (u8 "single"), (u8 "double"), null ],
     p_bg_values     [ (u8 "light"), (u8 "dark"), null ],
     p_nf_values     [ (u8 "octal"), (u8 "hex"), (u8 "alpha"), null ],
-    p_ff_values     [ FF_UNIX, FF_DOS, FF_MAC, null ],
     p_mousem_values [ (u8 "extend"), (u8 "popup"), (u8 "popup_setpos"), (u8 "mac"), null ],
     p_sel_values    [ (u8 "inclusive"), (u8 "exclusive"), (u8 "old"), null ],
     p_slm_values    [ (u8 "mouse"), (u8 "key"), (u8 "cmd"), null ],
@@ -10301,7 +10274,6 @@
 
 (defn- #_void check_buf_options [#_buffer_C buf]
     (§
-;       check_string_option(buf.b_p_ff);
 ;       check_string_option(buf.b_p_kp);
 ;       check_string_option(buf.b_p_mps);
 ;       check_string_option(buf.b_p_fo);
@@ -10314,7 +10286,6 @@
 ;       check_string_option(buf.b_p_cino);
 ;       parse_cino(buf);
 ;       check_string_option(buf.b_p_cinw);
-;       check_string_option(buf.b_p_ep);
 ;       check_string_option(buf.b_p_lw);
     ))
 
@@ -10560,25 +10531,6 @@
 ;           }
 ;           else
 ;               errmsg = e_invarg;
-;       }
-
-        ;; 'fileformat'
-;       else if (gvarp == p_ff)
-;       {
-;           if (!@curbuf.@b_p_ma && (opt_flags & OPT_GLOBAL) == 0)
-;               errmsg = e_modifiable;
-;           else if (check_opt_strings(varp[0], p_ff_values, false) != true)
-;               errmsg = e_invarg;
-;           else
-;           {
-;               redraw_titles();
-                ;; update flag in swap file
-;               ml_setflags(@curbuf);
-                ;; Redraw needed when switching to/from "mac":
-                ;; a CR in the text will be displayed differently.
-;               if (get_fileformat(@curbuf) == EOL_MAC || oldval.at(0) == (byte)'m')
-;                   redraw_curbuf_later(NOT_VALID);
-;           }
 ;       }
 
         ;; 'matchpairs'
@@ -11293,16 +11245,6 @@
 
         ;; when 'modifiable' is changed, redraw the window title
 ;       else if (varp == @curbuf.b_p_ma)
-;       {
-;           redraw_titles();
-;       }
-        ;; when 'endofline' is changed, redraw the window title
-;       else if (varp == @curbuf.b_p_eol)
-;       {
-;           redraw_titles();
-;       }
-        ;; when 'bomb' is changed, redraw the window title and tab page text
-;       else if (varp == @curbuf.b_p_bomb)
 ;       {
 ;           redraw_titles();
 ;       }
@@ -12294,7 +12236,6 @@
 ;       {
 ;           switch (v.indir)
 ;           {
-;               case PV_EP:   return @curbuf.b_p_ep;
 ;               case PV_KP:   return @curbuf.b_p_kp;
 ;               case PV_LW:   return @curbuf.b_p_lw;
 ;               case PV_STL:  return @curwin.w_onebuf_opt.wo_stl;
@@ -12321,7 +12262,6 @@
 ;           case PV_NONE:   return v.var;
 
             ;; global option with local value: use local value if it's been set
-;           case PV_EP:     return (@curbuf.@b_p_ep.at(0) != NUL)          ? @curbuf.b_p_ep : v.var;
 ;           case PV_KP:     return (@curbuf.@b_p_kp.at(0) != NUL)          ? @curbuf.b_p_kp : v.var;
 ;           case PV_LW:     return (@curbuf.@b_p_lw.at(0) != NUL)          ? @curbuf.b_p_lw : v.var;
 ;           case PV_STL:    return (wop.@wo_stl.at(0) != NUL)             ? wop.wo_stl    : v.var;
@@ -12350,16 +12290,13 @@
 
 ;           case PV_AI:     return @curbuf.b_p_ai;
 ;           case PV_BIN:    return @curbuf.b_p_bin;
-;           case PV_BOMB:   return @curbuf.b_p_bomb;
 ;           case PV_CI:     return @curbuf.b_p_ci;
 ;           case PV_CIN:    return @curbuf.b_p_cin;
 ;           case PV_CINK:   return @curbuf.b_p_cink;
 ;           case PV_CINO:   return @curbuf.b_p_cino;
 ;           case PV_CINW:   return @curbuf.b_p_cinw;
 ;           case PV_COM:    return @curbuf.b_p_com;
-;           case PV_EOL:    return @curbuf.b_p_eol;
 ;           case PV_ET:     return @curbuf.b_p_et;
-;           case PV_FF:     return @curbuf.b_p_ff;
 ;           case PV_FLP:    return @curbuf.b_p_flp;
 ;           case PV_FO:     return @curbuf.b_p_fo;
 ;           case PV_IMI:    return @curbuf.b_p_iminsert;
@@ -12389,16 +12326,6 @@
 ;       }
 
 ;       return null;
-    ))
-
-;; Get the value of 'equalprg', either the buffer-local one or the global one.
-
-(defn- #_Bytes get_equalprg []
-    (§
-;       if (@curbuf.@b_p_ep.at(0) == NUL)
-;           return @p_ep;
-
-;       return @curbuf.@b_p_ep;
     ))
 
 ;; Copy options from one window to another.
@@ -12526,7 +12453,6 @@
 ;               {
 ;                   free_buf_options(buf, true);
 ;                   buf.@b_p_ro = false;             ;; don't copy readonly
-;                   buf.@b_p_ff = STRDUP(@p_ff);
 ;               }
 ;               else
 ;                   free_buf_options(buf, false);
@@ -12541,7 +12467,6 @@
 ;               buf.b_p_wm_nopaste = @p_wm_nopaste;
 ;               buf.b_p_wm_nobin = @p_wm_nobin;
 ;               buf.@b_p_bin = @p_bin;
-;               buf.@b_p_bomb = @p_bomb;
 ;               buf.@b_p_et = @p_et;
 ;               buf.b_p_et_nobin = @p_et_nobin;
 ;               buf.@b_p_inf = @p_inf;
@@ -12569,7 +12494,6 @@
                 ;; Options that are normally global but also have a local value
                 ;; are not copied: start using the global value.
 ;               buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
-;               buf.@b_p_ep = EMPTY_OPTION;
 ;               buf.@b_p_kp = EMPTY_OPTION;
 ;               buf.@b_p_qe = STRDUP(@p_qe);
 ;               buf.@b_p_udf = @p_udf;
@@ -12884,9 +12808,7 @@
 
 (defn- #_void save_file_ff [#_buffer_C buf]
     (§
-;       buf.b_start_ffc = buf.@b_p_ff.at(0);
-;       buf.b_start_eol = buf.@b_p_eol;
-;       buf.b_start_bomb = buf.@b_p_bomb;
+        
     ))
 
 ;; Return true if 'fileformat' and/or 'fileencoding' has a different value
@@ -12905,12 +12827,6 @@
 ;               && buf.b_ml.ml_line_count == 1
 ;               && ml_get_buf(buf, 1, false).at(0) == NUL)
 ;           return false;
-;       if (buf.b_start_ffc != buf.@b_p_ff.at(0))
-;           return true;
-;       if (buf.@b_p_bin && buf.b_start_eol != buf.@b_p_eol)
-;           return true;
-;       if (!buf.@b_p_bin && buf.b_start_bomb != buf.@b_p_bomb)
-;           return true;
 
 ;       return false;
     ))
@@ -13044,11 +12960,7 @@
 ;           if (c == NL)        ;; NUL is stored as NL
 ;               c = NUL;
 
-;           int cval;
-;           if (c == CAR && get_fileformat(@curbuf) == EOL_MAC)
-;               cval = NL;      ;; NL is stored as CR
-;           else
-;               cval = c;
+;           int cval = c;
 
 ;           Bytes buf1 = new Bytes(20);
 ;           if (vim_isprintc(c) && (c < ' ' || '~' < c))
@@ -13066,8 +12978,7 @@
 ;           else
 ;               buf2.be(0, NUL);
 
-;           vim_snprintf(@ioBuff, IOSIZE, u8("<%s>%s%s  %d,  Hex %02x,  Octal %03o"),
-;                                   transchar(c), buf1, buf2, cval, cval, cval);
+;           vim_snprintf(@ioBuff, IOSIZE, u8("<%s>%s%s  %d,  Hex %02x,  Octal %03o"), transchar(c), buf1, buf2, cval, cval, cval);
 ;           c = cc[ci++];
 ;       }
 
@@ -23908,6 +23819,13 @@
 ;                   }
 ;                   break;
 
+;               case OP_INDENT:
+;                   if (@curbuf.@b_p_lisp)
+;                       op_reindent(oap, get_lisp_indent);
+;                   else
+;                       op_reindent(oap, get_c_indent);
+;                   break;
+
 ;               case OP_FILTER:
 ;                   if (vim_strbyte(@p_cpo, CPO_FILTER) != null)
 ;                       appendToRedobuff(u8("!\r"));    ;; use any last used !cmd
@@ -23915,22 +23833,7 @@
 ;                       @bangredo = true;            ;; do_bang() will put cmd in redo buffer
                     ;; FALLTHROUGH
 
-;               case OP_INDENT:
 ;               case OP_COLON:
-
-                    ;; If 'equalprg' is empty, do the indenting internally.
-
-;                   if (oap.op_type == OP_INDENT && get_equalprg().at(0) == NUL)
-;                   {
-;                       if (@curbuf.@b_p_lisp)
-;                       {
-;                           op_reindent(oap, get_lisp_indent);
-;                           break;
-;                       }
-;                       op_reindent(oap, get_c_indent);
-;                       break;
-;                   }
-
 ;                   op_colon(oap);
 ;                   break;
 
@@ -24035,7 +23938,7 @@
 ;       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
     ))
 
-;; Handle indent and format operators and visual mode ":".
+;; Handle filter operator and visual mode ":".
 
 (defn- #_void op_colon [#_oparg_C oap]
     (§
@@ -24068,16 +23971,6 @@
 ;       }
 ;       if (oap.op_type != OP_COLON)
 ;           stuffReadbuff(u8("!"));
-;       if (oap.op_type == OP_INDENT)
-;       {
-;           stuffReadbuff(get_equalprg());
-;           stuffReadbuff(u8("\n"));
-;       }
-;       else if (oap.op_type == OP_FORMAT)
-;       {
-;           stuffReadbuff(u8("fmt"));
-;           stuffReadbuff(u8("\n']"));
-;       }
 
         ;; do_cmdline() does the rest
 
@@ -34095,7 +33988,7 @@
 ;       pos_C max_pos = §_pos_C();
 ;       oparg_C oparg = §_oparg_C();
 
-;       int eol_size = (get_fileformat(@curbuf) == EOL_DOS) ? 2 : 1;
+;       int eol_size = 1;
 
 ;       if (@VIsual_active)
 ;       {
@@ -34192,14 +34085,7 @@
 ;               }
 
 ;               if (s != null)
-;               {
 ;                   byte_count_cursor += line_count_info(s, word_count_cursor, char_count_cursor, len, eol_size);
-;                   if (lnum == @curbuf.b_ml.ml_line_count
-;                           && !@curbuf.@b_p_eol
-;                           && @curbuf.@b_p_bin
-;                           && STRLEN(s) < len)
-;                       byte_count_cursor -= eol_size;
-;               }
 ;           }
 ;           else
 ;           {
@@ -34209,18 +34095,13 @@
 ;                   word_count_cursor[0] += word_count[0];
 ;                   char_count_cursor[0] += char_count[0];
 ;                   byte_count_cursor = byte_count +
-;                       line_count_info(ml_get(lnum), word_count_cursor, char_count_cursor,
-;                                   @curwin.w_cursor.col + 1, eol_size);
+;                       line_count_info(ml_get(lnum), word_count_cursor, char_count_cursor, @curwin.w_cursor.col + 1, eol_size);
 ;               }
 ;           }
 
             ;; Add to the running totals.
 ;           byte_count += line_count_info(ml_get(lnum), word_count, char_count, MAXCOL, eol_size);
 ;       }
-
-        ;; Correction for when last line doesn't have an EOL.
-;       if (!@curbuf.@b_p_eol && @curbuf.@b_p_bin)
-;           byte_count -= eol_size;
 
 ;       if (@VIsual_active)
 ;       {
@@ -62015,7 +61896,6 @@
 
 (defn- #_long ml_find_line_or_offset [#_buffer_C buf, #_long lnum, #_long* offp]
     (§
-;       boolean ffdos = (get_fileformat(buf) == EOL_DOS);
 ;       int extra = 0;
 
         ;; take care of cached line first
@@ -62036,15 +61916,10 @@
 ;       long size = curix;
 ;       while (curix < buf.b_ml.ml_usedchunks - 1
 ;           && ((lnum != 0 && curline + buf.b_ml.ml_chunksize[curix].mlcs_numlines <= lnum)
-;               || (offset != 0
-;                   && size
-;                       + buf.b_ml.ml_chunksize[curix].mlcs_totalsize
-;                       + (ffdos ? 1 : 0) * buf.b_ml.ml_chunksize[curix].mlcs_numlines < offset)))
+;               || (offset != 0 && size + buf.b_ml.ml_chunksize[curix].mlcs_totalsize < offset)))
 ;       {
 ;           curline += buf.b_ml.ml_chunksize[curix].mlcs_numlines;
 ;           size += buf.b_ml.ml_chunksize[curix].mlcs_totalsize;
-;           if (offset != 0 && ffdos)
-;               size += buf.b_ml.ml_chunksize[curix].mlcs_numlines;
 ;           curix++;
 ;       }
 
@@ -62079,10 +61954,8 @@
 ;           else
 ;           {
 ;               extra = 0;
-;               while (size + text_end - (dp.db_index[idx] & DB_INDEX_MASK) + (ffdos ? 1 : 0) <= offset)
+;               while (size + text_end - (dp.db_index[idx] & DB_INDEX_MASK) <= offset)
 ;               {
-;                   if (ffdos)
-;                       size++;
 ;                   if (idx == count - 1)
 ;                   {
 ;                       extra = 1;
@@ -62095,7 +61968,7 @@
 ;           size += len;
 ;           if (offset != 0 && offset <= size)
 ;           {
-;               if (size + (ffdos ? 1 : 0) == offset)
+;               if (size == offset)
 ;                   offp[0] = 0;
 ;               else if (idx == start_idx)
 ;                   offp[0] = offset - size + len;
@@ -62108,17 +61981,6 @@
 ;               return curline;
 ;           }
 ;           curline = buf.b_ml.ml_locked_high + 1;
-;       }
-
-;       if (lnum != 0)
-;       {
-            ;; Count extra CR characters.
-;           if (ffdos)
-;               size += lnum - 1;
-
-            ;; Don't count the last line break if 'bin' and 'noeol'.
-;           if (buf.@b_p_bin && !buf.@b_p_eol)
-;               size -= (ffdos ? 1 : 0) + 1;
 ;       }
 
 ;       return size;
@@ -62444,10 +62306,6 @@
 ;       buf.b_ml.ml_line_count = 1;
 ;       unchanged(buf, true);
 ;       buf.b_shortname = false;
-;       buf.@b_p_eol = true;
-;       buf.b_start_eol = true;
-;       buf.@b_p_bomb = false;
-;       buf.b_start_bomb = false;
 ;       buf.b_ml.ml_mfp = null;
 ;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
     ))
@@ -63260,10 +63118,6 @@
 
 (defn- #_void free_buf_options [#_buffer_C buf, #_boolean free_p_ff]
     (§
-;       if (free_p_ff)
-;       {
-;           clear_string_option(buf.b_p_ff);
-;       }
 ;       clear_string_option(buf.b_p_kp);
 ;       clear_string_option(buf.b_p_mps);
 ;       clear_string_option(buf.b_p_fo);
@@ -63274,7 +63128,6 @@
 ;       clear_string_option(buf.b_p_cink);
 ;       clear_string_option(buf.b_p_cino);
 ;       clear_string_option(buf.b_p_cinw);
-;       clear_string_option(buf.b_p_ep);
 ;       clear_string_option(buf.b_p_qe);
 ;       buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       clear_string_option(buf.b_p_lw);
@@ -64331,8 +64184,6 @@
 ;                   num = byteval;
 ;                   if (num == NL)
 ;                       num = 0;
-;                   else if (num == CAR && get_fileformat(wp.w_buffer) == EOL_MAC)
-;                       num = NL;
 ;                   break;
 
 ;               case STL_ROFLAG:
@@ -65249,8 +65100,6 @@
     (§
 ;       if (c == NL)
 ;           c = NUL;                                    ;; we use newline in place of a NUL
-;       else if (c == CAR && get_fileformat(@curbuf) == EOL_MAC)
-;           c = NL;                                     ;; we use CR in place of  NL in this case
 
 ;       if ((@dy_flags & DY_UHEX) != 0)                  ;; 'display' has "uhex"
 ;           transchar_hex(buf, c);
@@ -78063,49 +77912,6 @@
 ;       return KE_IGNORE;          ;; not recognized, ignore it
     ))
 
-;; Return the current end-of-line type: EOL_DOS, EOL_UNIX or EOL_MAC.
-
-(defn- #_int get_fileformat [#_buffer_C buf]
-    (§
-;       byte c = buf.@b_p_ff.at(0);
-
-;       if (buf.@b_p_bin || c == 'u')
-;           return EOL_UNIX;
-;       if (c == 'm')
-;           return EOL_MAC;
-
-;       return EOL_DOS;
-    ))
-
-;; Set the current end-of-line type to EOL_DOS, EOL_UNIX or EOL_MAC.
-;; Sets both 'textmode' and 'fileformat'.
-;; Note: Does _not_ set global value of 'textmode'!
-
-(defn- #_void set_fileformat [#_int t, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
-    (§
-;       Bytes p = null;
-
-;       switch (t)
-;       {
-;           case EOL_DOS:
-;               p = FF_DOS;
-;               break;
-;           case EOL_UNIX:
-;               p = FF_UNIX;
-;               break;
-;           case EOL_MAC:
-;               p = FF_MAC;
-;               break;
-;       }
-;       if (p != null)
-;           set_string_option_direct(u8("ff"), -1, p, OPT_FREE | opt_flags);
-
-        ;; This may cause the buffer to become (un)modified.
-;       check_status(@curbuf);
-;       @redraw_tabline = true;
-    ))
-
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
 ;; NORMAL State with a condition.  This function returns the real State.
 
@@ -78209,13 +78015,10 @@
 
 ;; fileio.c: read from and write to a file --------------------------------------------------------
 
-;; Set default or forced 'fileformat' and 'binary'.
+;; Set default or forced 'binary'.
 
 (defn- #_void set_file_options [#_exarg_C eap]
     (§
-        ;; set default 'fileformat'
-;       set_fileformat(EOL_UNIX, OPT_LOCAL);
-
         ;; set or reset 'binary'
 ;       if (eap != null && eap.force_bin != 0)
 ;       {
