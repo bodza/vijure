@@ -3208,7 +3208,7 @@
             ((ß len =) (+ len n))
             (.be buf e, (.at s e))
 
-            ((ß FOR) (ß ((ß n =) (us-ptr2len-cc (.plus s e))) (< 0 ((ß n =) (dec n))) nil)
+            ((ß FOR) (ß ((ß n =) (us-ptr2len-cc s, e)) (< 0 ((ß n =) (dec n))) nil)
                 (if (== ((ß e =) (inc e)) buflen)
                     (ß BREAK)
                 )
@@ -3333,7 +3333,7 @@
             (let [#_int cells (mb-string2cells s, -1)]
                 (if (<= cells room)
                     s
-                    (let [#_int n (loop [cells cells #_int n 0] (if (<= room cells) (recur (- cells (us-ptr2cells (.plus s n))) (+ n (us-ptr2len-cc (.plus s n)))) n))]
+                    (let [#_int n (loop [cells cells #_int n 0] (if (<= room cells) (recur (- cells (us-ptr2cells (.plus s n))) (+ n (us-ptr2len-cc s, n))) n))]
                         (.be (.plus s (dec n)) 0, (byte \<))
                     )
                 )
@@ -6445,7 +6445,7 @@
                     (ß BREAK)
                 )
                 ((ß vcol =) (+ vcol (chartabsize (.plus ptr col), vcol)))
-                ((ß col =) (+ col (us-ptr2len-cc (.plus ptr col))))
+                ((ß col =) (+ col (us-ptr2len-cc ptr, col)))
             )
             (line-breakcheck)
         )
@@ -6833,7 +6833,7 @@
                             :else
                             (do
                                 ;; search for a match at next column
-                                ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus sub_firstline matchcol))))
+                                ((ß matchcol =) (+ matchcol (us-ptr2len-cc sub_firstline, matchcol)))
                             ))
                             (ß BREAK skip)
                         )
@@ -7000,7 +7000,7 @@
                             )
                             :else
                             (do
-                                ((ß p1 =) (.plus p1 (- (us-ptr2len-cc p1) 1)))
+                                ((ß p1 =) (.plus p1 (dec (us-ptr2len-cc p1))))
                             ))
                         )
 ;                   }
@@ -7641,7 +7641,7 @@
                                     (ß BREAK)
                                 )
                                 (swap! ccline update :cmdspos + i)
-                                (swap! ccline update :cmdpos + (us-ptr2len-cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
+                                (swap! ccline update :cmdpos + (us-ptr2len-cc (:cmdbuff @ccline), (:cmdpos @ccline)))
 ;                           }
                             (while (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space)))
 ;                               ;
@@ -8112,7 +8112,7 @@
                 ;; Don't move the cursor itself, so we can still append.
                 (when (< (+ (:cmdspos @ccline) c) m)
                     (swap! ccline update :cmdspos + c)
-                    (recur (+ i (us-ptr2len-cc (.plus (:cmdbuff @ccline) i))))
+                    (recur (+ i (us-ptr2len-cc (:cmdbuff @ccline), i)))
                 )
             ))
     )
@@ -8191,7 +8191,7 @@
     (let [pos (:cmdpos @ccline) len (:cmdlen @ccline)]
         (if (== len pos)
             (msg-putchar (byte \space))
-            (draw-cmdline pos, (us-ptr2len-cc (.plus (:cmdbuff @ccline) pos)))))
+            (draw-cmdline pos, (us-ptr2len-cc (:cmdbuff @ccline), pos))))
     (reset! msg_no_more false)
     (cursorcmd)
     nil)
@@ -8215,8 +8215,8 @@
                 (BCOPY (:cmdbuff @ccline), (+ (:cmdpos @ccline) len), (:cmdbuff @ccline), (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
                 (+ (:cmdlen @ccline) len)
             )
-            (let [#_int m (loop [#_int m 0 #_int n 0] (if (< n len) (recur (inc m) (+ n (us-ptr2len-cc (.plus str n)))) m))
-                  #_int n (loop [m m #_int n (:cmdpos @ccline)] (if (and (< n (:cmdlen @ccline)) (< 0 m)) (recur (dec m) (+ n (us-ptr2len-cc (.plus (:cmdbuff @ccline) n)))) n))]
+            (let [#_int m (loop [#_int m 0 #_int n 0] (if (< n len) (recur (inc m) (+ n (us-ptr2len-cc str, n))) m))
+                  #_int n (loop [m m #_int n (:cmdpos @ccline)] (if (and (< n (:cmdlen @ccline)) (< 0 m)) (recur (dec m) (+ n (us-ptr2len-cc (:cmdbuff @ccline), n))) n))]
                   ;; m: nof characters in the new string; n: nof bytes in cmdline that are overwritten by these characters
                 (if (< n (:cmdlen @ccline))
                     (do
@@ -8274,7 +8274,7 @@
                 (swap! ccline update :cmdspos + c)
             )
 
-            ((ß c =) (min (dec (us-ptr2len-cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline)))) (- len i 1)))
+            ((ß c =) (min (dec (us-ptr2len-cc (:cmdbuff @ccline), (:cmdpos @ccline))) (- len i 1)))
             (swap! ccline update :cmdpos + c)
             ((ß i =) (+ i c))
 
@@ -11238,7 +11238,7 @@
                 (if (and (non-zero? this_class) (or (== round 1) (!= this_class 1)))
                     (ß BREAK)
                 )
-                ((ß col =) (+ col (us-ptr2len-cc (.plus p col))))
+                ((ß col =) (+ col (us-ptr2len-cc p, col)))
             )
 
             ;; 2. Back up to start of identifier/string.
@@ -11278,7 +11278,7 @@
         ;; Search for point of changing multibyte character class.
         ((ß this_class =) (us-get-class p))
         (while (and (non-eos? p col) (if (zero? round) (== (us-get-class (.plus p col)) this_class) (!= (us-get-class (.plus p col)) 0)))
-            ((ß col =) (+ col (us-ptr2len-cc (.plus p col))))
+            ((ß col =) (+ col (us-ptr2len-cc p, col)))
         )
 
         col
@@ -12471,7 +12471,7 @@
                 ))
 
                 ;; Correct the length to include the whole last character.
-                (reset! a'lenp (+ @a'lenp (dec (us-ptr2len-cc (.plus @a'pp (dec @a'lenp))))))
+                (swap! a'lenp #(+ % (dec (us-ptr2len-cc @a'pp, (dec %)))))
             ))
             (reset-VIsual-and-resel)
             true
@@ -18937,7 +18937,7 @@
                 ((ß is_word =) true)
             ))
             ((ß chars =) (inc chars))
-            ((ß i =) (+ i (us-ptr2len-cc (.plus line i))))
+            ((ß i =) (+ i (us-ptr2len-cc line, i)))
         )
 
         (if is_word
@@ -20821,7 +20821,7 @@
                                             (swap! curwin assoc :w_wcol vcol)
                                         )
                                         ((ß vcol =) (+ vcol (lbr-chartabsize ptr, (.plus ptr col), vcol)))
-                                        ((ß col =) (+ col (us-ptr2len-cc (.plus ptr col))))
+                                        ((ß col =) (+ col (us-ptr2len-cc ptr, col)))
                                     )
                                     (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
                                     (swap! curwin update :w_wcol % (:w_width @curwin))
@@ -22081,7 +22081,7 @@
             ((ß Bytes ptr =) (ml-get-curline))
             (while (<= vcol (:w_virtcol @curwin))
                 ((ß last_vcol =) vcol)
-                ((ß new_cursor_col =) (+ new_cursor_col (if (<= 0 new_cursor_col) (us-ptr2len-cc (.plus ptr new_cursor_col)) 1)))
+                ((ß new_cursor_col =) (+ new_cursor_col (if (<= 0 new_cursor_col) (us-ptr2len-cc ptr, new_cursor_col) 1)))
                 ((ß vcol =) (+ vcol (lbr-chartabsize ptr, (.plus ptr new_cursor_col), vcol)))
             )
             ((ß vcol =) last_vcol)
@@ -24965,7 +24965,7 @@
     (§
         ((ß Bytes p =) @a'pp)
         (when (at? p 1 (byte \=))
-            ((ß int len =) (us-ptr2len-cc (.plus p 2)))
+            ((ß int len =) (us-ptr2len-cc p, 2))
             (when (and (at? p (+ len 2) (byte \=)) (at? p (+ len 3) (byte \])))
                 ((ß int c =) (us-ptr2char (.plus p 2)))
                 (reset! a'pp (.plus @a'pp (+ len 4)))
@@ -25501,7 +25501,7 @@
         ((ß Bytes p =) @a'pp)
 
         (when (at? p 1 (byte \.))
-            ((ß int len =) (us-ptr2len-cc (.plus p 2)))
+            ((ß int len =) (us-ptr2len-cc p, 2))
             (when (and (at? p (+ len 2) (byte \.)) (at? p (+ len 3) (byte \])))
                 ((ß int c =) (us-ptr2char (.plus p 2)))
                 (reset! a'pp (.plus @a'pp (+ len 4)))
@@ -28139,7 +28139,7 @@
                     (if (eos? @regline col)
                         (ß BREAK)
                     )
-                    ((ß col =) (+ col (us-ptr2len-cc (.plus @regline col))))
+                    ((ß col =) (+ col (us-ptr2len-cc @regline, col)))
                     ;; Check for timeout once in a twenty times to avoid overhead.
                     (when (and (non-zero? nsec) (== ((ß tm_count =) (inc tm_count)) 20))
                         ((ß tm_count =) 0)
@@ -28833,7 +28833,7 @@
                                     (== opndc inpc)
                                     (do
                                         ;; Include all following composing chars.
-                                        ((ß len =) (+ i (us-ptr2len-cc (.plus @reginput i))))
+                                        ((ß len =) (+ i (us-ptr2len-cc @reginput, i)))
                                         ((ß status =) RA_MATCH)
                                         (ß BREAK)
                                     ))
@@ -31124,11 +31124,11 @@
                         (reset! a'cc c)
                     ))
 
-                    ((ß int totlen =) (us-ptr2len-cc (.minus src 1)))
+                    ((ß int totlen =) (us-ptr2len-cc src, -1))
 
                     (if copy
                         (utf-char2bytes @a'cc, dst))
-                    ((ß dst =) (.plus dst (- (utf-char2len @a'cc) 1)))
+                    ((ß dst =) (.plus dst (dec (utf-char2len @a'cc))))
 
                     ((ß int clen =) (us-ptr2len src -1))
 
@@ -38379,14 +38379,14 @@
                                     ((ß matchcol =) (:col endpos))
                                     ;; for empty match: advance one char
                                     (if (and (== matchcol (:col matchpos)) (non-eos? ptr matchcol))
-                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus ptr matchcol))))
+                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc ptr, matchcol)))
                                     )
                                 )
                                 :else
                                 (do
                                     ((ß matchcol =) (:col matchpos))
                                     (if (non-eos? ptr matchcol)
-                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus ptr matchcol))))
+                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc ptr, matchcol)))
                                     )
                                 ))
                                 (if (and (zero? matchcol) (flag? options SEARCH_START))
@@ -38446,7 +38446,7 @@
                                     ((ß matchcol =) (:col endpos))
                                     ;; for empty match: advance one char
                                     (if (and (== matchcol (:col matchpos)) (non-eos? ptr matchcol))
-                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus ptr matchcol))))
+                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc ptr, matchcol)))
                                     )
                                 )
                                 :else
@@ -38457,7 +38457,7 @@
                                     )
                                     ((ß matchcol =) (:col matchpos))
                                     (if (non-eos? ptr matchcol)
-                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus ptr matchcol))))
+                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc ptr, matchcol)))
                                     )
                                 ))
                                 (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim-regexec-multi regmatch, (+ lnum (:lnum matchpos)), matchcol, nsec))))
@@ -38999,7 +38999,7 @@
             (while true
                 (cond (< 0 dir)
                 (do
-                    ((ß col =) (+ col (us-ptr2len-cc (.plus p col))))
+                    ((ß col =) (+ col (us-ptr2len-cc p, col)))
                     (if (<= len col)
                         ((ß RETURN) false)
                     )
@@ -39217,7 +39217,7 @@
                         (if (!= @a'findc NUL)
                             (ß BREAK)
                         )
-                        (swap! _2_pos update :col + (us-ptr2len-cc (.plus linep (:col @_2_pos))))
+                        (swap! _2_pos update :col + (us-ptr2len-cc linep, (:col @_2_pos)))
                     )
                     (cond (== @a'findc NUL)
                     (do
@@ -39389,7 +39389,7 @@
                 )
                 :else
                 (do
-                    (swap! _2_pos update :col + (us-ptr2len-cc (.plus linep (:col @_2_pos))))
+                    (swap! _2_pos update :col + (us-ptr2len-cc linep, (:col @_2_pos)))
                 ))
             ))
 
@@ -40363,7 +40363,7 @@
             (do
                 (ß BREAK)
             ))
-            ((ß col =) (+ col (us-ptr2len-cc (.plus line col))))
+            ((ß col =) (+ col (us-ptr2len-cc line, col)))
         )
         col
     ))
@@ -41426,7 +41426,7 @@
     (§
         ((ß int cells =) 0)
 
-        (loop-if-recur [#_int i 0] (and (or (< len 0) (< i len)) (non-eos? p i)) [(+ i (us-ptr2len-cc (.plus p i)))]
+        (loop-if-recur [#_int i 0] (and (or (< len 0) (< i len)) (non-eos? p i)) [(+ i (us-ptr2len-cc p, i))]
             ((ß cells =) (+ cells (mb-ptr2cells (.plus p i))))
         )
 
@@ -43923,7 +43923,7 @@
     (§
         ((ß int cells =) 0)
 
-        (loop-if-recur [#_int i 0] (and (or (< len 0) (< i len)) (non-eos? p i)) [(+ i (us-ptr2len-cc (.plus p i)))]
+        (loop-if-recur [#_int i 0] (and (or (< len 0) (< i len)) (non-eos? p i)) [(+ i (us-ptr2len-cc p, i))]
             ((ß cells =) (+ cells (us-ptr2cells (.plus p i))))
         )
 
@@ -43937,43 +43937,29 @@
 ;; If the sequence is illegal or truncated by a NUL the first byte is returned.
 ;; Does not include composing characters, of course.
 
-(defn- #_int us-ptr2char [#_Bytes p]
-    (§
-        (if (< (char_u (.at p 0)) 0x80)    ;; be quick for ASCII
-            ((ß RETURN) (.at p 0))
-        )
-
-        ((ß int len =) (us-byte2len (.at p 0), true))
-        (when (and (< 1 len) (== (& (char_u (.at p 1)) 0xc0) 0x80))
-            (if (== len 2)
-                ((ß RETURN) (+ (<< (& (.at p 0) 0x1f) 6) (& (.at p 1) 0x3f)))
-            )
-
-            (when (== (& (char_u (.at p 2)) 0xc0) 0x80)
-                (if (== len 3)
-                    ((ß RETURN) (+ (<< (& (.at p 0) 0x0f) 12) (<< (& (.at p 1) 0x3f) 6) (& (.at p 2) 0x3f)))
-                )
-
-                (when (== (& (char_u (.at p 3)) 0xc0) 0x80)
-                    (when (== len 4)
-                        ((ß RETURN) (+ (<< (& (.at p 0) 0x07) 18) (<< (& (.at p 1) 0x3f) 12) (<< (& (.at p 2) 0x3f) 6) (& (.at p 3) 0x3f)))
-                    )
-
-                    (when (== (& (char_u (.at p 4)) 0xc0) 0x80)
-                        (when (== len 5)
-                            ((ß RETURN) (+ (<< (& (.at p 0) 0x03) 24) (<< (& (.at p 1) 0x3f) 18) (<< (& (.at p 2) 0x3f) 12) (<< (& (.at p 3) 0x3f) 6) (& (.at p 4) 0x3f)))
-                        )
-
-                        (when (and (== (& (char_u (.at p 5)) 0xc0) 0x80) (== len 6))
-                            ((ß RETURN) (+ (<< (& (.at p 0) 0x01) 30) (<< (& (.at p 1) 0x3f) 24) (<< (& (.at p 2) 0x3f) 18) (<< (& (.at p 3) 0x3f) 12) (<< (& (.at p 4) 0x3f) 6) (& (.at p 5) 0x3f)))
-                        )
-                    )
-                )
-            )
-        )
-
-        ;; Illegal value, just return the first byte.
-        (char_u (.at p 0))
+(defn- us-ptr2char
+    ([s] (us-ptr2char s 0))
+    ([s i]
+        (let [s0 (.at s i) u0 (char_u s0)] (if (< u0 0x80) ;; be quick for ASCII
+            s0
+        (let [n (us-byte2len s0, true)] (if (< n 2) ;; illegal value, just return the first byte
+            u0
+        (let [s1 (.at s (+ i 1))] (if (== (& (char_u s1) 0xc0) 0x80) (if (== n 2)
+            (+ (<< (& s0 0x1f) 6) (& s1 0x3f))
+        (let [s2 (.at s (+ i 2))] (if (== (& (char_u s2) 0xc0) 0x80) (if (== n 3)
+            (+ (<< (& s0 0x0f) 12) (<< (& s1 0x3f) 6) (& s2 0x3f))
+        (let [s3 (.at s (+ i 3))] (if (== (& (char_u s3) 0xc0) 0x80) (if (== n 4)
+            (+ (<< (& s0 0x07) 18) (<< (& s1 0x3f) 12) (<< (& s2 0x3f) 6) (& s3 0x3f))
+        (let [s4 (.at s (+ i 4))] (if (== (& (char_u s4) 0xc0) 0x80) (if (== n 5)
+            (+ (<< (& s0 0x03) 24) (<< (& s1 0x3f) 18) (<< (& s2 0x3f) 12) (<< (& s3 0x3f) 6) (& s4 0x3f))
+        (let [s5 (.at s (+ i 5))] (if (and (== (& (char_u s5) 0xc0) 0x80) (== n 6))
+            (+ (<< (& s0 0x01) 30) (<< (& s1 0x3f) 24) (<< (& s2 0x3f) 18) (<< (& s3 0x3f) 12) (<< (& s4 0x3f) 6) (& s5 0x3f))
+            u0
+        ))) u0
+        ))) u0
+        ))) u0
+        ))) u0
+        ))))))
     ))
 
 ;; Convert a UTF-8 byte sequence to a wide character.
@@ -44072,7 +44058,7 @@
         ;; Only accept a composing char when the first char isn't illegal.
         ((ß int i =) (us-ptr2len-len p, maxlen))
         (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (< i maxlen) (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len-len (.plus p i), (- maxlen i)))))
+            ((ß FOR) (ß (ß int cc) (and (< i maxlen) (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len-len p, i, (- maxlen i)))))
                 ((ß pcc[j++] =) cc)
                 (if (== j MAX_MCO)
                     (ß BREAK)
@@ -44121,105 +44107,74 @@
             )
         )))
 
-;; Get the length of UTF-8 byte sequence "p[size]".
+;; Get the length of UTF-8 byte sequence "s[m]".
 ;; Does not include any following composing characters.
 ;; Returns 1 for "".
 ;; Returns 1 for an illegal byte sequence (also in incomplete byte seq.).
-;; Returns number > "size" for an incomplete byte sequence.
+;; Returns number > "m" for an incomplete byte sequence.
 ;; Never returns zero.
 
-(defn- #_int us-ptr2len-len [#_Bytes p, #_int size]
-    (§
-        ((ß int len =) (us-byte2len (.at p 0), false))
-        (if (== len 1)
-            ((ß RETURN) 1)       ;; NUL, ASCII or illegal lead byte
-        )
-
-        ((ß int m =) (min len size))  ;; incomplete byte sequence?
-        (loop-if-recur [#_int i 1] (< i m) [(inc i)]
-            (if (!= (& (char_u (.at p i)) 0xc0) 0x80)
-                ((ß RETURN) 1)
+(defn- us-ptr2len-len
+    ([s m] (us-ptr2len-len s 0 m))
+    ([s i m]
+        (let [n (us-byte2len (.at s i), false)]
+            (if (== n 1)
+                1 ;; NUL, ASCII or illegal lead byte
+                (let [m (min n m)] ;; incomplete byte sequence?
+                    (loop-if [i (inc i)] (< i m) => n
+                        (recur-if (== (& (char_u (.at s i)) 0xc0) 0x80) [(inc i)] => 1)
+                    )
+                )
             )
-        )
+        )))
 
-        len
-    ))
-
-;; Return the number of bytes the UTF-8 encoding of the character at "p" takes.
+;; Return the number of bytes the UTF-8 encoding of the character at "s" takes.
 ;; This includes following composing characters.
 
-(defn- #_int us-ptr2len-cc [#_Bytes p]
-    (§
-        (if (eos? p)
-            ((ß RETURN) 0)
-        )
-        (if (and (< (char_u (.at p 0)) 0x80) (< (char_u (.at p 1)) 0x80))     ;; be quick for ASCII
-            ((ß RETURN) 1)
-        )
+(defn- us-ptr2len-cc
+    ([s] (us-ptr2len-cc 0))
+    ([s i]
+        (cond
+            (eos? s i)
+                0
+            (and (< (char_u (.at s i)) 0x80) (< (char_u (.at s (inc i))) 0x80)) ;; be quick for ASCII
+                1
+            :else
+                (let [n (us-ptr2len s i)] ;; skip over first UTF-8 char, stopping at a NUL byte
+                    (if (and (== n 1) (<= 0x80 (char_u (.at s i)))) ;; check for illegal byte
+                        1
+                        (let [a i]
+                            ;; Check for composing characters.  We can handle only the first six, but skip all of them (otherwise the cursor would get stuck).
+                            (loop-if-recur [i (+ i n)] (and (<= 0x80 (char_u (.at s i))) (utf-iscomposing (us-ptr2char (.plus s i)))) [(+ i (us-ptr2len s i))] => (- i a)))
+                    ))
+        )))
 
-        ;; Skip over first UTF-8 char, stopping at a NUL byte.
-        ((ß int len =) (us-ptr2len p))
-
-        ;; Check for illegal byte.
-        (if (and (== len 1) (<= 0x80 (char_u (.at p 0))))
-            ((ß RETURN) 1)
-        )
-
-        ;; Check for composing characters.  We can handle only the first six,
-        ;; but skip all of them (otherwise the cursor would get stuck).
-
-        (while (and (<= 0x80 (char_u (.at p len))) (utf-iscomposing (us-ptr2char (.plus p len))))
-            ;; Skip over composing char.
-            ((ß len =) (+ len (us-ptr2len p len)))
-        )
-
-        len
-    ))
-
-;; Return the number of bytes the UTF-8 encoding of the character at "p[size]" takes.
+;; Return the number of bytes the UTF-8 encoding of the character at "s[m]" takes.
 ;; This includes following composing characters.
 ;; Returns 0 for an empty string.
 ;; Returns 1 for an illegal char or an incomplete byte sequence.
 
-(defn- #_int us-ptr2len-cc-len [#_Bytes p, #_int size]
-    (§
-        (if (or (< size 1) (eos? p))
-            ((ß RETURN) 0)
-        )
-        (if (and (< (char_u (.at p 0)) 0x80) (or (== size 1) (< (char_u (.at p 1)) 0x80)))    ;; be quick for ASCII
-            ((ß RETURN) 1)
-        )
-
-        ;; Skip over first UTF-8 char, stopping at a NUL byte.
-        ((ß int len =) (us-ptr2len-len p, size))
-
-        ;; Check for illegal byte and incomplete byte sequence.
-        (if (or (and (== len 1) (<= 0x80 (char_u (.at p 0)))) (< size len))
-            ((ß RETURN) 1)
-        )
-
-        ;; Check for composing characters.  We can handle only the first six,
-        ;; but skip all of them (otherwise the cursor would get stuck).
-
-        (while (and (< len size) (<= 0x80 (char_u (.at p len))))
-            ;; Next character length should not go beyond size to ensure
-            ;; that UTF_COMPOSINGLIKE(...) does not read beyond size.
-
-            ((ß int len_next_char =) (us-ptr2len-len (.plus p len), (- size len)))
-            (if (< (- size len) len_next_char)
-                (ß BREAK)
-            )
-
-            (if (not (utf-iscomposing (us-ptr2char (.plus p len))))
-                (ß BREAK)
-            )
-
-            ;; Skip over composing char.
-            ((ß len =) (+ len len_next_char))
-        )
-
-        len
-    ))
+(defn- us-ptr2len-cc-len
+    ([s m] (us-ptr2len-cc-len s 0 m))
+    ([s i m]
+        (cond
+            (or (< m 1) (eos? s i))
+                0
+            (and (< (char_u (.at s i)) 0x80) (or (== m 1) (< (char_u (.at s (inc i))) 0x80))) ;; be quick for ASCII
+                1
+            :else
+                (let [n (us-ptr2len-len s, i, m)] ;; skip over first UTF-8 char, stopping at a NUL byte
+                    (if (or (and (== n 1) (<= 0x80 (char_u (.at s i)))) (< m n)) ;; check for illegal byte and incomplete byte sequence
+                        1
+                        (let [a i m (+ i m)]
+                            ;; Check for composing characters.  We can handle only the first six, but skip all of them (otherwise the cursor would get stuck).
+                            (loop-if [i (+ i n)] (and (< i m) (<= 0x80 (char_u (.at s i)))) => (- i a)
+                                ;; Next character length should not go beyond size to ensure that UTF_COMPOSINGLIKE(...) does not read beyond size.
+                                (let [n (us-ptr2len-len s, i, (- m i))]
+                                    (recur-if (and (<= n (- m i)) (utf-iscomposing (us-ptr2char (.plus s i)))) [(+ i n)] => (- i a))
+                                )))
+                    ))
+        )))
 
 ;; Return the number of bytes the UTF-8 encoding of character "c" takes.
 ;; This does not include composing characters.
@@ -46423,10 +46378,8 @@
         lines
     ))
 
-(defn- #_int plines-m-win [#_window_C wp, #_long first, #_long last]
-    (loop [#_int n 0 #_long i first] (if (<= i last)
-        (recur (+ n (plines-win wp, i, true)) (inc i))
-    n)))
+(defn- #_int plines-m-win [#_window_C win, #_long first, #_long last]
+    (loop-if-recur [#_int n 0 #_long i first] (<= i last) [(+ n (plines-win win, i, true)) (inc i)] => n))
 
 ;; Insert string "p" at the cursor position.  Stops at a NUL byte.
 ;; Handles Replace mode and multi-byte characters.
@@ -46439,7 +46392,7 @@
 
 (defn- #_void ins-bytes-len [#_Bytes p, #_int len]
     (loop [#_int i 0] (when (< i len)
-        (let [#_int n (us-ptr2len-cc-len (.plus p i), (- len i))]
+        (let [#_int n (us-ptr2len-cc-len p, i, (- len i))]
             (ins-char-bytes (.plus p i), n)
             (recur (+ i n))
         ))
@@ -46494,7 +46447,7 @@
                     (if (and (< new_vcol @a'vcol) (at? oldp (+ col oldlen) TAB))
                         (ß BREAK)
                     )
-                    ((ß oldlen =) (+ oldlen (us-ptr2len-cc (.plus oldp (+ col oldlen)))))
+                    ((ß oldlen =) (+ oldlen (us-ptr2len-cc oldp, (+ col oldlen))))
                     ;; Deleted a bit too much, insert spaces.
                     (if (< new_vcol @a'vcol)
                         ((ß newlen =) (+ newlen (- @a'vcol new_vcol)))
@@ -46504,7 +46457,7 @@
             (non-eos? oldp col)
             (do
                 ;; normal replace
-                ((ß oldlen =) (us-ptr2len-cc (.plus oldp col)))
+                ((ß oldlen =) (us-ptr2len-cc oldp, col))
             ))
 
             ;; Push the replaced bytes onto the replace stack, so that they can be
@@ -46637,7 +46590,7 @@
 
         ;; If 'delcombine' is set and deleting (less than) one character,
         ;; only delete the last combining character.
-        (when (and @p_deco use_delcombine (<= count (us-ptr2len-cc (.plus oldp col))))
+        (when (and @p_deco use_delcombine (<= count (us-ptr2len-cc oldp, col)))
             ((ß int[] cc =) (ß new int[MAX_MCO]))
 
             (us-ptr2char-cc (.plus oldp col), cc)
@@ -52672,7 +52625,7 @@
                 ;; Highlight one character for an empty match.
                 (when (== (:startcol shl) (:endcol shl))
                     (if (non-eos? line (:endcol shl))
-                        ((ß shl.endcol =) (+ (:endcol shl) (us-ptr2len-cc (.plus line (:endcol shl)))))
+                        ((ß shl.endcol =) (+ (:endcol shl) (us-ptr2len-cc line, (:endcol shl))))
                         ((ß shl.endcol =) (inc (:endcol shl)))
                     )
                 )
@@ -52888,7 +52841,7 @@
 
                                     (when (== (:startcol shl) (:endcol shl))
                                         ;; highlight empty match, try again after it
-                                        ((ß shl.endcol =) (+ (:endcol shl) (us-ptr2len-cc (.plus line (:endcol shl)))))
+                                        ((ß shl.endcol =) (+ (:endcol shl) (us-ptr2len-cc line, (:endcol shl))))
                                     )
 
                                     ;; Loop to check if the match starts at the current position.
@@ -54048,7 +54001,7 @@
                 ;; Find first character that will fit.
                 ;; Going from start to end is much faster for DBCS.
                 (ß int i)
-                ((ß FOR) (ß ((ß i =) 0) (and (non-eos? p i) (<= (dec this_ru_col) len)) ((ß i =) (+ i (us-ptr2len-cc (.plus p i)))))
+                ((ß FOR) (ß ((ß i =) 0) (and (non-eos? p i) (<= (dec this_ru_col) len)) ((ß i =) (+ i (us-ptr2len-cc p, i))))
                     ((ß len =) (- len (us-ptr2cells (.plus p i))))
                 )
                 (when (< 0 i)
@@ -56203,7 +56156,7 @@
 
             ;; Truncate at window boundary.
             ((ß int ooo =) 0)
-            (loop-if-recur [#_int i 0] (non-eos? buffer i) [(+ i (us-ptr2len-cc (.plus buffer i)))]
+            (loop-if-recur [#_int i 0] (non-eos? buffer i) [(+ i (us-ptr2len-cc buffer, i))]
                 ((ß ooo =) (+ ooo (us-ptr2cells (.plus buffer i))))
                 (when (< width (+ this_ru_col ooo))
                     (eos! buffer i)
