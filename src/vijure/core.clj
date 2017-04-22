@@ -12,7 +12,7 @@
 (defmacro § [& _])
 (defmacro ß [& _])
 
-(defmacro def- [symbol & init] (list* 'def (vary-meta symbol assoc :private true) init))
+(defmacro def- [s i] `(def ~(vary-meta s assoc :private true) ~i))
 
 (def- null nil)
 
@@ -23,8 +23,12 @@
 (defmacro ... [a i] `(~a ~i))
 
 (defmacro any
-    ([x y z] `(~y ~x ~z))
-    ([x y z & w] `(let [x# ~x y# ~y _# (any x# y# ~z)] (if _# _# (any x# y# ~@w)))))
+    ([f x y] `(~f ~x ~y))
+    ([f x y & z] `(let [f# ~f x# ~x _# (any f# x# ~y)] (if _# _# (any f# x# ~@z)))))
+
+(defn- ==?
+    ([x y] (if (sequential? x) (if (seq x) (or (==? (first x) y) (recur (rest x) y)) false) (if (sequential? y) (recur y x) (== x y))))
+    ([x y & z] (==? x (cons y z))))
 
 (defmacro let-when [x y & w]
     (let [[_ & w] (if (= '=> (first w)) (rest w) (cons nil w))]
@@ -269,7 +273,7 @@
     (cond (== c (char_u KB_SPECIAL)) KS_SPECIAL (== c NUL) KS_ZERO :else (KEY2TERMCAP0 c)))
 
 (defn- #_byte KB-THIRD [#_int c]
-    (if (or (== c (char_u KB_SPECIAL)) (== c NUL)) KE_FILLER (KEY2TERMCAP1 c)))
+    (if (any == c (char_u KB_SPECIAL) NUL) KE_FILLER (KEY2TERMCAP1 c)))
 
 ;; Codes for keys that do not have a termcap name.
 ;;
@@ -913,7 +917,7 @@
 ;; because it doesn't include <CR> and <LF> and the like.
 
 (defn- #_boolean vim-iswhite [#_int x]
-    (or (== x (byte \space)) (== x TAB)))
+    (any == x (byte \space) TAB))
 
 (final int MAX_MCO        6)        ;; maximum value for 'maxcombine'
 
@@ -2648,7 +2652,7 @@
         ;; When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return here.
         ;; This avoids that a non-reentrant function is interrupted, e.g. free().
         ;; Calling free() again may then cause a crash.
-        (if (and (zero? @trap__entered) (or (== sigarg SIGHUP) (== sigarg SIGQUIT) (== sigarg SIGTERM) (== sigarg SIGPWR) (== sigarg SIGUSR1) (== sigarg SIGUSR2)) (not (vim-handle-signal sigarg)))
+        (if (and (zero? @trap__entered) (any == sigarg SIGHUP SIGQUIT SIGTERM SIGPWR SIGUSR1 SIGUSR2) (not (vim-handle-signal sigarg)))
             ((ß RETURN) nil)
         )
 
@@ -2786,34 +2790,29 @@
 ;; Returns true when Vim should exit.
 
 (defn- #_boolean vim-handle-signal [#_int sig]
-    (§
-        ((ß SWITCH) sig
-            ((ß CASE) SIGNAL_BLOCK)
-            (do
-                (reset! __blocked true)
-                (ß BREAK)
-            )
-            ((ß CASE) SIGNAL_UNBLOCK)
-            (do
-                (reset! __blocked false)
-                (when (non-zero? @got_signal)
-                    (.kill libc (.getpid libc), @got_signal)
-                    (reset! got_signal 0)
-                )
-                (ß BREAK)
-            )
-            (ß DEFAULT)
-            (do
-                (if (not @__blocked)
-                    ((ß RETURN) true)            ;; exit!
-                )
-                (reset! got_signal sig)
-                (if (!= sig SIGPWR)
-                    (reset! got_int true))         ;; break any loops
-                (ß BREAK)
-            )
+    (cond (== sig SIGNAL_BLOCK)
+    (do
+        (reset! __blocked true)
+        false
+    )
+    (== sig SIGNAL_UNBLOCK)
+    (do
+        (reset! __blocked false)
+        (when (non-zero? @got_signal)
+;%%         (.kill libc (.getpid libc), @got_signal)
+            (reset! got_signal 0)
         )
         false
+    )
+    @__blocked
+    (do
+        (reset! got_signal sig)
+;%%     (when (!= sig SIGPWR)
+;%%         (reset! got_int true))         ;; break any loops
+        false
+    )
+    :else
+        true            ;; exit!
     ))
 
 ;; Output a newline when exiting.
@@ -3389,7 +3388,7 @@
                 ;; to avoid that typing one 'j' too many makes the messages disappear.
 
                 (when @p_more
-                    (cond (or (== c (byte \b)) (== c (byte \k)) (== c (byte \u)) (== c (byte \g)) (== c K_UP) (== c K_PAGEUP))
+                    (cond (any == c (byte \b) (byte \k) (byte \u) (byte \g) K_UP K_PAGEUP)
                     (do
                         (cond (< @Rows @msg_scrolled)
                         (do
@@ -3414,7 +3413,7 @@
                             (hit-return-msg)
                         ))
                     )
-                    (and (< (- @Rows 2) @msg_scrolled) (or (== c (byte \j)) (== c (byte \d)) (== c (byte \f)) (== c K_DOWN) (== c K_PAGEDOWN)))
+                    (and (< (- @Rows 2) @msg_scrolled) (any == c (byte \j) (byte \d) (byte \f) K_DOWN K_PAGEDOWN))
                     (do
                         ((ß c =) K_IGNORE)
                     ))
@@ -3433,7 +3432,7 @@
 
         ;; If the user hits ':', '?' or '/' we get a command line from the next line.
 
-        (when (or (== c (byte \:)) (== c (byte \?)) (== c (byte \/)))
+        (when (any == c (byte \:) (byte \?) (byte \/))
             (reset! cmdline_row @msg_row)
             (reset! skip_redraw true)         ;; skip redraw once
             (reset! do_redraw false)
@@ -4366,7 +4365,7 @@
         (display-confirm-msg)  ;; display ":confirm" message again
         (reset! msg_row (dec (int @Rows)))
     )
-    (or (== @State HITRETURN) (== @State SETWSIZE))
+    (any == @State HITRETURN SETWSIZE)
     (do
         (when (== @msg_row (dec (int @Rows)))
             ;; Avoid drawing the "hit-enter" prompt below the previous one,
@@ -7347,7 +7346,7 @@
             ;; e.g. for ":g/pat/normal /pat" (without the <CR>).
             ;; Don't ignore it for the input() function.
 
-            (when (and (or (== c Ctrl_C) (== c @intr_char)) (!= firstc (byte \@)) (not break_ctrl_c))
+            (when (and (any == c Ctrl_C @intr_char) (!= firstc (byte \@)) (not break_ctrl_c))
                 (reset! got_int false)
             )
 
@@ -7430,7 +7429,7 @@
                         ))
                     )
 
-                    (cond (or (== c @cedit_key) (== c K_CMDWIN))
+                    (cond (any == c @cedit_key K_CMDWIN)
                     (do
                         (when (not @got_int)
                             ;; Open a window to edit the command line (and history).
@@ -7453,7 +7452,7 @@
 
                     ((ß gotesc =) false)
 
-                    (if (or (== c NUL) (== c K_ZERO))        ;; NUL is stored as NL
+                    (if (any == c NUL K_ZERO)        ;; NUL is stored as NL
                         ((ß c =) NL)
                     )
 
@@ -7472,8 +7471,7 @@
                                 ((ß c =) K_DEL)
                             )
 
-                            ;; delete current character is the same as backspace on next
-                            ;; character, except at end of line
+                            ;; Delete current character is the same as backspace on next character, except at end of line.
 
                             (if (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
                                 (swap! ccline update :cmdpos inc)
@@ -7687,7 +7685,7 @@
 
                         ((ß CASE) Ctrl_L)
                         (do
-                            (when (and @p_is (or (== firstc (byte \/)) (== firstc (byte \?))))
+                            (when (and @p_is (any == firstc (byte \/) (byte \?)))
                                 ;; Add a character from under the cursor for 'incsearch'.
                                 (when (and did_incsearch (not (eqpos (:w_cursor @curwin), old_cursor)))
                                     ((ß c =) (gchar))
@@ -7740,7 +7738,7 @@
 
                             (while true
                                 ;; one step backwards
-                                (cond (or (== c K_UP) (== c K_S_UP) (== c Ctrl_P) (== c K_PAGEUP) (== c K_KPAGEUP))
+                                (cond (any == c K_UP K_S_UP Ctrl_P K_PAGEUP K_KPAGEUP)
                                 (do
                                     (cond (== hiscnt @hislen)   ;; first time
                                     (do
@@ -7910,7 +7908,7 @@
 
             ;; 'incsearch' highlighting.
 
-            (when (and @p_is (or (== firstc (byte \/)) (== firstc (byte \?))))
+            (when (and @p_is (any == firstc (byte \/) (byte \?)))
                 ;; if there is a character waiting, search and redraw later
                 (when (char-avail)
                     ((ß incsearch_postponed =) true)
@@ -8332,8 +8330,7 @@
         (swap! textlock inc)
 
         ((ß Bytes[] a'arg =) (atom (#_Bytes object)))
-        ((ß boolean[] a'allocated =) (atom (boolean)))
-        ((ß boolean got =) (get-spec-reg regname, a'arg, a'allocated, true))
+        ((ß boolean got =) (get-spec-reg regname, a'arg, true))
 
         (swap! textlock dec)
         (restore-cmdline-alloc save_cli)
@@ -9116,7 +9113,7 @@
                     ((ß ea.cmdidx =) (ß CMD_print))
                     ((ß ea.argt =) (+ RANGE COUNT))
                     (when (nil? ((ß errormsg =) (invalid-range ea)))
-                        (correct-range ea)
+                        ((ß ea =) (correct-range ea))
 ;                       ex_print(ea);
                     )
                 )
@@ -9222,7 +9219,7 @@
                 ((ß ea.line2 =) 1)
             )
 
-            (correct-range ea)
+            ((ß ea =) (correct-range ea))
 
             ;; Skip to start of argument.
 
@@ -9475,38 +9472,14 @@
                 ((ß CASE) (byte \.))                       ;; '.' - Cursor position
                 (do
                     ((ß cmd =) (.plus cmd 1))
-                    ((ß SWITCH) addr_type
-                        ((ß CASE) ADDR_LINES)
-                        (do
-                            ((ß lnum =) (:lnum (:w_cursor @curwin)))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) ADDR_WINDOWS)
-                        (do
-                            ((ß lnum =) (current-win-nr @curwin))
-                            (ß BREAK)
-                        )
-                    )
+                    ((ß lnum =) (condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum))
                     (ß BREAK)
                 )
 
                 ((ß CASE) (byte \$))                       ;; '$' - last line
                 (do
                     ((ß cmd =) (.plus cmd 1))
-                    ((ß SWITCH) addr_type
-                        ((ß CASE) ADDR_LINES)
-                        (do
-                            ((ß lnum =) (:ml_line_count (:b_ml @curbuf)))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) ADDR_WINDOWS)
-                        (do
-                            ((ß lnum =) (current-win-nr nil))
-                            (ß BREAK)
-                        )
-                    )
+                    ((ß lnum =) (condp == addr_type ADDR_LINES (:ml_line_count (:b_ml @curbuf)) ADDR_WINDOWS (current-win-nr nil) lnum))
                     (ß BREAK)
                 )
 
@@ -9654,20 +9627,7 @@
                 )
 
                 (when (== lnum MAXLNUM)
-                    ((ß SWITCH) addr_type
-                        ((ß CASE) ADDR_LINES)
-                        (do
-                            ;; "+1" is same as ".+1"
-                            ((ß lnum =) (:lnum (:w_cursor @curwin)))
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) ADDR_WINDOWS)
-                        (do
-                            ((ß lnum =) (current-win-nr @curwin))
-                            (ß BREAK)
-                        )
-                    )
+                    ((ß lnum =) (condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum)) ;; "+1" is same as ".+1"
                 )
 
                 ((ß int m =) (if (asc-isdigit (.at cmd 0))
@@ -9698,56 +9658,32 @@
 ;; Return null when valid, error message when invalid.
 
 (defn- #_Bytes invalid-range [#_exarg_C eap]
-    (§
-        (if (or (< (:line1 eap) 0) (< (:line2 eap) 0) (< (:line2 eap) (:line1 eap)))
-            ((ß RETURN) e_invrange)
-        )
-
+    (if (or (< (:line1 eap) 0) (< (:line2 eap) 0) (< (:line2 eap) (:line1 eap)))
+        e_invrange
         (when (flag? (:argt eap) RANGE)
-            ((ß SWITCH) (:addr_type eap)
-                ((ß CASE) ADDR_LINES)
-                (do
-                    (if (and (non-flag? (:argt eap) NOTADR) (< (:ml_line_count (:b_ml @curbuf)) (:line2 eap)))
-                        ((ß RETURN) e_invrange)
-                    )
-                    (ß BREAK)
-                )
-
-                ((ß CASE) ADDR_WINDOWS)
-                (do
-                    (if (< (current-win-nr nil) (:line2 eap))
-                        ((ß RETURN) e_invrange)
-                    )
-                    (ß BREAK)
-                )
-            )
-        )
-
-        nil
+            (condp == (:addr_type eap)
+                ADDR_LINES
+                    (when (and (non-flag? (:argt eap) NOTADR) (< (:ml_line_count (:b_ml @curbuf)) (:line2 eap))) e_invrange)
+                ADDR_WINDOWS
+                    (when (< (current-win-nr nil) (:line2 eap)) e_invrange)
+            ))
     ))
 
 ;; Correct the range for zero line number, if required.
 
-(defn- #_void correct-range [#_exarg_C eap]
-    (§
-        (when (non-flag? (:argt eap) ZEROR)    ;; zero in range not allowed
-            (if (zero? (:line1 eap))
-                ((ß eap.line1 =) 1)
-            )
-            (if (zero? (:line2 eap))
-                ((ß eap.line2 =) 1)
-            )
-        )
-        nil
+(defn- #_exarg_C correct-range [#_exarg_C eap]
+    (if (non-flag? (:argt eap) ZEROR)    ;; zero in range not allowed
+        (let [eap (if (zero? (:line1 eap)) (assoc eap :line1 1) eap)
+              eap (if (zero? (:line2 eap)) (assoc eap :line2 1) eap)]
+            eap)
+        eap
     ))
 
-;; Check if *p is a separator between Ex commands.
-;; Return null if it isn't, (p + 1) if it is.
+;; Check if *cmd is a separator between Ex commands.
+;; Return null if it isn't, (cmd + 1) if it is.
 
-(defn- #_Bytes check-nextcmd [#_Bytes p]
-    (let [p (skipwhite p)]
-        (if (or (at? p (byte \|)) (at? p (byte \newline))) (.plus p 1) nil)
-    ))
+(defn- #_Bytes check-nextcmd [#_Bytes cmd]
+    (let-when [cmd (skipwhite cmd)] (or (at? cmd (byte \|)) (at? cmd (byte \newline))) (.plus cmd 1)))
 
 ;; ":close": close current window, unless it is the last one
 
@@ -10009,8 +9945,8 @@
                 ;; Note that '0' is a command and not the start of a count,
                 ;; but it's part of a count after other digits.
 
-                (while (or (<= (byte \1) c (byte \9)) (and (!= (:count0 ca) 0) (or (== c K_DEL) (== c K_KDEL) (== c (byte \0)))))
-                    (cond (or (== c K_DEL) (== c K_KDEL))
+                (while (or (<= (byte \1) c (byte \9)) (and (!= (:count0 ca) 0) (any == c K_DEL K_KDEL (byte \0))))
+                    (cond (any == c K_DEL K_KDEL)
                     (do
                         ((ß ca.count0 =) (/ (:count0 ca) 10))
                         (del-from-showcmd 4)    ;; delete the digit and ~@%
@@ -10139,7 +10075,7 @@
 
             ;; Get an additional character if we need one.
 
-            (when (and (!= (& (:cmd_flags (... nv_cmds idx)) NV_NCH) 0) (or (and (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_NOP) NV_NCH_NOP) (== (:op_type oap) OP_NOP)) (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_ALW) NV_NCH_ALW) (and (== (:cmdchar ca) (byte \q)) (== (:op_type oap) OP_NOP) (not @Recording) (not @execReg)) (and (or (== (:cmdchar ca) (byte \a)) (== (:cmdchar ca) (byte \i))) (or (!= (:op_type oap) OP_NOP) @VIsual_active))))
+            (when (and (!= (& (:cmd_flags (... nv_cmds idx)) NV_NCH) 0) (or (and (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_NOP) NV_NCH_NOP) (== (:op_type oap) OP_NOP)) (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_ALW) NV_NCH_ALW) (and (== (:cmdchar ca) (byte \q)) (== (:op_type oap) OP_NOP) (not @Recording) (not @execReg)) (and (any == (:cmdchar ca) (byte \a) (byte \i)) (or (!= (:op_type oap) OP_NOP) @VIsual_active))))
                 ((ß boolean repl =) false)                   ;; get character for replace mode
                 ((ß boolean lit =) false)                    ;; get extra character literally
 
@@ -10155,7 +10091,7 @@
 
                     ((ß ca.nchar =) (plain-vgetc))
                     ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (:nchar ca))))
-                    (cond (or (== (:nchar ca) (byte \r)) (== (:nchar ca) (byte \')) (== (:nchar ca) (byte \`)) (== (:nchar ca) Ctrl_BSL))
+                    (cond (any == (:nchar ca) (byte \r) (byte \') (byte \`) Ctrl_BSL)
                     (do
                         ((ß k'char =) :extra_char)            ;; need to get a third character
                         (if (!= (:nchar ca) (byte \r))
@@ -10207,13 +10143,13 @@
                     ;; When the next character is CTRL-\ a following CTRL-N means
                     ;; the command is aborted and we go to Normal mode.
 
-                    (cond (and (== k'char :extra_char) (== (:nchar ca) Ctrl_BSL) (or (== (:extra_char ca) Ctrl_N) (== (:extra_char ca) Ctrl_G)))
+                    (cond (and (== k'char :extra_char) (== (:nchar ca) Ctrl_BSL) (any == (:extra_char ca) Ctrl_N Ctrl_G))
                     (do
                         ((ß ca.cmdchar =) Ctrl_BSL)
                         ((ß ca.nchar =) (:extra_char ca))
                         ((ß idx =) (find--command (:cmdchar ca)))
                     )
-                    (and (or (== (:nchar ca) (byte \n)) (== (:nchar ca) (byte \N))) (== (:cmdchar ca) (byte \g)))
+                    (and (any == (:nchar ca) (byte \n) (byte \N)) (== (:cmdchar ca) (byte \g)))
                     (do
                         ((ß ca.oap.op_type =) (get-op-type (k'char ca), NUL))
                     )
@@ -10475,7 +10411,7 @@
             ;; Also redo Operator-pending Visual mode mappings.
             (when (and (or (some? (vim-strbyte @p_cpo, CPO_YANK)) (!= (:op_type oap) OP_YANK)) (or (not @VIsual_active) (!= (:motion_force oap) 0) (and @VIsual_active (== (:cmdchar cap) (byte \:)) (!= (:op_type oap) OP_COLON))) (!= (:cmdchar cap) (byte \D)))
                 (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
-                (cond (or (== (:cmdchar cap) (byte \/)) (== (:cmdchar cap) (byte \?))) ;; was a search
+                (cond (any == (:cmdchar cap) (byte \/) (byte \?)) ;; was a search
                 (do
                     ;; If 'cpoptions' does not contain 'r',
                     ;; insert the search pattern to really repeat the same command.
@@ -10679,7 +10615,7 @@
                     ;; Prepare for redoing.  Only use the nchar field for "r",
                     ;; otherwise it might be the second char of the operator.
 
-                    (cond (and (== (:cmdchar cap) (byte \g)) (or (== (:nchar cap) (byte \n)) (== (:nchar cap) (byte \N))))
+                    (cond (and (== (:cmdchar cap) (byte \g)) (any == (:nchar cap) (byte \n) (byte \N)))
                     (do
                         (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
                     )
@@ -10742,7 +10678,7 @@
                 (if @mode_displayed
                     (reset! clear_cmdline true)   ;; unshow visual mode later
                     (clear-showcmd))
-                (when (and (or (== (:op_type oap) OP_YANK) (== (:op_type oap) OP_COLON) (== (:op_type oap) OP_FUNCTION) (== (:op_type oap) OP_FILTER)) (== (:motion_force oap) NUL))
+                (when (and (any == (:op_type oap) OP_YANK OP_COLON OP_FUNCTION OP_FILTER) (== (:motion_force oap) NUL))
                     ;; make sure redrawing is correct
                     (reset! (:wo_lbr (:w_options @curwin)) lbr_saved)
                     (redraw-curbuf-later INVERTED)
@@ -10993,7 +10929,7 @@
             (reset! virtual_op MAYBE)
 
             ;; If 'sol' not set, go back to old column for some commands.
-            (when (and (not @p_sol) (== (:motion_type oap) MLINE) (not (:end_adjusted oap)) (or (== (:op_type oap) OP_LSHIFT) (== (:op_type oap) OP_RSHIFT) (== (:op_type oap) OP_DELETE)))
+            (when (and (not @p_sol) (== (:motion_type oap) MLINE) (not (:end_adjusted oap)) (any == (:op_type oap) OP_LSHIFT OP_RSHIFT OP_DELETE))
                 (reset! (:wo_lbr (:w_options @curwin)) false)
                 (swap! curwin assoc :w_curswant old_col)
                 (coladvance old_col)
@@ -11831,7 +11767,7 @@
 
                 (add-to-showcmd nchar)
 
-                (cond (or (== nchar K_DEL) (== nchar K_KDEL))
+                (cond (any == nchar K_DEL K_KDEL)
                 (do
                     ((ß n =) (/ n 10))
                 )
@@ -11844,7 +11780,7 @@
                     (win-setheight (int n))
                     (ß BREAK)
                 )
-                (or (== nchar (byte \l)) (== nchar (byte \h)) (== nchar K_LEFT) (== nchar K_RIGHT))
+                (any == nchar (byte \l) (byte \h) K_LEFT K_RIGHT)
                 (do
                     ((ß cap.count1 =) (if (non-zero? n) (* n (:count1 cap)) (:count1 cap)))
                     (ß BREAK dozet)
@@ -12131,7 +12067,7 @@
         )
 
         (when (nil? @a'ident)
-            ((ß int type =) (if (or (== cmdchar (byte \*)) (== cmdchar (byte \#))) (| FIND_IDENT FIND_STRING) FIND_IDENT))
+            ((ß int type =) (if (any == cmdchar (byte \*) (byte \#)) (| FIND_IDENT FIND_STRING) FIND_IDENT))
             (reset! a'count (find-ident-under-cursor a'ident, type))
             (when (zero? @a'count)
                 (clearop (:oap cap))
@@ -12147,7 +12083,7 @@
 
         ((ß Bytes buf =) (Bytes. (+ (* @a'count 2) 30 (STRLEN kp))))
 
-        (cond (or (== cmdchar (byte \*)) (== cmdchar (byte \#)))
+        (cond (any == cmdchar (byte \*) (byte \#))
             (do
                 ;; Put cursor at start of word, makes search skip the word under the cursor.
                 ;; Call setpcmark() first, so "*``" puts the cursor back where it was.
@@ -12211,7 +12147,7 @@
 
         ;; Execute the command.
 
-        (cond (or (== cmdchar (byte \*)) (== cmdchar (byte \#)))
+        (cond (any == cmdchar (byte \*) (byte \#))
         (do
             (if (and (not g_cmd) (us-iswordp (us-prevptr (ml-get-curline), @a'ident)))
                 (STRCAT buf, (u8 "\\>")))
@@ -12367,9 +12303,9 @@
                 ;; <BS> and <Del> wrap to previous line if 'whichwrap' has 'b'.
                 ;;           'h' wraps to previous line if 'whichwrap' has 'h'.
                 ;;     CURS_LEFT wraps to previous line if 'whichwrap' has '<'.
-                (if (and (or (and (or (== (:cmdchar cap) K_BS) (== (:cmdchar cap) Ctrl_H)) (some? (vim-strchr @p_ww, (byte \b))))
-                             (or (and (== (:cmdchar cap) (byte \h))                        (some? (vim-strchr @p_ww, (byte \h))))
-                                 (and (== (:cmdchar cap) K_LEFT)                           (some? (vim-strchr @p_ww, (byte \<))))))
+                (if (and (or (and (any == (:cmdchar cap) K_BS Ctrl_H) (some? (vim-strchr @p_ww, (byte \b))))
+                             (or (and (== (:cmdchar cap) (byte \h))   (some? (vim-strchr @p_ww, (byte \h))))
+                                 (and (== (:cmdchar cap) K_LEFT)      (some? (vim-strchr @p_ww, (byte \<))))))
                          (< 1 (:lnum (:w_cursor @curwin))))
                     (do
                         (swap! curwin update-in [:w_cursor :lnum] dec)
@@ -12508,7 +12444,7 @@
 ;; cap.nchar is NUL for ',' and ';' (repeat the search).
 
 (defn- #_cmdarg_C nv-csearch [#_cmdarg_C cap]
-    (let [#_boolean t_cmd (or (== (:cmdchar cap) (byte \t)) (== (:cmdchar cap) (byte \T))) cap (assoc-in cap [:oap :motion_type] MCHAR)]
+    (let [#_boolean t_cmd (any == (:cmdchar cap) (byte \t) (byte \T)) cap (assoc-in cap [:oap :motion_type] MCHAR)]
         (if (or (is-special (:nchar cap)) (not (searchc cap, t_cmd)))
             (do (clearopbeep (:oap cap)) cap)
             (do
@@ -12553,7 +12489,7 @@
 
         ;; "[p", "[P", "]P" and "]p": put with indent adjustment
 
-        (or (== (:nchar cap) (byte \p)) (== (:nchar cap) (byte \P)))
+        (any == (:nchar cap) (byte \p) (byte \P))
         (if (checkclearop (:oap cap))
             cap
             (let [visual? @VIsual_active
@@ -12590,7 +12526,7 @@
 
         ;; "['", "[`", "]'" and "]`": jump to next mark
 
-        (or (== (:nchar cap) (byte \')) (== (:nchar cap) (byte \`)))
+        (any == (:nchar cap) (byte \') (byte \`))
         (let [dir (if (== (:cmdchar cap) (byte \[)) BACKWARD FORWARD) sol (== (:nchar cap) (byte \'))
               pos (loop-when [pos (:w_cursor @curwin) n (:count1 cap)] (< 0 n) => pos
                     (let [next (getnextmark pos, dir, sol)]
@@ -12736,7 +12672,7 @@
             ((ß RETURN) nil)
         )
 
-        (cond (and (!= had_ctrl_v Ctrl_V) (or (== (:nchar cap) (byte \return)) (== (:nchar cap) (byte \newline))))
+        (cond (and (!= had_ctrl_v Ctrl_V) (any == (:nchar cap) (byte \return) (byte \newline)))
         (do
             ;; Replace character(s) by a single newline.
             ;; Strange vi behaviour: Only one newline is inserted.
@@ -12765,7 +12701,7 @@
                 ;; Also handles adding composing characters for utf-8.
                 (loop-when-recur [n (:count1 cap)] (< 0 n) [(dec n)]
                     (reset! State REPLACE)
-                    (if (or (== (:nchar cap) Ctrl_E) (== (:nchar cap) Ctrl_Y))
+                    (if (any == (:nchar cap) Ctrl_E Ctrl_Y)
                         (let [#_int c (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1)))]
                             (if (!= c NUL)
                                 (ins-char c)
@@ -12908,7 +12844,7 @@
 (defn- #_cmdarg_C nv-cursormark [#_cmdarg_C cap, #_boolean flag, #_pos_C pos]
     (if (check-mark pos)
         (do
-            (if (or (== (:cmdchar cap) (byte \')) (== (:cmdchar cap) (byte \`)) (== (:cmdchar cap) (byte \[)) (== (:cmdchar cap) (byte \])))
+            (if (any == (:cmdchar cap) (byte \') (byte \`) (byte \[) (byte \]))
                 (setpcmark))
             (swap! curwin assoc :w_cursor pos)
             (if flag
@@ -12936,7 +12872,7 @@
             (reset! VIsual_mode_orig @VIsual_mode)
             (reset! VIsual_mode (byte \V))
         )
-        (or (== (:cmdchar cap) (byte \C)) (== (:cmdchar cap) (byte \D)))
+        (any == (:cmdchar cap) (byte \C) (byte \D))
         (do
             (swap! curwin assoc :w_curswant MAXCOL)
         ))
@@ -12960,7 +12896,7 @@
 ;; Abbreviated commands.
 
 (defn- #_cmdarg_C nv-abbrev [#_cmdarg_C cap]
-    (let [cap (if (or (== (:cmdchar cap) K_DEL) (== (:cmdchar cap) K_KDEL)) (assoc cap :cmdchar (byte \x)) cap)] ;; DEL key behaves like 'x'
+    (let [cap (if (any == (:cmdchar cap) K_DEL K_KDEL) (assoc cap :cmdchar (byte \x)) cap)] ;; DEL key behaves like 'x'
         ;; in Visual mode these commands are operators
         (if @VIsual_active (v-visop cap) (nv-optrans cap))
     ))
@@ -13125,7 +13061,7 @@
                                 (let [cap (update cap :count1 dec)]
                                     (if (< 0 (:count1 cap)) ;; with a count select that many characters or lines
                                         (cond
-                                            (or (== @VIsual_mode (byte \v)) (== @VIsual_mode Ctrl_V)) (nv-right cap)
+                                            (any == @VIsual_mode (byte \v) Ctrl_V) (nv-right cap)
                                             (== @VIsual_mode (byte \V)) (nv-down cap)
                                             :else cap
                                         )
@@ -13860,7 +13796,7 @@
 
 (defn- #_cmdarg_C nv-wordcmd [#_cmdarg_C cap]
     (§
-        ((ß boolean word_end =) (or (== (:cmdchar cap) (byte \e)) (== (:cmdchar cap) (byte \E))))
+        ((ß boolean word_end =) (any == (:cmdchar cap) (byte \e) (byte \E)))
         ((ß cap.oap.inclusive =) word_end) ;; set inclusive for the "E" and "e" command
 
         ((ß boolean flag =) false)
@@ -14013,7 +13949,7 @@
 
 (defn- #_cmdarg_C nv-normal [#_cmdarg_C cap]
     (let [key (:nchar cap)]
-        (if (or (== key Ctrl_N) (== key Ctrl_G))
+        (if (any == key Ctrl_N Ctrl_G)
             (do
                 (clearop (:oap cap))
                 (if (and (non-zero? @restart_edit) @mode_displayed)
@@ -14070,12 +14006,12 @@
 ;; Handle "A", "a", "I", "i" and <Insert> commands.
 
 (defn- #_cmdarg_C nv-edit [#_cmdarg_C cap]
-    (let [cap (if (or (== (:cmdchar cap) K_INS) (== (:cmdchar cap) K_KINS)) (assoc cap :cmdchar (byte \i)) cap)] ;; <Insert> is equal to "i"
+    (let [cap (if (any == (:cmdchar cap) K_INS K_KINS) (assoc cap :cmdchar (byte \i)) cap)] ;; <Insert> is equal to "i"
         ;; in Visual mode "A" and "I" are an operator
-        (cond (and @VIsual_active (or (== (:cmdchar cap) (byte \A)) (== (:cmdchar cap) (byte \I))))
+        (cond (and @VIsual_active (any == (:cmdchar cap) (byte \A) (byte \I)))
             (v-visop cap)
         ;; in Visual mode and after an operator "a" and "i" are for text objects
-        (and (or (== (:cmdchar cap) (byte \a)) (== (:cmdchar cap) (byte \i))) (or (!= (:op_type (:oap cap)) OP_NOP) @VIsual_active))
+        (and (any == (:cmdchar cap) (byte \a) (byte \i)) (or (!= (:op_type (:oap cap)) OP_NOP) @VIsual_active))
             (nv-object cap)
         (checkclearopq (:oap cap))
             cap
@@ -14175,7 +14111,7 @@
         cap
     :else
         (let [nchar (:nchar cap)]
-            (cond (or (== nchar (byte \:)) (== nchar (byte \/)) (== nchar (byte \?)))
+            (cond (any == nchar (byte \:) (byte \/) (byte \?))
                 (do (stuff-char nchar) (stuff-char K_CMDWIN))
             (and (not @execReg) (not (do-record nchar))) ;; (stop) recording into a named register, unless executing a register
                 (clearopbeep (:oap cap))
@@ -15433,160 +15369,108 @@
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean insert-reg [#_int regname, #_boolean literally]
-    ;; literally: insert literally, not as if typed
-    (§
-        ((ß boolean retval =) true)
-
-        ;; It is possible to get into an endless loop by having CTRL-R a in
-        ;; register a and then, in insert mode, doing CTRL-R a.
-        ;; If you hit CTRL-C, the loop will be broken here.
-
-        (ui-breakcheck)
-        (if @got_int
-            ((ß RETURN) false)
-        )
-
-        ;; check for valid regname
-        (if (and (!= regname NUL) (not (valid-yank-reg regname, false)))
-            ((ß RETURN) false)
-        )
-
-        ((ß regname =) (may-get-selection regname))
-
-        ((ß Bytes[] a'arg =) (atom (#_Bytes object)))
-        ((ß boolean[] a'allocated =) (atom (boolean)))
-
-        (cond (== regname (byte \.))                 ;; insert last inserted text
-        (do
-            ((ß retval =) (stuff-inserted NUL, 1, true))
-        )
-        (get-spec-reg regname, a'arg, a'allocated, true)
-        (do
-            (if (nil? @a'arg)
-                ((ß RETURN) false)
-            )
-            (stuffescaped @a'arg, literally)
-        )
-        :else                                ;; name or number register
-        (do
-            (get-yank-register regname, false)
-            (cond (nil? (:y_array @y_current))
+(defn- #_boolean insert-reg [#_int regname, #_boolean literally] ;; literally: insert literally, not as if typed
+    ;; It is possible to get into an endless loop by having CTRL-R a in register a and then, in insert mode, doing CTRL-R a.
+    ;; If you hit CTRL-C, the loop will be broken here.
+    (ui-breakcheck)
+    (if (or @got_int (and (!= regname NUL) (not (valid-yank-reg regname, false)))) ;; check for valid regname
+        false
+        (let [regname (may-get-selection regname) a'arg (atom (#_Bytes object))]
+            (cond (== regname (byte \.))                 ;; insert last inserted text
+                (stuff-inserted NUL, 1, true)
+            (get-spec-reg regname, a'arg, true)
+                (if (some? @a'arg) (do (stuffescaped @a'arg, literally) true) false)
+            :else                                ;; name or number register
             (do
-                ((ß retval =) false)
-            )
-            :else
-            (do
-                (dotimes [#_int i (:y_size @y_current)]
-                    (stuffescaped (... (:y_array @y_current) i), literally)
-
-                    ;; Insert a newline between lines and after last line if y_type is MLINE.
-
-                    (if (or (== (:y_type @y_current) MLINE) (< i (- (:y_size @y_current) 1)))
-                        (stuff-char (byte \newline)))
-                )
+                (get-yank-register regname, false)
+                (if (nil? (:y_array @y_current))
+                    false
+                    (do
+                        (dotimes [#_int i (:y_size @y_current)]
+                            (stuffescaped (... (:y_array @y_current) i), literally)
+                            ;; Insert a newline between lines and after last line if y_type is MLINE.
+                            (if (or (== (:y_type @y_current) MLINE) (< i (dec (:y_size @y_current))))
+                                (stuff-char (byte \newline)))
+                        )
+                        true
+                    ))
             ))
-        ))
-
-        retval
+        )
     ))
 
 ;; Stuff a string into the typeahead buffer, such that edit() will insert it
 ;; literally ("literally" true) or interpret is as typed characters.
 
 (defn- #_void stuffescaped [#_Bytes _arg, #_boolean literally]
-    (§
-        ((ß Bytes[] a'arg =) (atom (#_Bytes object _arg)))
+    (let [a'arg (atom (#_Bytes object _arg))]
         (while (non-eos? @a'arg)
             ;; Stuff a sequence of normal ASCII characters, that's fast.
             ;; Also stuff KB_SPECIAL to get the effect of a special key when "literally" is true.
-            ((ß Bytes start =) @a'arg)
-            (while (or (and (<= (byte \space) (.at @a'arg 0)) (< (.at @a'arg 0) DEL)) (and (at? @a'arg KB_SPECIAL) (not literally)))
-                (swap! a'arg plus 1)
+            (let [#_Bytes start @a'arg]
+                (while (or (and (<= (byte \space) (.at @a'arg 0)) (< (.at @a'arg 0) DEL)) (and (at? @a'arg KB_SPECIAL) (not literally)))
+                    (swap! a'arg plus 1)
+                )
+                (if (BLT start, @a'arg)
+                    (stuffReadbuffLen start, (BDIFF @a'arg, start)))
             )
-            (if (BLT start, @a'arg)
-                (stuffReadbuffLen start, (BDIFF @a'arg, start)))
-
             ;; stuff a single special character
             (when (non-eos? @a'arg)
-                ((ß int c =) (us-ptr2char-adv a'arg, false))
-                (if (and literally (or (and (< c (byte \space)) (!= c TAB)) (== c DEL)))
-                    (stuff-char Ctrl_V))
-                (stuff-char c)
+                (let [#_int c (us-ptr2char-adv a'arg, false)]
+                    (if (and literally (or (and (< c (byte \space)) (!= c TAB)) (== c DEL)))
+                        (stuff-char Ctrl_V))
+                    (stuff-char c)
+                )
             )
         )
         nil
     ))
 
-;; If "regname" is a special register, return true and store a pointer to its value in "argp".
+;; If "regname" is a special register, return true and store a pointer to its value in "value".
 
-(defn- #_boolean get-spec-reg [#_int regname, #_Bytes' a'argp, #_boolean' a'allocated, #_boolean errmsg]
-    ;; allocated: return: true when value was allocated
-    ;; errmsg: give error message when failing
-    (§
-        (reset! a'argp nil)
-        (reset! a'allocated false)
-
-        ((ß SWITCH) regname
-            ((ß CASE) (byte \%))                                       ;; file name
-            ((ß CASE) (byte \#))                                       ;; alternate file name
-            (do
-                (reset! a'argp (ß null))
-                ((ß RETURN) false)
-            )
-
-            ((ß CASE) (byte \=))                                       ;; result of expression
-            (do
-                (reset! a'argp (get-expr-line))
-                (reset! a'allocated true)
-                ((ß RETURN) true)
-            )
-
-            ((ß CASE) (byte \:))                                       ;; last command line
-            (do
-                (if (and (nil? @last_cmdline) errmsg)
-                    (emsg e_nolastcmd))
-                (reset! a'argp @last_cmdline)
-                ((ß RETURN) true)
-            )
-
-            ((ß CASE) (byte \/))                                       ;; last search-pattern
-            (do
-                (if (and (nil? (last-search-pat)) errmsg)
-                    (emsg e_noprevre))
-                (reset! a'argp (last-search-pat))
-                ((ß RETURN) true)
-            )
-
-            ((ß CASE) (byte \.))                                       ;; last inserted text
-            (do
-                (reset! a'argp (get-last-insert-save))
-                (reset! a'allocated true)
-                (if (and (nil? @a'argp) errmsg)
-                    (emsg e_noinstext))
-                ((ß RETURN) true)
-            )
-
-            ((ß CASE) Ctrl_W)                                    ;; word under cursor
-            ((ß CASE) Ctrl_A)                                    ;; WORD (mnemonic All) under cursor
-            (do
-                (if (not errmsg)
-                    ((ß RETURN) false)
-                )
-                ((ß int cnt =) (find-ident-under-cursor a'argp, (if (== regname Ctrl_W) (| FIND_IDENT FIND_STRING) FIND_STRING)))
-                (reset! a'argp (if (non-zero? cnt) (STRNDUP @a'argp, cnt) nil))
-                (reset! a'allocated true)
-                ((ß RETURN) true)
-            )
-
-            ((ß CASE) (byte \_))               ;; black hole: always empty
-            (do
-                (reset! a'argp (u8 ""))
-                ((ß RETURN) true)
-            )
+(defn- #_boolean get-spec-reg [#_int regname, #_Bytes' a'value, #_boolean errmsg]
+    (condp ==? regname
+        (byte \=)                                       ;; result of expression
+        (do
+            (reset! a'value (get-expr-line))
+            true
         )
-
-        false
+        (byte \:)                                       ;; last command line
+        (do
+            (reset! a'value @last_cmdline)
+            (when (and (nil? @a'value) errmsg) (emsg e_nolastcmd))
+            true
+        )
+        (byte \/)                                       ;; last search-pattern
+        (do
+            (reset! a'value (last-search-pat))
+            (when (and (nil? @a'value) errmsg) (emsg e_noprevre))
+            true
+        )
+        (byte \.)                                       ;; last inserted text
+        (do
+            (reset! a'value (get-last-insert-save))
+            (when (and (nil? @a'value) errmsg) (emsg e_noinstext))
+            true
+        )
+        [Ctrl_W Ctrl_A]         ;; word under cursor ;; WORD (mnemonic All) under cursor
+        (do
+            (reset! a'value nil)
+            (when errmsg
+                (let [#_int n (find-ident-under-cursor a'value, (if (== regname Ctrl_W) (| FIND_IDENT FIND_STRING) FIND_STRING))]
+                    (reset! a'value (if (pos? n) (STRNDUP @a'value, n) nil))
+                ))
+            errmsg
+        )
+        (byte \_)               ;; black hole: always empty
+        (do
+            (reset! a'value (u8 ""))
+            true
+        )
+     ;; :else
+        (do
+            (reset! a'value nil)
+            false
+        )
     ))
 
 ;; Paste a yank register into the command line.
@@ -15629,13 +15513,13 @@
 ;; Adjust the register name "reg" for the clipboard being used always and the clipboard being available.
 
 (defn- #_int adjust-clip-reg [#_int reg]
-    (if (or (== reg (byte \*)) (== reg (byte \+))) 0 reg))
+    (if (any == reg (byte \*) (byte \+)) 0 reg))
 
 ;; When "reg" is a clipboard register, obtain the selection.
 ;; If it's not available return zero, otherwise return "reg".
 
 (defn- #_int may-get-selection [#_int reg]
-    (if (or (== reg (byte \*)) (== reg (byte \+))) 0 reg))
+    (if (any == reg (byte \*) (byte \+)) 0 reg))
 
 ;; Handle a delete operation.
 ;;
@@ -15980,7 +15864,7 @@
 (defn- #_boolean op-replace [#_oparg_C oap, #_int c]
     (§
         ((ß Bytes after_p =) nil)
-        ((ß boolean had_ctrl_v_cr =) (or (== c -1) (== c -2)))
+        ((ß boolean had_ctrl_v_cr =) (any == c -1 -2))
 
         (if (or (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY)) (:empty oap))
             ((ß RETURN) true)            ;; nothing to do
@@ -16908,8 +16792,7 @@
         ;; ':' (last command line), etc. we have to create a fake yank register.
 
         ((ß Bytes[] a'insert_string =) (atom (#_Bytes object nil)))
-        ((ß boolean[] a'allocated =) (atom (boolean false)))
-        (when (get-spec-reg regname, a'insert_string, a'allocated, true)
+        (when (get-spec-reg regname, a'insert_string, true)
             (if (nil? @a'insert_string)
                 ((ß RETURN) nil)
             )
@@ -17495,7 +17378,7 @@
                         (ß ++spaces[t])
                     )
                     ;; extra space when 'joinspaces' set and line ends in '.'
-                    (if (and @p_js (or (== endcurr1 (byte \.)) (and (nil? (vim-strbyte @p_cpo, CPO_JOINSP)) (or (== endcurr1 (byte \?)) (== endcurr1 (byte \!))))))
+                    (if (and @p_js (or (== endcurr1 (byte \.)) (and (nil? (vim-strbyte @p_cpo, CPO_JOINSP)) (any == endcurr1 (byte \?) (byte \!)))))
                         (ß ++spaces[t])
                     )
                 )
@@ -18212,7 +18095,7 @@
             ((ß RETURN) false)
         )
 
-        (when (or (== c (byte \')) (== c (byte \`)))
+        (when (any == c (byte \') (byte \`))
             (cond (== pos (:w_cursor @curwin))
             (do
                 (setpcmark)
@@ -18241,7 +18124,7 @@
             ((ß RETURN) true)
         )
 
-        (when (or (== c (byte \<)) (== c (byte \>)))
+        (when (any == c (byte \<) (byte \>))
             (if (== c (byte \<))
                 (swap! curbuf assoc-in [:b_visual :vi_start] pos)
                 (swap! curbuf assoc-in [:b_visual :vi_end] pos))
@@ -18369,15 +18252,15 @@
 (defn- #_pos_C getmark [#_int c, #_boolean _changefile]
     (cond
         (or (< c 0) (< (byte \~) c))           nil
-        (or (== c (byte \')) (== c (byte \`))) (:w_pcmark @curwin)      ;; previous context mark
+        (any == c (byte \') (byte \`)) (:w_pcmark @curwin)              ;; previous context mark
         (== c (byte \"))                       (:b_last_cursor @curbuf) ;; to pos when leaving buffer """
         (== c (byte \^))                       (:b_last_insert @curbuf) ;; to where Insert mode stopped
         (== c (byte \.))                       (:b_last_change @curbuf) ;; to where last change was made
         (== c (byte \[))                       (:b_op_start @curbuf)    ;; to start of previous operator
         (== c (byte \]))                       (:b_op_end @curbuf)      ;; to end of previous operator
-        (or (== c (byte \{)) (== c (byte \}))) nil                      ;; to previous/next paragraph
-        (or (== c (byte \()) (== c (byte \)))) nil                      ;; to previous/next sentence
-        (or (== c (byte \<)) (== c (byte \>)))                          ;; start/end of visual area
+        (any == c (byte \{) (byte \})) nil                              ;; to previous/next paragraph
+        (any == c (byte \() (byte \))) nil                              ;; to previous/next sentence
+        (any == c (byte \<) (byte \>))                                  ;; start/end of visual area
             (let [visual (:b_visual @curbuf) #_pos_C startp (:vi_start visual) #_pos_C endp (:vi_end visual)
                   #_pos_C p (if (== (== c (byte \<)) (ltpos startp, endp)) startp endp)]
                 ;; for Visual line mode, set mark at begin or end of line
@@ -19030,7 +18913,7 @@
             ;; Handle a special or multibyte character.
             ;; Handle composing chars separately.
             ((ß int c =) (us-ptr2char-adv s, false))
-            (if (or (< c (byte \space)) (== c DEL) (and (eos? (... s 0)) (or (== c (byte \0)) (== c (byte \^)))))
+            (if (or (< c (byte \space)) (== c DEL) (and (eos? (... s 0)) (any == c (byte \0) (byte \^))))
                 (add-char-buff @redobuff, Ctrl_V))
 
             ;; CTRL-V '0' must be inserted as CTRL-V 048
@@ -19219,7 +19102,7 @@
         ;; skip the count and the command character
         ((ß FOR) (ß (ß int c) (!= ((ß c =) (read-redo)) NUL) nil)
             (when (some? (vim-strchr (u8 "AaIiRrOo"), c))
-                (if (or (== c (byte \O)) (== c (byte \o)))
+                (if (any == c (byte \O) (byte \o))
                     (add-buff @readbuf2, NL_STR, -1))
                 (ß BREAK)
             )
@@ -19652,7 +19535,7 @@
 ;       {
             ((ß c =) (safe-vgetc))
 ;       }
-        ((ß WHILE) (or (== c K_IGNORE) (== c K_VER_SCROLLBAR) (== c K_HOR_SCROLLBAR)))
+        ((ß WHILE) (any == c K_IGNORE K_VER_SCROLLBAR K_HOR_SCROLLBAR))
 
         c
     ))
@@ -20257,7 +20140,7 @@
         (when (and (!= cmdchar NUL) (zero? @restart_edit))
             (resetRedobuff)
             (appendNumberToRedobuff @a'count)
-            (cond (or (== cmdchar (byte \V)) (== cmdchar (byte \v)))
+            (cond (any == cmdchar (byte \V) (byte \v))
             (do
                 ;; "gR" or "gr" command
                 (appendCharToRedobuff (byte \g))
@@ -20282,7 +20165,7 @@
         (do
             (reset! State REPLACE)
         )
-        (or (== cmdchar (byte \V)) (== cmdchar (byte \v)))
+        (any == cmdchar (byte \V) (byte \v))
         (do
             (reset! State VREPLACE)
             ((ß replaceState =) VREPLACE)
@@ -20490,7 +20373,7 @@
 
                 ((ß c =) (do-digraph c))
 
-                (when (or (== c Ctrl_V) (== c Ctrl_Q))
+                (when (any == c Ctrl_V Ctrl_Q)
                     (ins-ctrl-v)
                     ((ß c =) Ctrl_V)         ;; pretend CTRL-V is last typed character
                     (ß CONTINUE)
@@ -20847,7 +20730,7 @@
                                 ;; Insert the new value of v:char literally.
                                 (loop-when-recur [#_Bytes p s] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
                                     ((ß c =) (us-ptr2char p))
-                                    (if (or (== c CAR) (== c K_KENTER) (== c NL))
+                                    (if (any == c CAR K_KENTER NL)
                                         (ins-eol c)
                                         (ins-char c))
                                 )
@@ -21026,7 +20909,7 @@
         (if (== @pc_status PC_STATUS_RIGHT)
             (swap! curwin update :w_wcol inc)
         )
-        (if (or (== @pc_status PC_STATUS_RIGHT) (== @pc_status PC_STATUS_LEFT))
+        (if (any == @pc_status PC_STATUS_RIGHT PC_STATUS_LEFT)
             (redraw-winline (:lnum (:w_cursor @curwin)))
             (screen-puts pc_bytes, (- @pc_row @msg_scrolled), @pc_col, @pc_attr))
     )
@@ -21317,15 +21200,15 @@
             (if (and (non-flag? @State CMDLINE) (== (mb-byte2len nc) 1))
                 (add-to-showcmd nc))
 
-            (cond (or (== nc (byte \x)) (== nc (byte \X)))
+            (cond (any == nc (byte \x) (byte \X))
             (do
                 ((ß hex =) true)
             )
-            (or (== nc (byte \o)) (== nc (byte \O)))
+            (any == nc (byte \o) (byte \O))
             (do
                 ((ß octal =) true)
             )
-            (or (== nc (byte \u)) (== nc (byte \U)))
+            (any == nc (byte \u) (byte \U))
             (do
                 ((ß unicode =) nc)
             )
@@ -22183,7 +22066,7 @@
 
         (swap! no_mapping inc)
         ((ß int regname =) (plain-vgetc))
-        (when (or (== regname Ctrl_R) (== regname Ctrl_O) (== regname Ctrl_P))
+        (when (any == regname Ctrl_R Ctrl_O Ctrl_P)
             ;; Get a third key for literal register insertion.
             ((ß literally =) regname)
             (add-to-showcmd-c literally)
@@ -22208,7 +22091,7 @@
         )
         :else
         (do
-            (cond (or (== literally Ctrl_O) (== literally Ctrl_P))
+            (cond (any == literally Ctrl_O Ctrl_P)
             (do
                 ;; Append the command to the redo buffer.
                 (appendCharToRedobuff Ctrl_R)
@@ -22343,7 +22226,7 @@
                 )
 
                 (start-redo-ins)
-                (if (or (== cmdchar (byte \r)) (== cmdchar (byte \v)))
+                (if (any == cmdchar (byte \r) (byte \v))
                     (stuffRedoReadbuff ESC_STR))     ;; no ESC in redo buffer
                 (swap! redrawingDisabled inc)
                 (reset! disabled_redraw true)
@@ -22480,7 +22363,7 @@
 
         ;; 0^D and ^^D: remove all indent.
 
-        (cond (and (== c Ctrl_D) (or (== lastc (byte \0)) (== lastc (byte \^))) (< 0 (:col (:w_cursor @curwin))))
+        (cond (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor @curwin))))
         (do
             (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))
             (del-char false)                ;; delete the '^' or '0'
@@ -24755,7 +24638,7 @@
             ((ß scan =) (operand scan))
 
             ;; Starting-point info.
-            (when (or (== (re-op scan) BOL) (== (re-op scan) RE_BOF))
+            (when (any == (re-op scan) BOL RE_BOF)
                 ((ß r.reganch =) (inc (:reganch r)))
                 ((ß scan =) (regnext scan))
             )
@@ -24764,7 +24647,7 @@
             (do
                 ((ß r.regstart =) (us-ptr2char (operand scan)))
             )
-            (and (or (== (re-op scan) BOW) (== (re-op scan) EOW) (== (re-op scan) NOTHING) (== (re-op scan) (+ MOPEN 0)) (== (re-op scan) NOPEN) (== (re-op scan) (+ MCLOSE 0)) (== (re-op scan) NCLOSE)) (== (re-op (regnext scan)) EXACTLY))
+            (and (any == (re-op scan) BOW EOW NOTHING (+ MOPEN 0) NOPEN (+ MCLOSE 0) NCLOSE) (== (re-op (regnext scan)) EXACTLY))
             (do
                 ((ß r.regstart =) (us-ptr2char (operand (regnext scan))))
             ))
@@ -25190,12 +25073,12 @@
                     ((ß RETURN) nil)
                 )
                 ;; Look behind must match with behind_pos.
-                (when (or (== lop BEHIND) (== lop NOBEHIND))
+                (when (any == lop BEHIND NOBEHIND)
                     (regtail ret, (regnode BHPOS))
                     (reset! a'flagp (| @a'flagp HASLOOKBH))
                 )
                 (regtail ret, (regnode END))                 ;; operand ends
-                (cond (or (== lop BEHIND) (== lop NOBEHIND))
+                (cond (any == lop BEHIND NOBEHIND)
                 (do
                     ((ß nr =) (max 0 nr))                   ;; no limit is same as zero limit
                     (reginsert-nr lop, nr, ret)
@@ -25766,7 +25649,7 @@
                         (do
                             (when (or (asc-isdigit c) (== c (byte \<)) (== c (byte \>)) (== c (byte \')))
                                 ((ß int cmp =) c)
-                                (if (or (== cmp (byte \<)) (== cmp (byte \>)))
+                                (if (any == cmp (byte \<) (byte \>))
                                     ((ß c =) (getchr))
                                 )
 
@@ -25792,7 +25675,7 @@
                                     ))
                                     (ß BREAK)
                                 )
-                                (or (== c (byte \l)) (== c (byte \c)) (== c (byte \v)))
+                                (any == c (byte \l) (byte \c) (byte \v))
                                 (do
                                     (cond (== c (byte \l))
                                     (do
@@ -26533,7 +26416,7 @@
 
                         (reset! curchr (backslash-trans c))
                     )
-                    (and (== @reg_magic MAGIC_NONE) (or (== c (byte \$)) (== c (byte \^))))
+                    (and (== @reg_magic MAGIC_NONE) (any == c (byte \$) (byte \^)))
                     (do
                         (reset! curchr (toggle-Magic c))
                     )
@@ -27506,7 +27389,7 @@
                             ((ß int cmp =) (.at (operand scan) 1))
 
                             ((ß pos_C pos =) (getmark mark, false))
-                            (if (or (nil? pos) (<= (:lnum pos) 0) (if (== (:lnum pos) (+ @reglnum @reg_firstlnum)) (if (== (:col pos) (BDIFF @reginput, @regline)) (or (== cmp (byte \<)) (== cmp (byte \>))) (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<)))) (if (< (:lnum pos) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
+                            (if (or (nil? pos) (< (:lnum pos) 1) (if (== (:lnum pos) (+ @reglnum @reg_firstlnum)) (if (== (:col pos) (BDIFF @reginput, @regline)) (any == cmp (byte \<) (byte \>)) (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<)))) (if (< (:lnum pos) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
                                 ((ß status =) RA_NOMATCH)
                             )
                             (ß BREAK)
@@ -31856,14 +31739,14 @@
                             ((ß int n =) 0)
                             ((ß int cmp =) c)
 
-                            (if (or (== c (byte \<)) (== c (byte \>)))
+                            (if (any == c (byte \<) (byte \>))
                                 ((ß c =) (getchr))
                             )
                             (while (asc-isdigit c)
                                 ((ß n =) (+ (* n 10) (- c (byte \0))))
                                 ((ß c =) (getchr))
                             )
-                            (cond (or (== c (byte \l)) (== c (byte \c)) (== c (byte \v)))
+                            (cond (any == c (byte \l) (byte \c) (byte \v))
                             (do
                                 (cond (== c (byte \l))
                                 (do
@@ -32377,7 +32260,7 @@
                     ((ß RETURN) false)
                 )
                 (emc1 i)
-                (if (or (== i NFA_PREV_ATOM_JUST_BEFORE) (== i NFA_PREV_ATOM_JUST_BEFORE_NEG))
+                (if (any == i NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
                     (emc1 c2))
                 (ß BREAK)
             )
@@ -33341,7 +33224,7 @@
                 ((ß CASE) NFA_PREV_ATOM_JUST_BEFORE_NEG)
                 ((ß CASE) NFA_PREV_ATOM_LIKE_PATTERN)
                 (do
-                    ((ß boolean before =) (or (== (... postfix i) NFA_PREV_ATOM_JUST_BEFORE) (== (... postfix i) NFA_PREV_ATOM_JUST_BEFORE_NEG)))
+                    ((ß boolean before =) (any == (... postfix i) NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG))
                     ((ß boolean pattern =) (== (... postfix i) NFA_PREV_ATOM_LIKE_PATTERN))
 
                     (ß int start_state, end_state)
@@ -33706,7 +33589,7 @@
             )
 
             ((ß int c =) (:c state))
-            (when (or (== c NFA_START_INVISIBLE) (== c NFA_START_INVISIBLE_NEG) (== c NFA_START_INVISIBLE_BEFORE) (== c NFA_START_INVISIBLE_BEFORE_NEG))
+            (when (any == c NFA_START_INVISIBLE NFA_START_INVISIBLE_NEG NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
                 (ß boolean directly)
 
                 ;; Do it directly when what follows is possibly the end of the match.
@@ -33720,7 +33603,7 @@
                     ((ß int ch_follows =) (failure-chance (.. state (out1) (out0)), 0))
 
                     ;; Postpone when the invisible match is expensive or has a lower chance of failing.
-                    (cond (or (== c NFA_START_INVISIBLE_BEFORE) (== c NFA_START_INVISIBLE_BEFORE_NEG))
+                    (cond (any == c NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
                     (do
                         ;; "before" matches are very expensive when unbounded,
                         ;; always prefer what follows then, unless what follows will always match.
@@ -34641,145 +34524,24 @@
 ;; Check character class "class" against current character c.
 
 (defn- #_boolean check-char-class [#_int klass, #_int c]
-    (§
-        ((ß SWITCH) klass
-            ((ß CASE) NFA_CLASS_ALNUM)
-            (do
-                (if (and (<= 1 c) (<= c 255) (asc-isalnum c))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_ALPHA)
-            (do
-                (if (and (<= 1 c) (<= c 255) (asc-isalpha c))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_BLANK)
-            (do
-                (if (or (== c (byte \space)) (== c TAB))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_CNTRL)
-            (do
-                (if (and (<= 1 c) (<= c 255) (asc-iscntrl c))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_DIGIT)
-            (do
-                (if (asc-isdigit c)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_GRAPH)
-            (do
-                (if (and (<= 1 c) (<= c 255) (asc-isgraph c))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_LOWER)
-            (do
-                (if (utf-islower c)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_PRINT)
-            (do
-                (if (vim-isprintc c)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_PUNCT)
-            (do
-                (if (and (<= 1 c) (<= c 255) (asc-ispunct c))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_SPACE)
-            (do
-                (if (or (<= 9 c 13) (== c (byte \space)))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_UPPER)
-            (do
-                (if (utf-isupper c)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_XDIGIT)
-            (do
-                (if (asc-isxdigit c)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_TAB)
-            (do
-                (if (== c TAB)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_RETURN)
-            (do
-                (if (== c (byte \return))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_BACKSPACE)
-            (do
-                (if (== c (byte \backspace))
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            ((ß CASE) NFA_CLASS_ESCAPE)
-            (do
-                (if (== c ESC)
-                    ((ß RETURN) true)
-                )
-                (ß BREAK)
-            )
-
-            (ß DEFAULT)
-            (do
-                ;; should not be here :P
-                (emsgn e_ill_char_class, (long klass))
-                ((ß RETURN) false)
-            )
-        )
-
-        false
+    (condp == klass
+        NFA_CLASS_ALNUM     (and (<= 1 c 255) (asc-isalnum c))
+        NFA_CLASS_ALPHA     (and (<= 1 c 255) (asc-isalpha c))
+        NFA_CLASS_BLANK     (any == c (byte \space) TAB)
+        NFA_CLASS_CNTRL     (and (<= 1 c 255) (asc-iscntrl c))
+        NFA_CLASS_DIGIT     (asc-isdigit c)
+        NFA_CLASS_GRAPH     (and (<= 1 c 255) (asc-isgraph c))
+        NFA_CLASS_LOWER     (utf-islower c)
+        NFA_CLASS_PRINT     (vim-isprintc c)
+        NFA_CLASS_PUNCT     (and (<= 1 c 255) (asc-ispunct c))
+        NFA_CLASS_SPACE     (or (<= TAB c CAR) (== c (byte \space)))
+        NFA_CLASS_UPPER     (utf-isupper c)
+        NFA_CLASS_XDIGIT    (asc-isxdigit c)
+        NFA_CLASS_TAB       (== c TAB)
+        NFA_CLASS_RETURN    (== c (byte \return))
+        NFA_CLASS_BACKSPACE (== c (byte \backspace))
+        NFA_CLASS_ESCAPE    (== c ESC)
+        (do (emsgn e_ill_char_class, (long klass)) false) ;; should not be here :P
     ))
 
 ;; Check for a match with subexpression "subidx".
@@ -34916,7 +34678,7 @@
                 (reset! reginput (:end_ptr pim)))
         )
 
-        (when (or (== (:c state) NFA_START_INVISIBLE_BEFORE) (== (:c state) NFA_START_INVISIBLE_BEFORE_FIRST) (== (:c state) NFA_START_INVISIBLE_BEFORE_NEG) (== (:c state) NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+        (when (any == (:c state) NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_FIRST NFA_START_INVISIBLE_BEFORE_NEG NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
             ;; The recursive match must end at the current position.
             ;; When "pim" is not null it specifies the current position.
             ((ß endposp =) endpos)
@@ -35036,197 +34798,145 @@
 ;; specific character: 99
 
 (defn- #_int failure-chance [#_nfa_state_C state, #_int depth]
-    (§
-        ;; detect looping
-        (if (< 4 depth)
-            ((ß RETURN) 1)
-        )
+    (if (< 4 depth) ;; detect looping
+        1
+        (let [#_int c (:c state)]
+            (condp ==? c
+                NFA_SPLIT
+                    (if (or (== (.. state (out0) c) NFA_SPLIT) (== (.. state (out1) c) NFA_SPLIT))
+                        1 ;; avoid recursive stuff
+                        (min (failure-chance (.out0 state), (inc depth)) ;; two alternatives, use the lowest failure chance
+                             (failure-chance (.out1 state), (inc depth))))
 
-        ((ß int c =) (:c state))
+                NFA_ANY
+                    1 ;; matches anything, unlikely to fail
 
-        ((ß SWITCH) c
-            ((ß CASE) NFA_SPLIT)
-            (do
-                (when (or (== (.. state (out0) c) NFA_SPLIT) (== (.. state (out1) c) NFA_SPLIT))
-                    ;; avoid recursive stuff
-                    ((ß RETURN) 1)
+               [NFA_MATCH
+                NFA_MCLOSE
+                NFA_ANY_COMPOSING]
+                    0 ;; empty match works always
+
+               [NFA_START_INVISIBLE
+                NFA_START_INVISIBLE_FIRST
+                NFA_START_INVISIBLE_NEG
+                NFA_START_INVISIBLE_NEG_FIRST
+                NFA_START_INVISIBLE_BEFORE
+                NFA_START_INVISIBLE_BEFORE_FIRST
+                NFA_START_INVISIBLE_BEFORE_NEG
+                NFA_START_INVISIBLE_BEFORE_NEG_FIRST
+                NFA_START_PATTERN]
+                    5 ;; recursive regmatch is expensive, use low failure chance
+
+               [NFA_BOL
+                NFA_EOL
+                NFA_BOF
+                NFA_EOF
+                NFA_NEWL]
+                    99
+
+               [NFA_BOW
+                NFA_EOW]
+                    90
+
+               [NFA_MOPEN
+                NFA_MOPEN1
+                NFA_MOPEN2
+                NFA_MOPEN3
+                NFA_MOPEN4
+                NFA_MOPEN5
+                NFA_MOPEN6
+                NFA_MOPEN7
+                NFA_MOPEN8
+                NFA_MOPEN9
+                NFA_ZOPEN
+                NFA_ZOPEN1
+                NFA_ZOPEN2
+                NFA_ZOPEN3
+                NFA_ZOPEN4
+                NFA_ZOPEN5
+                NFA_ZOPEN6
+                NFA_ZOPEN7
+                NFA_ZOPEN8
+                NFA_ZOPEN9
+                NFA_ZCLOSE
+                NFA_ZCLOSE1
+                NFA_ZCLOSE2
+                NFA_ZCLOSE3
+                NFA_ZCLOSE4
+                NFA_ZCLOSE5
+                NFA_ZCLOSE6
+                NFA_ZCLOSE7
+                NFA_ZCLOSE8
+                NFA_ZCLOSE9
+                NFA_NOPEN
+                NFA_MCLOSE1
+                NFA_MCLOSE2
+                NFA_MCLOSE3
+                NFA_MCLOSE4
+                NFA_MCLOSE5
+                NFA_MCLOSE6
+                NFA_MCLOSE7
+                NFA_MCLOSE8
+                NFA_MCLOSE9
+                NFA_NCLOSE]
+                    (failure-chance (.out0 state), (inc depth))
+
+               [NFA_BACKREF1
+                NFA_BACKREF2
+                NFA_BACKREF3
+                NFA_BACKREF4
+                NFA_BACKREF5
+                NFA_BACKREF6
+                NFA_BACKREF7
+                NFA_BACKREF8
+                NFA_BACKREF9
+                NFA_ZREF1
+                NFA_ZREF2
+                NFA_ZREF3
+                NFA_ZREF4
+                NFA_ZREF5
+                NFA_ZREF6
+                NFA_ZREF7
+                NFA_ZREF8
+                NFA_ZREF9]
+                    94 ;; backreferences don't match in many places
+
+               [NFA_LNUM_GT
+                NFA_LNUM_LT
+                NFA_COL_GT
+                NFA_COL_LT
+                NFA_VCOL_GT
+                NFA_VCOL_LT
+                NFA_MARK_GT
+                NFA_MARK_LT
+                NFA_VISUAL]
+                    85 ;; before/after positions don't match very often
+
+                NFA_LNUM
+                    90
+
+               [NFA_CURSOR
+                NFA_COL
+                NFA_VCOL
+                NFA_MARK]
+                    98 ;; specific positions rarely match
+
+                NFA_COMPOSING
+                    95
+
+                (if (< 0 c)
+                    95 ;; character match fails often
+                    50 ;; something else, includes character classes
                 )
-
-                ;; two alternatives, use the lowest failure chance
-                ((ß int l =) (failure-chance (.out0 state), (inc depth)))
-                ((ß int r =) (failure-chance (.out1 state), (inc depth)))
-                ((ß RETURN) (min l r))
-            )
-
-            ((ß CASE) NFA_ANY)
-            (do
-                ;; matches anything, unlikely to fail
-                ((ß RETURN) 1)
-            )
-
-            ((ß CASE) NFA_MATCH)
-            ((ß CASE) NFA_MCLOSE)
-            ((ß CASE) NFA_ANY_COMPOSING)
-            (do
-                ;; empty match works always
-                ((ß RETURN) 0)
-            )
-
-            ((ß CASE) NFA_START_INVISIBLE)
-            ((ß CASE) NFA_START_INVISIBLE_FIRST)
-            ((ß CASE) NFA_START_INVISIBLE_NEG)
-            ((ß CASE) NFA_START_INVISIBLE_NEG_FIRST)
-            ((ß CASE) NFA_START_INVISIBLE_BEFORE)
-            ((ß CASE) NFA_START_INVISIBLE_BEFORE_FIRST)
-            ((ß CASE) NFA_START_INVISIBLE_BEFORE_NEG)
-            ((ß CASE) NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
-            ((ß CASE) NFA_START_PATTERN)
-            (do
-                ;; recursive regmatch is expensive, use low failure chance
-                ((ß RETURN) 5)
-            )
-
-            ((ß CASE) NFA_BOL)
-            ((ß CASE) NFA_EOL)
-            ((ß CASE) NFA_BOF)
-            ((ß CASE) NFA_EOF)
-            ((ß CASE) NFA_NEWL)
-            (do
-                ((ß RETURN) 99)
-            )
-
-            ((ß CASE) NFA_BOW)
-            ((ß CASE) NFA_EOW)
-            (do
-                ((ß RETURN) 90)
-            )
-
-            ((ß CASE) NFA_MOPEN)
-            ((ß CASE) NFA_MOPEN1)
-            ((ß CASE) NFA_MOPEN2)
-            ((ß CASE) NFA_MOPEN3)
-            ((ß CASE) NFA_MOPEN4)
-            ((ß CASE) NFA_MOPEN5)
-            ((ß CASE) NFA_MOPEN6)
-            ((ß CASE) NFA_MOPEN7)
-            ((ß CASE) NFA_MOPEN8)
-            ((ß CASE) NFA_MOPEN9)
-            ((ß CASE) NFA_ZOPEN)
-            ((ß CASE) NFA_ZOPEN1)
-            ((ß CASE) NFA_ZOPEN2)
-            ((ß CASE) NFA_ZOPEN3)
-            ((ß CASE) NFA_ZOPEN4)
-            ((ß CASE) NFA_ZOPEN5)
-            ((ß CASE) NFA_ZOPEN6)
-            ((ß CASE) NFA_ZOPEN7)
-            ((ß CASE) NFA_ZOPEN8)
-            ((ß CASE) NFA_ZOPEN9)
-            ((ß CASE) NFA_ZCLOSE)
-            ((ß CASE) NFA_ZCLOSE1)
-            ((ß CASE) NFA_ZCLOSE2)
-            ((ß CASE) NFA_ZCLOSE3)
-            ((ß CASE) NFA_ZCLOSE4)
-            ((ß CASE) NFA_ZCLOSE5)
-            ((ß CASE) NFA_ZCLOSE6)
-            ((ß CASE) NFA_ZCLOSE7)
-            ((ß CASE) NFA_ZCLOSE8)
-            ((ß CASE) NFA_ZCLOSE9)
-            ((ß CASE) NFA_NOPEN)
-            ((ß CASE) NFA_MCLOSE1)
-            ((ß CASE) NFA_MCLOSE2)
-            ((ß CASE) NFA_MCLOSE3)
-            ((ß CASE) NFA_MCLOSE4)
-            ((ß CASE) NFA_MCLOSE5)
-            ((ß CASE) NFA_MCLOSE6)
-            ((ß CASE) NFA_MCLOSE7)
-            ((ß CASE) NFA_MCLOSE8)
-            ((ß CASE) NFA_MCLOSE9)
-            ((ß CASE) NFA_NCLOSE)
-            (do
-                ((ß RETURN) (failure-chance (.out0 state), (inc depth)))
-            )
-
-            ((ß CASE) NFA_BACKREF1)
-            ((ß CASE) NFA_BACKREF2)
-            ((ß CASE) NFA_BACKREF3)
-            ((ß CASE) NFA_BACKREF4)
-            ((ß CASE) NFA_BACKREF5)
-            ((ß CASE) NFA_BACKREF6)
-            ((ß CASE) NFA_BACKREF7)
-            ((ß CASE) NFA_BACKREF8)
-            ((ß CASE) NFA_BACKREF9)
-            ((ß CASE) NFA_ZREF1)
-            ((ß CASE) NFA_ZREF2)
-            ((ß CASE) NFA_ZREF3)
-            ((ß CASE) NFA_ZREF4)
-            ((ß CASE) NFA_ZREF5)
-            ((ß CASE) NFA_ZREF6)
-            ((ß CASE) NFA_ZREF7)
-            ((ß CASE) NFA_ZREF8)
-            ((ß CASE) NFA_ZREF9)
-            (do
-                ;; backreferences don't match in many places
-                ((ß RETURN) 94)
-            )
-
-            ((ß CASE) NFA_LNUM_GT)
-            ((ß CASE) NFA_LNUM_LT)
-            ((ß CASE) NFA_COL_GT)
-            ((ß CASE) NFA_COL_LT)
-            ((ß CASE) NFA_VCOL_GT)
-            ((ß CASE) NFA_VCOL_LT)
-            ((ß CASE) NFA_MARK_GT)
-            ((ß CASE) NFA_MARK_LT)
-            ((ß CASE) NFA_VISUAL)
-            (do
-                ;; before/after positions don't match very often
-                ((ß RETURN) 85)
-            )
-
-            ((ß CASE) NFA_LNUM)
-            (do
-                ((ß RETURN) 90)
-            )
-
-            ((ß CASE) NFA_CURSOR)
-            ((ß CASE) NFA_COL)
-            ((ß CASE) NFA_VCOL)
-            ((ß CASE) NFA_MARK)
-            (do
-                ;; specific positions rarely match
-                ((ß RETURN) 98)
-            )
-
-            ((ß CASE) NFA_COMPOSING)
-            (do
-                ((ß RETURN) 95)
-            )
-
-            (ß DEFAULT)
-            (do
-                (when (< 0 c)
-                    ;; character match fails often
-                    ((ß RETURN) 95)
-                )
-            )
-        )
-
-        ;; something else, includes character classes
-        50
+            ))
     ))
 
 ;; Skip until the char "c" we know a match must start with.
 
 (defn- #_boolean skip-to-start [#_int c, #_int' a'colp]
-    (§
-        ;; Used often, do some work to avoid call overhead.
-        ((ß Bytes s =) (cstrchr (.plus @regline @a'colp), c))
-        (if (nil? s)
-            ((ß RETURN) false)
-        )
-
-        (reset! a'colp (BDIFF s, @regline))
-        true
+    ;; Used often, do some work to avoid call overhead.
+    (let [#_Bytes s (cstrchr (.plus @regline @a'colp), c)]
+        (if (some? s) (do (reset! a'colp (BDIFF s, @regline)) true) false)
     ))
 
 ;; Check for a match with match_text.
@@ -36904,7 +36614,7 @@
         (when (zero? (STRNCMP expr, (u8 "\\%#="), 4))
             ((ß int newengine =) (- (.at expr 4) (byte \0)))
 
-            (cond (or (== newengine AUTOMATIC_ENGINE) (== newengine BACKTRACKING_ENGINE) (== newengine NFA_ENGINE))
+            (cond (any == newengine AUTOMATIC_ENGINE BACKTRACKING_ENGINE NFA_ENGINE)
             (do
                 (reset! regexp_engine (- (.at expr 4) (byte \0)))
                 ((ß expr =) (.plus expr 5))
@@ -37170,10 +36880,10 @@
 
         (when (non-flag? options SEARCH_KEEP)
             ;; search or global command
-            (if (or (== pat_save RE_SEARCH) (== pat_save RE_BOTH))
+            (if (any == pat_save RE_SEARCH RE_BOTH)
                 (save-re-pat RE_SEARCH, pat, magic))
             ;; substitute or global command
-            (if (or (== pat_save RE_SUBST) (== pat_save RE_BOTH))
+            (if (any == pat_save RE_SUBST RE_BOTH)
                 (save-re-pat RE_SUBST, pat, magic))
         )
 
@@ -38662,7 +38372,7 @@
                     ;; Check for match outside of quotes, and inside of
                     ;; quotes when the start is also inside of quotes.
 
-                    (when (and (or (not inquote) (== start_in_quotes TRUE)) (or (== c @a'initc) (== c @a'findc)))
+                    (when (and (or (not inquote) (== start_in_quotes TRUE)) (any == c @a'initc @a'findc))
                         ((ß int bslcnt =) 0)
 
                         (when (not cpo_bsl)
@@ -38821,7 +38531,7 @@
 (defn- #_int cls []
     (§
         ((ß int c =) (gchar))
-        (if (or (== c (byte \space)) (== c TAB) (== c NUL))
+        (if (any == c (byte \space) TAB NUL)
             ((ß RETURN) 0)
         )
 
@@ -41013,7 +40723,7 @@
         ;; Recognize hex and octal.
         (when (and (at? ptr (byte \0)) (not-at? ptr 1 (byte \8)) (not-at? ptr 1 (byte \9)))
             ((ß hex =) (.at ptr 1))
-            (cond (and (non-zero? dohex) (or (== hex (byte \X)) (== hex (byte \x))) (asc-isxdigit (.at ptr 2)))
+            (cond (and (non-zero? dohex) (any == hex (byte \X) (byte \x)) (asc-isxdigit (.at ptr 2)))
             (do
                 ((ß ptr =) (.plus ptr 2))          ;; hexadecimal
             )
@@ -42489,7 +42199,7 @@
                 ((ß c =) (getdigraph @backspaced, c, false))
             )
             (reset! backspaced -1)
-            (if (and (or (== c K_BS) (== c Ctrl_H)) (<= 0 @lastchar))
+            (if (and (any == c K_BS Ctrl_H) (<= 0 @lastchar))
                 (reset! backspaced @lastchar))
         ))
         (reset! lastchar c)
@@ -43620,7 +43330,7 @@
     (§
         ;; First quick check for Latin1 characters, use 'iskeyword'.
         (when (< c 0x100)
-            (if (or (== c (byte \space)) (== c TAB) (== c NUL) (== c 0xa0))
+            (if (any == c (byte \space) TAB NUL 0xa0)
                 ((ß RETURN) 0)       ;; blank
             )
             (if (vim-iswordc c)
@@ -45056,7 +44766,7 @@
 
                     ;; find the character just before the '{' or ';'
 
-                    (when (or (== last_char (byte \{)) (== last_char (byte \;)))
+                    (when (any == last_char (byte \{) (byte \;))
                         (if (BLT s, p)
                             ((ß p =) (.minus p 1))
                         )
@@ -46036,7 +45746,7 @@
             (smsg-attr (hl-attr HLF_R), (u8 "%s (y/n)?"), q)
 
             ((ß c =) (if direct (get-keystroke) (plain-vgetc)))
-            (if (or (== c Ctrl_C) (== c ESC))
+            (if (any == c Ctrl_C ESC)
                 ((ß c =) (byte \n))
             )
 
@@ -48894,7 +48604,7 @@
                 ((ß CASE) (byte \.))                           ;; print x/y
                 (do
                                                           ;; these are chars that UNIX hates
-                    (when (or (== row TAB) (== row (byte \newline)) (== row (byte \u0004)) (== row (byte \u0000)))
+                    (when (any == row TAB (byte \newline) (byte \u0004) (byte \u0000))
                         ((ß row =) (inc row))                      ;; so go to next pos
                         (if (== reverse (== row col))
                             ((ß addup =) true)           ;; and mark UP
@@ -48952,7 +48662,7 @@
                 ((ß CASE) (byte \p))                           ;; so, what?
                 (do
                     ((ß byte d =) (.at ((ß cm =) (.plus cm 1)) -1))
-                    (if (or (== d (byte \1)) (== d (byte \2)))       ;; ignore %p1 and %p2
+                    (if (any == d (byte \1) (byte \2))       ;; ignore %p1 and %p2
                         (ß BREAK)
                     )
                     (ß FALLTHROUGH)
@@ -49253,7 +48963,7 @@
             ((ß RETURN) nil)
         )
 
-        (when (or (== @State HITRETURN) (== @State SETWSIZE))
+        (when (any == @State HITRETURN SETWSIZE)
             ;; postpone the resizing
             (reset! State SETWSIZE)
             ((ß RETURN) nil)
@@ -49293,7 +49003,7 @@
             ;; Always need to call update-screen() or screenalloc(), to make
             ;; sure Rows/Cols and the size of screenLines[] is correct!
 
-            (cond (or (== @State ASKMORE) (== @State CONFIRM))
+            (cond (any == @State ASKMORE CONFIRM)
             (do
                 (screenalloc false)
                 (repeat-message)
@@ -50688,7 +50398,7 @@
         ;; 2: wp.w_topline is below wp.w_lines[0].wl_lnum: may scroll up
         ;; 3: wp.w_topline is wp.w_lines[0].wl_lnum: find first entry in w_lines[] that needs updating.
 
-        (cond (or (== type VALID) (== type SOME_VALID) (== type INVERTED) (== type INVERTED_ALL))
+        (cond (any == type VALID SOME_VALID INVERTED INVERTED_ALL)
         (do
             (cond (and (non-zero? mod_top) (== (:w_topline wp) mod_top))
             (do
@@ -52269,7 +51979,7 @@
                         )
                         ((ß mb_utf8 =) false)                    ;; don't draw as UTF-8
                     )
-                    (and @VIsual_active (or (== @VIsual_mode Ctrl_V) (== @VIsual_mode (byte \v))) (virtual-active) (!= @a'tocol MAXCOL) (< vcol @a'tocol) (< col (:w_width wp)))
+                    (and @VIsual_active (any == @VIsual_mode Ctrl_V (byte \v)) (virtual-active) (!= @a'tocol MAXCOL) (< vcol @a'tocol) (< col (:w_width wp)))
                     (do
                         ((ß c =) (byte \space))
                         ((ß ptr =) (.minus ptr 1))                             ;; put it back at the NUL
@@ -54626,7 +54336,7 @@
         ;; For clearing the lines screen-del-lines() is used.  This will also take
         ;; care of t_db if necessary.
 
-        (if (or (== type USE_T_CD) (== type USE_T_CDL) (== type USE_T_CE) (== type USE_T_DL))
+        (if (any == type USE_T_CD USE_T_CDL USE_T_CE USE_T_DL)
             ((ß RETURN) (screen-del-lines off, row, line_count, end, false, wp))
         )
 
@@ -54880,7 +54590,7 @@
         ;; If the 'db' flag is set, we need to clear the lines that have been
         ;; scrolled up at the bottom of the region.
 
-        (when (and (non-eos? @T_DB) (or (== type USE_T_DL) (== type USE_T_CDL)))
+        (when (and (non-eos? @T_DB) (any == type USE_T_DL USE_T_CDL))
             (loop-when-recur [#_int i line_count] (< 0 i) [(dec i)]
                 (windgoto (- cursor_end i), 0)
                 (out-str @T_CE)                 ;; erase a line
@@ -54931,71 +54641,28 @@
             (when do_mode
                 (msg-puts-attr (u8 "--"), attr)
 
-                (cond (flag? @State VREPLACE_FLAG)
-                (do
-                    (msg-puts-attr (u8 " VREPLACE"), attr)
+                (cond
+                    (flag? @State VREPLACE_FLAG) (msg-puts-attr (u8 " VREPLACE"), attr)
+                    (flag? @State REPLACE_FLAG)  (msg-puts-attr (u8 " REPLACE"), attr)
+                    (flag? @State INSERT)        (msg-puts-attr (u8 " INSERT"), attr)
+                    (== @restart_edit (byte \I)) (msg-puts-attr (u8 " (insert)"), attr)
+                    (== @restart_edit (byte \R)) (msg-puts-attr (u8 " (replace)"), attr)
+                    (== @restart_edit (byte \V)) (msg-puts-attr (u8 " (vreplace)"), attr)
                 )
-                (flag? @State REPLACE_FLAG)
-                (do
-                    (msg-puts-attr (u8 " REPLACE"), attr)
-                )
-                (flag? @State INSERT)
-                (do
-                    (msg-puts-attr (u8 " INSERT"), attr)
-                )
-                (== @restart_edit (byte \I))
-                (do
-                    (msg-puts-attr (u8 " (insert)"), attr)
-                )
-                (== @restart_edit (byte \R))
-                (do
-                    (msg-puts-attr (u8 " (replace)"), attr)
-                )
-                (== @restart_edit (byte \V))
-                (do
-                    (msg-puts-attr (u8 " (vreplace)"), attr)
-                ))
 
                 (if (and (flag? @State INSERT) @p_paste)
                     (msg-puts-attr (u8 " (paste)"), attr))
 
                 (when @VIsual_active
-                    (ß Bytes p)
-
                     ;; Don't concatenate separate words to avoid translation problems.
-                    ((ß SWITCH) (+ (if @VIsual_select 4 0) (if (== @VIsual_mode Ctrl_V) 2 0) (if (== @VIsual_mode (byte \V)) 1 0))
-                        ((ß CASE) 0)
-                        (do
-                            ((ß p =) (u8 " VISUAL"))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) 1)
-                        (do
-                            ((ß p =) (u8 " VISUAL LINE"))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) 2)
-                        (do
-                            ((ß p =) (u8 " VISUAL BLOCK"))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) 4)
-                        (do
-                            ((ß p =) (u8 " SELECT"))
-                            (ß BREAK)
-                        )
-                        ((ß CASE) 5)
-                        (do
-                            ((ß p =) (u8 " SELECT LINE"))
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT)
-                        (do
-                            ((ß p =) (u8 " SELECT BLOCK"))
-                            (ß BREAK)
-                        )
-                    )
-                    (msg-puts-attr p, attr)
+                    (-> (condp == (+ (if @VIsual_select 4 0) (if (== @VIsual_mode Ctrl_V) 2 0) (if (== @VIsual_mode (byte \V)) 1 0))
+                            0 (u8 " VISUAL")
+                            1 (u8 " VISUAL LINE")
+                            2 (u8 " VISUAL BLOCK")
+                            4 (u8 " SELECT")
+                            5 (u8 " SELECT LINE")
+                            6 (u8 " SELECT BLOCK"))
+                        (msg-puts-attr attr))
                 )
                 (msg-puts-attr (u8 " --"), attr)
 
@@ -55277,314 +54944,130 @@
 
 ;; all CTRL-W window commands are handled here, called from normal-cmd().
 
-(defn- #_void do-window [#_int nchar, #_long Prenum, #_int xchar]
-    ;; xchar: extra char from ":wincmd gx" or NUL
-    (§
-        ((ß Bytes cbuf =) (Bytes. 40))
-
-        ((ß long Prenum1 =) (if (zero? Prenum) 1 Prenum))
-
-        ((ß SWITCH) nchar
+(defn- #_void do-window [#_int nchar, #_long Prenum, #_int xchar] ;; xchar: extra char from ":wincmd gx" or NUL
+    (let [#_Bytes cbuf (Bytes. 40) #_long Prenum1 (if (zero? Prenum) 1 Prenum)]
+        (condp ==? nchar
             ;; split current window in two parts, horizontally
-            ((ß CASE) (byte \S))
-            ((ß CASE) Ctrl_S)
-            ((ß CASE) (byte \s))
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (reset-VIsual-and-resel)
-                (win-split (int Prenum), 0)
-                (ß BREAK)
-            )
+            [(byte \S) Ctrl_S (byte \s)]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-split Prenum, 0)))
 
             ;; split current window in two parts, vertically
-            ((ß CASE) Ctrl_V)
-            ((ß CASE) (byte \v))
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (reset-VIsual-and-resel)
-                (win-split (int Prenum), WSP_VERT)
-                (ß BREAK)
-            )
+            [Ctrl_V (byte \v)]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-split Prenum, WSP_VERT)))
 
             ;; quit current window
-            ((ß CASE) Ctrl_Q)
-            ((ß CASE) (byte \q))
-            (do
-                (reset-VIsual-and-resel)
-                (cmd-with-count (u8 "quit"), cbuf, (.size cbuf), Prenum)
-                (do-cmdline-cmd cbuf)
-                (ß BREAK)
-            )
+            [Ctrl_Q (byte \q)]
+                (do (reset-VIsual-and-resel) (cmd-with-count (u8 "quit"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
 
             ;; close current window
-            ((ß CASE) Ctrl_C)
-            ((ß CASE) (byte \c))
-            (do
-                (reset-VIsual-and-resel)
-                (cmd-with-count (u8 "close"), cbuf, (.size cbuf), Prenum)
-                (do-cmdline-cmd cbuf)
-                (ß BREAK)
-            )
+            [Ctrl_C (byte \c)]
+                (do (reset-VIsual-and-resel) (cmd-with-count (u8 "close"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
 
             ;; close all but current window
-            ((ß CASE) Ctrl_O)
-            ((ß CASE) (byte \o))
-            (do
-                (when (non-zero? @cmdwin_type)
+            [Ctrl_O (byte \o)]
+                (if (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
-                    (ß BREAK)
+                    (do (reset-VIsual-and-resel) (cmd-with-count (u8 "only"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
                 )
-                (reset-VIsual-and-resel)
-                (cmd-with-count (u8 "only"), cbuf, (.size cbuf), Prenum)
-                (do-cmdline-cmd cbuf)
-                (ß BREAK)
-            )
 
-            ;; cursor to next window with wrap around
-            ((ß CASE) Ctrl_W)
-            ((ß CASE) (byte \w))
-            ;; cursor to previous window with wrap around
-            ((ß CASE) (byte \W))
-            (do
-                (when (non-zero? @cmdwin_type)
+            ;; cursor to next window with wrap around ;; cursor to previous window with wrap around
+            [Ctrl_W (byte \w) (byte \W)]
+                (cond (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (cond (and (== @firstwin @lastwin) (!= Prenum 1)) ;; just one window
-                (do
+                (and (== @firstwin @lastwin) (!= Prenum 1)) ;; just one window
                     (beep-flush)
-                )
                 :else
-                (do
-                    (ß window_C wp)
-                    (cond (non-zero? Prenum)                    ;; go to specified window
-                    (do
-                        ((ß FOR) (ß ((ß wp =) @firstwin) (< 0 ((ß Prenum =) (dec Prenum))) nil)
-                            (if (nil? (:w_next wp))
-                                (ß BREAK)
-                                ((ß wp =) (:w_next wp))
-                            )
-                        )
-                    )
-                    :else
-                    (do
-                        (cond (== nchar (byte \W))           ;; go to previous window
-                        (do
-                            ((ß wp =) (:w_prev @curwin))
-                            (if (nil? wp)
-                                ((ß wp =) @lastwin)       ;; wrap around
-                            )
-                        )
+                (let [#_window_C win
+                        (cond (non-zero? Prenum)                    ;; go to specified window
+                            (loop-when-recur [win @firstwin n Prenum] (and (< 1 n) (some? (:w_next win))) [(:w_next win) (dec n)] => win)
+                        (== nchar (byte \W))           ;; go to previous window
+                            (or (:w_prev @curwin) @lastwin)       ;; wrap around
                         :else                        ;; go to next window
-                        (do
-                            ((ß wp =) (:w_next @curwin))
-                            (if (nil? wp)
-                                ((ß wp =) @firstwin)      ;; wrap around
-                            )
-                        ))
-                    ))
-                    (win-goto wp)
+                            (or (:w_next @curwin) @firstwin)      ;; wrap around
+                        )]
+                    (win-goto win)
                 ))
-                (ß BREAK)
-            )
 
             ;; cursor to window below
-            ((ß CASE) (byte \j))
-            ((ß CASE) K_DOWN)
-            ((ß CASE) Ctrl_J)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (win-goto-ver false, Prenum1)
-                (ß BREAK)
-            )
+            [(byte \j) K_DOWN Ctrl_J]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (win-goto-ver false, Prenum1))
 
             ;; cursor to window above
-            ((ß CASE) (byte \k))
-            ((ß CASE) K_UP)
-            ((ß CASE) Ctrl_K)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (win-goto-ver true, Prenum1)
-                (ß BREAK)
-            )
+            [(byte \k) K_UP Ctrl_K]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (win-goto-ver true, Prenum1))
 
             ;; cursor to left window
-            ((ß CASE) (byte \h))
-            ((ß CASE) K_LEFT)
-            ((ß CASE) Ctrl_H)
-            ((ß CASE) K_BS)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (win-goto-hor true, Prenum1)
-                (ß BREAK)
-            )
+            [(byte \h) K_LEFT Ctrl_H K_BS]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (win-goto-hor true, Prenum1))
 
             ;; cursor to right window
-            ((ß CASE) (byte \l))
-            ((ß CASE) K_RIGHT)
-            ((ß CASE) Ctrl_L)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (win-goto-hor false, Prenum1)
-                (ß BREAK)
-            )
+            [(byte \l) K_RIGHT Ctrl_L]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (win-goto-hor false, Prenum1))
 
             ;; cursor to top-left window
-            ((ß CASE) (byte \t))
-            ((ß CASE) Ctrl_T)
-            (do
+            [(byte \t) Ctrl_T]
                 (win-goto @firstwin)
-                (ß BREAK)
-            )
 
             ;; cursor to bottom-right window
-            ((ß CASE) (byte \b))
-            ((ß CASE) Ctrl_B)
-            (do
+            [(byte \b) Ctrl_B]
                 (win-goto @lastwin)
-                (ß BREAK)
-            )
 
             ;; cursor to last accessed (previous) window
-            ((ß CASE) (byte \p))
-            ((ß CASE) Ctrl_P)
-            (do
-                (if (nil? @prevwin)
-                    (beep-flush)
-                    (win-goto @prevwin))
-                (ß BREAK)
-            )
+            [(byte \p) Ctrl_P]
+                (if (some? @prevwin) (win-goto @prevwin) (beep-flush))
 
             ;; exchange current and next window
-            ((ß CASE) (byte \x))
-            ((ß CASE) Ctrl_X)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (win-exchange Prenum)
-                (ß BREAK)
-            )
+            [(byte \x) Ctrl_X]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (win-exchange Prenum))
 
             ;; rotate windows downwards
-            ((ß CASE) Ctrl_R)
-            ((ß CASE) (byte \r))
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (reset-VIsual-and-resel)
-                (win-rotate false, (int Prenum1))
-                (ß BREAK)
-            )
+            [Ctrl_R (byte \r)]
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-rotate false, Prenum1)))
 
             ;; rotate windows upwards
-            ((ß CASE) (byte \R))
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (reset-VIsual-and-resel)
-                (win-rotate true, (int Prenum1))
-                (ß BREAK)
-            )
+            (byte \R)
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-rotate true, Prenum1)))
 
             ;; move window to the very top/bottom/left/right
-            ((ß CASE) (byte \K))
-            ((ß CASE) (byte \J))
-            ((ß CASE) (byte \H))
-            ((ß CASE) (byte \L))
-            (do
-                (when (non-zero? @cmdwin_type)
+            [(byte \K) (byte \J) (byte \H) (byte \L)]
+                (if (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
-                    (ß BREAK)
+                    (win-totop Prenum, (| (if (any == nchar (byte \H) (byte \L)) WSP_VERT 0) (if (any == nchar (byte \H) (byte \K)) WSP_TOP WSP_BOT)))
                 )
-                (win-totop (int Prenum), (| (if (or (== nchar (byte \H)) (== nchar (byte \L))) WSP_VERT 0) (if (or (== nchar (byte \H)) (== nchar (byte \K))) WSP_TOP WSP_BOT)))
-                (ß BREAK)
-            )
 
             ;; make all windows the same height
-            ((ß CASE) (byte \=))
-            (do
+            (byte \=)
                 (win-equal nil, false, (byte \b))
-                (ß BREAK)
-            )
 
             ;; increase current window height
-            ((ß CASE) (byte \+))
-            (do
-                (win-setheight (+ (:w_height @curwin) (int Prenum1)))
-                (ß BREAK)
-            )
+            (byte \+)
+                (win-setheight (+ (:w_height @curwin) Prenum1))
 
             ;; decrease current window height
-            ((ß CASE) (byte \-))
-            (do
-                (win-setheight (- (:w_height @curwin) (int Prenum1)))
-                (ß BREAK)
-            )
+            (byte \-)
+                (win-setheight (- (:w_height @curwin) Prenum1))
 
             ;; set current window height
-            ((ß CASE) Ctrl__)
-            ((ß CASE) (byte \_))
-            (do
-                (win-setheight (if (non-zero? Prenum) (int Prenum) 9999))
-                (ß BREAK)
-            )
+            [Ctrl__ (byte \_)]
+                (win-setheight (if (non-zero? Prenum) Prenum 9999))
 
             ;; increase current window width
-            ((ß CASE) (byte \>))
-            (do
-                (win-setwidth (+ (:w_width @curwin) (int Prenum1)))
-                (ß BREAK)
-            )
+            (byte \>)
+                (win-setwidth (+ (:w_width @curwin) Prenum1))
 
             ;; decrease current window width
-            ((ß CASE) (byte \<))
-            (do
-                (win-setwidth (- (:w_width @curwin) (int Prenum1)))
-                (ß BREAK)
-            )
+            (byte \<)
+                (win-setwidth (- (:w_width @curwin) Prenum1))
 
             ;; set current window width
-            ((ß CASE) (byte \|))
-            (do
-                (win-setwidth (if (non-zero? Prenum) (int Prenum) 9999))
-                (ß BREAK)
-            )
+            (byte \|)
+                (win-setwidth (if (non-zero? Prenum) Prenum 9999))
 
-            ((ß CASE) K_KENTER)
-            ((ß CASE) CAR)
-            (do
-                (ß BREAK)
-            )
+            [K_KENTER CAR]
+                nil
 
-            (ß DEFAULT)
-            (do
+         ;; :else
                 (beep-flush)
-                (ß BREAK)
-            )
         )
         nil
     ))
@@ -55625,19 +55108,7 @@
         ((ß boolean do_equal =) false)
         ((ß int oldwin_height =) 0)
 
-        (ß window_C oldwin)
-        (cond (flag? flags WSP_TOP)
-        (do
-            ((ß oldwin =) @firstwin)
-        )
-        (flag? flags WSP_BOT)
-        (do
-            ((ß oldwin =) @lastwin)
-        )
-        :else
-        (do
-            ((ß oldwin =) @curwin)
-        ))
+        ((ß window_C oldwin =) (cond (flag? flags WSP_TOP) @firstwin (flag? flags WSP_BOT) @lastwin :else @curwin))
 
         ((ß int need_status =) 0)
         ;; add a status line when p_ls == 1 and splitting the first window
