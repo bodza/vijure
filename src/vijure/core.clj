@@ -21421,19 +21421,14 @@
                 :else
                 (let [op (if (with-nl op) (- op ADD_NL) op) #_int c (us-ptr2char @reginput)]
                     ((ß status =) (condp ==? op
-                        RE_BOL
-                            (if (BNE @reginput, @regline) RA_NIL status)
 
-                        RE_EOL
-                            (if (!= c NUL) RA_NIL status)
+                        RE_BOL  (if (BNE @reginput, @regline) RA_NIL status)
+                        RE_EOL  (if (!= c NUL)                RA_NIL status)
 
                         ;; We're not at the beginning of the file when below the first line where we started,
                         ;; not at the start of the line or we didn't start at the first line of the buffer.
-                        RE_BOF
-                            (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NIL status)
-
-                        RE_EOF
-                            (if (or (!= @reglnum @reg_maxline) (!= c NUL)) RA_NIL status)
+                        RE_BOF  (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NIL status)
+                        RE_EOF  (if (or (!= @reglnum @reg_maxline) (!= c NUL))                                                       RA_NIL status)
 
                         RE_CURSOR ;; compare the cursor position to the match position
                             (if (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NIL status)
@@ -21452,9 +21447,9 @@
                         RE_VISUAL
                             (if (not (reg-match-visual)) RA_NIL status)
 
-                        RE_LNUM     (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan)))                    RA_NIL status)
-                        RE_COL      (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                      RA_NIL status)
-                        RE_VCOL     (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
+                        RE_LNUM (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan)))                    RA_NIL status)
+                        RE_COL  (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                      RA_NIL status)
+                        RE_VCOL (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
 
                         RE_BOW ;; \<word; reginput points to w
                             (if (== c NUL) ;; can't match at end of line
@@ -21474,147 +21469,87 @@
                         ANY ;; does not match new lines
                             (if (== c NUL) RA_NIL RA_STEP)
 
-                        IDENT   (if                                     (not (vim-isidentc c))                        RA_NIL RA_STEP)
-                        SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))                       RA_NIL RA_STEP)
-                        KWORD   (if                                     (not (us-iswordp @reginput))                  RA_NIL RA_STEP)
-                        SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput)))                 RA_NIL RA_STEP)
-                        FNAME   (if                                     (not (vim-isfnamec c))                        RA_NIL RA_STEP)
-                        SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))                       RA_NIL RA_STEP)
-                        PRINT   (if                                     (not (vim-isprintc (us-ptr2char @reginput)))  RA_NIL RA_STEP)
-                        SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc (us-ptr2char @reginput)))) RA_NIL RA_STEP)
+                        IDENT   (if (not (vim-isidentc c))       RA_NIL RA_STEP)    SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))       RA_NIL RA_STEP)
+                        KWORD   (if (not (us-iswordp @reginput)) RA_NIL RA_STEP)    SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput))) RA_NIL RA_STEP)
+                        FNAME   (if (not (vim-isfnamec c))       RA_NIL RA_STEP)    SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))       RA_NIL RA_STEP)
+                        PRINT   (if (not (vim-isprintc c))       RA_NIL RA_STEP)    SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc c)))       RA_NIL RA_STEP)
 
-                        WHITE   (if           (not (vim-iswhite c)) RA_NIL RA_STEP)
-                        NWHITE  (if (or (== c NUL) (vim-iswhite c)) RA_NIL RA_STEP)
-                        DIGIT   (if           (not (ri-digit c))    RA_NIL RA_STEP)
-                        NDIGIT  (if (or (== c NUL) (ri-digit c))    RA_NIL RA_STEP)
-                        HEX     (if           (not (ri-hex c))      RA_NIL RA_STEP)
-                        NHEX    (if (or (== c NUL) (ri-hex c))      RA_NIL RA_STEP)
-                        OCTAL   (if           (not (ri-octal c))    RA_NIL RA_STEP)
-                        NOCTAL  (if (or (== c NUL) (ri-octal c))    RA_NIL RA_STEP)
-                        WORD    (if           (not (ri-word c))     RA_NIL RA_STEP)
-                        NWORD   (if (or (== c NUL) (ri-word c))     RA_NIL RA_STEP)
-                        HEAD    (if           (not (ri-head c))     RA_NIL RA_STEP)
-                        NHEAD   (if (or (== c NUL) (ri-head c))     RA_NIL RA_STEP)
-                        ALPHA   (if           (not (ri-alpha c))    RA_NIL RA_STEP)
-                        NALPHA  (if (or (== c NUL) (ri-alpha c))    RA_NIL RA_STEP)
-                        LOWER   (if           (not (ri-lower c))    RA_NIL RA_STEP)
-                        NLOWER  (if (or (== c NUL) (ri-lower c))    RA_NIL RA_STEP)
-                        UPPER   (if           (not (ri-upper c))    RA_NIL RA_STEP)
-                        NUPPER  (if (or (== c NUL) (ri-upper c))    RA_NIL RA_STEP)
+                        WHITE   (if (not (vim-iswhite c))        RA_NIL RA_STEP)    NWHITE  (if (or (== c NUL)                           (vim-iswhite c))         RA_NIL RA_STEP)
+                        DIGIT   (if (not (ri-digit c))           RA_NIL RA_STEP)    NDIGIT  (if (or (== c NUL)                           (ri-digit c))            RA_NIL RA_STEP)
+                        HEX     (if (not (ri-hex c))             RA_NIL RA_STEP)    NHEX    (if (or (== c NUL)                           (ri-hex c))              RA_NIL RA_STEP)
+                        OCTAL   (if (not (ri-octal c))           RA_NIL RA_STEP)    NOCTAL  (if (or (== c NUL)                           (ri-octal c))            RA_NIL RA_STEP)
+                        WORD    (if (not (ri-word c))            RA_NIL RA_STEP)    NWORD   (if (or (== c NUL)                           (ri-word c))             RA_NIL RA_STEP)
+                        HEAD    (if (not (ri-head c))            RA_NIL RA_STEP)    NHEAD   (if (or (== c NUL)                           (ri-head c))             RA_NIL RA_STEP)
+                        ALPHA   (if (not (ri-alpha c))           RA_NIL RA_STEP)    NALPHA  (if (or (== c NUL)                           (ri-alpha c))            RA_NIL RA_STEP)
+                        LOWER   (if (not (ri-lower c))           RA_NIL RA_STEP)    NLOWER  (if (or (== c NUL)                           (ri-lower c))            RA_NIL RA_STEP)
+                        UPPER   (if (not (ri-upper c))           RA_NIL RA_STEP)    NUPPER  (if (or (== c NUL)                           (ri-upper c))            RA_NIL RA_STEP)
 
                         EXACTLY
-                        (do
-                            ((ß Bytes opnd =) (operand scan))
-                            ;; Inline the first byte, for speed.
-                            (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_ic))
-                            (do
-                                ((ß status =) RA_NIL)
-                            )
-                            (eos? opnd)
-                            (do
-                                ;; match empty string always works; happens when "~" is empty.
-                            )
-                            :else
-                            (do
-                                ((ß int[] a'len =) (atom (int)))
-                                (cond (and (eos? opnd 1) (not @ireg_ic))
-                                (do
-                                    (reset! a'len 1)        ;; matched a single byte above
-                                )
+                            (let [#_Bytes opnd (operand scan)]
+                                ;; Inline the first byte for speed.
+                                (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_ic))
+                                    RA_NIL
+                                ;; Match empty string always works; happens when "~" is empty.
+                                (eos? opnd)
+                                    status
                                 :else
-                                (do
-                                    ;; Need to match first byte again for multi-byte.
-                                    (reset! a'len (STRLEN opnd))
-                                    ((ß status =) (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NIL status))
+                                    (let [a'len (atom (int))
+                                          status
+                                            (if (and (eos? opnd 1) (not @ireg_ic))
+                                                (do (reset! a'len 1) ;; matched a single byte above
+                                                    status)
+                                                ;; Need to match first byte again for multi-byte.
+                                                (do (reset! a'len (STRLEN opnd))
+                                                    (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NIL status)
+                                                ))
+                                          ;; Check for following composing character, unless %C follows (skips over all composing chars).
+                                          status
+                                            (if (and (!= status RA_NIL) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
+                                                ;; This code makes a composing character get ignored, which is the correct behavior (sometimes) for voweled Hebrew texts.
+                                                RA_NIL status
+                                            )]
+                                        (when (!= status RA_NIL)
+                                            (swap! reginput plus @a'len))
+                                        status)
                                 ))
-                                ;; Check for following composing character, unless %C follows (skips over all composing chars).
-                                (when (and (!= status RA_NIL) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
-                                    ;; This code makes a composing character get ignored,
-                                    ;; which is the correct behavior (sometimes)
-                                    ;; for voweled Hebrew texts.
-                                    ((ß status =) RA_NIL)
-                                )
-                                (if (!= status RA_NIL)
-                                    (swap! reginput plus @a'len))
-                            ))
-                            (ß BREAK) status
-                        )
 
                        [ANYOF ANYBUT]
-                        (do
-                            (cond (== c NUL)
-                            (do
-                                ((ß status =) RA_NIL)
-                            )
-                            (== (nil? (cstrchr (operand scan), c)) (== op ANYOF))
-                            (do
-                                ((ß status =) RA_NIL)
-                            )
-                            :else
-                            (do
-                                ((ß status =) RA_STEP)
-                            ))
-                            (ß BREAK) status
-                        )
+                            (if (or (== c NUL) (== (nil? (cstrchr (operand scan), c)) (== op ANYOF))) RA_NIL RA_STEP)
 
                         MULTIBYTECODE
-                        (do
-                            ((ß Bytes opnd =) (operand scan))
                             ;; Safety check (just in case 'encoding' was changed since compiling the program).
-                            ((ß int len =) (us-ptr2len-cc opnd))
-                            (when (< len 2)
-                                ((ß status =) RA_NIL)
-                                (ß BREAK) status
-                            )
-                            ((ß int opndc =) (us-ptr2char opnd))
-                            (cond (utf-iscomposing opndc)
-                            (do
-                                ;; When only a composing char is given match at any
-                                ;; position where that composing char appears.
-                                ((ß status =) RA_NIL)
-                                (loop-when-recur [#_int i 0] (non-eos? @reginput i) [(+ i (us-ptr2len @reginput, i))]
-                                    ((ß int inpc =) (us-ptr2char @reginput, i))
-                                    (cond (not (utf-iscomposing inpc))
-                                    (do
-                                        (if (< 0 i)
-                                            (ß BREAK)
-                                        )
-                                    )
-                                    (== opndc inpc)
-                                    (do
-                                        ;; Include all following composing chars.
-                                        ((ß len =) (+ i (us-ptr2len-cc @reginput, i)))
-                                        ((ß status =) RA_MATCH)
-                                        (ß BREAK)
-                                    ))
-                                )
-                            )
-                            :else
-                            (do
-                                (dotimes [#_int i len]
-                                    (when (not-at? opnd i (.at @reginput i))
-                                        ((ß status =) RA_NIL)
-                                        (ß BREAK)
-                                    )
-                                )
-                            ))
-
-                            (swap! reginput plus len)
-                            (ß BREAK) status
-                        )
+                            (let-when [#_Bytes opnd (operand scan) #_int len (us-ptr2len-cc opnd)] (< 1 len) => RA_NIL
+                                (let [#_int opndc (us-ptr2char opnd)
+                                      [len status]
+                                        (if (utf-iscomposing opndc)
+                                            ;; When only a composing char is given, match at any position where that composing char appears.
+                                            (loop-when [#_int i 0] (non-eos? @reginput i) => [len RA_NIL]
+                                                (let [#_int inpc (us-ptr2char @reginput, i)]
+                                                    (if (utf-iscomposing inpc)
+                                                        (if (== opndc inpc)
+                                                            [(+ i (us-ptr2len-cc @reginput, i)) RA_MATCH] ;; include all following composing chars
+                                                            (recur (+ i (us-ptr2len @reginput, i)))
+                                                        )
+                                                        (if (< 0 i)
+                                                            [len RA_NIL]
+                                                            (recur (+ i (us-ptr2len @reginput, i)))
+                                                        ))
+                                                ))
+                                            (loop-when [#_int i 0] (< i len) => [len status]
+                                                (recur-if (at? opnd i (.at @reginput i)) [(inc i)] => [len RA_NIL]))
+                                        )]
+                                    (swap! reginput plus len)
+                                    status
+                                ))
 
                         RE_COMPOSING
-                        (do
-                            ;; Skip composing characters.
-                            (while (utf-iscomposing (us-ptr2char @reginput))
-                                (swap! reginput #(.plus % (us-ptr2len %))))
-                            (ß BREAK) status
-                        )
+                            (do ;; Skip composing characters.
+                                (while (utf-iscomposing (us-ptr2char @reginput))
+                                    (swap! reginput #(.plus % (us-ptr2len %))))
+                                status)
 
                         NOTHING
-                        (do
-                            (ß BREAK) status
-                        )
+                            status
 
                         BACK
                         (do
@@ -23017,7 +22952,7 @@
         ))
     nil)
 
-;; Compare two strings, ignore case if ireg_ic set.
+;; Compare two strings, ignore case if "ireg_ic" set.
 ;; Return 0 if strings match, non-zero otherwise.
 ;; Correct the length "*n" when composing characters are ignored.
 
