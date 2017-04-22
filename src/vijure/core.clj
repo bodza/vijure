@@ -25255,39 +25255,32 @@
         nil
     ))
 
-;; regrepeat - repeatedly match something simple, return how many.
+;; Repeatedly match something simple, return how many.
 ;; Advances reginput (and reglnum) to just after the matched chars.
 
-(defn- #_int regrepeat [#_Bytes p, #_long maxcount]
-    ;; maxcount: maximum number of matches allowed
+(defn- #_int regrepeat [#_Bytes p, #_long m] ;; m(axcount): maximum number of matches allowed
     (§
-        ((ß long count =) 0)
+        ((ß long n =) 0)
         ((ß int testval =) 0)
         (ß int mask)
 
-        ((ß Bytes scan =) @reginput)     ;; Make local copy of reginput for speed.
+        ((ß Bytes s =) @reginput)     ;; Make local copy of reginput for speed.
         ((ß Bytes opnd =) (operand p))
 
 ;       do_class:
 ;       {
-            ((ß SWITCH) (re-op p)
-                ((ß CASE) ANY)
-                ((ß CASE) (+ ANY ADD_NL))
+            (condp ==? (re-op p)
+               [ANY (+ ANY ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
-                        ;; Matching anything means we continue until end-of-line (or
-                        ;; end-of-file for ANY + ADD_NL), only limited by maxcount.
-                        (loop-when [] (and (non-eos? scan) (< count maxcount))
-                            ((ß count =) (inc count))
-                            ((ß scan =) (.plus scan (us-ptr2len-cc scan)))
-                            (recur)
-                        )
-                        (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr (== count maxcount))
+                    (loop-when [] (< n m)
+                        ;; Matching anything means we continue until end-of-line (or end-of-file for ANY + ADD_NL), only limited by m(axcount).
+                        ((ß [s n] =) (loop-when-recur [s s n n] (and (non-eos? s) (< n m)) [(.plus s (us-ptr2len-cc s)) (inc n)] => [s n]))
+                        (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr (== n m))
                             (ß BREAK)
                         )
-                        ((ß count =) (inc count))                ;; count the line-break
+                        ((ß n =) (inc n))                ;; count the line-break
                         (reg-nextline)
-                        ((ß scan =) @reginput)
+                        ((ß s =) @reginput)
                         (if @got_int
                             (ß BREAK)
                         )
@@ -25296,289 +25289,259 @@
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) IDENT)
-                ((ß CASE) (+ IDENT ADD_NL))
+               [IDENT (+ IDENT ADD_NL)]
                 (do
                     ((ß testval =) TRUE)
                     (ß FALLTHROUGH)
                 )
-                ((ß CASE) SIDENT)
-                ((ß CASE) (+ SIDENT ADD_NL))
+               [SIDENT (+ SIDENT ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
-                        (cond (and (vim-isIDc (us-ptr2char scan)) (or (non-zero? testval) (not (asc-isdigit (.at scan 0)))))
+                    ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
+                        (cond (and (vim-isIDc (us-ptr2char s)) (or (non-zero? testval) (not (asc-isdigit (.at s 0)))))
                         (do
-                            ((ß scan =) (.plus scan (us-ptr2len-cc scan)))
+                            ((ß s =) (.plus s (us-ptr2len-cc s)))
                         )
-                        (eos? scan)
+                        (eos? s)
                         (do
                             (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                                 (ß BREAK)
                             )
                             (reg-nextline)
-                            ((ß scan =) @reginput)
+                            ((ß s =) @reginput)
                             (if @got_int
                                 (ß BREAK)
                             )
                         )
-                        (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                        (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                         (do
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         )
                         :else
                         (do
                             (ß BREAK)
                         ))
-                        ((ß count =) (inc count))
-                        (recur)
-                    )
+                        (recur s (inc n))
+                    ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) KWORD)
-                ((ß CASE) (+ KWORD ADD_NL))
+               [KWORD (+ KWORD ADD_NL)]
                 (do
                     ((ß testval =) TRUE)
                     (ß FALLTHROUGH)
                 )
-                ((ß CASE) SKWORD)
-                ((ß CASE) (+ SKWORD ADD_NL))
+               [SKWORD (+ SKWORD ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
-                        (cond (and (us-iswordp scan) (or (non-zero? testval) (not (asc-isdigit (.at scan 0)))))
+                    ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
+                        (cond (and (us-iswordp s) (or (non-zero? testval) (not (asc-isdigit (.at s 0)))))
                         (do
-                            ((ß scan =) (.plus scan (us-ptr2len-cc scan)))
+                            ((ß s =) (.plus s (us-ptr2len-cc s)))
                         )
-                        (eos? scan)
+                        (eos? s)
                         (do
                             (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                                 (ß BREAK)
                             )
                             (reg-nextline)
-                            ((ß scan =) @reginput)
+                            ((ß s =) @reginput)
                             (if @got_int
                                 (ß BREAK)
                             )
                         )
-                        (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                        (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                         (do
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         )
                         :else
                         (do
                             (ß BREAK)
                         ))
-                        ((ß count =) (inc count))
-                        (recur)
-                    )
+                        (recur s (inc n))
+                    ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) FNAME)
-                ((ß CASE) (+ FNAME ADD_NL))
+               [FNAME (+ FNAME ADD_NL)]
                 (do
                     ((ß testval =) TRUE)
                     (ß FALLTHROUGH)
                 )
-                ((ß CASE) SFNAME)
-                ((ß CASE) (+ SFNAME ADD_NL))
+               [SFNAME (+ SFNAME ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
-                        (cond (and (vim-isfilec (us-ptr2char scan)) (or (non-zero? testval) (not (asc-isdigit (.at scan 0)))))
+                    ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
+                        (cond (and (vim-isfilec (us-ptr2char s)) (or (non-zero? testval) (not (asc-isdigit (.at s 0)))))
                         (do
-                            ((ß scan =) (.plus scan (us-ptr2len-cc scan)))
+                            ((ß s =) (.plus s (us-ptr2len-cc s)))
                         )
-                        (eos? scan)
+                        (eos? s)
                         (do
                             (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                                 (ß BREAK)
                             )
                             (reg-nextline)
-                            ((ß scan =) @reginput)
+                            ((ß s =) @reginput)
                             (if @got_int
                                 (ß BREAK)
                             )
                         )
-                        (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                        (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                         (do
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         )
                         :else
                         (do
                             (ß BREAK)
                         ))
-                        ((ß count =) (inc count))
-                        (recur)
-                    )
+                        (recur s (inc n))
+                    ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) PRINT)
-                ((ß CASE) (+ PRINT ADD_NL))
+               [PRINT (+ PRINT ADD_NL)]
                 (do
                     ((ß testval =) TRUE)
                     (ß FALLTHROUGH)
                 )
-                ((ß CASE) SPRINT)
-                ((ß CASE) (+ SPRINT ADD_NL))
+               [SPRINT (+ SPRINT ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
-                        (cond (eos? scan)
+                    ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
+                        (cond (eos? s)
                         (do
                             (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                                 (ß BREAK)
                             )
                             (reg-nextline)
-                            ((ß scan =) @reginput)
+                            ((ß s =) @reginput)
                             (if @got_int
                                 (ß BREAK)
                             )
                         )
-                        (and (vim-isprintc (us-ptr2char scan)) (or (non-zero? testval) (not (asc-isdigit (.at scan 0)))))
+                        (and (vim-isprintc (us-ptr2char s)) (or (non-zero? testval) (not (asc-isdigit (.at s 0)))))
                         (do
-                            ((ß scan =) (.plus scan (us-ptr2len-cc scan)))
+                            ((ß s =) (.plus s (us-ptr2len-cc s)))
                         )
-                        (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                        (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                         (do
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         )
                         :else
                         (do
                             (ß BREAK)
                         ))
-                        ((ß count =) (inc count))
-                        (recur)
-                    )
+                        (recur s (inc n))
+                    ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) WHITE)
-                ((ß CASE) (+ WHITE ADD_NL))
+               [WHITE (+ WHITE ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_WHITE))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NWHITE)
-                ((ß CASE) (+ NWHITE ADD_NL))
+               [NWHITE (+ NWHITE ADD_NL)]
                 (do
                     ((ß mask =) RI_WHITE)
                     (ß BREAK)
                 )
 
-                ((ß CASE) DIGIT)
-                ((ß CASE) (+ DIGIT ADD_NL))
+               [DIGIT (+ DIGIT ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_DIGIT))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NDIGIT)
-                ((ß CASE) (+ NDIGIT ADD_NL))
+               [NDIGIT (+ NDIGIT ADD_NL)]
                 (do
                     ((ß mask =) RI_DIGIT)
                     (ß BREAK)
                 )
 
-                ((ß CASE) HEX)
-                ((ß CASE) (+ HEX ADD_NL))
+               [HEX (+ HEX ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_HEX))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NHEX)
-                ((ß CASE) (+ NHEX ADD_NL))
+               [NHEX (+ NHEX ADD_NL)]
                 (do
                     ((ß mask =) RI_HEX)
                     (ß BREAK)
                 )
 
-                ((ß CASE) OCTAL)
-                ((ß CASE) (+ OCTAL ADD_NL))
+               [OCTAL (+ OCTAL ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_OCTAL))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NOCTAL)
-                ((ß CASE) (+ NOCTAL ADD_NL))
+               [NOCTAL (+ NOCTAL ADD_NL)]
                 (do
                     ((ß mask =) RI_OCTAL)
                     (ß BREAK)
                 )
 
-                ((ß CASE) WORD)
-                ((ß CASE) (+ WORD ADD_NL))
+               [WORD (+ WORD ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_WORD))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NWORD)
-                ((ß CASE) (+ NWORD ADD_NL))
+               [NWORD (+ NWORD ADD_NL)]
                 (do
                     ((ß mask =) RI_WORD)
                     (ß BREAK)
                 )
 
-                ((ß CASE) HEAD)
-                ((ß CASE) (+ HEAD ADD_NL))
+               [HEAD (+ HEAD ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_HEAD))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NHEAD)
-                ((ß CASE) (+ NHEAD ADD_NL))
+               [NHEAD (+ NHEAD ADD_NL)]
                 (do
                     ((ß mask =) RI_HEAD)
                     (ß BREAK)
                 )
 
-                ((ß CASE) ALPHA)
-                ((ß CASE) (+ ALPHA ADD_NL))
+               [ALPHA (+ ALPHA ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_ALPHA))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NALPHA)
-                ((ß CASE) (+ NALPHA ADD_NL))
+               [NALPHA (+ NALPHA ADD_NL)]
                 (do
                     ((ß mask =) RI_ALPHA)
                     (ß BREAK)
                 )
 
-                ((ß CASE) LOWER)
-                ((ß CASE) (+ LOWER ADD_NL))
+               [LOWER (+ LOWER ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_LOWER))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NLOWER)
-                ((ß CASE) (+ NLOWER ADD_NL))
+               [NLOWER (+ NLOWER ADD_NL)]
                 (do
                     ((ß mask =) RI_LOWER)
                     (ß BREAK)
                 )
 
-                ((ß CASE) UPPER)
-                ((ß CASE) (+ UPPER ADD_NL))
+               [UPPER (+ UPPER ADD_NL)]
                 (do
                     ((ß testval =) ((ß mask =) RI_UPPER))
                     (ß BREAK)
                 )
 
-                ((ß CASE) NUPPER)
-                ((ß CASE) (+ NUPPER ADD_NL))
+               [NUPPER (+ NUPPER ADD_NL)]
                 (do
                     ((ß mask =) RI_UPPER)
                     (ß BREAK)
                 )
 
-                ((ß CASE) EXACTLY)
+                EXACTLY
                 (do
                     ;; This doesn't do a multi-byte character, because a MULTIBYTECODE would have
                     ;; been used for it.  It does handle single-byte characters, such as latin1.
@@ -25586,98 +25549,84 @@
                     (do
                         ((ß int cu =) (utf-toupper (.at opnd 0)))
                         ((ß int cl =) (utf-tolower (.at opnd 0)))
-                        (loop-when [] (and (< count maxcount) (or (at? scan cu) (at? scan cl)))
-                            ((ß count =) (inc count))
-                            ((ß scan =) (.plus scan 1))
-                            (recur)
-                        )
+                        ((ß [n s] =) (loop-when-recur [n n s s] (and (< n m) (or (at? s cu) (at? s cl))) [(inc n) (.plus s 1)] => [n s]))
                     )
                     :else
                     (do
                         ((ß int cu =) (.at opnd 0))
-                        (loop-when [] (and (< count maxcount) (at? scan cu))
-                            ((ß count =) (inc count))
-                            ((ß scan =) (.plus scan 1))
-                            (recur)
-                        )
+                        ((ß [n s] =) (loop-when-recur [n n s s] (and (< n m) (at? s cu)) [(inc n) (.plus s 1)] => [n s]))
                     ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) MULTIBYTECODE)
+                MULTIBYTECODE
                 (do
                     ;; Safety check (just in case 'encoding' was changed since compiling the program).
                     ((ß int len =) (us-ptr2len-cc opnd))
                     (when (< 1 len)
-                        ((ß int cf =) 0)
-                        ((ß cf =) (if @ireg_ic (utf-fold (us-ptr2char opnd)) cf))
-                        (loop-when [] (< count maxcount)
-                            ((ß int i =) (loop-when-recur [i 0] (and (< i len) (at? opnd i (.at scan i))) [(inc i)] => i))
-                            (if (and (< i len) (or (not @ireg_ic) (!= (utf-fold (us-ptr2char scan)) cf)))
+                        ((ß int cf =) (if @ireg_ic (utf-fold (us-ptr2char opnd)) 0))
+                        ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
+                            ((ß int i =) (loop-when-recur [i 0] (and (< i len) (at? opnd i (.at s i))) [(inc i)] => i))
+                            (if (and (< i len) (or (not @ireg_ic) (!= (utf-fold (us-ptr2char s)) cf)))
                                 (ß BREAK)
                             )
-                            ((ß scan =) (.plus scan len))
-                            ((ß count =) (inc count))
-                            (recur)
-                        )
+                            (recur (.plus s len) (inc n))
+                        ))
                     )
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) ANYOF)
-                ((ß CASE) (+ ANYOF ADD_NL))
+               [ANYOF (+ ANYOF ADD_NL)]
                 (do
                     ((ß testval =) TRUE)
                     (ß FALLTHROUGH)
                 )
-                ((ß CASE) ANYBUT)
-                ((ß CASE) (+ ANYBUT ADD_NL))
+               [ANYBUT (+ ANYBUT ADD_NL)]
                 (do
-                    (loop-when [] (< count maxcount)
+                    ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
                         (ß int len)
-                        (cond (eos? scan)
+                        (cond (eos? s)
                         (do
                             (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                                 (ß BREAK)
                             )
                             (reg-nextline)
-                            ((ß scan =) @reginput)
+                            ((ß s =) @reginput)
                             (if @got_int
                                 (ß BREAK)
                             )
                         )
-                        (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                        (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                         (do
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         )
-                        (< 1 ((ß len =) (us-ptr2len-cc scan)))
+                        (< 1 ((ß len =) (us-ptr2len-cc s)))
                         (do
-                            (if (== (nil? (cstrchr opnd, (us-ptr2char scan))) (non-zero? testval))
+                            (if (== (nil? (cstrchr opnd, (us-ptr2char s))) (non-zero? testval))
                                 (ß BREAK)
                             )
-                            ((ß scan =) (.plus scan len))
+                            ((ß s =) (.plus s len))
                         )
                         :else
                         (do
-                            (if (== (nil? (cstrchr opnd, (.at scan 0))) (non-zero? testval))
+                            (if (== (nil? (cstrchr opnd, (.at s 0))) (non-zero? testval))
                                 (ß BREAK)
                             )
-                            ((ß scan =) (.plus scan 1))
+                            ((ß s =) (.plus s 1))
                         ))
-                        ((ß count =) (inc count))
-                        (recur)
-                    )
+                        (recur s (inc n))
+                    ))
                     (ß BREAK do_class)
                 )
 
-                ((ß CASE) NEWL)
+                NEWL
                 (do
-                    (loop-when [] (and (< count maxcount) (or (and (eos? scan) (<= @reglnum @reg_maxline) (not @reg_line_lbr) (nil? @reg_match)) (and (at? scan (byte \newline)) @reg_line_lbr)))
-                        ((ß count =) (inc count))
+                    (loop-when [] (and (< n m) (or (and (eos? s) (<= @reglnum @reg_maxline) (not @reg_line_lbr) (nil? @reg_match)) (and (at? s (byte \newline)) @reg_line_lbr)))
+                        ((ß n =) (inc n))
                         (if @reg_line_lbr
                             (swap! reginput #(.plus % (us-ptr2len-cc %)))
                             (reg-nextline))
-                        ((ß scan =) @reginput)
+                        ((ß s =) @reginput)
                         (if @got_int
                             (ß BREAK)
                         )
@@ -25686,53 +25635,51 @@
                     (ß BREAK do_class)
                 )
 
-                (ß DEFAULT)                ;; Oh dear.  Called inappropriately.
-                (do
+                (do                         ;; Oh dear.  Called inappropriately.
                     (emsg e_re_corr)
                     (ß BREAK do_class)
                 )
             )
 
-            (loop-when [] (< count maxcount)
+            ((ß [s n] =) (loop-when [s s n n] (< n m) => [s n]
                 (ß int l)
-                (cond (eos? scan)
+                (cond (eos? s)
                 (do
                     (if (or (some? @reg_match) (not (with-nl (re-op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
                         (ß BREAK)
                     )
                     (reg-nextline)
-                    ((ß scan =) @reginput)
+                    ((ß s =) @reginput)
                     (if @got_int
                         (ß BREAK)
                     )
                 )
-                (< 1 ((ß l =) (us-ptr2len-cc scan)))
+                (< 1 ((ß l =) (us-ptr2len-cc s)))
                 (do
                     (if (non-zero? testval)
                         (ß BREAK)
                     )
-                    ((ß scan =) (.plus scan l))
+                    ((ß s =) (.plus s l))
                 )
-                (== (& (... @class_tab (char_u (.at scan 0))) mask) testval)
+                (== (& (... @class_tab (char_u (.at s 0))) mask) testval)
                 (do
-                    ((ß scan =) (.plus scan 1))
+                    ((ß s =) (.plus s 1))
                 )
-                (and @reg_line_lbr (at? scan (byte \newline)) (with-nl (re-op p)))
+                (and @reg_line_lbr (at? s (byte \newline)) (with-nl (re-op p)))
                 (do
-                    ((ß scan =) (.plus scan 1))
+                    ((ß s =) (.plus s 1))
                 )
                 :else
                 (do
                     (ß BREAK)
                 ))
-                ((ß count =) (inc count))
-                (recur)
-            )
+                (recur s (inc n))
+            ))
 ;       }
 
-        (reset! reginput scan)
+        (reset! reginput s)
 
-        (int count)
+        n
     ))
 
 ;; Dig the "next" pointer out of a node.
@@ -27020,117 +26967,48 @@
     CLASS_underscore 0x01)
 
 (defn- #_int nfa-recognize-char-class [#_Bytes start, #_Bytes end, #_boolean newl]
-    (§
-        ((ß int config =) 0)
-
-        (if (not-at? end (byte \]))
-            ((ß RETURN) 0)
-        )
-
-        ((ß Bytes p =) start)
-        (when (at? p (byte \^))
-            ((ß config =) (| config CLASS_not))
-            ((ß p =) (.plus p 1))
-        )
-
-        (loop-when [] (BLT p, end)
-            (cond (and (BLT (.plus p 2), end) (at? p 1 (byte \-)))
-            (do
-                ((ß SWITCH) (.at p 0)
-                    ((ß CASE) (byte \0))
-                    (do
-                        (cond (at? p 2 (byte \9))
-                        (do
-                            ((ß config =) (| config CLASS_o9))
-                            (ß BREAK)
-                        )
-                        (at? p 2 (byte \7))
-                        (do
-                            ((ß config =) (| config CLASS_o7))
-                            (ß BREAK)
-                        ))
-                        (ß FALLTHROUGH)
-                    )
-                    ((ß CASE) (byte \a))
-                    (do
-                        (cond (at? p 2 (byte \z))
-                        (do
-                            ((ß config =) (| config CLASS_az))
-                            (ß BREAK)
-                        )
-                        (at? p 2 (byte \f))
-                        (do
-                            ((ß config =) (| config CLASS_af))
-                            (ß BREAK)
-                        ))
-                        (ß FALLTHROUGH)
-                    )
-                    ((ß CASE) (byte \A))
-                    (do
-                        (cond (at? p 2 (byte \Z))
-                        (do
-                            ((ß config =) (| config CLASS_AZ))
-                            (ß BREAK)
-                        )
-                        (at? p 2 (byte \F))
-                        (do
-                            ((ß config =) (| config CLASS_AF))
-                            (ß BREAK)
-                        ))
-                        (ß FALLTHROUGH)
-                    )
-                    (ß DEFAULT)
-                    (do
-                        ((ß RETURN) 0)
-                    )
-                )
-                ((ß p =) (.plus p 3))
-            )
-            (and (BLT (.plus p 1), end) (at? p (byte \\)) (at? p 1 (byte \n)))
-            (do
-                ((ß newl =) true)
-                ((ß p =) (.plus p 2))
-            )
-            (at? p (byte \_))
-            (do
-                ((ß config =) (| config CLASS_underscore))
-                ((ß p =) (.plus p 1))
-            )
-            (at? p (byte \newline))
-            (do
-                ((ß newl =) true)
-                ((ß p =) (.plus p 1))
-            )
-            :else
-            (do
-                ((ß RETURN) 0)
+    (if (not-at? end (byte \]))
+        0
+        (let-when [[#_int x #_Bytes p] (if (at? start (byte \^)) [CLASS_not (.plus start 1)] [0 start])
+              [x p newl :as _]
+                (loop-when [x x p p newl newl] (BLT p, end) => [x p newl]
+                    (cond (and (BLT (.plus p 2), end) (at? p 1 (byte \-)))
+                        (let-when [x (condp == (.at p 0)
+                                    (byte \0) (condp == (.at p 2) (byte \9) (| x CLASS_o9) (byte \7) (| x CLASS_o7) nil)
+                                    (byte \a) (condp == (.at p 2) (byte \z) (| x CLASS_az) (byte \f) (| x CLASS_af) nil)
+                                    (byte \A) (condp == (.at p 2) (byte \Z) (| x CLASS_AZ) (byte \F) (| x CLASS_AF) nil)
+                                nil)] (some? x) => nil
+                            (recur x (.plus p 3) newl))
+                    (and (BLT (.plus p 1), end) (at? p (byte \\)) (at? p 1 (byte \n)))
+                        (recur x (.plus p 2) true)
+                    (at? p (byte \_))
+                        (recur (| x CLASS_underscore) (.plus p 1) newl)
+                    (at? p (byte \newline))
+                        (recur x (.plus p 1) true)
+                    ))
+        ] (some? _) => 0
+            (if (BNE p, end)
+                0
+                (let [#_int nfa_add_nl (if newl NFA_ADD_NL 0)]
+                    (condp == x
+                        CLASS_o9                                               (+ nfa_add_nl NFA_DIGIT)
+                     (| CLASS_not CLASS_o9)                                    (+ nfa_add_nl NFA_NDIGIT)
+                     (| CLASS_af CLASS_AF CLASS_o9)                            (+ nfa_add_nl NFA_HEX)
+                     (| CLASS_not CLASS_af CLASS_AF CLASS_o9)                  (+ nfa_add_nl NFA_NHEX)
+                        CLASS_o7                                               (+ nfa_add_nl NFA_OCTAL)
+                     (| CLASS_not CLASS_o7)                                    (+ nfa_add_nl NFA_NOCTAL)
+                     (| CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore)           (+ nfa_add_nl NFA_WORD)
+                     (| CLASS_not CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore) (+ nfa_add_nl NFA_NWORD)
+                     (| CLASS_az CLASS_AZ CLASS_underscore)                    (+ nfa_add_nl NFA_HEAD)
+                     (| CLASS_not CLASS_az CLASS_AZ CLASS_underscore)          (+ nfa_add_nl NFA_NHEAD)
+                     (| CLASS_az CLASS_AZ)                                     (+ nfa_add_nl NFA_ALPHA)
+                     (| CLASS_not CLASS_az CLASS_AZ)                           (+ nfa_add_nl NFA_NALPHA)
+                        CLASS_az                                               (+ nfa_add_nl NFA_LOWER_IC)
+                     (| CLASS_not CLASS_az)                                    (+ nfa_add_nl NFA_NLOWER_IC)
+                        CLASS_AZ                                               (+ nfa_add_nl NFA_UPPER_IC)
+                     (| CLASS_not CLASS_AZ)                                    (+ nfa_add_nl NFA_NUPPER_IC)
+                0))
             ))
-            (recur)
-        )
-
-        (if (BNE p, end)
-            ((ß RETURN) 0)
-        )
-
-        (let [#_int nfa_add_nl (if newl NFA_ADD_NL 0)]
-            (condp == config
-                CLASS_o9                                               (+ nfa_add_nl NFA_DIGIT)
-             (| CLASS_not CLASS_o9)                                    (+ nfa_add_nl NFA_NDIGIT)
-             (| CLASS_af CLASS_AF CLASS_o9)                            (+ nfa_add_nl NFA_HEX)
-             (| CLASS_not CLASS_af CLASS_AF CLASS_o9)                  (+ nfa_add_nl NFA_NHEX)
-                CLASS_o7                                               (+ nfa_add_nl NFA_OCTAL)
-             (| CLASS_not CLASS_o7)                                    (+ nfa_add_nl NFA_NOCTAL)
-             (| CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore)           (+ nfa_add_nl NFA_WORD)
-             (| CLASS_not CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore) (+ nfa_add_nl NFA_NWORD)
-             (| CLASS_az CLASS_AZ CLASS_underscore)                    (+ nfa_add_nl NFA_HEAD)
-             (| CLASS_not CLASS_az CLASS_AZ CLASS_underscore)          (+ nfa_add_nl NFA_NHEAD)
-             (| CLASS_az CLASS_AZ)                                     (+ nfa_add_nl NFA_ALPHA)
-             (| CLASS_not CLASS_az CLASS_AZ)                           (+ nfa_add_nl NFA_NALPHA)
-                CLASS_az                                               (+ nfa_add_nl NFA_LOWER_IC)
-             (| CLASS_not CLASS_az)                                    (+ nfa_add_nl NFA_NLOWER_IC)
-                CLASS_AZ                                               (+ nfa_add_nl NFA_UPPER_IC)
-             (| CLASS_not CLASS_AZ)                                    (+ nfa_add_nl NFA_NUPPER_IC)
-        0))
     ))
 
 ;; helper functions used when doing re2post() ... regatom() parsing
@@ -27430,262 +27308,172 @@
 ;; minimize surprise and keep the syntax consistent.
 
 (defn- #_boolean nfa-regcoll- [#_int c, #_int extra, #_Bytes old_regparse]
-    (§
-        ;; [abc]  uses NFA_START_COLL - NFA_END_COLL
-        ;; [^abc] uses NFA_START_NEG_COLL - NFA_END_NEG_COLL
-        ;; Each character is produced as a regular state,
-        ;; using NFA_CONCAT to bind them together.
-        ;; Besides normal characters there can be:
-        ;; - character classes  NFA_CLASS_*
-        ;; - ranges, two characters followed by NFA_RANGE.
-
-        ((ß Bytes p =) @regparse)
-        ((ß Bytes endp =) (skip-anyof p))
-
-        (when (at? endp (byte \]))
+    ;; [abc]  uses NFA_START_COLL - NFA_END_COLL
+    ;; [^abc] uses NFA_START_NEG_COLL - NFA_END_NEG_COLL
+    ;; Each character is produced as a regular state,
+    ;; using NFA_CONCAT to bind them together.
+    ;; Besides normal characters there can be:
+    ;; - character classes  NFA_CLASS_*
+    ;; - ranges, two characters followed by NFA_RANGE.
+    (let [#_Bytes p @regparse #_Bytes endp (skip-anyof p)]
+        (cond (at? endp (byte \]))
             ;; Try to reverse engineer character classes.  For example,
             ;; recognize that [0-9] stands for \d and [A-Za-z_] for \h,
             ;; and perform the necessary substitutions in the NFA.
-
-            ((ß int result =) (nfa-recognize-char-class @regparse, endp, (== extra NFA_ADD_NL)))
-            (when (non-zero? result)
-                (cond (<= NFA_FIRST_NL result NFA_LAST_NL)
-                (do
-                    (emc1 (- result NFA_ADD_NL))
-                    (emc1 NFA_NEWL)
-                    (emc1 NFA_OR)
-                )
-                :else
-                (do
-                    (emc1 result)
-                ))
-                (reset! regparse endp)
-                (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                ((ß RETURN) true)
-            )
-
-            ;; Failed to recognize a character class.
-            ;; Use the simple version that turns [abc] into 'a' OR 'b' OR 'c'.
-
-            ((ß int startc =) -1)
-            ((ß int endc =) -1)
-            ((ß int oldstartc =) -1)
-
-            ((ß boolean negated =) false)
-            (cond (at? @regparse (byte \^))                   ;; negated range
-            (do
-                ((ß negated =) true)
-                (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                (emc1 NFA_START_NEG_COLL)
-            )
-            :else
-            (do
-                (emc1 NFA_START_COLL)
-            ))
-            (when (at? @regparse (byte \-))
-                ((ß startc =) (byte \-))
-                (emc1 startc)
-                (emc1 NFA_CONCAT)
-                (swap! regparse #(.plus % (us-ptr2len-cc %)))
-            )
-            ;; Emit the OR branches for each character in the [].
-            ((ß boolean emit_range =) false)
-            (loop-when [] (BLT @regparse, endp)
-                ((ß oldstartc =) startc)
-                ((ß startc =) -1)
-                ((ß boolean got_coll_char =) false)
-                (when (at? @regparse (byte \[))
-                    ;; Check for [: :], [= =], [. .].
-                    (ß int charclass, equiclass = 0, collclass = 0)
-                    ((ß charclass =) (get-char-class regparse))
-                    (when (== charclass CLASS_NONE)
-                        ((ß equiclass =) (get-equi-class regparse))
-                        (when (zero? equiclass)
-                            ((ß collclass =) (get-coll-element regparse))
-                        )
-                    )
-
-                    ;; Character class like [:alpha:].
-                    (when (!= charclass CLASS_NONE)
-                        (condp == charclass
-                            CLASS_ALNUM     (emc1 NFA_CLASS_ALNUM)
-                            CLASS_ALPHA     (emc1 NFA_CLASS_ALPHA)
-                            CLASS_BLANK     (emc1 NFA_CLASS_BLANK)
-                            CLASS_CNTRL     (emc1 NFA_CLASS_CNTRL)
-                            CLASS_DIGIT     (emc1 NFA_CLASS_DIGIT)
-                            CLASS_GRAPH     (emc1 NFA_CLASS_GRAPH)
-                            CLASS_LOWER     (emc1 NFA_CLASS_LOWER)
-                            CLASS_PRINT     (emc1 NFA_CLASS_PRINT)
-                            CLASS_PUNCT     (emc1 NFA_CLASS_PUNCT)
-                            CLASS_SPACE     (emc1 NFA_CLASS_SPACE)
-                            CLASS_UPPER     (emc1 NFA_CLASS_UPPER)
-                            CLASS_XDIGIT    (emc1 NFA_CLASS_XDIGIT)
-                            CLASS_TAB       (emc1 NFA_CLASS_TAB)
-                            CLASS_RETURN    (emc1 NFA_CLASS_RETURN)
-                            CLASS_BACKSPACE (emc1 NFA_CLASS_BACKSPACE)
-                            CLASS_ESCAPE    (emc1 NFA_CLASS_ESCAPE)
-                        )
-                        (emc1 NFA_CONCAT)
-                        (ß CONTINUE)
-                    )
-                    ;; Try equivalence class [=a=] and the like.
-                    (when (non-zero? equiclass)
-                        (when (not (nfa-emit-equi-class equiclass))
-                            ;; should never happen
-                            (emsg (u8 "E868: Error building NFA with equivalence class!"))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) false)
-                        )
-                        (ß CONTINUE)
-                    )
-                    ;; Try collating class like [. .].
-                    (when (non-zero? collclass)
-                        ((ß startc =) collclass)     ;; allow [.a.]-x as a range
-                        ;; Will emit the proper atom at the end of the while loop.
-                    )
-                )
-                ;; Try a range like 'a-x' or '\t-z'.  Also allows '-' as a start character.
-                (when (and (at? @regparse (byte \-)) (!= oldstartc -1))
-                    ((ß emit_range =) true)
-                    ((ß startc =) oldstartc)
-                    (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                    (ß CONTINUE)           ;; reading the end of the range
-                )
-
-                ;; Now handle simple and escaped characters.
-                ;; Only "\]", "\^", "\]" and "\\" are special in Vi.
-                ;; Vim accepts "\t", "\e", etc., but only when the 'l' flag in 'cpoptions' is not included.
-                ;; Posix doesn't recognize backslash at all.
-
-                (when (and (at? @regparse (byte \\)) (not @reg_cpo_bsl) (BLE (.plus @regparse 1), endp) (or (some? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
-                    (swap! regparse #(.plus % (us-ptr2len-cc %)))
-
-                    (cond (at? @regparse (byte \n))
-                    (do
-                        ((ß startc =) (if @reg_string NL NFA_NEWL))
-                    )
-                    (or (at? @regparse (byte \d)) (at? @regparse (byte \o)) (at? @regparse (byte \x)) (at? @regparse (byte \u)) (at? @regparse (byte \U)))
-                    (do
-                        ;; TODO(RE) This needs more testing.
-                        ((ß startc =) (coll-get-char))
-                        ((ß got_coll_char =) true)
+            (let [#_int result (nfa-recognize-char-class @regparse, endp, (== extra NFA_ADD_NL))]
+                (if (non-zero? result)
+                    (do (if (<= NFA_FIRST_NL result NFA_LAST_NL)
+                            (and (emc1 (- result NFA_ADD_NL)) (emc1 NFA_NEWL) (emc1 NFA_OR))
+                            (emc1 result))
+                        (reset! regparse endp)
+                        (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                        true)
+                    ;; Failed to recognize a character class.
+                    ;; Use the simple version that turns [abc] into 'a' OR 'b' OR 'c'.
+                    (let-when [#_boolean negated (at? @regparse (byte \^))
+                          _ (if negated
+                                (do (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                                    (emc1 NFA_START_NEG_COLL))
+                                (emc1 NFA_START_COLL))
+                          #_int startc
+                            (let-when [startc (byte \-)] (at? @regparse startc) => -1
+                                (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                                (emc2 startc)
+                                startc)
+                          [extra :as _]
+                            ;; Emit the OR branches for each character in the [].
+                            (loop-when [startc startc #_boolean emit_range false extra extra] (BLT @regparse, endp) => [extra]
+                                (let-when [#_int oldstartc startc
+                                      [startc recur? :as _]
+                                        (if (at? @regparse (byte \[))
+                                            ;; Check for [: :], [= =], [. .].
+                                            (let [#_int charclass (get-char-class regparse)
+                                                  #_int equiclass (if (== charclass CLASS_NONE) (get-equi-class regparse) 0)
+                                                  #_int collclass (if (and (== charclass CLASS_NONE) (zero? equiclass)) (get-coll-element regparse) 0)]
+                                                ;; Character class like [:alpha:].
+                                                (cond (!= charclass CLASS_NONE)
+                                                    (do (condp == charclass
+                                                            CLASS_ALNUM     (emc2 NFA_CLASS_ALNUM)
+                                                            CLASS_ALPHA     (emc2 NFA_CLASS_ALPHA)
+                                                            CLASS_BLANK     (emc2 NFA_CLASS_BLANK)
+                                                            CLASS_CNTRL     (emc2 NFA_CLASS_CNTRL)
+                                                            CLASS_DIGIT     (emc2 NFA_CLASS_DIGIT)
+                                                            CLASS_GRAPH     (emc2 NFA_CLASS_GRAPH)
+                                                            CLASS_LOWER     (emc2 NFA_CLASS_LOWER)
+                                                            CLASS_PRINT     (emc2 NFA_CLASS_PRINT)
+                                                            CLASS_PUNCT     (emc2 NFA_CLASS_PUNCT)
+                                                            CLASS_SPACE     (emc2 NFA_CLASS_SPACE)
+                                                            CLASS_UPPER     (emc2 NFA_CLASS_UPPER)
+                                                            CLASS_XDIGIT    (emc2 NFA_CLASS_XDIGIT)
+                                                            CLASS_TAB       (emc2 NFA_CLASS_TAB)
+                                                            CLASS_RETURN    (emc2 NFA_CLASS_RETURN)
+                                                            CLASS_BACKSPACE (emc2 NFA_CLASS_BACKSPACE)
+                                                            CLASS_ESCAPE    (emc2 NFA_CLASS_ESCAPE)
+                                                        )
+                                                        [-1 true])
+                                                ;; Try equivalence class [=a=] and the like.
+                                                (non-zero? equiclass)
+                                                    (if-not (nfa-emit-equi-class equiclass)
+                                                        (do ;; should never happen
+                                                            (emsg (u8 "E868: Error building NFA with equivalence class!"))
+                                                            (reset! rc_did_emsg true)
+                                                            nil)
+                                                        [-1 true])
+                                                ;; Try collating class like [. .].
+                                                (non-zero? collclass)
+                                                    ;; Will emit the proper atom at the end of the while loop.
+                                                    [collclass false]     ;; allow [.a.]-x as a range
+                                                :else
+                                                    [-1 false]
+                                                ))
+                                            [-1 false])
+                                ] (some? _) => nil
+                                    (cond recur?
+                                        (recur startc emit_range extra)
+                                    ;; Try a range like 'a-x' or '\t-z'.  Also allows '-' as a start character.
+                                    (and (at? @regparse (byte \-)) (!= oldstartc -1))
+                                        (do (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                                            (recur oldstartc true extra))       ;; reading the end of the range
+                                    :else
+                                        ;; Now handle simple and escaped characters.
+                                        ;; Only "\]", "\^", "\]" and "\\" are special in Vi.
+                                        ;; Vim accepts "\t", "\e", etc., but only when the 'l' flag in 'cpoptions' is not included.
+                                        ;; Posix doesn't recognize backslash at all.
+                                        (let-when [[startc #_boolean got_coll_char]
+                                                (if (and (at? @regparse (byte \\)) (not @reg_cpo_bsl) (BLE (.plus @regparse 1), endp)
+                                                         (or (some? (vim-strchr REGEXP_INRANGE, (.at @regparse 1)))
+                                                             (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
+                                                    (do (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                                                        (let [#_int c (.at @regparse 0)]
+                                                            (cond (== c (byte \n))
+                                                                [(if @reg_string NL NFA_NEWL) false]
+                                                            (any == c (byte \d) (byte \o) (byte \x) (byte \u) (byte \U))
+                                                                (let [startc (coll-get-char)] ;; TODO(RE) This needs more testing.
+                                                                    (swap! regparse #(.minus % (us-ptr-back old_regparse, %)))
+                                                                    [startc true])
+                                                            :else ;; \r,\t,\e,\b
+                                                                [(backslash-trans c) false])
+                                                        ))
+                                                    [startc false])
+                                              ;; Normal printable char.
+                                              startc (if (== startc -1) (us-ptr2char @regparse) startc)
+                                              [startc emit_range extra :as _]
+                                                ;; Previous char was '-', so this char is end of range.
+                                                (cond emit_range
+                                                    (let [#_int endc startc startc oldstartc]
+                                                        (if (< endc startc)
+                                                            (do (emsg e_invrange)
+                                                                (reset! rc_did_emsg true)
+                                                                nil)
+                                                            (do
+                                                                (cond (< (+ startc 2) endc)
+                                                                (do ;; Emit a range instead of the sequence of individual characters.
+                                                                    (if (zero? startc)
+                                                                        (emc1 1) ;; \x00 is translated to \x0a, start at \x01
+                                                                        (swap! post_index dec)) ;; remove NFA_CONCAT
+                                                                    (and (emc1 endc) (emc1 NFA_RANGE) (emc1 NFA_CONCAT)))
+                                                                :else ;; Emit the range.  "startc" was already emitted, so skip it.
+                                                                    (loop-when-recur [#_int c (inc startc)] (<= c endc) [(inc c)] (emc2 c)))
+                                                                [-1 false extra])
+                                                        ))
+                                                :else
+                                                    ;; This char (startc) is not part of a range.  Normally, just emit it.
+                                                    ;; But if we get NUL from a collating char, then replace it with 0x0a.
+                                                    ;; Needed to completely mimic the behaviour of the backtracking engine.
+                                                    (let [extra (if (== startc NFA_NEWL)
+                                                                    ;; Line break can't be matched as part of the collection,
+                                                                    ;; add an OR below.  But not for negated range.
+                                                                    (if (not negated) NFA_ADD_NL extra)
+                                                                    (do (emc2 (if (and got_coll_char (zero? startc)) 0x0a startc)) extra)
+                                                                )]
+                                                        [startc emit_range extra]
+                                                    ))
+                                        ] (some? _) => nil
+                                            (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                                            (recur startc emit_range extra)
+                                        ))
+                                ))
+                    ] (some? _) => false
                         (swap! regparse #(.minus % (us-ptr-back old_regparse, %)))
-                    )
-                    :else
-                    (do
-                        ;; \r,\t,\e,\b
-                        ((ß startc =) (backslash-trans (.at @regparse 0)))
-                    ))
-                )
-
-                ;; Normal printable char.
-                ((ß startc =) (if (== startc -1) (us-ptr2char @regparse) startc))
-
-                ;; Previous char was '-', so this char is end of range.
-                (cond emit_range
-                (do
-                    ((ß endc =) startc)
-                    ((ß startc =) oldstartc)
-                    (when (< endc startc)
-                        (emsg e_invrange)
-                        (reset! rc_did_emsg true)
-                        ((ß RETURN) false)
-                    )
-
-                    (cond (< (+ startc 2) endc)
-                    (do
-                        ;; Emit a range instead of the sequence of individual characters.
-                        (cond (zero? startc)
-                        (do
-                            ;; \x00 is translated to \x0a, start at \x01.
-                            (emc1 1)
-                        )
-                        :else
-                        (do
-                            (swap! post_index dec) ;; remove NFA_CONCAT
-                        ))
-                        (emc1 endc)
-                        (emc1 NFA_RANGE)
-                        (emc1 NFA_CONCAT)
-                    )
-                    (or (< 1 (utf-char2len startc)) (< 1 (utf-char2len endc)))
-                    (do
-                        ;; Emit the characters in the range.
-                        ;; "startc" was already emitted, so skip it.
-
-                        ((ß c =) (loop-when-recur [c (inc startc)] (<= c endc) [(inc c)] => c
-                            (emc1 c)
-                            (emc1 NFA_CONCAT)
-                        ))
-                    )
-                    :else
-                    (do
-                        ;; Emit the range. "startc" was already emitted, so skip it.
-                        ((ß c =) (loop-when-recur [c (inc startc)] (<= c endc) [(inc c)] => c
-                            (emc1 c)
-                            (emc1 NFA_CONCAT)
-                        ))
-                    ))
-                    ((ß emit_range =) false)
-                    ((ß startc =) -1)
-                )
-                :else
-                (do
-                    ;; This char (startc) is not part of a range.  Just emit it.
-                    ;; Normally, simply emit startc.  But if we get char
-                    ;; code=0 from a collating char, then replace it with 0x0a.
-                    ;; This is needed to completely mimic the behaviour of
-                    ;; the backtracking engine.
-                    (cond (== startc NFA_NEWL)
-                    (do
-                        ;; Line break can't be matched as part of the collection,
-                        ;; add an OR below.  But not for negated range.
-                        ((ß extra =) (if (not negated) NFA_ADD_NL extra))
-                    )
-                    :else
-                    (do
-                        (if (and got_coll_char (zero? startc))
-                            (emc1 0x0a)
-                            (emc1 startc))
-                        (emc1 NFA_CONCAT)
-                    ))
+                        (when (at? @regparse (byte \-))       ;; if last, '-' is just a char
+                            (emc2 (byte \-)))
+                        ;; skip the trailing ]
+                        (reset! regparse endp)
+                        (swap! regparse #(.plus % (us-ptr2len-cc %)))
+                        ;; Mark end of the collection.
+                        (emc1 (if negated NFA_END_NEG_COLL NFA_END_COLL))
+                        ;; \_[] also matches \n but it's not negated
+                        (when (== extra NFA_ADD_NL)
+                            (emc1 (if @reg_string NL NFA_NEWL))
+                            (emc1 NFA_OR))
+                        true)
                 ))
-
-                (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                (recur)
-            )
-
-            (swap! regparse #(.minus % (us-ptr-back old_regparse, %)))
-            (when (at? @regparse (byte \-))       ;; if last, '-' is just a char
-                (emc1 (byte \-))
-                (emc1 NFA_CONCAT)
-            )
-
-            ;; skip the trailing ]
-            (reset! regparse endp)
-            (swap! regparse #(.plus % (us-ptr2len-cc %)))
-
-            ;; Mark end of the collection.
-            (if negated
-                (emc1 NFA_END_NEG_COLL)
-                (emc1 NFA_END_COLL))
-
-            ;; \_[] also matches \n but it's not negated
-            (when (== extra NFA_ADD_NL)
-                (emc1 (if @reg_string NL NFA_NEWL))
-                (emc1 NFA_OR)
-            )
-
-            ((ß RETURN) true)
-        )
-
-        (when @reg_strict
-            (emsg e_missingbracket)
-            (reset! rc_did_emsg true)
-            ((ß RETURN) false)
-        )
-
-        (nfa-do-multibyte c, old_regparse)
+        @reg_strict
+            (do (emsg e_missingbracket)
+                (reset! rc_did_emsg true)
+                false)
+        :else
+            (nfa-do-multibyte c, old_regparse))
     ))
 
 (defn- #_boolean nfa-regclass- [#_int c, #_int extra, #_Bytes old_regparse]
@@ -28100,9 +27888,7 @@
                     (when (< @a'minval (inc i))
                         (cond (== @a'maxval MAX_LIMIT)
                         (do
-                            (if greedy
-                                (emc1 NFA_STAR)
-                                (emc1 NFA_STAR_NONGREEDY))
+                            (emc1 (if greedy NFA_STAR NFA_STAR_NONGREEDY))
                         )
                         :else
                         (do
