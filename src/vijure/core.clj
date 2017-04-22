@@ -9678,8 +9678,8 @@
 
 ;; Handle the "r" command.
 
-(defn- #_[window_C cmdarg_C] nv-replace [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-replace [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
         (let [[cap #_int had_ctrl_v]
                 (if (== (:nchar cap) Ctrl_V) ;; get another character
                     (let [cap (assoc cap :nchar (get-literal))]
@@ -9689,33 +9689,31 @@
                 )]
             (cond (is-special (:nchar cap))
                 ;; Abort if the character is a special key.
-                (clearopbeep cap)
+                [win (clearopbeep cap)]
             @VIsual_active
                 ;; Visual mode "r".
                 (let [_ (when @got_int (reset-VIsual))
                       cap (if (!= had_ctrl_v NUL) (update cap :nchar #(condp == % (byte \return) -1 (byte \newline) -2 %)) cap)]
-                    (nv-operator cap))
+                    (nv-operator win, cap))
             :else
                 ;; Break tabs, etc.
-                (let-when [_
-                    (when (virtual-active)
+                (let-when [[win abort]
+                    (if (virtual-active)
                         (if (not (u-save-cursor))
-                            :_
+                            [win :abort]
                             (condp == (gchar-cursor win)
-                                NUL (do ;; Add extra space and put the cursor on the first one.
-                                        (swap! curwin coladvance-force (+ (getviscol win) (:count1 cap)))
-                                        (swap! curwin update-in [:w_cursor :col] - (:count1 cap))
-                                        nil)
-                                TAB (do (swap! curwin coladvance-force (getviscol win))
-                                        nil)
-                                nil)
-                        ))
-                ] (nil? _) => cap
+                                ;; Add extra space and put the cursor on the first one.
+                                NUL [(-> win (coladvance-force (+ (getviscol win) (:count1 cap))) (update-in [:w_cursor :col] - (:count1 cap))) nil]
+                                TAB [(coladvance-force win, (getviscol win)) nil]
+                                    [win nil]
+                            ))
+                        [win nil]
+                    )] (not abort) => [win cap]
 
                     (let [#_Bytes s (ml-get-cursor win)]
                         (cond (< (min (us-charlen s) (STRLEN s)) (:count1 cap))
                             ;; Abort if not enough characters to replace.
-                            (clearopbeep cap)
+                            [win (clearopbeep cap)]
 
                         (and (!= had_ctrl_v Ctrl_V) (== (:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
                             ;; Replacing with a TAB is done by edit() when it is complicated because
@@ -9726,11 +9724,11 @@
                                 (stuff-char (byte \R))
                                 (stuff-char TAB)
                                 (stuff-char ESC)
-                                cap)
+                                [win cap])
 
                         ;; save line for undo
                         (not (u-save-cursor))
-                            cap
+                            [win cap]
 
                         (and (!= had_ctrl_v Ctrl_V) (any == (:nchar cap) (byte \return) (byte \newline)))
                             ;; Replace character(s) by a single newline.
@@ -9738,42 +9736,44 @@
                             ;; Delete the characters here.
                             ;; Insert the newline with an insert command, takes care of autoindent.
                             ;; The insert command depends on being on the last character of a line or not.
-                            (do (swap! curwin del-chars (:count1 cap), false)
+                            (let [win (del-chars win, (:count1 cap), false)]
                                 (stuff-char (byte \return))
                                 (stuff-char ESC)
                                 ;; Give 'r' to edit(), to get the redo command right.
-                                (invoke-edit cap, true, (byte \r), false))
+                                [win (invoke-edit cap, true, (byte \r), false)])
 
                         :else
-                            (do (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, (:nchar cap))
-                                (swap! curbuf assoc :b_op_start (:w_cursor win))
-                                (let [state' @State]
-                                    (when (non-zero? (:ncharC1 cap)) (append-redo-char (:ncharC1 cap)))
-                                    (when (non-zero? (:ncharC2 cap)) (append-redo-char (:ncharC2 cap)))
-                                    ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
-                                    ;; Also handles adding composing characters for utf-8.
-                                    (loop-when-recur [n (:count1 cap)] (pos? n) [(dec n)]
+                            (let [_ (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, (:nchar cap))
+                                  _ (swap! curbuf assoc :b_op_start (:w_cursor win))
+                                  o'State @State
+                                  _ (when (non-zero? (:ncharC1 cap)) (append-redo-char (:ncharC1 cap)))
+                                  _ (when (non-zero? (:ncharC2 cap)) (append-redo-char (:ncharC2 cap)))
+                                  ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
+                                  ;; Also handles adding composing characters for utf-8.
+                                  win (loop-when [win win n (:count1 cap)] (< 0 n) => win
                                         (reset! State REPLACE)
-                                        (if (any == (:nchar cap) Ctrl_E Ctrl_Y)
-                                            (let [[_ #_int c] (ins-copychar win, (+ (:lnum (:w_cursor win)) (if (== (:nchar cap) Ctrl_Y) -1 1))) _ (reset! curwin _)]
-                                                (if (!= c NUL)
-                                                    (swap! curwin ins-char c)
-                                                    (swap! curwin update-in [:w_cursor :col] inc)   ;; will be decremented further down
-                                                ))
-                                            (swap! curwin ins-char (:nchar cap)))
-                                        (reset! State state')
-                                        (when (non-zero? (:ncharC1 cap)) (swap! curwin ins-char (:ncharC1 cap)))
-                                        (when (non-zero? (:ncharC2 cap)) (swap! curwin ins-char (:ncharC2 cap)))
-                                    ))
-                                (swap! curwin update-in [:w_cursor :col] dec)                       ;; cursor on the last replaced char
-                                ;; If the character on the left of the current cursor
-                                ;; is a multi-byte character, move two characters left.
-                                (swap! curwin update :w_cursor mb-adjust-pos)
-                                (swap! curbuf assoc :b_op_end (:w_cursor win))
-                                (swap! curwin assoc :w_set_curswant true)
+                                        (let [win (if (any == (:nchar cap) Ctrl_E Ctrl_Y)
+                                                    (let [[win #_int c] (ins-copychar win, (+ (:lnum (:w_cursor win)) (if (== (:nchar cap) Ctrl_Y) -1 1)))]
+                                                        (if (!= c NUL)
+                                                            (ins-char win, c)
+                                                            (update-in win [:w_cursor :col] inc) ;; will be decremented further down
+                                                        ))
+                                                    (ins-char win, (:nchar cap)))
+                                              _ (reset! State o'State)
+                                              win (if (non-zero? (:ncharC1 cap)) (ins-char win, (:ncharC1 cap)) win)
+                                              win (if (non-zero? (:ncharC2 cap)) (ins-char win, (:ncharC2 cap)) win)]
+                                            (recur win (dec n))
+                                        ))
+                                  win (update-in win [:w_cursor :col] dec) ;; cursor on the last replaced char
+                                  ;; If the character on the left of the current cursor
+                                  ;; is a multi-byte character, move two characters left.
+                                  win (update win :w_cursor mb-adjust-pos)
+                                  _ (swap! curbuf assoc :b_op_end (:w_cursor win))
+                                  win (assoc win :w_set_curswant true)]
                                 (set-last-insert (:nchar cap))
-                                cap)
-                        )))
+                                [win cap]
+                            ))
+                    ))
             ))
     ))
 
@@ -9813,32 +9813,31 @@
 
 ;; "R" (cap.arg is FALSE) and "gR" (cap.arg is TRUE).
 
-(defn- #_[window_C cmdarg_C] nv-Replace [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-Replace [#_window_C win, #_cmdarg_C cap]
     (cond @VIsual_active
         (do ;; "R" is replace lines
             (reset! VIsual_mode_orig @VIsual_mode) ;; remember original area for gv
             (reset! VIsual_mode (byte \V))
-            (nv-operator (assoc cap :cmdchar (byte \c) :nchar NUL)))
+            (nv-operator win, (assoc cap :cmdchar (byte \c) :nchar NUL)))
     :else
-        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-            (when (virtual-active)
-                (swap! curwin coladvance (getviscol win)))
-            (invoke-edit cap, false, (if (non-zero? (:arg cap)) (byte \V) (byte \R)), false))
+        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+            (let [win (if (virtual-active) (coladvance win, (getviscol win)) win)]
+                [win (invoke-edit cap, false, (if (non-zero? (:arg cap)) (byte \V) (byte \R)), false)]
+            ))
     ))
 
 ;; "gr".
 
-(defn- #_[window_C cmdarg_C] nv-vreplace [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-vreplace [#_window_C win, #_cmdarg_C cap]
     (cond @VIsual_active
-        (nv-replace (assoc cap :cmdchar (byte \r) :nchar (:extra_char cap))) ;; do same as "r" in Visual mode for now
+        (nv-replace win, (assoc cap :cmdchar (byte \r) :nchar (:extra_char cap))) ;; do same as "r" in Visual mode for now
     :else
-        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-            (let [cap (if (== (:extra_char cap) Ctrl_V) (assoc cap :extra_char (get-literal)) cap)] ;; get another character
-                (stuff-char (:extra_char cap))
-                (stuff-char ESC)
-                (when (virtual-active)
-                    (swap! curwin coladvance (getviscol win)))
-                (invoke-edit cap, true, (byte \v), false)
+        (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+            (let [cap (if (== (:extra_char cap) Ctrl_V) (assoc cap :extra_char (get-literal)) cap) ;; get another character
+                  _ (stuff-char (:extra_char cap))
+                  _ (stuff-char ESC)
+                  win (if (virtual-active) (coladvance win, (getviscol win)) win)]
+                [win (invoke-edit cap, true, (byte \v), false)]
             ))
     ))
 
@@ -9846,34 +9845,36 @@
 
 (defn- #_pos_C crlf [#_pos_C pos] (assoc pos :lnum (inc (:lnum pos)) :col 0))
 
-(defn- #_[window_C cmdarg_C] n-swapchar [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] n-swapchar [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
         (cond (and (lineempty (:lnum (:w_cursor win))) (nil? (vim-strchr @p_ww, (byte \~))))
-            (clearopbeep cap)
+            [win (clearopbeep cap)]
         :else
-            (do (prep-redo-cmd cap)
-                (if (not (u-save-cursor))
-                    cap
-                    (let [more- #(or (!= (gchar-cursor win) NUL)
-                                     (and (some? (vim-strchr @p_ww, (byte \~))) (< (:lnum (:w_cursor win)) (line-count @curbuf))
-                                          (do (swap! curwin update :w_cursor crlf)
-                                              (if (< 1 %) (if (u-savesub (:lnum (:w_cursor win))) (do (u-clearline) true) false) true))))
-                          startpos (:w_cursor win)
-                          changed (loop-when [changed false n (:count1 cap)] (< 0 n) => changed
-                                        (let [[_ ?] (swapchar (:op_type (:oap cap)), (:w_cursor win)) _ (swap! curwin assoc :w_cursor _) changed (or ? changed)]
-                                            (swap! curwin inc-cursor false)
-                                            (recur-if (more- n) [changed (dec n)] => changed)
-                                        ))]
-                        (swap! curwin check-cursor)
-                        (swap! curwin assoc :w_set_curswant true)
-                        (when changed
-                            (changed-lines (:lnum startpos), (:col startpos), (inc (:lnum (:w_cursor win))), 0)
-                            (let [endpos (update (:w_cursor win) :col #(max 0 (dec %)))]
-                                (swap! curbuf assoc :b_op_start startpos, :b_op_end endpos)
+            (let-when [_ (prep-redo-cmd cap)] (u-save-cursor) => [win cap]
+                (let [startpos (:w_cursor win) lmax (line-count @curbuf)
+                      [win changed]
+                        (loop-when [win win changed false n (:count1 cap)] (< 0 n) => [win changed]
+                            (let [[_ ?] (swapchar (:op_type (:oap cap)), (:w_cursor win)) win (assoc win :w_cursor _) changed (or ? changed)
+                                  win (inc-cursor win, false)
+                                  [win ?]
+                                    (cond (!= (gchar-cursor win) NUL)
+                                        [win true]
+                                    (and (some? (vim-strchr @p_ww, (byte \~))) (< (:lnum (:w_cursor win)) lmax))
+                                        (let-when [win (update win :w_cursor crlf)] (< 1 n) => [win true]
+                                            [win (if (u-savesub (:lnum (:w_cursor win))) (do (u-clearline) true) false)])
+                                    :else
+                                        [win false]
+                                    )]
+                                (recur-if ? [win changed (dec n)] => [win changed])
                             ))
-                        cap)
-                ))
-        )
+                      win (-> win (check-cursor) (assoc :w_set_curswant true))]
+                    (when changed
+                        (changed-lines (:lnum startpos), (:col startpos), (inc (:lnum (:w_cursor win))), 0)
+                        (let [endpos (update (:w_cursor win) :col #(max 0 (dec %)))]
+                            (swap! curbuf assoc :b_op_start startpos, :b_op_end endpos)
+                        ))
+                    [win cap])
+            ))
     ))
 
 ;; Move cursor to mark.
