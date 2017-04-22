@@ -2089,12 +2089,10 @@
 (atom! boolean  msg_nowait)         ;; don't wait for this msg
 (atom! int      emsg_off)           ;; don't display errors for now
 (atom! boolean  info_message)       ;; printing informative message
-(atom! boolean  need_clr_eos)       ;; need to clear text before displaying a message
 (atom! int      emsg_skip)          ;; don't display errors for expression that is skipped
 (atom! boolean  did_emsg)           ;; set by emsg() when the message is displayed or thrown
 (atom! boolean  did_emsg_syntax)    ;; did_emsg set because of a syntax error
 (atom! boolean  called_emsg)        ;; always set by emsg()
-(atom! int      ex_exitval)         ;; exit value for ex mode
 (atom! boolean  emsg_on_display)    ;; there is an error message
 (atom! boolean  rc_did_emsg)        ;; vim-regcomp() called emsg()
 
@@ -3266,36 +3264,28 @@
 ;; Return true if wait-return not called.
 
 (defn- #_boolean emsg [#_Bytes s]
-    (§
-        ;; Skip this if not giving error messages at the moment.
-        (if (emsg-not-now)
-            ((ß RETURN) true)
+    ;; Skip this if not giving error messages at the moment.
+    (or (emsg-not-now)
+        (do
+            (reset! called_emsg true)
+
+            (when (zero? @emsg_off)
+                (if @p_eb
+                    (beep-flush)                    ;; also includes flush-buffers()
+                    (flush-buffers false))          ;; flush internal buffers
+                (reset! did_emsg true))             ;; flag for DoOneCmd()
+
+            (reset! emsg_on_display true)           ;; remember there is an error message
+            (reset! msg_scroll true)                ;; don't overwrite a previous message
+
+            ;; needed in case emsg() is called after wait-return has reset need_wait_return
+            ;; and a redraw is expected because msg_scrolled is non-zero
+            (when (non-zero? @msg_scrolled)
+                (reset! need_wait_return true))
+
+            (reset! msg_nowait false)               ;; wait for this msg
+            (msg-attr s, (hl-attr HLF_E))           ;; highlight mode for error messages
         )
-
-        (reset! called_emsg true)
-        (reset! ex_exitval 1)
-
-        (when (zero? @emsg_off)
-            (if @p_eb
-                (beep-flush)               ;; also includes flush-buffers()
-                (flush-buffers false))       ;; flush internal buffers
-            (reset! did_emsg true)                ;; flag for DoOneCmd()
-        )
-
-        (reset! emsg_on_display true)             ;; remember there is an error message
-        (reset! msg_scroll true)                  ;; don't overwrite a previous message
-        ((ß int attr =) (hl-attr HLF_E))          ;; set highlight mode for error messages
-        (when (non-zero? @msg_scrolled)
-            (reset! need_wait_return true)        ;; needed in case emsg() is called after
-                                            ;; wait-return has reset need_wait_return
-                                            ;; and a redraw is expected because
-                                            ;; msg_scrolled is non-zero
-        )
-
-        ;; Display the error message itself.
-
-        (reset! msg_nowait false)                 ;; wait for this msg
-        (msg-attr s, attr)
     ))
 
 ;; Print an error message with one "%s" and one string argument.
@@ -3494,37 +3484,22 @@
 ;; Prepare for outputting characters in the command line.
 
 (defn- #_void msg-start []
-    (§
-        ((ß boolean did_return =) false)
-
-        (reset! keep_msg nil)                    ;; don't display old message now
-
-        (when @need_clr_eos
-            ;; Halfway an ":echo" command and getting an (error) message:
-            ;; clear any text from the command.
-            (reset! need_clr_eos false)
-            (msg-clr-eos)
-        )
-
-        (cond (and (not @msg_scroll) @full_screen)         ;; overwrite last message
-        (do
-            (reset! msg_row @cmdline_row)
-            (reset! msg_col 0)
-        )
-        @msg_didout                    ;; start message on next line
-        (do
-            (msg-putchar (byte \newline))
-            ((ß did_return =) true)
-            (reset! cmdline_row @msg_row)
-        ))
-
-        (if (or (not @msg_didany) (< @lines_left 0))
-            (msg-starthere))
-
-        (reset! msg_didout false)                 ;; no output on current line yet
-        (cursor-off)
-        nil
+    (reset! keep_msg nil)                       ;; don't display old message now
+    (cond (and (not @msg_scroll) @full_screen)  ;; overwrite last message
+    (do
+        (reset! msg_row @cmdline_row)
+        (reset! msg_col 0)
+    )
+    @msg_didout                                 ;; start message on next line
+    (do
+        (msg-putchar (byte \newline))
+        (reset! cmdline_row @msg_row)
     ))
+    (when (or (not @msg_didany) (< @lines_left 0))
+        (msg-starthere))
+    (reset! msg_didout false)                   ;; no output on current line yet
+    (cursor-off)
+    nil)
 
 ;; Note that the current msg position is where messages start.
 
@@ -3629,25 +3604,19 @@
 ;; Return the pointer "s" advanced to the next character.
 
 (defn- #_Bytes screen-puts-mbyte [#_Bytes s, #_int len, #_int attr]
-    (§
-        (reset! msg_didout true)          ;; remember that line is not empty
-
-        ((ß int cells =) (us-ptr2cells s))
-        (when (and (< 1 cells) (== @msg_col (dec (int @Cols))))
+    (reset! msg_didout true) ;; remember that line is not empty
+    (let [#_int cells (us-ptr2cells s)]
+        (if (and (< 1 cells) (== @msg_col (dec @Cols)))
             ;; Doesn't fit, print a highlighted '>' to fill it up.
-            (msg-screen-putchar (byte \>), (hl-attr HLF_AT))
-            ((ß RETURN) s)
-        )
-
-        (screen-puts-len s, len, @msg_row, @msg_col, attr)
-
-        (swap! msg_col + cells)
-        (when (<= (int @Cols) @msg_col)
-            (reset! msg_col 0)
-            (swap! msg_row inc)
-        )
-
-        (.plus s len)
+            (do (msg-screen-putchar (byte \>), (hl-attr HLF_AT)) s)
+            (do
+                (screen-puts-len s, len, @msg_row, @msg_col, attr)
+                (swap! msg_col + cells)
+                (when (<= @Cols @msg_col)
+                    (reset! msg_col 0)
+                    (swap! msg_row inc))
+                (.plus s len)
+            ))
     ))
 
 ;; Output a string to the screen at position msg_row, msg_col.
@@ -14931,22 +14900,14 @@
 ;; Returns '=' when OK, NUL otherwise.
 
 (defn- #_int get-expr-register []
-    (§
-        ((ß Bytes new_line =) (getcmdline (byte \=), 0))
-        (if (nil? new_line)
-            ((ß RETURN) NUL)
+    (let [#_Bytes s (getcmdline (byte \=), 0)]
+        (if (some? s)
+            (do
+                (when (non-eos? s) (reset! expr_line s)) ;; else use previous line
+                (byte \=)
+            )
+            NUL
         )
-
-        (cond (eos? new_line)
-        (do
-            ; ;; use previous line
-        )
-        :else
-        (do
-            (reset! expr_line new_line)
-        ))
-
-        (byte \=)
     ))
 
 (atom! int __nested)
@@ -15227,7 +15188,8 @@
                 ((ß p =) (.plus p 5))
             )
 
-            ((ß RETURN) (put-in-typebuf p, true, true))
+            (put-in-typebuf p, true, true)
+            ((ß RETURN) true)
         )
 
         (when (== regname (byte \=))
@@ -15236,7 +15198,8 @@
                 ((ß RETURN) false)
             )
 
-            ((ß RETURN) (put-in-typebuf p, true, false))
+            (put-in-typebuf p, true, false)
+            ((ß RETURN) true)
         )
 
         (when (== regname (byte \.))            ;; use last inserted text
@@ -15245,7 +15208,8 @@
                 (emsg e_noinstext)
                 ((ß RETURN) false)
             )
-            ((ß RETURN) (put-in-typebuf p, false, false))
+            (put-in-typebuf p, false, false)
+            ((ß RETURN) true)
         )
 
         (get-yank-register regname, false)
@@ -15288,26 +15252,14 @@
 ;; Insert register contents "s" into the typeahead buffer, so that it will be executed again.
 ;; When "esc" is true it is to be taken literally: escape CSI characters and no remapping.
 
-(defn- #_boolean put-in-typebuf [#_Bytes s, #_boolean esc, #_boolean colon]
-    ;; colon: add ':' before the line
-    (§
-        (put-reedit-in-typebuf)
-
-        (if colon
-            (ins-typebuf (u8 "\n")))
-
-        ((ß Bytes p =) (if esc (vim-strsave-escape-special s) s))
-        (if (nil? p)
-            ((ß RETURN) false)
-        )
-
-        (ins-typebuf p)
-
-        (if colon
-            (ins-typebuf (u8 ":")))
-
-        true
-    ))
+(defn- #_void put-in-typebuf [#_Bytes s, #_boolean esc, #_boolean colon]
+    (put-reedit-in-typebuf)
+    (when colon
+        (ins-typebuf (u8 "\n")))
+    (ins-typebuf (if esc (vim-strsave-escape-special s) s))
+    (when colon
+        (ins-typebuf (u8 ":")))
+    nil)
 
 ;; Insert a yank register: copy it into the Read buffer.
 ;; Used by CTRL-R command and middle mouse button in insert mode.
@@ -15420,39 +15372,29 @@
 
 ;; Paste a yank register into the command line.
 ;; Only for non-special registers.
-;; Used by CTRL-R command in command-line mode
-;; insert-reg() can't be used here, because special characters from the
-;; register contents will be interpreted as commands.
+;; Used by CTRL-R command in command-line mode.
+;; insert-reg() can't be used here, because special characters from the register contents will be interpreted as commands.
 ;;
 ;; return false for failure, true otherwise
 
 (defn- #_boolean cmdline-paste-reg [#_int regname, #_boolean literally, #_boolean remcr]
-    ;; literally: Insert text literally instead of "as typed"
+    ;; literally: insert text literally instead of "as typed"
     ;; remcr: don't add trailing CR
-    (§
-        (get-yank-register regname, false)
-        (if (nil? (:y_array @y_current))
-            ((ß RETURN) false)
-        )
-
-        (dotimes [#_int i (:y_size @y_current)]
+    (get-yank-register regname, false)
+    (if (some? (:y_array @y_current))
+        (loop-when [#_int i 0] (< i (:y_size @y_current)) => true
             (cmdline-paste-str (... (:y_array @y_current) i), literally)
-
             ;; Insert ^M between lines and after last line if type is MLINE.
             ;; Don't do this when "remcr" is true and the next line is empty.
-            (when (or (== (:y_type @y_current) MLINE) (and (< i (dec (:y_size @y_current))) (not (and remcr (== i (- (:y_size @y_current) 2)) (eos? (... (:y_array @y_current) (inc i)))))))
-                (cmdline-paste-str (u8 "\r"), literally)
-            )
-
-            ;; Check for CTRL-C in case someone tries to paste
-            ;; a few thousand lines and gets bored.
+            (when (or (== (:y_type @y_current) MLINE)
+                        (and (< i (dec (:y_size @y_current)))
+                            (not (and remcr (== i (- (:y_size @y_current) 2)) (eos? (... (:y_array @y_current) (inc i)))))))
+                (cmdline-paste-str (u8 "\r"), literally))
+            ;; Check for CTRL-C in case someone tries to paste a few thousand lines and gets bored.
             (ui-breakcheck)
-            (if @got_int
-                ((ß RETURN) false)
-            )
+            (if @got_int false (recur (inc i)))
         )
-
-        true
+        false
     ))
 
 ;; Adjust the register name "reg" for the clipboard being used always and the clipboard being available.
@@ -17251,22 +17193,16 @@
 ;; and it should not be there, move it left.
 
 (defn- #_void adjust-cursor-eol []
-    (§
-        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar) NUL) (non-flag? @ve_flags VE_ONEMORE) (zero? @restart_edit) (non-flag? @State INSERT))
-            ;; Put the cursor on the last character in the line.
-            (dec-cursor)
-
-            (when (== @ve_flags VE_ALL)
-                ((ß int[] a'scol =) (atom (int)))
-                ((ß int[] a'ecol =) (atom (int)))
-
+    (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar) NUL) (non-flag? @ve_flags VE_ONEMORE) (zero? @restart_edit) (non-flag? @State INSERT))
+        ;; Put the cursor on the last character in the line.
+        (dec-cursor)
+        (when (== @ve_flags VE_ALL)
+            (let [a'scol (atom (int)) a'ecol (atom (int))]
                 ;; Coladd is set to the width of the last character.
                 (getvcol @curwin, (:w_cursor @curwin), a'scol, nil, a'ecol)
                 (swap! curwin assoc-in [:w_cursor :coladd] (inc (- @a'ecol @a'scol)))
-            )
-        )
-        nil
-    ))
+            )))
+    nil)
 
 ;; Join 'count' lines (minimal 2) at cursor position.
 ;; When "save_undo" is true save lines for undo first.
@@ -21424,89 +21360,63 @@
     ))
 
 (defn- #_boolean oneleft []
-    (§
-        (when (virtual-active)
-            ((ß int v =) (getviscol))
+    (cond (virtual-active)
+        (let [#_int v (getviscol)]
             (if (zero? v)
-                ((ß RETURN) false)
-            )
-
-            ;; We might get stuck on 'showbreak', skip over it.
-            (loop-when-recur [#_int width 1] true [(inc width)]
-                (coladvance (- v width))
-                (if (< (getviscol) v)
-                    (ß BREAK)
+                false
+                (do ;; We might get stuck on 'showbreak', skip over it.
+                    (loop [#_int width 1] (coladvance (- v width)) (when-not (< (getviscol) v) (recur (inc width))))
+                    (when (== (:coladd (:w_cursor @curwin)) 1)
+                        ;; Adjust for multi-wide char (not a TAB).
+                        (let-when [#_Bytes s (ml-get-cursor)] (and (not-at? s TAB) (vim-isprintc (us-ptr2char s)) (< 1 (mb-ptr2cells s)))
+                            (swap! curwin assoc-in [:w_cursor :coladd] 0)
+                        ))
+                    (swap! curwin assoc :w_set_curswant true)
+                    true
                 )
-            )
-
-            (when (== (:coladd (:w_cursor @curwin)) 1)
-                ;; Adjust for multi-wide char (not a TAB).
-                ((ß Bytes s =) (ml-get-cursor))
-                (if (and (not-at? s TAB) (vim-isprintc (us-ptr2char s)) (< 1 (mb-ptr2cells s)))
-                    (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                )
-            )
-
+            ))
+    (zero? (:col (:w_cursor @curwin)))
+        false
+    :else
+        (do
+            (swap! curwin update-in [:w_cursor :col] dec)
             (swap! curwin assoc :w_set_curswant true)
-            ((ß RETURN) true)
-        )
-
-        (if (zero? (:col (:w_cursor @curwin)))
-            false
-            (do
-                (swap! curwin update-in [:w_cursor :col] dec)
-                (swap! curwin assoc :w_set_curswant true)
-                ;; If the char on the left of the cursor is multi-byte, move to its first byte.
-                (mb-adjust-pos (:w_cursor @curwin))
-                true
-            )
+            ;; If the char on the left of the cursor is multi-byte, move to its first byte.
+            (mb-adjust-pos (:w_cursor @curwin))
+            true
         )
     ))
 
 (defn- #_boolean cursor-up [#_long n, #_boolean upd_topline]
-    ;; upd_topline: When true: update topline
-    (§
-        (when (< 0 n)
-            ((ß long lnum =) (:lnum (:w_cursor @curwin)))
-            ;; This fails if the cursor is already in the first line or the count
-            ;; is larger than the line number and '-' is in 'cpoptions'.
-            (if (or (<= lnum 1) (and (<= lnum n) (some? (vim-strbyte @p_cpo, CPO_MINUS))))
-                ((ß RETURN) false)
-            )
-            (swap! curwin assoc-in [:w_cursor :lnum] (if (<= lnum n) 1 (- lnum n)))
-        )
-
-        ;; try to advance to the column we want to be at
-        (coladvance (:w_curswant @curwin))
-
-        (if upd_topline
-            (update-topline))       ;; make sure curwin.w_topline is valid
-
-        true
+    (let [b (if (< 0 n)
+                (let [lmin 1 lnum (:lnum (:w_cursor @curwin))]
+                    ;; This fails if the cursor is already in the first line
+                    ;; or the count is larger than the line number and '-' is in 'cpoptions'.
+                    (if (or (<= lnum lmin) (and (< (- lnum n) lmin) (some? (vim-strbyte @p_cpo, CPO_MINUS))))
+                        false
+                        (do (swap! curwin assoc-in [:w_cursor :lnum] (max lmin (- lnum n))) true)
+                    ))
+                true)]
+        (when b
+            (coladvance (:w_curswant @curwin)) ;; try to advance to the column we want to be at
+            (when upd_topline (update-topline))) ;; make sure curwin.w_topline is valid
+        b
     ))
 
-;; Cursor down a number of logical lines.
-
 (defn- #_boolean cursor-down [#_long n, #_boolean upd_topline]
-    ;; upd_topline: When true: update topline
-    (§
-        (when (< 0 n)
-            ((ß long lnum =) (:lnum (:w_cursor @curwin)))
-            ;; This fails if the cursor is already in the last line
-            ;; or would move beyond the last line and '-' is in 'cpoptions'.
-            (if (or (<= (:ml_line_count (:b_ml @curbuf)) lnum) (and (< (:ml_line_count (:b_ml @curbuf)) (+ lnum n)) (some? (vim-strbyte @p_cpo, CPO_MINUS))))
-                ((ß RETURN) false)
-            )
-            (swap! curwin assoc-in [:w_cursor :lnum] (min (+ lnum n) (:ml_line_count (:b_ml @curbuf))))
-        )
-
-        ;; try to advance to the column we want to be at
-        (coladvance (:w_curswant @curwin))
-
-        (if upd_topline
-            (update-topline))       ;; make sure curwin.w_topline is valid
-
-        true
+    (let [b (if (< 0 n)
+                (let [lnum (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))]
+                    ;; This fails if the cursor is already in the last line
+                    ;; or would move beyond the last line and '-' is in 'cpoptions'.
+                    (if (or (<= lmax lnum) (and (< lmax (+ lnum n)) (some? (vim-strbyte @p_cpo, CPO_MINUS))))
+                        false
+                        (do (swap! curwin assoc-in [:w_cursor :lnum] (min (+ lnum n) lmax)) true)
+                    ))
+                true)]
+        (when b
+            (coladvance (:w_curswant @curwin)) ;; try to advance to the column we want to be at
+            (when upd_topline (update-topline))) ;; make sure curwin.w_topline is valid
+        b
     ))
 
 ;; Stuff the last inserted text in the read buffer.
@@ -21634,8 +21544,7 @@
 (defn- #_int replace-push-mb [#_Bytes p]
     (let [#_int n (us-ptr2len-cc p)]
         (loop-when-recur [#_int i (dec n)] (<= 0 i) [(dec i)]
-            (replace-push (.at p i))
-        )
+            (replace-push (.at p i)))
         n
     ))
 
@@ -21665,17 +21574,13 @@
 ;; before the cursor.  Can only be used in REPLACE or VREPLACE mode.
 
 (defn- #_void replace-pop-ins []
-    (let [#_int oldState @State]
+    (let [#_int _ @State]
         (reset! State NORMAL)                     ;; don't want REPLACE here
-
         (loop-when-recur [#_int cc (replace-pop)] (< 0 cc) [(replace-pop)]
             (mb-replace-pop-ins cc)
-            (dec-cursor)
-        )
-
-        (reset! State oldState)
-        nil
-    ))
+            (dec-cursor))
+        (reset! State _))
+    nil)
 
 ;; Insert bytes popped from the replace stack. "cc" is the first byte.
 ;; If it indicates a multi-byte char, pop the other bytes too.
@@ -22735,33 +22640,31 @@
 ;; Return true when out of memory or can't undo.
 
 (defn- #_boolean ins-eol [#_int c]
-    (§
-        (if (not (stop-arrow))
-            ((ß RETURN) true)
-        )
+    (if (stop-arrow)
+        (do
+            ;; Strange Vi behaviour:
+            ;; In Replace mode, typing a NL will not delete the character under the cursor.
+            ;; Only push a NUL on the replace stack, nothing to put back when the NL is deleted.
 
-        ;; Strange Vi behaviour:
-        ;; In Replace mode, typing a NL will not delete the character under the cursor.
-        ;; Only push a NUL on the replace stack, nothing to put back when the NL is deleted.
+            (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
+                (replace-push NUL))
 
-        (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
-            (replace-push NUL)
-        )
+            ;; In VREPLACE mode, a NL replaces the rest of the line, and starts replacing the next line,
+            ;; so we push all of the characters left on the line onto the replace stack.
+            ;; This is not done here though, it is done in open-line().
 
-        ;; In VREPLACE mode, a NL replaces the rest of the line, and starts replacing the next line,
-        ;; so we push all of the characters left on the line onto the replace stack.
-        ;; This is not done here though, it is done in open-line().
+            ;; Put cursor on NUL if on the last char and coladd is 1 (happens after CTRL-O).
+            (when (and (virtual-active) (< 0 (:coladd (:w_cursor @curwin))))
+                (coladvance (getviscol)))
 
-        ;; Put cursor on NUL if on the last char and coladd is 1 (happens after CTRL-O).
-        (if (and (virtual-active) (< 0 (:coladd (:w_cursor @curwin))))
-            (coladvance (getviscol)))
+            (appendToRedobuff NL_STR)
 
-        (appendToRedobuff NL_STR)
-        ((ß boolean b =) (open-line FORWARD, 0, @old_indent))
-        (reset! old_indent 0)
-        (reset! can_cindent true)
-
-        (not b)
+            (let [#_boolean b (open-line FORWARD, 0, @old_indent)]
+                (reset! old_indent 0)
+                (reset! can_cindent true)
+                (not b)
+            ))
+        true
     ))
 
 ;; Handle digraph in insert mode.
@@ -22838,50 +22741,30 @@
 ;; Returns the char to be inserted, or NUL if none found.
 
 (defn- #_int ins-copychar [#_long lnum]
-    (§
-        (when (or (< lnum 1) (< (:ml_line_count (:b_ml @curbuf)) lnum))
-            (vim-beep)
-            ((ß RETURN) NUL)
-        )
-
-        ;; try to advance to the cursor column
-        ((ß Bytes line =) (ml-get lnum))
-        ((ß Bytes[] a'ptr =) (atom (#_Bytes object line)))
-        ((ß Bytes prev_ptr =) @a'ptr)
-        (validate-virtcol)
-
-        ((ß int temp =) 0)
-        (while (and (< temp (:w_virtcol @curwin)) (non-eos? @a'ptr))
-            ((ß prev_ptr =) @a'ptr)
-            ((ß temp =) (+ temp (lbr-chartabsize-adv line, a'ptr, temp)))
-        )
-        (if (< (:w_virtcol @curwin) temp)
-            (reset! a'ptr prev_ptr)
-        )
-
-        ((ß int c =) (us-ptr2char @a'ptr))
-        (if (== c NUL)
-            (vim-beep))
-        c
-    ))
+    (let [c (if (<= 1 lnum (:ml_line_count (:b_ml @curbuf)))
+                (let [#_Bytes line (ml-get lnum) a's (atom (#_Bytes object line))]
+                    (validate-virtcol)
+                    (loop-when-recur [#_Bytes prior @a's #_int vcol 0] ;; try to advance to the cursor column
+                                     (and (< vcol (:w_virtcol @curwin)) (non-eos? @a's))
+                                     [@a's (+ vcol (lbr-chartabsize-adv line, a's, vcol))]
+                                  => (when (< (:w_virtcol @curwin) vcol) (reset! a's prior)))
+                    (us-ptr2char @a's))
+                NUL)]
+        (when (== c NUL) (vim-beep))
+        c))
 
 ;; CTRL-Y or CTRL-E typed in Insert mode.
 
 (defn- #_int ins-ctrl-ey [#_int tc]
-    (§
-        ((ß int c =) (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== tc Ctrl_Y) -1 1))))
-        (when (!= c NUL)
-            ;; The character must be taken literally, insert like it was typed after a CTRL-V.
-            ;; Digits, 'o' and 'x' are special after a CTRL-V, don't use it for these.
-            (if (and (< c 256) (not (asc-isalnum c)))
-                (appendToRedobuff CTRL_V_STR)) ;; CTRL-V
-
-            (insert-special c, true, false)
-
-            ((ß c =) Ctrl_V)                     ;; pretend CTRL-V is last character
-        )
-
-        c
+    (let [#_int c (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== tc Ctrl_Y) -1 1)))]
+        (if (!= c NUL)
+            (do ;; The character must be taken literally, insert like it was typed after a CTRL-V.
+                ;; Digits, 'o' and 'x' are special after a CTRL-V, don't use it for these.
+                (when (and (< c 256) (not (asc-isalnum c)))
+                    (appendToRedobuff CTRL_V_STR))
+                (insert-special c, true, false)
+                Ctrl_V) ;; pretend CTRL-V is last character
+            NUL)
     ))
 
 ;; Try to do some very smart auto-indenting.
@@ -23355,21 +23238,18 @@
         (u8 "escape:]")
     ])
 
-;; Check for a character class name "[:name:]".  "pp" points to the '['.
+;; Check for a character class name "[:name:]".  "s" points to the '['.
 ;; Returns one of the CLASS_ items.  CLASS_NONE means that no item was
-;; recognized.  Otherwise "pp" is advanced to after the item.
+;; recognized.  Otherwise "s" is advanced to after the item.
 
-(defn- #_int get-char-class [#_Bytes' a'pp]
-    (§
-        (when (at? @a'pp 1 (byte \:))
-            (dotimes [#_int i (:length class_names)]
-                ((ß int len =) (STRLEN (... class_names i)))
-                (when (zero? (STRNCMP (.plus @a'pp 2), (... class_names i), len))
-                    (reset! a'pp (.plus @a'pp (+ len 2)))
-                    ((ß RETURN) i)
-                )
-            )
-        )
+(defn- #_int get-char-class [#_Bytes' a's]
+    (if (at? @a's 1 (byte \:))
+        (loop-when [#_int i 0] (< i (:length class_names)) => CLASS_NONE
+            (let [#_int n (STRLEN (... class_names i))]
+                (if (zero? (STRNCMP (.plus @a's 2), (... class_names i), n))
+                    (do (swap! a's plus (+ 2 n)) i)
+                    (recur (inc i))
+                )))
         CLASS_NONE
     ))
 
