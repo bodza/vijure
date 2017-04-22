@@ -1,5 +1,5 @@
 (ns vijure.core
-    (:refer-clojure :exclude [boolean byte short int long])
+    (:refer-clojure :exclude [/ boolean byte short int long])
     (:require [org.baznex.imports :refer [import-static]])
     (:import [java.util Arrays])
     (:gen-class))
@@ -43,6 +43,7 @@
     (let [z (cond (vector? z) `(recur ~@z) (some? z) `(recur ~z)) _ (if (= '=> (first w)) (second w))]
         `(if ~y ~z ~_)))
 
+(def- / quot)
 (def- % rem)
 
 (def- & bit-and)
@@ -5740,113 +5741,82 @@
 
 ;; ":retab".
 
-(defn- #_exarg_C ex-retab [#_exarg_C eap]
-    (§
-        ((ß boolean got_tab =) false)
-        ((ß int num_spaces =) 0)
-        ((ß int start_col =) 0)                          ;; for start of white-space string
-        ((ß int start_vcol =) 0)                         ;; for start of white-space string
-        ((ß long first_line =) 0)                        ;; first changed line
-        ((ß long last_line =) 0)                         ;; last changed line
-
-        (ß int new_ts)
-        (let [__ (atom (#_Bytes object (:arg eap)))]
-            ((ß new_ts =) (int (getdigits __)))
-            ((ß eap.arg =) @__))
-        (when (< new_ts 0)
-            (emsg e_positive)
-            ((ß RETURN) nil)
-        )
-        ((ß new_ts =) (if (zero? new_ts) (int @(:b_p_ts @curbuf)) new_ts))
-
-;       loop:
-        (loop-when-recur [#_long lnum (:line1 eap)] (and (not @got_int) (<= lnum (:line2 eap))) [(inc lnum)]
-            ((ß Bytes ptr =) (ml-get lnum))
-            ((ß int col =) 0)
-            ((ß int vcol =) 0)
-            ((ß boolean did_undo =) false)           ;; called u-save() for current line
-            (loop []
-                (cond (vim-iswhite (.at ptr col))
-                (do
-                    (when (and (not got_tab) (zero? num_spaces))
-                        ;; First consecutive white-space.
-                        ((ß start_vcol =) vcol)
-                        ((ß start_col =) col)
-                    )
-                    (if (at? ptr col (byte \space))
-                        ((ß num_spaces =) (inc num_spaces))
-                        ((ß got_tab =) true)
-                    )
-                )
-                :else
-                (do
-                    (when (or got_tab (and (:forceit eap) (< 1 num_spaces)))
-                        ;; Retabulate this string of white-space.
-
-                        ;; len is virtual length of white string
-                        ((ß int len =) ((ß num_spaces =) (- vcol start_vcol)))
-                        ((ß int num_tabs =) 0)
-                        (when (not @(:b_p_et @curbuf))
-                            ((ß int temp =) (- new_ts (% start_vcol new_ts)))
-                            (when (<= temp num_spaces)
-                                ((ß num_spaces =) (- num_spaces temp))
-                                ((ß num_tabs =) (inc num_tabs))
-                            )
-                            ((ß num_tabs =) (+ num_tabs (/ num_spaces new_ts)))
-                            ((ß num_spaces =) (- num_spaces (* (/ num_spaces new_ts) new_ts)))
-                        )
-                        (when (or @(:b_p_et @curbuf) got_tab (< (+ num_spaces num_tabs) len))
-                            (when (not did_undo)
-                                ((ß did_undo =) true)
-                                (if (not (u-save (dec lnum), (inc lnum)))
-                                    (ß BREAK loop)        ;; out-of-memory ???
+(defn- #_exarg_C ex-retab [#_exarg_C eap]
+    (let-when [__ (atom (#_Bytes object (:arg eap))) #_int ts (getdigits __) eap (assoc eap :arg @__)] (<= 0 ts) => (do (emsg e_positive) eap)
+        (let [ts (if (zero? ts) @(:b_p_ts @curbuf) ts)
+              m { #_boolean :got_tab false, #_int :num_spaces 0, #_int :start_vcol 0, #_int :start_col 0, #_long :first_line 0, #_long :last_line 0 }
+              m (loop-when [m m #_long lnum (:line1 eap)] (and (not @got_int) (<= lnum (:line2 eap))) => m
+                    (let-when [[m abort]
+                        (loop [m m #_Bytes s (ml-get lnum) x { #_int :vcol 0, #_int :col 0, #_boolean :did_undo false }]
+                            (let [[m s x abort]
+                                    (if (vim-iswhite (.at s (:col x)))
+                                        (let [m (if (and (not (:got_tab m)) (zero? (:num_spaces m)))
+                                                    ;; First consecutive white-space.
+                                                    (assoc m :start_vcol (:vcol x) :start_col (:col x))
+                                                    m)
+                                              m (if (at? s (:col x) (byte \space))
+                                                    (update m :num_spaces inc)
+                                                    (assoc m :got_tab true)
+                                                )]
+                                            [m s x false])
+                                        (let [[m s x abort] ;; Retabulate this string of white-space.
+                                                (if (or (:got_tab m) (and (:forceit eap) (< 1 (:num_spaces m))))
+                                                    ;; len is virtual length of white string
+                                                    (let [#_int len (- (:vcol x) (:start_vcol m)) m (assoc m :num_spaces len)
+                                                          [#_int num_tabs m]
+                                                            (if (not @(:b_p_et @curbuf))
+                                                                (let [#_int t' (- ts (% (:start_vcol m) ts)) ns (:num_spaces m)
+                                                                      [ns num_tabs] (if (<= t' ns) [(- ns t') 1] [ns 0])]
+                                                                    [(+ num_tabs (/ ns ts)) (assoc m :num_spaces (- ns (* (/ ns ts) ts)))])
+                                                                [0 m]
+                                                            )]
+                                                        (if (or @(:b_p_et @curbuf) (:got_tab m) (< (+ num_tabs (:num_spaces m)) len))
+                                                            (let-when [[x abort]
+                                                                (if (not (:did_undo x))
+                                                                    [(assoc x :did_undo true) (not (u-save (dec lnum), (inc lnum)))]
+                                                                    [x false])
+                                                            ] (not abort) => [m s x abort]
+                                                                ;; len is actual number of white characters used
+                                                                (let [len (+ num_tabs (:num_spaces m)) #_int old_len (STRLEN s)
+                                                                      #_Bytes line (Bytes. (+ (- old_len (:col x)) (:start_col m) len 1))
+                                                                      _ (when (< 0 (:start_col m))
+                                                                            (BCOPY line, s, (:start_col m)))
+                                                                      _ (BCOPY line, (+ (:start_col m) len), s, (:col x), (inc (- old_len (:col x))))
+                                                                      s (.plus line (:start_col m))]
+                                                                    (dotimes [i len]
+                                                                        (.be s i, (if (< i num_tabs) TAB (byte \space))))
+                                                                    (ml-replace lnum, line)
+                                                                    (let [m (assoc m :first_line (if (zero? (:first_line m)) lnum (:first_line m)) :last_line lnum)
+                                                                          x (assoc x :col (+ (:start_col m) len))]
+                                                                        [m line x false]
+                                                                    )
+                                                                ))
+                                                            [m s x false]
+                                                        ))
+                                                    [m s x false]
+                                                )]
+                                            [(assoc m :got_tab false :num_spaces 0) s x abort])
+                                    )]
+                                (if (or (eos? s (:col x)) abort)
+                                    [m abort]
+                                    (recur m s (assoc x :vcol (+ (:vcol x) (chartabsize s, (:col x), (:vcol x))) :col (+ (:col x) (us-ptr2len-cc s, (:col x)))))
                                 )
-                            )
-
-                            ;; len is actual number of white characters used
-                            ((ß len =) (+ num_spaces num_tabs))
-                            ((ß int old_len =) (STRLEN ptr))
-                            ((ß Bytes new_line =) (Bytes. (+ (- old_len col) start_col len 1)))
-
-                            (if (< 0 start_col)
-                                (BCOPY new_line, ptr, start_col))
-                            (BCOPY new_line, (+ start_col len), ptr, col, (inc (- old_len col)))
-                            ((ß ptr =) (.plus new_line start_col))
-                            (dotimes [col len]
-                                (.be ptr col, (if (< col num_tabs) TAB (byte \space)))
-                            )
-                            (ml-replace lnum, new_line)
-                            ((ß first_line =) (if (zero? first_line) lnum first_line))
-                            ((ß last_line =) lnum)
-                            ((ß ptr =) new_line)
-                            ((ß col =) (+ start_col len))
-                        )
+                            ))
+                    ] (not abort) => m
+                        (slow-breakcheck)
+                        (recur m (inc lnum))
                     )
-                    ((ß got_tab =) false)
-                    ((ß num_spaces =) 0)
-                ))
-                (if (eos? ptr col)
-                    (ß BREAK)
-                )
-                ((ß vcol =) (+ vcol (chartabsize ptr, col, vcol)))
-                ((ß col =) (+ col (us-ptr2len-cc ptr, col)))
-                (recur)
-            )
-            (slow-breakcheck)
-        )
-        (when @got_int
-            (emsg e_interr))
-
-        (when (!= @(:b_p_ts @curbuf) new_ts)
-            (redraw-curbuf-later NOT_VALID))
-        (when (non-zero? first_line)
-            (changed-lines first_line, 0, (inc last_line), 0))
-
-        (reset! (:b_p_ts @curbuf) new_ts)
-        (coladvance (:w_curswant @curwin))
-
-        (u-clearline)
-        nil
+                )]
+            (when @got_int
+                (emsg e_interr))
+            (when (!= @(:b_p_ts @curbuf) ts)
+                (redraw-curbuf-later NOT_VALID))
+            (when (non-zero? (:first_line m))
+                (changed-lines (:first_line m), 0, (inc (:last_line m)), 0))
+            (reset! (:b_p_ts @curbuf) ts)
+            (coladvance (:w_curswant @curwin))
+            (u-clearline)
+            eap)
     ))
 
 ;; Implementation of ":fixdel", also used by get-stty().
