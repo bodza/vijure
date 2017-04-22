@@ -2822,19 +2822,19 @@
     ;; But when t_ti does swap pages, it should not go to the shell page.
     ;; Do this before stop-termcap().
 
-    (if (and (swapping-screen) (not @newline_on_exit))
+    (when (and (swapping-screen) (not @newline_on_exit))
         (exit-scroll))
 
     (stop-termcap)
 
     ;; A newline is only required after a message in the alternate screen.
     ;; This is set to true by wait-return().
-    (if (or (not (swapping-screen)) @newline_on_exit)
+    (when (or (not (swapping-screen)) @newline_on_exit)
         (exit-scroll))
 
     ;; Cursor may have been switched off without calling start-termcap()
     ;; when doing "vim -u vimrc" and vimrc contains ":q".
-    (if @full_screen
+    (when @full_screen
         (cursor-on))
 
     (out-flush)
@@ -3201,7 +3201,7 @@
 
 (defn- #_void wait-return [#_int redraw]
     (§
-        (if (== redraw TRUE)
+        (when (== redraw TRUE)
             (reset! must_redraw CLEAR))
 
         ;; When inside vgetc(), we can't wait for a typed character at all.
@@ -3323,7 +3323,7 @@
 
         ;; When switching screens, we need to output an extra newline on exit.
 
-        (if (and (swapping-screen) (not @termcap_active))
+        (when (and (swapping-screen) (not @termcap_active))
             (reset! newline_on_exit true))
 
         (reset! need_wait_return false)
@@ -3354,14 +3354,14 @@
     (let [#_boolean save_p_more @p_more]
         (reset! p_more false)             ;; don't want see this message when scrolling back
 
-        (if @msg_didout             ;; start on a new line
+        (when @msg_didout             ;; start on a new line
             (msg-putchar (byte \newline)))
-        (if @got_int
+        (when @got_int
             (msg-puts (u8 "Interrupt: ")))
 
         (msg-puts-attr (u8 "Press ENTER or type command to continue"), (hl-attr HLF_R))
 
-        (if (not (msg-use-printf))
+        (when (not (msg-use-printf))
             (msg-clr-eos))
 
         (reset! p_more save_p_more)
@@ -3434,7 +3434,7 @@
 
         ;; If the string starts with a composing character,
         ;; first draw a space on which the composing char can be drawn.
-        (if (utf-iscomposing (us-ptr2char p))
+        (when (utf-iscomposing (us-ptr2char p))
             (msg-puts-attr (u8 " "), attr))
 
         ((ß Bytes q =) p)
@@ -3590,7 +3590,7 @@
                 (msg-scroll-up)
 
                 (reset! msg_row (- @Rows 2))
-                (if (<= @Cols @msg_col)     ;; can happen after screen resize
+                (when (<= @Cols @msg_col)     ;; can happen after screen resize
                     (reset! msg_col (dec @Cols)))
 
                 (ß boolean did_last_char)
@@ -3624,15 +3624,15 @@
 
                 (inc-msg-scrolled)
                 (reset! need_wait_return true)    ;; may need wait-return in main()
-                (if (< @must_redraw VALID)
+                (when (< @must_redraw VALID)
                     (reset! must_redraw VALID))
                 (reset! redraw_cmdline true)
-                (if (< 0 @cmdline_row)
+                (when (< 0 @cmdline_row)
                     (swap! cmdline_row dec))
 
                 ;; If screen is completely filled and 'more' is set then wait for a character.
 
-                (if (< 0 @lines_left)
+                (when (< 0 @lines_left)
                     (swap! lines_left dec))
                 (when (and @p_more (zero? @lines_left) (!= @State HITRETURN) (not @msg_no_more))
                     ((ß s =) (if (do-more-prompt NUL) @confirm_msg_tail s))
@@ -3723,7 +3723,7 @@
 
         ;; output any postponed text
         ((ß t_col =) (if (< 0 t_col) (t-puts t_col, t_s, s, attr) t_col))
-        (if (and @p_more (not recurse))
+        (when (and @p_more (not recurse))
             (store-sb-text a'sb_str, s, attr, a'sb_col, false))
 
         (msg-check)
@@ -3925,7 +3925,7 @@
         )
 
         (reset! State ASKMORE)
-        (if (== typed_char NUL)
+        (when (== typed_char NUL)
             (msg-moremsg false))
 
         (loop []
@@ -5442,7 +5442,7 @@
                 (reset! p_ch 1)
             )
             ((ß int min =) (min-rows))
-            (if (> @p_ch (inc (- @Rows min)))
+            (when (> @p_ch (inc (- @Rows min)))
                 (reset! p_ch (inc (- @Rows min))))
 
             ;; Only compute the new window layout when startup has been completed,
@@ -6188,12 +6188,12 @@
             )
             (line-breakcheck)
         )
-        (if @got_int
+        (when @got_int
             (emsg e_interr))
 
-        (if (!= @(:b_p_ts @curbuf) new_ts)
+        (when (!= @(:b_p_ts @curbuf) new_ts)
             (redraw-curbuf-later NOT_VALID))
-        (if (non-zero? first_line)
+        (when (non-zero? first_line)
             (changed-lines first_line, 0, (inc last_line), 0))
 
         (reset! (:b_p_ts @curbuf) new_ts)
@@ -6831,7 +6831,7 @@
         )
 
         ;; ":s/pat//n" doesn't move the cursor
-        (if @do__count
+        (when @do__count
             (swap! curwin assoc :w_cursor old_cursor))
 
         (cond (< start_nsubs @sub_nsubs)
@@ -7709,7 +7709,7 @@
                 (restore-cmdline save_cli)
 
                 ;; Leave it at the end to make CTRL-R CTRL-W work.
-                (if (non-zero? i)
+                (when (non-zero? i)
                     (swap! curwin assoc :w_cursor end_pos))
 
                 (msg-starthere)
@@ -7756,7 +7756,7 @@
         (reset! msg_scroll save_msg_scroll)
 
         ;; When the command line was typed, no need for a wait-return prompt.
-        (if some_key_typed
+        (when some_key_typed
             (reset! need_wait_return false))
 
         (reset! State save_State)
@@ -7967,7 +7967,7 @@
 ;; But get_cmdline_str() may need it, thus make it available globally in prev_ccline.
 
 (defn- #_void save-cmdline [#_cmdline_info_C cli]
-    (if (nil? @prev_ccline)
+    (when (nil? @prev_ccline)
         (reset! prev_ccline (NEW_cmdline_info_C)))
 
     (COPY-cmdline-info cli, @prev_ccline)
@@ -8149,7 +8149,7 @@
 (defn- #_void cursorcmd []
     (reset! msg_row (+ @cmdline_row (/ (:cmdspos @ccline) @Cols)))
     (reset! msg_col (% (:cmdspos @ccline) @Cols))
-    (if (<= @Rows @msg_row)
+    (when (<= @Rows @msg_row)
         (reset! msg_row (dec @Rows)))
 
     (windgoto @msg_row, @msg_col)
@@ -8417,7 +8417,7 @@
         ;; keyTyped is only set when calling vgetc().
         ;; Reset it here when not calling vgetc() (sourced command lines).
 
-        (if (and (non-flag? flags DOCMD_KEYTYPED) (not use_getline))
+        (when (and (non-flag? flags DOCMD_KEYTYPED) (not use_getline))
             (reset! keyTyped false))
 
         ((ß Bytes[] a'cmdline_copy =) (atom (#_Bytes object nil)))                ;; copy of cmd line
@@ -8430,7 +8430,7 @@
         ((ß Bytes next_cmdline =) cmdline)
         (loop []
             ;; stop skipping cmds for an error msg after all endif/while/for
-            (if (nil? next_cmdline)
+            (when (nil? next_cmdline)
                 (reset! did_emsg false))
 
             ;; 2. If no line given, get an allocated line with getexline().
@@ -8581,7 +8581,7 @@
         ((ß ea.line2 =) 1)
 
         ;; When the last file has not been edited :q has to be typed twice.
-        (if (non-zero? @quitmore)
+        (when (non-zero? @quitmore)
             (swap! quitmore dec))
 
 ;       doend:
@@ -9855,9 +9855,9 @@
             ;; is being executed.  Only do this when the shown command was actually displayed,
             ;; otherwise this will slow down a lot when executing mappings.
 
-            (if need_flushbuf
+            (when need_flushbuf
                 (out-flush))
-            (if (!= (:cmdchar ca) K_IGNORE)
+            (when (!= (:cmdchar ca) K_IGNORE)
                 (reset! did_cursorhold false))
 
             (reset! State NORMAL)
@@ -9921,7 +9921,7 @@
                 ((ß int save_State =) @State)
 
                 ;; Draw the cursor with the right shape here.
-                (if (non-zero? @restart_edit)
+                (when (non-zero? @restart_edit)
                     (reset! State INSERT))
 
                 ;; If need to redraw, and there is a "keep_msg", redraw before the delay.
@@ -9960,7 +9960,7 @@
             (ui-cursor-shape)              ;; may show different cursor shape
         )
 
-        (if (and (== (:op_type oap) OP_NOP) (zero? (:regname oap)) (!= (:cmdchar ca) K_CURSORHOLD))
+        (when (and (== (:op_type oap) OP_NOP) (zero? (:regname oap)) (!= (:cmdchar ca) K_CURSORHOLD))
             (clear-showcmd))
 
         (checkpcmark)                      ;; check if we moved since setting pcmark
@@ -9992,7 +9992,7 @@
                 (edit @restart_edit, false, 1))
         )
 
-        (if (== @restart_VIsual_select 2)
+        (when (== @restart_VIsual_select 2)
             (reset! restart_VIsual_select 1))
 
         ;; Save count before an operator for next time.
@@ -10681,7 +10681,7 @@
     (swap! curbuf update :b_visual assoc :vi_mode @VIsual_mode :vi_start @VIsual :vi_end (:w_cursor @curwin) :vi_curswant (:w_curswant @curwin))
     (swap! curbuf assoc :b_visual_mode_eval @VIsual_mode)
 
-    (if (not (virtual-active))
+    (when (not (virtual-active))
         (swap! curwin assoc-in [:w_cursor :coladd] 0))
 
     (if @mode_displayed
@@ -11689,7 +11689,7 @@
 ;; Returns false if more than one line selected.
 
 (defn- #_boolean get-visual-text [#_cmdarg_C cap, #_Bytes' a'start, #_int' a'count]
-    (if (!= @VIsual_mode (byte \V))
+    (when (!= @VIsual_mode (byte \V))
         (unadjust-for-sel))
 
     (if (!= (:lnum @VIsual) (:lnum (:w_cursor @curwin)))
@@ -12543,7 +12543,7 @@
                             (reset! redraw_cmdline true))      ;; show visual mode later
 
                         ;; For V and ^V, we multiply the number of lines even if there was only one.
-                        (if (or (!= @resel_VIsual_mode (byte \v)) (< 1 @resel_VIsual_lmax))
+                        (when (or (!= @resel_VIsual_mode (byte \v)) (< 1 @resel_VIsual_lmax))
                             (swap! curwin update-in [:w_cursor :lnum] #(min (+ % (dec (* @resel_VIsual_lmax (:count0 cap)))) (:ml_line_count (:b_ml @curbuf)))))
 
                         (reset! VIsual_mode @resel_VIsual_mode)
@@ -13355,7 +13355,7 @@
 
         ;; Don't leave the cursor on the NUL past the end of line.
         ;; Unless we didn't move it forward.
-        (if (ltpos startpos, (:w_cursor @curwin))
+        (when (ltpos startpos, (:w_cursor @curwin))
             (adjust-cursor (:oap cap)))
 
         (if (and (not b) (== (:op_type (:oap cap)) OP_NOP))
@@ -14718,7 +14718,7 @@
 
         (loop-when-recur [#_int i (:y_size @y_current)] (< 0 i) [(dec i)]
             ;; insert NL between lines and after last line if type is MLINE
-            (if (or (== (:y_type @y_current) MLINE) (< i (:y_size @y_current)))
+            (when (or (== (:y_type @y_current) MLINE) (< i (:y_size @y_current)))
                 (ins-typebuf (u8 "\n")))
 
             (ins-typebuf (vim-strsave-escape-special (... (:y_array @y_current) (dec i))))
@@ -15635,7 +15635,7 @@
         ;; When a tab was inserted, and the characters in front of the tab
         ;; have been converted to a tab as well, the column of the cursor
         ;; might have actually been reduced, so need to adjust here.
-        (if (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1))
+        (when (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1))
             (COPY-pos (:op_start oap), (:b_op_start_orig @curbuf)))
 
         ;; If user has moved off this line, we don't know what to do, so do nothing.
@@ -15696,7 +15696,7 @@
                 ((ß Bytes ins_text =) (STRNDUP firstline, ins_len))
 
                 ;; block handled here
-                (if (u-save (:lnum (:op_start oap)), (+ (:lnum (:op_end oap)) 1))
+                (when (u-save (:lnum (:op_start oap)), (+ (:lnum (:op_end oap)) 1))
                     (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), bd))
 
                 (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
@@ -15734,7 +15734,7 @@
             ((ß RETURN) false)
         ))
 
-        (if (and (< (:col (:w_cursor @curwin)) l) (not (lineempty (:lnum (:w_cursor @curwin)))) (== @virtual_op FALSE))
+        (when (and (< (:col (:w_cursor @curwin)) l) (not (lineempty (:lnum (:w_cursor @curwin)))) (== @virtual_op FALSE))
             (inc-cursor))
 
         ((ß block_def_C bd =) (NEW_block_def_C))
@@ -15852,7 +15852,7 @@
             ((ß oap.regname =) 0)
         ))
 
-        (if (not deleting)                                  ;; op-delete() already set y_current
+        (when (not deleting)                                  ;; op-delete() already set y_current
             (get-yank-register (:regname oap), true))
 
         ((ß yankreg_C curr =) @y_current)                     ;; copy of y_current
@@ -17483,41 +17483,25 @@
 ;;
 ;; Returns pointer to pos_C of the next mark or null if no mark is found.
 
-(defn- #_pos_C getnextmark [#_pos_C startpos, #_int dir, #_boolean begin_line]
-    ;; startpos: where to start
-    ;; dir: direction for search
+(defn- #_pos_C getnextmark [#_pos_C startpos, #_int dir, #_boolean begin_line] ;; startpos: where to start ;; dir: direction for search
+    ;; When searching backward/forward and leaving the cursor on the first non-blank, position must be in a previous/next line.
+    (let [#_pos_C pos (cond (and (== dir BACKWARD) begin_line) (assoc startpos :col 0) (and (== dir FORWARD) begin_line) (assoc startpos :col MAXCOL) :else startpos)]
+
     (§
-        ((ß pos_C result =) nil)
-        ((ß pos_C pos =) (NEW_pos_C))
-        (COPY-pos pos, startpos)
-
-        ;; When searching backward and leaving the cursor on the first non-blank,
-        ;; position must be in a previous line.
-        ;; When searching forward and leaving the cursor on the first non-blank,
-        ;; position must be in a next line.
-        (cond (and (== dir BACKWARD) begin_line)
-        (do
-            ((ß pos.col =) 0)
-        )
-        (and (== dir FORWARD) begin_line)
-        (do
-            ((ß pos.col =) MAXCOL)
-        ))
-
+        ((ß pos_C mark =) nil)
         (dotimes [#_int i NMARKS]
-            (when (< 0 (:lnum (... (:b_namedm @curbuf) i)))
-                (cond (== dir FORWARD)
-                (do
-                    ((ß result =) (if (and (or (nil? result) (ltpos (... (:b_namedm @curbuf) i), result)) (ltpos pos, (... (:b_namedm @curbuf) i))) (... (:b_namedm @curbuf) i) result))
+            (let [mi (... (:b_namedm @curbuf) i)]
+                (when (< 0 (:lnum mi))
+                    ((ß mark =) (if (== dir FORWARD)
+                        (if (and (or (nil? mark) (ltpos mi, mark)) (ltpos pos, mi)) mi mark)
+                        (if (and (or (nil? mark) (ltpos mark, mi)) (ltpos mi, pos)) mi mark)
+                    ))
                 )
-                :else
-                (do
-                    ((ß result =) (if (and (or (nil? result) (ltpos result, (... (:b_namedm @curbuf) i))) (ltpos (... (:b_namedm @curbuf) i), pos)) (... (:b_namedm @curbuf) i) result))
-                ))
             )
         )
+        mark
+    )
 
-        result
     ))
 
 ;; Check a if a position from a mark is valid.
@@ -17525,16 +17509,15 @@
 
 (defn- #_boolean check-mark [#_pos_C pos]
     (cond
-        (nil? pos) (do (emsg e_umark) false)
+        (nil? pos)
+            (do (emsg e_umark) false)
+        ;; 'lnum' is negative if mark is in another file and can't get that file, error message already give then.
         (<= (:lnum pos) 0)
-            (do
-                ;; 'lnum' is negative if mark is in another file and can't get that file, error message already give then.
-                (if (zero? (:lnum pos))
-                    (emsg e_marknotset))
-                false
-            )
-        (< (:ml_line_count (:b_ml @curbuf)) (:lnum pos)) (do (emsg e_markinval) false)
-        :else true
+            (do (when (zero? (:lnum pos)) (emsg e_marknotset)) false)
+        (< (:ml_line_count (:b_ml @curbuf)) (:lnum pos))
+            (do (emsg e_markinval) false)
+        :else
+            true
     ))
 
 (defn- #_long one-adjust [#_long add, #_long line1, #_long line2, #_long amount, #_long amount_after]
@@ -18469,7 +18452,7 @@
 
 (atom! int __tc)
 
-;; get a character:
+;; Get a character:
 ;; 1. from the stuffbuffer
 ;;      This is used for abbreviated commands like "D" -> "d$".
 ;;      Also used to redo a command for ".".
@@ -18480,342 +18463,292 @@
 ;; 3. from the user
 ;;      This may do a blocking wait if "advance" is true.
 ;;
-;; if "advance" is true (vgetc()):
-;;      really get the character.
+;; If "advance" is true (vgetc()):
+;;      Really get the character.
 ;;      keyTyped is set to true in the case the user typed the key.
 ;;      keyStuffed is true if the character comes from the stuff buffer.
-;; if "advance" is false (vpeekc()):
-;;      just look whether there is a character available.
+;; If "advance" is false (vpeekc()):
+;;      Just look whether there is a character available.
 ;;
 ;; When "no_mapping" is zero, checks for mappings in the current mode.
 ;; Only returns one byte (of a multi-byte character).
 ;; KB_SPECIAL may be escaped, need to get two more bytes then.
 
 (defn- #_int vgetorpeek [#_boolean advance]
-    (§
-        ;; This function doesn't work very well when called recursively.
-        ;; It may happen though, because of:
-        ;;
-        ;; 1. The call to add-to-showcmd(). char-avail() is then used to check
-        ;; if there is a character available, which calls this function.
-        ;; In that case we must return NUL, to indicate no character is available.
-        ;;
-        ;; 2. A GUI callback function writes to the screen, causing a wait-return().
-        ;; Using ":normal" can also do this, but it saves the typeahead buffer,
-        ;; thus it should be OK.  But don't get a key from the user then.
+    ;; This function doesn't work very well when called recursively.
+    ;; It may happen though, because of:
+    ;;
+    ;; 1. The call to add-to-showcmd(). char-avail() is then used to check
+    ;; if there is a character available, which calls this function.
+    ;; In that case we must return NUL, to indicate no character is available.
+    ;;
+    ;; 2. A GUI callback function writes to the screen, causing a wait-return().
+    ;; Using ":normal" can also do this, but it saves the typeahead buffer,
+    ;; thus it should be OK.  But don't get a key from the user then.
+    (if (pos? @vgetc_busy)
+        NUL
+        (do (swap! vgetc_busy inc)
+            (when advance
+                (reset! keyStuffed false))
+            (init-typebuf)
+            (start-stuff)
+            (when advance
+                (reset! execReg false))
+            (let [a'timedout (atom (boolean false))       ;; waited for more than 1 second for mapping to complete
+                  a'mode_deleted (atom (boolean false))   ;; set when mode has been deleted
+                  #_int c (loop []
+                    ;; get a character: 1. from the stuffbuffer
+                    (let [c (if (non-zero? @typeahead_char)
+                                (let [c @typeahead_char] (when advance (reset! typeahead_char 0)) c)
+                                (char_u (read-readbuffers advance)))
+                          c (if (and (!= c NUL) (not @got_int))
+                                (do (when advance
+                                        ;; keyTyped = false;
+                                        ;; When the command that stuffed something was typed,
+                                        ;; behave like the stuffed command was typed;
+                                        ;; needed e.g. for CTRL-W CTRl-] to open a fold.
+                                        (reset! keyStuffed true))
+                                    c)
+                                ;; Loop until we either find a matching mapped key,
+                                ;; or we are sure that it is not a mapped key.
+                                ;; If a mapped key sequence is found, we go back to the start to try re-mapping.
+                                (loop []
+                                    (ui-breakcheck)            ;; check for CTRL-C
+                                    (cond @got_int
+                                        (let [#_int len (inchar (:tb_buf @typebuf), (dec (:tb_buflen @typebuf)), 0, (:tb_change_cnt @typebuf)) ;; flush all input
+                                              ;; If inchar() returns true (script file was active)
+                                              ;; or we are inside a mapping, get out of insert mode.
+                                              ;; Otherwise we behave like having gotten a CTRL-C.
+                                              ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
+                                              c (if (and (non-zero? len) (flag? @State (+ INSERT CMDLINE))) ESC Ctrl_C)]
+                                            (flush-buffers true)        ;; flush all typeahead
+                                            (when advance
+                                                ;; Also record this character, it might be needed to get out of Insert mode.
+                                                (.be (:tb_buf @typebuf) 0, c)
+                                                (gotchars (:tb_buf @typebuf), 1))
+                                            c)
+                                    :else
 
-        (if (< 0 @vgetc_busy)
-            ((ß RETURN) NUL)
-        )
+                                        (§
+                                            ((ß int keylen =) (if (< 0 (:tb_len @typebuf))
+                                                ;; When no matching mapping found or found a non-matching mapping
+                                                ;; that matches at least what the matching mapping matched:
+                                                ;; Check if we have a terminal code, when:
+                                                ;; - mapping is allowed,
+                                                ;; - keys have not been mapped,
+                                                ;; - and when not timed out.
+                                                (let [keylen
+                                                        (if (and (or (zero? @no_mapping) (non-zero? @allow_keys)) (not @a'timedout))
+                                                            (let [keylen (check-termcode nil, 0, nil)]
+                                                                ;; When getting a partial match, but the last characters were not typed,
+                                                                ;; don't wait for a typed character to complete the termcode.
+                                                                ;; This helps a lot when a ":normal" command ends in an ESC.
+                                                                (if (and (< keylen 0) (zero? (:tb_len @typebuf))) 0 keylen))
+                                                            0)]
+                                                    (cond (zero? keylen)        ;; no matching terminal code
+                                                        ;; get a character: 2. from the typeahead buffer
+                                                        (let [c (& (.at (:tb_buf @typebuf) (:tb_off @typebuf)) 0xff)]
+                                                            (when advance    ;; remove chars from tb_buf
+                                                                (reset! keyTyped true)
+                                                                ;; write char to script file(s)
+                                                                (gotchars (.plus (:tb_buf @typebuf) (:tb_off @typebuf)), 1)
+                                                                (del-typebuf 1))
+                                                            (ß BREAK)          ;; got character, break for loop
+                                                        )
+                                                    (< 0 keylen)         ;; full matching terminal code
+                                                        (ß CONTINUE)           ;; try mapping again
+                                                    :else
+                                                        ;; Partial match: get some more characters.
+                                                        KEYLEN_PART_KEY
+                                                    ))
+                                                0
+                                            ))
 
-        (swap! vgetc_busy inc)
+                                            ;; get a character: 3. from the user - handle <Esc> in Insert mode
 
-        (if advance
-            (reset! keyStuffed false))
+                                            ;; Special case: if we get an <ESC> in insert mode and there are no more
+                                            ;; characters at once, we pretend to go out of insert mode.  This prevents
+                                            ;; the one second delay after typing an <ESC>.  If we get something after
+                                            ;; all, we may have to redisplay the mode.  That the cursor is in the wrong
+                                            ;; place does not matter.
 
-        (init-typebuf)
-        (start-stuff)
-        (if advance
-            (reset! execReg false))
+                                            ((ß int len =) 0)
+                                            ((ß int new_wcol =) (:w_wcol @curwin))
+                                            ((ß int new_wrow =) (:w_wrow @curwin))
+                                            (when (and advance (== (:tb_len @typebuf) 1) (at? (:tb_buf @typebuf) (:tb_off @typebuf) ESC) (zero? @no_mapping) (flag? @State INSERT) (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout)) (zero? ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25, (:tb_change_cnt @typebuf)))))
+                                                (when @mode_displayed
+                                                    (unshowmode true)
+                                                    (reset! a'mode_deleted true))
+                                                (validate-cursor)
+                                                ((ß int old_wcol =) (:w_wcol @curwin))
+                                                ((ß int old_wrow =) (:w_wrow @curwin))
 
-        ((ß boolean timedout =) false)       ;; waited for more than 1 second for mapping to complete
-        ((ß int mapdepth =) 0)               ;; check for recursive mapping
-        ((ß boolean mode_deleted =) false)   ;; set when mode has been deleted
+                                                ;; move cursor left, if possible
+                                                (when (non-zero? (:col (:w_cursor @curwin)))
+                                                    ((ß int col =) 0)
+                                                    (cond (< 0 (:w_wcol @curwin))
+                                                    (do
+                                                        (cond @did_ai
+                                                        (do
+                                                            ;; We are expecting to truncate the trailing white-space,
+                                                            ;; so find the last non-white character.
+                                                            (reset! curwin assoc :w_wcol 0)
+                                                            ((ß Bytes s =) (ml-get-curline))
+                                                            (loop-when-recur [#_int vcol 0 #_int i 0] (< i (:col (:w_cursor @curwin))) [(+ vcol (lbr-chartabsize s, (.plus s i), vcol)) (+ i (us-ptr2len-cc s, i))]
+                                                                (when (not (vim-iswhite (.at s i)))
+                                                                    (swap! curwin assoc :w_wcol vcol))
+                                                            )
+                                                            (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
+                                                            (swap! curwin update :w_wcol % (:w_width @curwin))
+                                                            (swap! curwin update :w_wcol + (win-col-off @curwin))
+                                                            ((ß col =) 0)        ;; no correction needed
+                                                        )
+                                                        :else
+                                                        (do
+                                                            (swap! curwin update :w_wcol dec)
+                                                            ((ß col =) (dec (:col (:w_cursor @curwin))))
+                                                        ))
+                                                    )
+                                                    (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
+                                                    (do
+                                                        (swap! curwin update :w_wrow dec)
+                                                        (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
+                                                        ((ß col =) (dec (:col (:w_cursor @curwin))))
+                                                    ))
 
-        (ß int c)
+                                                    (when (and (< 0 col) (< 0 (:w_wcol @curwin)))
+                                                        ;; Correct when the cursor is on the right halve of a double-wide character.
+                                                        ((ß Bytes s =) (ml-get-curline))
+                                                        ((ß col =) (- col (us-head-off s, (.plus s col))))
+                                                        (when (< 1 (us-ptr2cells s, col))
+                                                            (swap! curwin update :w_wcol dec))
+                                                    )
+                                                )
+                                                (setcursor)
+                                                (out-flush)
+                                                ((ß new_wcol =) (:w_wcol @curwin))
+                                                ((ß new_wrow =) (:w_wrow @curwin))
+                                                (swap! curwin assoc :w_wcol old_wcol)
+                                                (swap! curwin assoc :w_wrow old_wrow)
+                                            )
 
-        (loop []
-            ;; get a character: 1. from the stuffbuffer
+                                            (if (< len 0)
+                                                (ß CONTINUE)   ;; end of input script reached
+                                            )
 
-            (cond (non-zero? @typeahead_char)
-            (do
-                ((ß c =) @typeahead_char)
-                (if advance
-                    (reset! typeahead_char 0))
-            )
-            :else
-            (do
-                ((ß c =) (char_u (read-readbuffers advance)))
-            ))
+                                            (swap! typebuf update :tb_len + len)
 
-            (cond (and (!= c NUL) (not @got_int))
-            (do
-                (when advance
-                    ;; keyTyped = false;
-                    ;; When the command that stuffed something was typed,
-                    ;; behave like the stuffed command was typed;
-                    ;; needed e.g. for CTRL-W CTRl-] to open a fold.
-                    (reset! keyStuffed true)
-                )
-            )
-            :else
-            (do
-                ;; Loop until we either find a matching mapped key,
-                ;; or we are sure that it is not a mapped key.
-                ;; If a mapped key sequence is found, we go back to the start to try re-mapping.
+                                            ;; buffer full, don't map
+                                            (when (<= MAXMAPLEN (:tb_len @typebuf))
+                                                (reset! a'timedout true)
+                                                (ß CONTINUE)
+                                            )
 
-                (loop []
-                    (ui-breakcheck)            ;; check for CTRL-C
+                                            ;; get a character: 3. from the user - update display
 
-                    (when @got_int
-                        ;; flush all input
-                        ((ß int len =) (inchar (:tb_buf @typebuf), (dec (:tb_buflen @typebuf)), 0, (:tb_change_cnt @typebuf)))
+                                            ;; In insert mode a screen update is skipped when characters are still available.
+                                            ;; But when those available characters are part of a mapping, and we are going
+                                            ;; to do a blocking wait here.  Need to update the screen to display the changed
+                                            ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
+                                            ;; because there was something in the input buffer (e.g., termresponse).
 
-                        ;; If inchar() returns true (script file was active)
-                        ;; or we are inside a mapping, get out of insert mode.
-                        ;; Otherwise we behave like having gotten a CTRL-C.
-                        ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
+                                            (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance (non-zero? @must_redraw) (not @need_wait_return))
+                                                (update-screen 0)
+                                                (setcursor)            ;; put cursor back where it belongs
+                                            )
 
-                        ((ß c =) (if (and (non-zero? len) (flag? @State (+ INSERT CMDLINE))) ESC Ctrl_C))
+                                            ;; If we have a partial match (and are going to wait for more input from the user),
+                                            ;; show the partially matched characters to the user with showcmd.
 
-                        (flush-buffers true)        ;; flush all typeahead
+                                            ((ß int i =) 0)
+                                            ((ß int c1 =) 0)
+                                            (when (and (< 0 (:tb_len @typebuf)) advance)
+                                                (when (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
+                                                    ;; this looks nice when typing a dead character map
+                                                    (when (and (flag? @State INSERT) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
+                                                        (edit-putchar (.at (:tb_buf @typebuf) (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))), false)
+                                                        (setcursor)    ;; put cursor back where it belongs
+                                                        ((ß c1 =) 1)
+                                                    )
+                                                    ;; need to use the col and row from above here
+                                                    ((ß int old_wcol =) (:w_wcol @curwin))
+                                                    ((ß int old_wrow =) (:w_wrow @curwin))
+                                                    (swap! curwin assoc :w_wcol new_wcol)
+                                                    (swap! curwin assoc :w_wrow new_wrow)
+                                                    (push-showcmd)
+                                                    ((ß i =) (if (< SHOWCMD_COLS (:tb_len @typebuf)) (- (:tb_len @typebuf) SHOWCMD_COLS) i))
+                                                    ((ß i =) (loop-when-recur i (< i (:tb_len @typebuf)) (inc i) => i
+                                                        (add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i)))
+                                                    ))
+                                                    (swap! curwin assoc :w_wcol old_wcol)
+                                                    (swap! curwin assoc :w_wrow old_wrow)
+                                                )
 
-                        (when advance
-                            ;; Also record this character, it might be needed to get out of Insert mode.
-                            (.be (:tb_buf @typebuf) 0, c)
-                            (gotchars (:tb_buf @typebuf), 1)
-                        )
+                                                ;; this looks nice when typing a dead character map
+                                                (when (and (flag? @State CMDLINE) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
+                                                    (putcmdline (.at (:tb_buf @typebuf) (dec (+ (@typebuf.tb_off) (@typebuf.tb_len)))), false)
+                                                    ((ß c1 =) 1)
+                                                )
+                                            )
 
-                        (ß BREAK)
-                    )
+                                            ;; get a character: 3. from the user - get it
 
-                    ((ß int keylen =) 0)
+                                            ((ß int wait_tb_len =) (:tb_len @typebuf))
+                                            ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1), (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))), (:tb_change_cnt @typebuf)))
 
-                    (when (< 0 (:tb_len @typebuf))
-                        ;; When no matching mapping found or found a non-matching mapping
-                        ;; that matches at least what the matching mapping matched:
-                        ;; Check if we have a terminal code, when:
-                        ;; - mapping is allowed,
-                        ;; - keys have not been mapped,
-                        ;; - and when not timed out.
+                                            (if (non-zero? i)
+                                                (pop-showcmd))
+                                            (when (== c1 1)
+                                                (if (flag? @State INSERT)
+                                                    (edit-unputchar))
+                                                (if (flag? @State CMDLINE)
+                                                    (unputcmdline)
+                                                    (setcursor))            ;; put cursor back where it belongs
+                                            )
 
-                        (when (and (or (zero? @no_mapping) (non-zero? @allow_keys)) (not timedout))
-                            ((ß keylen =) (check-termcode nil, 0, nil))
+                                            (if (< len 0)
+                                                (ß CONTINUE)                   ;; end of input script reached
+                                            )
 
-                            ;; When getting a partial match, but the last characters were not typed,
-                            ;; don't wait for a typed character to complete the termcode.
-                            ;; This helps a lot when a ":normal" command ends in an ESC.
+                                            (cond (zero? len)                   ;; no character available
+                                            (do
+                                                (when (not advance)
+                                                    ((ß c =) NUL)
+                                                    (ß BREAK)
+                                                )
+                                                (when (< 0 wait_tb_len)        ;; timed out
+                                                    (reset! a'timedout true)
+                                                    (ß CONTINUE)
+                                                )
+                                            )
+                                            :else
+                                            (do
+                                                (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
+                                                    (swap! typebuf update :tb_len inc))
+                                            ))
 
-                            ((ß keylen =) (if (and (< keylen 0) (zero? (:tb_len @typebuf))) 0 keylen))
-                        )
+                                            (recur)
+                                        )
 
-                        (when (zero? keylen)        ;; no matching terminal code
-
-                            ;; get a character: 2. from the typeahead buffer
-
-                            ((ß c =) (& (.at (:tb_buf @typebuf) (:tb_off @typebuf)) 0xff))
-                            (when advance    ;; remove chars from tb_buf
-                                (reset! keyTyped true)
-                                ;; write char to script file(s)
-                                (gotchars (.plus (:tb_buf @typebuf) (:tb_off @typebuf)), 1)
-
-                                (del-typebuf 1)
-                            )
-                            (ß BREAK)          ;; got character, break for loop
-                        )
-
-                        (when (< 0 keylen)         ;; full matching terminal code
-                            (ß CONTINUE)           ;; try mapping again
-                        )
-
-                        ;; Partial match: get some more characters.
-                        ((ß keylen =) KEYLEN_PART_KEY)
-                    )
-
-                    ;; get a character: 3. from the user - handle <Esc> in Insert mode
-
-                    ;; Special case: if we get an <ESC> in insert mode and there are no more
-                    ;; characters at once, we pretend to go out of insert mode.  This prevents
-                    ;; the one second delay after typing an <ESC>.  If we get something after
-                    ;; all, we may have to redisplay the mode.  That the cursor is in the wrong
-                    ;; place does not matter.
-
-                    ((ß int len =) 0)
-                    ((ß int new_wcol =) (:w_wcol @curwin))
-                    ((ß int new_wrow =) (:w_wrow @curwin))
-                    (when (and advance (== (:tb_len @typebuf) 1) (at? (:tb_buf @typebuf) (:tb_off @typebuf) ESC) (zero? @no_mapping) (flag? @State INSERT) (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout)) (zero? ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25, (:tb_change_cnt @typebuf)))))
-                        (when @mode_displayed
-                            (unshowmode true)
-                            ((ß mode_deleted =) true)
-                        )
-                        (validate-cursor)
-                        ((ß int old_wcol =) (:w_wcol @curwin))
-                        ((ß int old_wrow =) (:w_wrow @curwin))
-
-                        ;; move cursor left, if possible
-                        (when (non-zero? (:col (:w_cursor @curwin)))
-                            ((ß int col =) 0)
-                            (cond (< 0 (:w_wcol @curwin))
-                            (do
-                                (cond @did_ai
-                                (do
-                                    ;; We are expecting to truncate the trailing white-space,
-                                    ;; so find the last non-white character.
-
-                                    ((ß col =) 0)
-                                    (reset! curwin assoc :w_wcol 0)
-                                    ((ß Bytes ptr =) (ml-get-curline))
-                                    (loop-when [#_int vcol col] (< col (:col (:w_cursor @curwin)))
-                                        (when (not (vim-iswhite (.at ptr col)))
-                                            (swap! curwin assoc :w_wcol vcol))
-                                        ((ß vcol =) (+ vcol (lbr-chartabsize ptr, (.plus ptr col), vcol)))
-                                        ((ß col =) (+ col (us-ptr2len-cc ptr, col)))
-                                        (recur vcol)
-                                    )
-                                    (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
-                                    (swap! curwin update :w_wcol % (:w_width @curwin))
-                                    (swap! curwin update :w_wcol + (win-col-off @curwin))
-                                    ((ß col =) 0)        ;; no correction needed
-                                )
-                                :else
-                                (do
-                                    (swap! curwin update :w_wcol dec)
-                                    ((ß col =) (dec (:col (:w_cursor @curwin))))
-                                ))
-                            )
-                            (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
-                            (do
-                                (swap! curwin update :w_wrow dec)
-                                (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
-                                ((ß col =) (dec (:col (:w_cursor @curwin))))
-                            ))
-
-                            (when (and (< 0 col) (< 0 (:w_wcol @curwin)))
-                                ;; Correct when the cursor is on the right halve of a double-wide character.
-                                ((ß Bytes p =) (ml-get-curline))
-                                ((ß col =) (- col (us-head-off p, (.plus p col))))
-                                (when (< 1 (us-ptr2cells p, col))
-                                    (swap! curwin update :w_wcol dec))
-                            )
-                        )
-                        (setcursor)
-                        (out-flush)
-                        ((ß new_wcol =) (:w_wcol @curwin))
-                        ((ß new_wrow =) (:w_wrow @curwin))
-                        (swap! curwin assoc :w_wcol old_wcol)
-                        (swap! curwin assoc :w_wrow old_wrow)
-                    )
-                    (if (< len 0)
-                        (ß CONTINUE)   ;; end of input script reached
-                    )
-
-                    (swap! typebuf update :tb_len + len)
-
-                    ;; buffer full, don't map
-                    (when (<= MAXMAPLEN (:tb_len @typebuf))
-                        ((ß timedout =) true)
-                        (ß CONTINUE)
-                    )
-
-                    ;; get a character: 3. from the user - update display
-
-                    ;; In insert mode a screen update is skipped when characters are still available.
-                    ;; But when those available characters are part of a mapping, and we are going
-                    ;; to do a blocking wait here.  Need to update the screen to display the changed
-                    ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
-                    ;; because there was something in the input buffer (e.g., termresponse).
-
-                    (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance (non-zero? @must_redraw) (not @need_wait_return))
-                        (update-screen 0)
-                        (setcursor)            ;; put cursor back where it belongs
-                    )
-
-                    ;; If we have a partial match (and are going to wait for more input from the user),
-                    ;; show the partially matched characters to the user with showcmd.
-
-                    ((ß int i =) 0)
-                    ((ß int c1 =) 0)
-                    (when (and (< 0 (:tb_len @typebuf)) advance)
-                        (when (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
-                            ;; this looks nice when typing a dead character map
-                            (when (and (flag? @State INSERT) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
-                                (edit-putchar (.at (:tb_buf @typebuf) (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))), false)
-                                (setcursor)    ;; put cursor back where it belongs
-                                ((ß c1 =) 1)
-                            )
-                            ;; need to use the col and row from above here
-                            ((ß int old_wcol =) (:w_wcol @curwin))
-                            ((ß int old_wrow =) (:w_wrow @curwin))
-                            (swap! curwin assoc :w_wcol new_wcol)
-                            (swap! curwin assoc :w_wrow new_wrow)
-                            (push-showcmd)
-                            ((ß i =) (if (< SHOWCMD_COLS (:tb_len @typebuf)) (- (:tb_len @typebuf) SHOWCMD_COLS) i))
-                            ((ß i =) (loop-when-recur i (< i (:tb_len @typebuf)) (inc i) => i
-                                (add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i)))
-                            ))
-                            (swap! curwin assoc :w_wcol old_wcol)
-                            (swap! curwin assoc :w_wrow old_wrow)
-                        )
-
-                        ;; this looks nice when typing a dead character map
-                        (when (and (flag? @State CMDLINE) (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
-                            (putcmdline (.at (:tb_buf @typebuf) (dec (+ (@typebuf.tb_off) (@typebuf.tb_len)))), false)
-                            ((ß c1 =) 1)
-                        )
-                    )
-
-                    ;; get a character: 3. from the user - get it
-
-                    ((ß int wait_tb_len =) (:tb_len @typebuf))
-                    ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1), (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))), (:tb_change_cnt @typebuf)))
-
-                    (if (non-zero? i)
-                        (pop-showcmd))
-                    (when (== c1 1)
-                        (if (flag? @State INSERT)
-                            (edit-unputchar))
-                        (if (flag? @State CMDLINE)
-                            (unputcmdline)
-                            (setcursor))            ;; put cursor back where it belongs
-                    )
-
-                    (if (< len 0)
-                        (ß CONTINUE)                   ;; end of input script reached
-                    )
-                    (cond (zero? len)                   ;; no character available
-                    (do
-                        (when (not advance)
-                            ((ß c =) NUL)
-                            (ß BREAK)
-                        )
-                        (when (< 0 wait_tb_len)        ;; timed out
-                            ((ß timedout =) true)
-                            (ß CONTINUE)
-                        )
-                    )
-                    :else
-                    (do
-                        (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
-                            (swap! typebuf update :tb_len inc))
+                                    ))
+                            )]
+                        (recur-if (or (< c 0) (and advance (== c NUL))) [] => c)   ;; if advance is false don't loop on NULs
+                    ))]
+                ;; The "INSERT" message is taken care of here:
+                ;;   if we return an ESC to exit insert mode, the message is deleted;
+                ;;   if we don't return an ESC, but deleted the message before, redisplay it.
+                (when (and advance @p_smd (flag? @State INSERT))
+                    (cond (and (== c ESC) (not @a'mode_deleted) (zero? @no_mapping) @mode_displayed)
+                        (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
+                            (reset! redraw_cmdline true)          ;; delete mode later
+                            (unshowmode false))
+                    (and (!= c ESC) @a'mode_deleted)
+                        (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
+                            (reset! redraw_cmdline true)          ;; show mode later
+                            (showmode))
                     ))
-                    (recur)
-                )
-            ))
-            (recur-if (or (< c 0) (and advance (== c NUL))) [])   ;; if advance is false don't loop on NULs
-        )
-
-        ;; The "INSERT" message is taken care of here:
-        ;;   if we return an ESC to exit insert mode, the message is deleted;
-        ;;   if we don't return an ESC, but deleted the message before, redisplay it.
-
-        (when (and advance @p_smd (flag? @State INSERT))
-            (cond (and (== c ESC) (not mode_deleted) (zero? @no_mapping) @mode_displayed)
-            (do
-                (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
-                    (reset! redraw_cmdline true)          ;; delete mode later
-                    (unshowmode false))
-            )
-            (and (!= c ESC) mode_deleted)
-            (do
-                (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
-                    (reset! redraw_cmdline true)          ;; show mode later
-                    (showmode))
-            ))
-        )
-
-        (swap! vgetc_busy dec)
-
-        c
+                (swap! vgetc_busy dec)
+            c))
     ))
 
 ;; inchar() - get one character from
@@ -18966,694 +18899,637 @@
 
 (defn- #_boolean edit [#_int cmdchar, #_boolean startln, #_long _count]
     ;; startln: if set, insert at start of line
-    (§
-        ((ß long[] a'count =) (atom (long _count)))
-
-        ((ß boolean did_backspace =) true)           ;; previous char was backspace
-        ((ß boolean line_is_white =) false)          ;; line is empty before insert
-        ((ß long old_topline =) 0)                   ;; topline before insertion
-        ((ß boolean[] a'inserted_space =) (atom (boolean false)))         ;; just inserted a space
-        ((ß boolean nomove =) false)                 ;; don't move cursor on return
-
+    (let [a'count (atom (long _count))]
         ;; Remember whether editing was restarted after CTRL-O.
         (reset! did_restart_edit @restart_edit)
-
         ;; sleep before redrawing, needed for "CTRL-O :" that results in an error message
         (check-for-delay true)
-
         ;; set insStart_orig to insStart
         (reset! update_insStart_orig true)
-
         ;; Don't allow changes in the buffer while editing the cmdline.
         ;; The caller of getcmdline() may get confused.
-        (when (non-zero? @textlock)
-            (emsg e_secure)
-            ((ß RETURN) false)
-        )
-
-        ;; Check if the cursor line needs redrawing before changing State.
-        ;; If 'concealcursor' is "n", it needs to be redrawn without concealing.
-        (conceal-check-cursor-line)
-
-        ;; When doing a paste with the middle mouse button,
-        ;; insStart is set to where the paste started.
-
-        (cond (non-zero? (:lnum @where_paste_started))
-        (do
-            (reset! insStart @where_paste_started)
-        )
+        (cond (non-zero? @textlock)
+            (do (emsg e_secure) false)
         :else
-        (do
-            (reset! insStart (:w_cursor @curwin))
-            (when startln
-                (swap! insStart assoc :col 0))
-        ))
-        (reset! insStart_textlen (linetabsize (ml-get-curline)))
-        (reset! insStart_blank_vcol MAXCOL)
-        (if (not @did_ai)
-            (reset! ai_col 0))
-
-        (when (and (!= cmdchar NUL) (zero? @restart_edit))
-            (reset-redo)
-            (append-redo-number @a'count)
-            (cond (any == cmdchar (byte \V) (byte \v))
-            (do
-                ;; "gR" or "gr" command
-                (append-redo-char (byte \g))
-                (append-redo-char (if (== cmdchar (byte \v)) (byte \r) (byte \R)))
-            )
-            :else
-            (do
-                (append-redo-char cmdchar)
-                (cond (== cmdchar (byte \g))             ;; "gI" command
+        (do ;; Check if the cursor line needs redrawing before changing State.
+            ;; If 'concealcursor' is "n", it needs to be redrawn without concealing.
+            (conceal-check-cursor-line)
+            ;; When doing a paste with the middle mouse button,
+            ;; insStart is set to where the paste started.
+            (if (non-zero? (:lnum @where_paste_started))
+                (reset! insStart @where_paste_started)
                 (do
-                    (append-redo-char (byte \I))
-                )
-                (== cmdchar (byte \r))        ;; "r<CR>" command
-                (do
-                    (reset! a'count 1)                  ;; insert only one <CR>
+                    (reset! insStart (:w_cursor @curwin))
+                    (when startln
+                        (swap! insStart assoc :col 0))
                 ))
-            ))
-        )
-
-        ((ß int replaceState =) REPLACE)
-        (cond (== cmdchar (byte \R))
-        (do
-            (reset! State REPLACE)
-        )
-        (any == cmdchar (byte \V) (byte \v))
-        (do
-            (reset! State VREPLACE)
-            ((ß replaceState =) VREPLACE)
-            (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
-            (reset! vr_lines_changed 1)
-        )
-        :else
-        (do
-            (reset! State INSERT)
-        ))
-
-        (reset! stop_insert_mode false)
-
-        ;; Need to recompute the cursor position,
-        ;; it might move when the cursor is on a TAB or special character.
-
-        (curs-columns true)
-
-        (clear-showcmd)
-
-        ;; Handle restarting Insert mode.
-        ;; Don't do this for "CTRL-O ." (repeat an insert): we get here with
-        ;; restart_edit non-zero, and something in the stuff buffer.
-
-        (cond (and (non-zero? @restart_edit) (stuff-empty))
-        (do
-            ;; After a paste we consider text typed to be part of the insert for
-            ;; the pasted text.  You can backspace over the pasted text too.
-
-            (reset! arrow_used (zero? (:lnum @where_paste_started)))
-            (reset! restart_edit 0)
-
-            ;; If the cursor was after the end-of-line before the CTRL-O and it is
-            ;; now at the end-of-line, put it after the end-of-line (this is not
-            ;; correct in very rare cases).
-            ;; Also do this if curswant is greater than the current virtual column.
-            ;; E.g. after "^O$" or "^O80|".
-
-            (validate-virtcol)
-            (update-curswant)
-            (when (or (and @ins_at_eol (== (:lnum (:w_cursor @curwin)) @o_lnum)) (< (:w_virtcol @curwin) (:w_curswant @curwin)))
-                ((ß Bytes p =) (.plus (ml-get-curline) (:col (:w_cursor @curwin))))
-                (when (non-eos? p)
-                    (cond (eos? p 1)
+            (reset! insStart_textlen (linetabsize (ml-get-curline)))
+            (reset! insStart_blank_vcol MAXCOL)
+            (when (not @did_ai)
+                (reset! ai_col 0))
+            (when (and (!= cmdchar NUL) (zero? @restart_edit))
+                (reset-redo)
+                (append-redo-number @a'count)
+                (if (any == cmdchar (byte \V) (byte \v))
+                    (do ;; "gR" or "gr" command
+                        (append-redo-char (byte \g))
+                        (append-redo-char (if (== cmdchar (byte \v)) (byte \r) (byte \R))))
                     (do
-                        (swap! curwin update-in [:w_cursor :col] inc)
-                    )
+                        (append-redo-char cmdchar)
+                        (cond
+                            (== cmdchar (byte \g)) (append-redo-char (byte \I)) ;; "gI" command
+                            (== cmdchar (byte \r)) (reset! a'count 1)           ;; "r<CR>" command ;; insert only one <CR>
+                        ))
+                ))
+            (let [#_int replaceState
+                    (cond (== cmdchar (byte \R))
+                        (do (reset! State REPLACE)
+                            REPLACE)
+                    (any == cmdchar (byte \V) (byte \v))
+                        (do (reset! State VREPLACE)
+                            (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
+                            (reset! vr_lines_changed 1)
+                            VREPLACE)
                     :else
-                    (do
-                        ((ß int n =) (us-ptr2len-cc p))
-                        (when (eos? p n)
-                            (swap! curwin update-in [:w_cursor :col] + n))
-                    ))
-                )
-            )
-            (reset! ins_at_eol false)
-        )
-        :else
-        (do
-            (reset! arrow_used false)
-        ))
+                        (do (reset! State INSERT)
+                            REPLACE)
+                    )]
+                (reset! stop_insert_mode false)
+                ;; Need to recompute the cursor position,
+                ;; it might move when the cursor is on a TAB or special character.
+                (curs-columns true)
+                (clear-showcmd)
+                ;; Handle restarting Insert mode.
+                ;; Don't do this for "CTRL-O ." (repeat an insert):
+                ;; we get here with restart_edit non-zero, and something in the stuff buffer.
+                (cond (and (non-zero? @restart_edit) (stuff-empty))
+                (do ;; After a paste we consider text typed to be part of the insert for
+                    ;; the pasted text.  You can backspace over the pasted text too.
+                    (reset! arrow_used (zero? (:lnum @where_paste_started)))
+                    (reset! restart_edit 0)
+                    ;; If the cursor was after the end-of-line before the CTRL-O and it is
+                    ;; now at the end-of-line, put it after the end-of-line (this is not
+                    ;; correct in very rare cases).
+                    ;; Also do this if curswant is greater than the current virtual column.
+                    ;; E.g. after "^O$" or "^O80|".
+                    (validate-virtcol)
+                    (update-curswant)
+                    (when (or (and @ins_at_eol (== (:lnum (:w_cursor @curwin)) @o_lnum)) (< (:w_virtcol @curwin) (:w_curswant @curwin)))
+                        (let-when [#_Bytes s (.plus (ml-get-curline) (:col (:w_cursor @curwin)))] (non-eos? s)
+                            (if (eos? s 1)
+                                (swap! curwin update-in [:w_cursor :col] inc)
+                                (let-when [#_int n (us-ptr2len-cc s)] (eos? s n)
+                                    (swap! curwin update-in [:w_cursor :col] + n)
+                                ))
+                        ))
+                    (reset! ins_at_eol false))
+                :else
+                    (reset! arrow_used false))
+                ;; We are in insert mode now, don't need to start it anymore.
+                (reset! need_start_insertmode false)
+                ;; Need to save the line for undo before inserting the first char.
+                (reset! ins_need_undo true)
+                (swap! where_paste_started assoc :lnum 0)
+                (reset! can_cindent true)
+                ;; If 'showmode' is set, show the current (insert/replace/...) mode.
+                ;; A warning message for changing a readonly file is given here, before
+                ;; actually changing anything.  It's put after the mode, if any.
+                (when @p_smd (showmode))
+                (ui-cursor-shape)           ;; may show different cursor shape
+                (do-digraph -1)             ;; clear digraphs
+                ;; Get the current length of the redo buffer,
+                ;; those characters have to be skipped if we want to get to the inserted characters.
+                (let [#_Bytes s (get-inserted)]
+                    (reset! new_insert_skip (if (some? s) (STRLEN s) 0)))
+                (reset! old_indent 0)
+                (let [a'inserted_space (atom (boolean false))   ;; just inserted a space
+                      a'did_backspace (atom (boolean true))     ;; previous char was backspace
+                      a'old_topline (atom (long 0))             ;; topline before insertion
+                      a'nomove (atom (boolean false))]          ;; don't move cursor on return
 
-        ;; We are in insert mode now, don't need to start it anymore.
-        (reset! need_start_insertmode false)
+                    ;; Main loop in Insert mode: repeat until Insert mode is left.
+                (§
+                    (loop [#_int lastc 0 #_int c 0]
+                        (when @arrow_used     ;; don't repeat insert when arrow key used
+                            (reset! a'count 0))
 
-        ;; Need to save the line for undo before inserting the first char.
-        (reset! ins_need_undo true)
+                        (when @update_insStart_orig
+                            (reset! insStart_orig @insStart))
 
-        (swap! where_paste_started assoc :lnum 0)
-        (reset! can_cindent true)
-
-        ;; If 'showmode' is set, show the current (insert/replace/..) mode.
-        ;; A warning message for changing a readonly file is given here, before
-        ;; actually changing anything.  It's put after the mode, if any.
-
-        ((ß int i =) (if @p_smd (showmode) 0))
-
-        (ui-cursor-shape)          ;; may show different cursor shape
-        (do-digraph -1)             ;; clear digraphs
-
-        ;; Get the current length of the redo buffer,
-        ;; those characters have to be skipped if we want to get to the inserted characters.
-
-        ((ß Bytes ptr =) (get-inserted))
-        (reset! new_insert_skip (if (some? ptr) (STRLEN ptr) 0))
-
-        (reset! old_indent 0)
-
-        ;; Main loop in Insert mode: repeat until Insert mode is left.
-
-        (loop [#_int lastc 0 #_int c 0]
-            (when @arrow_used     ;; don't repeat insert when arrow key used
-                (reset! a'count 0))
-
-            (when @update_insStart_orig
-                (reset! insStart_orig @insStart))
-
-;           doESCkey:
-;           {
-                (when @stop_insert_mode
-                    ;; ":stopinsert" used or 'insertmode' reset
-                    (reset! a'count 0)
-                    (ß BREAK doESCkey)
-                )
-
-                ;; set curwin.w_curswant for next K_DOWN or K_UP
-                (when (not @arrow_used)
-                    (swap! curwin assoc :w_set_curswant true))
-
-                ;; When emsg() was called msg_scroll will have been set.
-
-                (reset! msg_scroll false)
-
-                ;; If we inserted a character at the last position of the last line in the window,
-                ;; scroll the window one line up.  This avoids an extra redraw.
-                ;; This is detected when the cursor column is smaller after inserting something.
-                ;; Don't do this when the topline changed already,
-                ;; it has already been adjusted (by insertchar() calling open-line()).
-
-                (when (and (:b_mod_set @curbuf) @(:wo_wrap (:w_options @curwin)) (not did_backspace) (== (:w_topline @curwin) old_topline))
-                    ((ß int mincol =) (:w_wcol @curwin))
-                    (validate-cursor-col)
-
-                    (when (and (< (:w_wcol @curwin) (- mincol @(:b_p_ts @curbuf))) (== (:w_wrow @curwin) (- (- (+ (:w_winrow @curwin) (:w_height @curwin)) 1) @p_so)) (!= (:lnum (:w_cursor @curwin)) (:w_topline @curwin)))
-                        (set-topline @curwin, (inc (:w_topline @curwin)))
-                    )
-                )
-
-                ;; May need to adjust w_topline to show the cursor.
-                (update-topline)
-
-                ((ß did_backspace =) false)
-
-                (validate-cursor)              ;; may set must_redraw
-
-                ;; Redraw the display when no characters are waiting.
-                ;; Also shows mode, ruler and positions cursor.
-
-                (ins-redraw true)
-
-                (if @(:wo_scb (:w_options @curwin))
-                    (do-check-scrollbind true))
-
-                (if @(:wo_crb (:w_options @curwin))
-                    (do-check-cursorbind))
-                (update-curswant)
-                ((ß old_topline =) (:w_topline @curwin))
-
-                ;; Get a character for Insert mode.  Ignore K_IGNORE.
-
-                ((ß lastc =) (if (!= c K_CURSORHOLD) c lastc))          ;; remember the previous char for CTRL-D
-                (loop []
-                    ((ß c =) (safe-vgetc))
-                    (recur-if (== c K_IGNORE) [])
-                )
-
-                ;; Don't want K_CURSORHOLD for the second key, e.g., after CTRL-V.
-                (reset! did_cursorhold true)
-
-                ;; CTRL-\ CTRL-N goes to Normal mode,
-                ;; CTRL-\ CTRL-G goes to mode selected with 'insertmode',
-                ;; CTRL-\ CTRL-O is like CTRL-O but without moving the cursor.
-                (when (== c Ctrl_BSL)
-                    ;; may need to redraw when no more chars available now
-                    (ins-redraw false)
-
-                    (swap! no_mapping inc)
-                    (swap! allow_keys inc)
-                    ((ß c =) (plain-vgetc))
-                    (swap! no_mapping dec)
-                    (swap! allow_keys dec)
-
-                    (cond (and (!= c Ctrl_N) (!= c Ctrl_G) (!= c Ctrl_O))
-                    (do
-                        ;; it's something else
-                        (vungetc c)
-                        ((ß c =) Ctrl_BSL)
-                    )
-                    (and (== c Ctrl_G) @p_im)
-                    (do
-                        (ß CONTINUE)
-                    )
-                    :else
-                    (do
-                        (when (== c Ctrl_O)
-                            (ins-ctrl-o)
-                            (reset! ins_at_eol false) ;; cursor keeps its column
-                            ((ß nomove =) true)
-                        )
-                        (reset! a'count 0)
-                        (ß BREAK doESCkey)
-                    ))
-                )
-
-                ((ß c =) (do-digraph c))
-
-                (when (any == c Ctrl_V Ctrl_Q)
-                    (ins-ctrl-v)
-                    ((ß c =) Ctrl_V)         ;; pretend CTRL-V is last typed character
-                    (ß CONTINUE)
-                )
-
-                ;; If 'keymodel' contains "startsel", may start selection.
-                ;; If it does, a CTRL-O and c will be stuffed, we need to get these characters.
-
-                (if (ins-start-select c)
-                    (ß CONTINUE)
-                )
-
-;               normalchar:
-;               {
-                    ;; The big switch to handle a character in insert mode.
-
-                    ((ß SWITCH) c
-                        ((ß CASE) ESC)                           ;; end input mode
-                        (do
-                            (ß FALLTHROUGH)
-                        )
-
-                        ((ß CASE) Ctrl_C)                        ;; end input mode
-                        (do
-                            (when (and (== c Ctrl_C) (non-zero? @cmdwin_type))
-                                ;; Close the cmdline window.
-                                (reset! cmdwin_result K_IGNORE)
-                                (reset! got_int false)            ;; don't stop executing autocommands et al.
-                                ((ß nomove =) true)
+;                       doESCkey:
+;                       {
+                            (when @stop_insert_mode
+                                ;; ":stopinsert" used or 'insertmode' reset
+                                (reset! a'count 0)
                                 (ß BREAK doESCkey)
                             )
 
-                            ;; When 'insertmode' set, and not halfway a mapping, don't leave Insert mode.
-                            (when (goto-im)
-                                (cond @got_int
+                            ;; set curwin.w_curswant for next K_DOWN or K_UP
+                            (when (not @arrow_used)
+                                (swap! curwin assoc :w_set_curswant true))
+
+                            ;; When emsg() was called msg_scroll will have been set.
+
+                            (reset! msg_scroll false)
+
+                            ;; If we inserted a character at the last position of the last line in the window,
+                            ;; scroll the window one line up.  This avoids an extra redraw.
+                            ;; This is detected when the cursor column is smaller after inserting something.
+                            ;; Don't do this when the topline changed already,
+                            ;; it has already been adjusted (by insertchar() calling open-line()).
+
+                            (when (and (:b_mod_set @curbuf) @(:wo_wrap (:w_options @curwin)) (not @a'did_backspace) (== (:w_topline @curwin) @a'old_topline))
+                                (let [#_int mincol (:w_wcol @curwin)]
+                                    (validate-cursor-col)
+                                    (when (and (< (:w_wcol @curwin) (- mincol @(:b_p_ts @curbuf)))
+                                               (== (:w_wrow @curwin) (- (dec (+ (:w_winrow @curwin) (:w_height @curwin))) @p_so))
+                                               (!= (:lnum (:w_cursor @curwin)) (:w_topline @curwin)))
+                                        (set-topline @curwin, (inc (:w_topline @curwin))))
+                                ))
+
+                            ;; May need to adjust w_topline to show the cursor.
+                            (update-topline)
+
+                            (reset! a'did_backspace false)
+
+                            (validate-cursor)              ;; may set must_redraw
+
+                            ;; Redraw the display when no characters are waiting.
+                            ;; Also shows mode, ruler and positions cursor.
+
+                            (ins-redraw true)
+
+                            (when @(:wo_scb (:w_options @curwin))
+                                (do-check-scrollbind true))
+
+                            (when @(:wo_crb (:w_options @curwin))
+                                (do-check-cursorbind))
+                            (update-curswant)
+                            (reset! a'old_topline (:w_topline @curwin))
+
+                            ;; Get a character for Insert mode.  Ignore K_IGNORE.
+
+                            ((ß lastc =) (if (!= c K_CURSORHOLD) c lastc))          ;; remember the previous char for CTRL-D
+                            ((ß c =) (loop [] (let [c (safe-vgetc)] (recur-if (== c K_IGNORE) [] => c))))
+
+                            ;; Don't want K_CURSORHOLD for the second key, e.g., after CTRL-V.
+                            (reset! did_cursorhold true)
+
+                            ;; CTRL-\ CTRL-N goes to Normal mode,
+                            ;; CTRL-\ CTRL-G goes to mode selected with 'insertmode',
+                            ;; CTRL-\ CTRL-O is like CTRL-O but without moving the cursor.
+                            (when (== c Ctrl_BSL)
+                                ;; may need to redraw when no more chars available now
+                                (ins-redraw false)
+
+                                (swap! no_mapping inc)
+                                (swap! allow_keys inc)
+                                ((ß c =) (plain-vgetc))
+                                (swap! no_mapping dec)
+                                (swap! allow_keys dec)
+
+                                (cond (and (!= c Ctrl_N) (!= c Ctrl_G) (!= c Ctrl_O))
                                 (do
-                                    (vgetc)                ;; flush all buffers
-                                    (reset! got_int false)
+                                    ;; it's something else
+                                    (vungetc c)
+                                    ((ß c =) Ctrl_BSL)
+                                )
+                                (and (== c Ctrl_G) @p_im)
+                                (do
+                                    (ß CONTINUE)
                                 )
                                 :else
                                 (do
-                                    (vim-beep)
-                                ))
-                                (ß BREAK normalchar)
-                            )
-                            (ß BREAK doESCkey)
-                        )
-
-                        ((ß CASE) Ctrl_Z)                        ;; suspend when 'insertmode' set
-                        (do
-                            (if (not @p_im)
-                                (ß BREAK)            ;; insert CTRL-Z as normal char
-                            )
-                            (stuff-string (u8 ":st\r"))
-                            ((ß c =) Ctrl_O)
-                            (ß FALLTHROUGH)
-                        )
-
-                        ((ß CASE) Ctrl_O)                        ;; execute one command
-                        (do
-                            (ins-ctrl-o)
-
-                            ;; Don't move the cursor left when 'virtualedit' has "onemore".
-                            (when (flag? @ve_flags VE_ONEMORE)
-                                (reset! ins_at_eol false)
-                                ((ß nomove =) true)
-                            )
-                            (reset! a'count 0)
-                            (ß BREAK doESCkey)
-                        )
-
-                        ((ß CASE) K_INS)                         ;; toggle insert/replace mode
-                        ((ß CASE) K_KINS)
-                        (do
-                            (ins-insert replaceState)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_SELECT)                      ;; end of Select mode mapping - ignore
-                        (do
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_HELP)                        ;; Help key works like <ESC> <Help>
-                        ((ß CASE) K_F1)
-                        ((ß CASE) K_XF1)
-                        (do
-                            (stuff-char K_HELP)
-                            (if @p_im
-                                (reset! need_start_insertmode true))
-                            (ß BREAK doESCkey)
-                        )
-
-                        ((ß CASE) K_ZERO)                        ;; insert the previously inserted text
-                        ((ß CASE) NUL)
-                        ((ß CASE) Ctrl_A)
-                        (do
-                            ;; For ^@ the trailing ESC will end the insert, unless there is an error.
-                            (if (and (not (stuff-inserted NUL, 1, (== c Ctrl_A))) (!= c Ctrl_A) (not @p_im))
-                                (ß BREAK doESCkey)             ;; quit insert mode
-                            )
-                            (reset! a'inserted_space false)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_R)                        ;; insert the contents of a register
-                        (do
-                            (ins-reg)
-                            (reset! a'inserted_space false)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_G)                        ;; commands starting with CTRL-G
-                        (do
-                            (ins-ctrl-g)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_HAT)                      ;; switch input mode and/or langmap
-                        (do
-                            (ins-ctrl-hat)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl__)                        ;; switch between languages
-                        (do
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) Ctrl_D)                        ;; make indent one shiftwidth smaller
-                        (do
-                            (ß FALLTHROUGH)
-                        )
-                        ((ß CASE) Ctrl_T)                        ;; make indent one shiftwidth greater
-                        (do
-                            (ins-shift c, lastc)
-                            (reset! a'inserted_space false)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_DEL)                         ;; delete character under the cursor
-                        ((ß CASE) K_KDEL)
-                        (do
-                            (ins-del)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_BS)                          ;; delete character before the cursor
-                        ((ß CASE) Ctrl_H)
-                        (do
-                            ((ß did_backspace =) (ins-bs c, BACKSPACE_CHAR, a'inserted_space))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_W)                        ;; delete word before the cursor
-                        (do
-                            ((ß did_backspace =) (ins-bs c, BACKSPACE_WORD, a'inserted_space))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_U)                        ;; delete all inserted text in current line
-                        (do
-                            ((ß did_backspace =) (ins-bs c, BACKSPACE_LINE, a'inserted_space))
-                            (reset! a'inserted_space false)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_IGNORE)                      ;; something mapped to nothing
-                        (do
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_CURSORHOLD)                  ;; didn't type something for a while
-                        (do
-                            (reset! did_cursorhold true)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_HOME)                        ;; <Home>
-                        ((ß CASE) K_KHOME)
-                        ((ß CASE) K_S_HOME)
-                        ((ß CASE) K_C_HOME)
-                        (do
-                            (ins-home c)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_END)                         ;; <End>
-                        ((ß CASE) K_KEND)
-                        ((ß CASE) K_S_END)
-                        ((ß CASE) K_C_END)
-                        (do
-                            (ins-end c)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_LEFT)                        ;; <Left>
-                        (do
-                            (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
-                                (ins-s-left)
-                                (ins-left))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_S_LEFT)                      ;; <S-Left>
-                        ((ß CASE) K_C_LEFT)
-                        (do
-                            (ins-s-left)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_RIGHT)                       ;; <Right>
-                        (do
-                            (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
-                                (ins-s-right)
-                                (ins-right))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_S_RIGHT)                     ;; <S-Right>
-                        ((ß CASE) K_C_RIGHT)
-                        (do
-                            (ins-s-right)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_UP)                          ;; <Up>
-                        (do
-                            (if (flag? @mod_mask MOD_MASK_SHIFT)
-                                (ins-pageup)
-                                (ins-up false))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_S_UP)                        ;; <S-Up>
-                        ((ß CASE) K_PAGEUP)
-                        ((ß CASE) K_KPAGEUP)
-                        (do
-                            (ins-pageup)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_DOWN)                        ;; <Down>
-                        (do
-                            (if (flag? @mod_mask MOD_MASK_SHIFT)
-                                (ins-pagedown)
-                                (ins-down false))
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_S_DOWN)                      ;; <S-Down>
-                        ((ß CASE) K_PAGEDOWN)
-                        ((ß CASE) K_KPAGEDOWN)
-                        (do
-                            (ins-pagedown)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_DROP)                        ;; drag-n-drop event
-                        (do
-                            (ins-drop)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_S_TAB)                       ;; when not mapped, use like a normal TAB
-                        (do
-                            ((ß c =) TAB)
-                            (ß FALLTHROUGH)
-                        )
-                        ((ß CASE) TAB)                           ;; TAB or Complete patterns along path
-                        (do
-                            (reset! a'inserted_space false)
-                            (if (ins-tab)
-                                (ß BREAK)            ;; insert TAB as a normal char
-                            )
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) K_KENTER)                      ;; <Enter>
-                        (do
-                            ((ß c =) CAR)
-                            (ß FALLTHROUGH)
-                        )
-                        ((ß CASE) CAR)
-                        ((ß CASE) NL)
-                        (do
-                            (when (non-zero? @cmdwin_type)
-                                ;; Execute the command in the cmdline window.
-                                (reset! cmdwin_result CAR)
-                                (ß BREAK doESCkey)
-                            )
-                            (if (and (ins-eol c) (not @p_im))
-                                (ß BREAK doESCkey)             ;; out of memory
-                            )
-                            (reset! a'inserted_space false)
-                            (ß BREAK normalchar)
-                        )
-
-                        ((ß CASE) Ctrl_K)                        ;; digraph or keyword completion
-                        (do
-                            ((ß c =) (ins-digraph))
-                            (if (== c NUL)
-                                (ß BREAK normalchar)
-                            )
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) Ctrl_L)                        ;; whole line completion after ^X
-                        (do
-                            ;; CTRL-L with 'insertmode' set: Leave Insert mode.
-                            (if @p_im
-                                (ß BREAK doESCkey)
-                            )
-                            (ß BREAK)
-                        )
-
-                        ((ß CASE) Ctrl_Y)                        ;; copy from previous line or scroll down
-                        ((ß CASE) Ctrl_E)                        ;; copy from next     line or scroll up
-                        (do
-                            ((ß c =) (ins-ctrl-ey c))
-                            (ß BREAK normalchar)
-                        )
-
-                        (ß DEFAULT)
-                        (do
-                            (when (== c @intr_char)             ;; special interrupt char
-                                ;; When 'insertmode' set, and not halfway a mapping, don't leave Insert mode.
-                                (when (goto-im)
-                                    (cond @got_int
-                                    (do
-                                        (vgetc)                ;; flush all buffers
-                                        (reset! got_int false)
+                                    (when (== c Ctrl_O)
+                                        (ins-ctrl-o)
+                                        (reset! ins_at_eol false) ;; cursor keeps its column
+                                        (reset! a'nomove true)
                                     )
-                                    :else
+                                    (reset! a'count 0)
+                                    (ß BREAK doESCkey)
+                                ))
+                            )
+
+                            ((ß c =) (do-digraph c))
+
+                            (when (any == c Ctrl_V Ctrl_Q)
+                                (ins-ctrl-v)
+                                ((ß c =) Ctrl_V)         ;; pretend CTRL-V is last typed character
+                                (ß CONTINUE)
+                            )
+
+                            ;; If 'keymodel' contains "startsel", may start selection.
+                            ;; If it does, a CTRL-O and c will be stuffed, we need to get these characters.
+
+                            (if (ins-start-select c)
+                                (ß CONTINUE)
+                            )
+
+;                           normalchar:
+;                           {
+                                ;; The big switch to handle a character in insert mode.
+
+                                ((ß SWITCH) c
+                                    ((ß CASE) ESC)                           ;; end input mode
                                     (do
-                                        (vim-beep)
-                                    ))
-                                    (ß BREAK normalchar)
+                                        (ß FALLTHROUGH)
+                                    )
+
+                                    ((ß CASE) Ctrl_C)                        ;; end input mode
+                                    (do
+                                        (when (and (== c Ctrl_C) (non-zero? @cmdwin_type))
+                                            ;; Close the cmdline window.
+                                            (reset! cmdwin_result K_IGNORE)
+                                            (reset! got_int false)            ;; don't stop executing autocommands et al.
+                                            (reset! a'nomove true)
+                                            (ß BREAK doESCkey)
+                                        )
+
+                                        ;; When 'insertmode' set, and not halfway a mapping, don't leave Insert mode.
+                                        (when (goto-im)
+                                            (cond @got_int
+                                            (do
+                                                (vgetc)                ;; flush all buffers
+                                                (reset! got_int false)
+                                            )
+                                            :else
+                                            (do
+                                                (vim-beep)
+                                            ))
+                                            (ß BREAK normalchar)
+                                        )
+                                        (ß BREAK doESCkey)
+                                    )
+
+                                    ((ß CASE) Ctrl_Z)                        ;; suspend when 'insertmode' set
+                                    (do
+                                        (if (not @p_im)
+                                            (ß BREAK)            ;; insert CTRL-Z as normal char
+                                        )
+                                        (stuff-string (u8 ":st\r"))
+                                        ((ß c =) Ctrl_O)
+                                        (ß FALLTHROUGH)
+                                    )
+
+                                    ((ß CASE) Ctrl_O)                        ;; execute one command
+                                    (do
+                                        (ins-ctrl-o)
+
+                                        ;; Don't move the cursor left when 'virtualedit' has "onemore".
+                                        (when (flag? @ve_flags VE_ONEMORE)
+                                            (reset! ins_at_eol false)
+                                            (reset! a'nomove true)
+                                        )
+                                        (reset! a'count 0)
+                                        (ß BREAK doESCkey)
+                                    )
+
+                                    ((ß CASE) K_INS)                         ;; toggle insert/replace mode
+                                    ((ß CASE) K_KINS)
+                                    (do
+                                        (ins-insert replaceState)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_SELECT)                      ;; end of Select mode mapping - ignore
+                                    (do
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_HELP)                        ;; Help key works like <ESC> <Help>
+                                    ((ß CASE) K_F1)
+                                    ((ß CASE) K_XF1)
+                                    (do
+                                        (stuff-char K_HELP)
+                                        (when @p_im
+                                            (reset! need_start_insertmode true))
+                                        (ß BREAK doESCkey)
+                                    )
+
+                                    ((ß CASE) K_ZERO)                        ;; insert the previously inserted text
+                                    ((ß CASE) NUL)
+                                    ((ß CASE) Ctrl_A)
+                                    (do
+                                        ;; For ^@ the trailing ESC will end the insert, unless there is an error.
+                                        (if (and (not (stuff-inserted NUL, 1, (== c Ctrl_A))) (!= c Ctrl_A) (not @p_im))
+                                            (ß BREAK doESCkey)             ;; quit insert mode
+                                        )
+                                        (reset! a'inserted_space false)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_R)                        ;; insert the contents of a register
+                                    (do
+                                        (ins-reg)
+                                        (reset! a'inserted_space false)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_G)                        ;; commands starting with CTRL-G
+                                    (do
+                                        (ins-ctrl-g)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_HAT)                      ;; switch input mode and/or langmap
+                                    (do
+                                        (ins-ctrl-hat)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl__)                        ;; switch between languages
+                                    (do
+                                        (ß BREAK)
+                                    )
+
+                                    ((ß CASE) Ctrl_D)                        ;; make indent one shiftwidth smaller
+                                    (do
+                                        (ß FALLTHROUGH)
+                                    )
+                                    ((ß CASE) Ctrl_T)                        ;; make indent one shiftwidth greater
+                                    (do
+                                        (ins-shift c, lastc)
+                                        (reset! a'inserted_space false)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_DEL)                         ;; delete character under the cursor
+                                    ((ß CASE) K_KDEL)
+                                    (do
+                                        (ins-del)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_BS)                          ;; delete character before the cursor
+                                    ((ß CASE) Ctrl_H)
+                                    (do
+                                        (reset! a'did_backspace (ins-bs c, BACKSPACE_CHAR, a'inserted_space))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_W)                        ;; delete word before the cursor
+                                    (do
+                                        (reset! a'did_backspace (ins-bs c, BACKSPACE_WORD, a'inserted_space))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_U)                        ;; delete all inserted text in current line
+                                    (do
+                                        (reset! a'did_backspace (ins-bs c, BACKSPACE_LINE, a'inserted_space))
+                                        (reset! a'inserted_space false)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_IGNORE)                      ;; something mapped to nothing
+                                    (do
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_CURSORHOLD)                  ;; didn't type something for a while
+                                    (do
+                                        (reset! did_cursorhold true)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_HOME)                        ;; <Home>
+                                    ((ß CASE) K_KHOME)
+                                    ((ß CASE) K_S_HOME)
+                                    ((ß CASE) K_C_HOME)
+                                    (do
+                                        (ins-home c)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_END)                         ;; <End>
+                                    ((ß CASE) K_KEND)
+                                    ((ß CASE) K_S_END)
+                                    ((ß CASE) K_C_END)
+                                    (do
+                                        (ins-end c)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_LEFT)                        ;; <Left>
+                                    (do
+                                        (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
+                                            (ins-s-left)
+                                            (ins-left))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_S_LEFT)                      ;; <S-Left>
+                                    ((ß CASE) K_C_LEFT)
+                                    (do
+                                        (ins-s-left)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_RIGHT)                       ;; <Right>
+                                    (do
+                                        (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
+                                            (ins-s-right)
+                                            (ins-right))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_S_RIGHT)                     ;; <S-Right>
+                                    ((ß CASE) K_C_RIGHT)
+                                    (do
+                                        (ins-s-right)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_UP)                          ;; <Up>
+                                    (do
+                                        (if (flag? @mod_mask MOD_MASK_SHIFT)
+                                            (ins-pageup)
+                                            (ins-up false))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_S_UP)                        ;; <S-Up>
+                                    ((ß CASE) K_PAGEUP)
+                                    ((ß CASE) K_KPAGEUP)
+                                    (do
+                                        (ins-pageup)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_DOWN)                        ;; <Down>
+                                    (do
+                                        (if (flag? @mod_mask MOD_MASK_SHIFT)
+                                            (ins-pagedown)
+                                            (ins-down false))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_S_DOWN)                      ;; <S-Down>
+                                    ((ß CASE) K_PAGEDOWN)
+                                    ((ß CASE) K_KPAGEDOWN)
+                                    (do
+                                        (ins-pagedown)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_DROP)                        ;; drag-n-drop event
+                                    (do
+                                        (ins-drop)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_S_TAB)                       ;; when not mapped, use like a normal TAB
+                                    (do
+                                        ((ß c =) TAB)
+                                        (ß FALLTHROUGH)
+                                    )
+                                    ((ß CASE) TAB)                           ;; TAB or Complete patterns along path
+                                    (do
+                                        (reset! a'inserted_space false)
+                                        (if (ins-tab)
+                                            (ß BREAK)            ;; insert TAB as a normal char
+                                        )
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) K_KENTER)                      ;; <Enter>
+                                    (do
+                                        ((ß c =) CAR)
+                                        (ß FALLTHROUGH)
+                                    )
+                                    ((ß CASE) CAR)
+                                    ((ß CASE) NL)
+                                    (do
+                                        (when (non-zero? @cmdwin_type)
+                                            ;; Execute the command in the cmdline window.
+                                            (reset! cmdwin_result CAR)
+                                            (ß BREAK doESCkey)
+                                        )
+                                        (if (and (ins-eol c) (not @p_im))
+                                            (ß BREAK doESCkey)             ;; out of memory
+                                        )
+                                        (reset! a'inserted_space false)
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    ((ß CASE) Ctrl_K)                        ;; digraph or keyword completion
+                                    (do
+                                        ((ß c =) (ins-digraph))
+                                        (if (== c NUL)
+                                            (ß BREAK normalchar)
+                                        )
+                                        (ß BREAK)
+                                    )
+
+                                    ((ß CASE) Ctrl_L)                        ;; whole line completion after ^X
+                                    (do
+                                        ;; CTRL-L with 'insertmode' set: Leave Insert mode.
+                                        (if @p_im
+                                            (ß BREAK doESCkey)
+                                        )
+                                        (ß BREAK)
+                                    )
+
+                                    ((ß CASE) Ctrl_Y)                        ;; copy from previous line or scroll down
+                                    ((ß CASE) Ctrl_E)                        ;; copy from next     line or scroll up
+                                    (do
+                                        ((ß c =) (ins-ctrl-ey c))
+                                        (ß BREAK normalchar)
+                                    )
+
+                                    (ß DEFAULT)
+                                    (do
+                                        (when (== c @intr_char)             ;; special interrupt char
+                                            ;; When 'insertmode' set, and not halfway a mapping, don't leave Insert mode.
+                                            (when (goto-im)
+                                                (cond @got_int
+                                                (do
+                                                    (vgetc)                ;; flush all buffers
+                                                    (reset! got_int false)
+                                                )
+                                                :else
+                                                (do
+                                                    (vim-beep)
+                                                ))
+                                                (ß BREAK normalchar)
+                                            )
+                                            (ß BREAK doESCkey)
+                                        )
+                                        (ß BREAK)
+                                    )
                                 )
-                                (ß BREAK doESCkey)
-                            )
-                            (ß BREAK)
-                        )
-                    )
 
-                    ;; Insert a normal character.
+                                ;; Insert a normal character.
 
-                    (when (not @p_paste)
-                        ;; Trigger InsertCharPre.
-                        ((ß Bytes s =) (do-insert-char-pre c))
+                                (when (not @p_paste)
+                                    ;; Trigger InsertCharPre.
+                                    ((ß Bytes s =) (do-insert-char-pre c))
 
-                        (when (some? s)
-                            (when (and (non-eos? s) (stop-arrow))
-                                ;; Insert the new value of v:char literally.
-                                (loop-when-recur [#_Bytes p s] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
-                                    ((ß c =) (us-ptr2char p))
-                                    (if (any == c CAR K_KENTER NL)
-                                        (ins-eol c)
-                                        (ins-char c))
+                                    (when (some? s)
+                                        (when (and (non-eos? s) (stop-arrow))
+                                            ;; Insert the new value of v:char literally.
+                                            (loop-when-recur [#_Bytes p s] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
+                                                ((ß c =) (us-ptr2char p))
+                                                (if (any == c CAR K_KENTER NL)
+                                                    (ins-eol c)
+                                                    (ins-char c))
+                                            )
+                                            (append-redo-lit s, -1)
+                                        )
+                                        ((ß c =) NUL)
+                                    )
+
+                                    ;; If the new value is already inserted or an empty string,
+                                    ;; then don't insert any character.
+                                    (if (== c NUL)
+                                        (ß BREAK normalchar)
+                                    )
                                 )
-                                (append-redo-lit s, -1)
-                            )
-                            ((ß c =) NUL)
+                                ;; Try to perform smart-indenting.
+                                (ins-try-si c)
+
+                                (when (== c (byte \space))
+                                    (reset! a'inserted_space true)
+                                    (when (inindent 0)
+                                        (reset! can_cindent false))
+                                    (when (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
+                                        (reset! insStart_blank_vcol (get-nolist-virtcol)))
+                                )
+
+                                ;; Insert a normal character and check for abbreviations on a special character.
+                                ;; Let CTRL-] expand abbreviations without inserting it.
+                                (when (or (vim-iswordc c) (!= c Ctrl_RSB))
+                                    (insert-special c, false, false)
+                                )
+;                           }
+
+                            ;; If typed something may trigger CursorHoldI again.
+                            (when (!= c K_CURSORHOLD)
+                                (reset! did_cursorhold false))
+
+                            ;; If the cursor was moved we didn't just insert a space.
+                            (when @arrow_used
+                                (reset! a'inserted_space false))
+
+                            (ß CONTINUE)
+;                       }
+
+                        ;; This is the ONLY return from edit()!
+
+                        ;; Always update o_lnum, so that a "CTRL-O ." that adds a line
+                        ;; still puts the cursor back after the inserted text.
+                        (when (and @ins_at_eol (== (gchar) NUL))
+                            (reset! o_lnum (:lnum (:w_cursor @curwin))))
+
+                        (when (ins-esc a'count, cmdchar, @a'nomove)
+                            (reset! did_cursorhold false)
+                            ((ß RETURN) (== c Ctrl_O))
                         )
-
-                        ;; If the new value is already inserted or an empty string,
-                        ;; then don't insert any character.
-                        (if (== c NUL)
-                            (ß BREAK normalchar)
-                        )
+                        (recur lastc c)
                     )
-                    ;; Try to perform smart-indenting.
-                    (ins-try-si c)
-
-                    (when (== c (byte \space))
-                        (reset! a'inserted_space true)
-                        (when (inindent 0)
-                            (reset! can_cindent false))
-                        (when (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
-                            (reset! insStart_blank_vcol (get-nolist-virtcol)))
-                    )
-
-                    ;; Insert a normal character and check for abbreviations on a special character.
-                    ;; Let CTRL-] expand abbreviations without inserting it.
-                    (when (or (vim-iswordc c) (!= c Ctrl_RSB))
-                        (insert-special c, false, false)
-                    )
-;               }
-
-                ;; If typed something may trigger CursorHoldI again.
-                (if (!= c K_CURSORHOLD)
-                    (reset! did_cursorhold false))
-
-                ;; If the cursor was moved we didn't just insert a space.
-                (when @arrow_used
-                    (reset! a'inserted_space false))
-
-                (ß CONTINUE)
-;           }
-
-            ;; This is the ONLY return from edit()!
-
-            ;; Always update o_lnum, so that a "CTRL-O ." that adds a line
-            ;; still puts the cursor back after the inserted text.
-            (when (and @ins_at_eol (== (gchar) NUL))
-                (reset! o_lnum (:lnum (:w_cursor @curwin))))
-
-            (when (ins-esc a'count, cmdchar, nomove)
-                (reset! did_cursorhold false)
-                ((ß RETURN) (== c Ctrl_O))
+                )
+                )
             )
-            (recur lastc c)
-        )
-
-        ;; NOTREACHED
+        ))
     ))
 
 ;; Redraw for Insert mode.
@@ -23885,9 +23761,9 @@
     (§
         ((ß long retval =) 0)
 
-        (if (nil? @regstack)
+        (when (nil? @regstack)
             (create-regstack))
-        (if (nil? @backpos)
+        (when (nil? @backpos)
             (create-backpos))
 
         (ß bt_regprog_C prog)
@@ -23934,7 +23810,7 @@
             ))
 
             ;; If pattern contains "\Z" overrule value of ireg_icombine.
-            (if (flag? (:regflags prog) RF_ICOMBINE)
+            (when (flag? (:regflags prog) RF_ICOMBINE)
                 (reset! ireg_icombine true))
 
             ;; If there is a "must appear" string, look for it.
@@ -24044,7 +23920,7 @@
 ;       }
 
         ;; Free "reg_tofree" when it's a bit big.
-        (if (< 400 @reg_tofree_len)
+        (when (< 400 @reg_tofree_len)
             (reset! reg_tofree nil))
 
         ;; Free backpos and regstack if they are bigger than their initial size.
@@ -24083,7 +23959,7 @@
         (reset! reginput (.plus @regline col))
         (reset! need_clear_subexpr true)
         ;; Clear the external match subpointers if necessary.
-        (if (== (:reghasz prog) REX_SET)
+        (when (== (:reghasz prog) REX_SET)
             (reset! need_clear_zsubexpr true))
 
         (if (not (regmatch (.plus (:program prog) 1)))
@@ -24761,7 +24637,7 @@
                                 ((ß status =) RA_NOMATCH)
                             ))
 
-                            (if (and (!= status RA_FAIL) (!= status RA_NOMATCH))
+                            (when (and (!= status RA_FAIL) (!= status RA_NOMATCH))
                                 (reg-save (:bp_pos (... bpp i)), @backpos))
 
                             (ß BREAK)
@@ -25548,7 +25424,7 @@
                         )
 
                         ;; Tried once already, restore input pointers.
-                        (if (!= status RA_BREAK)
+                        (when (!= status RA_BREAK)
                             (reg-restore (:rs_regsave rip), @backpos))
 
                         ;; Repeat until we found a position where it could match.
@@ -27574,7 +27450,7 @@
 
 (defn- #_boolean emc1 [#_int c]
     (§
-        (if (<= (:length @post_array) @post_index)
+        (when (<= (:length @post_array) @post_index)
             (grow-post-array 1000))
 
         ((ß @post_array[@post_index++] =) c)
@@ -30423,7 +30299,7 @@
                     ((ß nfl.has_pim =) true)
                 ))
                 (copy-sub (:rs_norm (:th_subs thread)), (:rs_norm subs))
-                (if @nfa_has_zsubexpr
+                (when @nfa_has_zsubexpr
                     (copy-sub (:rs_synt (:th_subs thread)), (:rs_synt subs)))
 
                 (ß BREAK)
@@ -31385,7 +31261,7 @@
                                 ;; Copy submatch info for the recursive call,
                                 ;; opposite of what happens on success below.
                                 (copy-sub-off (:rs_norm m), (:rs_norm (:th_subs thread)))
-                                (if @nfa_has_zsubexpr
+                                (when @nfa_has_zsubexpr
                                     (copy-sub-off (:rs_synt m), (:rs_synt (:th_subs thread))))
 
                                 ;; First try matching the invisible match, then what follows.
@@ -31467,7 +31343,7 @@
 
                             ;; Copy submatch info to the recursive call, opposite of what happens afterwards.
                             (copy-sub-off (:rs_norm m), (:rs_norm (:th_subs thread)))
-                            (if @nfa_has_zsubexpr
+                            (when @nfa_has_zsubexpr
                                 (copy-sub-off (:rs_synt m), (:rs_synt (:th_subs thread))))
 
                             ;; First try matching the pattern.
@@ -32595,7 +32471,7 @@
         ))
 
         ;; If pattern contains "\Z" overrule value of ireg_icombine.
-        (if (flag? (:regflags prog) RF_ICOMBINE)
+        (when (flag? (:regflags prog) RF_ICOMBINE)
             (reset! ireg_icombine true))
 
         (reset! regline line)
@@ -33845,7 +33721,7 @@
             (swap! curwin assoc :w_set_curswant true)
 ;       }
 
-        (if (flag? options SEARCH_KEEP)
+        (when (flag? options SEARCH_KEEP)
             (COPY-soffset (:sp_off (... @spats 0)), old_off))
 
         retval
@@ -34797,7 +34673,7 @@
         ((ß pos_C start_pos =) (NEW_pos_C))
 
         ;; Correct cursor when 'selection' is exclusive.
-        (if (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual, (:w_cursor @curwin)))
+        (when (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual, (:w_cursor @curwin)))
             (dec-cursor))
 
         ;; When Visual mode is not active, or when the VIsual area is only one
@@ -35354,7 +35230,7 @@
         (reset! p_ws false)
 
         ;; Correct cursor when 'selection' is exclusive.
-        (if (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual, (:w_cursor @curwin)))
+        (when (and @VIsual_active (at? @p_sel (byte \e)) (ltpos @VIsual, (:w_cursor @curwin)))
             (dec-cursor))
 
         ((ß pos_C orig_pos =) (NEW_pos_C))       ;; position of the cursor at beginning
@@ -35431,7 +35307,7 @@
             (searchit pos, (if forward FORWARD BACKWARD), (:pat (... @spats @last_idx)), 0, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
         )
 
-        (if (not @VIsual_active)
+        (when (not @VIsual_active)
             (reset! VIsual start_pos))
 
         (swap! curwin assoc :w_cursor pos)
@@ -39982,7 +39858,7 @@
 
                 (swap! curwin assoc :w_cursor old_cursor)
             )
-            (if do_si
+            (when do_si
                 (reset! can_si true))
 
             (reset! did_ai true)
@@ -40146,7 +40022,7 @@
                 ((ß vreplace_mode =) 0)
             ))
 
-            (if (non-zero? vreplace_mode)
+            (when (non-zero? vreplace_mode)
                 (reset! State vreplace_mode))
 
             ;; Finally, VREPLACE gets the stuff on the new line, then puts back the
@@ -42371,12 +42247,12 @@
         ((ß boolean did_undo =) true)
 
         ;; First make sure the current undoable change is synced.
-        (if (not (:b_u_synced @curbuf))
+        (when (not (:b_u_synced @curbuf))
             (u-sync true))
 
         (reset! u_newcount 0)
         (reset! u_oldcount 0)
-        (if (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
+        (when (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
             (reset! u_oldcount -1))
 
 ;       u_header_C uhp = null;	// %% anno dunno
@@ -42922,7 +42798,7 @@
     (§
         ;; When there is an alternate redo list free that branch completely,
         ;; because we can never go there.
-        (if (some? (:ptr (:uh_alt_next uhp)))
+        (when (some? (:ptr (:uh_alt_next uhp)))
             (u-freebranch (:ptr (:uh_alt_next uhp)), a'uhpp))
 
         (if (some? (:ptr (:uh_alt_prev uhp)))
@@ -43232,27 +43108,27 @@
 ;; (use functions like msg-puts() and screen-putchar() for that).
 
 (defn- #_void out-char [#_byte c]
-    (if (== c (byte \newline))          ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
+    (when (== c (byte \newline))          ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
         (out-char (byte \return)))
 
     (.be out_buf @out_pos, c)
     (swap! out_pos inc)
 
     ;; For testing we flush each time.
-    (if (or (<= OUT_SIZE @out_pos) (non-zero? @p_wd))
+    (when (or (<= OUT_SIZE @out_pos) (non-zero? @p_wd))
         (out-flush))
     nil)
 
 ;; out-char-nf(c): like out-char(), but don't flush when "p_wd" is set
 
 (defn- #_void out-char-nf [#_byte c]
-    (if (== c (byte \newline))          ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
+    (when (== c (byte \newline))          ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
         (out-char-nf (byte \return)))
 
     (.be out_buf @out_pos, c)
     (swap! out_pos inc)
 
-    (if (<= OUT_SIZE @out_pos)
+    (when (<= OUT_SIZE @out_pos)
         (out-flush))
     nil)
 
@@ -43921,7 +43797,7 @@
         ;; Speed up the checks for terminal codes by gathering all first bytes used in termleader[].
         ;; Often this is just a single <Esc>.
 
-        (if @need_gather
+        (when @need_gather
             (gather-termleader))
 
         (ß Bytes tp)
@@ -44576,7 +44452,7 @@
         (compute-cmdrow)
 
         ;; Check for changed highlighting.
-        (if @need_highlight_changed
+        (when @need_highlight_changed
             (highlight-changed))
 
         (when (== type CLEAR)              ;; first clear screen
@@ -46820,7 +46696,7 @@
                         ;; First make sure we are at the end of the screen line,
                         ;; then output the same character again to let the terminal know about the wrap.
                         ;; If the terminal doesn't auto-wrap, we overwrite the character.
-                        (if (!= @screen_cur_col (:w_width win))
+                        (when (!= @screen_cur_col (:w_width win))
                             (screen-char eoff, (dec screen_row), (dec @Cols)))
 
                         ;; When there is a multi-byte character,
@@ -47576,13 +47452,13 @@
             (and (some? aep) (< 1 @t_colors) (non-zero? (:ae_fg_color aep)) (non-zero? @cterm_normal_fg_bold))
                 (out-str @T_ME))
 
-            (if (and (flag? attr HL_STANDOUT) (some? @T_SO))      ;; standout
+            (when (and (flag? attr HL_STANDOUT) (some? @T_SO))      ;; standout
                 (out-str @T_SO))
-            (if (and (flag? attr (| HL_UNDERLINE HL_UNDERCURL)) (some? @T_US)) ;; underline or undercurl
+            (when (and (flag? attr (| HL_UNDERLINE HL_UNDERCURL)) (some? @T_US)) ;; underline or undercurl
                 (out-str @T_US))
-            (if (and (flag? attr HL_ITALIC) (some? @T_CZH))       ;; italic
+            (when (and (flag? attr HL_ITALIC) (some? @T_CZH))       ;; italic
                 (out-str @T_CZH))
-            (if (and (flag? attr HL_INVERSE) (some? @T_MR))       ;; inverse (reverse)
+            (when (and (flag? attr HL_INVERSE) (some? @T_MR))       ;; inverse (reverse)
                 (out-str @T_MR))
 
             ;; Output the color or start string after bold etc.,
@@ -47667,12 +47543,12 @@
         ;; Stop highlighting first, so it's easier to move the cursor.
 
         ((ß int attr =) (if (non-zero? @screen_char_attr) @screen_char_attr (... @screenAttrs off)))
-        (if (!= @screen_attr attr)
+        (when (!= @screen_attr attr)
             (screen-stop-highlight))
 
         (windgoto row, col)
 
-        (if (!= @screen_attr attr)
+        (when (!= @screen_attr attr)
             (screen-start-highlight attr))
 
         (cond (non-zero? (... @screenLinesUC off))
@@ -47740,9 +47616,9 @@
             ;; When drawing over the right halve of a double-wide char clear out the left halve.
             ;; When drawing over the left halve of a double wide-char clear out the right halve.
             ;; Only needed in a terminal.
-            (if (and (< 0 start_col) (!= (mb-fix-col start_col, row) start_col))
+            (when (and (< 0 start_col) (!= (mb-fix-col start_col, row) start_col))
                 (screen-puts-len (u8 " "), 1, row, (dec start_col), 0))
-            (if (and (< end_col @screenCols) (!= (mb-fix-col end_col, row) end_col))
+            (when (and (< end_col @screenCols) (!= (mb-fix-col end_col, row) end_col))
                 (screen-puts-len (u8 " "), 1, row, end_col, 0))
 
             ;; Try to use delete-line termcap code, when no attributes or in a
@@ -48493,7 +48369,7 @@
         ;; lines at the bottom of the window as are about to be inserted so that
         ;; the deleted lines won't later surface during a screen-del-lines.
 
-        (if (non-eos? @T_DB)
+        (when (non-eos? @T_DB)
             (screen-del-lines off, (- end line_count), line_count, end, false, win))
 
         ((ß int cursor_row =) (+ row off))
@@ -48803,7 +48679,7 @@
                     (== @restart_edit (byte \V)) (msg-puts-attr (u8 " (vreplace)"), attr)
                 )
 
-                (if (and (flag? @State INSERT) @p_paste)
+                (when (and (flag? @State INSERT) @p_paste)
                     (msg-puts-attr (u8 " (paste)"), attr))
 
                 (when @VIsual_active
@@ -48841,7 +48717,7 @@
         ))
 
         ;; In Visual mode the size of the selected area must be redrawn.
-        (if @VIsual_active
+        (when @VIsual_active
             (clear-showcmd))
 
         ;; If the last window has no status line,
@@ -49302,7 +49178,7 @@
 
             ;; We don't like to take lines for the new window from a 'winfixwidth' window.
             ;; Take them from a window to the left or right instead, if possible.
-            (if @(:wo_wfw (:w_options oldwin))
+            (when @(:wo_wfw (:w_options oldwin))
                 (win-setwidth oldwin, (+ (:w_width oldwin) new_size)))
 
             ;; Only make all windows the same width if one of them (except oldwin)
@@ -49603,7 +49479,7 @@
             (frame-fix-height oldwin)
         ))
 
-        (if (flag? flags (| WSP_TOP WSP_BOT))
+        (when (flag? flags (| WSP_TOP WSP_BOT))
             (win-comp-pos))
 
         ;; Both windows need redrawing
@@ -49624,7 +49500,7 @@
 
         ;; equalize the window sizes.
 
-        (if (or do_equal (non-zero? dir))
+        (when (or do_equal (non-zero? dir))
             (win-equal wp, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
 
         ;; Don't change the window height/width to 'winheight' / 'winwidth' if a size was given.
@@ -50834,7 +50710,7 @@
             (do (beep-flush) (text-locked-msg))
             (let [#_window_C prior @curwin]
 
-                (if @VIsual_active
+                (when @VIsual_active
                     (COPY-pos (:w_cursor win), (:w_cursor @curwin)))
 
                 (win-enter win)
@@ -51033,7 +50909,7 @@
     (§
         (clear-winopt (:w_options win))
 
-        (if (== @prevwin win)
+        (when (== @prevwin win)
             (reset! prevwin nil))
 
         (win-free-lines win)
@@ -51148,7 +51024,7 @@
             ;; First try setting the heights of windows with 'winfixheight'.
             ;; If that doesn't result in the right height, forget about that option.
             (frame-new-height @topframe, rows, false, true)
-            (if (not (frame-check-height @topframe, rows))
+            (when (not (frame-check-height @topframe, rows))
                 (frame-new-height @topframe, rows, false, false))
 
             (win-comp-pos)              ;; recompute w_winrow and w_wincol
@@ -51165,7 +51041,7 @@
             ;; First try setting the widths of windows with 'winfixwidth'.
             ;; If that doesn't result in the right width, forget about that option.
             (frame-new-width @topframe, cols, false, true)
-            (if (not (frame-check-width @topframe, cols))
+            (when (not (frame-check-width @topframe, cols))
                 (frame-new-width @topframe, cols, false, false))
 
             (win-comp-pos)                  ;; recompute w_winrow and w_wincol
@@ -51932,7 +51808,7 @@
         ;; for every small change.
 
         (when check_botline
-            (if (non-flag? (:w_valid @curwin) VALID_BOTLINE_AP)
+            (when (non-flag? (:w_valid @curwin) VALID_BOTLINE_AP)
                 (validate-botline))
 
             (when (<= (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf)))
@@ -52280,7 +52156,7 @@
 
         ;; Next make sure that w_cline_row is valid.
 
-        (if (non-flag? (:w_valid @curwin) VALID_CROW)
+        (when (non-flag? (:w_valid @curwin) VALID_CROW)
             (curs-rows @curwin))
 
         ;; Compute the number of virtual columns.
@@ -52430,11 +52306,11 @@
         (do
             (swap! curwin assoc :w_skipcol 0)
         ))
-        (if (!= prev_skipcol (:w_skipcol @curwin))
+        (when (!= prev_skipcol (:w_skipcol @curwin))
             (redraw-win-later @curwin, NOT_VALID))
 
         ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
-        (if (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
+        (when (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
             (redraw-win-later @curwin, SOME_VALID))
 
         (swap! curwin update :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL)
@@ -53747,7 +53623,7 @@
 
     ;; When switching screens and something caused a message from a vimrc script,
     ;; need to output an extra newline on exit.
-    (if (and (or @did_emsg @msg_didout) (non-eos? @T_TI))
+    (when (and (or @did_emsg @msg_didout) (non-eos? @T_TI))
         (reset! newline_on_exit true))
 
     ;; When done something that is not allowed or error message call wait-return.
@@ -53757,7 +53633,7 @@
 
     (settmode TMODE_RAW)
 
-    (if (or @need_wait_return @msg_didany)
+    (when (or @need_wait_return @msg_didany)
         (wait-return TRUE))
 
     (start-termcap)                         ;; start termcap if not done by wait-return()
@@ -53783,12 +53659,12 @@
     (reset! starting 0)
 
     ;; start in insert mode
-    (if @p_im
+    (when @p_im
         (reset! need_start_insertmode true))
 
     ;; If ":startinsert" command used, stuff a dummy command to be
     ;; able to call normal-cmd(), which will then start Insert mode.
-    (if (non-zero? @restart_edit)
+    (when (non-zero? @restart_edit)
         (stuff-char K_NOP))
 
     ;; Call the main command loop.  This never returns.
