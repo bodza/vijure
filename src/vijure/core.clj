@@ -130,6 +130,10 @@
     ESC_STR  (u8 "\033")
     DEL_STR  (u8 "\177"))
 
+(defmacro at
+    ([x] (at x 0))
+    ([x y] (.at x y)))
+
 (defn- at?
     ([x z] (at? x 0 z))
     ([x y z] (== (.at x y) z)))
@@ -5698,68 +5702,41 @@
 ;; ":ascii" and "ga".
 
 (defn- #_void do-ascii []
-    (§
-        ((ß int[] cc =) (ß new int[MAX_MCO]))
-
-        ((ß int c =) (us-ptr2char-cc (ml-get-cursor), cc))
-        (when (== c NUL)
-            (msg (u8 "NUL"))
-            ((ß RETURN) nil)
-        )
-
-        ((ß int ci =) 0)
-
-        (eos! @ioBuff)
-        (when (< c 0x80)
-            ((ß c =) (if (== c NL) NUL c))        ;; NUL is stored as NL
-
-            ((ß int cval =) c)
-
-            ((ß Bytes buf1 =) (Bytes. 20))
-            (cond (and (vim-isprintc c) (or (< c (byte \space)) (< (byte \~) c)))
-            (do
-                ((ß Bytes buf3 =) (Bytes. 7))
-                (transchar-nonprint buf3, c)
-;%%             (vim_snprintf buf1, (.size buf1), (u8 "  <%s>"), buf3)
-            )
-            :else
-            (do
-                (eos! buf1)
-            ))
-
-            ((ß Bytes buf2 =) (Bytes. 20))
-            (if (<= 0x80 c)
-;%%             (vim_snprintf buf2, (.size buf2), (u8 "  <M-%s>"), (transchar (& c 0x7f)))
-                (eos! buf2)
-            )
-
-;%%         (vim_snprintf @ioBuff, IOSIZE, (u8 "<%s>%s%s  %d,  Hex %02x,  Octal %03o"), (transchar c), buf1, buf2, cval, cval, cval)
-            ((ß c =) (... cc (ß ci++)))
-        )
-
-        ;; Repeat for combining characters.
-        (loop-when [] (or (<= 0x100 c) (<= 0x80 c))
-            ((ß int len =) (STRLEN @ioBuff))
-            ;; This assumes every multi-byte char is printable...
-            (if (< 0 len)
-                (.be @ioBuff (ß len++), (byte \space))
-            )
-            (.be @ioBuff (ß len++), (byte \<))
-            (if (utf-iscomposing c)
-                (.be @ioBuff (ß len++), (byte \space))                ;; draw composing char on top of a space
-            )
-            ((ß len =) (+ len (utf-char2bytes c, (.plus @ioBuff len))))
-;%%         (vim_snprintf (.plus @ioBuff len), (- IOSIZE len), (if (< c 0x10000) (u8 "> %d, Hex %04x, Octal %o") (u8 "> %d, Hex %08x, Octal %o")), c, c, c)
-            (if (== ci MAX_MCO)
-                (ß BREAK)
-            )
-            ((ß c =) (... cc (ß ci++)))
-            (recur)
-        )
-
-        (msg @ioBuff)
-        nil
-    ))
+    (let-when [#_int* cc (int-array MAX_MCO) #_int c (us-ptr2char-cc (ml-get-cursor), cc)] (!= c NUL) => (msg (u8 "NUL"))
+        (let [_ (eos! @ioBuff)
+              [c #_int ci]
+                (if (< c 0x80)
+                    (let [#_Bytes buf1 (Bytes. 20) #_Bytes buf2 (Bytes. 20) c (if (== c NL) NUL c)] ;; NUL is stored as NL
+                        (if (and (vim-isprintc c) (or (< c (byte \space)) (< (byte \~) c)))
+                            (let [#_Bytes buf3 (Bytes. 7)]
+                                (transchar-nonprint buf3, c)
+;%%                             (vim_snprintf buf1, (.size buf1), (u8 "  <%s>"), buf3)
+                            )
+                            (eos! buf1)
+                        )
+                        (if (<= 0x80 c)
+;%%                         (vim_snprintf buf2, (.size buf2), (u8 "  <M-%s>"), (transchar (& c 0x7f)))
+                            (eos! buf2)
+                        )
+;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "<%s>%s%s  %d,  Hex %02x,  Octal %03o"), (transchar c), buf1, buf2, c, c, c)
+                        [(aget cc 0) 1]
+                    )
+                    [c 0]
+                )]
+            ;; Repeat for combining characters.
+            (loop-when [c c ci ci] (<= 0x80 c)
+                (let [#_int n (STRLEN @ioBuff)
+                      ;; This assumes every multi-byte char is printable...
+                      n (if (pos? n)            (do (.be @ioBuff n, (byte \space)) (inc n)) n)
+                      n                         (do (.be @ioBuff n, (byte \<))     (inc n))
+                      n (if (utf-iscomposing c) (do (.be @ioBuff n, (byte \space)) (inc n)) n) ;; draw composing char on top of a space
+                      n (+ n (utf-char2bytes c, (.plus @ioBuff n)))]
+;%%                 (vim_snprintf (.plus @ioBuff n), (- IOSIZE n), (if (< c 0x10000) (u8 "> %d, Hex %04x, Octal %o") (u8 "> %d, Hex %08x, Octal %o")), c, c, c)
+                    (recur-if (< ci MAX_MCO) [(aget cc ci) (inc ci)])
+                ))
+            (msg @ioBuff)
+        ))
+    nil)
 
 ;; ":retab".
 
@@ -19512,14 +19489,13 @@
                                                     [mode temp])] (some? _)
                                             (if (flag? @State REPLACE_FLAG)
                                                 (replace-do-bs -1)
-                                                (§
-                                                    ((ß int[] cpc =) (ß new int[MAX_MCO]))   ;; composing characters
+                                                (let [#_int* cpc (int-array MAX_MCO)] ;; composing characters
                                                     (when @p_deco
                                                         (us-ptr2char-cc (ml-get-cursor), cpc))
                                                     (del-char false)
                                                     ;; If there are combining characters and 'delcombine' is set,
                                                     ;; move the cursor back.  Don't back up before the base character.
-                                                    (when (and @p_deco (!= (... cpc 0) NUL))
+                                                    (when (and @p_deco (non-zero? (aget cpc 0)))
                                                         (inc-cursor))
                                                 ))
                                             (recur-if (and (!= mode BACKSPACE_CHAR) ;; !Just a single backspace?
@@ -35779,24 +35755,19 @@
 
 (defn- #_int us-ptr2char-cc [#_Bytes p, #_int* pcc]
     ;; pcc: return: composing chars, last one is 0
-    (§
-        ((ß int j =) 0)
-
-        ;; Only accept a composing char when the first char isn't illegal.
-        ((ß int i =) (us-ptr2len p))
-        (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char p, i)))) ((ß i =) (+ i (us-ptr2len p, i))))
-                ((ß pcc[j++] =) cc)
-                (if (== j MAX_MCO)
-                    (ß BREAK)
-                )
-            )
-        )
-
-        (if (< j MAX_MCO)    ;; last composing char must be 0
-            ((ß pcc[j] =) 0)
-        )
-
+    (let [#_int i (us-ptr2len p)
+          #_int j ;; Only accept a composing char when the first char isn't illegal.
+            (if (or (< 1 i) (< (char_u (.at p 0)) 0x80))
+                (loop-when [i i j 0] (<= 0x80 (char_u (.at p i))) => j
+                    (let-when [#_int cc (us-ptr2char p, i)] (utf-iscomposing cc) => j
+                        (aset pcc j cc)
+                        (let [j (inc j)]
+                            (recur-if (< j MAX_MCO) [(+ i (us-ptr2len p, i)) j] => j))
+                    ))
+                0
+            )]
+        (when (< j MAX_MCO)    ;; last composing char must be 0
+            (aset pcc j 0))
         (us-ptr2char p)
     ))
 
@@ -35806,24 +35777,19 @@
 
 (defn- #_int us-ptr2char-cc-len [#_Bytes p, #_int* pcc, #_int maxlen]
     ;; pcc: return: composing chars, last one is 0
-    (§
-        ((ß int j =) 0)
-
-        ;; Only accept a composing char when the first char isn't illegal.
-        ((ß int i =) (us-ptr2len-len p, maxlen))
-        (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (< i maxlen) (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char p, i)))) ((ß i =) (+ i (us-ptr2len-len p, i, (- maxlen i)))))
-                ((ß pcc[j++] =) cc)
-                (if (== j MAX_MCO)
-                    (ß BREAK)
-                )
-            )
-        )
-
-        (if (< j MAX_MCO)    ;; last composing char must be 0
-            ((ß pcc[j] =) 0)
-        )
-
+    (let [#_int i (us-ptr2len-len p, maxlen)
+          #_int j ;; Only accept a composing char when the first char isn't illegal.
+            (if (or (< 1 i) (< (char_u (.at p 0)) 0x80))
+                (loop-when [i i j 0] (and (< i maxlen) (<= 0x80 (char_u (.at p i)))) => j
+                    (let-when [#_int cc (us-ptr2char p, i)] (utf-iscomposing cc) => j
+                        (aset pcc j cc)
+                        (let [j (inc j)]
+                            (recur-if (< j MAX_MCO) [(+ i (us-ptr2len-len p, i, (- maxlen i))) j] => j))
+                    ))
+                0
+            )]
+        (when (< j MAX_MCO)    ;; last composing char must be 0
+            (aset pcc j 0))
         (us-ptr2char p)
     ))
 
@@ -37736,52 +37702,36 @@
     (let [#_long lnum (:lnum (:w_cursor @curwin)) #_int col (:col (:w_cursor @curwin))
           #_Bytes oldp (ml-get lnum) #_int oldlen (STRLEN oldp)]
         ;; Can't do anything when the cursor is on the NUL after the line.
-        (if (<= oldlen col)
-            false
-            (§
-                ;; If 'delcombine' is set and deleting (less than) one character,
-                ;; only delete the last combining character.
-                (when (and @p_deco use_delcombine (<= nof (us-ptr2len-cc oldp, col)))
-                    ((ß int[] cc =) (ß new int[MAX_MCO]))
-
-                    (us-ptr2char-cc (.plus oldp col), cc)
-                    (when (!= (... cc 0) NUL)
-                        ;; Find the last composing char, there can be several.
-                        (loop [#_int n col]
-                            ((ß col =) n)
-                            ((ß nof =) (us-ptr2len oldp, n))
-                            ((ß n =) (+ n nof))
-                            (recur-if (utf-iscomposing (us-ptr2char oldp, n)) [n])
-                        )
-                        ((ß fixpos =) false)
-                    )
-                )
-
-                ;; When nof is too big, reduce it.
-
-                ((ß int movelen =) (inc (- oldlen col nof))) ;; includes trailing NUL
-                (when (<= movelen 1)
-                    ;; If we just took off the last character of a non-blank line, and
-                    ;; fixpos is true, we don't want to end up positioned at the NUL,
-                    ;; unless "restart_edit" is set or 'virtualedit' contains "onemore".
-
-                    (when (and (< 0 col) fixpos (zero? @restart_edit) (non-flag? @ve_flags VE_ONEMORE))
-                        (swap! curwin update-in [:w_cursor :col] dec)
-                        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                        (swap! curwin update-in [:w_cursor :col] #(- % (us-head-off oldp, (.plus oldp %))))
-                    )
-                    ((ß nof =) (- oldlen col))
-                    ((ß movelen =) 1)
-                )
-
-                ((ß Bytes newp =) (Bytes. (- (inc oldlen) nof)))
-                (BCOPY newp, oldp, col)
-                (BCOPY newp, col, oldp, (+ col nof), movelen)
+        (and (< col oldlen)
+            ;; If 'delcombine' is set and deleting (less than) one character, only delete the last combining character.
+            (let [[col nof fixpos]
+                    (if (and @p_deco use_delcombine (<= nof (us-ptr2len-cc oldp, col)))
+                        (let-when [#_int* cc (int-array MAX_MCO) _ (us-ptr2char-cc (.plus oldp col), cc)] (non-zero? (aget cc 0)) => [col nof fixpos]
+                            ;; Find the last composing char, there can be several.
+                            (loop [#_int n col]
+                                (let [col n nof (us-ptr2len oldp, n) n (+ n nof)]
+                                    (recur-if (utf-iscomposing (us-ptr2char oldp, n)) [n] => [col nof false]))
+                            ))
+                        [col nof fixpos])
+                  ;; When nof is too big, reduce it.
+                  #_int movelen (inc (- oldlen col nof)) ;; includes trailing NUL
+                  [nof movelen]
+                    (if (<= movelen 1)
+                        (do ;; If we just took off the last character of a non-blank line, and
+                            ;; fixpos is true, we don't want to end up positioned at the NUL,
+                            ;; unless "restart_edit" is set or 'virtualedit' contains "onemore".
+                            (when (and (< 0 col) fixpos (zero? @restart_edit) (non-flag? @ve_flags VE_ONEMORE))
+                                (swap! curwin update-in [:w_cursor :col] dec)
+                                (swap! curwin assoc-in [:w_cursor :coladd] 0)
+                                (swap! curwin update-in [:w_cursor :col] #(- % (us-head-off oldp, (.plus oldp %)))))
+                            [(- oldlen col) 1])
+                        [nof movelen])
+                  #_Bytes newp (Bytes. (- (inc oldlen) nof))
+                  _ (BCOPY newp, oldp, col)
+                  _ (BCOPY newp, col, oldp, (+ col nof), movelen)]
                 (ml-replace lnum, newp)
-
                 ;; mark the buffer as changed and prepare for displaying
                 (changed-bytes lnum, (:col (:w_cursor @curwin)))
-
                 true
             ))
     ))
