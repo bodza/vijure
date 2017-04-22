@@ -30,6 +30,9 @@
     ([x y] (if (sequential? x) (if (seq x) (or (==? (first x) y) (recur (rest x) y)) false) (if (sequential? y) (recur y x) (== x y))))
     ([x y & z] (==? x (cons y z))))
 
+(defmacro when' [y & w]
+    (let [[_ & w] (if (= '=> (first w)) (rest w) (cons nil w))]
+        `(if ~y (do ~@w) ~_)))
 (defmacro let-when [x y & w]
     (let [[_ & w] (if (= '=> (first w)) (rest w) (cons nil w))]
         `(let [~@x] (if ~y (do ~@w) ~_))))
@@ -7221,7 +7224,7 @@
         (when (or o'finish_op (== (:cmdchar ca) (byte \r)))
             (ui-cursor-shape)) ;; may show different cursor shape
         (when (and (== (:op_type (:oap ca)) OP_NOP) (zero? (:regname (:oap ca))) (!= (:cmdchar ca) K_CURSORHOLD))
-            (clear-showcmd @curwin))
+            (swap! curwin clear-showcmd))
         (swap! curwin checkpcmark) ;; check if we moved since setting pcmark
         (let [ca (assoc ca :searchbuf nil)]
             (swap! curwin update :w_cursor mb-adjust-pos)
@@ -7471,8 +7474,7 @@
                                     ;; If oap.op_end is on a NUL (empty line) oap.inclusive becomes false.
                                     ;; This makes "d}P" and "v}dP" work the same.
                                     (let [oap (if (or (== (:motion_force oap) NUL) (== (:motion_type oap) MLINE)) (assoc oap :inclusive true) oap)
-                                          oap (if (== @VIsual_mode (byte \V))
-                                                (assoc oap :motion_type MLINE)
+                                          oap (when' (!= @VIsual_mode (byte \V)) => (assoc oap :motion_type MLINE)
                                                 (let [oap (assoc oap :motion_type MCHAR)]
                                                     (if (and (!= @VIsual_mode Ctrl_V) (eos? (ml-get-pos (:op_end oap))) (or include_eol? (== @virtual_op FALSE)))
                                                         ;; Try to include the newline, unless it's an operator that works on lines only.
@@ -7486,17 +7488,17 @@
                                                             ;; Cannot move below the last line, make the op inclusive
                                                             ;; to tell the operation to include the line break.
                                                             (assoc oap :inclusive true))
-                                                        oap
-                                                    ))
+                                                        oap)
+                                                ))
+                                          _ (reset! redo_VIsual_busy false)
+                                          ;; Switch Visual off now, so screen updating does not show inverted text when the screen is redrawn.
+                                          ;; With OP_YANK and sometimes with OP_COLON and OP_FILTER there is no screen redraw,
+                                          ;; so it is done here to remove the inverted part.
+                                          _ (reset! VIsual_active false)
+                                          win (if @mode_displayed
+                                                (do (reset! clear_cmdline true) win) ;; unshow visual mode later
+                                                (clear-showcmd win)
                                             )]
-                                        (reset! redo_VIsual_busy false)
-                                        ;; Switch Visual off now, so screen updating does not show inverted text when the screen is redrawn.
-                                        ;; With OP_YANK and sometimes with OP_COLON and OP_FILTER there is no screen redraw,
-                                        ;; so it is done here to remove the inverted part.
-                                        (reset! VIsual_active false)
-                                        (if @mode_displayed
-                                            (reset! clear_cmdline true) ;; unshow visual mode later
-                                            (clear-showcmd win))
                                         (when (and (any == (:op_type oap) OP_YANK OP_COLON OP_FUNCTION OP_FILTER) (== (:motion_force oap) NUL))
                                             (reset! (:wo_lbr (:w_options win)) o'lbr) ;; make sure redrawing is correct
                                             (redraw-curbuf-later INVERTED))
@@ -7633,31 +7635,31 @@
 
                                [OP_INSERT OP_APPEND]
                                     (let [_ (reset! VIsual_reselect false) ;; don't reselect now
-                                          oap (if empty_region?
-                                                (do (beep) (cancel-redo) oap)
+                                          [win oap] (if empty_region?
+                                                (do (beep) (cancel-redo) [win oap])
                                                 ;; This is a new edit command, not a restart.
                                                 ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
                                                 ;; But do this only once.
                                                 (let [o'restart_edit @restart_edit _ (reset! restart_edit 0)
                                                       ;; Restore linebreak, so that when the user edits, it looks as before.
                                                       _ (reset! (:wo_lbr (:w_options win)) o'lbr)
-                                                      oap (op-insert oap, (:count1 cap))
+                                                      [win oap] (op-insert win, oap, (:count1 cap))
                                                       ;; Reset linebreak, so that formatting works correctly.
                                                       _ (reset! (:wo_lbr (:w_options win)) false)]
                                                     (when (zero? @restart_edit)
                                                         (reset! restart_edit o'restart_edit))
-                                                    oap)
+                                                    [win oap])
                                             )]
                                         [win cap oap])
 
                                 OP_REPLACE
                                     (let [_ (reset! VIsual_reselect false) ;; don't reselect now
-                                          oap (if empty_region?
-                                                (do (beep) (cancel-redo) oap)
+                                          [win oap] (if empty_region?
+                                                (do (beep) (cancel-redo) [win oap])
                                                 ;; Restore linebreak, so that when the user edits, it looks as before.
                                                 (let [_ (reset! (:wo_lbr (:w_options win)) o'lbr)
-                                                      [oap _] (op-replace? oap, (:nchar cap))]
-                                                    oap)
+                                                      [win oap _] (op-replace? win, oap, (:nchar cap))]
+                                                    [win oap])
                                             )]
                                         [win cap oap])
 
@@ -7745,30 +7747,37 @@
     (reset! VIsual_active false)
     ;; Save the current VIsual area for '< and '> marks, and "gv".
     (swap! curbuf update :b_visual assoc :vi_mode @VIsual_mode, :vi_start @VIsual_cursor, :vi_end (:w_cursor win), :vi_curswant (:w_curswant win))
-    (let [win (if (not (virtual-active)) (assoc-in win [:w_cursor :coladd] 0) win)]
-        (if @mode_displayed
-            (reset! clear_cmdline true) ;; unshow visual mode later
-            (clear-showcmd win))
+    (let [win (if (not (virtual-active)) (assoc-in win [:w_cursor :coladd] 0) win)
+          win (if @mode_displayed
+                (do (reset! clear_cmdline true) win) ;; unshow visual mode later
+                (clear-showcmd win)
+            )]
         (adjust-cursor-eol win)
     ))
 
 ;; Reset VIsual_active and VIsual_reselect.
 
-(defn- #_void reset-VIsual-and-resel []
-    (when @VIsual_active
-        (swap! curwin end-visual-mode)
-        (redraw-curbuf-later INVERTED)) ;; delete the inversion later
-    (reset! VIsual_reselect false)
-    nil)
+(defn- #_window_C reset-VIsual-and-resel [#_window_C win]
+    (let [win (when' @VIsual_active => win
+                (let [win (end-visual-mode win)]
+                    (redraw-curbuf-later INVERTED)  ;; delete the inversion later
+                    win)
+            )]
+        (reset! VIsual_reselect false)
+        win
+    ))
 
 ;; Reset VIsual_active and VIsual_reselect if it's set.
 
-(defn- #_void reset-VIsual []
-    (when @VIsual_active
-        (swap! curwin end-visual-mode)
-        (redraw-curbuf-later INVERTED)  ;; delete the inversion later
-        (reset! VIsual_reselect false))
-    nil)
+(defn- #_window_C reset-VIsual [#_window_C win]
+    (let [win (when' @VIsual_active => win
+                (let [win (end-visual-mode win)]
+                    (redraw-curbuf-later INVERTED)  ;; delete the inversion later
+                    (reset! VIsual_reselect false)
+                    win)
+            )]
+        win
+    ))
 
 ;; Find the identifier under or to the right of the cursor.
 ;;
@@ -7889,8 +7898,8 @@
 (atom! boolean  showcmd_is_clear true)
 (atom! boolean  showcmd_visual)
 
-(defn- #_void clear-showcmd [#_window_C win]
-    (when @p_sc
+(defn- #_window_C clear-showcmd [#_window_C win]
+    (when' @p_sc => win
         (if (and @VIsual_active (not (char-avail)))
             (let [#_boolean cursor_bot (ltpos @VIsual_cursor, (:w_cursor win))
                   [#_long top #_long bot] (if cursor_bot [(:lnum @VIsual_cursor) (:lnum (:w_cursor win))] [(:lnum (:w_cursor win)) (:lnum @VIsual_cursor)])
@@ -7917,16 +7926,16 @@
                     ))
                 (eos! showcmd_buf SHOWCMD_COLS)      ;; truncate
                 (reset! showcmd_visual true)
-                (display-showcmd))
+                (display-showcmd win))
             (do
                 (eos! showcmd_buf)
                 (reset! showcmd_visual false)
                 ;; Don't actually display something if there is nothing to clear.
-                (when-not @showcmd_is_clear
-                    (display-showcmd)
-                ))
-        ))
-    nil)
+                (if-not @showcmd_is_clear
+                    (display-showcmd win)
+                    win)
+            ))
+    ))
 
 (final int* ignore_showcmd
     [
@@ -7952,14 +7961,12 @@
                             (BCOPY showcmd_buf, 0, showcmd_buf, overflow, (inc (- olen overflow))))
                         (STRCAT showcmd_buf, p)
                     ))
-                (and (not (char-avail)) (do (display-showcmd) true))
+                (and (not (char-avail)) (do (swap! curwin display-showcmd) true))
             ))
     ))
 
-(defn- #_void add-to-showcmd-c [#_int c]
-    (when (not (add-to-showcmd c))
-        (swap! curwin setcursor))
-    nil)
+(defn- #_window_C add-to-showcmd-c [#_window_C win, #_int c]
+    (if (not (add-to-showcmd c)) (setcursor win) win))
 
 ;; Delete 'len' characters from the end of the shown command.
 
@@ -7968,7 +7975,7 @@
         (let [#_int o'len (STRLEN showcmd_buf) len (min len o'len)]
             (eos! showcmd_buf (- o'len len)))
         (when (not (char-avail))
-            (display-showcmd)))
+            (swap! curwin display-showcmd)))
     nil)
 
 ;; push-showcmd() and pop-showcmd() are used when waiting for
@@ -7979,25 +7986,21 @@
         (STRCPY old_showcmd_buf, showcmd_buf))
     nil)
 
-(defn- #_void pop-showcmd []
-    (when @p_sc
+(defn- #_window_C pop-showcmd [#_window_C win]
+    (when' @p_sc => win
         (STRCPY showcmd_buf, old_showcmd_buf)
-        (display-showcmd))
-    nil)
+        (display-showcmd win)
+    ))
 
-(defn- #_void display-showcmd []
+(defn- #_window_C display-showcmd [#_window_C win]
     (cursor-off)
-
     (let [#_int len (STRLEN showcmd_buf)]
         (when (pos? len)
             (screen-puts showcmd_buf, (dec @Rows), @sc_col, 0))
         ;; clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
         (screen-puts (.plus (u8 "          ") len), (dec @Rows), (+ @sc_col len), 0)
-        (reset! showcmd_is_clear (zero? len))
-    )
-
-    (swap! curwin setcursor)            ;; put cursor back where it belongs
-    nil)
+        (reset! showcmd_is_clear (zero? len)))
+    (setcursor win)) ;; put cursor back where it belongs
 
 (atom! window_C scr_old_curwin)
 (atom! long scr_old_topline)
@@ -8572,8 +8575,7 @@
             ;; Correct the length to include the whole last character.
             (swap! a'count #(+ % (dec (us-ptr2len-cc @a'start, (dec %)))))
         ))
-        (reset-VIsual-and-resel)
-        [win true]
+        [(reset-VIsual-and-resel win) true]
     ))
 
 ;; Handle scrolling command 'H', 'L' and 'M'.
@@ -8943,7 +8945,7 @@
                 [win (clearopbeep cap)]
             @VIsual_active
                 ;; Visual mode "r".
-                (let [_ (when @got_int (reset-VIsual))
+                (let [win (if @got_int (reset-VIsual win) win)
                       cap (if (!= had_ctrl_v NUL) (update cap :nchar #(condp == % (byte \return) -1 (byte \newline) -2 %)) cap)]
                     (nv-operator win, cap))
             :else
@@ -11319,32 +11321,32 @@
 
 ;; Replace a whole area with one character.
 
-(defn- #_[oparg_C boolean] op-replace? [#_oparg_C oap, #_int c]
+(defn- #_[window_C oparg_C boolean] op-replace? [#_window_C win, #_oparg_C oap, #_int c]
     (if (or (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) (:empty oap))
-        [oap true] ;; nothing to do
+        [win oap true] ;; nothing to do
         (let [oap (mb-adjust-opend oap)]
             (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
-                [oap false]
+                [win oap false]
                 (let [#_boolean had_ctrl_v_cr (any == c -1 -2)
                       c (if had_ctrl_v_cr (if (== c -1) (byte \return) (byte \newline)) c)
-                      oap (cond (:block_mode oap) ;; block mode replace
-                            (let [#_boolean is_MAX (== (:w_curswant @curwin) MAXCOL)]
-                                (loop-when [oap oap #_Bytes after_p nil] (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap))) => oap
-                                    (swap! curwin assoc-in [:w_cursor :col] 0) ;; make sure cursor position is valid
-                                    (let [#_block_def_C bd (block-prep oap, is_MAX, (:lnum (:w_cursor @curwin)), true)]
+                      [win oap]
+                        (cond (:block_mode oap) ;; block mode replace
+                            (let [#_boolean is_MAX (== (:w_curswant win) MAXCOL)]
+                                (loop-when [win win oap oap #_Bytes after_p nil] (<= (:lnum (:w_cursor win)) (:lnum (:op_end oap))) => [win oap]
+                                    (let [win (assoc-in win [:w_cursor :col] 0) ;; make sure cursor position is valid
+                                          #_block_def_C bd (block-prep oap, is_MAX, (:lnum (:w_cursor win)), true)]
                                         (if (and (zero? (:textlen bd)) (or (== @virtual_op FALSE) (:is_MAX bd)))
-                                            (do (swap! curwin update-in [:w_cursor :lnum] inc)
-                                                (recur oap after_p)) ;; nothing to replace
+                                            (recur (update-in win [:w_cursor :lnum] inc) oap after_p) ;; nothing to replace
                                             ;; If we split a TAB, it may be replaced by several characters, thus the number of chars may increase!
                                             ;; If the range starts in virtual space, count the initial "coladd" offset as part of "startspaces".
-                                            (let [[bd #_int n] ;; number of extra chars required
+                                            (let [[win bd #_int n] ;; number of extra chars required
                                                     (if (and (!= @virtual_op FALSE) (:is_short bd) (eos? (:textstart bd)))
-                                                        (let [#_pos_C vpos (->pos_C (:lnum (:w_cursor @curwin)) 0 0)
-                                                              [_ vpos] (getvpos @curwin, vpos, (:start_vcol oap)) _ (reset! curwin _)
+                                                        (let [#_pos_C vpos (->pos_C (:lnum (:w_cursor win)) 0 0)
+                                                              [win vpos] (getvpos win, vpos, (:start_vcol oap))
                                                               bd (update bd :startspaces + (:coladd vpos))]
-                                                            [bd (:startspaces bd)])
+                                                            [win bd (:startspaces bd)])
                                                         ;; allow for pre-spaces
-                                                        [bd (if (non-zero? (:startspaces bd)) (dec (:start_char_vcols bd)) 0)])
+                                                        [win bd (if (non-zero? (:startspaces bd)) (dec (:start_char_vcols bd)) 0)])
                                                   ;; allow for post-spaces
                                                   n (+ n (if (and (non-zero? (:endspaces bd)) (not (:is_oneChar bd)) (< 0 (:end_char_vcols bd))) (dec (:end_char_vcols bd)) 0))
                                                   ;; Figure out how many characters to replace.
@@ -11360,7 +11362,7 @@
                                                   #_int x r r (* r (utf-char2len c))
                                                   ;; oldlen includes textlen, so don't double count
                                                   n (+ n (- r (:textlen bd)))
-                                                  #_Bytes o's (ml-get (:lnum (:w_cursor @curwin))) #_int o'len (STRLEN o's)
+                                                  #_Bytes o's (ml-get (:lnum (:w_cursor win))) #_int o'len (STRLEN o's)
                                                   #_Bytes s (Bytes. (+ o'len n 1))
                                                   ;; copy up to deleted part
                                                   _ (BCOPY s, o's, (:textcol bd))
@@ -11383,92 +11385,89 @@
                                                             after_p)
                                                     )]
                                                 ;; replace the line
-                                                (ml-replace (:lnum (:w_cursor @curwin)), s)
-                                                (let [oap (if (some? after_p)
-                                                            (do (ml-append (:lnum (:w_cursor @curwin)), after_p)
-                                                                (swap! curwin update-in [:w_cursor :lnum] inc)
-                                                                (appended-lines-mark (:lnum (:w_cursor @curwin)), 1)
-                                                                (update-in oap [:op_end :lnum] inc))
-                                                            oap
+                                                (ml-replace (:lnum (:w_cursor win)), s)
+                                                (let [[win oap]
+                                                        (when' (some? after_p) => [win oap]
+                                                            (ml-append (:lnum (:w_cursor win)), after_p)
+                                                            (let [win (update-in win [:w_cursor :lnum] inc)]
+                                                                (appended-lines-mark (:lnum (:w_cursor win)), 1)
+                                                                [win (update-in oap [:op_end :lnum] inc)])
                                                         )]
-                                                    (swap! curwin update-in [:w_cursor :lnum] inc)
-                                                    (recur oap after_p)
+                                                    (recur (update-in win [:w_cursor :lnum] inc) oap after_p)
                                                 ))
                                         ))
                                 ))
                         :else ;; MCHAR and MLINE motion replace
-                            (let [oap (cond (== (:motion_type oap) MLINE)
+                            (let [[win oap]
+                                    (cond (== (:motion_type oap) MLINE)
                                         (let [oap (assoc-in oap [:op_start :col] 0)
-                                              _ (swap! curwin assoc-in [:w_cursor :col] 0)
-                                              oap (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap)))))]
-                                            (if (non-zero? (:col (:op_end oap)))
-                                                (update-in oap [:op_end :col] dec)
-                                                oap
-                                            ))
+                                              win (assoc-in win [:w_cursor :col] 0)
+                                              oap (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap)))))
+                                              oap (if (non-zero? (:col (:op_end oap))) (update-in oap [:op_end :col] dec) oap)]
+                                            [win oap])
                                     (not (:inclusive oap))
-                                        (update oap :op_end #(let [[_ ?] (decp %)] _))
+                                        [win (update oap :op_end #(let [[_ ?] (decp %)] _))]
                                     :else
-                                        oap
+                                        [win oap]
                                     )]
-                                (loop-when [oap oap] (ltoreq (:w_cursor @curwin), (:op_end oap)) => oap
-                                    (let [#_int k (gchar-cursor @curwin)
-                                          oap (cond (!= k NUL)
+                                (loop-when [win win oap oap] (ltoreq (:w_cursor win), (:op_end oap)) => [win oap]
+                                    (let [#_int k (gchar-cursor win)
+                                          [win oap]
+                                            (cond (!= k NUL)
                                                 (let [cl (utf-char2len c) kl (utf-char2len k)]
                                                     (if (or (< 1 cl) (< 1 kl))
                                                         ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
-                                                        (let [oap (if (== (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap))) (update-in oap [:op_end :col] + (- cl kl)) oap)
-                                                              o'State @State _ (reset! State REPLACE)]
-                                                            (swap! curwin ins-char c)
+                                                        (let [oap (if (== (:lnum (:w_cursor win)) (:lnum (:op_end oap))) (update-in oap [:op_end :col] + (- cl kl)) oap)
+                                                              o'State @State _ (reset! State REPLACE)
+                                                              win (ins-char win, c)]
                                                             (reset! State o'State)
                                                             ;; Backup to the replaced character.
-                                                            (swap! curwin dec-cursor false)
-                                                            oap)
-                                                        (let [oap (if (== k TAB)
+                                                            [(dec-cursor win, false) oap])
+                                                        (let [[win oap]
+                                                                (when' (== k TAB) => [win oap]
                                                                     ;; "op_end" has to be recalculated when the tab breaks
                                                                     (let [#_int end_vcol
-                                                                            (if (== (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
-                                                                                (getviscol2 @curwin, (:col (:op_end oap)), (:coladd (:op_end oap)))
-                                                                                0
-                                                                            )]
-                                                                        (swap! curwin coladvance-force (getviscol @curwin))
-                                                                        (if (== (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
-                                                                            (let [[_ ?] (getvpos @curwin, (:op_end oap), end_vcol)] (reset! curwin _) (assoc oap :op_end ?))
-                                                                            oap
+                                                                            (when' (== (:lnum (:w_cursor win)) (:lnum (:op_end oap))) => 0
+                                                                                (getviscol2 win, (:col (:op_end oap)), (:coladd (:op_end oap))))
+                                                                          win (coladvance-force win, (getviscol win))]
+                                                                        (if (== (:lnum (:w_cursor win)) (:lnum (:op_end oap)))
+                                                                            (let [[win ?] (getvpos win, (:op_end oap), end_vcol)] [win (assoc oap :op_end ?)])
+                                                                            [win oap]
                                                                         ))
-                                                                    oap
                                                                 )]
-                                                            (.be (ml-get (:lnum (:w_cursor @curwin))) (:col (:w_cursor @curwin)), c)
-                                                            oap)
+                                                            (.be (ml-get (:lnum (:w_cursor win))) (:col (:w_cursor win)), c)
+                                                            [win oap])
                                                     ))
-                                            (and (!= @virtual_op FALSE) (== (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap))))
+                                            (and (!= @virtual_op FALSE) (== (:lnum (:w_cursor win)) (:lnum (:op_end oap))))
                                                 (let [#_int vcols (:coladd (:op_end oap))
-                                                      vcols (if (and (== (:lnum (:w_cursor @curwin)) (:lnum (:op_start oap)))
+                                                      vcols (if (and (== (:lnum (:w_cursor win)) (:lnum (:op_start oap)))
                                                                      (== (:col (:op_start oap)) (:col (:op_end oap)))
                                                                      (non-zero? (:coladd (:op_start oap))))
                                                                 (- vcols (:coladd (:op_start oap)))
-                                                                vcols
+                                                                vcols)
+                                                      ;; "op_end" has been trimmed, so it's effectively inclusive;
+                                                      ;; as a result, an extra +1 must be counted, so we don't trample the NUL byte.
+                                                      win (coladvance-force win, (inc (getviscol2 win, (:col (:op_end oap)), (:coladd (:op_end oap)))))
+                                                      win (update-in win [:w_cursor :col] - (inc vcols))
+                                                      win (loop-when [win win vcols vcols] (<= 0 vcols) => win
+                                                            (.be (ml-get (:lnum (:w_cursor win))) (:col (:w_cursor win)), c)
+                                                            (let [[win ?] (inc-cursor? win, false)]
+                                                                (recur-if (!= ? -1) [win (dec vcols)] => win))
                                                         )]
-                                                    ;; "op_end" has been trimmed, so it's effectively inclusive;
-                                                    ;; as a result, an extra +1 must be counted, so we don't trample the NUL byte.
-                                                    (swap! curwin coladvance-force (inc (getviscol2 @curwin, (:col (:op_end oap)), (:coladd (:op_end oap)))))
-                                                    (swap! curwin update-in [:w_cursor :col] - (inc vcols))
-                                                    (loop-when vcols (<= 0 vcols) => nil
-                                                        (.be (ml-get (:lnum (:w_cursor @curwin))) (:col (:w_cursor @curwin)), c)
-                                                        (recur-if (!= (let [[_ ?] (inc-cursor? @curwin, false)] (reset! curwin _) ?) -1) (dec vcols) => nil))
-                                                    oap)
+                                                    [win oap])
                                             :else
-                                                oap
+                                                [win oap]
                                             )]
                                         ;; Advance to next character, stop at the end of the file.
-                                        (recur-if (!= (let [[_ ?] (inc-cursor? @curwin, false)] (reset! curwin _) ?) -1) oap => oap)
+                                        (let [[win ?] (inc-cursor? win, false)]
+                                            (recur-if (!= ? -1) [win oap] => [win oap]))
                                     ))
-                            ))]
-                    (swap! curwin assoc :w_cursor (:op_start oap))
-                    (swap! curwin check-cursor)
+                            ))
+                      win (-> win (assoc :w_cursor (:op_start oap)) (check-cursor))]
                     (swap! curbuf changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
                     ;; Set '[ and '] marks.
                     (swap! curbuf assoc :b_op_start (:op_start oap) :b_op_end (:op_end oap))
-                    [oap true])
+                    [win oap true])
             ))
     ))
 
@@ -11581,78 +11580,74 @@
 
 ;; Insert and append operators for Visual mode.
 
-(defn- #_oparg_C op-insert [#_oparg_C oap, #_long count1]
+(defn- #_[window_C oparg_C] op-insert [#_window_C win, #_oparg_C oap, #_long count1]
     ;; edit() changes this - record it for OP_APPEND
-    (let [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX (== (:w_curswant @curwin) MAXCOL))]
-        ;; vis block is still marked, get rid of it now
-        (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
+    (let [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX (== (:w_curswant win) MAXCOL))
+          ;; visual block is still marked, get rid of it now
+          win (assoc-in win [:w_cursor :lnum] (:lnum (:op_start oap)))]
         (update-screen INVERTED)
-        (let-when [[bd #_int pre_textlen :as _]
-                (if (:block_mode oap)
+        (let-when [[win [bd #_int pre_textlen :as _]]
+                (when' (:block_mode oap) => [win [bd 0]]
                     ;; When 'virtualedit' is used, need to insert the extra spaces before doing block-prep().
                     ;; When only "block" is used, virtual edit is already disabled,
                     ;; but still need it when calling coladvance-force().
-                    (let-when [_
-                            (if (< 0 (:coladd (:w_cursor @curwin)))
+                    (let-when [[win ?]
+                            (when' (< 0 (:coladd (:w_cursor win))) => [win nil]
                                 (let [o've_flags @ve_flags _ (reset! ve_flags VE_ALL)]
                                     (if (not (u-save-cursor))
-                                        (do (reset! ve_flags o've_flags) nil)
-                                        (do (swap! curwin coladvance-force (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol @curwin)))
-                                            (when (== (:op_type oap) OP_APPEND)
-                                                (swap! curwin update-in [:w_cursor :col] dec))
+                                        (do (reset! ve_flags o've_flags)
+                                            [win :abort])
+                                        (let [win (coladvance-force win, (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol win)))
+                                              win (if (== (:op_type oap) OP_APPEND) (update-in win [:w_cursor :col] dec) win)]
                                             (reset! ve_flags o've_flags)
-                                            :_)
+                                            [win nil])
                                     ))
-                                :_
-                            )] (some? _) => nil
+                            )] (not ?) => [win nil]
+
                         ;; Get the info about the block before entering the text.
                         (let [bd (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true)
                               #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
                               s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
-                            [bd (STRLEN s)]
+                            [win [bd (STRLEN s)]]
                         ))
-                    [bd 0]
-                )] (some? _) => oap
+                )] (some? _) => [win oap]
 
-            (let-when [[bd :as _]
-                    (if (== (:op_type oap) OP_APPEND)
-                        (if (and (:block_mode oap) (zero? (:coladd (:w_cursor @curwin))))
-                            (do ;; Move the cursor to the character right of the block.
-                                (swap! curwin assoc :w_set_curswant true)
-                                (while (and (non-eos? (ml-get-cursor @curwin)) (< (:col (:w_cursor @curwin)) (+ (:textcol bd) (:textlen bd))))
-                                    (swap! curwin update-in [:w_cursor :col] inc))
-                                (if (and (:is_short bd) (not (:is_MAX bd)))
+            (let-when [[win [bd :as _]]
+                    (when' (== (:op_type oap) OP_APPEND) => [win [bd]]
+                        (if (and (:block_mode oap) (zero? (:coladd (:w_cursor win))))
+                            ;; Move the cursor to the character right of the block.
+                            (let [win (assoc win :w_set_curswant true)
+                                  win (loop-when-recur win
+                                                       (and (non-eos? (ml-get-cursor win)) (< (:col (:w_cursor win)) (+ (:textcol bd) (:textlen bd))))
+                                                       (update-in win [:w_cursor :col] inc)
+                                                    => win)]
+                                (when' (and (:is_short bd) (not (:is_MAX bd))) => [win [bd]]
                                     ;; First line was too short, make it longer and adjust the values in "bd".
-                                    (if (not (u-save-cursor))
-                                        nil
-                                        (do (dotimes [_ (:endspaces bd)]
-                                                (swap! curwin ins-char (byte \space)))
-                                            [(update bd :textlen + (:endspaces bd))]
+                                    (when' (u-save-cursor) => [win nil]
+                                        (let [win (loop-when-recur [win win _ 0] (< _ (:endspaces bd)) [(ins-char win, (byte \space)) (inc _)] => win)]
+                                            [win [(update bd :textlen + (:endspaces bd))]]
                                         ))
-                                    [bd]
                                 ))
-                            (do (swap! curwin assoc :w_cursor (:op_end oap))
-                                (swap! curwin check-cursor-col)
-                                ;; Works just like an 'i'nsert on the next character.
-                                (when (and (not (lineempty (:lnum (:w_cursor @curwin)))) (!= (:start_vcol oap) (:end_vcol oap)))
-                                    (swap! curwin inc-cursor false))
-                                [bd]
+                            (let [win (-> win (assoc :w_cursor (:op_end oap)) (check-cursor-col))
+                                  ;; Works just like an 'i'nsert on the next character.
+                                  win (when' (and (not (lineempty (:lnum (:w_cursor win)))) (!= (:start_vcol oap) (:end_vcol oap))) => win
+                                        (inc-cursor win, false)
+                                    )]
+                                [win [bd]]
                             ))
-                        [bd]
-                    )] (some? _) => oap
+                    )] (some? _) => [win oap]
 
                 (let [#_pos_C t1 (:op_start oap)
-                      [_ ?] (edit? @curwin, NUL, false, count1) _ (reset! curwin _)
+                      [win _] (edit? win, NUL, false, count1)
                       ;; When a tab was inserted, and the characters in front of the tab have been converted to a tab
                       ;; as well, the column of the cursor might have actually been reduced, so need to adjust here.
-                      oap (if (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1))
+                      oap (when' (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1)) => oap
                             (assoc oap :op_start (:b_op_start_orig @curbuf))
-                            oap
                         )]
                     ;; If user has moved off this line, we don't know what to do, so do nothing.
                     ;; Also don't repeat the insert when Insert mode ended with CTRL-C.
-                    (cond (or (!= (:lnum (:w_cursor @curwin)) (:lnum (:op_start oap))) @got_int)
-                        oap
+                    (cond (or (!= (:lnum (:w_cursor win)) (:lnum (:op_start oap))) @got_int)
+                        [win oap]
                     (:block_mode oap)
                         ;; The user may have moved the cursor before inserting something, try to adjust the block for that.
                         (let [[oap pre_textlen]
@@ -11660,13 +11655,13 @@
                                     [oap pre_textlen]
                                 (and (== (:op_type oap) OP_INSERT)
                                            (!= (+ (:col (:op_start oap)) (:coladd (:op_start oap))) (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf)))))
-                                    (let [#_int t (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                    (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
                                           oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
                                           pre_textlen (- pre_textlen (- t (:start_vcol oap)))]
                                         [(assoc oap :start_vcol t) pre_textlen])
                                 (and (== (:op_type oap) OP_APPEND)
                                      (<= (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf))) (+ (:col (:op_end oap)) (:coladd (:op_end oap)))))
-                                    (let [#_int t (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                    (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
                                           oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
                                           ;; reset "pre_textlen" to the value of OP_INSERT
                                           pre_textlen (- (+ pre_textlen (:textlen bd)) (- t (:start_vcol oap)))]
@@ -11690,22 +11685,18 @@
                               ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the required string.
                               #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
                               s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
-                            (if (<= 0 pre_textlen)
+                            (when' (<= 0 pre_textlen) => [win oap]
                                 (let [#_int ins_len (- (STRLEN s) pre_textlen)]
-                                    (if (< 0 ins_len)
+                                    (when' (< 0 ins_len) => [win oap]
                                         (let [#_Bytes ins_text (STRNDUP s, ins_len)]
                                             ;; block handled here
                                             (when (u-save (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
                                                 (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
-                                            (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
-                                            (swap! curwin check-cursor)
-                                            oap)
-                                        oap
+                                            [(-> win (assoc-in [:w_cursor :col] (:col (:op_start oap))) (check-cursor)) oap])
                                     ))
-                                oap
                             ))
                     :else
-                        oap
+                        [win oap]
                     ))
             ))
     ))
@@ -13927,7 +13918,7 @@
                                                                                       (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))),
                                                                                       (:tb_change_cnt @typebuf)))
                                                                 (when (non-zero? i)
-                                                                    (pop-showcmd))
+                                                                    (swap! curwin pop-showcmd))
                                                                 (when (== c1 1)
                                                                     (when (flag? @State INSERT)
                                                                         (swap! curwin edit-unputchar))
@@ -14165,7 +14156,7 @@
                   _ (reset! stop_insert_mode false)
                   ;; Need to recompute the cursor position, it might move when the cursor is on a TAB or special character.
                   win (curs-columns win, true)
-                  _ (clear-showcmd win)
+                  win (clear-showcmd win)
                   ;; Handle restarting Insert mode.
                   ;; Don't do this for "CTRL-O ." (repeat an insert): we get here with "restart_edit" non-zero, and something in the stuff buffer.
                   win (if (and (non-zero? @restart_edit) (stuff-empty))
@@ -14574,18 +14565,18 @@
 ;; Handle a CTRL-V or CTRL-Q typed in Insert mode.
 
 (defn- #_window_C ins-ctrl-v [#_window_C win]
-    (let [win (ins-redraw win, false) ;; may need to redraw when no more chars available now
+    ;; May need to redraw when no more chars available now.
+    (let [win (ins-redraw win, false)
           #_boolean putchar? (and (redrawing) (not (char-avail)))
-          win (if putchar? (edit-putchar win, (byte \^), true) win)]
-        (append-redo CTRL_V_STR)
-        (add-to-showcmd-c Ctrl_V)
-        (let [#_int c (get-literal)
-              ;; When the line fits in 'columns' the '^' is at the start
-              ;; of the next line and will not be removed by the redraw.
-              win (if putchar? (edit-unputchar win) win)]
-            (clear-showcmd win)
-            (insert-special win, c, false, true)
-        )
+          win (if putchar? (edit-putchar win, (byte \^), true) win)
+          _ (append-redo CTRL_V_STR)
+          win (add-to-showcmd-c win, Ctrl_V)
+          #_int c (get-literal)
+          ;; When the line fits in 'columns' the '^' is at the start
+          ;; of the next line and will not be removed by the redraw.
+          win (if putchar? (edit-unputchar win) win)
+          win (clear-showcmd win)]
+        (insert-special win, c, false, true)
     ))
 
 ;; Put a character directly onto the screen.  It's not stored in a buffer.
@@ -15389,15 +15380,16 @@
           _ (reset! pc_status PC_STATUS_UNSET)
           win (if (and (redrawing) (not (char-avail)))
                 ;; May need to redraw when no more chars available now.
-                (let [win (ins-redraw win, false) win (edit-putchar win, (byte \"), true)] ;; """
-                    (add-to-showcmd-c Ctrl_R)
-                    win)
+                (-> win
+                    (ins-redraw false)
+                    (edit-putchar (byte \"), true) ;; """
+                    (add-to-showcmd-c Ctrl_R))
                 win)
           ;; Don't map the register name.  This also prevents the mode message to be deleted when ESC is hit.
           _ (swap! no_mapping inc)
           #_int regname (plain-vgetc)
           ;; Get a third key for literal register insertion.
-          [#_int literally regname] (if (any == regname Ctrl_R Ctrl_O Ctrl_P) (do (add-to-showcmd-c regname) [regname (plain-vgetc)]) [0 regname])
+          [win #_int literally regname] (if (any == regname Ctrl_R Ctrl_O Ctrl_P) (let [win (add-to-showcmd-c win, regname)] [win regname (plain-vgetc)]) [win 0 regname])
           _ (swap! no_mapping dec)
           ;; Don't call u-sync() while typing the expression or giving an error message for it.  Only call it explicitly.
           _ (swap! no_u_sync inc)
@@ -15419,16 +15411,15 @@
                 ;; then stuff-empty() returns false, but we won't insert anything, need to remove the '"'.
                 [win @stop_insert_mode]
             )
-          _ (swap! no_u_sync dec)]
-        (when (== @u_sync_once 1)
-            (reset! ins_need_undo true))
-        (reset! u_sync_once 0)
-        (clear-showcmd win)
-        ;; If the inserted register is empty, we need to remove the '"'.
-        (let [win (if (or need_redraw (stuff-empty)) (edit-unputchar win) win)]
-            ;; Disallow starting Visual mode here, would get a weird mode.
-            (if (and (not o'VIsual_active) @VIsual_active) (end-visual-mode win) win)
-        )
+          _ (swap! no_u_sync dec)
+          _ (when (== @u_sync_once 1)
+                (reset! ins_need_undo true))
+          _ (reset! u_sync_once 0)
+          win (clear-showcmd win)
+          ;; If the inserted register is empty, we need to remove the '"'.
+          win (if (or need_redraw (stuff-empty)) (edit-unputchar win) win)]
+        ;; Disallow starting Visual mode here, would get a weird mode.
+        (if (and (not o'VIsual_active) @VIsual_active) (end-visual-mode win) win)
     ))
 
 ;; CTRL-G commands in Insert mode.
@@ -16025,8 +16016,7 @@
                 ;; May need to redraw when no more chars available now.
                 (let [win (ins-redraw win, false)
                       win (edit-putchar win, (byte \?), true) _ (reset! a'putchar? true)]
-                    (add-to-showcmd-c Ctrl_K)
-                    win)
+                    (add-to-showcmd-c win, Ctrl_K))
                 win)
           ;; Don't map the digraph chars.  ;; This also prevents the mode message to be deleted when ESC is hit.
           _ (swap! no_mapping inc) _ (swap! allow_keys inc) #_int c1 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)
@@ -16034,7 +16024,7 @@
           win (if @a'putchar? (edit-unputchar win) win)]
 
         (cond (or (is-special c1) (non-zero? @mod_mask)) ;; special key
-            (do (clear-showcmd win) [(insert-special win, c1, true, false) NUL])
+            (let [win (clear-showcmd win)] [(insert-special win, c1, true, false) NUL])
         (!= c1 ESC)
             (let [_ (reset! a'putchar? false)
                   win (if (and (redrawing) (not (char-avail)))
@@ -16045,18 +16035,17 @@
                                           win (edit-putchar win, c1, true) _ (reset! a'putchar? true)]
                                         win)
                                     win)]
-                            (add-to-showcmd-c c1)
-                            win)
+                            (add-to-showcmd-c win, c1))
                         win)
                   _ (swap! no_mapping inc) _ (swap! allow_keys inc) #_int c2 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)
                   ;; When the line fits in 'columns', the '?' is at the start of the next line and will not be removed by a redraw.
                   win (if @a'putchar? (edit-unputchar win) win)
 
                   #_int c3 (if (!= c2 ESC) (do (append-redo CTRL_V_STR) (getdigraph c1, c2, true)) NUL)]
-                (do (clear-showcmd win) [win c3])
+                [(clear-showcmd win) c3]
             )
         :else
-            (do (clear-showcmd win) [win NUL])
+            [(clear-showcmd win) NUL]
         )
     ))
 
@@ -37718,7 +37707,8 @@
                     ))
             )] (some? length) => 0
         ;; In Visual mode the size of the selected area must be redrawn.
-        (when @VIsual_active (clear-showcmd @curwin))
+        (when @VIsual_active
+            (swap! curwin clear-showcmd))
         ;; If the last window has no status line,
         ;; the ruler is after the mode message and must be redrawn.
         (when (and (redrawing) (zero? (:w_status_height @lastwin)))
@@ -37903,24 +37893,24 @@
         (condp ==? nchar
             ;; split current window in two parts, horizontally
             [(byte \S) Ctrl_S (byte \s)]
-                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-split Prenum, 0)))
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (swap! curwin reset-VIsual-and-resel) (win-split Prenum, 0)))
 
             ;; split current window in two parts, vertically
             [Ctrl_V (byte \v)]
-                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-split Prenum, WSP_VERT)))
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (swap! curwin reset-VIsual-and-resel) (win-split Prenum, WSP_VERT)))
 
             ;; quit current window
             [Ctrl_Q (byte \q)]
-                (do (reset-VIsual-and-resel) (cmd-with-count (u8 "quit"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
+                (do (swap! curwin reset-VIsual-and-resel) (cmd-with-count (u8 "quit"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
 
             ;; close current window
             [Ctrl_C (byte \c)]
-                (do (reset-VIsual-and-resel) (cmd-with-count (u8 "close"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
+                (do (swap! curwin reset-VIsual-and-resel) (cmd-with-count (u8 "close"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
 
             ;; close all but current window
             [Ctrl_O (byte \o)]
                 (if (zero? @cmdwin_type)
-                    (do (reset-VIsual-and-resel) (cmd-with-count (u8 "only"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
+                    (do (swap! curwin reset-VIsual-and-resel) (cmd-with-count (u8 "only"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
                     (emsg e_cmdwin))
 
             ;; cursor to next window with wrap around ;; cursor to previous window with wrap around
@@ -37975,11 +37965,11 @@
 
             ;; rotate windows downwards
             [Ctrl_R (byte \r)]
-                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-rotate false, Prenum1)))
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (swap! curwin reset-VIsual-and-resel) (win-rotate false, Prenum1)))
 
             ;; rotate windows upwards
             (byte \R)
-                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (reset-VIsual-and-resel) (win-rotate true, Prenum1)))
+                (if (non-zero? @cmdwin_type) (emsg e_cmdwin) (do (swap! curwin reset-VIsual-and-resel) (win-rotate true, Prenum1)))
 
             ;; move window to the very top/bottom/left/right
             [(byte \K) (byte \J) (byte \H) (byte \L)]
