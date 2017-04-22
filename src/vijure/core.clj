@@ -4848,7 +4848,7 @@
                                 ((ß int[] a'ip =) (atom (int)))
 
                                 ;; Allow negative (for 'undolevels'), octal and hex numbers.
-                                ((ß value =) (let [__ (atom (long))] (vim-str2nr arg, nil, a'ip, TRUE, TRUE, __) @__))
+                                ((ß value =) (let [__ (atom (long))] (vim-str2nr arg, nil, a'ip, true, true, __) @__))
                                 (when (and (non-eos? arg @a'ip) (not (vim-iswhite (.at arg @a'ip))))
                                     ((ß errmsg =) e_invarg)
                                     (ß BREAK skip)
@@ -17397,7 +17397,7 @@
             ((ß int[] a'length =) (atom (int 0)))                               ;; character length of the number
             ((ß long[] a'n =) (atom (long)))
             ;; get the number value (unsigned)
-            (vim-str2nr (.plus ptr col), a'hex, a'length, (if dooct TRUE FALSE), (if dohex TRUE FALSE), a'n)
+            (vim-str2nr (.plus ptr col), a'hex, a'length, dooct, dohex, a'n)
             (if (< @a'n 0)
                 (reset! a'n (- @a'n))
             )
@@ -38040,15 +38040,15 @@
 
 ;; This function is used very often, keep it fast!!!!
 ;;
-;; If "headp" not null, set "*headp" to the size of what we for 'showbreak' string at start of line.
-;; Warning: "*headp" is only set if it's a non-zero value, init to 0 before calling.
+;; If "head" not null, set "*head" to the size of what we for 'showbreak' string at start of line.
+;; Warning: "*head" is only set if it's a non-zero value, init to 0 before calling.
 
-(defn- #_int win-lbr-chartabsize [#_window_C win, #_Bytes line, #_Bytes s, #_int col, #_int' a'headp]
+(defn- #_int win-lbr-chartabsize [#_window_C win, #_Bytes line, #_Bytes s, #_int col, #_int' a'head]
     ;; line: start of the line
     (let [lbr @(:wo_lbr (:w_options win)) bri @(:wo_bri (:w_options win)) wrap @(:wo_wrap (:w_options win))]
         ;; No 'linebreak', 'showbreak' and 'breakindent': return quickly.
         (if (and (not lbr) (not bri) (eos? @p_sbr))
-            (if wrap (win-nolbr-chartabsize win, s, col, a'headp) (chartabsize s, col))
+            (if wrap (win-nolbr-chartabsize win, s, col, a'head) (chartabsize s, col))
             ;; First get normal size, without 'linebreak'.
             (let [#_int size (chartabsize s, col)
                   #_int col_adj (if (at? s TAB) (dec size) 0) ;; col + screen size of tab
@@ -38100,8 +38100,8 @@
                                 ))
                             [size 0]
                         )]
-                ;; Set "*headp" to the size of what we add.
-                (when (some? a'headp) (reset! a'headp (+ added mb_added)))
+                ;; Set "*head" to the size of what we add.
+                (when (some? a'head) (reset! a'head (+ added mb_added)))
                 size
             ))
     ))
@@ -38110,12 +38110,12 @@
 ;; This means we need to check for a double-byte character that doesn't fit at the end
 ;; of the screen line.
 
-(defn- #_int win-nolbr-chartabsize [#_window_C win, #_Bytes s, #_int col, #_int' a'headp]
+(defn- #_int win-nolbr-chartabsize [#_window_C win, #_Bytes s, #_int col, #_int' a'head]
     (if (at? s TAB)
         (let [#_int ts (int @(:b_p_ts @curbuf))] (- ts (% col ts)))
         ;; Add one cell for a double-width character in the last column of the window, displayed with a ">".
         (let-when [#_int n (mb-ptr2cells s)] (and (== n 2) (< 1 (us-byte2len (.at s 0), false)) (in-win-border win, col)) => n
-            (when (some? a'headp) (reset! a'headp 1))
+            (when (some? a'head) (reset! a'head 1))
             3)
     ))
 
@@ -38145,92 +38145,56 @@
 ;;
 ;; This is used very often, keep it fast!
 
-(defn- #_void getvcol [#_window_C wp, #_pos_C pos, #_int' a'start, #_int' a'cursor, #_int' a'end]
-    (§
-        ((ß Bytes p =) (ml-get (:lnum pos)))
-        ((ß Bytes line =) p)
-        ((ß Bytes posptr =) (if (== (:col pos) MAXCOL) nil (.plus p (:col pos))))
-
-        ((ß int vcol =) 0)
-        ((ß int ts =) (int @(:b_p_ts @curbuf)))
-
-        ((ß int[] a'head =) (atom (int)))
-        (ß int incr)
-
-        ;; This function is used very often, do some speed optimizations.
-        ;; When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set use a simple loop.
-        ;; Also use this when 'list' is set but tabs take their normal size.
-
-        (cond (and (not @(:wo_lbr (:w_options wp))) (eos? @p_sbr) (not @(:wo_bri (:w_options wp))))
-        (do
-            ((ß FOR) (ß nil true ((ß p =) (.plus p (us-ptr2len-cc p))))
-                (reset! a'head 0)
-                ;; make sure we don't go past the end of the line
-                (when (eos? p)
-                    ((ß incr =) 1)       ;; NUL at end of line only takes one column
-                    (ß BREAK)
-                )
-                ;; A tab gets expanded, depending on the current column.
-                (cond (at? p TAB)
-                (do
-                    ((ß incr =) (- ts (% vcol ts)))
-                )
-                :else
-                (do
-                    ((ß incr =) (mb-ptr2cells p))
-
-                    ;; If a double-cell char doesn't fit at the end of a line,
-                    ;; it wraps to the next line, it's like this char is three cells wide.
-                    (when (and (== incr 2) @(:wo_wrap (:w_options wp)) (< 1 (us-byte2len (.at p 0), false)) (in-win-border wp, vcol))
-                        ((ß incr =) (inc incr))
-                        (reset! a'head 1)
-                    )
-                ))
-
-                (if (and (some? posptr) (BLE posptr, p))  ;; character at pos.col
-                    (ß BREAK)
-                )
-
-                ((ß vcol =) (+ vcol incr))
-            )
-        )
-        :else
-        (do
-            ((ß FOR) (ß nil true ((ß p =) (.plus p (us-ptr2len-cc p))))
-                ;; A tab gets expanded, depending on the current column.
-                (reset! a'head 0)
-                ((ß incr =) (win-lbr-chartabsize wp, line, p, vcol, a'head))
-                ;; make sure we don't go past the end of the line
-                (when (eos? p)
-                    ((ß incr =) 1)       ;; NUL at end of line only takes one column
-                    (ß BREAK)
-                )
-
-                (if (and (some? posptr) (BLE posptr, p))  ;; character at pos.col
-                    (ß BREAK)
-                )
-
-                ((ß vcol =) (+ vcol incr))
-            )
-        ))
-        (if (some? a'start)
-            (reset! a'start (+ vcol @a'head))
-        )
-        (if (some? a'end)
-            (reset! a'end (dec (+ vcol incr)))
-        )
-        (when (some? a'cursor)
-            (cond (and (at? p TAB) (flag? @State NORMAL) (not (virtual-active)) (not (and @VIsual_active (or (at? @p_sel (byte \e)) (ltoreq pos, @VIsual)))))
-            (do
-                (reset! a'cursor (dec (+ vcol incr)))        ;; cursor at end
-            )
+(defn- #_void getvcol [#_window_C win, #_pos_C pos, #_int' a'start, #_int' a'cursor, #_int' a'end]
+    (let [lbr @(:wo_lbr (:w_options win)) bri @(:wo_bri (:w_options win)) wrap @(:wo_wrap (:w_options win))
+          #_Bytes line (ml-get (:lnum pos))
+          #_Bytes posp (if (== (:col pos) MAXCOL) nil (.plus line (:col pos)))
+          a'head (atom (int))
+          tabs- (fn [#_Bytes s, #_int col]
+                    (if (at? s TAB)
+                        (let [#_int ts (int @(:b_p_ts @curbuf))] (- ts (% col ts)))
+                        (let-when [#_int n (mb-ptr2cells s)] (and (== n 2) wrap (< 1 (us-byte2len (.at s 0), false)) (in-win-border win, col)) => n
+                            ;; If a double-cell char doesn't fit at eol, it wraps to the next line, like this char is three cells wide.
+                            (reset! a'head 1)
+                            (inc n))
+                    ))
+          ;; This function is used very often, do some speed optimizations.
+          ;; When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set use a simple loop.
+          ;; Also use this when 'list' is set but tabs take their normal size.
+          [#_int vcol #_int i #_Bytes p]
+            (cond (and (not lbr) (eos? @p_sbr) (not bri))
+                (loop [vcol 0 p line] (reset! a'head 0)
+                    ;; make sure we don't go past the end of the line
+                    (if (eos? p)
+                        [vcol 1 p]          ;; NUL at end of line only takes one column
+                        ;; A tab gets expanded, depending on the current column.
+                        (let [i (tabs- p, vcol)]
+                            (if (and (some? posp) (BLE posp, p))
+                                [vcol i p]
+                                (recur (+ vcol i) (.plus p (us-ptr2len-cc p)))))
+                    ))
             :else
-            (do
-                (reset! a'cursor (+ vcol @a'head))         ;; cursor at start
-            ))
-        )
-        nil
-    ))
+                (loop [vcol 0 p line] (reset! a'head 0)
+                    ;; A tab gets expanded, depending on the current column.
+                    (let [i (win-lbr-chartabsize win, line, p, vcol, a'head)]
+                        ;; make sure we don't go past the end of the line
+                        (cond (eos? p)
+                            [vcol 1 p]       ;; NUL at end of line only takes one column
+                        (and (some? posp) (BLE posp, p))
+                            [vcol i p]
+                        :else
+                            (recur (+ vcol i) (.plus p (us-ptr2len-cc p))))
+                    ))
+            )]
+        (when (some? a'start)  (reset! a'start (+ vcol @a'head)))
+        (when (some? a'end)    (reset! a'end (dec (+ vcol i))))
+        (when (some? a'cursor) (reset! a'cursor
+            (if (and (at? p TAB) (flag? @State NORMAL) (not (virtual-active)) (not (and @VIsual_active (or (at? @p_sel (byte \e)) (ltoreq pos, @VIsual)))))
+                (dec (+ vcol i))    ;; cursor at end
+                (+ vcol @a'head)    ;; cursor at start
+            )))
+    )
+    nil)
 
 ;; Get virtual cursor column in the current window, pretending 'list' is off.
 
@@ -38296,105 +38260,57 @@
 
 ;; Convert a string into a long and/or unsigned long, taking care of
 ;; hexadecimal and octal numbers.  Accepts a '-' sign.
-;; If "hexp" is not null, returns a flag to indicate the type of the number:
-;;  0       decimal
-;;  '0'     octal
-;;  'X'     hex
-;;  'x'     hex
-;; If "len" is not null, the length of the number in characters is returned.
-;; If "nptr" is not null, the signed result is returned in it.
-;; If "unptr" is not null, the unsigned result is returned in it.
-;; If "dooct" is non-zero recognize octal numbers, when > 1 always assume octal number.
-;; If "dohex" is non-zero recognize hex numbers, when > 1 always assume hex number.
+;; If "t" is not null, returns a flag to indicate the type of the number:
+;;  0           decimal
+;;  '0'         octal
+;;  'x' or 'X'  hexadecimal
+;; If "l" is not null, the length of the number in characters is returned.
+;; If "dooct" is true, recognize octal numbers.
+;; If "dohex" is true, recognize hex numbers.
+;; If "n" is not null, the signed result is returned in it.
 
-(defn- #_void vim-str2nr [#_Bytes start, #_int' a'hexp, #_int' a'len, #_int dooct, #_int dohex, #_long' a'nptr]
-    ;; hexp: return: type of number 0 = decimal, 'x' or 'X' is hex, '0' = octal
-    ;; len: return: detected length of number
-    ;; dooct: recognize octal number
-    ;; dohex: recognize hex number
-    ;; nptr: return: signed result
-    (§
-        ((ß Bytes ptr =) start)
-
-        ((ß boolean negative =) false)
-        (when (at? ptr (byte \-))
-            ((ß negative =) true)
-            ((ß ptr =) (.plus ptr 1))
-        )
-
-        ((ß int hex =) 0)                        ;; default is decimal
-
-        ;; Recognize hex and octal.
-        (when (and (at? ptr (byte \0)) (not-at? ptr 1 (byte \8)) (not-at? ptr 1 (byte \9)))
-            ((ß hex =) (.at ptr 1))
-            (cond (and (non-zero? dohex) (any == hex (byte \X) (byte \x)) (asc-isxdigit (.at ptr 2)))
-            (do
-                ((ß ptr =) (.plus ptr 2))          ;; hexadecimal
-            )
-            :else
-            (do
-                ((ß hex =) 0)                    ;; default is decimal
-                (when (non-zero? dooct)
-                    ;; Don't interpret "0", "08" or "0129" as octal.
-                    (loop-when-recur [#_int n 1] (asc-isdigit (.at ptr n)) [(inc n)]
-                        (when (< (byte \7) (.at ptr n))
-                            ((ß hex =) 0)        ;; can't be octal
-                            (ß BREAK)
-                        )
-                        (if (<= (byte \0) (.at ptr n))
-                            ((ß hex =) (byte \0))      ;; assume octal
-                        )
-                    )
-                )
-            ))
-        )
-
-        ((ß long nr =) 0)
-
-        ;; Do the string-to-numeric conversion "manually" to avoid sscanf quirks.
-
-        (cond (or (== hex (byte \0)) (< 1 dooct))
-        (do
-            ((ß FOR) (ß nil (asc-isodigit (.at ptr 0)) ((ß ptr =) (.plus ptr 1)))         ;; octal
-                ((ß long l =) (+ (* 8 nr) (long (- (.at ptr 0) (byte \0)))))
-                (if (< l nr)
-                    (ß BREAK)
-                )
-                ((ß nr =) l)
-            )
-        )
-        (or (non-zero? hex) (< 1 dohex))
-        (do
-            ((ß FOR) (ß nil (asc-isxdigit (.at ptr 0)) ((ß ptr =) (.plus ptr 1)))         ;; hex
-                ((ß long l =) (+ (* 16 nr) (long (hex2nr (.at ptr 0)))))
-                (if (< l nr)
-                    (ß BREAK)
-                )
-                ((ß nr =) l)
-            )
-        )
-        :else
-        (do
-            ((ß FOR) (ß nil (asc-isdigit (.at ptr 0)) ((ß ptr =) (.plus ptr 1)))          ;; decimal
-                ((ß long l =) (+ (* 10 nr) (long (- (.at ptr 0) (byte \0)))))
-                (if (< l nr)
-                    (ß BREAK)
-                )
-                ((ß nr =) l)
-            )
+(defn- #_void vim-str2nr [#_Bytes start, #_int' a't, #_int' a'l, #_boolean dooct, #_boolean dohex, #_long' a'n]
+    (let [#_boolean negative (at? start (byte \-))
+          #_Bytes s (if negative (.plus start 1) start)
+          ;; Recognize hex and octal.
+          [#_int x s]
+            (if (and (at? s (byte \0)) (not-at? s 1 (byte \8)) (not-at? s 1 (byte \9)))
+                (let [x (.at s 1)]
+                    (if (and dohex (any == x (byte \X) (byte \x)) (asc-isxdigit (.at s 2)))
+                        [x (.plus s 2)]                                                         ;; hexadecimal
+                        (if dooct
+                            ;; Don't interpret "0", "08" or "0129" as octal.
+                            (loop-when [x 0 #_int i 1] (asc-isdigit (.at s i)) => [x s]
+                                (if (< (byte \7) (.at s i))
+                                    [0 s]                                                       ;; can't be octal
+                                    (recur (if (<= (byte \0) (.at s i)) (byte \0) x) (inc i))   ;; assume octal
+                                ))
+                            [0 s])
+                    ))
+                [0 s]
+            )]
+        (let [[#_long nr s] ;; do the conversion "manually" to avoid sscanf quirks
+                (cond (== x (byte \0))                                              ;; octal
+                    (loop-when [nr 0 #_int i 0] (asc-isodigit (.at s i))
+                        (let [#_long a (+ (* 8 nr) (long (- (.at s i) (byte \0))))]
+                            (recur-if (<= nr a) [a (inc i)] => [nr (.plus s i)])
+                        ))
+                (non-zero? x)                                                       ;; hex
+                    (loop-when [nr 0 #_int i 0] (asc-isxdigit (.at s i))
+                        (let [#_long a (+ (* 16 nr) (long (hex2nr (.at s i))))]
+                            (recur-if (<= nr a) [a (inc i)] => [nr (.plus s i)])
+                        ))
+                :else                                                               ;; decimal
+                    (loop-when [nr 0 #_int i 0] (asc-isdigit (.at s i))
+                        (let [#_long a (+ (* 10 nr) (long (- (.at s i) (byte \0))))]
+                            (recur-if (<= nr a) [a (inc i)] => [nr (.plus s i)])
+                        ))
+                )]
+            (when (some? a't) (reset! a't x))
+            (when (some? a'l) (reset! a'l (BDIFF s, start)))
+            (when (some? a'n) (reset! a'n (if negative (- nr) nr))) ;; account for leading '-' for decimal numbers
         ))
-
-        (if (some? a'hexp)
-            (reset! a'hexp hex)
-        )
-        (if (some? a'len)
-            (reset! a'len (BDIFF ptr, start))
-        )
-        (when (some? a'nptr)
-            (reset! a'nptr (if negative (- nr) nr))               ;; account for leading '-' for decimal numbers
-        )
-        nil
-    ))
+    nil)
 
 ;; Return the value of a single hex character.
 ;; Only valid when the argument is '0' - '9', 'A' - 'F' or 'a' - 'f'.
