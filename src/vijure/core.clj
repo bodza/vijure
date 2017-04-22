@@ -7764,12 +7764,12 @@
           ca (let [#_int idx (find--command (:cmdchar ca))]
                 (cond (< idx 0)
                     (do ;; Not a known command: beep.
-                        (clearopbeep (:oap ca))
+                        (clearopbeep ca)
                         ca)
 
                 (and (text-locked) (flag? (:cmd_flags (... nv_cmds idx)) NV_NCW))
                     (do ;; This command is not allowed while editing a cmdline: beep.
-                        (clearopbeep (:oap ca))
+                        (clearopbeep ca)
                         (text-locked-msg)
                         ca)
 
@@ -7786,7 +7786,7 @@
                                         (if (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
                                             (let [ca (unshift-special ca) idx (find--command (:cmdchar ca))]
                                                 (if (< idx 0) ;; Just in case.
-                                                    (do (clearopbeep (:oap ca)) [ca idx :abort])
+                                                    (do (clearopbeep ca) [ca idx :abort])
                                                     [ca idx nil]
                                                 ))
                                             (do (when (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
@@ -7893,7 +7893,7 @@
                                 (reset! did_cursorhold false))
                             (reset! State NORMAL)
                             (if (== (:nchar ca) ESC)
-                                (do (clearop (:oap ca))
+                                (do (clearop ca)
                                     (when (and (zero? @restart_edit) (goto-im))
                                         (reset! restart_edit (byte \a)))
                                     ca)
@@ -7919,7 +7919,7 @@
                                       ca ((:cmd_func (... nv_cmds idx)) ca)
                                       ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
                                       _ (when (and (not @finish_op) (== (:op_type (:oap ca)) OP_NOP) (or (< idx 0) (non-flag? (:cmd_flags (... nv_cmds idx)) NV_KEEPREG)))
-                                            (clearop (:oap ca)))
+                                            (clearop ca))
                                       ;; If an operation is pending, handle it...
                                       ca (do-pending-operator ca, o'curswant)]
 
@@ -8417,7 +8417,7 @@
                                             )]
                                         [win cap oap])
 
-                                (do (clearopbeep oap) [win cap oap])
+                                (do (clearopbeep oap) [win cap oap])
                             )]
                         (reset! virtual_op MAYBE)
                         ;; If 'sol' not set, go back to old column for some commands.
@@ -8429,7 +8429,7 @@
                                         ))
                                     win)
                               oap (assoc oap :block_mode false)]
-                            (clearop oap)
+                            (clearop oap)
                             [win cap oap])
                     ))
             )]
@@ -8606,26 +8606,19 @@
 ;; Check for operator active and clear it.
 
 (defn- #_[cmdarg_C boolean] checkclearop? [#_cmdarg_C cap]
-    (if (== (:op_type (:oap cap)) OP_NOP) [cap false] (do (clearopbeep (:oap cap)) [cap true])))
+    (if (== (:op_type (:oap cap)) OP_NOP) [cap false] (do (clearopbeep cap) [cap true])))
 
 ;; Check for operator or Visual active.  Clear active operator.
 
 (defn- #_[cmdarg_C boolean] checkclearopq? [#_cmdarg_C cap]
-    (if (and (== (:op_type (:oap cap)) OP_NOP) (not @VIsual_active)) [cap false] (do (clearopbeep (:oap cap)) [cap true])))
+    (if (and (== (:op_type (:oap cap)) OP_NOP) (not @VIsual_active)) [cap false] (do (clearopbeep cap) [cap true])))
 
-(defn- #_void clearop [#_oparg_C oap]
-    (§
-        ((ß oap =) (assoc oap :op_type OP_NOP))
-        ((ß oap =) (assoc oap :regname 0))
-        ((ß oap =) (assoc oap :motion_force NUL))
-        ((ß oap =) (assoc oap :use_reg_one false))
-        nil
-    ))
+(defn- #_cmdarg_C clearop [#_cmdarg_C cap]
+    (update cap :oap assoc :op_type OP_NOP, :regname 0, :motion_force NUL, :use_reg_one false))
 
-(defn- #_void clearopbeep [#_oparg_C oap]
-    (clearop oap)
+(defn- #_cmdarg_C clearopbeep [#_cmdarg_C cap]
     (beep-flush)
-    nil)
+    (clearop cap))
 
 ;; Remove the shift modifier from a special key.
 
@@ -8857,7 +8850,7 @@
 ;; Command character doesn't exist.
 
 (defn- #_cmdarg_C nv-error [#_cmdarg_C cap]
-    (clearopbeep (:oap cap))
+    (clearopbeep cap)
     cap)
 
 ;; CTRL-A and CTRL-X: Add or subtract from letter or number under cursor.
@@ -9011,7 +9004,7 @@
                                 (asc-isdigit nchar)                               (recur (+ (* n 10) (- nchar (byte \0))))
                                 (== nchar CAR)                                    (do (win-setheight @curwin, n) [cap nil])
                                 (any == nchar (byte \l) (byte \h) K_LEFT K_RIGHT) [(update cap :count1 #(if (non-zero? n) (* n %) %)) nchar]
-                                :else                                             (do (clearopbeep (:oap cap)) [cap nil]))
+                                :else                                             (do (clearopbeep cap) [cap nil]))
                         ))
                     [cap nchar]
                 )] (some? nchar) => cap
@@ -9113,7 +9106,7 @@
                                     )]
                                 [win cap])
 
-                        (do (clearopbeep (:oap cap)) [win cap])
+                        (do (clearopbeep cap) [win cap])
                     )]
                 (do (reset! curwin win) cap)
             ))
@@ -9145,9 +9138,9 @@
                     (reset! restart_edit (if @p_im (byte \i) 0)))
                 (let [start (:op_start (:oap cap)) lmax (line-count @curbuf)]
                     (cond (not ?)
-                        (clearop (:oap cap)) ;; the Ex command failed, do not execute the operator
+                        (clearop cap) ;; the Ex command failed, do not execute the operator
                     (and (!= (:op_type (:oap cap)) OP_NOP) (or (< lmax (:lnum start)) (< (STRLEN (ml-get (:lnum start))) (:col start)) @did_emsg))
-                        (clearopbeep (:oap cap))) ;; the start of the operator has become invalid by the Ex command
+                        (clearopbeep cap)) ;; the start of the operator has become invalid by the Ex command
                 cap)
             ))
     ))
@@ -9197,7 +9190,7 @@
     (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
         (condp == (:nchar cap)
             (byte \Z) (do-cmdline-cmd (u8 "x")) ;; "ZZ": equivalent to ":x".
-            (clearopbeep (:oap cap)))
+            (clearopbeep cap))
         cap
     ))
 
@@ -9229,7 +9222,7 @@
                     (let [#_int type (if sea? (| FIND_IDENT FIND_STRING) FIND_IDENT)]
                         (reset! a'count (find-ident-under-cursor @curwin, a'ident, type))
                         (if (zero? @a'count)
-                            (do (clearop (:oap cap)) [cap :abort])
+                            (do (clearop cap) [cap :abort])
                             [cap nil]
                         ))
                     [cap nil]
@@ -9314,7 +9307,7 @@
     (if (!= (:lnum @VIsual_cursor) (:lnum (:w_cursor @curwin)))
         (do
             (when (some? cap)
-                (clearopbeep (:oap cap)))
+                (clearopbeep cap))
             false
         )
         (do
@@ -9472,7 +9465,7 @@
     :else
         (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
             (cond (not (let [[_ ?] (cursor-up? @curwin, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))] (reset! curwin _) ?))
-                (clearopbeep (:oap cap))
+                (clearopbeep cap)
             (non-zero? (:arg cap))
                 (swap! curwin beginline (| BL_WHITE BL_FIX))
             )
@@ -9490,7 +9483,7 @@
     :else
         (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
             (cond (not (let [[_ ?] (cursor-down? @curwin, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))] (reset! curwin _) ?))
-                (clearopbeep (:oap cap))
+                (clearopbeep cap)
             (non-zero? (:arg cap))
                 (swap! curwin beginline (| BL_WHITE BL_FIX))
             )
@@ -9513,7 +9506,7 @@
         (when (or (not (virtual-active)) (!= (gchar-cursor @curwin) NUL) nop)
             (swap! curwin assoc :w_curswant MAXCOL))     ;; so we stay at the end
         (when (not (let [[_ ?] (cursor-down? @curwin, (dec (:count1 cap)), nop)] (reset! curwin _) ?))
-            (clearopbeep (:oap cap)))
+            (clearopbeep cap))
         cap
     ))
 
@@ -9526,7 +9519,7 @@
         (let [cap (assoc cap :searchbuf (getcmdline (:cmdchar cap), (:count1 cap)))]
             (if (some? (:searchbuf cap))
                 (let [[cap _] (normal-search? cap, (:cmdchar cap), (:searchbuf cap), (if (zero? (:arg cap)) SEARCH_MARK 0))] cap)
-                (do (clearop (:oap cap)) cap)
+                (do (clearop cap) cap)
             ))
     ))
 
@@ -9554,7 +9547,7 @@
           _ (swap! curwin assoc :w_set_curswant true)
           #_int i (do-search (:oap cap), dirc, pat, (:count1 cap), (| opt SEARCH_OPT SEARCH_ECHO SEARCH_MSG), nil)
           cap (if (zero? i)
-                (do (clearop (:oap cap)) cap)
+                (do (clearop cap) cap)
                 (let [cap (if (== i 2) (assoc-in cap [:oap :motion_type] MLINE) cap)]
                     (swap! curwin assoc-in [:w_cursor :coladd] 0)
                     cap)
@@ -9571,7 +9564,7 @@
 (defn- #_cmdarg_C nv-csearch [#_cmdarg_C cap]
     (let [#_boolean t_cmd (any == (:cmdchar cap) (byte \t) (byte \T)) cap (assoc-in cap [:oap :motion_type] MCHAR)]
         (if (or (is-special (:nchar cap)) (not (searchc cap, t_cmd)))
-            (do (clearopbeep (:oap cap)) cap)
+            (do (clearopbeep cap) cap)
             (do (swap! curwin assoc :w_set_curswant true)
                 ;; Include a Tab for "tx" and for "dfx".
                 (swap! curwin assoc-in [:w_cursor :coladd]
@@ -9602,7 +9595,7 @@
                         (let [#_pos_C prior pos, pos (findmatchlimit (:oap cap), findc, dir, 0)]
                             (if (some? pos)
                                 (do (swap! curwin assoc :w_cursor pos) (recur pos (dec n)))
-                                (if (some? prior) prior (do (clearopbeep (:oap cap)) nil))
+                                (if (some? prior) prior (do (clearopbeep cap) nil))
                             ))
                     )]
                 (if (some? pos)
@@ -9654,7 +9647,7 @@
 
         ;; Not a valid cap.nchar.
 
-        :else (do (clearopbeep (:oap cap)) cap))
+        :else (do (clearopbeep cap) cap))
     ))
 
 ;; Handle Normal mode "%" command.
@@ -9664,7 +9657,7 @@
         (if (non-zero? (:count0 cap))
             ;; {cnt}% : goto {cnt} percentage in file
             (if (< 100 (:count0 cap))
-                (do (clearopbeep (:oap cap)) cap)
+                (do (clearopbeep cap) cap)
                 (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
                     (swap! curwin setpcmark)
                     (let [lmax (line-count @curbuf)]
@@ -9676,7 +9669,7 @@
             ;; "%" : go to matching paren
             (let [cap (update cap :oap assoc :motion_type MCHAR :use_reg_one true) #_pos_C pos (findmatch (:oap cap), NUL)]
                 (if (nil? pos)
-                    (do (clearopbeep (:oap cap)) cap)
+                    (do (clearopbeep cap) cap)
                     (do (swap! curwin setpcmark)
                         (swap! curwin assoc :w_cursor (assoc pos :coladd 0) :w_set_curswant true)
                         (let [[win cap] (adjust-for-sel @curwin, cap)] (reset! curwin win) cap)
@@ -9689,7 +9682,7 @@
 (defn- #_cmdarg_C nv-mark [#_cmdarg_C cap]
     (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
         (when (not (let [[_ ?] (set-mark? @curwin, (:w_cursor @curwin), (:nchar cap))] (reset! curwin _) ?))
-            (clearopbeep (:oap cap)))
+            (clearopbeep cap))
         cap
     ))
 
@@ -9723,7 +9716,7 @@
                 )]
             (cond (is-special (:nchar cap))
                 ;; Abort if the character is a special key.
-                (do (clearopbeep (:oap cap)) cap)
+                (do (clearopbeep cap) cap)
             @VIsual_active
                 ;; Visual mode "r".
                 (let [_ (when @got_int (reset-VIsual))
@@ -9749,7 +9742,7 @@
                     (let [#_Bytes s (ml-get-cursor @curwin)]
                         (cond (< (min (us-charlen s) (STRLEN s)) (:count1 cap))
                             ;; Abort if not enough characters to replace.
-                            (do (clearopbeep (:oap cap)) cap)
+                            (do (clearopbeep cap) cap)
 
                         (and (!= had_ctrl_v Ctrl_V) (== (:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
                             ;; Replacing with a TAB is done by edit() when it is complicated because
@@ -9883,7 +9876,7 @@
 (defn- #_cmdarg_C n-swapchar [#_cmdarg_C cap]
     (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
         (cond (and (lineempty (:lnum (:w_cursor @curwin))) (nil? (vim-strchr @p_ww, (byte \~))))
-            (do (clearopbeep (:oap cap)) cap)
+            (do (clearopbeep cap) cap)
         :else
             (do (prep-redo-cmd cap)
                 (if (not (u-save-cursor))
@@ -9922,7 +9915,7 @@
                 (swap! curwin beginline (| BL_WHITE BL_FIX))
                 (swap! curwin check-cursor)
             ))
-        (clearop (:oap cap)))
+        (clearop cap))
     (let [cap (update cap :oap assoc :motion_type (if flag MLINE MCHAR))
           cap (if (== (:cmdchar cap) (byte \`)) (update cap :oap assoc :use_reg_one true) cap)
           cap (update cap :oap assoc :inclusive false)] ;; ignored if not MCHAR
@@ -10025,7 +10018,7 @@
                             (< (:count1 cap) 0) (u8 "E662: At start of changelist")
                             :else (u8 "E663: At end of changelist")
                         ))
-                        (clearopbeep (:oap cap)))
+                        (clearopbeep cap))
                     cap)
             ))
     ))
@@ -10038,7 +10031,7 @@
             (if (and (!= (:nchar cap) NUL) (valid-yank-reg (:nchar cap), false))
                 (as-> (update cap :oap assoc :regname (:nchar cap)) cap
                       (assoc cap :opcount (:count0 cap))) ;; remember count before '"'
-                (do (clearopbeep (:oap cap)) cap)
+                (do (clearopbeep cap) cap)
             ))
     ))
 
@@ -10184,7 +10177,7 @@
 ;; CTRL-Z: Suspend
 
 (defn- #_cmdarg_C nv-suspend [#_cmdarg_C cap]
-    (clearop (:oap cap))
+    (clearop cap)
     (when @VIsual_active
         (swap! curwin end-visual-mode)) ;; stop Visual mode
     (do-cmdline-cmd (u8 "st"))
@@ -10275,7 +10268,7 @@
 
                [(byte \N) (byte \n)]
                     (do (when (not (current-search (:count1 cap), (== (:nchar cap) (byte \n))))
-                            (clearopbeep (:oap cap)))
+                            (clearopbeep cap))
                         [win cap])
 
                 ;; "gj" and "gk" two new funny movement keys -- up and down movement based on *screen* line rather than *file* line.
@@ -10289,7 +10282,7 @@
                                 (nv-screengo win, cap, FORWARD, (:count1 cap))
                             )]
                         (when (not ?)
-                            (clearopbeep (:oap cap)))
+                            (clearopbeep cap))
                         [win cap])
 
                [(byte \k) K_UP]
@@ -10301,7 +10294,7 @@
                                 (nv-screengo win, cap, BACKWARD, (:count1 cap))
                             )]
                         (when (not ?)
-                            (clearopbeep (:oap cap)))
+                            (clearopbeep cap))
                         [win cap])
 
                 ;; "gJ": join two lines without inserting a space.
@@ -10339,7 +10332,7 @@
                           win (assoc win :w_curswant MAXCOL)
                           [win ?] (cursor-down? win, (dec (:count1 cap)), (== (:op_type (:oap cap)) OP_NOP))]
                         (if (not ?)
-                            (do (clearopbeep (:oap cap)) [win cap])
+                            (do (clearopbeep cap) [win cap])
                             (let [s (ml-get (:lnum (:w_cursor win))) i (:col (:w_cursor win))
                                   ;; In Visual mode we may end up after the line.
                                   i (if (and (< 0 i) (eos? s i)) (dec i) i)
@@ -10372,7 +10365,7 @@
                                 :else
                                     (let [[win cap ?] (nv-screengo win, cap, FORWARD, (dec (:count1 cap)))]
                                         (when (not ?)
-                                            (clearopbeep (:oap cap)))
+                                            (clearopbeep cap))
                                         [win cap])
                                 ))
                             (let [i (dec (- (+ (:w_leftcol win) (:w_width win)) off))
@@ -10395,7 +10388,7 @@
                           win (assoc win :w_set_curswant true)
                           [win ?] (bckend-word? win, (:count1 cap), (== (:nchar cap) (byte \E)), false)]
                         (when (not ?)
-                            (clearopbeep (:oap cap)))
+                            (clearopbeep cap))
                         [win cap])
 
                 ;; "g CTRL-G": display info about cursor position.
@@ -10498,7 +10491,7 @@
                 K_IGNORE
                     [win cap]
 
-                (do (clearopbeep (:oap cap)) [win cap])
+                (do (clearopbeep cap) [win cap])
             )]
         (reset! curwin _)
         cap
@@ -10524,7 +10517,7 @@
         ;; If "restart_edit" is true, the last but one command is repeated instead of the last command (inserting text).
         ;; This is used for CTRL-O <.> in insert mode.
         (when (not (start-redo @curwin, (:count0 cap), (and (non-zero? @restart_edit) (not @arrow_used))))
-            (clearopbeep (:oap cap)))
+            (clearopbeep cap))
         cap
     ))
 
@@ -10579,7 +10572,7 @@
 (defn- #_cmdarg_C nv-lineop [#_cmdarg_C cap]
     (let [cap (update cap :oap assoc :motion_type MLINE) motion_force (:motion_force (:oap cap)) op_type (:op_type (:oap cap))]
         (cond (not (let [[_ ?] (cursor-down? @curwin, (dec (:count1 cap)), (== op_type OP_NOP))] (reset! curwin _) ?))
-            (clearopbeep (:oap cap))
+            (clearopbeep cap)
         ;; only with linewise motions
         (or (and (== op_type OP_DELETE) (!= motion_force (byte \v)) (!= motion_force Ctrl_V)) (== op_type OP_LSHIFT) (== op_type OP_RSHIFT))
             (swap! curwin beginline (| BL_SOL BL_FIX))
@@ -10617,7 +10610,7 @@
     (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive false)]
         (swap! curwin assoc :w_set_curswant true)
         (when (not (let [[_ ?] (bck-word? @curwin, (:count1 cap), (non-zero? (:arg cap)), false)] (reset! curwin _) ?))
-            (clearopbeep (:oap cap))
+            (clearopbeep cap)
         )
         cap
     ))
@@ -10663,7 +10656,7 @@
               [win cap] (if (ltpos o'cursor, (:w_cursor win)) (adjust-cursor win, cap) [win cap])
               [win cap]
                 (if (and (not ?) (== (:op_type (:oap cap)) OP_NOP))
-                    (do (clearopbeep (:oap cap)) [win cap])
+                    (do (clearopbeep cap) [win cap])
                     (adjust-for-sel win, cap)
                 )]
             (do (reset! curwin win) cap))
@@ -10746,7 +10739,7 @@
     (let [key (:nchar cap)]
         (if (any == key Ctrl_N Ctrl_G)
             (do
-                (clearop (:oap cap))
+                (clearop cap)
                 (if (and (non-zero? @restart_edit) @mode_displayed)
                     (reset! clear_cmdline true))               ;; unshow mode later
                 (reset! restart_edit 0)
@@ -10760,7 +10753,7 @@
                 (if (and (== key Ctrl_G) @p_im)
                     (reset! restart_edit (byte \a)))
             )
-            (clearopbeep (:oap cap))
+            (clearopbeep cap)
         )
         cap
     ))
@@ -10790,7 +10783,7 @@
                     (redraw-curbuf-later INVERTED)
                 )
                 no_reason (beep))
-            (clearop (:oap cap))
+            (clearop cap)
             ;; When 'insertmode' is set, return to Insert mode afterwards.
             (if (and (zero? @restart_edit) (goto-im))
                 (reset! restart_edit (byte \a)))
@@ -10884,7 +10877,7 @@
                 )]
             (reset! (:b_p_mps @curbuf) mps_save)
             (when-not ok
-                (clearopbeep (:oap cap)))
+                (clearopbeep cap))
             (swap! curwin adjust-cursor-col)
             (swap! curwin assoc :w_set_curswant true)
             cap
@@ -10903,7 +10896,7 @@
                     (do (stuff-char nchar) (stuff-char K_CMDWIN) cap)
                 ;; (stop) recording into a named register, unless executing a register
                 (and (not @execReg) (not (do-record nchar)))
-                    (do (clearopbeep (:oap cap)) cap)
+                    (do (clearopbeep cap) cap)
                 :else
                     cap)
             ))
@@ -10919,7 +10912,7 @@
             (loop-when cap (and (< 0 (:count1 cap)) (not @got_int)) => cap
                 (if (do-execreg (:nchar cap))
                     (do (slow-breakcheck) (recur (update cap :count1 dec)))
-                    (do (clearopbeep (:oap cap)) cap)
+                    (do (clearopbeep cap) cap)
                 ))
         )
     ))
@@ -10929,7 +10922,7 @@
 (defn- #_cmdarg_C nv-halfpage [#_cmdarg_C cap]
     (let [key (:cmdchar cap) lnum (:lnum (:w_cursor @curwin)) lmax (line-count @curbuf)]
         (cond (or (and (== key Ctrl_U) (== lnum 1)) (and (== key Ctrl_D) (== lnum lmax)))
-            (do (clearopbeep (:oap cap)) cap)
+            (do (clearopbeep cap) cap)
         :else
             (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
                 (swap! curwin halfpage (== key Ctrl_D), (:count0 cap))
@@ -10949,7 +10942,7 @@
                     (do (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
                         (swap! curwin do-join (:count0 cap), (== (:nchar cap) NUL), true, true)
                         cap)
-                    (do (clearopbeep (:oap cap)) cap) ;; beyond last line
+                    (do (clearopbeep cap) cap) ;; beyond last line
                 )
             )
         )
@@ -10959,7 +10952,7 @@
 
 (defn- #_cmdarg_C nv-put [#_cmdarg_C cap]
     (if (!= (:op_type (:oap cap)) OP_NOP)
-        (do (clearopbeep (:oap cap)) cap)
+        (do (clearopbeep cap) cap)
         (let [visual? @VIsual_active]
             (prep-redo-cmd cap)
             (let [#_int dir (if (or (== (:cmdchar cap) (byte \P)) (and (== (:cmdchar cap) (byte \g)) (== (:nchar cap) (byte \P)))) BACKWARD FORWARD)
