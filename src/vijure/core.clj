@@ -27888,43 +27888,13 @@
 ;; This function is used a lot for simple searches, keep it fast!
 
 (defn- #_Bytes cstrchr [#_Bytes s, #_int c]
-    (§
-        (if (not @ireg_ic)
-            ((ß RETURN) (vim-strchr s, c))
-        )
-
-        (ß int cc)
-        (cond (< 0x80 c)
-        (do
-            ((ß cc =) (utf-fold c))
-        )
-        (utf-isupper c)
-        (do
-            ((ß cc =) (utf-tolower c))
-        )
-        (utf-islower c)
-        (do
-            ((ß cc =) (utf-toupper c))
-        )
-        :else
-        (do
-            ((ß RETURN) (vim-strchr s, c))
-        ))
-
-        (loop-when-recur [#_Bytes p s] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
-            (cond (< 0x80 c)
-            (do
-                (if (== (utf-fold (us-ptr2char p)) cc)
-                    ((ß RETURN) p)
-                )
-            )
-            (or (at? p c) (at? p cc))
-            (do
-                ((ß RETURN) p)
-            ))
-        )
-
-        nil
+    (if @ireg_ic
+        (let-when [cc (cond (<= 0x80 c) (utf-fold c) (utf-isupper c) (utf-tolower c) (utf-islower c) (utf-toupper c))] (some? cc) => (vim-strchr s, c)
+            (loop-when [i 0] (non-eos? s i) => nil
+                (let-when [_ (cond (<= 0x80 c) (when (== (utf-fold (us-ptr2char s, i)) cc) i) (or (at? s i c) (at? s i cc)) i)] (nil? _) => (.plus s _)
+                    (recur (+ i (us-ptr2len-cc s, i)))
+                )))
+        (vim-strchr s, c)
     ))
 
 ;; regsub stuff
@@ -28815,36 +28785,12 @@
 ;; Otherwise return null.
 
 (defn- #_Bytes nfa-get-match-text [#_nfa_state_C start]
-    (§
-        ((ß nfa_state_C p =) start)
-        (if (!= (:c p) NFA_MOPEN)
-            ((ß RETURN) nil)                ;; just in case
-        )
-        ((ß p =) (.out0 p))
-
-        ((ß int len =) 0)
-        (loop-when [] (< 0 (:c p))
-            ((ß len =) (+ len (utf-char2len (:c p))))
-            ((ß p =) (.out0 p))
-            (recur)
-        )
-
-        (if (or (!= (:c p) NFA_MCLOSE) (!= (.. p (out0) c) NFA_MATCH))
-            ((ß RETURN) nil)
-        )
-
-        ((ß Bytes ret =) (Bytes. len))
-
-        ((ß p =) (.. start (out0) (out0)))    ;; skip first char, it goes into regstart
-        ((ß Bytes s =) ret)
-        (loop-when [] (< 0 (:c p))
-            ((ß s =) (.plus s (utf-char2bytes (:c p), s)))
-            ((ß p =) (.out0 p))
-            (recur)
-        )
-        (eos! s)
-
-        ret
+    (let-when [p start] (== (:c p) NFA_MOPEN) => nil
+        (let-when [[n p] (loop-when-recur [n 0 p (.out0 p)] (< 0 (:c p)) [(+ n (utf-char2len (:c p))) (.out0 p)] => [n p])]
+                  (and (== (:c p) NFA_MCLOSE) (== (.. p (out0) c) NFA_MATCH)) => nil
+            (let [q (Bytes. n) ;; skip first char, it goes into regstart
+                  _ (loop-when-recur [s q p (.. start (out0) (out0))] (< 0 (:c p)) [(.plus s (utf-char2bytes (:c p), s)) (.out0 p)] => (eos! s))]
+            q))
     ))
 
 ;; Allocate more space for post_array.
@@ -36515,25 +36461,17 @@
 
 (defn- #_int find-next-quote [#_Bytes line, #_int col, #_int quotechar, #_Bytes escape]
     ;; escape: escape characters, can be null
-    (§
-        (loop []
-            ((ß int c =) (.at line col))
+    (loop [i col]
+        (let [c (.at line i)]
             (cond (== c NUL)
-            (do
-                ((ß RETURN) -1)
-            )
+                -1
             (and (some? escape) (some? (vim-strchr escape, c)))
-            (do
-                ((ß col =) (inc col))
-            )
+                (let [i (inc i)] (recur (+ i (us-ptr2len-cc line, i))))
             (== c quotechar)
-            (do
-                (ß BREAK)
+                i
+            :else
+                (recur (+ i (us-ptr2len-cc line, i)))
             ))
-            ((ß col =) (+ col (us-ptr2len-cc line, col)))
-            (recur)
-        )
-        col
     ))
 
 ;; Search backwards in "line" from column "col_start" to find "quotechar".
@@ -36542,30 +36480,14 @@
 
 (defn- #_int find-prev-quote [#_Bytes line, #_int col_start, #_int quotechar, #_Bytes escape]
     ;; escape: escape characters, can be null
-    (§
-        (ß int n)
-
-        (loop-when [] (< 0 col_start)
-            ((ß col_start =) (dec col_start))
-            ((ß col_start =) (- col_start (us-head-off line, (.plus line col_start))))
-            ((ß n =) 0)
-            (when (some? escape)
-                (loop-when [] (and (< 0 (- col_start n)) (!= (vim-strchr escape, (.at line (- col_start n 1))) nil))
-                    ((ß n =) (inc n))
-                    (recur)
-                )
-            )
-            (cond (non-zero? (& n 1))
-            (do
-                ((ß col_start =) (- col_start n))     ;; uneven number of escape chars, skip it
-            )
-            (at? line col_start quotechar)
-            (do
-                (ß BREAK)
+    (loop-when [i col_start] (< 0 i) => i
+        (let [i (dec i) i (- i (us-head-off line, (.plus line i)))
+              n (if (some? escape) (loop-when-recur [n 0] (and (< 0 (- i n)) (some? (vim-strchr escape, (.at line (- i n 1))))) [(inc n)] => n) 0)]
+            (cond
+                (non-zero? (& n 1)) (recur (- i n)) ;; uneven number of escape chars, skip it
+                (at? line i quotechar) i
+                :else (recur i)
             ))
-            (recur)
-        )
-        col_start
     ))
 
 ;; Find quote under the cursor, cursor at end.
@@ -39242,102 +39164,64 @@
 ;; handle digraphs after typing a character
 
 (defn- #_int do-digraph [#_int c]
-    (§
-        (cond (== c -1)                ;; init values
-        (do
-            (reset! backspaced -1)
-        )
-        @p_dg
-        (do
-            ((ß c =) (if (<= 0 @backspaced) (getdigraph @backspaced, c, false) c))
-            (reset! backspaced -1)
-            (when (and (any == c K_BS Ctrl_H) (<= 0 @lastchar))
-                (reset! backspaced @lastchar))
-        ))
+    (let [c (cond (== c -1)
+                (do (reset! backspaced -1) c)
+            @p_dg
+                (let [c (if (<= 0 @backspaced) (getdigraph @backspaced, c, false) c)]
+                    (reset! backspaced -1)
+                    (when (and (any == c K_BS Ctrl_H) (<= 0 @lastchar))
+                        (reset! backspaced @lastchar))
+                    c)
+            :else c)]
         (reset! lastchar c)
-        c
-    ))
+    c))
 
 ;; Get a digraph.  Used after typing CTRL-K on the command line or in normal mode.
 ;; Returns composed character, or NUL when ESC was used.
 
 (defn- #_int get-digraph [#_boolean cmdline]
     ;; cmdline: true when called from the cmdline
-    (§
-        (swap! no_mapping inc)
-        (swap! allow_keys inc)
-        ((ß int c =) (plain-vgetc))
-        (swap! no_mapping dec)
-        (swap! allow_keys dec)
-        (when (!= c ESC)               ;; ESC cancels CTRL-K
-            (if (is-special c)      ;; insert special key code
-                ((ß RETURN) c)
-            )
-            (cond cmdline
-            (do
-                (if (== (mb-char2cells c) 1)
-                    (putcmdline c, true))
-            )
-            :else
-            (do
-                (add-to-showcmd c)
-            ))
-            (swap! no_mapping inc)
-            (swap! allow_keys inc)
-            ((ß int cc =) (plain-vgetc))
-            (swap! no_mapping dec)
-            (swap! allow_keys dec)
-            (if (!= cc ESC)      ;; ESC cancels CTRL-K
-                ((ß RETURN) (getdigraph c, cc, true))
-            )
-        )
-        NUL
+    (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) c1 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+        (cond (== c1 ESC)           ;; ESC cancels CTRL-K
+            NUL
+        (is-special c1)             ;; insert special key code
+            c1
+        :else
+        (do
+            (if cmdline
+                (when (== (mb-char2cells c1) 1) (putcmdline c1, true))
+                (add-to-showcmd c1))
+            (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) c2 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+                (if (== c2 ESC)     ;; ESC cancels CTRL-K
+                    NUL
+                    (getdigraph c1, c2, true)
+                ))
+        ))
     ))
 
 ;; Lookup the pair "char1", "char2" in the digraph tables.
 ;; If no match, return "char2".
-;; If "meta_char" is true and "char1" is a space, return "char2" | 0x80.
+;; If "meta?" is true and "char1" is a space, return "char2" | 0x80.
 
-(defn- #_int getexactdigraph [#_int char1, #_int char2, #_boolean meta_char]
-    (§
-        ((ß int retval =) 0)
-
-        (if (or (is-special char1) (is-special char2))
-            ((ß RETURN) char2)
-        )
-
-        ((ß digr_C[] dgs =) digraphdefault)
-        (dotimes [#_int i (:length dgs)]
-            (when (and (== (int (:char1 (... dgs i))) char1) (== (int (:char2 (... dgs i))) char2))
-                ((ß retval =) (:result (... dgs i)))
-                (ß BREAK)
-            )
-        )
-
-        (when (zero? retval)            ;; digraph deleted or not found
-            (if (and (== char1 (byte \space)) meta_char)  ;; <space> <char> --> meta-char
-                ((ß RETURN) (| char2 0x80))
-            )
-
-            ((ß RETURN) char2)
-        )
-
-        retval
+(defn- #_int getexactdigraph [#_int char1, #_int char2, #_boolean meta?]
+    (if (or (is-special char1) (is-special char2))
+        char2
+        (let [n (:length digraphdefault)
+              x (loop-when [i 0] (< i n) => 0
+                    (let [y (... digraphdefault i)] (if (and (== (int (:char1 y)) char1) (== (int (:char2 y)) char2)) (:result y) (recur (inc i))))
+                )]
+            ;; digraph deleted or not found ;; <space> <char> --> meta-char
+            (if (zero? x) (if (and (== char1 (byte \space)) meta?) (| char2 0x80) char2) x))
     ))
 
 ;; Get digraph.
 ;; Allow for both char1-char2 and char2-char1
 
-(defn- #_int getdigraph [#_int char1, #_int char2, #_boolean meta_char]
-    (§
-        (ß int retval)
-
-        (when (and (== ((ß retval =) (getexactdigraph char1, char2, meta_char)) char2) (!= char1 char2) (== ((ß retval =) (getexactdigraph char2, char1, meta_char)) char1))
-            ((ß RETURN) char2)
-        )
-
-        retval
-    ))
+(defn- #_int getdigraph [#_int char1, #_int char2, #_boolean meta?]
+    (let-when [x (getexactdigraph char1, char2, meta?)] (and (== x char2) (!= char1 char2)) => x
+        (let-when [x (getexactdigraph char2, char1, meta?)] (== x char1) => x
+            char2
+        )))
 
 ;; mbyte.c: Code specifically for handling multi-byte characters.
 ;;
@@ -39422,31 +39306,15 @@
     ))
 
 (defn- #_boolean intable [#_int* table, #_int c]
-    (§
-        ;; first quick check for Latin1 etc. characters
-        (if (< c (... table 0))
-            ((ß RETURN) false)
-        )
-
-        ;; binary search in table
-        (loop-when [#_int bot 0 #_int top (dec (/ (:length table) 2))] (<= bot top)
-            ((ß int mid =) (/ (+ bot top) 2))
-            (cond (< (... table (inc (* 2 mid))) c)
-            (do
-                ((ß bot =) (inc mid))
-            )
-            (< c (... table (* 2 mid)))
-            (do
-                ((ß top =) (dec mid))
-            )
-            :else
-            (do
-                ((ß RETURN) true)
-            ))
-            (recur bot top)
-        )
-
+    (if (< c (... table 0))
         false
+        (loop-when [bot 0 top (dec (/ (:length table) 2))] (<= bot top) => false
+            (let [mid (/ (+ bot top) 2)]
+                (cond
+                    (<   (... table (inc (* 2 mid))) c) (recur (inc mid) top)
+                    (< c (... table      (* 2 mid)))    (recur bot (dec mid))
+                    :else true)
+            ))
     ))
 
 ;; Sorted list of non-overlapping intervals of East Asian double width characters,
@@ -39676,31 +39544,13 @@
 ;; Is only correct for characters >= 0x80.
 
 (defn- #_int utf-char2cells [#_int c]
-    (§
-        (when (<= 0x80 c)
-            ;; Characters below 0x100 are influenced by 'isprint' option.
-            (cond (< c 0x100)
-            (do
-                (if (not (vim-isprintc c))
-                    ((ß RETURN) 4)                           ;; unprintable, displays <xx>
-                )
-            )
-            :else
-            (do
-                (if (not (utf-printable c))
-                    ((ß RETURN) 6)                           ;; unprintable, displays <xxxx>
-                )
-                (if (intable doublewidth, c)
-                    ((ß RETURN) 2)
-                )
-            ))
-
-            (if (and (ß hamis) (intable ambiguous, c))
-                ((ß RETURN) 2)
-            )
-        )
-
-        1
+    (let [miez? false
+          _ (when (<= 0x80 c)
+                ;; chars below 0x100 are influenced by 'isprint' ;; 4: unprintable, displays <xx> ;; 6: unprintable, displays <xxxx>
+                (let [_ (if (< c 0x100) (when (not (vim-isprintc c)) 4) (cond (not (utf-printable c)) 6 (intable doublewidth, c) 2))]
+                    (if (some? _) _ (when (and miez? (intable ambiguous, c)) 2)))
+            )]
+        (if (some? _) _ 1)
     ))
 
 (defn- us-ptr2cells
@@ -40352,39 +40202,15 @@
 ;;  2 or bigger: some class of word character.
 
 (defn- #_int utf-class [#_int c]
-    (§
-        ;; First quick check for Latin1 characters, use 'iskeyword'.
-        (when (< c 0x100)
-            (if (any == c (byte \space) TAB NUL 0xa0)
-                ((ß RETURN) 0)       ;; blank
-            )
-            (if (vim-iswordc c)
-                ((ß RETURN) 2)       ;; word character
-            )
-
-            ((ß RETURN) 1)           ;; punctuation
-        )
-
-        ;; binary search in table
-        (loop-when [#_int bot 0 #_int top (dec (/ (:length classes) 3))] (<= bot top)
-            ((ß int mid =) (/ (+ bot top) 2))
-            (cond (< (... classes (inc (* 3 mid))) c)
-            (do
-                ((ß bot =) (inc mid))
-            )
-            (< c (... classes (* 3 mid)))
-            (do
-                ((ß top =) (dec mid))
-            )
-            :else
-            (do
-                ((ß RETURN) (... classes (+ (* 3 mid) 2)))
-            ))
-            (recur bot top)
-        )
-
-        ;; most other characters are "word" characters
-        2
+    (if (< c 0x100) ;; first quick check for Latin1 characters, use 'iskeyword'
+        (cond (any == c (byte \space) TAB NUL 0xa0) 0 (vim-iswordc c) 2 :else 1)    ;; blank ;; word character ;; punctuation
+        (loop-when [bot 0 top (dec (/ (:length classes) 3))] (<= bot top) => 2      ;; most other characters are "word" characters
+            (let [mid (/ (+ bot top) 2)]
+                (cond
+                    (<    (... classes (inc (* 3 mid))) c) (recur (inc mid) top)
+                    (< c  (... classes      (* 3 mid)))    (recur bot (dec mid))
+                    :else (... classes (+   (* 3 mid) 2))
+                )))
     ))
 
 ;; Code for Unicode case-dependent operations.  Based on notes in
