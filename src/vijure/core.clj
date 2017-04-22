@@ -1094,7 +1094,6 @@
 
 ;; flags for check_changed()
 
-(final int CCGD_AW         1)       ;; do autowrite if buffer was changed
 (final int CCGD_MULTWIN    2)       ;; check also when several wins for the buf
 (final int CCGD_FORCEIT    4)       ;; ! used
 (final int CCGD_ALLBUF     8)       ;; may write all buffers
@@ -1258,7 +1257,7 @@
 
 ;; option.h: definition of global variables for settable options
 
-;; Default values for "b_p_ff" 'fileformat' and "p_ffs" 'fileformats'.
+;; Default values for "b_p_ff" 'fileformat'.
 (final Bytes FF_DOS       (u8 "dos"))
 (final Bytes FF_MAC       (u8 "mac"))
 (final Bytes FF_UNIX      (u8 "unix"))
@@ -1487,8 +1486,6 @@
 
 (atom! long    p_aleph)     ;; 'aleph'
 (atom! Bytes   p_ambw)      ;; 'ambiwidth'
-(atom! boolean p_aw)        ;; 'autowrite'
-(atom! boolean p_awa)       ;; 'autowriteall'
 (atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_bg)        ;; 'background'
 (atom! Bytes   p_breakat)   ;; 'breakat'
@@ -1512,9 +1509,6 @@
 (atom! Bytes   p_ep)        ;; 'equalprg'
 (atom! boolean p_eb)        ;; 'errorbells'
 (atom! boolean p_ek)        ;; 'esckeys'
-(atom! boolean p_exrc)      ;; 'exrc'
-(atom! Bytes   p_fencs)     ;; 'fileencodings'
-(atom! Bytes   p_ffs)       ;; 'fileformats'
 (atom! boolean p_fs)        ;; 'fsync'
 (atom! boolean p_gd)        ;; 'gdefault'
 (atom! boolean p_prompt)    ;; 'prompt'
@@ -1656,7 +1650,7 @@
     BV_EOL   12,
     BV_EP    13,
     BV_ET    14,
-    BV_FENC  15,
+
 
     BV_FF    17,
     BV_FLP   18,
@@ -1685,7 +1679,7 @@
     BV_SW    41,
     BV_TS    42,
     BV_TW    43,
-    BV_TX    44,
+
     BV_UDF   45,
     BV_UL    46,
     BV_WM    47)
@@ -2646,7 +2640,6 @@
         (atom' boolean      b_p_eol)            ;; 'endofline'
         (atom' boolean      b_p_et)             ;; 'expandtab'
         (field boolean      b_p_et_nobin)       ;; "b_p_et" saved for binary mode
-        (atom' Bytes        b_p_fenc)           ;; 'fileencoding'
         (atom' Bytes        b_p_ff)             ;; 'fileformat'
         (atom' Bytes        b_p_fo)             ;; 'formatoptions'
         (atom' Bytes        b_p_flp)            ;; 'formatlistpat'
@@ -2666,7 +2659,6 @@
         (field long         b_p_sts_nopaste)    ;; "b_p_sts" saved for paste mode
         (atom' long         b_p_smc)            ;; 'synmaxcol'
         (atom' long         b_p_ts)             ;; 'tabstop'
-        (atom' boolean      b_p_tx)             ;; 'textmode'
         (atom' long         b_p_tw)             ;; 'textwidth'
         (field long         b_p_tw_nobin)       ;; "b_p_tw" saved for binary mode
         (field long         b_p_tw_nopaste)     ;; "b_p_tw" saved for paste mode
@@ -2723,7 +2715,6 @@
 
 ; %%    (field boolean      b_start_eol)        ;; last line had eol when it was read
 ; %%    (field int          b_start_ffc)        ;; first char of 'ff' when edit started
-; %%    (field Bytes        b_start_fenc)       ;; 'fileencoding' when edit started or null
 ; %%    (field int          b_bad_char)         ;; "++bad=" argument when edit started or 0
 ; %%    (field boolean      b_start_bomb)       ;; 'bomb' when it was read
 
@@ -3245,181 +3236,166 @@
     CMD_cnoremap 29,
     CMD_cnoreabbrev 30,
     CMD_copy 31,
-    CMD_cquit 32,
-    CMD_cunmap 33,
-    CMD_cunabbrev 34,
-    CMD_delete 35,
-    CMD_delmarks 36,
-    CMD_display 37,
-    CMD_digraphs 38,
-    CMD_edit 39,
-    CMD_earlier 40,
-    CMD_enew 41,
-    CMD_ex 42,
-    CMD_exit 43,
-    CMD_fixdel 44,
-    CMD_global 45,
-    CMD_goto 46,
-    CMD_hide 47,
-    CMD_history 48,
-    CMD_insert 49,
-    CMD_iabbrev 50,
-    CMD_iabclear 51,
-    CMD_imap 52,
-    CMD_imapclear 53,
-    CMD_inoremap 54,
-    CMD_inoreabbrev 55,
-    CMD_iunmap 56,
-    CMD_iunabbrev 57,
-    CMD_join 58,
-    CMD_jumps 59,
-    CMD_k 60,
-    CMD_keepmarks 61,
-    CMD_keepjumps 62,
-    CMD_keeppatterns 63,
-    CMD_keepalt 64,
-    CMD_list 65,
-    CMD_later 66,
-    CMD_left 67,
-    CMD_leftabove 68,
-    CMD_lmap 69,
-    CMD_lmapclear 70,
-    CMD_lnoremap 71,
-    CMD_lockmarks 72,
-    CMD_lunmap 73,
-    CMD_move 74,
-    CMD_mark 75,
-    CMD_map 76,
-    CMD_mapclear 77,
-    CMD_marks 78,
-    CMD_messages 79,
-    CMD_mode 80,
-    CMD_new 81,
-    CMD_nmap 82,
-    CMD_nmapclear 83,
-    CMD_nnoremap 84,
-    CMD_noremap 85,
-    CMD_nohlsearch 86,
-    CMD_noreabbrev 87,
-    CMD_normal 88,
-    CMD_number 89,
-    CMD_nunmap 90,
-    CMD_open 91,
-    CMD_omap 92,
-    CMD_omapclear 93,
-    CMD_only 94,
-    CMD_onoremap 95,
-    CMD_ounmap 96,
-    CMD_print 97,
-    CMD_put 98,
-    CMD_quit 99,
-    CMD_quitall 100,
-    CMD_qall 101,
-    CMD_read 102,
-    CMD_redo 103,
-    CMD_redraw 104,
-    CMD_redrawstatus 105,
-    CMD_registers 106,
-    CMD_resize 107,
-    CMD_retab 108,
-    CMD_right 109,
-    CMD_rightbelow 110,
-    CMD_rundo 111,
-    CMD_substitute 112,
-    CMD_sandbox 113,
-    CMD_saveas 114,
-    CMD_sbuffer 115,
-    CMD_sbNext 116,
-    CMD_sball 117,
-    CMD_sbfirst 118,
-    CMD_sblast 119,
-    CMD_sbmodified 120,
-    CMD_sbnext 121,
-    CMD_sbprevious 122,
-    CMD_sbrewind 123,
-    CMD_set 124,
-    CMD_setglobal 125,
-    CMD_setlocal 126,
-    CMD_silent 127,
-    CMD_smagic 128,
-    CMD_smap 129,
-    CMD_smapclear 130,
-    CMD_snomagic 131,
-    CMD_snoremap 132,
-    CMD_split 133,
-    CMD_stop 134,
-    CMD_startinsert 135,
-    CMD_startgreplace 136,
-    CMD_startreplace 137,
-    CMD_stopinsert 138,
-    CMD_sunhide 139,
-    CMD_sunmap 140,
-    CMD_suspend 141,
-    CMD_sview 142,
-    CMD_syncbind 143,
-    CMD_t 144,
-    CMD_tab 145,
-    CMD_tabclose 146,
-    CMD_tabedit 147,
-    CMD_tabfirst 148,
-    CMD_tabmove 149,
-    CMD_tablast 150,
-    CMD_tabnext 151,
-    CMD_tabnew 152,
-    CMD_tabonly 153,
-    CMD_tabprevious 154,
-    CMD_tabNext 155,
-    CMD_tabrewind 156,
-    CMD_tabs 157,
-    CMD_topleft 158,
-    CMD_undo 159,
-    CMD_undojoin 160,
-    CMD_undolist 161,
-    CMD_unabbreviate 162,
-    CMD_unhide 163,
-    CMD_unmap 164,
-    CMD_unsilent 165,
-    CMD_update 166,
-    CMD_vglobal 167,
-    CMD_verbose 168,
-    CMD_vertical 169,
-    CMD_visual 170,
-    CMD_view 171,
-    CMD_vmap 172,
-    CMD_vmapclear 173,
-    CMD_vnoremap 174,
-    CMD_vnew 175,
-    CMD_vsplit 176,
-    CMD_vunmap 177,
-    CMD_write 178,
-    CMD_wall 179,
-    CMD_wincmd 180,
-    CMD_wq 181,
-    CMD_wqall 182,
-    CMD_wundo 183,
-    CMD_xit 184,
-    CMD_xall 185,
-    CMD_xmap 186,
-    CMD_xmapclear 187,
-    CMD_xnoremap 188,
-    CMD_xunmap 189,
-    CMD_yank 190,
-    CMD_z 191,
+    CMD_cunmap 32,
+    CMD_cunabbrev 33,
+    CMD_delete 34,
+    CMD_delmarks 35,
+    CMD_display 36,
+    CMD_digraphs 37,
+    CMD_edit 38,
+    CMD_earlier 39,
+    CMD_enew 40,
+    CMD_ex 41,
+    CMD_fixdel 42,
+    CMD_global 43,
+    CMD_goto 44,
+    CMD_hide 45,
+    CMD_history 46,
+    CMD_insert 47,
+    CMD_iabbrev 48,
+    CMD_iabclear 49,
+    CMD_imap 50,
+    CMD_imapclear 51,
+    CMD_inoremap 52,
+    CMD_inoreabbrev 53,
+    CMD_iunmap 54,
+    CMD_iunabbrev 55,
+    CMD_join 56,
+    CMD_jumps 57,
+    CMD_k 58,
+    CMD_keepmarks 59,
+    CMD_keepjumps 60,
+    CMD_keeppatterns 61,
+    CMD_keepalt 62,
+    CMD_list 63,
+    CMD_later 64,
+    CMD_left 65,
+    CMD_leftabove 66,
+    CMD_lmap 67,
+    CMD_lmapclear 68,
+    CMD_lnoremap 69,
+    CMD_lockmarks 70,
+    CMD_lunmap 71,
+    CMD_move 72,
+    CMD_mark 73,
+    CMD_map 74,
+    CMD_mapclear 75,
+    CMD_marks 76,
+    CMD_messages 77,
+    CMD_mode 78,
+    CMD_new 79,
+    CMD_nmap 80,
+    CMD_nmapclear 81,
+    CMD_nnoremap 82,
+    CMD_noremap 83,
+    CMD_nohlsearch 84,
+    CMD_noreabbrev 85,
+    CMD_normal 86,
+    CMD_number 87,
+    CMD_nunmap 88,
+    CMD_open 89,
+    CMD_omap 90,
+    CMD_omapclear 91,
+    CMD_only 92,
+    CMD_onoremap 93,
+    CMD_ounmap 94,
+    CMD_print 95,
+    CMD_put 96,
+    CMD_quit 97,
+    CMD_quitall 98,
+    CMD_qall 99,
+    CMD_redo 100,
+    CMD_redraw 101,
+    CMD_redrawstatus 102,
+    CMD_registers 103,
+    CMD_resize 104,
+    CMD_retab 105,
+    CMD_right 106,
+    CMD_rightbelow 107,
+    CMD_rundo 108,
+    CMD_substitute 109,
+    CMD_sandbox 110,
+    CMD_sbuffer 111,
+    CMD_sbNext 112,
+    CMD_sball 113,
+    CMD_sbfirst 114,
+    CMD_sblast 115,
+    CMD_sbmodified 116,
+    CMD_sbnext 117,
+    CMD_sbprevious 118,
+    CMD_sbrewind 119,
+    CMD_set 120,
+    CMD_setglobal 121,
+    CMD_setlocal 122,
+    CMD_silent 123,
+    CMD_smagic 124,
+    CMD_smap 125,
+    CMD_smapclear 126,
+    CMD_snomagic 127,
+    CMD_snoremap 128,
+    CMD_split 129,
+    CMD_stop 130,
+    CMD_startinsert 131,
+    CMD_startgreplace 132,
+    CMD_startreplace 133,
+    CMD_stopinsert 134,
+    CMD_sunhide 135,
+    CMD_sunmap 136,
+    CMD_suspend 137,
+    CMD_sview 138,
+    CMD_syncbind 139,
+    CMD_t 140,
+    CMD_tab 141,
+    CMD_tabclose 142,
+    CMD_tabedit 143,
+    CMD_tabfirst 144,
+    CMD_tabmove 145,
+    CMD_tablast 146,
+    CMD_tabnext 147,
+    CMD_tabnew 148,
+    CMD_tabonly 149,
+    CMD_tabprevious 150,
+    CMD_tabNext 151,
+    CMD_tabrewind 152,
+    CMD_tabs 153,
+    CMD_topleft 154,
+    CMD_undo 155,
+    CMD_undojoin 156,
+    CMD_undolist 157,
+    CMD_unabbreviate 158,
+    CMD_unhide 159,
+    CMD_unmap 160,
+    CMD_unsilent 161,
+    CMD_vglobal 162,
+    CMD_verbose 163,
+    CMD_vertical 164,
+    CMD_visual 165,
+    CMD_view 166,
+    CMD_vmap 167,
+    CMD_vmapclear 168,
+    CMD_vnoremap 169,
+    CMD_vnew 170,
+    CMD_vsplit 171,
+    CMD_vunmap 172,
+    CMD_wincmd 173,
+    CMD_wundo 174,
+    CMD_xmap 175,
+    CMD_xmapclear 176,
+    CMD_xnoremap 177,
+    CMD_xunmap 178,
+    CMD_yank 179,
+    CMD_z 180,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_bang 192,
-    CMD_pound 193,
-    CMD_and 194,
-    CMD_star 195,
-    CMD_lshift 196,
-    CMD_equal 197,
-    CMD_rshift 198,
-    CMD_at 199,
-    CMD_Print 200,
-    CMD_tilde 201,
+    CMD_pound 181,
+    CMD_and 182,
+    CMD_lshift 183,
+    CMD_equal 184,
+    CMD_rshift 185,
+    CMD_tilde 186,
 
-    CMD_SIZE 202)     ;; MUST be after all real commands!
+    CMD_SIZE 187)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3440,8 +3416,6 @@
         (field int          flags)          ;; extra flags after count: EXFLAG_
         (field Bytes        do_ecmd_cmd)    ;; +command arg to be used in edited file
         (field long         do_ecmd_lnum)   ;; the line number in an edited file
-        (field boolean      append)         ;; true with ":w >>file" command
-        (field boolean      usefilter)      ;; true with ":w !command" and ":r!command"
         (field int          amount)         ;; number of '>' or '<' for shift command
         (field int          regname)        ;; register name (NUL if none)
         (field int          force_bin)      ;; 0, FORCE_BIN or FORCE_NOBIN
@@ -4319,7 +4293,7 @@
         ;; Using autocommands here may cause trouble...
 
 ;       if (params.edit_type == EDIT_STDIN)
-;           read_stdin();
+;           read_stdin();
 
         ;; When switching screens and something caused a message from a vimrc script,
         ;; need to output an extra newline on exit.
@@ -4367,10 +4341,6 @@
         ;; If opened more than one window, start editing files in the other windows.
 
 ;       edit_buffers(params);
-
-        ;; Shorten any of the filenames, but only when absolute.
-
-;       shorten_fnames(false);
 
 ;       @redrawingDisabled = 0;
 ;       redraw_all_later(NOT_VALID);
@@ -4420,7 +4390,7 @@
 ;           {
 ;               @did_check_timestamps = false;
 ;               if (@need_check_timestamps)
-;                   check_timestamps(false);
+;                   check_timestamps(false);
 ;               if (@need_wait_return)                   ;; if wait_return still needed ...
 ;                   wait_return(FALSE);                 ;; ... call it now
 ;               if (@need_start_insertmode && goto_im() && !@VIsual_active)
@@ -4815,24 +4785,6 @@
 ;       }
     ))
 
-;; Read text from stdin.
-
-(defn- #_void read_stdin []
-    (§
-;       @no_wait_return = TRUE;
-;       boolean b = @msg_didany;
-;       open_buffer(true, null, 0);     ;; create memfile and read file
-;       @no_wait_return = FALSE;
-;       @msg_didany = b;
-
-        ;; Close stdin and dup it from stderr.
-        ;; Required for GPM to work properly, and for running external commands.
-        ;; Is there any other system that cannot do this?
-
-;       libc.close(0);
-;       libc.dup(2);
-    ))
-
 ;; Create the requested number of windows and edit buffers in them.
 
 (defn- #_void create_windows [#_mparm_C parmp]
@@ -4863,7 +4815,7 @@
 ;           if (@curbuf.b_ml.ml_mfp == null)
 ;           {
                 ;; create memfile, read file
-;               open_buffer(false, null, 0);
+;               open_buffer(false, null, 0);
 
 ;               dorewind = true;                ;; start again
 ;           }
@@ -6413,7 +6365,7 @@
             ;; Avoid the sequence that the user types ":" at the hit-return prompt
             ;; to start an Ex command, but the file-changed dialog gets in the way.
 ;           if (@need_check_timestamps)
-;               check_timestamps(false);
+;               check_timestamps(false);
 
 ;           hit_return_msg();
 
@@ -8878,7 +8830,7 @@
     PV_EOL  16396,    ;; opt_buf(BV_EOL),
     PV_EP   20493,    ;; opt_both(opt_buf(BV_EP)),
     PV_ET   16398,    ;; opt_buf(BV_ET),
-    PV_FENC 16399,    ;; opt_buf(BV_FENC),
+
 
     PV_FF   16401,    ;; opt_buf(BV_FF),
     PV_FLP  16402,    ;; opt_buf(BV_FLP),
@@ -8907,7 +8859,7 @@
     PV_SW   16425,    ;; opt_buf(BV_SW),
     PV_TS   16426,    ;; opt_buf(BV_TS),
     PV_TW   16427,    ;; opt_buf(BV_TW),
-    PV_TX   16428,    ;; opt_buf(BV_TX),
+
     PV_UDF  16429,    ;; opt_buf(BV_UDF),
     PV_UL   20526,    ;; opt_both(opt_buf(BV_UL)),
     PV_WM   16431)    ;; opt_buf(BV_WM);
@@ -8957,7 +8909,6 @@
 (atom! Bytes   p_com)
 (atom! boolean p_eol)
 (atom! boolean p_et)
-(atom! Bytes   p_fenc)
 (atom! Bytes   p_ff)
 (atom! Bytes   p_fo)
 (atom! Bytes   p_flp)
@@ -8979,7 +8930,6 @@
 (atom! long    p_smc)
 (atom! long    p_ts)
 (atom! long    p_tw)
-(atom! boolean p_tx)
 (atom! boolean p_udf)
 (atom! long    p_wm)
 
@@ -9087,8 +9037,6 @@
         (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
         (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
-        (bool_opt (u8 "autowrite"),      (u8 "aw"),        0,                           p_aw,        PV_NONE,    false),
-        (bool_opt (u8 "autowriteall"),   (u8 "awa"),       0,                           p_awa,       PV_NONE,    false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "binary"),         (u8 "bin"),       P_RSTAT,                     p_bin,       PV_BIN,     false),
@@ -9124,11 +9072,7 @@
         (bool_opt (u8 "errorbells"),     (u8 "eb"),        0,                           p_eb,        PV_NONE,    false),
         (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        PV_NONE,    true),
         (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           p_et,        PV_ET,      false),
-        (bool_opt (u8 "exrc"),           (u8 "ex"),        P_SECURE,                    p_exrc,      PV_NONE,    false),
-        (utf8_opt (u8 "fileencoding"),   (u8 "fenc"),   (| P_RSTAT P_RBUF),             p_fenc,      PV_FENC,   (u8 "")),
-        (utf8_opt (u8 "fileencodings"),  (u8 "fencs"),     P_COMMA,                     p_fencs,     PV_NONE,   (u8 "ucs-bom,utf-8")),
         (utf8_opt (u8 "fileformat"),     (u8 "ff"),     (| P_RSTAT P_CURSWANT),         p_ff,        PV_FF,     (u8 "unix")),
-        (utf8_opt (u8 "fileformats"),    (u8 "ffs"),    (| P_COMMA P_NODUP),            p_ffs,       PV_NONE,   (u8 "unix,dos")),
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       PV_NONE,   (u8 "vert:|,fold:-")),
         (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
         (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
@@ -9227,7 +9171,6 @@
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
         (bool_opt (u8 "terse"),           null,            0,                           p_terse,     PV_NONE,    false),
-        (bool_opt (u8 "textmode"),       (u8 "tx"),        0,                           p_tx,        PV_TX,      false),
         (long_opt (u8 "textwidth"),      (u8 "tw"),        P_RBUF,                      p_tw,        PV_TW,      0#_L),
         (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        PV_NONE,    false),
         (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   PV_NONE,    true),
@@ -10358,7 +10301,6 @@
 
 (defn- #_void check_buf_options [#_buffer_C buf]
     (§
-;       check_string_option(buf.b_p_fenc);
 ;       check_string_option(buf.b_p_ff);
 ;       check_string_option(buf.b_p_kp);
 ;       check_string_option(buf.b_p_mps);
@@ -10620,29 +10562,6 @@
 ;               errmsg = e_invarg;
 ;       }
 
-        ;; 'fileencoding'
-;       else if (gvarp == p_fenc)
-;       {
-;           if (!@curbuf.@b_p_ma && opt_flags != OPT_GLOBAL)
-;               errmsg = e_modifiable;
-;           else if (vim_strchr(varp[0], ',') != null)
-                ;; No comma allowed in 'fileencoding'; catches confusing it with 'fileencodings'.
-;               errmsg = e_invarg;
-;           else
-;           {
-                ;; May show a "+" in the title now.
-;               redraw_titles();
-                ;; Add 'fileencoding' to the swap file.
-;               ml_setflags(@curbuf);
-;           }
-
-;           if (errmsg == null)
-;           {
-                ;; canonize the value, so that strcmp() can be used on it
-;               varp[0] = enc_canonize(varp[0]);
-;           }
-;       }
-
         ;; 'fileformat'
 ;       else if (gvarp == p_ff)
 ;       {
@@ -10652,11 +10571,6 @@
 ;               errmsg = e_invarg;
 ;           else
 ;           {
-                ;; may also change 'textmode'
-;               if (get_fileformat(@curbuf) == EOL_DOS)
-;                   @curbuf.@b_p_tx = true;
-;               else
-;                   @curbuf.@b_p_tx = false;
 ;               redraw_titles();
                 ;; update flag in swap file
 ;               ml_setflags(@curbuf);
@@ -10665,13 +10579,6 @@
 ;               if (get_fileformat(@curbuf) == EOL_MAC || oldval.at(0) == (byte)'m')
 ;                   redraw_curbuf_later(NOT_VALID);
 ;           }
-;       }
-
-        ;; 'fileformats'
-;       else if (varp == p_ffs)
-;       {
-;           if (check_opt_strings(@p_ffs, p_ff_values, true) != true)
-;               errmsg = e_invarg;
 ;       }
 
         ;; 'matchpairs'
@@ -11472,15 +11379,7 @@
 ;           }
 ;       }
 
-        ;; when 'textmode' is set or reset also change 'fileformat'
-;       else if (varp == @curbuf.b_p_tx)
-;       {
-;           set_fileformat(@curbuf.@b_p_tx ? EOL_DOS : EOL_UNIX, opt_flags);
-;       }
-
-        ;; When 'lisp' option changes include/exclude '-' in
-        ;; keyword characters.
-
+        ;; When 'lisp' option changes include/exclude '-' in keyword characters.
 ;       else if (varp == @curbuf.b_p_lisp)
 ;       {
 ;           buf_init_chartab(@curbuf, false);        ;; ignore errors
@@ -12460,7 +12359,6 @@
 ;           case PV_COM:    return @curbuf.b_p_com;
 ;           case PV_EOL:    return @curbuf.b_p_eol;
 ;           case PV_ET:     return @curbuf.b_p_et;
-;           case PV_FENC:   return @curbuf.b_p_fenc;
 ;           case PV_FF:     return @curbuf.b_p_ff;
 ;           case PV_FLP:    return @curbuf.b_p_flp;
 ;           case PV_FO:     return @curbuf.b_p_fo;
@@ -12482,7 +12380,6 @@
 ;           case PV_SW:     return @curbuf.b_p_sw;
 ;           case PV_TS:     return @curbuf.b_p_ts;
 ;           case PV_TW:     return @curbuf.b_p_tw;
-;           case PV_TX:     return @curbuf.b_p_tx;
 ;           case PV_UDF:    return @curbuf.b_p_udf;
 ;           case PV_WM:     return @curbuf.b_p_wm;
 
@@ -12629,8 +12526,6 @@
 ;               {
 ;                   free_buf_options(buf, true);
 ;                   buf.@b_p_ro = false;             ;; don't copy readonly
-;                   buf.@b_p_tx = @p_tx;
-;                   buf.@b_p_fenc = STRDUP(@p_fenc);
 ;                   buf.@b_p_ff = STRDUP(@p_ff);
 ;               }
 ;               else
@@ -12992,10 +12887,6 @@
 ;       buf.b_start_ffc = buf.@b_p_ff.at(0);
 ;       buf.b_start_eol = buf.@b_p_eol;
 ;       buf.b_start_bomb = buf.@b_p_bomb;
-
-        ;; Only use free/alloc when necessary, they take time.
-;       if (buf.b_start_fenc == null || STRCMP(buf.b_start_fenc, buf.@b_p_fenc) != 0)
-;           buf.b_start_fenc = STRDUP(buf.@b_p_fenc);
     ))
 
 ;; Return true if 'fileformat' and/or 'fileencoding' has a different value
@@ -13020,10 +12911,8 @@
 ;           return true;
 ;       if (!buf.@b_p_bin && buf.b_start_bomb != buf.@b_p_bomb)
 ;           return true;
-;       if (buf.b_start_fenc == null)
-;           return (buf.@b_p_fenc.at(0) != NUL);
 
-;       return (STRCMP(buf.b_start_fenc, buf.@b_p_fenc) != 0);
+;       return false;
     ))
 
 ;; Return the effective shiftwidth value for current buffer,
@@ -13582,413 +13471,6 @@
 ;       msgmore(count);
     ))
 
-(atom! Bytes prevcmd)          ;; the previous command
-
-;; Handle the ":!cmd" command.  Also for ":r !cmd" and ":w !cmd"
-;; Bangs in the argument are replaced with the previously entered command.
-;; Remember the argument.
-
-(defn- #_void do_bang [#_int addr_count, #_exarg_C eap, #_boolean forceit, #_boolean do_in, #_boolean do_out]
-    (§
-;       Bytes arg = eap.arg;               ;; command
-;       long line1 = eap.line1;             ;; start of range
-;       long line2 = eap.line2;             ;; end of range
-;       Bytes newcmd = null;               ;; the new command
-;       boolean scroll_save = @msg_scroll;
-
-        ;; Disallow shell commands for "rvim".
-        ;; Disallow shell commands from .exrc and .vimrc in current directory for security reasons.
-
-;       if (check_restricted() || check_secure())
-;           return;
-
-;       if (addr_count == 0)                ;; :!
-;       {
-;           @msg_scroll = false;         ;; don't scroll here
-;           autowrite_all();
-;           @msg_scroll = scroll_save;
-;       }
-
-        ;; Try to find an embedded bang, like in :!<cmd> ! [args]
-        ;; (:!! is indicated by the 'forceit' variable)
-
-;       boolean ins_prevcmd = forceit;
-;       Bytes trailarg = arg;
-;       do
-;       {
-;           int len = STRLEN(trailarg) + 1;
-;           if (newcmd != null)
-;               len += STRLEN(newcmd);
-;           if (ins_prevcmd)
-;           {
-;               if (@prevcmd == null)
-;               {
-;                   emsg(e_noprev);
-;                   return;
-;               }
-;               len += STRLEN(@prevcmd);
-;           }
-;           Bytes t = new Bytes(len);
-;           t.be(0, NUL);
-;           if (newcmd != null)
-;               STRCAT(t, newcmd);
-;           if (ins_prevcmd)
-;               STRCAT(t, @prevcmd);
-;           Bytes p = t.plus(STRLEN(t));
-;           STRCAT(t, trailarg);
-;           newcmd = t;
-
-            ;; Scan the rest of the argument for '!', which is replaced by the
-            ;; previous command.  "\!" is replaced by "!" (this is vi compatible).
-
-;           trailarg = null;
-;           while (p.at(0) != NUL)
-;           {
-;               if (p.at(0) == (byte)'!')
-;               {
-;                   if (BLT(newcmd, p) && p.at(-1) == (byte)'\\')
-;                       BCOPY(p, -1, p, 0, STRLEN(p) + 1);
-;                   else
-;                   {
-;                       trailarg = p;
-;                       (trailarg = trailarg.plus(1)).be(-1, NUL);
-;                       ins_prevcmd = true;
-;                       break;
-;                   }
-;               }
-;               p = p.plus(1);
-;           }
-;       } while (trailarg != null);
-
-;       @prevcmd = newcmd;
-
-;       if (@bangredo)           ;; put cmd in redo buffer for ! command
-;       {
-            ;; If % or # appears in the command, it must have been escaped.
-            ;; Reescape them, so that redoing them does not substitute them by the buffername.
-;           Bytes cmd = vim_strsave_escaped(@prevcmd, u8("%#"));
-
-;           appendToRedobuffLit(cmd, -1);
-;           appendToRedobuff(u8("\n"));
-
-;           @bangredo = false;
-;       }
-
-;       if (addr_count == 0)                ;; :!
-;       {
-            ;; echo the command
-;           msg_start();
-;           msg_putchar(':');
-;           msg_putchar('!');
-;           msg_outtrans(newcmd);
-;           msg_clr_eos();
-;           windgoto(@msg_row, @msg_col);
-
-;           do_shell(newcmd, 0);
-;       }
-;       else                                ;; :range!
-;       {
-            ;; Careful: This may recursively call do_bang() again! (because of autocommands).
-;           do_filter(line1, line2, newcmd, do_in, do_out);
-;       }
-    ))
-
-;; do_filter: filter lines through a command given by the user
-;;
-;; We mostly use temp files and the call_shell() routine here.  This would
-;; normally be done using pipes on a UNIX machine, but this is more portable
-;; to non-unix machines.  The call_shell() routine needs to be able
-;; to deal with redirection somehow, and should handle things like looking
-;; at the PATH env. variable, and adding reasonable extensions to the
-;; command name given by the user.  All reasonable versions of call_shell() do this.
-;; Alternatively, if on Unix and redirecting input or output, but not both,
-;; and the 'shelltemp' option isn't set, use pipes.
-;; We use input redirection if do_in is true.
-;; We use output redirection if do_out is true.
-
-(defn- #_void do_filter [#_long line1, #_long line2, #_Bytes cmd, #_boolean do_in, #_boolean do_out]
-    (§
-;       buffer_C old_curbuf = @curbuf;
-
-;       if (cmd.at(0) == NUL)           ;; no filter command
-;           return;
-
-;       pos_C cursor_save = §_pos_C();
-;       COPY_pos(cursor_save, @curwin.w_cursor);
-
-;       long linecount = line2 - line1 + 1;
-;       @curwin.w_cursor.lnum = line1;
-;       @curwin.w_cursor.col = 0;
-;       changed_line_abv_curs();
-;       invalidate_botline();
-
-;       boolean error = false;
-
-;       filterend:
-;       {
-            ;; When using temp files:
-            ;; 1. * Form temp file names
-            ;; 2. * Write the lines to a temp file
-            ;; 3.   Run the filter command on the temp file
-            ;; 4. * Read the output of the command into the buffer
-            ;; 5. * Delete the original lines to be filtered
-            ;; 6. * Remove the temp files
-            ;;
-            ;; When writing the input with a pipe or when catching the output with a
-            ;; pipe only need to do 3.
-
-;           int shell_flags = 0;
-;           if (do_out)
-;               shell_flags |= SHELL_DOOUT;
-
-;           if (!do_in && do_out)
-;           {
-                ;; Use a pipe to fetch stdout of the command, do not use a temp file.
-;               shell_flags |= SHELL_READ;
-;               @curwin.w_cursor.lnum = line2;
-;           }
-;           else if (do_in && !do_out)
-;           {
-                ;; Use a pipe to write stdin of the command, do not use a temp file.
-;               shell_flags |= SHELL_WRITE;
-;               @curbuf.b_op_start.lnum = line1;
-;               @curbuf.b_op_end.lnum = line2;
-;           }
-;           else if (do_in && do_out)
-;           {
-                ;; Use a pipe to write stdin and fetch stdout of the command, do not use a temp file.
-;               shell_flags |= SHELL_READ|SHELL_WRITE;
-;               @curbuf.b_op_start.lnum = line1;
-;               @curbuf.b_op_end.lnum = line2;
-;               @curwin.w_cursor.lnum = line2;
-;           }
-;           else if (do_in || do_out)
-;           {
-;               emsg(e_notmp);
-;               break filterend;
-;           }
-
-;           @no_wait_return++;           ;; don't call wait_return() while busy
-
-;           if (@curbuf != old_curbuf)
-;               break filterend;
-
-;           if (!do_out)
-;               msg_putchar('\n');
-
-            ;; Create the shell command in allocated memory.
-;           Bytes cmd_buf = new Bytes(STRLEN(cmd) + 3);         ;; "()" + NUL
-;           STRCPY(cmd_buf, cmd);
-
-;           windgoto((int)@Rows - 1, 0);
-;           cursor_on();
-
-            ;; When not redirecting the output,
-            ;; the command can write anything to the screen.
-            ;; If p_srr is equal to ">", screen may be messed up by stderr.
-            ;; If do_in is false, this could be something like ":r !cat",
-            ;; which may also mess up the screen.
-            ;; Clear the screen later.
-
-;           if (!do_out || /*STRCMP(p_srr, u8(">")) == 0*/false || !do_in)
-;               redraw_later_clear();
-
-;           if (do_out)
-;           {
-;               if (!u_save(line2, line2 + 1))
-;               {
-;                   error = true;
-;                   break filterend;
-;               }
-
-;               redraw_curbuf_later(VALID);
-;           }
-
-;           long read_linecount = @curbuf.b_ml.ml_line_count;
-
-            ;; When call_shell() fails, wait_return() is called to give the user a chance
-            ;; to read the error messages.  Otherwise errors are ignored, so you can see
-            ;; the error messages from the command that appear on stdout.
-            ;; Use 'u' to fix the text.
-            ;; Switch to cooked mode when not redirecting stdin, avoids that something
-            ;; like ":r !cat" hangs.
-            ;; Pass on the SHELL_DOOUT flag when the output is being redirected.
-
-;           if (call_shell(cmd_buf, SHELL_FILTER | SHELL_COOKED | shell_flags) != 0)
-;           {
-;               redraw_later_clear();
-;               wait_return(FALSE);
-;           }
-
-;           @did_check_timestamps = false;
-;           @need_check_timestamps = true;
-
-            ;; When interrupting the shell command, it may still have produced some useful output.
-            ;; Reset got_int here, so that readfile() won't cancel reading.
-;           ui_breakcheck();
-;           @got_int = false;
-
-;           if (do_out)
-;           {
-;               read_linecount = @curbuf.b_ml.ml_line_count - read_linecount;
-
-;               if ((shell_flags & SHELL_READ) != 0)
-;               {
-;                   @curbuf.b_op_start.lnum = line2 + 1;
-;                   @curbuf.b_op_end.lnum = @curwin.w_cursor.lnum;
-;                   appended_lines_mark(line2, read_linecount);
-;               }
-
-;               if (do_in)
-;               {
-;                   if (@cmdmod.keepmarks || vim_strbyte(@p_cpo, CPO_REMMARK) == null)
-;                   {
-;                       if (linecount <= read_linecount)
-                            ;; move all marks from old lines to new lines
-;                           mark_adjust(line1, line2, linecount, 0L);
-;                       else
-;                       {
-                            ;; move marks from old lines to new lines,
-                            ;; delete marks that are in deleted lines
-;                           mark_adjust(line1, line1 + read_linecount - 1, linecount, 0L);
-;                           mark_adjust(line1 + read_linecount, line2, MAXLNUM, 0L);
-;                       }
-;                   }
-
-                    ;; Put cursor on first filtered line for ":range!cmd".
-                    ;; Adjust '[ and '] (set by buf_write()).
-
-;                   @curwin.w_cursor.lnum = line1;
-;                   del_lines(linecount, true);
-;                   @curbuf.b_op_start.lnum -= linecount;    ;; adjust '[
-;                   @curbuf.b_op_end.lnum -= linecount;      ;; adjust ']
-;                   write_lnum_adjust(-linecount);          ;; adjust last line for next write
-;               }
-;               else
-;               {
-                    ;; Put cursor on last new line for ":r !cmd".
-
-;                   linecount = @curbuf.b_op_end.lnum - @curbuf.b_op_start.lnum + 1;
-;                   @curwin.w_cursor.lnum = @curbuf.b_op_end.lnum;
-;               }
-
-;               beginline(BL_WHITE | BL_FIX);       ;; cursor on first non-blank
-;               --@no_wait_return;
-
-;               if (@p_report < linecount)
-;               {
-;                   if (do_in)
-;                   {
-;                       vim_snprintf(msg_buf, MSG_BUF_LEN, u8("%ld lines filtered"), linecount);
-;                       if (msg(msg_buf) && !@msg_scroll)
-                            ;; save message to display it after redraw
-;                           set_keep_msg(msg_buf, 0);
-;                   }
-;                   else
-;                       msgmore(linecount);
-;               }
-;           }
-;           else
-;           {
-;               error = true;
-;               break filterend;
-;           }
-;       }
-
-;       if (error)
-;       {
-            ;; put cursor back in same position for ":w !cmd"
-;           COPY_pos(@curwin.w_cursor, cursor_save);
-;           --@no_wait_return;
-;           wait_return(FALSE);
-;       }
-
-;       if (@curbuf != old_curbuf)
-;       {
-;           --@no_wait_return;
-;           emsg(u8("E135: *Filter* Autocommands must not change current buffer"));
-;       }
-    ))
-
-;; Call a shell to execute a command.
-;; When "cmd" is null start an interactive shell.
-
-(defn- #_void do_shell [#_Bytes cmd, #_int flags]
-    ;; flags: may be SHELL_DOOUT when output is redirected
-    (§
-        ;; Disallow shell commands for "rvim".
-        ;; Disallow shell commands from .exrc and .vimrc in current directory for security reasons.
-
-;       if (check_restricted() || check_secure())
-;       {
-;           msg_end();
-;           return;
-;       }
-
-        ;; For autocommands we want to get the output on the current screen,
-        ;; to avoid having to type return below.
-
-;       msg_putchar('\r');              ;; put cursor at start of line
-;       {
-;           stoptermcap();
-;       }
-;       msg_putchar('\n');              ;; may shift screen one line up
-
-        ;; warning message before calling the shell
-;       if (@p_warn && @msg_silent == 0)
-;           for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;               if (bufIsChanged(buf))
-;               {
-;                   msg_puts(u8("[No write since last change]\n"));
-;                   break;
-;               }
-
-        ;; This windgoto is required for when the '\n' resulted
-        ;; in a "delete line 1" command to the terminal.
-;       if (!swapping_screen())
-;           windgoto(@msg_row, @msg_col);
-;       cursor_on();
-;       call_shell(cmd, SHELL_COOKED | flags);
-;       @did_check_timestamps = false;
-;       @need_check_timestamps = true;
-
-        ;; put the message cursor at the end of the screen, avoids wait_return()
-        ;; to overwrite the text that the external command showed
-
-;       if (!swapping_screen())
-;       {
-;           @msg_row = (int)@Rows - 1;
-;           @msg_col = 0;
-;       }
-
-        ;; For ":sh" there is no need to call wait_return(), just redraw.
-        ;; Otherwise there is probably text on the screen that the user wants
-        ;; to read before redrawing, so call wait_return().
-
-;       if (cmd == null)
-;       {
-;           if (@msg_silent == 0)
-;               redraw_later_clear();
-;           @need_wait_return = false;
-;       }
-;       else
-;       {
-            ;; If we switch screens when starttermcap() is called, we really
-            ;; want to wait for "hit return to continue".
-
-;           int save_nwr = @no_wait_return;
-;           if (swapping_screen())
-;               @no_wait_return = FALSE;
-;           wait_return((@msg_silent == 0) ? TRUE : FALSE);
-;           @no_wait_return = save_nwr;
-;       }
-
-;       starttermcap();     ;; start termcap if not done by wait_return()
-
-        ;; display any error messages now
-;       libc.fflush(stderr);
-    ))
-
 ;; Implementation of ":fixdel", also used by get_stty().
 ;;  <BS>    resulting <Del>
 ;;   ^?         ^H
@@ -14032,362 +13514,10 @@
 ;       @info_message = false;
     ))
 
-;; ":update".
-
-(defn- #_void ex_update [#_exarg_C eap]
-    (§
-;       if (curbufIsChanged())
-;           do_write(eap);
-    ))
-
-;; ":write" and ":saveas".
-
-(defn- #_void ex_write [#_exarg_C eap]
-    (§
-;       if (eap.usefilter)      ;; input lines to shell command
-;           do_bang(1, eap, false, true, false);
-;       else
-;           do_write(eap);
-    ))
-
-;; write current buffer to file 'eap.arg'
-;; if 'eap.append' is true, append to the file
-;;
-;; if eap.arg[0] == NUL write to current file
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean do_write [#_exarg_C eap]
-    (§
-;       boolean retval = false;
-
-;       Bytes fname = null;
-;       Bytes free_fname = null;
-;       buffer_C alt_buf = null;
-
-;       if (not_writing())              ;; check 'write' option
-;           return false;
-
-;       boolean other;
-
-;       Bytes ffname = eap.arg;
-;       if (ffname.at(0) == NUL)
-;       {
-;           if (eap.cmdidx == CMD_saveas)
-;           {
-;               emsg(e_argreq);
-;               return retval;
-;           }
-;           other = false;
-;       }
-;       else
-;       {
-;           fname = ffname;
-;           free_fname = fullName_save(ffname, true);
-
-            ;; When out-of-memory, keep unexpanded file name,
-            ;; because we MUST be able to write the file in this situation.
-
-;           if (free_fname != null)
-;               ffname = free_fname;
-;           other = otherfile(ffname);
-;       }
-
-        ;; If we have a new file, put its name in the list of alternate file names.
-
-;       if (other)
-;       {
-;           if (vim_strbyte(@p_cpo, CPO_ALTWRITE) != null || eap.cmdidx == CMD_saveas)
-;               alt_buf = setaltfname(ffname, fname, 1);
-;           else
-;               alt_buf = buflist_findname(ffname);
-;           if (alt_buf != null && alt_buf.b_ml.ml_mfp != null)
-;           {
-                ;; Overwriting a file that is loaded in another buffer is not a good idea.
-;               emsg(e_bufloaded);
-;               return retval;
-;           }
-;       }
-
-        ;; Writing to the current file is not allowed in readonly mode and a file name is required.
-        ;; "nofile" and "nowrite" buffers cannot be written implicitly either.
-
-;       if (!other)
-;       {
-;           if (check_fname() == false)
-;               return retval;
-;           boolean b;
-;           { boolean[] __ = { eap.forceit }; b = check_readonly(__, @curbuf); eap.forceit = __[0]; }
-;           if (b)
-;               return retval;
-;       }
-
-;       if (!other)
-;       {
-;           ffname = @curbuf.b_ffname;
-;           fname = @curbuf.b_fname;
-
-            ;; Not writing the whole file is only allowed with '!'.
-
-;           if ((eap.line1 != 1 || eap.line2 != @curbuf.b_ml.ml_line_count)
-;                   && !eap.forceit
-;                   && !eap.append
-;                   && !@p_wa)
-;           {
-;               emsg(u8("E140: Use ! to write partial buffer"));
-;               return retval;
-;           }
-;       }
-
-;       if (check_overwrite(eap, @curbuf, fname, ffname, other) == true)
-;       {
-;           if (eap.cmdidx == CMD_saveas && alt_buf != null)
-;           {
-;               buffer_C was_curbuf = @curbuf;
-
-;               if (@curbuf != was_curbuf || aborting())
-;               {
-                    ;; buffer changed, don't change name now
-;                   return false;
-;               }
-                ;; Exchange the file names for the current and the alternate buffer.
-                ;; This makes it look like we are now editing the buffer under the new name.
-                ;; Must be done before buf_write(), because if there is no file name
-                ;; and 'cpo' contains 'F', it will set the file name.
-;               fname = alt_buf.b_fname;
-;               alt_buf.b_fname = @curbuf.b_fname;
-;               @curbuf.b_fname = fname;
-;               fname = alt_buf.b_ffname;
-;               alt_buf.b_ffname = @curbuf.b_ffname;
-;               @curbuf.b_ffname = fname;
-;               fname = alt_buf.b_sfname;
-;               alt_buf.b_sfname = @curbuf.b_sfname;
-;               @curbuf.b_sfname = fname;
-;               buf_name_changed(@curbuf);
-
-;               if (@curbuf != was_curbuf || aborting())
-;               {
-                    ;; buffer changed, don't write the file
-;                   return false;
-;               }
-
-                ;; Autocommands may have changed buffer names, esp. when 'autochdir' is set.
-;               fname = @curbuf.b_sfname;
-;           }
-
-;           retval = buf_write(@curbuf, ffname, fname, eap.line1, eap.line2, eap, eap.append, eap.forceit, true, false);
-
-            ;; After ":saveas fname" reset 'readonly'.
-;           if (eap.cmdidx == CMD_saveas)
-;           {
-;               if (retval == true)
-;               {
-;                   @curbuf.@b_p_ro = false;
-;                   @redraw_tabline = true;
-;               }
-;           }
-;       }
-
-;       return retval;
-    ))
-
-;; Check if it is allowed to overwrite a file.  If b_flags has BF_NOTEDITED,
-;; BF_NEW or BF_READERR, check for overwriting current file.
-;; May set eap.forceit if a dialog says it's OK to overwrite.
-;; Return true if it's OK, false if it is not.
-
-(defn- #_boolean check_overwrite [#_exarg_C eap, #_buffer_C buf, #_Bytes fname, #_Bytes ffname, #_boolean other]
-    ;; fname: file name to be used (can differ from buf.ffname)
-    ;; ffname: full path version of fname
-    ;; other: writing under other name
-    (§
-        ;; write to other file or b_flags set or not writing the whole file:
-        ;; overwriting only allowed with '!'
-
-;       if ((other
-;                  || (buf.b_flags & BF_NOTEDITED) != 0
-;                  || ((buf.b_flags & BF_NEW) != 0 && vim_strbyte(@p_cpo, CPO_OVERNEW) == null)
-;                  || (buf.b_flags & BF_READERR) != 0)
-;               && !@p_wa
-;               && vim_fexists(ffname))
-;       {
-;           if (!eap.forceit && !eap.append)
-;           {
-                ;; with UNIX it is possible to open a directory
-;               if (mch_isdir(ffname))
-;               {
-;                   emsg2(e_isadir2, ffname);
-;                   return false;
-;               }
-
-;               emsg(e_exists);
-;               return false;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; ":wall", ":wqall" and ":xall": Write all changed files (and exit).
-
-(defn- #_void ex_wqall [#_exarg_C eap]
-    (§
-;       int error = 0;
-;       boolean save_forceit = eap.forceit;
-
-;       if (eap.cmdidx == CMD_xall || eap.cmdidx == CMD_wqall)
-;           @exiting = true;
-
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;       {
-;           if (bufIsChanged(buf))
-;           {
-                    ;; Check if there is a reason the buffer cannot be written:
-                    ;; 1. if the 'write' option is set
-                    ;; 2. if there is no file name (even after browsing)
-                    ;; 3. if the 'readonly' is set (even after a dialog)
-                    ;; 4. if overwriting is allowed (even after a dialog)
-
-;               if (not_writing())
-;               {
-;                   error++;
-;                   break;
-;               }
-;               if (buf.b_ffname == null)
-;               {
-;                   emsgn(u8("E141: No file name for buffer %ld"), (long)buf.b_fnum);
-;                   error++;
-;               }
-;               else
-;               {
-;                   boolean b;
-;                   { boolean[] __ = { eap.forceit }; b = check_readonly(__, buf); eap.forceit = __[0]; }
-;                   if (b || check_overwrite(eap, buf, buf.b_fname, buf.b_ffname, false) == false)
-;                   {
-;                       error++;
-;                   }
-;                   else
-;                   {
-;                       if (buf_write_all(buf, eap.forceit) == false)
-;                           error++;
-                            ;; an autocommand may have deleted the buffer
-;                       if (!buf_valid(buf))
-;                           buf = @firstbuf;
-;                   }
-;               }
-;               eap.forceit = save_forceit; ;; check_overwrite() may set it
-;           }
-;       }
-
-;       if (@exiting)
-;       {
-;           if (error == 0)
-;               getout(0);          ;; exit Vim
-;           not_exiting();
-;       }
-    ))
-
-;; Check the 'write' option.
-;; Return true and give a message when it's not st.
-
-(defn- #_boolean not_writing []
-    (§
-;       if (@p_write)
-;           return false;
-
-;       emsg(u8("E142: File not written: Writing is disabled by 'write' option"));
-;       return true;
-    ))
-
-;; Check if a buffer is read-only (either 'readonly' option is set or file is read-only).
-;; Ask for overruling in a dialog.
-;; Return true and give an error message when the buffer is readonly.
-
-(defn- #_boolean check_readonly [#_boolean* forceit, #_buffer_C buf]
-    (§
-;       stat_C st = new stat_C();
-
-        ;; Handle a file being readonly when the 'readonly' option is set or when the file exists
-        ;; and permissions are read-only.  We will send 0777 to check_file_readonly(),
-        ;; as the "perm" variable is important for device checks but not here.
-;       if (!forceit[0] && (buf.@b_p_ro || (0 <= libC.stat(buf.b_ffname, st) && check_file_readonly(buf.b_ffname, 0777))))
-;       {
-;           if (buf.@b_p_ro)
-;               emsg(e_readonly);
-;           else
-;               emsg2(u8("E505: \"%s\" is read-only (add ! to override)"), buf.b_fname);
-;           return true;
-;       }
-
-;       return false;
-    ))
-
 ;; Use P_HID to check if a buffer is to be hidden when it is no longer visible in a window.
 (defn- #_boolean P_HID [#_buffer_C _dummy]
     (§
 ;       return (@p_hid || @cmdmod.hide);
-    ))
-
-;; Try to abandon current file and edit a new or existing file.
-;; 'fnum' is the number of the file, if zero use ffname/sfname.
-;;
-;; Return 1 for "normal" error, 2 for "not written" error, 0 for success
-;; -1 for successfully opening another file.
-;; 'lnum' is the line number for the cursor in the new file (if non-zero).
-
-(defn- #_int getfile [#_int fnum, #_Bytes _ffname, #_Bytes _sfname, #_boolean setpm, #_long lnum, #_boolean forceit]
-    (§
-;       Bytes[] ffname = { _ffname };
-;       Bytes[] sfname = { _sfname };
-;       int retval;
-;       Bytes free_me = null;
-
-;       if (text_locked())
-;           return 1;
-;       if (curbuf_locked())
-;           return 1;
-
-;       boolean other;
-;       if (fnum == 0)
-;       {
-;           fname_expand(ffname, sfname);       ;; make "ffname" full path, set "sfname"
-;           other = otherfile(ffname[0]);
-;           free_me = ffname[0];                ;; has been allocated, free() later
-;       }
-;       else
-;           other = (fnum != @curbuf.b_fnum);
-
-;       if (other)
-;           @no_wait_return++;                   ;; don't wait for autowrite message
-;       if (other && !forceit && @curbuf.b_nwindows == 1 && !P_HID(@curbuf) && curbufIsChanged() && autowrite(@curbuf, forceit) == false)
-;       {
-;           if (curbufIsChanged())
-;           {
-;               if (other)
-;                   --@no_wait_return;
-;               emsg(e_nowrtmsg);
-;               return 2; ;; file has been changed
-;           }
-;       }
-;       if (other)
-;           --@no_wait_return;
-;       if (setpm)
-;           setpcmark();
-;       if (!other)
-;       {
-;           if (lnum != 0)
-;               @curwin.w_cursor.lnum = lnum;
-;           check_cursor_lnum();
-;           beginline(BL_SOL | BL_FIX);
-;           retval = 0;     ;; it's in the same file
-;       }
-;       else if (do_ecmd(fnum, ffname[0], sfname[0], null, lnum,
-;                   (P_HID(@curbuf) ? ECMD_HIDE : 0) + (forceit ? ECMD_FORCEIT : 0), @curwin) == true)
-;           retval = -1;    ;; opened another file
-;       else
-;           retval = 1;     ;; error encountered
-
-;       return retval;
     ))
 
 ;; start editing a new file
@@ -14480,13 +13610,12 @@
 ;           if (((!other_file && (flags & ECMD_OLDBUF) == 0)
 ;                   || (@curbuf.b_nwindows == 1
 ;                       && (flags & (ECMD_HIDE | ECMD_ADDBUF)) == 0))
-;               && check_changed(@curbuf, (@p_awa ? CCGD_AW : 0)
-;                                   | (other_file ? 0 : CCGD_MULTWIN)
-;                                   | ((flags & ECMD_FORCEIT) != 0 ? CCGD_FORCEIT : 0)
-;                                   | (eap == null ? 0 : CCGD_EXCMD)))
+;               && check_changed(@curbuf, (other_file ? 0 : CCGD_MULTWIN)
+;                                       | ((flags & ECMD_FORCEIT) != 0 ? CCGD_FORCEIT : 0)
+;                                       | (eap == null ? 0 : CCGD_EXCMD)))
 ;           {
 ;               if (fnum == 0 && other_file && ffname != null)
-;                   setaltfname(ffname, sfname, newlnum < 0 ? 0 : newlnum);
+;                   setaltfname(ffname, sfname, (newlnum < 0) ? 0 : newlnum);
 ;               break theend;
 ;           }
 
@@ -14541,7 +13670,7 @@
 ;               else                                    ;; existing memfile
 ;               {
 ;                   oldbuf = true;
-;                   buf_check_timestamp(buf);
+;                   buf_check_timestamp(buf);
                     ;; Check if autocommands made buffer invalid or changed the current buffer.
 ;                   if (!buf_valid(buf) || @curbuf != old_curbuf)
 ;                       break theend;
@@ -14619,7 +13748,7 @@
 
                             ;; Set 'fileformat' and 'binary' when forced.
 ;                           if (!oldbuf && eap != null)
-;                               set_file_options(true, eap);
+;                               set_file_options(eap);
 ;                       }
 
                         ;; May get the window options from the last time this buffer was in this
@@ -14736,7 +13865,7 @@
 
                     ;; Open the buffer and read the file.
 
-;                   if (should_abort(open_buffer(false, eap, readfile_flags)))
+;                   if (should_abort(open_buffer(false, eap, readfile_flags)))
 ;                       retval[0] = false;
 ;               }
 
@@ -19126,16 +18255,16 @@
         CMD_open,
         CMD_print,
         CMD_quit,
-        CMD_read,
+        CMD_redo,
         CMD_substitute,
         CMD_t,
         CMD_undo,
         CMD_vglobal,
-        CMD_write,
-        CMD_xit,
+        CMD_wincmd,
+        CMD_xmap,
         CMD_yank,
         CMD_z,
-        CMD_bang
+        CMD_pound
     ])
 
 ;; do_exmode(): Repeatedly get commands for the "Ex" mode, until the ":vi" command is given.
@@ -20234,12 +19363,8 @@
 ;           correct_range(ea);
 
             ;; Skip to start of argument.
-            ;; Don't do this for the ":!" command, because ":!! -l" needs the space.
 
-;           if (ea.cmdidx == CMD_bang)
-;               ea.arg = p;
-;           else
-;               ea.arg = skipwhite(p);
+;           ea.arg = skipwhite(p);
 
             ;; Check for "++opt=val" argument.
             ;; Must be first, allow ":w ++enc=utf8 !cmd"
@@ -20251,39 +19376,6 @@
 ;                       errormsg = e_invarg;
 ;                       break doend;
 ;                   }
-
-;           if (ea.cmdidx == CMD_write || ea.cmdidx == CMD_update)
-;           {
-;               if (ea.arg.at(0) == (byte)'>')                 ;; append
-;               {
-;                   if ((ea.arg = ea.arg.plus(1)).at(0) != (byte)'>')           ;; typed wrong
-;                   {
-;                       errormsg = u8("E494: Use w or w>>");
-;                       break doend;
-;                   }
-;                   ea.arg = skipwhite(ea.arg.plus(1));
-;                   ea.append = true;
-;               }
-;               else if (ea.arg.at(0) == (byte)'!' && ea.cmdidx == CMD_write)  ;; :w !filter
-;               {
-;                   ea.arg = ea.arg.plus(1);
-;                   ea.usefilter = true;
-;               }
-;           }
-
-;           if (ea.cmdidx == CMD_read)
-;           {
-;               if (ea.forceit)
-;               {
-;                   ea.usefilter = true;            ;; :r! filter if ea.forceit
-;                   ea.forceit = false;
-;               }
-;               else if (ea.arg.at(0) == (byte)'!')            ;; :r !filter
-;               {
-;                   ea.arg = ea.arg.plus(1);
-;                   ea.usefilter = true;
-;               }
-;           }
 
 ;           if (ea.cmdidx == CMD_lshift || ea.cmdidx == CMD_rshift)
 ;           {
@@ -20297,9 +19389,8 @@
 ;           }
 
             ;; Check for "+command" argument, before checking for next command.
-            ;; Don't do this for ":read !cmd" and ":write !cmd".
 
-;           if ((ea.argt & EDITCMD) != 0 && !ea.usefilter)
+;           if ((ea.argt & EDITCMD) != 0)
 ;           {
 ;               Bytes[] __ = { ea.arg };
 ;               ea.do_ecmd_cmd = getargcmd(__);
@@ -20307,13 +19398,10 @@
 ;           }
 
             ;; Check for <newline> to end a shell command.
-            ;; Also do this for ":read !cmd", ":write !cmd" and ":global".
+            ;; Also do this for ":global".
             ;; Any others?
 
-;           if (ea.cmdidx == CMD_bang
-;                   || ea.cmdidx == CMD_global
-;                   || ea.cmdidx == CMD_vglobal
-;                   || ea.usefilter)
+;           if (ea.cmdidx == CMD_global || ea.cmdidx == CMD_vglobal)
 ;           {
 ;               for (p = ea.arg; p.at(0) != NUL; p = p.plus(1))
 ;               {
@@ -20705,8 +19793,7 @@
 ;               }
 
             ;; Look for a user defined command as a last resort.
-            ;; Let ":Print" be overruled by a user defined command.
-;           if ((eap.cmdidx == CMD_SIZE || eap.cmdidx == CMD_Print) && 'A' <= eap.cmd.at(0) && eap.cmd.at(0) <= 'Z')
+;           if (eap.cmdidx == CMD_SIZE && 'A' <= eap.cmd.at(0) && eap.cmd.at(0) <= 'Z')
 ;           {
                 ;; User defined commands may contain digits.
 ;               while (asc_isalnum(p.at(0)))
@@ -21509,10 +20596,7 @@
 
 ;       if (only_one_window())
 ;           @exiting = true;
-;       if ((!P_HID(@curbuf)
-;                   && check_changed(@curbuf, (@p_awa ? CCGD_AW : 0)
-;                                       | (eap.forceit ? CCGD_FORCEIT : 0)
-;                                       | CCGD_EXCMD))
+;       if ((!P_HID(@curbuf) && check_changed(@curbuf, (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
 ;               || (only_one_window() && check_changed_any(eap.forceit)))
 ;       {
 ;           not_exiting();
@@ -21524,13 +20608,6 @@
                 ;; close window; may free buffer
 ;           win_close(wp, !P_HID(wp.w_buffer) || eap.forceit);
 ;       }
-    ))
-
-;; ":cquit".
-
-(defn- #_void ex_cquit [#_exarg_C _eap]
-    (§
-;       getout(1);
     ))
 
 ;; ":qall": try to quit all windows
@@ -21763,8 +20840,6 @@
 
 ;       if (!check_restricted())
 ;       {
-;           if (!eap.forceit)
-;               autowrite_all();
 ;           windgoto((int)@Rows - 1, 0);
 ;           out_char((byte)'\n');
 ;           out_flush();
@@ -21775,46 +20850,6 @@
 ;           scroll_start();         ;; scroll screen before redrawing
 ;           redraw_later_clear();
 ;           shell_resized();        ;; may have resized window
-;       }
-    ))
-
-;; ":exit", ":xit" and ":wq": Write file and exit Vim.
-
-(defn- #_void ex_exit [#_exarg_C eap]
-    (§
-;       if (@cmdwin_type != 0)
-;       {
-;           @cmdwin_result = Ctrl_C;
-;           return;
-;       }
-
-            ;; Don't quit while editing the command line.
-;       if (text_locked())
-;       {
-;           text_locked_msg();
-;           return;
-;       }
-
-            ;; Refuse to quit when locked or when the buffer in the last window
-            ;; is being closed (can only happen in autocommands).
-;       if (curbuf_locked() || (@curbuf.b_nwindows == 1 && @curbuf.b_closing))
-;           return;
-
-            ;; if more files or windows we won't exit
-
-;       if (only_one_window())
-;           @exiting = true;
-;       if (((eap.cmdidx == CMD_wq || curbufIsChanged()) && do_write(eap) == false)
-;               || (only_one_window() && check_changed_any(eap.forceit)))
-;       {
-;           not_exiting();
-;       }
-;       else
-;       {
-;           if (only_one_window())      ;; quit last window, exit Vim
-;               getout(0);
-                ;; Quit current window, may free the buffer.
-;           win_close(@curwin, !P_HID(@curwin.w_buffer));
 ;       }
     ))
 
@@ -22289,59 +21324,6 @@
 ;       }
     ))
 
-(defn- #_void ex_read [#_exarg_C eap]
-    (§
-;       boolean empty = ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0);
-
-;       if (eap.usefilter)                      ;; :r!cmd
-;           do_bang(1, eap, false, false, true);
-;       else
-;       {
-;           if (!u_save(eap.line2, eap.line2 + 1))
-;               return;
-
-;           boolean i;
-;           if (eap.arg.at(0) == NUL)
-;           {
-;               if (check_fname() == false)     ;; check for no file name
-;                   return;
-;               i = readfile(@curbuf.b_ffname, @curbuf.b_fname, eap.line2, 0, MAXLNUM, eap, 0);
-;           }
-;           else
-;           {
-;               if (vim_strbyte(@p_cpo, CPO_ALTREAD) != null)
-;                   setaltfname(eap.arg, eap.arg, 1);
-;               i = readfile(eap.arg, null, eap.line2, 0, MAXLNUM, eap, 0);
-;           }
-;           if (i == false)
-;           {
-;               if (!aborting())
-;                   emsg2(e_notopen, eap.arg);
-;           }
-;           else
-;           {
-;               if (empty && @exmode_active != 0)
-;               {
-;                   long lnum;
-                        ;; Delete the empty line that remains.
-                        ;; Historically ex does this but vi doesn't.
-;                   if (eap.line2 == 0)
-;                       lnum = @curbuf.b_ml.ml_line_count;
-;                   else
-;                       lnum = 1;
-;                   if (ml_get(lnum).at(0) == NUL && u_savedel(lnum, 1L) == true)
-;                   {
-;                       ml_delete(lnum, false);
-;                       if (1 < @curwin.w_cursor.lnum && lnum <= @curwin.w_cursor.lnum)
-;                           --@curwin.w_cursor.lnum;
-;                       deleted_lines_mark(lnum, 1L);
-;                   }
-;               }
-;               redraw_curbuf_later(VALID);
-;           }
-;       }
-    ))
-
 ;; ":=".
 
 (defn- #_void ex_equal [#_exarg_C eap]
@@ -22545,46 +21527,6 @@
 ;       do_join((int)(eap.line2 - eap.line1 + 1), !eap.forceit, true, true, true);
 ;       beginline(BL_WHITE | BL_FIX);
 ;       ex_may_print(eap);
-    ))
-
-;; ":[addr]@r" or ":[addr]*r": execute register
-
-(defn- #_void ex_at [#_exarg_C eap]
-    (§
-;       int prev_len = @typebuf.tb_len;
-
-;       @curwin.w_cursor.lnum = eap.line2;
-
-            ;; Get the register name.  No name means to use the previous one.
-;       byte c = eap.arg.at(0);
-;       if (c == NUL || (c == '*' && eap.cmd.at(0) == (byte)'*'))
-;           c = '@';
-            ;; Put the register in the typeahead buffer with the "silent" flag.
-;       if (do_execreg(c, true, vim_strbyte(@p_cpo, CPO_EXECBUF) != null, true) == false)
-;       {
-;           beep_flush();
-;       }
-;       else
-;       {
-;           boolean save_efr = @exec_from_reg;
-
-;           @exec_from_reg = true;
-
-                ;; Execute from the typeahead buffer.
-                ;; Continue until the stuff buffer is empty and all added characters have been consumed.
-
-;           while (!stuff_empty() || prev_len < @typebuf.tb_len)
-;               do_cmdline(null, getexline, null, DOCMD_NOWAIT|DOCMD_VERBOSE);
-
-;           @exec_from_reg = save_efr;
-;       }
-    ))
-
-;; ":!".
-
-(defn- #_void ex_bang [#_exarg_C eap]
-    (§
-;       do_bang(eap.addr_count, eap, eap.forceit, true, true);
     ))
 
 ;; ":undo".
@@ -23226,7 +22168,7 @@
 ;               val = ret.plus(4);
 ;           }
 
-            ;; msg_add_fname() may have been used to prefix the message with a file name in quotes.
+            ;; msg_add_fname() may have been used to prefix the message with a file name in quotes.
             ;; In the exception value, put the file name in parentheses and move it to the end.
 ;           for (Bytes p = mesg; ; p = p.plus(1))
 ;           {
@@ -23545,43 +22487,6 @@
 ;       tm.tv_sec(0);
     ))
 
-;; If 'autowrite' option set, try to write the file.
-;; Careful: autocommands may make "buf" invalid!
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean autowrite [#_buffer_C buf, #_boolean forceit]
-    (§
-;       if (!(@p_aw || @p_awa) || !@p_write || (!forceit && buf.@b_p_ro) || buf.b_ffname == null)
-;           return false;
-
-;       boolean r = buf_write_all(buf, forceit);
-
-        ;; Writing may succeed but the buffer still changed, e.g. when
-        ;; there is a conversion error.  We do want to return false then.
-;       if (buf_valid(buf) && bufIsChanged(buf))
-;           r = false;
-
-;       return r;
-    ))
-
-;; flush all buffers, except the ones that are readonly
-
-(defn- #_void autowrite_all []
-    (§
-;       if (!(@p_aw || @p_awa) || !@p_write)
-;           return;
-
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;           if (bufIsChanged(buf) && !buf.@b_p_ro)
-;           {
-;               buf_write_all(buf, false);
-                ;; an autocommand may have deleted the buffer
-;               if (!buf_valid(buf))
-;                   buf = @firstbuf;
-;           }
-    ))
-
 ;; Return true if buffer was changed and cannot be abandoned.
 ;; For flags use the CCGD_ values.
 
@@ -23589,10 +22494,7 @@
     (§
 ;       boolean forceit = ((flags & CCGD_FORCEIT) != 0);
 
-;       if (!forceit
-;               && bufIsChanged(buf)
-;               && ((flags & CCGD_MULTWIN) != 0 || buf.b_nwindows <= 1)
-;               && ((flags & CCGD_AW) == 0 || autowrite(buf, forceit) == false))
+;       if (!forceit && bufIsChanged(buf) && ((flags & CCGD_MULTWIN) != 0 || buf.b_nwindows <= 1))
 ;       {
 ;           if ((flags & CCGD_EXCMD) != 0)
 ;               emsg(e_nowrtmsg);
@@ -23613,7 +22515,7 @@
 ;       return (P_HID(buf)
 ;                   || !bufIsChanged(buf)
 ;                   || 1 < buf.b_nwindows
-;                   || autowrite(buf, forceit) == true
+;                   || false == true
 ;                   || forceit);
     ))
 
@@ -23675,9 +22577,7 @@
 ;           {
                 ;; Try auto-writing the buffer.  If this fails,
                 ;; but the buffer no longer exists, it's not changed, that's OK.
-;               if (check_changed(buf, (@p_awa ? CCGD_AW : 0)
-;                                    | CCGD_MULTWIN
-;                                    | CCGD_ALLBUF) && buf_valid(buf))
+;               if (check_changed(buf, CCGD_MULTWIN | CCGD_ALLBUF) && buf_valid(buf))
 ;                   break;      ;; didn't save - still changes
 ;           }
 ;       }
@@ -23741,21 +22641,6 @@
 ;           return false;
 ;       }
 ;       return true;
-    ))
-
-;; Flush the contents of a buffer, unless it has no file name.
-;; Return false for failure, true otherwise.
-
-(defn- #_boolean buf_write_all [#_buffer_C buf, #_boolean forceit]
-    (§
-;       buffer_C old_curbuf = @curbuf;
-
-;       boolean retval = buf_write(buf, buf.b_ffname, buf.b_fname, 1, buf.b_ml.ml_line_count, null, false, forceit, true, false);
-
-;       if (@curbuf != old_curbuf)
-;           msg(u8("Warning: Entered other buffer unexpectedly (check autocommands)"));
-
-;       return retval;
     ))
 
 ;;; ============================================================================================== VimK
@@ -25027,7 +23912,7 @@
 ;                   if (vim_strbyte(@p_cpo, CPO_FILTER) != null)
 ;                       appendToRedobuff(u8("!\r"));    ;; use any last used !cmd
 ;                   else
-;                       @bangredo = true;            ;; do_bang() will put cmd in redo buffer
+;                       @bangredo = true;            ;; do_bang() will put cmd in redo buffer
                     ;; FALLTHROUGH
 
 ;               case OP_INDENT:
@@ -27269,7 +26154,7 @@
 (defn- #_void nv_hat [#_cmdarg_C cap]
     (§
 ;       if (!checkclearopq(cap.oap))
-;           buflist_getfile((int)cap.count0, 0, GETF_SETMARK|GETF_ALT, false);
+;           buflist_getfile((int)cap.count0, 0, GETF_SETMARK|GETF_ALT, false);
     ))
 
 ;; "Z" commands.
@@ -27849,8 +26734,7 @@
 ;       {
 ;           @curwin.w_set_curswant = true;
                 ;; Include a Tab for "tx" and for "dfx".
-;           if (gchar_cursor() == TAB && virtual_active() && cap.arg == FORWARD
-;                   && (t_cmd || cap.oap.op_type != OP_NOP))
+;           if (gchar_cursor() == TAB && virtual_active() && cap.arg == FORWARD && (t_cmd || cap.oap.op_type != OP_NOP))
 ;           {
 ;               int[] scol = new int[1];
 ;               int[] ecol = new int[1];
@@ -35392,10 +34276,6 @@
 ;                   byte_count_cursor, byte_count);
 ;       }
 
-;       long n = bomb_size();
-;       if (0 < n)
-;           libC.sprintf(@ioBuff.plus(STRLEN(@ioBuff)), u8("(+%ld for BOM)"), n);
-
         ;; Don't shorten this message, the user asked for it.
 ;       Bytes p = @p_shm;
 ;       @p_shm = u8("");
@@ -35577,7 +34457,7 @@
 ;                   count += count < 0 ? -1 : 1;
 ;                   continue;
 ;               }
-;               if (buflist_getfile(jmp.fmark.fnum, jmp.fmark.mark.lnum, 0, false) == false)
+;               if (buflist_getfile(jmp.fmark.fnum, jmp.fmark.mark.lnum, 0, false) == false)
 ;                   return null;
                 ;; set lnum again, autocommands my have changed it
 ;               COPY_pos(@curwin.w_cursor, jmp.fmark.mark);
@@ -35740,7 +34620,7 @@
 
 ;               if (namedfm[c].fmark.mark.lnum != 0 && changefile && namedfm[c].fmark.fnum != 0)
 ;               {
-;                   if (buflist_getfile(namedfm[c].fmark.fnum, 1, GETF_SETMARK, false) == true)
+;                   if (buflist_getfile(namedfm[c].fmark.fnum, 1, GETF_SETMARK, false) == true)
 ;                   {
                         ;; Set the lnum now, autocommands could have changed it.
 ;                       COPY_pos(@curwin.w_cursor, namedfm[c].fmark.mark);
@@ -40063,7 +38943,7 @@
 ;               {
 ;                   @did_check_timestamps = false;
 ;                   if (@need_check_timestamps)
-;                       check_timestamps(false);
+;                       check_timestamps(false);
 ;               }
 
                 ;; When emsg() was called msg_scroll will have been set.
@@ -61794,7 +60674,7 @@
     ;; newfile: flag, see above
     (§
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
 ;           return false;
 
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
@@ -62225,7 +61105,7 @@
 ;           return false;
 
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
 ;           return false;
 
 ;       if (copy)
@@ -63294,8 +62174,8 @@
 ;; Open current buffer, that is: open the memfile and read the file into memory.
 ;; Return false for failure, true otherwise.
 
-(defn- #_boolean open_buffer [#_boolean read_stdin, #_exarg_C eap, #_int flags]
-    ;; read_stdin: read file from stdin
+(defn- #_boolean open_buffer [#_boolean read_stdin, #_exarg_C eap, #_int flags]
+    ;; read_stdin: read file from stdin
     ;; eap: for forced 'ff' and 'fenc' or null
     ;; flags: extra flags for readfile()
     (§
@@ -63343,48 +62223,11 @@
 
 ;       if (@curbuf.b_ffname != null)
 ;       {
-;           retval[0] = readfile(@curbuf.b_ffname, @curbuf.b_fname, 0, 0, MAXLNUM, eap, flags | READ_NEW);
+;           retval[0] = readfile(@curbuf.b_ffname, @curbuf.b_fname, 0, 0, MAXLNUM, eap, flags | READ_NEW);
 ;       }
-;       else if (read_stdin)
+;       else if (read_stdin)
 ;       {
-;           boolean save_bin = @curbuf.@b_p_bin;
-;           long line_count;
-
-            ;; First read the text in binary mode into the buffer.
-            ;; Then read from that same buffer and append at the end.
-            ;; This makes it possible to retry when 'fileformat' or 'fileencoding' was guessed wrong.
-
-;           @curbuf.@b_p_bin = true;
-;           retval[0] = readfile(null, null, 0, 0, MAXLNUM, null, flags | (READ_NEW + READ_STDIN));
-;           @curbuf.@b_p_bin = save_bin;
-
-;           if (retval[0] == true)
-;           {
-;               line_count = @curbuf.b_ml.ml_line_count;
-;               retval[0] = readfile(null, null, line_count, 0, MAXLNUM, eap, flags | READ_BUFFER);
-;               if (retval[0] == true)
-;               {
-                    ;; Delete the binary lines.
-;                   while (0 <= --line_count)
-;                       ml_delete(1, false);
-;               }
-;               else
-;               {
-                    ;; Delete the converted lines.
-;                   while (line_count < @curbuf.b_ml.ml_line_count)
-;                       ml_delete(line_count, false);
-;               }
-                ;; Put the cursor on the first line.
-;               @curwin.w_cursor.lnum = 1;
-;               @curwin.w_cursor.col = 0;
-
-                ;; Set or reset 'modified' before executing autocommands,
-                ;; so that it can be changed there.
-;               if (!@readonlymode && !bufempty())
-;                   changed();
-;               else if (retval[0] != false)
-;                   unchanged(@curbuf, false);
-;           }
+            
 ;       }
 
         ;; if first time loading this buffer, init b_chartab[]
@@ -63405,7 +62248,7 @@
 ;                   || @modified_was_set     ;; ":set modified" used in autocmd
 ;                   || (aborting() && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
 ;           changed();
-;       else if (retval[0] != false && !read_stdin)
+;       else if (retval[0] != false && !read_stdin)
 ;           unchanged(@curbuf, false);
 ;       save_file_ff(@curbuf);               ;; keep this fileformat
 
@@ -63674,7 +62517,6 @@
 ;       }
 ;       map_clear_int(buf, MAP_ALL_MODES, true, false);     ;; clear local mappings
 ;       map_clear_int(buf, MAP_ALL_MODES, true, true);      ;; clear local abbrevs
-;       buf.b_start_fenc = null;
     ))
 
 ;; Free the b_wininfo list for buffer "buf".
@@ -64211,13 +63053,13 @@
         ;; Make sure the buffer is loaded.
 ;       if (@curbuf.b_ml.ml_mfp == null)     ;; need to load the file
 ;       {
-;           open_buffer(false, null, 0);
+;           open_buffer(false, null, 0);
 ;       }
 ;       else
 ;       {
 ;           if (@msg_silent == 0)
 ;               @need_fileinfo = true;       ;; display file info after redraw
-;           buf_check_timestamp(@curbuf);    ;; check if file changed
+;           buf_check_timestamp(@curbuf);    ;; check if file changed
 ;           @curwin.w_topline = 1;
 ;       }
 
@@ -64420,7 +63262,6 @@
     (§
 ;       if (free_p_ff)
 ;       {
-;           clear_string_option(buf.b_p_fenc);
 ;           clear_string_option(buf.b_p_ff);
 ;       }
 ;       clear_string_option(buf.b_p_kp);
@@ -64437,94 +63278,6 @@
 ;       clear_string_option(buf.b_p_qe);
 ;       buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       clear_string_option(buf.b_p_lw);
-    ))
-
-;; get alternate file n
-;; set linenr to lnum or altfpos.lnum if lnum == 0
-;;      also set cursor column to altfpos.col if 'startofline' is not set.
-;; if (options & GETF_SETMARK) call setpcmark()
-;; if (options & GETF_ALT) we are jumping to an alternate file.
-;; if (options & GETF_SWITCH) respect 'switchbuf' settings when jumping
-;;
-;; return false for failure, true for success
-
-(defn- #_boolean buflist_getfile [#_int n, #_long lnum, #_int options, #_boolean forceit]
-    (§
-;       buffer_C buf = buflist_findnr(n);
-;       if (buf == null)
-;       {
-;           if ((options & GETF_ALT) != 0 && n == 0)
-;               emsg(e_noalt);
-;           else
-;               emsgn(u8("E92: Buffer %ld not found"), (long)n);
-;           return false;
-;       }
-
-        ;; if alternate file is the current buffer, nothing to do
-;       if (buf == @curbuf)
-;           return true;
-
-;       if (text_locked())
-;       {
-;           text_locked_msg();
-;           return false;
-;       }
-;       if (curbuf_locked())
-;           return false;
-
-        ;; altfpos may be changed by getfile(), get it now
-;       int col;
-;       if (lnum == 0)
-;       {
-;           pos_C fpos = buflist_findfpos(buf);
-;           lnum = fpos.lnum;
-;           col = fpos.col;
-;       }
-;       else
-;           col = 0;
-
-;       window_C wp = null;
-
-;       if ((options & GETF_SWITCH) != 0)
-;       {
-            ;; If 'switchbuf' contains "useopen": jump to first window containing
-            ;; "buf" if one exists.
-;           if ((@swb_flags & SWB_USEOPEN) != 0)
-;               wp = buf_jump_open_win(buf);
-            ;; If 'switchbuf' contains "usetab": jump to first window in any tab
-            ;; page containing "buf" if one exists.
-;           if (wp == null && (@swb_flags & SWB_USETAB) != 0)
-;               wp = buf_jump_open_tab(buf);
-            ;; If 'switchbuf' contains "split" or "newtab" and the current buffer
-            ;; isn't empty: open new window.
-;           if (wp == null && (@swb_flags & (SWB_SPLIT | SWB_NEWTAB)) != 0 && !bufempty())
-;           {
-;               if ((@swb_flags & SWB_NEWTAB) != 0)      ;; open in a new tab
-;                   tabpage_new();
-;               else if (win_split(0, 0) == false)      ;; open in a new window
-;                   return false;
-;               @curwin.w_onebuf_opt.@wo_scb = false;
-;               @curwin.w_onebuf_opt.@wo_crb = false;
-;           }
-;       }
-
-;       @redrawingDisabled++;
-;       if (getfile(buf.b_fnum, null, null, (options & GETF_SETMARK) != 0, lnum, forceit) <= 0)
-;       {
-;           --@redrawingDisabled;
-
-            ;; cursor is at to BOL and w_cursor.lnum is checked due to getfile()
-;           if (!@p_sol && col != 0)
-;           {
-;               @curwin.w_cursor.col = col;
-;               check_cursor_col();
-;               @curwin.w_cursor.coladd = 0;
-;               @curwin.w_set_curswant = true;
-;           }
-;           return true;
-;       }
-;       --@redrawingDisabled;
-;       return false;
     ))
 
 ;; go to the last know line number for the current buffer
@@ -64547,37 +63300,7 @@
 ;       }
     ))
 
-;; Find file in buffer list by name (it has to be for the current window).
-;; Returns null if not found.
-
-(defn- #_buffer_C buflist_findname_exp [#_Bytes fname]
-    (§
-;       buffer_C buf = null;
-
-        ;; First make the name into a full path name.
-;       Bytes ffname = fullName_save(fname, true); ;; force expansion, get rid of symbolic links
-;       if (ffname != null)
-;           buf = buflist_findname(ffname);
-
-;       return buf;
-    ))
-
-;; Find file in buffer list by name (it has to be for the current window).
-;; "ffname" must have a full path.
-;; Skips dummy buffers.
-;; Returns null if not found.
-
-(defn- #_buffer_C buflist_findname [#_Bytes ffname]
-    (§
-;       stat_C st = new stat_C();
-
-;       if (libC.stat(ffname, st) < 0)
-;           st.st_dev(-1);
-
-;       return buflist_findname_stat(ffname, st);
-    ))
-
-;; Same as buflist_findname(), but pass the stat structure to avoid getting it twice for the same file.
+;; Same as buflist_findname(), but pass the stat structure to avoid getting it twice for the same file.
 ;; Returns null if not found.
 
 (defn- #_buffer_C buflist_findname_stat [#_Bytes ffname, #_stat_C st]
@@ -64964,28 +63687,6 @@
 ;       return true;
     ))
 
-;; Crude way of changing the name of a buffer.  Use with care!
-;; The name should be relative to the current directory.
-
-(defn- #_void buf_set_name [#_int fnum, #_Bytes name]
-    (§
-;       buffer_C buf = buflist_findnr(fnum);
-;       if (buf != null)
-;       {
-;           buf.b_ffname = STRDUP(name);
-;           buf.b_sfname = null;
-            ;; Allocate ffname and expand into full path.  Also resolves .lnk files on Win32.
-;           {
-;               Bytes[] _1 = { buf.b_ffname };
-;               Bytes[] _2 = { buf.b_sfname };
-;               fname_expand(_1, _2);
-;               buf.b_ffname = _1[0];
-;               buf.b_sfname = _2[0];
-;           }
-;           buf.b_fname = buf.b_sfname;
-;       }
-    ))
-
 ;; Take care of what needs to be done when the name of buffer "buf" has changed.
 
 (defn- #_void buf_name_changed [#_buffer_C buf]
@@ -64997,7 +63698,7 @@
 
 ;; set alternate file name for current window
 ;;
-;; Used by do_one_cmd(), do_write() and do_ecmd().
+;; Used by do_one_cmd() and do_ecmd().
 ;; Return the buffer.
 
 (defn- #_buffer_C setaltfname [#_Bytes ffname, #_Bytes sfname, #_long lnum]
@@ -65025,20 +63726,6 @@
 ;           return null;
 ;       }
 ;       return fname[0];
-    ))
-
-;; Add a file name to the buflist and return its number.
-;; Uses same flags as buflist_new(), except BLN_DUMMY.
-;;
-;; used by qf_init(), main() and doarglist()
-
-(defn- #_int buflist_add [#_Bytes fname, #_int flags]
-    (§
-;       buffer_C buf = buflist_new(fname, null, 0, flags);
-;       if (buf != null)
-;           return buf.b_fnum;
-
-;       return 0;
     ))
 
 ;; Set alternate cursor position for the current buffer and window "win".
@@ -66119,7 +64806,7 @@
 
 ;       for (window_C wp = @lastwin; count < open_wins; )
 ;       {
-;           boolean r = (P_HID(wp.w_buffer) || !bufIsChanged(wp.w_buffer) || autowrite(wp.w_buffer, false) == true);
+;           boolean r = (P_HID(wp.w_buffer) || !bufIsChanged(wp.w_buffer) || false == true);
 ;           if (!win_valid(wp))
 ;           {
                     ;; BufWrite Autocommands made the window invalid, start over.
@@ -66149,55 +64836,6 @@
 ;           return u8("[No Name]");
 
 ;       return (full) ? buf.b_ffname : buf.b_fname;
-    ))
-
-;; Read the file for "buf" again and check if the contents changed.
-;; Return true if it changed or this could not be checked.
-
-(defn- #_boolean buf_contents_changed [#_buffer_C buf]
-    (§
-;       boolean differ = true;
-
-        ;; Allocate a buffer without putting it in the buffer list.
-;       buffer_C newbuf = buflist_new(null, null, 1, BLN_DUMMY);
-;       if (newbuf == null)
-;           return true;
-
-;       exarg_C ea = §_exarg_C();
-;       prep_exarg(ea, buf);
-
-;       if (ml_open(@curbuf) == true
-;               && readfile(buf.b_ffname, buf.b_fname,
-;                       0, 0, MAXLNUM, ea, READ_NEW | READ_DUMMY) == true)
-;       {
-            ;; compare the two files line by line
-;           if (buf.b_ml.ml_line_count == @curbuf.b_ml.ml_line_count)
-;           {
-;               differ = false;
-;               for (long lnum = 1; lnum <= @curbuf.b_ml.ml_line_count; lnum++)
-;                   if (STRCMP(ml_get_buf(buf, lnum, false), ml_get(lnum)) != 0)
-;                   {
-;                       differ = true;
-;                       break;
-;                   }
-;           }
-;       }
-
-;       if (@curbuf != newbuf)       ;; safety check
-;           wipe_buffer(newbuf);
-
-;       return differ;
-    ))
-
-;; Wipe out a buffer and decrement the last buffer number if it was used for
-;; this buffer.  Call this to wipe out a temp buffer that does not contain any marks.
-
-(defn- #_void wipe_buffer [#_buffer_C buf]
-    (§
-;       if (buf.b_fnum == @top_file_num - 1)
-;           --@top_file_num;
-
-;       close_buffer(null, buf, DOBUF_WIPE, false);
     ))
 
 ;;; ============================================================================================== VimQ
@@ -69196,32 +67834,6 @@
 (defn- #_int mb_byte2len [#_int b]
     (§
 ;       return (b < 0 || 0xff < b) ? 1 : us_byte2len((byte)b, false);
-    ))
-
-;; Return the size of the BOM for the current buffer:
-;; 0 - no BOM
-;; 2 - UCS-2 or UTF-16 BOM
-;; 4 - UCS-4 BOM
-;; 3 - UTF-8 BOM
-
-(defn- #_int bomb_size []
-    (§
-;       int n = 0;
-
-;       if (@curbuf.@b_p_bomb && !@curbuf.@b_p_bin)
-;       {
-;           if (@curbuf.@b_p_fenc.at(0) == NUL)
-;               n = 3;
-;           else if (STRCMP(@curbuf.@b_p_fenc, u8("utf-8")) == 0)
-;               n = 3;
-;           else if (STRNCMP(@curbuf.@b_p_fenc, u8("ucs-2"), 5) == 0
-;                 || STRNCMP(@curbuf.@b_p_fenc, u8("utf-16"), 6) == 0)
-;               n = 2;
-;           else if (STRNCMP(@curbuf.@b_p_fenc, u8("ucs-4"), 5) == 0)
-;               n = 4;
-;       }
-
-;       return n;
     ))
 
 ;; Get class of pointer:
@@ -74148,23 +72760,6 @@
 ;                   (d = d.plus(1)).be(-1, (s = s.plus(1)).at(0));
 ;           }
 ;       }
-    ))
-
-;; Return true if the directory of "fname" exists, false otherwise.
-;; Also returns true if there is no directory name.
-;; "fname" must be writable!.
-
-(defn- #_boolean dir_of_file_exists [#_Bytes fname]
-    (§
-;       Bytes p = gettail_sep(fname);
-;       if (BEQ(p, fname))
-;           return true;
-
-;       byte c = p.at(0);
-;       p.be(0, NUL);
-;       boolean retval = mch_isdir(fname);
-;       p.be(0, c);
-;       return retval;
     ))
 
 ;; Concatenate file names fname1 and fname2 into allocated memory.
@@ -79482,23 +78077,6 @@
 ;       return EOL_DOS;
     ))
 
-;; Like get_fileformat(), but override 'fileformat' with "p" for "++opt=val" argument.
-
-(defn- #_int get_fileformat_force [#_buffer_C buf, #_exarg_C eap]
-    ;; eap: can be null!
-    (§
-;       if ((eap != null && eap.force_bin != 0) ? (eap.force_bin == FORCE_BIN) : buf.@b_p_bin)
-;           return EOL_UNIX;
-
-;       byte c = buf.@b_p_ff.at(0);
-;       if (c == 'u')
-;           return EOL_UNIX;
-;       if (c == 'm')
-;           return EOL_MAC;
-
-;       return EOL_DOS;
-    ))
-
 ;; Set the current end-of-line type to EOL_DOS, EOL_UNIX or EOL_MAC.
 ;; Sets both 'textmode' and 'fileformat'.
 ;; Note: Does _not_ set global value of 'textmode'!
@@ -79512,15 +78090,12 @@
 ;       {
 ;           case EOL_DOS:
 ;               p = FF_DOS;
-;               @curbuf.@b_p_tx = true;
 ;               break;
 ;           case EOL_UNIX:
 ;               p = FF_UNIX;
-;               @curbuf.@b_p_tx = false;
 ;               break;
 ;           case EOL_MAC:
 ;               p = FF_MAC;
-;               @curbuf.@b_p_tx = false;
 ;               break;
 ;       }
 ;       if (p != null)
@@ -79529,25 +78104,6 @@
         ;; This may cause the buffer to become (un)modified.
 ;       check_status(@curbuf);
 ;       @redraw_tabline = true;
-    ))
-
-;; Return the default fileformat from 'fileformats'.
-
-(defn- #_int default_fileformat []
-    (§
-;       switch (@p_ffs.at(0))
-;       {
-;           case 'm':   return EOL_MAC;
-;           case 'd':   return EOL_DOS;
-;       }
-;       return EOL_UNIX;
-    ))
-
-;; Well, no shell.
-
-(defn- #_int call_shell [#_Bytes _cmd, #_int _opt]
-    (§
-;       return 127;
     ))
 
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
@@ -79653,1535 +78209,12 @@
 
 ;; fileio.c: read from and write to a file --------------------------------------------------------
 
-(final int BUFSIZE         8192)    ;; size of normal write buffer
-
-(final int AUGROUP_ALL        -3)   ;; all autocmd groups
-
-(final int FIO_LATIN1     0x01)     ;; convert Latin1
-(final int FIO_UTF8       0x02)     ;; convert UTF-8
-(final int FIO_UCS2       0x04)     ;; convert UCS-2
-(final int FIO_UCS4       0x08)     ;; convert UCS-4
-(final int FIO_UTF16      0x10)     ;; convert UTF-16
-(final int FIO_ENDIAN_L   0x80)     ;; little endian
-(final int FIO_NOCONVERT  0x2000)   ;; skip encoding conversion
-(final int FIO_UCSBOM     0x4000)   ;; check for BOM at start of file
-(final int FIO_ALL        -1)       ;; allow all formats
-
-;; When converting, a read() or write() may leave some bytes to be converted
-;; for the next call.  The value is guessed...
-
-(final int CONV_RESTLEN 30)
-
-;; We have to guess how much a sequence of bytes may expand when converting
-;; with iconv() to be able to allocate a buffer.
-
-(final int ICONV_MULT 8)
-
-;; Structure to pass arguments from buf_write() to buf_write_bytes().
-
-(class! #_final bw_info_C
-    [
-        (field int          bw_fd)                  ;; file descriptor
-        (field Bytes        bw_buf)                 ;; buffer with data to be written
-        (field int          bw_len)                 ;; length of data
-        (field int          bw_flags)               ;; FIO_ flags
-        (field Bytes        bw_rest     (Bytes. CONV_RESTLEN))  ;; not converted bytes
-        (field int          bw_restlen)             ;; nr of bytes in bw_rest[]
-        (field int          bw_first)               ;; first write call
-        (field Bytes        bw_conv_buf)            ;; buffer for writing converted chars
-        (field int          bw_conv_buflen)         ;; size of "bw_conv_buf"
-        (field boolean      bw_conv_error)          ;; set for conversion error
-        (field long         bw_conv_error_lnum)     ;; first line with error or zero
-        (field long         bw_start_lnum)          ;; line number at start of buffer
-    ])
-
-(final Bytes e_auchangedbuf (u8 "E812: Autocommands changed buffer or buffer name"))
-
-(defn- #_void filemess [#_Bytes name, #_Bytes s, #_int attr]
-    (§
-;       if (@msg_silent != 0)
-;           return;
-
-;       msg_add_fname(name);                        ;; put file name in ioBuff with quotes
-        ;; If it's extremely long, truncate it.
-;       if (IOSIZE - 80 < STRLEN(@ioBuff))
-;           @ioBuff.be(IOSIZE - 80, NUL);
-;       STRCAT(@ioBuff, s);
-
-        ;; For the first message may have to start a new line.
-        ;; For further ones overwrite the previous one, reset msg_scroll before calling filemess().
-
-;       boolean msg_scroll_save = @msg_scroll;
-;       if (shortmess(SHM_OVERALL) && !@exiting && @p_verbose == 0)
-;           @msg_scroll = false;
-;       if (!@msg_scroll)                            ;; wait a bit when overwriting an error msg
-;           check_for_delay(false);
-;       msg_start();
-;       @msg_scroll = msg_scroll_save;
-
-;       @msg_scrolled_ign = true;
-        ;; may truncate the message to avoid a hit-return prompt
-;       msg_outtrans_attr(msg_may_trunc(false, @ioBuff), attr);
-;       msg_clr_eos();
-;       out_flush();
-;       @msg_scrolled_ign = false;
-    ))
-
-;; Read lines from file "fname" into the buffer after line "from".
-;;
-;; 1. We allocate blocks with lalloc, as big as possible.
-;; 2. Each block is filled with characters from the file with a single read().
-;; 3. The lines are inserted in the buffer with ml_append().
-;;
-;; (caller must check that fname != null, unless READ_STDIN is used)
-;;
-;; "lines_to_skip" is the number of lines that must be skipped
-;; "lines_to_read" is the number of lines that are appended
-;; When not recovering lines_to_skip is 0 and lines_to_read MAXLNUM.
-;;
-;; flags:
-;; READ_NEW     starting to edit a new buffer
-;; READ_FILTER  reading filter output
-;; READ_STDIN   read from stdin instead of a file
-;; READ_BUFFER  read from curbuf instead of a file (converting after reading stdin)
-;; READ_DUMMY   read into a dummy buffer (to check if file contents changed)
-;; READ_KEEP_UNDO  don't clear undo info or read it from a file
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean readfile [#_Bytes fname, #_Bytes sfname, #_long from, #_long lines_to_skip, #_long lines_to_read, #_exarg_C eap, #_int flags]
-    ;; eap: can be null!
-    (§
-;       boolean newfile = ((flags & READ_NEW) != 0);
-;       boolean filtering = ((flags & READ_FILTER) != 0);
-;       boolean read_stdin = ((flags & READ_STDIN) != 0);
-;       boolean read_buffer = ((flags & READ_BUFFER) != 0);
-
-;       boolean set_options = newfile || read_buffer || (eap != null && eap.read_edit);
-
-;       @curbuf.b_no_eol_lnum = 0;   ;; in case it was set by the previous read
-
-        ;; If there is no file name yet, use the one for the read file.
-        ;; BF_NOTEDITED is set to reflect this.
-        ;; Don't do this for a read from a filter.
-        ;; Only do this when 'cpoptions' contains the 'f' flag.
-
-;       if (@curbuf.b_ffname == null
-;               && !filtering
-;               && fname != null
-;               && vim_strbyte(@p_cpo, CPO_FNAMER) != null
-;               && (flags & READ_DUMMY) == 0)
-;       {
-;           if (set_rw_fname(fname, sfname) == false)
-;               return false;
-;       }
-
-        ;; Remember the initial values of curbuf, curbuf.b_ffname and curbuf.b_fname
-        ;; to detect whether they are altered as a result of executing nasty autocommands.
-        ;; Also check if "fname" and "sfname" point to one of these values.
-;       buffer_C old_curbuf = @curbuf;
-;       Bytes old_b_ffname = @curbuf.b_ffname;
-;       Bytes old_b_fname = @curbuf.b_fname;
-;       boolean using_b_ffname = (BEQ(fname, @curbuf.b_ffname) || BEQ(sfname, @curbuf.b_ffname));
-;       boolean using_b_fname = (BEQ(fname, @curbuf.b_fname) || BEQ(sfname, @curbuf.b_fname));
-
-        ;; After reading a file the cursor line changes but we don't want to display the line.
-;       @ex_no_reprint = true;
-
-        ;; don't display the file info for another buffer now
-;       @need_fileinfo = false;
-
-        ;; For Unix: Use the short file name whenever possible.
-        ;; Avoids problems with networks and when directory names are changed.
-
-;       if (sfname == null)
-;           sfname = fname;
-;       fname = sfname;
-
-        ;; The BufReadCmd and FileReadCmd events intercept the reading process
-        ;; by executing the associated commands instead.
-
-;       if (!filtering && !read_stdin && !read_buffer)
-;       {
-;           pos_C pos = §_pos_C();
-;           COPY_pos(pos, @curbuf.b_op_start);
-
-            ;; Set '[ mark to the line above where the lines go (line 1 if zero).
-;           @curbuf.b_op_start.lnum = (from == 0) ? 1 : from;
-;           @curbuf.b_op_start.col = 0;
-
-;           COPY_pos(@curbuf.b_op_start, pos);
-;       }
-
-;       boolean msg_save = @msg_scroll;
-;       if (shortmess(SHM_OVER) && @p_verbose == 0)
-;           @msg_scroll = false;                     ;; overwrite previous file message
-;       else
-;           @msg_scroll = true;                      ;; don't overwrite previous file message
-
-        ;; If the name ends in a path separator, we can't open it.  Check here,
-        ;; because reading the file may actually work, but then creating the swap
-        ;; file may destroy it!  Reported on MS-DOS and Win 95.
-        ;; If the name is too long we might crash further on, quit here.
-
-;       if (fname != null && fname.at(0) != NUL)
-;       {
-;           Bytes p = fname.plus(STRLEN(fname));
-;           if (after_pathsep(fname, p) || MAXPATHL <= STRLEN(fname))
-;           {
-;               filemess(fname, u8("Illegal file name"), 0);
-;               msg_end();
-;               @msg_scroll = msg_save;
-;               return false;
-;           }
-;       }
-
-;       int perm = 0;
-;       if (!read_stdin && !read_buffer)
-;       {
-            ;; On Unix it is possible to read a directory,
-            ;; so we have to check for it before the open().
-
-;           perm = mch_getperm(fname);
-;           if (0 <= perm && !S_ISREG(perm)         ;; not a regular file ...
-;                         && !S_ISFIFO(perm)        ;; ... nor fifo
-;                         && !S_ISSOCK(perm))       ;; ... nor socket
-;           {
-;               if (S_ISDIR(perm))
-;                   filemess(fname, u8("is a directory"), 0);
-;               else
-;                   filemess(fname, u8("is not a file"), 0);
-;               msg_end();
-;               @msg_scroll = msg_save;
-;               return false;
-;           }
-;       }
-
-        ;; Set default or forced 'fileformat' and 'binary'.
-;       set_file_options(set_options, eap);
-
-        ;; When opening a new file we take the readonly flag from the file.
-        ;; Default is r/w, can be set to r/o below.
-        ;; Don't reset it when in readonly mode
-        ;; Only set/reset "b_p_ro" when BF_CHECK_RO is set.
-
-;       boolean check_readonly = (newfile && (@curbuf.b_flags & BF_CHECK_RO) != 0);
-;       if (check_readonly && !@readonlymode)
-;           @curbuf.@b_p_ro = false;
-
-;       stat_C st = new stat_C();
-;       if (newfile && !read_stdin && !read_buffer)
-;       {
-            ;; Remember time of file.
-;           if (0 <= libC.stat(fname, st))
-;           {
-;               buf_store_time(@curbuf, st);
-;               @curbuf.b_mtime_read = @curbuf.b_mtime;
-;           }
-;           else
-;           {
-;               @curbuf.b_mtime = 0;
-;               @curbuf.b_mtime_read = 0;
-;               @curbuf.b_orig_size = 0;
-;               @curbuf.b_orig_mode = 0;
-;           }
-
-            ;; Reset the "new file" flag.  It will be set again below when the file doesn't exist.
-;           @curbuf.b_flags &= ~(BF_NEW | BF_NEW_W);
-;       }
-
-;       int fd = 0;
-
-;       boolean file_readonly = false;
-;       if (!read_stdin && !read_buffer)
-;       {
-;           if ((perm & 0222) == 0 || libC.access(fname, W_OK) != 0)
-;               file_readonly = true;
-;           fd = libC.open(fname, O_RDONLY, 0);
-;       }
-
-;       if (fd < 0)                                 ;; cannot open at all
-;       {
-;           @msg_scroll = msg_save;
-
-;           if (newfile)
-;           {
-;               if (perm < 0 && libC.errno() == ENOENT)
-;               {
-                    ;; Set the 'new-file' flag, so that when the file has
-                    ;; been created by someone else, a ":w" will complain.
-
-;                   @curbuf.b_flags |= BF_NEW;
-
-                    ;; SwapExists autocommand may mess things up.
-;                   if (@curbuf != old_curbuf
-;                           || (using_b_ffname && BNE(old_b_ffname, @curbuf.b_ffname))
-;                           || (using_b_fname && BNE(old_b_fname, @curbuf.b_fname)))
-;                   {
-;                       emsg(e_auchangedbuf);
-;                       return false;
-;                   }
-
-;                   if (dir_of_file_exists(fname))
-;                       filemess(sfname, u8("[New File]"), 0);
-;                   else
-;                       filemess(sfname, u8("[New DIRECTORY]"), 0);
-
-                    ;; remember the current fileformat
-;                   save_file_ff(@curbuf);
-
-;                   if (aborting())             ;; autocmds may abort script processing
-;                       return false;
-
-;                   return true;                ;; a new file is not an error
-;               }
-;               else
-;               {
-;                   filemess(sfname, (libC.errno() == EFBIG) ? u8("[File too big]")
-;                                           : (libC.errno() == EOVERFLOW) ? u8("[File too big]")
-;                                                       : u8("[Permission Denied]"), 0);
-;                   @curbuf.@b_p_ro = true;       ;; must use "w!" now
-;               }
-;           }
-
-;           return false;
-;       }
-
-        ;; Only set the 'ro' flag for readonly files the first time they are loaded.
-
-;       if (check_readonly && file_readonly)
-;           @curbuf.@b_p_ro = true;
-
-;       if (set_options)
-;       {
-            ;; Don't change 'eol' if reading from buffer as it will already be
-            ;; correctly set when reading stdin.
-;           if (!read_buffer)
-;           {
-;               @curbuf.@b_p_eol = true;
-;               @curbuf.b_start_eol = true;
-;           }
-;           @curbuf.@b_p_bomb = false;
-;           @curbuf.b_start_bomb = false;
-;       }
-
-;       if (!read_stdin && (@curbuf != old_curbuf
-;               || (using_b_ffname && BNE(old_b_ffname, @curbuf.b_ffname))
-;               || (using_b_fname && BNE(old_b_fname, @curbuf.b_fname))))
-;       {
-;           emsg(e_auchangedbuf);
-;           if (!read_buffer)
-;               libc.close(fd);
-;           return false;
-;       }
-
-;       @no_wait_return++;                           ;; don't wait for return yet
-
-        ;; Set '[ mark to the line above where the lines go (line 1 if zero).
-
-;       @curbuf.b_op_start.lnum = (from == 0) ? 1 : from;
-;       @curbuf.b_op_start.col = 0;
-
-;       if (!read_buffer)
-;       {
-;           boolean m = @msg_scroll;
-;           int n = @msg_scrolled;
-
-            ;; The file must be closed again,
-            ;; the autocommands may want to change the file before reading it.
-
-;           if (!read_stdin)
-;               libc.close(fd);                         ;; ignore errors
-
-            ;; The output from the autocommands should not overwrite anything and
-            ;; should not be overwritten: Set msg_scroll, restore its value if no
-            ;; output was done.
-
-;           @msg_scroll = true;
-
-;           if (@msg_scrolled == n)
-;               @msg_scroll = m;
-
-;           if (aborting())                         ;; autocmds may abort script processing
-;           {
-;               --@no_wait_return;
-;               @msg_scroll = msg_save;
-;               @curbuf.@b_p_ro = true;               ;; must use "w!" now
-;               return false;
-;           }
-
-            ;; Don't allow the autocommands to change the current buffer.
-            ;; Try to re-open the file.
-            ;;
-            ;; Don't allow the autocommands to change the buffer name either
-            ;; (cd for example) if it invalidates "fname" or "sfname".
-
-;           if (!read_stdin && (@curbuf != old_curbuf
-;                   || (using_b_ffname && BNE(old_b_ffname, @curbuf.b_ffname))
-;                   || (using_b_fname && BNE(old_b_fname, @curbuf.b_fname))
-;                   || (fd = libC.open(fname, O_RDONLY, 0)) < 0))
-;           {
-;               --@no_wait_return;
-;               @msg_scroll = msg_save;
-;               if (fd < 0)
-;                   emsg(u8("E200: *ReadPre autocommands made the file unreadable"));
-;               else
-;                   emsg(u8("E201: *ReadPre autocommands must not change current buffer"));
-;               @curbuf.@b_p_ro = true;               ;; must use "w!" now
-;               return false;
-;           }
-;       }
-
-        ;; Autocommands may add lines to the file, need to check if it is empty.
-;       boolean wasempty = ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0);
-
-;       if (!filtering && (flags & READ_DUMMY) == 0)
-;       {
-            ;; Show the user that we are busy reading the input.  Sometimes this
-            ;; may take a while.  When reading from stdin another program may
-            ;; still be running, don't move the cursor to the last line, unless
-            ;; always using the GUI.
-
-;           if (read_stdin)
-;               libC.fprintf(stdout, u8("Vim: Reading from stdin...\n"));
-;           else if (!read_buffer)
-;               filemess(sfname, u8(""), 0);
-;       }
-
-;       @msg_scroll = false;                         ;; overwrite the file message
-
-        ;; Set linecnt now, before the "retry" caused by a wrong guess for
-        ;; fileformat, and after the autocommands, which may change them.
-
-;       long linecnt = @curbuf.b_ml.ml_line_count;
-
-        ;; "++bad=" argument.
-;       int bad_char_behavior = BAD_REPLACE;    ;; BAD_KEEP, BAD_DROP or character to replace with
-;       if (eap != null && eap.bad_char != 0)
-;       {
-;           bad_char_behavior = eap.bad_char;
-;           if (set_options)
-;               @curbuf.b_bad_char = eap.bad_char;
-;       }
-;       else
-;           @curbuf.b_bad_char = 0;
-
-        ;; Decide which 'encoding' to use or use first.
-
-;       Bytes[] fenc_next = { null };                   ;; next item in 'fencs' or null
-;       Bytes fenc;                                ;; fileencoding to use
-;       if (@curbuf.@b_p_bin)
-;       {
-;           fenc = u8("");                              ;; binary: don't convert
-;       }
-;       else if (@p_fencs.at(0) == NUL)
-;       {
-;           fenc = @curbuf.@b_p_fenc;                 ;; use format from buffer
-;       }
-;       else
-;       {
-;           fenc_next[0] = @p_fencs;                    ;; try items in 'fileencodings'
-;           fenc = next_fenc(fenc_next);
-;       }
-
-;       int try_mac = (vim_strchr(@p_ffs, 'm') != null) ? 1 : 0;
-;       boolean try_dos = (vim_strchr(@p_ffs, 'd') != null);
-;       int try_unix = (vim_strchr(@p_ffs, 'x') != null) ? 1 : 0;
-
-        ;; Jump back here to retry reading the file in different ways.
-        ;; Reasons to retry:
-        ;; - encoding conversion failed: try another one from "fenc_next"
-        ;; - BOM detected and "fenc" was set, need to setup conversion
-        ;; - "fileformat" check failed: try another
-        ;;
-        ;; Variables set for special retry actions:
-        ;; "file_rewind"    Rewind the file to start reading it again.
-        ;; "advance_fenc"   Advance "fenc" using "fenc_next".
-        ;; "skip_read"      Re-use already read bytes (BOM detected).
-        ;; "keep_fileformat" Don't reset "fileformat".
-
-;       int fileformat = 0;                     ;; end-of-line format
-;       int ff_error = EOL_UNKNOWN;             ;; file format with errors
-
-;       boolean file_rewind = false;
-;       boolean advance_fenc = false;
-;       boolean skip_read = false;
-;       boolean keep_fileformat = false;
-
-;       boolean read_undo_file = false;
-
-;       boolean converted = false;              ;; true if conversion done
-;       boolean notconverted = false;           ;; true if conversion wanted but it wasn't possible
-
-;       long read_buf_lnum = 1;                 ;; next line to read from curbuf
-;       int read_buf_col = 0;                   ;; next char to read from this line
-
-;       Bytes conv_rest = new Bytes(CONV_RESTLEN);
-;       int conv_restlen = 0;                   ;; nr of bytes in conv_rest[]
-
-;       long conv_error = 0;                    ;; line nr with conversion error
-;       long illegal_byte = 0;                  ;; line nr with illegal byte
-;       long read_no_eol_lnum = 0;              ;; non-zero lnum when last line of
-                                                ;; last read was missing the eol
-;       int size = 0;
-;       long filesize = 0;
-;       int real_size = 0;
-;       long skip_count = 0;
-;       long read_count = 0;
-;       int linerest = 0;                      ;; remaining chars in line
-
-;       boolean error = false;                  ;; errors encountered
-
-;       Bytes ptr = null;                      ;; pointer into read buffer
-;       Bytes buffer = null;                   ;; read buffer
-;       Bytes new_buffer = null;
-;       Bytes line_start = null;
-
-;       long lnum = from;
-
-;       context_sha256_C sha_ctx = new context_sha256_C();
-
-;       retry:
-;       for ( ; ; )
-;       {
-;           if (file_rewind)
-;           {
-;               if (read_buffer)
-;               {
-;                   read_buf_lnum = 1;
-;                   read_buf_col = 0;
-;               }
-;               else if (read_stdin || libc.lseek(fd, 0L, SEEK_SET) != 0)
-;               {
-                    ;; Can't rewind the file, give up.
-;                   error = true;
-;                   break retry;
-;               }
-                ;; Delete the previously read lines.
-;               while (from < lnum)
-;                   ml_delete(lnum--, false);
-;               file_rewind = false;
-;               if (set_options)
-;               {
-;                   @curbuf.@b_p_bomb = false;
-;                   @curbuf.b_start_bomb = false;
-;               }
-;               conv_error = 0;
-;           }
-
-            ;; When retrying with another "fenc" and the first time "fileformat" will be reset.
-
-;           if (keep_fileformat)
-;               keep_fileformat = false;
-;           else
-;           {
-;               if (@curbuf.@b_p_bin)
-;                   fileformat = EOL_UNIX;                  ;; binary: use Unix format
-;               else if (@p_ffs.at(0) == NUL)
-;                   fileformat = get_fileformat(@curbuf);    ;; use format from buffer
-;               else
-;                   fileformat = EOL_UNKNOWN;               ;; detect from file
-;           }
-
-;           if (advance_fenc)
-;           {
-                ;; Try the next entry in 'fileencodings'.
-
-;               advance_fenc = false;
-
-;               if (fenc_next[0] != null)
-;                   fenc = next_fenc(fenc_next);
-;               else
-;                   fenc = u8("");
-;           }
-
-            ;; Conversion may be required when the encoding of the file is different
-            ;; from 'encoding' or 'encoding' is UTF-16, UCS-2 or UCS-4.
-
-;           int fio_flags = 0;
-;           converted = need_conversion(fenc);
-;           if (converted)
-;           {
-                ;; "ucs-bom" means we need to check the first bytes of the file for a BOM.
-;               if (STRCMP(fenc, u8("ucs-bom")) == 0)
-;                   fio_flags = FIO_UCSBOM;
-
-                ;; Check if UCS-2/4 or Latin1 to UTF-8 conversion needs to be done.
-                ;; This is handled below after read().  Prepare the fio_flags to avoid
-                ;; having to parse the string each time.  Also check for Unicode to Latin1
-                ;; conversion, because iconv() appears not to handle this correctly.
-                ;; This works just like conversion to UTF-8 except how the resulting
-                ;; character is put in the buffer.
-
-;               else
-;                   fio_flags = get_fio_flags(fenc);
-
-;               if (fio_flags == 0)
-;               {
-                    ;; Conversion wanted but we can't.
-                    ;; Try the next conversion in 'fileencodings'.
-;                   advance_fenc = true;
-;                   continue retry;
-;               }
-;           }
-
-            ;; Set 'can_retry' when it's possible to rewind the file and try with another 'fenc' value.
-            ;; It's false when no other 'fenc' to try, reading stdin or fixed at a specific encoding.
-;           boolean can_retry = (fenc.at(0) != NUL && !read_stdin);
-
-;           if (!skip_read)
-;           {
-;               linerest = 0;
-;               filesize = 0;
-;               skip_count = lines_to_skip;
-;               read_count = lines_to_read;
-;               conv_restlen = 0;
-;               read_undo_file = (newfile && (flags & READ_KEEP_UNDO) == 0
-;                                       && @curbuf.b_ffname != null
-;                                       && @curbuf.@b_p_udf
-;                                       && !filtering
-;                                       && !read_stdin
-;                                       && !read_buffer);
-;               if (read_undo_file)
-;                   sha256_start(sha_ctx);
-;           }
-
-;           while (!error && !@got_int)
-;           {
-                ;; We allocate as much space for the file as we can get, plus
-                ;; space for the old line plus room for one terminating NUL.
-                ;; The amount is limited by the fact that read() only can read
-                ;; upto max_unsigned characters (and other things).
-
-;               if (!skip_read)
-;               {
-;                   size = 0x10000;                ;; use buffer >= 64K
-
-;                   new_buffer = new Bytes(size + linerest + 1);
-;                   if (linerest != 0)                  ;; copy characters from the previous buffer
-;                       BCOPY(new_buffer, 0, ptr, -linerest, linerest);
-;                   buffer = new_buffer;
-;                   ptr = buffer.plus(linerest);
-;                   line_start = buffer;
-
-                    ;; May need room to translate into.
-                    ;; For iconv() we don't really know the required space, use a factor ICONV_MULT.
-                    ;; latin1 to utf-8: 1 byte becomes up to 2 bytes
-                    ;; utf-16 to utf-8: 2 bytes become up to 3 bytes, 4 bytes
-                    ;; become up to 4 bytes, size must be multiple of 2
-                    ;; ucs-2 to utf-8: 2 bytes become up to 3 bytes, size must be multiple of 2
-                    ;; ucs-4 to utf-8: 4 bytes become up to 6 bytes, size must be multiple of 4
-
-;                   real_size = size;
-;                   if ((fio_flags & FIO_LATIN1) != 0)
-;                       size = size / 2;
-;                   else if ((fio_flags & (FIO_UCS2 | FIO_UTF16)) != 0)
-;                       size = (size * 2 / 3) & ~1;
-;                   else if ((fio_flags & FIO_UCS4) != 0)
-;                       size = (size * 2 / 3) & ~3;
-;                   else if (fio_flags == FIO_UCSBOM)
-;                       size = size / ICONV_MULT;   ;; worst case
-
-;                   if (0 < conv_restlen)
-;                   {
-                        ;; Insert unconverted bytes from previous line.
-;                       BCOPY(ptr, conv_rest, conv_restlen);
-;                       ptr = ptr.plus(conv_restlen);
-;                       size -= conv_restlen;
-;                   }
-
-;                   if (read_buffer)
-;                   {
-                        ;; Read bytes from curbuf.
-                        ;; Used for converting text read from stdin.
-;                       if (from < read_buf_lnum)
-;                           size = 0;
-;                       else
-;                       {
-;                           int tlen = 0;
-
-;                           for ( ; ; )
-;                           {
-;                               Bytes p = ml_get(read_buf_lnum).plus(read_buf_col);
-;                               int n = STRLEN(p);
-;                               if (size < tlen + n + 1)
-;                               {
-                                    ;; Filled up to "size", append partial line.
-                                    ;; Change NL to NUL to reverse the effect done below.
-;                                   n = size - tlen;
-;                                   for (int ni = 0; ni < n; ni++)
-;                                   {
-;                                       if (p.at(ni) == NL)
-;                                           ptr.be(tlen++, NUL);
-;                                       else
-;                                           ptr.be(tlen++, p.at(ni));
-;                                   }
-;                                   read_buf_col += n;
-;                                   break;
-;                               }
-;                               else
-;                               {
-                                    ;; Append whole line and new-line.
-                                    ;; Change NL to NUL to reverse the effect done below.
-;                                   for (int ni = 0; ni < n; ni++)
-;                                   {
-;                                       if (p.at(ni) == NL)
-;                                           ptr.be(tlen++, NUL);
-;                                       else
-;                                           ptr.be(tlen++, p.at(ni));
-;                                   }
-;                                   ptr.be(tlen++, NL);
-;                                   read_buf_col = 0;
-;                                   if (from < ++read_buf_lnum)
-;                                   {
-                                        ;; When the last line didn't have an end-of-line,
-                                        ;; don't add it now either.
-;                                       if (!@curbuf.@b_p_eol)
-;                                           --tlen;
-;                                       size = tlen;
-;                                       break;
-;                                   }
-;                               }
-;                           }
-;                       }
-;                   }
-;                   else
-;                   {
-                        ;; Read bytes from the file.
-;                       size = read_eintr(fd, ptr, size);
-;                   }
-
-;                   if (size <= 0)
-;                   {
-;                       if (size < 0)               ;; read error
-;                           error = true;
-;                       else if (0 < conv_restlen)
-;                       {
-                            ;; Reached end-of-file but some trailing bytes could not be converted.
-                            ;; Truncated file?
-
-                            ;; When we did a conversion report an error.
-;                           if (fio_flags != 0)
-;                           {
-;                               if (can_retry)
-;                               {
-                                    ;; Retry reading with another conversion.
-                                    ;; Use next item from 'fileencodings'.
-;                                   advance_fenc = true;
-;                                   file_rewind = true;
-;                                   continue retry;
-;                               }
-;                               if (conv_error == 0)
-;                                   conv_error = @curbuf.b_ml.ml_line_count - linecnt + 1;
-;                           }
-                            ;; Remember the first linenr with an illegal byte.
-;                           else if (illegal_byte == 0)
-;                               illegal_byte = @curbuf.b_ml.ml_line_count - linecnt + 1;
-;                           if (bad_char_behavior == BAD_DROP)
-;                           {
-;                               ptr.be(-conv_restlen, NUL);
-;                               conv_restlen = 0;
-;                           }
-;                           else
-;                           {
-                                ;; Replace the trailing bytes with the replacement character
-                                ;; if we were converting; if we weren't, leave the UTF8
-                                ;; checking code to do it, as it works slightly differently.
-
-;                               if (bad_char_behavior != BAD_KEEP && fio_flags != 0)
-;                               {
-;                                   while (0 < conv_restlen)
-;                                   {
-;                                       (ptr = ptr.minus(1)).be(0, bad_char_behavior);
-;                                       --conv_restlen;
-;                                   }
-;                               }
-;                               fio_flags = 0;      ;; don't convert this
-;                           }
-;                       }
-;                   }
-;               }
-;               skip_read = false;
-
-                ;; At start of file (or after crypt magic number): Check for BOM.
-                ;; Also check for a BOM for other Unicode encodings, but not when
-                ;; a BOM has already been found.
-
-;               if (filesize == 0 && (fio_flags == FIO_UCSBOM || (!@curbuf.@b_p_bomb && (fenc.at(0) == (byte)'u' || fenc.at(0) == NUL))))
-;               {
-;                   Bytes ccname;
-;                   int[] blen = new int[1];
-
-                    ;; no BOM detection in a short file or in binary mode
-;                   if (size < 2 || @curbuf.@b_p_bin)
-;                       ccname = null;
-;                   else
-;                       ccname = check_for_bom(ptr, size, blen,
-;                           (fio_flags == FIO_UCSBOM) ? FIO_ALL : get_fio_flags(fenc));
-;                   if (ccname != null)
-;                   {
-                        ;; Remove BOM from the text.
-;                       filesize += blen[0];
-;                       size -= blen[0];
-;                       BCOPY(ptr, 0, ptr, blen[0], size);
-;                       if (set_options)
-;                       {
-;                           @curbuf.@b_p_bomb = true;
-;                           @curbuf.b_start_bomb = true;
-;                       }
-;                   }
-
-;                   if (fio_flags == FIO_UCSBOM)
-;                   {
-;                       if (ccname == null)
-;                       {
-                            ;; No BOM detected: retry with next encoding.
-;                           advance_fenc = true;
-;                       }
-;                       else
-;                       {
-                            ;; BOM detected: set "fenc" and jump back.
-;                           fenc = ccname;
-;                       }
-                        ;; retry reading without getting new bytes or rewinding
-;                       skip_read = true;
-;                       continue retry;
-;                   }
-;               }
-
-                ;; Include not converted bytes.
-;               ptr = ptr.minus(conv_restlen);
-;               size += conv_restlen;
-;               conv_restlen = 0;
-
-                ;; Break here for a read error or end-of-file.
-
-;               if (size <= 0)
-;                   break;
-
-;               if (fio_flags != 0)
-;               {
-;                   Bytes tail = null;
-
-                    ;; Convert Unicode or Latin1 to UTF-8.
-                    ;; Go from end to start through the buffer, because the number of bytes may increase.
-                    ;; "dest" points to after where the UTF-8 bytes go,
-                    ;; "p" points to after the next character to convert.
-
-;                   Bytes dest = ptr.plus(real_size);
-;                   Bytes p;
-;                   if (fio_flags == FIO_LATIN1 || fio_flags == FIO_UTF8)
-;                   {
-;                       p = ptr.plus(size);
-;                       if (fio_flags == FIO_UTF8)
-;                       {
-                            ;; Check for a trailing incomplete UTF-8 sequence.
-;                           tail = ptr.plus(size - 1);
-;                           while (BLT(ptr, tail) && (char_u(tail.at(0)) & 0xc0) == 0x80)
-;                               tail = tail.minus(1);
-;                           if (BLE(tail.plus(us_byte2len(tail.at(0), false)), ptr.plus(size)))
-;                               tail = null;
-;                           else
-;                               p = tail;
-;                       }
-;                   }
-;                   else if ((fio_flags & (FIO_UCS2 | FIO_UTF16)) != 0)
-;                   {
-                        ;; Check for a trailing byte.
-;                       p = ptr.plus((size & ~1));
-;                       if ((size & 1) != 0)
-;                           tail = p;
-;                       if ((fio_flags & FIO_UTF16) != 0 && BLT(ptr, p))
-;                       {
-;                           int u8c;
-                            ;; Check for a trailing leading word.
-;                           if ((fio_flags & FIO_ENDIAN_L) != 0)
-;                           {
-;                               u8c = (char_u((p = p.minus(1)).at(0)) << 8);
-;                               u8c += char_u((p = p.minus(1)).at(0));
-;                           }
-;                           else
-;                           {
-;                               u8c = char_u((p = p.minus(1)).at(0));
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 8);
-;                           }
-;                           if (0xd800 <= u8c && u8c <= 0xdbff)
-;                               tail = p;
-;                           else
-;                               p = p.plus(2);
-;                       }
-;                   }
-;                   else ;; FIO_UCS4
-;                   {
-                        ;; Check for trailing 1, 2 or 3 bytes.
-;                       p = ptr.plus((size & ~3));
-;                       if ((size & 3) != 0)
-;                           tail = p;
-;                   }
-
-                    ;; If there is a trailing incomplete sequence move it to conv_rest[].
-;                   if (tail != null)
-;                   {
-;                       conv_restlen = BDIFF(ptr.plus(size), tail);
-;                       BCOPY(conv_rest, tail, conv_restlen);
-;                       size -= conv_restlen;
-;                   }
-
-;                   while (BLT(ptr, p))
-;                   {
-;                       int u8c;
-;                       if ((fio_flags & FIO_LATIN1) != 0)
-;                           u8c = char_u((p = p.minus(1)).at(0));
-;                       else if ((fio_flags & (FIO_UCS2 | FIO_UTF16)) != 0)
-;                       {
-;                           if ((fio_flags & FIO_ENDIAN_L) != 0)
-;                           {
-;                               u8c = (char_u((p = p.minus(1)).at(0)) << 8);
-;                               u8c += char_u((p = p.minus(1)).at(0));
-;                           }
-;                           else
-;                           {
-;                               u8c = char_u((p = p.minus(1)).at(0));
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 8);
-;                           }
-;                           if ((fio_flags & FIO_UTF16) != 0 && 0xdc00 <= u8c && u8c <= 0xdfff)
-;                           {
-;                               if (BEQ(p, ptr))
-;                               {
-                                    ;; Missing leading word.
-;                                   if (can_retry)
-;                                   {
-                                        ;; Retry reading with another conversion.
-                                        ;; Use next item from 'fileencodings'.
-;                                       advance_fenc = true;
-;                                       file_rewind = true;
-;                                       continue retry;
-;                                   }
-;                                   if (conv_error == 0)
-;                                       conv_error = readfile_linenr(linecnt, ptr, p);
-;                                   if (bad_char_behavior == BAD_DROP)
-;                                       continue;
-;                                   if (bad_char_behavior != BAD_KEEP)
-;                                       u8c = bad_char_behavior;
-;                               }
-
-                                ;; Found second word of double-word,
-                                ;; get the first word and compute the resulting character.
-;                               int u16c;
-;                               if ((fio_flags & FIO_ENDIAN_L) != 0)
-;                               {
-;                                   u16c = (char_u((p = p.minus(1)).at(0)) << 8);
-;                                   u16c += char_u((p = p.minus(1)).at(0));
-;                               }
-;                               else
-;                               {
-;                                   u16c = char_u((p = p.minus(1)).at(0));
-;                                   u16c += (char_u((p = p.minus(1)).at(0)) << 8);
-;                               }
-;                               u8c = 0x10000 + ((u16c & 0x3ff) << 10) + (u8c & 0x3ff);
-
-                                ;; Check if the word is indeed a leading word.
-;                               if (u16c < 0xd800 || 0xdbff < u16c)
-;                               {
-;                                   if (can_retry)
-;                                   {
-                                        ;; Retry reading with another conversion.
-                                        ;; Use next item from 'fileencodings'.
-;                                       advance_fenc = true;
-;                                       file_rewind = true;
-;                                       continue retry;
-;                                   }
-;                                   if (conv_error == 0)
-;                                       conv_error = readfile_linenr(linecnt, ptr, p);
-;                                   if (bad_char_behavior == BAD_DROP)
-;                                       continue;
-;                                   if (bad_char_behavior != BAD_KEEP)
-;                                       u8c = bad_char_behavior;
-;                               }
-;                           }
-;                       }
-;                       else if ((fio_flags & FIO_UCS4) != 0)
-;                       {
-;                           if ((fio_flags & FIO_ENDIAN_L) != 0)
-;                           {
-;                               u8c = (char_u((p = p.minus(1)).at(0)) << 24);
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 16);
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 8);
-;                               u8c += char_u((p = p.minus(1)).at(0));
-;                           }
-;                           else ;; big endian
-;                           {
-;                               u8c = char_u((p = p.minus(1)).at(0));
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 8);
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 16);
-;                               u8c += (char_u((p = p.minus(1)).at(0)) << 24);
-;                           }
-;                       }
-;                       else ;; UTF-8
-;                       {
-;                           if (char_u((p = p.minus(1)).at(0)) < 0x80)
-;                               u8c = char_u(p.at(0));
-;                           else
-;                           {
-;                               int len = us_head_off(ptr, p);
-;                               p = p.minus(len);
-;                               u8c = us_ptr2char(p);
-;                               if (len == 0)
-;                               {
-                                    ;; Not a valid UTF-8 character, retry with another 'fenc'
-                                    ;; when possible, otherwise just report the error.
-;                                   if (can_retry)
-;                                   {
-                                        ;; Retry reading with another conversion.
-                                        ;; Use next item from 'fileencodings'.
-;                                       advance_fenc = true;
-;                                       file_rewind = true;
-;                                       continue retry;
-;                                   }
-;                                   if (conv_error == 0)
-;                                       conv_error = readfile_linenr(linecnt, ptr, p);
-;                                   if (bad_char_behavior == BAD_DROP)
-;                                       continue;
-;                                   if (bad_char_behavior != BAD_KEEP)
-;                                       u8c = bad_char_behavior;
-;                               }
-;                           }
-;                       }
-
-;                       dest = dest.minus(utf_char2len(u8c));
-;                       utf_char2bytes(u8c, dest);
-;                   }
-
-                    ;; move the linerest to before the converted characters
-;                   line_start = dest.minus(linerest);
-;                   BCOPY(line_start, buffer, linerest);
-;                   size = BDIFF(ptr.plus(real_size), dest);
-;                   ptr = dest;
-;               }
-;               else if (!@curbuf.@b_p_bin)
-;               {
-;                   boolean incomplete_tail = false;
-
-                    ;; Reading UTF-8: Check if the bytes are valid UTF-8.
-;                   Bytes p;
-;                   for (p = ptr; ; p = p.plus(1))
-;                   {
-;                       int todo = BDIFF(ptr.plus(size), p);
-;                       if (todo <= 0)
-;                           break;
-
-;                       if (0x80 <= char_u(p.at(0)))
-;                       {
-                            ;; A length of 1 means it's an illegal byte.  Accept
-                            ;; an incomplete character at the end though, the next
-                            ;; read() will get the next bytes, we'll check it then.
-;                           int l = us_ptr2len_len(p, todo);
-;                           if (todo < l && !incomplete_tail)
-;                           {
-                                ;; Avoid retrying with a different encoding when
-                                ;; a truncated file is more likely, or attempting
-                                ;; to read the rest of an incomplete sequence when
-                                ;; we have already done so.
-;                               if (BLT(ptr, p) || 0 < filesize)
-;                                   incomplete_tail = true;
-                                ;; Incomplete byte sequence, move it to conv_rest[]
-                                ;; and try to read the rest of it, unless we've
-                                ;; already done so.
-;                               if (BLT(ptr, p))
-;                               {
-;                                   conv_restlen = todo;
-;                                   BCOPY(conv_rest, p, conv_restlen);
-;                                   size -= conv_restlen;
-;                                   break;
-;                               }
-;                           }
-;                           if (l == 1 || todo < l)
-;                           {
-                                ;; Illegal byte.  If we can try another encoding
-                                ;; do that, unless at EOF where a truncated
-                                ;; file is more likely than a conversion error.
-;                               if (can_retry && !incomplete_tail)
-;                                   break;
-
-                                ;; Remember the first linenr with an illegal byte.
-;                               if (conv_error == 0 && illegal_byte == 0)
-;                                   illegal_byte = readfile_linenr(linecnt, ptr, p);
-
-                                ;; Drop, keep or replace the bad byte.
-;                               if (bad_char_behavior == BAD_DROP)
-;                               {
-;                                   BCOPY(p, 0, p, 1, todo - 1);
-;                                   p = p.minus(1);
-;                                   --size;
-;                               }
-;                               else if (bad_char_behavior != BAD_KEEP)
-;                                   p.be(0, bad_char_behavior);
-;                           }
-;                           else
-;                               p = p.plus(l - 1);
-;                       }
-;                   }
-;                   if (BLT(p, ptr.plus(size)) && !incomplete_tail)
-;                   {
-                        ;; Detected a UTF-8 error.
-                        ;; Retry reading with another conversion.
-                        ;; Use next item from 'fileencodings'.
-;                       advance_fenc = true;
-;                       file_rewind = true;
-;                       continue retry;
-;                   }
-;               }
-
-                ;; count the number of characters (after conversion!)
-;               filesize += size;
-
-                ;; when reading the first part of a file: guess EOL type
-
-;               if (fileformat == EOL_UNKNOWN)
-;               {
-                    ;; First try finding a NL, for Dos and Unix.
-;                   if (try_dos || try_unix != 0)
-;                   {
-                        ;; Reset the carriage return counter.
-;                       if (try_mac != 0)
-;                           try_mac = 1;
-
-;                       Bytes p;
-;                       for (p = ptr; BLT(p, ptr.plus(size)); p = p.plus(1))
-;                       {
-;                           if (p.at(0) == NL)
-;                           {
-;                               if (try_unix == 0 || (try_dos && BLT(ptr, p) && p.at(-1) == CAR))
-;                                   fileformat = EOL_DOS;
-;                               else
-;                                   fileformat = EOL_UNIX;
-;                               break;
-;                           }
-;                           else if (p.at(0) == CAR && try_mac != 0)
-;                               try_mac++;
-;                       }
-
-                        ;; Don't give in to EOL_UNIX if EOL_MAC is more likely.
-;                       if (fileformat == EOL_UNIX && try_mac != 0)
-;                       {
-                            ;; Need to reset the counters when retrying 'fenc'.
-;                           try_mac = 1;
-;                           try_unix = 1;
-;                           for ( ; BLE(ptr, p) && p.at(0) != CAR; p = p.minus(1))
-                            ;
-;                           if (BLE(ptr, p))
-;                           {
-;                               for (p = ptr; BLT(p, ptr.plus(size)); p = p.plus(1))
-;                               {
-;                                   if (p.at(0) == NL)
-;                                       try_unix++;
-;                                   else if (p.at(0) == CAR)
-;                                       try_mac++;
-;                               }
-;                               if (try_unix < try_mac)
-;                                   fileformat = EOL_MAC;
-;                           }
-;                       }
-;                       else if (fileformat == EOL_UNKNOWN && try_mac == 1)
-                            ;; Looking for CR but found no end-of-line markers at all:
-                            ;; use the default format.
-;                           fileformat = default_fileformat();
-;                   }
-
-                    ;; No NL found: may use Mac format.
-;                   if (fileformat == EOL_UNKNOWN && try_mac != 0)
-;                       fileformat = EOL_MAC;
-
-                    ;; Still nothing found?  Use first format in 'ffs'.
-;                   if (fileformat == EOL_UNKNOWN)
-;                       fileformat = default_fileformat();
-
-                    ;; if editing a new file: may set "p_tx" and "p_ff"
-;                   if (set_options)
-;                       set_fileformat(fileformat, OPT_LOCAL);
-;               }
-
-                ;; This loop is executed once for every character read.
-                ;; Keep it fast!
-
-;               if (fileformat == EOL_MAC)
-;               {
-;                   for ( ; 0 < size--; ptr = ptr.plus(1))
-;                   {
-                        ;; catch most common case first
-;                       byte c = ptr.at(0);
-;                       if (c != NUL && c != CAR && c != NL)
-;                           continue;
-;                       if (c == NUL)
-;                           ptr.be(0, NL);                  ;; NULs are replaced by newlines!
-;                       else if (c == NL)
-;                           ptr.be(0, CAR);                 ;; NLs are replaced by CRs!
-;                       else
-;                       {
-;                           if (skip_count == 0)
-;                           {
-;                               ptr.be(0, NUL);             ;; end of line
-;                               int len = BDIFF(ptr, line_start) + 1;
-;                               if (!ml_append(lnum, line_start, len, newfile))
-;                               {
-;                                   error = true;
-;                                   break;
-;                               }
-;                               if (read_undo_file)
-;                                   sha256_update(sha_ctx, line_start, len);
-;                               lnum++;
-;                               if (--read_count == 0)
-;                               {
-;                                   error = true;       ;; break loop
-;                                   line_start = ptr;   ;; nothing left to write
-;                                   break;
-;                               }
-;                           }
-;                           else
-;                               --skip_count;
-;                           line_start = ptr.plus(1);
-;                       }
-;                   }
-;               }
-;               else
-;               {
-;                   for ( ; 0 < size--; ptr = ptr.plus(1))
-;                   {
-;                       byte c = ptr.at(0);
-;                       if (c != NUL && c != NL)            ;; catch most common case
-;                           continue;
-;                       if (c == NUL)
-;                           ptr.be(0, NL);                      ;; NULs are replaced by newlines!
-;                       else
-;                       {
-;                           if (skip_count == 0)
-;                           {
-;                               ptr.be(0, NUL);                 ;; end of line
-;                               int len = BDIFF(ptr, line_start) + 1;
-;                               if (fileformat == EOL_DOS)
-;                               {
-;                                   if (ptr.at(-1) == CAR)     ;; remove CR
-;                                   {
-;                                       ptr.be(-1, NUL);
-;                                       --len;
-;                                   }
-
-                                    ;; Reading in Dos format, but no CR-LF found!
-                                    ;; When 'fileformats' includes "unix", delete all
-                                    ;; the lines read so far and start all over again.
-                                    ;; Otherwise give an error message later.
-
-;                                   else if (ff_error != EOL_DOS)
-;                                   {
-;                                       if (try_unix != 0
-;                                           && !read_stdin
-;                                           && (read_buffer || libc.lseek(fd, 0L, SEEK_SET) == 0))
-;                                       {
-;                                           fileformat = EOL_UNIX;
-;                                           if (set_options)
-;                                               set_fileformat(EOL_UNIX, OPT_LOCAL);
-;                                           file_rewind = true;
-;                                           keep_fileformat = true;
-;                                           continue retry;
-;                                       }
-;                                       ff_error = EOL_DOS;
-;                                   }
-;                               }
-;                               if (!ml_append(lnum, line_start, len, newfile))
-;                               {
-;                                   error = true;
-;                                   break;
-;                               }
-;                               if (read_undo_file)
-;                                   sha256_update(sha_ctx, line_start, len);
-;                               lnum++;
-;                               if (--read_count == 0)
-;                               {
-;                                   error = true;       ;; break loop
-;                                   line_start = ptr;   ;; nothing left to write
-;                                   break;
-;                               }
-;                           }
-;                           else
-;                               --skip_count;
-;                           line_start = ptr.plus(1);
-;                       }
-;                   }
-;               }
-;               linerest = BDIFF(ptr, line_start);
-;               ui_breakcheck();
-;           }
-
-;           break;
-;       }
-
-        ;; not an error, max. number of lines reached
-;       if (error && read_count == 0)
-;           error = false;
-
-        ;; If we get EOF in the middle of a line, note the fact and
-        ;; complete the line ourselves.
-        ;; In Dos format ignore a trailing CTRL-Z, unless 'binary' set.
-
-;       if (!error
-;               && !@got_int
-;               && linerest != 0
-;               && !(!@curbuf.@b_p_bin
-;                   && fileformat == EOL_DOS
-;                   && line_start.at(0) == Ctrl_Z
-;                   && BEQ(ptr, line_start.plus(1))))
-;       {
-            ;; remember for when writing
-;           if (set_options)
-;               @curbuf.@b_p_eol = false;
-;           ptr.be(0, NUL);
-;           int len = BDIFF(ptr, line_start) + 1;
-;           if (!ml_append(lnum, line_start, len, newfile))
-;               error = true;
-;           else
-;           {
-;               if (read_undo_file)
-;                   sha256_update(sha_ctx, line_start, len);
-;               read_no_eol_lnum = ++lnum;
-;           }
-;       }
-
-;       if (set_options)
-;           save_file_ff(@curbuf);                   ;; remember the current file format
-
-        ;; If editing a new file: set 'fenc' for the current buffer.
-        ;; Also for ":read ++edit file".
-;       if (set_options)
-;           set_string_option_direct(u8("fenc"), -1, fenc, OPT_FREE|OPT_LOCAL);
-
-;       if (!read_buffer && !read_stdin)
-;           libc.close(fd);                             ;; errors are ignored
-;       else
-;       {
-;           int fdflags = libc.fcntl(fd, F_GETFD);
-;           if (0 <= fdflags && (fdflags & FD_CLOEXEC) == 0)
-;               libc.fcntl(fd, F_SETFD, fdflags | FD_CLOEXEC);
-;       }
-
-;       if (read_stdin)
-;       {
-            ;; Use stderr for stdin, makes shell commands work.
-;           libc.close(0);
-;           libc.dup(2);
-;       }
-
-;       --@no_wait_return;                           ;; may wait for return now
-
-        ;; need to delete the last line, which comes from the empty buffer
-;       if (newfile && wasempty && (@curbuf.b_ml.ml_flags & ML_EMPTY) == 0)
-;       {
-;           ml_delete(@curbuf.b_ml.ml_line_count, false);
-;           --linecnt;
-;       }
-;       linecnt = @curbuf.b_ml.ml_line_count - linecnt;
-;       if (filesize == 0)
-;           linecnt = 0;
-;       if (newfile || read_buffer)
-;           redraw_curbuf_later(NOT_VALID);
-;       else if (linecnt != 0)                          ;; appended at least one line
-;           appended_lines_mark(from, linecnt);
-
-        ;; If we were reading from the same terminal as where messages go,
-        ;; the screen will have been messed up.
-        ;; Switch on raw mode now and clear the screen.
-
-;       if (read_stdin)
-;       {
-;           settmode(TMODE_RAW);                    ;; set to raw mode
-;           starttermcap();
-;           screenclear();
-;       }
-
-;       if (@got_int)
-;       {
-;           if ((flags & READ_DUMMY) == 0)
-;           {
-;               filemess(sfname, e_interr, 0);
-;               if (newfile)
-;                   @curbuf.@b_p_ro = true;           ;; must use "w!" now
-;           }
-;           @msg_scroll = msg_save;
-;           return true;                            ;; an interrupt isn't really an error
-;       }
-
-;       if (!filtering && (flags & READ_DUMMY) == 0)
-;       {
-;           msg_add_fname(sfname);                  ;; "fname" in ioBuff with quotes
-;           boolean c = false;
-
-;           if (S_ISFIFO(perm))                     ;; fifo or socket
-;           {
-;               STRCAT(@ioBuff, u8("[fifo/socket]"));
-;               c = true;
-;           }
-;           if (@curbuf.@b_p_ro)
-;           {
-;               STRCAT(@ioBuff, shortmess(SHM_RO) ? u8("[RO]") : u8("[readonly]"));
-;               c = true;
-;           }
-;           if (read_no_eol_lnum != 0)
-;           {
-;               msg_add_eol();
-;               c = true;
-;           }
-;           if (ff_error == EOL_DOS)
-;           {
-;               STRCAT(@ioBuff, u8("[CR missing]"));
-;               c = true;
-;           }
-;           if (notconverted)
-;           {
-;               STRCAT(@ioBuff, u8("[NOT converted]"));
-;               c = true;
-;           }
-;           else if (converted)
-;           {
-;               STRCAT(@ioBuff, u8("[converted]"));
-;               c = true;
-;           }
-;           if (conv_error != 0)
-;           {
-;               libC.sprintf(@ioBuff.plus(STRLEN(@ioBuff)), u8("[CONVERSION ERROR in line %ld]"), conv_error);
-;               c = true;
-;           }
-;           else if (0 < illegal_byte)
-;           {
-;               libC.sprintf(@ioBuff.plus(STRLEN(@ioBuff)), u8("[ILLEGAL BYTE in line %ld]"), illegal_byte);
-;               c = true;
-;           }
-;           else if (error)
-;           {
-;               STRCAT(@ioBuff, u8("[READ ERRORS]"));
-;               c = true;
-;           }
-;           if (msg_add_fileformat(fileformat))
-;               c = true;
-;           msg_add_lines(c, linecnt, filesize);
-
-;           @keep_msg = null;
-;           @msg_scrolled_ign = true;
-;           Bytes p = msg_trunc_attr(@ioBuff, false, 0);
-;           if (read_stdin || read_buffer || @restart_edit != 0
-;                   || (@msg_scrolled != 0 && !@need_wait_return))
-                ;; Need to repeat the message after redrawing when:
-                ;; - When reading from stdin (the screen will be cleared next).
-                ;; - When restart_edit is set (otherwise there will be a delay before redrawing).
-                ;; - When the screen was scrolled but there is no wait-return prompt.
-;               set_keep_msg(p, 0);
-;           @msg_scrolled_ign = false;
-;       }
-
-        ;; with errors writing the file requires ":w!"
-;       if (newfile && (error
-;                   || conv_error != 0
-;                   || (0 < illegal_byte && bad_char_behavior != BAD_KEEP)))
-;           @curbuf.@b_p_ro = true;
-
-;       u_clearline();                  ;; cannot use "U" command after adding lines
-
-        ;; In Ex mode: cursor at last new line.
-        ;; Otherwise: cursor at first new line.
-
-;       if (@exmode_active != 0)
-;           @curwin.w_cursor.lnum = from + linecnt;
-;       else
-;           @curwin.w_cursor.lnum = from + 1;
-;       check_cursor_lnum();
-;       beginline(BL_WHITE | BL_FIX);               ;; on first non-blank
-
-        ;; Set '[ and '] marks to the newly read lines.
-
-;       @curbuf.b_op_start.lnum = from + 1;
-;       @curbuf.b_op_start.col = 0;
-;       @curbuf.b_op_end.lnum = from + linecnt;
-;       @curbuf.b_op_end.col = 0;
-
-;       @msg_scroll = msg_save;
-
-        ;; Trick: We remember if the last line of the read didn't have an eol even
-        ;; when 'binary' is off, for when writing it again with 'binary' on.  This is
-        ;; required for * ":autocmd FileReadPost *.gz set bin|'[,']!gunzip" to work.
-
-;       @curbuf.b_no_eol_lnum = read_no_eol_lnum;
-
-        ;; When reloading a buffer put the cursor at the first line that is different.
-;       if ((flags & READ_KEEP_UNDO) != 0)
-;           u_find_first_changed();
-
-        ;; When opening a new file locate undo info and read it.
-
-;       if (read_undo_file)
-;       {
-;           Bytes hash = new Bytes(UNDO_HASH_SIZE);
-
-;           sha256_finish(sha_ctx, hash);
-;           u_read_undo(null, hash, fname);
-;       }
-
-;       if (!read_stdin && !read_buffer)
-;       {
-;           boolean m = @msg_scroll;
-;           int n = @msg_scrolled;
-
-            ;; Save the fileformat now, otherwise the buffer will be considered
-            ;; modified if the format/encoding was automatically detected.
-;           if (set_options)
-;               save_file_ff(@curbuf);
-
-            ;; The output from the autocommands should not overwrite anything and
-            ;; should not be overwritten: set msg_scroll, restore its value if no
-            ;; output was done.
-
-;           @msg_scroll = true;
-
-;           if (@msg_scrolled == n)
-;               @msg_scroll = m;
-;           if (aborting())             ;; autocmds may abort script processing
-;               return false;
-;       }
-
-;       return true;
-    ))
-
-;; From the current line count and characters read after that, estimate the line number where we are now.
-;; Used for error messages that include a line number.
-
-(defn- #_long readfile_linenr [#_long linecnt, #_Bytes p, #_Bytes endp]
-    ;; linecnt: line count before reading more bytes
-    ;; p: start of more bytes read
-    ;; endp: end of more bytes read
-    (§
-;       long lnum = @curbuf.b_ml.ml_line_count - linecnt + 1;
-;       for (Bytes s = p; BLT(s, endp); s = s.plus(1))
-;           if (s.at(0) == (byte)'\n')
-;               lnum++;
-;       return lnum;
-    ))
-
-;; ... used for calling readfile()
-
-(defn- #_void prep_exarg [#_exarg_C eap, #_buffer_C buf]
-    (§
-;       eap.cmd = STRDUP(u8("e"));
-
-;       eap.bad_char = buf.b_bad_char;
-;       eap.force_bin = buf.@b_p_bin ? FORCE_BIN : FORCE_NOBIN;
-;       eap.read_edit = false;
-;       eap.forceit = false;
-    ))
-
 ;; Set default or forced 'fileformat' and 'binary'.
 
-(defn- #_void set_file_options [#_boolean set_options, #_exarg_C eap]
+(defn- #_void set_file_options [#_exarg_C eap]
     (§
         ;; set default 'fileformat'
-;       if (set_options && @p_ffs.at(0) != NUL)
-;           set_fileformat(default_fileformat(), OPT_LOCAL);
+;       set_fileformat(EOL_UNIX, OPT_LOCAL);
 
         ;; set or reset 'binary'
 ;       if (eap != null && eap.force_bin != 0)
@@ -81191,1238 +78224,6 @@
 ;           @curbuf.@b_p_bin = (eap.force_bin == FORCE_BIN);
 ;           set_options_bin(oldval, @curbuf.@b_p_bin, OPT_LOCAL);
 ;       }
-    ))
-
-;; Find next fileencoding to use from 'fileencodings'.
-;; "pp" points to fenc_next.  It's advanced to the next item.
-;; When there are no more items, an empty string is returned and *pp is set to null.
-;; When *pp is not set to null, the result is in allocated memory.
-
-(defn- #_Bytes next_fenc [#_Bytes* pp]
-    (§
-;       if (pp[0].at(0) == NUL)
-;       {
-;           pp[0] = null;
-;           return u8("");
-;       }
-
-;       Bytes r;
-
-;       Bytes p = vim_strchr(pp[0], ',');
-;       if (p == null)
-;       {
-;           r = enc_canonize(pp[0]);
-;           pp[0] = pp[0].plus(STRLEN(pp[0]));
-;       }
-;       else
-;       {
-;           r = STRNDUP(pp[0], BDIFF(p, pp[0]));
-;           pp[0] = p.plus(1);
-;           if (r != null)
-;               r = enc_canonize(r);
-;       }
-
-;       return r;
-    ))
-
-;; Return true if a file appears to be read-only from the file permissions.
-
-(defn- #_boolean check_file_readonly [#_Bytes fname, #_int perm]
-    ;; fname: full path to file
-    ;; perm: known permissions on file
-    (§
-;       return ((perm & 0222) == 0 || libC.access(fname, W_OK) != 0);
-    ))
-
-(final Bytes err_readonly (u8 "is read-only (cannot override: \"W\" in 'cpoptions')"))
-
-;; buf_write() - write to file "fname" lines "start" through "end"
-;;
-;; We do our own buffering here because fwrite() is so slow.
-;;
-;; If "forceit" is true, we don't care for errors when attempting backups.
-;; In case of an error everything possible is done to restore the original
-;; file.  But when "forceit" is true, we risk losing it.
-;;
-;; When "reset_changed" is true and "append" == false and "start" == 1 and
-;; "end" == curbuf.b_ml.ml_line_count, reset "curbuf.b_changed".
-;;
-;; This function must NOT use nameBuff (because it's called by autowrite()).
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean buf_write [#_buffer_C buf, #_Bytes fname, #_Bytes sfname, #_long start, #_long end, #_exarg_C eap, #_boolean append, #_boolean forceit, #_boolean reset_changed, #_boolean filtering]
-    ;; eap: for forced 'ff' and 'fenc', can be null!
-    ;; append: append to the file
-    (§
-;       boolean retval = true;
-
-;       boolean msg_save = @msg_scroll;
-;       boolean prev_got_int = @got_int;
-
-;       long old_line_count = buf.b_ml.ml_line_count;
-;       boolean whole = (start == 1 && end == old_line_count);  ;; writing everything
-
-;       if (fname == null || fname.at(0) == NUL)                ;; safety check
-;           return false;
-
-;       if (buf.b_ml.ml_mfp == null)
-;       {
-            ;; This can happen during startup when there is a stray "w" in the vimrc file.
-;           emsg(e_emptybuf);
-;           return false;
-;       }
-
-        ;; Disallow writing from .exrc and .vimrc in current directory for security reasons.
-
-;       if (check_secure())
-;           return false;
-
-        ;; Avoid a crash for a long name.
-;       if (MAXPATHL <= STRLEN(fname))
-;       {
-;           emsg(e_longname);
-;           return false;
-;       }
-
-        ;; After writing a file changedtick changes but we don't want to display the line.
-;       @ex_no_reprint = true;
-
-        ;; If there is no file name yet, use the one for the written file.
-        ;; BF_NOTEDITED is set to reflect this (in case the write fails).
-        ;; Don't do this when the write is for a filter command.
-        ;; Don't do this when appending.
-        ;; Only do this when 'cpoptions' contains the 'F' flag.
-
-;       if (buf.b_ffname == null
-;               && reset_changed
-;               && whole
-;               && buf == @curbuf
-;               && !filtering
-;               && (!append || vim_strbyte(@p_cpo, CPO_FNAMEAPP) != null)
-;               && vim_strbyte(@p_cpo, CPO_FNAMEW) != null)
-;       {
-;           if (set_rw_fname(fname, sfname) == false)
-;               return false;
-;           buf = @curbuf;               ;; just in case autocmds made "buf" invalid
-;       }
-
-;       if (sfname == null)
-;           sfname = fname;
-
-        ;; For Unix: Use the short file name whenever possible.
-        ;; Avoids problems with networks and when directory names are changed.
-
-;       Bytes ffname = fname;          ;; remember full "fname"
-;       fname = sfname;
-
-;       boolean overwriting;            ;; true if writing over original
-;       if (buf.b_ffname != null && STRCMP(ffname, buf.b_ffname) == 0)
-;           overwriting = true;
-;       else
-;           overwriting = false;
-
-;       if (@exiting)
-;           settmode(TMODE_COOK);       ;; when exiting allow typeahead now
-
-;       @no_wait_return++;               ;; don't wait for return yet
-
-        ;; Set '[ and '] marks to the lines to be written.
-
-;       buf.b_op_start.lnum = start;
-;       buf.b_op_start.col = 0;
-;       buf.b_op_end.lnum = end;
-;       buf.b_op_end.col = 0;
-
-;       {
-;           boolean empty_memline = (buf.b_ml.ml_mfp == null);
-
-            ;; Apply PRE autocommands.
-            ;; Set curbuf to the buffer to be written.
-            ;; Careful: the autocommands may call buf_write() recursively!
-
-;           boolean buf_ffname = BEQ(ffname, buf.b_ffname);
-;           boolean buf_sfname = BEQ(sfname, buf.b_sfname);
-;           boolean buf_fname_f = BEQ(fname, buf.b_ffname);
-;           boolean buf_fname_s = BEQ(fname, buf.b_sfname);
-
-            ;; In three situations we return here and don't write the file:
-            ;; 1. the autocommands deleted or unloaded the buffer.
-            ;; 2. The autocommands abort script processing.
-            ;; 3. If one of the "Cmd" autocommands was executed.
-
-;           if (!buf_valid(buf))
-;               buf = null;
-;           if (buf == null || (buf.b_ml.ml_mfp == null && !empty_memline) || aborting())
-;           {
-;               --@no_wait_return;
-;               @msg_scroll = msg_save;
-
-;               if (aborting())
-                    ;; An aborting error, interrupt or exception in the autocommands.
-;                   return false;
-
-;               if (!aborting())
-;                   emsg(u8("E203: Autocommands deleted or unloaded buffer to be written"));
-;               return false;
-;           }
-
-            ;; The autocommands may have changed the number of lines in the file.
-            ;; When writing the whole file, adjust the end.
-            ;; When writing part of the file, assume that the autocommands only
-            ;; changed the number of lines that are to be written (tricky!).
-
-;           if (buf.b_ml.ml_line_count != old_line_count)
-;           {
-;               if (whole)                                              ;; write all
-;                   end = buf.b_ml.ml_line_count;
-;               else if (buf.b_ml.ml_line_count > old_line_count)       ;; more lines
-;                   end += buf.b_ml.ml_line_count - old_line_count;
-;               else                                                    ;; less lines
-;               {
-;                   end -= old_line_count - buf.b_ml.ml_line_count;
-;                   if (end < start)
-;                   {
-;                       --@no_wait_return;
-;                       @msg_scroll = msg_save;
-;                       emsg(u8("E204: Autocommand changed number of lines in unexpected way"));
-;                       return false;
-;                   }
-;               }
-;           }
-
-            ;; The autocommands may have changed the name of the buffer,
-            ;; which may be kept in "fname", "ffname" and "sfname".
-
-;           if (buf_ffname)
-;               ffname = buf.b_ffname;
-;           if (buf_sfname)
-;               sfname = buf.b_sfname;
-;           if (buf_fname_f)
-;               fname = buf.b_ffname;
-;           if (buf_fname_s)
-;               fname = buf.b_sfname;
-;       }
-
-;       if (shortmess(SHM_OVER) && !@exiting)
-;           @msg_scroll = false;                 ;; overwrite previous file message
-;       else
-;           @msg_scroll = true;                  ;; don't overwrite previous file message
-;       if (!filtering)
-;           filemess(fname, u8(""), 0);             ;; show that we are busy
-;       @msg_scroll = false;                     ;; always overwrite the file message now
-
-;       Bytes buffer = new Bytes(BUFSIZE);
-;       int bufsize = BUFSIZE;
-
-;       Bytes wfname = null;                   ;; name of file to write to
-;       boolean newfile = false;                ;; true if file doesn't exist yet
-;       boolean file_readonly = false;          ;; overwritten file is read-only
-;       boolean made_writable = false;          ;; 'w' bit has been set
-;       boolean no_eol = false;                 ;; no end-of-line written
-;       boolean device = false;                 ;; writing to a device
-
-;       boolean notconverted = false;
-;       int wb_flags = 0;
-
-;       Bytes errmsg = null;
-;       Bytes errnum = null;
-
-;       bw_info_C write_info = §_bw_info_C(); ;; info for buf_write_bytes()
-;       write_info.bw_conv_buf = null;          ;; must init bw_conv_buf before jumping to "fail"
-;       write_info.bw_conv_error = false;
-;       write_info.bw_conv_error_lnum = 0;
-;       write_info.bw_restlen = 0;
-
-;       context_sha256_C sha_ctx = new context_sha256_C();
-;       boolean write_undo_file = false;
-
-;       nofail:
-;       {
-;           fail:
-;           {
-                ;; Get information about original file (if there is one).
-
-;               stat_C st_old = new stat_C();
-;               st_old.st_dev(0);
-;               st_old.st_ino(0);
-;               int perm = -1;                         ;; file permissions
-;               if (libC.stat(fname, st_old) < 0)
-;                   newfile = true;
-;               else
-;               {
-;                   perm = st_old.st_mode();
-;                   if (!S_ISREG(st_old.st_mode()))     ;; not a file
-;                   {
-;                       if (S_ISDIR(st_old.st_mode()))
-;                       {
-;                           errnum = u8("E502: ");
-;                           errmsg = u8("is a directory");
-;                           break fail;
-;                       }
-;                       if (mch_nodetype(fname) != NODE_WRITABLE)
-;                       {
-;                           errnum = u8("E503: ");
-;                           errmsg = u8("is not a file or writable device");
-;                           break fail;
-;                       }
-                        ;; It's a device of some kind (or a fifo) which we can write to
-                        ;; but for which we can't make a backup.
-;                       device = true;
-;                       newfile = true;
-;                       perm = -1;
-;                   }
-;               }
-
-;               if (!device && !newfile)
-;               {
-                    ;; Check if the file is really writable
-                    ;; (when renaming the file to make a backup we won't discover it later).
-
-;                   file_readonly = check_file_readonly(fname, perm);
-
-;                   if (!forceit && file_readonly)
-;                   {
-;                       if (vim_strbyte(@p_cpo, CPO_FWRITE) != null)
-;                       {
-;                           errnum = u8("E504: ");
-;                           errmsg = err_readonly;
-;                       }
-;                       else
-;                       {
-;                           errnum = u8("E505: ");
-;                           errmsg = u8("is read-only (add ! to override)");
-;                       }
-;                       break fail;
-;                   }
-
-                    ;; Check if the timestamp hasn't changed since reading the file.
-
-;                   if (overwriting)
-;                   {
-;                       retval = check_mtime(buf, st_old);
-;                       if (retval == false)
-;                           break fail;
-;                   }
-;               }
-
-                ;; Save the value of got_int and reset it.  We don't want a previous interruption
-                ;; cancel writing, only hitting CTRL-C while writing should abort it.
-
-;               prev_got_int = @got_int;
-;               @got_int = false;
-
-                ;; Mark the buffer as 'being saved' to prevent changed buffer warnings.
-;               buf.b_saving = true;
-
-                ;; When using ":w!" and the file was read-only: make it writable.
-;               if (forceit && 0 <= perm && (perm & 0200) == 0 && st_old.st_uid() == libc.getuid()
-;                                                                       && vim_strbyte(@p_cpo, CPO_FWRITE) == null)
-;               {
-;                   perm |= 0200;
-;                   mch_setperm(fname, perm);
-;                   made_writable = true;
-;               }
-
-                ;; When using ":w!" and writing to the current file, 'readonly' makes no sense;
-                ;; reset it, unless 'Z' appears in 'cpoptions'.
-;               if (forceit && overwriting && vim_strbyte(@p_cpo, CPO_KEEPRO) == null)
-;               {
-;                   buf.@b_p_ro = false;
-;                   status_redraw_all();            ;; redraw status lines later
-;               }
-
-;               if (end > buf.b_ml.ml_line_count)
-;                   end = buf.b_ml.ml_line_count;
-;               if ((buf.b_ml.ml_flags & ML_EMPTY) != 0)
-;                   start = end + 1;
-
-                ;; Default: write the file directly.
-;               wfname = fname;
-
-;               Bytes fenc = buf.@b_p_fenc;         ;; effective 'fileencoding'
-
-                ;; Check if the file needs to be converted.
-
-;               boolean converted = need_conversion(fenc);
-
-                ;; Check if UTF-8 to UCS-2/4 or Latin1 conversion needs to be done.
-                ;; Or Latin1 to Unicode conversion.  This is handled in buf_write_bytes().
-                ;; Prepare the flags for it and allocate bw_conv_buf when needed.
-
-;               if (converted)
-;               {
-;                   wb_flags = get_fio_flags(fenc);
-;                   if ((wb_flags & (FIO_UCS2 | FIO_UCS4 | FIO_UTF16 | FIO_UTF8)) != 0)
-;                   {
-                        ;; Need to allocate a buffer to translate into.
-;                       if ((wb_flags & (FIO_UCS2 | FIO_UTF16 | FIO_UTF8)) != 0)
-;                           write_info.bw_conv_buflen = bufsize * 2;
-;                       else ;; FIO_UCS4
-;                           write_info.bw_conv_buflen = bufsize * 4;
-;                       write_info.bw_conv_buf = new Bytes(write_info.bw_conv_buflen);
-;                   }
-;               }
-
-;               if (converted && wb_flags == 0 && BEQ(wfname, fname))
-;               {
-;                   if (!forceit)
-;                   {
-;                       errmsg = u8("E213: Cannot convert (add ! to write without conversion)");
-
-;                       stat_C st = new stat_C();
-
-                        ;; if original file no longer exists give an extra warning
-;                       if (!newfile && libC.stat(fname, st) < 0)
-;                           end = 0;
-
-;                       break fail;
-;                   }
-;                   notconverted = true;
-;               }
-
-                ;; Open the file "wfname" for writing.
-                ;; We may try to open the file twice: If we can't write to the
-                ;; file and forceit is true we delete the existing file and try to create
-                ;; a new one.  If this still fails we may have lost the original file!
-                ;; (this may happen when the user reached his quotum for number of files).
-                ;; Appending will fail if the file does not exist and forceit is false.
-
-;               int fd;
-;               while ((fd = libC.open(wfname,
-;                   O_WRONLY | (append ? (forceit ? (O_APPEND | O_CREAT) : O_APPEND) : (O_CREAT | O_TRUNC)),
-;                   (perm < 0) ? 0666 : (perm & 0777))) < 0)
-;               {
-;                   stat_C st = new stat_C();
-
-                    ;; A forced write will try to create a new file if the old one is still readonly.
-                    ;; This may also happen when the directory is read-only.
-                    ;; In that case the unlink() will fail.
-
-;                   if (errmsg == null)
-;                   {
-                        ;; Don't delete the file when it's a hard or symbolic link.
-;                       if ((!newfile && 1 < st_old.st_nlink())
-;                               || (libC.lstat(fname, st) == 0 && (st.st_dev() != st_old.st_dev() || st.st_ino() != st_old.st_ino())))
-;                           errmsg = u8("E166: Can't open linked file for writing");
-;                       else
-;                       {
-;                           errmsg = u8("E212: Can't open file for writing");
-;                           if (forceit && vim_strbyte(@p_cpo, CPO_FWRITE) == null && 0 <= perm)
-;                           {
-                                ;; we write to the file, thus it should be marked writable after all
-;                               if ((perm & 0200) == 0)
-;                                   made_writable = true;
-;                               perm |= 0200;
-;                               if (st_old.st_uid() != libc.getuid() || st_old.st_gid() != libc.getgid())
-;                                   perm &= 0777;
-;                               if (!append)            ;; don't remove when appending
-;                                   libC.unlink(wfname);
-;                               continue;
-;                           }
-;                       }
-;                   }
-
-                    ;; if original file no longer exists give an extra warning
-;                   if (!newfile && libC.stat(fname, st) < 0)
-;                       end = 0;
-
-;                   break fail;
-;               }
-;               errmsg = null;
-
-;               write_info.bw_fd = fd;
-
-;               write_info.bw_buf = buffer;
-;               long nchars = 0;
-
-;               boolean write_bin;
-                ;; use "++bin", "++nobin" or 'binary'
-;               if (eap != null && eap.force_bin != 0)
-;                   write_bin = (eap.force_bin == FORCE_BIN);
-;               else
-;                   write_bin = buf.@b_p_bin;
-
-                ;; The BOM is written just after the encryption magic number.
-                ;; Skip it when appending and the file already existed, the BOM only makes
-                ;; sense at the start of the file.
-
-;               if (buf.@b_p_bomb && !write_bin && (!append || perm < 0))
-;               {
-;                   write_info.bw_len = make_bom(buffer, fenc);
-;                   if (0 < write_info.bw_len)
-;                   {
-                        ;; don't convert, do encryption
-;                       write_info.bw_flags = FIO_NOCONVERT | wb_flags;
-;                       if (buf_write_bytes(write_info) == false)
-;                           end = 0;
-;                       else
-;                           nchars += write_info.bw_len;
-;                   }
-;               }
-;               write_info.bw_start_lnum = start;
-
-;               write_undo_file = (buf.@b_p_udf && overwriting && !append && !filtering && reset_changed);
-;               if (write_undo_file)
-                    ;; Prepare for computing the hash value of the text.
-;                   sha256_start(sha_ctx);
-
-;               write_info.bw_len = bufsize;
-;               write_info.bw_flags = wb_flags;
-;               int fileformat = get_fileformat_force(buf, eap);
-;               Bytes s = buffer;
-;               int len = 0;
-;               long lnum;
-;               for (lnum = start; lnum <= end; lnum++)
-;               {
-                    ;; The next while loop is done once for each character written.
-                    ;; Keep it fast!
-
-;                   Bytes ptr = ml_get_buf(buf, lnum, false).minus(1);
-;                   if (write_undo_file)
-;                       sha256_update(sha_ctx, ptr.plus(1), STRLEN(ptr, 1) + 1);
-;                   byte c;
-;                   while ((c = (ptr = ptr.plus(1)).at(0)) != NUL)
-;                   {
-;                       if (c == NL)
-;                           s.be(0, NUL);               ;; replace newlines with NULs
-;                       else if (c == CAR && fileformat == EOL_MAC)
-;                           s.be(0, NL);                ;; Mac: replace CRs with NLs
-;                       else
-;                           s.be(0, c);
-;                       s = s.plus(1);
-;                       if (++len != bufsize)
-;                           continue;
-;                       if (buf_write_bytes(write_info) == false)
-;                       {
-;                           end = 0;                ;; write error: break loop
-;                           break;
-;                       }
-;                       nchars += bufsize;
-;                       s = buffer;
-;                       len = 0;
-;                       write_info.bw_start_lnum = lnum;
-;                   }
-                    ;; write failed or last line has no EOL: stop here
-;                   if (end == 0
-;                           || (lnum == end
-;                               && write_bin
-;                               && (lnum == buf.b_no_eol_lnum
-;                                       || (lnum == buf.b_ml.ml_line_count && !buf.@b_p_eol))))
-;                   {
-;                       lnum++;                     ;; written the line, count it
-;                       no_eol = true;
-;                       break;
-;                   }
-;                   if (fileformat == EOL_UNIX)
-;                       (s = s.plus(1)).be(-1, NL);
-;                   else
-;                   {
-;                       (s = s.plus(1)).be(-1, CAR);        ;; EOL_MAC or EOL_DOS: write CR
-;                       if (fileformat == EOL_DOS)  ;; write CR-NL
-;                       {
-;                           if (++len == bufsize)
-;                           {
-;                               if (buf_write_bytes(write_info) == false)
-;                               {
-;                                   end = 0;        ;; write error: break loop
-;                                   break;
-;                               }
-;                               nchars += bufsize;
-;                               s = buffer;
-;                               len = 0;
-;                           }
-;                           (s = s.plus(1)).be(-1, NL);
-;                       }
-;                   }
-;                   if (++len == bufsize && end != 0)
-;                   {
-;                       if (buf_write_bytes(write_info) == false)
-;                       {
-;                           end = 0;                ;; write error: break loop
-;                           break;
-;                       }
-;                       nchars += bufsize;
-;                       s = buffer;
-;                       len = 0;
-
-;                       ui_breakcheck();
-;                       if (@got_int)
-;                       {
-;                           end = 0;                ;; Interrupted, break loop
-;                           break;
-;                       }
-;                   }
-;               }
-;               if (0 < len && 0 < end)
-;               {
-;                   write_info.bw_len = len;
-;                   if (buf_write_bytes(write_info) == false)
-;                       end = 0;                ;; write error
-;                   nchars += len;
-;               }
-
-                ;; On many journalling file systems there is a bug that causes both the
-                ;; original and the backup file to be lost when halting the system right
-                ;; after writing the file.  That's because only the meta-data is
-                ;; journalled.  Syncing the file slows down the system, but assures it has
-                ;; been written to disk and we don't lose it.
-                ;; For a device do try the fsync() but don't complain if it does not work (could be a pipe).
-                ;; If the 'fsync' option is false, don't fsync().  Useful for laptops.
-;               if (@p_fs && libc.fsync(fd) != 0 && !device)
-;               {
-;                   errmsg = u8("E667: Fsync failed");
-;                   end = 0;
-;               }
-
-                ;; When creating a new file, set its owner/group to that of the original file.
-                ;; Get the new device and inode number.
-;               if (!buf.b_dev_valid)
-                    ;; Set the inode when creating a new file.
-;                   buf_setino(buf);
-
-;               if (libc.close(fd) != 0)
-;               {
-;                   errmsg = u8("E512: Close failed");
-;                   end = 0;
-;               }
-
-;               if (made_writable)
-;                   perm &= ~0200;          ;; reset 'w' bit for security reasons
-;               if (0 <= perm)              ;; set perm of new file same as old file
-;                   mch_setperm(wfname, perm);
-
-;               if (BNE(wfname, fname))
-;                   libC.unlink(wfname);
-
-;               if (end == 0)
-;               {
-;                   if (errmsg == null)
-;                   {
-;                       if (write_info.bw_conv_error)
-;                       {
-;                           if (write_info.bw_conv_error_lnum == 0)
-;                               errmsg = u8("E513: write error, conversion failed (make 'fenc' empty to override)");
-;                           else
-;                           {
-;                               errmsg = new Bytes(300);
-;                               vim_snprintf(errmsg, errmsg.size(), u8("E513: write error, conversion failed in line %ld (make 'fenc' empty to override)"), write_info.bw_conv_error_lnum);
-;                           }
-;                       }
-;                       else if (@got_int)
-;                           errmsg = e_interr;
-;                       else
-;                           errmsg = u8("E514: write error (file system full?)");
-;                   }
-
-;                   break fail;
-;               }
-
-;               lnum -= start;                  ;; compute number of written lines
-;               --@no_wait_return;               ;; may wait for return now
-
-;               if (!filtering)
-;               {
-;                   msg_add_fname(fname);       ;; put "fname" in ioBuff with quotes
-;                   boolean c = false;
-;                   if (write_info.bw_conv_error)
-;                   {
-;                       STRCAT(@ioBuff, u8(" CONVERSION ERROR"));
-;                       c = true;
-;                       if (write_info.bw_conv_error_lnum != 0)
-;                           vim_snprintf_add(@ioBuff, IOSIZE, u8(" in line %ld;"), write_info.bw_conv_error_lnum);
-;                   }
-;                   else if (notconverted)
-;                   {
-;                       STRCAT(@ioBuff, u8("[NOT converted]"));
-;                       c = true;
-;                   }
-;                   else if (converted)
-;                   {
-;                       STRCAT(@ioBuff, u8("[converted]"));
-;                       c = true;
-;                   }
-;                   if (device)
-;                   {
-;                       STRCAT(@ioBuff, u8("[Device]"));
-;                       c = true;
-;                   }
-;                   else if (newfile)
-;                   {
-;                       STRCAT(@ioBuff, shortmess(SHM_NEW) ? u8("[New]") : u8("[New File]"));
-;                       c = true;
-;                   }
-;                   if (no_eol)
-;                   {
-;                       msg_add_eol();
-;                       c = true;
-;                   }
-                    ;; may add [unix/dos/mac]
-;                   if (msg_add_fileformat(fileformat))
-;                       c = true;
-;                   msg_add_lines(c, lnum, nchars);     ;; add line/char count
-;                   if (!shortmess(SHM_WRITE))
-;                   {
-;                       if (append)
-;                           STRCAT(@ioBuff, shortmess(SHM_WRI) ? u8(" [a]") : u8(" appended"));
-;                       else
-;                           STRCAT(@ioBuff, shortmess(SHM_WRI) ? u8(" [w]") : u8(" written"));
-;                   }
-
-;                   set_keep_msg(msg_trunc_attr(@ioBuff, false, 0), 0);
-;               }
-
-                ;; When written everything correctly: reset 'modified'.
-                ;; Unless not writing to the original file and '+' is not in 'cpoptions'.
-;               if (reset_changed && whole && !append
-;                       && !write_info.bw_conv_error
-;                       && (overwriting || vim_strbyte(@p_cpo, CPO_PLUS) != null))
-;               {
-;                   unchanged(buf, true);
-                    ;; buf.b_changedtick is always incremented in unchanged(),
-                    ;; but that should not trigger a TextChanged event.
-;                   if (@last_changedtick + 1 == buf.b_changedtick && @last_changedtick_buf == buf)
-;                       @last_changedtick = buf.b_changedtick;
-;                   u_unchanged(buf);
-;                   u_update_save_nr(buf);
-;               }
-
-                ;; If written to the current file, update the timestamp of the swap file
-                ;; and reset the BF_WRITE_MASK flags.  Also sets buf.b_mtime.
-
-;               if (overwriting)
-;               {
-;                   ml_timestamp(buf);
-;                   if (append)
-;                       buf.b_flags &= ~BF_NEW;
-;                   else
-;                       buf.b_flags &= ~BF_WRITE_MASK;
-;               }
-
-;               break nofail;
-;           }
-
-            ;; Finish up.  We get here either after failure or success.
-
-;           --@no_wait_return;           ;; may wait for return now
-;       }
-
-        ;; Done saving, we accept changed buffer warnings again.
-;       buf.b_saving = false;
-
-;       if (errmsg != null)
-;       {
-;           int numlen = (errnum != null) ? STRLEN(errnum) : 0;
-
-;           int attr = hl_attr(HLF_E);          ;; set highlight for error messages
-;           msg_add_fname(fname);               ;; put file name in ioBuff with quotes
-;           if (IOSIZE <= STRLEN(@ioBuff) + STRLEN(errmsg) + numlen)
-;               @ioBuff.be(IOSIZE - STRLEN(errmsg) - numlen - 1, NUL);
-            ;; If the error message has the form "is ...", put the error number in front of the file name.
-;           if (errnum != null)
-;           {
-;               BCOPY(@ioBuff, numlen, @ioBuff, 0, STRLEN(@ioBuff) + 1);
-;               BCOPY(@ioBuff, errnum, numlen);
-;           }
-;           STRCAT(@ioBuff, errmsg);
-;           emsg(@ioBuff);
-
-;           retval = false;
-;           if (end == 0)
-;           {
-;               msg_puts_attr(u8("\nWARNING: Original file may be lost or damaged\n"), attr | MSG_HIST);
-;               msg_puts_attr(u8("don't quit the editor until the file is successfully written!"), attr | MSG_HIST);
-
-;               stat_C st_old = new stat_C();
-
-                ;; Update the timestamp to avoid an "overwrite changed file" prompt when writing again.
-;               if (0 <= libC.stat(fname, st_old))
-;               {
-;                   buf_store_time(buf, st_old);
-;                   buf.b_mtime_read = buf.b_mtime;
-;               }
-;           }
-;       }
-;       @msg_scroll = msg_save;
-
-        ;; When writing the whole file and 'undofile' is set, also write the undo file.
-
-;       if (retval == true && write_undo_file)
-;       {
-;           Bytes hash = new Bytes(UNDO_HASH_SIZE);
-
-;           sha256_finish(sha_ctx, hash);
-;           u_write_undo(null, false, buf, hash);
-;       }
-
-;       if (!should_abort(retval))
-;       {
-;           @curbuf.b_no_eol_lnum = 0;   ;; in case it was set by the previous read
-
-;           if (aborting())     ;; autocmds may abort script processing
-;               retval = false;
-;       }
-
-;       @got_int |= prev_got_int;
-
-;       return retval;
-    ))
-
-;; Set the name of the current buffer.
-;; Use when the buffer doesn't have a name and a ":r" or ":w" command with a file name is used.
-
-(defn- #_boolean set_rw_fname [#_Bytes fname, #_Bytes sfname]
-    (§
-;       buffer_C buf = @curbuf;
-
-        ;; It's like the unnamed buffer is deleted....
-;       if (aborting())         ;; autocmds may abort script processing
-;           return false;
-;       if (@curbuf != buf)
-;       {
-            ;; We are in another buffer now, don't do the renaming.
-;           emsg(e_auchangedbuf);
-;           return false;
-;       }
-
-;       if (setfname(@curbuf, fname, sfname, false) == true)
-;           @curbuf.b_flags |= BF_NOTEDITED;
-
-        ;; ....and a new named one is created
-;       if (aborting())         ;; autocmds may abort script processing
-;           return false;
-
-;       return true;
-    ))
-
-;; Put file name into ioBuff with quotes.
-
-(defn- #_void msg_add_fname [#_Bytes fname]
-    (§
-;       if (fname == null)
-;           fname = u8("-stdin-");
-
-;       vim_strncpy(@ioBuff.plus(1), fname, IOSIZE - 4 - 1);
-;       @ioBuff.be(0, (byte)'"');
-;       STRCAT(@ioBuff, u8("\" "));
-    ))
-
-;; Append message for text mode to ioBuff.
-;; Return true if something appended.
-
-(defn- #_boolean msg_add_fileformat [#_int eol_type]
-    (§
-;       if (eol_type == EOL_DOS)
-;       {
-;           STRCAT(@ioBuff, shortmess(SHM_TEXT) ? u8("[dos]") : u8("[dos format]"));
-;           return true;
-;       }
-;       if (eol_type == EOL_MAC)
-;       {
-;           STRCAT(@ioBuff, shortmess(SHM_TEXT) ? u8("[mac]") : u8("[mac format]"));
-;           return true;
-;       }
-;       return false;
-    ))
-
-;; Append line and character count to ioBuff.
-
-(defn- #_void msg_add_lines [#_boolean insert_space, #_long lnum, #_long nchars]
-    (§
-;       Bytes p = @ioBuff.plus(STRLEN(@ioBuff));
-
-;       if (insert_space)
-;           (p = p.plus(1)).be(-1, (byte)' ');
-;       if (shortmess(SHM_LINES))
-;           libC.sprintf(p, u8("%ldL, %ldC"), lnum, nchars);
-;       else
-;       {
-;           if (lnum == 1)
-;               STRCPY(p, u8("1 line, "));
-;           else
-;               libC.sprintf(p, u8("%ld lines, "), lnum);
-;           p = p.plus(STRLEN(p));
-;           if (nchars == 1)
-;               STRCPY(p, u8("1 character"));
-;           else
-;               libC.sprintf(p, u8("%ld characters"), nchars);
-;       }
-    ))
-
-;; Append message for missing line separator to ioBuff.
-
-(defn- #_void msg_add_eol []
-    (§
-;       STRCAT(@ioBuff, shortmess(SHM_LAST) ? u8("[noeol]") : u8("[Incomplete last line]"));
-    ))
-
-;; Check modification time of file, before writing to it.
-;; The size isn't checked, because using a tool like "gzip" takes care of
-;; using the same timestamp but can't set the size.
-
-(defn- #_boolean check_mtime [#_buffer_C buf, #_stat_C st]
-    (§
-;       if (buf.b_mtime_read != 0 && time_differs(st.st_mtime(), buf.b_mtime_read))
-;       {
-;           @msg_scroll = true;          ;; don't overwrite messages here
-;           @msg_silent = 0;             ;; must give this prompt
-            ;; don't use emsg() here, don't want to flush the buffers
-;           msg_attr(u8("WARNING: The file has been changed since reading it!!!"), hl_attr(HLF_E));
-;           if (ask_yesno(u8("Do you really want to write to it"), true) == 'n')
-;               return false;
-;           @msg_scroll = false;         ;; always overwrite the file message now
-;       }
-;       return true;
-    ))
-
-(defn- #_boolean time_differs [#_long t1, #_long t2]
-    (§
-        ;; On a FAT filesystem, esp. under Linux, there are only 5 bits to store
-        ;; the seconds.  Since the roundoff is done when flushing the inode, the
-        ;; time may change unexpectedly by one second!!!
-;       return (1 < t1 - t2 || 1 < t2 - t1);
-    ))
-
-;; Call write() to write a number of bytes to the file.
-;; Handles encryption and 'encoding' conversion.
-;;
-;; Return false for failure, true otherwise.
-
-(defn- #_boolean buf_write_bytes [#_bw_info_C ip]
-    (§
-;       Bytes buf = ip.bw_buf;         ;; data to write
-;       int len = ip.bw_len;            ;; length of data
-;       int flags = ip.bw_flags;        ;; extra flags
-
-        ;; Skip conversion when writing the crypt magic number or the BOM.
-
-;       if ((flags & FIO_NOCONVERT) == 0)
-;       {
-;           if ((flags & FIO_UTF8) != 0)
-;           {
-                ;; Convert latin1 in the buffer to UTF-8 in the file.
-
-;               Bytes p = ip.bw_conv_buf;      ;; translate to buffer
-;               for (int wlen = 0; wlen < len; wlen++)
-;                   p = p.plus(utf_char2bytes(buf.at(wlen), p));
-;               buf = ip.bw_conv_buf;
-;               len = BDIFF(p, ip.bw_conv_buf);
-;           }
-;           else if ((flags & (FIO_UCS4 | FIO_UTF16 | FIO_UCS2 | FIO_LATIN1)) != 0)
-;           {
-                ;; Convert UTF-8 bytes in the buffer to UCS-2, UCS-4, UTF-16 or
-                ;; Latin1 chars in the file.
-
-;               Bytes p;
-;               if ((flags & FIO_LATIN1) != 0)
-;                   p = buf;        ;; translate in-place (can only get shorter)
-;               else
-;                   p = ip.bw_conv_buf;     ;; translate to buffer
-;               int n;
-;               for (int wlen = 0; wlen < len; wlen += n)
-;               {
-;                   int c;
-
-;                   if (wlen == 0 && ip.bw_restlen != 0)
-;                   {
-                        ;; Use remainder of previous call.
-                        ;; Append the start of buf[] to get a full sequence.
-                        ;; Might still be too short!
-
-;                       int l = CONV_RESTLEN - ip.bw_restlen;
-;                       if (len < l)
-;                           l = len;
-;                       BCOPY(ip.bw_rest, ip.bw_restlen, buf, 0, l);
-;                       n = us_ptr2len_len(ip.bw_rest, ip.bw_restlen + l);
-;                       if (ip.bw_restlen + len < n)
-;                       {
-                            ;; We have an incomplete byte sequence at the end to be written.
-                            ;; We can't convert it without the remaining bytes.
-                            ;; Keep them for the next call.
-
-;                           if (CONV_RESTLEN < ip.bw_restlen + len)
-;                               return false;
-;                           ip.bw_restlen += len;
-;                           break;
-;                       }
-;                       if (1 < n)
-;                           c = us_ptr2char(ip.bw_rest);
-;                       else
-;                           c = ip.bw_rest.at(0);
-;                       if (ip.bw_restlen <= n)
-;                       {
-;                           n -= ip.bw_restlen;
-;                           ip.bw_restlen = 0;
-;                       }
-;                       else
-;                       {
-;                           ip.bw_restlen -= n;
-;                           BCOPY(ip.bw_rest, 0, ip.bw_rest, n, ip.bw_restlen);
-;                           n = 0;
-;                       }
-;                   }
-;                   else
-;                   {
-;                       n = us_ptr2len_len(buf.plus(wlen), len - wlen);
-;                       if (len - wlen < n)
-;                       {
-                            ;; We have an incomplete byte sequence at the end to
-                            ;; be written.  We can't convert it without the
-                            ;; remaining bytes.  Keep them for the next call.
-;                           if (CONV_RESTLEN < len - wlen)
-;                               return false;
-;                           ip.bw_restlen = len - wlen;
-;                           BCOPY(ip.bw_rest, 0, buf, wlen, ip.bw_restlen);
-;                           break;
-;                       }
-;                       if (1 < n)
-;                           c = us_ptr2char(buf.plus(wlen));
-;                       else
-;                           c = buf.at(wlen);
-;                   }
-
-;                   boolean b;
-;                   { Bytes[] __ = { p }; b = ucs2bytes(c, __, flags); p = __[0]; }
-;                   if (b && !ip.bw_conv_error)
-;                   {
-;                       ip.bw_conv_error = true;
-;                       ip.bw_conv_error_lnum = ip.bw_start_lnum;
-;                   }
-;                   if (c == NL)
-;                       ip.bw_start_lnum++;
-;               }
-;               if ((flags & FIO_LATIN1) != 0)
-;                   len = BDIFF(p, buf);
-;               else
-;               {
-;                   buf = ip.bw_conv_buf;
-;                   len = BDIFF(p, ip.bw_conv_buf);
-;               }
-;           }
-;       }
-
-;       int wlen = write_eintr(ip.bw_fd, buf, len);
-;       return (wlen < len) ? false : true;
-    ))
-
-;; Convert a Unicode character to bytes.
-;; Return true for an error, false when it's OK.
-
-(defn- #_boolean ucs2bytes [#_int c, #_Bytes* pp, #_int flags]
-    ;; c: in: character
-    ;; pp: in/out: pointer to result
-    ;; flags: FIO_ flags
-    (§
-;       boolean error = false;
-;       Bytes p = pp[0];
-
-;       if ((flags & FIO_UCS4) != 0)
-;       {
-;           if ((flags & FIO_ENDIAN_L) != 0)
-;           {
-;               (p = p.plus(1)).be(-1, c);
-;               (p = p.plus(1)).be(-1, (c >>> 8));
-;               (p = p.plus(1)).be(-1, (c >>> 16));
-;               (p = p.plus(1)).be(-1, (c >>> 24));
-;           }
-;           else
-;           {
-;               (p = p.plus(1)).be(-1, (c >>> 24));
-;               (p = p.plus(1)).be(-1, (c >>> 16));
-;               (p = p.plus(1)).be(-1, (c >>> 8));
-;               (p = p.plus(1)).be(-1, c);
-;           }
-;       }
-;       else if ((flags & (FIO_UCS2 | FIO_UTF16)) != 0)
-;       {
-;           if (0x10000 <= c)
-;           {
-;               if ((flags & FIO_UTF16) != 0)
-;               {
-                    ;; Make two words, ten bits of the character in each.
-                    ;; First word is 0xd800 - 0xdbff, second one 0xdc00 - 0xdfff.
-
-;                   c -= 0x10000;
-;                   if (0x100000 <= c)
-;                       error = true;
-;                   int cc = ((c >>> 10) & 0x3ff) + 0xd800;
-;                   if ((flags & FIO_ENDIAN_L) != 0)
-;                   {
-;                       (p = p.plus(1)).be(-1, cc);
-;                       (p = p.plus(1)).be(-1, (cc >>> 8));
-;                   }
-;                   else
-;                   {
-;                       (p = p.plus(1)).be(-1, (cc >>> 8));
-;                       (p = p.plus(1)).be(-1, cc);
-;                   }
-;                   c = (c & 0x3ff) + 0xdc00;
-;               }
-;               else
-;                   error = true;
-;           }
-;           if ((flags & FIO_ENDIAN_L) != 0)
-;           {
-;               (p = p.plus(1)).be(-1, c);
-;               (p = p.plus(1)).be(-1, (c >>> 8));
-;           }
-;           else
-;           {
-;               (p = p.plus(1)).be(-1, (c >>> 8));
-;               (p = p.plus(1)).be(-1, c);
-;           }
-;       }
-;       else    ;; Latin1
-;       {
-;           if (0x100 <= c)
-;           {
-;               error = true;
-;               (p = p.plus(1)).be(-1, 0xbf);
-;           }
-;           else
-;               (p = p.plus(1)).be(-1, c);
-;       }
-
-;       pp[0] = p;
-;       return error;
-    ))
-
-;; Return true if file encoding "fenc" requires conversion from or to 'encoding'.
-
-(defn- #_boolean need_conversion [#_Bytes fenc]
-    (§
-;       boolean same_encoding;
-;       int enc_flags;
-;       int fenc_flags;
-
-;       if (fenc.at(0) == NUL || STRCMP(u8("utf-8"), fenc) == 0)
-;       {
-;           same_encoding = true;
-;           fenc_flags = 0;
-;       }
-;       else
-;       {
-            ;; Ignore difference between "ansi" and "latin1", "ucs-4" and "ucs-4be", etc.
-;           enc_flags = get_fio_flags(u8("utf-8"));
-;           fenc_flags = get_fio_flags(fenc);
-;           same_encoding = (enc_flags != 0 && fenc_flags == enc_flags);
-;       }
-;       if (same_encoding)
-;       {
-            ;; Specified encoding matches with 'encoding'.  This requires
-            ;; conversion when 'encoding' is Unicode but not UTF-8.
-;           return false;
-;       }
-
-        ;; Encodings differ.  However, conversion is not needed when 'enc'
-        ;; is any Unicode encoding and the file is UTF-8.
-;       return (fenc_flags != FIO_UTF8);
-    ))
-
-;; Check "name" for a unicode encoding and return the FIO_ flags needed for the internal conversion.
-;; If "name" is an empty string, use 'encoding'.
-
-(defn- #_int get_fio_flags [#_Bytes name]
-    (§
-;       if (name.at(0) == NUL)
-;           name = u8("utf-8");
-
-;       if (STRCMP(name, u8("utf-8")) == 0)
-;           return FIO_UTF8;
-
-;       return 0;
-    ))
-
-;; Check for a Unicode BOM (Byte Order Mark) at the start of p[size].
-;; "size" must be at least 2.
-;; Return the name of the encoding and set "*lenp" to the length.
-;; Returns null when no BOM found.
-
-(defn- #_Bytes check_for_bom [#_Bytes p, #_long size, #_int* lenp, #_int flags]
-    (§
-;       Bytes name = null;
-;       int len = 2;
-
-;       if (char_u(p.at(0)) == 0xef && char_u(p.at(1)) == 0xbb && 3 <= size && char_u(p.at(2)) == 0xbf
-;               && (flags == FIO_ALL || flags == FIO_UTF8 || flags == 0))
-;       {
-;           name = u8("utf-8");         ;; EF BB BF
-;           len = 3;
-;       }
-;       else if (char_u(p.at(0)) == 0xff && char_u(p.at(1)) == 0xfe)
-;       {
-;           if (4 <= size && p.at(2) == 0 && p.at(3) == 0
-;               && (flags == FIO_ALL || flags == (FIO_UCS4 | FIO_ENDIAN_L)))
-;           {
-;               name = u8("ucs-4le");   ;; FF FE 00 00
-;               len = 4;
-;           }
-;           else if (flags == (FIO_UCS2 | FIO_ENDIAN_L))
-;               name = u8("ucs-2le");   ;; FF FE
-;           else if (flags == FIO_ALL || flags == (FIO_UTF16 | FIO_ENDIAN_L))
-                ;; utf-16le is preferred, it also works for ucs-2le text
-;               name = u8("utf-16le");  ;; FF FE
-;       }
-;       else if (char_u(p.at(0)) == 0xfe && char_u(p.at(1)) == 0xff
-;               && (flags == FIO_ALL || flags == FIO_UCS2 || flags == FIO_UTF16))
-;       {
-            ;; Default to utf-16, it works also for ucs-2 text.
-;           if (flags == FIO_UCS2)
-;               name = u8("ucs-2");     ;; FE FF
-;           else
-;               name = u8("utf-16");    ;; FE FF
-;       }
-;       else if (4 <= size && p.at(0) == 0 && p.at(1) == 0 && char_u(p.at(2)) == 0xfe && char_u(p.at(3)) == 0xff
-;               && (flags == FIO_ALL || flags == FIO_UCS4))
-;       {
-;           name = u8("ucs-4");         ;; 00 00 FE FF
-;           len = 4;
-;       }
-
-;       lenp[0] = len;
-;       return name;
-    ))
-
-;; Generate a BOM in "buf[4]" for encoding "name".
-;; Return the length of the BOM (zero when no BOM).
-
-(defn- #_int make_bom [#_Bytes buf, #_Bytes name]
-    (§
-;       int flags = get_fio_flags(name);
-
-        ;; Can't put a BOM in a non-Unicode file.
-;       if (flags == FIO_LATIN1 || flags == 0)
-;           return 0;
-
-;       if (flags == FIO_UTF8)      ;; UTF-8
-;       {
-;           buf.be(0, 0xef);
-;           buf.be(1, 0xbb);
-;           buf.be(2, 0xbf);
-;           return 3;
-;       }
-
-;       Bytes[] p = { buf };
-;       ucs2bytes(0xfeff, p, flags);
-;       return BDIFF(p[0], buf);
-    ))
-
-;; Try to find a shortname by comparing the fullname with the current directory.
-;; Returns "full_path" or pointer into "full_path" if shortened.
-
-(defn- #_Bytes shorten_fname1 [#_Bytes full_path]
-    (§
-;       Bytes p = full_path;
-
-;       Bytes dirname = new Bytes(MAXPATHL);
-;       if (mch_dirname(dirname, MAXPATHL) == true)
-;       {
-;           p = shorten_fname(full_path, dirname);
-;           if (p == null || p.at(0) == NUL)
-;               p = full_path;
-;       }
-
-;       return p;
     ))
 
 ;; Try to find a shortname by comparing the fullname with the current directory.
@@ -82444,426 +78245,6 @@
 ;       return p.plus(1);
     ))
 
-;; Shorten filenames for all buffers.
-;; When "force" is true: use full path from now on for files currently being edited,
-;; both for file name and swap file name.  Try to shorten the file names a bit,
-;; if safe to do so.
-;; When "force" is false: only try to shorten absolute file names.
-;; For buffers that have buftype "nofile" or "scratch": never change the file name.
-
-(defn- #_void shorten_fnames [#_boolean force]
-    (§
-;       Bytes dirname = new Bytes(MAXPATHL);
-;       mch_dirname(dirname, MAXPATHL);
-
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;       {
-;           if (buf.b_fname != null
-;                   && path_with_url(buf.b_fname) == 0
-;                   && (force
-;                       || buf.b_sfname == null
-;                       || mch_isFullName(buf.b_sfname)))
-;           {
-;               buf.b_sfname = null;
-;               Bytes p = shorten_fname(buf.b_ffname, dirname);
-;               if (p != null)
-;               {
-;                   buf.b_sfname = STRDUP(p);
-;                   buf.b_fname = buf.b_sfname;
-;               }
-;               if (p == null || buf.b_fname == null)
-;                   buf.b_fname = buf.b_ffname;
-;           }
-;       }
-;       status_redraw_all();
-;       @redraw_tabline = true;
-    ))
-
-(atom! boolean already_warned)
-
-;; Check if any not hidden buffer has been changed.
-;; Postpone the check if there are characters in the stuff buffer,
-;; a global command is being executed, a mapping is being executed or an autocommand is busy.
-;; Returns true if some message was written (screen should be redrawn and cursor positioned).
-
-(defn- #_int check_timestamps [#_boolean focus]
-    ;; focus: called for GUI focus event
-    (§
-;       int didit = 0;
-
-        ;; Don't check timestamps while system() or another low-level function
-        ;; may cause us to lose and gain focus.
-;       if (0 < @no_check_timestamps)
-;           return FALSE;
-
-        ;; Avoid doing a check twice.  The OK/Reload dialog can cause a focus
-        ;; event and we would keep on checking if the file is steadily growing.
-        ;; Do check again after typing something.
-;       if (focus && @did_check_timestamps)
-;       {
-;           @need_check_timestamps = true;
-;           return FALSE;
-;       }
-
-;       if (!stuff_empty() || @global_busy != 0 || !typebuf_typed() || 0 < @curbuf_lock || 0 < @allbuf_lock)
-;           @need_check_timestamps = true;           ;; check later
-;       else
-;       {
-;           @no_wait_return++;
-;           @did_check_timestamps = true;
-;           @already_warned = false;
-;           for (buffer_C buf = @firstbuf; buf != null; )
-;           {
-                ;; Only check buffers in a window.
-;               if (0 < buf.b_nwindows)
-;               {
-;                   int n = buf_check_timestamp(buf);
-;                   if (didit < n)
-;                       didit = n;
-;                   if (0 < n && !buf_valid(buf))
-;                   {
-                        ;; Autocommands have removed the buffer, start at the first one again.
-;                       buf = @firstbuf;
-;                       continue;
-;                   }
-;               }
-;               buf = buf.b_next;
-;           }
-;           --@no_wait_return;
-;           @need_check_timestamps = false;
-;           if (@need_wait_return && didit == 2)
-;           {
-                ;; make sure msg isn't overwritten
-;               msg_puts(u8("\n"));
-;               out_flush();
-;           }
-;       }
-
-;       return didit;
-    ))
-
-;; Move all the lines from buffer "frombuf" to buffer "tobuf".
-;; Return true or false.  When false "tobuf" is incomplete and/or "frombuf" is not empty.
-
-(defn- #_boolean move_lines [#_buffer_C frombuf, #_buffer_C tobuf]
-    (§
-;       boolean retval = true;
-;       buffer_C tbuf = @curbuf;
-
-        ;; Copy the lines in "frombuf" to "tobuf".
-;       @curbuf = tobuf;
-;       for (long lnum = 1; lnum <= frombuf.b_ml.ml_line_count; lnum++)
-;       {
-;           Bytes p = STRDUP(ml_get_buf(frombuf, lnum, false));
-;           if (!ml_append(lnum - 1, p, 0, false))
-;           {
-;               retval = false;
-;               break;
-;           }
-;       }
-
-        ;; Delete all the lines in "frombuf".
-;       if (retval != false)
-;       {
-;           @curbuf = frombuf;
-;           for (long lnum = @curbuf.b_ml.ml_line_count; 0 < lnum; --lnum)
-;               if (ml_delete(lnum, false) == false)
-;               {
-                    ;; Oops!  We could try putting back the saved lines,
-                    ;; but that might fail again...
-;                   retval = false;
-;                   break;
-;               }
-;       }
-
-;       @curbuf = tbuf;
-;       return retval;
-    ))
-
-;; Check if buffer "buf" has been changed.
-;; Also check if the file for a new buffer unexpectedly appeared.
-;; return 1 if a changed buffer was found.
-;; return 2 if a message has been displayed.
-;; return 0 otherwise.
-
-(defn- #_int buf_check_timestamp [#_buffer_C buf]
-    (§
-;       Bytes mesg = null;
-;       Bytes mesg2 = u8("");
-;       boolean helpmesg = false;
-;       boolean reload = false;
-;       boolean can_reload = false;
-;       long orig_size = buf.b_orig_size;
-;       int orig_mode = buf.b_orig_mode;
-
-        ;; If there is no file name, the buffer is not loaded, 'buftype' is set,
-        ;; we are in the middle of a save or being called recursively: ignore this buffer.
-;       if (buf.b_ffname == null || buf.b_ml.ml_mfp == null || buf.b_saving)
-;           return 0;
-
-;       int retval = 0;
-
-;       int stat_res;
-;       stat_C st = new stat_C();
-;       if ((buf.b_flags & BF_NOTEDITED) == 0
-;               && buf.b_mtime != 0
-;               && ((stat_res = libC.stat(buf.b_ffname, st)) < 0
-;                   || time_differs(st.st_mtime(), buf.b_mtime)
-;                   || st.st_size() != buf.b_orig_size
-;                   || st.st_mode() != buf.b_orig_mode))
-;       {
-;           retval = 1;
-
-            ;; set b_mtime to stop further warnings (e.g., when executing FileChangedShell autocmd)
-;           if (stat_res < 0)
-;           {
-;               buf.b_mtime = 0;
-;               buf.b_orig_size = 0;
-;               buf.b_orig_mode = 0;
-;           }
-;           else
-;               buf_store_time(buf, st);
-
-            ;; Don't do anything for a directory.  Might contain the file explorer.
-;           if (!mch_isdir(buf.b_fname))
-;           {
-;               Bytes reason;
-;               if (stat_res < 0)
-;                   reason = u8("deleted");
-;               else if (bufIsChanged(buf))
-;                   reason = u8("conflict");
-;               else if (orig_size != buf.b_orig_size || buf_contents_changed(buf))
-;                   reason = u8("changed");
-;               else if (orig_mode != buf.b_orig_mode)
-;                   reason = u8("mode");
-;               else
-;                   reason = u8("time");
-
-;               if (reason.at(0) == (byte)'d')
-;                   mesg = u8("E211: File \"%s\" no longer available");
-;               else
-;               {
-;                   helpmesg = true;
-;                   can_reload = true;
-
-                    ;; Check if the file contents really changed to avoid giving a warning
-                    ;; when only the timestamp was set (e.g. checked out of CVS).
-                    ;; Always warn when the buffer was changed.
-
-;                   if (reason.at(2) == (byte)'n')
-;                   {
-;                       mesg = u8("W12: Warning: File \"%s\" has changed and the buffer was changed in Vim as well");
-;                       mesg2 = u8("See \":help W12\" for more info.");
-;                   }
-;                   else if (reason.at(1) == (byte)'h')
-;                   {
-;                       mesg = u8("W11: Warning: File \"%s\" has changed since editing started");
-;                       mesg2 = u8("See \":help W11\" for more info.");
-;                   }
-;                   else if (reason.at(0) == (byte)'m')
-;                   {
-;                       mesg = u8("W16: Warning: Mode of file \"%s\" has changed since editing started");
-;                       mesg2 = u8("See \":help W16\" for more info.");
-;                   }
-;                   else
-                        ;; Only timestamp changed.
-                        ;; Store it to avoid a warning in check_mtime() later.
-;                       buf.b_mtime_read = buf.b_mtime;
-;               }
-;           }
-;       }
-;       else if ((buf.b_flags & BF_NEW) != 0 && (buf.b_flags & BF_NEW_W) == 0 && vim_fexists(buf.b_ffname))
-;       {
-;           retval = 1;
-;           mesg = u8("W13: Warning: File \"%s\" has been created after editing started");
-;           buf.b_flags |= BF_NEW_W;
-;           can_reload = true;
-;       }
-
-;       if (mesg != null)
-;       {
-;           Bytes path = buf.b_fname;
-;           if (path != null)
-;           {
-;               if (!helpmesg)
-;                   mesg2 = u8("");
-;               Bytes tbuf = new Bytes(STRLEN(path) + STRLEN(mesg) + STRLEN(mesg2) + 2);
-;               libC.sprintf(tbuf, mesg, path);
-;               if (can_reload)
-;               {
-;                   if (mesg2.at(0) != NUL)
-;                   {
-;                       STRCAT(tbuf, u8("\n"));
-;                       STRCAT(tbuf, mesg2);
-;                   }
-;                   if (do_dialog(tbuf, u8("&OK\n&Load File"), 1, true) == 2)
-;                       reload = true;
-;               }
-;               else if (NORMAL_BUSY < @State || (@State & CMDLINE) != 0 || @already_warned)
-;               {
-;                   if (mesg2.at(0) != NUL)
-;                   {
-;                       STRCAT(tbuf, u8("; "));
-;                       STRCAT(tbuf, mesg2);
-;                   }
-;                   emsg(tbuf);
-;                   retval = 2;
-;               }
-;               else
-;               {
-;                   msg_start();
-;                   msg_puts_attr(tbuf, hl_attr(HLF_E) + MSG_HIST);
-;                   if (mesg2.at(0) != NUL)
-;                       msg_puts_attr(mesg2, hl_attr(HLF_W) + MSG_HIST);
-;                   msg_clr_eos();
-;                   msg_end();
-
-;                   if (@emsg_silent == 0)
-;                   {
-;                       out_flush();
-                        ;; give the user some time to think about it
-;                       ui_delay(1000L, true);
-
-                        ;; don't redraw and erase the message
-;                       @redraw_cmdline = false;
-;                   }
-
-;                   @already_warned = true;
-;               }
-;           }
-;       }
-
-;       if (reload)
-;       {
-            ;; Reload the buffer.
-;           buf_reload(buf, orig_mode);
-;           if (buf.@b_p_udf && buf.b_ffname != null)
-;           {
-;               Bytes hash = new Bytes(UNDO_HASH_SIZE);
-;               buffer_C save_curbuf = @curbuf;
-
-                ;; Any existing undo file is unusable, write it now.
-;               @curbuf = buf;
-;               u_compute_hash(hash);
-;               u_write_undo(null, false, buf, hash);
-;               @curbuf = save_curbuf;
-;           }
-;       }
-
-;       return retval;
-    ))
-
-;; Reload a buffer that is already loaded.
-;; Used when the file was changed outside of Vim.
-;; "orig_mode" is buf.b_orig_mode before the need for reloading was detected.
-;; buf.b_orig_mode may have been reset already.
-
-(defn- #_void buf_reload [#_buffer_C buf, #_int orig_mode]
-    (§
-;       boolean old_ro = buf.@b_p_ro;
-;       boolean saved = true;
-;       int flags = READ_NEW;
-
-        ;; We only want to read the text from the file,
-        ;; not reset the syntax highlighting, clear marks, diff status, etc.
-
-;       exarg_C ea = §_exarg_C();
-;       prep_exarg(ea, buf);
-
-;       pos_C old_cursor = §_pos_C();
-;       COPY_pos(old_cursor, @curwin.w_cursor);
-;       long old_topline = @curwin.w_topline;
-
-;       if (@p_ur < 0 || @curbuf.b_ml.ml_line_count <= @p_ur)
-;       {
-            ;; Save all the text, so that the reload can be undone.
-            ;; Sync first so that this is a separate undo-able action.
-;           u_sync(false);
-;           saved = u_savecommon(0, @curbuf.b_ml.ml_line_count + 1, 0, true);
-;           flags |= READ_KEEP_UNDO;
-;       }
-
-        ;; To behave like when a new file is edited (matters for BufReadPost
-        ;; autocommands) we first need to delete the current buffer contents.
-        ;; But if reading the file fails we should keep the old contents.
-        ;; Can't use memory only, the file might be too big.
-        ;; Use a hidden buffer to move the buffer contents to.
-
-;       buffer_C savebuf;
-;       if (bufempty() || saved == false)
-;           savebuf = null;
-;       else
-;       {
-            ;; Allocate a buffer without putting it in the buffer list.
-;           savebuf = buflist_new(null, null, 1, BLN_DUMMY);
-;           if (savebuf != null && buf == @curbuf)
-;           {
-                ;; Open the memline.
-;               @curbuf = savebuf;
-;               @curwin.w_buffer = savebuf;
-;               saved = ml_open(@curbuf);
-;               @curbuf = buf;
-;               @curwin.w_buffer = buf;
-;           }
-;           if (savebuf == null || saved == false || buf != @curbuf || move_lines(buf, savebuf) == false)
-;           {
-;               emsg2(u8("E462: Could not prepare for reloading \"%s\""), buf.b_fname);
-;               saved = false;
-;           }
-;       }
-
-;       if (saved == true)
-;       {
-;           @curbuf.b_flags |= BF_CHECK_RO;              ;; check for RO again
-;           if (readfile(buf.b_ffname, buf.b_fname, 0, 0, MAXLNUM, ea, flags) == false)
-;           {
-;               if (!aborting())
-;                   emsg2(u8("E321: Could not reload \"%s\""), buf.b_fname);
-;               if (savebuf != null && buf_valid(savebuf) && buf == @curbuf)
-;               {
-                    ;; Put the text back from the save buffer.
-                    ;; First delete any lines that readfile() added.
-;                   while (!bufempty())
-;                       if (ml_delete(buf.b_ml.ml_line_count, false) == false)
-;                           break;
-;                   move_lines(savebuf, buf);
-;               }
-;           }
-;           else if (buf == @curbuf)                     ;; "buf" still valid
-;           {
-                ;; Mark the buffer as unmodified and free undo info.
-;               unchanged(buf, true);
-;               if ((flags & READ_KEEP_UNDO) == 0)
-;               {
-;                   u_blockfree(buf);
-;                   u_clearall(buf);
-;               }
-;               else
-;               {
-                    ;; Mark all undo states as changed.
-;                   u_unchanged(@curbuf);
-;               }
-;           }
-;       }
-
-;       if (savebuf != null && buf_valid(savebuf))
-;           wipe_buffer(savebuf);
-
-        ;; Restore the topline and cursor position and check it (lines may have been removed).
-;       if (@curbuf.b_ml.ml_line_count < old_topline)
-;           @curwin.w_topline = @curbuf.b_ml.ml_line_count;
-;       else
-;           @curwin.w_topline = old_topline;
-;       COPY_pos(@curwin.w_cursor, old_cursor);
-;       check_cursor();
-;       update_topline();
-        ;; If the mode didn't change and 'readonly' was set, keep the old value;
-        ;; the user probably used the ":view" command.  But don't reset it,
-        ;; might have had a read error.
-;       if (orig_mode == @curbuf.b_orig_mode)
-;           @curbuf.@b_p_ro |= old_ro;
-    ))
-
 (defn- #_void buf_store_time [#_buffer_C buf, #_stat_C st]
     (§
 ;       buf.b_mtime = st.st_mtime();
@@ -82872,7 +78253,7 @@
     ))
 
 ;; Adjust the line with missing eol, used for the next write.
-;; Used for do_filter(), when the input lines for the filter are deleted.
+;; Used for do_filter(), when the input lines for the filter are deleted.
 
 (defn- #_void write_lnum_adjust [#_long offset]
     (§
@@ -103038,7 +98419,6 @@
         (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cnoreabbrev"),   ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
-        (->cmdname_C (u8 "cquit"),         ex_cquit,            BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN MODIFY),                         ADDR_LINES),
@@ -103049,7 +98429,6 @@
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "enew"),          ex_edit,             BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "exit"),          ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL SBOXOK CMDWIN),                    ADDR_LINES),
         (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT SBOXOK CMDWIN),                         ADDR_LINES),
@@ -103108,7 +98487,6 @@
         (->cmdname_C (u8 "quit"),          ex_quit,          (| BANG RANGE COUNT NOTADR CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "quitall"),       ex_quit_all,         BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "qall"),          ex_quit_all,      (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "read"),          ex_read,          (| BANG RANGE FILE1 ARGOPT ZEROR CMDWIN MODIFY),              ADDR_LINES),
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
@@ -103120,7 +98498,6 @@
         (->cmdname_C (u8 "rundo"),         ex_rundo,         (| NEEDARG FILE1),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "sandbox"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "saveas"),        ex_write,         (| BANG DFLALL FILE1 ARGOPT CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "sbuffer"),       ex_buffer,        (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA EDITCMD),     ADDR_BUFFERS),
         (->cmdname_C (u8 "sbNext"),        ex_bprevious,     (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
         (->cmdname_C (u8 "sball"),         ex_buffer_all,    (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
@@ -103172,7 +98549,6 @@
         (->cmdname_C (u8 "unhide"),        ex_buffer_all,    (| RANGE NOTADR COUNT),                                       ADDR_LINES),
         (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
         (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM SBOXOK CMDWIN),                     ADDR_LINES),
-        (->cmdname_C (u8 "update"),        ex_update,        (| RANGE BANG FILE1 ARGOPT DFLALL),                           ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM SBOXOK CMDWIN),        ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
@@ -103184,14 +98560,8 @@
         (->cmdname_C (u8 "vnew"),          ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "write"),         ex_write,         (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
-        (->cmdname_C (u8 "wall"),          ex_wqall,         (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "wq"),            ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL),                           ADDR_LINES),
-        (->cmdname_C (u8 "wqall"),         ex_wqall,         (| BANG FILE1 ARGOPT DFLALL),                                 ADDR_LINES),
         (->cmdname_C (u8 "wundo"),         ex_wundo,         (| BANG NEEDARG FILE1),                                       ADDR_LINES),
-        (->cmdname_C (u8 "xit"),           ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
-        (->cmdname_C (u8 "xall"),          ex_wqall,            BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "xmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "xnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
@@ -103201,15 +98571,11 @@
 
         ;; commands that don't start with a lowercase letter
 
-        (->cmdname_C (u8 "!"),             ex_bang,          (| RANGE BANG FILES CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "#"),             ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "&"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
-        (->cmdname_C (u8 "*"),             ex_at,            (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "<"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN MODIFY),                        ADDR_LINES),
         (->cmdname_C (u8 "="),             ex_equal,         (| RANGE DFLALL EXFLAGS CMDWIN),                              ADDR_LINES),
         (->cmdname_C (u8 ">"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN MODIFY),                        ADDR_LINES),
-        (->cmdname_C (u8 "@"),             ex_at,            (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "Print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
     ])
 
