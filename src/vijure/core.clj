@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -4610,19 +4610,15 @@
                     (if (:skip eap) ;; not executing commands, only parsing
                         [win eap]
 
-                        (let-when [[#_matcher_C matcher ?] (search-regcomp? nil, pat, RE_SUBST, re_use, SEARCH_HIST)
-                              [win matcher]
+                        (let-when [[#_matcher_C mat ?] (search-regcomp? nil, pat, RE_SUBST, re_use, SEARCH_HIST)
+                              [win mat]
                                 (when' ? => [(if @sub_error (emsg win, e_invcmd) win) nil]
-                                    [win matcher])
+                                    [win mat])
 
-                        ] (some? matcher) => [win eap]
+                        ] (some? mat) => [win eap]
 
                             ;; the 'i' or 'I' flag overrules 'ignorecase' and 'smartcase'
-                            (let [matcher
-                                    (condp == @sub_ic
-                                        (byte \i) (assoc matcher :r_icase true)
-                                        (byte \I) (assoc matcher :r_icase false)
-                                        matcher)
+                            (let [mat (condp == @sub_ic (byte \i) (assoc mat :r_icase true) (byte \I) (assoc mat :r_icase false) mat)
                                   ;; ~ in the substitute pattern is replaced with the old pattern.
                                   ;; We do it here once to avoid it to be replaced over and over again.
                                   ;; But don't do it when it starts with "\=", then it's an expression.
@@ -4633,11 +4629,10 @@
                                   a'line2 (atom (long (:line2 eap)))
                                   a'got_match (atom (boolean false))
                                   ;; Check for a match on each line.
-                                  win (loop-when [win win #_long lnum (:line1 eap)] (and (<= lnum @a'line2) (not @got_int)) => win
-                                        (let [a'nmatch (atom (long (vim-regexec matcher, lnum, 0, nil, win))) ;; number of lines in match
-                                              [win lnum]
-                                                (if (zero? @a'nmatch)
-                                                    [win lnum]
+                                  win (loop-when [win win mat mat #_long lnum (:line1 eap)] (and (<= lnum @a'line2) (not @got_int)) => win
+                                        (let [[win mat ?] (vim-regexec? win, mat, lnum, 0, nil) a'nmatch (atom (long ?)) ;; number of lines in match
+                                              [win mat lnum]
+                                                (when' (non-zero? @a'nmatch) => [win mat lnum]
                                                     ;; The new text is build up step by step, to avoid too much copying.
                                                     ;; There are these pieces:
                                                     ;;
@@ -4649,7 +4644,7 @@
                                                     ;; prev_matchcol    Column just after the previous match (if any).
                                                     ;;                  Mostly equal to "matchcol", except for the first match
                                                     ;;                  and after skipping an empty match.
-                                                    ;; matcher.*pos     Where the pattern matched in the old text.
+                                                    ;; mat.*pos         Where the pattern matched in the old text.
                                                     ;; new_start        The new text, all that has been produced so far.
                                                     ;; new_end          The new text, where to append new text.
                                                     ;;
@@ -4676,9 +4671,8 @@
                                                     ;; or handling a multi-line match.  The "old_" pointers point into this copy.
                                                     (let [a'did_sub (atom (boolean false))
                                                           ;; At first match, remember current cursor position.
-                                                          win (if (not @a'got_match)
-                                                                (let [win (setpcmark win)] (reset! a'got_match true) win)
-                                                                win)
+                                                          win (when' (not @a'got_match) => win
+                                                                (let [win (setpcmark win)] (reset! a'got_match true) win))
 
                                                           l'sub_firstlnum (atom (long lnum))            ;; lnum of first sub line
                                                           l'sub_firstline (atom (#_Bytes object nil))   ;; allocated copy of first sub line
@@ -4697,12 +4691,12 @@
                                                           ;; 3. Substitute the string.
                                                           ;; 4. If "sub_all" is set, find next match.
                                                           ;; 5. Break if there isn't another match in this line.
-                                                          [win lnum]
-                                                            (loop [win win lnum lnum]
+                                                          [win mat lnum]
+                                                            (loop [win win mat mat lnum lnum]
                                                                 ;; Advance "lnum" to the line where the match starts.
                                                                 ;; The match does not start in the first line when there is a line break before \zs.
                                                                 (let-when [lnum
-                                                                        (let-when [n (:lnum (... (:r_startpos matcher) 0))] (pos? n) => lnum
+                                                                        (let-when [n (:lnum (... (:r_startpos mat) 0))] (pos? n) => lnum
                                                                             (swap! a'nmatch - n)
                                                                             (swap! l'sub_firstlnum + n) (reset! l'sub_firstline nil)
                                                                             (+ lnum n))
@@ -4713,7 +4707,7 @@
                                                                       a'do_again (atom (boolean false)) ;; do it again after joining lines
 
                                                                       [win lnum]
-                                                                        (if (and (== @l'matchcol @l'prev_matchcol) (zero? (:lnum (... (:r_endpos matcher) 0))) (== @l'matchcol (:col (... (:r_endpos matcher) 0))))
+                                                                        (if (and (== @l'matchcol @l'prev_matchcol) (zero? (:lnum (... (:r_endpos mat) 0))) (== @l'matchcol (:col (... (:r_endpos mat) 0))))
                                                                             (do ;; 1. Matching the empty string does not count, except for the first match.
                                                                                 ;; This reproduces the strange Vi behaviour; also catches endless loops.
                                                                                 (if (eos? @l'sub_firstline @l'matchcol)
@@ -4723,7 +4717,7 @@
                                                                                     (swap! l'matchcol #(+ % (us-ptr2len-cc @l'sub_firstline, %))))
                                                                                 [win lnum])
                                                                             ;; Normally we continue searching for a match just after the previous match.
-                                                                            (let-when [_ (reset! l'matchcol (:col (... (:r_endpos matcher) 0)))
+                                                                            (let-when [_ (reset! l'matchcol (:col (... (:r_endpos mat) 0)))
                                                                                   _ (reset! l'prev_matchcol @l'matchcol)
                                                                                   ;; 2. If "sub_count" is set, only increase the counter.
                                                                                   ? (if @sub_count
@@ -4743,9 +4737,9 @@
                                                                                     )] ? => [win lnum]
 
                                                                                 ;; Move the cursor to the start of the match, so that we can use "\=col(".").
-                                                                                (let [win (assoc-in win [:w_cursor :col] (:col (... (:r_startpos matcher) 0)))
+                                                                                (let [win (assoc-in win [:w_cursor :col] (:col (... (:r_startpos mat) 0)))
                                                                                       ;; get length of substitution part
-                                                                                      #_int sublen (vim-regsub matcher, (- @l'sub_firstlnum (:lnum (... (:r_startpos matcher) 0))), sub, @l'sub_firstline, false, @p_magic, true)]
+                                                                                      #_int sublen (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:r_startpos mat) 0))), sub, @l'sub_firstline, false, @p_magic, true)]
                                                                                     (if @sub_count
                                                                                         [win lnum]
                                                                                         ;; 3. Substitute the string.
@@ -4765,8 +4759,8 @@
                                                                                                     (do (swap! l'nmatch_tl + (dec @a'nmatch))
                                                                                                         (ml-get (+ @l'sub_firstlnum (dec @a'nmatch)))
                                                                                                     ))
-                                                                                              #_int copy_len (- (:col (... (:r_startpos matcher) 0)) @l'copycol)
-                                                                                              #_int needed_len (+ copy_len (- (STRLEN s) (:col (... (:r_endpos matcher) 0))) sublen 1)
+                                                                                              #_int copy_len (- (:col (... (:r_startpos mat) 0)) @l'copycol)
+                                                                                              #_int needed_len (+ copy_len (- (STRLEN s) (:col (... (:r_endpos mat) 0))) sublen 1)
                                                                                               [s needed_len #_Bytes new_end]
                                                                                                 (if (nil? @l'new_start)
                                                                                                     (do ;; Get some space for a temporary buffer to do the substitution into
@@ -4789,7 +4783,7 @@
                                                                                               ;; copy the text up to the part that matched
                                                                                               _ (BCOPY new_end, 0, @l'sub_firstline, @l'copycol, copy_len)
                                                                                               new_end (.plus new_end copy_len)
-                                                                                              _ (vim-regsub matcher, (- @l'sub_firstlnum (:lnum (... (:r_startpos matcher) 0))), sub, new_end, true, @p_magic, true)
+                                                                                              _ (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:r_startpos mat) 0))), sub, new_end, true, @p_magic, true)
                                                                                               _ (swap! a'sub_nsubs inc)
                                                                                               _ (reset! a'did_sub true)
                                                                                               ;; Move the cursor to the start of the line, to avoid that
@@ -4806,7 +4800,7 @@
                                                                                                     (reset! sub_all false)
                                                                                                 ))
                                                                                             ;; Remember next character to be copied.
-                                                                                            (reset! l'copycol (:col (... (:r_endpos matcher) 0)))
+                                                                                            (reset! l'copycol (:col (... (:r_endpos mat) 0)))
                                                                                             (when @l'skip_match
                                                                                                 ;; Already hit end of the buffer,
                                                                                                 ;; "sub_firstlnum" is one less than what it ought to be.
@@ -4857,7 +4851,7 @@
 
                                                                       #_boolean lastone (or @l'skip_match @got_int (< @a'line2 lnum) (not (or @sub_all @a'do_again))
                                                                                             (and (eos? @l'sub_firstline @l'matchcol) (<= @a'nmatch 1)
-                                                                                                 (not (re-multiline (:regprog matcher)))))
+                                                                                                 (not (re-multiline (:regprog mat)))))
                                                                       _ (reset! a'nmatch -1)
 
                                                                       ;; Replace the line in the buffer when needed.
@@ -4867,9 +4861,15 @@
                                                                       ;; When the match starts below where we start searching
                                                                       ;; also need to replace the line first (using \zs after \n).
 
-                                                                      [win lnum ?]
-                                                                        (if (or lastone (< 0 @l'nmatch_tl) (zero? (reset! a'nmatch (vim-regexec matcher, @l'sub_firstlnum, @l'matchcol, nil, win))) (< 0 (:lnum (... (:r_startpos matcher) 0))))
-                                                                            (let-when [[win lnum ? :as _]
+                                                                      [win mat ?]
+                                                                        (when' (not (or lastone (< 0 @l'nmatch_tl))) => [win mat true]
+                                                                            (let [[win mat ?] (vim-regexec? win, mat, @l'sub_firstlnum, @l'matchcol, nil)]
+                                                                                (reset! a'nmatch ?)
+                                                                                [win mat false]
+                                                                            ))
+                                                                      [win mat lnum ?]
+                                                                        (if (or ? (zero? @a'nmatch) (< 0 (:lnum (... (:r_startpos mat) 0))))
+                                                                            (let-when [[win lnum ?]
                                                                                     (when' (some? @l'new_start) => [win lnum nil]
                                                                                         ;; Copy the rest of the line, that didn't match.
                                                                                         ;; "matchcol" has to be adjusted, we use the end of the line as reference,
@@ -4908,33 +4908,41 @@
                                                                                                 (reset! l'copycol 0)
                                                                                                 [win lnum nil]
                                                                                             ))
-                                                                                    )] (not ?) => _
+                                                                                    )] (not ?) => [win mat lnum ?]
 
-                                                                                (reset! a'nmatch (if (and (== @a'nmatch -1) (not lastone)) (vim-regexec matcher, @l'sub_firstlnum, @l'matchcol, nil, win) @a'nmatch))
+                                                                                (let [[win mat]
+                                                                                        (when' (and (== @a'nmatch -1) (not lastone)) => [win mat]
+                                                                                            (let [[win mat ?] (vim-regexec? win, mat, @l'sub_firstlnum, @l'matchcol, nil)]
+                                                                                                (reset! a'nmatch ?)
+                                                                                                [win mat]
+                                                                                            ))
 
-                                                                                ;; 5. Break if there isn't another match in this line.
+                                                                                      ;; 5. Break if there isn't another match in this line.
 
-                                                                                (if (<= @a'nmatch 0)
-                                                                                    ;; If the match found didn't start where we were searching,
-                                                                                    ;; do the next search in the line where we found the match.
-                                                                                    [win (if (== @a'nmatch -1) (- lnum (:lnum (... (:r_startpos matcher) 0))) lnum) :break]
-                                                                                    [win lnum nil]
+                                                                                      [lnum ?]
+                                                                                        (if (<= @a'nmatch 0)
+                                                                                            ;; If the match found didn't start where we were searching,
+                                                                                            ;; do the next search in the line where we found the match.
+                                                                                            [(if (== @a'nmatch -1) (- lnum (:lnum (... (:r_startpos mat) 0))) lnum) :break]
+                                                                                            [lnum nil]
+                                                                                        )]
+                                                                                    [win mat lnum ?]
                                                                                 ))
-                                                                            [win lnum nil])
+                                                                            [win mat lnum nil])
 
-                                                                ] (not ?) => [win lnum]
+                                                                ] (not ?) => [win mat lnum]
 
                                                                     (slow-breakcheck)
-                                                                    (recur win lnum)
+                                                                    (recur win mat lnum)
                                                                 )
                                                             )]
                                                         (when @a'did_sub
                                                             (swap! a'sub_nlines inc))
-                                                        [win lnum]
+                                                        [win mat lnum]
                                                     )
                                                 )]
                                             (slow-breakcheck)
-                                            (recur win (inc lnum))
+                                            (recur win mat (inc lnum))
                                         )
                                     )]
                                 (when (non-zero? @a'first_line)
@@ -24524,65 +24532,35 @@
 
 ;; ----------------------------------------------------------------------- ;;
 
-;; Which regexp engine to use?  Needed for vim-regcomp().
-;; Must match with 'regexpengine'.
-
-(atom! int regexp_engine)
-
 ;; Compile a regular expression into internal code.
 ;; Returns the program in allocated memory.
 ;; Returns null for an error.
 
-(defn- #_regprog_C vim-regcomp [#_Bytes expr_arg, #_int re_flags]
-    (§
-        ((ß regprog_C prog =) nil)
-        ((ß Bytes expr =) expr_arg)
-
-        (reset! regexp_engine @p_re)
-
-        ;; Check for prefix "\%#=", that sets the regexp engine.
-        (when (zero? (STRNCMP expr, (u8 "\\%#="), 4))
-            ((ß int newengine =) (- (.at expr 4) (byte \0)))
-
-            (cond (any == newengine AUTOMATIC_ENGINE BACKTRACKING_ENGINE NFA_ENGINE)
-            (do
-                (reset! regexp_engine (- (.at expr 4) (byte \0)))
-                ((ß expr =) (.plus expr 5))
-            )
-            :else
-            (do
-                (emsg (u8 "E864: \\%#= can only be followed by 0, 1, or 2. The automatic engine will be used."))
-                (reset! regexp_engine AUTOMATIC_ENGINE)
-            ))
-        )
-
-        ;; First try the NFA engine, unless backtracking was requested.
-
-        ((ß prog =) (if (!= @regexp_engine BACKTRACKING_ENGINE)
-            (nfa-regcomp expr, (+ re_flags (if (== @regexp_engine AUTOMATIC_ENGINE) RE_AUTO 0)))
-            (bt-regcomp expr, re_flags)
-        ))
-
-        ;; Check for error compiling regexp with initial engine.
-        (when (nil? prog)
-            ;; If the NFA engine failed, try the backtracking engine.
-            ;; The NFA engine also fails for patterns that it can't handle well
-            ;; but are still valid patterns, thus a retry should work.
-
-            (when (== @regexp_engine AUTOMATIC_ENGINE)
-                (reset! regexp_engine BACKTRACKING_ENGINE)
-                ((ß prog =) (bt-regcomp expr, re_flags))
-            )
-        )
-
-        (when (some? prog)
-            ;; Store the info needed to call regcomp() again when
-            ;; the engine turns out to be very slow executing it.
-            ((ß prog =) (assoc prog :re_engine @regexp_engine))
-            ((ß prog =) (assoc prog :re_flags re_flags))
-        )
-
-        prog
+(defn- #_[window_C regprog_C] vim-regcomp? [#_window_C win, #_Bytes expr, #_int re_flags]
+    ;; Check for prefix "\%#=", that sets the regexp engine.
+    (let [[win #_int re_engine expr]
+            (when' (zero? (STRNCMP expr, (u8 "\\%#="), 4)) => [win @p_re expr]
+                (let [#_int n (- (.at expr 4) (byte \0))]
+                    (if (any == n AUTOMATIC_ENGINE BACKTRACKING_ENGINE NFA_ENGINE)
+                        [win n (.plus expr 5)]
+                        (let [win (emsg win, (u8 "E864: \\%#= can only be followed by 0, 1, or 2. The automatic engine will be used."))]
+                            [win AUTOMATIC_ENGINE expr]
+                        ))
+                ))
+          ;; First try the NFA engine, unless backtracking was requested.
+          #_regprog_C prog
+            (if (!= re_engine BACKTRACKING_ENGINE)
+                (nfa-regcomp expr, (+ re_flags (if (== re_engine AUTOMATIC_ENGINE) RE_AUTO 0)))
+                (bt-regcomp expr, re_flags))
+          ;; Check for error compiling regexp with initial engine.
+          [re_engine prog]
+            (when' (and (nil? prog) (== re_engine AUTOMATIC_ENGINE)) => [re_engine prog]
+                ;; If the NFA engine failed, try the backtracking engine.
+                ;; The NFA engine also fails for patterns that it can't handle well but are still valid patterns, thus a retry should work.
+                [BACKTRACKING_ENGINE (bt-regcomp expr, re_flags)]
+            )]
+        ;; Store the info needed to call regcomp() again when the engine turns out to be very slow executing it.
+        [win (when (some? prog) (assoc prog :re_engine re_engine, :re_flags re_flags))]
     ))
 
 (defn- #_void report-re-switch [#_Bytes pat]
@@ -24597,30 +24575,26 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long vim-regexec [#_matcher_C matcher, #_long lnum, #_int col, #_long nsec, #_window_C win]
+(defn- #_[window_C matcher_C long] vim-regexec? [#_window_C win, #_matcher_C matcher, #_long lnum, #_int col, #_long nsec]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
-    (§
-        ((ß long result =) ((:regexec (:regprog matcher)) matcher, lnum, col, nsec, win))
-
+    (let [#_long nof ((:regexec (:regprog matcher)) matcher, lnum, col, nsec, win) #_regprog_C prog (:regprog matcher)]
         ;; NFA engine aborted because it's very slow.
-        (when (and (== (:re_engine (:regprog matcher)) AUTOMATIC_ENGINE) (== result NFA_TOO_EXPENSIVE))
-            (let [#_long save_p_re @p_re]
-                ((ß int re_flags =) (:re_flags (:regprog matcher)))
-                ((ß Bytes pat =) (STRDUP (:pattern (ß (nfa_regprog_C)(matcher.regprog)))))
-
-                (reset! p_re BACKTRACKING_ENGINE)
-                ((ß matcher =) (assoc matcher :regprog nil))
-                (when (some? pat)
-                    (report-re-switch pat)
-                    ((ß matcher =) (assoc matcher :regprog (vim-regcomp pat, re_flags)))
-                    ((ß result =) (if (some? (:regprog matcher)) ((:regexec (:regprog matcher)) matcher, lnum, col, nsec, win) result))
-                )
-                (reset! p_re save_p_re)
+        (when' (and (== (:re_engine prog) AUTOMATIC_ENGINE) (== nof NFA_TOO_EXPENSIVE)) => [win matcher (max 0, nof)]
+            (let [o'p_re @p_re _ (reset! p_re BACKTRACKING_ENGINE)
+                  matcher (assoc matcher :regprog nil)
+                  #_Bytes pat (STRDUP (:pattern #_nfa_regprog_C prog))
+                  [win matcher nof]
+                    (when' (some? pat) => [win matcher nof]
+                        (report-re-switch pat)
+                        (let [[win prog] (vim-regcomp? win, pat, (:re_flags prog)) matcher (assoc matcher :regprog prog)
+                              nof (if (some? prog) ((:regexec prog) matcher, lnum, col, nsec, win) nof)]
+                            [win matcher nof])
+                    )]
+                (reset! p_re o'p_re)
+                [win matcher (max 0, nof)]
             ))
-
-        (max 0, result)
     ))
 
 ;;; ============================================================================================== VimP
@@ -24721,7 +24695,8 @@
             (when (any == pat_save RE_SEARCH RE_BOTH) (save-re-pat RE_SEARCH, pat, magic)) ;; search or global command
             (when (any == pat_save RE_SUBST RE_BOTH)  (save-re-pat RE_SUBST, pat, magic))  ;; substitute or global command
         )
-        (let [matcher (assoc matcher :r_icase (ignorecase pat), :r_maxcol 0, :regprog (vim-regcomp pat, (if magic RE_MAGIC 0)))]
+        (let [[_ ?] (vim-regcomp? @curwin, pat, (if magic RE_MAGIC 0)) _ (reset! curwin _)
+              matcher (assoc matcher :r_icase (ignorecase pat), :r_maxcol 0, :regprog ?)]
             [matcher (some? (:regprog matcher))]
         )
     ))
@@ -24806,7 +24781,7 @@
 ;; Returns the index of the first matching subpattern plus one; one if there was none.
 
 (defn- #_[window_C pos_C int] searchit? [#_window_C win, #_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_long nsec]
-    (let [[#_matcher_C matcher ?] (search-regcomp? nil, pat, RE_SEARCH, pat_use, (& options (| SEARCH_HIST SEARCH_KEEP)))]
+    (let [[#_matcher_C mat ?] (search-regcomp? nil, pat, RE_SEARCH, pat_use, (& options (| SEARCH_HIST SEARCH_KEEP)))]
         (if (not ?)
             (let [win (when' (and (flag? options SEARCH_MSG) (not @rc_did_emsg)) => win
                         (emsg* win, (u8 "E383: Invalid search string: %s"), @mr_pattern)
@@ -24845,38 +24820,39 @@
                                     (:lnum pos))
                               [win pos lnum]
                                 (loop-when [win win pos pos lnum lnum #_int round 0] (< round 2) => [win pos lnum] ;; loop twice if 'wrapscan' set
-                                    (let [[pos lnum]
-                                            (loop-when [pos pos lnum lnum] (<= 1 lnum lmax) => [pos lnum]
+                                    (let [[win pos lnum]
+                                            (loop-when [win win pos pos lnum lnum] (<= 1 lnum lmax) => [win pos lnum]
                                                 ;; Stop after checking "stop_lnum", if it's set.
                                                 (cond (and (non-zero? stop_lnum) (if (== dir FORWARD) (< stop_lnum lnum) (< lnum stop_lnum)))
-                                                    [pos lnum]
+                                                    [win pos lnum]
                                                 ;; Stop after passing the 'nsec' time limit.
                                                 (and (non-zero? nsec) (profile-passed-limit nsec))
-                                                    [pos lnum]
+                                                    [win pos lnum]
                                                 :else
                                                     ;; Look for a match somewhere in line "lnum".
-                                                    (let [#_long nof (vim-regexec matcher, lnum, 0, nsec, win)]
+                                                    (let [[win mat #_long nof] (vim-regexec? win, mat, lnum, 0, nsec)]
                                                         ;; Abort searching on an error (e.g. out of stack).
                                                         (cond @called_emsg
-                                                            [pos lnum]
+                                                            [win pos lnum]
                                                         (< 0 nof)
                                                             ;; match may actually be in another line when using \zs
-                                                            (let-when [#_lpos_C start (... (:r_startpos matcher) 0) #_lpos_C end (... (:r_endpos matcher) 0)
-                                                                  _ (reset! a'submatch (first-submatch matcher))
+                                                            (let-when [#_lpos_C start (... (:r_startpos mat) 0) #_lpos_C end (... (:r_endpos mat) 0)
+                                                                  _ (reset! a'submatch (first-submatch mat))
                                                                   ;; "lnum" may be past end of buffer for "\n\zs"
                                                                   #_Bytes line (if (< lmax (+ lnum (:lnum start))) (u8 "") (ml-get (+ lnum (:lnum start))))
                                                                   ;; Forward search in the first line: match should be after the start position.
                                                                   ;; If not, continue at the end of the match (this is vi compatible) or on the next char.
-                                                                  t* (let-when [t* [nof start end line]] (and (== dir FORWARD) @a'at_first_line) => t*
+                                                                  [win t*]
+                                                                    (let-when [t* [mat nof start end line]] (and (== dir FORWARD) @a'at_first_line) => [win t*]
                                                                         ;; When the match starts in a next line, it's certainly past the start position.
                                                                         ;; When match lands on a NUL, the cursor will be put one back afterwards,
                                                                         ;; compare with that position, otherwise "/$" will get stuck at EOL.
-                                                                        (loop-when [[nof start end line :as t*] t*]
+                                                                        (loop-when [win win [mat nof start end line :as t*] t*]
                                                                                    (and (zero? (:lnum start))
                                                                                         (if (and (flag? options SEARCH_END) @a'first_match)
                                                                                             (and (== nof 1) (< (dec (:col end)) (+ (:col o'pos) extra_col)))
                                                                                             (< (- (:col start) (if (eos? line (:col start)) 1 0)) (+ (:col o'pos) extra_col))))
-                                                                                => t*
+                                                                                => [win t*]
                                                                             ;; If searching is vi-compatible, continue at the end
                                                                             ;; of the match, else continue one position forward.
                                                                             (let-when [#_int i
@@ -24890,45 +24866,45 @@
                                                                                         (let [i (:col start)]
                                                                                             (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i)
                                                                                         ))
-                                                                            ] (some? i) => nil
+                                                                            ] (some? i) => [win nil]
 
                                                                                 (if (and (zero? i) (flag? options SEARCH_START))
-                                                                                    t*
-                                                                                    (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec, win)]
+                                                                                    [win t*]
+                                                                                    (let [[win mat nof] (vim-regexec? win, mat, (+ lnum (:lnum start)), i, nsec)]
                                                                                         (if (or (eos? line i) (zero? nof))
-                                                                                            nil
-                                                                                            (let [start (... (:r_startpos matcher) 0) end (... (:r_endpos matcher) 0)]
-                                                                                                (reset! a'submatch (first-submatch matcher))
+                                                                                            [win nil]
+                                                                                            (let [start (... (:r_startpos mat) 0) end (... (:r_endpos mat) 0)]
+                                                                                                (reset! a'submatch (first-submatch mat))
                                                                                                 ;; Need to get the line pointer again,
                                                                                                 ;; a multi-line search may have made it invalid.
-                                                                                                (recur [nof start end (ml-get (+ lnum (:lnum start)))]))
+                                                                                                (recur win [mat nof start end (ml-get (+ lnum (:lnum start)))]))
                                                                                         ))
                                                                                 ))
                                                                         ))
-                                                            ] (some? t*) => (do (reset! a'at_first_line false) (recur pos lnum))
+                                                            ] (some? t*) => (do (reset! a'at_first_line false) (recur win pos lnum))
 
-                                                                (let-when [[start end :as t']
-                                                                        (let-when [[nof start end line] t*] (== dir BACKWARD) => [start end]
+                                                                (let-when [[win [start end :as t']]
+                                                                        (let-when [[mat nof start end line] t*] (== dir BACKWARD) => [win [start end]]
                                                                             ;; Now, if there are multiple matches on this line, we have to get the last one.
                                                                             ;; Or the last one before the cursor, if we're on that line.
                                                                             ;; When putting the new cursor at the end, compare relative to the end of the match.
-                                                                            (loop-when [nof nof t' nil line line]
+                                                                            (loop-when [win win mat mat nof nof t' nil line line]
                                                                                        (or (non-zero? round)
                                                                                            (if (flag? options SEARCH_END)
-                                                                                               (let [end (... (:r_endpos matcher) 0)]
+                                                                                               (let [end (... (:r_endpos mat) 0)]
                                                                                                    (or (< (+ lnum (:lnum end)) (:lnum o'pos))
                                                                                                        (and (== (+ lnum (:lnum end)) (:lnum o'pos))
                                                                                                             (<= (+ (dec (:col end)) extra_col) (:col o'pos)))))
-                                                                                               (let [start (... (:r_startpos matcher) 0)]
+                                                                                               (let [start (... (:r_startpos mat) 0)]
                                                                                                    (or (< (+ lnum (:lnum start)) (:lnum o'pos))
                                                                                                        (and (== (+ lnum (:lnum start)) (:lnum o'pos))
                                                                                                             (<= (+ (:col start) extra_col) (:col o'pos)))))))
-                                                                                    => t'
+                                                                                    => [win t']
                                                                                 ;; Remember a position that is before the start position,
                                                                                 ;; we use it if it's the last match in the line.
                                                                                 ;; Always accept a position after wrapping around.
-                                                                                (let-when [[start end :as t'] [(... (:r_startpos matcher) 0) (... (:r_endpos matcher) 0)]
-                                                                                      _ (reset! a'submatch (first-submatch matcher))
+                                                                                (let-when [[start end :as t'] [(... (:r_startpos mat) 0) (... (:r_endpos mat) 0)]
+                                                                                      _ (reset! a'submatch (first-submatch mat))
                                                                                       ;; We found a valid match, now check if there is another one after it.
                                                                                       ;; If searching is vi-compatible, continue at the end of the match,
                                                                                       ;; else continue one position forward.
@@ -24945,17 +24921,17 @@
                                                                                                 nil
                                                                                                 (let [i (:col start)] (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i))
                                                                                             ))
-                                                                                ] (some? i) => t'
+                                                                                ] (some? i) => [win t']
 
-                                                                                    (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec, win)]
+                                                                                    (let [[win mat nof] (vim-regexec? win, mat, (+ lnum (:lnum start)), i, nsec)]
                                                                                         (if (or (eos? line i) (zero? nof))
-                                                                                            t'
+                                                                                            [win t']
                                                                                             ;; Need to get the line pointer again,
                                                                                             ;; a multi-line search may have made it invalid.
-                                                                                            (recur nof t' (ml-get (+ lnum (:lnum start)))))
+                                                                                            (recur win mat nof t' (ml-get (+ lnum (:lnum start)))))
                                                                                     ))
                                                                             )) ;; If there is only a match after the cursor, skip this match.
-                                                                ] (some? t') => (do (reset! a'at_first_line false) (recur pos lnum))
+                                                                ] (some? t') => (do (reset! a'at_first_line false) (recur win pos lnum))
 
                                                                     ;; With the SEARCH_END option, move to the last character of the match.
                                                                     ;; Don't do it for an empty match, end should be same as start then.
@@ -24981,20 +24957,20 @@
                                                                         ;; Set variables used for 'incsearch' highlighting.
                                                                         (reset! search_match_lines (- (:lnum end) (:lnum start)))
                                                                         (reset! search_match_endcol (:col end))
-                                                                        [pos lnum])
+                                                                        [win pos lnum])
                                                                 ))
                                                         (slow-breakcheck) ;; stop if CTRL-C typed
-                                                            [pos lnum]
+                                                            [win pos lnum]
                                                         ;; Cancel searching if a character was typed.  Used for 'incsearch'.
                                                         ;; Don't check too often, that would slow searching down considerably.
                                                         (and (flag? options SEARCH_PEEK) (zero? (& (- lnum (:lnum pos)) 0x3f)) (char-avail))
                                                             (do (reset! a'break_loop true)
-                                                                [pos lnum])
+                                                                [win pos lnum])
                                                         (and (non-zero? round) (== lnum (:lnum o'pos)))
-                                                            [pos lnum] ;; if second round, stop where started
+                                                            [win pos lnum] ;; if second round, stop where started
                                                         :else
                                                             (do (reset! a'at_first_line false)
-                                                                (recur pos (+ lnum dir))
+                                                                (recur win pos (+ lnum dir))
                                                             ))
                                                     ))
                                             )]
@@ -26286,18 +26262,18 @@
 
 (defn- #_[window_C int] is-one-char? [#_window_C win, #_Bytes pattern, #_boolean move]
     (let-when [o'called_emsg @called_emsg
-               [matcher ?] (search-regcomp? nil, pattern, RE_SEARCH, RE_SEARCH, SEARCH_KEEP)] ? => [win -1]
+               [mat ?] (search-regcomp? nil, pattern, RE_SEARCH, RE_SEARCH, SEARCH_KEEP)] ? => [win -1]
 
         (let [[pos flags] (if move [(NEW_pos_C) 0] [(:w_cursor win) SEARCH_START]) ;; accept a match at the cursor position
               [win pos sm1] (searchit? win, pos, FORWARD, (:pat (... @spats @last_idx)), 1, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
-              one? (if (non-zero? sm1)
-                    ;; Zero-width pattern should match somewhere, then we can check if start and end are in the same position.
+              [win one?] ;; Zero-width pattern should match somewhere, then we can check if start and end are in the same position.
+                (when' (non-zero? sm1) => [win -1]
                     (let [_ (reset! called_emsg false)
-                          n (vim-regexec matcher, (:lnum pos), 0, nil, win)
-                          startpos (... (:r_startpos matcher) 0) endpos (... (:r_endpos matcher) 0)
-                          one? (if (not @called_emsg) (if (and (!= n 0) (== (:lnum startpos) (:lnum endpos)) (== (:col startpos) (:col endpos))) TRUE FALSE) -1)]
-                        (if (and (== one? FALSE) (let [[pos ?] (incp? pos)] (and (<= 0 ?) (== (:col pos) (:col endpos))))) TRUE one?))
-                    -1)]
+                          [win mat n] (vim-regexec? win, mat, (:lnum pos), 0, nil)
+                          startpos (... (:r_startpos mat) 0) endpos (... (:r_endpos mat) 0)
+                          one? (if (not @called_emsg) (if (and (non-zero? n) (== (:lnum startpos) (:lnum endpos)) (== (:col startpos) (:col endpos))) TRUE FALSE) -1)]
+                        [win (if (and (== one? FALSE) (let [[pos ?] (incp? pos)] (and (<= 0 ?) (== (:col pos) (:col endpos))))) TRUE one?)])
+                )]
             (swap! called_emsg #(or % o'called_emsg))
             [win one?])
     ))
@@ -34581,7 +34557,7 @@
         (loop-when [win win row 0 i 0] (< i (:w_lines_valid win)) => win
             (let-when [wli (... (:w_lines win) i)] (== lnum (:wl_lnum wli)) => (recur win (+ row (:wl_size wli)) (inc i))
                 (let [_ (screen-start) ;; not sure of screen cursor
-                      _ (init-search-hl) _ (start-search-hl) _ (prepare-search-hl win, lnum)
+                      _ (init-search-hl) _ (start-search-hl) win (prepare-search-hl win, lnum)
                       [win _] (win-line win, lnum, row, (+ row (:wl_size wli)))
                       _ (end-search-hl)]
                     win)
@@ -35020,7 +34996,7 @@
                                                     (do (reset! a'row (inc (:w_height win)))
                                                         win)
                                                     ;; Display one line.
-                                                    (let [_ (prepare-search-hl win, @a'lnum) [win _] (win-line win, @a'lnum, @a'srow, (:w_height win)) _ (reset! a'row _)]
+                                                    (let [win (prepare-search-hl win, @a'lnum) [win _] (win-line win, @a'lnum, @a'srow, (:w_height win)) _ (reset! a'row _)]
                                                         win)
                                                 ))
                                           win (update-in win [:w_lines @a'idx] assoc :wl_lnum @a'lnum, :wl_valid true)]
@@ -36280,7 +36256,7 @@
 
 ;; Advance to the match in window "win" line "lnum" or past it.
 
-(defn- #_void prepare-search-hl [#_window_C win, #_long lnum]
+(defn- #_window_C prepare-search-hl [#_window_C win, #_long lnum]
     (let [#_match_C shl @search_hl
           shl (if (and (some? (:regprog (:rmm shl))) (zero? (:lnum shl)) (re-multiline (:regprog (:rmm shl))))
                 ;; When using a multi-line pattern, start searching at the top of the window.
@@ -36295,8 +36271,9 @@
                     ))
                 shl
             )]
-        (reset! search_hl shl))
-    nil)
+        (reset! search_hl shl)
+        win
+    ))
 
 ;; Search for a next 'hlsearch'.  Sets shl.lnum and shl.rmm contents.
 ;; Note: Assumes a previous match is always before "lnum", unless shl.lnum is zero.
@@ -36344,9 +36321,9 @@
                     )] (not ?) => (assoc shl :lnum 0)
 
                 (let-when [shl (assoc shl :lnum lnum)
-                      [nmatched ?]
+                      [nof ?]
                         (if (some? (:regprog (:rmm shl)))
-                            (let [nmatched (vim-regexec (:rmm shl), lnum, matchcol, (:nsec shl), win)
+                            (let [nof (vim-regexec? win, (:rmm shl), lnum, matchcol, (:nsec shl))
                                   ? (when (or @called_emsg @got_int)
                                         ;; Error while handling regexp: stop using this regexp.
                                         (when (== shl @search_hl)
@@ -36354,14 +36331,14 @@
                                         (reset! got_int false) ;; avoid the "Type :quit to exit Vim" message
                                         :break
                                     )]
-                                [nmatched ?])
+                                [nof ?])
                             [0 nil]
                         )] (not ?) => (-> shl (assoc :lnum 0) (assoc-in [:rmm :regprog] nil))
 
                     (let [start (... (:r_startpos (:rmm shl)) 0) end (... (:r_endpos (:rmm shl)) 0)]
-                        (cond (zero? nmatched)
+                        (cond (zero? nof)
                             (assoc shl :lnum 0) ;; no match found
-                        (or (< 0 (:lnum start)) (<= mincol (:col start)) (< 1 nmatched) (< mincol (:col end)))
+                        (or (< 0 (:lnum start)) (<= mincol (:col start)) (< 1 nof) (< mincol (:col end)))
                             (update shl :lnum + (:lnum start)) ;; useful match found
                         :else
                             (recur shl))
