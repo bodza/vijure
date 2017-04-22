@@ -18710,45 +18710,32 @@
 ;; Insert a string in the typeahead buffer.
 
 (defn- #_void ins-typebuf [#_Bytes str]
-    (§
-        (init-typebuf)
-        (if (zero? (ß ++@typebuf.tb_change_cnt))
-            (swap! typebuf assoc :tb_change_cnt 1)
-        )
-
-        ((ß int addlen =) (STRLEN str))
-
-        ;; Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
-
+    (init-typebuf)
+    (swap! typebuf update :tb_change_cnt inc)
+    (if (zero? (:tb_change_cnt @typebuf))
+        (swap! typebuf assoc :tb_change_cnt 1))
+    (let [#_int addlen (STRLEN str)]
+        ;; Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off].
         (cond (<= addlen (:tb_off @typebuf))
         (do
             (swap! typebuf update :tb_off - addlen)
             (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), str, 0, addlen)
         )
         :else
-        (do
-            ;; Need to allocate a new buffer.
-            ;; In typebuf.tb_buf there must always be room for 3 * MAXMAPLEN + 4 characters.
-            ;; We add some extra room to avoid having to allocate too often.
-
-            ((ß int newoff =) (+ MAXMAPLEN 4))
-            ((ß int newlen =) (+ (:tb_len @typebuf) addlen newoff (* 4 (+ MAXMAPLEN 4))))
-
-            ((ß Bytes newbuf =) (Bytes. newlen))
-            (swap! typebuf assoc :tb_buflen newlen)
-
+        ;; Need to allocate a new buffer.
+        ;; In typebuf.tb_buf there must always be room for 3 * MAXMAPLEN + 4 characters.
+        ;; We add some extra room to avoid having to allocate too often.
+        (let [#_int newoff (+ MAXMAPLEN 4)
+              #_int newlen (+ (:tb_len @typebuf) addlen newoff (* 4 (+ MAXMAPLEN 4)))
+              #_Bytes newbuf (Bytes. newlen)]
             ;; copy the new chars
             (BCOPY newbuf, newoff, str, 0, addlen)
             ;; copy the old chars, after the insertion point, including the NUL at the end
             (BCOPY newbuf, (+ newoff addlen), (:tb_buf @typebuf), (:tb_off @typebuf), (inc (:tb_len @typebuf)))
-
-            (swap! typebuf assoc :tb_buf newbuf)
-            (swap! typebuf assoc :tb_off newoff)
+            (swap! typebuf assoc :tb_buf newbuf :tb_buflen newlen :tb_off newoff)
         ))
-
-        (swap! typebuf update :tb_len + addlen)
-        nil
-    ))
+        (swap! typebuf update :tb_len + addlen))
+    nil)
 
 ;; Put character "c" back into the typeahead buffer.
 ;; Can be used for a character obtained by vgetc() that needs to be put back.
@@ -18758,11 +18745,9 @@
     (let [#_Bytes buf (Bytes. (inc MB_MAXBYTES))]
         (if (is-special c)
             (-> buf (.be 0, KB_SPECIAL) (.be 1, (KB-SECOND c)) (.be 2, (KB-THIRD c)) (eos! 3))
-            (eos! buf (utf-char2bytes c, buf))
-        )
-        (ins-typebuf buf)
-        nil
-    ))
+            (eos! buf (utf-char2bytes c, buf)))
+        (ins-typebuf buf))
+    nil)
 
 ;; Return true if the typeahead buffer was changed (while waiting for a character to arrive).
 ;; Happens when a message was received from a client or from feedkeys().
@@ -18779,7 +18764,6 @@
 (defn- #_void del-typebuf [#_int len]
     (when (non-zero? len)
         (swap! typebuf update :tb_len - len)
-
         (if (<= (+ (* 3 MAXMAPLEN) 3) (- (:tb_buflen @typebuf) (+ (:tb_off @typebuf) len)))
             (swap! typebuf update :tb_off + len)
             (let [#_int i (:tb_off @typebuf)]
@@ -18788,12 +18772,10 @@
                 ;; adjust typebuf.tb_buf (include the NUL at the end)
                 (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), (:tb_buf @typebuf), (+ i len), (inc (:tb_len @typebuf)))
             ))
-
         (swap! typebuf update :tb_change_cnt inc)
         (when (zero? (:tb_change_cnt @typebuf))
             (swap! typebuf assoc :tb_change_cnt 1)
-        )
-    )
+        ))
     nil)
 
 ;; Write typed characters to script file.
@@ -18824,8 +18806,7 @@
 
 (defn- #_void may-sync-undo []
     (when (or (non-flag? @State (+ INSERT CMDLINE)) @arrow_used)
-        (u-sync false)
-    )
+        (u-sync false))
     nil)
 
 (atom! int old_char         -1) ;; character put back by vungetc()
@@ -20246,30 +20227,21 @@
 ;; Handle a CTRL-V or CTRL-Q typed in Insert mode.
 
 (defn- #_void ins-ctrl-v []
-    (§
-        ((ß boolean did_putchar =) false)
-
-        ;; may need to redraw when no more chars available now
-        (ins-redraw false)
-
-        (when (and (redrawing) (not (char-avail)))
-            (edit-putchar (byte \^), true)
-            ((ß did_putchar =) true)
-        )
-        (appendToRedobuff CTRL_V_STR)   ;; CTRL-V
-
-        (add-to-showcmd-c Ctrl_V)
-
-        ((ß int c =) (get-literal))
+    (ins-redraw false) ;; may need to redraw when no more chars available now
+    (let [#_boolean did_putchar (and (redrawing) (not (char-avail)))]
         (when did_putchar
-            ;; When the line fits in 'columns' the '^' is at the start
-            ;; of the next line and will not removed by the redraw.
-            (edit-unputchar)
-        )
-        (clear-showcmd)
-        (insert-special c, false, true)
-        nil
-    ))
+            (edit-putchar (byte \^), true))
+        (appendToRedobuff CTRL_V_STR)   ;; CTRL-V
+        (add-to-showcmd-c Ctrl_V)
+        (let [#_int c (get-literal)]
+            (when did_putchar
+                ;; When the line fits in 'columns' the '^' is at the start
+                ;; of the next line and will not removed by the redraw.
+                (edit-unputchar))
+            (clear-showcmd)
+            (insert-special c, false, true)
+        ))
+    nil)
 
 ;; Put a character directly onto the screen.  It's not stored in a buffer.
 ;; Used while handling CTRL-K, CTRL-V, etc. in Insert mode.
@@ -20328,201 +20300,133 @@
 ;; type == INDENT_SET   set indent to "amount"
 ;; If round is true, round the indent to 'shiftwidth' (only with _INC and _DEC).
 
-(defn- #_void change-indent [#_int type, #_int amount, #_boolean round, #_int replaced, #_boolean call_changed_bytes]
-    ;; replaced: replaced character, put on replace stack
-    ;; call_changed_bytes: call changed-bytes()
-    (§
-        ((ß Bytes orig_line =) nil)
-        ((ß int orig_col =) 0)
-
-        ;; VREPLACE mode needs to know what the line was like before changing.
-        (when (flag? @State VREPLACE_FLAG)
-            ((ß orig_line =) (STRDUP (ml-get-curline)))   ;; Deal with null below
-            ((ß orig_col =) (:col (:w_cursor @curwin)))
-        )
-
-        ((ß int vc =) (getvcol-nolist (:w_cursor @curwin)))
-        ((ß int vcol =) vc)
-
-        ;; For Replace mode we need to fix the replace stack later, which is only
-        ;; possible when the cursor is in the indent.  Remember the number of
-        ;; characters before the cursor if it's possible.
-
-        ((ß int start_col =) (:col (:w_cursor @curwin)))
-
-        ;; determine offset from first non-blank
-        ((ß int new_cursor_col =) (:col (:w_cursor @curwin)))
-        (beginline BL_WHITE)
-        ((ß new_cursor_col =) (- new_cursor_col (:col (:w_cursor @curwin))))
-
-        ((ß int insstart_less =) (:col (:w_cursor @curwin)))    ;; reduction for insStart.col
-
-        ;; If the cursor is in the indent, compute how many screen columns the
-        ;; cursor is to the left of the first non-blank.
-
-        (if (< new_cursor_col 0)
-            ((ß vcol =) (- (get-indent) vcol))
-        )
-
-        (if (< 0 new_cursor_col)         ;; can't fix replace stack
-            ((ß start_col =) -1)
-        )
+(defn- #_void change-indent [#_int type, #_int amount, #_boolean round, #_int replaced, #_boolean call_changed_bytes] ;; replaced: replaced character, put on replace stack
+    ;; VREPLACE mode needs to know what the line was like before changing.
+    (let [[#_Bytes orig_line #_int orig_col] (if (flag? @State VREPLACE_FLAG) [(STRDUP (ml-get-curline)) (:col (:w_cursor @curwin))] [nil 0])
+          #_int vcol (getvcol-nolist (:w_cursor @curwin))
+          ;; For Replace mode we need to fix the replace stack later, which is only possible when the
+          ;; cursor is in the indent.  Remember the number of chars before the cursor if it's possible.
+          #_int start_col (:col (:w_cursor @curwin))
+          ;; determine offset from first non-blank
+          _ (beginline BL_WHITE)
+          #_int new_cursor_col (- start_col (:col (:w_cursor @curwin)))
+          #_int insstart_less (:col (:w_cursor @curwin))    ;; reduction for insStart.col
+          ;; If the cursor is in the indent, compute how many screen columns
+          ;; the cursor is to the left of the first non-blank.
+          vcol (if (< new_cursor_col 0) (- (get-indent) vcol) vcol)
+          start_col (if (< 0 new_cursor_col) -1 start_col)] ;; can't fix replace stack
 
         ;; Set the new indent.  The cursor will be put on the first non-blank.
 
-        (cond (== type INDENT_SET)
-        (do
+        (if (== type INDENT_SET)
             (set-indent amount, (if call_changed_bytes SIN_CHANGED 0))
-        )
-        :else
-        (do
-            ((ß int save_State =) @State)
+            (let [_ @State]
+                ;; Avoid being called recursively.
+                (when (flag? @State VREPLACE_FLAG)
+                    (reset! State INSERT))
+                (shift-line (== type INDENT_DEC), round, 1, call_changed_bytes)
+                (reset! State _)
+            ))
 
-            ;; Avoid being called recursively.
-            (if (flag? @State VREPLACE_FLAG)
-                (reset! State INSERT))
-            (shift-line (== type INDENT_DEC), round, 1, call_changed_bytes)
+        (let [insstart_less (- insstart_less (:col (:w_cursor @curwin)))
+              ;; Try to put cursor on same character.
+              ;; If the cursor is at or after the first non-blank in the line,
+              ;; compute the cursor column relative to the column of the first non-blank character.
+              ;; If we are not in insert mode, leave the cursor on the first non-blank.
+              ;; If the cursor is before the first non-blank, position it relative
+              ;; to the first non-blank, counted in screen columns.
+              [insstart_less new_cursor_col]
+                (cond (<= 0 new_cursor_col)
+                    ;; When changing the indent while the cursor is touching it, reset insStart_col to 0.
+                    [(if (zero? new_cursor_col) MAXCOL insstart_less) (+ new_cursor_col (:col (:w_cursor @curwin)))]
+                (non-flag? @State INSERT)
+                    [insstart_less (:col (:w_cursor @curwin))]
+                :else
+                (do ;; Compute the screen column where the cursor should be.
+                    (swap! curwin assoc :w_virtcol (max 0 (- (get-indent) vcol)))
+                    ;; Advance the cursor until we reach the right screen column.
+                    (let [#_Bytes s (ml-get-curline)
+                          [vcol new_cursor_col]
+                            (loop-when [#_int last_vcol 0 #_int i -1 #_int vcol 0] (<= vcol (:w_virtcol @curwin)) => [last_vcol i]
+                                (let [i (+ i (if (<= 0 i) (us-ptr2len-cc s, i) 1))]
+                                    (recur vcol i (+ vcol (lbr-chartabsize s, (.plus s i), vcol)))
+                                ))
+                          ;; May need to insert spaces to be able to position the cursor on the right screen column.
+                          new_cursor_col
+                            (if (!= vcol (:w_virtcol @curwin))
+                                (do
+                                    (swap! curwin assoc-in [:w_cursor :col] new_cursor_col)
+                                    (let [#_int i (- (:w_virtcol @curwin) vcol) #_Bytes p (-> (Bytes. (inc i)) (eos! i))]
+                                        (loop-when-recur [i (dec i)] (<= 0 i) [(dec i)] (.be p i, (byte \space)))
+                                        (ins-str p)
+                                        (+ new_cursor_col i)
+                                    ))
+                                new_cursor_col)]
+                        ;; When changing the indent while the cursor is in it, reset insStart_col to 0.
+                        [MAXCOL new_cursor_col])
+                ))]
 
-            (reset! State save_State)
-        ))
-        ((ß insstart_less =) (- insstart_less (:col (:w_cursor @curwin))))
+            (swap! curwin assoc-in [:w_cursor :col] (max 0 new_cursor_col))
+            (swap! curwin assoc :w_set_curswant true)
+            (changed-cline-bef-curs)
 
-        ;; Try to put cursor on same character.
-        ;; If the cursor is at or after the first non-blank in the line,
-        ;; compute the cursor column relative to the column of the first non-blank character.
-        ;; If we are not in insert mode, leave the cursor on the first non-blank.
-        ;; If the cursor is before the first non-blank, position it relative
-        ;; to the first non-blank, counted in screen columns.
+            ;; May have to adjust the start of the insert.
 
-        (cond (<= 0 new_cursor_col)
-        (do
-            ;; When changing the indent while the cursor is touching it, reset insStart_col to 0.
+            (when (flag? @State INSERT)
+                (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (non-zero? (:col @insStart)))
+                    (swap! insStart update :col #(max 0 (- % insstart_less))))
+                (swap! ai_col #(max 0 (- % insstart_less))))
 
-            (if (zero? new_cursor_col)
-                ((ß insstart_less =) MAXCOL)
-            )
-            ((ß new_cursor_col =) (+ new_cursor_col (:col (:w_cursor @curwin))))
-        )
-        (non-flag? @State INSERT)
-        (do
-            ((ß new_cursor_col =) (:col (:w_cursor @curwin)))
-        )
-        :else
-        (do
-            ;; Compute the screen column where the cursor should be.
+            ;; For REPLACE mode, may have to fix the replace stack, if it's possible.
+            ;; If the number of characters before the cursor decreased, need to pop a
+            ;; few characters from the replace stack.
+            ;; If the number of characters before the cursor increased, need to push a
+            ;; few NULs onto the replace stack.
 
-            ((ß vcol =) (- (get-indent) vcol))
-            (swap! curwin assoc :w_virtcol (max 0 vcol))
+            (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG) (<= 0 start_col))
+                (let [start_col
+                        (loop-when-recur start_col (< (:col (:w_cursor @curwin)) start_col) (dec start_col) => start_col
+                            (replace-join 0) ;; remove a NUL from the replace stack
+                        )]
+                    (loop-when-recur [#_int i start_col #_int r replaced] (or (< i (:col (:w_cursor @curwin))) (!= r NUL)) [(inc i) NUL]
+                        (replace-push NUL)
+                        (when (!= r NUL) (replace-push r)))
+                ))
 
-            ;; Advance the cursor until we reach the right screen column.
+            ;; For VREPLACE mode, we also have to fix the replace stack.  In this case
+            ;; it is always possible because we backspace over the whole line and then
+            ;; put it back again the way we wanted it.
 
-            ((ß int last_vcol =) ((ß vcol =) 0))
-            ((ß new_cursor_col =) -1)
-            ((ß Bytes ptr =) (ml-get-curline))
-            (while (<= vcol (:w_virtcol @curwin))
-                ((ß last_vcol =) vcol)
-                ((ß new_cursor_col =) (+ new_cursor_col (if (<= 0 new_cursor_col) (us-ptr2len-cc ptr, new_cursor_col) 1)))
-                ((ß vcol =) (+ vcol (lbr-chartabsize ptr, (.plus ptr new_cursor_col), vcol)))
-            )
-            ((ß vcol =) last_vcol)
-
-            ;; May need to insert spaces to be able to position the cursor on
-            ;; the right screen column.
-
-            (when (!= vcol (:w_virtcol @curwin))
-                (swap! curwin assoc-in [:w_cursor :col] new_cursor_col)
-                ((ß int i =) (- (:w_virtcol @curwin) vcol))
-                ((ß ptr =) (Bytes. (inc i)))
-
-                ((ß new_cursor_col =) (+ new_cursor_col i))
-                (eos! ptr i)
-                (while (<= 0 ((ß i =) (dec i)))
-                    (.be ptr i, (byte \space))
-                )
-                (ins-str ptr)
-            )
-
-            ;; When changing the indent while the cursor is in it, reset insStart_col to 0.
-
-            ((ß insstart_less =) MAXCOL)
-        ))
-
-        (swap! curwin assoc-in [:w_cursor :col] (max 0 new_cursor_col))
-        (swap! curwin assoc :w_set_curswant true)
-        (changed-cline-bef-curs)
-
-        ;; May have to adjust the start of the insert.
-
-        (when (flag? @State INSERT)
-            (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (non-zero? (:col @insStart)))
-                (swap! insStart update :col #(max 0 (- % insstart_less)))
-            )
-            (swap! ai_col #(max 0 (- % insstart_less)))
-        )
-
-        ;; For REPLACE mode, may have to fix the replace stack, if it's possible.
-        ;; If the number of characters before the cursor decreased, need to pop a
-        ;; few characters from the replace stack.
-        ;; If the number of characters before the cursor increased, need to push a
-        ;; few NULs onto the replace stack.
-
-        (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG) (<= 0 start_col))
-            (while (< (:col (:w_cursor @curwin)) start_col)
-                (replace-join 0)        ;; remove a NUL from the replace stack
-                ((ß start_col =) (dec start_col))
-            )
-            (while (or (< start_col (:col (:w_cursor @curwin))) (!= replaced NUL))
-                (replace-push NUL)
-                (when (!= replaced NUL)
-                    (replace-push replaced)
-                    ((ß replaced =) NUL)
-                )
-                ((ß start_col =) (inc start_col))
-            )
-        )
-
-        ;; For VREPLACE mode, we also have to fix the replace stack.  In this case
-        ;; it is always possible because we backspace over the whole line and then
-        ;; put it back again the way we wanted it.
-
-        (when (flag? @State VREPLACE_FLAG)
             ;; If 'orig_line' didn't allocate, just return.
             ;; At least we did the job, even if you can't backspace.
-            (if (nil? orig_line)
-                ((ß RETURN) nil)
-            )
 
-            ;; Save new line.
-            ((ß Bytes new_line =) (STRDUP (ml-get-curline)))
+            (when (and (flag? @State VREPLACE_FLAG) (some? orig_line))
+                ;; Save new line.
+                (let [#_Bytes new_line (STRDUP (ml-get-curline))]
+                    ;; We only put back the new line up to the cursor.
+                    (eos! new_line (:col (:w_cursor @curwin)))
+                    ;; Put back original line.
+                    (ml-replace (:lnum (:w_cursor @curwin)), orig_line)
+                    (swap! curwin assoc-in [:w_cursor :col] orig_col)
+                    ;; Backspace from cursor to start of line.
+                    (backspace-until-column 0)
+                    ;; Insert new stuff into line again.
+                    (ins-bytes new_line)
+                ))
+        ))
+    nil)
 
-            ;; We only put back the new line up to the cursor.
-            (eos! new_line (:col (:w_cursor @curwin)))
-
-            ;; Put back original line.
-            (ml-replace (:lnum (:w_cursor @curwin)), orig_line)
-            (swap! curwin assoc-in [:w_cursor :col] orig_col)
-
-            ;; Backspace from cursor to start of line.
-            (backspace-until-column 0)
-
-            ;; Insert new stuff into line again.
-            (ins-bytes new_line)
-        )
-        nil
-    ))
-
-;; Truncate the space at the end of a line.  This is to be used only in an
-;; insert mode.  It handles fixing the replace stack for REPLACE and VREPLACE modes.
+;; Truncate the space at the end of a line.  This is to be used only in an insert mode.
+;; It handles fixing the replace stack for REPLACE and VREPLACE modes.
 
 (defn- #_void truncate-spaces [#_Bytes line]
     (let [#_int i ;; find start of trailing white space
             (loop-when-recur [i (dec (STRLEN line))] (and (<= 0 i) (vim-iswhite (.at line i))) [(dec i)] => i
-                (if (flag? @State REPLACE_FLAG)
+                (when (flag? @State REPLACE_FLAG)
                     (replace-join 0))        ;; remove a NUL from the replace stack
             )]
-        (eos! line (inc i))
-        nil
-    ))
+        (eos! line (inc i)))
+    nil)
 
 ;; Backspace the cursor until the given column.  Handles REPLACE and VREPLACE
 ;; modes correctly.  May also be used when not in insert mode at all.
@@ -20542,33 +20446,21 @@
 ;; Return true when something was deleted.
 
 (defn- #_boolean del-char-after-col [#_int limit_col]
-    (§
-        (cond (<= 0 limit_col)
-        (do
-            ((ß int ecol =) (+ (:col (:w_cursor @curwin)) 1))
-
-            ;; Make sure the cursor is at the start of a character, but
-            ;; skip forward again when going too far back because of a
-            ;; composing character.
+    (if (<= 0 limit_col)
+        (let [#_int ecol (inc (:col (:w_cursor @curwin)))]
+            ;; Make sure the cursor is at the start of a character, but skip forward again
+            ;; when going too far back because of a composing character.
             (mb-adjust-pos (:w_cursor @curwin))
-            (while (< (:col (:w_cursor @curwin)) limit_col)
-                ((ß int l =) (us-ptr2len (ml-get-cursor)))
-
-                (if (zero? l)     ;; end of line
-                    (ß BREAK)
-                )
-                (swap! curwin update-in [:w_cursor :col] + l)
-            )
+            (loop-when [] (< (:col (:w_cursor @curwin)) limit_col)
+                (let-when [#_int n (us-ptr2len (ml-get-cursor))] (pos? n)
+                    (swap! curwin update-in [:w_cursor :col] + n)
+                    (recur)
+                ))
             (if (or (eos? (ml-get-cursor)) (== (:col (:w_cursor @curwin)) ecol))
-                ((ß RETURN) false)
-            )
-            (del-bytes (- ecol (:col (:w_cursor @curwin))), false, true)
-        )
-        :else
-        (do
-            (del-char false)
-        ))
-        true
+                false
+                (do (del-bytes (- ecol (:col (:w_cursor @curwin))), false, true) true)
+            ))
+        (do (del-char false) true)
     ))
 
 ;; Next character is interpreted literally.
@@ -20806,21 +20698,13 @@
 ;; Put a character in the redo buffer, for when just after a CTRL-V.
 
 (defn- #_void redo-literal [#_int c]
-    (§
-        ((ß Bytes buf =) (Bytes. 10))
-
-        ;; Only digits need special treatment.  Translate them into a string of three digits.
-        (cond (asc-isdigit c)
-        (do
+    ;; Only digits need special treatment.  Translate them into a string of three digits.
+    (if (asc-isdigit c)
+        (let [#_Bytes buf (Bytes. 10)]
 ;%%         (vim_snprintf buf, (.size buf), (u8 "%03d"), c)
-            (appendToRedobuff buf)
-        )
-        :else
-        (do
-            (appendCharToRedobuff c)
-        ))
-        nil
-    ))
+            (appendToRedobuff buf))
+        (appendCharToRedobuff c))
+    nil)
 
 ;; start-arrow() is called when an arrow key is used in insert mode.
 ;; For undo/redo it resembles hitting the <ESC> key.
@@ -51177,25 +51061,10 @@
 
 ;; Redraw the characters for a vertically split window.
 
-(defn- #_void redraw-block [#_int row, #_int end, #_window_C wp]
-    (§
-        (ß int col)
-        (ß int width)
-
-        (cond (nil? wp)
-        (do
-            ((ß col =) 0)
-            ((ß width =) @Cols)
-        )
-        :else
-        (do
-            ((ß col =) (:w_wincol wp))
-            ((ß width =) (:w_width wp))
-        ))
-
-        (screen-draw-rectangle row, col, (- end row), width, false)
-        nil
-    ))
+(defn- #_void redraw-block [#_int row, #_int end, #_window_C win]
+    (let [[#_int col #_int width] (if (some? win) [(:w_wincol win) (:w_width win)] [0 @Cols])]
+        (screen-draw-rectangle row, col, (- end row), width, false))
+    nil)
 
 ;; Fill the screen from 'start_row' to 'end_row', from 'start_col' to 'end_col'
 ;; with character 'c1' in first column followed by 'c2' in the other columns.
@@ -52468,29 +52337,14 @@
 ;; Get the character to use in a status line.  Get its attributes in "*attr".
 
 (defn- #_int fillchar-status [#_int' a'attr, #_boolean is_curwin]
-    (§
-        (ß int fill)
-        (cond is_curwin
-        (do
-            (reset! a'attr (hl-attr HLF_S))
-            ((ß fill =) @fill_stl)
-        )
-        :else
-        (do
-            (reset! a'attr (hl-attr HLF_SNC))
-            ((ß fill =) @fill_stlnc)
-        ))
-
-        ;; Use fill when there is highlighting, and highlighting of current window differs,
-        ;; or the fillchars differ, or this is not the current window.
+    (let [#_int fill (if is_curwin
+                (do (reset! a'attr (hl-attr HLF_S)) @fill_stl)
+                (do (reset! a'attr (hl-attr HLF_SNC)) @fill_stlnc)
+            )]
+        ;; Use fill when there is highlighting, and highlighting of current window differs, or the fillchars differ, or this is not the current window.
         (if (and (non-zero? @a'attr) (or (!= (hl-attr HLF_S) (hl-attr HLF_SNC)) (not is_curwin) (== @firstwin @lastwin) (!= @fill_stl @fill_stlnc)))
-            ((ß RETURN) fill)
-        )
-        (if is_curwin
-            ((ß RETURN) (byte \^))
-        )
-
-        (byte \=)
+            fill
+            (if is_curwin (byte \^) (byte \=)))
     ))
 
 ;; Get the character to use in a separator between vertically split windows.
@@ -52514,9 +52368,8 @@
 ;; If always is false, only show ruler if position has changed.
 
 (defn- #_void showruler [#_boolean always]
-    (if (or always (redrawing))
-        (win-redr-ruler @curwin, always)
-    )
+    (when (or always (redrawing))
+        (win-redr-ruler @curwin, always))
     nil)
 
 (defn- #_void win-redr-ruler [#_window_C wp, #_boolean always]
