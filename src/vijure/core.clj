@@ -1168,7 +1168,6 @@
 (atom! long    p_mmp)       ;; 'maxmempattern'
 (atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
-(atom! Bytes   p_para)      ;; 'paragraphs'
 (atom! boolean p_paste)     ;; 'paste'
 (atom! Bytes   p_pt)        ;; 'pastetoggle'
 (atom! boolean p_prompt)    ;; 'prompt'
@@ -1180,7 +1179,6 @@
 (atom! long    p_sj)        ;; 'scrolljump'
 (atom! long    p_so)        ;; 'scrolloff'
 (atom! Bytes   p_sbo)       ;; 'scrollopt'
-(atom! Bytes   p_sections)  ;; 'sections'
 (atom! Bytes   p_sel)       ;; 'selection'
 (atom! Bytes   p_slm)       ;; 'selectmode'
 (atom! boolean p_sr)        ;; 'shiftround'
@@ -2486,12 +2484,12 @@
     CMD_cunabbrev 19,
     CMD_delete 20,
     CMD_delmarks 21,
-    CMD_display 22,
+
     CMD_digraphs 23,
     CMD_earlier 24,
     CMD_fixdel 25,
     CMD_global 26,
-    CMD_goto 27,
+
 
     CMD_history 29,
     CMD_insert 30,
@@ -7062,7 +7060,6 @@
         (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      null,        PV_NU,      false),
         (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4#_L),
         (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    0,         (u8 "")),
-        (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      0,         (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
         (bool_opt (u8 "paste"),           null,            0,                           p_paste,     0,          false),
         (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        0,         (u8 "")),
         (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           null,        PV_PI,      false),
@@ -7079,7 +7076,6 @@
         (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        0,          1#_L),
         (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        0,          0#_L),
         (utf8_opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       0,         (u8 "ver,jump")),
-        (utf8_opt (u8 "sections"),       (u8 "sect"),      0,                           p_sections,  0,         (u8 "SHNHH HUnhsh")),
         (utf8_opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       0,         (u8 "inclusive")),
         (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       0,         (u8 "")),
         (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        0,          false),
@@ -15572,11 +15568,6 @@
 ;       }
     ))
 
-(defn- #_void ex_goto [#_exarg_C eap]
-    (§
-;       goto_byte(eap.line2);
-    ))
-
 ;; Command modifier used in a wrong way.
 
 (defn- #_void ex_wrongmodifier [#_exarg_C eap]
@@ -19599,7 +19590,7 @@
                 ;; Imitate strange Vi behaviour: When using "]]" with an operator we also stop at '}'.
 
 ;           boolean b;
-;           { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, flag, (cap.oap.op_type != OP_NOP && cap.arg == FORWARD && flag == '{')); cap.oap.inclusive = __[0]; }
+;           { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, flag, (cap.oap.op_type != OP_NOP && cap.arg == FORWARD && flag == '{')); cap.oap.inclusive = __[0]; }
 ;           if (!b)
 ;               clearopbeep(cap.oap);
 ;           else
@@ -19740,7 +19731,7 @@
 ;       cap.oap.inclusive = false;
 ;       @curwin.w_set_curswant = true;
 
-;       if (findsent(cap.arg, cap.count1) == false)
+;       if (findsent(cap.arg, cap.count1) == false)
 ;           clearopbeep(cap.oap);
 ;       else
 ;       {
@@ -19771,7 +19762,7 @@
 ;       cap.oap.use_reg_one = true;
 ;       @curwin.w_set_curswant = true;
 ;       boolean b;
-;       { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, NUL, false); cap.oap.inclusive = __[0]; }
+;       { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, NUL, false); cap.oap.inclusive = __[0]; }
 ;       if (!b)
 ;           clearopbeep(cap.oap);
 ;       else
@@ -21494,10 +21485,10 @@
 ;                   flag = current_block(cap.oap, cap.count1, include, '<', '>');
 ;                   break;
 ;           case 'p': ;; "ap" = a paragraph
-;                   flag = current_par(cap.oap, cap.count1, include, 'p');
+;                   flag = current_par(cap.oap, cap.count1, include, 'p');
 ;                   break;
 ;           case 's': ;; "as" = a sentence
-;                   flag = current_sent(cap.oap, cap.count1, include);
+;                   flag = current_sent(cap.oap, cap.count1, include);
 ;                   break;
 ;           case '"': ;; "a"" = a double quoted string
 ;           case '\'': ;; "a'" = a single quoted string
@@ -26541,7 +26532,7 @@
 ;           @listcmd_busy = true;                    ;; avoid that '' is changed
 ;           oparg_C oa = §_oparg_C();
 ;           boolean b;
-;           { boolean[] __ = { oa.inclusive }; b = findpar(__, (c == '}') ? FORWARD : BACKWARD, 1L, NUL, false); oa.inclusive = __[0]; }
+;           { boolean[] __ = { oa.inclusive }; b = findpar(__, (c == '}') ? FORWARD : BACKWARD, 1L, NUL, false); oa.inclusive = __[0]; }
 ;           if (b)
 ;           {
 ;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
@@ -26557,7 +26548,7 @@
 ;           pos_C pos = §_pos_C();
 ;           COPY_pos(pos, @curwin.w_cursor);
 ;           @listcmd_busy = true;                    ;; avoid that '' is changed
-;           if (findsent(c == ')' ? FORWARD : BACKWARD, 1L))
+;           if (findsent(c == ')' ? FORWARD : BACKWARD, 1L))
 ;           {
 ;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
 ;               posp = @_1_pos_copy;
@@ -48809,218 +48800,6 @@
 ;       }
     ))
 
-;; findsent(dir, count) - Find the start of the next sentence in direction "dir".
-;; Sentences are supposed to end in ".", "!" or "?" followed by white space or a line break.
-;; Also stop at an empty line.
-;; Return true if the next sentence was found.
-
-(defn- #_boolean findsent [#_int dir, #_long count]
-    (§
-;       boolean noskip = false;     ;; do not skip blanks
-
-;       pos_C pos = §_pos_C();
-;       COPY_pos(pos, @curwin.w_cursor);
-
-;       while (0 < count--)
-;       {
-;           found:
-;           {
-                ;; If on an empty line, skip upto a non-empty line.
-
-;               if (gchar_pos(pos) == NUL)
-;               {
-;                   do
-;                   {
-;                       if (((dir == FORWARD) ? incl(pos) : decl(pos)) == -1)
-;                           break;
-;                   } while (gchar_pos(pos) == NUL);
-;                   if (dir == FORWARD)
-;                       break found;
-;               }
-
-                ;; If on the start of a paragraph or a section and searching forward, go to the next line.
-
-;               else if (dir == FORWARD && pos.col == 0 && startPS(pos.lnum, NUL, false))
-;               {
-;                   if (pos.lnum == @curbuf.b_ml.ml_line_count)
-;                       return false;
-;                   pos.lnum++;
-;                   break found;
-;               }
-;               else if (dir == BACKWARD)
-;                   decl(pos);
-
-                ;; go back to the previous non-blank char
-;               boolean found_dot = false;
-;               for (int c; (c = gchar_pos(pos)) == ' ' || c == '\t' ||
-;                   (dir == BACKWARD && vim_strchr(u8(".!?)]\"'"), c) != null); )
-;               {
-;                   if (vim_strchr(u8(".!?"), c) != null)
-;                   {
-                        ;; only skip over a '.', '!' and '?' once
-;                       if (found_dot)
-;                           break;
-;                       found_dot = true;
-;                   }
-;                   if (decl(pos) == -1)
-;                       break;
-                    ;; when going forward: stop in front of empty line
-;                   if (lineempty(pos.lnum) && dir == FORWARD)
-;                   {
-;                       incl(pos);
-;                       break found;
-;                   }
-;               }
-
-                ;; remember the line where the search started
-;               long startlnum = pos.lnum;
-;               boolean cpo_J = (vim_strbyte(@p_cpo, CPO_ENDOFSENT) != null);
-
-;               pos_C tpos = §_pos_C();
-
-;               for ( ; ; )                 ;; find end of sentence
-;               {
-;                   int c = gchar_pos(pos);
-;                   if (c == NUL || (pos.col == 0 && startPS(pos.lnum, NUL, false)))
-;                   {
-;                       if (dir == BACKWARD && pos.lnum != startlnum)
-;                           pos.lnum++;
-;                       break;
-;                   }
-;                   if (c == '.' || c == '!' || c == '?')
-;                   {
-;                       COPY_pos(tpos, pos);
-;                       do
-;                       {
-;                           if ((c = incp(tpos)) == -1)
-;                               break;
-;                       } while (vim_strchr(u8(")]\"'"), c = gchar_pos(tpos)) != null);
-;                       if (c == -1 || (!cpo_J && (c == ' ' || c == '\t')) || c == NUL
-;                           || (cpo_J && (c == ' ' && 0 <= incp(tpos) && gchar_pos(tpos) == ' ')))
-;                       {
-;                           COPY_pos(pos, tpos);
-;                           if (gchar_pos(pos) == NUL)
-;                               incp(pos);               ;; skip NUL at EOL
-;                           break;
-;                       }
-;                   }
-;                   if (((dir == FORWARD) ? incl(pos) : decl(pos)) == -1)
-;                   {
-;                       if (count != 0)
-;                           return false;
-;                       noskip = true;
-;                       break;
-;                   }
-;               }
-;           }
-
-;           for (int c; !noskip && ((c = gchar_pos(pos)) == ' ' || c == '\t'); )
-;               if (incl(pos) == -1)                ;; skip white space
-;                   break;
-;       }
-
-;       setpcmark();
-;       COPY_pos(@curwin.w_cursor, pos);
-;       return true;
-    ))
-
-;; Find the next paragraph or section in direction 'dir'.
-;; Paragraphs are currently supposed to be separated by empty lines.
-;; If 'what' is NUL we go to the next paragraph.
-;; If 'what' is '{' or '}' we go to the next section.
-;; If 'both' is true also stop at '}'.
-;; Return true if the next paragraph or section was found.
-
-(defn- #_boolean findpar [#_boolean* pincl, #_int dir, #_long count, #_int what, #_boolean both]
-    ;; pincl: Return: true if last char is to be included
-    (§
-;       boolean posix = (vim_strbyte(@p_cpo, CPO_PARA) != null);
-
-;       long curr = @curwin.w_cursor.lnum;
-
-;       while (0 < count--)
-;       {
-;           boolean did_skip = false;       ;; true after separating lines have been skipped
-
-;           for (boolean first = true; ; first = false)     ;; true on first line
-;           {
-;               if (ml_get(curr).at(0) != NUL)
-;                   did_skip = true;
-
-                ;; POSIX has it's own ideas of what a paragraph boundary is and
-                ;; it doesn't match historical Vi: It also stops at a "{" in the
-                ;; first column and at an empty line.
-;               if (!first && did_skip && (startPS(curr, what, both)
-;                              || (posix && what == NUL && ml_get(curr).at(0) == (byte)'{')))
-;                   break;
-
-;               if ((curr += dir) < 1 || @curbuf.b_ml.ml_line_count < curr)
-;               {
-;                   if (count != 0)
-;                       return false;
-;                   curr -= dir;
-;                   break;
-;               }
-;           }
-;       }
-;       setpcmark();
-;       if (both && ml_get(curr).at(0) == (byte)'}')   ;; include line with '}'
-;           curr++;
-;       @curwin.w_cursor.lnum = curr;
-;       if (curr == @curbuf.b_ml.ml_line_count && what != '}')
-;       {
-;           if ((@curwin.w_cursor.col = STRLEN(ml_get(curr))) != 0)
-;           {
-;               --@curwin.w_cursor.col;
-;               pincl[0] = true;
-;           }
-;       }
-;       else
-;           @curwin.w_cursor.col = 0;
-;       return true;
-    ))
-
-;; check if the string 's' is a nroff macro that is in option 'opt'
-
-(defn- #_boolean inmacro [#_Bytes opt, #_Bytes s]
-    (§
-;       Bytes macro;
-
-;       for (macro = opt; macro.at(0) != NUL; macro = macro.plus(1))
-;       {
-            ;; Accept two characters in the option being equal to two characters in the line.
-            ;; A space in the option matches with a space in the line or the line having ended.
-
-;           if ((macro.at(0) == s.at(0)
-;                       || (macro.at(0) == (byte)' '
-;                           && (s.at(0) == NUL || s.at(0) == (byte)' ')))
-;                   && (macro.at(1) == s.at(1)
-;                       || ((macro.at(1) == NUL || macro.at(1) == (byte)' ')
-;                           && (s.at(0) == NUL || s.at(1) == NUL || s.at(1) == (byte)' '))))
-;               break;
-;           macro = macro.plus(1);
-;           if (macro.at(0) == NUL)
-;               break;
-;       }
-
-;       return (macro.at(0) != NUL);
-    ))
-
-;; startPS: return true if line 'lnum' is the start of a section or paragraph.
-;; If 'para' is '{' or '}' only check for sections.
-;; If 'both' is true also stop at '}'.
-
-(defn- #_boolean startPS [#_long lnum, #_int para, #_boolean both]
-    (§
-;       Bytes s = ml_get(lnum);
-;       if (s.at(0) == para || s.at(0) == (byte)'\f' || (both && s.at(0) == (byte)'}'))
-;           return true;
-;       if (s.at(0) == (byte)'.' && (inmacro(@p_sections, s.plus(1)) || (para == NUL && inmacro(@p_para, s.plus(1)))))
-;           return true;
-
-;       return false;
-    ))
-
 ;; The following routines do the word searches performed
 ;; by the 'w', 'W', 'b', 'B', 'e', and 'E' commands.
 
@@ -49307,22 +49086,6 @@
 ;       }
     ))
 
-;; Skip count/2 sentences and count/2 separating white spaces.
-
-(defn- #_void findsent_forward [#_long count, #_boolean at_start_sent]
-    ;; at_start_sent: cursor is at start of sentence
-    (§
-;       while (0 < count--)
-;       {
-;           findsent(FORWARD, 1L);
-;           if (at_start_sent)
-;               find_first_blank(@curwin.w_cursor);
-;           if (count == 0 || at_start_sent)
-;               decl(@curwin.w_cursor);
-;           at_start_sent = !at_start_sent;
-;       }
-    ))
-
 ;; Find word under cursor, cursor at end.
 ;; Used while an operator is pending, and in Visual mode.
 
@@ -49481,178 +49244,6 @@
 ;       }
 ;       else
 ;           oap.inclusive = inclusive;
-
-;       return true;
-    ))
-
-;; Find sentence(s) under the cursor, cursor at end.
-;; When Visual active, extend it by one or more sentences.
-
-(defn- #_boolean current_sent [#_oparg_C oap, #_long count, #_boolean include]
-    (§
-;       pos_C start_pos = §_pos_C();
-;       COPY_pos(start_pos, @curwin.w_cursor);
-;       pos_C pos = §_pos_C();
-;       COPY_pos(pos, start_pos);
-;       findsent(FORWARD, 1L);      ;; Find start of next sentence.
-
-;       extend:
-;       {
-            ;; When the Visual area is bigger than one character: Extend it.
-
-;           if (@VIsual_active && !eqpos(start_pos, @VIsual))
-;               break extend;
-
-            ;; If the cursor started on a blank, check if it is just before
-            ;; the start of the next sentence.
-
-;           while (vim_iswhite(gchar_pos(pos)))
-;               incl(pos);
-
-;           boolean start_blank;
-;           if (eqpos(pos, @curwin.w_cursor))
-;           {
-;               start_blank = true;
-;               find_first_blank(start_pos);    ;; go back to first blank
-;           }
-;           else
-;           {
-;               start_blank = false;
-;               findsent(BACKWARD, 1L);
-;               COPY_pos(start_pos, @curwin.w_cursor);
-;           }
-
-;           long ncount;
-;           if (include)
-;               ncount = count * 2;
-;           else
-;           {
-;               ncount = count;
-;               if (start_blank)
-;                   --ncount;
-;           }
-;           if (0 < ncount)
-;               findsent_forward(ncount, true);
-;           else
-;               decl(@curwin.w_cursor);
-
-;           if (include)
-;           {
-                ;; If the blank in front of the sentence is included, exclude the
-                ;; blanks at the end of the sentence, go back to the first blank.
-                ;; If there are no trailing blanks, try to include leading blanks.
-
-;               if (start_blank)
-;               {
-;                   find_first_blank(@curwin.w_cursor);
-;                   if (vim_iswhite(gchar_pos(@curwin.w_cursor)))
-;                       decl(@curwin.w_cursor);
-;               }
-;               else
-;               {
-;                   if (!vim_iswhite(gchar_cursor()))
-;                       find_first_blank(start_pos);
-;               }
-;           }
-
-;           if (@VIsual_active)
-;           {
-                ;; Avoid getting stuck with "is" on a single space before a sentence.
-;               if (eqpos(start_pos, @curwin.w_cursor))
-;                   break extend;
-;               if (@p_sel.at(0) == (byte)'e')
-;                   @curwin.w_cursor.col++;
-;               COPY_pos(@VIsual, start_pos);
-;               @VIsual_mode = 'v';
-;               redraw_curbuf_later(INVERTED);  ;; update the inversion
-;           }
-;           else
-;           {
-                ;; include a newline after the sentence, if there is one
-;               if (incl(@curwin.w_cursor) == -1)
-;                   oap.inclusive = true;
-;               else
-;                   oap.inclusive = false;
-;               COPY_pos(oap.op_start, start_pos);
-;               oap.motion_type = MCHAR;
-;           }
-
-;           return true;
-;       }
-
-;       if (ltpos(start_pos, @VIsual))
-;       {
-            ;; Cursor at start of Visual area.
-            ;; Find out where we are:
-            ;; - in the white space before a sentence
-            ;; - in a sentence or just after it
-            ;; - at the start of a sentence
-
-;           boolean at_start_sent = true;
-;           decl(pos);
-;           while (ltpos(pos, @curwin.w_cursor))
-;           {
-;               if (!vim_iswhite(gchar_pos(pos)))
-;               {
-;                   at_start_sent = false;
-;                   break;
-;               }
-;               incl(pos);
-;           }
-;           if (!at_start_sent)
-;           {
-;               findsent(BACKWARD, 1L);
-;               if (eqpos(@curwin.w_cursor, start_pos))
-;                   at_start_sent = true;   ;; exactly at start of sentence
-;               else
-                    ;; inside a sentence, go to its end (start of next)
-;                   findsent(FORWARD, 1L);
-;           }
-;           if (include)                    ;; "as" gets twice as much as "is"
-;               count *= 2;
-;           while (0 < count--)
-;           {
-;               if (at_start_sent)
-;                   find_first_blank(@curwin.w_cursor);
-;               if (!at_start_sent || (!include && !vim_iswhite(gchar_cursor())))
-;                   findsent(BACKWARD, 1L);
-;               at_start_sent = !at_start_sent;
-;           }
-;       }
-;       else
-;       {
-            ;; Cursor at end of Visual area.
-            ;; Find out where we are:
-            ;; - just before a sentence
-            ;; - just before or in the white space before a sentence
-            ;; - in a sentence
-
-;           incl(pos);
-;           boolean at_start_sent = true;
-;           if (!eqpos(pos, @curwin.w_cursor))   ;; not just before a sentence
-;           {
-;               at_start_sent = false;
-;               while (ltpos(pos, @curwin.w_cursor))
-;               {
-;                   if (!vim_iswhite(gchar_pos(pos)))
-;                   {
-;                       at_start_sent = true;
-;                       break;
-;                   }
-;                   incl(pos);
-;               }
-;               if (at_start_sent)      ;; in the sentence
-;                   findsent(BACKWARD, 1L);
-;               else            ;; in/before white before a sentence
-;                   COPY_pos(@curwin.w_cursor, start_pos);
-;           }
-
-;           if (include)        ;; "as" gets twice as much as "is"
-;               count *= 2;
-;           findsent_forward(count, at_start_sent);
-;           if (@p_sel.at(0) == (byte)'e')
-;               @curwin.w_cursor.col++;
-;       }
 
 ;       return true;
     ))
@@ -49841,157 +49432,6 @@
 ;       }
 
 ;       return (lc != '/');
-    ))
-
-(defn- #_boolean current_par [#_oparg_C oap, #_long count, #_boolean include, #_int type]
-    ;; include: true == include white space
-    ;; type: 'p' for paragraph, 'S' for section
-    (§
-;       if (type == 'S')        ;; not implemented yet
-;           return false;
-
-;       long start_lnum = @curwin.w_cursor.lnum;
-
-;       extend:
-;       {
-            ;; When visual area is more than one line: extend it.
-
-;           if (@VIsual_active && start_lnum != @VIsual.lnum)
-;               break extend;
-
-            ;; First move back to the start_lnum of the paragraph or white lines
-
-;           boolean white_in_front = linewhite(start_lnum);
-;           while (1 < start_lnum)
-;           {
-;               if (white_in_front)         ;; stop at first white line
-;               {
-;                   if (!linewhite(start_lnum - 1))
-;                       break;
-;               }
-;               else            ;; stop at first non-white line of start of paragraph
-;               {
-;                   if (linewhite(start_lnum - 1) || startPS(start_lnum, NUL, false))
-;                       break;
-;               }
-;               --start_lnum;
-;           }
-
-            ;; Move past the end of any white lines.
-
-;           long end_lnum = start_lnum;
-;           while (end_lnum <= @curbuf.b_ml.ml_line_count && linewhite(end_lnum))
-;               end_lnum++;
-
-;           boolean do_white = false;
-
-;           --end_lnum;
-;           int i = (int)count;
-;           if (!include && white_in_front)
-;               --i;
-;           while (0 < i--)
-;           {
-;               if (end_lnum == @curbuf.b_ml.ml_line_count)
-;                   return false;
-
-;               if (!include)
-;                   do_white = linewhite(end_lnum + 1);
-
-;               if (include || !do_white)
-;               {
-;                   end_lnum++;
-
-                    ;; skip to end of paragraph
-
-;                   while (end_lnum < @curbuf.b_ml.ml_line_count
-;                           && !linewhite(end_lnum + 1)
-;                           && !startPS(end_lnum + 1, NUL, false))
-;                       end_lnum++;
-;               }
-
-;               if (i == 0 && white_in_front && include)
-;                   break;
-
-                ;; skip to end of white lines after paragraph
-
-;               if (include || do_white)
-;                   while (end_lnum < @curbuf.b_ml.ml_line_count && linewhite(end_lnum + 1))
-;                       end_lnum++;
-;           }
-
-            ;; If there are no empty lines at the end, try to find some empty lines
-            ;; at the start (unless that has been already done).
-
-;           if (!white_in_front && !linewhite(end_lnum) && include)
-;               while (1 < start_lnum && linewhite(start_lnum - 1))
-;                   --start_lnum;
-
-;           if (@VIsual_active)
-;           {
-                ;; Problem: when doing "Vipipip" nothing happens in a single white line,
-                ;; we get stuck there.  Trap this here.
-;               if (@VIsual_mode == 'V' && start_lnum == @curwin.w_cursor.lnum)
-;                   break extend;
-;               @VIsual.lnum = start_lnum;
-;               @VIsual_mode = 'V';
-;               redraw_curbuf_later(INVERTED);  ;; update the inversion
-;               showmode();
-;           }
-;           else
-;           {
-;               oap.op_start.lnum = start_lnum;
-;               oap.op_start.col = 0;
-;               oap.motion_type = MLINE;
-;           }
-
-;           @curwin.w_cursor.lnum = end_lnum;
-;           @curwin.w_cursor.col = 0;
-
-;           return true;
-;       }
-
-;       boolean retval = true;
-;       int dir = (start_lnum < @VIsual.lnum) ? BACKWARD : FORWARD;
-
-;       for (int i = (int)count; 0 <= --i; )
-;       {
-;           if (start_lnum == (dir == BACKWARD ? 1 : @curbuf.b_ml.ml_line_count))
-;           {
-;               retval = false;
-;               break;
-;           }
-
-;           int prev_start_is_white = -1;
-;           for (int t = 0; t < 2; t++)
-;           {
-;               start_lnum += dir;
-;               boolean start_is_white = linewhite(start_lnum);
-;               if (prev_start_is_white == (start_is_white ? 1 : 0))
-;               {
-;                   start_lnum -= dir;
-;                   break;
-;               }
-;               for ( ; ; )
-;               {
-;                   if (start_lnum == (dir == BACKWARD ? 1 : @curbuf.b_ml.ml_line_count))
-;                       break;
-;                   if (start_is_white != linewhite(start_lnum + dir)
-;                           || (!start_is_white && startPS(start_lnum + (0 < dir ? 1 : 0), NUL, false)))
-;                       break;
-;                   start_lnum += dir;
-;               }
-;               if (!include)
-;                   break;
-;               if (start_lnum == (dir == BACKWARD ? 1 : @curbuf.b_ml.ml_line_count))
-;                   break;
-;               prev_start_is_white = start_is_white ? 1 : 0;
-;           }
-;       }
-
-;       @curwin.w_cursor.lnum = start_lnum;
-;       @curwin.w_cursor.col = 0;
-
-;       return retval;
     ))
 
 ;; Search quote char from string line[col].
@@ -77716,12 +77156,12 @@
         (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
-        (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
+
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT CMDWIN),                                ADDR_LINES),
+
 
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
