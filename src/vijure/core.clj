@@ -23574,21 +23574,22 @@
 (final Bytes e_missing_sb      (u8 "E69: Missing ] after %s%%["))
 (final Bytes e_empty_sb        (u8 "E70: Empty %s%%[]"))
 
-(final int NOT_MULTI       0)
-(final int MULTI_ONE       1)
-(final int MULTI_MULT      2)
+(final int
+    NOT_MULTI       0,
+    MULTI_ONE       1,
+    MULTI_MULT      2)
 
 ;; Return NOT_MULTI if c is not a "multi" operator.
 ;; Return MULTI_ONE if c is a single "multi" operator.
 ;; Return MULTI_MULT if c is a multi "multi" operator.
 
 (defn- #_int re-multi-type [#_int c]
-    (cond
-        (or (== c (Magic (byte \@))) (== c (Magic (byte \=))) (== c (Magic (byte \?))))
+    (condp ==? c
+        [(Magic (byte \@)) (Magic (byte \=)) (Magic (byte \?))]
             MULTI_ONE
-        (or (== c (Magic (byte \*))) (== c (Magic (byte \+))) (== c (Magic (byte \{))))
+        [(Magic (byte \*)) (Magic (byte \+)) (Magic (byte \{))]
             MULTI_MULT
-        :else
+     ;; :else
             NOT_MULTI
     ))
 
@@ -23627,46 +23628,32 @@
 ;; Translate '\x' to its control character, except "\n", which is Magic.
 
 (defn- #_int backslash-trans [#_int c]
-    (§
-        ((ß SWITCH) c
-            ((ß CASE) (byte \r))
-            (do
-                ((ß RETURN) CAR)
-            )
-            ((ß CASE) (byte \t))
-            (do
-                ((ß RETURN) TAB)
-            )
-            ((ß CASE) (byte \e))
-            (do
-                ((ß RETURN) ESC)
-            )
-            ((ß CASE) (byte \b))
-            (do
-                ((ß RETURN) BS)
-            )
-        )
-        c
+    (condp == c
+        (byte \r) CAR
+        (byte \t) TAB
+        (byte \e) ESC
+        (byte \b) BS
+                  c
     ))
 
 (final int
-    CLASS_ALNUM 0,
-    CLASS_ALPHA 1,
-    CLASS_BLANK 2,
-    CLASS_CNTRL 3,
-    CLASS_DIGIT 4,
-    CLASS_GRAPH 5,
-    CLASS_LOWER 6,
-    CLASS_PRINT 7,
-    CLASS_PUNCT 8,
-    CLASS_SPACE 9,
-    CLASS_UPPER 10,
-    CLASS_XDIGIT 11,
-    CLASS_TAB 12,
-    CLASS_RETURN 13,
+    CLASS_ALNUM      0,
+    CLASS_ALPHA      1,
+    CLASS_BLANK      2,
+    CLASS_CNTRL      3,
+    CLASS_DIGIT      4,
+    CLASS_GRAPH      5,
+    CLASS_LOWER      6,
+    CLASS_PRINT      7,
+    CLASS_PUNCT      8,
+    CLASS_SPACE      9,
+    CLASS_UPPER     10,
+    CLASS_XDIGIT    11,
+    CLASS_TAB       12,
+    CLASS_RETURN    13,
     CLASS_BACKSPACE 14,
-    CLASS_ESCAPE 15,
-    CLASS_NONE 99)
+    CLASS_ESCAPE    15,
+    CLASS_NONE      99)
 
 (final Bytes* class_names
     [
@@ -23917,515 +23904,374 @@
 ;; NOTE! When changing this function, also change nfa-emit-equi-class()
 
 (defn- #_void reg-equi-class [#_int c]
-    (§
-        ((ß SWITCH) c
-            ((ß CASE) (byte \A))
-            ((ß CASE) 0xc0) ((ß CASE) 0xc1) ((ß CASE) 0xc2)
-            ((ß CASE) 0xc3) ((ß CASE) 0xc4) ((ß CASE) 0xc5)
-            ((ß CASE) 0x100) ((ß CASE) 0x102) ((ß CASE) 0x104)
-            ((ß CASE) 0x1cd) ((ß CASE) 0x1de) ((ß CASE) 0x1e0)
-            ((ß CASE) 0x1ea2)
-            (do
-                (regmbc (byte \A))
-                (regmbc 0xc0) regmbc(0xc1) (regmbc 0xc2)
-                (regmbc 0xc3) regmbc(0xc4) (regmbc 0xc5)
-                (regmbc 0x100) regmbc(0x102) (regmbc 0x104)
-                (regmbc 0x1cd) regmbc(0x1de) (regmbc 0x1e0)
-                (regmbc 0x1ea2)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \a))
-            ((ß CASE) 0xe0) ((ß CASE) 0xe1) ((ß CASE) 0xe2)
-            ((ß CASE) 0xe3) ((ß CASE) 0xe4) ((ß CASE) 0xe5)
-            ((ß CASE) 0x101) ((ß CASE) 0x103) ((ß CASE) 0x105)
-            ((ß CASE) 0x1ce) ((ß CASE) 0x1df) ((ß CASE) 0x1e1)
-            ((ß CASE) 0x1ea3)
-            (do
-                (regmbc (byte \a))
-                (regmbc 0xe0) regmbc(0xe1) (regmbc 0xe2)
-                (regmbc 0xe3) regmbc(0xe4) (regmbc 0xe5)
-                (regmbc 0x101) regmbc(0x103) (regmbc 0x105)
-                (regmbc 0x1ce) regmbc(0x1df) (regmbc 0x1e1)
-                (regmbc 0x1ea3)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \B))
-            ((ß CASE) 0x1e02) ((ß CASE) 0x1e06)
-            (do
-                (regmbc (byte \B))
-                (regmbc 0x1e02) regmbc(0x1e06)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \b))
-            ((ß CASE) 0x1e03) ((ß CASE) 0x1e07)
-            (do
-                (regmbc (byte \b))
-                (regmbc 0x1e03) regmbc(0x1e07)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \C))
-            ((ß CASE) 0xc7)
-            ((ß CASE) 0x106) ((ß CASE) 0x108) ((ß CASE) 0x10a) ((ß CASE) 0x10c)
-            (do
-                (regmbc (byte \C))
-                (regmbc 0xc7)
-                (regmbc 0x106) regmbc(0x108) (regmbc 0x10a) regmbc(0x10c)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \c))
-            ((ß CASE) 0xe7)
-            ((ß CASE) 0x107) ((ß CASE) 0x109) ((ß CASE) 0x10b) ((ß CASE) 0x10d)
-            (do
-                (regmbc (byte \c))
-                (regmbc 0xe7)
-                (regmbc 0x107) regmbc(0x109) (regmbc 0x10b) regmbc(0x10d)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \D))
-            ((ß CASE) 0x10e) ((ß CASE) 0x110)
-            ((ß CASE) 0x1e0a) ((ß CASE) 0x1e0c) ((ß CASE) 0x1e0e) ((ß CASE) 0x1e10) ((ß CASE) 0x1e12)
-            (do
-                (regmbc (byte \D))
-                (regmbc 0x10e) regmbc(0x110)
-                (regmbc 0x1e0a) regmbc(0x1e0c) (regmbc 0x1e0e) regmbc(0x1e10) (regmbc 0x1e12)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \d))
-            ((ß CASE) 0x10f) ((ß CASE) 0x111)
-            ((ß CASE) 0x1e0b) ((ß CASE) 0x1e0d) ((ß CASE) 0x1e0f) ((ß CASE) 0x1e11) ((ß CASE) 0x1e13)
-            (do
-                (regmbc (byte \d))
-                (regmbc 0x10f) regmbc(0x111)
-                (regmbc 0x1e0b) regmbc(0x1e0d) (regmbc 0x1e0f) regmbc(0x1e11) (regmbc 0x1e13)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \E))
-            ((ß CASE) 0xc8) ((ß CASE) 0xc9) ((ß CASE) 0xca) ((ß CASE) 0xcb)
-            ((ß CASE) 0x112) ((ß CASE) 0x114) ((ß CASE) 0x116) ((ß CASE) 0x118) ((ß CASE) 0x11a)
-            ((ß CASE) 0x1eba) ((ß CASE) 0x1ebc)
-            (do
-                (regmbc (byte \E))
-                (regmbc 0xc8) regmbc(0xc9) (regmbc 0xca) regmbc(0xcb)
-                (regmbc 0x112) regmbc(0x114) (regmbc 0x116) regmbc(0x118) (regmbc 0x11a)
-                (regmbc 0x1eba) regmbc(0x1ebc)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \e))
-            ((ß CASE) 0xe8) ((ß CASE) 0xe9) ((ß CASE) 0xea) ((ß CASE) 0xeb)
-            ((ß CASE) 0x113) ((ß CASE) 0x115) ((ß CASE) 0x117) ((ß CASE) 0x119) ((ß CASE) 0x11b)
-            ((ß CASE) 0x1ebb) ((ß CASE) 0x1ebd)
-            (do
-                (regmbc (byte \e))
-                (regmbc 0xe8) regmbc(0xe9) (regmbc 0xea) regmbc(0xeb)
-                (regmbc 0x113) regmbc(0x115) (regmbc 0x117) regmbc(0x119) (regmbc 0x11b)
-                (regmbc 0x1ebb) regmbc(0x1ebd)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \F))
-            ((ß CASE) 0x1e1e)
-            (do
-                (regmbc (byte \F))
-                (regmbc 0x1e1e)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \f))
-            ((ß CASE) 0x1e1f)
-            (do
-                (regmbc (byte \f))
-                (regmbc 0x1e1f)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \G))
-            ((ß CASE) 0x11c) ((ß CASE) 0x11e) ((ß CASE) 0x120) ((ß CASE) 0x122)
-            ((ß CASE) 0x1e4) ((ß CASE) 0x1e6) ((ß CASE) 0x1f4)
-            ((ß CASE) 0x1e20)
-            (do
-                (regmbc (byte \G))
-                (regmbc 0x11c) regmbc(0x11e) (regmbc 0x120) regmbc(0x122)
-                (regmbc 0x1e4) regmbc(0x1e6) (regmbc 0x1f4)
-                (regmbc 0x1e20)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \g))
-            ((ß CASE) 0x11d) ((ß CASE) 0x11f) ((ß CASE) 0x121) ((ß CASE) 0x123)
-            ((ß CASE) 0x1e5) ((ß CASE) 0x1e7) ((ß CASE) 0x1f5)
-            ((ß CASE) 0x1e21)
-            (do
-                (regmbc (byte \g))
-                (regmbc 0x11d) regmbc(0x11f) (regmbc 0x121) regmbc(0x123)
-                (regmbc 0x1e5) regmbc(0x1e7) (regmbc 0x1f5)
-                (regmbc 0x1e21)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \H))
-            ((ß CASE) 0x124) ((ß CASE) 0x126)
-            ((ß CASE) 0x1e22) ((ß CASE) 0x1e26) ((ß CASE) 0x1e28)
-            (do
-                (regmbc (byte \H))
-                (regmbc 0x124) regmbc(0x126)
-                (regmbc 0x1e22) regmbc(0x1e26) (regmbc 0x1e28)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \h))
-            ((ß CASE) 0x125) ((ß CASE) 0x127)
-            ((ß CASE) 0x1e23) ((ß CASE) 0x1e27) ((ß CASE) 0x1e29) ((ß CASE) 0x1e96)
-            (do
-                (regmbc (byte \h))
-                (regmbc 0x125) regmbc(0x127)
-                (regmbc 0x1e23) regmbc(0x1e27) (regmbc 0x1e29) regmbc(0x1e96)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \I))
-            ((ß CASE) 0xcc) ((ß CASE) 0xcd) ((ß CASE) 0xce) ((ß CASE) 0xcf)
-            ((ß CASE) 0x128) ((ß CASE) 0x12a) ((ß CASE) 0x12c) ((ß CASE) 0x12e) ((ß CASE) 0x130)
-            ((ß CASE) 0x1cf)
-            ((ß CASE) 0x1ec8)
-            (do
-                (regmbc (byte \I))
-                (regmbc 0xcc) regmbc(0xcd) (regmbc 0xce) regmbc(0xcf)
-                (regmbc 0x128) regmbc(0x12a) (regmbc 0x12c) regmbc(0x12e) (regmbc 0x130)
-                (regmbc 0x1cf)
-                (regmbc 0x1ec8)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \i))
-            ((ß CASE) 0xec) ((ß CASE) 0xed) ((ß CASE) 0xee) ((ß CASE) 0xef)
-            ((ß CASE) 0x129) ((ß CASE) 0x12b) ((ß CASE) 0x12d) ((ß CASE) 0x12f) ((ß CASE) 0x131)
-            ((ß CASE) 0x1d0)
-            ((ß CASE) 0x1ec9)
-            (do
-                (regmbc (byte \i))
-                (regmbc 0xec) regmbc(0xed) (regmbc 0xee) regmbc(0xef)
-                (regmbc 0x129) regmbc(0x12b) (regmbc 0x12d) regmbc(0x12f) (regmbc 0x131)
-                (regmbc 0x1d0)
-                (regmbc 0x1ec9)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \J))
-            ((ß CASE) 0x134)
-            (do
-                (regmbc (byte \J))
-                (regmbc 0x134)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \j))
-            ((ß CASE) 0x135) ((ß CASE) 0x1f0)
-            (do
-                (regmbc (byte \j))
-                (regmbc 0x135) regmbc(0x1f0)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \K))
-            ((ß CASE) 0x136) ((ß CASE) 0x1e8)
-            ((ß CASE) 0x1e30) ((ß CASE) 0x1e34)
-            (do
-                (regmbc (byte \K))
-                (regmbc 0x136) regmbc(0x1e8)
-                (regmbc 0x1e30) regmbc(0x1e34)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \k))
-            ((ß CASE) 0x137) ((ß CASE) 0x1e9)
-            ((ß CASE) 0x1e31) ((ß CASE) 0x1e35)
-            (do
-                (regmbc (byte \k))
-                (regmbc 0x137) regmbc(0x1e9)
-                (regmbc 0x1e31) regmbc(0x1e35)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \L))
-            ((ß CASE) 0x139) ((ß CASE) 0x13b) ((ß CASE) 0x13d) ((ß CASE) 0x13f) ((ß CASE) 0x141)
-            ((ß CASE) 0x1e3a)
-            (do
-                (regmbc (byte \L))
-                (regmbc 0x139) regmbc(0x13b) (regmbc 0x13d) regmbc(0x13f) (regmbc 0x141)
-                (regmbc 0x1e3a)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \l))
-            ((ß CASE) 0x13a) ((ß CASE) 0x13c) ((ß CASE) 0x13e) ((ß CASE) 0x140) ((ß CASE) 0x142)
-            ((ß CASE) 0x1e3b)
-            (do
-                (regmbc (byte \l))
-                (regmbc 0x13a) regmbc(0x13c) (regmbc 0x13e) regmbc(0x140) (regmbc 0x142)
-                (regmbc 0x1e3b)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \M))
-            ((ß CASE) 0x1e3e) ((ß CASE) 0x1e40)
-            (do
-                (regmbc (byte \M))
-                (regmbc 0x1e3e) regmbc(0x1e40)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \m))
-            ((ß CASE) 0x1e3f) ((ß CASE) 0x1e41)
-            (do
-                (regmbc (byte \m))
-                (regmbc 0x1e3f) regmbc(0x1e41)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \N))
-            ((ß CASE) 0xd1)
-            ((ß CASE) 0x143) ((ß CASE) 0x145) ((ß CASE) 0x147)
-            ((ß CASE) 0x1e44) ((ß CASE) 0x1e48)
-            (do
-                (regmbc (byte \N))
-                (regmbc 0xd1)
-                (regmbc 0x143) regmbc(0x145) (regmbc 0x147)
-                (regmbc 0x1e44) regmbc(0x1e48)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \n))
-            ((ß CASE) 0xf1)
-            ((ß CASE) 0x144) ((ß CASE) 0x146) ((ß CASE) 0x148) ((ß CASE) 0x149)
-            ((ß CASE) 0x1e45) ((ß CASE) 0x1e49)
-            (do
-                (regmbc (byte \n))
-                (regmbc 0xf1)
-                (regmbc 0x144) regmbc(0x146) (regmbc 0x148) regmbc(0x149)
-                (regmbc 0x1e45) regmbc(0x1e49)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \O))
-            ((ß CASE) 0xd2) ((ß CASE) 0xd3) ((ß CASE) 0xd4)
-            ((ß CASE) 0xd5) ((ß CASE) 0xd6) ((ß CASE) 0xd8)
-            ((ß CASE) 0x14c) ((ß CASE) 0x14e) ((ß CASE) 0x150)
-            ((ß CASE) 0x1a0) ((ß CASE) 0x1d1) ((ß CASE) 0x1ea) ((ß CASE) 0x1ec)
-            ((ß CASE) 0x1ece)
-            (do
-                (regmbc (byte \O))
-                (regmbc 0xd2) regmbc(0xd3) (regmbc 0xd4)
-                (regmbc 0xd5) regmbc(0xd6) (regmbc 0xd8)
-                (regmbc 0x14c) regmbc(0x14e) (regmbc 0x150)
-                (regmbc 0x1a0) regmbc(0x1d1) (regmbc 0x1ea) regmbc(0x1ec)
-                (regmbc 0x1ece)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \o))
-            ((ß CASE) 0xf2) ((ß CASE) 0xf3) ((ß CASE) 0xf4)
-            ((ß CASE) 0xf5) ((ß CASE) 0xf6) ((ß CASE) 0xf8)
-            ((ß CASE) 0x14d) ((ß CASE) 0x14f) ((ß CASE) 0x151)
-            ((ß CASE) 0x1a1) ((ß CASE) 0x1d2) ((ß CASE) 0x1eb) ((ß CASE) 0x1ed)
-            ((ß CASE) 0x1ecf)
-            (do
-                (regmbc (byte \o))
-                (regmbc 0xf2) regmbc(0xf3) (regmbc 0xf4)
-                (regmbc 0xf5) regmbc(0xf6) (regmbc 0xf8)
-                (regmbc 0x14d) regmbc(0x14f) (regmbc 0x151)
-                (regmbc 0x1a1) regmbc(0x1d2) (regmbc 0x1eb) regmbc(0x1ed)
-                (regmbc 0x1ecf)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \P))
-            ((ß CASE) 0x1e54) ((ß CASE) 0x1e56)
-            (do
-                (regmbc (byte \P))
-                (regmbc 0x1e54) regmbc(0x1e56)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \p))
-            ((ß CASE) 0x1e55) ((ß CASE) 0x1e57)
-            (do
-                (regmbc (byte \p))
-                (regmbc 0x1e55) regmbc(0x1e57)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \R))
-            ((ß CASE) 0x154) ((ß CASE) 0x156) ((ß CASE) 0x158)
-            ((ß CASE) 0x1e58) ((ß CASE) 0x1e5e)
-            (do
-                (regmbc (byte \R))
-                (regmbc 0x154) regmbc(0x156) (regmbc 0x158)
-                (regmbc 0x1e58) regmbc(0x1e5e)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \r))
-            ((ß CASE) 0x155) ((ß CASE) 0x157) ((ß CASE) 0x159)
-            ((ß CASE) 0x1e59) ((ß CASE) 0x1e5f)
-            (do
-                (regmbc (byte \r))
-                (regmbc 0x155) regmbc(0x157) (regmbc 0x159)
-                (regmbc 0x1e59) regmbc(0x1e5f)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \S))
-            ((ß CASE) 0x15a) ((ß CASE) 0x15c) ((ß CASE) 0x15e) ((ß CASE) 0x160)
-            ((ß CASE) 0x1e60)
-            (do
-                (regmbc (byte \S))
-                (regmbc 0x15a) regmbc(0x15c) (regmbc 0x15e) regmbc(0x160)
-                (regmbc 0x1e60)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \s))
-            ((ß CASE) 0x15b) ((ß CASE) 0x15d) ((ß CASE) 0x15f) ((ß CASE) 0x161)
-            ((ß CASE) 0x1e61)
-            (do
-                (regmbc (byte \s))
-                (regmbc 0x15b) regmbc(0x15d) (regmbc 0x15f) regmbc(0x161)
-                (regmbc 0x1e61)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \T))
-            ((ß CASE) 0x162) ((ß CASE) 0x164) ((ß CASE) 0x166)
-            ((ß CASE) 0x1e6a) ((ß CASE) 0x1e6e)
-            (do
-                (regmbc (byte \T))
-                (regmbc 0x162) regmbc(0x164) (regmbc 0x166)
-                (regmbc 0x1e6a) regmbc(0x1e6e)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \t))
-            ((ß CASE) 0x163) ((ß CASE) 0x165) ((ß CASE) 0x167)
-            ((ß CASE) 0x1e6b) ((ß CASE) 0x1e6f) ((ß CASE) 0x1e97)
-            (do
-                (regmbc (byte \t))
-                (regmbc 0x163) regmbc(0x165) (regmbc 0x167)
-                (regmbc 0x1e6b) regmbc(0x1e6f) (regmbc 0x1e97)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \U))
-            ((ß CASE) 0xd9) ((ß CASE) 0xda) ((ß CASE) 0xdb) ((ß CASE) 0xdc)
-            ((ß CASE) 0x168) ((ß CASE) 0x16a) ((ß CASE) 0x16c) ((ß CASE) 0x16e)
-            ((ß CASE) 0x170) ((ß CASE) 0x172) ((ß CASE) 0x1af) ((ß CASE) 0x1d3)
-            ((ß CASE) 0x1ee6)
-            (do
-                (regmbc (byte \U))
-                (regmbc 0xd9) regmbc(0xda) (regmbc 0xdb) regmbc(0xdc)
-                (regmbc 0x168) regmbc(0x16a) (regmbc 0x16c) regmbc(0x16e)
-                (regmbc 0x170) regmbc(0x172) (regmbc 0x1af) regmbc(0x1d3)
-                (regmbc 0x1ee6)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \u))
-            ((ß CASE) 0xf9) ((ß CASE) 0xfa) ((ß CASE) 0xfb) ((ß CASE) 0xfc)
-            ((ß CASE) 0x169) ((ß CASE) 0x16b) ((ß CASE) 0x16d) ((ß CASE) 0x16f)
-            ((ß CASE) 0x171) ((ß CASE) 0x173) ((ß CASE) 0x1b0) ((ß CASE) 0x1d4)
-            ((ß CASE) 0x1ee7)
-            (do
-                (regmbc (byte \u))
-                (regmbc 0xf9) regmbc(0xfa) (regmbc 0xfb) regmbc(0xfc)
-                (regmbc 0x169) regmbc(0x16b) (regmbc 0x16d) regmbc(0x16f)
-                (regmbc 0x171) regmbc(0x173) (regmbc 0x1b0) regmbc(0x1d4)
-                (regmbc 0x1ee7)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \V))
-            ((ß CASE) 0x1e7c)
-            (do
-                (regmbc (byte \V))
-                (regmbc 0x1e7c)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \v))
-            ((ß CASE) 0x1e7d)
-            (do
-                (regmbc (byte \v))
-                (regmbc 0x1e7d)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \W))
-            ((ß CASE) 0x174)
-            ((ß CASE) 0x1e80) ((ß CASE) 0x1e82) ((ß CASE) 0x1e84) ((ß CASE) 0x1e86)
-            (do
-                (regmbc (byte \W))
-                (regmbc 0x174)
-                (regmbc 0x1e80) regmbc(0x1e82) (regmbc 0x1e84) regmbc(0x1e86)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \w))
-            ((ß CASE) 0x175)
-            ((ß CASE) 0x1e81) ((ß CASE) 0x1e83) ((ß CASE) 0x1e85) ((ß CASE) 0x1e87) ((ß CASE) 0x1e98)
-            (do
-                (regmbc (byte \w))
-                (regmbc 0x175)
-                (regmbc 0x1e81) regmbc(0x1e83) (regmbc 0x1e85) regmbc(0x1e87) (regmbc 0x1e98)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \X))
-            ((ß CASE) 0x1e8a) ((ß CASE) 0x1e8c)
-            (do
-                (regmbc (byte \X))
-                (regmbc 0x1e8a) regmbc(0x1e8c)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \x))
-            ((ß CASE) 0x1e8b) ((ß CASE) 0x1e8d)
-            (do
-                (regmbc (byte \x))
-                (regmbc 0x1e8b) regmbc(0x1e8d)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \Y))
-            ((ß CASE) 0xdd)
-            ((ß CASE) 0x176) ((ß CASE) 0x178)
-            ((ß CASE) 0x1e8e) ((ß CASE) 0x1ef2) ((ß CASE) 0x1ef6) ((ß CASE) 0x1ef8)
-            (do
-                (regmbc (byte \Y))
-                (regmbc 0xdd)
-                (regmbc 0x176) regmbc(0x178)
-                (regmbc 0x1e8e) regmbc(0x1ef2) (regmbc 0x1ef6) regmbc(0x1ef8)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \y))
-            ((ß CASE) 0xfd) ((ß CASE) 0xff)
-            ((ß CASE) 0x177)
-            ((ß CASE) 0x1e8f) ((ß CASE) 0x1e99) ((ß CASE) 0x1ef3) ((ß CASE) 0x1ef7) ((ß CASE) 0x1ef9)
-            (do
-                (regmbc (byte \y))
-                (regmbc 0xfd) regmbc(0xff)
-                (regmbc 0x177)
-                (regmbc 0x1e8f) regmbc(0x1e99) (regmbc 0x1ef3) regmbc(0x1ef7) (regmbc 0x1ef9)
-                ((ß RETURN) nil)
-            )
-
-            ((ß CASE) (byte \Z))
-            ((ß CASE) 0x179) ((ß CASE) 0x17b) ((ß CASE) 0x17d) ((ß CASE) 0x1b5)
-            ((ß CASE) 0x1e90) ((ß CASE) 0x1e94)
-            (do
-                (regmbc (byte \Z))
-                (regmbc 0x179) regmbc(0x17b) (regmbc 0x17d) regmbc(0x1b5)
-                (regmbc 0x1e90) regmbc(0x1e94)
-                ((ß RETURN) nil)
-            )
-            ((ß CASE) (byte \z))
-            ((ß CASE) 0x17a) ((ß CASE) 0x17c) ((ß CASE) 0x17e) ((ß CASE) 0x1b6)
-            ((ß CASE) 0x1e91) ((ß CASE) 0x1e95)
-            (do
-                (regmbc (byte \z))
-                (regmbc 0x17a) regmbc(0x17c) (regmbc 0x17e) regmbc(0x1b6)
-                (regmbc 0x1e91) regmbc(0x1e95)
-                ((ß RETURN) nil)
-            )
+    (condp ==? c
+        [(byte \A), 0xc0 0xc1 0xc2, 0xc3 0xc4 0xc5, 0x100 0x102 0x104, 0x1cd 0x1de 0x1e0, 0x1ea2]
+        (do
+            (regmbc (byte \A))
+            (regmbc 0xc0) (regmbc 0xc1) (regmbc 0xc2)
+            (regmbc 0xc3) (regmbc 0xc4) (regmbc 0xc5)
+            (regmbc 0x100) (regmbc 0x102) (regmbc 0x104)
+            (regmbc 0x1cd) (regmbc 0x1de) (regmbc 0x1e0)
+            (regmbc 0x1ea2)
         )
 
-        (regmbc c)
-        nil
-    ))
+        [(byte \a), 0xe0 0xe1 0xe2, 0xe3 0xe4 0xe5, 0x101 0x103 0x105, 0x1ce 0x1df 0x1e1, 0x1ea3]
+        (do
+            (regmbc (byte \a))
+            (regmbc 0xe0) (regmbc 0xe1) (regmbc 0xe2)
+            (regmbc 0xe3) (regmbc 0xe4) (regmbc 0xe5)
+            (regmbc 0x101) (regmbc 0x103) (regmbc 0x105)
+            (regmbc 0x1ce) (regmbc 0x1df) (regmbc 0x1e1)
+            (regmbc 0x1ea3)
+        )
+
+        [(byte \B), 0x1e02 0x1e06]
+        (do
+            (regmbc (byte \B))
+            (regmbc 0x1e02) (regmbc 0x1e06)
+        )
+
+        [(byte \b), 0x1e03 0x1e07]
+        (do
+            (regmbc (byte \b))
+            (regmbc 0x1e03) (regmbc 0x1e07)
+        )
+
+        [(byte \C), 0xc7, 0x106 0x108 0x10a 0x10c]
+        (do
+            (regmbc (byte \C))
+            (regmbc 0xc7)
+            (regmbc 0x106) (regmbc 0x108) (regmbc 0x10a) (regmbc 0x10c)
+        )
+
+        [(byte \c), 0xe7, 0x107 0x109 0x10b 0x10d]
+        (do
+            (regmbc (byte \c))
+            (regmbc 0xe7)
+            (regmbc 0x107) (regmbc 0x109) (regmbc 0x10b) (regmbc 0x10d)
+        )
+
+        [(byte \D), 0x10e 0x110, 0x1e0a 0x1e0c 0x1e0e 0x1e10 0x1e12]
+        (do
+            (regmbc (byte \D))
+            (regmbc 0x10e) (regmbc 0x110)
+            (regmbc 0x1e0a) (regmbc 0x1e0c) (regmbc 0x1e0e) (regmbc 0x1e10) (regmbc 0x1e12)
+        )
+
+        [(byte \d), 0x10f 0x111, 0x1e0b 0x1e0d 0x1e0f 0x1e11 0x1e13]
+        (do
+            (regmbc (byte \d))
+            (regmbc 0x10f) (regmbc 0x111)
+            (regmbc 0x1e0b) (regmbc 0x1e0d) (regmbc 0x1e0f) (regmbc 0x1e11) (regmbc 0x1e13)
+        )
+
+        [(byte \E), 0xc8 0xc9 0xca 0xcb, 0x112 0x114 0x116 0x118 0x11a, 0x1eba 0x1ebc]
+        (do
+            (regmbc (byte \E))
+            (regmbc 0xc8) (regmbc 0xc9) (regmbc 0xca) (regmbc 0xcb)
+            (regmbc 0x112) (regmbc 0x114) (regmbc 0x116) (regmbc 0x118) (regmbc 0x11a)
+            (regmbc 0x1eba) (regmbc 0x1ebc)
+        )
+
+        [(byte \e), 0xe8 0xe9 0xea 0xeb, 0x113 0x115 0x117 0x119 0x11b, 0x1ebb 0x1ebd]
+        (do
+            (regmbc (byte \e))
+            (regmbc 0xe8) (regmbc 0xe9) (regmbc 0xea) (regmbc 0xeb)
+            (regmbc 0x113) (regmbc 0x115) (regmbc 0x117) (regmbc 0x119) (regmbc 0x11b)
+            (regmbc 0x1ebb) (regmbc 0x1ebd)
+        )
+
+        [(byte \F), 0x1e1e]
+        (do
+            (regmbc (byte \F))
+            (regmbc 0x1e1e)
+        )
+
+        [(byte \f), 0x1e1f]
+        (do
+            (regmbc (byte \f))
+            (regmbc 0x1e1f)
+        )
+
+        [(byte \G), 0x11c 0x11e 0x120 0x122, 0x1e4 0x1e6 0x1f4, 0x1e20]
+        (do
+            (regmbc (byte \G))
+            (regmbc 0x11c) (regmbc 0x11e) (regmbc 0x120) (regmbc 0x122)
+            (regmbc 0x1e4) (regmbc 0x1e6) (regmbc 0x1f4)
+            (regmbc 0x1e20)
+        )
+
+        [(byte \g), 0x11d 0x11f 0x121 0x123, 0x1e5 0x1e7 0x1f5, 0x1e21]
+        (do
+            (regmbc (byte \g))
+            (regmbc 0x11d) (regmbc 0x11f) (regmbc 0x121) (regmbc 0x123)
+            (regmbc 0x1e5) (regmbc 0x1e7) (regmbc 0x1f5)
+            (regmbc 0x1e21)
+        )
+
+        [(byte \H), 0x124 0x126, 0x1e22 0x1e26 0x1e28]
+        (do
+            (regmbc (byte \H))
+            (regmbc 0x124) (regmbc 0x126)
+            (regmbc 0x1e22) (regmbc 0x1e26) (regmbc 0x1e28)
+        )
+
+        [(byte \h), 0x125 0x127, 0x1e23 0x1e27 0x1e29 0x1e96]
+        (do
+            (regmbc (byte \h))
+            (regmbc 0x125) (regmbc 0x127)
+            (regmbc 0x1e23) (regmbc 0x1e27) (regmbc 0x1e29) (regmbc 0x1e96)
+        )
+
+        [(byte \I), 0xcc 0xcd 0xce 0xcf, 0x128 0x12a 0x12c 0x12e 0x130, 0x1cf, 0x1ec8]
+        (do
+            (regmbc (byte \I))
+            (regmbc 0xcc) (regmbc 0xcd) (regmbc 0xce) (regmbc 0xcf)
+            (regmbc 0x128) (regmbc 0x12a) (regmbc 0x12c) (regmbc 0x12e) (regmbc 0x130)
+            (regmbc 0x1cf)
+            (regmbc 0x1ec8)
+        )
+
+        [(byte \i), 0xec 0xed 0xee 0xef, 0x129 0x12b 0x12d 0x12f 0x131, 0x1d0, 0x1ec9]
+        (do
+            (regmbc (byte \i))
+            (regmbc 0xec) (regmbc 0xed) (regmbc 0xee) (regmbc 0xef)
+            (regmbc 0x129) (regmbc 0x12b) (regmbc 0x12d) (regmbc 0x12f) (regmbc 0x131)
+            (regmbc 0x1d0)
+            (regmbc 0x1ec9)
+        )
+
+        [(byte \J), 0x134]
+        (do
+            (regmbc (byte \J))
+            (regmbc 0x134)
+        )
+
+        [(byte \j), 0x135 0x1f0]
+        (do
+            (regmbc (byte \j))
+            (regmbc 0x135) (regmbc 0x1f0)
+        )
+
+        [(byte \K), 0x136 0x1e8, 0x1e30 0x1e34]
+        (do
+            (regmbc (byte \K))
+            (regmbc 0x136) (regmbc 0x1e8)
+            (regmbc 0x1e30) (regmbc 0x1e34)
+        )
+
+        [(byte \k), 0x137 0x1e9, 0x1e31 0x1e35]
+        (do
+            (regmbc (byte \k))
+            (regmbc 0x137) (regmbc 0x1e9)
+            (regmbc 0x1e31) (regmbc 0x1e35)
+        )
+
+        [(byte \L), 0x139 0x13b 0x13d 0x13f 0x141, 0x1e3a]
+        (do
+            (regmbc (byte \L))
+            (regmbc 0x139) (regmbc 0x13b) (regmbc 0x13d) (regmbc 0x13f) (regmbc 0x141)
+            (regmbc 0x1e3a)
+        )
+
+        [(byte \l), 0x13a 0x13c 0x13e 0x140 0x142, 0x1e3b]
+        (do
+            (regmbc (byte \l))
+            (regmbc 0x13a) (regmbc 0x13c) (regmbc 0x13e) (regmbc 0x140) (regmbc 0x142)
+            (regmbc 0x1e3b)
+        )
+
+        [(byte \M), 0x1e3e 0x1e40]
+        (do
+            (regmbc (byte \M))
+            (regmbc 0x1e3e) (regmbc 0x1e40)
+        )
+
+        [(byte \m), 0x1e3f 0x1e41]
+        (do
+            (regmbc (byte \m))
+            (regmbc 0x1e3f) (regmbc 0x1e41)
+        )
+
+        [(byte \N), 0xd1, 0x143 0x145 0x147, 0x1e44 0x1e48]
+        (do
+            (regmbc (byte \N))
+            (regmbc 0xd1)
+            (regmbc 0x143) (regmbc 0x145) (regmbc 0x147)
+            (regmbc 0x1e44) (regmbc 0x1e48)
+        )
+
+        [(byte \n), 0xf1, 0x144 0x146 0x148 0x149, 0x1e45 0x1e49]
+        (do
+            (regmbc (byte \n))
+            (regmbc 0xf1)
+            (regmbc 0x144) (regmbc 0x146) (regmbc 0x148) (regmbc 0x149)
+            (regmbc 0x1e45) (regmbc 0x1e49)
+        )
+
+        [(byte \O), 0xd2 0xd3 0xd4, 0xd5 0xd6 0xd8, 0x14c 0x14e 0x150, 0x1a0 0x1d1 0x1ea 0x1ec, 0x1ece]
+        (do
+            (regmbc (byte \O))
+            (regmbc 0xd2) (regmbc 0xd3) (regmbc 0xd4)
+            (regmbc 0xd5) (regmbc 0xd6) (regmbc 0xd8)
+            (regmbc 0x14c) (regmbc 0x14e) (regmbc 0x150)
+            (regmbc 0x1a0) (regmbc 0x1d1) (regmbc 0x1ea) (regmbc 0x1ec)
+            (regmbc 0x1ece)
+        )
+
+        [(byte \o), 0xf2 0xf3 0xf4, 0xf5 0xf6 0xf8, 0x14d 0x14f 0x151, 0x1a1 0x1d2 0x1eb 0x1ed, 0x1ecf]
+        (do
+            (regmbc (byte \o))
+            (regmbc 0xf2) (regmbc 0xf3) (regmbc 0xf4)
+            (regmbc 0xf5) (regmbc 0xf6) (regmbc 0xf8)
+            (regmbc 0x14d) (regmbc 0x14f) (regmbc 0x151)
+            (regmbc 0x1a1) (regmbc 0x1d2) (regmbc 0x1eb) (regmbc 0x1ed)
+            (regmbc 0x1ecf)
+        )
+
+        [(byte \P), 0x1e54 0x1e56]
+        (do
+            (regmbc (byte \P))
+            (regmbc 0x1e54) (regmbc 0x1e56)
+        )
+
+        [(byte \p), 0x1e55 0x1e57]
+        (do
+            (regmbc (byte \p))
+            (regmbc 0x1e55) (regmbc 0x1e57)
+        )
+
+        [(byte \R), 0x154 0x156 0x158, 0x1e58 0x1e5e]
+        (do
+            (regmbc (byte \R))
+            (regmbc 0x154) (regmbc 0x156) (regmbc 0x158)
+            (regmbc 0x1e58) (regmbc 0x1e5e)
+        )
+
+        [(byte \r), 0x155 0x157 0x159, 0x1e59 0x1e5f]
+        (do
+            (regmbc (byte \r))
+            (regmbc 0x155) (regmbc 0x157) (regmbc 0x159)
+            (regmbc 0x1e59) (regmbc 0x1e5f)
+        )
+
+        [(byte \S), 0x15a 0x15c 0x15e 0x160, 0x1e60]
+        (do
+            (regmbc (byte \S))
+            (regmbc 0x15a) (regmbc 0x15c) (regmbc 0x15e) (regmbc 0x160)
+            (regmbc 0x1e60)
+        )
+
+        [(byte \s), 0x15b 0x15d 0x15f 0x161, 0x1e61]
+        (do
+            (regmbc (byte \s))
+            (regmbc 0x15b) (regmbc 0x15d) (regmbc 0x15f) (regmbc 0x161)
+            (regmbc 0x1e61)
+        )
+
+        [(byte \T), 0x162 0x164 0x166, 0x1e6a 0x1e6e]
+        (do
+            (regmbc (byte \T))
+            (regmbc 0x162) (regmbc 0x164) (regmbc 0x166)
+            (regmbc 0x1e6a) (regmbc 0x1e6e)
+        )
+
+        [(byte \t), 0x163 0x165 0x167, 0x1e6b 0x1e6f 0x1e97]
+        (do
+            (regmbc (byte \t))
+            (regmbc 0x163) (regmbc 0x165) (regmbc 0x167)
+            (regmbc 0x1e6b) (regmbc 0x1e6f) (regmbc 0x1e97)
+        )
+
+        [(byte \U), 0xd9 0xda 0xdb 0xdc, 0x168 0x16a 0x16c 0x16e, 0x170 0x172 0x1af 0x1d3, 0x1ee6]
+        (do
+            (regmbc (byte \U))
+            (regmbc 0xd9) (regmbc 0xda) (regmbc 0xdb) (regmbc 0xdc)
+            (regmbc 0x168) (regmbc 0x16a) (regmbc 0x16c) (regmbc 0x16e)
+            (regmbc 0x170) (regmbc 0x172) (regmbc 0x1af) (regmbc 0x1d3)
+            (regmbc 0x1ee6)
+        )
+
+        [(byte \u), 0xf9 0xfa 0xfb 0xfc, 0x169 0x16b 0x16d 0x16f, 0x171 0x173 0x1b0 0x1d4, 0x1ee7]
+        (do
+            (regmbc (byte \u))
+            (regmbc 0xf9) (regmbc 0xfa) (regmbc 0xfb) (regmbc 0xfc)
+            (regmbc 0x169) (regmbc 0x16b) (regmbc 0x16d) (regmbc 0x16f)
+            (regmbc 0x171) (regmbc 0x173) (regmbc 0x1b0) (regmbc 0x1d4)
+            (regmbc 0x1ee7)
+        )
+
+        [(byte \V), 0x1e7c]
+        (do
+            (regmbc (byte \V))
+            (regmbc 0x1e7c)
+        )
+
+        [(byte \v), 0x1e7d]
+        (do
+            (regmbc (byte \v))
+            (regmbc 0x1e7d)
+        )
+
+        [(byte \W), 0x174, 0x1e80 0x1e82 0x1e84 0x1e86]
+        (do
+            (regmbc (byte \W))
+            (regmbc 0x174)
+            (regmbc 0x1e80) (regmbc 0x1e82) (regmbc 0x1e84) (regmbc 0x1e86)
+        )
+
+        [(byte \w), 0x175, 0x1e81 0x1e83 0x1e85 0x1e87 0x1e98]
+        (do
+            (regmbc (byte \w))
+            (regmbc 0x175)
+            (regmbc 0x1e81) (regmbc 0x1e83) (regmbc 0x1e85) (regmbc 0x1e87) (regmbc 0x1e98)
+        )
+
+        [(byte \X), 0x1e8a 0x1e8c]
+        (do
+            (regmbc (byte \X))
+            (regmbc 0x1e8a) (regmbc 0x1e8c)
+        )
+
+        [(byte \x), 0x1e8b 0x1e8d]
+        (do
+            (regmbc (byte \x))
+            (regmbc 0x1e8b) (regmbc 0x1e8d)
+        )
+
+        [(byte \Y), 0xdd, 0x176 0x178, 0x1e8e 0x1ef2 0x1ef6 0x1ef8]
+        (do
+            (regmbc (byte \Y))
+            (regmbc 0xdd)
+            (regmbc 0x176) (regmbc 0x178)
+            (regmbc 0x1e8e) (regmbc 0x1ef2) (regmbc 0x1ef6) (regmbc 0x1ef8)
+        )
+
+        [(byte \y), 0xfd 0xff, 0x177, 0x1e8f 0x1e99 0x1ef3 0x1ef7 0x1ef9]
+        (do
+            (regmbc (byte \y))
+            (regmbc 0xfd) (regmbc 0xff)
+            (regmbc 0x177)
+            (regmbc 0x1e8f) (regmbc 0x1e99) (regmbc 0x1ef3) (regmbc 0x1ef7) (regmbc 0x1ef9)
+        )
+
+        [(byte \Z), 0x179 0x17b 0x17d 0x1b5, 0x1e90 0x1e94]
+        (do
+            (regmbc (byte \Z))
+            (regmbc 0x179) (regmbc 0x17b) (regmbc 0x17d) (regmbc 0x1b5)
+            (regmbc 0x1e90) (regmbc 0x1e94)
+        )
+
+        [(byte \z), 0x17a 0x17c 0x17e 0x1b6, 0x1e91 0x1e95]
+        (do
+            (regmbc (byte \z))
+            (regmbc 0x17a) (regmbc 0x17c) (regmbc 0x17e) (regmbc 0x1b6)
+            (regmbc 0x1e91) (regmbc 0x1e95)
+        )
+
+     ;; :else
+            (regmbc c))
+    nil)
 
 ;; Check for a collating element "[.a.]".  "pp" points to the '['.
 ;; Returns a character.  Zero means that no item was recognized.
@@ -25598,39 +25444,14 @@
                         ((ß CASE) (byte \u))   ;; %uabcd hex 4
                         ((ß CASE) (byte \U))   ;; %U1234abcd hex 8
                         (do
-                            (ß int i)
-                            ((ß SWITCH) c
-                                ((ß CASE) (byte \d))
-                                (do
-                                    ((ß i =) (getdecchrs))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \o))
-                                (do
-                                    ((ß i =) (getoctchrs))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \x))
-                                (do
-                                    ((ß i =) (gethexchrs 2))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \u))
-                                (do
-                                    ((ß i =) (gethexchrs 4))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \U))
-                                (do
-                                    ((ß i =) (gethexchrs 8))
-                                    (ß BREAK)
-                                )
-                                (ß DEFAULT)
-                                (do
-                                    ((ß i =) -1)
-                                    (ß BREAK)
-                                )
-                            )
+                            ((ß int i =) (condp == c
+                                (byte \d) (getdecchrs)
+                                (byte \o) (getoctchrs)
+                                (byte \x) (gethexchrs 2)
+                                (byte \u) (gethexchrs 4)
+                                (byte \U) (gethexchrs 8)
+                                          -1
+                            ))
 
                             (when (< i 0)
                                 (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -26293,102 +26114,78 @@
 ;; Get the next character without advancing.
 
 (defn- #_int peekchr []
-    (§
-        (when (== @curchr -1)
-            ((ß SWITCH) (reset! curchr (.at @regparse 0))
-                ((ß CASE) (byte \.))
-                ((ß CASE) (byte \[))
-                ((ß CASE) (byte \~))
-                (do
-                    ;; magic when 'magic' is on
-                    (if (<= MAGIC_ON @reg_magic)
-                        (swap! curchr Magic))
-                    (ß BREAK)
-                )
+    (when (== @curchr -1)
+        (condp ==? (reset! curchr (.at @regparse 0))
+           [(byte \.)
+            (byte \[)
+            (byte \~)]
+                (when (<= MAGIC_ON @reg_magic) ;; magic when 'magic' is on
+                    (swap! curchr Magic))
 
-                ((ß CASE) (byte \())
-                ((ß CASE) (byte \)))
-                ((ß CASE) (byte \{))
-                ((ß CASE) (byte \%))
-                ((ß CASE) (byte \+))
-                ((ß CASE) (byte \=))
-                ((ß CASE) (byte \?))
-                ((ß CASE) (byte \@))
-                ((ß CASE) (byte \!))
-                ((ß CASE) (byte \&))
-                ((ß CASE) (byte \|))
-                ((ß CASE) (byte \<))
-                ((ß CASE) (byte \>))
-                ((ß CASE) (byte \#))       ;; future ext.
-                ((ß CASE) (byte \"))       ;; future ext. """
-                ((ß CASE) (byte \'))       ;; future ext.
-                ((ß CASE) (byte \,))       ;; future ext.
-                ((ß CASE) (byte \-))       ;; future ext.
-                ((ß CASE) (byte \:))       ;; future ext.
-                ((ß CASE) (byte \;))       ;; future ext.
-                ((ß CASE) (byte \`))       ;; future ext.
-                ((ß CASE) (byte \/))       ;; can't be used in / command
-                (do
-                    ;; magic only after "\v"
-                    (if (== @reg_magic MAGIC_ALL)
-                        (swap! curchr Magic))
-                    (ß BREAK)
-                )
+           [(byte \()
+            (byte \))
+            (byte \{)
+            (byte \%)
+            (byte \+)
+            (byte \=)
+            (byte \?)
+            (byte \@)
+            (byte \!)
+            (byte \&)
+            (byte \|)
+            (byte \<)
+            (byte \>)
+            (byte \#)   ;; future ext.
+            (byte \")   ;; future ext. """
+            (byte \')   ;; future ext.
+            (byte \,)   ;; future ext.
+            (byte \-)   ;; future ext.
+            (byte \:)   ;; future ext.
+            (byte \;)   ;; future ext.
+            (byte \`)   ;; future ext.
+            (byte \/)]  ;; can't be used in / command
+                (when (== @reg_magic MAGIC_ALL) ;; magic only after "\v"
+                    (swap! curchr Magic))
 
-                ((ß CASE) (byte \*))
-                (do
-                    ;; * is not magic as the very first character, e.g. "?*ptr",
-                    ;; when after '^', e.g. "/^*ptr" and when after "\(", "\|", "\&".
-                    ;; But "\(\*" is not magic, thus must be magic if "after_slash"
-                    (when (and (<= MAGIC_ON @reg_magic) (not @at_start) (not (and @prev_at_start (== @prevchr (Magic (byte \^))))) (or (!= @after_slash 0) (and (!= @prevchr (Magic (byte \())) (!= @prevchr (Magic (byte \&))) (!= @prevchr (Magic (byte \|))))))
-                        (reset! curchr (Magic (byte \*)))
-                    )
-                    (ß BREAK)
-                )
+            (byte \*)
+                ;; * is not magic as the very first character, e.g. "?*ptr",
+                ;; when after '^', e.g. "/^*ptr" and when after "\(", "\|", "\&",
+                ;; but "\(\*" is not magic, thus must be magic if "after_slash"
+                (when (and (<= MAGIC_ON @reg_magic)
+                           (not @at_start)
+                           (not (and @prev_at_start (== @prevchr (Magic (byte \^)))))
+                           (or (!= @after_slash 0) (and (!= @prevchr (Magic (byte \())) (!= @prevchr (Magic (byte \&))) (!= @prevchr (Magic (byte \|))))))
+                    (swap! curchr Magic))
 
-                ((ß CASE) (byte \^))
-                (do
-                    ;; '^' is only magic as the very first character
-                    ;; and if it's after "\(", "\|", "\&' or "\n"
-                    (when (and (<= MAGIC_OFF @reg_magic) (or @at_start (== @reg_magic MAGIC_ALL) (== @prevchr (Magic (byte \())) (== @prevchr (Magic (byte \|))) (== @prevchr (Magic (byte \&))) (== @prevchr (Magic (byte \n))) (and (== (no-Magic @prevchr) (byte \()) (== @prevprevchr (Magic (byte \%))))))
-                        (reset! curchr (Magic (byte \^)))
-                        (reset! at_start true)
-                        (reset! prev_at_start false)
-                    )
-                    (ß BREAK)
-                )
+            (byte \^)
+                ;; '^' is only magic as the very first character
+                ;; and if it's after "\(", "\|", "\&' or "\n"
+                (when (and (<= MAGIC_OFF @reg_magic)
+                           (or @at_start (== @reg_magic MAGIC_ALL)
+                                         (== @prevchr (Magic (byte \())) (== @prevchr (Magic (byte \|))) (== @prevchr (Magic (byte \&))) (== @prevchr (Magic (byte \n)))
+                                         (and (== (no-Magic @prevchr) (byte \()) (== @prevprevchr (Magic (byte \%))))))
+                    (swap! curchr Magic)
+                    (reset! at_start true)
+                    (reset! prev_at_start false))
 
-                ((ß CASE) (byte \$))
-                (do
-                    ;; '$' is only magic as the very last char
-                    ;; and if it's in front of either "\|", "\)", "\&", or "\n"
-                    (when (<= MAGIC_OFF @reg_magic)
-                        ((ß Bytes p =) (.plus @regparse 1))
-                        ((ß boolean is_magic_all =) (== @reg_magic MAGIC_ALL))
+            (byte \$)
+                ;; '$' is only magic as the very last character
+                ;; and if it's in front of either "\|", "\)", "\&", or "\n"
+                (when (<= MAGIC_OFF @reg_magic)
+                    (let [[ma? re] ;; ignore \c \C \m \M \v \V and \Z after '$'
+                            (loop-when-recur [ma? (boolean (== @reg_magic MAGIC_ALL)) re (.plus @regparse 1)]
+                                             (and (at? re (byte \\)) (any == (.at re 1) (byte \c) (byte \C) (byte \m) (byte \M) (byte \v) (byte \V) (byte \Z)))
+                                             [(cond (at? re 1 (byte \v)) true (any == (.at re 1) (byte \m) (byte \M) (byte \V)) false :else ma?) (.plus re 2)]
+                                          => [ma? re])]
+                        (when (or (eos? re)
+                                  (and (at? re (byte \\)) (any == (.at re 1) (byte \|) (byte \&) (byte \)) (byte \n)))
+                                  (and ma?                (any == (.at re 0) (byte \|) (byte \&) (byte \))))
+                                  (== @reg_magic MAGIC_ALL))
+                            (swap! curchr Magic)
+                        )))
 
-                        ;; ignore \c \C \m \M \v \V and \Z after '$'
-                        (while (and (at? p (byte \\)) (or (at? p 1 (byte \c)) (at? p 1 (byte \C)) (at? p 1 (byte \m)) (at? p 1 (byte \M)) (at? p 1 (byte \v)) (at? p 1 (byte \V)) (at? p 1 (byte \Z))))
-                            (cond (at? p 1 (byte \v))
-                            (do
-                                ((ß is_magic_all =) true)
-                            )
-                            (or (at? p 1 (byte \m)) (at? p 1 (byte \M)) (at? p 1 (byte \V)))
-                            (do
-                                ((ß is_magic_all =) false)
-                            ))
-                            ((ß p =) (.plus p 2))
-                        )
-                        (if (or (eos? p) (and (at? p (byte \\)) (or (at? p 1 (byte \|)) (at? p 1 (byte \&)) (at? p 1 (byte \))) (at? p 1 (byte \n)))) (and is_magic_all (or (at? p (byte \|)) (at? p (byte \&)) (at? p (byte \))))) (== @reg_magic MAGIC_ALL))
-                            (reset! curchr (Magic (byte \$)))
-                        )
-                    )
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \\))
-                (do
-                    ((ß int c =) (.at @regparse 1))
-
+            (byte \\)
+                (let [#_int c (.at @regparse 1)]
                     (cond (== c NUL)
                     (do
                         (reset! curchr (byte \\))      ;; trailing '\'
@@ -26399,7 +26196,6 @@
                         ;; except ^ and $ ("\^" and "\$" are only magic after "\v").
                         ;; We now fetch the next character and toggle its magicness.
                         ;; Therefore, \ is so meta-magic that it is not in META.
-
                         (reset! curchr -1)
                         (reset! prev_at_start @at_start)
                         (reset! at_start false)   ;; be able to say "/\*ptr"
@@ -26413,7 +26209,6 @@
                     (some? (vim-strchr REGEXP_ABBR, c))
                     (do
                         ;; Handle abbreviations, like "\t" for TAB.
-
                         (reset! curchr (backslash-trans c))
                     )
                     (and (== @reg_magic MAGIC_NONE) (any == c (byte \$) (byte \^)))
@@ -26424,22 +26219,14 @@
                     (do
                         ;; Next character can never be (made) magic?
                         ;; Then backslashing it won't do anything.
-
                         (reset! curchr (us-ptr2char @regparse, 1))
                     ))
-                    (ß BREAK)
                 )
 
-                (ß DEFAULT)
-                (do
-                    (reset! curchr (us-ptr2char @regparse))
-                    (ß BREAK)
-                )
-            )
-        )
-
-        @curchr
-    ))
+         ;; :else
+            (reset! curchr (us-ptr2char @regparse))
+        ))
+    @curchr)
 
 ;; Eat one lexed character.  Do this in a way that we can undo it.
 
@@ -26579,43 +26366,17 @@
 ;; When nothing is recognized return a backslash.
 
 (defn- #_int coll-get-char []
-    (§
-        ((ß int nr =) -1)
-
-        ((ß SWITCH) (.at (swap! regparse plus 1) -1)
-            ((ß CASE) (byte \d))
-            (do
-                ((ß nr =) (getdecchrs))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \o))
-            (do
-                ((ß nr =) (getoctchrs))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \x))
-            (do
-                ((ß nr =) (gethexchrs 2))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \u))
-            (do
-                ((ß nr =) (gethexchrs 4))
-                (ß BREAK)
-            )
-            ((ß CASE) (byte \U))
-            (do
-                ((ß nr =) (gethexchrs 8))
-                (ß BREAK)
-            )
-        )
-        (when (< nr 0)
-            ;; If getting the number fails be backwards compatible: the character is a backslash.
-            (swap! regparse minus 1)
-            ((ß nr =) (byte \\))
-        )
-
-        nr
+    (let [#_int nr
+            (condp == (.at (swap! regparse plus 1) -1)
+                (byte \d) (getdecchrs)
+                (byte \o) (getoctchrs)
+                (byte \x) (gethexchrs 2)
+                (byte \u) (gethexchrs 4)
+                (byte \U) (gethexchrs 8)
+            -1)]
+        (if (neg? nr) ;; if getting the number fails, be backwards compatible: the character is a backslash
+            (do (swap! regparse minus 1) (byte \\))
+            nr)
     ))
 
 ;; read-limits - Read two integers to be taken as a minimum and maximum.
@@ -27841,7 +27602,7 @@
                         )
 
                         ((ß CASE) (+ MOPEN 0))     ;; Match start: \zs
-                        ((ß CASE) (inc MOPEN))     ;; \(
+                        ((ß CASE) (+ MOPEN 1))     ;; \(
                         ((ß CASE) (+ MOPEN 2))
                         ((ß CASE) (+ MOPEN 3))
                         ((ß CASE) (+ MOPEN 4))
@@ -27877,7 +27638,7 @@
                             (ß BREAK)
                         )
 
-                        ((ß CASE) (inc ZOPEN))
+                        ((ß CASE) (+ ZOPEN 1))
                         ((ß CASE) (+ ZOPEN 2))
                         ((ß CASE) (+ ZOPEN 3))
                         ((ß CASE) (+ ZOPEN 4))
@@ -27904,7 +27665,7 @@
                         )
 
                         ((ß CASE) (+ MCLOSE 0))    ;; Match end: \ze
-                        ((ß CASE) (inc MCLOSE))    ;; \)
+                        ((ß CASE) (+ MCLOSE 1))    ;; \)
                         ((ß CASE) (+ MCLOSE 2))
                         ((ß CASE) (+ MCLOSE 3))
                         ((ß CASE) (+ MCLOSE 4))
@@ -27930,7 +27691,7 @@
                             (ß BREAK)
                         )
 
-                        ((ß CASE) (inc ZCLOSE))    ;; \) after \z(
+                        ((ß CASE) (+ ZCLOSE 1))    ;; \) after \z(
                         ((ß CASE) (+ ZCLOSE 2))
                         ((ß CASE) (+ ZCLOSE 3))
                         ((ß CASE) (+ ZCLOSE 4))
@@ -27956,7 +27717,7 @@
                             (ß BREAK)
                         )
 
-                        ((ß CASE) (inc BACKREF))
+                        ((ß CASE) (+ BACKREF 1))
                         ((ß CASE) (+ BACKREF 2))
                         ((ß CASE) (+ BACKREF 3))
                         ((ß CASE) (+ BACKREF 4))
@@ -28020,7 +27781,7 @@
                             (ß BREAK)
                         )
 
-                        ((ß CASE) (inc ZREF))
+                        ((ß CASE) (+ ZREF 1))
                         ((ß CASE) (+ ZREF 2))
                         ((ß CASE) (+ ZREF 3))
                         ((ß CASE) (+ ZREF 4))
@@ -28083,7 +27844,7 @@
                         )
 
                         ((ß CASE) (+ BRACE_COMPLEX 0))
-                        ((ß CASE) (inc BRACE_COMPLEX))
+                        ((ß CASE) (+ BRACE_COMPLEX 1))
                         ((ß CASE) (+ BRACE_COMPLEX 2))
                         ((ß CASE) (+ BRACE_COMPLEX 3))
                         ((ß CASE) (+ BRACE_COMPLEX 4))
@@ -30467,139 +30228,109 @@
 ;; Figure out if the NFA state list starts with an anchor, must match at start of the line.
 
 (defn- #_boolean nfa-get-reganch [#_nfa_state_C start, #_int depth]
-    (§
-        (if (< 4 depth)
-            ((ß RETURN) false)
-        )
-
-        ((ß FOR) (ß ((ß nfa_state_C p =) start) (some? p) nil)
-            ((ß SWITCH) (:c p)
-                ((ß CASE) NFA_BOL)
-                ((ß CASE) NFA_BOF)
-                (do
-                    ((ß RETURN) true) ;; yes!
-                )
-
-                ((ß CASE) NFA_ZSTART)
-                ((ß CASE) NFA_ZEND)
-                ((ß CASE) NFA_CURSOR)
-                ((ß CASE) NFA_VISUAL)
-
-                ((ß CASE) NFA_MOPEN)
-                ((ß CASE) NFA_MOPEN1)
-                ((ß CASE) NFA_MOPEN2)
-                ((ß CASE) NFA_MOPEN3)
-                ((ß CASE) NFA_MOPEN4)
-                ((ß CASE) NFA_MOPEN5)
-                ((ß CASE) NFA_MOPEN6)
-                ((ß CASE) NFA_MOPEN7)
-                ((ß CASE) NFA_MOPEN8)
-                ((ß CASE) NFA_MOPEN9)
-                ((ß CASE) NFA_NOPEN)
-                ((ß CASE) NFA_ZOPEN)
-                ((ß CASE) NFA_ZOPEN1)
-                ((ß CASE) NFA_ZOPEN2)
-                ((ß CASE) NFA_ZOPEN3)
-                ((ß CASE) NFA_ZOPEN4)
-                ((ß CASE) NFA_ZOPEN5)
-                ((ß CASE) NFA_ZOPEN6)
-                ((ß CASE) NFA_ZOPEN7)
-                ((ß CASE) NFA_ZOPEN8)
-                ((ß CASE) NFA_ZOPEN9)
-                (do
-                    ((ß p =) (.out0 p))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) NFA_SPLIT)
-                (do
-                    ((ß RETURN) (and (nfa-get-reganch (.out0 p), (inc depth)) (nfa-get-reganch (.out1 p), (inc depth))))
-                )
-
-                (ß DEFAULT)
-                (do
-                    ((ß RETURN) false) ;; noooo!
-                )
-            )
-        )
-
+    (if (< 4 depth)
         false
+        (loop-when [#_nfa_state_C state start] (some? state) => false
+            (condp ==? (:c state)
+               [NFA_BOL
+                NFA_BOF]
+                    true ;; yes!
+
+               [NFA_ZSTART
+                NFA_ZEND
+                NFA_CURSOR
+                NFA_VISUAL
+
+                NFA_MOPEN
+                NFA_MOPEN1
+                NFA_MOPEN2
+                NFA_MOPEN3
+                NFA_MOPEN4
+                NFA_MOPEN5
+                NFA_MOPEN6
+                NFA_MOPEN7
+                NFA_MOPEN8
+                NFA_MOPEN9
+                NFA_NOPEN
+                NFA_ZOPEN
+                NFA_ZOPEN1
+                NFA_ZOPEN2
+                NFA_ZOPEN3
+                NFA_ZOPEN4
+                NFA_ZOPEN5
+                NFA_ZOPEN6
+                NFA_ZOPEN7
+                NFA_ZOPEN8
+                NFA_ZOPEN9]
+                    (recur (.out0 state))
+
+                NFA_SPLIT
+                    (and (nfa-get-reganch (.out0 state), (inc depth)) (nfa-get-reganch (.out1 state), (inc depth)))
+
+             ;; :else
+                false ;; noooo!
+            ))
     ))
 
 ;; Figure out if the NFA state list starts with a character which must match at start of the match.
 
 (defn- #_int nfa-get-regstart [#_nfa_state_C start, #_int depth]
-    (§
-        (if (< 4 depth)
-            ((ß RETURN) 0)
-        )
-
-        ((ß FOR) (ß ((ß nfa_state_C p =) start) (some? p) nil)
-            ((ß SWITCH) (:c p)
-                ;; all kinds of zero-width matches
-                ((ß CASE) NFA_BOL)
-                ((ß CASE) NFA_BOF)
-                ((ß CASE) NFA_BOW)
-                ((ß CASE) NFA_EOW)
-                ((ß CASE) NFA_ZSTART)
-                ((ß CASE) NFA_ZEND)
-                ((ß CASE) NFA_CURSOR)
-                ((ß CASE) NFA_VISUAL)
-                ((ß CASE) NFA_LNUM)
-                ((ß CASE) NFA_LNUM_GT)
-                ((ß CASE) NFA_LNUM_LT)
-                ((ß CASE) NFA_COL)
-                ((ß CASE) NFA_COL_GT)
-                ((ß CASE) NFA_COL_LT)
-                ((ß CASE) NFA_VCOL)
-                ((ß CASE) NFA_VCOL_GT)
-                ((ß CASE) NFA_VCOL_LT)
-                ((ß CASE) NFA_MARK)
-                ((ß CASE) NFA_MARK_GT)
-                ((ß CASE) NFA_MARK_LT)
-
-                ((ß CASE) NFA_MOPEN)
-                ((ß CASE) NFA_MOPEN1)
-                ((ß CASE) NFA_MOPEN2)
-                ((ß CASE) NFA_MOPEN3)
-                ((ß CASE) NFA_MOPEN4)
-                ((ß CASE) NFA_MOPEN5)
-                ((ß CASE) NFA_MOPEN6)
-                ((ß CASE) NFA_MOPEN7)
-                ((ß CASE) NFA_MOPEN8)
-                ((ß CASE) NFA_MOPEN9)
-                ((ß CASE) NFA_NOPEN)
-                ((ß CASE) NFA_ZOPEN)
-                ((ß CASE) NFA_ZOPEN1)
-                ((ß CASE) NFA_ZOPEN2)
-                ((ß CASE) NFA_ZOPEN3)
-                ((ß CASE) NFA_ZOPEN4)
-                ((ß CASE) NFA_ZOPEN5)
-                ((ß CASE) NFA_ZOPEN6)
-                ((ß CASE) NFA_ZOPEN7)
-                ((ß CASE) NFA_ZOPEN8)
-                ((ß CASE) NFA_ZOPEN9)
-                (do
-                    ((ß p =) (.out0 p))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) NFA_SPLIT)
-                (do
-                    ((ß int c1 =) (nfa-get-regstart (.out0 p), (inc depth)))
-                    ((ß int c2 =) (nfa-get-regstart (.out1 p), (inc depth)))
-
-                    ((ß RETURN) (if (== c1 c2) c1 0))
-                )
-
-                (ß DEFAULT)
-                (do
-                    ((ß RETURN) (max 0 (:c p)))
-                )
-            )
-        )
-
+    (if (< 4 depth)
         0
+        (loop-when [#_nfa_state_C state start] (some? state) => 0
+            (condp ==? (:c state)
+                ;; all kinds of zero-width matches
+               [NFA_BOL
+                NFA_BOF
+                NFA_BOW
+                NFA_EOW
+                NFA_ZSTART
+                NFA_ZEND
+                NFA_CURSOR
+                NFA_VISUAL
+                NFA_LNUM
+                NFA_LNUM_GT
+                NFA_LNUM_LT
+                NFA_COL
+                NFA_COL_GT
+                NFA_COL_LT
+                NFA_VCOL
+                NFA_VCOL_GT
+                NFA_VCOL_LT
+                NFA_MARK
+                NFA_MARK_GT
+                NFA_MARK_LT
+
+                NFA_MOPEN
+                NFA_MOPEN1
+                NFA_MOPEN2
+                NFA_MOPEN3
+                NFA_MOPEN4
+                NFA_MOPEN5
+                NFA_MOPEN6
+                NFA_MOPEN7
+                NFA_MOPEN8
+                NFA_MOPEN9
+                NFA_NOPEN
+                NFA_ZOPEN
+                NFA_ZOPEN1
+                NFA_ZOPEN2
+                NFA_ZOPEN3
+                NFA_ZOPEN4
+                NFA_ZOPEN5
+                NFA_ZOPEN6
+                NFA_ZOPEN7
+                NFA_ZOPEN8
+                NFA_ZOPEN9]
+                    (recur (.out0 state))
+
+                NFA_SPLIT
+                    (let [l (nfa-get-regstart (.out0 state), (inc depth)) r (nfa-get-regstart (.out1 state), (inc depth))]
+                        (if (== l r) l 0))
+
+             ;; :else
+                (max 0 (:c state))
+            ))
     ))
 
 ;; Figure out if the NFA state list contains just literal text and nothing else.
@@ -30754,76 +30485,25 @@
             ((ß RETURN) 0)
         )
 
-        ((ß int nfa_add_nl =) (if newl NFA_ADD_NL 0))
-
-        ((ß SWITCH) config
-            ((ß CASE) CLASS_o9)
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_DIGIT))
-            )
-            ((ß CASE) (| CLASS_not CLASS_o9))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NDIGIT))
-            )
-            ((ß CASE) (| CLASS_af CLASS_AF CLASS_o9))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_HEX))
-            )
-            ((ß CASE) (| CLASS_not CLASS_af CLASS_AF CLASS_o9))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NHEX))
-            )
-            ((ß CASE) CLASS_o7)
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_OCTAL))
-            )
-            ((ß CASE) (| CLASS_not CLASS_o7))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NOCTAL))
-            )
-            ((ß CASE) (| CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_WORD))
-            )
-            ((ß CASE) (| CLASS_not CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NWORD))
-            )
-            ((ß CASE) (| CLASS_az CLASS_AZ CLASS_underscore))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_HEAD))
-            )
-            ((ß CASE) (| CLASS_not CLASS_az CLASS_AZ CLASS_underscore))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NHEAD))
-            )
-            ((ß CASE) (| CLASS_az CLASS_AZ))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_ALPHA))
-            )
-            ((ß CASE) (| CLASS_not CLASS_az CLASS_AZ))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NALPHA))
-            )
-            ((ß CASE) CLASS_az)
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_LOWER_IC))
-            )
-            ((ß CASE) (| CLASS_not CLASS_az))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NLOWER_IC))
-            )
-            ((ß CASE) CLASS_AZ)
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_UPPER_IC))
-            )
-            ((ß CASE) (| CLASS_not CLASS_AZ))
-            (do
-                ((ß RETURN) (+ nfa_add_nl NFA_NUPPER_IC))
-            )
-        )
-
-        0
+        (let [#_int nfa_add_nl (if newl NFA_ADD_NL 0)]
+            (condp == config
+                CLASS_o9                                               (+ nfa_add_nl NFA_DIGIT)
+             (| CLASS_not CLASS_o9)                                    (+ nfa_add_nl NFA_NDIGIT)
+             (| CLASS_af CLASS_AF CLASS_o9)                            (+ nfa_add_nl NFA_HEX)
+             (| CLASS_not CLASS_af CLASS_AF CLASS_o9)                  (+ nfa_add_nl NFA_NHEX)
+                CLASS_o7                                               (+ nfa_add_nl NFA_OCTAL)
+             (| CLASS_not CLASS_o7)                                    (+ nfa_add_nl NFA_NOCTAL)
+             (| CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore)           (+ nfa_add_nl NFA_WORD)
+             (| CLASS_not CLASS_az CLASS_AZ CLASS_o9 CLASS_underscore) (+ nfa_add_nl NFA_NWORD)
+             (| CLASS_az CLASS_AZ CLASS_underscore)                    (+ nfa_add_nl NFA_HEAD)
+             (| CLASS_not CLASS_az CLASS_AZ CLASS_underscore)          (+ nfa_add_nl NFA_NHEAD)
+             (| CLASS_az CLASS_AZ)                                     (+ nfa_add_nl NFA_ALPHA)
+             (| CLASS_not CLASS_az CLASS_AZ)                           (+ nfa_add_nl NFA_NALPHA)
+                CLASS_az                                               (+ nfa_add_nl NFA_LOWER_IC)
+             (| CLASS_not CLASS_az)                                    (+ nfa_add_nl NFA_NLOWER_IC)
+                CLASS_AZ                                               (+ nfa_add_nl NFA_UPPER_IC)
+             (| CLASS_not CLASS_AZ)                                    (+ nfa_add_nl NFA_NUPPER_IC)
+        0))
     ))
 
 ;; helper functions used when doing re2post() ... regatom() parsing
@@ -30848,464 +30528,272 @@
 ;; NOTE! When changing this function, also update reg-equi-class()
 
 (defn- #_boolean nfa-emit-equi-class [#_int c]
-    (§
-        ((ß SWITCH) c
-            ((ß CASE) (byte \A))
-            ((ß CASE) 0xc0) ((ß CASE) 0xc1) ((ß CASE) 0xc2)
-            ((ß CASE) 0xc3) ((ß CASE) 0xc4) ((ß CASE) 0xc5)
-            ((ß CASE) 0x100) ((ß CASE) 0x102) ((ß CASE) 0x104)
-            ((ß CASE) 0x1cd) ((ß CASE) 0x1de) ((ß CASE) 0x1e0)
-            ((ß CASE) 0x1ea2)
-            (do
-                ((ß RETURN) (and (emc2 (byte \A))
-                    (emc2 0xc0) (emc2 0xc1) (emc2 0xc2)
-                    (emc2 0xc3) (emc2 0xc4) (emc2 0xc5)
-                    (emc2 0x100) (emc2 0x102) (emc2 0x104)
-                    (emc2 0x1cd) (emc2 0x1de) (emc2 0x1e0)
-                    (emc2 0x1ea2)))
-            )
-            ((ß CASE) (byte \a))
-            ((ß CASE) 0xe0) ((ß CASE) 0xe1) ((ß CASE) 0xe2)
-            ((ß CASE) 0xe3) ((ß CASE) 0xe4) ((ß CASE) 0xe5)
-            ((ß CASE) 0x101) ((ß CASE) 0x103) ((ß CASE) 0x105)
-            ((ß CASE) 0x1ce) ((ß CASE) 0x1df) ((ß CASE) 0x1e1)
-            ((ß CASE) 0x1ea3)
-            (do
-                ((ß RETURN) (and (emc2 (byte \a))
-                    (emc2 0xe0) (emc2 0xe1) (emc2 0xe2)
-                    (emc2 0xe3) (emc2 0xe4) (emc2 0xe5)
-                    (emc2 0x101) (emc2 0x103) (emc2 0x105)
-                    (emc2 0x1ce) (emc2 0x1df) (emc2 0x1e1)
-                    (emc2 0x1ea3)))
-            )
+    (condp ==? c
+       [(byte \A), 0xc0 0xc1 0xc2, 0xc3 0xc4 0xc5, 0x100 0x102 0x104, 0x1cd 0x1de 0x1e0, 0x1ea2]
+        (and (emc2 (byte \A))
+            (emc2 0xc0) (emc2 0xc1) (emc2 0xc2)
+            (emc2 0xc3) (emc2 0xc4) (emc2 0xc5)
+            (emc2 0x100) (emc2 0x102) (emc2 0x104)
+            (emc2 0x1cd) (emc2 0x1de) (emc2 0x1e0)
+            (emc2 0x1ea2))
 
-            ((ß CASE) (byte \B))
-            ((ß CASE) 0x1e02) ((ß CASE) 0x1e06)
-            (do
-                ((ß RETURN) (and (emc2 (byte \B))
-                    (emc2 0x1e02) (emc2 0x1e06)))
-            )
-            ((ß CASE) (byte \b))
-            ((ß CASE) 0x1e03) ((ß CASE) 0x1e07)
-            (do
-                ((ß RETURN) (and (emc2 (byte \b))
-                    (emc2 0x1e03) (emc2 0x1e07)))
-            )
+       [(byte \a), 0xe0 0xe1 0xe2, 0xe3 0xe4 0xe5, 0x101 0x103 0x105, 0x1ce 0x1df 0x1e1, 0x1ea3]
+        (and (emc2 (byte \a))
+            (emc2 0xe0) (emc2 0xe1) (emc2 0xe2)
+            (emc2 0xe3) (emc2 0xe4) (emc2 0xe5)
+            (emc2 0x101) (emc2 0x103) (emc2 0x105)
+            (emc2 0x1ce) (emc2 0x1df) (emc2 0x1e1)
+            (emc2 0x1ea3))
 
-            ((ß CASE) (byte \C))
-            ((ß CASE) 0xc7)
-            ((ß CASE) 0x106) ((ß CASE) 0x108) ((ß CASE) 0x10a) ((ß CASE) 0x10c)
-            (do
-                ((ß RETURN) (and (emc2 (byte \C))
-                    (emc2 0xc7)
-                    (emc2 0x106) (emc2 0x108) (emc2 0x10a) (emc2 0x10c)))
-            )
-            ((ß CASE) (byte \c))
-            ((ß CASE) 0xe7)
-            ((ß CASE) 0x107) ((ß CASE) 0x109) ((ß CASE) 0x10b) ((ß CASE) 0x10d)
-            (do
-                ((ß RETURN) (and (emc2 (byte \c))
-                    (emc2 0xe7)
-                    (emc2 0x107) (emc2 0x109) (emc2 0x10b) (emc2 0x10d)))
-            )
+       [(byte \B), 0x1e02 0x1e06]
+        (and (emc2 (byte \B))
+            (emc2 0x1e02) (emc2 0x1e06))
 
-            ((ß CASE) (byte \D))
-            ((ß CASE) 0x10e) ((ß CASE) 0x110)
-            ((ß CASE) 0x1e0a) ((ß CASE) 0x1e0c) ((ß CASE) 0x1e0e) ((ß CASE) 0x1e10) ((ß CASE) 0x1e12)
-            (do
-                ((ß RETURN) (and (emc2 (byte \D))
-                    (emc2 0x10e) (emc2 0x110)
-                    (emc2 0x1e0a) (emc2 0x1e0c) (emc2 0x1e0e) (emc2 0x1e10) (emc2 0x1e12)))
-            )
-            ((ß CASE) (byte \d))
-            ((ß CASE) 0x10f) ((ß CASE) 0x111)
-            ((ß CASE) 0x1e0b) ((ß CASE) 0x1e0d) ((ß CASE) 0x1e0f) ((ß CASE) 0x1e11) ((ß CASE) 0x1e13)
-            (do
-                ((ß RETURN) (and (emc2 (byte \d))
-                    (emc2 0x10f) (emc2 0x111)
-                    (emc2 0x1e0b) (emc2 0x1e0d) (emc2 0x1e0f) (emc2 0x1e11) (emc2 0x1e13)))
-            )
+       [(byte \b), 0x1e03 0x1e07]
+        (and (emc2 (byte \b))
+            (emc2 0x1e03) (emc2 0x1e07))
 
-            ((ß CASE) (byte \E))
-            ((ß CASE) 0xc8) ((ß CASE) 0xc9) ((ß CASE) 0xca) ((ß CASE) 0xcb)
-            ((ß CASE) 0x112) ((ß CASE) 0x114) ((ß CASE) 0x116) ((ß CASE) 0x118) ((ß CASE) 0x11a)
-            ((ß CASE) 0x1eba) ((ß CASE) 0x1ebc)
-            (do
-                ((ß RETURN) (and (emc2 (byte \E))
-                    (emc2 0xc8) (emc2 0xc9) (emc2 0xca) (emc2 0xcb)
-                    (emc2 0x112) (emc2 0x114) (emc2 0x116) (emc2 0x118) (emc2 0x11a)
-                    (emc2 0x1eba) (emc2 0x1ebc)))
-            )
-            ((ß CASE) (byte \e))
-            ((ß CASE) 0xe8) ((ß CASE) 0xe9) ((ß CASE) 0xea) ((ß CASE) 0xeb)
-            ((ß CASE) 0x113) ((ß CASE) 0x115) ((ß CASE) 0x117) ((ß CASE) 0x119) ((ß CASE) 0x11b)
-            ((ß CASE) 0x1ebb) ((ß CASE) 0x1ebd)
-            (do
-                ((ß RETURN) (and (emc2 (byte \e))
-                    (emc2 0xe8) (emc2 0xe9) (emc2 0xea) (emc2 0xeb)
-                    (emc2 0x113) (emc2 0x115) (emc2 0x117) (emc2 0x119) (emc2 0x11b)
-                    (emc2 0x1ebb) (emc2 0x1ebd)))
-            )
+       [(byte \C), 0xc7, 0x106 0x108 0x10a 0x10c]
+        (and (emc2 (byte \C))
+            (emc2 0xc7)
+            (emc2 0x106) (emc2 0x108) (emc2 0x10a) (emc2 0x10c))
 
-            ((ß CASE) (byte \F))
-            ((ß CASE) 0x1e1e)
-            (do
-                ((ß RETURN) (and (emc2 (byte \F))
-                    (emc2 0x1e1e)))
-            )
-            ((ß CASE) (byte \f))
-            ((ß CASE) 0x1e1f)
-            (do
-                ((ß RETURN) (and (emc2 (byte \f))
-                    (emc2 0x1e1f)))
-            )
+       [(byte \c), 0xe7, 0x107 0x109 0x10b 0x10d]
+        (and (emc2 (byte \c))
+            (emc2 0xe7)
+            (emc2 0x107) (emc2 0x109) (emc2 0x10b) (emc2 0x10d))
 
-            ((ß CASE) (byte \G))
-            ((ß CASE) 0x11c) ((ß CASE) 0x11e) ((ß CASE) 0x120) ((ß CASE) 0x122)
-            ((ß CASE) 0x1e4) ((ß CASE) 0x1e6) ((ß CASE) 0x1f4)
-            ((ß CASE) 0x1e20)
-            (do
-                ((ß RETURN) (and (emc2 (byte \G))
-                    (emc2 0x11c) (emc2 0x11e) (emc2 0x120) (emc2 0x122)
-                    (emc2 0x1e4) (emc2 0x1e6) (emc2 0x1f4)
-                    (emc2 0x1e20)))
-            )
-            ((ß CASE) (byte \g))
-            ((ß CASE) 0x11d) ((ß CASE) 0x11f) ((ß CASE) 0x121) ((ß CASE) 0x123)
-            ((ß CASE) 0x1e5) ((ß CASE) 0x1e7) ((ß CASE) 0x1f5)
-            ((ß CASE) 0x1e21)
-            (do
-                ((ß RETURN) (and (emc2 (byte \g))
-                    (emc2 0x11d) (emc2 0x11f) (emc2 0x121) (emc2 0x123)
-                    (emc2 0x1e5) (emc2 0x1e7) (emc2 0x1f5)
-                    (emc2 0x1e21)))
-            )
+       [(byte \D), 0x10e 0x110, 0x1e0a 0x1e0c 0x1e0e 0x1e10 0x1e12]
+        (and (emc2 (byte \D))
+            (emc2 0x10e) (emc2 0x110)
+            (emc2 0x1e0a) (emc2 0x1e0c) (emc2 0x1e0e) (emc2 0x1e10) (emc2 0x1e12))
 
-            ((ß CASE) (byte \H))
-            ((ß CASE) 0x124) ((ß CASE) 0x126)
-            ((ß CASE) 0x1e22) ((ß CASE) 0x1e26) ((ß CASE) 0x1e28)
-            (do
-                ((ß RETURN) (and (emc2 (byte \H))
-                    (emc2 0x124) (emc2 0x126)
-                    (emc2 0x1e22) (emc2 0x1e26) (emc2 0x1e28)))
-            )
-            ((ß CASE) (byte \h))
-            ((ß CASE) 0x125) ((ß CASE) 0x127)
-            ((ß CASE) 0x1e23) ((ß CASE) 0x1e27) ((ß CASE) 0x1e29) ((ß CASE) 0x1e96)
-            (do
-                ((ß RETURN) (and (emc2 (byte \h))
-                    (emc2 0x125) (emc2 0x127)
-                    (emc2 0x1e23) (emc2 0x1e27) (emc2 0x1e29) (emc2 0x1e96)))
-            )
+       [(byte \d), 0x10f 0x111, 0x1e0b 0x1e0d 0x1e0f 0x1e11 0x1e13]
+        (and (emc2 (byte \d))
+            (emc2 0x10f) (emc2 0x111)
+            (emc2 0x1e0b) (emc2 0x1e0d) (emc2 0x1e0f) (emc2 0x1e11) (emc2 0x1e13))
 
-            ((ß CASE) (byte \I))
-            ((ß CASE) 0xcc) ((ß CASE) 0xcd) ((ß CASE) 0xce) ((ß CASE) 0xcf)
-            ((ß CASE) 0x128) ((ß CASE) 0x12a) ((ß CASE) 0x12c) ((ß CASE) 0x12e) ((ß CASE) 0x130)
-            ((ß CASE) 0x1cf)
-            ((ß CASE) 0x1ec8)
-            (do
-                ((ß RETURN) (and (emc2 (byte \I))
-                    (emc2 0xcc) (emc2 0xcd) (emc2 0xce) (emc2 0xcf)
-                    (emc2 0x128) (emc2 0x12a) (emc2 0x12c) (emc2 0x12e) (emc2 0x130)
-                    (emc2 0x1cf)
-                    (emc2 0x1ec8)))
-            )
-            ((ß CASE) (byte \i))
-            ((ß CASE) 0xec) ((ß CASE) 0xed) ((ß CASE) 0xee) ((ß CASE) 0xef)
-            ((ß CASE) 0x129) ((ß CASE) 0x12b) ((ß CASE) 0x12d) ((ß CASE) 0x12f) ((ß CASE) 0x131)
-            ((ß CASE) 0x1d0)
-            ((ß CASE) 0x1ec9)
-            (do
-                ((ß RETURN) (and (emc2 (byte \i))
-                    (emc2 0xec) (emc2 0xed) (emc2 0xee) (emc2 0xef)
-                    (emc2 0x129) (emc2 0x12b) (emc2 0x12d) (emc2 0x12f) (emc2 0x131)
-                    (emc2 0x1d0)
-                    (emc2 0x1ec9)))
-            )
+       [(byte \E), 0xc8 0xc9 0xca 0xcb, 0x112 0x114 0x116 0x118 0x11a, 0x1eba 0x1ebc]
+        (and (emc2 (byte \E))
+            (emc2 0xc8) (emc2 0xc9) (emc2 0xca) (emc2 0xcb)
+            (emc2 0x112) (emc2 0x114) (emc2 0x116) (emc2 0x118) (emc2 0x11a)
+            (emc2 0x1eba) (emc2 0x1ebc))
 
-            ((ß CASE) (byte \J))
-            ((ß CASE) 0x134)
-            (do
-                ((ß RETURN) (and (emc2 (byte \J))
-                    (emc2 0x134)))
-            )
-            ((ß CASE) (byte \j))
-            ((ß CASE) 0x135) ((ß CASE) 0x1f0)
-            (do
-                ((ß RETURN) (and (emc2 (byte \j))
-                    (emc2 0x135) (emc2 0x1f0)))
-            )
+       [(byte \e), 0xe8 0xe9 0xea 0xeb, 0x113 0x115 0x117 0x119 0x11b, 0x1ebb 0x1ebd]
+        (and (emc2 (byte \e))
+            (emc2 0xe8) (emc2 0xe9) (emc2 0xea) (emc2 0xeb)
+            (emc2 0x113) (emc2 0x115) (emc2 0x117) (emc2 0x119) (emc2 0x11b)
+            (emc2 0x1ebb) (emc2 0x1ebd))
 
-            ((ß CASE) (byte \K))
-            ((ß CASE) 0x136) ((ß CASE) 0x1e8)
-            ((ß CASE) 0x1e30) ((ß CASE) 0x1e34)
-            (do
-                ((ß RETURN) (and (emc2 (byte \K))
-                    (emc2 0x136) (emc2 0x1e8)
-                    (emc2 0x1e30) (emc2 0x1e34)))
-            )
-            ((ß CASE) (byte \k))
-            ((ß CASE) 0x137) ((ß CASE) 0x1e9)
-            ((ß CASE) 0x1e31) ((ß CASE) 0x1e35)
-            (do
-                ((ß RETURN) (and (emc2 (byte \k))
-                    (emc2 0x137) (emc2 0x1e9)
-                    (emc2 0x1e31) (emc2 0x1e35)))
-            )
+       [(byte \F), 0x1e1e]
+        (and (emc2 (byte \F))
+            (emc2 0x1e1e))
 
-            ((ß CASE) (byte \L))
-            ((ß CASE) 0x139) ((ß CASE) 0x13b) ((ß CASE) 0x13d) ((ß CASE) 0x13f) ((ß CASE) 0x141)
-            ((ß CASE) 0x1e3a)
-            (do
-                ((ß RETURN) (and (emc2 (byte \L))
-                    (emc2 0x139) (emc2 0x13b) (emc2 0x13d) (emc2 0x13f) (emc2 0x141)
-                    (emc2 0x1e3a)))
-            )
-            ((ß CASE) (byte \l))
-            ((ß CASE) 0x13a) ((ß CASE) 0x13c) ((ß CASE) 0x13e) ((ß CASE) 0x140) ((ß CASE) 0x142)
-            ((ß CASE) 0x1e3b)
-            (do
-                ((ß RETURN) (and (emc2 (byte \l))
-                    (emc2 0x13a) (emc2 0x13c) (emc2 0x13e) (emc2 0x140) (emc2 0x142)
-                    (emc2 0x1e3b)))
-            )
+       [(byte \f), 0x1e1f]
+        (and (emc2 (byte \f))
+            (emc2 0x1e1f))
 
-            ((ß CASE) (byte \M))
-            ((ß CASE) 0x1e3e) ((ß CASE) 0x1e40)
-            (do
-                ((ß RETURN) (and (emc2 (byte \M))
-                    (emc2 0x1e3e) (emc2 0x1e40)))
-            )
-            ((ß CASE) (byte \m))
-            ((ß CASE) 0x1e3f) ((ß CASE) 0x1e41)
-            (do
-                ((ß RETURN) (and (emc2 (byte \m))
-                    (emc2 0x1e3f) (emc2 0x1e41)))
-            )
+       [(byte \G), 0x11c 0x11e 0x120 0x122, 0x1e4 0x1e6 0x1f4, 0x1e20]
+        (and (emc2 (byte \G))
+            (emc2 0x11c) (emc2 0x11e) (emc2 0x120) (emc2 0x122)
+            (emc2 0x1e4) (emc2 0x1e6) (emc2 0x1f4)
+            (emc2 0x1e20))
 
-            ((ß CASE) (byte \N))
-            ((ß CASE) 0xd1)
-            ((ß CASE) 0x143) ((ß CASE) 0x145) ((ß CASE) 0x147)
-            ((ß CASE) 0x1e44) ((ß CASE) 0x1e48)
-            (do
-                ((ß RETURN) (and (emc2 (byte \N))
-                    (emc2 0xd1)
-                    (emc2 0x143) (emc2 0x145) (emc2 0x147)
-                    (emc2 0x1e44) (emc2 0x1e48)))
-            )
-            ((ß CASE) (byte \n))
-            ((ß CASE) 0xf1)
-            ((ß CASE) 0x144) ((ß CASE) 0x146) ((ß CASE) 0x148) ((ß CASE) 0x149)
-            ((ß CASE) 0x1e45) ((ß CASE) 0x1e49)
-            (do
-                ((ß RETURN) (and (emc2 (byte \n))
-                    (emc2 0xf1)
-                    (emc2 0x144) (emc2 0x146) (emc2 0x148) (emc2 0x149)
-                    (emc2 0x1e45) (emc2 0x1e49)))
-            )
+       [(byte \g), 0x11d 0x11f 0x121 0x123, 0x1e5 0x1e7 0x1f5, 0x1e21]
+        (and (emc2 (byte \g))
+            (emc2 0x11d) (emc2 0x11f) (emc2 0x121) (emc2 0x123)
+            (emc2 0x1e5) (emc2 0x1e7) (emc2 0x1f5)
+            (emc2 0x1e21))
 
-            ((ß CASE) (byte \O))
-            ((ß CASE) 0xd2) ((ß CASE) 0xd3) ((ß CASE) 0xd4)
-            ((ß CASE) 0xd5) ((ß CASE) 0xd6) ((ß CASE) 0xd8)
-            ((ß CASE) 0x14c) ((ß CASE) 0x14e) ((ß CASE) 0x150)
-            ((ß CASE) 0x1a0) ((ß CASE) 0x1d1) ((ß CASE) 0x1ea) ((ß CASE) 0x1ec)
-            ((ß CASE) 0x1ece)
-            (do
-                ((ß RETURN) (and (emc2 (byte \O))
-                    (emc2 0xd2) (emc2 0xd3) (emc2 0xd4)
-                    (emc2 0xd5) (emc2 0xd6) (emc2 0xd8)
-                    (emc2 0x14c) (emc2 0x14e) (emc2 0x150)
-                    (emc2 0x1a0) (emc2 0x1d1) (emc2 0x1ea) (emc2 0x1ec)
-                    (emc2 0x1ece)))
-            )
-            ((ß CASE) (byte \o))
-            ((ß CASE) 0xf2) ((ß CASE) 0xf3) ((ß CASE) 0xf4)
-            ((ß CASE) 0xf5) ((ß CASE) 0xf6) ((ß CASE) 0xf8)
-            ((ß CASE) 0x14d) ((ß CASE) 0x14f) ((ß CASE) 0x151)
-            ((ß CASE) 0x1a1) ((ß CASE) 0x1d2) ((ß CASE) 0x1eb) ((ß CASE) 0x1ed)
-            ((ß CASE) 0x1ecf)
-            (do
-                ((ß RETURN) (and (emc2 (byte \o))
-                    (emc2 0xf2) (emc2 0xf3) (emc2 0xf4)
-                    (emc2 0xf5) (emc2 0xf6) (emc2 0xf8)
-                    (emc2 0x14d) (emc2 0x14f) (emc2 0x151)
-                    (emc2 0x1a1) (emc2 0x1d2) (emc2 0x1eb) (emc2 0x1ed)
-                    (emc2 0x1ecf)))
-            )
+       [(byte \H), 0x124 0x126, 0x1e22 0x1e26 0x1e28]
+        (and (emc2 (byte \H))
+            (emc2 0x124) (emc2 0x126)
+            (emc2 0x1e22) (emc2 0x1e26) (emc2 0x1e28))
 
-            ((ß CASE) (byte \P))
-            ((ß CASE) 0x1e54) ((ß CASE) 0x1e56)
-            (do
-                ((ß RETURN) (and (emc2 (byte \P))
-                    (emc2 0x1e54) (emc2 0x1e56)))
-            )
-            ((ß CASE) (byte \p))
-            ((ß CASE) 0x1e55) ((ß CASE) 0x1e57)
-            (do
-                ((ß RETURN) (and (emc2 (byte \p))
-                    (emc2 0x1e55) (emc2 0x1e57)))
-            )
+       [(byte \h), 0x125 0x127, 0x1e23 0x1e27 0x1e29 0x1e96]
+        (and (emc2 (byte \h))
+            (emc2 0x125) (emc2 0x127)
+            (emc2 0x1e23) (emc2 0x1e27) (emc2 0x1e29) (emc2 0x1e96))
 
-            ((ß CASE) (byte \R))
-            ((ß CASE) 0x154) ((ß CASE) 0x156) ((ß CASE) 0x158)
-            ((ß CASE) 0x1e58) ((ß CASE) 0x1e5e)
-            (do
-                ((ß RETURN) (and (emc2 (byte \R))
-                    (emc2 0x154) (emc2 0x156) (emc2 0x158)
-                    (emc2 0x1e58) (emc2 0x1e5e)))
-            )
-            ((ß CASE) (byte \r))
-            ((ß CASE) 0x155) ((ß CASE) 0x157) ((ß CASE) 0x159)
-            ((ß CASE) 0x1e59) ((ß CASE) 0x1e5f)
-            (do
-                ((ß RETURN) (and (emc2 (byte \r))
-                    (emc2 0x155) (emc2 0x157) (emc2 0x159)
-                    (emc2 0x1e59) (emc2 0x1e5f)))
-            )
+       [(byte \I), 0xcc 0xcd 0xce 0xcf, 0x128 0x12a 0x12c 0x12e 0x130, 0x1cf, 0x1ec8]
+        (and (emc2 (byte \I))
+            (emc2 0xcc) (emc2 0xcd) (emc2 0xce) (emc2 0xcf)
+            (emc2 0x128) (emc2 0x12a) (emc2 0x12c) (emc2 0x12e) (emc2 0x130)
+            (emc2 0x1cf)
+            (emc2 0x1ec8))
 
-            ((ß CASE) (byte \S))
-            ((ß CASE) 0x15a) ((ß CASE) 0x15c) ((ß CASE) 0x15e) ((ß CASE) 0x160)
-            ((ß CASE) 0x1e60)
-            (do
-                ((ß RETURN) (and (emc2 (byte \S))
-                    (emc2 0x15a) (emc2 0x15c) (emc2 0x15e) (emc2 0x160)
-                    (emc2 0x1e60)))
-            )
-            ((ß CASE) (byte \s))
-            ((ß CASE) 0x15b) ((ß CASE) 0x15d) ((ß CASE) 0x15f) ((ß CASE) 0x161)
-            ((ß CASE) 0x1e61)
-            (do
-                ((ß RETURN) (and (emc2 (byte \s))
-                    (emc2 0x15b) (emc2 0x15d) (emc2 0x15f) (emc2 0x161)
-                    (emc2 0x1e61)))
-            )
+       [(byte \i), 0xec 0xed 0xee 0xef, 0x129 0x12b 0x12d 0x12f 0x131, 0x1d0, 0x1ec9]
+        (and (emc2 (byte \i))
+            (emc2 0xec) (emc2 0xed) (emc2 0xee) (emc2 0xef)
+            (emc2 0x129) (emc2 0x12b) (emc2 0x12d) (emc2 0x12f) (emc2 0x131)
+            (emc2 0x1d0)
+            (emc2 0x1ec9))
 
-            ((ß CASE) (byte \T))
-            ((ß CASE) 0x162) ((ß CASE) 0x164) ((ß CASE) 0x166)
-            ((ß CASE) 0x1e6a) ((ß CASE) 0x1e6e)
-            (do
-                ((ß RETURN) (and (emc2 (byte \T))
-                    (emc2 0x162) (emc2 0x164) (emc2 0x166)
-                    (emc2 0x1e6a) (emc2 0x1e6e)))
-            )
-            ((ß CASE) (byte \t))
-            ((ß CASE) 0x163) ((ß CASE) 0x165) ((ß CASE) 0x167)
-            ((ß CASE) 0x1e6b) ((ß CASE) 0x1e6f) ((ß CASE) 0x1e97)
-            (do
-                ((ß RETURN) (and (emc2 (byte \t))
-                    (emc2 0x163) (emc2 0x165) (emc2 0x167)
-                    (emc2 0x1e6b) (emc2 0x1e6f) (emc2 0x1e97)))
-            )
+       [(byte \J), 0x134]
+        (and (emc2 (byte \J))
+            (emc2 0x134))
 
-            ((ß CASE) (byte \U))
-            ((ß CASE) 0xd9) ((ß CASE) 0xda) ((ß CASE) 0xdb) ((ß CASE) 0xdc)
-            ((ß CASE) 0x168) ((ß CASE) 0x16a) ((ß CASE) 0x16c) ((ß CASE) 0x16e)
-            ((ß CASE) 0x170) ((ß CASE) 0x172) ((ß CASE) 0x1af) ((ß CASE) 0x1d3)
-            ((ß CASE) 0x1ee6)
-            (do
-                ((ß RETURN) (and (emc2 (byte \U))
-                    (emc2 0xd9) (emc2 0xda) (emc2 0xdb) (emc2 0xdc)
-                    (emc2 0x168) (emc2 0x16a) (emc2 0x16c) (emc2 0x16e)
-                    (emc2 0x170) (emc2 0x172) (emc2 0x1af) (emc2 0x1d3)
-                    (emc2 0x1ee6)))
-            )
-            ((ß CASE) (byte \u))
-            ((ß CASE) 0xf9) ((ß CASE) 0xfa) ((ß CASE) 0xfb) ((ß CASE) 0xfc)
-            ((ß CASE) 0x169) ((ß CASE) 0x16b) ((ß CASE) 0x16d) ((ß CASE) 0x16f)
-            ((ß CASE) 0x171) ((ß CASE) 0x173) ((ß CASE) 0x1b0) ((ß CASE) 0x1d4)
-            ((ß CASE) 0x1ee7)
-            (do
-                ((ß RETURN) (and (emc2 (byte \u))
-                    (emc2 0xf9) (emc2 0xfa) (emc2 0xfb) (emc2 0xfc)
-                    (emc2 0x169) (emc2 0x16b) (emc2 0x16d) (emc2 0x16f)
-                    (emc2 0x171) (emc2 0x173) (emc2 0x1b0) (emc2 0x1d4)
-                    (emc2 0x1ee7)))
-            )
+       [(byte \j), 0x135 0x1f0]
+        (and (emc2 (byte \j))
+            (emc2 0x135) (emc2 0x1f0))
 
-            ((ß CASE) (byte \V))
-            ((ß CASE) 0x1e7c)
-            (do
-                ((ß RETURN) (and (emc2 (byte \V))
-                    (emc2 0x1e7c)))
-            )
-            ((ß CASE) (byte \v))
-            ((ß CASE) 0x1e7d)
-            (do
-                ((ß RETURN) (and (emc2 (byte \v))
-                    (emc2 0x1e7d)))
-            )
+       [(byte \K), 0x136 0x1e8, 0x1e30 0x1e34]
+        (and (emc2 (byte \K))
+            (emc2 0x136) (emc2 0x1e8)
+            (emc2 0x1e30) (emc2 0x1e34))
 
-            ((ß CASE) (byte \W))
-            ((ß CASE) 0x174)
-            ((ß CASE) 0x1e80) ((ß CASE) 0x1e82) ((ß CASE) 0x1e84) ((ß CASE) 0x1e86)
-            (do
-                ((ß RETURN) (and (emc2 (byte \W))
-                    (emc2 0x174)
-                    (emc2 0x1e80) (emc2 0x1e82) (emc2 0x1e84) (emc2 0x1e86)))
-            )
-            ((ß CASE) (byte \w))
-            ((ß CASE) 0x175)
-            ((ß CASE) 0x1e81) ((ß CASE) 0x1e83) ((ß CASE) 0x1e85) ((ß CASE) 0x1e87) ((ß CASE) 0x1e98)
-            (do
-                ((ß RETURN) (and (emc2 (byte \w))
-                    (emc2 0x175)
-                    (emc2 0x1e81) (emc2 0x1e83) (emc2 0x1e85) (emc2 0x1e87) (emc2 0x1e98)))
-            )
+       [(byte \k), 0x137 0x1e9, 0x1e31 0x1e35]
+        (and (emc2 (byte \k))
+            (emc2 0x137) (emc2 0x1e9)
+            (emc2 0x1e31) (emc2 0x1e35))
 
-            ((ß CASE) (byte \X))
-            ((ß CASE) 0x1e8a) ((ß CASE) 0x1e8c)
-            (do
-                ((ß RETURN) (and (emc2 (byte \X))
-                    (emc2 0x1e8a) (emc2 0x1e8c)))
-            )
-            ((ß CASE) (byte \x))
-            ((ß CASE) 0x1e8b) ((ß CASE) 0x1e8d)
-            (do
-                ((ß RETURN) (and (emc2 (byte \x))
-                    (emc2 0x1e8b) (emc2 0x1e8d)))
-            )
+       [(byte \L), 0x139 0x13b 0x13d 0x13f 0x141, 0x1e3a]
+        (and (emc2 (byte \L))
+            (emc2 0x139) (emc2 0x13b) (emc2 0x13d) (emc2 0x13f) (emc2 0x141)
+            (emc2 0x1e3a))
 
-            ((ß CASE) (byte \Y))
-            ((ß CASE) 0xdd)
-            ((ß CASE) 0x176) ((ß CASE) 0x178)
-            ((ß CASE) 0x1e8e) ((ß CASE) 0x1ef2) ((ß CASE) 0x1ef6) ((ß CASE) 0x1ef8)
-            (do
-                ((ß RETURN) (and (emc2 (byte \Y))
-                    (emc2 0xdd)
-                    (emc2 0x176) (emc2 0x178)
-                    (emc2 0x1e8e) (emc2 0x1ef2) (emc2 0x1ef6) (emc2 0x1ef8)))
-            )
-            ((ß CASE) (byte \y))
-            ((ß CASE) 0xfd) ((ß CASE) 0xff)
-            ((ß CASE) 0x177)
-            ((ß CASE) 0x1e8f) ((ß CASE) 0x1e99) ((ß CASE) 0x1ef3) ((ß CASE) 0x1ef7) ((ß CASE) 0x1ef9)
-            (do
-                ((ß RETURN) (and (emc2 (byte \y))
-                    (emc2 0xfd) (emc2 0xff)
-                    (emc2 0x177)
-                    (emc2 0x1e8f) (emc2 0x1e99) (emc2 0x1ef3) (emc2 0x1ef7) (emc2 0x1ef9)))
-            )
+       [(byte \l), 0x13a 0x13c 0x13e 0x140 0x142, 0x1e3b]
+        (and (emc2 (byte \l))
+            (emc2 0x13a) (emc2 0x13c) (emc2 0x13e) (emc2 0x140) (emc2 0x142)
+            (emc2 0x1e3b))
 
-            ((ß CASE) (byte \Z))
-            ((ß CASE) 0x179) ((ß CASE) 0x17b) ((ß CASE) 0x17d) ((ß CASE) 0x1b5)
-            ((ß CASE) 0x1e90) ((ß CASE) 0x1e94)
-            (do
-                ((ß RETURN) (and (emc2 (byte \Z))
-                    (emc2 0x179) (emc2 0x17b) (emc2 0x17d) (emc2 0x1b5)
-                    (emc2 0x1e90) (emc2 0x1e94)))
-            )
-            ((ß CASE) (byte \z))
-            ((ß CASE) 0x17a) ((ß CASE) 0x17c) ((ß CASE) 0x17e) ((ß CASE) 0x1b6)
-            ((ß CASE) 0x1e91) ((ß CASE) 0x1e95)
-            (do
-                ((ß RETURN) (and (emc2 (byte \z))
-                    (emc2 0x17a) (emc2 0x17c) (emc2 0x17e) (emc2 0x1b6)
-                    (emc2 0x1e91) (emc2 0x1e95)))
-            )
+       [(byte \M), 0x1e3e 0x1e40]
+        (and (emc2 (byte \M))
+            (emc2 0x1e3e) (emc2 0x1e40))
 
-            ;; default: character itself
-        )
+       [(byte \m), 0x1e3f 0x1e41]
+        (and (emc2 (byte \m))
+            (emc2 0x1e3f) (emc2 0x1e41))
 
+       [(byte \N), 0xd1, 0x143 0x145 0x147, 0x1e44 0x1e48]
+        (and (emc2 (byte \N))
+            (emc2 0xd1)
+            (emc2 0x143) (emc2 0x145) (emc2 0x147)
+            (emc2 0x1e44) (emc2 0x1e48))
+
+       [(byte \n), 0xf1, 0x144 0x146 0x148 0x149, 0x1e45 0x1e49]
+        (and (emc2 (byte \n))
+            (emc2 0xf1)
+            (emc2 0x144) (emc2 0x146) (emc2 0x148) (emc2 0x149)
+            (emc2 0x1e45) (emc2 0x1e49))
+
+       [(byte \O), 0xd2 0xd3 0xd4, 0xd5 0xd6 0xd8, 0x14c 0x14e 0x150, 0x1a0 0x1d1 0x1ea 0x1ec, 0x1ece]
+        (and (emc2 (byte \O))
+            (emc2 0xd2) (emc2 0xd3) (emc2 0xd4)
+            (emc2 0xd5) (emc2 0xd6) (emc2 0xd8)
+            (emc2 0x14c) (emc2 0x14e) (emc2 0x150)
+            (emc2 0x1a0) (emc2 0x1d1) (emc2 0x1ea) (emc2 0x1ec)
+            (emc2 0x1ece))
+
+       [(byte \o), 0xf2 0xf3 0xf4, 0xf5 0xf6 0xf8, 0x14d 0x14f 0x151, 0x1a1 0x1d2 0x1eb 0x1ed, 0x1ecf]
+        (and (emc2 (byte \o))
+            (emc2 0xf2) (emc2 0xf3) (emc2 0xf4)
+            (emc2 0xf5) (emc2 0xf6) (emc2 0xf8)
+            (emc2 0x14d) (emc2 0x14f) (emc2 0x151)
+            (emc2 0x1a1) (emc2 0x1d2) (emc2 0x1eb) (emc2 0x1ed)
+            (emc2 0x1ecf))
+
+       [(byte \P), 0x1e54 0x1e56]
+        (and (emc2 (byte \P))
+            (emc2 0x1e54) (emc2 0x1e56))
+
+       [(byte \p), 0x1e55 0x1e57]
+        (and (emc2 (byte \p))
+            (emc2 0x1e55) (emc2 0x1e57))
+
+       [(byte \R), 0x154 0x156 0x158, 0x1e58 0x1e5e]
+        (and (emc2 (byte \R))
+            (emc2 0x154) (emc2 0x156) (emc2 0x158)
+            (emc2 0x1e58) (emc2 0x1e5e))
+
+       [(byte \r), 0x155 0x157 0x159, 0x1e59 0x1e5f]
+        (and (emc2 (byte \r))
+            (emc2 0x155) (emc2 0x157) (emc2 0x159)
+            (emc2 0x1e59) (emc2 0x1e5f))
+
+       [(byte \S), 0x15a 0x15c 0x15e 0x160, 0x1e60]
+        (and (emc2 (byte \S))
+            (emc2 0x15a) (emc2 0x15c) (emc2 0x15e) (emc2 0x160)
+            (emc2 0x1e60))
+
+       [(byte \s), 0x15b 0x15d 0x15f 0x161, 0x1e61]
+        (and (emc2 (byte \s))
+            (emc2 0x15b) (emc2 0x15d) (emc2 0x15f) (emc2 0x161)
+            (emc2 0x1e61))
+
+       [(byte \T), 0x162 0x164 0x166, 0x1e6a 0x1e6e]
+        (and (emc2 (byte \T))
+            (emc2 0x162) (emc2 0x164) (emc2 0x166)
+            (emc2 0x1e6a) (emc2 0x1e6e))
+
+       [(byte \t), 0x163 0x165 0x167, 0x1e6b 0x1e6f 0x1e97]
+        (and (emc2 (byte \t))
+            (emc2 0x163) (emc2 0x165) (emc2 0x167)
+            (emc2 0x1e6b) (emc2 0x1e6f) (emc2 0x1e97))
+
+       [(byte \U), 0xd9 0xda 0xdb 0xdc, 0x168 0x16a 0x16c 0x16e, 0x170 0x172 0x1af 0x1d3, 0x1ee6]
+        (and (emc2 (byte \U))
+            (emc2 0xd9) (emc2 0xda) (emc2 0xdb) (emc2 0xdc)
+            (emc2 0x168) (emc2 0x16a) (emc2 0x16c) (emc2 0x16e)
+            (emc2 0x170) (emc2 0x172) (emc2 0x1af) (emc2 0x1d3)
+            (emc2 0x1ee6))
+
+       [(byte \u), 0xf9 0xfa 0xfb 0xfc, 0x169 0x16b 0x16d 0x16f, 0x171 0x173 0x1b0 0x1d4, 0x1ee7]
+        (and (emc2 (byte \u))
+            (emc2 0xf9) (emc2 0xfa) (emc2 0xfb) (emc2 0xfc)
+            (emc2 0x169) (emc2 0x16b) (emc2 0x16d) (emc2 0x16f)
+            (emc2 0x171) (emc2 0x173) (emc2 0x1b0) (emc2 0x1d4)
+            (emc2 0x1ee7))
+
+       [(byte \V), 0x1e7c]
+        (and (emc2 (byte \V))
+            (emc2 0x1e7c))
+
+       [(byte \v), 0x1e7d]
+        (and (emc2 (byte \v))
+            (emc2 0x1e7d))
+
+       [(byte \W), 0x174, 0x1e80 0x1e82 0x1e84 0x1e86]
+        (and (emc2 (byte \W))
+            (emc2 0x174)
+            (emc2 0x1e80) (emc2 0x1e82) (emc2 0x1e84) (emc2 0x1e86))
+
+       [(byte \w), 0x175, 0x1e81 0x1e83 0x1e85 0x1e87 0x1e98]
+        (and (emc2 (byte \w))
+            (emc2 0x175)
+            (emc2 0x1e81) (emc2 0x1e83) (emc2 0x1e85) (emc2 0x1e87) (emc2 0x1e98))
+
+       [(byte \X), 0x1e8a 0x1e8c]
+        (and (emc2 (byte \X))
+            (emc2 0x1e8a) (emc2 0x1e8c))
+
+       [(byte \x), 0x1e8b 0x1e8d]
+        (and (emc2 (byte \x))
+            (emc2 0x1e8b) (emc2 0x1e8d))
+
+       [(byte \Y), 0xdd, 0x176 0x178, 0x1e8e 0x1ef2 0x1ef6 0x1ef8]
+        (and (emc2 (byte \Y))
+            (emc2 0xdd)
+            (emc2 0x176) (emc2 0x178)
+            (emc2 0x1e8e) (emc2 0x1ef2) (emc2 0x1ef6) (emc2 0x1ef8))
+
+       [(byte \y), 0xfd 0xff, 0x177, 0x1e8f 0x1e99 0x1ef3 0x1ef7 0x1ef9]
+        (and (emc2 (byte \y))
+            (emc2 0xfd) (emc2 0xff)
+            (emc2 0x177)
+            (emc2 0x1e8f) (emc2 0x1e99) (emc2 0x1ef3) (emc2 0x1ef7) (emc2 0x1ef9))
+
+       [(byte \Z), 0x179 0x17b 0x17d 0x1b5, 0x1e90 0x1e94]
+        (and (emc2 (byte \Z))
+            (emc2 0x179) (emc2 0x17b) (emc2 0x17d) (emc2 0x1b5)
+            (emc2 0x1e90) (emc2 0x1e94))
+
+       [(byte \z), 0x17a 0x17c 0x17e 0x1b6, 0x1e91 0x1e95]
+        (and (emc2 (byte \z))
+            (emc2 0x17a) (emc2 0x17c) (emc2 0x17e) (emc2 0x1b6)
+            (emc2 0x1e91) (emc2 0x1e95))
+
+        ;; default: character itself
         (emc2 c)
     ))
 
@@ -31621,40 +31109,14 @@
                         ((ß CASE) (byte \u))   ;; %uabcd hex 4
                         ((ß CASE) (byte \U))   ;; %U1234abcd hex 8
                         (do
-                            (ß int nr)
-
-                            ((ß SWITCH) c
-                                ((ß CASE) (byte \d))
-                                (do
-                                    ((ß nr =) (getdecchrs))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \o))
-                                (do
-                                    ((ß nr =) (getoctchrs))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \x))
-                                (do
-                                    ((ß nr =) (gethexchrs 2))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \u))
-                                (do
-                                    ((ß nr =) (gethexchrs 4))
-                                    (ß BREAK)
-                                )
-                                ((ß CASE) (byte \U))
-                                (do
-                                    ((ß nr =) (gethexchrs 8))
-                                    (ß BREAK)
-                                )
-                                (ß DEFAULT)
-                                (do
-                                    ((ß nr =) -1)
-                                    (ß BREAK)
-                                )
-                            )
+                            ((ß int nr =) (condp == c
+                                (byte \d) (getdecchrs)
+                                (byte \o) (getoctchrs)
+                                (byte \x) (gethexchrs 2)
+                                (byte \u) (gethexchrs 4)
+                                (byte \U) (gethexchrs 8)
+                                          -1
+                            ))
 
                             (when (< nr 0)
                                 (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -31873,87 +31335,23 @@
 
                     ;; Character class like [:alpha:].
                     (when (!= charclass CLASS_NONE)
-                        ((ß SWITCH) charclass
-                            ((ß CASE) CLASS_ALNUM)
-                            (do
-                                (emc1 NFA_CLASS_ALNUM)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_ALPHA)
-                            (do
-                                (emc1 NFA_CLASS_ALPHA)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_BLANK)
-                            (do
-                                (emc1 NFA_CLASS_BLANK)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_CNTRL)
-                            (do
-                                (emc1 NFA_CLASS_CNTRL)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_DIGIT)
-                            (do
-                                (emc1 NFA_CLASS_DIGIT)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_GRAPH)
-                            (do
-                                (emc1 NFA_CLASS_GRAPH)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_LOWER)
-                            (do
-                                (emc1 NFA_CLASS_LOWER)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_PRINT)
-                            (do
-                                (emc1 NFA_CLASS_PRINT)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_PUNCT)
-                            (do
-                                (emc1 NFA_CLASS_PUNCT)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_SPACE)
-                            (do
-                                (emc1 NFA_CLASS_SPACE)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_UPPER)
-                            (do
-                                (emc1 NFA_CLASS_UPPER)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_XDIGIT)
-                            (do
-                                (emc1 NFA_CLASS_XDIGIT)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_TAB)
-                            (do
-                                (emc1 NFA_CLASS_TAB)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_RETURN)
-                            (do
-                                (emc1 NFA_CLASS_RETURN)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_BACKSPACE)
-                            (do
-                                (emc1 NFA_CLASS_BACKSPACE)
-                                (ß BREAK)
-                            )
-                            ((ß CASE) CLASS_ESCAPE)
-                            (do
-                                (emc1 NFA_CLASS_ESCAPE)
-                                (ß BREAK)
-                            )
+                        (condp == charclass
+                            CLASS_ALNUM     (emc1 NFA_CLASS_ALNUM)
+                            CLASS_ALPHA     (emc1 NFA_CLASS_ALPHA)
+                            CLASS_BLANK     (emc1 NFA_CLASS_BLANK)
+                            CLASS_CNTRL     (emc1 NFA_CLASS_CNTRL)
+                            CLASS_DIGIT     (emc1 NFA_CLASS_DIGIT)
+                            CLASS_GRAPH     (emc1 NFA_CLASS_GRAPH)
+                            CLASS_LOWER     (emc1 NFA_CLASS_LOWER)
+                            CLASS_PRINT     (emc1 NFA_CLASS_PRINT)
+                            CLASS_PUNCT     (emc1 NFA_CLASS_PUNCT)
+                            CLASS_SPACE     (emc1 NFA_CLASS_SPACE)
+                            CLASS_UPPER     (emc1 NFA_CLASS_UPPER)
+                            CLASS_XDIGIT    (emc1 NFA_CLASS_XDIGIT)
+                            CLASS_TAB       (emc1 NFA_CLASS_TAB)
+                            CLASS_RETURN    (emc1 NFA_CLASS_RETURN)
+                            CLASS_BACKSPACE (emc1 NFA_CLASS_BACKSPACE)
+                            CLASS_ESCAPE    (emc1 NFA_CLASS_ESCAPE)
                         )
                         (emc1 NFA_CONCAT)
                         (ß CONTINUE)
@@ -32389,89 +31787,31 @@
 ;;      etc.
 
 (defn- #_boolean nfa-regconcat []
-    (§
-        ((ß boolean cont =) true)
-        ((ß boolean first =) true)
+    (loop [#_boolean first true]
+        (condp ==? (peekchr)
+           [NUL
+            (Magic (byte \|))
+            (Magic (byte \&))
+            (Magic (byte \)))]
+                true
 
-        (while cont
-            ((ß SWITCH) (peekchr)
-                ((ß CASE) NUL)
-                ((ß CASE) (Magic (byte \|)))
-                ((ß CASE) (Magic (byte \&)))
-                ((ß CASE) (Magic (byte \))))
+            (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur first))
+            (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur first))
+            (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur first))
+
+            (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur first))
+            (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur first))
+            (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur first))
+            (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur first))
+
+            ;; :else
+            (if (not (nfa-regpiece))
+                false
                 (do
-                    ((ß cont =) false)
-                    (ß BREAK)
+                    (when (not first) (emc1 NFA_CONCAT))
+                    (recur false)
                 )
-
-                ((ß CASE) (Magic (byte \Z)))
-                (do
-                    (swap! regflags | RF_ICOMBINE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \c)))
-                (do
-                    (swap! regflags | RF_ICASE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \C)))
-                (do
-                    (swap! regflags | RF_NOICASE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \v)))
-                (do
-                    (reset! reg_magic MAGIC_ALL)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \m)))
-                (do
-                    (reset! reg_magic MAGIC_ON)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \M)))
-                (do
-                    (reset! reg_magic MAGIC_OFF)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \V)))
-                (do
-                    (reset! reg_magic MAGIC_NONE)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                (ß DEFAULT)
-                (do
-                    (if (not (nfa-regpiece))
-                        ((ß RETURN) false)
-                    )
-                    (if (not first)
-                        (emc1 NFA_CONCAT)
-                        ((ß first =) false)
-                    )
-                    (ß BREAK)
-                )
-            )
-        )
-
-        true
+            ))
     ))
 
 ;; Parse a branch, one or more concats, separated by "\&".  It matches the
@@ -32486,36 +31826,30 @@
 ;;              etc.
 
 (defn- #_boolean nfa-regbranch []
-    (§
-        ((ß int old_post_pos =) @post_index)
-
-        ;; First branch, possibly the only one.
-        (if (not (nfa-regconcat))
-            ((ß RETURN) false)
-        )
-
-        ((ß int ch =) (peekchr))
-        ;; Try next concats.
-        (while (== ch (Magic (byte \&)))
-            (skipchr)
-            (emc1 NFA_NOPEN)
-            (emc1 NFA_PREV_ATOM_NO_WIDTH)
-            ((ß old_post_pos =) @post_index)
-            (if (not (nfa-regconcat))
-                ((ß RETURN) false)
-            )
-            ;; if concat is empty do emit a node
-            (if (== old_post_pos @post_index)
-                (emc1 NFA_EMPTY))
-            (emc1 NFA_CONCAT)
-            ((ß ch =) (peekchr))
-        )
-
-        ;; if a branch is empty, emit one node for it
-        (if (== old_post_pos @post_index)
-            (emc1 NFA_EMPTY))
-
-        true
+    (let [i @post_index]
+        (if (not (nfa-regconcat)) ;; first branch, possibly the only one
+            false
+            (let [i (loop-when i (== (peekchr) (Magic (byte \&))) => i ;; try next concats
+                        (skipchr)
+                        (emc1 NFA_NOPEN)
+                        (emc1 NFA_PREV_ATOM_NO_WIDTH)
+                        (let [i @post_index]
+                            (if (not (nfa-regconcat))
+                                false
+                                (do ;; if concat is empty, emit a node
+                                    (when (== @post_index i) (emc1 NFA_EMPTY))
+                                    (emc1 NFA_CONCAT)
+                                    (recur i)
+                                ))
+                        ))]
+                (if i
+                    (do ;; if branch is empty, emit a node
+                        (when (== @post_index i) (emc1 NFA_EMPTY))
+                        true
+                    )
+                    false
+                )
+            ))
     ))
 
 ;; Parse a pattern, one or more branches, separated by "\|".
@@ -32639,222 +31973,170 @@
 ;; When unknown or unlimited return -1.
 
 (defn- #_int nfa-max-width [#_nfa_state_C startstate, #_int depth]
-    (§
-        ;; detect looping in a NFA_SPLIT
-        (if (< 4 depth)
-            ((ß RETURN) -1)
-        )
-
-        ((ß int len =) 0)
-
-        ((ß FOR) (ß ((ß nfa_state_C state =) startstate) (some? state) nil)
-            ((ß SWITCH) (:c state)
-                ((ß CASE) NFA_END_INVISIBLE)
-                ((ß CASE) NFA_END_INVISIBLE_NEG)
-                (do
-                    ;; the end, return what we have
-                    ((ß RETURN) len)
-                )
-
-                ((ß CASE) NFA_SPLIT)
-                (do
-                    ;; two alternatives, use the maximum
-                    ((ß int l =) (nfa-max-width (.out0 state), (inc depth)))
-                    ((ß int r =) (nfa-max-width (.out1 state), (inc depth)))
-                    (if (or (< l 0) (< r 0))
-                        ((ß RETURN) -1)
-                    )
-
-                    ((ß RETURN) (+ len (max l r)))
-                )
-
-                ((ß CASE) NFA_ANY)
-                ((ß CASE) NFA_START_COLL)
-                ((ß CASE) NFA_START_NEG_COLL)
-                (do
-                    ;; matches some character, including composing chars
-                    ((ß len =) (+ len MB_MAXBYTES))
-                    (when (!= (:c state) NFA_ANY)
-                        ;; skip over the characters
-                        ((ß state =) (.. state (out1) (out0)))
-                        (ß CONTINUE)
-                    )
-                    (ß BREAK)
-                )
-
-                ((ß CASE) NFA_DIGIT)
-                ((ß CASE) NFA_WHITE)
-                ((ß CASE) NFA_HEX)
-                ((ß CASE) NFA_OCTAL)
-                (do
-                    ;; ascii
-                    ((ß len =) (inc len))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) NFA_IDENT)
-                ((ß CASE) NFA_SIDENT)
-                ((ß CASE) NFA_KWORD)
-                ((ß CASE) NFA_SKWORD)
-                ((ß CASE) NFA_FNAME)
-                ((ß CASE) NFA_SFNAME)
-                ((ß CASE) NFA_PRINT)
-                ((ß CASE) NFA_SPRINT)
-                ((ß CASE) NFA_NWHITE)
-                ((ß CASE) NFA_NDIGIT)
-                ((ß CASE) NFA_NHEX)
-                ((ß CASE) NFA_NOCTAL)
-                ((ß CASE) NFA_WORD)
-                ((ß CASE) NFA_NWORD)
-                ((ß CASE) NFA_HEAD)
-                ((ß CASE) NFA_NHEAD)
-                ((ß CASE) NFA_ALPHA)
-                ((ß CASE) NFA_NALPHA)
-                ((ß CASE) NFA_LOWER)
-                ((ß CASE) NFA_NLOWER)
-                ((ß CASE) NFA_UPPER)
-                ((ß CASE) NFA_NUPPER)
-                ((ß CASE) NFA_LOWER_IC)
-                ((ß CASE) NFA_NLOWER_IC)
-                ((ß CASE) NFA_UPPER_IC)
-                ((ß CASE) NFA_NUPPER_IC)
-                ((ß CASE) NFA_ANY_COMPOSING)
-                (do
-                    ;; possibly non-ascii
-                    ((ß len =) (+ len 3))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) NFA_START_INVISIBLE)
-                ((ß CASE) NFA_START_INVISIBLE_NEG)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE_NEG)
-                (do
-                    ;; zero-width, out1 points to the END state
-                    ((ß state =) (.. state (out1) (out0)))
-                    (ß CONTINUE)
-                )
-
-                ((ß CASE) NFA_BACKREF1)
-                ((ß CASE) NFA_BACKREF2)
-                ((ß CASE) NFA_BACKREF3)
-                ((ß CASE) NFA_BACKREF4)
-                ((ß CASE) NFA_BACKREF5)
-                ((ß CASE) NFA_BACKREF6)
-                ((ß CASE) NFA_BACKREF7)
-                ((ß CASE) NFA_BACKREF8)
-                ((ß CASE) NFA_BACKREF9)
-                ((ß CASE) NFA_ZREF1)
-                ((ß CASE) NFA_ZREF2)
-                ((ß CASE) NFA_ZREF3)
-                ((ß CASE) NFA_ZREF4)
-                ((ß CASE) NFA_ZREF5)
-                ((ß CASE) NFA_ZREF6)
-                ((ß CASE) NFA_ZREF7)
-                ((ß CASE) NFA_ZREF8)
-                ((ß CASE) NFA_ZREF9)
-                ((ß CASE) NFA_NEWL)
-                ((ß CASE) NFA_SKIP)
-                (do
-                    ;; unknown width
-                    ((ß RETURN) -1)
-                )
-
-                ((ß CASE) NFA_BOL)
-                ((ß CASE) NFA_EOL)
-                ((ß CASE) NFA_BOF)
-                ((ß CASE) NFA_EOF)
-                ((ß CASE) NFA_BOW)
-                ((ß CASE) NFA_EOW)
-                ((ß CASE) NFA_MOPEN)
-                ((ß CASE) NFA_MOPEN1)
-                ((ß CASE) NFA_MOPEN2)
-                ((ß CASE) NFA_MOPEN3)
-                ((ß CASE) NFA_MOPEN4)
-                ((ß CASE) NFA_MOPEN5)
-                ((ß CASE) NFA_MOPEN6)
-                ((ß CASE) NFA_MOPEN7)
-                ((ß CASE) NFA_MOPEN8)
-                ((ß CASE) NFA_MOPEN9)
-                ((ß CASE) NFA_ZOPEN)
-                ((ß CASE) NFA_ZOPEN1)
-                ((ß CASE) NFA_ZOPEN2)
-                ((ß CASE) NFA_ZOPEN3)
-                ((ß CASE) NFA_ZOPEN4)
-                ((ß CASE) NFA_ZOPEN5)
-                ((ß CASE) NFA_ZOPEN6)
-                ((ß CASE) NFA_ZOPEN7)
-                ((ß CASE) NFA_ZOPEN8)
-                ((ß CASE) NFA_ZOPEN9)
-                ((ß CASE) NFA_ZCLOSE)
-                ((ß CASE) NFA_ZCLOSE1)
-                ((ß CASE) NFA_ZCLOSE2)
-                ((ß CASE) NFA_ZCLOSE3)
-                ((ß CASE) NFA_ZCLOSE4)
-                ((ß CASE) NFA_ZCLOSE5)
-                ((ß CASE) NFA_ZCLOSE6)
-                ((ß CASE) NFA_ZCLOSE7)
-                ((ß CASE) NFA_ZCLOSE8)
-                ((ß CASE) NFA_ZCLOSE9)
-                ((ß CASE) NFA_MCLOSE)
-                ((ß CASE) NFA_MCLOSE1)
-                ((ß CASE) NFA_MCLOSE2)
-                ((ß CASE) NFA_MCLOSE3)
-                ((ß CASE) NFA_MCLOSE4)
-                ((ß CASE) NFA_MCLOSE5)
-                ((ß CASE) NFA_MCLOSE6)
-                ((ß CASE) NFA_MCLOSE7)
-                ((ß CASE) NFA_MCLOSE8)
-                ((ß CASE) NFA_MCLOSE9)
-                ((ß CASE) NFA_NOPEN)
-                ((ß CASE) NFA_NCLOSE)
-
-                ((ß CASE) NFA_LNUM_GT)
-                ((ß CASE) NFA_LNUM_LT)
-                ((ß CASE) NFA_COL_GT)
-                ((ß CASE) NFA_COL_LT)
-                ((ß CASE) NFA_VCOL_GT)
-                ((ß CASE) NFA_VCOL_LT)
-                ((ß CASE) NFA_MARK_GT)
-                ((ß CASE) NFA_MARK_LT)
-                ((ß CASE) NFA_VISUAL)
-                ((ß CASE) NFA_LNUM)
-                ((ß CASE) NFA_CURSOR)
-                ((ß CASE) NFA_COL)
-                ((ß CASE) NFA_VCOL)
-                ((ß CASE) NFA_MARK)
-
-                ((ß CASE) NFA_ZSTART)
-                ((ß CASE) NFA_ZEND)
-                ((ß CASE) NFA_OPT_CHARS)
-                ((ß CASE) NFA_EMPTY)
-                ((ß CASE) NFA_START_PATTERN)
-                ((ß CASE) NFA_END_PATTERN)
-                ((ß CASE) NFA_COMPOSING)
-                ((ß CASE) NFA_END_COMPOSING)
-                (do
-                    ;; zero-width
-                    (ß BREAK)
-                )
-
-                (ß DEFAULT)
-                (do
-                    (when (< (:c state) 0)
-                        ;; don't know what this is
-                        ((ß RETURN) -1)
-                    )
-                    ;; normal character
-                    ((ß len =) (+ len (utf-char2len (:c state))))
-                    (ß BREAK)
-                )
-            )
-
-            ;; normal way to continue
-            ((ß state =) (.out0 state))
-        )
-
-        ;; unrecognized, "cannot happen"
+    (if (< 4 depth) ;; detect looping in a NFA_SPLIT
         -1
+        (loop-when [#_int len 0 #_nfa_state_C state startstate] (some? state) => -1 ;; unrecognized, "cannot happen"
+            (condp ==? (:c state)
+               [NFA_END_INVISIBLE
+                NFA_END_INVISIBLE_NEG]
+                    len ;; the end, return what we have
+
+                NFA_SPLIT
+                    ;; two alternatives, use the maximum
+                    (let [l (nfa-max-width (.out0 state), (inc depth)) r (nfa-max-width (.out1 state), (inc depth))]
+                        (if (or (neg? l) (neg? r)) -1 (+ len (max l r))))
+
+               [NFA_ANY
+                NFA_START_COLL
+                NFA_START_NEG_COLL]
+                    ;; matches some character, including composing chars
+                    (recur (+ len MB_MAXBYTES) (if (!= (:c state) NFA_ANY) (.. state (out1) (out0)) (.out0 state)))
+
+               [NFA_DIGIT
+                NFA_WHITE
+                NFA_HEX
+                NFA_OCTAL]
+                    (recur (inc len) (.out0 state)) ;; ascii
+
+               [NFA_IDENT
+                NFA_SIDENT
+                NFA_KWORD
+                NFA_SKWORD
+                NFA_FNAME
+                NFA_SFNAME
+                NFA_PRINT
+                NFA_SPRINT
+                NFA_NWHITE
+                NFA_NDIGIT
+                NFA_NHEX
+                NFA_NOCTAL
+                NFA_WORD
+                NFA_NWORD
+                NFA_HEAD
+                NFA_NHEAD
+                NFA_ALPHA
+                NFA_NALPHA
+                NFA_LOWER
+                NFA_NLOWER
+                NFA_UPPER
+                NFA_NUPPER
+                NFA_LOWER_IC
+                NFA_NLOWER_IC
+                NFA_UPPER_IC
+                NFA_NUPPER_IC
+                NFA_ANY_COMPOSING]
+                    (recur (+ len 3) (.out0 state)) ;; possibly non-ascii
+
+               [NFA_START_INVISIBLE
+                NFA_START_INVISIBLE_NEG
+                NFA_START_INVISIBLE_BEFORE
+                NFA_START_INVISIBLE_BEFORE_NEG]
+                    (recur len (.. state (out1) (out0))) ;; zero-width, out1 points to the END state
+
+               [NFA_BACKREF1
+                NFA_BACKREF2
+                NFA_BACKREF3
+                NFA_BACKREF4
+                NFA_BACKREF5
+                NFA_BACKREF6
+                NFA_BACKREF7
+                NFA_BACKREF8
+                NFA_BACKREF9
+                NFA_ZREF1
+                NFA_ZREF2
+                NFA_ZREF3
+                NFA_ZREF4
+                NFA_ZREF5
+                NFA_ZREF6
+                NFA_ZREF7
+                NFA_ZREF8
+                NFA_ZREF9
+                NFA_NEWL
+                NFA_SKIP]
+                    -1 ;; unknown width
+
+               [NFA_BOL
+                NFA_EOL
+                NFA_BOF
+                NFA_EOF
+                NFA_BOW
+                NFA_EOW
+                NFA_MOPEN
+                NFA_MOPEN1
+                NFA_MOPEN2
+                NFA_MOPEN3
+                NFA_MOPEN4
+                NFA_MOPEN5
+                NFA_MOPEN6
+                NFA_MOPEN7
+                NFA_MOPEN8
+                NFA_MOPEN9
+                NFA_ZOPEN
+                NFA_ZOPEN1
+                NFA_ZOPEN2
+                NFA_ZOPEN3
+                NFA_ZOPEN4
+                NFA_ZOPEN5
+                NFA_ZOPEN6
+                NFA_ZOPEN7
+                NFA_ZOPEN8
+                NFA_ZOPEN9
+                NFA_ZCLOSE
+                NFA_ZCLOSE1
+                NFA_ZCLOSE2
+                NFA_ZCLOSE3
+                NFA_ZCLOSE4
+                NFA_ZCLOSE5
+                NFA_ZCLOSE6
+                NFA_ZCLOSE7
+                NFA_ZCLOSE8
+                NFA_ZCLOSE9
+                NFA_MCLOSE
+                NFA_MCLOSE1
+                NFA_MCLOSE2
+                NFA_MCLOSE3
+                NFA_MCLOSE4
+                NFA_MCLOSE5
+                NFA_MCLOSE6
+                NFA_MCLOSE7
+                NFA_MCLOSE8
+                NFA_MCLOSE9
+                NFA_NOPEN
+                NFA_NCLOSE
+
+                NFA_LNUM_GT
+                NFA_LNUM_LT
+                NFA_COL_GT
+                NFA_COL_LT
+                NFA_VCOL_GT
+                NFA_VCOL_LT
+                NFA_MARK_GT
+                NFA_MARK_LT
+                NFA_VISUAL
+                NFA_LNUM
+                NFA_CURSOR
+                NFA_COL
+                NFA_VCOL
+                NFA_MARK
+
+                NFA_ZSTART
+                NFA_ZEND
+                NFA_OPT_CHARS
+                NFA_EMPTY
+                NFA_START_PATTERN
+                NFA_END_PATTERN
+                NFA_COMPOSING
+                NFA_END_COMPOSING]
+                    (recur len (.out0 state)) ;; zero-width
+
+             ;; :else
+                (if (< (:c state) 0)
+                    ;; don't know what this is
+                    -1
+                    ;; normal character
+                    (recur (+ len (utf-char2len (:c state))) (.out0 state))
+                )
+            ))
     ))
 
 ;; A partially built NFA without the matching state filled in.
@@ -33227,39 +32509,14 @@
                     ((ß boolean before =) (any == (... postfix i) NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG))
                     ((ß boolean pattern =) (== (... postfix i) NFA_PREV_ATOM_LIKE_PATTERN))
 
-                    (ß int start_state, end_state)
-                    ((ß SWITCH) (... postfix i)
-                        ((ß CASE) NFA_PREV_ATOM_NO_WIDTH)
-                        (do
-                            ((ß start_state =) NFA_START_INVISIBLE)
-                            ((ß end_state =) NFA_END_INVISIBLE)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_PREV_ATOM_NO_WIDTH_NEG)
-                        (do
-                            ((ß start_state =) NFA_START_INVISIBLE_NEG)
-                            ((ß end_state =) NFA_END_INVISIBLE_NEG)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_PREV_ATOM_JUST_BEFORE)
-                        (do
-                            ((ß start_state =) NFA_START_INVISIBLE_BEFORE)
-                            ((ß end_state =) NFA_END_INVISIBLE)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_PREV_ATOM_JUST_BEFORE_NEG)
-                        (do
-                            ((ß start_state =) NFA_START_INVISIBLE_BEFORE_NEG)
-                            ((ß end_state =) NFA_END_INVISIBLE_NEG)
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT) ;; NFA_PREV_ATOM_LIKE_PATTERN:
-                        (do
-                            ((ß start_state =) NFA_START_PATTERN)
-                            ((ß end_state =) NFA_END_PATTERN)
-                            (ß BREAK)
-                        )
-                    )
+                    ((ß int start_state, end_state =)
+                        (condp == (... postfix i)
+                            NFA_PREV_ATOM_NO_WIDTH        [NFA_START_INVISIBLE            NFA_END_INVISIBLE]
+                            NFA_PREV_ATOM_NO_WIDTH_NEG    [NFA_START_INVISIBLE_NEG        NFA_END_INVISIBLE_NEG]
+                            NFA_PREV_ATOM_JUST_BEFORE     [NFA_START_INVISIBLE_BEFORE     NFA_END_INVISIBLE]
+                            NFA_PREV_ATOM_JUST_BEFORE_NEG [NFA_START_INVISIBLE_BEFORE_NEG NFA_END_INVISIBLE_NEG]
+                            NFA_PREV_ATOM_LIKE_PATTERN    [NFA_START_PATTERN              NFA_END_PATTERN]
+                        ))
 
                     ((ß int n =) (if before (... postfix ((ß i =) (inc i))) 0))    ;; get the count
 
@@ -33348,75 +32605,22 @@
                         (ß BREAK)
                     )
 
-                    ((ß int mopen =) (ß postfix[i], mclose))
-                    ((ß SWITCH) (... postfix i)
-                        ((ß CASE) NFA_NOPEN)
-                        (do
-                            ((ß mclose =) NFA_NCLOSE)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN1)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE1)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN2)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE2)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN3)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE3)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN4)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE4)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN5)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE5)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN6)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE6)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN7)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE7)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN8)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE8)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_ZOPEN9)
-                        (do
-                            ((ß mclose =) NFA_ZCLOSE9)
-                            (ß BREAK)
-                        )
-                        ((ß CASE) NFA_COMPOSING)
-                        (do
-                            ((ß mclose =) NFA_END_COMPOSING)
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT)
-                        (do
-                            ;; NFA_MOPEN, NFA_MOPEN1 .. NFA_MOPEN9
-                            ((ß mclose =) (+ (... postfix i) NSUBEXP))
-                            (ß BREAK)
-                        )
-                    )
+                    ((ß int mopen =) (... postfix i))
+                    ((ß int mclose =) (condp == mopen
+                        NFA_NOPEN     NFA_NCLOSE
+                        NFA_ZOPEN     NFA_ZCLOSE
+                        NFA_ZOPEN1    NFA_ZCLOSE1
+                        NFA_ZOPEN2    NFA_ZCLOSE2
+                        NFA_ZOPEN3    NFA_ZCLOSE3
+                        NFA_ZOPEN4    NFA_ZCLOSE4
+                        NFA_ZOPEN5    NFA_ZCLOSE5
+                        NFA_ZOPEN6    NFA_ZCLOSE6
+                        NFA_ZOPEN7    NFA_ZCLOSE7
+                        NFA_ZOPEN8    NFA_ZCLOSE8
+                        NFA_ZOPEN9    NFA_ZCLOSE9
+                        NFA_COMPOSING NFA_END_COMPOSING
+                        (+ mopen NSUBEXP) ;; NFA_MOPEN, NFA_MOPEN1 .. NFA_MOPEN9
+                    ))
 
                     ;; Allow "NFA_MOPEN" as a valid postfix representation for the empty regexp "".
                     ;; In this case, the NFA will be NFA_MOPEN -> NFA_MCLOSE.  Note that this also
@@ -33921,141 +33125,108 @@
     ;; state: state to update
     ;; subs: pointers to subexpressions
     ;; pim: postponed match or null
-    (§
-        (dotimes [#_int i (:n nfl)]
-            ((ß nfa_thread_C thread =) (... (:threads nfl) i))
-
-            (when (and (== (:id (:state thread)) (:id state)) (sub-equal (:rs_norm (:th_subs thread)), (:rs_norm subs)) (or (not @nfa_has_zsubexpr) (sub-equal (:rs_synt (:th_subs thread)), (:rs_synt subs))) (pim-equal (:th_pim thread), pim))
-                ((ß RETURN) true)
-            )
-        )
-
-        false
+    (loop-when [i 0] (< i (:n nfl)) => false
+        (let [#_nfa_thread_C thread (... (:threads nfl) i)]
+            (if (and (== (:id (:state thread)) (:id state))
+                     (sub-equal (:rs_norm (:th_subs thread)), (:rs_norm subs))
+                     (or (not @nfa_has_zsubexpr) (sub-equal (:rs_synt (:th_subs thread)), (:rs_synt subs)))
+                     (pim-equal (:th_pim thread), pim))
+                true
+                (recur (inc i))
+            ))
     ))
 
 ;; Return true if "one" and "two" are equal.  That includes when both are not set.
 
 (defn- #_boolean pim-equal [#_nfa_pim_C one, #_nfa_pim_C two]
-    (§
-        ((ß boolean one_unused =) (or (nil? one) (== (:result one) NFA_PIM_UNUSED)))
-        ((ß boolean two_unused =) (or (nil? two) (== (:result two) NFA_PIM_UNUSED)))
-
-        (when one_unused
-            ;; one is unused: equal when two is also unused
-            ((ß RETURN) two_unused)
-        )
-        (when two_unused
-            ;; one is used and two is not: not equal
-            ((ß RETURN) false)
-        )
-        ;; compare the state id
-        (if (!= (:id (:state one)) (:id (:state two)))
-            ((ß RETURN) false)
-        )
-        ;; compare the position
-        (if (nil? @reg_match)
-            ((ß RETURN) (and (== (:lnum (:end_pos one)) (:lnum (:end_pos two))) (== (:col (:end_pos one)) (:col (:end_pos two)))))
-        )
-
-        (BEQ (:end_ptr one), (:end_ptr two))
-    ))
+    (let [#_boolean one_unused (or (nil? one) (== (:result one) NFA_PIM_UNUSED))
+          #_boolean two_unused (or (nil? two) (== (:result two) NFA_PIM_UNUSED))]
+        (cond
+            one_unused ;; one is unused: equal when two is also unused
+                two_unused
+            two_unused ;; one is used and two is not: not equal
+                false
+            (!= (:id (:state one)) (:id (:state two))) ;; compare the state id
+                false
+            (nil? @reg_match) ;; compare the position
+                (and (== (:lnum (:end_pos one)) (:lnum (:end_pos two))) (== (:col (:end_pos one)) (:col (:end_pos two))))
+            :else
+                (BEQ (:end_ptr one), (:end_ptr two))
+        )))
 
 ;; Return true if "state" leads to a NFA_MATCH without advancing the input.
 
 (defn- #_boolean match-follows [#_nfa_state_C startstate, #_int depth]
-    (§
-        ;; avoid too much recursion
-        (if (< 10 depth)
-            ((ß RETURN) false)
-        )
-
-        ((ß FOR) (ß ((ß nfa_state_C state =) startstate) (some? state) nil)
-            ((ß SWITCH) (:c state)
-                ((ß CASE) NFA_MATCH)
-                ((ß CASE) NFA_MCLOSE)
-                ((ß CASE) NFA_END_INVISIBLE)
-                ((ß CASE) NFA_END_INVISIBLE_NEG)
-                ((ß CASE) NFA_END_PATTERN)
-                (do
-                    ((ß RETURN) true)
-                )
-
-                ((ß CASE) NFA_SPLIT)
-                (do
-                    ((ß RETURN) (or (match-follows (.out0 state), (inc depth)) (match-follows (.out1 state), (inc depth))))
-                )
-
-                ((ß CASE) NFA_START_INVISIBLE)
-                ((ß CASE) NFA_START_INVISIBLE_FIRST)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE_FIRST)
-                ((ß CASE) NFA_START_INVISIBLE_NEG)
-                ((ß CASE) NFA_START_INVISIBLE_NEG_FIRST)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE_NEG)
-                ((ß CASE) NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
-                ((ß CASE) NFA_COMPOSING)
-                (do
-                    ;; skip ahead to next state
-                    ((ß state =) (.. state (out1) (out0)))
-                    (ß CONTINUE)
-                )
-
-                ((ß CASE) NFA_ANY)
-                ((ß CASE) NFA_ANY_COMPOSING)
-                ((ß CASE) NFA_IDENT)
-                ((ß CASE) NFA_SIDENT)
-                ((ß CASE) NFA_KWORD)
-                ((ß CASE) NFA_SKWORD)
-                ((ß CASE) NFA_FNAME)
-                ((ß CASE) NFA_SFNAME)
-                ((ß CASE) NFA_PRINT)
-                ((ß CASE) NFA_SPRINT)
-                ((ß CASE) NFA_WHITE)
-                ((ß CASE) NFA_NWHITE)
-                ((ß CASE) NFA_DIGIT)
-                ((ß CASE) NFA_NDIGIT)
-                ((ß CASE) NFA_HEX)
-                ((ß CASE) NFA_NHEX)
-                ((ß CASE) NFA_OCTAL)
-                ((ß CASE) NFA_NOCTAL)
-                ((ß CASE) NFA_WORD)
-                ((ß CASE) NFA_NWORD)
-                ((ß CASE) NFA_HEAD)
-                ((ß CASE) NFA_NHEAD)
-                ((ß CASE) NFA_ALPHA)
-                ((ß CASE) NFA_NALPHA)
-                ((ß CASE) NFA_LOWER)
-                ((ß CASE) NFA_NLOWER)
-                ((ß CASE) NFA_UPPER)
-                ((ß CASE) NFA_NUPPER)
-                ((ß CASE) NFA_LOWER_IC)
-                ((ß CASE) NFA_NLOWER_IC)
-                ((ß CASE) NFA_UPPER_IC)
-                ((ß CASE) NFA_NUPPER_IC)
-                ((ß CASE) NFA_START_COLL)
-                ((ß CASE) NFA_START_NEG_COLL)
-                ((ß CASE) NFA_NEWL)
-                (do
-                    ;; state will advance input
-                    ((ß RETURN) false)
-                )
-
-                (ß DEFAULT)
-                (do
-                    (when (< 0 (:c state))
-                        ;; state will advance input
-                        ((ß RETURN) false)
-                    )
-
-                    ;; Others: zero-width or possibly zero-width,
-                    ;; might still find a match at the same position, keep looking.
-                    (ß BREAK)
-                )
-            )
-            ((ß state =) (.out0 state))
-        )
-
+    (if (< 10 depth) ;; avoid too much recursion
         false
+        (loop-when [#_nfa_state_C state startstate] (some? state) => false
+            (condp ==? (:c state)
+               [NFA_MATCH
+                NFA_MCLOSE
+                NFA_END_INVISIBLE
+                NFA_END_INVISIBLE_NEG
+                NFA_END_PATTERN]
+                    true
+
+                NFA_SPLIT
+                    (or (match-follows (.out0 state), (inc depth)) (match-follows (.out1 state), (inc depth)))
+
+               [NFA_START_INVISIBLE
+                NFA_START_INVISIBLE_FIRST
+                NFA_START_INVISIBLE_BEFORE
+                NFA_START_INVISIBLE_BEFORE_FIRST
+                NFA_START_INVISIBLE_NEG
+                NFA_START_INVISIBLE_NEG_FIRST
+                NFA_START_INVISIBLE_BEFORE_NEG
+                NFA_START_INVISIBLE_BEFORE_NEG_FIRST
+                NFA_COMPOSING]
+                    (recur (.. state (out1) (out0))) ;; skip ahead to next state
+
+               [NFA_ANY
+                NFA_ANY_COMPOSING
+                NFA_IDENT
+                NFA_SIDENT
+                NFA_KWORD
+                NFA_SKWORD
+                NFA_FNAME
+                NFA_SFNAME
+                NFA_PRINT
+                NFA_SPRINT
+                NFA_WHITE
+                NFA_NWHITE
+                NFA_DIGIT
+                NFA_NDIGIT
+                NFA_HEX
+                NFA_NHEX
+                NFA_OCTAL
+                NFA_NOCTAL
+                NFA_WORD
+                NFA_NWORD
+                NFA_HEAD
+                NFA_NHEAD
+                NFA_ALPHA
+                NFA_NALPHA
+                NFA_LOWER
+                NFA_NLOWER
+                NFA_UPPER
+                NFA_NUPPER
+                NFA_LOWER_IC
+                NFA_NLOWER_IC
+                NFA_UPPER_IC
+                NFA_NUPPER_IC
+                NFA_START_COLL
+                NFA_START_NEG_COLL
+                NFA_NEWL]
+                    false ;; state will advance input
+
+             ;; :else
+                (if (< 0 (:c state))
+                    ;; state will advance input
+                    false
+                    ;; Others: zero-width or possibly zero-width, might still find a match at the same position, keep looking.
+                    (recur (.out0 state))
+                )
+            ))
     ))
 
 ;; Return true if "state" is already in list "nfl".
