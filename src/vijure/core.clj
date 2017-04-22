@@ -78,7 +78,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(buffer cmdline_info frame lpos match matcher memline nfa_pim nfa_state oparg pattern pos regsave regsubs soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(buffer cmdline_info frame lpos match matcher memline nfa_pim nfa_state oparg pattern pos regsave regsubs soffset termios typebuf u_entry u_header visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr frag frame key_name lpos modmasktable nfa_state nfa_thread nv_cmd pos signalinfo spat termcode typebuf vimoption wline yankreg)))
 
@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state? nfa-max-width alloc-frag fr-single fr-patch fr-append fr-push fr-pop post2nfa? nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state? nfa-max-width alloc-frag fr-single fr-patch fr-append fr-push fr-pop post2nfa? nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon? u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -1253,20 +1253,14 @@
         (field long         ue_size)        ;; number of lines in "ue_array"
     ])
 
-(class! #_final u_link_C
-    [
-        (field u_header_C   ptr)
-        (field long         seq)
-    ])
-
 (class! #_final u_header_C
     [
         ;; The following have a pointer and a number.
         ;; The number is used when reading the undo file in u_read_undo().
-        (field u_link_C     uh_next         (NEW_u_link_C))         ;; next undo header in list
-        (field u_link_C     uh_prev         (NEW_u_link_C))         ;; previous header in list
-        (field u_link_C     uh_alt_next     (NEW_u_link_C))         ;; next header for alt. redo
-        (field u_link_C     uh_alt_prev     (NEW_u_link_C))         ;; previous header for alt. redo
+        (field u_header_C   uh_next)                                ;; next undo header in list
+        (field u_header_C   uh_prev)                                ;; previous header in list
+        (field u_header_C   uh_alt_next)                            ;; next header for alt. redo
+        (field u_header_C   uh_alt_prev)                            ;; previous header for alt. redo
         (field long         uh_seq)                                 ;; sequence number, higher == newer undo
         (field int          uh_walk)                                ;; used by undo-time()
         (field u_entry_C    uh_entry)                               ;; pointer to first entry
@@ -1326,6 +1320,7 @@
         (field pos_C*       b_namedm            (ARRAY-pos NMARKS))     ;; current named marks (mark.c)
 
         ;; These variables are set when VIsual_active becomes false.
+
         (field visualinfo_C b_visual            (NEW_visualinfo_C))
 
         (field pos_C        b_last_cursor       (NEW_pos_C))    ;; cursor position when last unloading this buffer
@@ -1346,13 +1341,13 @@
         ;; start and end of an operator, also used for '[ and ']
 
         (field pos_C        b_op_start          (NEW_pos_C))
-        (field pos_C        b_op_start_orig     (NEW_pos_C))    ;; used for insStart_orig
+        (field pos_C        b_op_start_orig     (NEW_pos_C))    ;; used for "insStart_orig"
         (field pos_C        b_op_end            (NEW_pos_C))
 
         ;; The following only used in undo.c.
 
         (field u_header_C   b_u_oldhead)        ;; pointer to oldest header
-        (field u_header_C   b_u_newhead)        ;; pointer to newest header; may not be valid if b_u_curhead is not null
+        (field u_header_C   b_u_newhead)        ;; pointer to newest header; may not be valid if "b_u_curhead" is not null
         (field u_header_C   b_u_curhead)        ;; pointer to current header
         (field int          b_u_numhead)        ;; current number of headers
         (field boolean      b_u_synced)         ;; entry lists are synced
@@ -10994,8 +10989,7 @@
     (if (or (:ml_empty (:b_ml @curbuf)) (:empty oap))
         [win oap true] ;; nothing to do
         (let [oap (mb-adjust-opend oap)]
-            (if (not (u-save win, (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
-                [win oap false]
+            (when' (u-save win, (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))) => [win oap false]
                 (let [#_boolean had_ctrl_v_cr (any == c -1 -2)
                       c (if had_ctrl_v_cr (if (== c -1) (byte \return) (byte \newline)) c)
                       [win oap]
@@ -11267,13 +11261,13 @@
                 (let-when [[win ?]
                         (when' (< 0 (:coladd (:w_cursor win))) => [win nil]
                             (let [o've_flags @ve_flags _ (reset! ve_flags VE_ALL)]
-                                (if (not (u-save-cursor win))
-                                    (do (reset! ve_flags o've_flags)
-                                        [win :abort])
+                                (if (u-save-cursor win)
                                     (let [win (coladvance-force win, (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol win)))
                                           win (if (== (:op_type oap) OP_APPEND) (update-in win [:w_cursor :col] dec) win)]
                                         (reset! ve_flags o've_flags)
                                         [win nil])
+                                    (do (reset! ve_flags o've_flags)
+                                        [win :abort])
                                 ))
                         )] (not ?) => [win nil]
 
@@ -26762,7 +26756,7 @@
 ;; Get the length of UTF-8 byte sequence "s[m]".
 ;; Does not include any following composing characters.
 ;; Returns 1 for "".
-;; Returns 1 for an illegal byte sequence (also in incomplete byte seq.).
+;; Returns 1 for an illegal byte sequence (also in incomplete byte sequence).
 ;; Returns number > "m" for an incomplete byte sequence.
 ;; Never returns zero.
 
@@ -29917,7 +29911,8 @@
 ;;
 ;; All data is allocated and will all be freed when the buffer is unloaded.
 
-;; used in undo_end() to report number of added and deleted lines
+;; Used in undo_end() to report number of added and deleted lines.
+
 (atom! long     u_newcount)
 (atom! long     u_oldcount)
 
@@ -29947,7 +29942,7 @@
             (do
                 (when (== (+ top 2) bot)
                     (u-saveline win, (inc top)))
-                (u-savecommon win, top, bot, 0)
+                (u-savecommon? win, top, bot, 0)
             ))
     ))
 
@@ -29956,21 +29951,21 @@
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-savesub [#_window_C win, #_long lnum]
-    (u-savecommon win, (dec lnum), (inc lnum), (inc lnum)))
+    (u-savecommon? win, (dec lnum), (inc lnum), (inc lnum)))
 
 ;; A new line is inserted before line "lnum" (used by :s command).
 ;; The line is inserted, so the new bottom line is lnum + 1.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-inssub [#_window_C win, #_long lnum]
-    (u-savecommon win, (dec lnum), lnum, (inc lnum)))
+    (u-savecommon? win, (dec lnum), lnum, (inc lnum)))
 
 ;; Save the lines "lnum" - "lnum" + nlines (used by delete command).
 ;; The lines are deleted, so the new bottom line is lnum, unless the buffer becomes empty.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-savedel [#_window_C win, #_long lnum, #_long nlines]
-    (u-savecommon win, (dec lnum), (+ lnum nlines), (if (== nlines (line-count @curbuf)) 2 lnum)))
+    (u-savecommon? win, (dec lnum), (+ lnum nlines), (if (== nlines (line-count @curbuf)) 2 lnum)))
 
 ;; Return true when undo is allowed,
 ;; otherwise give an error message and return false.
@@ -29993,237 +29988,225 @@
 ;;
 ;; Returns false when lines could not be saved, true otherwise.
 
-(defn- #_boolean u-savecommon [#_window_C win, #_long top, #_long bot, #_long newbot]
-    (§
-        ;; When making changes is not allowed, return false.
-        ;; It's a crude way to make all change commands fail.
-        ((ß [win ?] =) (undo-allowed? win))
-        (if (not ?)
-            ((ß RETURN) false)
-        )
+(defn- #_[window_C boolean] u-savecommon? [#_window_C win, #_long top, #_long bot, #_long newbot]
+    ;; When making changes is not allowed, return false.
+    ;; It's a crude way to make all change commands fail.
+    (let-when [[win ?] (undo-allowed? win)] ? => [win false]
+        ;; This happens when the FileChangedRO autocommand changes the file in a way it becomes shorter.
+        (when' (<= bot (inc (line-count @curbuf))) => [(emsg win, (u8 "E881: Line count changed unexpectedly")) false]
+            (let [#_long size (- bot top 1)
+                  ;; If "b_u_synced" is true, make a new header.
+            ]
 
-        (when (< (inc (line-count @curbuf)) bot)
-            ;; This happens when the FileChangedRO autocommand changes
-            ;; the file in a way it becomes shorter.
-            ((ß win =) (emsg win, (u8 "E881: Line count changed unexpectedly")))
-            ((ß RETURN) false)
-        )
+%%                  (cond (:b_u_synced @curbuf)
+                    (do
+                        ;; Need to create new entry in "b_changelist".
+                        (swap! curbuf assoc :b_new_change true)
 
-        ((ß long size =) (- bot top 1))
+                        ((ß u_header_C uhp =) (if (<= 0 (get-undolevels)) (NEW_u_header_C) nil))
 
-        ;; If curbuf.b_u_synced == true make a new header.
+                        ;; If we undid more than we redid, move the entry lists before
+                        ;; and including curbuf.b_u_curhead to an alternate branch.
 
-        (cond (:b_u_synced @curbuf)
-        (do
-            ;; Need to create new entry in b_changelist.
-            (swap! curbuf assoc :b_new_change true)
+                        ((ß u_header_C[] a'old_curhead =) (atom (#_u_header_C object (:b_u_curhead @curbuf))))
+                        (when (some? @a'old_curhead)
+                            (swap! curbuf assoc :b_u_newhead (:uh_next @a'old_curhead))
+                            (swap! curbuf assoc :b_u_curhead nil)
+                        )
 
-            ((ß u_header_C uhp =) (if (<= 0 (get-undolevels)) (NEW_u_header_C) nil))
+                        ;; free headers to keep the size right
 
-            ;; If we undid more than we redid, move the entry lists before
-            ;; and including curbuf.b_u_curhead to an alternate branch.
+                        (loop-when [] (and (< (get-undolevels) (:b_u_numhead @curbuf)) (some? (:b_u_oldhead @curbuf)))
+                            ((ß u_header_C uhfree =) (:b_u_oldhead @curbuf))
 
-            ((ß u_header_C[] a'old_curhead =) (atom (#_u_header_C object (:b_u_curhead @curbuf))))
-            (when (some? @a'old_curhead)
-                (swap! curbuf assoc :b_u_newhead (:ptr (:uh_next @a'old_curhead)))
-                (swap! curbuf assoc :b_u_curhead nil)
-            )
+                            (cond (== uhfree @a'old_curhead)
+                            (do
+                                ;; Can't reconnect the branch, delete all of it.
+                                (u-freebranch uhfree, a'old_curhead)
+                            )
+                            (nil? (:uh_alt_next uhfree))
+                            (do
+                                ;; There is no branch, only free one header.
+                                (u-freeheader uhfree, a'old_curhead)
+                            )
+                            :else
+                            (do
+                                ;; Free the oldest alternate branch as a whole.
+                                (loop-when [] (some? (:uh_alt_next uhfree))
+                                    ((ß uhfree =) (:uh_alt_next uhfree))
+                                    (recur)
+                                )
+                                (u-freebranch uhfree, a'old_curhead)
+                            ))
+                            (recur)
+                        )
 
-            ;; free headers to keep the size right
-
-            (loop-when [] (and (< (get-undolevels) (:b_u_numhead @curbuf)) (some? (:b_u_oldhead @curbuf)))
-                ((ß u_header_C uhfree =) (:b_u_oldhead @curbuf))
-
-                (cond (== uhfree @a'old_curhead)
-                (do
-                    ;; Can't reconnect the branch, delete all of it.
-                    (u-freebranch uhfree, a'old_curhead)
-                )
-                (nil? (:ptr (:uh_alt_next uhfree)))
-                (do
-                    ;; There is no branch, only free one header.
-                    (u-freeheader uhfree, a'old_curhead)
-                )
-                :else
-                (do
-                    ;; Free the oldest alternate branch as a whole.
-                    (loop-when [] (some? (:ptr (:uh_alt_next uhfree)))
-                        ((ß uhfree =) (:ptr (:uh_alt_next uhfree)))
-                        (recur)
-                    )
-                    (u-freebranch uhfree, a'old_curhead)
-                ))
-                (recur)
-            )
-
-            (when (nil? uhp)                ;; no undo at all
-                (if (some? @a'old_curhead)
-                    (u-freebranch @a'old_curhead, nil))
-                (swap! curbuf assoc :b_u_synced false)
-                ((ß RETURN) true)
-            )
-
-            ((ß uhp =) (assoc-in uhp [:uh_prev :ptr] nil))
-            ((ß uhp =) (assoc-in uhp [:uh_next :ptr] (:b_u_newhead @curbuf)))
-            ((ß uhp =) (assoc-in uhp [:uh_alt_next :ptr] @a'old_curhead))
-            (cond (some? @a'old_curhead)
-            (do
-                ((ß uhp =) (assoc-in uhp [:uh_alt_prev :ptr] (:ptr (:uh_alt_prev @a'old_curhead))))
-                (if (some? (:ptr (:uh_alt_prev uhp)))
-                    ((ß uhp.uh_alt_prev.ptr.uh_alt_next.ptr =) uhp)
-                )
-                (swap! a'old_curhead assoc-in [:uh_alt_prev :ptr] uhp)
-                (when (== (:b_u_oldhead @curbuf) @a'old_curhead)
-                    (swap! curbuf assoc :b_u_oldhead uhp))
-            )
-            :else
-            (do
-                ((ß uhp =) (assoc-in uhp [:uh_alt_prev :ptr] nil))
-            ))
-            (when (some? (:b_u_newhead @curbuf))
-                (swap! curbuf assoc-in [:b_u_newhead :uh_prev :ptr] uhp))
-
-            (swap! curbuf update :b_u_seq_last inc)
-            ((ß uhp =) (assoc uhp :uh_seq (:b_u_seq_last @curbuf)))
-            (swap! curbuf assoc :b_u_seq_cur (:uh_seq uhp))
-            ((ß uhp =) (assoc uhp :uh_time (._time libC)))
-            (swap! curbuf assoc :b_u_time_cur (inc (:uh_time uhp)))
-
-            ((ß uhp =) (assoc uhp :uh_walk 0))
-            ((ß uhp =) (assoc uhp :uh_entry nil))
-            ((ß uhp =) (assoc uhp :uh_getbot_entry nil))
-            ((ß uhp =) (assoc uhp :uh_cursor (:w_cursor win))) ;; save cursor pos. for undo
-            ((ß uhp =) (assoc uhp :uh_cursor_vcol (if (and (virtual-active) (< 0 (:coladd (:w_cursor win)))) (getviscol win) -1)))
-
-            ;; save changed and buffer empty flag for undo
-            ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))))
-
-            ;; save named marks and Visual marks for undo
-            (dotimes [#_int i NMARKS]
-                ((ß uhp =) (assoc-in uhp [:uh_namedm i] (... (:b_namedm @curbuf) i)))
-            )
-            ((ß uhp =) (assoc uhp :uh_visual (:b_visual @curbuf)))
-
-            (swap! curbuf assoc :b_u_newhead uhp)
-            (when (nil? (:b_u_oldhead @curbuf))
-                (swap! curbuf assoc :b_u_oldhead uhp))
-            (swap! curbuf update :b_u_numhead inc)
-        )
-        :else
-        (do
-            (if (< (get-undolevels) 0)        ;; no undo at all
-                ((ß RETURN) true)
-            )
-
-            ;; When saving a single line, and it has been saved just before, it
-            ;; doesn't make sense saving it again.  Saves a lot of memory when
-            ;; making lots of changes inside the same line.
-            ;; This is only possible if the previous change didn't increase or
-            ;; decrease the number of lines.
-            ;; Check the ten last changes.  More doesn't make sense and takes too long.
-
-            (when (== size 1)
-                ((ß [win u_entry_C uep] =) (u-get-headentry? win))
-                ((ß u_entry_C prev_uep =) nil)
-                (loop-when-recur [#_int i 0] (< i 10) [(inc i)]
-                    (if (nil? uep)
-                        (ß BREAK)
-                    )
-
-                    ;; If lines have been inserted/deleted we give up.
-                    ;; Also when the line was included in a multi-line save.
-                    (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc (line-count @curbuf)) (:ue_bot uep))) (!= (:ue_lcount uep) (line-count @curbuf))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
-                        (ß BREAK)
-                    )
-
-                    ;; If it's the same line we can skip saving it again.
-                    (when (and (== (:ue_size uep) 1) (== (:ue_top uep) top))
-                        (when (< 0 i)
-                            ;; It's not the last entry: get ue_bot for the last entry now.
-                            ;; Following deleted/inserted lines go to the re-used entry.
-                            ((ß win =) (u-getbot win))
+                        (when (nil? uhp)                ;; no undo at all
+                            (when (some? @a'old_curhead)
+                                (u-freebranch @a'old_curhead, nil))
                             (swap! curbuf assoc :b_u_synced false)
-
-                            ;; Move the found entry to become the last entry.
-                            ;; The order of undo/redo doesn't matter for the entries we move it over,
-                            ;; since they don't change the line count and don't include this line.
-                            ;; It does matter for the found entry if the line count is changed
-                            ;; by the executed command.
-                            ((ß prev_uep.ue_next =) (:ue_next uep))
-                            ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
-                            (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
+                            ((ß RETURN) [win true])
                         )
 
-                        ;; The executed command may change the line count.
-                        (cond (non-zero? newbot)
+                        ((ß uhp =) (assoc uhp :uh_prev nil))
+                        ((ß uhp =) (assoc uhp :uh_next (:b_u_newhead @curbuf)))
+                        ((ß uhp =) (assoc uhp :uh_alt_next @a'old_curhead))
+                        (cond (some? @a'old_curhead)
                         (do
-                            ((ß uep =) (assoc uep :ue_bot newbot))
-                        )
-                        (< (line-count @curbuf) bot)
-                        (do
-                            ((ß uep =) (assoc uep :ue_bot 0))
+                            ((ß uhp =) (assoc uhp :uh_alt_prev (:uh_alt_prev @a'old_curhead)))
+                            (when (some? (:uh_alt_prev uhp))
+                                ((ß uhp.uh_alt_prev.uh_alt_next =) uhp)
+                            )
+                            (swap! a'old_curhead assoc :uh_alt_prev uhp)
+                            (when (== (:b_u_oldhead @curbuf) @a'old_curhead)
+                                (swap! curbuf assoc :b_u_oldhead uhp))
                         )
                         :else
                         (do
-                            ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
-                            (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
+                            ((ß uhp =) (assoc uhp :uh_alt_prev nil))
                         ))
-                        ((ß RETURN) true)
+                        (when (some? (:b_u_newhead @curbuf))
+                            (swap! curbuf assoc-in [:b_u_newhead :uh_prev] uhp))
+
+                        (swap! curbuf update :b_u_seq_last inc)
+                        ((ß uhp =) (assoc uhp :uh_seq (:b_u_seq_last @curbuf)))
+                        (swap! curbuf assoc :b_u_seq_cur (:uh_seq uhp))
+                        ((ß uhp =) (assoc uhp :uh_time (._time libC)))
+                        (swap! curbuf assoc :b_u_time_cur (inc (:uh_time uhp)))
+
+                        ((ß uhp =) (assoc uhp :uh_walk 0))
+                        ((ß uhp =) (assoc uhp :uh_entry nil))
+                        ((ß uhp =) (assoc uhp :uh_getbot_entry nil))
+                        ((ß uhp =) (assoc uhp :uh_cursor (:w_cursor win))) ;; save cursor pos. for undo
+                        ((ß uhp =) (assoc uhp :uh_cursor_vcol (if (and (virtual-active) (< 0 (:coladd (:w_cursor win)))) (getviscol win) -1)))
+
+                        ;; save changed and buffer empty flag for undo
+                        ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))))
+
+                        ;; save named marks and Visual marks for undo
+                        (dotimes [#_int i NMARKS]
+                            ((ß uhp =) (assoc-in uhp [:uh_namedm i] (... (:b_namedm @curbuf) i)))
+                        )
+                        ((ß uhp =) (assoc uhp :uh_visual (:b_visual @curbuf)))
+
+                        (swap! curbuf assoc :b_u_newhead uhp)
+                        (when (nil? (:b_u_oldhead @curbuf))
+                            (swap! curbuf assoc :b_u_oldhead uhp))
+                        (swap! curbuf update :b_u_numhead inc)
                     )
-                    ((ß prev_uep =) uep)
-                    ((ß uep =) (:ue_next uep))
+                    :else
+                    (do
+                        (if (< (get-undolevels) 0)        ;; no undo at all
+                            ((ß RETURN) [win true])
+                        )
+
+                        ;; When saving a single line, and it has been saved just before, it doesn't make sense saving it again.
+                        ;; Saves a lot of memory when making lots of changes inside the same line.
+                        ;; This is only possible if the previous change didn't increase or decrease the number of lines.
+                        ;; Check the ten last changes.  More doesn't make sense and takes too long.
+
+                        (when (== size 1)
+                            ((ß [win u_entry_C uep] =) (u-get-headentry? win))
+                            ((ß u_entry_C prev_uep =) nil)
+                            (loop-when-recur [#_int i 0] (< i 10) [(inc i)]
+                                (if (nil? uep)
+                                    (ß BREAK)
+                                )
+
+                                ;; If lines have been inserted/deleted we give up.
+                                ;; Also when the line was included in a multi-line save.
+                                (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc (line-count @curbuf)) (:ue_bot uep))) (!= (:ue_lcount uep) (line-count @curbuf))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
+                                    (ß BREAK)
+                                )
+
+                                ;; If it's the same line we can skip saving it again.
+                                (when (and (== (:ue_size uep) 1) (== (:ue_top uep) top))
+                                    (when (< 0 i)
+                                        ;; It's not the last entry: get ue_bot for the last entry now.
+                                        ;; Following deleted/inserted lines go to the re-used entry.
+                                        ((ß win =) (u-getbot win))
+                                        (swap! curbuf assoc :b_u_synced false)
+
+                                        ;; Move the found entry to become the last entry.
+                                        ;; The order of undo/redo doesn't matter for the entries we move it over,
+                                        ;; since they don't change the line count and don't include this line.
+                                        ;; It does matter for the found entry if the line count is changed
+                                        ;; by the executed command.
+                                        ((ß prev_uep.ue_next =) (:ue_next uep))
+                                        ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
+                                        (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
+                                    )
+
+                                    ;; The executed command may change the line count.
+                                    (cond (non-zero? newbot)
+                                    (do
+                                        ((ß uep =) (assoc uep :ue_bot newbot))
+                                    )
+                                    (< (line-count @curbuf) bot)
+                                    (do
+                                        ((ß uep =) (assoc uep :ue_bot 0))
+                                    )
+                                    :else
+                                    (do
+                                        ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
+                                        (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
+                                    ))
+                                    ((ß RETURN) [win true])
+                                )
+                                ((ß prev_uep =) uep)
+                                ((ß uep =) (:ue_next uep))
+                            )
+                        )
+
+                        ;; find line number for ue_bot for previous u-save()
+                        ((ß win =) (u-getbot win))
+                    ))
+
+                ;; add lines in front of entry list
+
+                ((ß u_entry_C uep =) (NEW_u_entry_C))
+
+                ((ß uep =) (assoc uep :ue_size size))
+                ((ß uep =) (assoc uep :ue_top top))
+                (cond (non-zero? newbot)
+                (do
+                    ((ß uep =) (assoc uep :ue_bot newbot))
                 )
-            )
-
-            ;; find line number for ue_bot for previous u-save()
-            ((ß win =) (u-getbot win))
-        ))
-
-        ;; add lines in front of entry list
-
-        ((ß u_entry_C uep =) (NEW_u_entry_C))
-
-        ((ß uep =) (assoc uep :ue_size size))
-        ((ß uep =) (assoc uep :ue_top top))
-        (cond (non-zero? newbot)
-        (do
-            ((ß uep =) (assoc uep :ue_bot newbot))
-        )
-
-        ;; Use 0 for ue_bot if bot is below last line.
-        ;; Otherwise we have to compute ue_bot later.
-
-        (< (line-count @curbuf) bot)
-        (do
-            ((ß uep =) (assoc uep :ue_bot 0))
-        )
-        :else
-        (do
-            ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
-            (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
-        ))
-
-        (cond (< 0 size)
-        (do
-            ((ß uep =) (assoc uep :ue_array (Bytes* size)))
-            ((ß long lnum =) (inc top))
-            (dotimes [#_int i size]
-                (if (fast-breakcheck)
-                    ((ß RETURN) false)
+                ;; Use 0 for ue_bot if bot is below last line.
+                ;; Otherwise we have to compute ue_bot later.
+                (< (line-count @curbuf) bot)
+                (do
+                    ((ß uep =) (assoc uep :ue_bot 0))
                 )
-                ((ß uep.ue_array[i] =) (STRDUP (ml-get (ß lnum++))))
+                :else
+                (do
+                    ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
+                    (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
+                ))
+
+                (cond (< 0 size)
+                (do
+                    ((ß uep =) (assoc uep :ue_array (Bytes* size)))
+                    ((ß long lnum =) (inc top))
+                    (dotimes [#_int i size]
+                        (if (fast-breakcheck)
+                            ((ß RETURN) [win false])
+                        )
+                        ((ß uep.ue_array[i] =) (STRDUP (ml-get (ß lnum++))))
+                    )
+                )
+                :else
+                (do
+                    ((ß uep =) (assoc uep :ue_array nil))
+                ))
+                ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
+                (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
+                (swap! curbuf assoc :b_u_synced false)
+                (reset! undo_undoes false)
+
+                [win true]
             )
         )
-        :else
-        (do
-            ((ß uep =) (assoc uep :ue_array nil))
-        ))
-        ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
-        (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
-        (swap! curbuf assoc :b_u_synced false)
-        (reset! undo_undoes false)
-
-        true
     ))
 
 ;; If 'cpoptions' contains 'u': Undo the previous undo or redo (vi compatible).
@@ -30247,7 +30230,7 @@
         (reset! undo_undoes false))
     (u-doit win, n))
 
-;; Undo or redo, depending on 'undo_undoes', 'count' times.
+;; Undo or redo, depending on "undo_undoes", "count" times.
 
 (defn- #_window_C u-doit [#_window_C win, #_int count]
     (let-when [[win ?] (undo-allowed? win)] ? => win
@@ -30257,8 +30240,8 @@
                 (loop-when [win win n count] (< 0 n) => [win nil]
                     (cond @undo_undoes
                     (do (cond
-                            (nil? (:b_u_curhead @curbuf)) (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf))                   ;; first undo
-                            (< 0 (get-undolevels))        (swap! curbuf assoc :b_u_curhead (:ptr (:uh_next (:b_u_curhead @curbuf)))) ;; multi level undo ;; get next undo
+                            (nil? (:b_u_curhead @curbuf)) (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf))            ;; first undo
+                            (< 0 (get-undolevels))        (swap! curbuf assoc :b_u_curhead (:uh_next (:b_u_curhead @curbuf))) ;; multi level undo ;; get next undo
                         )
                         (if (or (zero? (:b_u_numhead @curbuf)) (nil? (:b_u_curhead @curbuf)))
                             (do (swap! curbuf assoc :b_u_curhead (:b_u_oldhead @curbuf))                ;; stick "b_u_curhead" at end
@@ -30271,9 +30254,9 @@
                             (let [win (u-undoredo win, false)]
                                 ;; Advance for next redo.
                                 ;; Set "newhead" when at the end of the redoable changes.
-                                (when (nil? (:ptr (:uh_prev (:b_u_curhead @curbuf))))
+                                (when (nil? (:uh_prev (:b_u_curhead @curbuf)))
                                     (swap! curbuf assoc :b_u_newhead (:b_u_curhead @curbuf)))
-                                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev (:b_u_curhead @curbuf))))
+                                (swap! curbuf assoc :b_u_curhead (:uh_prev (:b_u_curhead @curbuf)))
                                 (recur win (dec n))
                             ))
                     ))
@@ -30344,10 +30327,9 @@
         ;; round, because there may be several entries with the same time.
 
         (loop-when-recur [#_int round 1] (<= round 2) [(inc round)]
-            ;; Find the path from the current state to where we want to go.  The
-            ;; desired state can be anywhere in the undo tree, need to go all over
-            ;; it.  We put "nomark" in uh_walk where we have been without success,
-            ;; "mark" where it could possibly be.
+            ;; Find the path from the current state to where we want to go.
+            ;; The desired state can be anywhere in the undo tree, need to go all over it.
+            ;; We put "nomark" in "uh_walk" where we have been without success, "mark" where it could possibly be.
             ((ß mark =) (swap! lastmark inc))
             ((ß nomark =) (swap! lastmark inc))
 
@@ -30381,29 +30363,29 @@
                 )
 
                 ;; go down in the tree if we haven't been there
-                (cond (and (some? (:ptr (:uh_prev uhp))) (!= (:uh_walk (:ptr (:uh_prev uhp))) nomark) (!= (:uh_walk (:ptr (:uh_prev uhp))) mark))
+                (cond (and (some? (:uh_prev uhp)) (!= (:uh_walk (:uh_prev uhp)) nomark) (!= (:uh_walk (:uh_prev uhp)) mark))
                 (do
-                    ((ß uhp =) (:ptr (:uh_prev uhp)))
+                    ((ß uhp =) (:uh_prev uhp))
                 )
                 ;; go to alternate branch if we haven't been there
-                (and (some? (:ptr (:uh_alt_next uhp))) (!= (:uh_walk (:ptr (:uh_alt_next uhp))) nomark) (!= (:uh_walk (:ptr (:uh_alt_next uhp))) mark))
+                (and (some? (:uh_alt_next uhp)) (!= (:uh_walk (:uh_alt_next uhp)) nomark) (!= (:uh_walk (:uh_alt_next uhp)) mark))
                 (do
-                    ((ß uhp =) (:ptr (:uh_alt_next uhp)))
+                    ((ß uhp =) (:uh_alt_next uhp))
                 )
                 ;; go up in the tree if we haven't been there and we are at the start of alternate branches
-                (and (some? (:ptr (:uh_next uhp))) (nil? (:ptr (:uh_alt_prev uhp))) (!= (:uh_walk (:ptr (:uh_next uhp))) nomark) (!= (:uh_walk (:ptr (:uh_next uhp))) mark))
+                (and (some? (:uh_next uhp)) (nil? (:uh_alt_prev uhp)) (!= (:uh_walk (:uh_next uhp)) nomark) (!= (:uh_walk (:uh_next uhp)) mark))
                 (do
                     ;; If still at the start we don't go through this change.
                     (if (== uhp (:b_u_curhead @curbuf))
                         ((ß uhp =) (assoc uhp :uh_walk nomark))
                     )
-                    ((ß uhp =) (:ptr (:uh_next uhp)))
+                    ((ß uhp =) (:uh_next uhp))
                 )
                 :else
                 (do
                     ;; need to backtrack; mark this node as useless
                     ((ß uhp =) (assoc uhp :uh_walk nomark))
-                    ((ß uhp =) (if (some? (:ptr (:uh_alt_prev uhp))) (:ptr (:uh_alt_prev uhp)) (:ptr (:uh_next uhp))))
+                    ((ß uhp =) (if (some? (:uh_alt_prev uhp)) (:uh_alt_prev uhp) (:uh_next uhp)))
                 ))
                 (recur)
             )
@@ -30433,7 +30415,7 @@
 
             (loop-when [] (not @got_int)
                 ((ß uhp =) (:b_u_curhead @curbuf))
-                ((ß uhp =) (if (nil? uhp) (:b_u_newhead @curbuf) (:ptr (:uh_next uhp))))
+                ((ß uhp =) (if (nil? uhp) (:b_u_newhead @curbuf) (:uh_next uhp)))
                 (if (or (nil? uhp) (!= (:uh_walk uhp) mark) (and (== (:uh_seq uhp) target) (not above)))
                     (ß BREAK)
                 )
@@ -30452,37 +30434,37 @@
                 )
 
                 ;; Go back to the first branch with a mark.
-                (loop-when [] (and (some? (:ptr (:uh_alt_prev uhp))) (== (:uh_walk (:ptr (:uh_alt_prev uhp))) mark))
-                    ((ß uhp =) (:ptr (:uh_alt_prev uhp)))
+                (loop-when [] (and (some? (:uh_alt_prev uhp)) (== (:uh_walk (:uh_alt_prev uhp)) mark))
+                    ((ß uhp =) (:uh_alt_prev uhp))
                     (recur)
                 )
 
                 ;; Find the last branch with a mark, that's the one.
                 ((ß u_header_C last =) uhp)
-                (loop-when [] (and (some? (:ptr (:uh_alt_next last))) (== (:uh_walk (:ptr (:uh_alt_next last))) mark))
-                    ((ß last =) (:ptr (:uh_alt_next last)))
+                (loop-when [] (and (some? (:uh_alt_next last)) (== (:uh_walk (:uh_alt_next last)) mark))
+                    ((ß last =) (:uh_alt_next last))
                     (recur)
                 )
                 (when (!= last uhp)
                     ;; Make the used branch the first entry in the list of
                     ;; alternatives to make "u" and CTRL-R take this branch.
-                    (loop-when [] (some? (:ptr (:uh_alt_prev uhp)))
-                        ((ß uhp =) (:ptr (:uh_alt_prev uhp)))
+                    (loop-when [] (some? (:uh_alt_prev uhp))
+                        ((ß uhp =) (:uh_alt_prev uhp))
                         (recur)
                     )
-                    (if (some? (:ptr (:uh_alt_next last)))
-                        ((ß last.uh_alt_next.ptr.uh_alt_prev.ptr =) (:ptr (:uh_alt_prev last)))
+                    (if (some? (:uh_alt_next last))
+                        ((ß last.uh_alt_next.uh_alt_prev =) (:uh_alt_prev last))
                     )
-                    ((ß last.uh_alt_prev.ptr.uh_alt_next.ptr =) (:ptr (:uh_alt_next last)))
-                    ((ß last =) (assoc-in last [:uh_alt_prev :ptr] nil))
-                    ((ß last =) (assoc-in last [:uh_alt_next :ptr] uhp))
-                    ((ß uhp =) (assoc-in uhp [:uh_alt_prev :ptr] last))
+                    ((ß last.uh_alt_prev.uh_alt_next =) (:uh_alt_next last))
+                    ((ß last =) (assoc last :uh_alt_prev nil))
+                    ((ß last =) (assoc last :uh_alt_next uhp))
+                    ((ß uhp =) (assoc uhp :uh_alt_prev last))
 
                     (when (== (:b_u_oldhead @curbuf) uhp)
                         (swap! curbuf assoc :b_u_oldhead last))
                     ((ß uhp =) last)
-                    (if (some? (:ptr (:uh_next uhp)))
-                        ((ß uhp.uh_next.ptr.uh_prev.ptr =) uhp)
+                    (if (some? (:uh_next uhp))
+                        ((ß uhp.uh_next.uh_prev =) uhp)
                     )
                 )
                 (swap! curbuf assoc :b_u_curhead uhp)
@@ -30502,16 +30484,16 @@
 
                 ;; Advance "curhead" to below the header we last used.
                 ;; If it becomes null, then we need to set "newhead" to this leaf.
-                (when (nil? (:ptr (:uh_prev uhp)))
+                (when (nil? (:uh_prev uhp))
                     (swap! curbuf assoc :b_u_newhead uhp))
-                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev uhp)))
+                (swap! curbuf assoc :b_u_curhead (:uh_prev uhp))
                 ((ß did_undo =) false)
 
                 (if (== (:uh_seq uhp) target)   ;; found it!
                     (ß BREAK)
                 )
 
-                ((ß uhp =) (:ptr (:uh_prev uhp)))
+                ((ß uhp =) (:uh_prev uhp))
                 (when (or (nil? uhp) (!= (:uh_walk uhp) mark))
                     ;; Need to redo more but can't find it...
                     ((ß win =) (emsg* win, e_intern2, (u8 "undo-time()")))
@@ -30755,11 +30737,11 @@
                     ))
               [#_u_header_C uhp did_undo]
                 (cond
-                    (nil? (:b_u_curhead @curbuf))                                   [(:b_u_newhead @curbuf) did_undo]
+                    (nil? (:b_u_curhead @curbuf))                            [(:b_u_newhead @curbuf) did_undo]
                     ;; For ":undo N" we prefer a "after #N" message.
-                    (and absolute (some? (:ptr (:uh_next (:b_u_curhead @curbuf))))) [(:ptr (:uh_next (:b_u_curhead @curbuf))) false]
-                    did_undo                                                        [(:b_u_curhead @curbuf) did_undo]
-                    :else                                                           [(:ptr (:uh_next (:b_u_curhead @curbuf))) did_undo]
+                    (and absolute (some? (:uh_next (:b_u_curhead @curbuf)))) [(:uh_next (:b_u_curhead @curbuf)) false]
+                    did_undo                                                 [(:b_u_curhead @curbuf) did_undo]
+                    :else                                                    [(:uh_next (:b_u_curhead @curbuf)) did_undo]
                 )
               #_Bytes msgbuf (Bytes. 80)]
             (if (some? uhp)
@@ -30838,27 +30820,27 @@
     (§
         ;; When there is an alternate redo list free that branch completely,
         ;; because we can never go there.
-        (when (some? (:ptr (:uh_alt_next uhp)))
-            (u-freebranch (:ptr (:uh_alt_next uhp)), a'uhpp))
+        (when (some? (:uh_alt_next uhp))
+            (u-freebranch (:uh_alt_next uhp), a'uhpp))
 
-        (if (some? (:ptr (:uh_alt_prev uhp)))
-            ((ß uhp.uh_alt_prev.ptr.uh_alt_next.ptr =) nil)
+        (if (some? (:uh_alt_prev uhp))
+            ((ß uhp.uh_alt_prev.uh_alt_next =) nil)
         )
 
         ;; Update the links in the list to remove the header.
-        (if (nil? (:ptr (:uh_next uhp)))
-            (swap! curbuf assoc :b_u_oldhead (:ptr (:uh_prev uhp)))
-            ((ß uhp.uh_next.ptr.uh_prev.ptr =) (:ptr (:uh_prev uhp)))
+        (if (nil? (:uh_next uhp))
+            (swap! curbuf assoc :b_u_oldhead (:uh_prev uhp))
+            ((ß uhp.uh_next.uh_prev =) (:uh_prev uhp))
         )
 
-        (cond (nil? (:ptr (:uh_prev uhp)))
+        (cond (nil? (:uh_prev uhp))
         (do
-            (swap! curbuf assoc :b_u_newhead (:ptr (:uh_next uhp)))
+            (swap! curbuf assoc :b_u_newhead (:uh_next uhp))
         )
         :else
         (do
-            (loop-when-recur [#_u_header_C uhap (:ptr (:uh_prev uhp))] (some? uhap) [(:ptr (:uh_alt_next uhap))]
-                ((ß uhap =) (assoc-in uhap [:uh_next :ptr] (:ptr (:uh_next uhp))))
+            (loop-when-recur [#_u_header_C uhap (:uh_prev uhp)] (some? uhap) [(:uh_alt_next uhap)]
+                ((ß uhap =) (assoc uhap :uh_next (:uh_next uhp)))
             )
         ))
 
@@ -30878,14 +30860,14 @@
             ((ß RETURN) nil)
         )
 
-        (when (some? (:ptr (:uh_alt_prev uhp)))
-            ((ß uhp.uh_alt_prev.ptr.uh_alt_next.ptr =) nil))
+        (when (some? (:uh_alt_prev uhp))
+            ((ß uhp.uh_alt_prev.uh_alt_next =) nil))
 
         (loop-when [#_u_header_C next uhp] (some? next)
             ((ß u_header_C tofree =) next)
-            (when (some? (:ptr (:uh_alt_next tofree)))
-                (u-freebranch (:ptr (:uh_alt_next tofree)), a'uhpp))    ;; recursive
-            ((ß next =) (:ptr (:uh_prev tofree)))
+            (when (some? (:uh_alt_next tofree))
+                (u-freebranch (:uh_alt_next tofree), a'uhpp))    ;; recursive
+            ((ß next =) (:uh_prev tofree))
             (u-freeentries tofree, a'uhpp)
             (recur next)
         )
@@ -30931,7 +30913,7 @@
 
 (defn- #_window_C u-undoline [#_window_C win]
     (let-when [uln (:b_u_line_lnum @curbuf)] (and (some? (:b_u_line_ptr @curbuf)) (<= uln (line-count @curbuf))) => (beep-flush win)
-        (when' (u-savecommon win, (dec uln), (inc uln), 0) => win
+        (when' (u-savecommon? win, (dec uln), (inc uln), 0) => win
             (let [#_Bytes s (STRDUP (ml-get uln))]
                 (ml-replace uln, (:b_u_line_ptr @curbuf))
                 (changed-bytes uln, 0)
