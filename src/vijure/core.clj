@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry)))
 
@@ -114,17 +114,12 @@
 (final byte ESC     033)
 (final byte DEL    0x7f)
 
-(final byte! CSI   0x9b)    ;; Control Sequence Introducer
-(final byte! DCS   0x90)    ;; Device Control String
-(final byte! STERM 0x9c)    ;; String Terminator
-
 (final byte! POUND 0xa3)
 
 (final Bytes
     NL_STR   (u8 "\012")
     ESC_STR  (u8 "\033")
-    DEL_STR  (u8 "\177")
-    CSI_STR  (u8 "\233"))
+    DEL_STR  (u8 "\177"))
 
 (defn- #_int ctrl_key [#_byte c]
     (§
@@ -224,7 +219,6 @@
 ;; Used for switching Select mode back on after a mapping or menu.
 
 (final byte! KS_SELECT          245)
-(final Bytes K_SELECT_STRING    (u8 "\200\365X"))
 
 ;; Used a termcap entry that produces a normal character.
 
@@ -307,9 +301,6 @@
 
     KE_KINS 78,           ;; keypad Insert key
     KE_KDEL 79,           ;; keypad Delete key
-
-    KE_CSI 80,            ;; CSI typed directly
-    KE_SNR 81,            ;; <SNR>
 
     KE_CMDWIN 83,         ;; open command-line window from Command-line Mode
 
@@ -440,9 +431,6 @@
 
     K_IGNORE        (TERMCAP2KEY KS_EXTRA KE_IGNORE),
     K_NOP           (TERMCAP2KEY KS_EXTRA KE_NOP),
-
-    K_CSI           (TERMCAP2KEY KS_EXTRA KE_CSI),
-    K_SNR           (TERMCAP2KEY KS_EXTRA KE_SNR),
 
     K_CMDWIN        (TERMCAP2KEY KS_EXTRA KE_CMDWIN),
 
@@ -734,11 +722,6 @@
 (final int FIND_STRING     2)       ;; find any string (WORD)
 (final int FIND_EVAL       4)       ;; include "->", "[]" and "."
 
-;; Values for "noremap" argument of ins_typebuf().
-
-(final int REMAP_YES       0)       ;; allow remapping
-(final int REMAP_NONE      -1)      ;; no remapping
-
 ;; Values for change_indent().
 (final int INDENT_SET      1)       ;; set indent
 (final int INDENT_INC      2)       ;; increase indent
@@ -949,15 +932,12 @@
 
 ;; characters for the "p_cpo" option:
 (final byte
-    CPO_BSLASH      \B,  ;; backslash in mapping is not special
     CPO_SEARCH      \c,
     CPO_DIGRAPH     \D,  ;; no digraph after "r", "f", etc.
     CPO_EMPTYREGION \E,  ;; operating on empty region is an error
     CPO_INSEND      \H,  ;; "I" inserts before last blank in line
     CPO_INDENT      \I,  ;; remove auto-indent more often
     CPO_JOINSP      \j,  ;; only use two spaces for join after '.'
-    CPO_ENDOFSENT   \J,  ;; need two spaces to detect end of sentence
-    CPO_KEYCODE     \k,  ;; don't recognize raw key code in mappings
     CPO_KOFFSET     \K,  ;; don't wait for key code in mappings
     CPO_LITERAL     \l,  ;; take char after backslash in [] literal
     CPO_LISTWM      \L,  ;; 'list' changes wrapmargin
@@ -978,20 +958,18 @@
     CPO_MATCH       \%,
     CPO_STAR        \*,  ;; ":*" means ":@"
     CPO_MINUS       \-,  ;; "9-" fails at and before line 9
-    CPO_SPECI       \<,  ;; don't recognize <> in mappings
     CPO_REGAPPEND   \>,  ;; insert NL when appending to a register
 
 ;; POSIX flags
     CPO_HASH        \#,  ;; "D", "o" and "O" do not use a count
-    CPO_PARA        \{,  ;; "{" is also a paragraph boundary
     CPO_TSIZE       \|,  ;; $LINES and $COLUMNS overrule term size
     CPO_SUBPERCENT  \/,  ;; % in :s string uses previous one
     CPO_BACKSL      \\,  ;; \ is not special in []
     CPO_SCOLON      \;)  ;; using "," and ";" will skip over char if cursor would not move
 
 ;; default values for Vim, Vi and POSIX
-(final Bytes CPO_VIM  (u8 "Bc"))
-(final Bytes CPO_ALL  (u8 "BcDEHIjJkKlLmMnoqruvwxXy$!%*-<>#{|/\\;"))
+(final Bytes CPO_VIM  (u8 "c"))
+(final Bytes CPO_ALL  (u8 "cDEHIjKlLmMnoqruvwxXy$!%*->#|/\\;"))
 
 ;; characters for "p_ww" option:
 (final Bytes WW_ALL   (u8 "bshl<>[],~"))
@@ -1044,7 +1022,6 @@
 (atom! boolean p_magic)     ;; 'magic'
 (atom! long    p_mat)       ;; 'matchtime'
 (atom! long    p_mco)       ;; 'maxcombine'
-(atom! long    p_mmd)       ;; 'maxmapdepth'
 (atom! long    p_mmp)       ;; 'maxmempattern'
 (atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
@@ -1589,34 +1566,11 @@
 (class! #_final typebuf_C
     [
         (field Bytes        tb_buf)             ;; buffer for typed characters
-        (field Bytes        tb_noremap)         ;; mapping flags for characters in "tb_buf"
         (field int          tb_buflen)          ;; size of "tb_buf"
         (field int          tb_off)             ;; current position in "tb_buf"
         (field int          tb_len)             ;; number of valid bytes in "tb_buf"
-        (field int          tb_maplen)          ;; nr of mapped bytes in "tb_buf"
-        (field int          tb_silent)          ;; nr of silently mapped bytes in "tb_buf"
-        (field int          tb_no_abbr_cnt)     ;; nr of bytes without abbrev. in "tb_buf"
         (field int          tb_change_cnt)      ;; nr of time "tb_buf" was changed; never zero
     ])
-
-;; Struct to hold the saved typeahead for save_typeahead().
-(class! #_final tasave_C
-    [
-        (field int          old_char)
-        (field int          old_mod_mask)
-        (field buffheader_C save_readbuf1)
-        (field buffheader_C save_readbuf2)
-        (field Bytes        save_inputbuf)
-        (field int          save_inputlen)
-    ])
-
-(defn- #_tasave_C new_tasave []
-    (§
-;       tasave_C tasp = §_tasave_C();
-;       tasp.save_readbuf1 = §_buffheader_C();
-;       tasp.save_readbuf2 = §_buffheader_C();
-;       return tasp;
-    ))
 
 ;; buffer: structure that holds information about one file
 ;;
@@ -1704,10 +1658,6 @@
         (field long         b_p_sts_nopaste)    ;; "b_p_sts" saved for paste mode
         (atom' long         b_p_ts)             ;; 'tabstop'
         (atom' long         b_p_ul)             ;; 'undolevels'
-
-        ;; end of buffer options
-
-        (field int          b_mapped_ctrl_c)    ;; modes where CTRL-C is mapped
     ])
 
 (atom! long         ch_used)         ;; value of 'cmdheight' when frame size was set
@@ -2088,7 +2038,7 @@
     CMD_mark 25,
     CMD_marks 26,
     CMD_nohlsearch 27,
-    CMD_normal 28,
+
     CMD_number 29,
     CMD_only 30,
     CMD_print 31,
@@ -2464,7 +2414,6 @@
 (atom! boolean  execReg)            ;; true when executing a register
 
 (atom! int      no_mapping)         ;; currently no mapping allowed
-(atom! int      no_zero_mapping)    ;; mapping zero not allowed
 (atom! int      allow_keys)         ;; allow key codes when no_mapping is set
 (atom! int      no_u_sync)          ;; Don't call u_sync()
 (atom! int      u_sync_once)        ;; Call u_sync() once when evaluating an expression.
@@ -2474,14 +2423,10 @@
                                     ;; Used by vgetorpeek() to decide when to call u_sync()
 (atom! boolean  ins_at_eol)         ;; put cursor after eol when restarting edit after CTRL-O
 
-(atom! int      mapped_ctrl_c)              ;; modes where CTRL-C is mapped
-(atom! boolean  ctrl_c_interrupts true)     ;; CTRL-C sets got_int
-
 (atom! cmdmod_C cmdmod      (§_cmdmod_C))   ;; Ex command modifiers
 
 (atom! int      msg_silent)                 ;; don't print messages
 (atom! int      emsg_silent)                ;; don't print error messages
-(atom! boolean  cmd_silent)                 ;; don't echo the command line
 
 (atom! Bytes    ioBuff)                             ;; sprintf's are done in this buffer, size is IOSIZE
 (atom! Bytes    nameBuff)                           ;; file names are expanded in this buffer, size is MAXPATHL
@@ -2490,9 +2435,6 @@
 (atom! int      redrawingDisabled)          ;; When non-zero, postpone redrawing.
 
 (atom! typebuf_C typebuf    (§_typebuf_C))  ;; typeahead buffer
-(atom! int      ex_normal_busy)             ;; recursiveness of ex_normal()
-(atom! int      ex_normal_lock)             ;; forbid use of ex_normal()
-(atom! boolean  ignore_script)              ;; ignore script input
 (atom! boolean  stop_insert_mode)           ;; for ":stopinsert" and 'insertmode'
 
 (atom! boolean  keyTyped)                   ;; true if user typed current char
@@ -2539,8 +2481,6 @@
 (atom! int      postponed_split)            ;; for CTRL-W CTRL-] command
 (atom! int      postponed_split_flags)      ;; args for win_split()
 (atom! int      replace_offset)             ;; offset for replace_push()
-
-(final Bytes    escape_chars (u8 " \t\\\"|")) ;; need backslash in cmd line
 
 ;; When a string option is null (which only happens in out-of-memory situations),
 ;; it is set to EMPTY_OPTION to avoid having to check for null everywhere.
@@ -2630,7 +2570,6 @@
     e_re_corr         (u8 "E44: Corrupted regexp program"),
     e_secure          (u8 "E523: Not allowed here"),
     e_scroll          (u8 "E49: Invalid scroll size"),
-    e_toocompl        (u8 "E74: Command too complex"),
     e_toomsbra        (u8 "E76: Too many ["),
     e_trailing        (u8 "E488: Trailing characters"),
     e_umark           (u8 "E78: Unknown mark"),
@@ -2651,7 +2590,6 @@
 (final int SIGNAL_UNBLOCK  -2)
 
 (final int KEYLEN_PART_KEY -1)      ;; keylen value for incomplete key-code
-(final int KEYLEN_PART_MAP -2)      ;; keylen value for incomplete mapping
 (final int KEYLEN_REMOVED  9999)    ;; keylen value for removed sequence
 
 ;; Position comparisons
@@ -3906,7 +3844,6 @@
 
             ;; Reset msg_silent, an error causes messages to be switched back on.
 ;           @msg_silent = 0;
-;           @cmd_silent = false;
 
 ;           if (@global_busy != 0)           ;; break :global command
 ;               @global_busy++;
@@ -4326,113 +4263,6 @@
 ;           msg_puts_attr_len(q, BDIFF(p, q), attr);
 
 ;       return cells;
-    ))
-
-;; Output the string 's' upto a NUL character.
-;; Return the number of characters it takes on the screen.
-;;
-;; If KB_SPECIAL is encountered, then it is taken in conjunction with the following character
-;; and shown as <F1>, <S-Up> etc.  Any other character which is not printable shown in <> form.
-;; If 'from' is true (lhs of a mapping), a space is shown as <Space>.
-;; If a character is displayed in one of these special ways, is also highlighted
-;; (its highlight name is '8' in the "p_hl" variable).  Otherwise characters are not highlighted.
-;; This function is used to show mappings, where we want to see how to type the character/string.
-
-(defn- #_int msg_outtrans_special [#_Bytes _p, #_boolean is_lhs]
-    ;; is_lhs: true for lhs of a mapping
-    (§
-;       Bytes[] p = { _p };
-;       int cells = 0;
-
-;       int attr = hl_attr(HLF_8);
-;       for (Bytes q = p[0]; p[0].at(0) != NUL; )
-;       {
-;           Bytes s;
-
-            ;; Leading and trailing spaces need to be displayed in <> form.
-;           if ((BEQ(p[0], q) || p[0].at(1) == NUL) && p[0].at(0) == (byte)' ')
-;           {
-;               s = u8("<Space>");
-;               p[0] = p[0].plus(1);
-;           }
-;           else
-;               s = str2special(p, is_lhs);
-
-;           int len = mb_string2cells(s, -1);
-            ;; Highlight special keys.
-;           msg_puts_attr(s, (1 < len && us_ptr2len_cc(s) <= 1) ? attr : 0);
-;           cells += len;
-;       }
-
-;       return cells;
-    ))
-
-(final Bytes buf7   (Bytes. 7))
-
-;; Return the printable string for the key codes at "*sp".
-;; Used for translating the lhs or rhs of a mapping to printable chars.
-;; Advances "*sp" to the next code.
-
-(defn- #_Bytes str2special [#_Bytes* sp, #_boolean is_lhs]
-    ;; is_lhs: true for lhs of mapping
-    (§
-;       Bytes s = sp[0];
-;       int modifiers = 0;
-;       boolean special = false;
-
-        ;; Try to un-escape a multi-byte character.
-        ;; Return the un-escaped string if it is a multi-byte character.
-;       Bytes p = mb_unescape(sp);
-;       if (p != null)
-;           return p;
-
-;       int c = char_u(s.at(0));
-;       if (c == char_u(KB_SPECIAL) && s.at(1) != NUL && s.at(2) != NUL)
-;       {
-;           if (s.at(1) == KS_MODIFIER)
-;           {
-;               modifiers = char_u(s.at(2));
-;               s = s.plus(3);
-;               c = char_u(s.at(0));
-;           }
-;           if (c == char_u(KB_SPECIAL) && s.at(1) != NUL && s.at(2) != NUL)
-;           {
-;               c = toSpecial(s.at(1), s.at(2));
-;               s = s.plus(2);
-;               if (c == char_u(KS_ZERO))   ;; display <Nul> as ^@ or <Nul>
-;                   c = NUL;
-;           }
-;           if (is_special(c) || modifiers != 0)    ;; special key
-;               special = true;
-;       }
-
-;       if (!is_special(c))
-;       {
-;           int len = us_ptr2len_cc(s);
-
-            ;; For multi-byte characters check for an illegal byte.
-;           if (len < us_byte2len(s.at(0), false))
-;           {
-;               transchar_nonprint(buf7, c);
-;               sp[0] = s.plus(1);
-;               return buf7;
-;           }
-            ;; Since 'special' is true, the multi-byte character 'c'
-            ;; will be processed by get_special_key_name().
-;           c = us_ptr2char(s);
-;           sp[0] = s.plus(len);
-;       }
-;       else
-;           sp[0] = s.plus(1);
-
-        ;; Make unprintable characters in <> form, also <M-Space> and <Tab>.
-        ;; Use <Space> only for lhs of a mapping.
-;       if (special || 1 < mb_char2cells(c) || (is_lhs && c == ' '))
-;           return get_special_key_name(c, modifiers);
-
-;       buf7.be(0, c);
-;       buf7.be(1, NUL);
-;       return buf7;
     ))
 
 ;; print line for :print or :list command
@@ -5588,7 +5418,7 @@
         (bool_opt (u8 "errorbells"),     (u8 "eb"),        0,                           p_eb,        0,          false),
         (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        0,          true),
         (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           null,        PV_ET,      false),
-        (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       0,         (u8 "vert:|,fold:-")),
+        (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       0,         (u8 "vert:|")),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        0,          false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        0,          HIGHLIGHT_INIT),
         (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50),
@@ -5613,7 +5443,6 @@
         (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            null,        PV_MPS,    (u8 "(:),{:},[:]")),
         (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       0,          5),
         (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       0,          2),
-        (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       0,          1000),
         (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000),
         (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     null,        PV_MOD,     false),
         (bool_opt (u8 "more"),            null,            0,                           p_more,      0,          true),
@@ -8719,7 +8548,7 @@
 ;           if (!@cmdmod.keeppatterns)
 ;               save_re_pat(RE_SUBST, pat, @p_magic);
                 ;; put pattern in history
-;           add_to_history(HIST_SEARCH, pat, true, NUL);
+;           add_to_history(HIST_SEARCH, pat, NUL);
 
 ;           return;
 ;       }
@@ -9735,7 +9564,6 @@
 ;           @ccline.cmdlen = 0;
 ;       }
 
-;       if (!@cmd_silent)
 ;       {
 ;           int i = @msg_scrolled;
 ;           @msg_scrolled = 0;               ;; avoid wait_return message
@@ -9899,7 +9727,7 @@
 
 ;                   if (c == @cedit_key || c == K_CMDWIN)
 ;                   {
-;                       if (@ex_normal_busy == 0 && !@got_int)
+;                       if (!@got_int)
 ;                       {
                             ;; Open a window to edit the command line (and history).
 ;                           c = ex_window();
@@ -9913,11 +9741,8 @@
 ;                   {
 ;                       gotesc = false;                     ;; Might have typed ESC previously,
                                                             ;; don't truncate the cmdline now.
-;                       if (!@cmd_silent)
-;                       {
-;                           windgoto(@msg_row, 0);
-;                           out_flush();
-;                       }
+;                       windgoto(@msg_row, 0);
+;                       out_flush();
 ;                       break;
 ;                   }
 
@@ -9976,12 +9801,11 @@
 ;                           }
 ;                           else if (@ccline.cmdlen == 0 && c != Ctrl_W && @ccline.cmdprompt == null)
 ;                           {
-;                               @ccline.cmdbuff = null;      ;; no commandline to return
-;                               if (!@cmd_silent)
-;                               {
-;                                   @msg_col = 0;
-;                                   msg_putchar(' ');       ;; delete ':'
-;                               }
+;                               @ccline.cmdbuff = null;     ;; no commandline to return
+
+;                               @msg_col = 0;
+;                               msg_putchar(' ');           ;; delete ':'
+
 ;                               @redraw_cmdline = true;
 ;                               break returncmd;            ;; back to cmd mode
 ;                           }
@@ -10172,7 +9996,7 @@
 
 ;                       case Ctrl_L:
 ;                       {
-;                           if (@p_is && !@cmd_silent && (firstc == '/' || firstc == '?'))
+;                           if (@p_is && (firstc == '/' || firstc == '?'))
 ;                           {
                                 ;; Add a character from under the cursor for 'incsearch'.
 ;                               if (did_incsearch && !eqpos(@curwin.w_cursor, old_cursor))
@@ -10341,7 +10165,7 @@
 ;                           c = get_literal();          ;; get next (two) character(s)
 ;                           do_abbr = false;            ;; don't do abbreviation now
                             ;; may need to remove ^ when composing char was typed
-;                           if (utf_iscomposing(c) && !@cmd_silent)
+;                           if (utf_iscomposing(c))
 ;                           {
 ;                               draw_cmdline(@ccline.cmdpos, @ccline.cmdlen - @ccline.cmdpos);
 ;                               msg_putchar(' ');
@@ -10415,7 +10239,7 @@
 
             ;; 'incsearch' highlighting.
 
-;           if (@p_is && !@cmd_silent && (firstc == '/' || firstc == '?'))
+;           if (@p_is && (firstc == '/' || firstc == '?'))
 ;           {
                 ;; if there is a character waiting, search and redraw later
 ;               if (char_avail())
@@ -10523,7 +10347,7 @@
 
 ;           if (@ccline.cmdlen != 0 && firstc != NUL && (some_key_typed || histype == HIST_SEARCH))
 ;           {
-;               add_to_history(histype, @ccline.cmdbuff, true, histype == HIST_SEARCH ? firstc : NUL);
+;               add_to_history(histype, @ccline.cmdbuff, (histype == HIST_SEARCH) ? firstc : NUL);
 ;               if (firstc == ':')
 ;                   @new_last_cmdline = STRDUP(@ccline.cmdbuff);
 ;           }
@@ -10703,8 +10527,6 @@
 
 (defn- #_void putcmdline [#_int c, #_boolean shift]
     (§
-;       if (@cmd_silent)
-;           return;
 ;       @msg_no_more = true;
 ;       msg_putchar(c);
 ;       if (shift)
@@ -10717,8 +10539,6 @@
 
 (defn- #_void unputcmdline []
     (§
-;       if (@cmd_silent)
-;           return;
 ;       @msg_no_more = true;
 ;       if (@ccline.cmdlen == @ccline.cmdpos)
 ;           msg_putchar(' ');
@@ -10793,7 +10613,7 @@
 ;           }
 ;       }
 
-;       if (redraw && !@cmd_silent)
+;       if (redraw)
 ;       {
 ;           @msg_no_more = true;
 ;           i = @cmdline_row;
@@ -10979,9 +10799,6 @@
 
 (defn- #_void redrawcmdline []
     (§
-;       if (@cmd_silent)
-;           return;
-
 ;       @need_wait_return = false;
 ;       compute_cmdrow();
 ;       redrawcmd();
@@ -10990,9 +10807,6 @@
 
 (defn- #_void redrawcmdprompt []
     (§
-;       if (@cmd_silent)
-;           return;
-
 ;       if (@ccline.cmdfirstc != NUL)
 ;           msg_putchar(@ccline.cmdfirstc);
 ;       if (@ccline.cmdprompt != null)
@@ -11012,9 +10826,6 @@
 
 (defn- #_void redrawcmd []
     (§
-;       if (@cmd_silent)
-;           return;
-
         ;; when 'incsearch' is set there may be no command line while redrawing
 ;       if (@ccline.cmdbuff == null)
 ;       {
@@ -11053,15 +10864,12 @@
 
 (defn- #_void cursorcmd []
     (§
-;       if (!@cmd_silent)
-;       {
-;           @msg_row = @cmdline_row + (@ccline.cmdspos / (int)@Columns);
-;           @msg_col = @ccline.cmdspos % (int)@Columns;
-;           if (@Rows <= @msg_row)
-;               @msg_row = (int)@Rows - 1;
+;       @msg_row = @cmdline_row + (@ccline.cmdspos / (int)@Columns);
+;       @msg_col = @ccline.cmdspos % (int)@Columns;
+;       if (@Rows <= @msg_row)
+;           @msg_row = (int)@Rows - 1;
 
-;           windgoto(@msg_row, @msg_col);
-;       }
+;       windgoto(@msg_row, @msg_col);
     ))
 
 (defn- #_void gotocmdline [#_boolean clr]
@@ -11238,8 +11046,7 @@
 ;; Add the given string to the given history.  If the string is already in the
 ;; history then it is moved to the front.  "histype" may be one of he HIST_ values.
 
-(defn- #_void add_to_history [#_int histype, #_Bytes new_entry, #_boolean in_map, #_int sep]
-    ;; in_map: consider maptick when inside a mapping
+(defn- #_void add_to_history [#_int histype, #_Bytes new_entry, #_int sep]
     ;; sep: separator character used (search hist)
     (§
 ;       if (@hislen == 0)            ;; no history
@@ -11252,7 +11059,7 @@
         ;; the last line is kept.  Be careful not to remove a line that was moved
         ;; down, only lines that were added.
 
-;       if (histype == HIST_SEARCH && in_map)
+;       if (histype == HIST_SEARCH)
 ;       {
 ;           if (@maptick == @last_maptick)
 ;           {
@@ -11280,7 +11087,7 @@
 ;           hisptr.hisstr.be(len + 1, sep);
 
 ;           hisptr.hisnum = ++@hisnum[histype];
-;           if (histype == HIST_SEARCH && in_map)
+;           if (histype == HIST_SEARCH)
 ;               @last_maptick = @maptick;
 ;       }
     ))
@@ -13087,7 +12894,8 @@
 
 ;               ctrl_o.be(0, Ctrl_O);
 ;               ctrl_o.be(1, NUL);
-;               ins_typebuf(ctrl_o, REMAP_NONE, 0, true, false);
+
+;               ins_typebuf(ctrl_o, 0, true);
 ;           }
 ;       }
     ))
@@ -13388,123 +13196,6 @@
 ;       }
     ))
 
-;; Update w_topline, w_leftcol and the cursor position.
-
-(defn- #_void update_topline_cursor []
-    (§
-;       check_cursor();             ;; put cursor on valid line
-;       update_topline();
-;       if (!@curwin.w_options.@wo_wrap)
-;           validate_cursor();
-;       update_curswant();
-    ))
-
-;; ":normal[!] {commands}": Execute normal mode commands.
-
-(defn- #_void ex_normal [#_exarg_C eap]
-    (§
-;       boolean save_msg_didout = @msg_didout;
-;       int save_State = @State;
-;       boolean save_finish_op = @finish_op;
-;       long save_opcount = @opcount;
-
-;       if (0 < @ex_normal_lock)
-;       {
-;           emsg(e_secure);
-;           return;
-;       }
-;       if (@p_mmd <= @ex_normal_busy)
-;       {
-;           emsg(u8("E192: Recursive use of :normal too deep"));
-;           return;
-;       }
-
-;       @ex_normal_busy++;
-
-;       boolean save_msg_scroll = @msg_scroll;
-;       int save_restart_edit = @restart_edit;
-;       boolean save_insertmode = @p_im;
-
-;       @msg_scroll = false;     ;; no msg scrolling in Normal mode
-;       @restart_edit = 0;       ;; don't go to Insert mode
-;       @p_im = false;           ;; don't use 'insertmode'
-
-            ;; vgetc() expects a CSI and KB_SPECIAL to have been escaped.
-            ;; Don't do this for the KB_SPECIAL leading byte, otherwise special keys will not work.
-
-            ;; Count the number of characters to be escaped.
-;       int len = 0;
-;       for (Bytes p = eap.arg; p.at(0) != NUL; p = p.plus(1))
-;       {
-;           for (int l = us_ptr2len_cc(p) - 1; 0 < l; --l)
-;               if ((p = p.plus(1)).at(0) == KB_SPECIAL)        ;; trailbyte KB_SPECIAL or CSI
-;                   len += 2;
-;       }
-;       Bytes arg = null;
-;       if (0 < len)
-;       {
-;           arg = new Bytes(STRLEN(eap.arg) + len + 1);
-
-;           len = 0;
-;           for (Bytes p = eap.arg; p.at(0) != NUL; p = p.plus(1))
-;           {
-;               arg.be(len++, p.at(0));
-;               for (int l = us_ptr2len_cc(p) - 1; 0 < l; --l)
-;               {
-;                   arg.be(len++, (p = p.plus(1)).at(0));
-;                   if (p.at(0) == KB_SPECIAL)
-;                   {
-;                       arg.be(len++, KS_SPECIAL);
-;                       arg.be(len++, KE_FILLER);
-;                   }
-;               }
-;               arg.be(len, NUL);
-;           }
-;       }
-
-            ;; Save the current typeahead.  This is required to allow using ":normal"
-            ;; from an event handler and makes sure we don't hang when the argument
-            ;; ends with half a command.
-
-;       tasave_C tabuf = new_tasave();
-;       save_typeahead(tabuf);
-
-            ;; Repeat the :normal command for each line in the range.
-            ;; When no range given, execute it just once, without positioning the cursor first.
-
-;       do
-;       {
-;           if (eap.addr_count != 0)
-;           {
-;               @curwin.w_cursor.lnum = eap.line1++;
-;               @curwin.w_cursor.col = 0;
-;           }
-
-;           exec_normal_cmd((arg != null) ? arg : eap.arg, eap.forceit ? REMAP_NONE : REMAP_YES, false);
-;       } while (0 < eap.addr_count && eap.line1 <= eap.line2 && !@got_int);
-
-            ;; Might not return to the main loop when in an event handler.
-;       update_topline_cursor();
-
-            ;; Restore the previous typeahead.
-;       restore_typeahead(tabuf);
-
-;       --@ex_normal_busy;
-
-;       @msg_scroll = save_msg_scroll;
-;       @restart_edit = save_restart_edit;
-;       @p_im = save_insertmode;
-
-;       @finish_op = save_finish_op;
-;       @opcount = save_opcount;
-;       @msg_didout |= save_msg_didout;      ;; don't reset msg_didout now
-
-            ;; Restore the state (needed when called from a function executed for
-            ;; 'indentexpr').  Update the mouse and cursor, they may have changed.
-;       @State = save_State;
-;       ui_cursor_shape();          ;; may show different cursor shape
-    ))
-
 ;; ":startinsert", ":startreplace" and ":startgreplace"
 
 (defn- #_void ex_startinsert [#_exarg_C eap]
@@ -13542,25 +13233,6 @@
     (§
 ;       @restart_edit = 0;
 ;       @stop_insert_mode = true;
-    ))
-
-;; Execute normal mode command "cmd".
-;; "remap" can be REMAP_NONE or REMAP_YES.
-
-(defn- #_void exec_normal_cmd [#_Bytes cmd, #_int remap, #_boolean silent]
-    (§
-;       oparg_C oa = §_oparg_C();
-
-        ;; Stuff the argument into the typeahead buffer.
-        ;; Execute normal_cmd() until there is no typeahead left.
-
-;       @finish_op = false;
-;       ins_typebuf(cmd, remap, 0, true, silent);
-;       while ((!stuff_empty() || (!typebuf_typed() && 0 < @typebuf.tb_len)) && !@got_int)
-;       {
-;           update_topline_cursor();
-;           normal_cmd(oa, true);   ;; execute a Normal mode cmd
-;       }
     ))
 
 (defn- #_void ex_digraphs [#_exarg_C eap]
@@ -13682,8 +13354,6 @@
 ;       %% return nv_cmds index for cmd_char or -1
     ))
 
-(atom! int old_mapped_len)
-
 ;; Execute a command in Normal mode.
 
 (defn- #_void normal_cmd [#_oparg_C oap, #_boolean toplevel]
@@ -13727,22 +13397,11 @@
 ;           oap.prev_count0 = 0;
 ;       }
 
-;       int mapped_len = typebuf_maplen();
-
 ;       @State = NORMAL_BUSY;
 
         ;; Get the command character from the user.
 
 ;       int c = safe_vgetc();
-
-        ;; If a mapping was started in Visual or Select mode, remember the length
-        ;; of the mapping.  This is used below to not return to Insert mode for as
-        ;; long as the mapping is being executed.
-
-;       if (@restart_edit == 0)
-;           @old_mapped_len = 0;
-;       else if (@old_mapped_len != 0 || (@VIsual_active && mapped_len == 0 && 0 < typebuf_maplen()))
-;           @old_mapped_len = typebuf_maplen();
 
 ;       if (c == NUL)
 ;           c = K_ZERO;
@@ -13762,7 +13421,6 @@
 ;           else
 ;               c = 'c';
 ;           @msg_nowait = true;      ;; don't delay going to insert mode
-;           @old_mapped_len = 0;     ;; do go to Insert mode
 ;       }
 
 ;       boolean need_flushbuf = add_to_showcmd(c);      ;; need to call out_flush()
@@ -13794,9 +13452,7 @@
 ;                       @no_mapping++;
 ;                       @allow_keys++;           ;; no mapping for nchar, but keys
 ;                   }
-;                   @no_zero_mapping++;          ;; don't map zero here
 ;                   c = plain_vgetc();
-;                   --@no_zero_mapping;
 ;                   if (ctrl_w)
 ;                   {
 ;                       --@no_mapping;
@@ -14115,11 +13771,6 @@
 ;               clearop(oap);
 ;           }
 
-            ;; Get the length of mapped chars again after typing a count,
-            ;; second character or "z333<cr>".
-;           if (0 < @old_mapped_len)
-;               @old_mapped_len = typebuf_maplen();
-
             ;; If an operation is pending, handle it...
 
 ;           do_pending_operator(ca, old_col, false);
@@ -14150,7 +13801,6 @@
 ;                   && oap.regname == 0
 ;                   && (ca.retval & CA_COMMAND_BUSY) == 0
 ;                   && stuff_empty()
-;                   && typebuf_typed()
 ;                   && @emsg_silent == 0
 ;                   && !@did_wait_return
 ;                   && oap.op_type == OP_NOP)
@@ -14224,8 +13874,7 @@
         ;; May switch from Visual to Select mode after CTRL-O command.
 
 ;       if (oap.op_type == OP_NOP
-;               && ((@restart_edit != 0 && !@VIsual_active && @old_mapped_len == 0)
-;                   || @restart_VIsual_select == 1)
+;               && ((@restart_edit != 0 && !@VIsual_active) || @restart_VIsual_select == 1)
 ;               && (ca.retval & CA_COMMAND_BUSY) == 0
 ;               && stuff_empty()
 ;               && oap.regname == 0)
@@ -14236,7 +13885,7 @@
 ;               showmode();
 ;               @restart_VIsual_select = 0;
 ;           }
-;           if (@restart_edit != 0 && !@VIsual_active && @old_mapped_len == 0)
+;           if (@restart_edit != 0 && !@VIsual_active)
 ;               edit(@restart_edit, false, 1);
 ;       }
 
@@ -15083,8 +14732,7 @@
 ;       col = 0;
         ;; Search for point of changing multibyte character class.
 ;       this_class = us_get_class(p, @curbuf);
-;       while (p.at(col) != NUL
-;           && ((round == 0 ? us_get_class(p.plus(col), @curbuf) == this_class : us_get_class(p.plus(col), @curbuf) != 0)))
+;       while (p.at(col) != NUL && ((round == 0 ? us_get_class(p.plus(col), @curbuf) == this_class : us_get_class(p.plus(col), @curbuf) != 0)))
 ;           col += us_ptr2len_cc(p.plus(col));
 
 ;       return col;
@@ -16227,7 +15875,7 @@
 ;               STRCAT(buf, u8("\\>"));
                 ;; put pattern in search history
 ;           init_history();
-;           add_to_history(HIST_SEARCH, buf, true, NUL);
+;           add_to_history(HIST_SEARCH, buf, NUL);
 ;           normal_search(cap, (cmdchar == '*') ? (byte)'/' : (byte)'?', buf, 0);
 ;       }
 ;       else
@@ -17599,7 +17247,7 @@
 
 (defn- #_void may_start_select [#_int c]
     (§
-;       @VIsual_select = (stuff_empty() && typebuf_typed() && vim_strchr(@p_slm, c) != null);
+;       @VIsual_select = (stuff_empty() && vim_strchr(@p_slm, c) != null);
     ))
 
 ;; Start Visual mode "c".
@@ -17944,9 +17592,9 @@
 
 ;           case '*':
 ;           case '#':
-;           case 163: // case char_u(POUND):        ;; pound sign (sometimes equal to '#')
-;           case Ctrl_RSB:                          ;; :tag or :tselect for current identifier
-;           case ']':                               ;; :tselect for current identifier
+;           case char_u(POUND):             ;; pound sign (sometimes equal to '#')
+;           case Ctrl_RSB:                  ;; :tag or :tselect for current identifier
+;           case ']':                       ;; :tselect for current identifier
 ;               nv_ident(cap);
 ;               break;
 
@@ -18536,7 +18184,7 @@
 
             ;; A CTRL-C is often used at the start of a menu.
             ;; When 'insertmode' is set, return to Insert mode afterwards.
-;       if (@restart_edit == 0 && goto_im() && @ex_normal_busy == 0)
+;       if (@restart_edit == 0 && goto_im())
 ;           @restart_edit = 'a';
     ))
 
@@ -18740,7 +18388,7 @@
 ;       }
 ;       while (0 < cap.count1-- && !@got_int)
 ;       {
-;           if (do_execreg(cap.@nchar, false, false, false) == false)
+;           if (do_execreg(cap.@nchar) == false)
 ;           {
 ;               clearopbeep(cap.oap);
 ;               break;
@@ -19045,7 +18693,7 @@
         (->nv_cmd_C (int \~),         nv_tilde,       0,                      0               ),
 
         ;; pound sign
-;       new nv_cmd_C(char_u(POUND),    nv_ident,       0,                     0               ),
+        (->nv_cmd_C (char_u POUND),   nv_ident,       0,                      0               ),
         (->nv_cmd_C K_IGNORE,         nv_ignore,      NV_KEEPREG,             0               ),
         (->nv_cmd_C K_NOP,            nv_nop,         0,                      0               ),
         (->nv_cmd_C K_INS,            nv_edit,        0,                      0               ),
@@ -19823,7 +19471,7 @@
 ;       else                            ;; stop recording
 ;       {
             ;; Get the recorded key hits.
-            ;; KB_SPECIAL and CSI will be escaped, this needs to be removed again to put it in a register.
+            ;; KB_SPECIAL will be escaped, this needs to be removed again to put it in a register.
             ;; exec_reg then adds the escaping back later.
 
 ;           @Recording = false;
@@ -19833,8 +19481,8 @@
 ;               retval = false;
 ;           else
 ;           {
-                ;; Remove escaping for CSI and KB_SPECIAL in multi-byte chars.
-;               vim_unescape_csi(p);
+                ;; Remove escaping for KB_SPECIAL in multi-byte chars.
+;               vim_unescape_special(p);
 
                 ;; We don't want to change the default register here,
                 ;; so save and restore the current register name.
@@ -19894,13 +19542,8 @@
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean do_execreg [#_int regname, #_boolean colon, #_boolean addcr, #_boolean silent]
-    ;; colon: insert ':' before each line
-    ;; addcr: always add '\n' to end of line
-    ;; silent: set "silent" flag in typeahead buffer
+(defn- #_boolean do_execreg [#_int regname]
     (§
-;       boolean retval = true;
-
 ;       if (regname == '@')                 ;; repeat previous one
 ;       {
 ;           if (@execreg_lastc == NUL)
@@ -19930,26 +19573,30 @@
 ;               emsg(e_nolastcmd);
 ;               return false;
 ;           }
+
 ;           @new_last_cmdline = null;        ;; don't keep the cmdline containing @:
+
             ;; Escape all control characters with a CTRL-V.
 ;           Bytes p = vim_strsave_escaped_ext(@last_cmdline, u8("\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037"), Ctrl_V);
 
             ;; When in Visual mode "'<,'>" will be prepended to the command.
             ;; Remove it when it's already there.
 ;           if (@VIsual_active && STRNCMP(p, u8("'<,'>"), 5) == 0)
-;               retval = put_in_typebuf(p.plus(5), true, true, silent);
-;           else
-;               retval = put_in_typebuf(p, true, true, silent);
+;               p = p.plus(5);
+
+;           return put_in_typebuf(p, true, true);
 ;       }
-;       else if (regname == '=')
+
+;       if (regname == '=')
 ;       {
 ;           Bytes p = get_expr_line();
 ;           if (p == null)
 ;               return false;
 
-;           retval = put_in_typebuf(p, true, colon, silent);
+;           return put_in_typebuf(p, true, false);
 ;       }
-;       else if (regname == '.')            ;; use last inserted text
+
+;       if (regname == '.')            ;; use last inserted text
 ;       {
 ;           Bytes p = get_last_insert_save();
 ;           if (p == null)
@@ -19957,53 +19604,42 @@
 ;               emsg(e_noinstext);
 ;               return false;
 ;           }
-;           retval = put_in_typebuf(p, false, colon, silent);
+;           return put_in_typebuf(p, false, false);
 ;       }
-;       else
+
+;       get_yank_register(regname, false);
+;       if (@y_current.y_array == null)
+;           return false;
+
+        ;; Insert lines into typeahead buffer, from last one to first one.
+
+;       put_reedit_in_typebuf();
+
+;       for (int i = @y_current.y_size; 0 <= --i; )
 ;       {
-;           get_yank_register(regname, false);
-;           if (@y_current.y_array == null)
-;               return false;
+            ;; insert NL between lines and after last line if type is MLINE
+;           if (@y_current.y_type == MLINE || i < @y_current.y_size - 1)
+;               ins_typebuf(u8("\n"), 0, true);
 
-            ;; Disallow remaping for ":@r".
-;           int remap = colon ? REMAP_NONE : REMAP_YES;
+;           Bytes escaped = vim_strsave_escape_special(@y_current.y_array[i]);
 
-            ;; Insert lines into typeahead buffer, from last one to first one.
-
-;           put_reedit_in_typebuf(silent);
-
-;           for (int i = @y_current.y_size; 0 <= --i; )
-;           {
-                ;; insert NL between lines and after last line if type is MLINE
-;               if (@y_current.y_type == MLINE || i < @y_current.y_size - 1 || addcr)
-;                   if (!ins_typebuf(u8("\n"), remap, 0, true, silent))
-;                       return false;
-
-;               Bytes escaped = vim_strsave_escape_csi(@y_current.y_array[i]);
-
-;               retval = ins_typebuf(escaped, remap, 0, true, silent);
-
-;               if (!retval)
-;                   return false;
-
-;               if (colon && !ins_typebuf(u8(":"), remap, 0, true, silent))
-;                   return false;
-;           }
-;           @execReg = true;         ;; disable the 'q' command
+;           ins_typebuf(escaped, 0, true);
 ;       }
 
-;       return retval;
+;       @execReg = true;         ;; disable the 'q' command
+
+;       return true;
     ))
 
-;; If "restart_edit" is not zero, put it in the typeahead buffer, so that it's
-;; used only after other typeahead has been processed.
+;; If "restart_edit" is not zero, put it in the typeahead buffer,
+;; so that it's used only after other typeahead has been processed.
 
-(defn- #_void put_reedit_in_typebuf [#_boolean silent]
+(defn- #_void put_reedit_in_typebuf []
     (§
-;       Bytes buf = new Bytes(3);
-
 ;       if (@restart_edit != NUL)
 ;       {
+;           Bytes buf = new Bytes(3);
+
 ;           if (@restart_edit == 'V')
 ;           {
 ;               buf.be(0, (byte)'g');
@@ -20015,36 +19651,33 @@
 ;               buf.be(0, (@restart_edit == 'I') ? (byte)'i' : @restart_edit);
 ;               buf.be(1, NUL);
 ;           }
-;           if (ins_typebuf(buf, REMAP_NONE, 0, true, silent))
-;               @restart_edit = NUL;
+
+;           ins_typebuf(buf, 0, true);
+;           @restart_edit = NUL;
 ;       }
     ))
 
 ;; Insert register contents "s" into the typeahead buffer, so that it will be executed again.
-;; When "esc" is true it is to be taken literally: escape CSI characters and no remapping.
+;; When "esc" is true it is to be taken literally: escape CSI characters and no remapping.
 
-(defn- #_boolean put_in_typebuf [#_Bytes s, #_boolean esc, #_boolean colon, #_boolean silent]
+(defn- #_boolean put_in_typebuf [#_Bytes s, #_boolean esc, #_boolean colon]
     ;; colon: add ':' before the line
     (§
-;       boolean retval = true;
-
-;       put_reedit_in_typebuf(silent);
+;       put_reedit_in_typebuf();
 
 ;       if (colon)
-;           retval = ins_typebuf(u8("\n"), REMAP_NONE, 0, true, silent);
-;       if (retval)
-;       {
-;           Bytes p = (esc) ? vim_strsave_escape_csi(s) : s;
+;           ins_typebuf(u8("\n"), 0, true);
 
-;           if (p == null)
-;               retval = false;
-;           else
-;               retval = ins_typebuf(p, esc ? REMAP_NONE : REMAP_YES, 0, true, silent);
-;       }
-;       if (colon && retval)
-;           retval = ins_typebuf(u8(":"), REMAP_NONE, 0, true, silent);
+;       Bytes p = (esc) ? vim_strsave_escape_special(s) : s;
+;       if (p == null)
+;           return false;
 
-;       return retval;
+;       ins_typebuf(p, 0, true);
+
+;       if (colon)
+;           ins_typebuf(u8(":"), 0, true);
+
+;       return true;
     ))
 
 ;; Insert a yank register: copy it into the Read buffer.
@@ -23915,19 +23548,13 @@
 ;; The bytes are stored like in the typeahead buffer:
 ;; - KB_SPECIAL introduces a special key (two more bytes follow).
 ;;   A literal KB_SPECIAL is stored as KB_SPECIAL KS_SPECIAL KE_FILLER.
-;; - CSI introduces a GUI termcap code (also when gui.in_use is false,
-;;   otherwise switching the GUI on would make mappings invalid).
-;;   A literal CSI is stored as CSI KS_EXTRA KE_CSI.
 ;; These translations are also done on multi-byte characters!
 ;;
-;; Escaping CSI bytes is done by the system-specific input functions, called by ui_inchar().
 ;; Escaping KB_SPECIAL is done by inchar().
 ;; Un-escaping is done by vgetc().
 
 (atom! buffheader_C redobuff    (§_buffheader_C))
 (atom! buffheader_C old_redobuff    (§_buffheader_C))
-(atom! buffheader_C save_redobuff   (§_buffheader_C))
-(atom! buffheader_C save_old_redobuff   (§_buffheader_C))
 (atom! buffheader_C recordbuff  (§_buffheader_C))
 
 (atom! int typeahead_char)      ;; typeahead char that's not flushed
@@ -23937,8 +23564,6 @@
 
 (atom! boolean block_redo)
 
-(atom! int keyNoremap)          ;; remapping flags
-
 ;; Variables used by vgetorpeek() and flush_buffers().
 ;;
 ;; typebuf.tb_buf[] contains all characters that are not consumed yet.
@@ -23946,19 +23571,7 @@
 ;; typebuf.tb_buf[typebuf.tb_off + typebuf.tb_len - 1] is the last valid char.
 ;; typebuf.tb_buf[typebuf.tb_off + typebuf.tb_len] must be NUL.
 ;;
-;; The head of the buffer may contain the result of mappings, abbreviations
-;; and @a commands.  The length of this part is typebuf.tb_maplen.
-;; typebuf.tb_silent is the part where <silent> applies.
 ;; After the head are characters that come from the terminal.
-;; typebuf.tb_no_abbr_cnt is the number of characters in typebuf.tb_buf that
-;; should not be considered for abbreviations.
-;; Some parts of typebuf.tb_buf may not be mapped.  These parts are remembered
-;; in typebuf.tb_noremap[], which is the same length as typebuf.tb_buf and
-;; contains RM_NONE for the characters that are not to be remapped.
-;; typebuf.tb_noremap[typebuf.tb_off] is the first valid flag.
-
-(final int RM_YES          0)       ;; tb_noremap: remap
-(final int RM_NONE         1)       ;; tb_noremap: don't remap
 
 ;; typebuf.tb_buf has three parts:
 ;;  room in front (for result of mappings),
@@ -23967,7 +23580,6 @@
 
 (final int TYPELEN_INIT    (* 5 (+ MAXMAPLEN 3)))
 (final Bytes    typebuf_init    (Bytes. TYPELEN_INIT))  ;; initial typebuf.tb_buf
-(final Bytes    noremapbuf_init (Bytes. TYPELEN_INIT))  ;; initial typebuf.tb_noremap
 
 (atom! int      last_recorded_len)          ;; number of last recorded chars
 
@@ -23979,7 +23591,7 @@
     ))
 
 ;; Return the contents of a buffer as a single string.
-;; KB_SPECIAL and CSI in the returned string are escaped.
+;; KB_SPECIAL in the returned string is escaped.
 
 (defn- #_Bytes get_buffcont [#_buffheader_C buffer, #_boolean dozero]
     ;; dozero: count == zero is not an error
@@ -24007,7 +23619,7 @@
     ))
 
 ;; Return the contents of the record buffer as a single string and clear the record buffer.
-;; KB_SPECIAL and CSI in the returned string are escaped.
+;; KB_SPECIAL in the returned string is escaped.
 
 (defn- #_Bytes get_recorded []
     (§
@@ -24033,7 +23645,7 @@
     ))
 
 ;; Return the contents of the redo buffer as a single string.
-;; KB_SPECIAL and CSI in the returned string are escaped.
+;; KB_SPECIAL in the returned string is escaped.
 
 (defn- #_Bytes get_inserted []
     (§
@@ -24041,7 +23653,7 @@
     ))
 
 ;; Add string "s" after the current block of buffer "buf".
-;; KB_SPECIAL and CSI should have been escaped already.
+;; KB_SPECIAL should have been escaped already.
 
 (defn- #_void add_buff [#_buffheader_C buf, #_Bytes s, #_long slen]
     ;; slen: length of "s" or -1
@@ -24104,7 +23716,7 @@
     ))
 
 ;; Add character 'c' to buffer "buf".
-;; Translates special keys, NUL, CSI, KB_SPECIAL and multibyte characters.
+;; Translates special keys, NUL, KB_SPECIAL and multibyte characters.
 
 (defn- #_void add_char_buff [#_buffheader_C buf, #_int c]
     (§
@@ -24145,7 +23757,7 @@
 
 ;; Get one byte from a read buffer.
 ;; If advance == true go to the next char.
-;; No translation is done KB_SPECIAL and CSI are escaped.
+;; No translation is done KB_SPECIAL is escaped.
 
 (defn- #_byte read_readbuf [#_buffheader_C buf, #_boolean advance]
     (§
@@ -24167,7 +23779,7 @@
 ;; Get one byte from the read buffers.
 ;; Use readbuf1 one first, use readbuf2 if that one is empty.
 ;; If advance == true go to the next char.
-;; No translation is done KB_SPECIAL and CSI are escaped.
+;; No translation is done KB_SPECIAL is escaped.
 
 (defn- #_byte read_readbuffers [#_boolean advance]
     (§
@@ -24218,7 +23830,7 @@
 
 ;       start_stuff();
 ;       while (read_readbuffers(true) != NUL)
-        ;
+            ;
 
 ;       if (flush_typeahead)            ;; remove all typeahead
 ;       {
@@ -24226,19 +23838,10 @@
             ;; In an xterm we get one char at a time and we have to get them all.
 
 ;           while (inchar(@typebuf.tb_buf, @typebuf.tb_buflen - 1, 10, @typebuf.tb_change_cnt) != 0)
-            ;
+                ;
 ;           @typebuf.tb_off = MAXMAPLEN;
 ;           @typebuf.tb_len = 0;
 ;       }
-;       else                    ;; remove mapped characters at the start only
-;       {
-;           @typebuf.tb_off += @typebuf.tb_maplen;
-;           @typebuf.tb_len -= @typebuf.tb_maplen;
-;       }
-;       @typebuf.tb_maplen = 0;
-;       @typebuf.tb_silent = 0;
-;       @cmd_silent = false;
-;       @typebuf.tb_no_abbr_cnt = 0;
     ))
 
 ;; The previous contents of the redo buffer is kept in old_redobuffer.
@@ -24270,7 +23873,7 @@
     ))
 
 ;; Append "s" to the redo buffer.
-;; KB_SPECIAL and CSI should already have been escaped.
+;; KB_SPECIAL should already have been escaped.
 
 (defn- #_void appendToRedobuff [#_Bytes s]
     (§
@@ -24279,7 +23882,7 @@
     ))
 
 ;; Append to Redo buffer literally, escaping special characters with CTRL-V.
-;; KB_SPECIAL and CSI are escaped as well.
+;; KB_SPECIAL is escaped as well.
 
 (defn- #_void appendToRedobuffLit [#_Bytes str, #_int len]
     ;; len: length of "str" or -1 for up to the NUL
@@ -24318,7 +23921,7 @@
     ))
 
 ;; Append a character to the redo buffer.
-;; Translates special keys, NUL, CSI, KB_SPECIAL and multibyte characters.
+;; Translates special keys, NUL, KB_SPECIAL and multibyte characters.
 
 (defn- #_void appendCharToRedobuff [#_int c]
     (§
@@ -24335,7 +23938,7 @@
     ))
 
 ;; Append string "s" to the stuff buffer.
-;; CSI and KB_SPECIAL must already have been escaped.
+;; KB_SPECIAL must already have been escaped.
 
 (defn- #_void stuffReadbuff [#_Bytes s]
     (§
@@ -24343,7 +23946,7 @@
     ))
 
 ;; Append string "s" to the redo stuff buffer.
-;; CSI and KB_SPECIAL must already have been escaped.
+;; KB_SPECIAL must already have been escaped.
 
 (defn- #_void stuffRedoReadbuff [#_Bytes s]
     (§
@@ -24356,7 +23959,7 @@
     ))
 
 ;; Append a character to the stuff buffer.
-;; Translates special keys, NUL, CSI, KB_SPECIAL and multibyte characters.
+;; Translates special keys, NUL, KB_SPECIAL and multibyte characters.
 
 (defn- #_void stuffcharReadbuff [#_int c]
     (§
@@ -24390,7 +23993,7 @@
     ))
 
 ;; Read a character from the redo buffer.
-;; Translates KB_SPECIAL, CSI and multibyte characters.
+;; Translates KB_SPECIAL and multibyte characters.
 ;; The redo buffer is left as it is.
 
 (defn- #_int read_redo []
@@ -24540,7 +24143,6 @@
 ;       if (@typebuf.tb_buf == null)
 ;       {
 ;           @typebuf.tb_buf = typebuf_init;
-;           @typebuf.tb_noremap = noremapbuf_init;
 ;           @typebuf.tb_buflen = TYPELEN_INIT;
 ;           @typebuf.tb_len = 0;
 ;           @typebuf.tb_off = 0;
@@ -24548,20 +24150,11 @@
 ;       }
     ))
 
-;; Insert a string in position 'offset' in the typeahead buffer
-;; (for "@r" and ":normal" command, vgetorpeek() and check_termcode()).
+;; Insert a string in position 'offset' in the typeahead buffer.
 ;;
-;; If noremap is REMAP_YES, new string can be mapped again.
-;; If noremap is REMAP_NONE, new string cannot be mapped again.
-;; If noremap is > 0, that many characters of the new string cannot be mapped.
-;;
-;; If nottyped is true, the string does not return keyTyped (don't use when offset is non-zero!).
-;;
-;; If silent is true, cmd_silent is set when the characters are obtained.
-;;
-;; Return false for failure, true otherwise.
+;; If nottyped is true, the string does not return keyTyped (don't use when offset is non-zero!).
 
-(defn- #_boolean ins_typebuf [#_Bytes str, #_int noremap, #_int offset, #_boolean nottyped, #_boolean silent]
+(defn- #_void ins_typebuf [#_Bytes str, #_int offset, #_boolean nottyped]
     (§
 ;       init_typebuf();
 ;       if (++@typebuf.tb_change_cnt == 0)
@@ -24585,69 +24178,31 @@
 ;       {
 ;           int newoff = MAXMAPLEN + 4;
 ;           int newlen = @typebuf.tb_len + addlen + newoff + 4 * (MAXMAPLEN + 4);
-;           if (newlen < 0)                 ;; string is getting too long
-;           {
-;               emsg(e_toocompl);           ;; also calls flush_buffers
-;               setcursor();
-;               return false;
-;           }
-;           Bytes s1 = new Bytes(newlen);
-;           Bytes s2 = new Bytes(newlen);
+
+;           Bytes newbuf = new Bytes(newlen);
 ;           @typebuf.tb_buflen = newlen;
 
             ;; copy the old chars, before the insertion point
-;           BCOPY(s1, newoff, @typebuf.tb_buf, @typebuf.tb_off, offset);
+;           BCOPY(newbuf, newoff, @typebuf.tb_buf, @typebuf.tb_off, offset);
             ;; copy the new chars
-;           BCOPY(s1, newoff + offset, str, 0, addlen);
+;           BCOPY(newbuf, newoff + offset, str, 0, addlen);
             ;; copy the old chars, after the insertion point, including the NUL at the end
-;           BCOPY(s1, newoff + offset + addlen, @typebuf.tb_buf, @typebuf.tb_off + offset, @typebuf.tb_len - offset + 1);
-;           @typebuf.tb_buf = s1;
-
-;           BCOPY(s2, newoff, @typebuf.tb_noremap, @typebuf.tb_off, offset);
-;           BCOPY(s2, newoff + offset + addlen, @typebuf.tb_noremap, @typebuf.tb_off + offset, @typebuf.tb_len - offset);
-;           @typebuf.tb_noremap = s2;
+;           BCOPY(newbuf, newoff + offset + addlen, @typebuf.tb_buf, @typebuf.tb_off + offset, @typebuf.tb_len - offset + 1);
+;           @typebuf.tb_buf = newbuf;
 
 ;           @typebuf.tb_off = newoff;
 ;       }
 ;       @typebuf.tb_len += addlen;
-
-;       int val = RM_NONE;
-
-        ;; Adjust typebuf.tb_noremap[] for the new characters:
-        ;; If noremap == REMAP_NONE: new characters are (sometimes) not remappable.
-        ;; If noremap == REMAP_YES: all the new characters are mappable.
-        ;; If noremap  > 0: "noremap" characters are not remappable, the rest mappable.
-
-;       int nrm;
-;       if (noremap < 0)
-;           nrm = addlen;
-;       else
-;           nrm = noremap;
-;       for (int i = 0; i < addlen; i++)
-;           @typebuf.tb_noremap.be(@typebuf.tb_off + i + offset, (0 <= --nrm) ? val : RM_YES);
-
-        ;; 'tb_maplen' and 'tb_silent' only remember the length of mapped and/or silent mappings at the
-        ;; start of the buffer, assuming that a mapped sequence doesn't result in typed characters.
-;       if (nottyped || offset < @typebuf.tb_maplen)
-;           @typebuf.tb_maplen += addlen;
-;       if (silent || offset < @typebuf.tb_silent)
-;       {
-;           @typebuf.tb_silent += addlen;
-;           @cmd_silent = true;
-;       }
-;       if (@typebuf.tb_no_abbr_cnt != 0 && offset == 0) ;; and not used for abbrev.s
-;           @typebuf.tb_no_abbr_cnt += addlen;
-
-;       return true;
     ))
 
 ;; Put character "c" back into the typeahead buffer.
 ;; Can be used for a character obtained by vgetc() that needs to be put back.
-;; Uses cmd_silent, keyTyped and keyNoremap to restore the flags belonging to the char.
+;; Uses keyTyped to restore the flags belonging to the char.
 
 (defn- #_void ins_char_typebuf [#_int c]
     (§
 ;       Bytes buf = new Bytes(MB_MAXBYTES + 1);
+
 ;       if (is_special(c))
 ;       {
 ;           buf.be(0, KB_SPECIAL);
@@ -24659,7 +24214,8 @@
 ;       {
 ;           buf.be(utf_char2bytes(c, buf), NUL);
 ;       }
-;       ins_typebuf(buf, @keyNoremap, 0, !@keyTyped, @cmd_silent);
+
+;       ins_typebuf(buf, 0, !@keyTyped);
     ))
 
 ;; Return true if the typeahead buffer was changed (while waiting for a character to arrive).
@@ -24674,21 +24230,6 @@
 ;       return (tb_change_cnt != 0 && (@typebuf.tb_change_cnt != tb_change_cnt || @typebuf_was_filled));
     ))
 
-;; Return true if there are no characters in the typeahead buffer that have
-;; not been typed (result from a mapping or come from ":normal").
-
-(defn- #_boolean typebuf_typed []
-    (§
-;       return (@typebuf.tb_maplen == 0);
-    ))
-
-;; Return the number of characters that are mapped (or not typed).
-
-(defn- #_int typebuf_maplen []
-    (§
-;       return @typebuf.tb_maplen;
-    ))
-
 ;; remove "len" characters from typebuf.tb_buf[typebuf.tb_off + offset]
 
 (defn- #_void del_typebuf [#_int len, #_int offset]
@@ -24698,13 +24239,8 @@
 
 ;       @typebuf.tb_len -= len;
 
-        ;; Easy case: Just increase typebuf.tb_off.
-
 ;       if (offset == 0 && 3 * MAXMAPLEN + 3 <= @typebuf.tb_buflen - (@typebuf.tb_off + len))
 ;           @typebuf.tb_off += len;
-
-        ;; Have to move the characters in typebuf.tb_buf[] and typebuf.tb_noremap[]
-
 ;       else
 ;       {
 ;           int i = @typebuf.tb_off + offset;
@@ -24714,35 +24250,10 @@
 ;           if (MAXMAPLEN < @typebuf.tb_off)
 ;           {
 ;               BCOPY(@typebuf.tb_buf, MAXMAPLEN, @typebuf.tb_buf, @typebuf.tb_off, offset);
-;               BCOPY(@typebuf.tb_noremap, MAXMAPLEN, @typebuf.tb_noremap, @typebuf.tb_off, offset);
 ;               @typebuf.tb_off = MAXMAPLEN;
 ;           }
             ;; adjust typebuf.tb_buf (include the NUL at the end)
 ;           BCOPY(@typebuf.tb_buf, @typebuf.tb_off + offset, @typebuf.tb_buf, i + len, @typebuf.tb_len - offset + 1);
-            ;; adjust typebuf.tb_noremap[]
-;           BCOPY(@typebuf.tb_noremap, @typebuf.tb_off + offset, @typebuf.tb_noremap, i + len, @typebuf.tb_len - offset);
-;       }
-
-;       if (offset < @typebuf.tb_maplen)             ;; adjust tb_maplen
-;       {
-;           if (@typebuf.tb_maplen < offset + len)
-;               @typebuf.tb_maplen = offset;
-;           else
-;               @typebuf.tb_maplen -= len;
-;       }
-;       if (offset < @typebuf.tb_silent)             ;; adjust tb_silent
-;       {
-;           if (@typebuf.tb_silent < offset + len)
-;               @typebuf.tb_silent = offset;
-;           else
-;               @typebuf.tb_silent -= len;
-;       }
-;       if (offset < @typebuf.tb_no_abbr_cnt)        ;; adjust tb_no_abbr_cnt
-;       {
-;           if (@typebuf.tb_no_abbr_cnt < offset + len)
-;               @typebuf.tb_no_abbr_cnt = offset;
-;           else
-;               @typebuf.tb_no_abbr_cnt -= len;
 ;       }
 
         ;; Reset the flag that text received from a client or from feedkeys()
@@ -24795,73 +24306,8 @@
 ;           u_sync(false);
     ))
 
-;; Make "typebuf" empty and allocate new buffers.
-
-(defn- #_void alloc_typebuf []
-    (§
-;       @typebuf.tb_buf = new Bytes(TYPELEN_INIT);
-;       @typebuf.tb_noremap = new Bytes(TYPELEN_INIT);
-;       @typebuf.tb_buflen = TYPELEN_INIT;
-;       @typebuf.tb_off = 0;
-;       @typebuf.tb_len = 0;
-;       @typebuf.tb_maplen = 0;
-;       @typebuf.tb_silent = 0;
-;       @typebuf.tb_no_abbr_cnt = 0;
-;       if (++@typebuf.tb_change_cnt == 0)
-;           @typebuf.tb_change_cnt = 1;
-    ))
-
-;; Free the buffers of "typebuf".
-
-(defn- #_void free_typebuf []
-    (§
-;       if (BNE(@typebuf.tb_buf, typebuf_init))
-;           @typebuf.tb_buf = null;
-;       if (BNE(@typebuf.tb_noremap, noremapbuf_init))
-;           @typebuf.tb_noremap = null;
-    ))
-
-;; When doing ":so! file", the current typeahead needs to be saved,
-;; and restored when "file" has been read completely.
-
 (atom! int old_char         -1) ;; character put back by vungetc()
 (atom! int old_mod_mask)        ;; mod_mask for ungotten character
-
-;; Save all three kinds of typeahead, so that the user must type at a prompt.
-
-(defn- #_void save_typeahead [#_tasave_C tp]
-    (§
-;       alloc_typebuf();
-
-;       tp.old_char = @old_char;
-;       tp.old_mod_mask = @old_mod_mask;
-;       @old_char = -1;
-
-;       COPY_buffheader(tp.save_readbuf1, @readbuf1);
-;       @readbuf1.bh_first.bb_next = null;
-;       COPY_buffheader(tp.save_readbuf2, @readbuf2);
-;       @readbuf2.bh_first.bb_next = null;
-
-;       save_input_buf(tp);
-    ))
-
-;; Restore the typeahead to what it was before calling save_typeahead().
-;; The allocated memory is freed, can only be called once!
-
-(defn- #_void restore_typeahead [#_tasave_C tp]
-    (§
-;       free_typebuf();
-
-;       @old_char = tp.old_char;
-;       @old_mod_mask = tp.old_mod_mask;
-
-;       free_buff(@readbuf1);
-;       COPY_buffheader(@readbuf1, tp.save_readbuf1);
-;       free_buff(@readbuf2);
-;       COPY_buffheader(@readbuf2, tp.save_readbuf2);
-
-;       restore_input_buf(tp);
-    ))
 
 ;; This function is called just before doing a blocking wait.
 ;; Thus after waiting 'updatetime' for a character to arrive.
@@ -24882,7 +24328,7 @@
 ;; Get the next input character.
 ;; Can return a special key or a multi-byte character.
 ;; Can return NUL when called recursively, use safe_vgetc() if that's not wanted.
-;; This translates escaped KB_SPECIAL and CSI bytes to a KB_SPECIAL or CSI byte.
+;; This translates escaped KB_SPECIAL bytes to a KB_SPECIAL byte.
 ;; Collects the bytes of a multibyte character into the whole character.
 ;; Returns the modifiers in the global "mod_mask".
 
@@ -25009,12 +24455,8 @@
 ;                       if (buf.at(i) == KB_SPECIAL)
 ;                       {
                             ;; Must be a KB_SPECIAL - KS_SPECIAL - KE_FILLER sequence,
-                            ;; which represents a KB_SPECIAL (0x80),
-                            ;; or a CSI - KS_EXTRA - KE_CSI sequence, which represents a CSI (0x9B),
-                            ;; of a KB_SPECIAL - KS_EXTRA - KE_CSI, which is CSI too.
+                            ;; which represents a KB_SPECIAL (0x80).
 ;                           c = vgetorpeek(true);
-;                           if (vgetorpeek(true) == KE_CSI && c == char_u(KS_EXTRA))
-;                               buf.be(i, CSI);
 ;                       }
 ;                   }
 ;                   --@no_mapping;
@@ -25123,7 +24565,7 @@
 ;;
 ;; When "no_mapping" is zero, checks for mappings in the current mode.
 ;; Only returns one byte (of a multi-byte character).
-;; KB_SPECIAL and CSI may be escaped, need to get two more bytes then.
+;; KB_SPECIAL may be escaped, need to get two more bytes then.
 
 (defn- #_int vgetorpeek [#_boolean advance]
     (§
@@ -25138,7 +24580,7 @@
         ;; Using ":normal" can also do this, but it saves the typeahead buffer,
         ;; thus it should be OK.  But don't get a key from the user then.
 
-;       if (0 < @vgetc_busy && @ex_normal_busy == 0)
+;       if (0 < @vgetc_busy)
 ;           return NUL;
 
 ;       @vgetc_busy++;
@@ -25148,7 +24590,7 @@
 
 ;       init_typebuf();
 ;       start_stuff();
-;       if (advance && @typebuf.tb_maplen == 0)
+;       if (advance)
 ;           @execReg = false;
 
 ;       boolean timedout = false;       ;; waited for more than 1 second for mapping to complete
@@ -25180,8 +24622,6 @@
                     ;; needed e.g. for CTRL-W CTRl-] to open a fold.
 ;                   @keyStuffed = true;
 ;               }
-;               if (@typebuf.tb_no_abbr_cnt == 0)
-;                   @typebuf.tb_no_abbr_cnt = 1; ;; no abbreviations now
 ;           }
 ;           else
 ;           {
@@ -25191,13 +24631,7 @@
 
 ;               for ( ; ; )
 ;               {
-                    ;; ui_breakcheck() is slow, don't use it too often when inside a mapping.
-                    ;; But call it each time for typed characters.
-
-;                   if (@typebuf.tb_maplen != 0)
-;                       line_breakcheck();
-;                   else
-;                       ui_breakcheck();            ;; check for CTRL-C
+;                   ui_breakcheck();            ;; check for CTRL-C
 
 ;                   if (@got_int)
 ;                   {
@@ -25209,7 +24643,7 @@
                         ;; Otherwise we behave like having gotten a CTRL-C.
                         ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
 
-;                       if ((len != 0 || @typebuf.tb_maplen != 0) && (@State & (INSERT + CMDLINE)) != 0)
+;                       if (len != 0 && (@State & (INSERT + CMDLINE)) != 0)
 ;                           c = ESC;
 ;                       else
 ;                           c = Ctrl_C;
@@ -25222,7 +24656,6 @@
 ;                           @typebuf.tb_buf.be(0, c);
 ;                           gotchars(@typebuf.tb_buf, 1);
 ;                       }
-;                       @cmd_silent = false;
 
 ;                       break;
 ;                   }
@@ -25236,12 +24669,9 @@
                         ;; Check if we have a terminal code, when:
                         ;; - mapping is allowed,
                         ;; - keys have not been mapped,
-                        ;; - and not an ESC sequence, not in insert mode or "p_ek" is on,
                         ;; - and when not timed out.
 
-;                       if ((@no_mapping == 0 || @allow_keys != 0)
-;                               && (@typebuf.tb_maplen == 0 || @typebuf.tb_noremap.at(@typebuf.tb_off) == RM_YES)
-;                               && !timedout)
+;                       if ((@no_mapping == 0 || @allow_keys != 0) && !timedout)
 ;                       {
 ;                           keylen = check_termcode(1, null, 0, null);
 
@@ -25249,11 +24679,9 @@
                             ;; don't wait for a typed character to complete the termcode.
                             ;; This helps a lot when a ":normal" command ends in an ESC.
 
-;                           if (keylen < 0 && @typebuf.tb_len == @typebuf.tb_maplen)
+;                           if (keylen < 0 && @typebuf.tb_len == 0)
 ;                               keylen = 0;
 ;                       }
-;                       else
-;                           keylen = 0;
 
 ;                       if (keylen == 0)        ;; no matching terminal code
 ;                       {
@@ -25262,16 +24690,10 @@
 ;                           c = @typebuf.tb_buf.at(@typebuf.tb_off) & 0xff;
 ;                           if (advance)    ;; remove chars from tb_buf
 ;                           {
-;                               @cmd_silent = (0 < @typebuf.tb_silent);
-;                               if (0 < @typebuf.tb_maplen)
-;                                   @keyTyped = false;
-;                               else
-;                               {
-;                                   @keyTyped = true;
-                                    ;; write char to script file(s)
-;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off), 1);
-;                               }
-;                               @keyNoremap = @typebuf.tb_noremap.at(@typebuf.tb_off);
+;                               @keyTyped = true;
+                                ;; write char to script file(s)
+;                               gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off), 1);
+
 ;                               del_typebuf(1, 0);
 ;                           }
 ;                           break;          ;; got character, break for loop
@@ -25301,8 +24723,6 @@
 ;                           && @typebuf.tb_len == 1
 ;                           && @typebuf.tb_buf.at(@typebuf.tb_off) == ESC
 ;                           && @no_mapping == 0
-;                           && @ex_normal_busy == 0
-;                           && @typebuf.tb_maplen == 0
 ;                           && (@State & INSERT) != 0
 ;                           && (@p_timeout || (keylen == KEYLEN_PART_KEY && @p_ttimeout))
 ;                           && (len = inchar(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len), 3, 25, @typebuf.tb_change_cnt)) == 0)
@@ -25373,44 +24793,13 @@
 ;                   if (len < 0)
 ;                       continue;   ;; end of input script reached
 
-                    ;; Allow mapping for just typed characters.
-                    ;; When we get here, len is the number of extra bytes and typebuf.tb_len is 1.
-;                   for (int n = 1; n <= len; n++)
-;                       @typebuf.tb_noremap.be(@typebuf.tb_off + n, RM_YES);
 ;                   @typebuf.tb_len += len;
 
                     ;; buffer full, don't map
-;                   if (@typebuf.tb_maplen + MAXMAPLEN <= @typebuf.tb_len)
+;                   if (0 + MAXMAPLEN <= @typebuf.tb_len)
 ;                   {
 ;                       timedout = true;
 ;                       continue;
-;                   }
-
-;                   if (0 < @ex_normal_busy)
-;                   {
-                        ;; No typeahead left and inside ":normal".
-                        ;; Must return something to avoid getting stuck.
-                        ;; When an incomplete mapping is present, behave like it timed out.
-;                       if (0 < @typebuf.tb_len)
-;                       {
-;                           timedout = true;
-;                           continue;
-;                       }
-
-                        ;; When 'insertmode' is set, ESC just beeps in Insert mode.
-                        ;; Use CTRL-L to make edit() return.
-                        ;; For the command line only CTRL-C always breaks it.
-                        ;; For the cmdline window: Alternate between ESC and CTRL-C:
-                        ;; ESC for most situations and CTRL-C to close the cmdline window.
-
-;                       if (@p_im && (@State & INSERT) != 0)
-;                           c = Ctrl_L;
-;                       else if ((@State & CMDLINE) != 0 || (0 < @cmdwin_type && @__tc == ESC))
-;                           c = Ctrl_C;
-;                       else
-;                           c = ESC;
-;                       @__tc = c;
-;                       break;
 ;                   }
 
 ;; get a character: 3. from the user - update display
@@ -25510,9 +24899,9 @@
 ;                       }
 ;                   }
 ;                   else
-;                   {   ;; allow mapping for just typed characters
+;                   {
 ;                       while (@typebuf.tb_buf.at(@typebuf.tb_off + @typebuf.tb_len) != NUL)
-;                           @typebuf.tb_noremap.be(@typebuf.tb_off + @typebuf.tb_len++, RM_YES);
+;                           @typebuf.tb_len++;
 ;                   }
 ;               }
 ;           }
@@ -25622,10 +25011,8 @@
 (defn- #_int fix_input_buffer [#_Bytes buf, #_int len]
     (§
         ;; Two characters are special: NUL and KB_SPECIAL.
-        ;; When compiled With the GUI CSI is also special.
         ;; Replace        NUL by KB_SPECIAL KS_ZERO    KE_FILLER
         ;; Replace KB_SPECIAL by KB_SPECIAL KS_SPECIAL KE_FILLER
-        ;; Replace        CSI by KB_SPECIAL KS_EXTRA   KE_CSI
 
 ;       Bytes p = buf;
 ;       for (int i = len; 0 <= --i; p = p.plus(1))
@@ -25656,10 +25043,9 @@
 ;       return (!is_input_buf_empty() || @typebuf_was_filled);
     ))
 
-;; Copy "p" to allocated memory, escaping KB_SPECIAL and CSI
-;; so that the result can be put in the typeahead buffer.
+;; Escape KB_SPECIAL so that the result can be put in the typeahead buffer.
 
-(defn- #_Bytes vim_strsave_escape_csi [#_Bytes p]
+(defn- #_Bytes vim_strsave_escape_special [#_Bytes p]
     (§
         ;; Need a buffer to hold up to three times as much.
 ;       Bytes res = new Bytes(STRLEN(p) * 3 + 1);
@@ -25676,7 +25062,7 @@
 ;           }
 ;           else
 ;           {
-                ;; Add character, possibly multi-byte to destination, escaping CSI and KB_SPECIAL.
+                ;; Add character, possibly multi-byte to destination, escaping KB_SPECIAL.
 ;               int c = us_ptr2char(s);
 ;               d = add_char2buf(c, d);
 ;               for (int len = utf_char2len(c), end = us_ptr2len_cc(s); len < end; len += utf_char2len(c))
@@ -25693,11 +25079,11 @@
 ;       return res;
     ))
 
-;; Remove escaping from CSI and KB_SPECIAL characters.
-;; Reverse of vim_strsave_escape_csi().
+;; Remove escaping from KB_SPECIAL characters.
+;; Reverse of vim_strsave_escape_special().
 ;; Works in-place.
 
-(defn- #_void vim_unescape_csi [#_Bytes p]
+(defn- #_void vim_unescape_special [#_Bytes p]
     (§
 ;       Bytes d = p;
 ;       for (Bytes s = p; s.at(0) != NUL; )
@@ -25705,11 +25091,6 @@
 ;           if (s.at(0) == KB_SPECIAL && s.at(1) == KS_SPECIAL && s.at(2) == KE_FILLER)
 ;           {
 ;               (d = d.plus(1)).be(-1, KB_SPECIAL);
-;               s = s.plus(3);
-;           }
-;           else if ((s.at(0) == KB_SPECIAL || s.at(0) == CSI) && s.at(1) == KS_EXTRA && s.at(2) == KE_CSI)
-;           {
-;               (d = d.plus(1)).be(-1, CSI);
 ;               s = s.plus(3);
 ;           }
 ;           else
@@ -25731,8 +25112,7 @@
 (atom! int      insStart_blank_vcol)            ;; vcol for first inserted blank
 (atom! boolean  update_insStart_orig true)    ;; set insStart_orig to insStart
 
-(atom! Bytes    last_insert)                    ;; the text of the previous insert,
-                                                            ;; KB_SPECIAL and CSI are escaped
+(atom! Bytes    last_insert)                    ;; the text of the previous insert, KB_SPECIAL is escaped
 (atom! int      last_insert_skip)               ;; nr of chars in front of previous insert
 (atom! int      new_insert_skip)                ;; nr of chars in front of current insert
 (atom! int      did_restart_edit)               ;; "restart_edit" when calling edit()
@@ -27218,7 +26598,7 @@
     ))
 
 ;; Add character "c" to buffer "s".
-;; Escape the special meaning of KB_SPECIAL and CSI.
+;; Escape the special meaning of KB_SPECIAL.
 ;; Handle multi-byte characters.
 ;; Returns a pointer to after the added bytes.
 
@@ -27229,7 +26609,7 @@
 ;       for (int i = 0; i < len; i++)
 ;       {
 ;           byte b = temp.at(i);
-            ;; Need to escape KB_SPECIAL and CSI like in the typeahead buffer.
+            ;; Need to escape KB_SPECIAL like in the typeahead buffer.
 ;           if (b == KB_SPECIAL)
 ;           {
 ;               (s = s.plus(1)).be(-1, KB_SPECIAL);
@@ -42333,7 +41713,7 @@
 ;           @no_smartcase = @spats[i].no_scs;
 ;       }
 ;       else if ((options & SEARCH_HIS) != 0)   ;; put new pattern in history
-;           add_to_history(HIST_SEARCH, pat, true, NUL);
+;           add_to_history(HIST_SEARCH, pat, NUL);
 
 ;       @mr_pattern = pat;
 
@@ -42986,7 +42366,7 @@
 ;                   pat = p;                        ;; put "pat" after search command
 ;               }
 
-;               if ((options & SEARCH_ECHO) != 0 && messaging() && !@cmd_silent && @msg_silent == 0)
+;               if ((options & SEARCH_ECHO) != 0 && messaging() && @msg_silent == 0)
 ;               {
 ;                   Bytes p;
 ;                   if (searchstr.at(0) == NUL)
@@ -49961,54 +49341,6 @@
 ;       return count;
     ))
 
-(final Bytes mb_unescape_buf (Bytes. 6))
-
-;; Try to un-escape a multi-byte character.
-;; Used for the "to" and "from" part of a mapping.
-;; Return the un-escaped string if it is a multi-byte character,
-;; and advance "pp" to just after the bytes that formed it.
-;; Return null if no multi-byte char was found.
-
-(defn- #_Bytes mb_unescape [#_Bytes* pp]
-    (§
-;       Bytes p = pp[0];
-
-        ;; Must translate KB_SPECIAL KS_SPECIAL KE_FILLER to KB_SPECIAL and CSI KS_EXTRA KE_CSI to CSI.
-        ;; Maximum length of a utf-8 character is 4 bytes.
-;       for (int n = 0, m = 0; p.at(n) != NUL && m < 4; n++)
-;       {
-;           if (p.at(n) == KB_SPECIAL && p.at(n + 1) == KS_SPECIAL && p.at(n + 2) == KE_FILLER)
-;           {
-;               mb_unescape_buf.be(m++, KB_SPECIAL);
-;               n += 2;
-;           }
-;           else if (p.at(n) == KB_SPECIAL && p.at(n + 1) == KS_EXTRA && p.at(n + 2) == KE_CSI)
-;           {
-;               mb_unescape_buf.be(m++, CSI);
-;               n += 2;
-;           }
-;           else if (p.at(n) == KB_SPECIAL)
-;               break;                          ;; a special key can't be a multibyte char
-;           else
-;               mb_unescape_buf.be(m++, p.at(n));
-;           mb_unescape_buf.be(m, NUL);
-
-            ;; Return a multi-byte character if it's found.
-            ;; An illegal sequence will result in a 1 here.
-;           if (1 < us_ptr2len_cc(mb_unescape_buf))
-;           {
-;               pp[0] = p.plus(n + 1);
-;               return mb_unescape_buf;
-;           }
-
-            ;; Bail out quickly for ASCII.
-;           if (char_u(mb_unescape_buf.at(0)) < 0x80)
-;               break;
-;       }
-
-;       return null;
-    ))
-
 ;; Return true if the character at "row"/"col" on the screen
 ;; is the left side of a double-width character.
 ;; Caller must make sure "row" and "col" are not invalid!
@@ -51669,10 +51001,6 @@
     (§
 ;       int c;
 
-;       int save_mapped_ctrl_c = @mapped_ctrl_c;
-
-;       @mapped_ctrl_c = 0;      ;; mappings are not used here
-
 ;       Bytes buf = null;
 
 ;       int buflen = 150;
@@ -51705,7 +51033,7 @@
 ;           int n = ui_inchar(buf.plus(len[0]), maxlen, (len[0] == 0) ? -1 : 100, 0);
 ;           if (0 < n)
 ;           {
-                ;; Replace zero and CSI by a special key code.
+                ;; Replace zero by a special key code.
 ;               n = fix_input_buffer(buf.plus(len[0]), n);
 ;               len[0] += n;
 ;               waited = 0;
@@ -51759,8 +51087,6 @@
 ;               c = ESC;
 ;           break;
 ;       }
-
-;       @mapped_ctrl_c = save_mapped_ctrl_c;
 
 ;       return c;
     ))
@@ -51916,7 +51242,7 @@
 
 (defn- #_boolean goto_im []
     (§
-;       return (@p_im && stuff_empty() && typebuf_typed());
+;       return (@p_im && stuff_empty());
     ))
 
 ;; Return true if in the current mode we need to use virtual.
@@ -52741,8 +52067,6 @@
         (->key_name_C K_BS,             (u8 "BS")              ),
         (->key_name_C K_BS,             (u8 "BackSpace")       ),  ;; alternative name
         (->key_name_C ESC,              (u8 "Esc")             ),
-        (->key_name_C (char_u CSI),     (u8 "CSI")             ),
-        (->key_name_C K_CSI,            (u8 "xCSI")            ),
         (->key_name_C (int \|),         (u8 "Bar")             ),
         (->key_name_C (int \\),         (u8 "Bslash")          ),
         (->key_name_C K_DEL,            (u8 "Del")             ),
@@ -52816,7 +52140,6 @@
 
         (->key_name_C K_DROP,           (u8 "Drop")            ),
         (->key_name_C K_ZERO,           (u8 "Nul")             ),
-        (->key_name_C K_SNR,            (u8 "SNR")             ),
 
         (->key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
     ])
@@ -56197,9 +55520,7 @@
 ;                   del_typebuf(-extra, offset);
 ;               else if (0 < extra)
                     ;; insert the extra space we need
-;                   ins_typebuf(string.plus(slen), REMAP_YES, offset, false, false);
-
-                ;; Careful: del_typebuf() and ins_typebuf() may have reallocated typebuf.tb_buf[]!
+;                   ins_typebuf(string.plus(slen), offset, false);
 
 ;               BCOPY(@typebuf.tb_buf, @typebuf.tb_off + offset, string, 0, new_slen);
 ;           }
@@ -56223,21 +55544,6 @@
 ;       }
 
 ;       return 0;                       ;; no match found
-    ))
-
-;; Find a termcode with keys 'src' (must be NUL terminated).
-;; Return the index in termcodes[], or -1 if not found.
-
-(defn- #_int find_term_bykeys [#_Bytes src]
-    (§
-;       int slen = STRLEN(src);
-
-;       for (int i = 0; i < @tc_len; i++)
-;       {
-;           if (slen == @termcodes[i].len && STRNCMP(@termcodes[i].code, src, slen) == 0)
-;               return i;
-;       }
-;       return -1;
     ))
 
 ;; Gather the first characters in the terminal key codes into a string.
@@ -56405,20 +55711,15 @@
 ;       {
             ;; ... allow signals to kill us.
 ;           vim_handle_signal(SIGNAL_UNBLOCK);
-
-            ;; ... there is no need for CTRL-C to interrupt something,
-            ;; don't let it set got_int when it was mapped.
-;           if (((@mapped_ctrl_c | @curbuf.b_mapped_ctrl_c) & get_real_state()) != 0)
-;               @ctrl_c_interrupts = false;
 ;       }
 
 ;       int len = mch_inchar(buf, maxlen, wtime, tb_change_cnt);
 
 ;       if (wtime == -1 || 100 < wtime)
+;       {
             ;; block SIGHUP et al.
 ;           vim_handle_signal(SIGNAL_BLOCK);
-
-;       @ctrl_c_interrupts = true;
+;       }
 
 ;       return len;
     ))
@@ -56502,12 +55803,6 @@
 (final Bytes    inbuf (Bytes. (+ INBUFLEN MAX_KEY_CODE_LEN)))
 (atom! int      inbufcount)     ;; number of chars in inbuf[]
 
-;; Remove everything from the input buffer.  Called when ^C is found.
-(defn- #_void trash_input_buf []
-    (§
-;       @inbufcount = 0;
-    ))
-
 (defn- #_boolean is_input_buf_full []
     (§
 ;       return (INBUFLEN <= @inbufcount);
@@ -56516,32 +55811,6 @@
 (defn- #_boolean is_input_buf_empty []
     (§
 ;       return (@inbufcount == 0);
-    ))
-
-;; Save current contents of the input buffer and make it empty.
-
-(defn- #_void save_input_buf [#_tasave_C tp]
-    (§
-        ;; Add one to avoid a zero size.
-;       tp.save_inputbuf = new Bytes(@inbufcount + 1);
-;       BCOPY(tp.save_inputbuf, inbuf, @inbufcount);
-;       tp.save_inputlen = @inbufcount;
-
-;       trash_input_buf();
-    ))
-
-;; Restore prior contents of the input buffer saved by save_input_buf().
-
-(defn- #_void restore_input_buf [#_tasave_C tp]
-    (§
-;       if (tp.save_inputbuf != null)
-;       {
-;           @inbufcount = tp.save_inputlen;
-;           BCOPY(inbuf, tp.save_inputbuf, @inbufcount);
-
-;           tp.save_inputbuf = null;
-;           tp.save_inputlen = 0;
-;       }
     ))
 
 ;; Read as much data from the input buffer as possible up to maxlen, and store it in buf.
@@ -56649,7 +55918,7 @@
 ;           {
                 ;; if a CTRL-C was typed, remove it from the buffer and set got_int
 
-;               if (inbuf.at(@inbufcount) == 3 && @ctrl_c_interrupts)
+;               if (inbuf.at(@inbufcount) == 3)
 ;               {
                     ;; remove everything typed before the CTRL-C
 ;                   BCOPY(inbuf, 0, inbuf, @inbufcount, len + 1);
@@ -67869,7 +67138,7 @@
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG USECTRLV CMDWIN),                 ADDR_LINES),
+
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
