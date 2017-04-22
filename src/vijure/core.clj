@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -956,10 +956,6 @@
 (final int BL_SOL          2)       ;; use 'sol' option
 (final int BL_FIX          4)       ;; don't leave cursor on a NUL
 
-;; flags for buf_copy_options()
-(final int BCO_ENTER       1)       ;; going to enter the buffer
-(final int BCO_ALWAYS      2)       ;; always copy the options
-
 ;; flags for do_put()
 (final int PUT_FIXINDENT   1)       ;; make indent look nice
 (final int PUT_CURSEND     2)       ;; leave cursor after end of new text
@@ -1119,14 +1115,11 @@
 
 (final int IOSIZE          (inc 1024))  ;; file i/o and sprintf buffer size
 
-(final int DIALOG_MSG_SIZE 1000)        ;; buffer size for dialog_msg()
-
 (final int
     MSG_BUF_LEN     480,                ;; length of buffer for small messages
     MSG_BUF_CLEN    (/ MSG_BUF_LEN 6))  ;; cell length (worst case: utf-8 takes 6 bytes for one cell)
 
 ;; Maximum length of key sequence to be mapped.
-;; Must be able to hold an Amiga resize report.
 
 (final int MAXMAPLEN 50)
 
@@ -1134,14 +1127,6 @@
 (final int UNDO_HASH_SIZE 32)
 
 (final long MAXLNUM 0x7fffffff#_L)      ;; maximum (invalid) line number
-
-;; Well, you won't believe it, but some S/390 machines ("host", now also known
-;; as zServer) use 31 bit pointers.  There are also some newer machines, that
-;; use 64 bit pointers.  I don't know how to distinguish between 31 and 64 bit
-;; machines, so the best way is to assume 31 bits whenever we detect OS/390 Unix.
-;; With this we restrict the maximum line length to 1073741823.  I guess this is
-;; not a real problem.  BTW:  Longer lines are split.
-
 (final int MAXCOL 0x7fffffff)           ;; maximum column number, 31 bits
 
 (final int SHOWCMD_COLS 10)             ;; columns needed by shown command
@@ -1801,30 +1786,15 @@
 (class! #_final fmark_C
     [
         (field pos_C    mark    (§_pos_C))      ;; cursor position
-        (field int      fnum)                   ;; file number
     ])
 
 (defn- #_void COPY_fmark [#_fmark_C fm1, #_fmark_C fm0]
     (§
 ;       COPY_pos(fm1.mark, fm0.mark);
-;       fm1.fnum = fm0.fnum;
     ))
 
-;; Xtended file mark: also has a file name.
-(class! #_final xfmark_C
-    [
-        (field fmark_C  fmark   (§_fmark_C))
-        (field Bytes    fname)                  ;; file name, used when fnum == 0
-    ])
-
-(defn- #_void COPY_xfmark [#_xfmark_C xfm1, #_xfmark_C xfm0]
-    (§
-;       COPY_fmark(xfm1.fmark, xfm0.fmark);
-;       xfm1.fname = xfm0.fname;
-    ))
-
-(defn- #_xfmark_C* ARRAY_xfmark [#_int n]
-    (vec (repeatedly n §_xfmark_C)))
+(defn- #_fmark_C* ARRAY_fmark [#_int n]
+    (vec (repeatedly n §_fmark_C)))
 
 ;; Structure that contains all options that are local to a window.
 ;; Used twice in a window: for the current buffer and for all buffers.
@@ -2294,14 +2264,9 @@
     [
         (field memline_C    b_ml)               ;; associated memline (also contains line count)
 
-        (field buffer_C     b_next)             ;; links in list of buffers
-        (field buffer_C     b_prev)
-
         (field int          b_nwindows)         ;; nr of windows open on this buffer
 
         (field int          b_flags)            ;; various BF_ flags
-
-        (field int          b_fnum)             ;; buffer number for this file.
 
         (atom' boolean      b_changed)          ;; 'modified': Set to true if something in the
                                                 ;; file has been changed and not written out.
@@ -2382,8 +2347,6 @@
         ;; Options local to a buffer.
         ;; They are here because their value depends on the type of file
         ;; or contents of the file being edited.
-
-        (field boolean      b_p_initialized)    ;; set when options initialized
 
         (atom' boolean      b_p_ai)             ;; 'autoindent'
         (field boolean      b_p_ai_nopaste)     ;; "b_p_ai" saved for paste mode
@@ -2727,7 +2690,7 @@
 
         ;; the jumplist contains old cursor positions
 
-        (field xfmark_C*    w_jumplist      (ARRAY_xfmark JUMPLISTSIZE))
+        (field fmark_C*     w_jumplist      (ARRAY_fmark JUMPLISTSIZE))
         (field int          w_jumplistlen)      ;; number of active entries
         (field int          w_jumplistidx)      ;; current position
 
@@ -3314,11 +3277,6 @@
 
 (atom! frame_C  topframe)               ;; top of the window frame tree
 
-;; All buffers are linked in a list.  'firstbuf' points to the first entry,
-;; 'lastbuf' to the last entry and 'curbuf' to the currently active buffer.
-
-(atom! buffer_C firstbuf)               ;; first buffer
-(atom! buffer_C lastbuf)                ;; last buffer
 (atom! buffer_C curbuf)                 ;; currently active buffer
 
 (atom! int      ru_col)                 ;; column for ruler
@@ -7879,7 +7837,6 @@
 
 ;       set_options_default(0);
 
-;       @curbuf.b_p_initialized = true;
 ;       check_buf_options(@curbuf);
 ;       check_win_options(@curwin);
 ;       check_options();
@@ -10584,112 +10541,53 @@
     ))
 
 ;; Copy global option values to local options for one buffer.
-;; Used when creating a new buffer and sometimes when entering a buffer.
-;; flags:
-;; BCO_ENTER    We will enter the buf buffer.
-;; BCO_ALWAYS   Always copy the options, but only set b_p_initialized when appropriate.
+;; Used when creating a new buffer.
 
-(defn- #_void buf_copy_options [#_buffer_C buf, #_int flags]
+(defn- #_void buf_copy_options [#_buffer_C buf]
     (§
-        ;; Don't do anything if the buffer is invalid.
-
-;       if (buf == null)
-;           return;
-
-;       boolean should_copy = true;
-;       Bytes save_p_isk = null;
-;       boolean did_isk = false;
-
         ;; Skip this when the option defaults have not been set yet.
-        ;; Happens when main() allocates the first buffer.
+        ;; Happens when main() allocates the first buffer.
 
-;       if (@p_cpo != null)
-;       {
-            ;; Always copy when entering and 'cpo' contains 'S'.
-            ;; Don't copy when already initialized.
-            ;; Don't copy when 'cpo' contains 's' and not entering.
-            ;; 'S'  BCO_ENTER  initialized  's'  should_copy
-            ;; yes    yes          X         X      true
-            ;; yes    no          yes        X      false
-            ;; no      X          yes        X      false
-            ;;  X     no          no        yes     false
-            ;;  X     no          no        no      true
-            ;; no     yes         no         X      true
+        ;; Always free the allocated strings.
 
-;           if ((vim_strbyte(@p_cpo, CPO_BUFOPTGLOB) == null || (flags & BCO_ENTER) == 0)
-;                   && (buf.b_p_initialized
-;                       || ((flags & BCO_ENTER) == 0
-;                           && vim_strbyte(@p_cpo, CPO_BUFOPT) != null)))
-;               should_copy = false;
+;       free_buf_options(buf);
 
-;           if (should_copy || (flags & BCO_ALWAYS) != 0)
-;           {
-                ;; Don't copy the options specific to a help buffer when the options were already initialized
-                ;; (jumping back to a help file with CTRL-T or CTRL-O).
-;               boolean dont_do_help = buf.b_p_initialized;
-;               if (dont_do_help)           ;; don't free "b_p_isk"
-;               {
-;                   save_p_isk = buf.@b_p_isk;
-;                   buf.@b_p_isk = null;
-;               }
+;       buf.@b_p_ai = @p_ai;
+;       buf.b_p_ai_nopaste = @p_ai_nopaste;
+;       buf.@b_p_sw = @p_sw;
+;       buf.@b_p_tw = @p_tw;
+;       buf.b_p_tw_nopaste = @p_tw_nopaste;
+;       buf.@b_p_wm = @p_wm;
+;       buf.b_p_wm_nopaste = @p_wm_nopaste;
+;       buf.@b_p_et = @p_et;
+;       buf.@b_p_inf = @p_inf;
+;       buf.@b_p_sts = @p_sts;
+;       buf.b_p_sts_nopaste = @p_sts_nopaste;
+;       buf.@b_p_com = STRDUP(@p_com);
+;       buf.@b_p_fo = STRDUP(@p_fo);
+;       buf.@b_p_flp = STRDUP(@p_flp);
+;       buf.@b_p_nf = STRDUP(@p_nf);
+;       buf.@b_p_mps = STRDUP(@p_mps);
+;       buf.@b_p_si = @p_si;
+;       buf.@b_p_ci = @p_ci;
+;       buf.@b_p_cin = @p_cin;
+;       buf.@b_p_cink = STRDUP(@p_cink);
+;       buf.@b_p_cino = STRDUP(@p_cino);
+;       buf.@b_p_pi = @p_pi;
+;       buf.@b_p_cinw = STRDUP(@p_cinw);
+;       buf.@b_p_lisp = @p_lisp;
 
-                ;; Always free the allocated strings.
+;       buf.@b_p_ul = @p_ul;
+;       buf.@b_p_kp = STRDUP(@p_kp);
+;       buf.@b_p_qe = STRDUP(@p_qe);
+;       buf.@b_p_lw = STRDUP(@p_lw);
 
-;               free_buf_options(buf);
-
-;               buf.@b_p_ai = @p_ai;
-;               buf.b_p_ai_nopaste = @p_ai_nopaste;
-;               buf.@b_p_sw = @p_sw;
-;               buf.@b_p_tw = @p_tw;
-;               buf.b_p_tw_nopaste = @p_tw_nopaste;
-;               buf.@b_p_wm = @p_wm;
-;               buf.b_p_wm_nopaste = @p_wm_nopaste;
-;               buf.@b_p_et = @p_et;
-;               buf.@b_p_inf = @p_inf;
-;               buf.@b_p_sts = @p_sts;
-;               buf.b_p_sts_nopaste = @p_sts_nopaste;
-;               buf.@b_p_com = STRDUP(@p_com);
-;               buf.@b_p_fo = STRDUP(@p_fo);
-;               buf.@b_p_flp = STRDUP(@p_flp);
-;               buf.@b_p_nf = STRDUP(@p_nf);
-;               buf.@b_p_mps = STRDUP(@p_mps);
-;               buf.@b_p_si = @p_si;
-;               buf.@b_p_ci = @p_ci;
-;               buf.@b_p_cin = @p_cin;
-;               buf.@b_p_cink = STRDUP(@p_cink);
-;               buf.@b_p_cino = STRDUP(@p_cino);
-;               buf.@b_p_pi = @p_pi;
-;               buf.@b_p_cinw = STRDUP(@p_cinw);
-;               buf.@b_p_lisp = @p_lisp;
-
-;               buf.@b_p_ul = @p_ul;
-;               buf.@b_p_kp = STRDUP(@p_kp);
-;               buf.@b_p_qe = STRDUP(@p_qe);
-;               buf.@b_p_lw = STRDUP(@p_lw);
-
-                ;; Don't copy the options set by ex_help(), use the saved values,
-                ;; when going from a help buffer to a non-help buffer.
-
-;               if (dont_do_help)
-;                   buf.@b_p_isk = save_p_isk;
-;               else
-;               {
-;                   buf.@b_p_isk = STRDUP(@p_isk);
-;                   did_isk = true;
-;                   buf.@b_p_ts = @p_ts;
-;               }
-;           }
-
-            ;; When the options should be copied (ignoring BCO_ALWAYS), set the
-            ;; flag that indicates that the options have been initialized.
-
-;           if (should_copy)
-;               buf.b_p_initialized = true;
-;       }
+;       buf.@b_p_isk = STRDUP(@p_isk);
+;       buf.@b_p_ts = @p_ts;
 
 ;       check_buf_options(buf);         ;; make sure we don't have NULLs
-;       if (did_isk)
-;           buf_init_chartab(buf, false);
+
+;       buf_init_chartab(buf, false);
     ))
 
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
@@ -10774,8 +10672,8 @@
 
 ;           if (!@old_p_paste)
 ;           {
-                ;; save options for each buffer
-;               for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
+                ;; save options
+;               buffer_C buf = @curbuf;
 ;               {
 ;                   buf.b_p_tw_nopaste = buf.@b_p_tw;
 ;                   buf.b_p_wm_nopaste = buf.@b_p_wm;
@@ -10795,8 +10693,8 @@
 
             ;; Always set the option values, also when 'paste' is set when it is already on.
 
-            ;; set options for each buffer
-;           for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
+            ;; set options
+;           buffer_C buf = @curbuf;
 ;           {
 ;               buf.@b_p_tw = 0;         ;; textwidth is 0
 ;               buf.@b_p_wm = 0;         ;; wrapmargin is 0
@@ -10820,8 +10718,8 @@
 
 ;       else if (@old_p_paste)
 ;       {
-            ;; restore options for each buffer
-;           for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
+            ;; restore options
+;           buffer_C buf = @curbuf;
 ;           {
 ;               buf.@b_p_tw = buf.b_p_tw_nopaste;
 ;               buf.@b_p_wm = buf.b_p_wm_nopaste;
@@ -17657,16 +17555,6 @@
 ;           update_topline_cursor();
 ;           normal_cmd(oa, true);   ;; execute a Normal mode cmd
 ;       }
-    ))
-
-;; Make a dialog message in "buff[DIALOG_MSG_SIZE]".
-;; "format" must contain "%s".
-
-(defn- #_void dialog_msg [#_Bytes buff, #_Bytes format, #_Bytes fname]
-    (§
-;       if (fname == null)
-;           fname = u8("Untitled");
-;       vim_snprintf(buff, DIALOG_MSG_SIZE, format, fname);
     ))
 
 (defn- #_void ex_digraphs [#_exarg_C eap]
@@ -29030,26 +28918,23 @@
 ;; mark.c: functions for setting marks and jumping to them ----------------------------------------
 
 ;; If a named file mark's lnum is non-zero, it is valid.
-;; If a named file mark's fnum is non-zero, it is for an existing buffer,
-;; otherwise it is from .viminfo and namedfm[n].fname is the file name.
 ;; There are marks 'A - 'Z (set by user) and '0 to '9 (set when writing viminfo).
 
 (final int EXTRA_MARKS 10)                                              ;; marks 0-9
-(final xfmark_C*    namedfm    (ARRAY_xfmark (+ NMARKS EXTRA_MARKS)))   ;; marks with file nr
+(final fmark_C*    namedfm    (ARRAY_fmark (+ NMARKS EXTRA_MARKS)))   ;; marks with file nr
 
 ;; Set named mark "c" at current cursor position.
 ;; Returns true on success, false if bad name given.
 
 (defn- #_boolean setmark [#_int c]
     (§
-;       return setmark_pos(c, @curwin.w_cursor, @curbuf.b_fnum);
+;       return setmark_pos(c, @curwin.w_cursor);
     ))
 
 ;; Set named mark "c" to position "pos".
-;; When "c" is upper case use file "fnum".
 ;; Returns true on success, false if bad name given.
 
-(defn- #_boolean setmark_pos [#_int c, #_pos_C pos, #_int fnum]
+(defn- #_boolean setmark_pos [#_int c, #_pos_C pos]
     (§
         ;; Check for a special key (may cause islower() to crash).
 ;       if (c < 0)
@@ -29109,9 +28994,7 @@
 ;       if (asc_isupper(c))
 ;       {
 ;           int i = c - 'A';
-;           COPY_pos(namedfm[i].fmark.mark, pos);
-;           namedfm[i].fmark.fnum = fnum;
-;           namedfm[i].fname = null;
+;           COPY_pos(namedfm[i].mark, pos);
 ;           return true;
 ;       }
 
@@ -29133,16 +29016,13 @@
 ;       if (++@curwin.w_jumplistlen > JUMPLISTSIZE)
 ;       {
 ;           @curwin.w_jumplistlen = JUMPLISTSIZE;
-;           @curwin.w_jumplist[0].fname = null;
 ;           for (int i = 1; i < JUMPLISTSIZE; i++)
-;               COPY_xfmark(@curwin.w_jumplist[i - 1], @curwin.w_jumplist[i]);
+;               COPY_fmark(@curwin.w_jumplist[i - 1], @curwin.w_jumplist[i]);
 ;       }
 ;       @curwin.w_jumplistidx = @curwin.w_jumplistlen;
-;       xfmark_C fm = @curwin.w_jumplist[@curwin.w_jumplistlen - 1];
+;       fmark_C fm = @curwin.w_jumplist[@curwin.w_jumplistlen - 1];
 
-;       COPY_pos(fm.fmark.mark, @curwin.w_pcmark);
-;       fm.fmark.fnum = @curbuf.b_fnum;
-;       fm.fname = null;
+;       COPY_pos(fm.mark, @curwin.w_pcmark);
     ))
 
 ;; To change context, call setpcmark(), then move the current position to
@@ -29152,8 +29032,7 @@
 
 (defn- #_void checkpcmark []
     (§
-;       if (@curwin.w_prev_pcmark.lnum != 0
-;               && (eqpos(@curwin.w_pcmark, @curwin.w_cursor) || @curwin.w_pcmark.lnum == 0))
+;       if (@curwin.w_prev_pcmark.lnum != 0 && (eqpos(@curwin.w_pcmark, @curwin.w_cursor) || @curwin.w_pcmark.lnum == 0))
 ;       {
 ;           COPY_pos(@curwin.w_pcmark, @curwin.w_prev_pcmark);
 ;           @curwin.w_prev_pcmark.lnum = 0;      ;; show it has been checked
@@ -29188,29 +29067,7 @@
 
 ;           @curwin.w_jumplistidx += count;
 
-;           pos_C pos;
-
-;           xfmark_C jmp = @curwin.w_jumplist[@curwin.w_jumplistidx];
-;           if (jmp.fmark.fnum == 0)
-;               fname2fnum(jmp);
-;           if (jmp.fmark.fnum != @curbuf.b_fnum)
-;           {
-                ;; jump to other file
-;               if (buflist_findnr(jmp.fmark.fnum) == null)
-;               {                                               ;; skip this one ..
-;                   count += count < 0 ? -1 : 1;
-;                   continue;
-;               }
-;               if (buflist_getfile(jmp.fmark.fnum, jmp.fmark.mark.lnum, 0, false) == false)
-;                   return null;
-                ;; set lnum again, autocommands my have changed it
-;               COPY_pos(@curwin.w_cursor, jmp.fmark.mark);
-;               pos = NOPOS;
-;           }
-;           else
-;               pos = jmp.fmark.mark;
-
-;           return pos;
+;           return @curwin.w_jumplist[@curwin.w_jumplistidx].mark;
 ;       }
     ))
 
@@ -29242,7 +29099,6 @@
 
 ;; Find mark "c" in buffer pointed to by "buf".
 ;; If "changefile" is true it's allowed to edit another file for '0, 'A, etc.
-;; If "fnum" is not null store the fnum there for '0, 'A etc., don't edit another file.
 ;; Returns:
 ;; - pointer to pos_C if found.  lnum is 0 when mark not set, -1 when mark is
 ;;   in another file which can't be gotten. (caller needs to check lnum!)
@@ -29251,23 +29107,24 @@
 
 (defn- #_pos_C getmark_buf [#_buffer_C buf, #_int c, #_boolean changefile]
     (§
-;       return getmark_buf_fnum(buf, c, changefile, null);
+;       return getmark_buf_fnum(buf, c, changefile);
     ))
 
 (defn- #_pos_C getmark [#_int c, #_boolean changefile]
     (§
-;       return getmark_buf_fnum(@curbuf, c, changefile, null);
+;       return getmark_buf_fnum(@curbuf, c, changefile);
     ))
 
 (atom! pos_C _1_pos_copy    (§_pos_C))
 
-(defn- #_pos_C getmark_buf_fnum [#_buffer_C buf, #_int c, #_boolean changefile, #_int* fnum]
+(defn- #_pos_C getmark_buf_fnum [#_buffer_C buf, #_int c, #_boolean changefile]
     (§
 ;       pos_C posp = null;
 
         ;; Check for special key, can't be a mark name and might cause islower() to crash.
 ;       if (c < 0)
 ;           return posp;
+
 ;       if ('~' < c)                                ;; check for islower()/isupper()
         ;
 ;       else if (c == '\'' || c == '`')             ;; previous context mark
@@ -29350,31 +29207,7 @@
 ;               c = c - '0' + NMARKS;
 ;           else
 ;               c -= 'A';
-;           posp = namedfm[c].fmark.mark;
-
-;           if (namedfm[c].fmark.fnum == 0)
-;               fname2fnum(namedfm[c]);
-
-;           if (fnum != null)
-;               fnum[0] = namedfm[c].fmark.fnum;
-;           else if (namedfm[c].fmark.fnum != buf.b_fnum)
-;           {
-                ;; mark is in another file
-;               posp = @_1_pos_copy;
-
-;               if (namedfm[c].fmark.mark.lnum != 0 && changefile && namedfm[c].fmark.fnum != 0)
-;               {
-;                   if (buflist_getfile(namedfm[c].fmark.fnum, 1, GETF_SETMARK, false) == true)
-;                   {
-                        ;; Set the lnum now, autocommands could have changed it.
-;                       COPY_pos(@curwin.w_cursor, namedfm[c].fmark.mark);
-;                       return NOPOS;
-;                   }
-;                   @_1_pos_copy.lnum = -1; ;; can't get file
-;               }
-;               else
-;                   @_1_pos_copy.lnum = 0;  ;; mark exists, but is not valid in current buffer
-;           }
+;           posp = namedfm[c].mark;
 ;       }
 
 ;       return posp;
@@ -29421,15 +29254,6 @@
 ;       return result;
     ))
 
-;; For an xtended filemark: set the fnum from the fname.
-;; This is used for marks obtained from the .viminfo file.
-;; It's postponed until the mark is used to avoid a long startup delay.
-
-(defn- #_void fname2fnum [#_xfmark_C fm]
-    (§
-        
-    ))
-
 ;; Check a if a position from a mark is valid.
 ;; Give and error message and return false if not.
 
@@ -29466,10 +29290,7 @@
     (§
 ;       if (@mark_i == -1)                   ;; first call ever: initialize
 ;           for (@mark_i = 0; @mark_i < NMARKS + 1; @mark_i++)
-;           {
-;               namedfm[@mark_i].fmark.mark.lnum = 0;
-;               namedfm[@mark_i].fname = null;
-;           }
+;               namedfm[@mark_i].mark.lnum = 0;
 
 ;       for (@mark_i = 0; @mark_i < NMARKS; @mark_i++)
 ;           buf.b_namedm[@mark_i].lnum = 0;
@@ -29483,16 +29304,11 @@
 ;       buf.b_changelistlen = 0;
     ))
 
-;; Get name of file from a filemark.
-;; When it's in the current buffer, return the text at the mark.
-;; Returns an allocated string.
+;; Return the text at the mark.
 
 (defn- #_Bytes fm_getname [#_fmark_C fmark, #_int lead_len]
     (§
-;       if (fmark.fnum == @curbuf.b_fnum)    ;; current buffer
-;           return mark_line(fmark.mark, lead_len);
-
-;       return null;
+;       return mark_line(fmark.mark, lead_len);
     ))
 
 ;; Return the line at mark "mp".  Truncate to fit in window.
@@ -29533,15 +29349,9 @@
 ;           show_one_mark(i + 'a', arg, @curbuf.b_namedm[i], null, true);
 ;       for (int i = 0; i < NMARKS + EXTRA_MARKS; i++)
 ;       {
-;           Bytes name;
-;           if (namedfm[i].fmark.fnum != 0)
-;               name = fm_getname(namedfm[i].fmark, 15);
-;           else
-;               name = namedfm[i].fname;
+;           Bytes name = fm_getname(namedfm[i], 15);
 ;           if (name != null)
-;           {
-;               show_one_mark(NMARKS <= i ? i - NMARKS + '0' : i + 'A', arg, namedfm[i].fmark.mark, name, namedfm[i].fmark.fnum == @curbuf.b_fnum);
-;           }
+;               show_one_mark((NMARKS <= i) ? i - NMARKS + '0' : i + 'A', arg, namedfm[i].mark, name, true);
 ;       }
 ;       show_one_mark('"', arg, @curbuf.b_last_cursor, null, true);
 ;       show_one_mark('[', arg, @curbuf.b_op_start, null, true);
@@ -29550,6 +29360,7 @@
 ;       show_one_mark('.', arg, @curbuf.b_last_change, null, true);
 ;       show_one_mark('<', arg, @curbuf.b_visual.vi_start, null, true);
 ;       show_one_mark('>', arg, @curbuf.b_visual.vi_end, null, true);
+
 ;       show_one_mark(-1, arg, null, null, false);
     ))
 
@@ -29642,8 +29453,7 @@
 ;                           else
 ;                               n = i - 'A';
 
-;                           namedfm[n].fmark.mark.lnum = 0;
-;                           namedfm[n].fname = null;
+;                           namedfm[n].mark.lnum = 0;
 ;                       }
 ;                   }
 ;               }
@@ -29676,12 +29486,9 @@
 
 ;       for (int i = 0; i < @curwin.w_jumplistlen && !@got_int; i++)
 ;       {
-;           if (@curwin.w_jumplist[i].fmark.mark.lnum != 0)
+;           if (@curwin.w_jumplist[i].mark.lnum != 0)
 ;           {
-;               if (@curwin.w_jumplist[i].fmark.fnum == 0)
-;                   fname2fnum(@curwin.w_jumplist[i]);
-
-;               Bytes name = fm_getname(@curwin.w_jumplist[i].fmark, 16);
+;               Bytes name = fm_getname(@curwin.w_jumplist[i], 16);
 ;               if (name == null)       ;; file name not available
 ;                   continue;
 
@@ -29693,10 +29500,10 @@
 ;               libC.sprintf(@ioBuff, u8("%c %2d %5ld %4d "),
 ;                   (i == x) ? (byte)'>' : (byte)' ',
 ;                   (x < i) ? i - x : x - i,
-;                   @curwin.w_jumplist[i].fmark.mark.lnum,
-;                   @curwin.w_jumplist[i].fmark.mark.col);
+;                   @curwin.w_jumplist[i].mark.lnum,
+;                   @curwin.w_jumplist[i].mark.col);
 ;               msg_outtrans(@ioBuff);
-;               msg_outtrans_attr(name, (@curwin.w_jumplist[i].fmark.fnum == @curbuf.b_fnum) ? hl_attr(HLF_D) : 0);
+;               msg_outtrans_attr(name, hl_attr(HLF_D));
 ;               ui_breakcheck();
 ;           }
 ;           out_flush();
@@ -29785,8 +29592,6 @@
 
 (defn- #_void mark_adjust [#_long line1, #_long line2, #_long amount, #_long amount_after]
     (§
-;       int fnum = @curbuf.b_fnum;
-
 ;       if (line2 < line1 && amount_after == 0L)                ;; nothing to do
 ;           return;
 
@@ -29796,14 +29601,10 @@
 ;           for (int i = 0; i < NMARKS; i++)
 ;           {
 ;               @curbuf.b_namedm[i].lnum = one_adjust(@curbuf.b_namedm[i].lnum, line1, line2, amount, amount_after);
-;               if (namedfm[i].fmark.fnum == fnum)
-;                   namedfm[i].fmark.mark.lnum = one_adjust_nodel(namedfm[i].fmark.mark.lnum, line1, line2, amount, amount_after);
+;               namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
 ;           }
 ;           for (int i = NMARKS; i < NMARKS + EXTRA_MARKS; i++)
-;           {
-;               if (namedfm[i].fmark.fnum == fnum)
-;                   namedfm[i].fmark.mark.lnum = one_adjust_nodel(namedfm[i].fmark.mark.lnum, line1, line2, amount, amount_after);
-;           }
+;               namedfm[i].mark.lnum = one_adjust_nodel(namedfm[i].mark.lnum, line1, line2, amount, amount_after);
 
             ;; last Insert position
 ;           @curbuf.b_last_insert.lnum = one_adjust(@curbuf.b_last_insert.lnum, line1, line2, amount, amount_after);
@@ -29842,8 +29643,7 @@
                 ;; Marks in the jumplist.  When deleting lines, this may create
                 ;; duplicate marks in the jumplist, they will be removed later.
 ;               for (int i = 0; i < win.w_jumplistlen; i++)
-;                   if (win.w_jumplist[i].fmark.fnum == fnum)
-;                       win.w_jumplist[i].fmark.mark.lnum = one_adjust_nodel(win.w_jumplist[i].fmark.mark.lnum, line1, line2, amount, amount_after);
+;                   win.w_jumplist[i].mark.lnum = one_adjust_nodel(win.w_jumplist[i].mark.lnum, line1, line2, amount, amount_after);
 
             ;; the displayed Visual area
 ;           if (win.w_old_cursor_lnum != 0)
@@ -29910,8 +29710,6 @@
 
 (defn- #_void mark_col_adjust [#_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
     (§
-;       int fnum = @curbuf.b_fnum;
-
 ;       if ((col_amount == 0L && lnum_amount == 0L) || @cmdmod.lockmarks)
 ;           return; ;; nothing to do
 
@@ -29919,14 +29717,10 @@
 ;       for (int i = 0; i < NMARKS; i++)
 ;       {
 ;           col_adjust(@curbuf.b_namedm[i], lnum, mincol, lnum_amount, col_amount);
-;           if (namedfm[i].fmark.fnum == fnum)
-;               col_adjust(namedfm[i].fmark.mark, lnum, mincol, lnum_amount, col_amount);
+;           col_adjust(namedfm[i].mark, lnum, mincol, lnum_amount, col_amount);
 ;       }
 ;       for (int i = NMARKS; i < NMARKS + EXTRA_MARKS; i++)
-;       {
-;           if (namedfm[i].fmark.fnum == fnum)
-;               col_adjust(namedfm[i].fmark.mark, lnum, mincol, lnum_amount, col_amount);
-;       }
+;           col_adjust(namedfm[i].mark, lnum, mincol, lnum_amount, col_amount);
 
         ;; last Insert position
 ;       col_adjust(@curbuf.b_last_insert, lnum, mincol, lnum_amount, col_amount);
@@ -29957,8 +29751,7 @@
 ;       {
             ;; marks in the jumplist
 ;           for (int i = 0; i < wp.w_jumplistlen; i++)
-;               if (wp.w_jumplist[i].fmark.fnum == fnum)
-;                   col_adjust(wp.w_jumplist[i].fmark.mark, lnum, mincol, lnum_amount, col_amount);
+;               col_adjust(wp.w_jumplist[i].mark, lnum, mincol, lnum_amount, col_amount);
 
             ;; cursor position for other windows with the same buffer
 ;           if (wp != @curwin)
@@ -29979,14 +29772,10 @@
 ;               @curwin.w_jumplistidx = to;
 ;           int i;
 ;           for (i = from + 1; i < @curwin.w_jumplistlen; i++)
-;               if (@curwin.w_jumplist[i].fmark.fnum == @curwin.w_jumplist[from].fmark.fnum
-;                       && @curwin.w_jumplist[from].fmark.fnum != 0
-;                       && @curwin.w_jumplist[i].fmark.mark.lnum == @curwin.w_jumplist[from].fmark.mark.lnum)
+;               if (@curwin.w_jumplist[i].mark.lnum == @curwin.w_jumplist[from].mark.lnum)
 ;                   break;
 ;           if (@curwin.w_jumplistlen <= i)  ;; no duplicate
-;               COPY_xfmark(@curwin.w_jumplist[to++], @curwin.w_jumplist[from]);
-;           else
-;               @curwin.w_jumplist[from].fname = null;
+;               COPY_fmark(@curwin.w_jumplist[to++], @curwin.w_jumplist[from]);
 ;       }
 
 ;       if (@curwin.w_jumplistidx == @curwin.w_jumplistlen)
@@ -30000,20 +29789,10 @@
     (§
 ;       for (int i = 0; i < from.w_jumplistlen; i++)
 ;       {
-;           COPY_xfmark(to.w_jumplist[i], from.w_jumplist[i]);
-;           if (from.w_jumplist[i].fname != null)
-;               to.w_jumplist[i].fname = STRDUP(from.w_jumplist[i].fname);
+;           COPY_fmark(to.w_jumplist[i], from.w_jumplist[i]);
 ;       }
 ;       to.w_jumplistlen = from.w_jumplistlen;
 ;       to.w_jumplistidx = from.w_jumplistidx;
-    ))
-
-;; Free items in the jumplist of window "wp".
-
-(defn- #_void free_jumplist [#_window_C wp]
-    (§
-;       for (int i = 0; i < wp.w_jumplistlen; i++)
-;           wp.w_jumplist[i].fname = null;
     ))
 
 (defn- #_void set_last_cursor [#_window_C win]
@@ -33215,7 +32994,7 @@
     (§
         ;; This this once for each buffer,
         ;; and then once for global mappings/abbreviations with bp == null.
-;       for (buffer_C bp = @firstbuf; ; bp = bp.b_next)
+;       for (buffer_C bp = @curbuf; ; bp = null)
 ;       {
             ;; Do the loop twice: Once for mappings, once for abbreviations.
             ;; Then loop over all map hash lists.
@@ -54958,12 +54737,10 @@
 
 ;; Close all existing memlines and memfiles.
 ;; Only used when exiting.
-;; But don't delete files that were ":preserve"d when we are POSIX compatible.
 
 (defn- #_void ml_close_all []
     (§
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;           ml_close(buf);
+;       ml_close(@curbuf);
     ))
 
 ;; Update the timestamp in the .swp file.
@@ -56606,8 +56383,6 @@
 
 ;; This is the ONLY way to create a new buffer.
 
-(atom! int  top_file_num 1)       ;; highest file number
-
 (defn- #_buffer_C newBuffer [#_long lnum]
     ;; lnum: preferred cursor line
     (§
@@ -56629,36 +56404,7 @@
 ;       clear_wininfo(buf);
 ;       buf.b_wininfo = §_wininfo_C();
 
-        ;; Put new buffer at the end of the buffer list.
-
-;       buf.b_next = null;
-;       if (@firstbuf == null)           ;; buffer list is empty
-;       {
-;           buf.b_prev = null;
-;           @firstbuf = buf;
-;       }
-;       else                            ;; append new buffer at end of list
-;       {
-;           @lastbuf.b_next = buf;
-;           buf.b_prev = @lastbuf;
-;       }
-;       @lastbuf = buf;
-
-;       buf.b_fnum = @top_file_num++;
-;       if (@top_file_num < 0)           ;; wrap around (may cause duplicates)
-;       {
-;           emsg(u8("W14: Warning: List of file names overflow"));
-;           if (@emsg_silent == 0)
-;           {
-;               out_flush();
-;               ui_delay(3000L, true);  ;; make sure it is noticed
-;           }
-;           @top_file_num = 1;
-;       }
-
-        ;; Always copy the options from the current buffer.
-
-;       buf_copy_options(buf, BCO_ALWAYS);
+;       buf_copy_options(buf);
 
 ;       buf.b_wininfo.wi_fpos.lnum = lnum;
 ;       buf.b_wininfo.wi_win = @curwin;
@@ -56707,17 +56453,6 @@
 ;           @curwin.w_cursor.coladd = 0;
 ;           @curwin.w_set_curswant = true;
 ;       }
-    ))
-
-;; find file in buffer list by number
-
-(defn- #_buffer_C buflist_findnr [#_int nr]
-    (§
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;           if (buf.b_fnum == nr)
-;               return buf;
-
-;       return null;
     ))
 
 ;; Set the "lnum" and "col" for the buffer "buf" and the current window.
@@ -56833,7 +56568,7 @@
 ;       Bytes p = buffer;
 ;       if (1 < fullname)       ;; 2 CTRL-G: include buffer number
 ;       {
-;           vim_snprintf(buffer, IOSIZE, u8("buf %d: "), @curbuf.b_fnum);
+;           vim_snprintf(buffer, IOSIZE, u8("buf %d: "), 1);
 ;           p = buffer.plus(STRLEN(buffer));
 ;       }
 
@@ -82338,6 +82073,7 @@
 (defn- #_void win_init [#_window_C newp, #_window_C oldp, #_int _flags]
     (§
 ;       @curbuf.b_nwindows++;
+
 ;       COPY_pos(newp.w_cursor, oldp.w_cursor);
 ;       newp.w_valid = 0;
 ;       newp.w_curswant = oldp.w_curswant;
@@ -83956,18 +83692,17 @@
 
 ;       if (@prevwin == wp)
 ;           @prevwin = null;
+
 ;       win_free_lines(wp);
 
         ;; Remove the window from the b_wininfo lists,
         ;; it may happen that the freed memory is re-used for another window.
-;       for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;           for (wininfo_C wip = buf.b_wininfo; wip != null; wip = wip.wi_next)
-;               if (wip.wi_win == wp)
-;                   wip.wi_win = null;
+
+;       for (wininfo_C wip = @curbuf.b_wininfo; wip != null; wip = wip.wi_next)
+;           if (wip.wi_win == wp)
+;               wip.wi_win = null;
 
 ;       clear_matches(wp);
-
-;       free_jumplist(wp);
 
 ;       wp.w_p_cc_cols = null;
 
