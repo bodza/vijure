@@ -3505,78 +3505,48 @@
                         (let [#_boolean wrap (or (at? s (byte \newline)) (<= @Cols (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec @Cols) (+ @msg_col t_col))))
                               ;; output any postponed text
                               t_col (if (and (< 0 t_col) (or wrap (any == (.at s 0) (byte \return) (byte \backspace) TAB BELL))) (t-puts t_col, t_s, s, attr) t_col)
-                        ]
-
-                            (when (and wrap @p_more (not recurse))
-                                ;; store text for scrolling back
-                                (store-sb-text a'sb_str, s, attr, a'sb_col, true)
-                            )
-
-                            (cond (at? s (byte \newline))                 ;; go to next line
-                            (do
-                                (reset! msg_didout false)         ;; remember that line is empty
-                                (reset! msg_col 0)
-                                (if (<= @Rows (swap! msg_row inc))      ;; safety check
-                                    (reset! msg_row (dec @Rows)))
-                            )
-                            (at? s (byte \return))            ;; go to column 0
-                            (do
-                                (reset! msg_col 0)
-                            )
-                            (at? s (byte \backspace))            ;; go to previous char
-                            (do
-                                (if (< 0 @msg_col)
-                                    (swap! msg_col dec))
-                            )
-                            (at? s TAB)                    ;; translate Tab into spaces
-                            (do
-                                (loop []
-                                    (msg-screen-putchar (byte \space), attr)
-                                    (recur-if (non-zero? (& @msg_col 7)) [])
-                                )
-                            )
-                            (at? s BELL)                   ;; beep (from ":sh")
-                            (do
-                                (vim-beep)
-                            )
-                            :else
-                            (do
-                                ((ß int cells =) (us-ptr2cells s))
-
-                                (ß int len)
-                                (cond (<= 0 maxlen)
-                                (do
-                                    ;; avoid including composing chars after the end
-                                    ((ß len =) (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s)))
-                                )
-                                :else
-                                (do
-                                    ((ß len =) (us-ptr2len-cc s))
-                                ))
-
-                                ;; When a double-wide character doesn't fit, draw a single character here.
-                                ;; Otherwise collect characters and draw them all at once later.
-                                (cond (and (< 1 cells) (<= (dec @Cols) (+ @msg_col t_col)))
-                                (do
-                                    (if (< 1 len)
-                                        ((ß s =) (.minus (screen-puts-mbyte s, len, attr) 1))
-                                        (msg-screen-putchar (.at s 0), attr))
-                                )
-                                :else
-                                (do
-                                    ;; postpone this character until later
-                                    ((ß t_s =) (if (zero? t_col) s t_s))
-                                    ((ß t_col =) (+ t_col cells))
-                                    ((ß s =) (.plus s (dec len)))
-                                ))
-                            ))
-                            ((ß s =) (.plus s 1))
+                              ;; store text for scrolling back
+                              _ (when (and wrap @p_more (not recurse))
+                                    (store-sb-text a'sb_str, s, attr, a'sb_col, true))
+                              [t_col t_s s] (let [_ [t_col t_s (.plus s 1)]]
+                                (condp == (.at s 0)
+                                    (byte \newline)                                 ;; go to next line
+                                        (do (reset! msg_didout false)               ;; remember that line is empty
+                                            (reset! msg_col 0)
+                                            (when (<= @Rows (swap! msg_row inc))    ;; safety check
+                                                (reset! msg_row (dec @Rows)))
+                                            _)
+                                    (byte \return)                                  ;; go to column 0
+                                        (do (reset! msg_col 0)
+                                            _)
+                                    (byte \backspace)                               ;; go to previous char
+                                        (do (when (< 0 @msg_col)
+                                                (swap! msg_col dec))
+                                            _)
+                                    TAB                                             ;; translate Tab into spaces
+                                        (do (loop [] (msg-screen-putchar (byte \space), attr) (recur-if (non-zero? (& @msg_col 7)) []))
+                                            _)
+                                    BELL                                            ;; beep (from ":sh")
+                                        (do (vim-beep)
+                                            _)
+                                    (let [#_int cells (us-ptr2cells s)
+                                          #_int len (if (<= 0 maxlen) ;; avoid including composing chars after the end
+                                                (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s))
+                                                (us-ptr2len-cc s)
+                                            )]
+                                        ;; When a double-wide character doesn't fit, draw a single character here.
+                                        ;; Otherwise collect characters and draw them all at once later.
+                                        (if (and (< 1 cells) (<= (dec @Cols) (+ @msg_col t_col)))
+                                            (let [s (if (< 1 len) (screen-puts-mbyte s, len, attr) (do (msg-screen-putchar (.at s 0), attr) (.plus s 1)))]
+                                                [t_col t_s s])
+                                            ;; postpone this character until later
+                                            (let [t_s (if (zero? t_col) s t_s)]
+                                                [(+ t_col cells) t_s (.plus s len)])
+                                        ))
+                                ))]
                             (recur t_col t_s s)
-                        )
-                    )
-                )
-            )
-
+                        ))
+                ))
     ] (some? _)
         ;; output any postponed text
         (when (pos? t_col)
