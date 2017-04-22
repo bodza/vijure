@@ -5582,367 +5582,361 @@
                                   a'got_match (atom (boolean false))
                                   ;; Check for a match on each line.
                                   win (loop-when [win win #_long lnum (:line1 eap)] (and (<= lnum @a'line2) (not @got_int)) => win
-                                        (let [#_long nmatch (vim-regexec-multi regmatch, lnum, 0, nil)
+                                        (let [#_long nmatch (vim-regexec-multi regmatch, lnum, 0, nil) ;; number of lines in match
                                               [win lnum]
-                                        ]
+                                                (if (non-zero? nmatch)
+                                                    ;; The new text is build up step by step, to avoid too much copying.
+                                                    ;; There are these pieces:
+                                                    ;;
+                                                    ;; sub_firstline    The old text, unmodified.
+                                                    ;; copycol          Column in the old text where we started looking for a match;
+                                                    ;;                  from here old text still needs to be copied to the new text.
+                                                    ;; matchcol         Column number of the old text where to look for the next match.
+                                                    ;;                  It's just after the previous match or one further.
+                                                    ;; prev_matchcol    Column just after the previous match (if any).
+                                                    ;;                  Mostly equal to "matchcol", except for the first match
+                                                    ;;                  and after skipping an empty match.
+                                                    ;; regmatch.*pos    Where the pattern matched in the old text.
+                                                    ;; new_start        The new text, all that has been produced so far.
+                                                    ;; new_end          The new text, where to append new text.
+                                                    ;;
+                                                    ;; lnum             The line number where we found the start of the match.
+                                                    ;;                  Can be below the line we searched when there is a \n
+                                                    ;;                  before a \zs in the pattern.
+                                                    ;; sub_firstlnum    The line number in the buffer where to look for a match.
+                                                    ;;                  Can be different from "lnum" when the pattern or substitute
+                                                    ;;                  string contains line breaks.
+                                                    ;;
+                                                    ;; Special situations:
+                                                    ;; - When the substitute string contains a line break, the part up to the line
+                                                    ;;   break is inserted in the text, but the copy of the original line is kept.
+                                                    ;;   "sub_firstlnum" is adjusted for the inserted lines.
+                                                    ;; - When the matched pattern contains a line break, the old line is taken from
+                                                    ;;   the line at the end of the pattern.  The lines in the match are deleted
+                                                    ;;   later, "sub_firstlnum" is adjusted accordingly.
+                                                    ;;
+                                                    ;; The new text is built up in new_start[].  It has some extra room to avoid
+                                                    ;; using calloc()/free() too often.  new_start_len is the length of the allocated
+                                                    ;; memory at new_start.
+                                                    ;;
+                                                    ;; Make a copy of the old line, so it won't be taken away when updating the screen
+                                                    ;; or handling a multi-line match.  The "old_" pointers point into this copy.
+                                                    (let [a'did_sub (atom (boolean false))
+                                                          ;; At first match, remember current cursor position.
+                                                          win (if (not @a'got_match)
+                                                                (let [win (setpcmark win)] (reset! a'got_match true) win)
+                                                                win)
 
-                                                (if (non-zero? nmatch)                        ;; number of lines in match
-                                                    (§
-                                                        ;; The new text is build up step by step, to avoid too much copying.
-                                                        ;; There are these pieces:
-                                                        ;;
-                                                        ;; sub_firstline    The old text, unmodified.
-                                                        ;; copycol          Column in the old text where we started looking for a match;
-                                                        ;;                  from here old text still needs to be copied to the new text.
-                                                        ;; matchcol         Column number of the old text where to look for the next match.
-                                                        ;;                  It's just after the previous match or one further.
-                                                        ;; prev_matchcol    Column just after the previous match (if any).
-                                                        ;;                  Mostly equal to matchcol, except for the first
-                                                        ;;                  match and after skipping an empty match.
-                                                        ;; regmatch.*pos    Where the pattern matched in the old text.
-                                                        ;; new_start        The new text, all that has been produced so far.
-                                                        ;; new_end          The new text, where to append new text.
-                                                        ;;
-                                                        ;; lnum             The line number where we found the start of the match.
-                                                        ;;                  Can be below the line we searched when there is a \n
-                                                        ;;                  before a \zs in the pattern.
-                                                        ;; sub_firstlnum    The line number in the buffer where to look for a match.
-                                                        ;;                  Can be different from "lnum" when the pattern or substitute
-                                                        ;;                  string contains line breaks.
-                                                        ;;
-                                                        ;; Special situations:
-                                                        ;; - When the substitute string contains a line break, the part up to the line
-                                                        ;;   break is inserted in the text, but the copy of the original line is kept.
-                                                        ;;   "sub_firstlnum" is adjusted for the inserted lines.
-                                                        ;; - When the matched pattern contains a line break, the old line is taken from
-                                                        ;;   the line at the end of the pattern.  The lines in the match are deleted
-                                                        ;;   later, "sub_firstlnum" is adjusted accordingly.
-                                                        ;;
-                                                        ;; The new text is built up in new_start[].  It has some extra room to avoid
-                                                        ;; using calloc()/free() too often.  new_start_len is the length of the allocated
-                                                        ;; memory at new_start.
-                                                        ;;
-                                                        ;; Make a copy of the old line, so it won't be taken away when updating the screen
-                                                        ;; or handling a multi-line match.  The "old_" pointers point into this copy.
+                                                          l'sub_firstlnum (atom (long lnum))            ;; lnum of first sub line
+                                                          l'sub_firstline (atom (#_Bytes object nil))   ;; allocated copy of first sub line
 
-                                                        ((ß int prev_matchcol =) MAXCOL)
-                                                        ((ß Bytes new_start =) nil)
-                                                        ((ß int new_start_len =) 0)
-                                                        ((ß boolean did_sub =) false)
-                                                        ((ß long nmatch_tl =) 0)                     ;; nr of lines matched below lnum
-                                                        ((ß boolean skip_match =) false)
+                                                          l'new_start (atom (#_Bytes object nil))
+                                                          l'new_start_len (atom (int 0))
+                                                          l'nmatch_tl (atom (long 0))                   ;; nr of lines matched below lnum
+                                                          l'skip_match (atom (boolean false))
 
-                                                        ((ß long sub_firstlnum =) lnum)              ;; nr of first sub line
-                                                        ((ß Bytes sub_firstline =) nil)        ;; allocated copy of first sub line
+                                                          l'prev_matchcol (atom (int MAXCOL))
+                                                          l'matchcol (atom (int 0))
+                                                          l'copycol (atom (int 0))
 
-                                                        ((ß int copycol =) 0)
-                                                        ((ß int matchcol =) 0)
+                                                          ;; Loop until nothing more to replace in this line.
+                                                          ;; 1. Handle match with empty string.
+                                                          ;; 3. Substitute the string.
+                                                          ;; 4. If do__all is set, find next match.
+                                                          ;; 5. Break if there isn't another match in this line.
+                                                          => [win lnum]
+                                                    ]
 
-                                                        ;; At first match, remember current cursor position.
-                                                        (when (not @a'got_match)
-                                                            (swap! curwin setpcmark)
-                                                            ((ß @a'got_match =) true)
-                                                        )
-
-                                                        ;; Loop until nothing more to replace in this line.
-                                                        ;; 1. Handle match with empty string.
-                                                        ;; 3. Substitute the string.
-                                                        ;; 4. If do__all is set, find next match.
-                                                        ;; 5. Break if there isn't another match in this line.
-
-                                                        (loop []
-                                                            ;; Advance "lnum" to the line where the match starts.
-                                                            ;; The match does not start in the first line when there is a line break before \zs.
-                                                            (when (< 0 (:lnum (... (:startpos regmatch) 0)))
-                                                                ((ß lnum =) (+ lnum (:lnum (... (:startpos regmatch) 0))))
-                                                                ((ß sub_firstlnum =) (+ sub_firstlnum (:lnum (... (:startpos regmatch) 0))))
-                                                                ((ß nmatch =) (- nmatch (:lnum (... (:startpos regmatch) 0))))
-                                                                ((ß sub_firstline =) nil)
-                                                            )
-
-                                                            ((ß sub_firstline =) (if (nil? sub_firstline) (STRDUP (ml-get sub_firstlnum)) sub_firstline))
-
-                                                            ;; Save the line number of the last change for the final cursor position (just like Vi).
-                                                            (swap! curwin assoc-in [:w_cursor :lnum] lnum)
-                                                            ((ß boolean do_again =) false)               ;; do it again after joining lines
-
-                                        ;                   skip:
-                                        ;                   {
-                                                                ;; 1. Match empty string does not count, except for first match.
-                                                                ;; This reproduces the strange vi behaviour.
-                                                                ;; This also catches endless loops.
-
-                                                                (when (and (== matchcol prev_matchcol) (zero? (:lnum (... (:endpos regmatch) 0))) (== matchcol (:col (... (:endpos regmatch) 0))))
-                                                                    (cond (eos? sub_firstline matchcol)
-                                                                    (do
-                                                                        ;; We already were at the end of the line.
-                                                                        ;; Don't look for a match in this line again.
-                                                                        ((ß skip_match =) true)
-                                                                    )
-                                                                    :else
-                                                                    (do
-                                                                        ;; search for a match at next column
-                                                                        ((ß matchcol =) (+ matchcol (us-ptr2len-cc sub_firstline, matchcol)))
-                                                                    ))
-                                                                    (ß BREAK skip)
+                                                            (§ loop [win win lnum lnum nmatch nmatch]
+                                                                ;; Advance "lnum" to the line where the match starts.
+                                                                ;; The match does not start in the first line when there is a line break before \zs.
+                                                                (when (< 0 (:lnum (... (:startpos regmatch) 0)))
+                                                                    ((ß lnum =) (+ lnum (:lnum (... (:startpos regmatch) 0))))
+                                                                    ((ß @l'sub_firstlnum =) (+ @l'sub_firstlnum (:lnum (... (:startpos regmatch) 0))))
+                                                                    ((ß nmatch =) (- nmatch (:lnum (... (:startpos regmatch) 0))))
+                                                                    ((ß @l'sub_firstline =) nil)
                                                                 )
 
-                                                                ;; Normally we continue searching for a match just after the previous match.
-                                                                ((ß matchcol =) (:col (... (:endpos regmatch) 0)))
-                                                                ((ß prev_matchcol =) matchcol)
+                                                                ((ß @l'sub_firstline =) (if (nil? @l'sub_firstline) (STRDUP (ml-get @l'sub_firstlnum)) @l'sub_firstline))
 
-                                                                ;; 2. If do__count is set only increase the counter.
+                                                                ;; Save the line number of the last change for the final cursor position (just like Vi).
+                                                                (swap! curwin assoc-in [:w_cursor :lnum] lnum)
+                                                                ((ß boolean do_again =) false)               ;; do it again after joining lines
 
-                                                                (when @do__count
-                                                                    ;; For a multi-line match, put matchcol at the NUL at
-                                                                    ;; the end of the line and set nmatch to one, so that
-                                                                    ;; we continue looking for a match on the next line.
-                                                                    ;; Avoids that ":s/\nB\@=//gc" get stuck.
-                                                                    (when (< 1 nmatch)
-                                                                        ((ß matchcol =) (STRLEN sub_firstline))
-                                                                        ((ß nmatch =) 1)
-                                                                        ((ß skip_match =) true)
-                                                                    )
-                                                                    (swap! sub_nsubs inc)
-                                                                    ((ß did_sub =) true)
-                                                                    ;; Skip the substitution, unless an expression is used,
-                                                                    ;; then it is evaluated in the sandbox.
-                                                                    (if (not (and (at? sub (byte \\)) (at? sub 1 (byte \=))))
+                                            ;                   skip:
+                                            ;                   {
+                                                                    ;; 1. Match empty string does not count, except for first match.
+                                                                    ;; This reproduces the strange vi behaviour.
+                                                                    ;; This also catches endless loops.
+
+                                                                    (when (and (== @l'matchcol @l'prev_matchcol) (zero? (:lnum (... (:endpos regmatch) 0))) (== @l'matchcol (:col (... (:endpos regmatch) 0))))
+                                                                        (cond (eos? @l'sub_firstline @l'matchcol)
+                                                                        (do
+                                                                            ;; We already were at the end of the line.
+                                                                            ;; Don't look for a match in this line again.
+                                                                            ((ß @l'skip_match =) true)
+                                                                        )
+                                                                        :else
+                                                                        (do
+                                                                            ;; search for a match at next column
+                                                                            ((ß @l'matchcol =) (+ @l'matchcol (us-ptr2len-cc @l'sub_firstline, @l'matchcol)))
+                                                                        ))
                                                                         (ß BREAK skip)
                                                                     )
-                                                                )
 
-                                                                ;; Move the cursor to the start of the match, so that we can use "\=col(".").
-                                                                (swap! curwin assoc-in [:w_cursor :col] (:col (... (:startpos regmatch) 0)))
+                                                                    ;; Normally we continue searching for a match just after the previous match.
+                                                                    ((ß @l'matchcol =) (:col (... (:endpos regmatch) 0)))
+                                                                    ((ß @l'prev_matchcol =) @l'matchcol)
 
-                                                                ;; 3. substitute the string.
+                                                                    ;; 2. If do__count is set only increase the counter.
 
-                                                                ;; get length of substitution part
-                                                                ((ß int sublen =) (vim-regsub-multi regmatch, (- sub_firstlnum (:lnum (... (:startpos regmatch) 0))), sub, sub_firstline, false, @p_magic, true))
-
-                                                                (if @do__count
-                                                                    (ß BREAK skip)
-                                                                )
-
-                                                                ;; When the match included the "$" of the last line it may
-                                                                ;; go beyond the last line of the buffer.
-                                                                (let-when [n' (inc (- (line-count @curbuf) sub_firstlnum))] (< n' nmatch)
-                                                                    ((ß nmatch =) n')
-                                                                    ((ß skip_match =) true)
-                                                                )
-
-                                                                ;; Need room for:
-                                                                ;; - result so far in "new_start" (not for first sub in line)
-                                                                ;; - original text up to match
-                                                                ;; - length of substituted part
-                                                                ;; - original text after match
-
-                                                                (ß Bytes p1)
-                                                                (cond (== nmatch 1)
-                                                                (do
-                                                                    ((ß p1 =) sub_firstline)
-                                                                )
-                                                                :else
-                                                                (do
-                                                                    ((ß p1 =) (ml-get (dec (+ sub_firstlnum nmatch))))
-                                                                    ((ß nmatch_tl =) (+ nmatch_tl (dec nmatch)))
-                                                                ))
-                                                                ((ß int copy_len =) (- (:col (... (:startpos regmatch) 0)) copycol))
-                                                                ((ß int needed_len =) (+ copy_len (- (STRLEN p1) (:col (... (:endpos regmatch) 0))) sublen 1))
-                                                                (ß Bytes new_end)
-                                                                (cond (nil? new_start)
-                                                                (do
-                                                                    ;; Get some space for a temporary buffer to do the substitution into
-                                                                    ;; (and some extra space to avoid too many calls to calloc()/free()).
-
-                                                                    ((ß new_start_len =) (+ needed_len 50))
-                                                                    ((ß new_start =) (Bytes. new_start_len))
-                                                                    (eos! new_start)
-                                                                    ((ß new_end =) new_start)
-                                                                )
-                                                                :else
-                                                                (do
-                                                                    ;; Check if the temporary buffer is long enough to do the
-                                                                    ;; substitution into.  If not, make it larger (with a bit
-                                                                    ;; extra to avoid too many calls to calloc()/free()).
-
-                                                                    ((ß int len =) (STRLEN new_start))
-                                                                    ((ß needed_len =) (+ needed_len len))
-                                                                    (when (< new_start_len needed_len)
-                                                                        ((ß new_start_len =) (+ needed_len 50))
-                                                                        ((ß p1 =) (Bytes. new_start_len))
-                                                                        (BCOPY p1, new_start, (inc len))
-                                                                        ((ß new_start =) p1)
-                                                                    )
-                                                                    ((ß new_end =) (.plus new_start len))
-                                                                ))
-
-                                                                ;; copy the text up to the part that matched
-
-                                                                (BCOPY new_end, 0, sub_firstline, copycol, copy_len)
-                                                                ((ß new_end =) (.plus new_end copy_len))
-
-                                                                (vim-regsub-multi regmatch, (- sub_firstlnum (:lnum (... (:startpos regmatch) 0))), sub, new_end, true, @p_magic, true)
-
-                                                                (swap! sub_nsubs inc)
-                                                                ((ß did_sub =) true)
-
-                                                                ;; Move the cursor to the start of the line, to avoid that
-                                                                ;; it is beyond the end of the line after the substitution.
-                                                                (swap! curwin assoc-in [:w_cursor :col] 0)
-
-                                                                ;; For a multi-line match, make a copy of the last matched
-                                                                ;; line and continue in that one.
-                                                                (when (< 1 nmatch)
-                                                                    ((ß sub_firstlnum =) (+ sub_firstlnum (dec nmatch)))
-                                                                    ((ß sub_firstline =) (STRDUP (ml-get sub_firstlnum)))
-                                                                    ;; When going beyond the last line, stop substituting.
-                                                                    (if (<= sub_firstlnum @a'line2)
-                                                                        ((ß do_again =) true)
-                                                                        (reset! do__all false))
-                                                                )
-
-                                                                ;; Remember next character to be copied.
-                                                                ((ß copycol =) (:col (... (:endpos regmatch) 0)))
-
-                                                                (when skip_match
-                                                                    ;; Already hit end of the buffer,
-                                                                    ;; sub_firstlnum is one less than what it ought to be.
-                                                                    ((ß sub_firstline =) (STRDUP (u8 "")))
-                                                                    ((ß copycol =) 0)
-                                                                )
-
-                                                                ;; Now the trick is to replace CTRL-M chars with a real line break.
-                                                                ;; This would make it impossible to insert a CTRL-M in the text.
-                                                                ;; The line break can be avoided by preceding the CTRL-M with a backslash.
-                                                                ;; To be able to insert a backslash, they must be doubled in the string
-                                                                ;; and are halved here.
-                                                                ;; That is Vi compatible.
-
-                                                                ((ß p1 =) (loop-when-recur [p1 new_end] (non-eos? p1) [(.plus p1 1)] => p1
-                                                                    (cond (and (at? p1 (byte \\)) (non-eos? p1 1))  ;; remove backslash
-                                                                    (do
-                                                                        (BCOPY p1, 0, p1, 1, (inc (STRLEN p1, 1)))
-                                                                    )
-                                                                    (at? p1 CAR)
-                                                                    (do
-                                                                        (when (u-inssub lnum)     ;; prepare for undo
-                                                                            (eos! p1)                  ;; truncate up to the CR
-                                                                            (ml-append (dec lnum), new_start)
-                                                                            (mark-adjust (inc lnum), MAXLNUM, 1, 0)
-
-                                                                            ((ß @a'first_line =) (if (zero? @a'first_line) lnum @a'first_line))
-                                                                            ((ß @a'last_line =) (inc lnum))
-
-                                                                            ;; All line numbers increase.
-                                                                            ((ß sub_firstlnum =) (inc sub_firstlnum))
-                                                                            ((ß lnum =) (inc lnum))
-                                                                            ((ß @a'line2 =) (inc @a'line2))
-                                                                            ;; move the cursor to the new line, like Vi
-                                                                            (swap! curwin update-in [:w_cursor :lnum] inc)
-                                                                            ;; copy the rest
-                                                                            (BCOPY new_start, 0, p1, 1, (inc (STRLEN p1, 1)))
-                                                                            ((ß p1 =) (.minus new_start 1))
+                                                                    (when @do__count
+                                                                        ;; For a multi-line match, put matchcol at the NUL at
+                                                                        ;; the end of the line and set nmatch to one, so that
+                                                                        ;; we continue looking for a match on the next line.
+                                                                        ;; Avoids that ":s/\nB\@=//gc" get stuck.
+                                                                        (when (< 1 nmatch)
+                                                                            ((ß @l'matchcol =) (STRLEN @l'sub_firstline))
+                                                                            ((ß nmatch =) 1)
+                                                                            ((ß @l'skip_match =) true)
                                                                         )
+                                                                        (swap! sub_nsubs inc)
+                                                                        ((ß @a'did_sub =) true)
+                                                                        ;; Skip the substitution, unless an expression is used,
+                                                                        ;; then it is evaluated in the sandbox.
+                                                                        (if (not (and (at? sub (byte \\)) (at? sub 1 (byte \=))))
+                                                                            (ß BREAK skip)
+                                                                        )
+                                                                    )
+
+                                                                    ;; Move the cursor to the start of the match, so that we can use "\=col(".").
+                                                                    (swap! curwin assoc-in [:w_cursor :col] (:col (... (:startpos regmatch) 0)))
+
+                                                                    ;; 3. substitute the string.
+
+                                                                    ;; get length of substitution part
+                                                                    ((ß int sublen =) (vim-regsub-multi regmatch, (- @l'sub_firstlnum (:lnum (... (:startpos regmatch) 0))), sub, @l'sub_firstline, false, @p_magic, true))
+
+                                                                    (if @do__count
+                                                                        (ß BREAK skip)
+                                                                    )
+
+                                                                    ;; When the match included the "$" of the last line it may
+                                                                    ;; go beyond the last line of the buffer.
+                                                                    (let-when [n' (inc (- (line-count @curbuf) @l'sub_firstlnum))] (< n' nmatch)
+                                                                        ((ß nmatch =) n')
+                                                                        ((ß @l'skip_match =) true)
+                                                                    )
+
+                                                                    ;; Need room for:
+                                                                    ;; - result so far in "new_start" (not for first sub in line)
+                                                                    ;; - original text up to match
+                                                                    ;; - length of substituted part
+                                                                    ;; - original text after match
+
+                                                                    (ß Bytes p1)
+                                                                    (cond (== nmatch 1)
+                                                                    (do
+                                                                        ((ß p1 =) @l'sub_firstline)
                                                                     )
                                                                     :else
                                                                     (do
-                                                                        ((ß p1 =) (.plus p1 (dec (us-ptr2len-cc p1))))
+                                                                        ((ß p1 =) (ml-get (dec (+ @l'sub_firstlnum nmatch))))
+                                                                        ((ß @l'nmatch_tl =) (+ @l'nmatch_tl (dec nmatch)))
                                                                     ))
-                                                                ))
-                                        ;                   }
+                                                                    ((ß int copy_len =) (- (:col (... (:startpos regmatch) 0)) @l'copycol))
+                                                                    ((ß int needed_len =) (+ copy_len (- (STRLEN p1) (:col (... (:endpos regmatch) 0))) sublen 1))
+                                                                    (ß Bytes new_end)
+                                                                    (cond (nil? @l'new_start)
+                                                                    (do
+                                                                        ;; Get some space for a temporary buffer to do the substitution into
+                                                                        ;; (and some extra space to avoid too many calls to calloc()/free()).
 
-                                                            ;; 4. If do__all is set, find next match.
-                                                            ;; Prevent endless loop with patterns that match empty
-                                                            ;; strings, e.g. :s/$/pat/g or :s/[a-z]* /(&)/g.
-                                                            ;; But ":s/\n/#/" is OK.
-
-                                                            ;; We already know that we did the last subst when we are at the end of the line,
-                                                            ;; except that a pattern like "bar\|\nfoo" may match at the NUL.
-                                                            ;; "lnum" can be below "line2" when there is a \zs in the pattern after a line break.
-
-                                                            ((ß boolean lastone =) (or skip_match @got_int (< @a'line2 lnum) (not (or @do__all do_again)) (and (eos? sub_firstline matchcol) (<= nmatch 1) (not (re-multiline (:regprog regmatch))))))
-                                                            ((ß nmatch =) -1)
-
-                                                            ;; Replace the line in the buffer when needed.
-                                                            ;; This is skipped when there are more matches.
-                                                            ;; The check for nmatch_tl is needed for when multi-line matching must replace
-                                                            ;; the lines before trying to do another match, otherwise "\@<=" won't work.
-                                                            ;; When the match starts below where we start searching
-                                                            ;; also need to replace the line first (using \zs after \n).
-
-                                                            (when (or lastone (< 0 nmatch_tl) (zero? ((ß nmatch =) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil))) (< 0 (:lnum (... (:startpos regmatch) 0))))
-                                                                (when (some? new_start)
-                                                                    ;; Copy the rest of the line, that didn't match.
-                                                                    ;; "matchcol" has to be adjusted, we use the end of the line as reference,
-                                                                    ;; because the substitute may have changed the number of characters.
-                                                                    ;; Same for "prev_matchcol".
-
-                                                                    (STRCAT new_start, (.plus sub_firstline copycol))
-                                                                    ((ß matchcol =) (- (STRLEN sub_firstline) matchcol))
-                                                                    ((ß prev_matchcol =) (- (STRLEN sub_firstline) prev_matchcol))
-
-                                                                    (if (!= (u-savesub lnum) true)
-                                                                        (ß BREAK)
+                                                                        ((ß @l'new_start_len =) (+ needed_len 50))
+                                                                        ((ß @l'new_start =) (Bytes. @l'new_start_len))
+                                                                        (eos! @l'new_start)
+                                                                        ((ß new_end =) @l'new_start)
                                                                     )
-                                                                    (ml-replace lnum, new_start)
+                                                                    :else
+                                                                    (do
+                                                                        ;; Check if the temporary buffer is long enough to do the
+                                                                        ;; substitution into.  If not, make it larger (with a bit
+                                                                        ;; extra to avoid too many calls to calloc()/free()).
 
-                                                                    (when (< 0 nmatch_tl)
-                                                                        ;; Matched lines have now been substituted and are useless, delete them.
-                                                                        ;; The part after the match has been appended to "new_start", we don't need
-                                                                        ;; it in the buffer.
+                                                                        ((ß int len =) (STRLEN @l'new_start))
+                                                                        ((ß needed_len =) (+ needed_len len))
+                                                                        (when (< @l'new_start_len needed_len)
+                                                                            ((ß @l'new_start_len =) (+ needed_len 50))
+                                                                            ((ß p1 =) (Bytes. @l'new_start_len))
+                                                                            (BCOPY p1, @l'new_start, (inc len))
+                                                                            ((ß @l'new_start =) p1)
+                                                                        )
+                                                                        ((ß new_end =) (.plus @l'new_start len))
+                                                                    ))
 
-                                                                        ((ß lnum =) (inc lnum))
-                                                                        (if (not (u-savedel lnum, nmatch_tl))
+                                                                    ;; copy the text up to the part that matched
+
+                                                                    (BCOPY new_end, 0, @l'sub_firstline, @l'copycol, copy_len)
+                                                                    ((ß new_end =) (.plus new_end copy_len))
+
+                                                                    (vim-regsub-multi regmatch, (- @l'sub_firstlnum (:lnum (... (:startpos regmatch) 0))), sub, new_end, true, @p_magic, true)
+
+                                                                    (swap! sub_nsubs inc)
+                                                                    ((ß @a'did_sub =) true)
+
+                                                                    ;; Move the cursor to the start of the line, to avoid that
+                                                                    ;; it is beyond the end of the line after the substitution.
+                                                                    (swap! curwin assoc-in [:w_cursor :col] 0)
+
+                                                                    ;; For a multi-line match, make a copy of the last matched
+                                                                    ;; line and continue in that one.
+                                                                    (when (< 1 nmatch)
+                                                                        ((ß @l'sub_firstlnum =) (+ @l'sub_firstlnum (dec nmatch)))
+                                                                        ((ß @l'sub_firstline =) (STRDUP (ml-get @l'sub_firstlnum)))
+                                                                        ;; When going beyond the last line, stop substituting.
+                                                                        (if (<= @l'sub_firstlnum @a'line2)
+                                                                            ((ß do_again =) true)
+                                                                            (reset! do__all false))
+                                                                    )
+
+                                                                    ;; Remember next character to be copied.
+                                                                    ((ß @l'copycol =) (:col (... (:endpos regmatch) 0)))
+
+                                                                    (when @l'skip_match
+                                                                        ;; Already hit end of the buffer,
+                                                                        ;; sub_firstlnum is one less than what it ought to be.
+                                                                        ((ß @l'sub_firstline =) (STRDUP (u8 "")))
+                                                                        ((ß @l'copycol =) 0)
+                                                                    )
+
+                                                                    ;; Now the trick is to replace CTRL-M chars with a real line break.
+                                                                    ;; This would make it impossible to insert a CTRL-M in the text.
+                                                                    ;; The line break can be avoided by preceding the CTRL-M with a backslash.
+                                                                    ;; To be able to insert a backslash, they must be doubled in the string
+                                                                    ;; and are halved here.
+                                                                    ;; That is Vi compatible.
+
+                                                                    ((ß p1 =) (loop-when-recur [p1 new_end] (non-eos? p1) [(.plus p1 1)] => p1
+                                                                        (cond (and (at? p1 (byte \\)) (non-eos? p1 1))  ;; remove backslash
+                                                                        (do
+                                                                            (BCOPY p1, 0, p1, 1, (inc (STRLEN p1, 1)))
+                                                                        )
+                                                                        (at? p1 CAR)
+                                                                        (do
+                                                                            (when (u-inssub lnum)     ;; prepare for undo
+                                                                                (eos! p1)                  ;; truncate up to the CR
+                                                                                (ml-append (dec lnum), @l'new_start)
+                                                                                (mark-adjust (inc lnum), MAXLNUM, 1, 0)
+
+                                                                                ((ß @a'first_line =) (if (zero? @a'first_line) lnum @a'first_line))
+                                                                                ((ß @a'last_line =) (inc lnum))
+
+                                                                                ;; All line numbers increase.
+                                                                                ((ß @l'sub_firstlnum =) (inc @l'sub_firstlnum))
+                                                                                ((ß lnum =) (inc lnum))
+                                                                                ((ß @a'line2 =) (inc @a'line2))
+                                                                                ;; move the cursor to the new line, like Vi
+                                                                                (swap! curwin update-in [:w_cursor :lnum] inc)
+                                                                                ;; copy the rest
+                                                                                (BCOPY @l'new_start, 0, p1, 1, (inc (STRLEN p1, 1)))
+                                                                                ((ß p1 =) (.minus @l'new_start 1))
+                                                                            )
+                                                                        )
+                                                                        :else
+                                                                        (do
+                                                                            ((ß p1 =) (.plus p1 (dec (us-ptr2len-cc p1))))
+                                                                        ))
+                                                                    ))
+                                            ;                   }
+
+                                                                ;; 4. If do__all is set, find next match.
+                                                                ;; Prevent endless loop with patterns that match empty
+                                                                ;; strings, e.g. :s/$/pat/g or :s/[a-z]* /(&)/g.
+                                                                ;; But ":s/\n/#/" is OK.
+
+                                                                ;; We already know that we did the last subst when we are at the end of the line,
+                                                                ;; except that a pattern like "bar\|\nfoo" may match at the NUL.
+                                                                ;; "lnum" can be below "line2" when there is a \zs in the pattern after a line break.
+
+                                                                ((ß boolean lastone =) (or @l'skip_match @got_int (< @a'line2 lnum) (not (or @do__all do_again)) (and (eos? @l'sub_firstline @l'matchcol) (<= nmatch 1) (not (re-multiline (:regprog regmatch))))))
+                                                                ((ß nmatch =) -1)
+
+                                                                ;; Replace the line in the buffer when needed.
+                                                                ;; This is skipped when there are more matches.
+                                                                ;; The check for nmatch_tl is needed for when multi-line matching must replace
+                                                                ;; the lines before trying to do another match, otherwise "\@<=" won't work.
+                                                                ;; When the match starts below where we start searching
+                                                                ;; also need to replace the line first (using \zs after \n).
+
+                                                                (when (or lastone (< 0 @l'nmatch_tl) (zero? ((ß nmatch =) (vim-regexec-multi regmatch, @l'sub_firstlnum, @l'matchcol, nil))) (< 0 (:lnum (... (:startpos regmatch) 0))))
+                                                                    (when (some? @l'new_start)
+                                                                        ;; Copy the rest of the line, that didn't match.
+                                                                        ;; "matchcol" has to be adjusted, we use the end of the line as reference,
+                                                                        ;; because the substitute may have changed the number of characters.
+                                                                        ;; Same for "prev_matchcol".
+
+                                                                        (STRCAT @l'new_start, (.plus @l'sub_firstline @l'copycol))
+                                                                        ((ß @l'matchcol =) (- (STRLEN @l'sub_firstline) @l'matchcol))
+                                                                        ((ß @l'prev_matchcol =) (- (STRLEN @l'sub_firstline) @l'prev_matchcol))
+
+                                                                        (if (!= (u-savesub lnum) true)
                                                                             (ß BREAK)
                                                                         )
-                                                                        (dotimes [_ nmatch_tl]
-                                                                            (ml-delete lnum, false)
+                                                                        (ml-replace lnum, @l'new_start)
+
+                                                                        (when (< 0 @l'nmatch_tl)
+                                                                            ;; Matched lines have now been substituted and are useless, delete them.
+                                                                            ;; The part after the match has been appended to "new_start", we don't need
+                                                                            ;; it in the buffer.
+
+                                                                            ((ß lnum =) (inc lnum))
+                                                                            (if (not (u-savedel lnum, @l'nmatch_tl))
+                                                                                (ß BREAK)
+                                                                            )
+                                                                            (dotimes [_ @l'nmatch_tl]
+                                                                                (ml-delete lnum, false)
+                                                                            )
+                                                                            (mark-adjust lnum, (dec (+ lnum @l'nmatch_tl)), MAXLNUM, (- @l'nmatch_tl))
+                                                                            ((ß lnum =) (dec lnum))
+                                                                            ((ß @a'line2 =) (- @a'line2 @l'nmatch_tl)) ;; nr of lines decreases
+                                                                            ((ß @l'nmatch_tl =) 0)
                                                                         )
-                                                                        (mark-adjust lnum, (dec (+ lnum nmatch_tl)), MAXLNUM, (- nmatch_tl))
-                                                                        ((ß lnum =) (dec lnum))
-                                                                        ((ß @a'line2 =) (- @a'line2 nmatch_tl)) ;; nr of lines decreases
-                                                                        ((ß nmatch_tl =) 0)
+
+                                                                        ((ß @a'first_line =) (if (zero? @a'first_line) lnum @a'first_line))
+                                                                        ((ß @a'last_line =) (inc lnum))
+
+                                                                        ((ß @l'sub_firstlnum =) lnum)
+                                                                        ((ß @l'sub_firstline =) @l'new_start)
+                                                                        ((ß @l'new_start =) nil)
+                                                                        ((ß @l'matchcol =) (- (STRLEN @l'sub_firstline) @l'matchcol))
+                                                                        ((ß @l'prev_matchcol =) (- (STRLEN @l'sub_firstline) @l'prev_matchcol))
+                                                                        ((ß @l'copycol =) 0)
                                                                     )
+                                                                    ((ß nmatch =) (if (and (== nmatch -1) (not lastone)) (vim-regexec-multi regmatch, @l'sub_firstlnum, @l'matchcol, nil) nmatch))
 
-                                                                    ((ß @a'first_line =) (if (zero? @a'first_line) lnum @a'first_line))
-                                                                    ((ß @a'last_line =) (inc lnum))
+                                                                    ;; 5. break if there isn't another match in this line
 
-                                                                    ((ß sub_firstlnum =) lnum)
-                                                                    ((ß sub_firstline =) new_start)
-                                                                    ((ß new_start =) nil)
-                                                                    ((ß matchcol =) (- (STRLEN sub_firstline) matchcol))
-                                                                    ((ß prev_matchcol =) (- (STRLEN sub_firstline) prev_matchcol))
-                                                                    ((ß copycol =) 0)
+                                                                    (when (<= nmatch 0)
+                                                                        ;; If the match found didn't start where we were
+                                                                        ;; searching, do the next search in the line where we
+                                                                        ;; found the match.
+                                                                        ((ß lnum =) (if (== nmatch -1) (- lnum (:lnum (... (:startpos regmatch) 0))) lnum))
+                                                                        (ß BREAK)
+                                                                    )
                                                                 )
-                                                                ((ß nmatch =) (if (and (== nmatch -1) (not lastone)) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil) nmatch))
 
-                                                                ;; 5. break if there isn't another match in this line
-
-                                                                (when (<= nmatch 0)
-                                                                    ;; If the match found didn't start where we were
-                                                                    ;; searching, do the next search in the line where we
-                                                                    ;; found the match.
-                                                                    ((ß lnum =) (if (== nmatch -1) (- lnum (:lnum (... (:startpos regmatch) 0))) lnum))
-                                                                    (ß BREAK)
-                                                                )
+                                                                (slow-breakcheck)
+                                                                (recur win lnum nmatch)
                                                             )
 
-                                                            (slow-breakcheck)
-                                                            (recur)
-                                                        )
-
-                                                        (if did_sub
+                                                        (when @a'did_sub
                                                             (swap! sub_nlines inc))
-                                                        [win lnum]
-                                                    )
+                                                        [win lnum])
                                                     [win lnum]
-                                                )
-
+                                                )]
                                             (slow-breakcheck)
                                             (recur win (inc lnum))
                                         )
-
                                     )]
                                 (when (non-zero? @a'first_line)
                                     ;; Need to subtract the number of added lines from "last_line" to get the line number
