@@ -4860,260 +4860,149 @@
 ;; Returns null for success, or an error message for an error.
 
 (defn- #_Bytes set-num-option [#_int opt_idx, #_long' varp, #_long value]
-    (§
-        ((ß long old_Rows =) @Rows)             ;; remember old Rows
-        ((ß long old_Cols =) @Cols)             ;; remember old Cols
-        ((ß long old_value =) @varp)
+    (let [#_long old_Rows @Rows #_long old_Cols @Cols
+          #_long old_value @varp _ (reset! varp value)
+          a'errmsg (atom (#_Bytes object nil))]
 
-        (reset! varp value)
+        (when (< @(:b_p_ts @curbuf) 1)  (reset! (:b_p_ts @curbuf) 8)                  (reset! a'errmsg e_positive))
+        (when (< @(:b_p_sw @curbuf) 0)  (reset! (:b_p_sw @curbuf) @(:b_p_ts @curbuf)) (reset! a'errmsg e_positive))
 
-        ((ß Bytes errmsg =) nil)
-        (when (< @(:b_p_sw @curbuf) 0)
-            ((ß errmsg =) e_positive)
-            (reset! (:b_p_sw @curbuf) @(:b_p_ts @curbuf))
-        )
+        (cond (== varp p_ch) ;; 'cmdheight'
+            (let [m (inc (- @Rows (min-rows)))]
+                (when (< @p_ch 1)       (reset! p_ch 1)       (reset! a'errmsg e_positive))
+                (when (< m @p_ch)       (reset! p_ch m))
+                ;; Only compute the new window layout when startup has been completed,
+                ;; otherwise the frame sizes may be wrong.
+                (when (and (!= @p_ch old_value) @full_screen)
+                    (command-height)
+                ))
 
-        ;; Number options that need some action when changed.
+        (== varp p_cwh) ;; 'cmdwinheight'
+            (when (< @p_cwh 1)          (reset! p_cwh 1)      (reset! a'errmsg e_positive))
 
-        (cond (== varp p_wh)
-        (do
-            (when (< @p_wh 1)
-                ((ß errmsg =) e_positive)
-                (reset! p_wh 1)
-            )
-            (when (< @p_wh @p_wmh)
-                ((ß errmsg =) e_winheight)
-                (reset! p_wh @p_wmh)
-            )
+        (== varp p_wh) ;; 'winheight'
+            (do (when (< @p_wh 1)       (reset! p_wh 1)       (reset! a'errmsg e_positive))
+                (when (< @p_wh @p_wmh)  (reset! p_wh @p_wmh)  (reset! a'errmsg e_winheight))
+                ;; Change window height NOW.
+                (when (and (!= @lastwin @firstwin) (< (:w_height @curwin) @p_wh))
+                    (win-setheight @curwin, @p_wh)
+                ))
 
-            ;; Change window height NOW.
-            (when (and (!= @lastwin @firstwin) (< (:w_height @curwin) @p_wh))
-                (win-setheight @curwin, @p_wh))
-        )
+        (== varp p_wiw) ;; 'winwidth'
+            (do (when (< @p_wiw 1)      (reset! p_wiw 1)      (reset! a'errmsg e_positive))
+                (when (< @p_wiw @p_wmw) (reset! p_wiw @p_wmw) (reset! a'errmsg e_winwidth))
+                ;; Change window width NOW.
+                (when (and (!= @lastwin @firstwin) (< (:w_width @curwin) @p_wiw))
+                    (win-setwidth @curwin, @p_wiw)
+                ))
 
-        ;; 'winminheight'
-        (== varp p_wmh)
-        (do
-            (when (< @p_wmh 0)
-                ((ß errmsg =) e_positive)
-                (reset! p_wmh 0)
-            )
-            (when (< @p_wh @p_wmh)
-                ((ß errmsg =) e_winheight)
-                (reset! p_wmh @p_wh)
-            )
-            (win-setminheight)
-        )
+        (== varp p_wmh) ;; 'winminheight'
+            (do (when (< @p_wmh 0)      (reset! p_wmh 0)      (reset! a'errmsg e_positive))
+                (when (< @p_wh @p_wmh)  (reset! p_wmh @p_wh)  (reset! a'errmsg e_winheight))
+                (win-setminheight))
 
-        (== varp p_wiw)
-        (do
-            (when (< @p_wiw 1)
-                ((ß errmsg =) e_positive)
-                (reset! p_wiw 1)
-            )
-            (when (< @p_wiw @p_wmw)
-                ((ß errmsg =) e_winwidth)
-                (reset! p_wiw @p_wmw)
-            )
+        (== varp p_wmw) ;; 'winminwidth'
+            (do (when (< @p_wmw 0)      (reset! p_wmw 0)      (reset! a'errmsg e_positive))
+                (when (< @p_wiw @p_wmw) (reset! p_wmw @p_wiw) (reset! a'errmsg e_winwidth))
+                (win-setminheight))
 
-            ;; Change window width NOW.
-            (when (and (!= @lastwin @firstwin) (< (:w_width @curwin) @p_wiw))
-                (win-setwidth @curwin, @p_wiw))
-        )
+        (== varp p_hi) ;; 'history'
+            (cond
+                (< @p_hi 0)     (do     (reset! p_hi 0)       (reset! a'errmsg e_positive))
+                (< 10000 @p_hi) (do     (reset! p_hi 10000)   (reset! a'errmsg e_invarg)))
 
-        ;; 'winminwidth'
-        (== varp p_wmw)
-        (do
-            (when (< @p_wmw 0)
-                ((ß errmsg =) e_positive)
-                (reset! p_wmw 0)
-            )
-            (when (< @p_wiw @p_wmw)
-                ((ß errmsg =) e_winwidth)
-                (reset! p_wmw @p_wiw)
-            )
-            (win-setminheight)
-        )
-
-        ;; (re)set last window status line
-        (== varp p_ls)
+        (== varp p_ls) ;; (re)set last window status line
             (last-status false)
 
-        ;; 'maxcombine'
-        (== varp p_mco)
-        (do
-            (swap! p_mco #(max 0 (min % MAX_MCO)))
-            (screen-clear)      ;; will re-allocate the screen
+        (== varp p_mco) ;; 'maxcombine'
+            (do (swap! p_mco #(max 0 (min % MAX_MCO)))
+                (screen-clear)) ;; will re-allocate the screen
+
+        (== varp p_re) ;; 'regexpengine'
+            (when-not (<= 0 @p_re 2)    (reset! p_re 0)       (reset! a'errmsg e_invarg))
+
+        (== varp p_report) ;; 'report'
+            (when (< @p_report 0)       (reset! p_report 1)   (reset! a'errmsg e_positive))
+
+        (== varp p_ss) ;; 'sidescroll'
+            (when (< @p_ss 0)           (reset! p_ss 0)       (reset! a'errmsg e_positive))
+
+        (== varp p_tm) ;; 'timeoutlen'
+            (when (< @p_tm 0)           (reset! p_tm 0)       (reset! a'errmsg e_positive))
+
+        (== varp (:wo_cole (:w_options @curwin))) ;; 'conceallevel'
+            (cond
+                (< @varp 0) (do         (reset! varp 0)       (reset! a'errmsg e_positive))
+                (< 3 @varp) (do         (reset! varp 3)       (reset! a'errmsg e_invarg)))
+
+        (== varp (:wo_nuw (:w_options @curwin))) ;; 'numberwidth'
+            (do (when (< @varp 1)       (reset! varp 1)       (reset! a'errmsg e_positive))
+                (when (< 10 @varp)      (reset! varp 10)      (reset! a'errmsg e_invarg))
+                (swap! curwin assoc :w_nrwidth_line_count 0)) ;; trigger a redraw
+
+        (== varp (:b_p_ul @curbuf)) ;; sync undo before 'undolevels' changes
+            (do ;; use the old value, otherwise u-sync() may not work properly
+                (reset! (:b_p_ul @curbuf) old_value)
+                (u-sync true)
+                (reset! (:b_p_ul @curbuf) value))
+
+        (== varp p_ut) ;; 'updatetime'
+            (when (< @p_ut 0)           (reset! p_ut 2000)    (reset! a'errmsg e_positive))
         )
-
-        ;; if "p_ch" changed value, change the command line height
-        (== varp p_ch)
-        (do
-            (when (< @p_ch 1)
-                ((ß errmsg =) e_positive)
-                (reset! p_ch 1)
-            )
-            ((ß int n =) (min-rows))
-            (when (> @p_ch (inc (- @Rows n)))
-                (reset! p_ch (inc (- @Rows n))))
-
-            ;; Only compute the new window layout when startup has been completed,
-            ;; otherwise the frame sizes may be wrong.
-            (when (and (!= @p_ch old_value) @full_screen)
-                (command-height))
-        )
-
-        (== varp (:wo_cole (:w_options @curwin)))
-        (do
-            (cond (< @(:wo_cole (:w_options @curwin)) 0)
-            (do
-                ((ß errmsg =) e_positive)
-                (reset! (:wo_cole (:w_options @curwin)) 0)
-            )
-            (< 3 @(:wo_cole (:w_options @curwin)))
-            (do
-                ((ß errmsg =) e_invarg)
-                (reset! (:wo_cole (:w_options @curwin)) 3)
-            ))
-        )
-
-        ;; sync undo before 'undolevels' changes
-        (== varp (:b_p_ul @curbuf))
-        (do
-            ;; use the old value, otherwise u-sync() may not work properly
-            (reset! (:b_p_ul @curbuf) old_value)
-            (u-sync true)
-            (reset! (:b_p_ul @curbuf) value)
-        )
-
-        ;; 'numberwidth' must be positive
-        (== varp (:wo_nuw (:w_options @curwin)))
-        (do
-            (when (< @(:wo_nuw (:w_options @curwin)) 1)
-                ((ß errmsg =) e_positive)
-                (reset! (:wo_nuw (:w_options @curwin)) 1)
-            )
-            (when (< 10 @(:wo_nuw (:w_options @curwin)))
-                ((ß errmsg =) e_invarg)
-                (reset! (:wo_nuw (:w_options @curwin)) 10)
-            )
-            (swap! curwin assoc :w_nrwidth_line_count 0)    ;; trigger a redraw
-        ))
-
-        ;; Check the bounds for numeric options here.
 
         (when @full_screen
-            ((ß int n =) (min-rows))
-            (when (< @Rows n)
-                ((ß Bytes errbuf =) (Bytes. 80))
-;%%             (vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), n)
-                ((ß errmsg =) errbuf)
-                (reset! Rows n)
-            )
-            (when (< @Cols MIN_COLS)
-                ((ß Bytes errbuf =) (Bytes. 80))
-;%%             (vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), MIN_COLS)
-                ((ß errmsg =) errbuf)
-                (reset! Cols MIN_COLS)
-            )
+            (let-when [m (min-rows)] (< @Rows m)
+                (reset! Rows m)
+                (let [#_Bytes errbuf (Bytes. 80)]
+;%%                 (vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), m)
+                    (reset! a'errmsg errbuf)
+                ))
+            (let-when [m MIN_COLS] (< @Cols m)
+                (reset! Cols m)
+                (let [#_Bytes errbuf (Bytes. 80)]
+;%%                 (vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), m)
+                    (reset! a'errmsg errbuf)
+                ))
         )
+
         (limit-screen-size)
 
         ;; If the screen (shell) height has been changed, assume it is the physical screenheight.
-
         (when (or (!= old_Rows @Rows) (!= old_Cols @Cols))
             ;; Changing the screen size is not allowed while updating the screen.
             (cond @updating_screen
-            (do
                 (reset! varp old_value)
-            )
             @full_screen
-            (do
                 (set-shellsize @Cols, @Rows, true)
-            )
             :else
-            (do
-                ;; Postpone the resizing; check the size and cmdline position for messages.
-                (check-shellsize)
-                (when (and (< (- @Rows @p_ch) @cmdline_row) (< @p_ch @Rows))
-                    (reset! cmdline_row (- @Rows @p_ch)))
-            ))
+                (do ;; Postpone the resizing; check the size and cmdline position for messages.
+                    (check-shellsize)
+                    (when (and (< (- @Rows @p_ch) @cmdline_row) (< @p_ch @Rows))
+                        (reset! cmdline_row (- @Rows @p_ch)))
+                ))
         )
 
-        (when (<= @(:b_p_ts @curbuf) 0)
-            ((ß errmsg =) e_positive)
-            (reset! (:b_p_ts @curbuf) 8)
-        )
-        (when (< @p_tm 0)
-            ((ß errmsg =) e_positive)
-            (reset! p_tm 0)
-        )
-        (when (and (or (<= @(:wo_scr (:w_options @curwin)) 0) (and (< (:w_height @curwin) @(:wo_scr (:w_options @curwin))) (< 0 (:w_height @curwin)))) @full_screen)
-            (cond (== varp (:wo_scr (:w_options @curwin)))
-            (do
-                ((ß errmsg =) (if (!= @(:wo_scr (:w_options @curwin)) 0) e_scroll errmsg))
-                (win-comp-scroll @curwin)
-            )
-            ;; If 'scroll' became invalid because of a side effect silently adjust it.
-            (<= @(:wo_scr (:w_options @curwin)) 0)
-            (do
-                (reset! (:wo_scr (:w_options @curwin)) 1)
-            )
-            :else ;; @curwin.w_options.@wo_scr > @curwin.w_height
-            (do
-                (reset! (:wo_scr (:w_options @curwin)) (:w_height @curwin))
-            ))
-        )
+        (when @full_screen
+            (let-when [a'scr (:wo_scr (:w_options @curwin))] (or (< @a'scr 1) (< 0 (:w_height @curwin) @a'scr))
+                (cond (== varp a'scr)
+                    (do (when (!= @a'scr 0)
+                            (reset! a'errmsg e_scroll))
+                        (win-comp-scroll @curwin))
+                ;; If 'scroll' became invalid because of a side effect, silently adjust it.
+                (< @a'scr 1)
+                    (reset! a'scr 1)
+                (< (:w_height @curwin) @a'scr)
+                    (reset! a'scr (:w_height @curwin))
+                ))
 
-        (cond (< @p_hi 0)
-        (do
-            ((ß errmsg =) e_positive)
-            (reset! p_hi 0)
-        )
-        (< 10000 @p_hi)
-        (do
-            ((ß errmsg =) e_invarg)
-            (reset! p_hi 10000)
-        ))
+            (when-not (and (<= -100 @p_sj) (< @p_sj @Rows))
+                (if (!= @Rows old_Rows)   ;; Rows changed, just adjust 'scrolljump'
+                    (reset! p_sj (/ @Rows 2))
+                    (do (reset! p_sj 1) (reset! a'errmsg e_scroll))
+                ))
 
-        (when (or (< @p_re 0) (< 2 @p_re))
-            ((ß errmsg =) e_invarg)
-            (reset! p_re 0)
-        )
-        (when (< @p_report 0)
-            ((ß errmsg =) e_positive)
-            (reset! p_report 1)
-        )
-        (when (and (or (< @p_sj -100) (<= @Rows @p_sj)) @full_screen)
-            (cond (!= @Rows old_Rows)   ;; Rows changed, just adjust "p_sj"
-            (do
-                (reset! p_sj (/ @Rows 2))
-            )
-            :else
-            (do
-                ((ß errmsg =) e_scroll)
-                (reset! p_sj 1)
-            ))
-        )
-        (when (and (< @p_so 0) @full_screen)
-            ((ß errmsg =) e_scroll)
-            (reset! p_so 0)
-        )
-        (when (and (< @p_siso 0) @full_screen)
-            ((ß errmsg =) e_positive)
-            (reset! p_siso 0)
-        )
-        (when (< @p_cwh 1)
-            ((ß errmsg =) e_positive)
-            (reset! p_cwh 1)
-        )
-        (when (< @p_ut 0)
-            ((ß errmsg =) e_positive)
-            (reset! p_ut 2000)
-        )
-        (when (< @p_ss 0)
-            ((ß errmsg =) e_positive)
-            (reset! p_ss 0)
+            (when (< @p_so 0)   (reset! p_so 0)   (reset! a'errmsg e_scroll)) ;; 'scrolloff'
+            (when (< @p_siso 0) (reset! p_siso 0) (reset! a'errmsg e_positive)) ;; 'sidescrolloff'
         )
 
         (let [#_vimoption_C v (... vimoptions opt_idx)]
@@ -5121,7 +5010,7 @@
             (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
                 (swap! curwin assoc :w_set_curswant true))
             (check-redraw (:flags v)))
-        errmsg
+        @a'errmsg
     ))
 
 ;; Called after an option changed: check if something needs to be redrawn.
@@ -5205,12 +5094,12 @@
         (when @p_ru
             (reset! ru_col (inc (if (non-zero? @ru_wid) @ru_wid COL_RULER)))
             ;; no last status line, adjust sc_col
-            (if (not last_has_status)
+            (when (not last_has_status)
                 (reset! sc_col @ru_col))
         )
         (when @p_sc
             (swap! sc_col + SHOWCMD_COLS)
-            (if (or (not @p_ru) last_has_status)       ;; no need for separating space
+            (when (or (not @p_ru) last_has_status) ;; no need for separating space
                 (swap! sc_col inc))
         )
         (swap! sc_col #(max 1 (- @Cols %)))
@@ -5265,36 +5154,33 @@
 ;; Copy options from one window to another.
 ;; Used when splitting a window.
 
-(defn- #_void win-copy-options [#_window_C wp_from, #_window_C wp_to]
-    (copy-winopt (:w_options wp_from), (:w_options wp_to))
-    (briopt-check wp_to)
+(defn- #_void win-copy-options [#_window_C from, #_window_C to]
+    (copy-winopt (:w_options from), (:w_options to))
+    (briopt-check to)
     nil)
 
 ;; Copy the options from one winopt_C to another.
 ;; Doesn't free the old option values in "to", use clear-winopt() for that.
 ;; The 'scroll' option is not copied, because it depends on the window height.
-;; The 'previewwindow' option is reset, there can be only one preview window.
 
 (defn- #_void copy-winopt [#_winopt_C from, #_winopt_C to]
-    (§
-        ((ß to.@wo_nu =) @(:wo_nu from))
-        ((ß to.@wo_rnu =) @(:wo_rnu from))
-        ((ß to.@wo_nuw =) @(:wo_nuw from))
-        ((ß to.@wo_wrap =) @(:wo_wrap from))
-        ((ß to.@wo_lbr =) @(:wo_lbr from))
-        ((ß to.@wo_bri =) @(:wo_bri from))
-        ((ß to.@wo_briopt =) (STRDUP @(:wo_briopt from)))
-        ((ß to.@wo_scb =) @(:wo_scb from))
-        ((ß to.@wo_crb =) @(:wo_crb from))
-        ((ß to.@wo_cuc =) @(:wo_cuc from))
-        ((ß to.@wo_cul =) @(:wo_cul from))
-        ((ß to.@wo_cc =) (STRDUP @(:wo_cc from)))
-        ((ß to.@wo_cocu =) (STRDUP @(:wo_cocu from)))
-        ((ß to.@wo_cole =) @(:wo_cole from))
+    (reset! (:wo_nu to)             @(:wo_nu from))
+    (reset! (:wo_rnu to)            @(:wo_rnu from))
+    (reset! (:wo_nuw to)            @(:wo_nuw from))
+    (reset! (:wo_wrap to)           @(:wo_wrap from))
+    (reset! (:wo_lbr to)            @(:wo_lbr from))
+    (reset! (:wo_bri to)            @(:wo_bri from))
+    (reset! (:wo_briopt to) (STRDUP @(:wo_briopt from)))
+    (reset! (:wo_scb to)            @(:wo_scb from))
+    (reset! (:wo_crb to)            @(:wo_crb from))
+    (reset! (:wo_cuc to)            @(:wo_cuc from))
+    (reset! (:wo_cul to)            @(:wo_cul from))
+    (reset! (:wo_cc to)     (STRDUP @(:wo_cc from)))
+    (reset! (:wo_cocu to)   (STRDUP @(:wo_cocu from)))
+    (reset! (:wo_cole to)           @(:wo_cole from))
 
-        (check-winopt to)           ;; don't want null pointers
-        nil
-    ))
+    (check-winopt to) ;; don't want null pointers
+    nil)
 
 ;; Check string options in a window for a null value.
 
@@ -5461,8 +5347,7 @@
         ((ß int bri_min =) 20)
         ((ß boolean bri_sbr =) false)
 
-        ((ß Bytes p =) @(:wo_briopt (:w_options win)))
-        (loop-when [] (non-eos? p)
+        (loop-when [#_Bytes p @(:wo_briopt (:w_options win))] (non-eos? p)
             (cond (and (zero? (STRNCMP p, (u8 "shift:"), 6)) (or (and (at? p 6 (byte \-)) (asc-isdigit (.at p 7))) (asc-isdigit (.at p 6))))
             (do
                 ((ß p =) (.plus p 6))
@@ -5482,11 +5367,10 @@
                 ((ß p =) (.plus p 3))
                 ((ß bri_sbr =) true)
             ))
-            (if (and (not-at? p (byte \,)) (non-eos? p))
+            (if (or (at? p (byte \,)) (eos? p))
+                (recur (if (at? p (byte \,)) (.plus p 1) p))
                 ((ß RETURN) false)
             )
-            ((ß p =) (if (at? p (byte \,)) (.plus p 1) p))
-            (recur)
         )
 
         ((ß win.w_p_brishift =) bri_shift)
@@ -40279,9 +40163,9 @@
 ;; Check if the new shell size is valid, correct it if it's too small or way too big.
 
 (defn- #_void check-shellsize []
-    (let [#_int min (min-rows)]
-        (when (< @Rows min)         ;; need room for one window and command line
-            (reset! Rows min))
+    (let [m (min-rows)]
+        (when (< @Rows m)           ;; need room for one window and command line
+            (reset! Rows m))
         (limit-screen-size))
     nil)
 
