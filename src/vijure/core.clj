@@ -41,11 +41,11 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave termcode typebuf vimoption wline yankreg)))
 
-(def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
+(def- C** (map #(symbol (str % "_C**")) '(histentry)))
 
 (def- F (map #(symbol (str % "_F")) '(ex_func nv_func)))
 
@@ -691,8 +691,6 @@
     CONFIRM         0x800,            ;; ":confirm" prompt
     SELECTMODE      0x1000)           ;; select mode, only for mappings
 
-(final int MAP_ALL_MODES (| 0x3f SELECTMODE)) ;; all mode bits used for mapping
-
 ;; directions
 (final int FORWARD        1)
 (final int BACKWARD       -1)
@@ -737,12 +735,9 @@
 (final int FIND_EVAL       4)       ;; include "->", "[]" and "."
 
 ;; Values for "noremap" argument of ins_typebuf().
-;; Also used for map.m_noremap and menu.noremap[].
 
 (final int REMAP_YES       0)       ;; allow remapping
 (final int REMAP_NONE      -1)      ;; no remapping
-(final int REMAP_SCRIPT    -2)      ;; remap script-local mappings only
-(final int REMAP_SKIP      -3)      ;; no remapping for first char
 
 ;; Values for change_indent().
 (final int INDENT_SET      1)       ;; set indent
@@ -1054,11 +1049,9 @@
 (atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
 (atom! boolean p_paste)     ;; 'paste'
-(atom! Bytes   p_pt)        ;; 'pastetoggle'
 (atom! boolean p_prompt)    ;; 'prompt'
 (atom! long    p_rdt)       ;; 'redrawtime'
 (atom! long    p_re)        ;; 'regexpengine'
-(atom! boolean p_remap)     ;; 'remap'
 (atom! long    p_report)    ;; 'report'
 (atom! boolean p_ru)        ;; 'ruler'
 (atom! long    p_sj)        ;; 'scrolljump'
@@ -1625,22 +1618,6 @@
 ;       return tasp;
     ))
 
-;; Structure used for mappings and abbreviations.
-
-(class! #_final mapblock_C
-    [
-        (field mapblock_C   m_next)         ;; next mapblock in list
-        (field Bytes        m_keys)         ;; mapped from, lhs
-        (field Bytes        m_str)          ;; mapped to, rhs
-        (field Bytes        m_orig_str)     ;; rhs as entered by the user
-        (field int          m_keylen)       ;; STRLEN(m_keys)
-        (field int          m_mode)         ;; valid mode
-        (field int          m_noremap)      ;; if non-zero no re-mapping for "m_str"
-        (field boolean      m_silent)       ;; <silent> used, don't echo commands
-        (field boolean      m_nowait)       ;; <nowait> used
-        (field boolean      m_expr)         ;; <expr> used, "m_str" is an expression
-    ])
-
 ;; buffer: structure that holds information about one file
 ;;
 ;; Several windows can share a single Buffer.
@@ -1682,10 +1659,6 @@
         ;; 8 bytes of 32 bits: 1 bit per character 0-255.
 
         (field int*         b_chartab)
-
-        ;; Table used for mappings local to a buffer.
-
-        (field mapblock_C** b_maphash)
 
         ;; start and end of an operator, also used for '[ and ']
 
@@ -2093,109 +2066,77 @@
     CMD_botright 3,
     CMD_changes 4,
     CMD_close 5,
-    CMD_cmap 6,
-    CMD_cmapclear 7,
-    CMD_cnoremap 8,
-    CMD_copy 9,
-    CMD_cunmap 10,
-    CMD_delete 11,
-    CMD_delmarks 12,
-    CMD_digraphs 13,
-    CMD_earlier 14,
-    CMD_fixdel 15,
-    CMD_global 16,
-    CMD_history 17,
-    CMD_imap 18,
-    CMD_imapclear 19,
-    CMD_inoremap 20,
-    CMD_iunmap 21,
-    CMD_join 22,
-    CMD_jumps 23,
-    CMD_k 24,
-    CMD_keepmarks 25,
-    CMD_keepjumps 26,
-    CMD_keeppatterns 27,
-    CMD_list 28,
-    CMD_later 29,
-    CMD_leftabove 30,
-    CMD_lockmarks 31,
-    CMD_move 32,
-    CMD_mark 33,
-    CMD_map 34,
-    CMD_mapclear 35,
-    CMD_marks 36,
-    CMD_nmap 37,
-    CMD_nmapclear 38,
-    CMD_nnoremap 39,
-    CMD_noremap 40,
-    CMD_nohlsearch 41,
-    CMD_normal 42,
-    CMD_number 43,
-    CMD_nunmap 44,
-    CMD_omap 45,
-    CMD_omapclear 46,
-    CMD_only 47,
-    CMD_onoremap 48,
-    CMD_ounmap 49,
-    CMD_print 50,
-    CMD_put 51,
-    CMD_redo 52,
-    CMD_redraw 53,
-    CMD_redrawstatus 54,
-    CMD_registers 55,
-    CMD_resize 56,
-    CMD_retab 57,
-    CMD_rightbelow 58,
-    CMD_substitute 59,
-    CMD_set 60,
-    CMD_silent 61,
-    CMD_smagic 62,
-    CMD_smap 63,
-    CMD_smapclear 64,
-    CMD_snomagic 65,
-    CMD_snoremap 66,
-    CMD_split 67,
-    CMD_stop 68,
-    CMD_startinsert 69,
-    CMD_startgreplace 70,
-    CMD_startreplace 71,
-    CMD_stopinsert 72,
-    CMD_sunmap 73,
-    CMD_suspend 74,
-    CMD_syncbind 75,
-    CMD_t 76,
-    CMD_topleft 77,
-    CMD_undo 78,
-    CMD_undojoin 79,
-    CMD_undolist 80,
-    CMD_unmap 81,
-    CMD_unsilent 82,
-    CMD_vglobal 83,
-    CMD_verbose 84,
-    CMD_vertical 85,
-    CMD_vmap 86,
-    CMD_vmapclear 87,
-    CMD_vnoremap 88,
-    CMD_vsplit 89,
-    CMD_vunmap 90,
-    CMD_wincmd 91,
-    CMD_xmap 92,
-    CMD_xmapclear 93,
-    CMD_xnoremap 94,
-    CMD_xunmap 95,
-    CMD_yank 96,
-    CMD_z 97,
+    CMD_copy 6,
+    CMD_delete 7,
+    CMD_delmarks 8,
+    CMD_digraphs 9,
+    CMD_earlier 10,
+    CMD_fixdel 11,
+    CMD_global 12,
+    CMD_history 13,
+    CMD_join 14,
+    CMD_jumps 15,
+    CMD_k 16,
+    CMD_keepmarks 17,
+    CMD_keepjumps 18,
+    CMD_keeppatterns 19,
+    CMD_list 20,
+    CMD_later 21,
+    CMD_leftabove 22,
+    CMD_lockmarks 23,
+    CMD_move 24,
+    CMD_mark 25,
+    CMD_marks 26,
+    CMD_nohlsearch 27,
+    CMD_normal 28,
+    CMD_number 29,
+    CMD_only 30,
+    CMD_print 31,
+    CMD_put 32,
+    CMD_redo 33,
+    CMD_redraw 34,
+    CMD_redrawstatus 35,
+    CMD_registers 36,
+    CMD_resize 37,
+    CMD_retab 38,
+    CMD_rightbelow 39,
+    CMD_substitute 40,
+    CMD_set 41,
+    CMD_silent 42,
+    CMD_smagic 43,
+    CMD_snomagic 44,
+    CMD_split 45,
+    CMD_stop 46,
+    CMD_startinsert 47,
+    CMD_startgreplace 48,
+    CMD_startreplace 49,
+    CMD_stopinsert 50,
+    CMD_suspend 51,
+    CMD_syncbind 52,
+    CMD_t 53,
+    CMD_topleft 54,
+    CMD_undo 55,
+    CMD_undojoin 56,
+    CMD_undolist 57,
+    CMD_unsilent 58,
+    CMD_vglobal 59,
+    CMD_verbose 60,
+    CMD_vertical 61,
+    CMD_vsplit 62,
+    CMD_wincmd 63,
+    CMD_yank 64,
+    CMD_z 65,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 98,
-    CMD_and 99,
-    CMD_lshift 100,
-    CMD_equal 101,
-    CMD_rshift 102,
-    CMD_tilde 103,
+    CMD_pound 66,
+    CMD_and 67,
+    CMD_lshift 68,
+    CMD_equal 69,
+    CMD_rshift 70,
+    CMD_tilde 71,
 
-    CMD_SIZE 104)     ;; MUST be after all real commands!
+    CMD_SIZE 72)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2676,7 +2617,6 @@
     e_nobang          (u8 "E477: No ! allowed"),
     e_noinstext       (u8 "E29: No inserted text yet"),
     e_nolastcmd       (u8 "E30: No previous command line"),
-    e_nomap           (u8 "E31: No such mapping"),
     e_nopresub        (u8 "E33: No previous substitute regular expression"),
     e_noprevre        (u8 "E35: No previous regular expression"),
     e_norange         (u8 "E481: No range allowed"),
@@ -4495,20 +4435,6 @@
 ;       return buf7;
     ))
 
-;; Translate a key sequence into special key names.
-
-(defn- #_void str2specialbuf [#_Bytes _sp, #_Bytes buf, #_int len]
-    (§
-;       Bytes[] sp = { _sp };
-;       buf.be(0, NUL);
-;       while (sp[0].at(0) != NUL)
-;       {
-;           Bytes s = str2special(sp, false);
-;           if (STRLEN(s) + STRLEN(buf) < len)
-;               STRCAT(buf, s);
-;       }
-    ))
-
 ;; print line for :print or :list command
 
 (defn- #_void msg_prt_line [#_Bytes s, #_boolean list]
@@ -5696,14 +5622,12 @@
         (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4),
         (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    0,         (u8 "")),
         (bool_opt (u8 "paste"),           null,            0,                           p_paste,     0,          false),
-        (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        0,         (u8 "")),
         (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           null,        PV_PI,      false),
         (bool_opt (u8 "prompt"),          null,            0,                           p_prompt,    0,          true),
         (utf8_opt (u8 "quoteescape"),    (u8 "qe"),        0,                           null,        PV_QE,     (u8 "\\")),
         (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       0,          2000),
         (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        0,          0),
         (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      null,        PV_RNU,     false),
-        (bool_opt (u8 "remap"),           null,            0,                           p_remap,     0,          true),
         (long_opt (u8 "report"),          null,            0,                           p_report,    0,          2),
         (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        0,          false),
         (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           null,        PV_SCROLL,  12),
@@ -6805,13 +6729,6 @@
 ;               errmsg = e_invarg;
 ;       }
 
-        ;; 'pastetoggle': translate key codes like in a mapping
-;       else if (varp == p_pt)
-;       {
-;           if (@p_pt.at(0) != NUL)
-;               @p_pt = replace_termcodes(@p_pt, true, true, false);
-;       }
-
         ;; 'backspace'
 ;       else if (varp == p_bs)
 ;       {
@@ -7880,9 +7797,6 @@
 
 ;           if (s == null)              ;; just in case
 ;               @nameBuff.be(0, NUL);
-            ;; translate 'pastetoggle' into special key names
-;           else if (v.var == p_pt)
-;               str2specialbuf(@p_pt, @nameBuff, MAXPATHL);
 ;           else
 ;               vim_strncpy(@nameBuff, s, MAXPATHL - 1);
 ;       }
@@ -12942,27 +12856,6 @@
 ;       }
     ))
 
-;; ":map" and friends.
-
-(defn- #_void ex_map [#_exarg_C eap]
-    (§
-;       do_exmap(eap);
-    ))
-
-;; ":unmap" and friends.
-
-(defn- #_void ex_unmap [#_exarg_C eap]
-    (§
-;       do_exmap(eap);
-    ))
-
-;; ":mapclear" and friends.
-
-(defn- #_void ex_mapclear [#_exarg_C eap]
-    (§
-;       map_clear(eap.cmd, eap.arg, eap.forceit);
-    ))
-
 ;; Check if *p is a separator between Ex commands.
 ;; Return null if it isn't, (p + 1) if it is.
 
@@ -13217,20 +13110,6 @@
 ;       {
 ;           ui_delay(1000 < msec - done ? 1000 : msec - done, true);
 ;           ui_breakcheck();
-;       }
-    ))
-
-(defn- #_void do_exmap [#_exarg_C eap]
-    (§
-;       Bytes[] cmdp = { eap.cmd };
-;       int mode = get_map_mode(cmdp, eap.forceit);
-
-;       switch (do_map((cmdp[0].at(0) == (byte)'n') ? 2 : (cmdp[0].at(0) == (byte)'u') ? 1 : 0, eap.arg, mode))
-;       {
-;           case 1: emsg(e_invarg);
-;                   break;
-;           case 2: emsg(e_nomap);
-;                   break;
 ;       }
     ))
 
@@ -13746,10 +13625,10 @@
 
 ;; The Visual area is remembered for reselection.
 
-(atom! int      resel_VIsual_mode NUL)        ;; 'v', 'V', or Ctrl-V
+(atom! int      resel_VIsual_mode       NUL)    ;; 'v', 'V', or Ctrl-V
 (atom! long     resel_VIsual_line_count)        ;; number of lines
 (atom! int      resel_VIsual_vcol)              ;; nr of cols or end col
-(atom! int      VIsual_mode_orig NUL)         ;; saved Visual mode
+(atom! int      VIsual_mode_orig        NUL)    ;; saved Visual mode
 
 (atom! int      restart_VIsual_select)
 
@@ -24058,21 +23937,6 @@
 
 (atom! boolean block_redo)
 
-;; Make a hash value for a mapping.
-;; "mode" is the lower 4 bits of the State for the mapping.
-;; "c1" is the first character of the "lhs".
-;; Returns a value between 0 and 255, index in maphash.
-;; Put Normal/Visual mode mappings mostly separately from Insert/Cmdline mode.
-
-(defn- #_int map_hash [#_int mode, #_int c1]
-    (§
-;       return ((mode & (NORMAL + VISUAL + SELECTMODE + OP_PENDING)) != 0) ? c1 : (c1 ^ 0x80);
-    ))
-
-;; Each mapping is put in one of the 256 hash lists, to speed up finding it.
-
-;   static mapblock_C[][] maphash = new mapblock_C[256][1];
-
 (atom! int keyNoremap)          ;; remapping flags
 
 ;; Variables used by vgetorpeek() and flush_buffers().
@@ -24095,8 +23959,6 @@
 
 (final int RM_YES          0)       ;; tb_noremap: remap
 (final int RM_NONE         1)       ;; tb_noremap: don't remap
-(final int RM_SCRIPT       2)       ;; tb_noremap: remap local script mappings
-(final int RM_ABBR         4)       ;; tb_noremap: don't remap, do abbrev.
 
 ;; typebuf.tb_buf has three parts:
 ;;  room in front (for result of mappings),
@@ -24691,14 +24553,9 @@
 ;;
 ;; If noremap is REMAP_YES, new string can be mapped again.
 ;; If noremap is REMAP_NONE, new string cannot be mapped again.
-;; If noremap is REMAP_SKIP, fist char of new string cannot be mapped again,
-;; but abbreviations are allowed.
-;; If noremap is REMAP_SCRIPT, new string cannot be mapped again,
-;; except for script-local mappings.
 ;; If noremap is > 0, that many characters of the new string cannot be mapped.
 ;;
-;; If nottyped is true, the string does not return keyTyped
-;; (don't use when offset is non-zero!).
+;; If nottyped is true, the string does not return keyTyped (don't use when offset is non-zero!).
 ;;
 ;; If silent is true, cmd_silent is set when the characters are obtained.
 ;;
@@ -24754,24 +24611,15 @@
 ;       }
 ;       @typebuf.tb_len += addlen;
 
-        ;; If noremap == REMAP_SCRIPT: do remap script-local mappings.
-;       int val;
-;       if (noremap == REMAP_SCRIPT)
-;           val = RM_SCRIPT;
-;       else if (noremap == REMAP_SKIP)
-;           val = RM_ABBR;
-;       else
-;           val = RM_NONE;
+;       int val = RM_NONE;
 
         ;; Adjust typebuf.tb_noremap[] for the new characters:
-        ;; If noremap == REMAP_NONE or REMAP_SCRIPT: new characters are (sometimes) not remappable.
+        ;; If noremap == REMAP_NONE: new characters are (sometimes) not remappable.
         ;; If noremap == REMAP_YES: all the new characters are mappable.
         ;; If noremap  > 0: "noremap" characters are not remappable, the rest mappable.
 
 ;       int nrm;
-;       if (noremap == REMAP_SKIP)
-;           nrm = 1;
-;       else if (noremap < 0)
+;       if (noremap < 0)
 ;           nrm = addlen;
 ;       else
 ;           nrm = noremap;
@@ -25293,8 +25141,6 @@
 ;       if (0 < @vgetc_busy && @ex_normal_busy == 0)
 ;           return NUL;
 
-;       int local_State = get_real_state();
-
 ;       @vgetc_busy++;
 
 ;       if (advance)
@@ -25385,330 +25231,59 @@
 
 ;                   if (0 < @typebuf.tb_len)
 ;                   {
-;                       int mp_match_len = 0;
+                        ;; When no matching mapping found or found a non-matching mapping
+                        ;; that matches at least what the matching mapping matched:
+                        ;; Check if we have a terminal code, when:
+                        ;; - mapping is allowed,
+                        ;; - keys have not been mapped,
+                        ;; - and not an ESC sequence, not in insert mode or "p_ek" is on,
+                        ;; - and when not timed out.
 
-                        ;; Check for a mappable key sequence.
-                        ;; Walk through one maphash[] list until we find an entry that matches.
-                        ;;
-                        ;; Don't look for mappings if:
-                        ;; - no_mapping set: mapping disabled (e.g. for CTRL-V)
-                        ;; - typebuf.tb_buf[typebuf.tb_off] should not be remapped
-                        ;; - in insert or cmdline mode and 'paste' option set
-                        ;; - waiting for "hit return to continue" and CR or SPACE typed
-                        ;; - waiting for a char with --more--
-                        ;; - in Ctrl-X mode, and we get a valid char for that mode
-
-;                       mapblock_C mp = null;
-;                       int max_mlen = 0;
-;                       int c1 = char_u(@typebuf.tb_buf.at(@typebuf.tb_off));
-;                       if (@no_mapping == 0
-;                               && (@no_zero_mapping == 0 || c1 != '0')
-;                               && (@typebuf.tb_maplen == 0
-;                                   || (@p_remap
-;                                       && (@typebuf.tb_noremap.at(@typebuf.tb_off) & (RM_NONE|RM_ABBR)) == 0))
-;                               && !(@p_paste && (@State & (INSERT + CMDLINE)) != 0)
-;                               && !(@State == HITRETURN && (c1 == CAR || c1 == ' '))
-;                               && @State != ASKMORE
-;                               && @State != CONFIRM)
+;                       if ((@no_mapping == 0 || @allow_keys != 0)
+;                               && (@typebuf.tb_maplen == 0 || @typebuf.tb_noremap.at(@typebuf.tb_off) == RM_YES)
+;                               && !timedout)
 ;                       {
-                            ;; First try buffer-local mappings.
-;                           int h1 = map_hash(local_State, c1);
-;                           mp = @curbuf.b_maphash[h1][0];
-;                           mapblock_C mp2 = maphash[h1][0];
-;                           if (mp == null)
-;                           {
-                                ;; There are no buffer-local mappings.
-;                               mp = mp2;
-;                               mp2 = null;
-;                           }
+;                           keylen = check_termcode(1, null, 0, null);
 
-                            ;; Loop until a partly matching mapping is found or
-                            ;; all (local) mappings have been checked.
-                            ;; The longest full match is remembered in "mp_match".
-                            ;; A full match is only accepted if there is no partly
-                            ;; match, so "aa" and "aaa" can both be mapped.
+                            ;; When getting a partial match, but the last characters were not typed,
+                            ;; don't wait for a typed character to complete the termcode.
+                            ;; This helps a lot when a ":normal" command ends in an ESC.
 
-;                           mapblock_C mp_match = null;
-;                           boolean __;
-;                           for ( ; mp != null; mp = mp.m_next, __ = (mp == null && (mp = mp2) == mp2 && (mp2 = null) == null))
-;                           {
-                                ;; Only consider an entry if the first character
-                                ;; matches and it is for the current state.
-
-;                               if (mp.m_keys.at(0) == c1 && (mp.m_mode & local_State) != 0)
-;                               {
-                                    ;; find the match length of this mapping
-;                                   int mlen;
-;                                   for (mlen = 1; mlen < @typebuf.tb_len; mlen++)
-;                                   {
-;                                       if (mp.m_keys.at(mlen) != @typebuf.tb_buf.at(@typebuf.tb_off + mlen))
-;                                           break;
-;                                   }
-
-                                    ;; Don't allow mapping the first byte(s) of a multi-byte char.
-                                    ;; Happens when mapping <M-a> and then changing 'encoding'.
-                                    ;; Beware that 0x80 is escaped.
-;                                   {
-;                                       Bytes[] p1 = { mp.m_keys };
-;                                       Bytes p2 = mb_unescape(p1);
-
-;                                       if (p2 != null && us_ptr2len_cc(p2) < mb_byte2len(c1))
-;                                           mlen = 0;
-;                                   }
-
-                                    ;; Check an entry whether it matches.
-                                    ;; - full match: mlen == keylen
-                                    ;; - partly match: mlen == typebuf.tb_len
-
-;                                   keylen = mp.m_keylen;
-;                                   if (mlen == keylen || (mlen == @typebuf.tb_len && @typebuf.tb_len < keylen))
-;                                   {
-                                        ;; If only script-local mappings are allowed,
-                                        ;; check if the mapping starts with K_SNR.
-
-;                                       Bytes s = @typebuf.tb_noremap.plus(@typebuf.tb_off);
-;                                       if (s.at(0) == RM_SCRIPT
-;                                               && (mp.m_keys.at(0) != KB_SPECIAL
-;                                                || mp.m_keys.at(1) != KS_EXTRA
-;                                                || mp.m_keys.at(2) != KE_SNR))
-;                                           continue;
-
-                                        ;; If one of the typed keys cannot be remapped, skip the entry.
-
-;                                       int n;
-;                                       for (n = mlen; 0 <= --n; )
-;                                           if (((s = s.plus(1)).at(-1) & (RM_NONE|RM_ABBR)) != 0)
-;                                               break;
-;                                       if (0 <= n)
-;                                           continue;
-
-;                                       if (@typebuf.tb_len < keylen)
-;                                       {
-;                                           if (!timedout && !(mp_match != null && mp_match.m_nowait))
-;                                           {
-                                                ;; break at a partly match
-;                                               keylen = KEYLEN_PART_MAP;
-;                                               break;
-;                                           }
-;                                       }
-;                                       else if (mp_match_len < keylen)
-;                                       {
-                                            ;; found a longer match
-;                                           mp_match = mp;
-;                                           mp_match_len = keylen;
-;                                       }
-;                                   }
-;                                   else
-                                        ;; No match; may have to check for termcode at next character.
-;                                       if (max_mlen < mlen)
-;                                           max_mlen = mlen;
-;                               }
-;                           }
-
-                            ;; If no partly match found, use the longest full match.
-;                           if (keylen != KEYLEN_PART_MAP)
-;                           {
-;                               mp = mp_match;
-;                               keylen = mp_match_len;
-;                           }
-;                       }
-
-                        ;; Check for match with 'pastetoggle'.
-;                       if (@p_pt.at(0) != NUL && mp == null && (@State & (INSERT|NORMAL)) != 0)
-;                       {
-;                           int mlen;
-;                           for (mlen = 0; mlen < @typebuf.tb_len && @p_pt.at(mlen) != NUL; mlen++)
-;                               if (@p_pt.at(mlen) != @typebuf.tb_buf.at(@typebuf.tb_off + mlen))
-;                                   break;
-;                           if (@p_pt.at(mlen) == NUL)            ;; match
-;                           {
-                                ;; write chars to script file(s)
-;                               if (@typebuf.tb_maplen < mlen)
-;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen), mlen - @typebuf.tb_maplen);
-
-;                               del_typebuf(mlen, 0);               ;; remove the chars
-;                               set_option_value(u8("paste"), !@p_paste ? TRUE : FALSE, null);
-;                               if ((@State & INSERT) == 0)
-;                               {
-;                                   @msg_col = 0;
-;                                   @msg_row = (int)@Rows - 1;
-;                                   msg_clr_eos();                  ;; clear ruler
-;                               }
-;                               status_redraw_all();
-;                               redraw_statuslines();
-;                               showmode();
-;                               setcursor();
-;                               continue;
-;                           }
-                            ;; Need more chars for partly match.
-;                           if (mlen == @typebuf.tb_len)
-;                               keylen = KEYLEN_PART_KEY;
-;                           else if (max_mlen < mlen)
-                                ;; No match; may have to check for termcode at next character.
-;                               max_mlen = mlen + 1;
-;                       }
-
-;                       if ((mp == null || mp_match_len <= max_mlen) && keylen != KEYLEN_PART_MAP)
-;                       {
-;                           int save_keylen = keylen;
-
-                            ;; When no matching mapping found or found a non-matching mapping
-                            ;; that matches at least what the matching mapping matched:
-                            ;; Check if we have a terminal code, when:
-                            ;; - mapping is allowed,
-                            ;; - keys have not been mapped,
-                            ;; - and not an ESC sequence, not in insert mode or "p_ek" is on,
-                            ;; - and when not timed out.
-
-;                           if ((@no_mapping == 0 || @allow_keys != 0)
-;                                   && (@typebuf.tb_maplen == 0
-;                                       || (@p_remap && @typebuf.tb_noremap.at(@typebuf.tb_off) == RM_YES))
-;                                   && !timedout)
-;                           {
-;                               keylen = check_termcode(max_mlen + 1, null, 0, null);
-
-                                ;; If no termcode matched but 'pastetoggle' matched partially,
-                                ;; it's like an incomplete key sequence.
-;                               if (keylen == 0 && save_keylen == KEYLEN_PART_KEY)
-;                                   keylen = KEYLEN_PART_KEY;
-
-                                ;; When getting a partial match, but the last characters were not typed,
-                                ;; don't wait for a typed character to complete the termcode.
-                                ;; This helps a lot when a ":normal" command ends in an ESC.
-
-;                               if (keylen < 0 && @typebuf.tb_len == @typebuf.tb_maplen)
-;                                   keylen = 0;
-;                           }
-;                           else
+;                           if (keylen < 0 && @typebuf.tb_len == @typebuf.tb_maplen)
 ;                               keylen = 0;
+;                       }
+;                       else
+;                           keylen = 0;
 
-;                           if (keylen == 0)        ;; no matching terminal code
-;                           {
-                                ;; When there was a matching mapping and no termcode could be
-                                ;; replaced after another one, use that mapping (loop around).
-                                ;; If there was no mapping use the character from the
-                                ;; typeahead buffer right here.
-;                               if (mp == null)
-;                               {
+;                       if (keylen == 0)        ;; no matching terminal code
+;                       {
 ;; get a character: 2. from the typeahead buffer
 
-;                                   c = @typebuf.tb_buf.at(@typebuf.tb_off) & 0xff;
-;                                   if (advance)    ;; remove chars from tb_buf
-;                                   {
-;                                       @cmd_silent = (0 < @typebuf.tb_silent);
-;                                       if (0 < @typebuf.tb_maplen)
-;                                           @keyTyped = false;
-;                                       else
-;                                       {
-;                                           @keyTyped = true;
-                                            ;; write char to script file(s)
-;                                           gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off), 1);
-;                                       }
-;                                       @keyNoremap = @typebuf.tb_noremap.at(@typebuf.tb_off);
-;                                       del_typebuf(1, 0);
-;                                   }
-;                                   break;          ;; got character, break for loop
+;                           c = @typebuf.tb_buf.at(@typebuf.tb_off) & 0xff;
+;                           if (advance)    ;; remove chars from tb_buf
+;                           {
+;                               @cmd_silent = (0 < @typebuf.tb_silent);
+;                               if (0 < @typebuf.tb_maplen)
+;                                   @keyTyped = false;
+;                               else
+;                               {
+;                                   @keyTyped = true;
+                                    ;; write char to script file(s)
+;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off), 1);
 ;                               }
+;                               @keyNoremap = @typebuf.tb_noremap.at(@typebuf.tb_off);
+;                               del_typebuf(1, 0);
 ;                           }
-;                           if (0 < keylen)         ;; full matching terminal code
-;                           {
-;                               continue;           ;; try mapping again
-;                           }
-
-                            ;; Partial match: get some more characters.
-                            ;; When a matching mapping was found use that one.
-;                           if (mp == null || keylen < 0)
-;                               keylen = KEYLEN_PART_KEY;
-;                           else
-;                               keylen = mp_match_len;
+;                           break;          ;; got character, break for loop
 ;                       }
 
-                        ;; complete match
-;                       if (0 <= keylen && keylen <= @typebuf.tb_len)
+;                       if (0 < keylen)         ;; full matching terminal code
 ;                       {
-                            ;; write chars to script file(s)
-;                           if (@typebuf.tb_maplen < keylen)
-;                               gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen), keylen - @typebuf.tb_maplen);
-
-;                           @cmd_silent = (0 < @typebuf.tb_silent);
-;                           del_typebuf(keylen, 0);     ;; remove the mapped keys
-
-                            ;; Put the replacement string in front of mapstr.
-                            ;; The depth check catches ":map x y" and ":map y x".
-
-;                           if (@p_mmd <= ++mapdepth)
-;                           {
-;                               emsg(u8("E223: recursive mapping"));
-;                               if ((@State & CMDLINE) != 0)
-;                                   redrawcmdline();
-;                               else
-;                                   setcursor();
-;                               flush_buffers(false);
-;                               mapdepth = 0;           ;; for next one
-;                               c = -1;
-;                               break;
-;                           }
-
-                            ;; In Select mode and a Visual mode mapping is used:
-                            ;; switch to Visual mode temporarily.
-                            ;; Append K_SELECT to switch back to Select mode.
-
-;                           if (@VIsual_active && @VIsual_select && (mp.m_mode & VISUAL) != 0)
-;                           {
-;                               @VIsual_select = false;
-;                               ins_typebuf(K_SELECT_STRING, REMAP_NONE, 0, true, false);
-;                           }
-
-                            ;; Copy the values from *mp that are used, because
-                            ;; evaluating the expression may invoke a function that
-                            ;; redefines the mapping, thereby making *mp invalid.
-;                           int save_m_noremap = mp.m_noremap;
-;                           boolean save_m_silent = mp.m_silent;
-;                           Bytes save_m_keys = null;      ;; only saved when needed
-;                           Bytes save_m_str = null;       ;; only saved when needed
-
-                            ;; Handle ":map <expr>": evaluate the {rhs} as an expression.
-                            ;; Also save and restore the command line for "normal :".
-
-;                           Bytes s;
-;                           if (mp.m_expr)
-;                           {
-;                               int save_vgetc_busy = @vgetc_busy;
-
-;                               @vgetc_busy = 0;
-;                               save_m_keys = STRDUP(mp.m_keys);
-;                               save_m_str = STRDUP(mp.m_str);
-;                               s = eval_map_expr(save_m_str, NUL);
-;                               @vgetc_busy = save_vgetc_busy;
-;                           }
-;                           else
-;                               s = mp.m_str;
-
-                            ;; Insert the 'to' part in the typebuf.tb_buf.
-                            ;; If 'from' field is the same as the start of the 'to' field,
-                            ;; don't remap the first character (but do allow abbreviations).
-                            ;; If m_noremap is set, don't remap the whole 'to' part.
-
-;                           boolean b = false;
-;                           if (s != null)
-;                           {
-;                               int noremap;
-
-;                               if (save_m_noremap != REMAP_YES)
-;                                   noremap = save_m_noremap;
-;                               else if (STRNCMP(s, (save_m_keys != null) ? save_m_keys : mp.m_keys, keylen) != 0)
-;                                   noremap = REMAP_YES;
-;                               else
-;                                   noremap = REMAP_SKIP;
-;                               b = ins_typebuf(s, noremap, 0, true, @cmd_silent || save_m_silent);
-;                           }
-;                           if (!b)
-;                           {
-;                               c = -1;
-;                               break;
-;                           }
-;                           continue;
+;                           continue;           ;; try mapping again
 ;                       }
+
+                        ;; Partial match: get some more characters.
+;                       keylen = KEYLEN_PART_KEY;
 ;                   }
 
 ;; get a character: 3. from the user - handle <Esc> in Insert mode
@@ -26081,662 +25656,6 @@
 ;       return (!is_input_buf_empty() || @typebuf_was_filled);
     ))
 
-;; map[!]                   : show all key mappings
-;; map[!] {lhs}             : show key mapping for {lhs}
-;; map[!] {lhs} {rhs}       : set key mapping for {lhs} to {rhs}
-;; noremap[!] {lhs} {rhs}   : same, but no remapping for {rhs}
-;; unmap[!] {lhs}           : remove key mapping for {lhs}
-;;
-;; maptype: 0 for :map, 1 for :unmap, 2 for noremap.
-;;
-;; arg is pointer to any arguments.  Note: arg cannot be a read-only string,
-;; it will be modified.
-;;
-;; for :map   mode is NORMAL + VISUAL + SELECTMODE + OP_PENDING
-;; for :map!  mode is INSERT + CMDLINE
-;; for :cmap  mode is CMDLINE
-;; for :imap  mode is INSERT
-;; for :nmap  mode is NORMAL
-;; for :vmap  mode is VISUAL + SELECTMODE
-;; for :xmap  mode is VISUAL
-;; for :smap  mode is SELECTMODE
-;; for :omap  mode is OP_PENDING
-;;
-;; Return 0 for success
-;;        1 for invalid arguments
-;;        2 for no match
-;;        4 for out of mem
-;;        5 for entry not unique
-
-(defn- #_int do_map [#_int maptype, #_Bytes arg, #_int mode]
-    (§
-;       int retval = 0;
-
-;       int len = 0;
-;       boolean did_it = false;
-;       boolean did_local = false;
-;       boolean unique = false;
-;       boolean nowait = false;
-;       boolean silent = false;
-;       boolean special = false;
-;       boolean expr = false;
-
-;       Bytes keys = arg;
-;       mapblock_C[][] map_table = maphash;
-
-        ;; For ":noremap" don't remap, otherwise do remap.
-;       int noremap;
-;       if (maptype == 2)
-;           noremap = REMAP_NONE;
-;       else
-;           noremap = REMAP_YES;
-
-        ;; Accept <buffer>, <nowait>, <silent>, <expr> <script> and <unique> in any order.
-;       for ( ; ; )
-;       {
-            ;; Check for "<buffer>": mapping local to buffer.
-
-;           if (STRNCMP(keys, u8("<buffer>"), 8) == 0)
-;           {
-;               keys = skipwhite(keys.plus(8));
-;               map_table = @curbuf.b_maphash;
-;               continue;
-;           }
-
-            ;; Check for "<nowait>": don't wait for more characters.
-
-;           if (STRNCMP(keys, u8("<nowait>"), 8) == 0)
-;           {
-;               keys = skipwhite(keys.plus(8));
-;               nowait = true;
-;               continue;
-;           }
-
-            ;; Check for "<silent>": don't echo commands.
-
-;           if (STRNCMP(keys, u8("<silent>"), 8) == 0)
-;           {
-;               keys = skipwhite(keys.plus(8));
-;               silent = true;
-;               continue;
-;           }
-
-            ;; Check for "<special>": accept special keys in <>
-
-;           if (STRNCMP(keys, u8("<special>"), 9) == 0)
-;           {
-;               keys = skipwhite(keys.plus(9));
-;               special = true;
-;               continue;
-;           }
-
-            ;; Check for "<script>": remap script-local mappings only
-
-;           if (STRNCMP(keys, u8("<script>"), 8) == 0)
-;           {
-;               keys = skipwhite(keys.plus(8));
-;               noremap = REMAP_SCRIPT;
-;               continue;
-;           }
-
-            ;; Check for "<expr>": {rhs} is an expression.
-
-;           if (STRNCMP(keys, u8("<expr>"), 6) == 0)
-;           {
-;               keys = skipwhite(keys.plus(6));
-;               expr = true;
-;               continue;
-;           }
-
-            ;; Check for "<unique>": don't overwrite an existing mapping.
-
-;           if (STRNCMP(keys, u8("<unique>"), 8) == 0)
-;           {
-;               keys = skipwhite(keys.plus(8));
-;               unique = true;
-;               continue;
-;           }
-;           break;
-;       }
-
-        ;; Find end of keys and skip CTRL-Vs (and backslashes) in it.
-        ;; Accept backslash like CTRL-V when 'cpoptions' does not contain 'B'.
-        ;; with :unmap white space is included in the keys, no argument possible.
-
-;       Bytes p = keys;
-;       boolean do_backslash = (vim_strbyte(@p_cpo, CPO_BSLASH) == null);
-;       while (p.at(0) != NUL && (maptype == 1 || !vim_iswhite(p.at(0))))
-;       {
-;           if ((p.at(0) == Ctrl_V || (do_backslash && p.at(0) == (byte)'\\')) && p.at(1) != NUL)
-;               p = p.plus(1);              ;; skip CTRL-V or backslash
-;           p = p.plus(1);
-;       }
-;       if (p.at(0) != NUL)
-;           (p = p.plus(1)).be(-1, NUL);
-
-;       p = skipwhite(p);
-;       Bytes rhs = p;
-;       boolean hasarg = (rhs.at(0) != NUL);
-;       boolean haskey = (keys.at(0) != NUL);
-
-        ;; check for :unmap without argument
-;       if (maptype == 1 && !haskey)
-;           return 1;
-
-        ;; If mapping has been given as ^V<C_UP> say, then replace the term codes
-        ;; with the appropriate two bytes.  If it is a shifted special key,
-        ;; unshift it too, giving another two bytes.
-        ;; replace_termcodes() may move the result to allocated memory,
-        ;; which needs to be freed later (keys_buf[0] and arg_buf[0]).
-        ;; replace_termcodes() also removes CTRL-Vs and sometimes backslashes.
-
-;       if (haskey)
-;           keys = replace_termcodes(keys, true, true, special);
-;       Bytes orig_rhs = rhs;
-;       if (hasarg)
-;       {
-;           if (STRCASECMP(rhs, u8("<nop>")) == 0)      ;; "<Nop>" means nothing
-;               rhs = u8("");
-;           else
-;               rhs = replace_termcodes(rhs, false, true, special);
-;       }
-
-        ;; check arguments and translate function keys
-
-;       if (haskey)
-;       {
-;           len = STRLEN(keys);
-;           if (MAXMAPLEN < len)            ;; maximum length of MAXMAPLEN chars
-;               return 1;
-;       }
-
-;       if (!haskey || (maptype != 1 && !hasarg))
-;           msg_start();
-
-        ;; Check if a new local mapping wasn't already defined globally.
-
-;       if (map_table == @curbuf.b_maphash && haskey && hasarg && maptype != 1)
-;       {
-            ;; need to loop over all global hash lists
-;           for (int hash = 0; hash < 256 && !@got_int; hash++)
-;           {
-;               mapblock_C mp = maphash[hash][0];
-
-;               for ( ; mp != null && !@got_int; mp = mp.m_next)
-;               {
-                    ;; check entries with the same mode
-;                   if ((mp.m_mode & mode) != 0 && mp.m_keylen == len && unique && STRNCMP(mp.m_keys, keys, len) == 0)
-;                   {
-;                       emsg2(u8("E225: global mapping already exists for %s"), mp.m_keys);
-;                       return 5;
-;                   }
-;               }
-;           }
-;       }
-
-        ;; When listing global mappings, also list buffer-local ones here.
-
-;       if (map_table != @curbuf.b_maphash && !hasarg && maptype != 1)
-;       {
-            ;; need to loop over all global hash lists
-;           for (int hash = 0; hash < 256 && !@got_int; hash++)
-;           {
-;               mapblock_C mp = @curbuf.b_maphash[hash][0];
-;               for ( ; mp != null && !@got_int; mp = mp.m_next)
-;               {
-                    ;; check entries with the same mode
-;                   if ((mp.m_mode & mode) != 0)
-;                   {
-;                       if (!haskey)                    ;; show all entries
-;                       {
-;                           showmap(mp, true);
-;                           did_local = true;
-;                       }
-;                       else
-;                       {
-;                           int n = mp.m_keylen;
-;                           if (STRNCMP(mp.m_keys, keys, (n < len) ? n : len) == 0)
-;                           {
-;                               showmap(mp, true);
-;                               did_local = true;
-;                           }
-;                       }
-;                   }
-;               }
-;           }
-;       }
-
-        ;; Find an entry in the maphash[] list that matches.
-        ;; For :unmap we may loop two times: once to try to unmap an entry with a
-        ;; matching 'from' part, a second time, if the first fails, to unmap an
-        ;; entry with a matching 'to' part.  This was done to allow ":ab foo bar"
-        ;; to be unmapped by typing ":unab foo", where "foo" will be replaced by
-        ;; "bar" because of the abbreviation.
-
-;       for (int round = 0; (round == 0 || maptype == 1) && round <= 1 && !did_it && !@got_int; round++)
-;       {
-            ;; need to loop over all hash lists
-;           for (int hash = 0; hash < 256 && !@got_int; hash++)
-;           {
-;               mapblock_C[] mpp0 = map_table[hash];
-;               for (mapblock_C mpp = null, mp = mpp0[0]; mp != null && !@got_int; mp = mpp.m_next)
-;               {
-;                   if ((mp.m_mode & mode) == 0)    ;; skip entries with wrong mode
-;                   {
-;                       mpp = mp;
-;                       continue;
-;                   }
-;                   if (!haskey)                ;; show all entries
-;                   {
-;                       showmap(mp, map_table != maphash);
-;                       did_it = true;
-;                   }
-;                   else                        ;; do we have a match?
-;                   {
-;                       int n;
-;                       if (round != 0)         ;; second round: Try unmap "rhs" string
-;                       {
-;                           n = STRLEN(mp.m_str);
-;                           p = mp.m_str;
-;                       }
-;                       else
-;                       {
-;                           n = mp.m_keylen;
-;                           p = mp.m_keys;
-;                       }
-;                       if (STRNCMP(p, keys, (n < len) ? n : len) == 0)
-;                       {
-;                           if (maptype == 1)       ;; delete entry
-;                           {
-                                ;; Only accept a full match.
-;                               if (n != len)
-;                               {
-;                                   mpp = mp;
-;                                   continue;
-;                               }
-
-                                ;; We reset the indicated mode bits.  If nothing is
-                                ;; left the entry is deleted below.
-
-;                               mp.m_mode &= ~mode;
-;                               did_it = true;      ;; remember we did something
-;                           }
-;                           else if (!hasarg)       ;; show matching entry
-;                           {
-;                               showmap(mp, map_table != maphash);
-;                               did_it = true;
-;                           }
-;                           else if (n != len)      ;; new entry is ambiguous
-;                           {
-;                               mpp = mp;
-;                               continue;
-;                           }
-;                           else if (unique)
-;                           {
-;                               emsg2(u8("E227: mapping already exists for %s"), p);
-;                               return 5;
-;                           }
-;                           else                    ;; new "rhs" for existing entry
-;                           {
-;                               mp.m_mode &= ~mode;     ;; remove mode bits
-;                               if (mp.m_mode == 0 && !did_it) ;; reuse entry
-;                               {
-;                                   Bytes newstr = STRDUP(rhs);
-;                                   mp.m_str = newstr;
-;                                   mp.m_orig_str = STRDUP(orig_rhs);
-;                                   mp.m_noremap = noremap;
-;                                   mp.m_nowait = nowait;
-;                                   mp.m_silent = silent;
-;                                   mp.m_mode = mode;
-;                                   mp.m_expr = expr;
-;                                   did_it = true;
-;                               }
-;                           }
-;                           if (mp.m_mode == 0)     ;; entry can be deleted
-;                           {
-;                               if (mpp == null)
-;                                   mpp0[0] = map_free(mpp0[0]);
-;                               else
-;                                   mpp.m_next = map_free(mpp.m_next);
-;                               continue;           ;; continue with *mpp
-;                           }
-
-                            ;; May need to put this entry into another hash list.
-
-;                           int new_hash = map_hash(mp.m_mode, mp.m_keys.at(0));
-;                           if (new_hash != hash)
-;                           {
-;                               if (mpp == null)
-;                                   mpp0[0] = mp.m_next;
-;                               else
-;                                   mpp.m_next = mp.m_next;
-;                               mp.m_next = map_table[new_hash][0];
-;                               map_table[new_hash][0] = mp;
-
-;                               continue;           ;; continue with *mpp
-;                           }
-;                       }
-;                   }
-;                   mpp = mp;
-;               }
-;           }
-;       }
-
-;       if (maptype == 1)                       ;; delete entry
-;       {
-;           if (!did_it)
-;               retval = 2;                     ;; no match
-;           else if (keys.at(0) == Ctrl_C)
-;           {
-                ;; If CTRL-C has been unmapped, reuse it for Interrupting.
-;               if (map_table == @curbuf.b_maphash)
-;                   @curbuf.b_mapped_ctrl_c &= ~mode;
-;               else
-;                   @mapped_ctrl_c &= ~mode;
-;           }
-;           return retval;
-;       }
-
-;       if (!haskey || !hasarg)                 ;; print entries
-;       {
-;           if (!did_it && !did_local)
-;           {
-;               msg(u8("No mapping found"));
-;           }
-;           return retval;                      ;; listing finished
-;       }
-
-;       if (did_it)                     ;; have added the new entry already
-;           return retval;
-
-        ;; Get here when adding a new entry to the maphash[] list or abbrlist.
-
-;       mapblock_C mp = §_mapblock_C();
-
-        ;; If CTRL-C has been mapped, don't always use it for Interrupting.
-;       if (keys.at(0) == Ctrl_C)
-;       {
-;           if (map_table == @curbuf.b_maphash)
-;               @curbuf.b_mapped_ctrl_c |= mode;
-;           else
-;               @mapped_ctrl_c |= mode;
-;       }
-
-;       mp.m_keys = STRDUP(keys);
-;       mp.m_str = STRDUP(rhs);
-;       mp.m_orig_str = STRDUP(orig_rhs);
-;       mp.m_keylen = STRLEN(mp.m_keys);
-;       mp.m_noremap = noremap;
-;       mp.m_nowait = nowait;
-;       mp.m_silent = silent;
-;       mp.m_mode = mode;
-;       mp.m_expr = expr;
-
-        ;; add the new entry in front of the maphash[] list
-;       {
-;           int n = map_hash(mp.m_mode, mp.m_keys.at(0));
-;           mp.m_next = map_table[n][0];
-;           map_table[n][0] = mp;
-;       }
-
-;       return retval;
-    ))
-
-;; Delete one entry from the maphash[].
-;; "mpp" is a pointer to the m_next field of the PREVIOUS entry!
-
-(defn- #_mapblock_C map_free [#_mapblock_C mp]
-    (§
-;       mp.m_keys = null;
-;       mp.m_str = null;
-;       mp.m_orig_str = null;
-
-;       return mp.m_next;
-    ))
-
-;; Get the mapping mode from the command name.
-
-(defn- #_int get_map_mode [#_Bytes* cmdp, #_boolean forceit]
-    (§
-;       int mode;
-
-;       Bytes p = cmdp[0];
-;       byte modec = (p = p.plus(1)).at(-1);
-
-;       if (modec == 'i')
-;           mode = INSERT;                                          ;; :imap
-;       else if (modec == 'c')
-;           mode = CMDLINE;                                         ;; :cmap
-;       else if (modec == 'n' && p.at(0) != (byte)'o')                         ;; avoid :noremap
-;           mode = NORMAL;                                          ;; :nmap
-;       else if (modec == 'v')
-;           mode = VISUAL + SELECTMODE;                             ;; :vmap
-;       else if (modec == 'x')
-;           mode = VISUAL;                                          ;; :xmap
-;       else if (modec == 's')
-;           mode = SELECTMODE;                                      ;; :smap
-;       else if (modec == 'o')
-;           mode = OP_PENDING;                                      ;; :omap
-;       else
-;       {
-;           p = p.minus(1);
-;           if (forceit)
-;               mode = INSERT + CMDLINE;                            ;; :map !
-;           else
-;               mode = VISUAL + SELECTMODE + NORMAL + OP_PENDING;   ;; :map
-;       }
-
-;       cmdp[0] = p;
-;       return mode;
-    ))
-
-;; Clear all mappings.
-
-(defn- #_void map_clear [#_Bytes _cmdp, #_Bytes arg, #_boolean forceit]
-    (§
-;       Bytes[] cmdp = { _cmdp };
-
-;       boolean local = (STRCMP(arg, u8("<buffer>")) == 0);
-;       if (!local && arg.at(0) != NUL)
-;       {
-;           emsg(e_invarg);
-;           return;
-;       }
-
-;       int mode = get_map_mode(cmdp, forceit);
-;       map_clear_int(@curbuf, mode, local);
-    ))
-
-;; Clear all mappings in "mode".
-
-(defn- #_void map_clear_int [#_buffer_C buf, #_int mode, #_boolean local]
-    ;; buf: buffer for local mappings
-    ;; mode: mode in which to delete
-    ;; local: true for buffer-local mappings
-    (§
-;       for (int hash = 0; hash < 256; hash++)
-;       {
-;           mapblock_C[] mpp0;
-
-;           if (local)
-;               mpp0 = buf.b_maphash[hash];
-;           else
-;               mpp0 = maphash[hash];
-
-;           for (mapblock_C mpp = null, mp = mpp0[0]; mp != null; mp = mpp.m_next)
-;           {
-;               if ((mp.m_mode & mode) != 0)
-;               {
-;                   mp.m_mode &= ~mode;
-;                   if (mp.m_mode == 0) ;; entry can be deleted
-;                   {
-;                       if (mpp == null)
-;                           mpp0[0] = map_free(mpp0[0]);
-;                       else
-;                           mpp.m_next = map_free(mpp.m_next);
-;                       continue;
-;                   }
-
-                    ;; May need to put this entry into another hash list.
-
-;                   int new_hash = map_hash(mp.m_mode, mp.m_keys.at(0));
-;                   if (new_hash != hash)
-;                   {
-;                       if (mpp == null)
-;                           mpp0[0] = mp.m_next;
-;                       else
-;                           mpp.m_next = mp.m_next;
-;                       if (local)
-;                       {
-;                           mp.m_next = buf.b_maphash[new_hash][0];
-;                           buf.b_maphash[new_hash][0] = mp;
-;                       }
-;                       else
-;                       {
-;                           mp.m_next = maphash[new_hash][0];
-;                           maphash[new_hash][0] = mp;
-;                       }
-;                       continue;           ;; continue with *mpp
-;                   }
-;               }
-;               mpp = mp;
-;           }
-;       }
-    ))
-
-;; Return characters to represent the map mode in an allocated string.
-;; Returns null when out of memory.
-
-(defn- #_Bytes map_mode_to_chars [#_int mode]
-    (§
-;       barray_C mapmode = new barray_C(7);
-
-;       if ((mode & (INSERT + CMDLINE)) == INSERT + CMDLINE)
-;           ba_append(mapmode, (byte)'!');                        ;; :map!
-;       else if ((mode & INSERT) != 0)
-;           ba_append(mapmode, (byte)'i');                        ;; :imap
-;       else if ((mode & CMDLINE) != 0)
-;           ba_append(mapmode, (byte)'c');                        ;; :cmap
-;       else if ((mode & (NORMAL + VISUAL + SELECTMODE + OP_PENDING)) == NORMAL + VISUAL + SELECTMODE + OP_PENDING)
-;           ba_append(mapmode, (byte)' ');                        ;; :map
-;       else
-;       {
-;           if ((mode & NORMAL) != 0)
-;               ba_append(mapmode, (byte)'n');                    ;; :nmap
-;           if ((mode & OP_PENDING) != 0)
-;               ba_append(mapmode, (byte)'o');                    ;; :omap
-;           if ((mode & (VISUAL + SELECTMODE)) == VISUAL + SELECTMODE)
-;               ba_append(mapmode, (byte)'v');                    ;; :vmap
-;           else
-;           {
-;               if ((mode & VISUAL) != 0)
-;                   ba_append(mapmode, (byte)'x');                ;; :xmap
-;               if ((mode & SELECTMODE) != 0)
-;                   ba_append(mapmode, (byte)'s');                ;; :smap
-;           }
-;       }
-
-;       ba_append(mapmode, NUL);
-;       return new Bytes(mapmode.ba_data);
-    ))
-
-(defn- #_void showmap [#_mapblock_C mp, #_boolean local]
-    ;; local: true for buffer-local map
-    (§
-;       if (@msg_didout || @msg_silent != 0)
-;       {
-;           msg_putchar('\n');
-;           if (@got_int)        ;; 'q' typed at MORE prompt
-;               return;
-;       }
-
-;       int len = 1;
-
-;       Bytes mapchars = map_mode_to_chars(mp.m_mode);
-;       if (mapchars != null)
-;       {
-;           msg_puts(mapchars);
-;           len = STRLEN(mapchars);
-;       }
-
-;       while (++len <= 3)
-;           msg_putchar(' ');
-
-        ;; Display the LHS.  Get length of what we write.
-;       len = msg_outtrans_special(mp.m_keys, true);
-;       do
-;       {
-;           msg_putchar(' ');               ;; padd with blanks
-;           len++;
-;       } while (len < 12);
-
-;       if (mp.m_noremap == REMAP_NONE)
-;           msg_puts_attr(u8("*"), hl_attr(HLF_8));
-;       else if (mp.m_noremap == REMAP_SCRIPT)
-;           msg_puts_attr(u8("&"), hl_attr(HLF_8));
-;       else
-;           msg_putchar(' ');
-
-;       if (local)
-;           msg_putchar('@');
-;       else
-;           msg_putchar(' ');
-
-        ;; Use false below if we only want things like <Up> to show up
-        ;; as such on the rhs, and not M-x etc, true gets both.
-;       if (mp.m_str.at(0) == NUL)
-;           msg_puts_attr(u8("<Nop>"), hl_attr(HLF_8));
-;       else
-;       {
-            ;; Remove escaping of CSI, because "m_str" is in a format to be used as typeahead.
-;           Bytes s = STRDUP(mp.m_str);
-;           vim_unescape_csi(s);
-;           msg_outtrans_special(s, false);
-;       }
-
-;       out_flush();                        ;; show one line at a time
-    ))
-
-;; Evaluate the RHS of a mapping and take care of escaping special characters.
-
-(defn- #_Bytes eval_map_expr [#_Bytes str, #_int c]
-    ;; c: NUL or typed character for abbreviation
-    (§
-        ;; Remove escaping of CSI, because "str" is in a format to be used as typeahead.
-;       Bytes expr = STRDUP(str);
-
-;       vim_unescape_csi(expr);
-
-;       cmdline_info_C save_cli = save_cmdline_alloc();
-
-        ;; Forbid changing text or using ":normal" to avoid most of the bad side effects.
-        ;; Also restore the cursor position.
-;       @textlock++;
-;       @ex_normal_lock++;
-
-;       pos_C save_cursor = §_pos_C();
-;       COPY_pos(save_cursor, @curwin.w_cursor);
-;       int save_msg_col = @msg_col;
-;       int save_msg_row = @msg_row;
-
-;       Bytes p = eval_to_string(expr, null);
-
-;       --@textlock;
-;       --@ex_normal_lock;
-
-;       COPY_pos(@curwin.w_cursor, save_cursor);
-;       @msg_col = save_msg_col;
-;       @msg_row = save_msg_row;
-
-;       restore_cmdline_alloc(save_cli);
-
-;       if (p == null)
-;           return null;
-
-        ;; Escape CSI in the result to be able to use the string as typeahead.
-;       return vim_strsave_escape_csi(p);
-    ))
-
 ;; Copy "p" to allocated memory, escaping KB_SPECIAL and CSI
 ;; so that the result can be put in the typeahead buffer.
 
@@ -26797,62 +25716,6 @@
 ;               (d = d.plus(1)).be(-1, (s = s.plus(1)).at(-1));
 ;       }
 ;       d.be(0, NUL);
-    ))
-
-;; Check all mappings for the presence of special key codes.
-;; Used after ":set term=xxx".
-
-(defn- #_void check_map_keycodes []
-    (§
-        ;; This this once for each buffer,
-        ;; and then once for global mappings with bp == null.
-;       for (buffer_C bp = @curbuf; ; bp = null)
-;       {
-            ;; Loop over all map hash lists.
-
-;           for (int hash = 0; hash < 256; hash++)
-;           {
-;               mapblock_C mp;
-
-;               if (bp != null)
-;                   mp = bp.b_maphash[hash][0];
-;               else
-;                   mp = maphash[hash][0];
-
-;               for ( ; mp != null; mp = mp.m_next)
-;               {
-;                   for (int i = 0; i <= 1; i++)        ;; do this twice
-;                   {
-;                       Bytes p;
-;                       if (i == 0)
-;                           p = mp.m_keys;              ;; once for the "from" part
-;                       else
-;                           p = mp.m_str;               ;; and once for the "to" part
-;                       while (p.at(0) != NUL)
-;                       {
-;                           if (p.at(0) == KB_SPECIAL)
-;                           {
-;                               p = p.plus(1);
-;                               if (char_u(p.at(0)) < 0x80)     ;; for "normal" tcap entries
-;                               {
-;                                   Bytes buf = new Bytes(3);
-
-;                                   buf.be(0, p.at(0));
-;                                   buf.be(1, p.at(1));
-;                                   buf.be(2, NUL);
-;                                   add_termcap_entry(buf, false);
-;                               }
-;                               p = p.plus(1);
-;                           }
-;                           p = p.plus(1);
-;                       }
-;                   }
-;               }
-;           }
-
-;           if (bp == null)
-;               break;
-;       }
     ))
 
 ;;; ============================================================================================== VimM
@@ -46268,7 +45131,6 @@
 ;       buf.b_last_change = §_pos_C();
 ;       buf.b_changelist = ARRAY_pos(JUMPLISTSIZE);
 ;       buf.b_chartab = new int[8];
-;       buf.b_maphash = new mapblock_C[256][1];
 ;       buf.b_op_start = §_pos_C();
 ;       buf.b_op_start_orig = §_pos_C();
 ;       buf.b_op_end = §_pos_C();
@@ -56133,8 +54995,6 @@
 ;       {
 ;           if (@scroll_region)
 ;               scroll_region_reset();          ;; in case Rows changed
-
-;           check_map_keycodes();       ;; check mappings for terminal codes used
 ;       }
 
 ;       return true;
@@ -57182,7 +56042,7 @@
 
 ;           Bytes q;
 ;           for (q = termleader; q.at(0) != NUL && q.at(0) != tp.at(0); q = q.plus(1))
-            ;
+                ;
 ;           if (q.at(0) == NUL)
 ;               continue;
 
@@ -57216,8 +56076,7 @@
 ;                   if (@termcodes[idx].name.at(0) == (byte)'K' && asc_isdigit(@termcodes[idx].name.at(1)))
 ;                   {
 ;                       for (int j = idx + 1; j < @tc_len; j++)
-;                           if (@termcodes[j].len == slen
-;                               && STRNCMP(@termcodes[idx].code, @termcodes[j].code, slen) == 0)
+;                           if (@termcodes[j].len == slen && STRNCMP(@termcodes[idx].code, @termcodes[j].code, slen) == 0)
 ;                           {
 ;                               idx = j;
 ;                               break;
@@ -57254,7 +56113,7 @@
                             ;; Skip over the digits, the final char must follow.
 ;                           int j;
 ;                           for (j = slen - 2; j < len && asc_isdigit(tp.at(j)); j++)
-                            ;
+                                ;
 ;                           j++;
 ;                           if (len < j)        ;; got a partial sequence
 ;                               return -1;      ;; need to get more chars
@@ -57364,150 +56223,6 @@
 ;       }
 
 ;       return 0;                       ;; no match found
-    ))
-
-;; Replace any terminal code strings in from[] with the equivalent internal vim representation.
-;; This is used for the "from" and "to" part of a mapping, and the "to" part of a menu command.
-;; Any strings like "<C-UP>" are also replaced, unless 'cpoptions' contains '<'.
-;; KB_SPECIAL by itself is replaced by KB_SPECIAL KS_SPECIAL KE_FILLER.
-;;
-;; CTRL-V characters are removed.  When "from_part" is true, a trailing CTRL-V is included,
-;; otherwise it is removed (for ":map xx ^V", maps xx to nothing).
-;; When 'cpoptions' does not contain 'B', a backslash can be used instead of a CTRL-V.
-
-(defn- #_Bytes replace_termcodes [#_Bytes from, #_boolean from_part, #_boolean do_lt, #_boolean special]
-    ;; do_lt: also translate <lt>
-    ;; special: always accept <key> notation
-    (§
-;       boolean do_backslash = (vim_strbyte(@p_cpo, CPO_BSLASH) == null);         ;; backslash is special
-;       boolean do_special = (vim_strbyte(@p_cpo, CPO_SPECI) == null) || special; ;; recognize <> key codes
-;       boolean do_key_code = (vim_strbyte(@p_cpo, CPO_KEYCODE) == null);         ;; recognize raw key codes
-
-        ;; Allocate space for the translation.  Worst case a single character
-        ;; is replaced by 6 bytes (shifted special key), plus a NUL at the end.
-
-;       Bytes dest = new Bytes(STRLEN(from) * 6 + 1);
-
-;       Bytes[] src = { from };
-;       int dlen = 0;
-
-        ;; Check for #n at start only: function key n.
-
-;       if (from_part && src[0].at(0) == (byte)'#' && asc_isdigit(src[0].at(1)))  ;; function key
-;       {
-;           dest.be(dlen++, KB_SPECIAL);
-;           dest.be(dlen++, (byte)'k');
-;           if (src[0].at(1) == (byte)'0')
-;               dest.be(dlen++, (byte)';');         ;; #0 is F10 is "k;"
-;           else
-;               dest.be(dlen++, src[0].at(1));      ;; #3 is F3 is "k3"
-;           src[0] = src[0].plus(2);
-;       }
-
-        ;; Copy each byte from *from to dest[dlen].
-
-;       while (src[0].at(0) != NUL)
-;       {
-            ;; If 'cpoptions' does not contain '<', check for special key codes,
-            ;; like "<C-S-LeftMouse>".
-
-;           if (do_special && (do_lt || STRNCMP(src[0], u8("<lt>"), 4) != 0))
-;           {
-;               int slen = trans_special(src, dest.plus(dlen), true);
-;               if (slen != 0)
-;               {
-;                   dlen += slen;
-;                   continue;
-;               }
-;           }
-
-            ;; If 'cpoptions' does not contain 'k', see if it's an actual key-code.
-            ;; Note that this is also checked after replacing the <> form.
-            ;; Single character codes are NOT replaced (e.g. ^H or DEL), because
-            ;; it could be a character in the file.
-
-;           if (do_key_code)
-;           {
-;               int i = find_term_bykeys(src[0]);
-;               if (0 <= i)
-;               {
-;                   dest.be(dlen++, KB_SPECIAL);
-;                   dest.be(dlen++, @termcodes[i].name.at(0));
-;                   dest.be(dlen++, @termcodes[i].name.at(1));
-;                   src[0] = src[0].plus(@termcodes[i].len);
-                    ;; If terminal code matched, continue after it.
-;                   continue;
-;               }
-;           }
-
-;           if (do_special)
-;           {
-;               Bytes p = null;
-;               int n = 0;
-
-                ;; Replace <Leader> by the value of "mapleader".
-                ;; Replace <LocalLeader> by the value of "maplocalleader".
-                ;; If "mapleader" or "maplocalleader" isn't set use a backslash.
-
-;               if (STRNCASECMP(src[0], u8("<Leader>"), 8) == 0)
-;               {
-;                   p = null;
-;                   n = 8;
-;               }
-;               else if (STRNCASECMP(src[0], u8("<LocalLeader>"), 13) == 0)
-;               {
-;                   p = null;
-;                   n = 13;
-;               }
-
-;               if (n != 0)
-;               {
-                    ;; Allow up to 8 * 6 characters for "mapleader".
-;                   if (p == null || p.at(0) == NUL || 8 * 6 < STRLEN(p))
-;                       p = u8("\\");
-;                   while (p.at(0) != NUL)
-;                       dest.be(dlen++, (p = p.plus(1)).at(-1));
-;                   src[0] = src[0].plus(n);
-;                   continue;
-;               }
-;           }
-
-            ;; Remove CTRL-V and ignore the next character.
-            ;; For "from" side the CTRL-V at the end is included, for the "to" part it is removed.
-            ;; If 'cpoptions' does not contain 'B', also accept a backslash.
-
-;           byte key = src[0].at(0);
-;           if (key == Ctrl_V || (do_backslash && key == '\\'))
-;           {
-;               src[0] = src[0].plus(1);                              ;; skip CTRL-V or backslash
-;               if (src[0].at(0) == NUL)
-;               {
-;                   if (from_part)
-;                       dest.be(dlen++, key);
-;                   break;
-;               }
-;           }
-
-            ;; skip multibyte char correctly
-;           for (int n = us_ptr2len_cc(src[0]); 0 < n--; src[0] = src[0].plus(1))
-;           {
-                ;; If the character is KB_SPECIAL, replace it with KB_SPECIAL KS_SPECIAL KE_FILLER.
-
-;               if (src[0].at(0) == KB_SPECIAL)
-;               {
-;                   dest.be(dlen++, KB_SPECIAL);
-;                   dest.be(dlen++, KS_SPECIAL);
-;                   dest.be(dlen++, KE_FILLER);
-;               }
-;               else
-;                   dest.be(dlen++, src[0].at(0));
-;           }
-;       }
-;       dest.be(dlen, NUL);
-
-        ;; Copy the new string to allocated memory.
-
-;       return STRDUP(dest);
     ))
 
 ;; Find a termcode with keys 'src' (must be NUL terminated).
@@ -69132,11 +67847,7 @@
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "cmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
@@ -69144,10 +67855,6 @@
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "imapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "inoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "iunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
@@ -69160,22 +67867,11 @@
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG USECTRLV CMDWIN),                 ADDR_LINES),
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "nunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "omap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "omapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-        (->cmdname_C (u8 "onoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
@@ -69189,17 +67885,13 @@
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "smapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startreplace"),  ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
         (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
@@ -69207,21 +67899,12 @@
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA CMDWIN),                                     ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA CMDWIN),                        ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "vmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
-        (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "xmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "xnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "xunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "yank"),          ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "z"),             ex_z,             (| RANGE EXTRA EXFLAGS CMDWIN),                               ADDR_LINES),
 
