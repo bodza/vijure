@@ -25100,8 +25100,8 @@
     [
         (field int          in_use)     ;; number of subexpr with useful info
 
-        (field lpos_C*      rs_from     (ARRAY-lpos NSUBEXP))
-        (field lpos_C*      rs_over     (ARRAY-lpos NSUBEXP))
+        (field lpos_C*      rs_start    (ARRAY-lpos NSUBEXP))
+        (field lpos_C*      rs_end      (ARRAY-lpos NSUBEXP))
     ])
 
 (defn- #_regsubs_C new-regsubs []
@@ -25166,14 +25166,14 @@
 
 ;; Like copy-subs() but exclude the main match.
 
-(defn- #_void copy-sub-off [#_regsubs_C to, #_regsubs_C from]
+(defn- #_void copy-sub-off [#_regsubs_C rs1, #_regsubs_C rs0]
     (§
-        ((ß to =) (update to :in_use max (:in_use from)))
-        (when (< 1 (:in_use from))
+        ((ß rs1 =) (update rs1 :in_use max (:in_use rs0)))
+        (when (< 1 (:in_use rs0))
             ;; Copy the match start and end positions.
-            (loop-when-recur [#_int i 1] (< i (:in_use from)) [(inc i)]
-                (COPY-lpos (... (:rs_from to) i), (... (:rs_from from) i))
-                (COPY-lpos (... (:rs_over to) i), (... (:rs_over from) i))
+            (loop-when-recur [#_int i 1] (< i (:in_use rs0)) [(inc i)]
+                (COPY-lpos (... (:rs_start rs1) i), (... (:rs_start rs0) i))
+                (COPY-lpos (... (:rs_end rs1) i), (... (:rs_end rs0) i))
             )
         )
         nil
@@ -25181,28 +25181,27 @@
 
 ;; Like copy-subs() but only do the end of the main match if \ze is present.
 
-(defn- #_void copy-ze-off [#_regsubs_C to, #_regsubs_C from]
+(defn- #_void copy-ze-off [#_regsubs_C rs1, #_regsubs_C rs0]
     (§
-        (when (and @nfa_has_zend (<= 0 (:end_lnum (... (:rs_multi from) 0))))
-            ((ß to.rs_multi[0].end_lnum =) (:end_lnum (... (:rs_multi from) 0)))
-            ((ß to.rs_multi[0].end_col =) (:end_col (... (:rs_multi from) 0)))
+        (when (and @nfa_has_zend (not (neg? (:lnum (... (:rs_end rs0) 0)))))
+            ((ß rs1.rs_end[0] =) (... (:rs_end rs0) 0))
         )
         nil
     ))
 
-;; Return true if "sub1" and "sub2" have the same start positions.
+;; Return true if "one" and "two" have the same start positions.
 ;; When using back-references also check the end position.
 
-(defn- #_boolean sub-equal [#_regsubs_C sub1, #_regsubs_C sub2]
-    (let [n1 (:in_use sub1) n2 (:in_use sub2) #_int n (max n1 n2)]
-        (loop-when [#_int i 0] (< i n) => true
-            (let-when [r1 (... (:rs_multi sub1) i) #_long s1 (if (< i n1) (:start_lnum r1) -1)
-                       r2 (... (:rs_multi sub2) i) #_long s2 (if (< i n2) (:start_lnum r2) -1)
-            ] (and (== s1 s2) (or (== s1 -1) (== (:start_col r1) (:start_col r2)))) => false
+(defn- #_boolean sub-equal [#_regsubs_C one, #_regsubs_C two]
+    (let [n1 (:in_use one) n2 (:in_use two) n (max n1 n2)]
+        (loop-when [i 0] (< i n) => true
+            (let-when [s1 (... (:rs_start one) i) l1 (if (< i n1) (:lnum s1) -1)
+                       s2 (... (:rs_start two) i) l2 (if (< i n2) (:lnum s2) -1)
+            ] (and (== l1 l2) (or (== l1 -1) (== (:col s1) (:col s2)))) => false
                 (let [_ (when @nfa_has_backref
-                            (let-when [s1 (if (< i n1) (:end_lnum r1) -1)
-                                       s2 (if (< i n2) (:end_lnum r2) -1)
-                            ] (and (== s1 s2) (or (== s1 -1) (== (:end_col r1) (:end_col r2)))) => false)
+                            (let-when [e1 (... (:rs_end one) i) l1 (if (< i n1) (:lnum e1) -1)
+                                       e2 (... (:rs_end two) i) l2 (if (< i n2) (:lnum e2) -1)
+                            ] (and (== l1 l2) (or (== l1 -1) (== (:col e1) (:col e2)))) => false)
                         )]
                     (if (some? _) _ (recur (inc i))))
             ))
@@ -25443,37 +25442,35 @@
             (do
                 ((ß int x =) (if (== (:c state) NFA_ZSTART) 0 (- (:c state) NFA_MOPEN)))
 
-                ((ß long o'lnum =) 0)
-                ((ß int o'col =) 0)
-
+                (ß lpos_C o'start)
                 (ß int o'in_use)
                 ;; Set the position (with "off" added) in the subexpression.
                 ;; Save and restore it when it was in use.
                 ;; Otherwise fill any gap.
                 (cond (< x (:in_use subs))
                 (do
-                    ((ß o'lnum =) (:start_lnum (... (:rs_multi subs) x)))
-                    ((ß o'col =) (:start_col (... (:rs_multi subs) x)))
+                    ((ß o'start =) (... (:rs_start subs) x))
                     ((ß o'in_use =) -1)
                 )
                 :else
                 (do
+                    ((ß o'start =) nil)
                     ((ß o'in_use =) (:in_use subs))
                     (loop-when-recur [#_int i (:in_use subs)] (< i x) [(inc i)]
-                        ((ß subs =) (assoc-in subs [:rs_from i] LPOS-1))
-                        ((ß subs =) (assoc-in subs [:rs_over i] LPOS-1))
+                        ((ß subs =) (assoc-in subs [:rs_start i] LPOS-1))
+                        ((ß subs =) (assoc-in subs [:rs_end i] LPOS-1))
                     )
                     ((ß subs =) (assoc subs :in_use (inc x)))
                 ))
                 ((ß subs =) (if (== off -1)
-                    (update-in subs [:rs_multi x] assoc :start_lnum (inc @reglnum) :start_col 0)
-                    (update-in subs [:rs_multi x] assoc :start_lnum @reglnum :start_col (+ (BDIFF @reginput, @regline) off))
+                    (assoc-in subs [:rs_start x] (->lpos_C (inc @reglnum) 0))
+                    (assoc-in subs [:rs_start x] (->lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
                 ((ß subs =) (addstate nfl, (.out0 state), subs, pim, off))
 
                 (if (== o'in_use -1)
-                    ((ß subs =) (update-in subs [:rs_multi x] assoc :start_lnum o'lnum :start_col o'col))
+                    ((ß subs =) (assoc-in subs [:rs_start x] o'start))
                     ((ß subs =) (assoc subs :in_use o'in_use))
                 )
 
@@ -25482,7 +25479,7 @@
 
             NFA_MCLOSE
             (do
-                (when (and @nfa_has_zend (<= 0 (:end_lnum (... (:rs_multi subs) 0))))
+                (when (and @nfa_has_zend (not (neg? (:lnum (... (:rs_end subs) 0)))))
                     ;; Do not overwrite the position set by \ze.
                     ((ß subs =) (addstate nfl, (.out0 state), subs, pim, off))
                     (ß BREAK)
@@ -25498,16 +25495,15 @@
                 ;; We don't fill in gaps here, there must have been an MOPEN that has done that.
                 ((ß int o'in_use =) (:in_use subs))
                 ((ß subs =) (update subs :in_use max (inc x)))
-                ((ß long o'lnum =) (:end_lnum (... (:rs_multi subs) x)))
-                ((ß int o'col =) (:end_col (... (:rs_multi subs) x)))
+                ((ß lpos_C o'end =) (... (:rs_end subs) x))
                 ((ß subs =) (if (== off -1)
-                    (update-in subs [:rs_multi x] assoc :end_lnum (inc @reglnum) :end_col 0)
-                    (update-in subs [:rs_multi x] assoc :end_lnum @reglnum :end_col (+ (BDIFF @reginput, @regline) off))
+                    (assoc-in subs [:rs_end x] (->lpos_C (inc @reglnum) 0))
+                    (assoc-in subs [:rs_end x] (->lpos_C @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
                 ((ß subs =) (addstate nfl, (.out0 state), subs, pim, off))
 
-                ((ß subs =) (update-in subs [:rs_multi x] assoc :end_lnum o'lnum :end_col o'col))
+                ((ß subs =) (assoc-in subs [:rs_end x] o'end))
                 ((ß subs =) (assoc subs :in_use o'in_use))
 
                 (ß BREAK)
@@ -25613,23 +25609,23 @@
 ;; Check for a match with subexpression "i".
 ;; Return true if it matches.
 
-(defn- #_boolean match-backref [#_regsubs_C sub, #_int i, #_int' a'len]
-    ;; sub: pointers to subexpressions
+(defn- #_boolean match-backref [#_regsubs_C subs, #_int i, #_int' a'len]
+    ;; subs: pointers to subexpressions
     ;; len: out: length of match in bytes
-    (if (<= (:in_use sub) i)
-        (do (reset! a'len 0) true) ;; backref was not set, match an empty string
-        (let [rsi (... (:rs_multi sub) i)]
-            (cond (or (neg? (:start_lnum rsi)) (neg? (:end_lnum rsi)))
+    (if (< i (:in_use subs))
+        (let [start (... (:rs_start subs) i) end (... (:rs_end subs) i)]
+            (cond (or (neg? (:lnum start)) (neg? (:lnum end)))
                 (do (reset! a'len 0) true) ;; backref was not set, match an empty string
-            (and (== (:start_lnum rsi) @reglnum) (== (:end_lnum rsi) @reglnum))
-                (let [a'n (atom (int (- (:end_col rsi) (:start_col rsi))))]
-                    (if (zero? (cstrncmp (.plus @regline (:start_col rsi)), @reginput, a'n))
+            (and (== (:lnum start) @reglnum) (== (:lnum end) @reglnum))
+                (let [a'n (atom (int (- (:col end) (:col start))))]
+                    (if (zero? (cstrncmp (.plus @regline (:col start)), @reginput, a'n))
                         (do (reset! a'len @a'n) true)
                         false
                     ))
             :else
-                (== (match-with-backref (:start_lnum rsi), (:start_col rsi), (:end_lnum rsi), (:end_col rsi), a'len) RA_MATCH)
+                (== (match-with-backref (:lnum start), (:col start), (:lnum end), (:col end), a'len) RA_MATCH)
             ))
+        (do (reset! a'len 0) true) ;; backref was not set, match an empty string
     ))
 
 ;; Save list IDs for all NFA states of "prog" into "list".
@@ -25914,8 +25910,7 @@
         ;; Inline optimized code for addstate(thislist, start, m, 0) if we know it's the first MOPEN.
         (cond toplevel
         (do
-            ((ß m.rs_multi[0].start_lnum =) @reglnum)
-            ((ß m.rs_multi[0].start_col =) (BDIFF @reginput, @regline))
+            ((ß m.rs_start[0] =) (->lpos_C @reglnum (BDIFF @reginput, @regline)))
             ((ß m =) (assoc m :in_use 1))
             (addstate thislist, (.out0 start), m, nil, 0)
         )
@@ -26109,15 +26104,15 @@
                                 (copy-sub-off (:th_subs thread), m)
                                 ;; Now we need to skip over the matched text and then continue with what follows.
                                 ;; TODO: multi-line match
-                                ((ß int bytelen =) (- (:end_col (... (:rs_multi m) 0)) (BDIFF @reginput, @regline)))
+                                ((ß int blen =) (- (:col (... (:rs_end m) 0)) (BDIFF @reginput, @regline)))
 
-                                (cond (zero? bytelen)
+                                (cond (zero? blen)
                                 (do
                                     ;; Empty match: output of corresponding NFA_END_PATTERN/NFA_SKIP to be used at current position.
                                     ((ß add_here =) true)
                                     ((ß add_state =) (.. thread state (out1) (out0) (out0)))
                                 )
-                                (<= bytelen clen)
+                                (<= blen clen)
                                 (do
                                     ;; Match current character, output of corresponding NFA_END_PATTERN to be used at next position.
                                     ((ß add_state =) (.. thread state (out1) (out0) (out0)))
@@ -26127,8 +26122,8 @@
                                 (do
                                     ;; Skip over the matched characters, set character count in NFA_SKIP.
                                     ((ß add_state =) (.. thread state (out1) (out0)))
-                                    ((ß add_off =) bytelen)
-                                    ((ß add_count =) (- bytelen clen))
+                                    ((ß add_off =) blen)
+                                    ((ß add_count =) (- blen clen))
                                 ))
                             )
                             (ß BREAK)
@@ -26680,7 +26675,7 @@
                             (ß BREAK)
                         )
 
-                        NFA_NUPPER_IC ;; ^[A-Z]
+                        NFA_NUPPER_IC ;; [^A-Z]
                         (do
                             ((ß boolean result =) (and (!= curc NUL) (not (or (ri-upper curc) (and @ireg_icase (ri-lower curc))))))
                             (when result
@@ -26700,18 +26695,18 @@
                         NFA_BACKREF8
                         NFA_BACKREF9] ;; \1 .. \9
                         (do
-                            ((ß int[] a'bytelen =) (atom (int)))
+                            ((ß int[] a'blen =) (atom (int)))
                             ((ß int subidx =) (inc (- (:c (:th_state thread)) NFA_BACKREF1)))
-                            ((ß boolean result =) (match-backref (:th_subs thread), subidx, a'bytelen))
+                            ((ß boolean result =) (match-backref (:th_subs thread), subidx, a'blen))
 
                             (when result
-                                (cond (zero? @a'bytelen)
+                                (cond (zero? @a'blen)
                                 (do
                                     ;; Empty match always works, output of NFA_SKIP to be used next.
                                     ((ß add_here =) true)
                                     ((ß add_state =) (.. thread state (out0) (out0)))
                                 )
-                                (<= @a'bytelen clen)
+                                (<= @a'blen clen)
                                 (do
                                     ;; Match current character, jump ahead to out of NFA_SKIP.
                                     ((ß add_state =) (.. thread state (out0) (out0)))
@@ -26721,8 +26716,8 @@
                                 (do
                                     ;; Skip over the matched characters, set character count in NFA_SKIP.
                                     ((ß add_state =) (.. thread state (out0)))
-                                    ((ß add_off =) @a'bytelen)
-                                    ((ß add_count =) (- @a'bytelen clen))
+                                    ((ß add_off =) @a'blen)
+                                    ((ß add_count =) (- @a'blen clen))
                                 ))
                             )
                             (ß BREAK)
@@ -26942,7 +26937,7 @@
                         )
 
                         (when add
-                            ((ß m.rs_multi[0].start_col =) (+ (BDIFF @reginput, @regline) clen))
+                            ((ß m.rs_start[0].col =) (+ (BDIFF @reginput, @regline) clen))
                             (addstate nextlist, (.out0 start), m, nil, clen)
                         )
                     )
@@ -27008,8 +27003,8 @@
         ))
 
         (loop-when-recur [#_int i 0] (< i (:in_use subs)) [(inc i)]
-            (swap! reg_match assoc-in [:r_startpos i] (->lpos_C (:start_lnum (... (:rs_multi subs) i)) (:start_col (... (:rs_multi subs) i))))
-            (swap! reg_match assoc-in [:r_endpos i] (->lpos_C (:end_lnum (... (:rs_multi subs) i)) (:end_col (... (:rs_multi subs) i))))
+            (swap! reg_match assoc-in [:r_startpos i] (... (:rs_start subs) i))
+            (swap! reg_match assoc-in [:r_endpos i] (... (:rs_end subs) i))
         )
 
         (when (neg? (:lnum (... (:r_startpos @reg_match) 0)))
