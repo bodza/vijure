@@ -107,7 +107,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq clearpos lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg new-vimoption bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-number-default set-init-2 do-set illegal-char didset-options check-options check-buf-options clear-string-option check-string-option did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt check-win-options check-winopt clear-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-cmdline-info COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline save-cmdline-alloc restore-cmdline-alloc cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor find-ident-at-pos prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-gd nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist set-last-cursor free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi COPY-soffset new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isIDc vim-iswordc us-iswordb us-iswordp vim-isfilec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-win plines-win-nofold plines-win-col plines-m-win ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit line-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance2 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor-col-win check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-in-table get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-win-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width COPY-lineoff comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting changed-window-setting-win set-topline changed-cline-bef-curs changed-cline-bef-curs-win changed-line-abv-curs changed-line-abv-curs-win validate-botline invalidate-botline invalidate-botline-win approximate-botline-win cursor-valid validate-cursor curs-rows validate-virtcol validate-virtcol-win validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq clearpos lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg new-vimoption bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-number-default set-init-2 do-set illegal-char didset-options check-options check-buf-options clear-string-option check-string-option did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt check-win-options check-winopt clear-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-cmdline-info COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline save-cmdline-alloc restore-cmdline-alloc cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor find-ident-at-pos prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-gd nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist set-last-cursor free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi COPY-soffset new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isIDc vim-iswordc us-iswordb us-iswordp vim-isfilec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-win plines-win-nofold plines-win-col plines-m-win ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit line-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance2 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor-col-win check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-in-table get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-win-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting changed-window-setting-win set-topline changed-cline-bef-curs changed-cline-bef-curs-win changed-line-abv-curs changed-line-abv-curs-win validate-botline invalidate-botline invalidate-botline-win approximate-botline-win cursor-valid validate-cursor curs-rows validate-virtcol validate-virtcol-win validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -16042,9 +16042,9 @@
 
 ;; Put contents of register "regname" into the text.
 ;; Caller must check "regname" to be valid!
-;; "flags": PUT_FIXINDENT       make indent look nice
-;;          PUT_CURSEND         leave cursor after end of new text
-;;          PUT_LINE            force linewise put (":put")
+;; "flags": PUT_FIXINDENT   make indent look nice
+;;          PUT_CURSEND     leave cursor after end of new text
+;;          PUT_LINE        force linewise put (":put")
 
 (defn- #_void do-put [#_int regname, #_int dir, #_int count, #_int flags]
     ;; dir: BACKWARD for 'P', FORWARD for 'p'
@@ -16592,10 +16592,8 @@
 
 ;; Join 'count' lines (minimal 2) at cursor position.
 ;; When "save_undo" is true save lines for undo first.
-;; Set "use_formatoptions" to false when e.g. processing backspace and comment
-;; leaders should not be removed.
-;; When setmark is true, sets the '[ and '] mark, else, the caller is expected
-;; to set those marks.
+;; Set "use_formatoptions" to false when e.g. processing backspace and comment leaders should not be removed.
+;; When setmark is true, sets the '[ and '] mark, else, the caller is expected to set those marks.
 ;;
 ;; return false for failure, true otherwise
 
@@ -48327,103 +48325,81 @@
         true
     ))
 
-;; show the current mode and ruler
+;; Show the current mode and ruler.
 ;;
 ;; If clear_cmdline is true, clear the rest of the cmdline.
-;; If clear_cmdline is false there may be a message there that needs to be
-;; cleared only if a mode is shown.
+;; If clear_cmdline is false there may be a message there that needs to be cleared only if a mode is shown.
+;;
 ;; Return the length of the message (0 if no message).
 
 (defn- #_int showmode []
-    (§
-        ((ß int length =) 0)
-
-        ((ß boolean do_mode =) (and @p_smd (or (flag? @State INSERT) (!= @restart_edit 0) @VIsual_active)))
-        (cond (or do_mode @Recording)
-        (do
-            ;; Don't show mode right now, when not redrawing or inside a mapping.
-            ;; Call char-avail() only when we are going to show something, because
-            ;; it takes a bit of time.
-
-            (when (or (not (redrawing)) (and (char-avail) (not @keyTyped)))
-                (reset! redraw_cmdline true)              ;; show mode later
-                ((ß RETURN) 0)
-            )
-
-            ((ß boolean nwr_save =) @need_wait_return)
-
-            ;; wait a bit before overwriting an important message
-            (check-for-delay false)
-
-            ;; if the cmdline is more than one line high, erase top lines
-            ((ß boolean need_clear =) @clear_cmdline)
-            (if (and @clear_cmdline (< @cmdline_row (dec @Rows)))
-                (msg-clr-cmdline))                  ;; will reset clear_cmdline
-
-            ;; Position on the last line in the window, column 0.
-            (msg-pos-mode)
-            (cursor-off)
-            ((ß int attr =) (hl-attr HLF_CM))                 ;; Highlight mode
-            (when do_mode
-                (msg-puts-attr (u8 "--"), attr)
-
-                (cond
-                    (flag? @State VREPLACE_FLAG) (msg-puts-attr (u8 " VREPLACE"), attr)
-                    (flag? @State REPLACE_FLAG)  (msg-puts-attr (u8 " REPLACE"), attr)
-                    (flag? @State INSERT)        (msg-puts-attr (u8 " INSERT"), attr)
-                    (== @restart_edit (byte \I)) (msg-puts-attr (u8 " (insert)"), attr)
-                    (== @restart_edit (byte \R)) (msg-puts-attr (u8 " (replace)"), attr)
-                    (== @restart_edit (byte \V)) (msg-puts-attr (u8 " (vreplace)"), attr)
-                )
-
-                (when (and (flag? @State INSERT) @p_paste)
-                    (msg-puts-attr (u8 " (paste)"), attr))
-
-                (when @VIsual_active
-                    ;; Don't concatenate separate words to avoid translation problems.
-                    (-> (condp == (+ (if @VIsual_select 4 0) (if (== @VIsual_mode Ctrl_V) 2 0) (if (== @VIsual_mode (byte \V)) 1 0))
-                            0 (u8 " VISUAL")
-                            1 (u8 " VISUAL LINE")
-                            2 (u8 " VISUAL BLOCK")
-                            4 (u8 " SELECT")
-                            5 (u8 " SELECT LINE")
-                            6 (u8 " SELECT BLOCK"))
-                        (msg-puts-attr attr))
-                )
-                (msg-puts-attr (u8 " --"), attr)
-
-                ((ß need_clear =) true)
-            )
-            (when @Recording
-                (msg-puts-attr (u8 "recording"), attr)
-                ((ß need_clear =) true)
-            )
-
-            (reset! mode_displayed true)
-            (if (or need_clear @clear_cmdline)
-                (msg-clr-eos))
-            (reset! msg_didout false)             ;; overwrite this message
-            ((ß length =) @msg_col)
-            (reset! msg_col 0)
-            (reset! need_wait_return nwr_save)    ;; never ask for hit-return for this
-        )
-        @clear_cmdline
-        (do
-            ;; Clear the whole command line.  Will reset "clear_cmdline".
-            (msg-clr-cmdline)
-        ))
-
+    (let-when [#_boolean do_mode (and @p_smd (or (flag? @State INSERT) (!= @restart_edit 0) @VIsual_active))
+          #_int length
+            (cond (and (not do_mode) (not @Recording))
+                ;; Clear the whole command line.  Will reset "clear_cmdline".
+                (do (when @clear_cmdline (msg-clr-cmdline)) 0)
+            (or (not (redrawing)) (and (char-avail) (not @keyTyped)))
+                ;; Don't show mode right now, when not redrawing or inside a mapping.
+                ;; Call char-avail() only when we are going to show something, because it takes a bit of time.
+                (do (reset! redraw_cmdline true) nil) ;; show mode later
+            :else
+                (let [#_boolean nwr_save @need_wait_return
+                      ;; wait a bit before overwriting an important message
+                      _ (check-for-delay false)
+                      ;; if the cmdline is more than one line high, erase top lines
+                      #_boolean need_clear @clear_cmdline]
+                    (when (and @clear_cmdline (< @cmdline_row (dec @Rows)))
+                        (msg-clr-cmdline))                  ;; will reset clear_cmdline
+                    ;; Position on the last line in the window, column 0.
+                    (msg-pos-mode)
+                    (cursor-off)
+                    (let [#_int attr (hl-attr HLF_CM)]                 ;; Highlight mode
+                        (when do_mode
+                            (msg-puts-attr (u8 "--"), attr)
+                            (cond
+                                (flag? @State VREPLACE_FLAG) (msg-puts-attr (u8 " VREPLACE"), attr)
+                                (flag? @State REPLACE_FLAG)  (msg-puts-attr (u8 " REPLACE"), attr)
+                                (flag? @State INSERT)        (msg-puts-attr (u8 " INSERT"), attr)
+                                (== @restart_edit (byte \I)) (msg-puts-attr (u8 " (insert)"), attr)
+                                (== @restart_edit (byte \R)) (msg-puts-attr (u8 " (replace)"), attr)
+                                (== @restart_edit (byte \V)) (msg-puts-attr (u8 " (vreplace)"), attr)
+                            )
+                            (when (and (flag? @State INSERT) @p_paste)
+                                (msg-puts-attr (u8 " (paste)"), attr))
+                            (when @VIsual_active
+                                ;; Don't concatenate separate words to avoid translation problems.
+                                (-> (condp == (+ (if @VIsual_select 4 0) (if (== @VIsual_mode Ctrl_V) 2 0) (if (== @VIsual_mode (byte \V)) 1 0))
+                                        0 (u8 " VISUAL")
+                                        1 (u8 " VISUAL LINE")
+                                        2 (u8 " VISUAL BLOCK")
+                                        4 (u8 " SELECT")
+                                        5 (u8 " SELECT LINE")
+                                        6 (u8 " SELECT BLOCK"))
+                                    (msg-puts-attr attr))
+                            )
+                            (msg-puts-attr (u8 " --"), attr)
+                        )
+                        (when @Recording
+                            (msg-puts-attr (u8 "recording"), attr)
+                        ))
+                    (reset! mode_displayed true)
+                    (when (or need_clear do_mode @Recording @clear_cmdline)
+                        (msg-clr-eos))
+                    (reset! msg_didout false)             ;; overwrite this message
+                    (let [length @msg_col]
+                        (reset! msg_col 0)
+                        (reset! need_wait_return nwr_save)    ;; never ask for hit-return for this
+                        length
+                    ))
+            )] (some? length) => 0
         ;; In Visual mode the size of the selected area must be redrawn.
-        (when @VIsual_active
-            (clear-showcmd))
-
+        (when @VIsual_active (clear-showcmd))
         ;; If the last window has no status line,
         ;; the ruler is after the mode message and must be redrawn.
-        (if (and (redrawing) (zero? (:w_status_height @lastwin)))
+        (when (and (redrawing) (zero? (:w_status_height @lastwin)))
             (win-redr-ruler @lastwin, true))
         (reset! redraw_cmdline false)
         (reset! clear_cmdline false)
-
         length
     ))
 
@@ -48441,14 +48417,11 @@
 (defn- #_void unshowmode [#_boolean force]
     ;; Don't delete it right now, when not redrawing or inside a mapping.
     (if (and (redrawing) (or force (not (char-avail)) @keyTyped))
-        (do
-            (msg-pos-mode)
-            (if @Recording
+        (do (msg-pos-mode)
+            (when @Recording
                 (msg-puts-attr (u8 "recording"), (hl-attr HLF_CM)))
-            (msg-clr-eos)
-        )
-        (reset! redraw_cmdline true)          ;; delete mode later
-    )
+            (msg-clr-eos))
+        (reset! redraw_cmdline true))       ;; delete mode later
     nil)
 
 ;; Get the character to use in a status line.  Get its attributes in "*attr".
@@ -48846,13 +48819,13 @@
             (do
                 ((ß minwidth =) (frame-minwidth (:w_frame oldwin), :NOWIN))
                 ((ß frame_C prevfrp =) (:w_frame oldwin))
-                (loop-when-recur [#_frame_C frp (:fr_parent (:w_frame oldwin))] (some? frp) [(:fr_parent frp)]
-                    (when (== (:fr_layout frp) FR_ROW)
-                        (loop-when-recur [#_frame_C frp2 (:fr_child frp)] (some? frp2) [(:fr_next frp2)]
-                            ((ß minwidth =) (if (!= frp2 prevfrp) (+ minwidth (frame-minwidth frp2, :NOWIN)) minwidth))
+                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame oldwin))] (some? fr) [(:fr_parent fr)]
+                    (when (== (:fr_layout fr) FR_ROW)
+                        (loop-when-recur [#_frame_C fr2 (:fr_child fr)] (some? fr2) [(:fr_next fr2)]
+                            ((ß minwidth =) (if (!= fr2 prevfrp) (+ minwidth (frame-minwidth fr2, :NOWIN)) minwidth))
                         )
                     )
-                    ((ß prevfrp =) frp)
+                    ((ß prevfrp =) fr)
                 )
                 ((ß available =) (:fr_width @topframe))
                 ((ß needed =) (+ needed minwidth))
@@ -48881,13 +48854,13 @@
             ;; Only make all windows the same width if one of them (except oldwin)
             ;; is wider than one of the split windows.
             (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \v)) (some? (:fr_parent (:w_frame oldwin))))
-                ((ß frame_C frp =) (:fr_child (:fr_parent (:w_frame oldwin))))
-                (loop-when [] (some? frp)
-                    (when (and (!= (:fr_win frp) oldwin) (some? (:fr_win frp)) (or (< new_size (:w_width (:fr_win frp))) (< (- (:w_width oldwin) new_size 1) (:w_width (:fr_win frp)))))
+                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame oldwin))))
+                (loop-when [] (some? fr)
+                    (when (and (!= (:fr_win fr) oldwin) (some? (:fr_win fr)) (or (< new_size (:w_width (:fr_win fr))) (< (- (:w_width oldwin) new_size 1) (:w_width (:fr_win fr)))))
                         ((ß do_equal =) true)
                         (ß BREAK)
                     )
-                    ((ß frp =) (:fr_next frp))
+                    ((ß fr =) (:fr_next fr))
                     (recur)
                 )
             )
@@ -48913,13 +48886,13 @@
             (do
                 ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), :NOWIN) need_status))
                 ((ß frame_C prevfrp =) (:w_frame oldwin))
-                (loop-when-recur [#_frame_C frp (:fr_parent (:w_frame oldwin))] (some? frp) [(:fr_parent frp)]
-                    (when (== (:fr_layout frp) FR_COL)
-                        (loop-when-recur [#_frame_C frp2 (:fr_child frp)] (some? frp2) [(:fr_next frp2)]
-                            ((ß minheight =) (if (!= frp2 prevfrp) (+ minheight (frame-minheight frp2, :NOWIN)) minheight))
+                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame oldwin))] (some? fr) [(:fr_parent fr)]
+                    (when (== (:fr_layout fr) FR_COL)
+                        (loop-when-recur [#_frame_C fr2 (:fr_child fr)] (some? fr2) [(:fr_next fr2)]
+                            ((ß minheight =) (if (!= fr2 prevfrp) (+ minheight (frame-minheight fr2, :NOWIN)) minheight))
                         )
                     )
-                    ((ß prevfrp =) frp)
+                    ((ß prevfrp =) fr)
                 )
                 ((ß available =) (:fr_height @topframe))
                 ((ß needed =) (+ needed minheight))
@@ -48956,13 +48929,13 @@
             ;; Only make all windows the same height if one of them (except oldwin)
             ;; is higher than one of the split windows.
             (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \h)) (some? (:fr_parent (:w_frame oldwin))))
-                ((ß frame_C frp =) (:fr_child (:fr_parent (:w_frame oldwin))))
-                (loop-when [] (some? frp)
-                    (when (and (!= (:fr_win frp) oldwin) (some? (:fr_win frp)) (or (< new_size (:w_height (:fr_win frp))) (< (- oldwin_height new_size STATUS_HEIGHT) (:w_height (:fr_win frp)))))
+                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame oldwin))))
+                (loop-when [] (some? fr)
+                    (when (and (!= (:fr_win fr) oldwin) (some? (:fr_win fr)) (or (< new_size (:w_height (:fr_win fr))) (< (- oldwin_height new_size STATUS_HEIGHT) (:w_height (:fr_win fr)))))
                         ((ß do_equal =) true)
                         (ß BREAK)
                     )
-                    ((ß frp =) (:fr_next frp))
+                    ((ß fr =) (:fr_next fr))
                     (recur)
                 )
             )
@@ -49022,54 +48995,39 @@
         :else
         (do
             ((ß curfrp =) (:w_frame oldwin))
-            (cond (flag? flags WSP_BELOW)
-            (do
-                ((ß before =) false)
-            )
-            (flag? flags WSP_ABOVE)
-            (do
-                ((ß before =) true)
-            )
-            (flag? flags WSP_VERT)
-            (do
-                ((ß before =) (not @p_spr))
-            )
-            :else
-            (do
-                ((ß before =) (not @p_sb))
-            ))
+            ((ß before =) (cond (flag? flags WSP_BELOW) false (flag? flags WSP_ABOVE) true (flag? flags WSP_VERT) (not @p_spr) :else (not @p_sb)))
         ))
 
         (when (or (nil? (:fr_parent curfrp)) (!= (:fr_layout (:fr_parent curfrp)) layout))
             ;; Need to create a new frame in the tree to make a branch.
-            ((ß frame_C frp =) (NEW_frame_C))
-            (COPY-frame frp, curfrp)
+            ((ß frame_C fr =) (NEW_frame_C))
+            (COPY-frame fr, curfrp)
             ((ß curfrp.fr_layout =) layout)
-            ((ß frp.fr_parent =) curfrp)
-            ((ß frp.fr_next =) nil)
-            ((ß frp.fr_prev =) nil)
-            ((ß curfrp.fr_child =) frp)
+            ((ß fr.fr_parent =) curfrp)
+            ((ß fr.fr_next =) nil)
+            ((ß fr.fr_prev =) nil)
+            ((ß curfrp.fr_child =) fr)
             ((ß curfrp.fr_win =) nil)
-            ((ß curfrp =) frp)
-            (cond (some? (:fr_win frp))
+            ((ß curfrp =) fr)
+            (cond (some? (:fr_win fr))
             (do
-                ((ß oldwin.w_frame =) frp)
+                ((ß oldwin.w_frame =) fr)
             )
             :else
             (do
-                (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-                    ((ß frp.fr_parent =) curfrp)
+                (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
+                    ((ß fr.fr_parent =) curfrp)
                 )
             ))
         )
 
-        ((ß frame_C frp =) (if (nil? new_wp) (:w_frame wp) (:w_frame new_wp)))
-        ((ß frp.fr_parent =) (:fr_parent curfrp))
+        ((ß frame_C fr =) (if (nil? new_wp) (:w_frame wp) (:w_frame new_wp)))
+        ((ß fr.fr_parent =) (:fr_parent curfrp))
 
         ;; Insert the new frame at the right place in the frame list.
         (if before
-            (frame-insert curfrp, frp)
-            (frame-append curfrp, frp))
+            (frame-insert curfrp, fr)
+            (frame-append curfrp, fr))
 
         ;; Set w_fraction now so that the cursor keeps the same relative vertical position.
         (if (< 0 (:w_height oldwin))
@@ -49098,7 +49056,7 @@
                 (win-new-height wp, (:w_height oldwin))
                 ((ß wp.w_status_height =) (:w_status_height oldwin))
             ))
-            ((ß frp.fr_height =) (:fr_height curfrp))
+            ((ß fr.fr_height =) (:fr_height curfrp))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one column for the vertical separator
@@ -49132,8 +49090,8 @@
             (do
                 ((ß wp.w_wincol =) (+ (:w_wincol oldwin) (:w_width oldwin) 1))
             ))
-            (frame-fix-width oldwin)
-            (frame-fix-width wp)
+            ((ß oldwin =) (frame-fix-width oldwin))
+            ((ß wp =) (frame-fix-width wp))
         )
         :else
         (do
@@ -49150,7 +49108,7 @@
                 (win-new-width wp, (:w_width oldwin))
                 ((ß wp.w_vsep_width =) (:w_vsep_width oldwin))
             ))
-            ((ß frp.fr_width =) (:fr_width curfrp))
+            ((ß fr.fr_width =) (:fr_width curfrp))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one row for the status line
@@ -49172,8 +49130,8 @@
             ))
             (if (flag? flags WSP_BOT)
                 (frame-add-statusline curfrp))
-            (frame-fix-height wp)
-            (frame-fix-height oldwin)
+            ((ß wp =) (frame-fix-height wp))
+            ((ß oldwin =) (frame-fix-height oldwin))
         ))
 
         (when (flag? flags (| WSP_TOP WSP_BOT))
@@ -49264,7 +49222,7 @@
             (recur-if (!= w win) [(:w_next w)] => true))
     ))
 
-;; Exchange current and next window
+;; Exchange current and next window.
 
 (defn- #_void win-exchange [#_long Prenum]
     (§
@@ -49273,33 +49231,27 @@
             ((ß RETURN) nil)
         )
 
-        (ß frame_C frp)
-
         ;; find window to exchange with
 
-        (cond (non-zero? Prenum)
+        ((ß frame_C fr1 =) (cond (non-zero? Prenum)
         (do
-            ((ß frp =) (:fr_child (:fr_parent (:w_frame @curwin))))
-            (loop-when [] (and (some? frp) (< 0 ((ß Prenum =) (dec Prenum))))
-                ((ß frp =) (:fr_next frp))
-                (recur)
-            )
+            (loop-when-recur [fr1 (:fr_child (:fr_parent (:w_frame @curwin))) Prenum (dec Prenum)] (and (some? fr1) (< 0 Prenum)) [(:fr_next fr1) (dec Prenum)] => fr1)
         )
         (some? (:fr_next (:w_frame @curwin)))    ;; Swap with next.
         (do
-            ((ß frp =) (:fr_next (:w_frame @curwin)))
+            (:fr_next (:w_frame @curwin))
         )
         :else    ;; Swap last window in row/col with previous.
         (do
-            ((ß frp =) (:fr_prev (:w_frame @curwin)))
-        ))
+            (:fr_prev (:w_frame @curwin))
+        )))
 
         ;; We can only exchange a window with another window, not with a frame containing windows.
-        (if (or (nil? frp) (nil? (:fr_win frp)) (== (:fr_win frp) @curwin))
+        (if (or (nil? fr1) (nil? (:fr_win fr1)) (== (:fr_win fr1) @curwin))
             ((ß RETURN) nil)
         )
 
-        ((ß window_C wp =) (:fr_win frp))
+        ((ß window_C wp =) (:fr_win fr1))
 
         ;; 1. remove curwin from the list.  Remember after which window it was in wp2
         ;; 2. insert curwin before wp in the list
@@ -49309,20 +49261,20 @@
         ;; 5. exchange the status line height and vsep width.
 
         ((ß window_C wp2 =) (:w_prev @curwin))
-        ((ß frame_C frp2 =) (:fr_prev (:w_frame @curwin)))
+        ((ß frame_C fr2 =) (:fr_prev (:w_frame @curwin)))
         (when (!= (:w_prev wp) @curwin)
             (win-remove @curwin)
             (frame-remove (:w_frame @curwin))
             (win-append (:w_prev wp), @curwin)
-            (frame-insert frp, (:w_frame @curwin))
+            (frame-insert fr1, (:w_frame @curwin))
         )
         (when (!= wp wp2)
             (win-remove wp)
             (frame-remove (:w_frame wp))
             (win-append wp2, wp)
-            (if (nil? frp2)
+            (if (nil? fr2)
                 (frame-insert (:fr_child (:fr_parent (:w_frame wp))), (:w_frame wp))
-                (frame-append frp2, (:w_frame wp)))
+                (frame-append fr2, (:w_frame wp)))
         )
 
         ((ß int temp =) (:w_status_height @curwin))
@@ -49345,10 +49297,10 @@
         )
         :else
         (do
-            (frame-fix-height @curwin)
-            (frame-fix-height wp)
-            (frame-fix-width @curwin)
-            (frame-fix-width wp)
+            (swap! curwin frame-fix-height)
+            ((ß wp =) (frame-fix-height wp))
+            (swap! curwin frame-fix-width)
+            ((ß wp =) (frame-fix-width wp))
         ))
 
         (win-comp-pos)                 ;; recompute window positions
@@ -49369,61 +49321,61 @@
         )
 
         ;; Check if all frames in this row/col have one window.
-        (loop-when-recur [#_frame_C frp (:fr_child (:fr_parent (:w_frame @curwin)))] (some? frp) [(:fr_next frp)]
-            (when (nil? (:fr_win frp))
+        (loop-when-recur [#_frame_C fr (:fr_child (:fr_parent (:w_frame @curwin)))] (some? fr) [(:fr_next fr)]
+            (when (nil? (:fr_win fr))
                 (emsg (u8 "E443: Cannot rotate when another window is split"))
                 ((ß RETURN) nil)
             )
         )
 
-        (loop-when [] (<= 0 ((ß count =) (dec count)))
+        (loop-when count (< 0 count)
             (ß window_C wp1, wp2)
 
             (cond upwards            ;; first window becomes last window
             (do
                 ;; remove first window/frame from the list
-                ((ß frame_C frp =) (:fr_child (:fr_parent (:w_frame @curwin))))
-                ((ß wp1 =) (:fr_win frp))
+                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame @curwin))))
+                ((ß wp1 =) (:fr_win fr))
                 (win-remove wp1)
-                (frame-remove frp)
+                (frame-remove fr)
 
                 ;; find last frame and append removed window/frame after it
-                ((ß frp =) (loop-when-recur frp (some? (:fr_next frp)) (:fr_next frp) => frp))
-                (win-append (:fr_win frp), wp1)
-                (frame-append frp, (:w_frame wp1))
+                ((ß fr =) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr))
+                (win-append (:fr_win fr), wp1)
+                (frame-append fr, (:w_frame wp1))
 
-                ((ß wp2 =) (:fr_win frp))   ;; previously last window
+                ((ß wp2 =) (:fr_win fr))   ;; previously last window
             )
             :else                    ;; last window becomes first window
             (do
                 ;; find last window/frame in the list and remove it
-                ((ß frame_C frp =) (loop-when-recur [frp (:w_frame @curwin)] (some? (:fr_next frp)) [(:fr_next frp)] => frp))
-                ((ß wp1 =) (:fr_win frp))
+                ((ß frame_C fr =) (loop-when-recur [fr (:w_frame @curwin)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
+                ((ß wp1 =) (:fr_win fr))
                 ((ß wp2 =) (:w_prev wp1))   ;; will become last window
                 (win-remove wp1)
-                (frame-remove frp)
+                (frame-remove fr)
 
                 ;; append the removed window/frame before the first in the list
-                (win-append (:w_prev (:fr_win (:fr_child (:fr_parent frp)))), wp1)
-                (frame-insert (:fr_child (:fr_parent frp)), frp)
+                (win-append (:w_prev (:fr_win (:fr_child (:fr_parent fr)))), wp1)
+                (frame-insert (:fr_child (:fr_parent fr)), fr)
             ))
 
             ;; exchange status height and vsep width of old and new last window
             ((ß int n =) (:w_status_height wp2))
             ((ß wp2.w_status_height =) (:w_status_height wp1))
             ((ß wp1.w_status_height =) n)
-            (frame-fix-height wp1)
-            (frame-fix-height wp2)
+            ((ß wp1 =) (frame-fix-height wp1))
+            ((ß wp2 =) (frame-fix-height wp2))
 
             ((ß n =) (:w_vsep_width wp2))
             ((ß wp2.w_vsep_width =) (:w_vsep_width wp1))
             ((ß wp1.w_vsep_width =) n)
-            (frame-fix-width wp1)
-            (frame-fix-width wp2)
+            ((ß wp1 =) (frame-fix-width wp1))
+            ((ß wp2 =) (frame-fix-width wp2))
 
             ;; recompute w_winrow and w_wincol for all windows
             (win-comp-pos)
-            (recur)
+            (recur (dec count))
         )
 
         (redraw-win-later @curwin, CLEAR)
@@ -49462,10 +49414,8 @@
         (win-equal-rec (if (nil? next_curwin) @curwin next_curwin), current, @topframe, dir, 0, 0, @Cols, (:fr_height @topframe)))
     nil)
 
-;; Set a frame to a new position and height, spreading the available room
-;; equally over contained frames.
-;; The window "next_curwin" (if not null) should at least get the size from
-;; 'winheight' and 'winwidth' if possible.
+;; Set a frame to a new position and height, spreading the available room equally over contained frames.
+;; The window "next_curwin" (if not null) should at least get the size from 'winheight' and 'winwidth' if possible.
 
 (defn- #_void win-equal-rec [#_window_C next_curwin, #_boolean current, #_frame_C topfr, #_int dir, #_int col, #_int row, #_int width, #_int height]
     ;; next_curwin: pointer to current window to be or null
@@ -49785,33 +49735,27 @@
 ;; Free the memory used for a window.
 ;; Returns a pointer to the window that got the freed up space.
 
-(defn- #_window_C win-free-mem [#_window_C win, #_int' a'dirp]
-    ;; dirp: set to 'v' or 'h' for direction if 'ea'
-
+(defn- #_window_C win-free-mem [#_window_C win, #_int' a'dir] ;; dir: set to 'v' or 'h' for direction if 'ea'
     ;; Remove the window and its frame from the tree of frames.
-    (let [#_window_C wp (winframe-remove win, a'dirp)]
-        (win-free win)
-        wp
-    ))
+    (let [#_window_C w (winframe-remove win, a'dir)] (win-free win) w))
 
 ;; Remove a window and its frame from the tree of frames.
 ;; Returns a pointer to the window that got the freed up space.
 
-(defn- #_window_C winframe-remove [#_window_C win, #_int' a'dirp]
-    ;; dirp: set to 'v' or 'h' for direction if 'ea'
+(defn- #_window_C winframe-remove [#_window_C win, #_int' a'dir] ;; dir: set to 'v' or 'h' for direction if 'ea'
     (§
-        ((ß frame_C frp_close =) (:w_frame win))
-
         ;; If there is only one window there is nothing to remove.
 
         (if (== @firstwin @lastwin)
             ((ß RETURN) nil)
         )
 
+        ((ß frame_C frp_close =) (:w_frame win))
+
         ;; Remove the window from its frame.
 
-        ((ß frame_C frp2 =) (win-altframe win))
-        ((ß window_C wp =) (frame2win frp2))
+        ((ß frame_C fr2 =) (win-altframe win))
+        ((ß window_C wp =) (frame2win fr2))
 
         ;; Remove this frame from the list of frames.
         (frame-remove frp_close)
@@ -49820,102 +49764,102 @@
         (do
             ;; When 'winfixheight' is set, try to find another frame in the column
             ;; (as close to the closed frame as possible) to distribute the height to.
-            (when (and (some? (:fr_win frp2)) @(:wo_wfh (:w_options (:fr_win frp2))))
-                ((ß frame_C frp =) (:fr_prev frp_close))
-                ((ß frame_C frp3 =) (:fr_next frp_close))
-                (loop-when [] (or (some? frp) (some? frp3))
-                    (when (some? frp)
-                        (when (and (some? (:fr_win frp)) (not @(:wo_wfh (:w_options (:fr_win frp)))))
-                            ((ß frp2 =) frp)
-                            ((ß wp =) (:fr_win frp))
+            (when (and (some? (:fr_win fr2)) @(:wo_wfh (:w_options (:fr_win fr2))))
+                ((ß frame_C fr =) (:fr_prev frp_close))
+                ((ß frame_C fr3 =) (:fr_next frp_close))
+                (loop-when [] (or (some? fr) (some? fr3))
+                    (when (some? fr)
+                        (when (and (some? (:fr_win fr)) (not @(:wo_wfh (:w_options (:fr_win fr)))))
+                            ((ß fr2 =) fr)
+                            ((ß wp =) (:fr_win fr))
                             (ß BREAK)
                         )
-                        ((ß frp =) (:fr_prev frp))
+                        ((ß fr =) (:fr_prev fr))
                     )
-                    (when (some? frp3)
-                        (when (and (some? (:fr_win frp3)) (not @(:wo_wfh (:w_options (:fr_win frp3)))))
-                            ((ß frp2 =) frp3)
-                            ((ß wp =) (:fr_win frp3))
+                    (when (some? fr3)
+                        (when (and (some? (:fr_win fr3)) (not @(:wo_wfh (:w_options (:fr_win fr3)))))
+                            ((ß fr2 =) fr3)
+                            ((ß wp =) (:fr_win fr3))
                             (ß BREAK)
                         )
-                        ((ß frp3 =) (:fr_next frp3))
+                        ((ß fr3 =) (:fr_next fr3))
                     )
                     (recur)
                 )
             )
-            (frame-new-height frp2, (+ (:fr_height frp2) (:fr_height frp_close)), (== frp2 (:fr_next frp_close)), false)
-            (reset! a'dirp (byte \v))
+            (frame-new-height fr2, (+ (:fr_height fr2) (:fr_height frp_close)), (== fr2 (:fr_next frp_close)), false)
+            (reset! a'dir (byte \v))
         )
         :else
         (do
             ;; When 'winfixwidth' is set, try to find another frame in the column
             ;; (as close to the closed frame as possible) to distribute the width to.
-            (when (and (some? (:fr_win frp2)) @(:wo_wfw (:w_options (:fr_win frp2))))
-                ((ß frame_C frp =) (:fr_prev frp_close))
-                ((ß frame_C frp3 =) (:fr_next frp_close))
-                (loop-when [] (or (some? frp) (some? frp3))
-                    (when (some? frp)
-                        (when (and (some? (:fr_win frp)) (not @(:wo_wfw (:w_options (:fr_win frp)))))
-                            ((ß frp2 =) frp)
-                            ((ß wp =) (:fr_win frp))
+            (when (and (some? (:fr_win fr2)) @(:wo_wfw (:w_options (:fr_win fr2))))
+                ((ß frame_C fr =) (:fr_prev frp_close))
+                ((ß frame_C fr3 =) (:fr_next frp_close))
+                (loop-when [] (or (some? fr) (some? fr3))
+                    (when (some? fr)
+                        (when (and (some? (:fr_win fr)) (not @(:wo_wfw (:w_options (:fr_win fr)))))
+                            ((ß fr2 =) fr)
+                            ((ß wp =) (:fr_win fr))
                             (ß BREAK)
                         )
-                        ((ß frp =) (:fr_prev frp))
+                        ((ß fr =) (:fr_prev fr))
                     )
-                    (when (some? frp3)
-                        (when (and (some? (:fr_win frp3)) (not @(:wo_wfw (:w_options (:fr_win frp3)))))
-                            ((ß frp2 =) frp3)
-                            ((ß wp =) (:fr_win frp3))
+                    (when (some? fr3)
+                        (when (and (some? (:fr_win fr3)) (not @(:wo_wfw (:w_options (:fr_win fr3)))))
+                            ((ß fr2 =) fr3)
+                            ((ß wp =) (:fr_win fr3))
                             (ß BREAK)
                         )
-                        ((ß frp3 =) (:fr_next frp3))
+                        ((ß fr3 =) (:fr_next fr3))
                     )
                     (recur)
                 )
             )
-            (frame-new-width frp2, (+ (:fr_width frp2) (:fr_width frp_close)), (== frp2 (:fr_next frp_close)), false)
-            (reset! a'dirp (byte \h))
+            (frame-new-width fr2, (+ (:fr_width fr2) (:fr_width frp_close)), (== fr2 (:fr_next frp_close)), false)
+            (reset! a'dir (byte \h))
         ))
 
         ;; If rows/columns go to a window below/right its positions need to be updated.
         ;; Can only be done after the sizes have been updated.
-        (when (== frp2 (:fr_next frp_close))
+        (when (== fr2 (:fr_next frp_close))
             ((ß int[] a'row =) (atom (int (:w_winrow win))))
             ((ß int[] a'col =) (atom (int (:w_wincol win))))
 
-            (frame-comp-pos frp2, a'row, a'col)
+            (frame-comp-pos fr2, a'row, a'col)
         )
 
-        (when (and (nil? (:fr_next frp2)) (nil? (:fr_prev frp2)))
+        (when (and (nil? (:fr_next fr2)) (nil? (:fr_prev fr2)))
             ;; There is no other frame in this list, move its info to the parent and remove it.
-            ((ß frp2.fr_parent.fr_layout =) (:fr_layout frp2))
-            ((ß frp2.fr_parent.fr_child =) (:fr_child frp2))
-            (loop-when-recur [#_frame_C frp (:fr_child frp2)] (some? frp) [(:fr_next frp)]
-                ((ß frp.fr_parent =) (:fr_parent frp2))
+            ((ß fr2.fr_parent.fr_layout =) (:fr_layout fr2))
+            ((ß fr2.fr_parent.fr_child =) (:fr_child fr2))
+            (loop-when-recur [#_frame_C fr (:fr_child fr2)] (some? fr) [(:fr_next fr)]
+                ((ß fr.fr_parent =) (:fr_parent fr2))
             )
-            ((ß frp2.fr_parent.fr_win =) (:fr_win frp2))
-            (if (some? (:fr_win frp2))
-                ((ß frp2.fr_win.w_frame =) (:fr_parent frp2))
+            ((ß fr2.fr_parent.fr_win =) (:fr_win fr2))
+            (if (some? (:fr_win fr2))
+                ((ß fr2.fr_win.w_frame =) (:fr_parent fr2))
             )
-            ((ß frame_C frp =) (:fr_parent frp2))
+            ((ß frame_C fr =) (:fr_parent fr2))
 
-            ((ß frp2 =) (:fr_parent frp))
-            (when (and (some? frp2) (== (:fr_layout frp2) (:fr_layout frp)))
+            ((ß fr2 =) (:fr_parent fr))
+            (when (and (some? fr2) (== (:fr_layout fr2) (:fr_layout fr)))
                 ;; The frame above the parent has the same layout,
                 ;; have to merge the frames into this list.
-                (if (== (:fr_child frp2) frp)
-                    ((ß frp2.fr_child =) (:fr_child frp))
+                (if (== (:fr_child fr2) fr)
+                    ((ß fr2.fr_child =) (:fr_child fr))
                 )
-                ((ß frp.fr_child.fr_prev =) (:fr_prev frp))
-                (if (some? (:fr_prev frp))
-                    ((ß frp.fr_prev.fr_next =) (:fr_child frp))
+                ((ß fr.fr_child.fr_prev =) (:fr_prev fr))
+                (if (some? (:fr_prev fr))
+                    ((ß fr.fr_prev.fr_next =) (:fr_child fr))
                 )
-                (loop-when-recur [#_frame_C frp3 (:fr_child frp)] true [(:fr_next frp3)]
-                    ((ß frp3.fr_parent =) frp2)
-                    (when (nil? (:fr_next frp3))
-                        ((ß frp3.fr_next =) (:fr_next frp))
-                        (if (some? (:fr_next frp))
-                            ((ß frp.fr_next.fr_prev =) frp3)
+                (loop-when-recur [#_frame_C fr3 (:fr_child fr)] true [(:fr_next fr3)]
+                    ((ß fr3.fr_parent =) fr2)
+                    (when (nil? (:fr_next fr3))
+                        ((ß fr3.fr_next =) (:fr_next fr))
+                        (if (some? (:fr_next fr))
+                            ((ß fr.fr_next.fr_prev =) fr3)
                         )
                         (ß BREAK)
                     )
@@ -49960,29 +49904,29 @@
 ;; Set a new height for a frame.  Recursively sets the height for contained
 ;; frames and windows.  Caller must take care of positions.
 
-(defn- #_void frame-new-height [#_frame_C topfrp, #_int height, #_boolean topfirst, #_boolean wfh]
+(defn- #_void frame-new-height [#_frame_C topfr, #_int height, #_boolean topfirst, #_boolean wfh]
     ;; topfirst: resize topmost contained frame first
     ;; wfh: obey 'winfixheight' when there is a choice; may cause the height not to be set
     (§
-        (cond (some? (:fr_win topfrp))
+        (cond (some? (:fr_win topfr))
         (do
             ;; Simple case: just one window.
-            (win-new-height (:fr_win topfrp), (- height (:w_status_height (:fr_win topfrp))))
+            (win-new-height (:fr_win topfr), (- height (:w_status_height (:fr_win topfr))))
         )
-        (== (:fr_layout topfrp) FR_ROW)
+        (== (:fr_layout topfr) FR_ROW)
         (do
-            (ß frame_C frp)
+            (ß frame_C fr)
             (loop []
                 ;; All frames in this row get the same new height.
-                ((ß frp =) (loop-when-recur [frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)] => frp
-                    (frame-new-height frp, height, topfirst, wfh)
-                    (when (< height (:fr_height frp))
+                ((ß fr =) (loop-when-recur [fr (:fr_child topfr)] (some? fr) [(:fr_next fr)] => fr
+                    (frame-new-height fr, height, topfirst, wfh)
+                    (when (< height (:fr_height fr))
                         ;; Could not fit the windows, make the whole row higher.
-                        ((ß height =) (:fr_height frp))
+                        ((ß height =) (:fr_height fr))
                         (ß BREAK)
                     )
                 ))
-                (recur-if (some? frp) [])
+                (recur-if (some? fr) [])
             )
         )
         :else    ;; fr_layout == FR_COL
@@ -49990,12 +49934,12 @@
             ;; Complicated case: resize a column of frames.
             ;; Resize the bottom frame first, frames above that when needed.
 
-            ((ß frame_C frp =) (:fr_child topfrp))
+            ((ß frame_C fr =) (:fr_child topfr))
             (when wfh
                 ;; Advance past frames with one window with 'wfh' set.
-                (loop-when [] (frame-fixed-height frp)
-                    ((ß frp =) (:fr_next frp))
-                    (if (nil? frp)
+                (loop-when [] (frame-fixed-height fr)
+                    ((ß fr =) (:fr_next fr))
+                    (if (nil? fr)
                         ((ß RETURN) nil)         ;; no frame without 'wfh', give up
                     )
                     (recur)
@@ -50003,61 +49947,61 @@
             )
             (when (not topfirst)
                 ;; Find the bottom frame of this column.
-                (loop-when [] (some? (:fr_next frp))
-                    ((ß frp =) (:fr_next frp))
+                (loop-when [] (some? (:fr_next fr))
+                    ((ß fr =) (:fr_next fr))
                     (recur)
                 )
                 (when wfh
                     ;; Advance back for frames with one window with 'wfh' set.
-                    (loop-when [] (frame-fixed-height frp)
-                        ((ß frp =) (:fr_prev frp))
+                    (loop-when [] (frame-fixed-height fr)
+                        ((ß fr =) (:fr_prev fr))
                         (recur)
                     )
                 )
             )
 
-            ((ß int extra_lines =) (- height (:fr_height topfrp)))
+            ((ß int extra_lines =) (- height (:fr_height topfr)))
             (cond (< extra_lines 0)
             (do
                 ;; reduce height of contained frames, bottom or top frame first
-                (loop-when [] (some? frp)
-                    ((ß int h =) (frame-minheight frp, nil))
-                    (cond (< (+ (:fr_height frp) extra_lines) h)
+                (loop-when [] (some? fr)
+                    ((ß int h =) (frame-minheight fr, nil))
+                    (cond (< (+ (:fr_height fr) extra_lines) h)
                     (do
-                        ((ß extra_lines =) (+ extra_lines (- (:fr_height frp) h)))
-                        (frame-new-height frp, h, topfirst, wfh)
+                        ((ß extra_lines =) (+ extra_lines (- (:fr_height fr) h)))
+                        (frame-new-height fr, h, topfirst, wfh)
                     )
                     :else
                     (do
-                        (frame-new-height frp, (+ (:fr_height frp) extra_lines), topfirst, wfh)
+                        (frame-new-height fr, (+ (:fr_height fr) extra_lines), topfirst, wfh)
                         (ß BREAK)
                     ))
                     (cond topfirst
                     (do
                         (loop []
-                            ((ß frp =) (:fr_next frp))
-                            (recur-if (and wfh (some? frp) (frame-fixed-height frp)) [])
+                            ((ß fr =) (:fr_next fr))
+                            (recur-if (and wfh (some? fr) (frame-fixed-height fr)) [])
                         )
                     )
                     :else
                     (do
                         (loop []
-                            ((ß frp =) (:fr_prev frp))
-                            (recur-if (and wfh (some? frp) (frame-fixed-height frp)) [])
+                            ((ß fr =) (:fr_prev fr))
+                            (recur-if (and wfh (some? fr) (frame-fixed-height fr)) [])
                         )
                     ))
                     ;; Increase "height" if we could not reduce enough frames.
-                    ((ß height =) (if (nil? frp) (- height extra_lines) height))
+                    ((ß height =) (if (nil? fr) (- height extra_lines) height))
                     (recur)
                 )
             )
             (< 0 extra_lines)
             (do
                 ;; increase height of bottom or top frame
-                (frame-new-height frp, (+ (:fr_height frp) extra_lines), topfirst, wfh)
+                (frame-new-height fr, (+ (:fr_height fr) extra_lines), topfirst, wfh)
             ))
         ))
-        ((ß topfrp.fr_height =) height)
+        ((ß topfr.fr_height =) height)
         nil
     ))
 
@@ -50097,14 +50041,14 @@
         )
     ))
 
-;; Add a status line to windows at the bottom of "frp".
+;; Add a status line to windows at the bottom of "fr".
 ;; Note: Does not check if there is room!
 
-(defn- #_void frame-add-statusline [#_frame_C frp]
+(defn- #_void frame-add-statusline [#_frame_C fr]
     (§
-        (cond (== (:fr_layout frp) FR_LEAF)
+        (cond (== (:fr_layout fr) FR_LEAF)
         (do
-            ((ß window_C win =) (:fr_win frp))
+            ((ß window_C win =) (:fr_win fr))
             (when (zero? (:w_status_height win))
                 (if (< 0 (:w_height win))    ;; don't make it negative
                     ((ß win.w_height =) (dec (:w_height win)))
@@ -50112,18 +50056,18 @@
                 ((ß win.w_status_height =) STATUS_HEIGHT)
             )
         )
-        (== (:fr_layout frp) FR_ROW)
+        (== (:fr_layout fr) FR_ROW)
         (do
             ;; Handle all the frames in the row.
-            (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-                (frame-add-statusline frp)
+            (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
+                (frame-add-statusline fr)
             )
         )
-        :else ;; frp.fr_layout == FR_COL
+        :else ;; fr.fr_layout == FR_COL
         (do
             ;; Only need to handle the last frame in the column.
-            ((ß frp =) (loop-when-recur [frp (:fr_child frp)] (some? (:fr_next frp)) [(:fr_next frp)] => frp))
-            (frame-add-statusline frp)
+            ((ß fr =) (loop-when-recur [fr (:fr_child fr)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
+            (frame-add-statusline fr)
         ))
         nil
     ))
@@ -50131,39 +50075,39 @@
 ;; Set width of a frame.  Handles recursively going through contained frames.
 ;; May remove separator line for windows at the right side (for win-close()).
 
-(defn- #_void frame-new-width [#_frame_C topfrp, #_int width, #_boolean leftfirst, #_boolean wfw]
+(defn- #_void frame-new-width [#_frame_C topfr, #_int width, #_boolean leftfirst, #_boolean wfw]
     ;; leftfirst: resize leftmost contained frame first
     ;; wfw: obey 'winfixwidth' when there is a choice; may cause the width not to be set
     (§
-        (cond (== (:fr_layout topfrp) FR_LEAF)
+        (cond (== (:fr_layout topfr) FR_LEAF)
         (do
             ;; Simple case: just one window.
-            ((ß window_C win =) (:fr_win topfrp))
+            ((ß window_C win =) (:fr_win topfr))
             ;; Find out if there are any windows right of this one.
-            ((ß frame_C frp =) (loop-when-recur [frp topfrp] (some? (:fr_parent frp)) [(:fr_parent frp)] => frp
-                (if (and (== (:fr_layout (:fr_parent frp)) FR_ROW) (some? (:fr_next frp)))
+            ((ß frame_C fr =) (loop-when-recur [fr topfr] (some? (:fr_parent fr)) [(:fr_parent fr)] => fr
+                (if (and (== (:fr_layout (:fr_parent fr)) FR_ROW) (some? (:fr_next fr)))
                     (ß BREAK)
                 )
             ))
-            (if (nil? (:fr_parent frp))
+            (if (nil? (:fr_parent fr))
                 ((ß win.w_vsep_width =) 0)
             )
             (win-new-width win, (- width (:w_vsep_width win)))
         )
-        (== (:fr_layout topfrp) FR_COL)
+        (== (:fr_layout topfr) FR_COL)
         (do
-            (ß frame_C frp)
+            (ß frame_C fr)
             (loop []
                 ;; All frames in this column get the same new width.
-                ((ß frp =) (loop-when-recur [frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)] => frp
-                    (frame-new-width frp, width, leftfirst, wfw)
-                    (when (< width (:fr_width frp))
+                ((ß fr =) (loop-when-recur [fr (:fr_child topfr)] (some? fr) [(:fr_next fr)] => fr
+                    (frame-new-width fr, width, leftfirst, wfw)
+                    (when (< width (:fr_width fr))
                         ;; Could not fit the windows, make whole column wider.
-                        ((ß width =) (:fr_width frp))
+                        ((ß width =) (:fr_width fr))
                         (ß BREAK)
                     )
                 ))
-                (recur-if (some? frp) [])
+                (recur-if (some? fr) [])
             )
         )
         :else    ;; fr_layout == FR_ROW
@@ -50171,12 +50115,12 @@
             ;; Complicated case: resize a row of frames.
             ;; Resize the rightmost frame first, frames left of it when needed.
 
-            ((ß frame_C frp =) (:fr_child topfrp))
+            ((ß frame_C fr =) (:fr_child topfr))
             (when wfw
                 ;; Advance past frames with one window with 'wfw' set.
-                (loop-when [] (frame-fixed-width frp)
-                    ((ß frp =) (:fr_next frp))
-                    (if (nil? frp)
+                (loop-when [] (frame-fixed-width fr)
+                    ((ß fr =) (:fr_next fr))
+                    (if (nil? fr)
                         ((ß RETURN) nil)         ;; no frame without 'wfw', give up
                     )
                     (recur)
@@ -50184,72 +50128,72 @@
             )
             (when (not leftfirst)
                 ;; Find the rightmost frame of this row.
-                (loop-when [] (some? (:fr_next frp))
-                    ((ß frp =) (:fr_next frp))
+                (loop-when [] (some? (:fr_next fr))
+                    ((ß fr =) (:fr_next fr))
                     (recur)
                 )
                 (when wfw
                     ;; Advance back for frames with one window with 'wfw' set.
-                    (loop-when [] (frame-fixed-width frp)
-                        ((ß frp =) (:fr_prev frp))
+                    (loop-when [] (frame-fixed-width fr)
+                        ((ß fr =) (:fr_prev fr))
                         (recur)
                     )
                 )
             )
 
-            ((ß int extra_cols =) (- width (:fr_width topfrp)))
+            ((ß int extra_cols =) (- width (:fr_width topfr)))
             (cond (< extra_cols 0)
             (do
                 ;; reduce frame width, rightmost frame first
-                (loop-when [] (some? frp)
-                    ((ß int w =) (frame-minwidth frp, nil))
-                    (cond (< (+ (:fr_width frp) extra_cols) w)
+                (loop-when [] (some? fr)
+                    ((ß int w =) (frame-minwidth fr, nil))
+                    (cond (< (+ (:fr_width fr) extra_cols) w)
                     (do
-                        ((ß extra_cols =) (+ extra_cols (- (:fr_width frp) w)))
-                        (frame-new-width frp, w, leftfirst, wfw)
+                        ((ß extra_cols =) (+ extra_cols (- (:fr_width fr) w)))
+                        (frame-new-width fr, w, leftfirst, wfw)
                     )
                     :else
                     (do
-                        (frame-new-width frp, (+ (:fr_width frp) extra_cols), leftfirst, wfw)
+                        (frame-new-width fr, (+ (:fr_width fr) extra_cols), leftfirst, wfw)
                         (ß BREAK)
                     ))
                     (cond leftfirst
                     (do
                         (loop []
-                            ((ß frp =) (:fr_next frp))
-                            (recur-if (and wfw (some? frp) (frame-fixed-width frp)) [])
+                            ((ß fr =) (:fr_next fr))
+                            (recur-if (and wfw (some? fr) (frame-fixed-width fr)) [])
                         )
                     )
                     :else
                     (do
                         (loop []
-                            ((ß frp =) (:fr_prev frp))
-                            (recur-if (and wfw (some? frp) (frame-fixed-width frp)) [])
+                            ((ß fr =) (:fr_prev fr))
+                            (recur-if (and wfw (some? fr) (frame-fixed-width fr)) [])
                         )
                     ))
                     ;; Increase "width" if we could not reduce enough frames.
-                    ((ß width =) (if (nil? frp) (- width extra_cols) width))
+                    ((ß width =) (if (nil? fr) (- width extra_cols) width))
                     (recur)
                 )
             )
             (< 0 extra_cols)
             (do
                 ;; increase width of rightmost frame
-                (frame-new-width frp, (+ (:fr_width frp) extra_cols), leftfirst, wfw)
+                (frame-new-width fr, (+ (:fr_width fr) extra_cols), leftfirst, wfw)
             ))
         ))
-        ((ß topfrp.fr_width =) width)
+        ((ß topfr.fr_width =) width)
         nil
     ))
 
-;; Add the vertical separator to windows at the right side of "frp".
+;; Add the vertical separator to windows at the right side of "fr".
 ;; Note: Does not check if there is room!
 
-(defn- #_void frame-add-vsep [#_frame_C frp]
+(defn- #_void frame-add-vsep [#_frame_C fr]
     (§
-        (cond (== (:fr_layout frp) FR_LEAF)
+        (cond (== (:fr_layout fr) FR_LEAF)
         (do
-            ((ß window_C win =) (:fr_win frp))
+            ((ß window_C win =) (:fr_win fr))
             (when (zero? (:w_vsep_width win))
                 (if (< 0 (:w_width win))     ;; don't make it negative
                     ((ß win.w_width =) (dec (:w_width win)))
@@ -50257,41 +50201,31 @@
                 ((ß win.w_vsep_width =) 1)
             )
         )
-        (== (:fr_layout frp) FR_COL)
+        (== (:fr_layout fr) FR_COL)
         (do
             ;; Handle all the frames in the column.
-            (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-                (frame-add-vsep frp)
+            (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
+                (frame-add-vsep fr)
             )
         )
-        :else ;; frp.fr_layout == FR_ROW
+        :else ;; fr.fr_layout == FR_ROW
         (do
             ;; Only need to handle the last frame in the row.
-            ((ß frp =) (:fr_child frp))
-            (loop-when [] (some? (:fr_next frp))
-                ((ß frp =) (:fr_next frp))
-                (recur)
-            )
-            (frame-add-vsep frp)
+            ((ß fr =) (loop-when-recur [fr (:fr_child fr)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
+            (frame-add-vsep fr)
         ))
         nil
     ))
 
 ;; Set frame width from the window it contains.
 
-(defn- #_void frame-fix-width [#_window_C win]
-    (§
-        ((ß win.w_frame.fr_width =) (+ (:w_width win) (:w_vsep_width win)))
-        nil
-    ))
+(defn- #_window_C frame-fix-width [#_window_C win]
+    (assoc-in win [:w_frame :fr_width] (+ (:w_width win) (:w_vsep_width win))))
 
 ;; Set frame height from the window it contains.
 
-(defn- #_void frame-fix-height [#_window_C win]
-    (§
-        ((ß win.w_frame.fr_height =) (+ (:w_height win) (:w_status_height win)))
-        nil
-    ))
+(defn- #_window_C frame-fix-height [#_window_C win]
+    (assoc-in win [:w_frame :fr_height] (+ (:w_height win) (:w_status_height win))))
 
 ;; Compute the minimal height for frame "topfr".
 ;; Uses the 'winminheight' option.
@@ -50423,17 +50357,16 @@
 ;; Move to window above or below "count" times.
 
 (defn- #_void win-goto-ver [#_boolean up, #_long count]
-    ;; up: true to go to win above
     (§
         ((ß frame_C foundfr =) (:w_frame @curwin))
 
 ;       end:
-        (loop-when [] (<= 0 ((ß count =) (dec count)))
-            (ß frame_C nfr)
+        (loop-when [count count] (< 0 count)
 
             ;; First go upwards in the tree of frames until we find a upwards or downwards neighbor.
 
-            (loop-when-recur [#_frame_C fr foundfr] true [(:fr_parent fr)]
+            (ß frame_C nfr)
+            (loop [#_frame_C fr foundfr]
                 (if (== fr @topframe)
                     (ß BREAK end)
                 )
@@ -50441,6 +50374,7 @@
                 (if (and (== (:fr_layout (:fr_parent fr)) FR_COL) (some? nfr))
                     (ß BREAK)
                 )
+                (recur (:fr_parent fr))
             )
 
             ;; Now go downwards to find the bottom or top frame in it.
@@ -50453,43 +50387,34 @@
                 ((ß frame_C fr =) (:fr_child nfr))
                 (when (== (:fr_layout nfr) FR_ROW)
                     ;; Find the frame at the cursor row.
-                    (loop-when [] (and (some? (:fr_next fr)) (<= (+ (:w_wincol (frame2win fr)) (:fr_width fr)) (+ (:w_wincol @curwin) (:w_wcol @curwin))))
-                        ((ß fr =) (:fr_next fr))
-                        (recur)
-                    )
+                    ((ß fr =) (loop-when fr (and (some? (:fr_next fr)) (<= (+ (:w_wincol (frame2win fr)) (:fr_width fr)) (+ (:w_wincol @curwin) (:w_wcol @curwin)))) => fr
+                        (recur (:fr_next fr))
+                    ))
                 )
-                (when (and (== (:fr_layout nfr) FR_COL) up)
-                    (loop-when [] (some? (:fr_next fr))
-                        ((ß fr =) (:fr_next fr))
-                        (recur)
-                    )
-                )
-                ((ß nfr =) fr)
+                ((ß nfr =) (if (and (== (:fr_layout nfr) FR_COL) up) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr) fr))
                 (recur)
             )
-            (recur)
+            (recur (dec count))
         )
 
         (when (some? foundfr)
-            (win-goto (:fr_win foundfr))
-        )
+            (win-goto (:fr_win foundfr)))
         nil
     ))
 
-;; Move to left or right window.
+;; Move to window left or right "count" times.
 
 (defn- #_void win-goto-hor [#_boolean left, #_long count]
-    ;; left: true to go to left win
     (§
         ((ß frame_C foundfr =) (:w_frame @curwin))
 
 ;       end:
-        (loop-when [] (<= 0 ((ß count =) (dec count)))
-            (ß frame_C nfr)
+        (loop-when [count count] (< 0 count)
 
             ;; First go upwards in the tree of frames until we find a left or right neighbor.
 
-            (loop-when-recur [#_frame_C fr foundfr] true [(:fr_parent fr)]
+            (ß frame_C nfr)
+            (loop [#_frame_C fr foundfr]
                 (if (== fr @topframe)
                     (ß BREAK end)
                 )
@@ -50497,6 +50422,7 @@
                 (if (and (== (:fr_layout (:fr_parent fr)) FR_ROW) (some? nfr))
                     (ß BREAK)
                 )
+                (recur (:fr_parent fr))
             )
 
             ;; Now go downwards to find the leftmost or rightmost frame in it.
@@ -50509,21 +50435,14 @@
                 ((ß frame_C fr =) (:fr_child nfr))
                 (when (== (:fr_layout nfr) FR_COL)
                     ;; Find the frame at the cursor row.
-                    (loop-when [] (and (some? (:fr_next fr)) (<= (+ (:w_winrow (frame2win fr)) (:fr_height fr)) (+ (:w_winrow @curwin) (:w_wrow @curwin))))
-                        ((ß fr =) (:fr_next fr))
-                        (recur)
-                    )
+                    ((ß fr =) (loop-when fr (and (some? (:fr_next fr)) (<= (+ (:w_winrow (frame2win fr)) (:fr_height fr)) (+ (:w_winrow @curwin) (:w_wrow @curwin)))) => fr
+                        (recur (:fr_next fr))
+                    ))
                 )
-                (when (and (== (:fr_layout nfr) FR_ROW) left)
-                    (loop-when [] (some? (:fr_next fr))
-                        ((ß fr =) (:fr_next fr))
-                        (recur)
-                    )
-                )
-                ((ß nfr =) fr)
+                ((ß nfr =) (if (and (== (:fr_layout nfr) FR_ROW) left) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr) fr))
                 (recur)
             )
-            (recur)
+            (recur (dec count))
         )
 
         (when (some? foundfr)
@@ -50652,43 +50571,43 @@
         nil
     ))
 
-;; Append frame "frp" in a frame list after frame "after".
+;; Append frame "fr" in a frame list after frame "after".
 
-(defn- #_void frame-append [#_frame_C after, #_frame_C frp]
+(defn- #_void frame-append [#_frame_C after, #_frame_C fr]
     (§
-        ((ß frp.fr_next =) (:fr_next after))
-        ((ß after.fr_next =) frp)
-        (if (some? (:fr_next frp))
-            ((ß frp.fr_next.fr_prev =) frp)
+        ((ß fr.fr_next =) (:fr_next after))
+        ((ß after.fr_next =) fr)
+        (if (some? (:fr_next fr))
+            ((ß fr.fr_next.fr_prev =) fr)
         )
-        ((ß frp.fr_prev =) after)
+        ((ß fr.fr_prev =) after)
         nil
     ))
 
-;; Insert frame "frp" in a frame list before frame "before".
+;; Insert frame "fr" in a frame list before frame "before".
 
-(defn- #_void frame-insert [#_frame_C before, #_frame_C frp]
+(defn- #_void frame-insert [#_frame_C before, #_frame_C fr]
     (§
-        ((ß frp.fr_next =) before)
-        ((ß frp.fr_prev =) (:fr_prev before))
-        ((ß before.fr_prev =) frp)
-        (if (some? (:fr_prev frp))
-            ((ß frp.fr_prev.fr_next =) frp)
-            ((ß frp.fr_parent.fr_child =) frp)
+        ((ß fr.fr_next =) before)
+        ((ß fr.fr_prev =) (:fr_prev before))
+        ((ß before.fr_prev =) fr)
+        (if (some? (:fr_prev fr))
+            ((ß fr.fr_prev.fr_next =) fr)
+            ((ß fr.fr_parent.fr_child =) fr)
         )
         nil
     ))
 
 ;; Remove a frame from a frame list.
 
-(defn- #_void frame-remove [#_frame_C frp]
+(defn- #_void frame-remove [#_frame_C fr]
     (§
-        (if (some? (:fr_prev frp))
-            ((ß frp.fr_prev.fr_next =) (:fr_next frp))
-            ((ß frp.fr_parent.fr_child =) (:fr_next frp))
+        (if (some? (:fr_prev fr))
+            ((ß fr.fr_prev.fr_next =) (:fr_next fr))
+            ((ß fr.fr_parent.fr_child =) (:fr_next fr))
         )
-        (when (some? (:fr_next frp))
-            ((ß frp.fr_next.fr_prev =) (:fr_prev frp))
+        (when (some? (:fr_next fr))
+            ((ß fr.fr_next.fr_prev =) (:fr_prev fr))
         )
         nil
     ))
@@ -50754,14 +50673,14 @@
         @a'row
     ))
 
-;; Update the position of the windows in frame "topfrp",
+;; Update the position of the windows in frame "topfr",
 ;; using the width and height of the frames.
 ;; "*row" and "*col" are the top-left position of the frame.
 ;; They are updated to the bottom-right position plus one.
 
-(defn- #_void frame-comp-pos [#_frame_C topfrp, #_int' a'row, #_int' a'col]
+(defn- #_void frame-comp-pos [#_frame_C topfr, #_int' a'row, #_int' a'col]
     (§
-        ((ß window_C win =) (:fr_win topfrp))
+        ((ß window_C win =) (:fr_win topfr))
         (cond (some? win)
         (do
             (when (or (!= (:w_winrow win) @a'row) (!= (:w_wincol win) @a'col))
@@ -50778,12 +50697,12 @@
         (do
             ((ß int startrow =) @a'row)
             ((ß int startcol =) @a'col)
-            (loop-when-recur [#_frame_C frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)]
-                (if (== (:fr_layout topfrp) FR_ROW)
+            (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
+                (if (== (:fr_layout topfr) FR_ROW)
                     (reset! a'row startrow)        ;; all frames are at the same row
                     (reset! a'col startcol)        ;; all frames are at the same col
                 )
-                (frame-comp-pos frp, a'row, a'col)
+                (frame-comp-pos fr, a'row, a'col)
             )
         ))
         nil
@@ -51203,18 +51122,18 @@
         ))
     nil)
 
-;; Resize frame "frp" to be "n" lines higher (negative for less high).
+;; Resize frame "fr" to be "n" lines higher (negative for less high).
 ;; Also resize the frames it is contained in.
 
-(defn- #_void frame-add-height [#_frame_C frp, #_int n]
+(defn- #_void frame-add-height [#_frame_C fr, #_int n]
     (§
-        (frame-new-height frp, (+ (:fr_height frp) n), false, false)
+        (frame-new-height fr, (+ (:fr_height fr) n), false, false)
         (loop []
-            ((ß frp =) (:fr_parent frp))
-            (if (nil? frp)
+            ((ß fr =) (:fr_parent fr))
+            (if (nil? fr)
                 (ß BREAK)
             )
-            ((ß frp.fr_height =) (+ (:fr_height frp) n))
+            ((ß fr.fr_height =) (+ (:fr_height fr) n))
             (recur)
         )
         nil
@@ -51258,7 +51177,7 @@
                 (cond (!= fp fr)
                 (do
                     (frame-new-height fp, (dec (:fr_height fp)), false, false)
-                    (frame-fix-height win)
+                    ((ß win =) (frame-fix-height win))
                     (win-comp-pos)
                 )
                 :else
@@ -51305,26 +51224,26 @@
         nil
     ))
 
-;; Return true if "topfrp" and its children are at the right height.
+;; Return true if "topfr" and its children are at the right height.
 
-(defn- #_boolean frame-check-height [#_frame_C topfrp, #_int height]
-    (if (!= (:fr_height topfrp) height)
+(defn- #_boolean frame-check-height [#_frame_C topfr, #_int height]
+    (if (!= (:fr_height topfr) height)
         false
-        (if (== (:fr_layout topfrp) FR_ROW)
-            (loop-when [#_frame_C frp (:fr_child topfrp)] (some? frp) => true
-                (recur-if (== (:fr_height frp) height) [(:fr_next frp)] => false))
+        (if (== (:fr_layout topfr) FR_ROW)
+            (loop-when [#_frame_C fr (:fr_child topfr)] (some? fr) => true
+                (recur-if (== (:fr_height fr) height) [(:fr_next fr)] => false))
             true
         )
     ))
 
-;; Return true if "topfrp" and its children are at the right width.
+;; Return true if "topfr" and its children are at the right width.
 
-(defn- #_boolean frame-check-width [#_frame_C topfrp, #_int width]
-    (if (!= (:fr_width topfrp) width)
+(defn- #_boolean frame-check-width [#_frame_C topfr, #_int width]
+    (if (!= (:fr_width topfr) width)
         false
-        (if (== (:fr_layout topfrp) FR_COL)
-            (loop-when [#_frame_C frp (:fr_child topfrp)] (some? frp) => true
-                (recur-if (== (:fr_width frp) width) [(:fr_next frp)] => false))
+        (if (== (:fr_layout topfr) FR_COL)
+            (loop-when [#_frame_C fr (:fr_child topfr)] (some? fr) => true
+                (recur-if (== (:fr_width fr) width) [(:fr_next fr)] => false))
             true
         )
     ))
@@ -51341,13 +51260,6 @@
         (field long     lnum)       ;; line number
         (field int      height)     ;; height of added line
     ])
-
-(defn- #_void COPY-lineoff [#_lineoff_C lo1, #_lineoff_C lo0]
-    (§
-        ((ß lo1.lnum =) (:lnum lo0))
-        ((ß lo1.height =) (:height lo0))
-        nil
-    ))
 
 ;; Compute win.w_botline for the current win.w_topline.
 ;; Can be called after win.w_topline changed.
@@ -52260,186 +52172,121 @@
 ;; Correct the cursor position so that it is in a part of the screen at least
 ;; 'so' lines from the top and bottom, if possible.
 ;; If not possible, put it at the same position as scroll-cursor-halfway().
-;; When called topline must be valid!
+;; When called, topline must be valid!
 
 (defn- #_void cursor-correct []
-    (§
-        ;; How many lines we would like to have above/below the cursor depends on
-        ;; whether the first/last line of the file is on screen.
-
-        ((ß int above_wanted =) (int @p_so))
-        ((ß int below_wanted =) (int @p_so))
-        (when (== (:w_topline @curwin) 1)
-            ((ß above_wanted =) 0)
-            ((ß below_wanted =) (min below_wanted (/ (:w_height @curwin) 2)))
-        )
-        (validate-botline)
-        (when (== (:w_botline @curwin) (inc (:ml_line_count (:b_ml @curbuf))))
-            ((ß below_wanted =) 0)
-            ((ß above_wanted =) (min above_wanted (/ (dec (:w_height @curwin)) 2)))
-        )
-
-        ;; If there are sufficient file-lines above and below the cursor, we can return now.
-
-        ((ß long cln =) (:lnum (:w_cursor @curwin)))    ;; Cursor Line Number
-        (if (and (<= (+ (:w_topline @curwin) above_wanted) cln) (< cln (- (:w_botline @curwin) below_wanted)))
-            ((ß RETURN) nil)
-        )
-
-        ((ß int above =) 0)          ;; screen lines above topline
-        ((ß int below =) 0)          ;; screen lines below botline
-
+    ;; How many lines we would like to have above/below the cursor depends on
+    ;; whether the first/last line of the file is on screen.
+    (let-when [#_int aw @p_so #_int bw @p_so lmin 1 lmax (:ml_line_count (:b_ml @curbuf))
+          [aw bw] (if (== (:w_topline @curwin)      lmin)  [0 (min bw (/      (:w_height @curwin)  2))] [aw bw])
+          _ (validate-botline)
+          [bw aw] (if (== (:w_botline @curwin) (inc lmax)) [0 (min aw (/ (dec (:w_height @curwin)) 2))] [bw aw])
+          ;; If there are sufficient file-lines above and below the cursor, we can return now.
+          #_long cln (:lnum (:w_cursor @curwin))    ;; Cursor Line Number
+    ] (or (< cln (+ (:w_topline @curwin) aw)) (<= (- (:w_botline @curwin) bw) cln))
         ;; Narrow down the area where the cursor can be put by taking lines from the top and the bottom until:
         ;; - the desired context lines are found
         ;; - the lines from the top is past the lines from the bottom
-
-        ((ß long topline =) (:w_topline @curwin))
-        ((ß long botline =) (dec (:w_botline @curwin)))
-        (loop-when [] (and (or (< above above_wanted) (< below below_wanted)) (< topline botline))
-            (when (and (< below below_wanted) (or (<= below above) (<= above_wanted above)))
-                ((ß below =) (+ below (plines botline)))
-                ((ß botline =) (dec botline))
-            )
-            (when (and (< above above_wanted) (or (< above below) (<= below_wanted below)))
-                ((ß above =) (+ above (plines topline)))
-                ((ß topline =) (inc topline))
-            )
-            (recur)
-        )
-        (cond (or (== topline botline) (zero? botline))
-        (do
-            (swap! curwin assoc-in [:w_cursor :lnum] topline)
-        )
-        (< botline topline)
-        (do
-            (swap! curwin assoc-in [:w_cursor :lnum] botline)
-        )
-        :else
-        (do
-            (when (and (< cln topline) (< 1 (:w_topline @curwin)))
+        (let [[#_long topline #_long botline]
+                (loop-when [#_int a 0 #_int b 0 top' (:w_topline @curwin) bot' (dec (:w_botline @curwin))] (and (or (< a aw) (< b bw)) (< top' bot')) => [top' bot']
+                    (let [[b bot'] (if (and (< b bw) (or (<= b a) (<= aw a))) [(+ b (plines bot')) (dec bot')] [b bot'])
+                          [a top'] (if (and (< a aw) (or (<  a b) (<= bw b))) [(+ a (plines top')) (inc top')] [a top'])]
+                        (recur a b top' bot')
+                    ))]
+            (cond (or (== topline botline) (zero? botline))
                 (swap! curwin assoc-in [:w_cursor :lnum] topline)
-                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW)))
-            )
-            (when (and (< botline cln) (<= (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf))))
+            (< botline topline)
                 (swap! curwin assoc-in [:w_cursor :lnum] botline)
-                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW)))
-            )
+            :else
+            (do
+                (when (and (< cln topline) (< lmin (:w_topline @curwin)))
+                    (swap! curwin assoc-in [:w_cursor :lnum] topline)
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW))))
+                (when (and (< botline cln) (<= (:w_botline @curwin) lmax))
+                    (swap! curwin assoc-in [:w_cursor :lnum] botline)
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW))))
+            ))
+            (swap! curwin update :w_valid | VALID_TOPLINE)
         ))
-        (swap! curwin update :w_valid | VALID_TOPLINE)
-        nil
-    ))
+    nil)
 
 ;; move screen 'count' pages up or down and update screen
 ;;
 ;; return false for failure, true otherwise
 
 (defn- #_boolean onepage [#_int dir, #_long count]
-    (§
-        ((ß boolean retval =) true)
-
-        ((ß long old_topline =) (:w_topline @curwin))
-
-        (when (== (:ml_line_count (:b_ml @curbuf)) 1) ;; nothing to do
-            (beep-flush)
-            ((ß RETURN) false)
-        )
-
-        ((ß lineoff_C loff =) (NEW_lineoff_C))
-
-        (loop-when-recur count (< 0 count) (dec count)
-            (validate-botline)
-
-            ;; It's an error to move a page up when the first line is already on
-            ;; the screen.  It's an error to move a page down when the last line
-            ;; is on the screen and the topline is 'scrolloff' lines from the last line.
-
-            (when (if (== dir FORWARD) (and (<= (- (:ml_line_count (:b_ml @curbuf)) @p_so) (:w_topline @curwin)) (< (:ml_line_count (:b_ml @curbuf)) (:w_botline @curwin))) (== (:w_topline @curwin) 1))
-                (beep-flush)
-                ((ß retval =) false)
-                (ß BREAK)
-            )
-
-            (cond (== dir FORWARD)
-            (do
-                (cond (< (:ml_line_count (:b_ml @curbuf)) (:w_botline @curwin))
-                (do
-                    ;; at end of file
-                    (swap! curwin assoc :w_topline (:ml_line_count (:b_ml @curbuf)))
-                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW)))
-                )
-                :else
-                (do
-                    ;; For the overlap, start with the line just below the window and go upwards.
-                    ((ß loff.lnum =) (:w_botline @curwin))
-                    (get-scroll-overlap loff, -1)
-                    (swap! curwin assoc :w_topline (:lnum loff))
-                    (swap! curwin assoc-in [:w_cursor :lnum] (:w_topline @curwin))
-                    (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
-                ))
-            )
-            :else    ;; dir == BACKWARDS
-            (do
-                ;; Find the line at the top of the window that is going to be the line at the bottom of the window.
-                ;; Make sure this results in the same line as before doing CTRL-F.
-                ((ß loff.lnum =) (dec (:w_topline @curwin)))
-                (get-scroll-overlap loff, 1)
-
-                ((ß loff.lnum =) (min (:lnum loff) (:ml_line_count (:b_ml @curbuf))))
-                (swap! curwin assoc-in [:w_cursor :lnum] (:lnum loff))
-
-                ;; Find the line just above the new topline to get the right line at the bottom of the window.
-                ((ß long n =) 0)
-                (loop-when [] (and (<= n (:w_height @curwin)) (<= 1 (:lnum loff)))
-                    ((ß loff =) (topline-back loff))
-                    ((ß n =) (if (== (:height loff) MAXCOL) MAXCOL (+ n (:height loff))))
-                    (recur)
-                )
-                (cond (< (:lnum loff) 1)      ;; at begin of file
-                (do
-                    (swap! curwin assoc :w_topline 1)
-                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
-                )
-                :else
-                (do
-                    ;; Go two lines forward again.
-                    ((ß loff =) (botline-forw loff))
-                    ((ß loff =) (botline-forw loff))
-
-                    ;; Always scroll at least one line.  Avoid getting stuck on very long lines.
-                    (cond (<= (:w_topline @curwin) (:lnum loff))
-                    (do
-                        (swap! curwin update :w_topline dec)
-
-                        (comp-botline @curwin)
-                        (swap! curwin assoc-in [:w_cursor :lnum] (dec (:w_botline @curwin)))
-                        (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW)))
+    (let-when [lmin 1 lmax (:ml_line_count (:b_ml @curbuf))] (!= lmin lmax) => (do (beep-flush) false) ;; nothing to do
+        (let [#_long old_topline (:w_topline @curwin)
+              #_boolean ok
+                (loop-when count (< 0 count) => true
+                    (validate-botline)
+                    ;; It's an error to move a page
+                    ;; - up when the first line is already on the screen.
+                    ;; - down when the last line is on the screen and topline is 'scrolloff' lines from it.
+                    (if (if (== dir FORWARD) (and (<= (- lmax @p_so) (:w_topline @curwin)) (< lmax (:w_botline @curwin))) (== (:w_topline @curwin) lmin))
+                        (do (beep-flush) false)
+                        (do
+                            (cond (== dir FORWARD)
+                                (cond (< lmax (:w_botline @curwin)) ;; at end of file
+                                (do
+                                    (swap! curwin assoc :w_topline lmax)
+                                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW)))
+                                )
+                                :else ;; For the overlap, start with the line just below the window and go upwards.
+                                (let [#_lineoff_C loff (get-scroll-overlap (:w_botline @curwin), -1)]
+                                    (swap! curwin assoc :w_topline (:lnum loff))
+                                    (swap! curwin assoc-in [:w_cursor :lnum] (:w_topline @curwin))
+                                    (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
+                                ))
+                            :else
+                                ;; Find the line at the top of the window that is going to be the line at the bottom of the window.
+                                ;; Make sure this results in the same line as before doing CTRL-F.
+                                (let [#_lineoff_C loff (get-scroll-overlap (dec (:w_topline @curwin)), 1) loff (update loff :lnum min lmax)]
+                                    (swap! curwin assoc-in [:w_cursor :lnum] (:lnum loff))
+                                    ;; Find the line just above the new topline to get the right line at the bottom of the window.
+                                    (let [loff (loop-when [loff loff #_long n 0] (and (<= n (:w_height @curwin)) (<= lmin (:lnum loff))) => loff
+                                                    (let [loff (topline-back loff)]
+                                                        (recur loff (if (== (:height loff) MAXCOL) MAXCOL (+ n (:height loff)))))
+                                            )]
+                                        (cond (< (:lnum loff) lmin) ;; at begin of file
+                                        (do
+                                            (swap! curwin assoc :w_topline lmin)
+                                            (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
+                                        )
+                                        :else ;; Go two lines forward again.
+                                        (let [loff (botline-forw loff) loff (botline-forw loff)]
+                                            ;; Always scroll at least one line.  Avoid getting stuck on very long lines.
+                                            (cond (<= (:w_topline @curwin) (:lnum loff))
+                                            (do
+                                                (swap! curwin update :w_topline dec)
+                                                (comp-botline @curwin)
+                                                (swap! curwin assoc-in [:w_cursor :lnum] (dec (:w_botline @curwin)))
+                                                (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW)))
+                                            )
+                                            :else
+                                            (do
+                                                (swap! curwin assoc :w_topline (:lnum loff))
+                                                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
+                                            ))
+                                        ))
+                                    )
+                                ))
+                            (recur (dec count))
+                        )
                     )
-                    :else
-                    (do
-                        (swap! curwin assoc :w_topline (:lnum loff))
-                        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
-                    ))
-                ))
-            ))
-        )
-
-        (cursor-correct)
-        (if retval
-            (beginline (| BL_SOL BL_FIX)))
-        (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_WROW VALID_VIRTCOL)))
-
-        ;; Avoid the screen jumping up and down when 'scrolloff' is non-zero.
-        ;; But make sure we scroll at least one line (happens with mix of long
-        ;; wrapping lines and non-wrapping line).
-
-        (when (and retval (== dir FORWARD) (check-top-offset))
-            (scroll-cursor-top 1, false)
-            (when (and (<= (:w_topline @curwin) old_topline) (< old_topline (:ml_line_count (:b_ml @curbuf))))
-                (swap! curwin assoc :w_topline (inc old_topline)))
-        )
-
-        (redraw-win-later @curwin, VALID)
-        retval
+                )]
+            (cursor-correct)
+            (when ok
+                (beginline (| BL_SOL BL_FIX)))
+            (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_WROW VALID_VIRTCOL)))
+            ;; Avoid the screen jumping up and down when 'scrolloff' is non-zero.
+            ;; But make sure we scroll at least one line (happens with mix of long wrapping lines and non-wrapping line).
+            (when (and ok (== dir FORWARD) (check-top-offset))
+                (scroll-cursor-top 1, false)
+                (when (and (<= (:w_topline @curwin) old_topline) (< old_topline lmax))
+                    (swap! curwin assoc :w_topline (inc old_topline))))
+            (redraw-win-later @curwin, VALID)
+        ok)
     ))
 
 ;; Decide how much overlap to use for page-up or page-down scrolling.
@@ -52453,43 +52300,24 @@
 ;;  -------------               l3 second text line
 ;;  l3                             etc.
 
-(defn- #_void get-scroll-overlap [#_lineoff_C lp, #_int dir]
-    (§
-        ((ß int min_height =) (- (:w_height @curwin) 2))
-
-        ((ß lp.height =) (plines (:lnum lp)))
-        ((ß int h1 =) (:height lp))
+(defn- #_lineoff_C get-scroll-overlap [#_long lnum, #_int dir]
+    (let [#_int min_height (- (:w_height @curwin) 2)     #_lineoff_C loff (->lineoff_C lnum (plines lnum))           #_int h1 (:height loff)]
         (if (< min_height h1)
-            ((ß RETURN) nil)         ;; no overlap
-        )
-
-        ((ß lineoff_C loff0 =) (NEW_lineoff_C))
-        (COPY-lineoff loff0, lp)
-        ((ß lp =) (if (< 0 dir) (botline-forw lp) (topline-back lp)))
-        ((ß int h2 =) (:height lp))
-        (when (or (== h2 MAXCOL) (< min_height (+ h2 h1)))
-            (COPY-lineoff lp, loff0)    ;; no overlap
-            ((ß RETURN) nil)
-        )
-
-        ((ß lineoff_C loff1 =) (NEW_lineoff_C))
-        (COPY-lineoff loff1, lp)
-        ((ß lp =) (if (< 0 dir) (botline-forw lp) (topline-back lp)))
-        ((ß int h3 =) (:height lp))
-        (when (or (== h3 MAXCOL) (< min_height (+ h3 h2)))
-            (COPY-lineoff lp, loff0)    ;; no overlap
-            ((ß RETURN) nil)
-        )
-
-        ((ß lineoff_C loff2 =) (NEW_lineoff_C))
-        (COPY-lineoff loff2, lp)
-        ((ß lp =) (if (< 0 dir) (botline-forw lp) (topline-back lp)))
-        ((ß int h4 =) (:height lp))
-        (if (or (== h4 MAXCOL) (< min_height (+ h4 h3 h2)) (< min_height (+ h3 h2 h1)))
-            (COPY-lineoff lp, loff1)    ;; 1 line overlap
-            (COPY-lineoff lp, loff2))    ;; 2 lines overlap
-        nil
-    ))
+            loff ;; no overlap
+            (let [#_lineoff_C over0 loff                 loff (if (< 0 dir) (botline-forw loff) (topline-back loff)) #_int h2 (:height loff)]
+                (if (or (== h2 MAXCOL) (< min_height (+ h2 h1)))
+                    over0 ;; no overlap
+                    (let [#_lineoff_C over1 loff         loff (if (< 0 dir) (botline-forw loff) (topline-back loff)) #_int h3 (:height loff)]
+                        (if (or (== h3 MAXCOL) (< min_height (+ h3 h2)))
+                            over0 ;; no overlap
+                            (let [#_lineoff_C over2 loff loff (if (< 0 dir) (botline-forw loff) (topline-back loff)) #_int h4 (:height loff)]
+                                (if (or (== h4 MAXCOL) (< min_height (+ h4 h3 h2)) (< min_height (+ h3 h2 h1)))
+                                    over1 ;; 1 line overlap
+                                    over2 ;; 2 lines overlap
+                                ))
+                        ))
+                ))
+        )))
 
 ;; Scroll 'scroll' lines up or down.
 
