@@ -36483,7 +36483,7 @@
 
 (atom! boolean cls_bigword)     ;; true for "W", "B" or "E"
 
-;; cls() - returns the class of character at curwin.w_cursor
+;; returns the class of character at curwin.w_cursor
 ;;
 ;; If a 'W', 'B', or 'E' motion is being done (cls_bigword == true),
 ;; chars from class 2 and higher are reported as class 1 since only
@@ -36492,82 +36492,47 @@
 (defn- #_int cls []
     (let [#_int c (gchar)] (if (any == c (byte \space) TAB NUL) 0 (let [c (utf-class c)] (if (and (non-zero? c) @cls_bigword) 1 c)))))
 
-;; fwd-word(count, type, eol) - move forward one word
+;; move forward 'n' words
 ;;
 ;; Returns false if the cursor was already at the end of the file.
 ;; If eol is true, last word stops at end of line (for operators).
 
-(defn- #_boolean fwd-word [#_long count, #_boolean bigword, #_boolean eol]
-    ;; bigword: "W", "E" or "B"
-    (§
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        (reset! cls_bigword bigword)
-
-        (while (<= 0 ((ß count =) (dec count)))
-            ((ß int sclass =) (cls))         ;; starting class
-
-            ;; We always move at least one character,
-            ;; unless on the last character in the buffer.
-
-            ((ß boolean last_line =) (== (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
-            ((ß int i =) (inc-cursor))
-            (if (or (== i -1) (and (<= 1 i) last_line))   ;; started at last char in file
-                ((ß RETURN) false)
-            )
-            (if (and (<= 1 i) eol (zero? count))        ;; started at last char in line
-                ((ß RETURN) true)
-            )
-
-            ;; Go one char past end of current word (if any).
-
-            (when (non-zero? sclass)
-                (while (== (cls) sclass)
-                    ((ß i =) (inc-cursor))
-                    (if (or (== i -1) (and (<= 1 i) eol (zero? count)))
-                        ((ß RETURN) true)
-                    )
-                )
-            )
-
-            ;; go to next non-white
-
-            (while (== (cls) 0)
-                ;; We'll stop if we land on a blank line
-
-                (if (and (zero? (:col (:w_cursor @curwin))) (eos? (ml-get-curline)))
-                    (ß BREAK)
-                )
-
-                ((ß i =) (inc-cursor))
-                (if (or (== i -1) (and (<= 1 i) eol (zero? count)))
-                    ((ß RETURN) true)
-                )
-            )
-        )
-
-        true
+(defn- #_boolean fwd-word [#_long n, #_boolean bigword, #_boolean eol]
+    (reset! cls_bigword bigword)
+    (swap! curwin assoc-in [:w_cursor :coladd] 0)
+    (loop-when [n (dec n)] (<= 0 n) => true
+        (let [#_int sclass (cls) ;; starting class
+              ;; We always move at least one character, unless on the last character in the buffer.
+              #_boolean last_line (== (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
+              #_int i (inc-cursor)]
+            (cond (or (== i -1) (and (<= 1 i) last_line))   ;; started at last char in file
+                false
+            (and (<= 1 i) eol (zero? n))                    ;; started at last char in line
+                true
+            :else
+                ;; go one char past end of current word (if any)
+                (let-when [step- #(let [#_int i (inc-cursor)] (or (== i -1) (and (<= 1 i) eol (zero? n))))
+                           _ (when (non-zero? sclass) (loop-when [] (== (cls) sclass) (if (step-) true (recur))))] (nil? _) => _
+                    ;; go to next non-white ;; we'll stop if we land on a blank line
+                    (let-when [_ (loop-when [] (and (== (cls) 0) (not (and (zero? (:col (:w_cursor @curwin))) (eos? (ml-get-curline))))) (if (step-) true (recur)))] (nil? _) => _
+                        (recur (dec n))
+                    ))
+            ))
     ))
 
-;; bck-word() - move backward 'count' words
+;; move backward 'n' words
 ;;
 ;; If stop is true and we are already on the start of a word, move one less.
-;;
 ;; Returns false if top of the file was reached.
 
-(defn- #_boolean bck-word [#_long count, #_boolean bigword, #_boolean stop]
-    (§
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        (reset! cls_bigword bigword)
+(defn- #_boolean bck-word [#_long n, #_boolean bigword, #_boolean stop]
+    (reset! cls_bigword bigword)
+    (swap! curwin assoc-in [:w_cursor :coladd] 0)
 
-        (while (<= 0 ((ß count =) (dec count)))
-            ((ß int sclass =) (cls))             ;; starting class
-
-            (if (== (dec-cursor) -1)         ;; started at start of file
-                ((ß RETURN) false)
-            )
-
+    (loop-when [n (dec n) stop stop] (<= 0 n) => true
+        (let-when [#_int sclass (cls)] (!= (dec-cursor) -1) => false ;; started at start of file
 ;           finished:
-;           {
+            (§
                 (when (or (not stop) (== sclass (cls)) (zero? sclass))
                     ;; Skip white space before the word.
                     ;; Stop on an empty line.
@@ -36589,42 +36554,33 @@
                 )
 
                 (inc-cursor)                   ;; overshot - forward one
-;           }
+            )
 
-            ((ß stop =) false)
+            (recur (dec n) false)
         )
-
-        true
     ))
 
-;; end-word() - move to the end of the word
+;; move to the end of the word
 ;;
 ;; There is an apparent bug in the 'e' motion of the real vi.  At least on the
-;; System V Release 3 version for the 80386.  Unlike 'b' and 'w', the 'e'
-;; motion crosses blank lines.  When the real vi crosses a blank line in an
-;; 'e' motion, the cursor is placed on the FIRST character of the next
-;; non-blank line. The 'E' command, however, works correctly.  Since this
-;; appears to be a bug, I have not duplicated it here.
+;; System V Release 3 version for the 80386.  Unlike 'b' and 'w', the 'e' motion
+;; crosses blank lines.  When the real vi crosses a blank line in an 'e' motion,
+;; the cursor is placed on the FIRST character of the next non-blank line.
+;; The 'E' command, however, works correctly.  Since this appears to be a bug,
+;; I have not duplicated it here.
 ;;
 ;; Returns false if end of the file was reached.
-;;
 ;; If stop is true and we are already on the end of a word, move one less.
 ;; If empty is true stop on an empty line.
 
-(defn- #_boolean end-word [#_long count, #_boolean bigword, #_boolean stop, #_boolean empty]
-    (§
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        (reset! cls_bigword bigword)
+(defn- #_boolean end-word [#_long n, #_boolean bigword, #_boolean stop, #_boolean empty]
+    (reset! cls_bigword bigword)
+    (swap! curwin assoc-in [:w_cursor :coladd] 0)
 
-        (while (<= 0 ((ß count =) (dec count)))
-            ((ß int sclass =) (cls))         ;; starting class
-
-            (if (== (inc-cursor) -1)
-                ((ß RETURN) false)
-            )
-
+    (loop-when [n (dec n) stop stop] (<= 0 n) => true
+        (let-when [#_int sclass (cls)] (!= (inc-cursor) -1) => false
 ;           finished:
-;           {
+            (§
                 ;; If we're in the middle of a word, we just have to move to the end of it.
 
                 (cond (and (== (cls) sclass) (non-zero? sclass))
@@ -36655,60 +36611,38 @@
                         ((ß RETURN) false)
                     )
                 ))
+
                 (dec-cursor)                   ;; overshot - one char backward
-;           }
+            )
 
-            ((ß stop =) false)                   ;; we move only one word less
+            (recur (dec n) false) ;; we move only one word less
         )
-
-        true
     ))
 
-;; Move back to the end of the word.
+;; move back to the end of the word
 ;;
 ;; Returns false if start of the file was reached.
+;; If eol is true, stop at end of line.
 
-(defn- #_boolean bckend-word [#_long count, #_boolean bigword, #_boolean eol]
-    ;; bigword: true for "B"
-    ;; eol: true: stop at end of line.
-    (§
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        (reset! cls_bigword bigword)
-
-        (while (<= 0 ((ß count =) (dec count)))
-            ((ß int sclass =) (cls))         ;; starting class
-
-            ((ß int i =) (dec-cursor))
-            (if (== i -1)
-                ((ß RETURN) false)
-            )
-            (if (and eol (== i 1))
-                ((ß RETURN) true)
-            )
-
-            ;; Move backward to before the start of this word.
-
-            (when (non-zero? sclass)
-                (while (== (cls) sclass)
-                    (if (or (== ((ß i =) (dec-cursor)) -1) (and eol (== i 1)))
-                        ((ß RETURN) true)
-                    )
-                )
-            )
-
-            ;; Move backward to end of the previous word
-
-            (while (== (cls) 0)
-                (if (and (zero? (:col (:w_cursor @curwin))) (lineempty (:lnum (:w_cursor @curwin))))
-                    (ß BREAK)
-                )
-                (if (or (== ((ß i =) (dec-cursor)) -1) (and eol (== i 1)))
-                    ((ß RETURN) true)
-                )
-            )
-        )
-
-        true
+(defn- #_boolean bckend-word [#_long n, #_boolean bigword, #_boolean eol]
+    (reset! cls_bigword bigword)
+    (swap! curwin assoc-in [:w_cursor :coladd] 0)
+    (loop-when [n (dec n)] (<= 0 n) => true
+        (let [#_int sclass (cls) ;; starting class
+              #_int i (dec-cursor)]
+            (cond (== i -1)
+                false
+            (and eol (== i 1))
+                true
+            :else
+                ;; Move backward to before the start of this word.
+                (let-when [step- #(let [#_int i (dec-cursor)] (or (== i -1) (and eol (== i 1))))
+                           _ (when (non-zero? sclass) (loop-when [] (== (cls) sclass) (if (step-) true (recur))))] (nil? _) => _
+                    ;; Move backward to end of the previous word.
+                    (let-when [_ (loop-when [] (and (== (cls) 0) (not (and (zero? (:col (:w_cursor @curwin))) (lineempty (:lnum (:w_cursor @curwin)))))) (if (step-) true (recur)))] (nil? _) => _
+                        (recur (dec n))
+                    ))
+            ))
     ))
 
 ;; Skip a row of characters of the same class.
@@ -37624,47 +37558,31 @@
 ;; Print info about the current buffer.
 
 (defn- #_void fileinfo [#_int _fullname]
-    (§
-        ((ß Bytes buffer =) (Bytes. IOSIZE))
-
-        ((ß Bytes p =) buffer)
-
-        (.be ((ß p =) (.plus p 1)) -1, (byte \"))   ;; """
-        (vim-strncpy p, (u8 "[No Name]"), (- IOSIZE (BDIFF p, buffer) 1))
-
-        (vim_snprintf_add buffer, IOSIZE, (u8 "\"%s"), (if @(:b_changed @curbuf) (u8 " [Modified] ") (u8 " ")))
-
-        ((ß int n =) (int (/ (* (:lnum (:w_cursor @curwin)) 100) (:ml_line_count (:b_ml @curbuf)))))
-
-        (cond (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
-        (do
-            (vim_snprintf_add buffer, IOSIZE, (u8 "%s"), no_lines_msg)
-        )
-        @p_ru
-        (do
-            ;; Current line and column are already on the screen.
-            (if (== (:ml_line_count (:b_ml @curbuf)) 1)
-                (vim_snprintf_add buffer, IOSIZE, (u8 "1 line --%d%%--"), n)
-                (vim_snprintf_add buffer, IOSIZE, (u8 "%ld lines --%d%%--"), (:ml_line_count (:b_ml @curbuf)), n)
-            )
-        )
-        :else
-        (do
-            (vim_snprintf_add buffer, IOSIZE, (u8 "line %ld of %ld --%d%%-- col "), (:lnum (:w_cursor @curwin)), (:ml_line_count (:b_ml @curbuf)), n)
-            (validate-virtcol)
-            ((ß int len =) (STRLEN buffer))
-            (col-print (.plus buffer len), (- IOSIZE len), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin)))
+    (let [lnum (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))
+          #_Bytes buf (Bytes. IOSIZE)]
+        (let [#_Bytes p (-> buf (.be 0, (byte \")) (.plus 1))] ;; """
+            (vim-strncpy p, (u8 "[No Name]"), (- IOSIZE (BDIFF p, buf) 1)))
+;%%     (vim_snprintf_add buf, IOSIZE, (u8 "\"%s"), (if @(:b_changed @curbuf) (u8 " [Modified] ") (u8 " ")))
+        (let [#_int n (int (/ (* lnum 100) lmax))]
+;%%         (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+;%%             (vim_snprintf_add buf, IOSIZE, (u8 "%s"), no_lines_msg)
+;%%         @p_ru ;; Current line and column are already on the screen.
+;%%             (if (== lmax 1)
+;%%                 (vim_snprintf_add buf, IOSIZE, (u8 "1 line --%d%%--"), n)
+;%%                 (vim_snprintf_add buf, IOSIZE, (u8 "%ld lines --%d%%--"), lmax, n))
+;%%         :else
+;%%         (do
+;%%             (vim_snprintf_add buf, IOSIZE, (u8 "line %ld of %ld --%d%%-- col "), lnum, lmax, n)
+;%%             (validate-virtcol)
+;%%             (let [#_int len (STRLEN buf)]
+;%%                 (col-print (.plus buf len), (- IOSIZE len), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin))))
+;%%         ))
+            ;; Temporarily set msg_scroll to avoid the message being truncated.
+            ;; First call msg-start() to get the message in the right place.
+            (msg-start)
+            (let [_ @msg_scroll] (reset! msg_scroll true) (msg buf) (reset! msg_scroll _))
         ))
-
-        ;; Temporarily set msg_scroll to avoid the message being truncated.
-        ;; First call msg-start() to get the message in the right place.
-        (msg-start)
-        ((ß boolean m =) @msg_scroll)
-        (reset! msg_scroll true)
-        (msg buffer)
-        (reset! msg_scroll m)
-        nil
-    ))
+    nil)
 
 (defn- #_void col-print [#_Bytes buf, #_int buflen, #_int col, #_int vcol]
 ;%% (if (== col vcol)
@@ -37676,31 +37594,20 @@
 ;; Get relative cursor position in window into "buf[buflen]", in the form 99%,
 ;; using "Top", "Bot" or "All" when appropriate.
 
-(defn- #_void get-rel-pos [#_window_C wp, #_Bytes buf, #_int buflen]
-    (§
-        (if (< buflen 3) ;; need at least 3 chars for writing
-            ((ß RETURN) nil)
-        )
-
+(defn- #_void get-rel-pos [#_window_C win, #_Bytes buf, #_int buflen]
+    (if (<= 3 buflen) ;; need at least 3 chars for writing
         ;; number of lines above/below window
-        ((ß long above =) (dec (:w_topline wp)))
-        ((ß long below =) (inc (- (:ml_line_count (:b_ml @curbuf)) (:w_botline wp))))
-
-        (cond (<= below 0)
-        (do
-            (vim-strncpy buf, (if (zero? above) (u8 "All") (u8 "Bot")), (dec buflen))
-        )
-        (<= above 0)
-        (do
-            (vim-strncpy buf, (u8 "Top"), (dec buflen))
-        )
-        :else
-        (do
-            ((ß int cent =) (if (< 1000000 above) (int (/ above (/ (+ above below) 100))) (int (/ (* above 100) (+ above below)))))
-;%%         (vim_snprintf buf, buflen, (u8 "%2d%%"), cent)
+        (let [#_long above (dec (:w_topline win)) #_long below (inc (- (:ml_line_count (:b_ml @curbuf)) (:w_botline win)))]
+            (cond (<= below 0)
+                (vim-strncpy buf, (if (zero? above) (u8 "All") (u8 "Bot")), (dec buflen))
+            (<= above 0)
+                (vim-strncpy buf, (u8 "Top"), (dec buflen))
+            :else
+            (let [#_int cent (if (< 1000000 above) (int (/ above (/ (+ above below) 100))) (int (/ (* above 100) (+ above below))))]
+;%%             (vim_snprintf buf, buflen, (u8 "%2d%%"), cent)
+            ))
         ))
-        nil
-    ))
+    nil)
 
 ;;; ============================================================================================== VimQ
 
@@ -37920,37 +37827,20 @@
 ;; enough room, not all characters will be translated.
 
 (defn- #_void trans-characters [#_Bytes buf, #_int bufsize]
-    (§
-        ((ß int len =) (STRLEN buf))
-        ((ß int room =) (- bufsize len))                           ;; room in buffer after string
-
-        (while (non-eos? buf)
-            ((ß int trs_len =) (us-ptr2len-cc buf))
-
+    (loop-when [buf buf #_int len (STRLEN buf) #_int room (- bufsize len)] (non-eos? buf)
+        (let-when [#_int n (us-ptr2len-cc buf)
             ;; Assume a multi-byte character doesn't need translation.
-            (cond (< 1 trs_len)
-            (do
-                ((ß len =) (- len trs_len))
-            )
-            :else
-            (do
-                ((ß Bytes trs =) (transchar-byte (.at buf 0)))          ;; translated character
-                ((ß trs_len =) (STRLEN trs))
-                (when (< 1 trs_len)
-                    ((ß room =) (- room (dec trs_len)))
-                    (if (<= room 0)
-                        ((ß RETURN) nil)
-                    )
-                    (BCOPY buf, trs_len, buf, 1, len)
-                )
-                (BCOPY buf, trs, trs_len)
-                ((ß len =) (dec len))
-            ))
-
-            ((ß buf =) (.plus buf trs_len))
-        )
-        nil
-    ))
+            [n len room :as _] (if (< 1 n)
+                [n (- len n) room]
+                (let-when [#_Bytes s (transchar-byte (.at buf 0)) n (STRLEN s)
+                           room (if (< 1 n) (let-when [room (- room (dec n))] (< 0 room) (BCOPY buf, n, buf, 1, len) room) room)]
+                (some? room)
+                    (BCOPY buf, s, n)
+                    [n (dec len) room]
+                ))] (some? _)
+            (recur (.plus buf n) len room)
+        ))
+    nil)
 
 ;; Catch 22: chartab[] can't be initialized before the options are initialized,
 ;; and initializing options may cause transchar() to be called!
@@ -37961,15 +37851,14 @@
 (final Bytes transchar_buf (Bytes. 7))
 
 (defn- #_Bytes transchar [#_int c]
-    (let [buf transchar_buf [#_int i c]
-            (if (is-special c) ;; special key code, display as ~@ char
+    (let [buf transchar_buf
+          [#_int i c] (if (is-special c) ;; special key code, display as ~@ char
                 (do (-> buf (.be 0, (byte \~)) (.be 1, (byte \@))) [2 (char_u (KB-SECOND c))])
                 [0 c]
             )]
         (if (or (and (not @chartab_initialized) (<= (byte \space) c (byte \~))) (and (< c 256) (vim-isprintc c)))
             (-> buf (.be i, c) (eos! (inc i))) ;; printable character
-            (transchar-nonprint (.plus buf i), c)
-        )
+            (transchar-nonprint (.plus buf i), c))
         buf
     ))
 
@@ -38154,185 +38043,99 @@
 ;; If "headp" not null, set "*headp" to the size of what we for 'showbreak' string at start of line.
 ;; Warning: "*headp" is only set if it's a non-zero value, init to 0 before calling.
 
-(defn- #_int win-lbr-chartabsize [#_window_C wp, #_Bytes line, #_Bytes s, #_int col, #_int' a'headp]
+(defn- #_int win-lbr-chartabsize [#_window_C win, #_Bytes line, #_Bytes s, #_int col, #_int' a'headp]
     ;; line: start of the line
-    (§
-        ((ß int col_adj =) 0)                ;; col + screen size of tab
-        ((ß int mb_added =) 0)
-        ((ß boolean tab_corr =) (at? s TAB))
-
+    (let [lbr @(:wo_lbr (:w_options win)) bri @(:wo_bri (:w_options win)) wrap @(:wo_wrap (:w_options win))]
         ;; No 'linebreak', 'showbreak' and 'breakindent': return quickly.
-
-        (when (and (not @(:wo_lbr (:w_options wp))) (not @(:wo_bri (:w_options wp))) (eos? @p_sbr))
-            (if @(:wo_wrap (:w_options wp))
-                ((ß RETURN) (win-nolbr-chartabsize wp, s, col, a'headp))
-            )
-
-            ((ß RETURN) (chartabsize s, col))
-        )
-
-        ;; First get normal size, without 'linebreak'.
-
-        ((ß int size =) (chartabsize s, col))
-        ((ß byte c =) (.at s 0))
-        (if tab_corr
-            ((ß col_adj =) (dec size))
-        )
-
-        ;; If 'linebreak' set check at a blank before a non-blank if the line needs a break here.
-
-        (cond (and @(:wo_lbr (:w_options wp)) (... @breakat_flags (char_u c)) (not (... @breakat_flags (char_u (.at s 1)))) @(:wo_wrap (:w_options wp)) (non-zero? (:w_width wp)))
-        (do
-            ;; Count all characters from first non-blank after a blank up to next non-blank after a blank.
-
-            ((ß int numberextra =) (win-col-off wp))
-            ((ß int col2 =) col)
-            ((ß int colmax =) (- (:w_width wp) numberextra col_adj))
-            (when (<= colmax col)
-                ((ß colmax =) (+ colmax col_adj))
-                ((ß int n =) (+ colmax (win-col-off2 wp)))
-                (if (< 0 n)
-                    ((ß colmax =) (+ colmax (- (* (inc (/ (- col colmax) n)) n) col_adj)))
-                )
-            )
-
-            (while true
-                ((ß Bytes ps =) s)
-                ((ß s =) (.plus s (us-ptr2len-cc s)))
-                ((ß c =) (.at s 0))
-                (when (not (and (!= c NUL) (or (... @breakat_flags (char_u c)) (and (not (... @breakat_flags (char_u c))) (or (== col2 col) (not (... @breakat_flags (char_u (.at ps 0)))))))))
-                    (ß BREAK)
-                )
-
-                ((ß col2 =) (+ col2 (chartabsize s, col2)))
-                (when (<= colmax col2)         ;; doesn't fit
-                    ((ß size =) (+ (- colmax col) col_adj))
-                    ((ß tab_corr =) false)
-                    (ß BREAK)
-                )
-            )
-        )
-        (and (== size 2) (< 1 (us-byte2len (.at s 0), false)) @(:wo_wrap (:w_options wp)) (in-win-border wp, col))
-        (do
-            ((ß size =) (inc size))         ;; Count the ">" in the last column.
-            ((ß mb_added =) 1)
-        ))
-
-        ;; May have to add something for 'breakindent' and/or 'showbreak' string at start of line.
-        ;; Set "*headp" to the size of what we add.
-
-        ((ß int added =) 0)
-        (when (and (or (non-eos? @p_sbr) @(:wo_bri (:w_options wp))) (and @(:wo_wrap (:w_options wp)) (non-zero? col)))
-            ((ß int sbrlen =) 0)
-            ((ß int numberwidth =) (win-col-off wp))
-
-            ((ß int numberextra =) numberwidth)
-            ((ß col =) (+ col (+ numberextra mb_added)))
-            (when (<= (:w_width wp) col)
-                ((ß col =) (- col (:w_width wp)))
-                ((ß numberextra =) (- (:w_width wp) (- numberextra (win-col-off2 wp))))
-                (if (and (<= numberextra col) (< 0 numberextra))
-                    ((ß col =) (% col numberextra))
-                )
-                (when (non-eos? @p_sbr)
-                    ((ß sbrlen =) (us-charlen @p_sbr))
-                    (if (<= sbrlen col)
-                        ((ß col =) (- col sbrlen))
-                    )
-                )
-                (cond (and (>= col numberextra) (< 0 numberextra))
-                (do
-                    ((ß col =) (% col numberextra))
-                )
-                (and (< 0 col) (< 0 numberextra))
-                (do
-                    ((ß col =) (+ col (- numberwidth (win-col-off2 wp))))
-                ))
-
-                ((ß numberwidth =) (- numberwidth (win-col-off2 wp)))
-            )
-            (when (or (zero? col) (< (:w_width wp) (+ col size sbrlen)))
-                ((ß added =) 0)
-                (when (non-eos? @p_sbr)
-                    (cond (< (:w_width wp) (+ size sbrlen numberwidth))
-                    (do
-                        ;; calculate effective window width
-                        ((ß int width =) (- (:w_width wp) sbrlen numberwidth))
-                        ((ß int prev_width =) (if (non-zero? col) (- (:w_width wp) (+ sbrlen col)) 0))
-                        (if (zero? width)
-                            ((ß width =) (:w_width wp))
-                        )
-                        ((ß added =) (+ added (* (/ (- size prev_width) width) (mb-string2cells @p_sbr))))
-                        (when (non-zero? (% (- size prev_width) width))
-                            ;; wrapped, add another length of 'sbr'
-                            ((ß added =) (+ added (mb-string2cells @p_sbr)))
-                        )
-                    )
-                    :else
-                    (do
-                        ((ß added =) (+ added (mb-string2cells @p_sbr)))
-                    ))
-                )
-                (if @(:wo_bri (:w_options wp))
-                    ((ß added =) (+ added (get-breakindent-win wp, line)))
-                )
-
-                ((ß size =) (+ size added))
-                (if (non-zero? col)
-                    ((ß added =) 0)
-                )
-            )
-        )
-        (if (some? a'headp)
-            (reset! a'headp (+ added mb_added))
-        )
-
-        size
+        (if (and (not lbr) (not bri) (eos? @p_sbr))
+            (if wrap (win-nolbr-chartabsize win, s, col, a'headp) (chartabsize s, col))
+            ;; First get normal size, without 'linebreak'.
+            (let [#_int size (chartabsize s, col)
+                  #_int col_adj (if (at? s TAB) (dec size) 0) ;; col + screen size of tab
+                  breakat? #(... @breakat_flags (char_u (.at %1 %2)))
+                  ;; If 'linebreak' set check at a blank before a non-blank if the line needs a break here.
+                  [size #_int mb_added]
+                        (cond (and lbr (breakat? s 0) (not (breakat? s 1)) wrap (non-zero? (:w_width win)))
+                            ;; Count all characters from first non-blank after a blank up to next non-blank after a blank.
+                            (let [#_int colmax (let [x (- (:w_width win) (win-col-off win) col_adj)] (if (<= x col)
+                                               (let [m (+ x col_adj) n (+ m (win-col-off2 win))]     (if (< 0 n) (+ m (- (* (inc (/ (- col m) n)) n) col_adj)) m)) x))
+                                size (loop [s s #_int col2 col]
+                                        (let-when [#_Bytes ps s s (.plus s (us-ptr2len-cc s))]
+                                                  (and (non-eos? s) (or (breakat? s 0) (and (not (breakat? s 0)) (or (== col2 col) (not (breakat? ps 0)))))) => size
+                                            (let-when [col2 (+ col2 (chartabsize s, col2))] (< col2 colmax) => (+ (- colmax col) col_adj) ;; doesn't fit
+                                                (recur s col2)
+                                            )))]
+                                [size 0])
+                        (and (== size 2) (< 1 (us-byte2len (.at s 0), false)) wrap (in-win-border win, col))
+                            [(inc size) 1] ;; count the ">" in the last column
+                        :else
+                            [size 0])
+                  ;; May have to add something for 'breakindent' and/or 'showbreak' string at start of line.
+                  [size #_int added]
+                        (if (and (or (non-eos? @p_sbr) bri) (and wrap (non-zero? col)))
+                            (let [#_int z (if (non-eos? @p_sbr) (us-charlen @p_sbr) 0)
+                                  #_int n (win-col-off win)
+                                  col (+ col n mb_added)
+                                  [n col] (if (<= (:w_width win) col)
+                                            (let [n (- n (win-col-off2 win))
+                                                  #_int e (- (:w_width win) n)
+                                                  col (- col (:w_width win))
+                                                  col (if (and (<= e col) (< 0 e)) (% col e) col)
+                                                  col (if (and (non-eos? @p_sbr) (<= z col)) (- col z) col)
+                                                  col (cond (and (<= e col) (< 0 e)) (% col e) (and (< 0 col) (< 0 e)) (+ col n) :else col)]
+                                                [n col])
+                                            [n col])]
+                                (if (or (zero? col) (< (:w_width win) (+ col size z)))
+                                    (let [#_int m (if (non-eos? @p_sbr)
+                                                    (if (< (:w_width win) (+ size z n))
+                                                        (let [#_int w (- (:w_width win) z n) w (if (zero? w) (:w_width win) w)
+                                                              #_int x (- size (if (non-zero? col) (- (:w_width win) z col) 0))]
+                                                            (+ (/ x w) (if (non-zero? (% x w)) 1 0))) ;; if wrapped, add another length of 'sbr'
+                                                        1)
+                                                    0)
+                                          added (* m (mb-string2cells @p_sbr))
+                                          added (if bri (+ added (get-breakindent-win win, line)) added)]
+                                        [(+ size added) (if (zero? col) added 0)])
+                                    [size 0]
+                                ))
+                            [size 0]
+                        )]
+                ;; Set "*headp" to the size of what we add.
+                (when (some? a'headp) (reset! a'headp (+ added mb_added)))
+                size
+            ))
     ))
 
 ;; Like win-lbr-chartabsize(), except that we know 'linebreak' is off and 'wrap' is on.
-;; This means we need to check for a double-byte character that doesn't fit
-;; at the end of the screen line.
+;; This means we need to check for a double-byte character that doesn't fit at the end
+;; of the screen line.
 
-(defn- #_int win-nolbr-chartabsize [#_window_C wp, #_Bytes p, #_int col, #_int' a'headp]
-    (§
-        (when (at? p TAB)
-            ((ß int ts =) (int @(:b_p_ts @curbuf)))
-            ((ß RETURN) (- ts (% col ts)))
-        )
-
-        ((ß int n =) (mb-ptr2cells p))
-        ;; Add one cell for a double-width character in the last column of the window,
-        ;; displayed with a ">".
-        (when (and (== n 2) (< 1 (us-byte2len (.at p 0), false)) (in-win-border wp, col))
-            (if (some? a'headp)
-                (reset! a'headp 1)
-            )
-            ((ß RETURN) 3)
-        )
-        n
+(defn- #_int win-nolbr-chartabsize [#_window_C win, #_Bytes s, #_int col, #_int' a'headp]
+    (if (at? s TAB)
+        (let [#_int ts (int @(:b_p_ts @curbuf))] (- ts (% col ts)))
+        ;; Add one cell for a double-width character in the last column of the window, displayed with a ">".
+        (let-when [#_int n (mb-ptr2cells s)] (and (== n 2) (< 1 (us-byte2len (.at s 0), false)) (in-win-border win, col)) => n
+            (when (some? a'headp) (reset! a'headp 1))
+            3)
     ))
 
-;; Return true if virtual column "vcol" is in the rightmost column of window "wp".
+;; Return true if virtual column "vcol" is in the rightmost column of window "win".
 
-(defn- #_boolean in-win-border [#_window_C wp, #_int vcol]
-    (§
-        (if (zero? (:w_width wp))                            ;; there is no border
-            ((ß RETURN) false)
-        )
-        ((ß int width1 =) (- (:w_width wp) (win-col-off wp)))      ;; width of first line (after line number)
-        (if (< vcol (dec width1))
-            ((ß RETURN) false)
-        )
-        (if (== vcol (dec width1))
-            ((ß RETURN) true)
-        )
-        ((ß int width2 =) (+ width1 (win-col-off2 wp)))         ;; width of further lines
-        (if (<= width2 0)
-            ((ß RETURN) false)
-        )
-
-        (== (% (- vcol width1) width2) (dec width2))
+(defn- #_boolean in-win-border [#_window_C win, #_int vcol]
+    (if (zero? (:w_width win))                                          ;; there is no border
+        false
+        (let [#_int width1 (- (:w_width win) (win-col-off win))]        ;; width of first line (after line number)
+            (cond (< vcol (dec width1))
+                false
+            (== vcol (dec width1))
+                true
+            :else
+                (let [#_int width2 (+ width1 (win-col-off2 win))]       ;; width of further lines
+                    (if (<= width2 0)
+                        false
+                        (== (% (- vcol width1) width2) (dec width2))
+                    ))
+            ))
     ))
 
 ;; Get virtual column number of pos.
