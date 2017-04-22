@@ -9,4 +9,6 @@
 ;   :global-vars {*warn-on-reflection* true}
     :jvm-opts ["-Xmx12g"]
 ;   :javac-options ["-g"]
-    :source-paths ["src"] :java-source-paths ["src"] :resource-paths ["resources"] :test-paths ["src"])
+    :source-paths ["src"] :java-source-paths ["src"] :resource-paths ["resources"] :test-paths ["src"]
+    :main vim.core
+    :aliases {"vim" ["run" "-m" "vim.core"]})
