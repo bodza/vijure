@@ -1204,22 +1204,22 @@
 
 ;       #_private void out0(nfa_state_C out0)
 ;       {
-            ((ß this.out0.fn_next =) out0)
+; %%        ((ß this.out0.fn_next =) out0)
 ;       }
 
 ;       #_private void out1(nfa_state_C out1)
 ;       {
-            ((ß this.out1.fn_next =) out1)
+; %%        ((ß this.out1.fn_next =) out1)
 ;       }
 
 ;       #_private nfa_state_C out0()
 ;       {
-            ((ß RETURN) (§ (nfa_state_C)out0.fn_next))
+; %%        ((ß RETURN) (§ (nfa_state_C)out0.fn_next))
 ;       }
 
 ;       #_private nfa_state_C out1()
 ;       {
-            ((ß RETURN) (§ (nfa_state_C)out1.fn_next))
+; %%        ((ß RETURN) (§ (nfa_state_C)out1.fn_next))
 ;       }
     ])
 
@@ -2601,21 +2601,21 @@
 (defn- #_void sig_winch [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-        (§ libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null))
+        (§ libC.sigset(SIGWINCH, #_"/*(void (*)())sig_winch*/"null))
         (reset! do_resize true)
     ))
 
 (defn- #_void catch_sigint [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-        (§ libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null))
+        (§ libC.sigset(SIGINT, #_"/*(void (*)())catch_sigint*/"null))
         (reset! got_int true)
     ))
 
 (defn- #_void catch_sigpwr [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-        (§ libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null))
+        (§ libC.sigset(SIGPWR, #_"/*(void (*)())catch_sigpwr*/"null))
     ))
 
 (atom! int trap__entered)       ;; Count the number of times we got here.
@@ -2625,7 +2625,7 @@
 (defn- #_void may_core_dump []
     (§
         (when (non-zero? @deadly_signal)
-            (§ libC.sigset(@deadly_signal, /*SIG_DFL*/null))
+            (§ libC.sigset(@deadly_signal, #_"/*SIG_DFL*/"null))
             (§ libc.kill(libc.getpid(), @deadly_signal))        ;; Die using the signal we caught
         )
     ))
@@ -2719,37 +2719,37 @@
     (§
         ;; WINDOW CHANGE signal is handled with sig_winch().
 
-        (§ libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null))
+        (§ libC.sigset(SIGWINCH, #_"/*(void (*)())sig_winch*/"null))
 
         ;; We want the STOP signal to work, to make mch_suspend() work.
         ;; For "rvim" the STOP signal is ignored.
 
-        (§ libC.sigset(SIGTSTP, /*SIG_DFL*/null))
+        (§ libC.sigset(SIGTSTP, #_"/*SIG_DFL*/"null))
 
         ;; We want to ignore breaking of PIPEs.
 
-        (§ libC.sigset(SIGPIPE, /*SIG_IGN*/null))
+        (§ libC.sigset(SIGPIPE, #_"/*SIG_IGN*/"null))
 
         (catch_int_signal)
 
         ;; Ignore alarm signals (Perl's alarm() generates it).
 
-        (§ libC.sigset(SIGALRM, /*SIG_IGN*/null))
+        (§ libC.sigset(SIGALRM, #_"/*SIG_IGN*/"null))
 
         ;; Catch SIGPWR (power failure?) to preserve the swap files, so that no work will be lost.
 
-        (§ libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null))
+        (§ libC.sigset(SIGPWR, #_"/*(void (*)())catch_sigpwr*/"null))
 
         ;; Arrange for other signals to gracefully shutdown Vim.
 
-        (catch_signals (§ #_"/*deathtrap*//*null*/"0), SIG_ERR)
+        (catch_signals #_"/*deathtrap*//*null*/"0, SIG_ERR)
     ))
 
 ;; Catch CTRL-C (only works while in Cooked mode).
 
 (defn- #_void catch_int_signal []
     (§
-        (§ libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null))
+        (§ libC.sigset(SIGINT, #_"/*(void (*)())catch_sigint*/"null))
     ))
 
 (defn- #_void reset_signals []
@@ -2766,13 +2766,13 @@
 
                 ;; Setup to use the alternate stack for the signal function.
 ;            // sa.sa_handler(func_deadly);
-                (§ libC.sigemptyset(/*&sa.sa_mask*/null))
+                (§ libC.sigemptyset(#_"/*&sa.sa_mask*/"null))
 ;            // sa.sa_flags(SA_ONSTACK);
-                (§ libC.sigaction(signal_info[i].sig, /*sa*/null, null))
+                (§ libC.sigaction(signal_info[i].sig, #_"/*sa*/"null, null))
             )
             (!= func_other SIG_ERR)
             (§
-                (§ libC.sigset(signal_info[i].sig, /*func_other*/null))
+                (§ libC.sigset(signal_info[i].sig, #_"/*func_other*/"null))
             ))
         )
     ))
@@ -3769,8 +3769,8 @@
         ((ß Bytes s =) str)
         ((ß Bytes t_s =) str)       ;; string from "t_s" to "s" is still todo
         ((ß int t_col =) 0)          ;; screen cells todo, 0 when "t_s" not used
-        ((ß Bytes[] sb_str =) (§ { str }))
-        ((ß int[] sb_col =) (§ { @msg_col }))
+; %%    ((ß Bytes[] sb_str =) (§ { str }))
+; %%    ((ß int[] sb_col =) (§ { @msg_col }))
 
         (reset! did_wait_return false)
         (while (§ (maxlen < 0 || BDIFF(s, str) < maxlen) && s.at(0) != NUL)
@@ -6946,7 +6946,7 @@
         ;; check for trailing command or garbage
 
         ((ß cmd =) (skipwhite cmd))
-        (when (and (non-eos? cmd) (!= (.at cmd 0) (byte \")))        ;; if not end-of-line or comment
+        (when (and (non-eos? cmd) (!= (.at cmd 0) (byte \")))        ;; if not end-of-line or comment """
             ((ß eap.nextcmd =) (check_nextcmd cmd))
             (when (nil? (. eap nextcmd))
                 (emsg e_trailing)
@@ -7836,7 +7836,7 @@
 
                         ((ß CASE) Ctrl_R)                    ;; insert register
                         (§
-                            (putcmdline (byte \"), true)
+                            (putcmdline (byte \"), true)    ;; """
                             (swap! no_mapping inc)
                             ((ß int i =) (§ c = plain_vgetc()))  ;; CTRL-R <char>
                             (if (== i Ctrl_O)
@@ -8088,7 +8088,7 @@
                                     ((ß FOR) (ß (§ int round = 0) (<= round 1) (§ round++))
                                         ((ß int len =) 0)
 
-                                        ((ß FOR) (ß (§ /*int */i = 0) (§ p.at(i) != NUL) (§ i++))
+                                        ((ß FOR) (ß (§ #_"/*int */"i = 0) (§ p.at(i) != NUL) (§ i++))
                                             ;; Replace old sep with new sep, unless it is escaped.
                                             (cond (and (== (.at p i) old_firstc) (or (zero? i) (!= (.at p (- i 1)) (byte \\))))
                                             (§
@@ -8757,7 +8757,7 @@
 
 (defn- #_void cmdline_paste_str [#_Bytes _s, #_boolean literally]
     (§
-        ((ß Bytes[] s =) (§ { _s }))
+; %%    ((ß Bytes[] s =) (§ { _s }))
         (cond literally
         (§
             (put_on_cmdline (§ s[0]), -1, true)
@@ -9141,7 +9141,7 @@
         (if (and (zero? (& flags DOCMD_KEYTYPED)) (not use_getline))
             (reset! keyTyped false))
 
-        ((ß Bytes[] cmdline_copy =) (§ { null }))                ;; copy of cmd line
+; %%    ((ß Bytes[] cmdline_copy =) (§ { null }))                ;; copy of cmd line
 
         ;; Continue executing command lines:
         ;; - when inside an ":if", ":while" or ":for"
@@ -9338,7 +9338,7 @@
                 )
 
                 ;; ignore comment and empty lines
-                (if (== (§ ea.cmd.at(0)) (byte \"))
+                (if (== (§ ea.cmd.at(0)) (byte \")) ;; """
                     (ß BREAK doend)
                 )
                 (when (== (§ ea.cmd.at(0)) NUL)
@@ -9348,7 +9348,7 @@
 
                 ;; 2. Handle command modifiers.
 
-                ((ß Bytes[] p =) (§ { ea.cmd }))
+; %%            ((ß Bytes[] p =) (§ { ea.cmd }))
                 (if (asc_isdigit (§ p[0].at(0)))
                     ((ß p[0] =) (§ skipwhite(skipdigits(p[0]))))
                 )
@@ -9507,7 +9507,7 @@
             ;; If we got a line, but no command, then go to the line.
             ;; If we find a '|' or '\n' we set ea.nextcmd.
 
-            (when (or (== (§ ea.cmd.at(0)) NUL) (== (§ ea.cmd.at(0)) (byte \")) (non-nil? (§ ea.nextcmd = check_nextcmd(ea.cmd))))
+            (when (or (== (§ ea.cmd.at(0)) NUL) (== (§ ea.cmd.at(0)) (byte \")) (non-nil? (§ ea.nextcmd = check_nextcmd(ea.cmd))))  ;; """
                 ;; strange vi behaviour:
                 ;; ":3"         jumps to line 3
                 ;; ":3|..."     prints line 3
@@ -9690,7 +9690,7 @@
                 ))
             )
 
-            (when (and (zero? (& (. ea argt) EXTRA)) (!= (§ ea.arg.at(0)) NUL) (!= (§ ea.arg.at(0)) (byte \")))
+            (when (and (zero? (& (. ea argt) EXTRA)) (!= (§ ea.arg.at(0)) NUL) (!= (§ ea.arg.at(0)) (byte \"))) ;; """
                 ((ß errormsg =) e_trailing)
                 (ß BREAK doend)
             )
@@ -10045,7 +10045,7 @@
 
                         ;; When search follows another address, start from there.
 
-                        ((ß pos.lnum =) (if (!= lnum MAXLNUM) lnum (§ @curwin.w_cursor.lnum)))
+                        ((ß pos.lnum =) (if (!= lnum MAXLNUM) lnum (.. @curwin w_cursor lnum)))
 
                         ;; Start the search just like for the above do_search().
 
@@ -10518,7 +10518,7 @@
                 (while (§ ((byte \1) <= c && c <= (byte \9)) || (ca.count0 != 0 && (c == K_DEL || c == K_KDEL || c == (byte \0))))
                     (cond (or (== c K_DEL) (== c K_KDEL))
                     (§
-                        ((ß ca.count0 /=) 10)
+; %%                    ((ß ca.count0 /=) 10)
                         (del_from_showcmd 4)    ;; delete the digit and ~@%
                     )
                     :else
@@ -10587,7 +10587,7 @@
         ;; When called from main(), save the count for use by the "count" built-in variable.
 
         ((ß ca.opcount =) (. ca count0))
-        ((ß ca.count1 =) (if (== (§ ca.count0) 0) 1 (§ ca.count0)))
+        ((ß ca.count1 =) (if (== (. ca count0) 0) 1 (. ca count0)))
 
         ;; Find the command character in the table of commands.
         ;; For CTRL-W we already got nchar when looking for a count.
@@ -11116,8 +11116,8 @@
                 (when (== @VIsual_mode Ctrl_V)  ;; block mode
                     ((ß oap.block_mode =) true)
 
-                    ((ß int[] start =) (§ { oap.start_vcol }))
-                    ((ß int[] end =) (§ { oap.end_vcol }))
+; %%                ((ß int[] start =) (§ { oap.start_vcol }))
+; %%                ((ß int[] end =) (§ { oap.end_vcol }))
                     (getvvcol @curwin, (. oap op_start), start, null, end)
                     ((ß oap.start_vcol =) (§ start[0]))
                     ((ß oap.end_vcol =) (§ end[0]))
@@ -11179,14 +11179,14 @@
                     :else
                     (§
                         (when (!= @VIsual_mode Ctrl_V)
-                            ((ß int[] __ =) (§ { oap.end_vcol }))
+; %%                        ((ß int[] __ =) (§ { oap.end_vcol }))
                             (getvvcol @curwin, (. oap op_end), null, null, __)
                             ((ß oap.end_vcol =) (§ __[0]))
                         )
                         (cond (or (== @VIsual_mode Ctrl_V) (<= (. oap line_count) 1))
                         (§
                             (when (!= @VIsual_mode Ctrl_V)
-                                ((ß int[] __ =) (§ { oap.start_vcol }))
+; %%                            ((ß int[] __ =) (§ { oap.start_vcol }))
                                 (getvvcol @curwin, (. oap op_start), __, null, null)
                                 ((ß oap.start_vcol =) (§ __[0]))
                             )
@@ -11207,11 +11207,11 @@
 
                     (cond (and (== (. cap cmdchar) (byte \g)) (or (== @(. cap nchar) (byte \n)) (== @(. cap nchar) (byte \N))))
                     (§
-                        (prep_redo (§ oap.regname), (§ cap.count0), (get_op_char (§ oap.op_type)), (get_extra_op_char (§ oap.op_type)), (§ oap.motion_force), (§ cap.cmdchar), @(§ cap.nchar))
+                        (prep_redo (. oap regname), (. cap count0), (get_op_char (. oap op_type)), (get_extra_op_char (. oap op_type)), (. oap motion_force), (. cap cmdchar), @(. cap nchar))
                     )
                     (!= (. cap cmdchar) (byte \:))
                     (§
-                        (prep_redo (§ oap.regname), 0, NUL, (byte \v), (get_op_char (§ oap.op_type)), (get_extra_op_char (§ oap.op_type)), (if (== (§ oap.op_type) OP_REPLACE) @(§ cap.nchar) NUL))
+                        (prep_redo (. oap regname), 0, NUL, (byte \v), (get_op_char (. oap op_type)), (get_extra_op_char (. oap op_type)), (if (== (. oap op_type) OP_REPLACE) @(. cap nchar) NUL))
                     ))
                     (when (not @redo_VIsual_busy)
                         (reset! redo_VIsual_mode @resel_VIsual_mode)
@@ -11804,7 +11804,7 @@
     (§
         (resetRedobuff)
         (when (non-zero? regname)   ;; yank from specified buffer
-            (appendCharToRedobuff (byte \"))
+            (appendCharToRedobuff (byte \"))    ;; """
             (appendCharToRedobuff regname)
         )
         (if (non-zero? num)
@@ -11966,7 +11966,7 @@
                     ((ß s =) (ml_get_cursor))
                     ((ß e =) (ml_get_pos @VIsual))
                 ))
-                (while (§ (@p_sel.at(0) != (byte \e)) ? BLE(s, e) : BLT(s, e))
+                (while (if (!= (.at @p_sel 0) (byte \e)) (BLE s, e) (BLT s, e))
                     ((ß int l =) (us_ptr2len_cc s))
                     (when (zero? l)
                         (§ bytes++)
@@ -11975,11 +11975,11 @@
                     )
                     ((ß bytes +=) l)
                     (§ chars++)
-                    ((ß s =) (§ s.plus(l)))
+                    ((ß s =) (.plus s l))
                 )
                 (if (== bytes chars)
-                    (§ libC.sprintf(showcmd_buf, (u8 "%d"), chars))
-                    (§ libC.sprintf(showcmd_buf, (u8 "%d-%d"), chars, bytes))
+                    (.sprintf libC showcmd_buf, (u8 "%d"), chars)
+                    (.sprintf libC showcmd_buf, (u8 "%d-%d"), chars, bytes)
                 )
             ))
             (.be showcmd_buf SHOWCMD_COLS, NUL)      ;; truncate
@@ -12487,7 +12487,7 @@
 
                 (cond (or (== nchar K_DEL) (== nchar K_KDEL))
                 (§
-                    ((ß n /=) 10)
+; %%                ((ß n /=) 10)
                 )
                 (asc_isdigit nchar)
                 (§
@@ -12500,7 +12500,7 @@
                 )
                 (or (== nchar (byte \l)) (== nchar (byte \h)) (== nchar K_LEFT) (== nchar K_RIGHT))
                 (§
-                    ((ß cap.count1 =) (if (!= n 0) (* n (§ cap.count1)) (§ cap.count1)))
+                    ((ß cap.count1 =) (if (!= n 0) (* n (. cap count1)) (. cap count1)))
                     (ß BREAK dozet)
                 )
                 :else
@@ -12734,7 +12734,7 @@
             ((ß boolean old_p_im =) @p_im)
 
             ;; get a command line and execute it
-            ((ß boolean cmd_result =) (do_cmdline null, true, (if (!= (§ cap.oap.op_type) OP_NOP) DOCMD_KEEPLINE 0)))
+            ((ß boolean cmd_result =) (do_cmdline null, true, (if (!= (.. cap oap op_type) OP_NOP) DOCMD_KEEPLINE 0)))
 
             ;; If 'insertmode' changed, enter or exit Insert mode.
             (when (!= @p_im old_p_im)
@@ -12885,8 +12885,8 @@
             ((ß cmdchar =) (byte \#))
         )
 
-        ((ß Bytes[] ident =) (§ { null }))
-        ((ß int[] n =) (§ { 0 }))
+; %%    ((ß Bytes[] ident =) (§ { null }))
+; %%    ((ß int[] n =) (§ { 0 }))
 
         ;; The "]", "CTRL-]" and "K" commands accept an argument in Visual mode.
 
@@ -13466,7 +13466,7 @@
         ;; "[m" or "]m" search for prev/next start of (Java) method.
         ;; "[M" or "]M" search for prev/next end of (Java) method.
 
-        (cond (or (and (== (. cap cmdchar) (byte \[)) (non-nil? (vim_strchr (u8 "{(*/#mM"), @(§ cap.nchar)))) (and (== (. cap cmdchar) (byte \])) (non-nil? (vim_strchr (u8 "})*/#mM"), @(§ cap.nchar)))))
+        (cond (or (and (== (. cap cmdchar) (byte \[)) (non-nil? (vim_strchr (u8 "{(*/#mM"), @(. cap nchar)))) (and (== (. cap cmdchar) (byte \])) (non-nil? (vim_strchr (u8 "})*/#mM"), @(. cap nchar)))))
         (§
             (if (== @(. cap nchar) (byte \*))
                 ((ß cap.@nchar =) (byte \/))
@@ -13493,7 +13493,7 @@
             ((ß pos_C new_pos =) (§ §_pos_C()))
 
             ((ß FOR) (ß (§  ) (< 0 n) (§ --n))
-                ((ß pos =) (findmatchlimit (§ cap.oap), findc, (if (== (§ cap.cmdchar) (byte \[)) FM_BACKWARD FM_FORWARD), 0))
+                ((ß pos =) (findmatchlimit (. cap oap), findc, (if (== (. cap cmdchar) (byte \[)) FM_BACKWARD FM_FORWARD), 0))
                 (when (nil? pos)
                     (cond (zero? (. new_pos lnum)) ;; nothing found
                     (§
@@ -13617,7 +13617,7 @@
         (or (== @(. cap nchar) (byte \p)) (== @(. cap nchar) (byte \P)))
         (§
             (when (not (checkclearop (. cap oap)))
-                ((ß int dir =) (§ (cap.cmdchar == (byte \]) && cap.@nchar == (byte \p)) ? FORWARD : BACKWARD))
+                ((ß int dir =) (if (and (== (. cap cmdchar) (byte \])) (== @(. cap nchar) (byte \p))) FORWARD BACKWARD))
                 ((ß int regname =) (.. cap oap regname))
                 ((ß boolean was_visual =) @VIsual_active)
                 ((ß long line_count =) (.. @curbuf b_ml ml_line_count))
@@ -13668,7 +13668,7 @@
             ((ß pos_C pos =) (. @curwin w_cursor))
             ((ß FOR) (ß (§ long n = cap.count1) (< 0 n) (§ --n))
                 (COPY_pos prev_pos, pos)
-                ((ß pos =) (§ getnextmark(pos, (cap.cmdchar == (byte \[)) ? BACKWARD : FORWARD, cap.@nchar == (byte \\)')))
+                ((ß pos =) (getnextmark pos, (if (== (. cap cmdchar) (byte \[)) BACKWARD FORWARD), (== @(. cap nchar) (byte \'))))
                 (if (nil? pos)
                     (ß BREAK)
                 )
@@ -13938,7 +13938,7 @@
                     (reset! State REPLACE)
                     (cond (or (== @(. cap nchar) Ctrl_E) (== @(. cap nchar) Ctrl_Y))
                     (§
-                        ((ß int c =) (§ ins_copychar(@curwin.w_cursor.lnum + (cap.@nchar == Ctrl_Y ? -1 : 1))))
+                        ((ß int c =) (ins_copychar (+ (.. @curwin w_cursor lnum) (if (== @(. cap nchar) Ctrl_Y) -1 1))))
                         (cond (!= c NUL)
                         (§
                             (ins_char c)
@@ -14738,7 +14738,7 @@
                 ;; Go to the middle of the screen line.  When 'number' or 'relativenumber' is on
                 ;; and lines are wrapping the middle can be more to the left.
                 (when (== @(. cap nchar) (byte \m))
-                    ((ß i +=) (§ (@curwin.w_width - curwin_col_off() + ((@curwin.w_options.@wo_wrap && 0 < i) ? curwin_col_off2() : 0)) / 2))
+                    ((ß i +=) (/ (+ (- (. @curwin w_width) (curwin_col_off)) (if (and @(.. @curwin w_options wo_wrap) (< 0 i)) (curwin_col_off2) 0)) 2))
                 )
                 (coladvance i)
                 (when flag
@@ -15772,7 +15772,7 @@
         )
         :else
         (§
-            ((ß int dir =) (§ (cap.cmdchar == (byte \P) || (cap.cmdchar == (byte \g) && cap.@nchar == (byte \P))) ? BACKWARD : FORWARD))
+            ((ß int dir =) (if (or (== (. cap cmdchar) (byte \P)) (and (== (. cap cmdchar) (byte \g)) (== @(. cap nchar) (byte \P)))) BACKWARD FORWARD))
             (prep_redo_cmd cap)
             (if (== (. cap cmdchar) (byte \g))
                 ((ß flags |=) PUT_CURSEND)
@@ -15789,7 +15789,7 @@
                 ((ß was_visual =) true)
                 ((ß regname =) (.. cap oap regname))
                 ((ß regname =) (adjust_clip_reg regname))
-                (when (or (zero? regname) (== regname (byte \")) (asc_isdigit regname) (== regname (byte \-)))
+                (when (or (zero? regname) (== regname (byte \")) (asc_isdigit regname) (== regname (byte \-)))  ;; """
                     ;; The delete is going to overwrite the register we want to put, save it first.
                     ((ß reg1 =) (get_register regname, true))
                 )
@@ -15926,7 +15926,7 @@
         (->nv_cmd_C Ctrl__,           nv_error,       0,                      0               ),
         (->nv_cmd_C (int \space),     nv_right,       0,                      0               ),
         (->nv_cmd_C (int \!),         nv_operator,    0,                      0               ),
-        (->nv_cmd_C (int \"),         nv_regname,  (| NV_NCH_NOP NV_KEEPREG), 0               ),
+        (->nv_cmd_C (int \"),         nv_regname,  (| NV_NCH_NOP NV_KEEPREG), 0               ),    ;; """
         (->nv_cmd_C (int \#),         nv_ident,       0,                      0               ),
         (->nv_cmd_C (int \$),         nv_dollar,      0,                      0               ),
         (->nv_cmd_C (int \%),         nv_percent,     0,                      0               ),
@@ -16242,7 +16242,7 @@
         ))
 
         (when (< @p_report (. oap line_count))
-            ((ß Bytes s =) (if (== (§ oap.op_type) OP_RSHIFT) (u8 ">") (u8 "<")))
+            ((ß Bytes s =) (if (== (. oap op_type) OP_RSHIFT) (u8 ">") (u8 "<")))
             (cond (== (. oap line_count) 1)
             (§
                 (if (== amount 1)
@@ -16375,7 +16375,7 @@
                 ((ß j =) (§ ((ws_vcol % q_ts) + total) % q_ts)) ;; number of spp
             )
             ;; if we're splitting a TAB, allow for it
-            ((ß bd.textcol -=) (§ bd.pre_whitesp_c - ((bd.startspaces != 0) ? 1 : 0)))
+            ((ß bd.textcol -=) (- (. bd pre_whitesp_c) (if (!= (. bd startspaces) 0) 1 0)))
             ((ß int len =) (§ STRLEN(bd.textstart) + 1))
             ((ß newp =) (§ new Bytes(bd.textcol + i + j + len)))
 
@@ -16395,7 +16395,7 @@
             ;; If "bd.startspaces" is set, "bd.textstart" points to the character,
             ;; the part of which is displayed at the block's beginning.  Let's start
             ;; searching from the next character.
-            ((ß Bytes[] non_white =) (§ { bd.textstart }))
+; %%        ((ß Bytes[] non_white =) (§ { bd.textstart }))
             (if (!= (. bd startspaces) 0)
                 ((ß non_white[0] =) (§ non_white[0].plus(us_ptr2len_cc(non_white[0]))))
             )
@@ -16505,11 +16505,11 @@
                 ((ß q_ts =) (. bdp end_char_vcols))
                 (cond (not (. bdp is_short))                      ;; spaces = padding after block
                 (§
-                    ((ß spaces =) (if (!= (§ bdp.endspaces) 0) (- q_ts (§ bdp.endspaces)) 0))
+                    ((ß spaces =) (if (!= (. bdp endspaces) 0) (- q_ts (. bdp endspaces)) 0))
                     (if (non-zero? spaces)
                         ((ß count =) (- q_ts 1))               ;; we're cutting a TAB
                     )
-                    ((ß offset =) (§ bdp.textcol + bdp.textlen - ((spaces != 0) ? 1 : 0)))
+                    ((ß offset =) (- (+ (. bdp textcol) (. bdp textlen)) (if (!= spaces 0) 1 0)))
                 )
                 :else                                    ;; spaces = padding to block edge
                 (§
@@ -16699,7 +16699,7 @@
 (defn- #_boolean valid_yank_reg [#_int regname, #_boolean writing]
     ;; writing: if true check for writable registers
     (§
-        (or (and (< 0 regname) (asc_isalnum regname)) (and (not writing) (non-nil? (vim_strchr (u8 "/.%:="), regname))) (== regname (byte \#)) (== regname (byte \")) (== regname (byte \-)) (== regname (byte \_)) (== regname (byte \*)) (== regname (byte \+)) (and (not writing) (== regname (byte \~))))
+        (or (and (< 0 regname) (asc_isalnum regname)) (and (not writing) (non-nil? (vim_strchr (u8 "/.%:="), regname))) (== regname (byte \#)) (== regname (byte \")) (== regname (byte \-)) (== regname (byte \_)) (== regname (byte \*)) (== regname (byte \+)) (and (not writing) (== regname (byte \~))))   ;; """
     ))
 
 ;; Set y_current and y_append, according to the value of "regname".
@@ -16713,7 +16713,7 @@
     (§
         (reset! y_append false)
 
-        (when (and (or (zero? regname) (== regname (byte \"))) (not writing) (non-nil? @y_previous))
+        (when (and (or (zero? regname) (== regname (byte \"))) (not writing) (non-nil? @y_previous))    ;; """
             (reset! y_current @y_previous)
             (ß RETURN)
         )
@@ -16809,7 +16809,7 @@
         (cond (not @Recording)         ;; start recording
         (§
             ;; registers 0-9, a-z and " are allowed
-            (cond (or (< c 0) (and (not (asc_isalnum c)) (!= c (byte \"))))
+            (cond (or (< c 0) (and (not (asc_isalnum c)) (!= c (byte \")))) ;; """
             (§
                 ((ß retval =) false)
             )
@@ -16999,7 +16999,7 @@
             )
             :else
             (§
-                (§ buf.be(0, (@restart_edit == (byte \I)) ? (byte \i) : @restart_edit))
+                (.be buf 0, (if (== @restart_edit (byte \I)) (byte \i) @restart_edit))
                 (.be buf 1, NUL)
             ))
 
@@ -17100,7 +17100,7 @@
 
 (defn- #_void stuffescaped [#_Bytes _arg, #_boolean literally]
     (§
-        ((ß Bytes[] arg =) (§ { _arg }))
+; %%    ((ß Bytes[] arg =) (§ { _arg }))
         (while (§ arg[0].at(0) != NUL)
             ;; Stuff a sequence of normal ASCII characters, that's fast.
             ;; Also stuff KB_SPECIAL to get the effect of a special key when "literally" is true.
@@ -17489,7 +17489,7 @@
                         ((ß RETURN) false)
                     )
 
-                    ((ß int n =) (§ oap.op_end.col - oap.op_start.col + 1 - (!oap.inclusive ? 1 : 0)))
+                    ((ß int n =) (- (+ (- (.. oap op_end col) (.. oap op_start col)) 1) (if (not (. oap inclusive)) 1 0)))
 
                     (when (!= @virtual_op FALSE)
                         ;; fix up things for virtualedit-delete:
@@ -17541,7 +17541,7 @@
                         ((ß oap.op_end.lnum =) (.. @curbuf b_ml ml_line_count))
                     )
 
-                    ((ß int n =) (§ (oap.op_end.col + 1 - (!oap.inclusive ? 1 : 0))))
+                    ((ß int n =) (- (+ (.. oap op_end col) 1) (if (not (. oap inclusive)) 1 0)))
                     (cond (and (. oap inclusive) delete_last_line (< (STRLEN (ml_get (.. oap op_end lnum))) n))
                     (§
                         ;; Special case: gH<Del> deletes the last line.
@@ -17645,11 +17645,11 @@
                 :else
                 (§
                     ;; allow for pre spaces
-                    ((ß n =) (if (!= (§ bd.startspaces) 0) (- (§ bd.start_char_vcols) 1) 0))
+                    ((ß n =) (if (!= (. bd startspaces) 0) (- (. bd start_char_vcols) 1) 0))
                 ))
 
                 ;; allow for post spp
-                ((ß n +=) (if (and (!= (§ bd.endspaces) 0) (not (§ bd.is_oneChar)) (< 0 (§ bd.end_char_vcols))) (- (§ bd.end_char_vcols) 1) 0))
+                ((ß n +=) (if (and (!= (. bd endspaces) 0) (not (. bd is_oneChar)) (< 0 (. bd end_char_vcols))) (- (. bd end_char_vcols) 1) 0))
                 ;; Figure out how many characters to replace.
                 ((ß int numc =) (§ oap.end_vcol - oap.start_vcol + 1))
                 (if (and (. bd is_short) (or (== @virtual_op FALSE) (. bd is_MAX)))
@@ -17844,12 +17844,12 @@
 
             (cond (== (. pos lnum) (.. oap op_end lnum))
             (§
-                ((ß did_change =) (§ swapchars(oap.op_type, pos, oap.op_end.col - pos.col + 1)))
+                ((ß did_change =) (swapchars (. oap op_type), pos, (+ (- (.. oap op_end col) (. pos col)) 1)))
             )
             :else
             (§
                 (while true
-                    ((ß did_change |=) (§ swapchars(oap.op_type, pos, (pos.lnum == oap.op_end.lnum) ? oap.op_end.col + 1 : STRLEN(ml_get_pos(pos)))))
+                    ((ß did_change |=) (swapchars (. oap op_type), pos, (if (== (. pos lnum) (.. oap op_end lnum)) (+ (.. oap op_end col) 1) (STRLEN (ml_get_pos pos)))))
                     (if (or (ltoreq (. oap op_end), pos) (== (incp pos) -1))
                         (ß BREAK)
                     )
@@ -18362,13 +18362,13 @@
                                 (§
                                     ;; Special case: inside a single char.
                                     ((ß is_oneChar =) true)
-                                    ((ß bd.startspaces =) (§ oap.op_end.coladd - oap.op_start.coladd + (oap.inclusive ? 1 : 0)))
+                                    ((ß bd.startspaces =) (+ (- (.. oap op_end coladd) (.. oap op_start coladd)) (if (. oap inclusive) 1 0)))
                                     ((ß endcol =) startcol)
                                 )
                                 :else
                                 (§
-                                    ((ß bd.endspaces =) (§ oap.op_end.coladd + (oap.inclusive ? 1 : 0)))
-                                    ((ß endcol -=) (§ (oap.inclusive ? 1 : 0)))
+                                    ((ß bd.endspaces =) (+ (.. oap op_end coladd) (if (. oap inclusive) 1 0)))
+                                    ((ß endcol -=) (if (. oap inclusive) 1 0))
                                 ))
                             )
                         )
@@ -18378,7 +18378,7 @@
                     )
                     (if (or (< endcol startcol) is_oneChar)
                         ((ß bd.textlen =) 0)
-                        ((ß bd.textlen =) (§ endcol - startcol + (oap.inclusive ? 1 : 0)))
+                        ((ß bd.textlen =) (+ (- endcol startcol) (if (. oap inclusive) 1 0)))
                     )
                     ((ß bd.textstart =) (§ p.plus(startcol)))
                     (yank_copy_line bd, y_idx)
@@ -18522,8 +18522,8 @@
         ;; For special registers '%' (file name), '#' (alternate file name) and
         ;; ':' (last command line), etc. we have to create a fake yank register.
 
-        ((ß Bytes[] insert_string =) (§ { null }))
-        ((ß boolean[] allocated =) (§ { false }))
+; %%    ((ß Bytes[] insert_string =) (§ { null }))
+; %%    ((ß boolean[] allocated =) (§ { false }))
         (when (get_spec_reg regname, insert_string, allocated, true)
             (if (nil? (§ insert_string[0]))
                 (ß RETURN)
@@ -18574,7 +18574,7 @@
             :else
             (§
                 ((ß y_size =) 1)         ;; use fake one-line yank register
-                ((ß y_array =) (§ new Bytes[] { insert_string[0] }))
+; %%            ((ß y_array =) (§ new Bytes[] { insert_string[0] }))
             ))
         )
         :else
@@ -18672,7 +18672,7 @@
             )
 
             ((ß lnum =) (.. @curwin w_cursor lnum))
-            ((ß int[] col =) (§ { @curwin.w_cursor.col }))
+; %%        ((ß int[] col =) (§ { @curwin.w_cursor.col }))
 
             ;; Block mode
 
@@ -18680,7 +18680,7 @@
             (§
                 ((ß block_def_C bd =) (§ §_block_def_C()))
                 ((ß int c =) (gchar_cursor))
-                ((ß int[] endcol2 =) (§ { 0 }))
+; %%            ((ß int[] endcol2 =) (§ { 0 }))
 
                 (cond (and (== dir FORWARD) (!= c NUL))
                 (§
@@ -19276,7 +19276,7 @@
             (if (and is_del (!= (. bdp startspaces) 0))
                 ((ß bdp.startspaces =) (§ bdp.start_char_vcols - bdp.startspaces))
             )
-            ((ß Bytes[] pend =) (§ { pstart }))
+; %%        ((ß Bytes[] pend =) (§ { pstart }))
             ((ß bdp.end_vcol =) (. bdp start_vcol))
             (cond (< (. oap end_vcol) (. bdp end_vcol))        ;; it's all in one character
             (§
@@ -19319,15 +19319,15 @@
                     ;; the line is short where the text is put.
                     ;; if (!is_del || oap.op_type == OP_APPEND)
                     (if (or (== (. oap op_type) OP_APPEND) (!= @virtual_op FALSE))
-                        ((ß bdp.endspaces =) (§ oap.end_vcol - bdp.end_vcol + (oap.inclusive ? 1 : 0)))
+                        ((ß bdp.endspaces =) (+ (- (. oap end_vcol) (. bdp end_vcol)) (if (. oap inclusive) 1 0)))
                         ((ß bdp.endspaces =) 0) ;; replace doesn't add characters
                     )
                 )
                 (< (. oap end_vcol) (. bdp end_vcol))
                 (§
-                    ((ß bdp.endspaces =) (§ bdp.end_vcol - oap.end_vcol - 1))
+                    ((ß bdp.endspaces =) (- (. bdp end_vcol) (. oap end_vcol) 1))
                     (when (and (not is_del) (!= (. bdp endspaces) 0))
-                        ((ß bdp.endspaces =) (§ incr - bdp.endspaces))
+                        ((ß bdp.endspaces =) (- incr (. bdp endspaces)))
                         (if (BNE (§ pend[0]), pstart)
                             ((ß pend[0] =) prev_pend)
                         )
@@ -19447,7 +19447,7 @@
             )
 
             ((ß int[] hex =) (§ new int[1]))                             ;; 'X' or 'x': hex; '0': octal
-            ((ß int[] length =) (§ { 0 }))                               ;; character length of the number
+; %%        ((ß int[] length =) (§ { 0 }))                               ;; character length of the number
             ((ß long[] n =) (§ new long[1]))
             ;; get the number value (unsigned)
             (vim_str2nr (.plus ptr col), hex, length, (if dooct TRUE FALSE), (if dohex TRUE FALSE), n)
@@ -19465,10 +19465,10 @@
             ;; add or subtract
             ((ß boolean subtract =) false)
             (if (== command Ctrl_X)
-                ((ß subtract ^=) true)
+; %%            ((ß subtract ^=) true)
             )
             (if negative
-                ((ß subtract ^=) true)
+; %%            ((ß subtract ^=) true)
             )
 
             ((ß long oldn =) (§ n[0]))
@@ -19477,7 +19477,7 @@
                 ((ß n[0] +=) Prenum1)
             )
 
-            ((ß final long roof =) 0x7fffffffffffffffL)
+            ((ß final long roof =) 0x7fffffffffffffff)
             ((ß n[0] &=) roof)
 
             ;; handle wraparound for decimal numbers
@@ -19485,15 +19485,15 @@
                 (cond subtract
                 (§
                     (when (< oldn (§ n[0]))
-                        ((ß n[0] =) (§ 1 + (n[0] ^ roof)))
-                        ((ß negative ^=) true)
+; %%                    ((ß n[0] =) (§ 1 + (n[0] ^ roof)))
+; %%                    ((ß negative ^=) true)
                     )
                 )
                 :else ;; add
                 (§
                     (when (< (§ n[0]) oldn)
-                        ((ß n[0] =) (§ (n[0] ^ roof)))
-                        ((ß negative ^=) true)
+; %%                    ((ß n[0] =) (§ (n[0] ^ roof)))
+; %%                    ((ß negative ^=) true)
                     )
                 ))
                 (if (zero? (§ n[0]))
@@ -19654,10 +19654,10 @@
         ((ß Bytes buf2 =) (§ new Bytes(40)))
         ((ß int byte_count =) 0)
         ((ß int byte_count_cursor =) 0)
-        ((ß int[] char_count =) (§ { 0 }))
-        ((ß int[] char_count_cursor =) (§ { 0 }))
-        ((ß int[] word_count =) (§ { 0 }))
-        ((ß int[] word_count_cursor =) (§ { 0 }))
+; %%    ((ß int[] char_count =) (§ { 0 }))
+; %%    ((ß int[] char_count_cursor =) (§ { 0 }))
+; %%    ((ß int[] word_count =) (§ { 0 }))
+; %%    ((ß int[] word_count_cursor =) (§ { 0 }))
         ((ß int last_check =) 100000)
         ((ß long line_count_selected =) 0)
 
@@ -19691,8 +19691,8 @@
                 ((ß oparg.block_mode =) true)
                 ((ß oparg.op_type =) OP_NOP)
 ;               {
-                    ((ß int[] scol =) (§ { oparg.start_vcol }))
-                    ((ß int[] ecol =) (§ { oparg.end_vcol }))
+; %%                ((ß int[] scol =) (§ { oparg.start_vcol }))
+; %%                ((ß int[] ecol =) (§ { oparg.end_vcol }))
                     (getvcols @curwin, min_pos, max_pos, scol, ecol)
                     ((ß oparg.start_vcol =) (§ scol[0]))
                     ((ß oparg.end_vcol =) (§ ecol[0]))
@@ -19749,8 +19749,8 @@
 
                     ((ß CASE) (byte \v))
                     (§
-                        ((ß int start_col =) (if (== lnum (§ min_pos.lnum)) (§ min_pos.col) 0))
-                        ((ß int end_col =) (if (== lnum (§ max_pos.lnum)) (+ (- (§ max_pos.col) start_col) 1) MAXCOL))
+                        ((ß int start_col =) (if (== lnum (. min_pos lnum)) (. min_pos col) 0))
+                        ((ß int end_col =) (if (== lnum (. max_pos lnum)) (+ (- (. max_pos col) start_col) 1) MAXCOL))
 
                         ((ß s =) (§ ml_get(lnum).plus(start_col)))
                         ((ß len =) end_col)
@@ -19782,8 +19782,8 @@
             (cond (and (== @VIsual_mode Ctrl_V) (< (. @curwin w_curswant) MAXCOL))
             (§
 ;               {
-                    ((ß int[] _1 =) (§ { min_pos.col }))
-                    ((ß int[] _2 =) (§ { max_pos.col }))
+; %%                ((ß int[] _1 =) (§ { min_pos.col }))
+; %%                ((ß int[] _2 =) (§ { max_pos.col }))
                     (getvcols @curwin, min_pos, max_pos, _1, _2)
                     ((ß min_pos.col =) (§ _1[0]))
                     ((ß max_pos.col =) (§ _2[0]))
@@ -19864,7 +19864,7 @@
             ((ß RETURN) true)
         )
 
-        (when (== c (byte \"))
+        (when (== c (byte \"))  ;; """
             (COPY_pos (. @curbuf b_last_cursor), pos)
             ((ß RETURN) true)
         )
@@ -20038,7 +20038,7 @@
             (COPY_pos @_1_pos_copy, (. @curwin w_pcmark)) ;; need to make a copy because
             ((ß posp =) @_1_pos_copy)                     ;; w_pcmark may be changed soon
         )
-        (== c (byte \"))                          ;; to pos when leaving buffer
+        (== c (byte \"))                          ;; to pos when leaving buffer """
         (§
             ((ß posp =) (. buf b_last_cursor))
         )
@@ -20621,7 +20621,7 @@
         (§
             ((ß final int MINIMAL_SIZE =) 20)            ;; minimal size for bb_str
 
-            ((ß int len =) (§ ((int)slen < MINIMAL_SIZE) ? MINIMAL_SIZE : (int)slen))
+            ((ß int len =) (if (< (int slen) MINIMAL_SIZE) MINIMAL_SIZE (int slen)))
 
             ((ß buffblock_C bp =) (§ §_buffblock_C()))
 
@@ -20819,7 +20819,7 @@
             (ß RETURN)
         )
 
-        ((ß FOR) (ß (§ Bytes[] s = { str }) (if (< len 0) (!= (§ s[0].at(0)) NUL) (< (BDIFF (§ s[0]), str) len)) nil)
+; %%    ((ß FOR) (ß (§ Bytes[] s = { str }) (if (< len 0) (!= (§ s[0].at(0)) NUL) (< (BDIFF (§ s[0]), str) len)) nil)
             ;; Put a string of normal characters in the redo buffer (that's faster).
             ((ß Bytes start =) (§ s[0]))
             (while (§ (byte \space) <= s[0].at(0) && s[0].at(0) < DEL && (len < 0 || BDIFF(s[0], str) < len))
@@ -20847,7 +20847,7 @@
             (if (and (== (§ s[0].at(0)) NUL) (== c (byte \0)))
                 (add_buff @redobuff, (u8 "048"), 3)
                 (add_char_buff @redobuff, c))
-        )
+; %%    )
     ))
 
 ;; Append a character to the redo buffer.
@@ -21821,7 +21821,7 @@
 ;; get a character: 3. from the user - get it
 
                     ((ß int wait_tb_len =) (. @typebuf tb_len))
-                    ((ß len =) (§ inchar(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len), @typebuf.tb_buflen - @typebuf.tb_off - @typebuf.tb_len - 1, !advance ? 0 : ((@typebuf.tb_len == 0 || !(@p_timeout || (@p_ttimeout && keylen == KEYLEN_PART_KEY))) ? -1 : ((keylen == KEYLEN_PART_KEY && 0 <= @p_ttm) ? @p_ttm : @p_tm)), @typebuf.tb_change_cnt)))
+                    ((ß len =) (inchar (.plus (. @typebuf tb_buf) (+ (. @typebuf tb_off) (. @typebuf tb_len))), (- (. @typebuf tb_buflen) (. @typebuf tb_off) (. @typebuf tb_len) 1), (if (not advance) 0 (if (or (== (. @typebuf tb_len) 0) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))), (. @typebuf tb_change_cnt)))
 
                     (if (non-zero? i)
                         (pop_showcmd))
@@ -22083,12 +22083,12 @@
 (defn- #_boolean edit [#_int cmdchar, #_boolean startln, #_long _count]
     ;; startln: if set, insert at start of line
     (§
-        ((ß long[] count =) (§ { _count }))
+; %%    ((ß long[] count =) (§ { _count }))
 
         ((ß boolean did_backspace =) true)           ;; previous char was backspace
         ((ß boolean line_is_white =) false)          ;; line is empty before insert
         ((ß long old_topline =) 0)                   ;; topline before insertion
-        ((ß boolean[] inserted_space =) (§ { false }))         ;; just inserted a space
+; %%    ((ß boolean[] inserted_space =) (§ { false }))         ;; just inserted a space
         ((ß boolean nomove =) false)                 ;; don't move cursor on return
 
         ;; Remember whether editing was restarted after CTRL-O.
@@ -24088,7 +24088,7 @@
             ;; May need to redraw when no more chars available now.
             (ins_redraw false)
 
-            (edit_putchar (byte \"), true)
+            (edit_putchar (byte \"), true)  ;; """
             (add_to_showcmd_c Ctrl_R)
         )
 
@@ -25217,7 +25217,7 @@
 
         ;; try to advance to the cursor column
         ((ß Bytes line =) (ml_get lnum))
-        ((ß Bytes[] ptr =) (§ { line }))
+; %%    ((ß Bytes[] ptr =) (§ { line }))
         ((ß Bytes prev_ptr =) (§ ptr[0]))
         (validate_virtcol)
 
@@ -25240,7 +25240,7 @@
 
 (defn- #_int ins_ctrl_ey [#_int tc]
     (§
-        ((ß int c =) (ins_copychar (+ (§ @curwin.w_cursor.lnum) (if (== tc Ctrl_Y) -1 1))))
+        ((ß int c =) (ins_copychar (+ (.. @curwin w_cursor lnum) (if (== tc Ctrl_Y) -1 1))))
         (when (!= c NUL)
             ;; The character must be taken literally, insert like it was typed after a CTRL-V.
             ;; Digits, 'o' and 'x' are special after a CTRL-V, don't use it for these.
@@ -25830,8 +25830,8 @@
                 ((ß @class_tab[i] =) 0)
             ))
         )
-        ((ß @class_tab[' '] |=) RI_WHITE)
-        ((ß @class_tab['\t'] |=) RI_WHITE)
+        ((ß @class_tab[(byte \space)] |=) RI_WHITE)
+        ((ß @class_tab[(byte \tab)] |=) RI_WHITE)
 
         (reset! class_tab_done true)
     ))
@@ -25972,17 +25972,17 @@
 ;   {
 ;       public regprog_C regcomp(Bytes expr, int re_flags)
 ;       {
-            ((ß RETURN) (bt_regcomp expr, re_flags))
+; %%        ((ß RETURN) (bt_regcomp expr, re_flags))
 ;       }
 
 ;       public long regexec_nl(regmatch_C rmp, Bytes line, int col, boolean line_lbr)
 ;       {
-            ((ß RETURN) (bt_regexec_nl rmp, line, col, line_lbr))
+; %%        ((ß RETURN) (bt_regexec_nl rmp, line, col, line_lbr))
 ;       }
 
 ;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, long nsec)
 ;       {
-            ((ß RETURN) (bt_regexec_multi rmp, win, buf, lnum, col, nsec))
+; %%        ((ß RETURN) (bt_regexec_multi rmp, win, buf, lnum, col, nsec))
 ;       }
 ;   };
 
@@ -25990,17 +25990,17 @@
 ;   {
 ;       public regprog_C regcomp(Bytes expr, int re_flags)
 ;       {
-            ((ß RETURN) (nfa_regcomp expr, re_flags))
+; %%        ((ß RETURN) (nfa_regcomp expr, re_flags))
 ;       }
 
 ;       public long regexec_nl(regmatch_C rmp, Bytes line, int col, boolean line_lbr)
 ;       {
-            ((ß RETURN) (nfa_regexec_nl rmp, line, col, line_lbr))
+; %%        ((ß RETURN) (nfa_regexec_nl rmp, line, col, line_lbr))
 ;       }
 
 ;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, long nsec)
 ;       {
-            ((ß RETURN) (nfa_regexec_multi rmp, win, buf, lnum, col, nsec))
+; %%        ((ß RETURN) (nfa_regexec_multi rmp, win, buf, lnum, col, nsec))
 ;       }
 ;   };
 
@@ -26909,7 +26909,7 @@
         )
 
         ;; Make a closing node, and hook it on the end.
-        ((ß Bytes ender =) (§ regnode((paren == REG_ZPAREN) ? ZCLOSE + parno : (paren == REG_PAREN) ? MCLOSE + parno : (paren == REG_NPAREN) ? NCLOSE : END)))
+        ((ß Bytes ender =) (regnode (cond (== paren REG_ZPAREN) (+ ZCLOSE parno) (== paren REG_PAREN) (+ MCLOSE parno) (== paren REG_NPAREN) NCLOSE :else END)))
 
         (regtail ret, ender)
 
@@ -27007,36 +27007,36 @@
         ((ß FOR) (ß (§ boolean cont = true) cont nil)
             ((ß SWITCH) (peekchr)
                 ((ß CASE) NUL)
-                ((ß CASE) (§ Magic((byte \|))))
-                ((ß CASE) (§ Magic((byte \&))))
-                ((ß CASE) (§ Magic((byte \)))))
+                ((ß CASE) (Magic (byte \|)))
+                ((ß CASE) (Magic (byte \&)))
+                ((ß CASE) (Magic (byte \))))
                 (§
                     ((ß cont =) false)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \Z))))
+                ((ß CASE) (Magic (byte \Z)))
                 (§
                     ((ß @regflags |=) RF_ICOMBINE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \c))))
+                ((ß CASE) (Magic (byte \c)))
                 (§
                     ((ß @regflags |=) RF_ICASE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \C))))
+                ((ß CASE) (Magic (byte \C)))
                 (§
                     ((ß @regflags |=) RF_NOICASE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \v))))
+                ((ß CASE) (Magic (byte \v)))
                 (§
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
@@ -27044,7 +27044,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \m))))
+                ((ß CASE) (Magic (byte \m)))
                 (§
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
@@ -27052,7 +27052,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \M))))
+                ((ß CASE) (Magic (byte \M)))
                 (§
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
@@ -27060,7 +27060,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \V))))
+                ((ß CASE) (Magic (byte \V)))
                 (§
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
@@ -27122,7 +27122,7 @@
 
         (skipchr)
         ((ß SWITCH) op
-            ((ß CASE) (§ Magic((byte \*))))
+            ((ß CASE) (Magic (byte \*)))
             (§
                 (cond (non-zero? (& (§ flags[0]) SIMPLE))
                 (§
@@ -27140,7 +27140,7 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \+))))
+            ((ß CASE) (Magic (byte \+)))
             (§
                 (cond (non-zero? (& (§ flags[0]) SIMPLE))
                 (§
@@ -27159,7 +27159,7 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \@))))
+            ((ß CASE) (Magic (byte \@)))
             (§
                 ((ß int lop =) END)
                 ((ß int nr =) (getdecchrs))
@@ -27168,17 +27168,17 @@
                     ((ß CASE) (byte \=))
                     (§
                         ((ß lop =) MATCH)                ;; \@=
-                        (ß ^_BREAK)
+                        (ß BREAK)
                     )
                     ((ß CASE) (byte \!))
                     (§
                         ((ß lop =) NOMATCH)              ;; \@!
-                        (ß ^_BREAK)
+                        (ß BREAK)
                     )
                     ((ß CASE) (byte \>))
                     (§
                         ((ß lop =) SUBPAT)               ;; \@>
-                        (ß ^_BREAK)
+                        (ß BREAK)
                     )
                     ((ß CASE) (byte \<))
                     (§
@@ -27223,8 +27223,8 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \?))))
-            ((ß CASE) (§ Magic((byte \=))))
+            ((ß CASE) (Magic (byte \?)))
+            ((ß CASE) (Magic (byte \=)))
             (§
                 ;; Emit x= as (x|).
                 (reginsert BRANCH, ret)                 ;; Either x
@@ -27235,7 +27235,7 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \{))))
+            ((ß CASE) (Magic (byte \{)))
             (§
                 ((ß long[] minval =) (§ new long[1]))
                 ((ß long[] maxval =) (§ new long[1]))
@@ -27322,31 +27322,31 @@
 ;       collection:
 ;       {
             ((ß SWITCH) c
-                ((ß CASE) (§ Magic((byte \^))))
+                ((ß CASE) (Magic (byte \^)))
                 (§
                     ((ß ret =) (regnode BOL))
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \$))))
+                ((ß CASE) (Magic (byte \$)))
                 (§
                     ((ß ret =) (regnode EOL))
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \<))))
+                ((ß CASE) (Magic (byte \<)))
                 (§
                     ((ß ret =) (regnode BOW))
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \>))))
+                ((ß CASE) (Magic (byte \>)))
                 (§
                     ((ß ret =) (regnode EOW))
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \_))))
+                ((ß CASE) (Magic (byte \_)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     (when (== c (byte \^))           ;; "\_^" is start-of-line
@@ -27372,33 +27372,33 @@
 
                 ;; Character classes.
 
-                ((ß CASE) (§ Magic((byte \.))))
-                ((ß CASE) (§ Magic((byte \i))))
-                ((ß CASE) (§ Magic((byte \I))))
-                ((ß CASE) (§ Magic((byte \k))))
-                ((ß CASE) (§ Magic((byte \K))))
-                ((ß CASE) (§ Magic((byte \f))))
-                ((ß CASE) (§ Magic((byte \F))))
-                ((ß CASE) (§ Magic((byte \p))))
-                ((ß CASE) (§ Magic((byte \P))))
-                ((ß CASE) (§ Magic((byte \s))))
-                ((ß CASE) (§ Magic((byte \S))))
-                ((ß CASE) (§ Magic((byte \d))))
-                ((ß CASE) (§ Magic((byte \D))))
-                ((ß CASE) (§ Magic((byte \x))))
-                ((ß CASE) (§ Magic((byte \X))))
-                ((ß CASE) (§ Magic((byte \o))))
-                ((ß CASE) (§ Magic((byte \O))))
-                ((ß CASE) (§ Magic((byte \w))))
-                ((ß CASE) (§ Magic((byte \W))))
-                ((ß CASE) (§ Magic((byte \h))))
-                ((ß CASE) (§ Magic((byte \H))))
-                ((ß CASE) (§ Magic((byte \a))))
-                ((ß CASE) (§ Magic((byte \A))))
-                ((ß CASE) (§ Magic((byte \l))))
-                ((ß CASE) (§ Magic((byte \L))))
-                ((ß CASE) (§ Magic((byte \u))))
-                ((ß CASE) (§ Magic((byte \U))))
+                ((ß CASE) (Magic (byte \.)))
+                ((ß CASE) (Magic (byte \i)))
+                ((ß CASE) (Magic (byte \I)))
+                ((ß CASE) (Magic (byte \k)))
+                ((ß CASE) (Magic (byte \K)))
+                ((ß CASE) (Magic (byte \f)))
+                ((ß CASE) (Magic (byte \F)))
+                ((ß CASE) (Magic (byte \p)))
+                ((ß CASE) (Magic (byte \P)))
+                ((ß CASE) (Magic (byte \s)))
+                ((ß CASE) (Magic (byte \S)))
+                ((ß CASE) (Magic (byte \d)))
+                ((ß CASE) (Magic (byte \D)))
+                ((ß CASE) (Magic (byte \x)))
+                ((ß CASE) (Magic (byte \X)))
+                ((ß CASE) (Magic (byte \o)))
+                ((ß CASE) (Magic (byte \O)))
+                ((ß CASE) (Magic (byte \w)))
+                ((ß CASE) (Magic (byte \W)))
+                ((ß CASE) (Magic (byte \h)))
+                ((ß CASE) (Magic (byte \H)))
+                ((ß CASE) (Magic (byte \a)))
+                ((ß CASE) (Magic (byte \A)))
+                ((ß CASE) (Magic (byte \l)))
+                ((ß CASE) (Magic (byte \L)))
+                ((ß CASE) (Magic (byte \u)))
+                ((ß CASE) (Magic (byte \U)))
                 (§
                     ((ß Bytes p =) (§ vim_strchr(classchars, no_Magic(c))))
                     (when (nil? p)
@@ -27420,7 +27420,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \n))))
+                ((ß CASE) (Magic (byte \n)))
                 (§
                     (cond @reg_string
                     (§
@@ -27439,7 +27439,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \())))
+                ((ß CASE) (Magic (byte \()))
                 (§
                     (when @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27456,9 +27456,9 @@
                 )
 
                 ((ß CASE) NUL)
-                ((ß CASE) (§ Magic((byte \|))))
-                ((ß CASE) (§ Magic((byte \&))))
-                ((ß CASE) (§ Magic((byte \)))))
+                ((ß CASE) (Magic (byte \|)))
+                ((ß CASE) (Magic (byte \&)))
+                ((ß CASE) (Magic (byte \))))
                 (§
                     (if @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27467,12 +27467,12 @@
                     ((ß RETURN) null)
                 )
 
-                ((ß CASE) (§ Magic((byte \=))))
-                ((ß CASE) (§ Magic((byte \?))))
-                ((ß CASE) (§ Magic((byte \+))))
-                ((ß CASE) (§ Magic((byte \@))))
-                ((ß CASE) (§ Magic((byte \{))))
-                ((ß CASE) (§ Magic((byte \*))))
+                ((ß CASE) (Magic (byte \=)))
+                ((ß CASE) (Magic (byte \?)))
+                ((ß CASE) (Magic (byte \+)))
+                ((ß CASE) (Magic (byte \@)))
+                ((ß CASE) (Magic (byte \{)))
+                ((ß CASE) (Magic (byte \*)))
                 (§
                     ((ß c =) (no_Magic c))
                     (.sprintf libC @ioBuff, (u8 "E64: %s%c follows nothing"), (if (if (== c (byte \*)) (<= MAGIC_ON @reg_magic) (== @reg_magic MAGIC_ALL)) (u8 "") (u8 "\\")), c)
@@ -27482,7 +27482,7 @@
                     ((ß RETURN) null)
                 )
 
-                ((ß CASE) (§ Magic((byte \~))))                    ;; previous substitute pattern
+                ((ß CASE) (Magic (byte \~)))                    ;; previous substitute pattern
                 (§
                     (cond (non-nil? @reg_prev_sub)
                     (§
@@ -27508,15 +27508,15 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \1))))
-                ((ß CASE) (§ Magic((byte \2))))
-                ((ß CASE) (§ Magic((byte \3))))
-                ((ß CASE) (§ Magic((byte \4))))
-                ((ß CASE) (§ Magic((byte \5))))
-                ((ß CASE) (§ Magic((byte \6))))
-                ((ß CASE) (§ Magic((byte \7))))
-                ((ß CASE) (§ Magic((byte \8))))
-                ((ß CASE) (§ Magic((byte \9))))
+                ((ß CASE) (Magic (byte \1)))
+                ((ß CASE) (Magic (byte \2)))
+                ((ß CASE) (Magic (byte \3)))
+                ((ß CASE) (Magic (byte \4)))
+                ((ß CASE) (Magic (byte \5)))
+                ((ß CASE) (Magic (byte \6)))
+                ((ß CASE) (Magic (byte \7)))
+                ((ß CASE) (Magic (byte \8)))
+                ((ß CASE) (Magic (byte \9)))
                 (§
                     ((ß int refnum =) (§ c - Magic((byte \0))))
 
@@ -27543,7 +27543,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \z))))
+                ((ß CASE) (Magic (byte \z)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     ((ß SWITCH) c
@@ -27613,7 +27613,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \%))))
+                ((ß CASE) (Magic (byte \%)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     ((ß SWITCH) c
@@ -27848,7 +27848,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \[))))
+                ((ß CASE) (Magic (byte \[)))
                 (§
                     (ß BREAK collection)
                 )
@@ -27905,12 +27905,12 @@
                         ;; Also accept "a-[.z.]".
                         ((ß endc =) 0)
                         (when (== (.at @regparse 0) (byte \[))
-                            ((ß Bytes[] __ =) (§ { @regparse }))
+; %%                        ((ß Bytes[] __ =) (§ { @regparse }))
                             ((ß endc =) (get_coll_element __))
                             (reset! regparse (§ __[0]))
                         )
                         (when (zero? endc)
-                            ((ß Bytes[] __ =) (§ { @regparse }))
+; %%                        ((ß Bytes[] __ =) (§ { @regparse }))
                             ((ß endc =) (us_ptr2char_adv __, true))
                             (reset! regparse (§ __[0]))
                         )
@@ -28483,7 +28483,7 @@
                 ((ß CASE) (byte \<))
                 ((ß CASE) (byte \>))
                 ((ß CASE) (byte \#))       ;; future ext.
-                ((ß CASE) (byte \"))       ;; future ext.
+                ((ß CASE) (byte \"))       ;; future ext. """
                 ((ß CASE) (byte \'))      ;; future ext.
                 ((ß CASE) (byte \,))       ;; future ext.
                 ((ß CASE) (byte \-))       ;; future ext.
@@ -29591,7 +29591,7 @@
                             ((ß pos_C pos =) (getmark_buf @reg_buf, mark, false))
                                                             ;; mark doesn't exist
                                                             ;; mark isn't set in reg_buf
-                            (if (§ pos == null || pos.lnum <= 0 || (pos.lnum == @reglnum + @reg_firstlnum ? (pos.col == BDIFF(@reginput, @regline) ? (cmp == (byte \<) || cmp == (byte \>)) : (pos.col < BDIFF(@reginput, @regline) ? cmp != (byte \>) : cmp != (byte \<))) : (pos.lnum < @reglnum + @reg_firstlnum ? cmp != (byte \>) : cmp != (byte \<))))
+                            (if (or (== pos null) (<= (. pos lnum) 0) (if (== (. pos lnum) (+ @reglnum @reg_firstlnum)) (if (== (. pos col) (BDIFF @reginput, @regline)) (or (== cmp (byte \<)) (== cmp (byte \>))) (if (< (. pos col) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<)))) (if (< (. pos lnum) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
                                 ((ß status =) RA_NOMATCH)
                             )
                             (ß BREAK)
@@ -30240,7 +30240,7 @@
                             ((ß int no =) (- op ZREF))
                             (cond (and (non-nil? @re_extmatch_in) (!= (§ @re_extmatch_in.matches[no]) null))
                             (§
-                                ((ß int[] len =) (§ { STRLEN(@re_extmatch_in.matches[no]) }))
+; %%                            ((ß int[] len =) (§ { STRLEN(@re_extmatch_in.matches[no]) }))
                                 (if (non-zero? (§ cstrncmp(@re_extmatch_in.matches[no], @reginput, len)))
                                     ((ß status =) RA_NOMATCH)
                                     (reset! reginput (.plus @reginput (§ len[0]))))
@@ -30427,7 +30427,7 @@
                                     ((ß @regstack.ga_data[@regstack.ga_len++] =) rst)
                                     ((ß rst =) null)
 
-                                    ((ß regitem_C rip =) (push_regitem (if (<= (§ rst.minval) (§ rst.maxval)) RS_STAR_LONG RS_STAR_SHORT), scan))
+                                    ((ß regitem_C rip =) (push_regitem (if (<= (. rst minval) (. rst maxval)) RS_STAR_LONG RS_STAR_SHORT), scan))
                                     (if (nil? rip)
                                         ((ß status =) RA_FAIL)
                                         ((ß status =) RA_BREAK)      ;; skip the restore bits
@@ -30557,7 +30557,7 @@
             ;; If the state is popped then loop and use the older state.
 
             (while (§ 0 < @regstack.ga_len && status != RA_FAIL)
-                ((ß Object vip =) (if (< 1 (§ @regstack.ga_len)) (§ @regstack.ga_data[@regstack.ga_len - 2]) null))
+                ((ß Object vip =) (if (< 1 (. @regstack ga_len)) (§ @regstack.ga_data[@regstack.ga_len - 2]) null))
                 ((ß regitem_C rip =) (§ (regitem_C)@regstack.ga_data[@regstack.ga_len - 1]))
 
                 ((ß SWITCH) (. rip rs_state)
@@ -31490,7 +31490,7 @@
 
 (defn- #_boolean prog_magic_wrong []
     (§
-        ((ß regprog_C prog =) (if (nil? @reg_match) (§ @reg_mmatch.regprog) (§ @reg_match.regprog)))
+        ((ß regprog_C prog =) (if (nil? @reg_match) (. @reg_mmatch regprog) (. @reg_match regprog)))
         (when (== (. prog engine) nfa_regengine)
             ;; For NFA matcher we don't check the magic.
             ((ß RETURN) false)
@@ -31877,8 +31877,8 @@
 
         ;; if it failed and it's utf8 and we want to combineignore
         (when (and (non-zero? result) @ireg_icombine)
-            ((ß Bytes[] str1 =) (§ { s1 }))
-            ((ß Bytes[] str2 =) (§ { s2 }))
+; %%        ((ß Bytes[] str1 =) (§ { s1 }))
+; %%        ((ß Bytes[] str2 =) (§ { s2 }))
             ((ß int c1 =) (§ 0, c2 = 0))
 
             ;; We have to handle the strcmp() ourselves, since it is necessary
@@ -33634,31 +33634,31 @@
                     ((ß RETURN) false)
                 )
 
-                ((ß CASE) (§ Magic((byte \^))))
+                ((ß CASE) (Magic (byte \^)))
                 (§
                     (emc1 NFA_BOL)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \$))))
+                ((ß CASE) (Magic (byte \$)))
                 (§
                     (emc1 NFA_EOL)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \<))))
+                ((ß CASE) (Magic (byte \<)))
                 (§
                     (emc1 NFA_BOW)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \>))))
+                ((ß CASE) (Magic (byte \>)))
                 (§
                     (emc1 NFA_EOW)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \_))))
+                ((ß CASE) (Magic (byte \_)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     (when (== c NUL)
@@ -33689,33 +33689,33 @@
 
                 ;; Character classes.
 
-                ((ß CASE) (§ Magic((byte \.))))
-                ((ß CASE) (§ Magic((byte \i))))
-                ((ß CASE) (§ Magic((byte \I))))
-                ((ß CASE) (§ Magic((byte \k))))
-                ((ß CASE) (§ Magic((byte \K))))
-                ((ß CASE) (§ Magic((byte \f))))
-                ((ß CASE) (§ Magic((byte \F))))
-                ((ß CASE) (§ Magic((byte \p))))
-                ((ß CASE) (§ Magic((byte \P))))
-                ((ß CASE) (§ Magic((byte \s))))
-                ((ß CASE) (§ Magic((byte \S))))
-                ((ß CASE) (§ Magic((byte \d))))
-                ((ß CASE) (§ Magic((byte \D))))
-                ((ß CASE) (§ Magic((byte \x))))
-                ((ß CASE) (§ Magic((byte \X))))
-                ((ß CASE) (§ Magic((byte \o))))
-                ((ß CASE) (§ Magic((byte \O))))
-                ((ß CASE) (§ Magic((byte \w))))
-                ((ß CASE) (§ Magic((byte \W))))
-                ((ß CASE) (§ Magic((byte \h))))
-                ((ß CASE) (§ Magic((byte \H))))
-                ((ß CASE) (§ Magic((byte \a))))
-                ((ß CASE) (§ Magic((byte \A))))
-                ((ß CASE) (§ Magic((byte \l))))
-                ((ß CASE) (§ Magic((byte \L))))
-                ((ß CASE) (§ Magic((byte \u))))
-                ((ß CASE) (§ Magic((byte \U))))
+                ((ß CASE) (Magic (byte \.)))
+                ((ß CASE) (Magic (byte \i)))
+                ((ß CASE) (Magic (byte \I)))
+                ((ß CASE) (Magic (byte \k)))
+                ((ß CASE) (Magic (byte \K)))
+                ((ß CASE) (Magic (byte \f)))
+                ((ß CASE) (Magic (byte \F)))
+                ((ß CASE) (Magic (byte \p)))
+                ((ß CASE) (Magic (byte \P)))
+                ((ß CASE) (Magic (byte \s)))
+                ((ß CASE) (Magic (byte \S)))
+                ((ß CASE) (Magic (byte \d)))
+                ((ß CASE) (Magic (byte \D)))
+                ((ß CASE) (Magic (byte \x)))
+                ((ß CASE) (Magic (byte \X)))
+                ((ß CASE) (Magic (byte \o)))
+                ((ß CASE) (Magic (byte \O)))
+                ((ß CASE) (Magic (byte \w)))
+                ((ß CASE) (Magic (byte \W)))
+                ((ß CASE) (Magic (byte \h)))
+                ((ß CASE) (Magic (byte \H)))
+                ((ß CASE) (Magic (byte \a)))
+                ((ß CASE) (Magic (byte \A)))
+                ((ß CASE) (Magic (byte \l)))
+                ((ß CASE) (Magic (byte \L)))
+                ((ß CASE) (Magic (byte \u)))
+                ((ß CASE) (Magic (byte \U)))
                 (§
                     ((ß Bytes p =) (§ vim_strchr(classchars, no_Magic(c))))
                     (when (nil? p)
@@ -33743,7 +33743,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \n))))
+                ((ß CASE) (Magic (byte \n)))
                 (§
                     (cond @reg_string
                     (§
@@ -33759,7 +33759,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \())))
+                ((ß CASE) (Magic (byte \()))
                 (§
                     (if (not (nfa_reg REG_PAREN))
                         ((ß RETURN) false)           ;; cascaded error
@@ -33767,27 +33767,27 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \|))))
-                ((ß CASE) (§ Magic((byte \&))))
-                ((ß CASE) (§ Magic((byte \)))))
+                ((ß CASE) (Magic (byte \|)))
+                ((ß CASE) (Magic (byte \&)))
+                ((ß CASE) (Magic (byte \))))
                 (§
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
                     ((ß RETURN) false)
                 )
 
-                ((ß CASE) (§ Magic((byte \=))))
-                ((ß CASE) (§ Magic((byte \?))))
-                ((ß CASE) (§ Magic((byte \+))))
-                ((ß CASE) (§ Magic((byte \@))))
-                ((ß CASE) (§ Magic((byte \*))))
-                ((ß CASE) (§ Magic((byte \{))))
+                ((ß CASE) (Magic (byte \=)))
+                ((ß CASE) (Magic (byte \?)))
+                ((ß CASE) (Magic (byte \+)))
+                ((ß CASE) (Magic (byte \@)))
+                ((ß CASE) (Magic (byte \*)))
+                ((ß CASE) (Magic (byte \{)))
                 (§
                     ;; these should follow an atom, not form an atom
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
                     ((ß RETURN) false)
                 )
 
-                ((ß CASE) (§ Magic((byte \~))))
+                ((ß CASE) (Magic (byte \~)))
                 (§
                     ;; Previous substitute pattern.
                     ;; Generated as "\%(pattern\)".
@@ -33804,22 +33804,22 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \1))))
-                ((ß CASE) (§ Magic((byte \2))))
-                ((ß CASE) (§ Magic((byte \3))))
-                ((ß CASE) (§ Magic((byte \4))))
-                ((ß CASE) (§ Magic((byte \5))))
-                ((ß CASE) (§ Magic((byte \6))))
-                ((ß CASE) (§ Magic((byte \7))))
-                ((ß CASE) (§ Magic((byte \8))))
-                ((ß CASE) (§ Magic((byte \9))))
+                ((ß CASE) (Magic (byte \1)))
+                ((ß CASE) (Magic (byte \2)))
+                ((ß CASE) (Magic (byte \3)))
+                ((ß CASE) (Magic (byte \4)))
+                ((ß CASE) (Magic (byte \5)))
+                ((ß CASE) (Magic (byte \6)))
+                ((ß CASE) (Magic (byte \7)))
+                ((ß CASE) (Magic (byte \8)))
+                ((ß CASE) (Magic (byte \9)))
                 (§
                     (emc1 (+ NFA_BACKREF1 (- (no_Magic c) (byte \1))))
                     (reset! nfa_has_backref true)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \z))))
+                ((ß CASE) (Magic (byte \z)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     ((ß SWITCH) c
@@ -33889,7 +33889,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \%))))
+                ((ß CASE) (Magic (byte \%)))
                 (§
                     ((ß c =) (§ no_Magic(getchr())))
                     ((ß SWITCH) c
@@ -34068,7 +34068,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \[))))
+                ((ß CASE) (Magic (byte \[)))
                 (§
                     (ß BREAK collection)
                 )
@@ -34470,13 +34470,13 @@
 
         (skipchr)
         ((ß SWITCH) op
-            ((ß CASE) (§ Magic((byte \*))))
+            ((ß CASE) (Magic (byte \*)))
             (§
                 (emc1 NFA_STAR)
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \+))))
+            ((ß CASE) (Magic (byte \+)))
             (§
                 ;; Trick: Normally, (a*)\+ would match the whole input "aaa".  The first and
                 ;; only submatch would be "aaa".  But the backtracking engine interprets the
@@ -34497,7 +34497,7 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \@))))
+            ((ß CASE) (Magic (byte \@)))
             (§
                 ((ß int c2 =) (getdecchrs))
                 ((ß op =) (§ no_Magic(getchr())))
@@ -34547,14 +34547,14 @@
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \?))))
-            ((ß CASE) (§ Magic((byte \=))))
+            ((ß CASE) (Magic (byte \?)))
+            ((ß CASE) (Magic (byte \=)))
             (§
                 (emc1 NFA_QUEST)
                 (ß BREAK)
             )
 
-            ((ß CASE) (§ Magic((byte \{))))
+            ((ß CASE) (Magic (byte \{)))
             (§
                 ;; a{2,5} will expand to 'aaa?a?a?'
                 ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
@@ -34607,7 +34607,7 @@
 
                 ;; Ignore previous call to nfa_regatom().
                 (reset! post_index my_post_start)
-                ;; Save parse state after the repeated atom and the \{).
+                ;; Save parse state after the repeated atom and the \{}.
                 ((ß parse_state_C new_state =) (§ §_parse_state_C()))
                 (save_parse_state new_state)
 
@@ -34640,17 +34640,17 @@
                     )
                 )
 
-                ;; Go to just after the repeated atom and the \{).
+                ;; Go to just after the repeated atom and the \{}.
                 (restore_parse_state new_state)
                 (reset! curchr -1)
                 (ß BREAK)
-;           }
+            )
 
             (ß DEFAULT)
             (§
                 (ß BREAK)
             )
-;       }
+        )
 
         (when (!= (re_multi_type (peekchr)) NOT_MULTI)
             (emsg (u8 "E871: (NFA regexp) Can't have a multi follow a multi !"))
@@ -34678,36 +34678,36 @@
         (while cont
             ((ß SWITCH) (peekchr)
                 ((ß CASE) NUL)
-                ((ß CASE) (§ Magic((byte \|))))
-                ((ß CASE) (§ Magic((byte \&))))
-                ((ß CASE) (§ Magic((byte \)))))
+                ((ß CASE) (Magic (byte \|)))
+                ((ß CASE) (Magic (byte \&)))
+                ((ß CASE) (Magic (byte \))))
                 (§
                     ((ß cont =) false)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \Z))))
+                ((ß CASE) (Magic (byte \Z)))
                 (§
                     ((ß @regflags |=) RF_ICOMBINE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \c))))
+                ((ß CASE) (Magic (byte \c)))
                 (§
                     ((ß @regflags |=) RF_ICASE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \C))))
+                ((ß CASE) (Magic (byte \C)))
                 (§
                     ((ß @regflags |=) RF_NOICASE)
                     (skipchr_keepstart)
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \v))))
+                ((ß CASE) (Magic (byte \v)))
                 (§
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
@@ -34715,7 +34715,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \m))))
+                ((ß CASE) (Magic (byte \m)))
                 (§
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
@@ -34723,7 +34723,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \M))))
+                ((ß CASE) (Magic (byte \M)))
                 (§
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
@@ -34731,7 +34731,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (§ Magic((byte \V))))
+                ((ß CASE) (Magic (byte \V)))
                 (§
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
@@ -35264,7 +35264,7 @@
             ((ß RETURN) null)
         )
 
-        ((ß nfa_stack_C stack =) (if nfa_calc_size null (new_nfa_stack (+ (§ prog.nstate) 1))))
+        ((ß nfa_stack_C stack =) (if nfa_calc_size null (new_nfa_stack (+ (. prog nstate) 1))))
 
         (ß int i)
         ((ß FOR) (ß (§ i = 0) (< i over) (§ i++))
@@ -36174,7 +36174,7 @@
 
 (defn- #_boolean sub_equal [#_regsub_C sub1, #_regsub_C sub2]
     (§
-        ((ß int todo =) (if (< (§ sub2.in_use) (§ sub1.in_use)) (§ sub1.in_use) (§ sub2.in_use)))
+        ((ß int todo =) (if (< (. sub2 in_use) (. sub1 in_use)) (. sub1 in_use) (. sub2 in_use)))
 
         (cond (nil? @reg_match)
         (§
@@ -37037,7 +37037,7 @@
             )
             (cond (and (== (§ sub.rs_multi[subidx].start_lnum) @reglnum) (== (§ sub.rs_multi[subidx].end_lnum) @reglnum))
             (§
-                ((ß int[] len =) (§ { sub.rs_multi[subidx].end_col - sub.rs_multi[subidx].start_col }))
+; %%            ((ß int[] len =) (§ { sub.rs_multi[subidx].end_col - sub.rs_multi[subidx].start_col }))
                 (when (zero? (§ cstrncmp(@regline.plus(sub.rs_multi[subidx].start_col), @reginput, len)))
                     ((ß bytelen[0] =) (§ len[0]))
                     ((ß RETURN) true)
@@ -37057,7 +37057,7 @@
                 ((ß bytelen[0] =) 0)
                 ((ß RETURN) true)
             )
-            ((ß int[] len =) (§ { BDIFF(sub.rs_line[subidx].end, sub.rs_line[subidx].start) }))
+; %%        ((ß int[] len =) (§ { BDIFF(sub.rs_line[subidx].end, sub.rs_line[subidx].start) }))
             (when (zero? (§ cstrncmp(sub.rs_line[subidx].start, @reginput, len)))
                 ((ß bytelen[0] =) (§ len[0]))
                 ((ß RETURN) true)
@@ -37081,7 +37081,7 @@
             ((ß RETURN) true)
         )
 
-        ((ß int[] len =) (§ { STRLEN(@re_extmatch_in.matches[subidx]) }))
+; %%    ((ß int[] len =) (§ { STRLEN(@re_extmatch_in.matches[subidx]) }))
         (when (zero? (§ cstrncmp(@re_extmatch_in.matches[subidx], @reginput, len)))
             ((ß bytelen[0] =) (§ len[0]))
             ((ß RETURN) true)
@@ -37478,7 +37478,7 @@
 
 (defn- #_long find_match_text [#_int startcol, #_int regstart, #_Bytes match_text]
     (§
-        ((ß FOR) (ß (§ int[] col = { startcol }) true nil)
+; %%    ((ß FOR) (ß (§ int[] col = { startcol }) true nil)
             ((ß boolean match =) true)
             ((ß int len2 =) (utf_char2len regstart))                      ;; skip regstart
 
@@ -37516,7 +37516,7 @@
             (if (not (skip_to_start regstart, col))
                 (ß BREAK)
             )
-        )
+; %%    )
 
         0
     ))
@@ -37581,7 +37581,7 @@
 
         ((ß boolean go_to_nextline =) false)
         ((ß int flag =) 0)
-        ((ß int[][] listids =) (§ { null }))
+; %%    ((ß int[][] listids =) (§ { null }))
         ((ß int add_off =) 0)
 
         ;; Run for each character.
@@ -37596,7 +37596,7 @@
 
             ;; swap lists
             ((ß thislist =) (§ list[flag]))
-            ((ß nextlist =) (§ list[flag ^= 1]))
+; %%        ((ß nextlist =) (§ list[flag ^= 1]))
             ((ß nextlist.n =) 0)                 ;; clear nextlist
             ((ß nextlist.has_pim =) false)
             (swap! nfa_listid inc)
@@ -37618,7 +37618,7 @@
 ;           nextchar:
 ;           {
                 ;; compute nextlist
-                ((ß FOR) (ß (§ int[] lidx = { 0 }) (§ lidx[0] < thislist.n) (§ lidx[0]++))
+; %%            ((ß FOR) (ß (§ int[] lidx = { 0 }) (§ lidx[0] < thislist.n) (§ lidx[0]++))
                     ((ß nfa_thread_C thread =) (§ thislist.threads[lidx[0]]))
 
                     ;; Handle the possible codes of the current state.
@@ -38557,7 +38557,7 @@
                             ;; Compare the mark position to the match position.
                                                                     ;; mark doesn't exist
                                                                     ;; mark isn't set in reg_buf
-                            ((ß boolean result =) (§ (pos != null && 0 < pos.lnum && (pos.lnum == @reglnum + @reg_firstlnum ? (pos.col == BDIFF(@reginput, @regline) ? thread.state.c == NFA_MARK : (pos.col < BDIFF(@reginput, @regline) ? thread.state.c == NFA_MARK_GT : thread.state.c == NFA_MARK_LT)) : (pos.lnum < @reglnum + @reg_firstlnum ? thread.state.c == NFA_MARK_GT : thread.state.c == NFA_MARK_LT)))))
+                            ((ß boolean result =) (and (!= pos null) (< 0 (. pos lnum)) (if (== (. pos lnum) (+ @reglnum @reg_firstlnum)) (if (== (. pos col) (BDIFF @reginput, @regline)) (== (.. thread state c) NFA_MARK) (if (< (. pos col) (BDIFF @reginput, @regline)) (== (.. thread state c) NFA_MARK_GT) (== (.. thread state c) NFA_MARK_LT))) (if (< (. pos lnum) (+ @reglnum @reg_firstlnum)) (== (.. thread state c) NFA_MARK_GT) (== (.. thread state c) NFA_MARK_LT)))))
                             (when result
                                 ((ß add_here =) true)
                                 ((ß add_state =) (§ thread.state.out0()))
@@ -38636,7 +38636,7 @@
                     )
 
                     (when (non-nil? add_state)
-                        ((ß nfa_pim_C pim =) (if (!= (§ thread.th_pim.result) NFA_PIM_UNUSED) (§ thread.th_pim) null))
+                        ((ß nfa_pim_C pim =) (if (!= (.. thread th_pim result) NFA_PIM_UNUSED) (. thread th_pim) null))
 
                         ;; Handle the postponed invisible match if the match might end
                         ;; without advancing and before the end of the line.
@@ -38656,7 +38656,7 @@
                             )
                             :else
                             (§
-                                ((ß result =) (if (== (§ pim.result) NFA_PIM_MATCH) TRUE FALSE))
+                                ((ß result =) (if (== (. pim result) NFA_PIM_MATCH) TRUE FALSE))
                             ))
 
                             ;; for \@! and \@<! it is a match when result is false
@@ -38699,7 +38699,7 @@
                             )
                         ))
                     )
-                )
+; %%            )
 
                 ;; Look for the start of a match in the current position
                 ;; by adding the start state to the list of states.
@@ -38708,7 +38708,8 @@
                 ;; because recursive calls should only start in the first position.
                 ;; Unless "nfa_endp" is not null, then we match the end position.
                 ;; Also don't start a match past the first line.
-                (when (§ @nfa_match == FALSE && ((toplevel && @reglnum == 0 && clen != 0 && (@ireg_maxcol == 0 || BDIFF(@reginput, @regline) < @ireg_maxcol)) || (@nfa_endp != null && ((@reg_match == null) ? (@reglnum < @nfa_endp.se_pos.lnum || (@reglnum == @nfa_endp.se_pos.lnum && BDIFF(@reginput, @regline) < @nfa_endp.se_pos.col)) : BLT(@reginput, @nfa_endp.se_ptr)))))
+
+                (when (and (== @nfa_match FALSE) (or (and toplevel (== @reglnum 0) (!= clen 0) (or (== @ireg_maxcol 0) (< (BDIFF @reginput, @regline) @ireg_maxcol))) (and (!= @nfa_endp null) (if (== @reg_match null) (or (< @reglnum (.. @nfa_endp se_pos lnum)) (and (== @reglnum (.. @nfa_endp se_pos lnum)) (< (BDIFF @reginput, @regline) (.. @nfa_endp se_pos col)))) (BLT @reginput, (. @nfa_endp se_ptr))))))
                     ;; Inline optimized code for addstate() if we know the state is the first MOPEN.
                     (cond toplevel
                     (§
@@ -38717,7 +38718,7 @@
                         (when (and (!= (. prog regstart) NUL) (non-zero? clen))
                             (cond (zero? (. nextlist n))
                             (§
-                                ((ß int[] col =) (§ { BDIFF(@reginput, @regline) + clen }))
+; %%                            ((ß int[] col =) (§ { BDIFF(@reginput, @regline) + clen }))
 
                                 ;; Nextlist is empty, we can skip ahead to the
                                 ;; character that must appear at the start.
@@ -38895,7 +38896,7 @@
     ;; startcol: column to start looking for match
     ;; nsec: timeout limit or 0
     (§
-        ((ß int[] col =) (§ { startcol }))
+; %%    ((ß int[] col =) (§ { startcol }))
 
         (ß nfa_regprog_C prog)
         (cond (nil? @reg_match)
@@ -39058,9 +39059,9 @@
 
                 (nfa_postprocess prog)
 
-                ((ß prog.reganch =) (if (nfa_get_reganch (§ prog.start), 0) 1 0))
-                ((ß prog.regstart =) (nfa_get_regstart (§ prog.start), 0))
-                ((ß prog.match_text =) (nfa_get_match_text (§ prog.start)))
+                ((ß prog.reganch =) (if (nfa_get_reganch (. prog start), 0) 1 0))
+                ((ß prog.regstart =) (nfa_get_regstart (. prog start), 0))
+                ((ß prog.match_text =) (nfa_get_match_text (. prog start)))
 
                 ;; Remember whether this pattern has any \z specials in it.
                 ((ß prog.reghasz =) @re_has_z)
@@ -39700,7 +39701,7 @@
                             ;; one back afterwards, compare with that position,
                             ;; otherwise "/$" will get stuck on end of line.
 
-                            (while (§ matchpos.lnum == 0 && ((options & SEARCH_END) != 0 && first_match ? (nmatched == 1 && endpos.col - 1 < start_pos.col + extra_col) : (matchpos.col - (ptr.at(matchpos.col) == NUL ? 1 : 0) < start_pos.col + extra_col)))
+                            (while (and (== (. matchpos lnum) 0) (if (and (!= (& options SEARCH_END) 0) first_match) (and (== nmatched 1) (< (- (. endpos col) 1) (+ (. start_pos col) extra_col))) (< (- (. matchpos col) (if (== (.at ptr (. matchpos col)) NUL) 1 0)) (+ (. start_pos col) extra_col))))
                                 ;; If vi-compatible searching, continue at the end
                                 ;; of the match, otherwise continue one position forward.
 
@@ -39757,7 +39758,7 @@
                                 ;; position, we use it if it's the last match in
                                 ;; the line.  Always accept a position after
                                 ;; wrapping around.
-                                (cond (§ loop != 0 || ((options & SEARCH_END) != 0 ? (lnum + regmatch.endpos[0].lnum < start_pos.lnum || (lnum + regmatch.endpos[0].lnum == start_pos.lnum && regmatch.endpos[0].col - 1 + extra_col <= start_pos.col)) : (lnum + regmatch.startpos[0].lnum < start_pos.lnum || (lnum + regmatch.startpos[0].lnum == start_pos.lnum && regmatch.startpos[0].col + extra_col <= start_pos.col))))
+                                (cond (or (!= loop 0) (if (!= (& options SEARCH_END) 0) (or (< (+ lnum (§ regmatch.endpos[0].lnum)) (. start_pos lnum)) (and (== (+ lnum (§ regmatch.endpos[0].lnum)) (. start_pos lnum)) (<= (+ (- (§ regmatch.endpos[0].col) 1) extra_col) (. start_pos col)))) (or (< (+ lnum (§ regmatch.startpos[0].lnum)) (. start_pos lnum)) (and (== (+ lnum (§ regmatch.startpos[0].lnum)) (. start_pos lnum)) (<= (+ (§ regmatch.startpos[0].col) extra_col) (. start_pos col))))))
                                 (§
                                     ((ß match_ok =) true)
                                     (COPY_lpos matchpos, (§ regmatch.startpos[0]))
@@ -40014,7 +40015,7 @@
 
 ;       end_do_search:
 ;       {
-            ((ß Bytes[] strcopy =) (§ { null }))
+; %%        ((ß Bytes[] strcopy =) (§ { null }))
 
             ;; Repeat the search when pattern followed by ';', e.g. "/foo/;?bar".
 
@@ -40189,7 +40190,7 @@
                     ))
                 )
 
-                ((ß int i =) (§ searchit(@curwin, @curbuf, pos, (dirc == (byte \/)) ? FORWARD : BACKWARD, searchstr, count, (@spats[0].sp_off.end ? SEARCH_REV : 0) + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG + SEARCH_START + ((pat != null && pat.at(0) == (byte \;)) ? 0 : SEARCH_NOOF))), RE_LAST, 0, nsec)))
+                ((ß int i =) (searchit @curwin, @curbuf, pos, (if (== dirc (byte \/)) FORWARD BACKWARD), searchstr, count, (+ (if (§ @spats[0].sp_off.end) SEARCH_REV 0) (& options (+ SEARCH_KEEP SEARCH_PEEK SEARCH_HIS SEARCH_MSG SEARCH_START (if (and (!= pat null) (== (.at pat 0) (byte \;))) 0 SEARCH_NOOF)))), RE_LAST, 0, nsec))
 
                 (if (non-nil? dircp)
                     (.be dircp 0, dirc)          ;; restore second '/' or '?' for normal_cmd()
@@ -40442,10 +40443,10 @@
 
 (defn- #_pos_C findmatchlimit [#_oparg_C oap, #_int _initc, #_int flags, #_int maxtravel]
     (§
-        ((ß int[] initc =) (§ { _initc }))
-        ((ß int[] findc =) (§ { 0 }))                    ;; matching brace
+; %%    ((ß int[] initc =) (§ { _initc }))
+; %%    ((ß int[] findc =) (§ { 0 }))                    ;; matching brace
         ((ß int count =) 0)                          ;; cumulative number of braces
-        ((ß boolean[] backwards =) (§ { false }))
+; %%    ((ß boolean[] backwards =) (§ { false }))
         ((ß boolean inquote =) false)                ;; true when inside quotes
         ((ß int hash_dir =) 0)                       ;; Direction searched for # things
         ((ß int comment_dir =) 0)                    ;; Direction searched for comments
@@ -40584,9 +40585,9 @@
                         ((ß int bslcnt =) 0)
 
                         ;; Set "match_escaped" if there are an odd number of backslashes.
-                        ((ß FOR) (ß (§ int[] col = { @_2_pos.col }) (§ check_prevcol(linep, col[0], (byte \\), col)) nil)
+; %%                    ((ß FOR) (ß (§ int[] col = { @_2_pos.col }) (§ check_prevcol(linep, col[0], (byte \\), col)) nil)
                             (§ bslcnt++)
-                        )
+; %%                    )
                         ((ß match_escaped =) (§ (bslcnt & 1)))
                     ))
                 )
@@ -40822,7 +40823,7 @@
                 ((ß FOR) (ß (§ p = linep) (§ p.at(0) != NUL) (§ p = p.plus(1)))
                     (if (BEQ p, (.plus linep (+ (. @_2_pos col) (if (§ backwards[0]) 1 0))))
                         (reset! at_start (& do_quotes 1)))
-                    (if (and (== (.at p 0) (byte \")) (or (BEQ p, linep) (!= (.at p -1) (byte \')) (!= (.at p 1) (byte \'))))
+                    (if (and (== (.at p 0) (byte \")) (or (BEQ p, linep) (!= (.at p -1) (byte \')) (!= (.at p 1) (byte \'))))   ;; """
                         (§ do_quotes++)
                     )
                     (if (and (== (.at p 0) (byte \\)) (non-eos? p 1))
@@ -40896,7 +40897,7 @@
                     (ß BREAK)
                 )
 
-                ((ß CASE) (byte \"))
+                ((ß CASE) (byte \"))  ;; """
                 (§
                     ;; a quote that is preceded with an odd number of backslashes is ignored
                     (when (non-zero? do_quotes)
@@ -40965,9 +40966,9 @@
                         ((ß int bslcnt =) 0)
 
                         (when (not cpo_bsl)
-                            ((ß FOR) (ß (§ int[] col = { @_2_pos.col }) (§ check_prevcol(linep, col[0], (byte \\), col)) nil)
+; %%                        ((ß FOR) (ß (§ int[] col = { @_2_pos.col }) (§ check_prevcol(linep, col[0], (byte \\), col)) nil)
                                 (§ bslcnt++)
-                            )
+; %%                        )
                         )
                         ;; Only accept a match when 'M' is in 'cpo'
                         ;; or when escaping is what we expect.
@@ -42351,7 +42352,7 @@
         (§ (p = p.plus(1)).be(-1, (byte \")))
         (vim_strncpy p, (buf_spname @curbuf), (§ IOSIZE - BDIFF(p, buffer) - 1))
 
-        (vim_snprintf_add buffer, IOSIZE, (u8 "\"%s"), (if @(§ @curbuf.b_changed) (u8 " [Modified] ") (u8 " ")))
+        (vim_snprintf_add buffer, IOSIZE, (u8 "\"%s"), (if @(. @curbuf b_changed) (u8 " [Modified] ") (u8 " ")))
 
         ((ß int n =) (§ (int)((@curwin.w_cursor.lnum * 100) / @curbuf.b_ml.ml_line_count)))
 
@@ -42616,12 +42617,12 @@
                             (when (or (< c (byte \space)) (< (byte \~) c))
                                 (cond tilde
                                 (§
-                                    ((ß chartab[c] =) (§ (byte)((chartab[c] & ~CT_CELL_MASK) + ((@dy_flags & DY_UHEX) != 0 ? 4 : 2))))
+                                    ((ß chartab[c] =) (byte (+ (& (§ chartab[c]) (§ ~CT_CELL_MASK)) (if (!= (& @dy_flags DY_UHEX) 0) 4 2))))
                                     ((ß chartab[c] &=) (§ ~CT_PRINT_CHAR))
                                 )
                                 :else
                                 (§
-                                    ((ß chartab[c] =) (§ (byte)((chartab[c] & ~CT_CELL_MASK) + 1)))
+                                    ((ß chartab[c] =) (byte (+ (& (§ chartab[c]) (§ ~CT_CELL_MASK)) 1)))
                                     ((ß chartab[c] |=) CT_PRINT_CHAR)
                                 ))
                             )
@@ -42754,7 +42755,7 @@
         (<= c 0x7f)                             ;; 0x00 - 0x1f and 0x7f
         (§
             (.be buf 0, (byte \^))
-            (§ buf.be(1, (byte)(c ^ 0x40)))                          ;; DEL displayed as ^?
+; %%        (§ buf.be(1, (byte)(c ^ 0x40)))                          ;; DEL displayed as ^?
 
             (.be buf 2, NUL)
         )
@@ -42771,7 +42772,7 @@
         :else                                            ;; 0x80 - 0x9f and 0xff
         (§
             (.be buf 0, (byte \~))
-            (§ buf.be(1, (byte)((c - 0x80) ^ 0x40)))                 ;; 0xff displayed as ~?
+; %%        (§ buf.be(1, (byte)((c - 0x80) ^ 0x40)))                 ;; 0xff displayed as ~?
             (.be buf 2, NUL)
         ))
     ))
@@ -42882,7 +42883,7 @@
 
 (defn- #_int linetabsize_col [#_Bytes _s, #_int startcol]
     (§
-        ((ß Bytes[] s =) (§ { _s }))
+; %%    ((ß Bytes[] s =) (§ { _s }))
 
         ((ß int col =) startcol)
 
@@ -43096,7 +43097,7 @@
                     (§
                         ;; calculate effective window width
                         ((ß int width =) (§ wp.w_width - sbrlen - numberwidth))
-                        ((ß int prev_width =) (if (!= col 0) (- (§ wp.w_width) (+ sbrlen col)) 0))
+                        ((ß int prev_width =) (if (!= col 0) (- (. wp w_width) (+ sbrlen col)) 0))
                         (if (zero? width)
                             ((ß width =) (. wp w_width))
                         )
@@ -43810,8 +43811,8 @@
         (digr \o, \-, 0x014d),
         (digr \O, \(, 0x014e),
         (digr \o, \(, 0x014f),
-        (digr \O, \", 0x0150),
-        (digr \o, \", 0x0151),
+        (digr \O, \", 0x0150),  ;; """
+        (digr \o, \", 0x0151),  ;; """
         (digr \O, \E, 0x0152),
         (digr \o, \e, 0x0153),
         (digr \R, \', 0x0154),
@@ -43842,8 +43843,8 @@
         (digr \u, \(, 0x016d),
         (digr \U, \0, 0x016e),
         (digr \u, \0, 0x016f),
-        (digr \U, \", 0x0170),
-        (digr \u, \", 0x0171),
+        (digr \U, \", 0x0170),  ;; """
+        (digr \u, \", 0x0171),  ;; """
         (digr \U, \;, 0x0172),
         (digr \u, \;, 0x0173),
         (digr \W, \>, 0x0174),
@@ -43902,7 +43903,7 @@
         (digr \', \., 0x02d9),
         (digr \', \0, 0x02da),
         (digr \', \;, 0x02db),
-        (digr \', \", 0x02dd),
+        (digr \', \", 0x02dd),  ;; """
         (digr \A, \%, 0x0386),
         (digr \E, \%, 0x0388),
         (digr \Y, \%, 0x0389),
@@ -44024,9 +44025,9 @@
         (digr \C, \%, 0x0427),
         (digr \S, \%, 0x0428),
         (digr \S, \c, 0x0429),
-        (digr \=, \", 0x042a),
+        (digr \=, \", 0x042a),  ;; """
         (digr \Y, \=, 0x042b),
-        (digr \%, \", 0x042c),
+        (digr \%, \", 0x042c),  ;; """
         (digr \J, \E, 0x042d),
         (digr \J, \U, 0x042e),
         (digr \J, \A, 0x042f),
@@ -44156,7 +44157,7 @@
         (digr \j, \+, 0x0649),
         (digr \y, \+, 0x064a),
         (digr \:, \+, 0x064b),
-        (digr \", \+, 0x064c),
+        (digr \", \+, 0x064c),  ;; """
         (digr \=, \+, 0x064d),
         (digr \/, \+, 0x064e),
         (digr \', \+, 0x064f),
@@ -44292,10 +44293,10 @@
         (digr \', \9, 0x2019),
         (digr \., \9, 0x201a),
         (digr \9, \', 0x201b),
-        (digr \", \6, 0x201c),
-        (digr \", \9, 0x201d),
+        (digr \", \6, 0x201c),  ;; """
+        (digr \", \9, 0x201d),  ;; """
         (digr \:, \9, 0x201e),
-        (digr \9, \", 0x201f),
+        (digr \9, \", 0x201f),  ;; """
         (digr \/, \-, 0x2020),
         (digr \/, \=, 0x2021),
         (digr \., \., 0x2025),
@@ -44303,9 +44304,9 @@
         (digr \1, \', 0x2032),
         (digr \2, \', 0x2033),
         (digr \3, \', 0x2034),
-        (digr \1, \", 0x2035),
-        (digr \2, \", 0x2036),
-        (digr \3, \", 0x2037),
+        (digr \1, \", 0x2035),  ;; """
+        (digr \2, \", 0x2036),  ;; """
+        (digr \3, \", 0x2037),  ;; """
         (digr \C, \a, 0x2038),
         (digr \<, \1, 0x2039),
         (digr \>, \1, 0x203a),
@@ -44605,7 +44606,7 @@
         (digr \I, \S, 0x3000),
         (digr \,, \_, 0x3001),
         (digr \., \_, 0x3002),
-        (digr \+, \", 0x3003),
+        (digr \+, \", 0x3003),  ;; """
         (digr \+, \_, 0x3004),
         (digr \*, \_, 0x3005),
         (digr \;, \_, 0x3006),
@@ -44614,10 +44615,10 @@
         (digr \>, \+, 0x300b),
         (digr \<, \', 0x300c),
         (digr \>, \', 0x300d),
-        (digr \<, \", 0x300e),
-        (digr \>, \", 0x300f),
-        (digr \(, \", 0x3010),
-        (digr \), \", 0x3011),
+        (digr \<, \", 0x300e),  ;; """
+        (digr \>, \", 0x300f),  ;; """
+        (digr \(, \", 0x3010),  ;; """
+        (digr \), \", 0x3011),  ;; """
         (digr \=, \T, 0x3012),
         (digr \=, \_, 0x3013),
         (digr \(, \', 0x3014),
@@ -44709,7 +44710,7 @@
         (digr \w, \o, 0x3092),
         (digr \n, \5, 0x3093),
         (digr \v, \u, 0x3094),
-        (digr \", \5, 0x309b),
+        (digr \", \5, 0x309b),  ;; """
         (digr \0, \5, 0x309c),
         (digr \*, \5, 0x309d),
         (digr \+, \5, 0x309e),
@@ -44883,14 +44884,14 @@
         (digr \A, \`, 192),
         (digr \A, \^, 194),
         (digr \A, \~, 195),
-        (digr \A, \", 196),
+        (digr \A, \", 196), ;; """
         (digr \A, \@, 197),
         (digr \E, \`, 200),
         (digr \E, \^, 202),
-        (digr \E, \", 203),
+        (digr \E, \", 203), ;; """
         (digr \I, \`, 204),
         (digr \I, \^, 206),
-        (digr \I, \", 207),
+        (digr \I, \", 207), ;; """
         (digr \N, \~, 209),
         (digr \O, \`, 210),
         (digr \O, \^, 212),
@@ -44902,11 +44903,11 @@
         (digr \a, \`, 224),
         (digr \a, \^, 226),
         (digr \a, \~, 227),
-        (digr \a, \", 228),
+        (digr \a, \", 228), ;; """
         (digr \a, \@, 229),
         (digr \e, \`, 232),
         (digr \e, \^, 234),
-        (digr \e, \", 235),
+        (digr \e, \", 235), ;; """
         (digr \i, \`, 236),
         (digr \i, \^, 238),
         (digr \n, \~, 241),
@@ -44915,7 +44916,7 @@
         (digr \o, \~, 245),
         (digr \u, \`, 249),
         (digr \u, \^, 251),
-        (digr \y, \", 255)
+        (digr \y, \", 255)  ;; """
     ])
 
 (atom! int backspaced)  ;; character before K_BS
@@ -45462,16 +45463,16 @@
 
                 (when (§ (char_u(p.at(3)) & 0xc0) == 0x80)
                     (when (== len 4)
-                        ((ß RETURN) (§ ((p.at(0) & 0x07) << 18) + ((p.at(1) & 0x3f) << 12) + ((p.at(2) & 0x3f) << 6) + (p.at(3) & 0x3f))
+                        ((ß RETURN) (§ ((p.at(0) & 0x07) << 18) + ((p.at(1) & 0x3f) << 12) + ((p.at(2) & 0x3f) << 6) + (p.at(3) & 0x3f)))
                     )
 
                     (when (§ (char_u(p.at(4)) & 0xc0) == 0x80)
                         (when (== len 5)
-                            ((ß RETURN) (§ ((p.at(0) & 0x03) << 24) + ((p.at(1) & 0x3f) << 18) + ((p.at(2) & 0x3f) << 12) + ((p.at(3) & 0x3f) << 6) + (p.at(4) & 0x3f))
+                            ((ß RETURN) (§ ((p.at(0) & 0x03) << 24) + ((p.at(1) & 0x3f) << 18) + ((p.at(2) & 0x3f) << 12) + ((p.at(3) & 0x3f) << 6) + (p.at(4) & 0x3f)))
                         )
 
                         (when (and (§ (char_u(p.at(5)) & 0xc0) == 0x80) (== len 6))
-                            ((ß RETURN) (§ ((p.at(0) & 0x01) << 30) + ((p.at(1) & 0x3f) << 24) + ((p.at(2) & 0x3f) << 18) + ((p.at(3) & 0x3f) << 12) + ((p.at(4) & 0x3f) << 6) + (p.at(5) & 0x3f))
+                            ((ß RETURN) (§ ((p.at(0) & 0x01) << 30) + ((p.at(1) & 0x3f) << 24) + ((p.at(2) & 0x3f) << 18) + ((p.at(3) & 0x3f) << 12) + ((p.at(4) & 0x3f) << 6) + (p.at(5) & 0x3f)))
                         )
                     )
                 )
@@ -46770,8 +46771,8 @@
 (defn- #_int us__strnicmp [#_Bytes _s1, #_Bytes _s2, #_int _n1, #_int _n2]
     (§
         (ß int c1, c2)
-        ((ß Bytes[] s1 =) (§ { _s1 }, s2 = { _s2 }))
-        ((ß int[] n1 =) (§ { _n1 }, n2 = { _n2 }))
+; %%    ((ß Bytes[] s1 =) (§ { _s1 }, s2 = { _s2 }))
+; %%    ((ß int[] n1 =) (§ { _n1 }, n2 = { _n2 }))
 
         (while true
             ((ß c1 =) (us_safe_read_char_adv s1, n1))
@@ -47443,7 +47444,7 @@
     (§
         ((ß int bri =) 0)
         ;; window width minus window margin space, i.e. what rests for text
-        ((ß int eff_wwidth =) (§ wp.w_width - (((wp.w_options.@wo_nu || wp.w_options.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) == null) ? number_width(wp) + 1 : 0)))
+        ((ß int eff_wwidth =) (- (. wp w_width) (if (and (or @(.. wp w_options wo_nu) @(.. wp w_options wo_rnu)) (nil? (vim_strbyte @p_cpo, CPO_NUMCOL))) (+ (number_width wp) 1) 0)))
 
         ;; used cached indent, unless pointer or 'tabstop' changed
         (when (or (BNE @bri_prev_line, line) (!= @bri_prev_ts @(. @curbuf b_p_ts)) (!= @bri_prev_tick (. @curbuf b_changedtick)))
@@ -47470,7 +47471,7 @@
         ;; always leave at least bri_min characters on the left, if text width is sufficient
         (§ eff_wwidth - wp.w_p_brimin < bri)
         (§
-            ((ß bri =) (if (< (- eff_wwidth (§ wp.w_p_brimin)) 0) 0 (- eff_wwidth (§ wp.w_p_brimin))))
+            ((ß bri =) (if (< (- eff_wwidth (. wp w_p_brimin)) 0) 0 (- eff_wwidth (. wp w_p_brimin))))
         ))
 
         bri
@@ -47487,13 +47488,13 @@
 
         ((ß line =) (skipwhite line))
 
-        ((ß FOR) (ß (§ Bytes[] cinw = { @curbuf.@b_p_cinw }) (§ cinw[0].at(0) != NUL) nil)
+; %%    ((ß FOR) (ß (§ Bytes[] cinw = { @curbuf.@b_p_cinw }) (§ cinw[0].at(0) != NUL) nil)
             ((ß int len =) (§ copy_option_part(cinw, cinw_buf, cinw_len, (u8 ","))))
             (when (and (zero? (STRNCMP line, cinw_buf, len)) (or (not (us_iswordb (.at line len), @curbuf)) (not (us_iswordb (.at line (- len 1)), @curbuf))))
                 ((ß retval =) true)
                 (ß BREAK)
             )
-        )
+; %%    )
 
         retval
     ))
@@ -47532,7 +47533,7 @@
             ;; replacing what was there before and pushing the right stuff onto the replace stack.
 
             (if (< (.. @curwin w_cursor lnum) @orig_line_count)
-                ((ß next_line =) (STRDUP (ml_get (+ (§ @curwin.w_cursor.lnum) 1))))
+                ((ß next_line =) (STRDUP (ml_get (+ (.. @curwin w_cursor lnum) 1))))
                 ((ß next_line =) (STRDUP (u8 "")))
             )
 
@@ -48716,7 +48717,7 @@
         ((ß Bytes buf =) null)
 
         ((ß int buflen =) 150)
-        ((ß int[] len =) (§ { 0 }))
+; %%    ((ß int[] len =) (§ { 0 }))
         ((ß int waited =) 0)
 
         (while true
@@ -48743,7 +48744,7 @@
 
             ;; First time: blocking wait.
             ;; Second time: wait up to 100ms for a terminal code to complete.
-            ((ß int n =) (§ ui_inchar(buf.plus(len[0]), maxlen, (len[0] == 0) ? -1 : 100, 0)))
+            ((ß int n =) (ui_inchar (.plus buf (§ len[0])), maxlen, (if (== (§ len[0]) 0) -1 100), 0))
             (cond (< 0 n)
             (§
                 ;; Replace zero by a special key code.
@@ -48873,7 +48874,7 @@
         ;; Ignore SIGHUP, because a dropped connection causes a read error, which
         ;; makes Vim exit and then handling SIGHUP causes various reentrance problems.
 
-        (§ libC.sigset(SIGHUP, /*SIG_IGN*/null))
+        (§ libC.sigset(SIGHUP, #_"/*SIG_IGN*/"null))
 
         (windgoto (- (int @Rows) 1), 0)
 
@@ -49031,7 +49032,7 @@
     (§
         ((ß int col =) 0)
         ((ß int csize =) 0)
-        ((ß int[] head =) (§ { 0 }))
+; %%    ((ß int[] head =) (§ { 0 }))
 
         ((ß boolean one_more =) (§ (@State & INSERT) != 0 || @restart_edit != NUL || (@VIsual_active && @p_sel.at(0) != (byte \o)) || ((@ve_flags & VE_ONEMORE) != 0 && wcol < MAXCOL)))
 
@@ -49040,11 +49041,11 @@
         (ß int idx)
         (cond (<= MAXCOL wcol)
         (§
-            ((ß idx =) (§ STRLEN(line) - 1 + (one_more ? 1 : 0)))
+            ((ß idx =) (+ (- (STRLEN line) 1) (if one_more 1 0)))
             ((ß col =) wcol)
 
             (when (and (or addspaces finetune) (not @VIsual_active))
-                ((ß @curwin.w_curswant =) (§ linetabsize(line) + (one_more ? 1 : 0)))
+                ((ß @curwin.w_curswant =) (+ (linetabsize line) (if one_more 1 0)))
                 (if (< 0 (. @curwin w_curswant))
                     (§ --@curwin.w_curswant)
                 )
@@ -49201,7 +49202,7 @@
 
 ;; Increment the line pointer "lp" crossing line boundaries as necessary.
 ;; Return 1 when going to the next line.
-;; Return 2 when moving forward onto a NUL at the end of the line).
+;; Return 2 when moving forward onto a NUL at the end of the line.
 ;; Return -1 when at the end of file.
 ;; Return 0 otherwise.
 
@@ -49213,7 +49214,7 @@
             ((ß int l =) (us_ptr2len_cc p))
 
             ((ß lp.col +=) l)
-            ((ß RETURN) (§ ((p.at(l) != NUL) ? 0 : 2)))
+            ((ß RETURN) (if (!= (.at p l) NUL) 0 2))
         )
         (when (!= (. lp lnum) (.. @curbuf b_ml ml_line_count))   ;; there is a next line
             ((ß lp.col =) 0)
@@ -49511,7 +49512,7 @@
     (§
         (when (non-nil? p)
             ((ß FOR) (ß (§ int c) (§ (c = p.at(0)) != NUL) nil)
-                (§ (p = p.plus(1)).be(-1, (c < (byte \a) || (byte \z) < c) ? c : (c - 0x20)))
+                (.be ((ß p =) (.plus p 1)) -1, (if (or (< c (byte \a)) (< (byte \z) c)) c (- c 0x20)))
             )
         )
     ))
@@ -50308,7 +50309,7 @@
             ;; If we undid more than we redid, move the entry lists before
             ;; and including curbuf.b_u_curhead to an alternate branch.
 
-            ((ß u_header_C[] old_curhead =) (§ { @curbuf.b_u_curhead }))
+; %%        ((ß u_header_C[] old_curhead =) (§ { @curbuf.b_u_curhead }))
             (when (!= (§ old_curhead[0]) null)
                 ((ß @curbuf.b_u_newhead =) (§ old_curhead[0].uh_next.ptr))
                 ((ß @curbuf.b_u_curhead =) null)
@@ -50383,7 +50384,7 @@
             )
 
             ;; save changed and buffer empty flag for undo
-            ((ß uhp.uh_flags =) (§ (@curbuf.@b_changed ? UH_CHANGED : 0) + ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0)))
+            ((ß uhp.uh_flags =) (+ (if @(. @curbuf b_changed) UH_CHANGED 0) (if (!= (& (.. @curbuf b_ml ml_flags) ML_EMPTY) 0) UH_EMPTYBUF 0)))
 
             ;; save named marks and Visual marks for undo
             ((ß FOR) (ß (§ int i = 0) (< i NMARKS) (§ i++))
@@ -50420,7 +50421,7 @@
 
                     ;; If lines have been inserted/deleted we give up.
                     ;; Also when the line was included in a multi-line save.
-                    (if (§ (@curbuf.b_u_newhead.uh_getbot_entry != uep ? (uep.ue_top + uep.ue_size + 1 != (uep.ue_bot == 0 ? @curbuf.b_ml.ml_line_count + 1 : uep.ue_bot)) : uep.ue_lcount != @curbuf.b_ml.ml_line_count) || (1 < uep.ue_size && uep.ue_top <= top && top + 2 <= uep.ue_top + uep.ue_size + 1))
+                    (if (or (if (!= (.. @curbuf b_u_newhead uh_getbot_entry) uep) (!= (+ (. uep ue_top) (. uep ue_size) 1) (if (== (. uep ue_bot) 0) (+ (.. @curbuf b_ml ml_line_count) 1) (. uep ue_bot))) (!= (. uep ue_lcount) (.. @curbuf b_ml ml_line_count))) (and (< 1 (. uep ue_size)) (<= (. uep ue_top) top) (<= (+ top 2) (+ (. uep ue_top) (. uep ue_size) 1))))
                         (ß BREAK)
                     )
 
@@ -50705,7 +50706,7 @@
                     ;; Remember the header that is closest to the target.
                     ;; It must be at least in the right direction (checked with "b_u_seq_cur").
                     ;; When the timestamp is equal find the highest/lowest sequence number.
-                    (when (§ (step < 0 ? uhp.uh_seq <= @curbuf.b_u_seq_cur : uhp.uh_seq > @curbuf.b_u_seq_cur) && ((dosec && val == closest) ? (step < 0 ? uhp.uh_seq < closest_seq : uhp.uh_seq > closest_seq) : closest == closest_start || (target < val ? (target < closest ? val - target <= closest - target : val - target <= target - closest) : (target < closest ? target - val <= closest - target : target - val <= target - closest))))
+                    (when (and (if (< step 0) (<= (. uhp uh_seq) (. @curbuf b_u_seq_cur)) (> (. uhp uh_seq) (. @curbuf b_u_seq_cur))) (if (and dosec (== val closest)) (if (< step 0) (< (. uhp uh_seq) closest_seq) (> (. uhp uh_seq) closest_seq)) (or (== closest closest_start) (if (< target val) (if (< target closest) (<= (- val target) (- closest target)) (<= (- val target) (- target closest))) (if (< target closest) (<= (- target val) (- closest target)) (<= (- target val) (- target closest)))))))
                         ((ß closest =) val)
                         ((ß closest_seq =) (. uhp uh_seq))
                     )
@@ -50884,7 +50885,7 @@
         ((ß u_header_C curhead =) (. @curbuf b_u_curhead))
 
         ((ß int old_flags =) (. curhead uh_flags))
-        ((ß int new_flags =) (§ (@curbuf.@b_changed ? UH_CHANGED : 0) + ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0)))
+        ((ß int new_flags =) (+ (if @(. @curbuf b_changed) UH_CHANGED 0) (if (!= (& (.. @curbuf b_ml ml_flags) ML_EMPTY) 0) UH_EMPTYBUF 0)))
         (setpcmark)
 
         ;; save marks before undo/redo
@@ -51173,7 +51174,7 @@
                 (redraw_win_later wp, NOT_VALID))
         )
 
-        (smsg (u8 "%ld %s; %s #%ld  %s"), (if (< @u_oldcount 0) (- @u_oldcount) @u_oldcount), msgstr, (if did_undo (u8 "before") (u8 "after")), (if (== uhp null) 0 (§ uhp.uh_seq)), msgbuf)
+        (smsg (u8 "%ld %s; %s #%ld  %s"), (if (< @u_oldcount 0) (- @u_oldcount) @u_oldcount), msgstr, (if did_undo (u8 "before") (u8 "after")), (if (== uhp null) 0 (. uhp uh_seq)), msgbuf)
     ))
 
 ;; u_sync: stop adding to the current entry list
@@ -51772,8 +51773,8 @@
 
                 ((ß CASE) (byte \n))                           ;; magic DM2500 code
                 (§
-                    ((ß row ^=) 0140)
-                    ((ß col ^=) 0140)
+; %%                ((ß row ^=) 0140)
+; %%                ((ß col ^=) 0140)
                     (ß BREAK)
                 )
 
@@ -51981,7 +51982,7 @@
         ;; Also accept "\e[3%dm" for TERMINFO, it is sometimes used.
         (when (§ 8 <= n && 16 <= @t_colors && s.at(0) == ESC && s.at(1) == (byte \[) && s.at(i) != NUL && (STRCMP(s.plus(i + 1), (u8 "%p1%dm")) == 0 || STRCMP(s.plus(i + 1), (u8 "%dm")) == 0) && (s.at(i) == (byte \3) || s.at(i) == (byte \4)))
             ((ß Bytes buf =) (§ new Bytes(20)))
-            (§ libC.sprintf(buf, (u8 "%s%s%%p1%%dm"), (i == 2) ? (u8 "\033[") : (u8 "\233"), (s.at(i) == (byte \3)) ? (16 <= n ? (u8 "38;5;") : (u8 "9")) : (16 <= n ? (u8 "48;5;") : (u8 "10"))))
+            (.sprintf libC buf, (u8 "%s%s%%p1%%dm"), (if (== i 2) (u8 "\033[") (u8 "\233")), (if (== (.at s i) (byte \3)) (if (<= 16 n) (u8 "38;5;") (u8 "9")) (if (<= 16 n) (u8 "48;5;") (u8 "10"))))
             ((ß s =) buf)
             ((ß n =) (if (<= 16 n) n (- n 8)))
         )
@@ -52588,7 +52589,7 @@
         )
 
         ((ß Bytes key_name =) (§ new Bytes(2)))
-        ((ß int[] modifiers =) (§ { 0 }))      ;; no modifiers yet
+; %%    ((ß int[] modifiers =) (§ { 0 }))      ;; no modifiers yet
 
         ((ß int slen =) 0)
 
@@ -53379,7 +53380,7 @@
 
 (defn- #_boolean conceal_cursor_line [#_window_C wp]
     (§
-        (if (== (§ wp.w_options.@wo_cocu.at(0)) NUL)
+        (if (== (.at @(.. wp w_options wo_cocu) 0) NUL)
             ((ß RETURN) false)
         )
 
@@ -53522,7 +53523,7 @@
         (init_search_hl wp)
 
         ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-        ((ß int i =) (if (or @(§ wp.w_options.wo_nu) @(§ wp.w_options.wo_rnu)) (number_width wp) 0))
+        ((ß int i =) (if (or @(.. wp w_options wo_nu) @(.. wp w_options wo_rnu)) (number_width wp) 0))
         (cond (!= (. wp w_nrwidth) i)
         (§
             ((ß type =) NOT_VALID)
@@ -54390,7 +54391,7 @@
         ((ß int draw_state =) WL_START)              ;; what to draw next
 
         ((ß int syntax_flags =) 0)
-        ((ß int[] syntax_seqnr =) (§ { 0 }))
+; %%    ((ß int[] syntax_seqnr =) (§ { 0 }))
         ((ß int prev_syntax_id =) 0)
         ((ß int conceal_attr =) (hl_attr HLF_CONCEAL))
         ((ß boolean is_concealing =) false)
@@ -54412,7 +54413,7 @@
         ((ß boolean extra_check =) @(.. wp w_options wo_lbr))  ;; has syntax or linebreak
 
         ;; Check for columns to display for 'colorcolumn'.
-        ((ß int[] color_cols =) (§ wp.w_p_cc_cols, cci = { 0 }))         ;; pointer to according columns array
+; %%    ((ß int[] color_cols =) (§ wp.w_p_cc_cols, cci = { 0 }))         ;; pointer to according columns array
         ((ß boolean draw_color_col =) false)                         ;; highlight colorcolumn
         (if (non-nil? color_cols)
             ((ß draw_color_col =) (§ advance_color_col(vcol - vcol_off, color_cols, cci)))
@@ -54420,7 +54421,7 @@
 
         ;; handle visual active in this window
 
-        ((ß int[] fromcol =) (§ { -10 }, tocol = { MAXCOL }))            ;; start/end of inverting
+; %%    ((ß int[] fromcol =) (§ { -10 }, tocol = { MAXCOL }))            ;; start/end of inverting
         (cond @VIsual_active
         (§
             (cond (ltoreq (. @curwin w_cursor), @VIsual)                ;; Visual is after curwin.w_cursor
@@ -56210,7 +56211,7 @@
             ((ß boolean force_redraw_this =) force_redraw_next)
             ((ß force_redraw_next =) false)
 
-            ((ß boolean need_redraw =) (§ (@screenLines.at(off) != c) || (mbyte_cells == 2 && @screenLines.at(off + 1) != 0) || (@screenLinesUC[off] != ((char_u(c) < 0x80 && u8cc[0] == 0) ? 0 : u8c) || (@screenLinesUC[off] != 0 && screen_comp_differs(off, u8cc))) || (@screenAttrs[off] != attr)))
+            ((ß boolean need_redraw =) (or (!= (.at @screenLines off) c) (and (== mbyte_cells 2) (!= (.at @screenLines (+ off 1)) 0)) (or (!= (§ @screenLinesUC[off]) (if (and (< (char_u c) 0x80) (== (§ u8cc[0]) 0)) 0 u8c)) (and (!= (§ @screenLinesUC[off]) 0) (screen_comp_differs off, u8cc))) (!= (§ @screenAttrs[off]) attr)))
 
             (when (or need_redraw force_redraw_this)
                 ;; The bold trick makes a single row of pixels appear in the next character.
@@ -56234,7 +56235,7 @@
                 (§
                     ((ß clear_next_cell =) false)
                 )
-                (§ (len < 0 ? ptr.at(mbyte_blen) == NUL : BLE(text.plus(len), ptr.plus(mbyte_blen))) && ((mbyte_cells == 1 && 1 < utf_off2cells(off, max_off)) || (mbyte_cells == 2 && utf_off2cells(off, max_off) == 1 && 1 < utf_off2cells(off + 1, max_off))))
+                (and (if (< len 0) (== (.at ptr mbyte_blen) NUL) (BLE (.plus text len), (.plus ptr mbyte_blen))) (or (and (== mbyte_cells 1) (< 1 (utf_off2cells off, max_off))) (and (== mbyte_cells 2) (== (utf_off2cells off, max_off) 1) (< 1 (utf_off2cells (+ off 1), max_off)))))
                 (§
                     ((ß clear_next_cell =) true)
                 ))
@@ -56308,7 +56309,7 @@
         ;; Setup for match and 'hlsearch' highlighting.  Disable any previous match.
         ((ß FOR) (ß (§ matchitem_C mi = wp.w_match_head) (!= mi null) (§ mi = mi.next))
             (COPY_regmmatch (.. mi mi_hl rmm), (. mi mi_match))
-            ((ß mi.mi_hl.attr =) (if (!= (§ mi.hlg_id) 0) (syn_id2attr (§ mi.hlg_id)) 0))
+            ((ß mi.mi_hl.attr =) (if (!= (. mi hlg_id) 0) (syn_id2attr (. mi hlg_id)) 0))
             ((ß mi.mi_hl.buf =) @curbuf)
             ((ß mi.mi_hl.lnum =) 0)
             ((ß mi.mi_hl.first_lnum =) 0)
@@ -56464,7 +56465,7 @@
             )
             (non-nil? mi)
             (§
-                ((ß nmatched =) (if (next_search_hl_pos shl, lnum, (§ mi.mi_pos), matchcol) 1 0))
+                ((ß nmatched =) (if (next_search_hl_pos shl, lnum, (. mi mi_pos), matchcol) 1 0))
             )
             :else
             (§
@@ -58238,7 +58239,7 @@
             ;; Some sprintfs return the length, some return a pointer.
             ;; To avoid portability problems we use STRLEN() here.
 
-            (§ vim_snprintf(buffer, RULER_BUF_LEN, (u8 "%ld,"), ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ? 0 : wp.w_cursor.lnum))
+            (vim_snprintf buffer, RULER_BUF_LEN, (u8 "%ld,"), (if (!= (& (.. @curbuf b_ml ml_flags) ML_EMPTY) 0) 0 (.. wp w_cursor lnum)))
             ((ß int len =) (STRLEN buffer))
             (col_print (.plus buffer len), (- RULER_BUF_LEN len), (if empty_line 0 (+ (.. wp w_cursor col) 1)), (+ (. wp w_virtcol) 1))
 
@@ -58320,7 +58321,7 @@
         ((ß int n =) 0)
 ;       do
 ;       {
-            ((ß lnum /=) 10)
+; %%        ((ß lnum /=) 10)
             (§ n++)
 ;       } while (0 < lnum);
 
@@ -58599,7 +58600,7 @@
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
-                (§ win_totop((int)Prenum, ((nchar == (byte \H) || nchar == (byte \L)) ? WSP_VERT : 0) | ((nchar == (byte \H) || nchar == (byte \K)) ? WSP_TOP : WSP_BOT)))
+                (win_totop (int Prenum), (| (if (or (== nchar (byte \H)) (== nchar (byte \L))) WSP_VERT 0) (if (or (== nchar (byte \H)) (== nchar (byte \K))) WSP_TOP WSP_BOT)))
                 (ß BREAK)
             )
 
@@ -59551,7 +59552,7 @@
                             :else
                             (§
                                 ;; These windows don't use up room.
-                                ((ß totwincount -=) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / (@p_wmw + 1)))
+                                ((ß totwincount -=) (/ (+ n (if (== (. fr fr_next) null) extra_sep 0)) (+ @p_wmw 1)))
                             ))
                             ((ß room -=) (- new_size n))
                             (when (< room 0)
@@ -59605,7 +59606,7 @@
                 (§
                     ;; Compute the maximum number of windows horiz. in "fr".
                     ((ß int n =) (frame_minwidth fr, NOWIN))
-                    ((ß wincount =) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / ((int)@p_wmw + 1)))
+                    ((ß wincount =) (/ (+ n (if (== (. fr fr_next) null) extra_sep 0)) (+ (int @p_wmw) 1)))
                     ((ß int m =) (frame_minwidth fr, next_curwin))
                     (ß boolean hnc)
                     (if has_next_curwin
@@ -59688,7 +59689,7 @@
                             :else
                             (§
                                 ;; These windows don't use up room.
-                                ((ß totwincount -=) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / (@p_wmh + 1)))
+                                ((ß totwincount -=) (/ (+ n (if (== (. fr fr_next) null) extra_sep 0)) (+ @p_wmh 1)))
                             ))
                             ((ß room -=) (- new_size n))
                             (when (< room 0)
@@ -59742,7 +59743,7 @@
                 (§
                     ;; Compute the maximum number of windows vert. in "fr".
                     ((ß int n =) (frame_minheight fr, NOWIN))
-                    ((ß wincount =) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / ((int)@p_wmh + 1)))
+                    ((ß wincount =) (/ (+ n (if (== (. fr fr_next) null) extra_sep 0)) (+ (int @p_wmh) 1)))
                     ((ß int m =) (frame_minheight fr, next_curwin))
                     (ß boolean hnc)
                     (if has_next_curwin
@@ -59943,8 +59944,8 @@
         ;; If rows/columns go to a window below/right its positions need to be updated.
         ;; Can only be done after the sizes have been updated.
         (when (== frp2 (. frp_close fr_next))
-            ((ß int[] row =) (§ { win.w_winrow }))
-            ((ß int[] col =) (§ { win.w_wincol }))
+; %%        ((ß int[] row =) (§ { win.w_winrow }))
+; %%        ((ß int[] col =) (§ { win.w_wincol }))
 
             (frame_comp_pos frp2, row, col)
         )
@@ -60001,7 +60002,7 @@
         )
 
         ((ß frame_C frp =) (. win w_frame))
-        ((ß boolean b =) (if (and (!= (§ frp.fr_parent) null) (== (§ frp.fr_parent.fr_layout) FR_ROW)) @p_spr @p_sb))
+        ((ß boolean b =) (if (and (!= (. frp fr_parent) null) (== (.. frp fr_parent fr_layout) FR_ROW)) @p_spr @p_sb))
         (if (or (and (not b) (!= (. frp fr_next) null)) (nil? (. frp fr_prev)))
             ((ß RETURN) (. frp fr_next))
         )
@@ -60967,8 +60968,8 @@
 
 (defn- #_int win_comp_pos []
     (§
-        ((ß int[] row =) (§ { 0 }))
-        ((ß int[] col =) (§ { 0 }))
+; %%    ((ß int[] row =) (§ { 0 }))
+; %%    ((ß int[] col =) (§ { 0 }))
 
         (frame_comp_pos @topframe, row, col)
         (§ row[0])
@@ -62252,7 +62253,7 @@
     (§
         (check_cursor_moved wp)
         (when (zero? (& (. wp w_valid) VALID_VIRTCOL))
-            ((ß int[] vcol =) (§ { wp.w_virtcol }))
+; %%        ((ß int[] vcol =) (§ { wp.w_virtcol }))
             (getvvcol wp, (. wp w_cursor), null, vcol, null)
             ((ß wp.w_virtcol =) (§ vcol[0]))
             ((ß wp.w_valid |=) VALID_VIRTCOL)
@@ -62343,7 +62344,7 @@
         ;; Compute the number of virtual columns.
 
         ((ß int[] startcol =) (§ new int[1]))
-        ((ß int[] vcol =) (§ { @curwin.w_virtcol }))
+; %%    ((ß int[] vcol =) (§ { @curwin.w_virtcol }))
         ((ß int[] endcol =) (§ new int[1]))
         (getvvcol @curwin, (. @curwin w_cursor), startcol, vcol, endcol)
         ((ß @curwin.w_virtcol =) (§ vcol[0]))
@@ -63181,9 +63182,9 @@
         ((ß long scrolled =) 0)
 
         (if (non-zero? Prenum)
-            ((ß @curwin.w_options.@wo_scr =) (if (< (§ @curwin.w_height) Prenum) (§ @curwin.w_height) Prenum))
+            ((ß @curwin.w_options.@wo_scr =) (if (< (. @curwin w_height) Prenum) (. @curwin w_height) Prenum))
         )
-        ((ß int n =) (if (<= (int @(§ @curwin.w_options.wo_scr)) (§ @curwin.w_height)) (int @(§ @curwin.w_options.wo_scr)) (§ @curwin.w_height)))
+        ((ß int n =) (if (<= (int @(.. @curwin w_options wo_scr)) (. @curwin w_height)) (int @(.. @curwin w_options wo_scr)) (. @curwin w_height)))
 
         (validate_botline)
         ((ß int room =) (. @curwin w_empty_rows))
@@ -63944,21 +63945,21 @@
                 ((ß hlt[n + i].sg_link =) 0)
 
                 ;; Apply difference between UserX and HLF_S to HLF_SNC.
-                ((ß hlt[n + i].sg_term ^=) (§ (hlt[id - 1].sg_term ^ hlt[id_S - 1].sg_term)))
+; %%            ((ß hlt[n + i].sg_term ^=) (§ (hlt[id - 1].sg_term ^ hlt[id_S - 1].sg_term)))
                 (if (BNE (§ hlt[id - 1].sg_start), (§ hlt[id_S - 1].sg_start))
                     ((ß hlt[n + i].sg_start =) (§ hlt[id - 1].sg_start))
                 )
                 (if (BNE (§ hlt[id - 1].sg_stop), (§ hlt[id_S - 1].sg_stop))
                     ((ß hlt[n + i].sg_stop =) (§ hlt[id - 1].sg_stop))
                 )
-                ((ß hlt[n + i].sg_cterm ^=) (§ (hlt[id - 1].sg_cterm ^ hlt[id_S - 1].sg_cterm)))
+; %%            ((ß hlt[n + i].sg_cterm ^=) (§ (hlt[id - 1].sg_cterm ^ hlt[id_S - 1].sg_cterm)))
                 (if (§ hlt[id - 1].sg_cterm_fg != hlt[id_S - 1].sg_cterm_fg)
                     ((ß hlt[n + i].sg_cterm_fg =) (§ hlt[id - 1].sg_cterm_fg))
                 )
                 (if (§ hlt[id - 1].sg_cterm_bg != hlt[id_S - 1].sg_cterm_bg)
                     ((ß hlt[n + i].sg_cterm_bg =) (§ hlt[id - 1].sg_cterm_bg))
                 )
-                ((ß hlt[n + i].sg_gui ^=) (§ (hlt[id - 1].sg_gui ^ hlt[id_S - 1].sg_gui)))
+; %%            ((ß hlt[n + i].sg_gui ^=) (§ (hlt[id - 1].sg_gui ^ hlt[id_S - 1].sg_gui)))
                 ((ß @highlight_ga.ga_len =) (§ n + i + 1))
                 (set_hl_attr (+ n i))         ;; at long last we can apply
             )
@@ -63997,7 +63998,7 @@
 (defn- #_void main_loop [#_boolean cmdwin]
     ;; cmdwin: true when working in the command-line window
     (§
-        ((ß /*volatile*//*transient */boolean previous_got_int =) false)     ;; "got_int" was true
+        ((ß #_"/*volatile*//*transient */"boolean previous_got_int =) false)     ;; "got_int" was true
 
         ((ß long conceal_old_cursor_line =) 0)
         ((ß long conceal_new_cursor_line =) 0)
