@@ -2618,20 +2618,11 @@
     ])
 
 ;; Tab pages point to the top frame of each tab page.
-;; Note: Most values are NOT valid for the current tab page!  Use "curwin",
-;; "firstwin", etc. for that.  "tp_topframe" is always valid and can be
-;; compared against "topframe" to find the current tab page.
+;; Note: Most values are NOT valid for the current tab page!  Use "curwin", "firstwin", etc. for that.
 
 (class! #_final tabpage_C
     [
-        (field tabpage_C    tp_next)            ;; next tabpage or null
-        (field frame_C      tp_topframe)        ;; topframe for the windows
         (field window_C     tp_curwin)          ;; current window in this Tab page
-        (field window_C     tp_prevwin)         ;; previous window in this Tab page
-        (field window_C     tp_firstwin)        ;; first window in this Tab page
-        (field window_C     tp_lastwin)         ;; last window in this Tab page
-        (field long         tp_old_Rows)        ;; Rows when Tab page was left
-        (field long         tp_old_Columns)     ;; Columns when Tab page was left
         (field long         tp_ch_used)         ;; value of 'cmdheight' when frame size was set
     ])
 
@@ -3592,18 +3583,13 @@
 (atom! window_C prevwin)                ;; previous window
 (atom! window_C curwin)                 ;; currently active window
 
-(atom! window_C aucmd_win)              ;; window used in aucmd_prepbuf()
-
 ;; The window layout is kept in a tree of frames.  "topframe" points to the top of the tree.
 
 (atom! frame_C  topframe)               ;; top of the window frame tree
 
-;; Tab pages are alternative topframes.  "first_tabpage" points to the first
-;; one in the list, "curtab" is the current one.
+;; Tab pages are alternative topframes.
 
-(atom! tabpage_C    first_tabpage)
 (atom! tabpage_C    curtab)
-(atom! boolean      redraw_tabline)     ;; need to redraw tabline
 
 ;; All buffers are linked in a list.  'firstbuf' points to the first entry,
 ;; 'lastbuf' to the last entry and 'curbuf' to the currently active buffer.
@@ -9161,9 +9147,8 @@
 ;               set_option_default(i, opt_flags);
 
         ;; The 'scroll' option must be computed for all windows.
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;               win_comp_scroll(wp);
+;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;           win_comp_scroll(wp);
 
 ;       parse_cino(@curbuf);
     ))
@@ -10135,11 +10120,10 @@
 
 (defn- #_void redraw_titles []
     (§
-;       @redraw_tabline = true;
+        
     ))
 
 ;; Set a string option to a new value (without checking the effect).
-;; The string is copied into allocated memory.
 ;; If ("opt_idx" == -1) "name" is used, otherwise "opt_idx" is used.
 
 (defn- #_void set_string_option_direct [#_Bytes name, #_int opt_idx, #_Bytes val, #_int opt_flags]
@@ -11236,9 +11220,8 @@
 ;               @curbuf.@b_p_tw = 0;
 ;           }
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   check_colorcolumn(wp);
+;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;               check_colorcolumn(wp);
 ;       }
 
         ;; Check the bounds for numeric options here.
@@ -13135,7 +13118,7 @@
 
                 ;; Autocommands may open a new window and leave oldwin open
                 ;; which leads to crashes since the above call sets oldwin.w_buffer to null.
-;               if (@curwin != oldwin && oldwin != @aucmd_win && win_valid(oldwin) && oldwin.w_buffer == null)
+;               if (@curwin != oldwin && win_valid(oldwin) && oldwin.w_buffer == null)
 ;                   win_close(oldwin, false);
 
 ;               if (aborting())                 ;; autocmds may abort script processing
@@ -21531,16 +21514,12 @@
 
         ;; curbuf
 ;       bufnrs[bufnum++] = @curbuf.b_fnum;
+
         ;; buf in curtab
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;           if (wp.w_buffer != @curbuf)
 ;               bufnum = add_bufnum(bufnrs, bufnum, wp.w_buffer.b_fnum);
 
-        ;; buf in other tab
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;           if (tp != @curtab)
-;               for (window_C wp = tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   bufnum = add_bufnum(bufnrs, bufnum, wp.w_buffer.b_fnum);
         ;; any other buf
 ;       for (buf = @firstbuf; buf != null; buf = buf.b_next)
 ;           bufnum = add_bufnum(bufnrs, bufnum, buf.b_fnum);
@@ -21583,22 +21562,24 @@
 ;           @no_wait_return = save;
 ;       }
 
-;       buf_found:
+        ;; Try to find a window that contains the buffer.
+;       if (buf != @curbuf)
 ;       {
-            ;; Try to find a window that contains the buffer.
-;           if (buf != @curbuf)
-;           {
-;               for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;                   for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                       if (wp.w_buffer == buf)
-;                       {
-;                           goto_tabpage_win(tp, wp);
-                            ;; Paranoia: did autocmds wipe out the buffer with changes?
-;                           if (!buf_valid(buf))
-;                               return retval;
-;                           break buf_found;
-;                       }
-;           }
+;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;               if (wp.w_buffer == buf)
+;               {
+                    ;; Don't repeat a message in another tab page.
+;                   set_keep_msg(null, 0);
+
+;                   if (win_valid(wp))
+;                       win_enter(wp, true);
+
+                    ;; Paranoia: did autocmds wipe out the buffer with changes?
+;                   if (!buf_valid(buf))
+;                       return retval;
+
+;                   break;
+;               }
 ;       }
 
         ;; Open the changed buffer in the current window.
@@ -23047,7 +23028,6 @@
 
 (atom! boolean do_always)       ;; ignore 'mouse' setting next time
 (atom! boolean got_click)       ;; got a click some time back
-(atom! boolean in_tab_line)     ;; mouse clicked in tab line
 (atom! pos_C orig_cursor    (§_pos_C))
 
 ;; Do the appropriate action for the current mouse click in the current mode.
@@ -23152,15 +23132,9 @@
 ;       {
 ;           if (!@got_click)                 ;; didn't get click, ignore
 ;               return false;
+
 ;           if (!is_drag[0])                   ;; release, reset got_click
-;           {
 ;               @got_click = false;
-;               if (@in_tab_line)
-;               {
-;                   @in_tab_line = false;
-;                   return false;
-;               }
-;           }
 ;       }
 
         ;; CTRL right mouse button does CTRL-T
@@ -33900,63 +33874,62 @@
 
         ;; Adjust items in all windows related to the current buffer.
 
-;       for (tabpage_C tab = @first_tabpage; tab != null; tab = null)
-;           for (window_C win = (tab == @curtab) ? @firstwin : tab.tp_firstwin; win != null; win = win.w_next)
+;       for (window_C win = @firstwin; win != null; win = win.w_next)
+;       {
+;           if (!@cmdmod.lockmarks)
+                ;; Marks in the jumplist.  When deleting lines, this may create
+                ;; duplicate marks in the jumplist, they will be removed later.
+;               for (int i = 0; i < win.w_jumplistlen; i++)
+;                   if (win.w_jumplist[i].fmark.fnum == fnum)
+;                       win.w_jumplist[i].fmark.mark.lnum = one_adjust_nodel(win.w_jumplist[i].fmark.mark.lnum, line1, line2, amount, amount_after);
+
+;           if (win.w_buffer == @curbuf)
 ;           {
-;               if (!@cmdmod.lockmarks)
-                    ;; Marks in the jumplist.  When deleting lines, this may create
-                    ;; duplicate marks in the jumplist, they will be removed later.
-;                   for (int i = 0; i < win.w_jumplistlen; i++)
-;                       if (win.w_jumplist[i].fmark.fnum == fnum)
-;                           win.w_jumplist[i].fmark.mark.lnum = one_adjust_nodel(win.w_jumplist[i].fmark.mark.lnum, line1, line2, amount, amount_after);
-
-;               if (win.w_buffer == @curbuf)
+                ;; the displayed Visual area
+;               if (win.w_old_cursor_lnum != 0)
 ;               {
-                    ;; the displayed Visual area
-;                   if (win.w_old_cursor_lnum != 0)
-;                   {
-;                       win.w_old_cursor_lnum = one_adjust_nodel(win.w_old_cursor_lnum, line1, line2, amount, amount_after);
-;                       win.w_old_visual_lnum = one_adjust_nodel(win.w_old_visual_lnum, line1, line2, amount, amount_after);
-;                   }
+;                   win.w_old_cursor_lnum = one_adjust_nodel(win.w_old_cursor_lnum, line1, line2, amount, amount_after);
+;                   win.w_old_visual_lnum = one_adjust_nodel(win.w_old_visual_lnum, line1, line2, amount, amount_after);
+;               }
 
-                    ;; topline and cursor position for windows with the same buffer
-                    ;; other than the current window
-;                   if (win != @curwin)
+                ;; topline and cursor position for windows with the same buffer
+                ;; other than the current window
+;               if (win != @curwin)
+;               {
+;                   if (line1 <= win.w_topline && win.w_topline <= line2)
 ;                   {
-;                       if (line1 <= win.w_topline && win.w_topline <= line2)
+;                       if (amount == MAXLNUM)              ;; topline is deleted
 ;                       {
-;                           if (amount == MAXLNUM)              ;; topline is deleted
-;                           {
-;                               if (line1 <= 1)
-;                                   win.w_topline = 1;
-;                               else
-;                                   win.w_topline = line1 - 1;
-;                           }
-;                           else                                ;; keep topline on the same line
-;                               win.w_topline += amount;
+;                           if (line1 <= 1)
+;                               win.w_topline = 1;
+;                           else
+;                               win.w_topline = line1 - 1;
 ;                       }
-;                       else if (amount_after != 0 && line2 < win.w_topline)
-;                       {
-;                           win.w_topline += amount_after;
-;                       }
-;                       if (line1 <= win.w_cursor.lnum && win.w_cursor.lnum <= line2)
-;                       {
-;                           if (amount == MAXLNUM)              ;; line with cursor is deleted
-;                           {
-;                               if (line1 <= 1)
-;                                   win.w_cursor.lnum = 1;
-;                               else
-;                                   win.w_cursor.lnum = line1 - 1;
-;                               win.w_cursor.col = 0;
-;                           }
-;                           else                                ;; keep cursor on the same line
-;                               win.w_cursor.lnum += amount;
-;                       }
-;                       else if (amount_after != 0 && line2 < win.w_cursor.lnum)
-;                           win.w_cursor.lnum += amount_after;
+;                       else                                ;; keep topline on the same line
+;                           win.w_topline += amount;
 ;                   }
+;                   else if (amount_after != 0 && line2 < win.w_topline)
+;                   {
+;                       win.w_topline += amount_after;
+;                   }
+;                   if (line1 <= win.w_cursor.lnum && win.w_cursor.lnum <= line2)
+;                   {
+;                       if (amount == MAXLNUM)              ;; line with cursor is deleted
+;                       {
+;                           if (line1 <= 1)
+;                               win.w_cursor.lnum = 1;
+;                           else
+;                               win.w_cursor.lnum = line1 - 1;
+;                           win.w_cursor.col = 0;
+;                       }
+;                       else                                ;; keep cursor on the same line
+;                           win.w_cursor.lnum += amount;
+;                   }
+;                   else if (amount_after != 0 && line2 < win.w_cursor.lnum)
+;                       win.w_cursor.lnum += amount_after;
 ;               }
 ;           }
+;       }
     ))
 
 ;; This code is used often, needs to be fast.
@@ -61408,9 +61381,7 @@
             ;; (unless it's the only window).  Repeat this so long as we end up in
             ;; a window with this buffer.
 
-;           while (buf == @curbuf
-;                      && !(@curwin.w_closing || @curwin.w_buffer.b_closing)
-;                      && (@firstwin != @lastwin || null != null))
+;           while (buf == @curbuf && !(@curwin.w_closing || @curwin.w_buffer.b_closing) && @firstwin != @lastwin)
 ;           {
 ;               if (win_close(@curwin, false) == false)
 ;                   break;
@@ -62853,21 +62824,18 @@
             ;; Close superfluous windows (two windows for the same buffer).
             ;; Also close windows that are not full-width.
 
-;       tabpage_C tpnext = null;
-
 ;       for (window_C wp = @firstwin, wpnext; wp != null; wp = wpnext)
 ;       {
 ;           wpnext = wp.w_next;
 ;           if ((1 < wp.w_buffer.b_nwindows
 ;                   || ((@cmdmod.split & WSP_VERT) != 0
-;                       ? wp.w_height + wp.w_status_height < @Rows - @p_ch - tabline_height()
+;                       ? wp.w_height + wp.w_status_height < @Rows - @p_ch
 ;                       : wp.w_width != (int)@Columns))
 ;               && @firstwin != @lastwin
 ;               && !(wp.w_closing || wp.w_buffer.b_closing))
 ;           {
 ;               win_close(wp, false);
 ;               wpnext = @firstwin;          ;; just in case an autocommand does something strange with windows
-;               tpnext = @first_tabpage;     ;; start all over...
 ;               open_wins = 0;
 ;           }
 ;           else
@@ -70109,7 +70077,6 @@
 ;       @curbuf.@b_changed = true;
 ;       ml_setflags(@curbuf);
 ;       check_status(@curbuf);
-;       @redraw_tabline = true;
     ))
 
 ;; Changed bytes within a single line for the current buffer.
@@ -70271,6 +70238,7 @@
 ;                       add = (p.col + cols < col || col + cols < p.col);
 ;                   }
 ;               }
+
 ;               if (add)
 ;               {
                     ;; This is the first of a new sequence of undo-able changes
@@ -70284,22 +70252,22 @@
 ;                       @curbuf.b_changelistlen = JUMPLISTSIZE - 1;
 ;                       for (int i = 0; i < JUMPLISTSIZE - 1; i++)
 ;                           COPY_pos(@curbuf.b_changelist[i], @curbuf.b_changelist[i + 1]);
-;                       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;                           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                           {
-                                ;; Correct position in changelist for other windows on this buffer.
-;                               if (wp.w_buffer == @curbuf && 0 < wp.w_changelistidx)
-;                                   --wp.w_changelistidx;
-;                           }
-;                   }
-;                   for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;                       for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
+;                       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;                       {
-                            ;; For other windows, if the position in the changelist is at the end,
-                            ;; it stays at the end.
-;                           if (wp.w_buffer == @curbuf && wp.w_changelistidx == @curbuf.b_changelistlen)
-;                               wp.w_changelistidx++;
+                            ;; Correct position in changelist for other windows on this buffer.
+;                           if (wp.w_buffer == @curbuf && 0 < wp.w_changelistidx)
+;                               --wp.w_changelistidx;
 ;                       }
+;                   }
+
+;                   for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;                   {
+                        ;; For other windows, if the position in the changelist is at the end,
+                        ;; it stays at the end.
+;                       if (wp.w_buffer == @curbuf && wp.w_changelistidx == @curbuf.b_changelistlen)
+;                           wp.w_changelistidx++;
+;                   }
+
 ;                   @curbuf.b_changelistlen++;
 ;               }
 ;           }
@@ -70308,54 +70276,53 @@
 ;           @curwin.w_changelistidx = @curbuf.b_changelistlen;
 ;       }
 
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
+;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;       {
+;           if (wp.w_buffer == @curbuf)
 ;           {
-;               if (wp.w_buffer == @curbuf)
+                ;; Mark this window to be redrawn later.
+;               if (wp.w_redr_type < VALID)
+;                   wp.w_redr_type = VALID;
+
+                ;; Check if a change in the buffer has invalidated
+                ;; the cached values for the cursor.
+;               if (lnum < wp.w_cursor.lnum)
+;                   changed_line_abv_curs_win(wp);
+;               else if (wp.w_cursor.lnum == lnum && col <= wp.w_cursor.col)
+;                   changed_cline_bef_curs_win(wp);
+;               if (lnum <= wp.w_botline)
 ;               {
-                    ;; Mark this window to be redrawn later.
-;                   if (wp.w_redr_type < VALID)
-;                       wp.w_redr_type = VALID;
+                    ;; Assume that botline doesn't change
+                    ;; (inserted lines make other lines scroll down below botline).
+;                   approximate_botline_win(wp);
+;               }
 
-                    ;; Check if a change in the buffer has invalidated
-                    ;; the cached values for the cursor.
-;                   if (lnum < wp.w_cursor.lnum)
-;                       changed_line_abv_curs_win(wp);
-;                   else if (wp.w_cursor.lnum == lnum && col <= wp.w_cursor.col)
-;                       changed_cline_bef_curs_win(wp);
-;                   if (lnum <= wp.w_botline)
+                ;; Check if any w_lines[] entries have become invalid.
+                ;; For entries below the change: Correct the lnums for inserted/deleted lines.
+                ;; Makes it possible to stop displaying after the change.
+;               for (int i = 0; i < wp.w_lines_valid; i++)
+;                   if (wp.w_lines[i].wl_valid)
 ;                   {
-                        ;; Assume that botline doesn't change
-                        ;; (inserted lines make other lines scroll down below botline).
-;                       approximate_botline_win(wp);
-;                   }
-
-                    ;; Check if any w_lines[] entries have become invalid.
-                    ;; For entries below the change: Correct the lnums for inserted/deleted lines.
-                    ;; Makes it possible to stop displaying after the change.
-;                   for (int i = 0; i < wp.w_lines_valid; i++)
-;                       if (wp.w_lines[i].wl_valid)
+;                       if (lnum <= wp.w_lines[i].wl_lnum)
 ;                       {
-;                           if (lnum <= wp.w_lines[i].wl_lnum)
+;                           if (wp.w_lines[i].wl_lnum < lnume)
 ;                           {
-;                               if (wp.w_lines[i].wl_lnum < lnume)
-;                               {
-                                    ;; line included in change
-;                                   wp.w_lines[i].wl_valid = false;
-;                               }
-;                               else if (xtra != 0)
-;                               {
-                                    ;; line below change
-;                                   wp.w_lines[i].wl_lnum += xtra;
-;                               }
+                                ;; line included in change
+;                               wp.w_lines[i].wl_valid = false;
+;                           }
+;                           else if (xtra != 0)
+;                           {
+                                ;; line below change
+;                               wp.w_lines[i].wl_lnum += xtra;
 ;                           }
 ;                       }
+;                   }
 
-                    ;; relative numbering may require updating more
-;                   if (wp.w_onebuf_opt.@wo_rnu)
-;                       redraw_win_later(wp, SOME_VALID);
-;               }
+                ;; relative numbering may require updating more
+;               if (wp.w_onebuf_opt.@wo_rnu)
+;                   redraw_win_later(wp, SOME_VALID);
 ;           }
+;       }
 
         ;; Call update_screen() later, which checks out what needs to be redrawn,
         ;; since it notices b_mod_set and then uses b_mod_*.
@@ -70377,7 +70344,6 @@
 ;           buf.@b_changed = false;
 ;           ml_setflags(buf);
 ;           check_status(buf);
-;           @redraw_tabline = true;
 ;       }
 ;       buf.b_changedtick++;
     ))
@@ -70792,31 +70758,6 @@
 ;       return p1;
     ))
 
-;; Get pointer to tail of "fname", including path separators.
-;; Putting a NUL here leaves the directory name.
-;; Takes care of "c:/" and "//".
-;; Always returns a valid pointer.
-
-(defn- #_Bytes gettail_sep [#_Bytes fname]
-    (§
-;       Bytes p = get_past_head(fname); ;; don't remove the '/' from "c:/file"
-;       Bytes t = gettail(fname);
-;       while (BLT(p, t) && after_pathsep(fname, t))
-;           t = t.minus(1);
-;       return t;
-    ))
-
-;; get the next path component (just after the next path separator).
-
-(defn- #_Bytes getnextcomp [#_Bytes fname]
-    (§
-;       while (fname.at(0) != NUL && !vim_ispathsep(fname.at(0)))
-;           fname = fname.plus(us_ptr2len_cc(fname));
-;       if (fname.at(0) != NUL)
-;           fname = fname.plus(1);
-;       return fname;
-    ))
-
 ;; Get a pointer to one character past the head of a path name.
 ;; Unix: after "/"; DOS: after "c:\"; Amiga: after "disk:/"; Mac: no head.
 ;; If there is no head, path is returned.
@@ -70846,55 +70787,6 @@
 ;       return vim_ispathsep(c);
     ))
 
-;; Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname"
-;; It's done in-place.
-
-(defn- #_void shorten_dir [#_Bytes str]
-    (§
-;       boolean skip = false;
-
-;       Bytes tail = gettail(str);
-;       Bytes d = str;
-;       for (Bytes s = str; ; s = s.plus(1))
-;       {
-;           if (BLE(tail, s))                      ;; copy the whole tail
-;           {
-;               (d = d.plus(1)).be(-1, s.at(0));
-;               if (s.at(0) == NUL)
-;                   break;
-;           }
-;           else if (vim_ispathsep(s.at(0)))            ;; copy '/' and next char
-;           {
-;               (d = d.plus(1)).be(-1, s.at(0));
-;               skip = false;
-;           }
-;           else if (!skip)
-;           {
-;               (d = d.plus(1)).be(-1, s.at(0));                      ;; copy next char
-;               if (s.at(0) != (byte)'~' && s.at(0) != (byte)'.')     ;; and leading "~" and "."
-;                   skip = true;
-
-;               for (int l = us_ptr2len_cc(s); 0 < --l; )
-;                   (d = d.plus(1)).be(-1, (s = s.plus(1)).at(0));
-;           }
-;       }
-    ))
-
-;; Concatenate file names fname1 and fname2 into allocated memory.
-;; Only add a '/' or '\\' when 'sep' is true and it is necessary.
-
-(defn- #_Bytes concat_fnames [#_Bytes fname1, #_Bytes fname2, #_boolean sep]
-    (§
-;       Bytes dest = new Bytes(STRLEN(fname1) + STRLEN(fname2) + 3);
-
-;       STRCPY(dest, fname1);
-;       if (sep)
-;           add_pathsep(dest);
-;       STRCAT(dest, fname2);
-
-;       return dest;
-    ))
-
 ;; Concatenate two strings and return the result in allocated memory.
 
 (defn- #_Bytes concat_str [#_Bytes str1, #_Bytes str2]
@@ -70907,34 +70799,6 @@
 ;       STRCPY(dest.plus(len), str2);
 
 ;       return dest;
-    ))
-
-;; Add a path separator to a file name, unless it already ends in a path separator.
-
-(defn- #_void add_pathsep [#_Bytes p]
-    (§
-;       if (p.at(0) != NUL && !after_pathsep(p, p.plus(STRLEN(p))))
-;           STRCAT(p, u8("/"));
-    ))
-
-;; Make an allocated copy of a full file name.
-;; Returns null when out of memory.
-
-(defn- #_Bytes fullName_save [#_Bytes fname, #_boolean force]
-    ;; force: force expansion, even when it already looks like a full path name
-    (§
-;       if (fname == null)
-;           return null;
-
-;       Bytes buf = new Bytes(MAXPATHL);
-
-;       Bytes new_fname;
-;       if (vim_fullName(fname, buf, MAXPATHL, force) != false)
-;           new_fname = STRDUP(buf);
-;       else
-;           new_fname = STRDUP(fname);
-
-;       return new_fname;
     ))
 
 ;; Find the start of a comment, not knowing if we are in a comment right now.
@@ -76190,15 +76054,6 @@
 ;               return OP_PENDING;
 ;       }
 ;       return @State;
-    ))
-
-;; Return true if "p" points to just after a path separator.
-;; Takes care of multi-byte characters.
-;; "b" must point to the start of the file name
-
-(defn- #_boolean after_pathsep [#_Bytes b, #_Bytes p]
-    (§
-;       return (BLT(b, p) && vim_ispathsep(p.at(-1)) && us_head_off(b, p.minus(1)) == 0);
     ))
 
 ;; Sort an array of strings.
@@ -82553,7 +82408,6 @@
 ;                   }
 ;               }
 ;               @redraw_cmdline = true;
-;               @redraw_tabline = true;
 ;           }
 ;           @msg_scrolled = 0;
 ;           @need_wait_return = false;
@@ -82596,10 +82450,6 @@
 ;                       && @curwin.w_old_curswant == @curwin.w_curswant)
 ;                   ))
 ;           @curwin.w_redr_type = type;
-
-        ;; Redraw the tab pages line if needed.
-;       if (@redraw_tabline || NOT_VALID <= type)
-;           draw_tabline();
 
         ;; Go from top to bottom through the windows, redrawing the ones that need it.
 
@@ -83025,9 +82875,6 @@
                     ;; win_ins_lines() above, "screen_cleared" is false or MAYBE then.
 ;                   if (@screen_cleared != TRUE)
 ;                       screenclear();
-                    ;; The screen was cleared, redraw the tab pages line.
-;                   if (@redraw_tabline)
-;                       draw_tabline();
 ;               }
 ;           }
 
@@ -85560,8 +85407,6 @@
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;           if (wp.w_redr_status)
 ;               win_redr_status(wp);
-;       if (@redraw_tabline)
-;           draw_tabline();
     ))
 
 ;; Draw the verticap separator right of window "wp" starting with line "row".
@@ -86704,11 +86549,8 @@
             ;; If anything fails, make "screenLines" null, so we don't do anything!
             ;; Continuing with the old "screenLines" may result in a crash, because the size is wrong.
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   win_free_lines(wp);
-;           if (@aucmd_win != null)
-;               win_free_lines(@aucmd_win);
+;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;               win_free_lines(wp);
 
 ;           Bytes slis = new Bytes((int)(@Rows + 1) * (int)@Columns);
 ;           for (int i = 0; i < MAX_MCO; i++)
@@ -86722,11 +86564,8 @@
 ;           boolean[] lwrs = new boolean[(int)@Rows];
 ;           short[] tpis = new short[(int)@Columns];
 
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;               for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   win_alloc_lines(wp);
-;           if (@aucmd_win != null && @aucmd_win.w_lines == null)
-;               win_alloc_lines(@aucmd_win);
+;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;               win_alloc_lines(wp);
 
 ;           for (int r = 0; r < @Rows; r++)
 ;           {
@@ -86847,7 +86686,6 @@
 
 ;       win_rest_invalid(@firstwin);
 ;       @redraw_cmdline = true;
-;       @redraw_tabline = true;
 ;       if (@must_redraw == CLEAR)       ;; no need to clear again
 ;           @must_redraw = NOT_VALID;
 ;       compute_cmdrow();
@@ -87837,148 +87675,6 @@
 ;       }
     ))
 
-;; Draw the tab pages line at the top of the Vim window.
-
-(defn- #_void draw_tabline []
-    (§
-;       int tabcount = 0;
-;       int col = 0;
-;       int attr_sel = hl_attr(HLF_TPS);
-;       int attr_nosel = hl_attr(HLF_TP);
-;       int attr_fill = hl_attr(HLF_TPF);
-;       boolean use_sep_chars = (@t_colors < 8);
-
-;       @redraw_tabline = false;
-
-;       if (tabline_height() < 1)
-;           return;
-
-        ;; Init tabPageIdxs[] to zero: Clicking outside of tabs has no effect.
-;       for (int scol = 0; scol < (int)@Columns; scol++)
-;           @tabPageIdxs[scol] = 0;
-
-        ;; Use the 'tabline' option if it's set.
-;       if (@p_tal.at(0) != NUL)
-;       {
-;           boolean save_called_emsg = @called_emsg;
-
-            ;; Check for an error.
-            ;; If there is one we would loop in redrawing the screen.
-            ;; Avoid that by making 'tabline' empty.
-;           @called_emsg = false;
-;           win_redr_custom();
-;           if (@called_emsg)
-;               set_string_option_direct(u8("tabline"), -1, u8(""), OPT_FREE);
-;           @called_emsg |= save_called_emsg;
-;       }
-;       else
-;       {
-;           for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;               tabcount++;
-
-;           int tabwidth = ((int)@Columns - 1 + tabcount / 2) / tabcount;
-;           if (tabwidth < 6)
-;               tabwidth = 6;
-
-;           int attr = attr_nosel;
-;           tabcount = 0;
-;           int scol = 0;
-;           for (tabpage_C tp = @first_tabpage; tp != null && col < (int)@Columns - 4; tp = null)
-;           {
-;               scol = col;
-
-;               if (tp.tp_topframe == @topframe)
-;                   attr = attr_sel;
-;               if (use_sep_chars && 0 < col)
-;                   screen_putchar('|', 0, col++, attr);
-
-;               if (tp.tp_topframe != @topframe)
-;                   attr = attr_nosel;
-
-;               screen_putchar(' ', 0, col++, attr);
-
-;               window_C cwp, wp;
-;               if (tp == @curtab)
-;               {
-;                   cwp = @curwin;
-;                   wp = @firstwin;
-;               }
-;               else
-;               {
-;                   cwp = tp.tp_curwin;
-;                   wp = tp.tp_firstwin;
-;               }
-
-;               boolean modified = false;
-;               int wincount;
-;               for (wincount = 0; wp != null; wp = wp.w_next, ++wincount)
-;                   if (bufIsChanged(wp.w_buffer))
-;                       modified = true;
-;               if (modified || 1 < wincount)
-;               {
-;                   if (1 < wincount)
-;                   {
-;                       vim_snprintf(@nameBuff, MAXPATHL, u8("%d"), wincount);
-;                       int len = STRLEN(@nameBuff);
-;                       if ((int)@Columns - 3 <= col + len)
-;                           break;
-;                       screen_puts_len(@nameBuff, len, 0, col, hl_combine_attr(attr, hl_attr(HLF_T)));
-;                       col += len;
-;                   }
-;                   if (modified)
-;                       screen_puts_len(u8("+"), 1, 0, col++, attr);
-;                   screen_putchar(' ', 0, col++, attr);
-;               }
-
-;               int room = scol - col + tabwidth - 1;
-;               if (0 < room)
-;               {
-                    ;; Get buffer name in nameBuff[].
-;                   get_trans_bufname(cwp.w_buffer);
-;                   shorten_dir(@nameBuff);
-;                   int len = mb_string2cells(@nameBuff, -1);
-;                   Bytes p = @nameBuff;
-
-;                   while (room < len)
-;                   {
-;                       len -= mb_ptr2cells(p);
-;                       p = p.plus(us_ptr2len_cc(p));
-;                   }
-
-;                   if (len > (int)@Columns - col - 1)
-;                       len = (int)@Columns - col - 1;
-
-;                   screen_puts_len(p, STRLEN(p), 0, col, attr);
-;                   col += len;
-;               }
-;               screen_putchar(' ', 0, col++, attr);
-
-                ;; Store the tab page number in tabPageIdxs[],
-                ;; so that jump_to_mouse() knows where each one is.
-;               tabcount++;
-;               while (scol < col)
-;                   @tabPageIdxs[scol++] = (short)tabcount;
-;           }
-
-;           int c;
-;           if (use_sep_chars)
-;               c = '_';
-;           else
-;               c = ' ';
-;           screen_fill(0, 1, col, (int)@Columns, c, c, attr_fill);
-
-            ;; Put an "X" for closing the current tab if there are several.
-;           if (null != null)
-;           {
-;               screen_putchar('X', 0, (int)@Columns - 1, attr_nosel);
-;               @tabPageIdxs[(int)@Columns - 1] = -999;
-;           }
-;       }
-
-        ;; Reset the flag here again, in case evaluating 'tabline' causes it to be set.
-;       @redraw_tabline = false;
-    ))
-
 ;; Get buffer name for "buf" into nameBuff[].
 ;; Takes care of special buffer names and translates special characters.
 
@@ -88049,10 +87745,6 @@
 ;           return;
 
 ;       win_redr_ruler(@curwin, always);
-
-        ;; Redraw the tab pages line if needed.
-;       if (@redraw_tabline)
-;           draw_tabline();
     ))
 
 (defn- #_void win_redr_ruler [#_window_C wp, #_boolean always]
@@ -88234,9 +87926,6 @@
 ;;; ============================================================================================== VimW
 
 ;; window.c ---------------------------------------------------------------------------------------
-
-(final int URL_SLASH       1)               ;; path_is_url() has found "://"
-(final int URL_BACKSLASH   2)               ;; path_is_url() has found ":\\"
 
 (final window_C NOWIN (§_window_C))         ;; non-existing window
 
@@ -89029,7 +88718,7 @@
 ;           if ((flags & (WSP_TOP | WSP_BOT)) != 0)
 ;           {
                 ;; set height and row of new window to full height
-;               wp.w_winrow = tabline_height();
+;               wp.w_winrow = 0;
 ;               win_new_height(wp, curfrp.fr_height - (0 < @p_ls ? 1 : 0));
 ;               wp.w_status_height = (0 < @p_ls) ? 1 : 0;
 ;           }
@@ -89320,14 +89009,14 @@
 ;       frame_C frp2 = @curwin.w_frame.fr_prev;
 ;       if (wp.w_prev != @curwin)
 ;       {
-;           win_remove(@curwin, null);
+;           win_remove(@curwin);
 ;           frame_remove(@curwin.w_frame);
 ;           win_append(wp.w_prev, @curwin);
 ;           frame_insert(frp, @curwin.w_frame);
 ;       }
 ;       if (wp != wp2)
 ;       {
-;           win_remove(wp, null);
+;           win_remove(wp);
 ;           frame_remove(wp.w_frame);
 ;           win_append(wp2, wp);
 ;           if (frp2 == null)
@@ -89397,7 +89086,7 @@
                 ;; remove first window/frame from the list
 ;               frp = @curwin.w_frame.fr_parent.fr_child;
 ;               wp1 = frp.fr_win;
-;               win_remove(wp1, null);
+;               win_remove(wp1);
 ;               frame_remove(frp);
 
                 ;; find last frame and append removed window/frame after it
@@ -89415,7 +89104,7 @@
                 ;
 ;               wp1 = frp.fr_win;
 ;               wp2 = wp1.w_prev;   ;; will become last window
-;               win_remove(wp1, null);
+;               win_remove(wp1);
 ;               frame_remove(frp);
 
                 ;; append the removed window/frame before the first in the list
@@ -89457,8 +89146,8 @@
 
         ;; Remove the window and frame from the tree of frames.
 ;       int[] dir = new int[1];
-;       winframe_remove(@curwin, dir, null);
-;       win_remove(@curwin, null);
+;       winframe_remove(@curwin, dir);
+;       win_remove(@curwin);
 ;       last_status(false);             ;; may need to remove last status line
 ;       win_comp_pos();                 ;; recompute window positions
 
@@ -89515,7 +89204,7 @@
 ;                   win1.w_frame.fr_width -= 1;
 ;               }
 ;           }
-;           win_remove(win1, null);
+;           win_remove(win1);
 ;           frame_remove(win1.w_frame);
 ;           win_append(win2, win1);
 ;           frame_append(win2.w_frame, win1.w_frame);
@@ -89536,8 +89225,7 @@
     (§
 ;       if (dir == 0)
 ;           dir = @p_ead.at(0);
-;       win_equal_rec((next_curwin == null) ? @curwin : next_curwin, current,
-;                         @topframe, dir, 0, tabline_height(), (int)@Columns, @topframe.fr_height);
+;       win_equal_rec((next_curwin == null) ? @curwin : next_curwin, current, @topframe, dir, 0, 0, (int)@Columns, @topframe.fr_height);
     ))
 
 ;; Set a frame to a new position and height, spreading the available room
@@ -89843,8 +89531,6 @@
 (defn- #_void close_windows [#_buffer_C buf, #_boolean keep_curwin]
     ;; keep_curwin: don't close "curwin"
     (§
-;       int h = tabline_height();
-
 ;       @redrawingDisabled++;
 
 ;       for (window_C wp = @firstwin; wp != null && @lastwin != @firstwin; )
@@ -89860,39 +89546,10 @@
 ;               wp = wp.w_next;
 ;       }
 
-        ;; Also check windows in other tab pages.
-;       for (tabpage_C tp = @first_tabpage, nexttp; tp != null; tp = nexttp)
-;       {
-;           nexttp = null;
-;           if (tp != @curtab)
-;               for (window_C wp = tp.tp_firstwin; wp != null; wp = wp.w_next)
-;                   if (wp.w_buffer == buf && !(wp.w_closing || wp.w_buffer.b_closing))
-;                   {
-;                       win_close_othertab(wp, false, tp);
-
-                        ;; Start all over, the tab page may be closed and
-                        ;; autocommands may change the window layout.
-;                       nexttp = @first_tabpage;
-;                       break;
-;                   }
-;       }
-
 ;       --@redrawingDisabled;
-
-;       @redraw_tabline = true;
-;       if (h != tabline_height())
-;           shell_new_rows();
     ))
 
-;; Return true if the current window is the only window that exists (ignoring "aucmd_win").
-;; Returns false if there is a window, possibly in another tab page.
-
-(defn- #_boolean last_window []
-    (§
-;       return (one_window() && null == null);
-    ))
-
-;; Return true if there is only one window other than "aucmd_win" in the current tab page.
+;; Return true if there is only one window.
 
 (defn- #_boolean one_window []
     (§
@@ -89900,48 +89557,12 @@
 
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;       {
-;           if (wp != @aucmd_win)
-;           {
-;               if (seen_one)
-;                   return false;
-;               seen_one = true;
-;           }
+;           if (seen_one)
+;               return false;
+;           seen_one = true;
 ;       }
 
 ;       return true;
-    ))
-
-;; Close the possibly last window in a tab page.
-;; Returns true when the window was closed already.
-
-(defn- #_boolean close_last_window_tabpage [#_window_C win, #_boolean free_buf, #_tabpage_C prev_curtab]
-    (§
-;       if (@firstwin == @lastwin)
-;       {
-;           buffer_C old_curbuf = @curbuf;
-
-            ;; Closing the last window in a tab page.  First go to another tab page and then
-            ;; close the window and the tab page.  This avoids that curwin and curtab are
-            ;; invalid while we are freeing memory, they may be used in GUI events.
-            ;; Don't trigger autocommands yet, they may use wrong values, so do that below.
-
-;           goto_tabpage_tp(alt_tabpage(), false, true);
-;           @redraw_tabline = true;
-
-            ;; Safety check:
-            ;; autocommands may have closed the window when jumping to the other tab page.
-;           if (valid_tabpage(prev_curtab) && prev_curtab.tp_firstwin == win)
-;           {
-;               int h = tabline_height();
-
-;               win_close_othertab(win, free_buf, prev_curtab);
-;               if (h != tabline_height())
-;                   shell_new_rows();
-;           }
-
-;           return true;
-;       }
-;       return false;
     ))
 
 ;; Close window "win".  Only works for the current tab page.
@@ -89955,9 +89576,7 @@
 ;       boolean other_buffer = false;
 ;       boolean close_curwin = false;
 
-;       tabpage_C prev_curtab = @curtab;
-
-;       if (last_window())
+;       if (one_window())
 ;       {
 ;           emsg(u8("E444: Cannot close last window"));
 ;           return false;
@@ -89965,21 +89584,11 @@
 
 ;       if (win.w_closing || (win.w_buffer != null && win.w_buffer.b_closing))
 ;           return false; ;; window is already being closed
-;       if (win == @aucmd_win)
-;       {
-;           emsg(u8("E813: Cannot close autocmd window"));
-;           return false;
-;       }
-;       if ((@firstwin == @aucmd_win || @lastwin == @aucmd_win) && one_window())
-;       {
-;           emsg(u8("E814: Cannot close window, only autocmd window would remain"));
-;           return false;
-;       }
 
         ;; When closing the last window in a tab page first go to another tab page
         ;; and then close the window and the tab page to avoid that curwin and
         ;; curtab are invalid while we are freeing memory.
-;       if (close_last_window_tabpage(win, free_buf, prev_curtab))
+;       if (@firstwin == @lastwin)
 ;           return false;
 
 ;       if (win == @curwin)
@@ -89987,7 +89596,7 @@
             ;; Guess which window is going to be the new current window.
             ;; This may change because of the autocommands (sigh).
 
-;           window_C wp = frame2win(win_altframe(win, null));
+;           window_C wp = frame2win(win_altframe(win));
 
             ;; Be careful: If autocommands delete the window or cause this window
             ;; to be the last one left, return now.
@@ -89999,14 +89608,14 @@
 ;               if (!win_valid(win))
 ;                   return false;
 ;               win.w_closing = false;
-;               if (last_window())
+;               if (one_window())
 ;                   return false;
 ;           }
 ;           win.w_closing = true;
 ;           if (!win_valid(win))
 ;               return false;
 ;           win.w_closing = false;
-;           if (last_window())
+;           if (one_window())
 ;               return false;
             ;; autocmds may abort script processing
 ;           if (aborting())
@@ -90023,8 +89632,7 @@
 ;               win.w_closing = false;
 ;       }
 
-;       if (only_one_window() && win_valid(win) && win.w_buffer == null
-;               && (last_window() || @curtab != prev_curtab || close_last_window_tabpage(win, free_buf, prev_curtab)))
+;       if (only_one_window() && win_valid(win) && win.w_buffer == null && (one_window() || @firstwin == @lastwin))
 ;       {
             ;; Autocommands have close all windows, quit now.
             ;; Restore curwin.w_buffer, otherwise writing viminfo may fail.
@@ -90032,15 +89640,14 @@
 ;               @curwin.w_buffer = @curbuf;
 ;           getout(0);
 ;       }
-
         ;; Autocommands may have closed the window already,
         ;; or closed the only other window or moved to another tab page.
-;       else if (!win_valid(win) || last_window() || @curtab != prev_curtab || close_last_window_tabpage(win, free_buf, prev_curtab))
+;       else if (!win_valid(win) || one_window() || @firstwin == @lastwin)
 ;           return false;
 
         ;; Free the memory used for the window and get the window that received the screen space.
 ;       int[] dir = new int[1];
-;       window_C wp = win_free_mem(win, dir, null);
+;       window_C wp = win_free_mem(win, dir);
 
         ;; Make sure curwin isn't invalid.
         ;; It can cause severe trouble when printing an error message.
@@ -90069,70 +89676,15 @@
 ;       return true;
     ))
 
-;; Close window "win" in tab page "tp", which is not the current tab page.
-;; This may be the last window in that tab page and result in closing the tab,
-;; thus "tp" may become invalid!
-;; Caller must check if buffer is hidden and whether the tabline needs to be updated.
-
-(defn- #_void win_close_othertab [#_window_C win, #_boolean free_buf, #_tabpage_C tp]
-    (§
-;       if (win.w_closing || win.w_buffer.b_closing)
-;           return; ;; window is already being closed
-
-        ;; Close the link to the buffer.
-;       close_buffer(win, win.w_buffer, free_buf ? DOBUF_UNLOAD : 0, false);
-
-        ;; Careful: Autocommands may have closed the tab page or made it the current tab page.
-;       tabpage_C ptp;
-;       for (ptp = @first_tabpage; ptp != null && ptp != tp; ptp = null)
-        ;
-;       if (ptp == null || tp == @curtab)
-;           return;
-
-        ;; Autocommands may have closed the window already.
-;       window_C wp;
-;       for (wp = tp.tp_firstwin; wp != null && wp != win; wp = wp.w_next)
-        ;
-;       if (wp == null)
-;           return;
-
-        ;; When closing the last window in a tab page remove the tab page.
-;       if (tp == null ? @firstwin == @lastwin : tp.tp_firstwin == tp.tp_lastwin)
-;       {
-;           if (tp == @first_tabpage)
-;               @first_tabpage = null;
-;           else
-;           {
-;               for (ptp = @first_tabpage; ptp != null && null != tp; ptp = null)
-                ;
-;               if (ptp == null)
-;               {
-;                   emsg2(e_intern2, u8("win_close_othertab()"));
-;                   return;
-;               }
-;           }
-;       }
-
-        ;; Free the memory used for the window.
-;       int[] dir = new int[1];
-;       win_free_mem(win, dir, tp);
-    ))
-
 ;; Free the memory used for a window.
 ;; Returns a pointer to the window that got the freed up space.
 
-(defn- #_window_C win_free_mem [#_window_C win, #_int* dirp, #_tabpage_C tp]
+(defn- #_window_C win_free_mem [#_window_C win, #_int* dirp]
     ;; dirp: set to 'v' or 'h' for direction if 'ea'
-    ;; tp: tab page "win" is in, null for current
     (§
         ;; Remove the window and its frame from the tree of frames.
-;       frame_C frp = win.w_frame;
-;       window_C wp = winframe_remove(win, dirp, tp);
-;       win_free(win, tp);
-
-        ;; When deleting the current window of another tab page select a new current window.
-;       if (tp != null && win == tp.tp_curwin)
-;           tp.tp_curwin = wp;
+;       window_C wp = winframe_remove(win, dirp);
+;       win_free(win);
 
 ;       return wp;
     ))
@@ -90140,20 +89692,19 @@
 ;; Remove a window and its frame from the tree of frames.
 ;; Returns a pointer to the window that got the freed up space.
 
-(defn- #_window_C winframe_remove [#_window_C win, #_int* dirp, #_tabpage_C tp]
+(defn- #_window_C winframe_remove [#_window_C win, #_int* dirp]
     ;; dirp: set to 'v' or 'h' for direction if 'ea'
-    ;; tp: tab page "win" is in, null for current
     (§
 ;       frame_C frp_close = win.w_frame;
 
         ;; If there is only one window there is nothing to remove.
 
-;       if (tp == null ? @firstwin == @lastwin : tp.tp_firstwin == tp.tp_lastwin)
+;       if (@firstwin == @lastwin)
 ;           return null;
 
         ;; Remove the window from its frame.
 
-;       frame_C frp2 = win_altframe(win, tp);
+;       frame_C frp2 = win_altframe(win);
 ;       window_C wp = frame2win(frp2);
 
         ;; Remove this frame from the list of frames.
@@ -90285,12 +89836,11 @@
 ;; if 'nosplitbelow'/'nosplitleft' the space goes to the window below/right.
 ;; This makes opening a window and closing it immediately keep the same window layout.
 
-(defn- #_frame_C win_altframe [#_window_C win, #_tabpage_C tp]
-    ;; tp: tab page "win" is in, null for current
+(defn- #_frame_C win_altframe [#_window_C win]
     (§
-;       if (tp == null ? @firstwin == @lastwin : tp.tp_firstwin == tp.tp_lastwin)
+;       if (@firstwin == @lastwin)
             ;; Last window in this tab page, will go to next tab page.
-;           return alt_tabpage().tp_curwin.w_frame;
+;           return @curtab.tp_curwin.w_frame;
 
 ;       frame_C frp = win.w_frame;
 ;       boolean b;
@@ -90302,21 +89852,6 @@
 ;           return frp.fr_next;
 
 ;       return frp.fr_prev;
-    ))
-
-;; Return the tabpage that will be used if the current one is closed.
-
-(defn- #_tabpage_C alt_tabpage []
-    (§
-        ;; Use the next tab page if possible.
-;       if (null != null)
-;           return null;
-
-;       tabpage_C tp;
-        ;; Find the last but one tab page.
-;       for (tp = @first_tabpage; null != @curtab; tp = null)
-        ;
-;       return tp;
     ))
 
 ;; Find the left-upper window in frame "frp".
@@ -90835,6 +90370,17 @@
 ;       wp.w_botline = 2;
     ))
 
+;; Allocate a new tabpage_C and init the values.
+
+(defn- #_tabpage_C newTabpage []
+    (§
+;       tabpage_C tp = §_tabpage_C();
+
+;       tp.tp_ch_used = @p_ch;
+
+;       return tp;
+    ))
+
 ;; Allocate the first window and put an empty buffer in it.
 ;; Called from main().
 
@@ -90842,9 +90388,7 @@
     (§
 ;       win_alloc_firstwin(null);
 
-;       @first_tabpage = newTabpage();
-;       @first_tabpage.tp_topframe = @topframe;
-;       @curtab = @first_tabpage;
+;       @curtab = newTabpage();
     ))
 
 ;; Allocate the first window.
@@ -90897,134 +90441,12 @@
 
 (defn- #_void win_init_size []
     (§
-;       long rows_avail = @Rows - @p_ch - tabline_height();
+;       long rows_avail = @Rows - @p_ch;
 
 ;       @firstwin.w_height = (int)rows_avail;
 ;       @topframe.fr_height = (int)rows_avail;
 ;       @firstwin.w_width = (int)@Columns;
 ;       @topframe.fr_width = (int)@Columns;
-    ))
-
-;; Allocate a new tabpage_C and init the values.
-
-(defn- #_tabpage_C newTabpage []
-    (§
-;       tabpage_C tp = §_tabpage_C();
-
-;       tp.tp_ch_used = @p_ch;
-
-;       return tp;
-    ))
-
-;; Return true when "tpc" points to a valid tab page.
-
-(defn- #_boolean valid_tabpage [#_tabpage_C tpc]
-    (§
-;       tabpage_C tp;
-
-;       for (tp = @first_tabpage; tp != null; tp = null)
-;           if (tp == tpc)
-;               return true;
-
-;       return false;
-    ))
-
-;; Prepare for leaving the current tab page.
-;; When autocommands change "curtab" we don't leave the tab page and return false.
-;; Careful: When true is returned need to get a new tab page very very soon!
-
-(defn- #_boolean leave_tabpage [#_buffer_C new_curbuf, #_boolean trigger_leave_autocmds]
-    ;; new_curbuf: what is going to be the new curbuf, null if unknown
-    (§
-;       tabpage_C tp = @curtab;
-
-;       reset_VIsual_and_resel();   ;; stop Visual mode
-
-;       if (trigger_leave_autocmds)
-;       {
-;           if (@curtab != tp)
-;               return false;
-;       }
-
-;       tp.tp_curwin = @curwin;
-;       tp.tp_prevwin = @prevwin;
-;       tp.tp_firstwin = @firstwin;
-;       tp.tp_lastwin = @lastwin;
-;       tp.tp_old_Rows = @Rows;
-;       tp.tp_old_Columns = @Columns;
-
-;       @firstwin = null;
-;       @lastwin = null;
-
-;       return true;
-    ))
-
-;; Start using tab page "tp".
-;; Only to be used after leave_tabpage() or freeing the current tab page.
-;; Only trigger *Enter autocommands when trigger_enter_autocmds is true.
-;; Only trigger *Leave autocommands when trigger_leave_autocmds is true.
-
-(defn- #_void enter_tabpage [#_tabpage_C tp, #_buffer_C old_curbuf, #_boolean trigger_enter_autocmds, #_boolean trigger_leave_autocmds]
-    (§
-;       int old_off = tp.tp_firstwin.w_winrow;
-;       window_C next_prevwin = tp.tp_prevwin;
-
-;       @curtab = tp;
-;       @firstwin = tp.tp_firstwin;
-;       @lastwin = tp.tp_lastwin;
-;       @topframe = tp.tp_topframe;
-
-        ;; We would like doing the TabEnter event first, but we don't have a
-        ;; valid current window yet, which may break some commands.
-        ;; This triggers autocommands, thus may make "tp" invalid.
-;       win_enter_ext(tp.tp_curwin, false, true, trigger_enter_autocmds, trigger_leave_autocmds);
-;       @prevwin = next_prevwin;
-
-;       last_status(false);         ;; status line may appear or disappear
-;       win_comp_pos();             ;; recompute w_winrow for all windows
-;       @must_redraw = CLEAR;        ;; need to redraw everything
-
-        ;; The tabpage line may have appeared or disappeared, may need to resize
-        ;; the frames for that.  When the Vim window was resized need to update
-        ;; frame sizes too.  Use the stored value of "p_ch", so that it can be
-        ;; different for each tab page.
-;       @p_ch = @curtab.tp_ch_used;
-;       if (@curtab.tp_old_Rows != @Rows || (old_off != @firstwin.w_winrow))
-;           shell_new_rows();
-;       if (@curtab.tp_old_Columns != @Columns && @starting == 0)
-;           shell_new_columns();    ;; update window widths
-
-;       redraw_all_later(CLEAR);
-    ))
-
-;; Go to tabpage "tp".
-;; Only trigger *Enter autocommands when trigger_enter_autocmds is true.
-;; Only trigger *Leave autocommands when trigger_leave_autocmds is true.
-;; Note: doesn't update the GUI tab.
-
-(defn- #_void goto_tabpage_tp [#_tabpage_C tp, #_boolean trigger_enter_autocmds, #_boolean trigger_leave_autocmds]
-    (§
-        ;; Don't repeat a message in another tab page.
-;       set_keep_msg(null, 0);
-
-;       if (tp != @curtab && leave_tabpage(tp.tp_curwin.w_buffer, trigger_leave_autocmds) == true)
-;       {
-;           if (valid_tabpage(tp))
-;               enter_tabpage(tp, @curbuf, trigger_enter_autocmds, trigger_leave_autocmds);
-;           else
-;               enter_tabpage(@curtab, @curbuf, trigger_enter_autocmds, trigger_leave_autocmds);
-;       }
-    ))
-
-;; Enter window "wp" in tab page "tp".
-;; Also updates the GUI tab.
-
-(defn- #_void goto_tabpage_win [#_tabpage_C tp, #_window_C wp]
-    (§
-;       goto_tabpage_tp(tp, true, true);
-
-;       if (@curtab == tp && win_valid(wp))
-;           win_enter(wp, true);
     ))
 
 ;; Go to another window.
@@ -91226,7 +90648,6 @@
 ;       changed_line_abv_curs();    ;; assume cursor position needs updating
 
 ;       @curwin.w_redr_status = true;
-;       @redraw_tabline = true;
 ;       if (@restart_edit != 0)
 ;           redraw_later(VALID);    ;; causes status line redraw
 
@@ -91276,8 +90697,7 @@
 
 ;; Remove window 'wp' from the window list and free the structure.
 
-(defn- #_void win_free [#_window_C wp, #_tabpage_C tp]
-    ;; tp: tab page "win" is in, null for current
+(defn- #_void win_free [#_window_C wp]
     (§
 ;       clear_winopt(wp.w_onebuf_opt);
 ;       clear_winopt(wp.w_allbuf_opt);
@@ -91299,8 +90719,7 @@
 
 ;       wp.w_p_cc_cols = null;
 
-;       if (wp != @aucmd_win)
-;           win_remove(wp, tp);
+;       win_remove(wp);
     ))
 
 ;; Append window "wp" in the window list after window "after".
@@ -91327,21 +90746,17 @@
 
 ;; Remove a window from the window list.
 
-(defn- #_void win_remove [#_window_C wp, #_tabpage_C tp]
-    ;; tp: tab page "win" is in, null for current
+(defn- #_void win_remove [#_window_C wp]
     (§
 ;       if (wp.w_prev != null)
 ;           wp.w_prev.w_next = wp.w_next;
-;       else if (tp == null)
-;           @firstwin = wp.w_next;
 ;       else
-;           tp.tp_firstwin = wp.w_next;
+;           @firstwin = wp.w_next;
+
 ;       if (wp.w_next != null)
 ;           wp.w_next.w_prev = wp.w_prev;
-;       else if (tp == null)
-;           @lastwin = wp.w_prev;
 ;       else
-;           tp.tp_lastwin = wp.w_prev;
+;           @lastwin = wp.w_prev;
     ))
 
 ;; Append frame "frp" in a frame list after frame "after".
@@ -91402,7 +90817,7 @@
 
 (defn- #_void shell_new_rows []
     (§
-;       long rows_avail = @Rows - @p_ch - tabline_height();
+;       long rows_avail = @Rows - @p_ch;
 
 ;       int h = (int)rows_avail;
 
@@ -91479,7 +90894,7 @@
 
 (defn- #_int win_comp_pos []
     (§
-;       int[] row = { tabline_height() };
+;       int[] row = { 0 };
 ;       int[] col = { 0 };
 
 ;       frame_comp_pos(@topframe, row, col);
@@ -91578,7 +90993,7 @@
 
 ;       if (curfrp.fr_parent == null)
 ;       {
-;           long rows_avail = @Rows - @p_ch - tabline_height();
+;           long rows_avail = @Rows - @p_ch;
 
             ;; topframe: can only change the command line
 ;           if (rows_avail < height)
@@ -91799,7 +91214,7 @@
 ;               if (width <= room)
 ;                   break;
 
-;               long rows_avail = @Rows - @p_ch - tabline_height();
+;               long rows_avail = @Rows - @p_ch;
 
 ;               if (run == 2 || rows_avail <= curfrp.fr_height)
 ;               {
@@ -92428,72 +91843,6 @@
 ;       }
     ))
 
-;; Return the number of lines used by the tab page line.
-
-(defn- #_int tabline_height []
-    (§
-;       return (null != null) ? 1 : 0;
-    ))
-
-;; Check if the "://" of a URL is at the pointer, return URL_SLASH.
-;; Also check for ":\\", which MS Internet Explorer accepts, return URL_BACKSLASH.
-
-(defn- #_int path_is_url [#_Bytes p]
-    (§
-;       if (STRNCMP(p, u8("://"), 3) == 0)
-;           return URL_SLASH;
-;       else if (STRNCMP(p, u8(":\\\\"), 3) == 0)
-;           return URL_BACKSLASH;
-
-;       return 0;
-    ))
-
-;; Check if "fname" starts with "name://".  Return URL_SLASH if it does.
-;; Return URL_BACKSLASH for "name:\\".
-;; Return zero otherwise.
-
-(defn- #_int path_with_url [#_Bytes fname]
-    (§
-;       Bytes p;
-
-;       for (p = fname; asc_isalpha(p.at(0)); p = p.plus(1))
-        ;
-
-;       return path_is_url(p);
-    ))
-
-;; Return true if "name" is a full (absolute) path name or URL.
-
-(defn- #_boolean vim_isAbsName [#_Bytes name]
-    (§
-;       return (path_with_url(name) != 0 || mch_isFullName(name));
-    ))
-
-;; Get absolute file name into buffer "buf[len]".
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean vim_fullName [#_Bytes fname, #_Bytes buf, #_int len, #_boolean force]
-    ;; force: force expansion even when already absolute
-    (§
-;       boolean retval = true;
-
-;       buf.be(0, NUL);
-;       if (fname == null)
-;           return false;
-
-;       int url = path_with_url(fname);
-;       if (url == 0)
-;           retval = mch_fullName(fname, buf, len, force);
-;       if (url != 0 || retval == false)
-;       {
-            ;; something failed; use the file name (truncate when too long)
-;           vim_strncpy(buf, fname, len - 1);
-;       }
-
-;       return retval;
-    ))
-
 ;; Return the minimal number of rows that is needed on the screen to display
 ;; the current number of windows.
 
@@ -92504,13 +91853,10 @@
 
 ;       int total = 0;
 
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;       {
-;           int n = frame_minheight(tp.tp_topframe, null);
-;           if (total < n)
-;               total = n;
-;       }
-;       total += tabline_height();
+;       int n = frame_minheight(@topframe, null);
+;       if (total < n)
+;           total = n;
+
 ;       total += 1;         ;; count the room for the command line
 
 ;       return total;
@@ -92523,32 +91869,27 @@
     (§
 ;       int count = 0;
 
-        ;; If there is another tab page there always is another window.
-;       if (null != null)
-;           return false;
-
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer != null && wp != @aucmd_win)
+;           if (wp.w_buffer != null)
 ;               count++;
 
 ;       return (count <= 1);
     ))
 
-;; Correct the cursor line number in other windows.  Used after changing the
-;; current buffer, and before applying autocommands.
+;; Correct the cursor line number in other windows.
+;; Used after changing the current buffer, and before applying autocommands.
 ;; When "do_curwin" is true, also check current window.
 
 (defn- #_void check_lnums [#_boolean do_curwin]
     (§
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = null)
-;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;               if ((do_curwin || wp != @curwin) && wp.w_buffer == @curbuf)
-;               {
-;                   if (wp.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
-;                       wp.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;                   if (wp.w_topline > @curbuf.b_ml.ml_line_count)
-;                       wp.w_topline = @curbuf.b_ml.ml_line_count;
-;               }
+;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
+;           if ((do_curwin || wp != @curwin) && wp.w_buffer == @curbuf)
+;           {
+;               if (wp.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
+;                   wp.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
+;               if (wp.w_topline > @curbuf.b_ml.ml_line_count)
+;                   wp.w_topline = @curbuf.b_ml.ml_line_count;
+;           }
     ))
 
 ;; Delete all matches in the match list of window 'wp'.
