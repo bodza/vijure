@@ -45958,7 +45958,7 @@
 
         ;; Set w_fraction now so that the cursor keeps the same relative vertical position.
         (if (< 0 (:w_height oldwin))
-            (set-fraction oldwin))
+            ((ß oldwin =) (set-fraction oldwin)))
         ((ß wp.w_fraction =) (:w_fraction oldwin))
 
         (cond (flag? flags WSP_VERT)
@@ -45966,28 +45966,28 @@
             ((ß wp.w_options.@wo_scr =) @(:wo_scr (:w_options @curwin)))
 
             (when (non-zero? need_status)
-                (win-new-height oldwin, (dec (:w_height oldwin)))
+                ((ß oldwin =) (win-new-height oldwin, (dec (:w_height oldwin))))
                 ((ß oldwin.w_status_height =) need_status)
             )
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
                 ;; set height and row of new window to full height
                 ((ß wp.w_winrow =) 0)
-                (win-new-height wp, (- (:fr_height curfrp) (if (< 0 @p_ls) 1 0)))
+                ((ß wp =) (win-new-height wp, (- (:fr_height curfrp) (if (< 0 @p_ls) 1 0))))
                 ((ß wp.w_status_height =) (if (< 0 @p_ls) 1 0))
             )
             :else
             (do
                 ;; height and row of new window is same as current window
                 ((ß wp.w_winrow =) (:w_winrow oldwin))
-                (win-new-height wp, (:w_height oldwin))
+                ((ß wp =) (win-new-height wp, (:w_height oldwin)))
                 ((ß wp.w_status_height =) (:w_status_height oldwin))
             ))
             ((ß fr.fr_height =) (:fr_height curfrp))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one column for the vertical separator
-            (win-new-width wp, new_size)
+            ((ß wp =) (win-new-width wp, new_size))
             (cond before
             (do
                 ((ß wp.w_vsep_width =) 1)
@@ -46006,7 +46006,7 @@
             )
             :else
             (do
-                (win-new-width oldwin, (- (:w_width oldwin) (inc new_size)))
+                ((ß oldwin =) (win-new-width oldwin, (- (:w_width oldwin) (inc new_size))))
             ))
             (cond before     ;; new window left of current one
             (do
@@ -46026,23 +46026,23 @@
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
                 ((ß wp.w_wincol =) 0)
-                (win-new-width wp, @Cols)
+                ((ß wp =) (win-new-width wp, @Cols))
                 ((ß wp.w_vsep_width =) 0)
             )
             :else
             (do
                 ((ß wp.w_wincol =) (:w_wincol oldwin))
-                (win-new-width wp, (:w_width oldwin))
+                ((ß wp =) (win-new-width wp, (:w_width oldwin)))
                 ((ß wp.w_vsep_width =) (:w_vsep_width oldwin))
             ))
             ((ß fr.fr_width =) (:fr_width curfrp))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one row for the status line
-            (win-new-height wp, new_size)
+            ((ß wp =) (win-new-height wp, new_size))
             (if (flag? flags (| WSP_TOP WSP_BOT))
                 (frame-new-height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (flag? flags WSP_TOP), false)
-                (win-new-height oldwin, (- oldwin_height (+ new_size STATUS_HEIGHT))))
+                ((ß oldwin =) (win-new-height oldwin, (- oldwin_height (+ new_size STATUS_HEIGHT)))))
             (cond before     ;; new window above current one
             (do
                 ((ß wp.w_winrow =) (:w_winrow oldwin))
@@ -46838,7 +46838,7 @@
         (cond (some? (:fr_win topfr))
         (do
             ;; Simple case: just one window.
-            (win-new-height (:fr_win topfr), (- height (:w_status_height (:fr_win topfr))))
+            ((ß (:fr_win topfr) =) (win-new-height (:fr_win topfr), (- height (:w_status_height (:fr_win topfr)))))
         )
         (== (:fr_layout topfr) FR_ROW)
         (do
@@ -47019,7 +47019,7 @@
             (if (nil? (:fr_parent fr))
                 ((ß win.w_vsep_width =) 0)
             )
-            (win-new-width win, (- width (:w_vsep_width win)))
+            ((ß win =) (win-new-width win, (- width (:w_vsep_width win))))
         )
         (== (:fr_layout topfr) FR_COL)
         (do
@@ -47831,145 +47831,108 @@
 
 (final long FRACTION_MULT 16384)
 
-;; Set win.w_fraction for the current w_wrow and w_height.
+;; Set "w_fraction" for the current "w_wrow" and "w_height".
 
-(defn- #_void set-fraction [#_window_C win]
-    (§
-        ((ß win.w_fraction =) (int (/ (+ (* (long (:w_wrow win)) FRACTION_MULT) (/ (long (:w_height win)) 2)) (long (:w_height win)))))
-        nil
-    ))
+(defn- #_window_C set-fraction [#_window_C win]
+    (assoc win :w_fraction (/ (+ (* (:w_wrow win) FRACTION_MULT) (/ (:w_height win) 2)) (:w_height win))))
 
 ;; Set the height of a window.
-;; This takes care of the things inside the window, not what happens to the
-;; window position, the frame or to other windows.
+;; This takes care of the things inside the window,
+;; not what happens to the window position, the frame or to other windows.
 
-(defn- #_void win-new-height [#_window_C win, #_int height]
-    (§
-        ((ß int prev_height =) (:w_height win))
+(defn- #_window_C win-new-height [#_window_C win, #_int height]
+    ;; Don't want a negative height.  Happens when splitting a tiny window.  Will equalize heights soon to fix it.
+    (let-when [#_int prev_height (:w_height win) height (max 0 height)] (!= (:w_height win) height) => win ;; nothing to do
+        (let-when [[win _]
+            (if (< 0 (:w_height win))
+                (do ;; When setting 'laststatus', this may call win-new-height() recursively.
+                    (when (== win @curwin) ;; "w_wrow" needs to be valid
+                        (validate-cursor))
+                    (if (!= (:w_height win) prev_height)
+                        [win false]
+                        [(if (!= (:w_wrow win) (:w_prev_fraction_row win)) (set-fraction win) win) true]
+                    ))
+                [win true])
+        ] _ => win ;; Recursive call already changed the size, bail out here to avoid the following to mess things up.
 
-        ;; Don't want a negative height.  Happens when splitting a tiny window.
-        ;; Will equalize heights soon to fix it.
-        ((ß height =) (max 0 height))
-        (if (== (:w_height win) height)
-            ((ß RETURN) nil)                             ;; nothing to do
-        )
-
-        (when (< 0 (:w_height win))
-            (when (== win @curwin)
-                ;; w_wrow needs to be valid.  When setting 'laststatus' this may
-                ;; call win-new-height() recursively.
-                (validate-cursor)
-            )
-
-            (if (!= (:w_height win) prev_height)
-                ((ß RETURN) nil)                         ;; Recursive call already changed the size,
-            )
-                                                ;; bail out here to avoid the following to mess things up.
-
-            (if (!= (:w_wrow win) (:w_prev_fraction_row win))
-                (set-fraction win))
-        )
-
-        ((ß win.w_height =) height)
-        ((ß win.w_skipcol =) 0)
-
-        ;; Don't change w_topline when height is zero.  Don't set w_topline
-        ;; when 'scrollbind' is set and this isn't the current window.
-        (when (and (< 0 height) (or (not @(:wo_scb (:w_options win))) (== win @curwin)))
-            ;; Find a value for w_topline that shows the cursor at the same
-            ;; relative position in the window as before (more or less).
-
-            ((ß long lnum =) (max 1 (:lnum (:w_cursor win))))           ;; can happen when starting up
-            ((ß win.w_wrow =) (int (/ (+ (- (* (long (:w_fraction win)) (long height)) 1) (/ FRACTION_MULT 2)) FRACTION_MULT)))
-            ((ß int line_size =) (- (plines-win-col win, lnum, (long (:col (:w_cursor win)))) 1))
-            ((ß int sline =) (- (:w_wrow win) line_size))
-
-            (when (<= 0 sline)
-                ;; Make sure the whole cursor line is visible, if possible.
-                ((ß int rows =) (plines-win win, lnum, false))
-
-                (when (> sline (- (:w_height win) rows))
-                    ((ß sline =) (- (:w_height win) rows))
-                    ((ß win.w_wrow =) (- (:w_wrow win) (- rows line_size)))
-                )
-            )
-
-            (cond (< sline 0)
-            (do
-                ;; Cursor line would go off top of screen if w_wrow was this high.
-                ;; Make cursor line the first line in the window.  If not enough
-                ;; room use w_skipcol;
-
-                ((ß win.w_wrow =) line_size)
-                (when (and (<= (:w_height win) (:w_wrow win)) (< 0 (- (:w_width win) (win-col-off win))))
-                    ((ß win.w_skipcol =) (+ (:w_skipcol win) (- (:w_width win) (win-col-off win))))
-                    ((ß win.w_wrow =) (dec (:w_wrow win)))
-                    (loop-when [] (<= (:w_height win) (:w_wrow win))
-                        ((ß win.w_skipcol =) (+ (:w_skipcol win) (+ (- (:w_width win) (win-col-off win)) (win-col-off2 win))))
-                        ((ß win.w_wrow =) (dec (:w_wrow win)))
-                        (recur)
-                    )
-                )
-                ((ß win =) (set-topline win, lnum))
-            )
-            (< 0 sline)
-            (do
-                (loop-when [] (and (< 0 sline) (< 1 lnum))
-                    ((ß lnum =) (dec lnum))
-                        ((ß line_size =) (plines-win win, lnum, true))
-                    ((ß sline =) (- sline line_size))
-                    (recur)
-                )
-
-                (cond (< sline 0)
-                (do
-                    ;; Line we want at top would go off top of screen.  Use next line instead.
-
-                    ((ß lnum =) (inc lnum))
-                    ((ß win.w_wrow =) (- (:w_wrow win) (+ line_size sline)))
-                )
-                (< 0 sline)
-                (do
-                    ;; First line of file reached, use that as topline.
-                    ((ß lnum =) 1)
-                    ((ß win.w_wrow =) (- (:w_wrow win) sline))
-                ))
-
-                ((ß win =) (set-topline win, lnum))
+            (let [win (assoc win :w_height height, :w_skipcol 0)
+                  win ;; Don't change "w_topline" when height is zero.  Don't set "w_topline" when 'scrollbind' is set and this isn't the current window.
+                    (if (and (< 0 height) (or (not @(:wo_scb (:w_options win))) (== win @curwin)))
+                        ;; Find a value for "w_topline" that shows the cursor at the same relative position in the window as before (more or less).
+                        (let [#_long lnum (max 1 (:lnum (:w_cursor win))) ;; can happen when starting up
+                              win (assoc win :w_wrow (/ (+ (dec (* (:w_fraction win) height)) (/ FRACTION_MULT 2)) FRACTION_MULT))
+                              #_int line_size (dec (plines-win-col win, lnum, (:col (:w_cursor win))))
+                              #_int sline (- (:w_wrow win) line_size)
+                              [sline win]
+                                (if (<= 0 sline) ;; Make sure the whole cursor line is visible, if possible.
+                                    (let [#_int rows (plines-win win, lnum, false)]
+                                        (if (< (- (:w_height win) rows) sline)
+                                            [(- (:w_height win) rows) (update win :w_wrow - (- rows line_size))]
+                                            [sline win]
+                                        ))
+                                    [sline win]
+                                )]
+                            (cond (< sline 0)
+                                ;; Cursor line would go off top of screen if "w_wrow" was this high.
+                                ;; Make cursor line the first line in the window.
+                                ;; If not enough room, use "w_skipcol".
+                                (let [win (assoc win :w_wrow line_size)
+                                      win
+                                        (if (and (<= (:w_height win) (:w_wrow win)) (< 0 (- (:w_width win) (win-col-off win))))
+                                            (let [win (update win :w_skipcol + (- (:w_width win) (win-col-off win)))
+                                                  win (update win :w_wrow dec)]
+                                                (loop-when win (<= (:w_height win) (:w_wrow win)) => win
+                                                    (let [win (update win :w_skipcol + (- (:w_width win) (win-col-off win)) (win-col-off2 win))
+                                                          win (update win :w_wrow dec)]
+                                                        (recur win))
+                                                ))
+                                            win
+                                        )]
+                                    (set-topline win, lnum))
+                            (< 0 sline)
+                                (let [[lnum line_size sline]
+                                        (loop-when [lnum lnum line_size line_size sline sline] (and (< 0 sline) (< 1 lnum)) => [lnum line_size sline]
+                                            (let [lnum (dec lnum) line_size (plines-win win, lnum, true) sline (- sline line_size)]
+                                                (recur lnum line_size sline)
+                                            ))
+                                      [lnum win]
+                                        (cond (< sline 0) ;; Line we want at top would go off top of screen.  Use next line instead.
+                                            [(inc lnum) (update win :w_wrow - line_size sline)]
+                                        (< 0 sline) ;; First line of file reached, use that as topline.
+                                            [1 (update win :w_wrow - sline)]
+                                        :else
+                                            [lnum win]
+                                        )]
+                                    (set-topline win, lnum))
+                            :else
+                                win
+                            ))
+                        win
+                    )]
+                (when (== win @curwin)
+                    (when (non-zero? @p_so)
+                        (update-topline))
+                    (curs-columns false)) ;; validate "w_wrow"
+                (let [win (if (< 0 prev_height) (assoc win :w_prev_fraction_row (:w_wrow win)) win)]
+                    (win-comp-scroll win)
+                    (redraw-win-later win, SOME_VALID)
+                    (let [win (assoc win :w_redr_status true)]
+                        (invalidate-botline win)
+                    ))
             ))
-        )
-
-        (when (== win @curwin)
-            (if (non-zero? @p_so)
-                (update-topline))
-            (curs-columns false)    ;; validate w_wrow
-        )
-        (if (< 0 prev_height)
-            ((ß win.w_prev_fraction_row =) (:w_wrow win))
-        )
-
-        (win-comp-scroll win)
-        (redraw-win-later win, SOME_VALID)
-        ((ß win.w_redr_status =) true)
-        ((ß win =) (invalidate-botline win))
-        nil
     ))
 
 ;; Set the width of a window.
 
-(defn- #_void win-new-width [#_window_C win, #_int width]
-    (§
-        ((ß win.w_width =) width)
-        ((ß win.w_lines_valid =) 0)
-        ((ß win =) (changed-line-abv-curs win))
-        ((ß win =) (invalidate-botline win))
+(defn- #_window_C win-new-width [#_window_C win, #_int width]
+    (let [win (assoc win :w_width width, :w_lines_valid 0)
+          win (changed-line-abv-curs win)
+          win (invalidate-botline win)]
         (when (== win @curwin)
             (update-topline)
-            (curs-columns true)     ;; validate w_wrow
-        )
+            (curs-columns true))     ;; validate w_wrow
         (redraw-win-later win, NOT_VALID)
-        ((ß win.w_redr_status =) true)
-        nil
+        (assoc win :w_redr_status true)
     ))
 
 (defn- #_void win-comp-scroll [#_window_C win]
@@ -48055,7 +48018,7 @@
             (cond (and (non-zero? (:w_status_height win)) (not statusline))
             (do
                 ;; remove status line
-                (win-new-height win, (inc (:w_height win)))
+                ((ß win =) (win-new-height win, (inc (:w_height win))))
                 ((ß win.w_status_height =) 0)
                 (comp-col)
             )
@@ -48082,7 +48045,7 @@
                 )
                 :else
                 (do
-                    (win-new-height win, (dec (:w_height win)))
+                    ((ß win =) (win-new-height win, (dec (:w_height win))))
                 ))
                 (comp-col)
                 (redraw-all-later SOME_VALID)
