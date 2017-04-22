@@ -34399,219 +34399,156 @@
 ;; "buflen" is then the length of the string in buf[] and is updated for inserts and deletes.
 
 (defn- #_int check-termcode [#_Bytes buf, #_int bufsize, #_int' a'buflen]
-    (§
-        ;; Speed up the checks for terminal codes by gathering all first bytes used in termleader[].
-        ;; Often this is just a single <Esc>.
+    ;; Speed up the checks for terminal codes by gathering all first bytes used in termleader[].
+    ;; Often this is just a single <Esc>.
+    (when @need_gather
+        (gather-termleader))
+    (let-when [[#_Bytes tp #_int len :as _]
+            (if (nil? buf)
+                (when (< 0 (:tb_len @typebuf)) [(.plus (:tb_buf @typebuf) (:tb_off @typebuf)) (:tb_len @typebuf)])
+                (when (< 0 @a'buflen)          [buf @a'buflen]))
+    ] (some? _) => 0
 
-        (when @need_gather
-            (gather-termleader))
-
-        (ß Bytes tp)
-        (ß int len)
-
-        (cond (nil? buf)
-        (do
-            (if (<= (:tb_len @typebuf) 0)
-                ((ß RETURN) 0)
-            )
-            ((ß tp =) (.plus (:tb_buf @typebuf) (:tb_off @typebuf)))
-            ((ß len =) (:tb_len @typebuf))      ;; length of the input
-        )
-        :else
-        (do
-            (if (<= @a'buflen 0)
-                ((ß RETURN) 0)
-            )
-            ((ß tp =) buf)
-            ((ß len =) @a'buflen)
-        ))
-
-        ;; Don't check characters after KB_SPECIAL, those are already
-        ;; translated terminal chars (avoid translating ~@^Hx).
-
-        (if (at? tp KB_SPECIAL)        ;; there are always 2 extra characters
-            ((ß RETURN) 0)
-        )
-
-        ;; Skip this position if the character does not appear as the first character in 'term_strings'.
+        ;; Don't check characters after KB_SPECIAL,
+        ;; those are already translated terminal chars (avoid translating ~@^Hx).
+        (cond (at? tp KB_SPECIAL) ;; there are always 2 extra characters
+            0
+        ;; Skip this position if the character does not appear as the first character in "term_strings".
         ;; This speeds up a lot, since most termcodes start with the same character (ESC).
-
-        ((ß Bytes q =) (loop-when-recur [q termleader] (and (non-eos? q) (!= (.at q 0) (.at tp 0))) [(.plus q 1)] => q))
-        (if (eos? q)
-            ((ß RETURN) 0)
-        )
-
+        (eos? (loop-when-recur [q termleader] (and (non-eos? q) (!= (.at q 0) (.at tp 0))) [(.plus q 1)] => q))
+            0
         ;; Skip this position if "p_ek" is not set and *tp is an ESC and we are in Insert mode.
+        (and (at? tp ESC) (not @p_ek) (flag? @State INSERT))
+            0
+        :else
+            (let-when [#_Bytes key_name (Bytes. 2) a'modifiers (atom (int 0)) ;; no modifiers yet
+                  #_int slen
+                    (loop-when [slen 0 #_int i 0] (< i @tc_len) => slen
+                        (let-when [tci (... @termcodes i) slen (:len tci)
+                              ? (when (zero? (STRNCMP (:code tci), tp, (min len slen)))
+                                    (if (< len slen)    ;; got a partial sequence
+                                        :again          ;; need to get more chars
+                                        ;; When found a keypad key, check if there is another key that matches and use that one.
+                                        ;; This makes <Home> to be found instead of <kHome> when they produce the same key code.
+                                        (let [i (if (and (== (:name0 tci) (byte \K)) (asc-isdigit (:name1 tci)))
+                                                    (loop-when [#_int j (inc i)] (< j @tc_len) => i
+                                                        (let [tcj (... @termcodes j)]
+                                                            (if (and (== (:len tcj) slen) (zero? (STRNCMP (:code tci), (:code tcj), slen)))
+                                                                j
+                                                                (recur (inc j))
+                                                            )))
+                                                    i
+                                                )]
+                                            (.be key_name 0, (:name0 (... @termcodes i)))
+                                            (.be key_name 1, (:name1 (... @termcodes i)))
+                                            :found
+                                        ))
+                                )] (not ?) => (when (== ? :found) slen)
 
-        (if (and (at? tp ESC) (not @p_ek) (flag? @State INSERT))
-            ((ß RETURN) 0)
-        )
+                            ;; Check for code with modifier, like xterm uses:
+                            ;; <Esc>[123;*X (modslen == slen - 3), also <Esc>O*X and <M-O>*X (modslen == slen - 2).
+                            ;; When there is a modifier, the * matches a number.
+                            ;; When there is no modifier, the ;* or * is omitted.
+                            (let-when [#_int modslen (:modlen tci)
+                                  [slen ?]
+                                    (if (and (< 0 modslen) (zero? (STRNCMP (:code tci), tp, (min len modslen))))
+                                        (if (<= len modslen)    ;; got a partial sequence
+                                            [slen :again]       ;; need to get more chars
+                                            (let-when [[slen ?]
+                                                    (cond (at? tp modslen (.at (:code tci) (dec slen)))
+                                                        [(inc modslen) nil]     ;; no modifiers
+                                                    (and (not-at? tp modslen (byte \;)) (== modslen (- slen 3)))
+                                                        [slen :recur]           ;; no match
+                                                    :else
+                                                        ;; Skip over the digits, the final char must follow.
+                                                        (let [#_int j (loop-when-recur [j (- slen 2)] (and (< j len) (asc-isdigit (.at tp j))) [(inc j)] => (inc j))]
+                                                            (cond (< len j)     ;; got a partial sequence
+                                                                [slen :again]   ;; need to get more chars
+                                                            (not-at? tp (dec j) (.at (:code tci) (dec slen)))
+                                                                [slen :recur]   ;; no match
+                                                            :else
+                                                                ;; Match!  Convert modifier bits.
+                                                                (let [#_int n (dec (ß .atoi libC (.plus tp (- slen 2))))]
+                                                                    (when (non-zero? (& n 1)) (swap! a'modifiers | MOD_MASK_SHIFT))
+                                                                    (when (non-zero? (& n 2)) (swap! a'modifiers | MOD_MASK_ALT))
+                                                                    (when (non-zero? (& n 4)) (swap! a'modifiers | MOD_MASK_CTRL))
+                                                                    (when (non-zero? (& n 8)) (swap! a'modifiers | MOD_MASK_META))
+                                                                    [j nil]
+                                                                ))
+                                                        ))
+                                            ] (not ?) => [slen (when-not (== ? :recur) ?)]
 
-        ((ß Bytes key_name =) (Bytes. 2))
-        ((ß int[] a'modifiers =) (atom (int 0)))      ;; no modifiers yet
+                                                (.be key_name 0, (:name0 tci))
+                                                (.be key_name 1, (:name1 tci))
+                                                [slen :found]
+                                            ))
+                                        [slen nil])
+                            ] (not ?) => (when (== ? :found) slen)
 
-        ((ß int slen =) 0)
+                                (recur slen (inc i))
+                            ))
+                    )] (some? slen) => -1
 
-        (loop-when-recur [#_int idx 0] (< idx @tc_len) [(inc idx)]
-            ((ß slen =) (:len (... @termcodes idx)))
+                (if (eos? key_name) ;; no match found
+                    0
+                    ;; We only get here when we have a complete termcode match.
+                    ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
+                    (let-when [#_int key (handle-x-keys (TERMCAP2KEY (.at key_name 0), (.at key_name 1)))
+                          #_Bytes s (Bytes. (inc MAX_KEY_CODE_LEN)) #_int n 0
+                          [key n] ;; Add any modifier codes to our string.
+                            (if (non-zero? @a'modifiers) ;; Some keys have the modifier included.
+                                (let-when [key (simplify-key key, a'modifiers)] (non-zero? @a'modifiers) => [key n]
+                                    (let [_ (.be s n, KB_SPECIAL)   n (inc n)
+                                          _ (.be s n, KS_MODIFIER)  n (inc n)
+                                          _ (.be s n, @a'modifiers) n (inc n)]
+                                        [key n]
+                                    ))
+                                [key n])
+                          ;; Finally, add the special key code to our string.
+                          _ (.be key_name 0, (KEY2TERMCAP0 key))
+                          _ (.be key_name 1, (KEY2TERMCAP1 key))
+                          [#_int retval n]
+                            (cond (at? key_name KS_KEY) ;; from ":set <M-b>=xx"
+                                [0 (+ n (utf-char2bytes (char_u (.at key_name 1)), (.plus s n)))]
+                            (and (zero? n) (at? key_name 0 KS_EXTRA) (at? key_name 1 KE_IGNORE))
+                                ;; Do not put K_IGNORE into the buffer, do return KEYLEN_REMOVED to indicate what happened.
+                                [KEYLEN_REMOVED n]
+                            :else
+                                (let [_ (.be s n, KB_SPECIAL)       n (inc n)
+                                      _ (.be s n, (.at key_name 0)) n (inc n)
+                                      _ (.be s n, (.at key_name 1)) n (inc n)]
+                                    [0 n]
+                                ))
+                          _ (eos! s n)
+                          #_int extra (- n slen)
+                          ? (cond (nil? buf)
+                                (do (cond
+                                        (< extra 0) (del-typebuf (- extra))
+                                        (< 0 extra) (ins-typebuf (.plus s slen)))
+                                    (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), s, 0, n)
+                                    nil)
+                            :else
+                                (let-when [
+                                      ? (cond (< extra 0) ;; Remove matched characters.
+                                            (do (BCOPY buf, 0, buf, (- extra), (+ @a'buflen extra))
+                                                nil)
+                                        (< 0 extra) ;; Insert the extra space we need.
+                                            (if (< (+ @a'buflen extra n) bufsize)
+                                                (do (BCOPY buf, extra, buf, 0, @a'buflen)
+                                                    nil)
+                                                :abort ;; If there is insufficient space, return -1.
+                                            ))
+                                ] (not ?) => ?
 
-            (when (== (STRNCMP (:code (... @termcodes idx)), tp, (min len slen)) 0)
-                (if (< len slen)             ;; got a partial sequence
-                    ((ß RETURN) -1)              ;; need to get more chars
-                )
+                                    (BCOPY buf, 0, s, 0, n)
+                                    (swap! a'buflen + extra n)
+                                    nil
+                                ))
+                    ] (not ?) => -1
 
-                ;; When found a keypad key, check if there is another key that matches and use that one.
-                ;; This makes <Home> to be found instead of <kHome> when they produce the same key code.
-
-                (when (and (== (:name0 (... @termcodes idx)) (byte \K)) (asc-isdigit (:name1 (... @termcodes idx))))
-                    (loop-when-recur [#_int j (inc idx)] (< j @tc_len) [(inc j)]
-                        (when (and (== (:len (... @termcodes j)) slen) (zero? (STRNCMP (:code (... @termcodes idx)), (:code (... @termcodes j)), slen)))
-                            ((ß idx =) j)
-                            (ß BREAK)
-                        )
-                    )
-                )
-
-                (.be key_name 0, (:name0 (... @termcodes idx)))
-                (.be key_name 1, (:name1 (... @termcodes idx)))
-                (ß BREAK)
-            )
-
-            ;; Check for code with modifier, like xterm uses:
-            ;; <Esc>[123;*X (modslen == slen - 3), also <Esc>O*X and <M-O>*X (modslen == slen - 2).
-            ;; When there is a modifier the * matches a number.
-            ;; When there is no modifier the ;* or * is omitted.
-
-            (when (< 0 (:modlen (... @termcodes idx)))
-                ((ß int modslen =) (:modlen (... @termcodes idx)))
-
-                (when (== (STRNCMP (:code (... @termcodes idx)), tp, (min len modslen)) 0)
-                    (if (<= len modslen)     ;; got a partial sequence
-                        ((ß RETURN) -1)          ;; need to get more chars
-                    )
-
-                    (cond (at? tp modslen (.at (:code (... @termcodes idx)) (dec slen)))
-                    (do
-                        ((ß slen =) (inc modslen)) ;; no modifiers
-                    )
-                    (and (not-at? tp modslen (byte \;)) (== modslen (- slen 3)))
-                    (do
-                        (ß CONTINUE)   ;; no match
-                    )
-                    :else
-                    (do
-                        ;; Skip over the digits, the final char must follow.
-                        ((ß int j =) (loop-when-recur [j (- slen 2)] (and (< j len) (asc-isdigit (.at tp j))) [(inc j)] => (inc j)))
-                        (if (< len j)        ;; got a partial sequence
-                            ((ß RETURN) -1)      ;; need to get more chars
-                        )
-                        (if (not-at? tp (dec j) (.at (:code (... @termcodes idx)) (dec slen)))
-                            (ß CONTINUE)       ;; no match
-                        )
-
-                        ;; Match!  Convert modifier bits.
-                        ((ß int n =) (- (.atoi libC (.plus tp (- slen 2))) 1))
-                        (when (non-zero? (& n 1)) (swap! a'modifiers | MOD_MASK_SHIFT))
-                        (when (non-zero? (& n 2)) (swap! a'modifiers | MOD_MASK_ALT))
-                        (when (non-zero? (& n 4)) (swap! a'modifiers | MOD_MASK_CTRL))
-                        (when (non-zero? (& n 8)) (swap! a'modifiers | MOD_MASK_META))
-
-                        ((ß slen =) j)
+                        (if (non-zero? retval) retval (+ len extra))
                     ))
-
-                    (.be key_name 0, (:name0 (... @termcodes idx)))
-                    (.be key_name 1, (:name1 (... @termcodes idx)))
-                    (ß BREAK)
-                )
-            )
-        )
-
-        (when (eos? key_name)
-            ((ß RETURN) 0)               ;; no match found
-        )
-
-        ;; We only get here when we have a complete termcode match.
-
-        ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
-
-        ((ß int key =) (handle-x-keys (TERMCAP2KEY (.at key_name 0), (.at key_name 1))))
-
-        ((ß Bytes string =) (Bytes. (inc MAX_KEY_CODE_LEN)))
-
-        ;; Add any modifier codes to our string.
-
-        ((ß int new_slen =) 0)           ;; length of what will replace the termcode
-        (when (non-zero? @a'modifiers)
-            ;; Some keys have the modifier included.
-            ;; Need to handle that here to make mappings work.
-            ((ß key =) (simplify-key key, a'modifiers))
-            (when (non-zero? @a'modifiers)
-                (.be string (ß new_slen++), KB_SPECIAL)
-                (.be string (ß new_slen++), KS_MODIFIER)
-                (.be string (ß new_slen++), @a'modifiers)
-            )
-        )
-
-        ((ß int retval =) 0)
-
-        ;; Finally, add the special key code to our string.
-        (.be key_name 0, (KEY2TERMCAP0 key))
-        (.be key_name 1, (KEY2TERMCAP1 key))
-        (cond (at? key_name KS_KEY)
-        (do
-            ;; from ":set <M-b>=xx"
-            ((ß new_slen =) (+ new_slen (utf-char2bytes (char_u (.at key_name 1)), (.plus string new_slen))))
-        )
-        (and (zero? new_slen) (at? key_name KS_EXTRA) (at? key_name 1 KE_IGNORE))
-        (do
-            ;; Do not put K_IGNORE into the buffer, do return KEYLEN_REMOVED to indicate what happened.
-            ((ß retval =) KEYLEN_REMOVED)
-        )
-        :else
-        (do
-            (.be string (ß new_slen++), KB_SPECIAL)
-            (.be string (ß new_slen++), (.at key_name 0))
-            (.be string (ß new_slen++), (.at key_name 1))
-        ))
-        (eos! string new_slen)
-
-        ((ß int extra =) (- new_slen slen))
-        (cond (nil? buf)
-        (do
-            (cond (< extra 0)
-            (do
-                ;; remove matched chars, taking care of noremap
-                (del-typebuf (- extra))
-            )
-            (< 0 extra)
-            (do
-                ;; insert the extra space we need
-                (ins-typebuf (.plus string slen))
             ))
-
-            (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), string, 0, new_slen)
-        )
-        :else
-        (do
-            (cond (< extra 0)
-            (do
-                ;; remove matched characters
-                (BCOPY buf, 0, buf, (- extra), (+ @a'buflen extra))
-            )
-            (< 0 extra)
-            (do
-                ;; Insert the extra space we need.  If there is insufficient space return -1.
-                (if (<= bufsize (+ @a'buflen extra new_slen))
-                    ((ß RETURN) -1)
-                )
-                (BCOPY buf, extra, buf, 0, @a'buflen)
-            ))
-
-            (BCOPY buf, 0, string, 0, new_slen)
-            (reset! a'buflen (+ @a'buflen (+ extra new_slen)))
-        ))
-
-        (if (non-zero? retval) retval (+ len extra))
     ))
 
 ;; Gather the first characters in the terminal key codes into a string.
