@@ -3420,70 +3420,47 @@
     (msg-outtrans-len-attr p, len, 0))
 
 (defn- #_int msg-outtrans-len-attr [#_Bytes p, #_int len, #_int attr]
-    (§
-        ((ß int cells =) 0)
-
-        ;; If the string starts with a composing character,
-        ;; first draw a space on which the composing char can be drawn.
-        (when (utf-iscomposing (us-ptr2char p))
-            (msg-puts-attr (u8 " "), attr))
-
-        ((ß Bytes q =) p)
-
-        ;; Go over the string.  Special characters are translated and printed.
-        ;; Normal characters are printed several at a time.
-
-        (loop-when [] (<= 0 ((ß len =) (dec len)))
-            ;; Don't include composing chars after the end.
-            ((ß int l =) (us-ptr2len-cc-len p, (inc len)))
-            (cond (< 1 l)
-            (do
-                ((ß int c =) (us-ptr2char p))
-                (cond (vim-isprintc c)
-                (do
-                    ;; printable multi-byte char: count the cells.
-                    ((ß cells =) (+ cells (us-ptr2cells p)))
-                )
-                :else
-                (do
-                    ;; unprintable multi-byte char: print the printable chars
-                    ;; so far and the translation of the unprintable char
-                    (if (BLT q, p)
-                        (msg-puts-attr-len q, (BDIFF p, q), attr))
-                    ((ß q =) (.plus p l))
-                    (msg-puts-attr (transchar c), (if (zero? attr) (hl-attr HLF_8) attr))
-                    ((ß cells =) (+ cells (mb-char2cells c)))
-                ))
-                ((ß len =) (- len (dec l)))
-                ((ß p =) (.plus p l))
-            )
-            :else
-            (do
-                ((ß Bytes s =) (transchar-byte (.at p 0)))
-                (cond (non-eos? s 1)
-                (do
-                    ;; unprintable char: print the printable chars so far
-                    ;; and the translation of the unprintable char
-                    (if (BLT q, p)
-                        (msg-puts-attr-len q, (BDIFF p, q), attr))
-                    ((ß q =) (.plus p 1))
-                    (msg-puts-attr s, (if (zero? attr) (hl-attr HLF_8) attr))
-                    ((ß cells =) (+ cells (STRLEN s)))
-                )
-                :else
-                (do
-                    ((ß cells =) (inc cells))
-                ))
-                ((ß p =) (.plus p 1))
-            ))
-            (recur)
-        )
-
+    ;; If the string starts with a composing character,
+    ;; first draw a space on which the composing char can be drawn.
+    (when (utf-iscomposing (us-ptr2char p))
+        (msg-puts-attr (u8 " "), attr))
+    ;; Go over the string.  Special characters are translated and printed.
+    ;; Normal characters are printed several at a time.
+    (let [[#_int cells #_Bytes q p]
+            (loop-when [cells 0 q p p p len len] (< 0 len) => [cells q p]
+                ;; Don't include composing chars after the end.
+                (let [#_int l (us-ptr2len-cc-len p, len)]
+                    (cond (< 1 l)
+                        (let [#_int c (us-ptr2char p)
+                              [cells q]
+                                (if (vim-isprintc c) ;; printable multi-byte char: count the cells
+                                    [(+ cells (us-ptr2cells p)) q]
+                                    (do ;; unprintable multi-byte char: print the printable chars
+                                        ;; so far and the translation of the unprintable char
+                                        (when (BLT q, p)
+                                            (msg-puts-attr-len q, (BDIFF p, q), attr))
+                                        (msg-puts-attr (transchar c), (if (zero? attr) (hl-attr HLF_8) attr))
+                                        [(+ cells (mb-char2cells c)) (.plus p l)])
+                                )]
+                            (recur cells q (.plus p l) (- len l)))
+                    :else
+                        (let [#_Bytes s (transchar-byte (.at p 0))
+                              [cells q]
+                                (if (eos? s 1)
+                                    [(inc cells) q]
+                                    (do ;; unprintable char: print the printable chars so far
+                                        ;; and the translation of the unprintable char
+                                        (when (BLT q, p)
+                                            (msg-puts-attr-len q, (BDIFF p, q), attr))
+                                        (msg-puts-attr s, (if (zero? attr) (hl-attr HLF_8) attr))
+                                        [(+ cells (STRLEN s)) (.plus p 1)])
+                                )]
+                            (recur cells q (.plus p 1) (dec len)))
+                    ))
+            )]
         (when (BLT q, p)
             ;; print the printable chars at the end
-            (msg-puts-attr-len q, (BDIFF p, q), attr)
-        )
-
+            (msg-puts-attr-len q, (BDIFF p, q), attr))
         cells
     ))
 
@@ -3895,268 +3872,134 @@
 
 ;; Show the more-prompt and handle the user response.
 ;; This takes care of scrolling back and displaying previously displayed text.
-;; When at hit-enter prompt "typed_char" is the already typed character,
-;; otherwise it's NUL.
+;; When at hit-enter prompt, "typed_char" is the already typed character, otherwise it's NUL.
 ;; Returns true when jumping ahead to "confirm_msg_tail".
 
-(defn- #_boolean do-more-prompt [#_int typed_char]
-    (§
-        ((ß boolean retval =) false)
-
-        ((ß int used_typed_char =) typed_char)
-        ((ß int oldState =) @State)
-
-        ((ß msgchunk_C mp_last =) nil)
-        (when (== typed_char (byte \G))
-            ;; "g<": Find first line on the last page.
-            ((ß mp_last =) (msg-sb-start @last_msgchunk))
-            (loop-when-recur [#_int i 0] (and (< i (- @Rows 2)) (some? mp_last) (some? (:sb_prev mp_last))) [(inc i)]
-                ((ß mp_last =) (msg-sb-start (:sb_prev mp_last)))
-            )
-        )
-
-        (reset! State ASKMORE)
-        (when (== typed_char NUL)
-            (msg-moremsg false))
-
-        (loop []
-            (ß int c)
-
-            ;; Get a typed character directly from the user.
-
-            (cond (!= used_typed_char NUL)
-            (do
-                ((ß c =) used_typed_char)        ;; was typed at hit-enter prompt
-                ((ß used_typed_char =) NUL)
-            )
-            :else
-            (do
-                ((ß c =) (get-keystroke))
-            ))
-
-            ((ß int toscroll =) 0)
-            ((ß SWITCH) c
-                ((ß CASE) BS)                    ;; scroll one line back
-                ((ß CASE) K_BS)
-                ((ß CASE) (byte \k))
-                ((ß CASE) K_UP)
-                (do
-                    ((ß toscroll =) -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) CAR)                   ;; one extra line
-                ((ß CASE) NL)
-                ((ß CASE) (byte \j))
-                ((ß CASE) K_DOWN)
-                (do
-                    ((ß toscroll =) 1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \u))                   ;; up half a page
-                (do
-                    ((ß toscroll =) (- (/ @Rows 2)))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \d))                   ;; down half a page
-                (do
-                    ((ß toscroll =) (/ @Rows 2))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \b))                   ;; one page back
-                ((ß CASE) K_PAGEUP)
-                (do
-                    ((ß toscroll =) (- (dec @Rows)))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \space))                   ;; one extra page
-                ((ß CASE) (byte \f))
-                ((ß CASE) K_PAGEDOWN)
-                (do
-                    ((ß toscroll =) (dec @Rows))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \g))                   ;; all the way back to the start
-                (do
-                    ((ß toscroll =) -999999)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \G))                   ;; all the way to the end
-                (do
-                    ((ß toscroll =) 999999)
-                    (reset! lines_left 999999)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \:))                   ;; start new command line
-                (do
-                    (when (zero? @confirm_msg_used)
-                        ;; Since got_int is set all typeahead will be flushed, but we
-                        ;; want to keep this ':', remember that in a special way.
-                        (typeahead-noflush (byte \:))
-                        (reset! cmdline_row (dec @Rows))         ;; put ':' on this line
-                        (reset! skip_redraw true)             ;; skip redraw once
-                        (reset! need_wait_return false)       ;; don't wait in main()
-                    )
-                    (ß FALLTHROUGH)
-                )
-                ((ß CASE) (byte \q))                   ;; quit
-                ((ß CASE) Ctrl_C)
-                ((ß CASE) ESC)
-                (do
-                    (cond (non-zero? @confirm_msg_used)
-                    (do
-                        ;; Jump to the choices of the dialog.
-                        ((ß retval =) true)
-                    )
-                    :else
-                    (do
-                        (reset! got_int true)
-                        (reset! quit_more true)
-                    ))
-                    ;; When there is some more output (wrapping line)
-                    ;; display that without another prompt.
-                    (reset! lines_left (dec @Rows))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) Ctrl_Y)
-                (do
-                    ;; Strange way to allow copying (yanking) a modeless
-                    ;; selection at the more prompt.  Use CTRL-Y,
-                    ;; because the same is used in Cmdline-mode and at the
-                    ;; hit-enter prompt.  However, scrolling one line up
-                    ;; might be expected...
-;                   
-                    (ß CONTINUE)
-                )
-
-                (ß DEFAULT)                    ;; no valid response
-                (do
-                    (msg-moremsg true)
-                    (ß CONTINUE)
-                )
-            )
-
-            (when (non-zero? toscroll)
-                (cond (< toscroll 0)
-                (do
-                    (ß msgchunk_C mp)
-                    ;; go to start of last line
-                    (cond (nil? mp_last)
-                    (do
-                        ((ß mp =) (msg-sb-start @last_msgchunk))
-                    )
-                    (some? (:sb_prev mp_last))
-                    (do
-                        ((ß mp =) (msg-sb-start (:sb_prev mp_last)))
-                    )
-                    :else
-                    (do
-                        ((ß mp =) nil)
-                    ))
-
-                    ;; go to start of line at top of the screen
-                    (loop-when-recur [#_int i 0] (and (< i (- @Rows 2)) (some? mp) (some? (:sb_prev mp))) [(inc i)]
-                        ((ß mp =) (msg-sb-start (:sb_prev mp)))
-                    )
-
-                    (when (and (some? mp) (some? (:sb_prev mp)))
-                        ;; Find line to be displayed at top.
-                        (loop-when-recur [#_int i 0] (< toscroll i) [(dec i)]
-                            (if (or (nil? mp) (nil? (:sb_prev mp)))
-                                (ß BREAK)
-                            )
-                            ((ß mp =) (msg-sb-start (:sb_prev mp)))
-                            ((ß mp_last =) (msg-sb-start (if (nil? mp_last) @last_msgchunk (:sb_prev mp_last))))
-                        )
-
-                        (cond (and (== toscroll -1) (screen-ins-lines 0, 0, 1, @Rows, nil))
-                        (do
-                            ;; display line at top
-                            (disp-sb-line 0, mp)
-                        )
-                        :else
-                        (do
-                            ;; redisplay all lines
-                            (screen-clear)
-                            (loop-when-recur [#_int i 0] (and (some? mp) (< i (dec @Rows))) [(inc i)]
-                                ((ß mp =) (disp-sb-line i, mp))
-                                (swap! msg_scrolled inc)
-                            )
+(defn- #_boolean do-more-prompt [#_int typed_char] ;; was typed at hit-enter prompt
+    (let [#_msgchunk_C lm
+            (when (== typed_char (byte \G)) ;; "g<": Find first line on the last page.
+                (loop-when-recur [#_int i 0 lm (msg-sb-start @last_msgchunk)]
+                                 (and (< i (- @Rows 2)) (some? lm) (some? (:sb_prev lm)))
+                                 [(inc i) (msg-sb-start (:sb_prev lm))]
+                              => lm))
+          #_int state' @State _ (reset! State ASKMORE)
+          _ (when (== typed_char NUL) (msg-moremsg false))
+          #_boolean ask?
+            (loop [#_int tc typed_char lm lm ask? false]
+                ;; Get a typed character directly from the user.
+                (let-when [#_int c (if (!= tc NUL) tc (get-keystroke)) tc NUL
+                      esc- (fn [ask?]
+                        (let [ask? (or (non-zero? @confirm_msg_used) ;; Jump to the choices of the dialog.
+                                       (do (reset! got_int true)
+                                           (reset! quit_more true)
+                                           ask?)
+                                   )]
+                            ;; When there is some more output (wrapping line), display that without another prompt.
+                            (reset! lines_left (dec @Rows))
+                            [0 ask?]
                         ))
-                        ((ß toscroll =) 0)
-                    )
-                )
-                :else
-                (do
-                    ;; First display any text that we scrolled back.
-                    (loop-when [] (and (< 0 toscroll) (some? mp_last))
-                        ;; scroll up, display line at bottom
-                        (msg-scroll-up)
-                        (inc-msg-scrolled)
-                        (screen-fill (- @Rows 2), (dec @Rows), 0, @Cols, (byte \space), (byte \space), 0)
-                        ((ß mp_last =) (disp-sb-line (- @Rows 2), mp_last))
-                        ((ß toscroll =) (dec toscroll))
-                        (recur)
-                    )
-                ))
+                      [#_int sl ask? :as _]
+                        (condp ==? c
+                           [BS K_BS (byte \k) K_UP] [-1 ask?]               ;; scroll one line back
+                           [CAR NL (byte \j) K_DOWN] [1 ask?]               ;; one extra line
 
-                (when (<= toscroll 0)
-                    ;; displayed the requested text, more prompt again
-                    (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
-                    (msg-moremsg false)
-                    (ß CONTINUE)
-                )
+                            (byte \u) [(- (/ @Rows 2)) ask?]                ;; up half a page
+                            (byte \d) [   (/ @Rows 2)  ask?]                ;; down half a page
 
-                ;; display more text, return to caller
-                (reset! lines_left toscroll)
-            )
+                           [              (byte \b) K_PAGEUP  ] [(- (dec @Rows)) ask?]  ;; one page back
+                           [(byte \space) (byte \f) K_PAGEDOWN] [   (dec @Rows)  ask?]  ;; one extra page
 
-            (ß BREAK)
-            (recur)
-        )
+                            (byte \g) [                  -999999  ask?]     ;; all the way back to the start
+                            (byte \G) [(reset! lines_left 999999) ask?]     ;; all the way to the end
 
+                            (byte \:)                                       ;; start new command line
+                                (do (when (zero? @confirm_msg_used)
+                                        ;; Since got_int is set all typeahead will be flushed, but
+                                        ;; we want to keep this ':', remember that in a special way.
+                                        (typeahead-noflush (byte \:))
+                                        (reset! cmdline_row (dec @Rows))    ;; put ':' on this line
+                                        (reset! skip_redraw true)           ;; skip redraw once
+                                        (reset! need_wait_return false))    ;; don't wait in main()
+                                    (esc- ask?))
+
+                           [(byte \q) Ctrl_C ESC] (esc- ask?)               ;; quit
+
+                            ;; Strange way to allow copying (yanking) a modeless selection at the more prompt.
+                            ;; Use CTRL-Y, because the same is used in Cmdline-mode and at the hit-enter prompt.
+                            ;; However, scrolling one line up might be expected...
+                            Ctrl_Y
+                                nil	;; %% not yet
+
+                            (do (msg-moremsg true) ;; no valid response
+                                nil))
+
+                ] (some? _) => (recur tc lm ask?)
+
+                    (if (zero? sl)
+                        ask?
+                        (let [[lm sl]
+                                (cond (< sl 0) ;; go to start of last line ;; go to start of line at top of the screen
+                                    (let-when [#_msgchunk_C m (cond (nil? lm) (msg-sb-start @last_msgchunk) (some? (:sb_prev lm)) (msg-sb-start (:sb_prev lm)))
+                                               m (loop-when-recur [#_int i 0 m m]
+                                                                   (and (< i (- @Rows 2)) (some? m) (some? (:sb_prev m)))
+                                                                   [(inc i) (msg-sb-start (:sb_prev m))]
+                                                                => m)
+                                    ] (and (some? m) (some? (:sb_prev m))) => [lm sl]
+                                        (let [[m lm] ;; Find line to be displayed at top.
+                                                (loop-when [#_int i 0 m m lm lm] (and (< sl i) (some? m) (some? (:sb_prev m))) => [m lm]
+                                                    (recur (dec i) (msg-sb-start (:sb_prev m)) (msg-sb-start (if (nil? lm) @last_msgchunk (:sb_prev lm))))
+                                                )]
+                                            (if (and (== sl -1) (screen-ins-lines 0, 0, 1, @Rows, nil))
+                                                (disp-sb-line 0, m) ;; display line at top
+                                                (do (screen-clear) ;; redisplay all lines
+                                                    (loop-when [#_int i 0 m m] (and (some? m) (< i (dec @Rows)))
+                                                        (let [m (disp-sb-line i, m)] (swap! msg_scrolled inc) (recur (inc i) m)))
+                                                ))
+                                            [lm 0]))
+                                :else
+                                    ;; First display any text that we scrolled back.
+                                    (loop-when [lm lm sl sl] (and (< 0 sl) (some? lm)) => [lm sl]
+                                        (msg-scroll-up) ;; scroll up, display line at bottom
+                                        (inc-msg-scrolled)
+                                        (screen-fill (- @Rows 2), (dec @Rows), 0, @Cols, (byte \space), (byte \space), 0)
+                                        (recur (disp-sb-line (- @Rows 2), lm) (dec sl)))
+                                )]
+                            (if (<= sl 0)
+                                (do ;; displayed the requested text, more prompt again
+                                    (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
+                                    (msg-moremsg false)
+                                    (recur tc lm ask?))
+                                (do (reset! lines_left sl)
+                                    ask?)
+                            ))
+                    ))
+            )]
         ;; clear the --more-- message
         (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
-        (reset! State oldState)
-
+        (reset! State state')
         (when @quit_more
             (reset! msg_row (dec @Rows))
-            (reset! msg_col 0)
-        )
-
-        retval
+            (reset! msg_col 0))
+        ask?
     ))
 
-;; Put a character on the screen at the current message position and advance
-;; to the next position.  Only for printable ASCII!
+;; Put a character on the screen at the current message position and advance to the next position.
+;; Only for printable ASCII!
 
 (defn- #_void msg-screen-putchar [#_int c, #_int attr]
     (reset! msg_didout true)          ;; remember that line is not empty
-
     (screen-putchar c, @msg_row, @msg_col, attr)
-
     (when (<= @Cols (swap! msg_col inc))
         (reset! msg_col 0)
-        (swap! msg_row inc)
-    )
+        (swap! msg_row inc))
     nil)
 
 (defn- #_void msg-moremsg [#_boolean full]
     (let [#_Bytes more (u8 "-- More --") #_int attr (hl-attr HLF_M)]
         (screen-puts more, (dec @Rows), 0, attr)
         (when full
-            (screen-puts (u8 " SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (dec @Rows), (mb-string2cells more), attr)
-        )
-        nil
-    ))
+            (screen-puts (u8 " SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (dec @Rows), (mb-string2cells more), attr)))
+    nil)
 
 ;; Repeat the message for the current mode: ASKMORE or CONFIRM.
 
@@ -4241,24 +4084,19 @@
 ;; return true if wait-return not called
 
 (defn- #_boolean msg-end []
-    ;; If the string is larger than the window,
-    ;; or the ruler option is set and we run into it,
-    ;; we have to redraw the window.
+    ;; If the string is larger than the window, or the ruler option is set and we run into it, we have to redraw the window.
     ;; Do not do this if we are abandoning the file or editing the command line.
-
     (if (and (not @exiting) @need_wait_return (non-flag? @State CMDLINE))
         (do (wait-return FALSE) false)
         (do (out-flush) true)
     ))
 
-;; If the written message runs into the shown command or ruler, we have to
-;; wait for hit-return and redraw the window later.
+;; If the written message runs into the shown command or ruler, we have to wait for hit-return and redraw the window later.
 
 (defn- #_void msg-check []
     (when (and (== @msg_row (dec @Rows)) (<= @sc_col @msg_col))
         (reset! need_wait_return true)
-        (reset! redraw_cmdline true)
-    )
+        (reset! redraw_cmdline true))
     nil)
 
 ;; Give a warning message (for searching).
@@ -4270,7 +4108,7 @@
 
     (reset! keep_msg nil)
     (reset! keep_msg_attr (if hl (hl-attr HLF_W) 0))
-    (if (and (msg-attr message, @keep_msg_attr) (zero? @msg_scrolled))
+    (when (and (msg-attr message, @keep_msg_attr) (zero? @msg_scrolled))
         (set-keep-msg message, @keep_msg_attr))
     (reset! msg_didout false)     ;; overwrite this message
     (reset! msg_nowait true)      ;; don't wait for this message
@@ -4284,7 +4122,7 @@
 (defn- #_void display-confirm-msg []
     ;; avoid that 'q' at the more prompt truncates the message here
     (swap! confirm_msg_used inc)
-    (if (some? @confirm_msg)
+    (when (some? @confirm_msg)
         (msg-puts-attr @confirm_msg, (hl-attr HLF_M)))
     (swap! confirm_msg_used dec)
     nil)
