@@ -855,10 +855,9 @@
 (final int BF_NEVERLOADED 0x04)     ;; file has never been loaded into buffer, many variables still need to be set
 (final int BF_NOTEDITED   0x08)     ;; set when file name is changed after starting to edit, reset when file is written out
 (final int BF_NEW         0x10)     ;; file didn't exist when editing started
-(final int BF_READERR     0x40)     ;; got errors while reading the file
 
 ;; Mask to check for flags that prevent normal writing.
-(final int BF_WRITE_MASK  (+ BF_NOTEDITED BF_NEW BF_READERR))
+(final int BF_WRITE_MASK  (+ BF_NOTEDITED BF_NEW))
 
 (final int HL_CONTAINED    0x01)    ;; not used on toplevel
 (final int HL_TRANSP       0x02)    ;; has no highlighting
@@ -927,9 +926,6 @@
 (final int FM_FORWARD      0x02)    ;; search forwards
 (final int FM_BLOCKSTOP    0x04)    ;; stop at start/end of block
 (final int FM_SKIPCOMM     0x08)    ;; skip comments
-
-;; Values for action argument for do_buffer().
-(final int DOBUF_UNLOAD    2)       ;; unload specified buffer(s)
 
 ;; Values for sub_cmd and which_pat argument for search_regcomp().
 ;; Also used for which_pat argument for searchit().
@@ -2607,8 +2603,6 @@
 
 (class! #_final window_C
     [
-        (field buffer_C     w_buffer)           ;; buffer we are a window into (used often, keep it the first item!)
-
         (field window_C     w_prev)             ;; link to previous window
         (field window_C     w_next)             ;; link to next window
 
@@ -3278,8 +3272,6 @@
 ;       return @highlight_attr[n];
     ))
 
-(atom! boolean  modified_was_set)       ;; did ":set modified"
-
 ;; Mouse coordinates, set by check_termcode()
 
 (atom! int      mouse_row)
@@ -3806,7 +3798,7 @@
         ;; If opened more than one window, start editing files in the other windows.
 
         ;; make the first window the current window
-;       win_enter(@firstwin, false);
+;       win_enter(@firstwin);
 
 ;       @redrawingDisabled = 0;
 ;       redraw_all_later(NOT_VALID);
@@ -9279,9 +9271,6 @@
 ;       int count = 0;
 ;       int[] color_cols = new int[256];
 
-;       if (wp.w_buffer == null)
-;           return null;    ;; buffer was closed
-
 ;       for (Bytes s = wp.w_onebuf_opt.@wo_cc; s.at(0) != NUL && count < 255; )
 ;       {
 ;           skip:
@@ -9295,9 +9284,9 @@
 ;                   if (!asc_isdigit(s.at(0)))
 ;                       return e_invarg;
 ;                   { Bytes[] __ = { s }; col *= getdigits(__); s = __[0]; }
-;                   if (wp.w_buffer.@b_p_tw == 0)
+;                   if (@curbuf.@b_p_tw == 0)
 ;                       break skip;     ;; 'textwidth' not set, skip this item
-;                   col += wp.w_buffer.@b_p_tw;
+;                   col += @curbuf.@b_p_tw;
 ;                   if (col < 0)
 ;                       break skip;
 ;               }
@@ -9616,7 +9605,6 @@
 ;       else if (varp == @curbuf.b_changed)
 ;       {
 ;           redraw_titles();
-;           @modified_was_set = value;
 ;       }
 
         ;; If 'wrap' is set, set w_leftcol to zero.
@@ -10102,17 +10090,18 @@
 
 ;       if (varp == null)               ;; hidden option
 ;           return -1;
+
 ;       if ((vimoptions[opt_idx].@flags & P_NUM) != 0)
 ;           numval[0] = ((long[])varp)[0];
 ;       else
 ;       {
-            ;; Special case: 'modified' is "b_changed",
-            ;; but we also want to consider it set when 'ff' or 'fenc' changed.
+            ;; Special case: 'modified' is "b_changed".
 ;           if (varp == @curbuf.b_changed)
-;               numval[0] = curbufIsChanged() ? TRUE : FALSE;
+;               numval[0] = bufIsChanged(@curbuf) ? TRUE : FALSE;
 ;           else
 ;               numval[0] = ((int[])varp)[0];
 ;       }
+
 ;       return 1;
     ))
 
@@ -10333,11 +10322,8 @@
 
 ;       Object varp = get_varp_scope(v, opt_flags);
 
-        ;; for 'modified' we also need to check if 'ff' or 'fenc' changed.
-;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !curbufIsChanged() : !((boolean[])varp)[0]))
+;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !bufIsChanged(@curbuf) : !((boolean[])varp)[0]))
 ;           msg_puts(u8("no"));
-;    /* else if ((v.@flags & P_BOOL) != 0 && ((boolean[])varp)[0] < 0)
-;           msg_puts(u8("--")); */
 ;       else
 ;           msg_puts(u8("  "));
 ;       msg_puts(v.fullname);
@@ -16984,7 +16970,7 @@
 
 (defn- #_void ex_win_close [#_boolean forceit, #_window_C win]
     (§
-;       buffer_C buf = win.w_buffer;
+;       buffer_C buf = @curbuf;
 
 ;       boolean need_hide = (bufIsChanged(buf) && buf.b_nwindows <= 1);
 ;       if (need_hide && !forceit)
@@ -17126,7 +17112,6 @@
 (defn- #_void ex_syncbind [#_exarg_C _eap]
     (§
 ;       window_C save_curwin = @curwin;
-;       buffer_C save_curbuf = @curbuf;
 ;       long old_linenr = @curwin.w_cursor.lnum;
 
 ;       setpcmark();
@@ -17138,9 +17123,9 @@
 ;           topline = @curwin.w_topline;
 ;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;           {
-;               if (wp.w_onebuf_opt.@wo_scb && wp.w_buffer != null)
+;               if (wp.w_onebuf_opt.@wo_scb)
 ;               {
-;                   long y = wp.w_buffer.b_ml.ml_line_count - @p_so;
+;                   long y = @curbuf.b_ml.ml_line_count - @p_so;
 ;                   if (y < topline)
 ;                       topline = y;
 ;               }
@@ -17159,7 +17144,6 @@
 ;       {
 ;           if (@curwin.w_onebuf_opt.@wo_scb)
 ;           {
-;               @curbuf = @curwin.w_buffer;
 ;               long y = topline - @curwin.w_topline;
 ;               if (0 < y)
 ;                   scrollup(y);
@@ -17172,7 +17156,6 @@
 ;           }
 ;       }
 ;       @curwin = save_curwin;
-;       @curbuf = save_curbuf;
 ;       if (@curwin.w_onebuf_opt.@wo_scb)
 ;       {
 ;           @did_syncbind = true;
@@ -19948,7 +19931,7 @@
 
 (defn- #_int find_ident_at_pos [#_window_C wp, #_long lnum, #_int startcol, #_Bytes* string, #_int find_type]
     (§
-;       Bytes p = ml_get_buf(wp.w_buffer, lnum, false);
+;       Bytes p = ml_get_buf(@curbuf, lnum, false);
 
 ;       int col = 0;
 ;       int this_class = 0;
@@ -20313,7 +20296,6 @@
 
 (atom! window_C scr_old_curwin)
 (atom! long scr_old_topline)
-(atom! buffer_C scr_old_buf)
 (atom! int scr_old_leftcol)
 
 ;; When "check" is false, prepare for commands that scroll the window.
@@ -20330,10 +20312,8 @@
 ;           else if (@curwin == @scr_old_curwin)
 ;           {
                 ;; Synchronize other windows, as necessary according to 'scrollbind'.
-                ;; Don't do this after an ":edit" command, except when 'diff' is set.
 
-;               if ((@curwin.w_buffer == @scr_old_buf)
-;                   && (@curwin.w_topline != @scr_old_topline || @curwin.w_leftcol != @scr_old_leftcol))
+;               if (@curwin.w_topline != @scr_old_topline || @curwin.w_leftcol != @scr_old_leftcol)
 ;               {
 ;                   check_scrollbind(@curwin.w_topline - @scr_old_topline, (long)(@curwin.w_leftcol - @scr_old_leftcol));
 ;               }
@@ -20356,7 +20336,6 @@
 
 ;       @scr_old_curwin = @curwin;
 ;       @scr_old_topline = @curwin.w_topline;
-;       @scr_old_buf = @curwin.w_buffer;
 ;       @scr_old_leftcol = @curwin.w_leftcol;
     ))
 
@@ -20366,7 +20345,6 @@
 (defn- #_void check_scrollbind [#_long topline_diff, #_long leftcol_diff]
     (§
 ;       window_C old_curwin = @curwin;
-;       buffer_C old_curbuf = @curbuf;
 ;       boolean old_VIsual_select = @VIsual_select;
 ;       boolean old_VIsual_active = @VIsual_active;
 ;       int tgt_leftcol = @curwin.w_leftcol;
@@ -20381,7 +20359,6 @@
 ;       @VIsual_select = @VIsual_active = false;
 ;       for (@curwin = @firstwin; @curwin != null; @curwin = @curwin.w_next)
 ;       {
-;           @curbuf = @curwin.w_buffer;
             ;; skip original window and windows with 'noscrollbind'
 ;           if (@curwin != old_curwin && @curwin.w_onebuf_opt.@wo_scb)
 ;           {
@@ -20422,7 +20399,6 @@
 ;       @VIsual_select = old_VIsual_select;
 ;       @VIsual_active = old_VIsual_active;
 ;       @curwin = old_curwin;
-;       @curbuf = old_curbuf;
     ))
 
 ;; Command character that's ignored.
@@ -20623,7 +20599,6 @@
 
                 ;; find the window at the pointer coordinates
 ;           @curwin = mouse_find_win(row, col);
-;           @curbuf = @curwin.w_buffer;
 ;       }
 
 ;       if (cap.arg == MSCR_UP || cap.arg == MSCR_DOWN)
@@ -20643,7 +20618,6 @@
 ;       @curwin.w_redr_status = true;
 
 ;       @curwin = old_curwin;
-;       @curbuf = @curwin.w_buffer;
     ))
 
 ;; Mouse clicks and drags.
@@ -27502,8 +27476,8 @@
 ;           if (t == 0 && setmark)
 ;           {
                 ;; Set the '[ mark.
-;               @curwin.w_buffer.b_op_start.lnum = @curwin.w_cursor.lnum;
-;               @curwin.w_buffer.b_op_start.col  = STRLEN(curr);
+;               @curbuf.b_op_start.lnum = @curwin.w_cursor.lnum;
+;               @curbuf.b_op_start.col  = STRLEN(curr);
 ;           }
 ;           if (remove_comments)
 ;           {
@@ -27584,8 +27558,7 @@
 ;               cend = cend.minus(spaces[t]);
 ;               copy_spaces(cend, spaces[t]);
 ;           }
-;           mark_col_adjust(@curwin.w_cursor.lnum + t, 0, (long)-t,
-;                            (long)(BDIFF(cend, newp) + spaces[t] - BDIFF(curr, curr_start)));
+;           mark_col_adjust(@curwin.w_cursor.lnum + t, 0, (long)-t, (long)(BDIFF(cend, newp) + spaces[t] - BDIFF(curr, curr_start)));
 ;           if (t == 0)
 ;               break;
 ;           curr = curr_start = ml_get(@curwin.w_cursor.lnum + t - 1);
@@ -27600,8 +27573,8 @@
 ;       if (setmark)
 ;       {
             ;; Set the '] mark.
-;           @curwin.w_buffer.b_op_end.lnum = @curwin.w_cursor.lnum;
-;           @curwin.w_buffer.b_op_end.col  = STRLEN(newp);
+;           @curbuf.b_op_end.lnum = @curwin.w_cursor.lnum;
+;           @curbuf.b_op_end.col  = STRLEN(newp);
 ;       }
 
         ;; Only report the change in the first line here,
@@ -29872,51 +29845,49 @@
 ;                   if (win.w_jumplist[i].fmark.fnum == fnum)
 ;                       win.w_jumplist[i].fmark.mark.lnum = one_adjust_nodel(win.w_jumplist[i].fmark.mark.lnum, line1, line2, amount, amount_after);
 
-;           if (win.w_buffer == @curbuf)
+            ;; the displayed Visual area
+;           if (win.w_old_cursor_lnum != 0)
 ;           {
-                ;; the displayed Visual area
-;               if (win.w_old_cursor_lnum != 0)
+;               win.w_old_cursor_lnum = one_adjust_nodel(win.w_old_cursor_lnum, line1, line2, amount, amount_after);
+;               win.w_old_visual_lnum = one_adjust_nodel(win.w_old_visual_lnum, line1, line2, amount, amount_after);
+;           }
+
+            ;; topline and cursor position for windows with the same buffer
+            ;; other than the current window
+;           if (win != @curwin)
+;           {
+;               if (line1 <= win.w_topline && win.w_topline <= line2)
 ;               {
-;                   win.w_old_cursor_lnum = one_adjust_nodel(win.w_old_cursor_lnum, line1, line2, amount, amount_after);
-;                   win.w_old_visual_lnum = one_adjust_nodel(win.w_old_visual_lnum, line1, line2, amount, amount_after);
+;                   if (amount == MAXLNUM)              ;; topline is deleted
+;                   {
+;                       if (line1 <= 1)
+;                           win.w_topline = 1;
+;                       else
+;                           win.w_topline = line1 - 1;
+;                   }
+;                   else                                ;; keep topline on the same line
+;                       win.w_topline += amount;
+;               }
+;               else if (amount_after != 0 && line2 < win.w_topline)
+;               {
+;                   win.w_topline += amount_after;
 ;               }
 
-                ;; topline and cursor position for windows with the same buffer
-                ;; other than the current window
-;               if (win != @curwin)
+;               if (line1 <= win.w_cursor.lnum && win.w_cursor.lnum <= line2)
 ;               {
-;                   if (line1 <= win.w_topline && win.w_topline <= line2)
+;                   if (amount == MAXLNUM)              ;; line with cursor is deleted
 ;                   {
-;                       if (amount == MAXLNUM)              ;; topline is deleted
-;                       {
-;                           if (line1 <= 1)
-;                               win.w_topline = 1;
-;                           else
-;                               win.w_topline = line1 - 1;
-;                       }
-;                       else                                ;; keep topline on the same line
-;                           win.w_topline += amount;
+;                       if (line1 <= 1)
+;                           win.w_cursor.lnum = 1;
+;                       else
+;                           win.w_cursor.lnum = line1 - 1;
+;                       win.w_cursor.col = 0;
 ;                   }
-;                   else if (amount_after != 0 && line2 < win.w_topline)
-;                   {
-;                       win.w_topline += amount_after;
-;                   }
-;                   if (line1 <= win.w_cursor.lnum && win.w_cursor.lnum <= line2)
-;                   {
-;                       if (amount == MAXLNUM)              ;; line with cursor is deleted
-;                       {
-;                           if (line1 <= 1)
-;                               win.w_cursor.lnum = 1;
-;                           else
-;                               win.w_cursor.lnum = line1 - 1;
-;                           win.w_cursor.col = 0;
-;                       }
-;                       else                                ;; keep cursor on the same line
-;                           win.w_cursor.lnum += amount;
-;                   }
-;                   else if (amount_after != 0 && line2 < win.w_cursor.lnum)
-;                       win.w_cursor.lnum += amount_after;
+;                   else                                ;; keep cursor on the same line
+;                       win.w_cursor.lnum += amount;
 ;               }
+;               else if (amount_after != 0 && line2 < win.w_cursor.lnum)
+;                   win.w_cursor.lnum += amount_after;
 ;           }
 ;       }
     ))
@@ -29989,12 +29960,9 @@
 ;               if (wp.w_jumplist[i].fmark.fnum == fnum)
 ;                   col_adjust(wp.w_jumplist[i].fmark.mark, lnum, mincol, lnum_amount, col_amount);
 
-;           if (wp.w_buffer == @curbuf)
-;           {
-                ;; cursor position for other windows with the same buffer
-;               if (wp != @curwin)
-;                   col_adjust(wp.w_cursor, lnum, mincol, lnum_amount, col_amount);
-;           }
+            ;; cursor position for other windows with the same buffer
+;           if (wp != @curwin)
+;               col_adjust(wp.w_cursor, lnum, mincol, lnum_amount, col_amount);
 ;       }
     ))
 
@@ -30050,8 +30018,7 @@
 
 (defn- #_void set_last_cursor [#_window_C win]
     (§
-;       if (win.w_buffer != null)
-;           COPY_pos(win.w_buffer.b_last_cursor, win.w_cursor);
+;       COPY_pos(@curbuf.b_last_cursor, win.w_cursor);
     ))
 
 ;;; ============================================================================================== VimL
@@ -37019,13 +36986,11 @@
                 ;; Mouse took us to another window.
                 ;; We need to go back to the previous one to stop insert there properly.
 ;               @curwin = old_curwin;
-;               @curbuf = @curwin.w_buffer;
 ;           }
 ;           start_arrow(@curwin == old_curwin ? tpos : null);
 ;           if (@curwin != new_curwin && win_valid(new_curwin))
 ;           {
 ;               @curwin = new_curwin;
-;               @curbuf = @curwin.w_buffer;
 ;           }
 ;           @can_cindent = true;
 ;       }
@@ -37048,7 +37013,6 @@
 
             ;; find the window at the pointer coordinates
 ;           @curwin = mouse_find_win(row, col);
-;           @curbuf = @curwin.w_buffer;
 ;       }
 
 ;       if (@curwin == old_curwin)
@@ -37065,7 +37029,6 @@
 ;       @curwin.w_redr_status = true;
 
 ;       @curwin = old_curwin;
-;       @curbuf = @curwin.w_buffer;
 
 ;       if (!eqpos(@curwin.w_cursor, tpos))
 ;       {
@@ -50153,7 +50116,7 @@
 ;                           boolean result = false;
 ;                           if (op == 1 && thread.state.val < col - 1 && 100 < col)
 ;                           {
-;                               int ts = (int)wp.w_buffer.@b_p_ts;
+;                               int ts = (int)@curbuf.@b_p_ts;
 
                                 ;; Guess that a character won't use more columns than 'tabstop',
                                 ;; with a minimum of 4.
@@ -54298,8 +54261,8 @@
 ;               else                ;; try again from end of buffer
 ;               {
                     ;; searching backwards, so set pos to last line and col
-;                   pos.lnum = @curwin.w_buffer.b_ml.ml_line_count;
-;                   pos.col  = STRLEN(ml_get(@curwin.w_buffer.b_ml.ml_line_count));
+;                   pos.lnum = @curbuf.b_ml.ml_line_count;
+;                   pos.col  = STRLEN(ml_get(@curbuf.b_ml.ml_line_count));
 ;               }
 ;           }
 ;           @p_ws = old_p_ws;
@@ -55165,8 +55128,8 @@
     ;; newfile: flag, see above
     (§
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer() == false)
-;           return false;
+;       if (@curbuf.b_ml.ml_mfp == null)
+;           open_buffer();
 
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
 ;           ml_flush_line(@curbuf);
@@ -55596,8 +55559,8 @@
 ;           return false;
 
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer() == false)
-;           return false;
+;       if (@curbuf.b_ml.ml_mfp == null)
+;           open_buffer();
 
 ;       if (copy)
 ;           line = STRDUP(line);
@@ -56570,20 +56533,12 @@
 ;;   not loaded: b_ml.ml_mfp == null, no memfile allocated
 ;;       hidden: b_nwindows == 0, loaded but not displayed in a window
 ;;       normal: loaded and displayed in a window
-;;
-;; Instead of storing file names all over the place, each file name is
-;; stored in the buffer list.  It can be referenced by a number.
 
-;; Open current buffer, that is: open the memfile and read the file into memory.
-;; Return false for failure, true otherwise.
+;; Open current buffer, that is: open the memfile.
 
-(defn- #_boolean open_buffer []
+(defn- #_void open_buffer []
     (§
 ;       ml_open(@curbuf);
-
-        ;; The autocommands in readfile() may change the buffer, but only AFTER reading the file.
-;       buffer_C old_curbuf = @curbuf;
-;       @modified_was_set = false;
 
         ;; mark cursor position as being invalid
 ;       @curwin.w_valid = 0;
@@ -56595,113 +56550,33 @@
 ;           parse_cino(@curbuf);
 ;       }
 
-        ;; When reading stdin, the buffer contents always needs writing, so set
-        ;; the changed flag.  Unless in readonly mode: "ls | gview -".
-        ;; When interrupted and 'cpoptions' contains 'i' set changed flag.
-;       if ((@got_int && vim_strbyte(@p_cpo, CPO_INTMOD) != null)
-;                   || @modified_was_set     ;; ":set modified" used in autocmd
-;                   || (@got_int && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
-;           changed();
-;       else
-;           unchanged(@curbuf, false);
+;       unchanged(@curbuf, false);
 
-        ;; require "!" to overwrite the file, because it wasn't read completely
-;       if (@got_int)
-;           @curbuf.b_flags |= BF_READERR;
+        ;; need to set w_topline
+;       @curwin.w_topline = 1;
 
-        ;; need to set w_topline, unless some autocommand already did that.
-;       if ((@curwin.w_valid & VALID_TOPLINE) == 0)
-;       {
-;           @curwin.w_topline = 1;
-;       }
-
-        ;; The autocommands may have changed the current buffer.  Apply the
-        ;; modelines to the correct buffer, if it still exists and is loaded.
-
-;       if (buf_valid(old_curbuf) && old_curbuf.b_ml.ml_mfp != null)
-;       {
-;           @curbuf.b_flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
-;       }
-
-;       return true;
-    ))
-
-;; Return true if "buf" points to a valid buffer (in the buffer list).
-
-(defn- #_boolean buf_valid [#_buffer_C buf]
-    (§
-;       for (buffer_C bp = @firstbuf; bp != null; bp = bp.b_next)
-;           if (bp == buf)
-;               return true;
-
-;       return false;
+;       @curbuf.b_flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
     ))
 
 ;; Close the link to a buffer.
-;; "action" is used when there is no longer a window for the buffer.
-;; It can be:
-;; 0                    buffer becomes hidden
-;; DOBUF_UNLOAD         buffer is unloaded
-;; When doing all but the first one on the current buffer, the caller should
-;; get a new buffer very soon!
 
-(defn- #_void close_buffer [#_window_C win, #_buffer_C buf, #_int action]
-    ;; win: if not null, set b_last_cursor
+(defn- #_void close_buffer [#_window_C win]
     (§
-;       boolean unload_buf = (action != 0);
+;       buffer_C buf = @curbuf;
 
-;       if (win != null && win_valid(win))      ;; in case autocommands closed the window
-;       {
-            ;; Set b_last_cursor when closing the last window for the buffer.
-            ;; Remember the last cursor position and window options of the buffer.
-            ;; This used to be only for the current window, but then options like
-            ;; 'foldmethod' may be lost with a ":only" command.
-;           if (buf.b_nwindows == 1)
-;               set_last_cursor(win);
-;           buflist_setfpos(buf, win, (win.w_cursor.lnum == 1) ? 0 : win.w_cursor.lnum, win.w_cursor.col, true);
-;       }
+        ;; Set b_last_cursor when closing the last window for the buffer.
+        ;; Remember the last cursor position and window options of the buffer.
+        ;; This used to be only for the current window, but then options like
+        ;; 'foldmethod' may be lost with a ":only" command.
 
-        ;; When the buffer is no longer in a window, trigger BufWinLeave.
 ;       if (buf.b_nwindows == 1)
-;       {
-;           if (one_window())
-;           {
-                ;; Autocommands made this the only window.
-;               emsg(e_auabort);
-;               return;
-;           }
-;       }
+;           set_last_cursor(win);
 
-;       int nwindows = buf.b_nwindows;
+;       buflist_setfpos(buf, win, (win.w_cursor.lnum == 1) ? 0 : win.w_cursor.lnum, win.w_cursor.col, true);
 
         ;; decrease the link count from windows (unless not in any window)
 ;       if (0 < buf.b_nwindows)
 ;           --buf.b_nwindows;
-
-        ;; Return when a window is displaying the buffer or when it's not unloaded.
-;       if (0 < buf.b_nwindows || !unload_buf)
-;           return;
-
-;       buf.b_nwindows = nwindows;
-
-;       buf_freeall(buf);
-;       if (win_valid(win) && win.w_buffer == buf)
-;           win.w_buffer = null;    ;; make sure we don't use the buffer now
-
-        ;; Autocommands may have opened or closed windows for this buffer.
-        ;; Decrement the count for the close we do here.
-;       if (0 < buf.b_nwindows)
-;           --buf.b_nwindows;
-
-;       free_buffer_stuff(buf);
-
-        ;; Make it look like a new buffer.
-;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
-
-        ;; Init the options when loaded again.
-;       buf.b_p_initialized = false;
-
-;       buf_clear_file(buf);
     ))
 
 ;; Make buffer not contain a file.
@@ -56712,30 +56587,6 @@
 ;       unchanged(buf, true);
 ;       buf.b_ml.ml_mfp = null;
 ;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
-    ))
-
-;; Free all things allocated for a buffer that are related to the file.
-
-(defn- #_void buf_freeall [#_buffer_C buf]
-    (§
-;       ml_close(buf);                  ;; close the memline/memfile
-;       buf.b_ml.ml_line_count = 0;     ;; no lines in buffer
-
-;       u_blockfree(buf);           ;; free the memory allocated for undo
-;       u_clearall(buf);            ;; reset all undo information
-
-;       buf.b_flags &= ~BF_READERR;     ;; a read error is no longer relevant
-    ))
-
-;; Free stuff in the buffer for ":bdel" and when wiping out the buffer.
-
-(defn- #_void free_buffer_stuff [#_buffer_C buf]
-    (§
-;       clear_wininfo(buf);                             ;; including window-local options
-;       free_buf_options(buf);
-
-;       map_clear_int(buf, MAP_ALL_MODES, true, false);     ;; clear local mappings
-;       map_clear_int(buf, MAP_ALL_MODES, true, true);      ;; clear local abbrevs
     ))
 
 ;; Free the b_wininfo list for buffer "buf".
@@ -56989,19 +56840,14 @@
 ;       (p = p.plus(1)).be(-1, (byte)'"');
 ;       vim_strncpy(p, buf_spname(@curbuf, fullname != 0), IOSIZE - BDIFF(p, buffer) - 1);
 
-;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s%s"),
-;               curbufIsChanged() ? (shortmess(SHM_MOD) ? u8(" [+]") : u8(" [Modified]")) : u8(" "),
+;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s"),
+;               bufIsChanged(@curbuf) ? (shortmess(SHM_MOD) ? u8(" [+]") : u8(" [Modified]")) : u8(" "),
 ;               (@curbuf.b_flags & BF_NOTEDITED) != 0 ? u8("[Not edited]") : u8(""),
 ;               (@curbuf.b_flags & BF_NEW) != 0 ? u8("[New file]") : u8(""),
-;               (@curbuf.b_flags & BF_READERR) != 0 ? u8("[Read errors]") : u8(""),
-;               (curbufIsChanged() || (@curbuf.b_flags & BF_WRITE_MASK) != 0) ? u8(" ") : u8(""));
-        ;; With 32 bit longs and more than 21,474,836 lines multiplying by 100
-        ;; causes an overflow, thus for large numbers divide instead.
-;       int n;
-;       if (1000000L < @curwin.w_cursor.lnum)
-;           n = (int)(@curwin.w_cursor.lnum / (@curbuf.b_ml.ml_line_count / 100L));
-;       else
-;           n = (int)((@curwin.w_cursor.lnum * 100L) / @curbuf.b_ml.ml_line_count);
+;               (bufIsChanged(@curbuf) || (@curbuf.b_flags & BF_WRITE_MASK) != 0) ? u8(" ") : u8(""));
+
+;       int n = (int)((@curwin.w_cursor.lnum * 100L) / @curbuf.b_ml.ml_line_count);
+
 ;       if ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0)
 ;       {
 ;           vim_snprintf_add(buffer, IOSIZE, u8("%s"), no_lines_msg);
@@ -57016,8 +56862,7 @@
 ;       }
 ;       else
 ;       {
-;           vim_snprintf_add(buffer, IOSIZE, u8("line %ld of %ld --%d%%-- col "),
-;                                               @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, n);
+;           vim_snprintf_add(buffer, IOSIZE, u8("line %ld of %ld --%d%%-- col "), @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, n);
 ;           validate_virtcol();
 ;           int len = STRLEN(buffer);
 ;           col_print(buffer.plus(len), IOSIZE - len, @curwin.w_cursor.col + 1, @curwin.w_virtcol + 1);
@@ -57062,7 +56907,7 @@
 
         ;; number of lines above/below window
 ;       long above = wp.w_topline - 1;
-;       long below = wp.w_buffer.b_ml.ml_line_count - wp.w_botline + 1;
+;       long below = @curbuf.b_ml.ml_line_count - wp.w_botline + 1;
 
 ;       if (below <= 0)
 ;           vim_strncpy(buf, (above == 0) ? u8("All") : u8("Bot"), buflen - 1);
@@ -57758,12 +57603,12 @@
 ;           if (wp.w_onebuf_opt.@wo_wrap)
 ;               return win_nolbr_chartabsize(wp, s, col, headp);
 
-;           return win_buf_chartabsize(wp, wp.w_buffer, s, col);
+;           return win_buf_chartabsize(wp, @curbuf, s, col);
 ;       }
 
         ;; First get normal size, without 'linebreak'.
 
-;       int size = win_buf_chartabsize(wp, wp.w_buffer, s, col);
+;       int size = win_buf_chartabsize(wp, @curbuf, s, col);
 ;       byte c = s.at(0);
 ;       if (tab_corr)
 ;           col_adj = size - 1;
@@ -57797,7 +57642,7 @@
 ;                               && (col2 == col || !@breakat_flags[char_u(ps.at(0))])))))
 ;                   break;
 
-;               col2 += win_buf_chartabsize(wp, wp.w_buffer, s, col2);
+;               col2 += win_buf_chartabsize(wp, @curbuf, s, col2);
 ;               if (colmax <= col2)         ;; doesn't fit
 ;               {
 ;                   size = colmax - col + col_adj;
@@ -57884,7 +57729,7 @@
     (§
 ;       if (p.at(0) == TAB && (!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL))
 ;       {
-;           int ts = (int)wp.w_buffer.@b_p_ts;
+;           int ts = (int)@curbuf.@b_p_ts;
 ;           return ts - (col % ts);
 ;       }
 
@@ -57927,7 +57772,7 @@
 
 (defn- #_void getvcol [#_window_C wp, #_pos_C pos, #_int* start, #_int* cursor, #_int* end]
     (§
-;       Bytes p = ml_get_buf(wp.w_buffer, pos.lnum, false);    ;; points to current char
+;       Bytes p = ml_get_buf(@curbuf, pos.lnum, false);    ;; points to current char
 ;       Bytes line = p;                                        ;; start of the line
 ;       Bytes posptr;                                          ;; points to char at pos.col
 ;       if (pos.col == MAXCOL)
@@ -57936,7 +57781,7 @@
 ;           posptr = p.plus(pos.col);
 
 ;       int vcol = 0;
-;       int ts = (int)wp.w_buffer.@b_p_ts;
+;       int ts = (int)@curbuf.@b_p_ts;
 
 ;       int[] head = new int[1];
 ;       int incr;
@@ -58043,7 +57888,7 @@
 ;           int endadd = 0;
 
             ;; Cannot put the cursor on part of a wide character.
-;           Bytes ptr = ml_get_buf(wp.w_buffer, pos.lnum, false);
+;           Bytes ptr = ml_get_buf(@curbuf, pos.lnum, false);
 ;           if (pos.col < STRLEN(ptr))
 ;           {
 ;               int c = us_ptr2char(ptr.plus(pos.col));
@@ -62523,12 +62368,12 @@
 ;       int eff_wwidth = wp.w_width - (((wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) == null) ? number_width(wp) + 1 : 0);
 
         ;; used cached indent, unless pointer or 'tabstop' changed
-;       if (BNE(@bri_prev_line, line) || @bri_prev_ts != wp.w_buffer.@b_p_ts || @bri_prev_tick != wp.w_buffer.b_changedtick)
+;       if (BNE(@bri_prev_line, line) || @bri_prev_ts != @curbuf.@b_p_ts || @bri_prev_tick != @curbuf.b_changedtick)
 ;       {
 ;           @bri_prev_line = line;
-;           @bri_prev_ts = wp.w_buffer.@b_p_ts;
-;           @bri_prev_tick = wp.w_buffer.b_changedtick;
-;           @bri_prev_indent = get_indent_str(line, (int)wp.w_buffer.@b_p_ts, wp.w_onebuf_opt.@wo_list);
+;           @bri_prev_ts = @curbuf.@b_p_ts;
+;           @bri_prev_tick = @curbuf.b_changedtick;
+;           @bri_prev_indent = get_indent_str(line, (int)@curbuf.@b_p_ts, wp.w_onebuf_opt.@wo_list);
 ;       }
 ;       bri = @bri_prev_indent + wp.w_p_brishift;
 
@@ -63725,7 +63570,7 @@
 
 (defn- #_int plines_win_nofold [#_window_C wp, #_long lnum]
     (§
-;       Bytes s = ml_get_buf(wp.w_buffer, lnum, false);
+;       Bytes s = ml_get_buf(@curbuf, lnum, false);
 ;       if (s.at(0) == NUL)     ;; empty line
 ;           return 1;
 
@@ -63763,7 +63608,7 @@
 ;       if (wp.w_width == 0)
 ;           return lines + 1;
 
-;       Bytes line = ml_get_buf(wp.w_buffer, lnum, false);
+;       Bytes line = ml_get_buf(@curbuf, lnum, false);
 ;       Bytes s = line;
 
 ;       long col = 0;
@@ -64393,7 +64238,7 @@
 ;                       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;                       {
                             ;; Correct position in changelist for other windows on this buffer.
-;                           if (wp.w_buffer == @curbuf && 0 < wp.w_changelistidx)
+;                           if (0 < wp.w_changelistidx)
 ;                               --wp.w_changelistidx;
 ;                       }
 ;                   }
@@ -64402,7 +64247,7 @@
 ;                   {
                         ;; For other windows, if the position in the changelist is at the end,
                         ;; it stays at the end.
-;                       if (wp.w_buffer == @curbuf && wp.w_changelistidx == @curbuf.b_changelistlen)
+;                       if (wp.w_changelistidx == @curbuf.b_changelistlen)
 ;                           wp.w_changelistidx++;
 ;                   }
 
@@ -64416,50 +64261,47 @@
 
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;       {
-;           if (wp.w_buffer == @curbuf)
+            ;; Mark this window to be redrawn later.
+;           if (wp.w_redr_type < VALID)
+;               wp.w_redr_type = VALID;
+
+            ;; Check if a change in the buffer has invalidated the cached values for the cursor.
+;           if (lnum < wp.w_cursor.lnum)
+;               changed_line_abv_curs_win(wp);
+;           else if (wp.w_cursor.lnum == lnum && col <= wp.w_cursor.col)
+;               changed_cline_bef_curs_win(wp);
+
+;           if (lnum <= wp.w_botline)
 ;           {
-                ;; Mark this window to be redrawn later.
-;               if (wp.w_redr_type < VALID)
-;                   wp.w_redr_type = VALID;
+                ;; Assume that botline doesn't change
+                ;; (inserted lines make other lines scroll down below botline).
+;               approximate_botline_win(wp);
+;           }
 
-                ;; Check if a change in the buffer has invalidated
-                ;; the cached values for the cursor.
-;               if (lnum < wp.w_cursor.lnum)
-;                   changed_line_abv_curs_win(wp);
-;               else if (wp.w_cursor.lnum == lnum && col <= wp.w_cursor.col)
-;                   changed_cline_bef_curs_win(wp);
-;               if (lnum <= wp.w_botline)
+            ;; Check if any w_lines[] entries have become invalid.
+            ;; For entries below the change: Correct the lnums for inserted/deleted lines.
+            ;; Makes it possible to stop displaying after the change.
+;           for (int i = 0; i < wp.w_lines_valid; i++)
+;               if (wp.w_lines[i].wl_valid)
 ;               {
-                    ;; Assume that botline doesn't change
-                    ;; (inserted lines make other lines scroll down below botline).
-;                   approximate_botline_win(wp);
-;               }
-
-                ;; Check if any w_lines[] entries have become invalid.
-                ;; For entries below the change: Correct the lnums for inserted/deleted lines.
-                ;; Makes it possible to stop displaying after the change.
-;               for (int i = 0; i < wp.w_lines_valid; i++)
-;                   if (wp.w_lines[i].wl_valid)
+;                   if (lnum <= wp.w_lines[i].wl_lnum)
 ;                   {
-;                       if (lnum <= wp.w_lines[i].wl_lnum)
+;                       if (wp.w_lines[i].wl_lnum < lnume)
 ;                       {
-;                           if (wp.w_lines[i].wl_lnum < lnume)
-;                           {
-                                ;; line included in change
-;                               wp.w_lines[i].wl_valid = false;
-;                           }
-;                           else if (xtra != 0)
-;                           {
-                                ;; line below change
-;                               wp.w_lines[i].wl_lnum += xtra;
-;                           }
+                            ;; line included in change
+;                           wp.w_lines[i].wl_valid = false;
+;                       }
+;                       else if (xtra != 0)
+;                       {
+                            ;; line below change
+;                           wp.w_lines[i].wl_lnum += xtra;
 ;                       }
 ;                   }
+;               }
 
-                ;; relative numbering may require updating more
-;               if (wp.w_onebuf_opt.@wo_rnu)
-;                   redraw_win_later(wp, SOME_VALID);
-;           }
+            ;; relative numbering may require updating more
+;           if (wp.w_onebuf_opt.@wo_rnu)
+;               redraw_win_later(wp, SOME_VALID);
 ;       }
 
         ;; Call update_screen() later, which checks out what needs to be redrawn,
@@ -64491,7 +64333,7 @@
 (defn- #_void check_status [#_buffer_C buf]
     (§
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer == buf && wp.w_status_height != 0)
+;           if (@curbuf == buf && wp.w_status_height != 0)
 ;           {
 ;               wp.w_redr_status = true;
 ;               if (@must_redraw < VALID)
@@ -68977,7 +68819,7 @@
 ;       int oldcol = win.w_cursor.col;
 ;       int oldcoladd = win.w_cursor.col + win.w_cursor.coladd;
 
-;       int len = STRLEN(ml_get_buf(win.w_buffer, win.w_cursor.lnum, false));
+;       int len = STRLEN(ml_get_buf(@curbuf, win.w_cursor.lnum, false));
 ;       if (len == 0)
 ;           win.w_cursor.col = 0;
 ;       else if (len <= win.w_cursor.col)
@@ -68995,7 +68837,7 @@
 ;           {
 ;               win.w_cursor.col = len - 1;
                 ;; Move the cursor to the head byte.
-;               mb_adjust_pos(win.w_buffer, win.w_cursor);
+;               mb_adjust_pos(@curbuf, win.w_cursor);
 ;           }
 ;       }
 ;       else if (win.w_cursor.col < 0)
@@ -70445,8 +70287,7 @@
 ;               uhp.uh_cursor_vcol = -1;
 
             ;; save changed and buffer empty flag for undo
-;           uhp.uh_flags = (@curbuf.@b_changed ? UH_CHANGED : 0) +
-;                          ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0);
+;           uhp.uh_flags = (@curbuf.@b_changed ? UH_CHANGED : 0) + ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0);
 
             ;; save named marks and Visual marks for undo
 ;           for (int i = 0; i < NMARKS; i++)
@@ -71005,8 +70846,7 @@
 ;       u_header_C curhead = @curbuf.b_u_curhead;
 
 ;       int old_flags = curhead.uh_flags;
-;       int new_flags = (@curbuf.@b_changed ? UH_CHANGED : 0)
-;                     + ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0);
+;       int new_flags = (@curbuf.@b_changed ? UH_CHANGED : 0) + ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 ? UH_EMPTYBUF : 0);
 ;       setpcmark();
 
         ;; save marks before undo/redo
@@ -71278,7 +71118,7 @@
 ;           u_add_time(msgbuf, msgbuf.size(), uhp.uh_time);
 
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer == @curbuf && 0 < wp.w_onebuf_opt.@wo_cole)
+;           if (0 < wp.w_onebuf_opt.@wo_cole)
 ;               redraw_win_later(wp, NOT_VALID);
 
 ;       smsg(u8("%ld %s; %s #%ld  %s"),
@@ -71660,18 +71500,11 @@
 ;       buf.b_u_line_ptr = null;
     ))
 
-;; Check if the 'modified' flag is set, or 'ff' has changed (only need to
-;; check the first character, because it can only be "dos", "unix" or "mac").
-;; "nofile" and "scratch" type buffers are considered to always be unchanged.
+;; Check if the 'modified' flag is set.
 
 (defn- #_boolean bufIsChanged [#_buffer_C buf]
     (§
 ;       return (buf.@b_changed || file_ff_differs(buf, true));
-    ))
-
-(defn- #_boolean curbufIsChanged []
-    (§
-;       return (@curbuf.@b_changed || file_ff_differs(@curbuf, true));
     ))
 
 ;;; ============================================================================================== VimV
@@ -72846,13 +72679,6 @@
 ;           @State = SETWSIZE;
 ;           return;
 ;       }
-
-        ;; curwin.w_buffer can be null when we are closing a window and the buffer
-        ;; has already been closed and removing a scrollbar causes a resize event.
-        ;; Don't resize then, it will happen after entering another buffer.
-
-;       if (@curwin.w_buffer == null)
-;           return;
 
 ;       @_2_busy++;
 
@@ -75753,9 +75579,7 @@
 
             ;; Before jumping to another buffer, or moving the cursor for a left click,
             ;; stop Visual mode.
-;           if (@VIsual_active
-;                   && (wp.w_buffer != @curwin.w_buffer
-;                       || (@on_status_line == 0 && @on_sep_line == 0 && (flags & MOUSE_MAY_STOP_VIS) != 0)))
+;           if (@VIsual_active && (@on_status_line == 0 && @on_sep_line == 0 && (flags & MOUSE_MAY_STOP_VIS) != 0))
 ;           {
 ;               end_visual_mode();
 ;               redraw_curbuf_later(INVERTED);      ;; delete the inversion
@@ -75774,7 +75598,7 @@
             ;; status line.  Do change focus when releasing the mouse button
             ;; (MOUSE_FOCUS was set above if we dragged first).
 ;           if (@jm__dragwin == null || (flags & MOUSE_RELEASED) != 0)
-;               win_enter(wp, true);                ;; can make wp invalid!
+;               win_enter(wp);                ;; can make wp invalid!
             ;; set topline, to be able to check for double click ourselves
 ;           if (@curwin != old_curwin)
 ;               set_mouse_topline(@curwin);
@@ -75874,7 +75698,7 @@
                 ;; far as it goes, moving the mouse in the top line should scroll
                 ;; the text down (done later when recomputing w_topline).
 ;               if (0 < @mouse_dragging
-;                       && @curwin.w_cursor.lnum == @curwin.w_buffer.b_ml.ml_line_count
+;                       && @curwin.w_cursor.lnum == @curbuf.b_ml.ml_line_count
 ;                       && @curwin.w_cursor.lnum == @curwin.w_topline)
 ;                   @curwin.w_valid &= ~(VALID_TOPLINE);
 ;           }
@@ -75936,7 +75760,7 @@
 ;           int count = plines_win(win, lnum, true);
 ;           if (row < count)
 ;               break;          ;; position is in this buffer line
-;           if (lnum == win.w_buffer.b_ml.ml_line_count)
+;           if (lnum == @curbuf.b_ml.ml_line_count)
 ;           {
 ;               retval = true;
 ;               break;              ;; past end of file
@@ -76150,7 +75974,7 @@
 (defn- #_void redraw_buf_later [#_buffer_C buf, #_int type]
     (§
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer == buf)
+;           if (@curbuf == buf)
 ;               redraw_win_later(wp, type);
     ))
 
@@ -76391,7 +76215,7 @@
         ;; Reset b_mod_set flags.  Going through all windows is probably faster
         ;; than going through all buffers (there could be many buffers).
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           wp.w_buffer.b_mod_set = false;
+;           @curbuf.b_mod_set = false;
 
 ;       @updating_screen = false;
 
@@ -76477,7 +76301,7 @@
 ;; VALID        1. scroll up/down to adjust for a changed w_topline
 ;;              2. update lines at the top when scrolled down
 ;;              3. redraw changed text:
-;;                 - if wp.w_buffer.b_mod_set set, update lines between
+;;                 - if @curbuf.b_mod_set set, update lines between
 ;;                   b_mod_top and b_mod_bot.
 ;;                 - if wp.w_redraw_top non-zero, redraw lines between
 ;;                   wp.w_redraw_top and wp.w_redr_bot.
@@ -76490,7 +76314,7 @@
 
 (defn- #_void win_update [#_window_C wp]
     (§
-;       buffer_C buf = wp.w_buffer;
+;       buffer_C buf = @curbuf;
 
 ;       int top_end = 0;                    ;; Below last row of the top area that needs updating.  0 when no top area updating.
 ;       int mid_start = 999;                ;; First row of the mid area that needs updating.     999 when no mid area updating.
@@ -76801,8 +76625,7 @@
 ;       }
 
         ;; check if we are updating or removing the inverted part
-;       if ((@VIsual_active && buf == @curwin.w_buffer)
-;           || (wp.w_old_cursor_lnum != 0 && type != NOT_VALID))
+;       if (@VIsual_active || (wp.w_old_cursor_lnum != 0 && type != NOT_VALID))
 ;       {
 ;           long from, to;
 
@@ -76964,7 +76787,7 @@
 ;           }
 ;       }
 
-;       if (@VIsual_active && buf == @curwin.w_buffer)
+;       if (@VIsual_active)
 ;       {
 ;           wp.w_old_visual_mode = @VIsual_mode;
 ;           wp.w_old_cursor_lnum = @curwin.w_cursor.lnum;
@@ -77453,7 +77276,7 @@
         ;; handle visual active in this window
 
 ;       int[] fromcol = { -10 }, tocol = { MAXCOL };            ;; start/end of inverting
-;       if (@VIsual_active && wp.w_buffer == @curwin.w_buffer)
+;       if (@VIsual_active)
 ;       {
 ;           if (ltoreq(@curwin.w_cursor, @VIsual))                ;; Visual is after curwin.w_cursor
 ;           {
@@ -77558,7 +77381,7 @@
 ;       if (line_attr != 0)
 ;           area_highlighting = true;
 
-;       Bytes line = ml_get_buf(wp.w_buffer, lnum, false); ;; current line
+;       Bytes line = ml_get_buf(@curbuf, lnum, false); ;; current line
 ;       Bytes ptr = line;                                  ;; current position in "line"
 
         ;; find start of trailing whitespace
@@ -77597,8 +77420,7 @@
             ;; - the visual mode is active,
             ;; the end of the line may be before the start of the displayed part.
 
-;           if (vcol < v && (wp.w_onebuf_opt.@wo_cuc || draw_color_col || virtual_active()
-;                               || (@VIsual_active && wp.w_buffer == @curwin.w_buffer)))
+;           if (vcol < v && (wp.w_onebuf_opt.@wo_cuc || draw_color_col || virtual_active() || @VIsual_active))
 ;           {
 ;               vcol = v;
 ;           }
@@ -77670,7 +77492,7 @@
 ;           next_search_hl(wp, shl, lnum, v, mi);
 
             ;; Need to get the line again, a multi-line regexp may have made it invalid.
-;           line = ml_get_buf(wp.w_buffer, lnum, false);
+;           line = ml_get_buf(@curbuf, lnum, false);
 ;           ptr = line.plus(v);
 
 ;           if (shl.lnum != 0 && shl.lnum <= lnum)
@@ -77795,7 +77617,7 @@
 ;                       char_attr = 0; ;; was: hl_attr(HLF_AT);
 ;                       p_extra = null;
 ;                       c_extra = ' ';
-;                       n_extra = get_breakindent_win(wp, ml_get_buf(wp.w_buffer, lnum, false));
+;                       n_extra = get_breakindent_win(wp, ml_get_buf(@curbuf, lnum, false));
                         ;; Correct end of highlighted area for 'breakindent',
                         ;; required when 'linebreak' is also set.
 ;                       if (tocol[0] == vcol)
@@ -77910,7 +77732,7 @@
 ;                               pos_inprogress = (mi != null && mi.mi_pos.cur != 0);
 
                                 ;; Need to get the line again, a multi-line regexp may have made it invalid.
-;                               line = ml_get_buf(wp.w_buffer, lnum, false);
+;                               line = ml_get_buf(@curbuf, lnum, false);
 ;                               ptr = line.plus(v);
 
 ;                               if (shl.lnum == lnum)
@@ -78175,7 +77997,7 @@
                         ;; TODO: is passing 'p' for start of the line OK?
 ;                       n_extra = win_lbr_chartabsize(wp, line, p, vcol, null) - 1;
 ;                       if (c == TAB && wp.w_width < n_extra + col)
-;                           n_extra = (int)wp.w_buffer.@b_p_ts - vcol % (int)wp.w_buffer.@b_p_ts - 1;
+;                           n_extra = (int)@curbuf.@b_p_ts - vcol % (int)@curbuf.@b_p_ts - 1;
 
 ;                       c_extra = (0 < mb_off) ? MB_FILLER_CHAR : ' ';
 ;                       if (vim_iswhite(c))
@@ -78231,7 +78053,7 @@
 ;                       if (@p_sbr.at(0) != NUL && vcol == vcol_sbr && wp.w_onebuf_opt.@wo_wrap)
 ;                           vcol_adjusted = vcol - us_charlen(@p_sbr);
                         ;; tab amount depends on current column
-;                       tab_len = (int)wp.w_buffer.@b_p_ts - vcol_adjusted % (int)wp.w_buffer.@b_p_ts - 1;
+;                       tab_len = (int)@curbuf.@b_p_ts - vcol_adjusted % (int)@curbuf.@b_p_ts - 1;
 
 ;                       if (!wp.w_onebuf_opt.@wo_lbr || !wp.w_onebuf_opt.@wo_list)
                             ;; tab amount depends on current column
@@ -79167,7 +78989,7 @@
 (defn- #_void status_redraw_curbuf []
     (§
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_status_height != 0 && wp.w_buffer == @curbuf)
+;           if (wp.w_status_height != 0)
 ;           {
 ;               wp.w_redr_status = true;
 ;               redraw_later(VALID);
@@ -79228,11 +79050,11 @@
 ;           int[] attr = new int[1];
 ;           int fillchar = fillchar_status(attr, wp == @curwin);
 
-;           get_trans_bufname(wp.w_buffer);
+;           get_trans_bufname(@curbuf);
 ;           Bytes p = @nameBuff;
 ;           int len = STRLEN(p);
 
-;           if (bufIsChanged(wp.w_buffer))
+;           if (bufIsChanged(@curbuf))
 ;           {
 ;               p.be(len++, (byte)' ');
 ;               STRCPY(p.plus(len), u8("[+]"));
@@ -79528,13 +79350,13 @@
 ;       {
 ;           COPY_regmmatch(mi.mi_hl.rmm, mi.mi_match);
 ;           mi.mi_hl.attr = (mi.hlg_id != 0) ? syn_id2attr(mi.hlg_id) : 0;
-;           mi.mi_hl.buf = wp.w_buffer;
+;           mi.mi_hl.buf = @curbuf;
 ;           mi.mi_hl.lnum = 0;
 ;           mi.mi_hl.first_lnum = 0;
             ;; Set the time limit to 'redrawtime'.
 ;           profile_setlimit(@p_rdt, mi.mi_hl.tm);
 ;       }
-;       @search_hl.buf = wp.w_buffer;
+;       @search_hl.buf = @curbuf;
 ;       @search_hl.lnum = 0;
 ;       @search_hl.first_lnum = 0;
         ;; time limit is set at the toplevel, for all windows
@@ -81415,13 +81237,13 @@
         ;; Check if cursor.lnum is valid, since win_redr_ruler() may be called
         ;; after deleting lines, before cursor.lnum is corrected.
 
-;       if (wp.w_buffer.b_ml.ml_line_count < wp.w_cursor.lnum)
+;       if (@curbuf.b_ml.ml_line_count < wp.w_cursor.lnum)
 ;           return;
 
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
 
 ;       boolean empty_line = false;
-;       if ((@State & INSERT) == 0 && ml_get_buf(wp.w_buffer, wp.w_cursor.lnum, false).at(0) == NUL)
+;       if ((@State & INSERT) == 0 && ml_get_buf(@curbuf, wp.w_cursor.lnum, false).at(0) == NUL)
 ;           empty_line = true;
 
         ;; Only draw the ruler when something changed.
@@ -81434,7 +81256,7 @@
 ;               || wp.w_virtcol != wp.w_ru_virtcol
 ;               || wp.w_cursor.coladd != wp.w_ru_cursor.coladd
 ;               || wp.w_topline != wp.w_ru_topline
-;               || wp.w_buffer.b_ml.ml_line_count != wp.w_ru_line_count
+;               || @curbuf.b_ml.ml_line_count != wp.w_ru_line_count
 ;               || empty_line != wp.w_ru_empty)
 ;       {
 ;           cursor_off();
@@ -81472,8 +81294,7 @@
             ;; Some sprintfs return the length, some return a pointer.
             ;; To avoid portability problems we use STRLEN() here.
 
-;           vim_snprintf(buffer, RULER_BUF_LEN, u8("%ld,"),
-;                   ((wp.w_buffer.b_ml.ml_flags & ML_EMPTY) != 0) ? 0L : wp.w_cursor.lnum);
+;           vim_snprintf(buffer, RULER_BUF_LEN, u8("%ld,"), ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ? 0L : wp.w_cursor.lnum);
 ;           int len = STRLEN(buffer);
 ;           col_print(buffer.plus(len), RULER_BUF_LEN - len, (empty_line) ? 0 : wp.w_cursor.col + 1, virtcol[0] + 1);
 
@@ -81527,7 +81348,7 @@
 ;           wp.w_ru_virtcol = wp.w_virtcol;
 ;           wp.w_ru_empty = empty_line;
 ;           wp.w_ru_topline = wp.w_topline;
-;           wp.w_ru_line_count = wp.w_buffer.b_ml.ml_line_count;
+;           wp.w_ru_line_count = @curbuf.b_ml.ml_line_count;
 ;       }
     ))
 
@@ -81543,7 +81364,7 @@
 ;           lnum = wp.w_height;
 ;       else
             ;; cursor line shows absolute line number
-;           lnum = wp.w_buffer.b_ml.ml_line_count;
+;           lnum = @curbuf.b_ml.ml_line_count;
 
 ;       if (lnum == wp.w_nrwidth_line_count && wp.w_nuw_cached == wp.w_onebuf_opt.@wo_nuw)
 ;           return wp.w_nrwidth_width;
@@ -82501,7 +82322,7 @@
 
         ;; make the new window the current window
 
-;       win_enter(wp, false);
+;       win_enter(wp);
 ;       if ((flags & WSP_VERT) != 0)
 ;           @p_wiw = i;
 ;       else
@@ -82516,8 +82337,7 @@
 
 (defn- #_void win_init [#_window_C newp, #_window_C oldp, #_int _flags]
     (§
-;       newp.w_buffer = oldp.w_buffer;
-;       oldp.w_buffer.b_nwindows++;
+;       @curbuf.b_nwindows++;
 ;       COPY_pos(newp.w_cursor, oldp.w_cursor);
 ;       newp.w_valid = 0;
 ;       newp.w_curswant = oldp.w_curswant;
@@ -82649,7 +82469,7 @@
 
 ;       win_comp_pos();                 ;; recompute window positions
 
-;       win_enter(wp, true);
+;       win_enter(wp);
 ;       redraw_later(CLEAR);
     ))
 
@@ -82808,7 +82628,7 @@
 ;           win_comp_pos();             ;; recompute w_winrow for all windows
 ;           redraw_later(NOT_VALID);
 ;       }
-;       win_enter(win1, false);
+;       win_enter(win1);
     ))
 
 ;; Make all windows the same height.
@@ -83138,11 +82958,11 @@
     ))
 
 ;; Close window "win".  Only works for the current tab page.
-;; If "free_buf" is true related buffer may be unloaded.
+;; If "_unload" is true related buffer may be unloaded.
 ;;
 ;; Returns false when the window was not closed.
 
-(defn- #_boolean win_close [#_window_C win, #_boolean free_buf]
+(defn- #_boolean win_close [#_window_C win, #_boolean _unload]
     (§
 ;       if (one_window())
 ;       {
@@ -83155,8 +82975,7 @@
 
         ;; Close the link to the buffer.
 
-;       if (win.w_buffer != null)
-;           close_buffer(win, win.w_buffer, free_buf ? DOBUF_UNLOAD : 0);
+;       close_buffer(win);
 
         ;; Free the memory used for the window and get the window that received the screen space.
 ;       int[] dir = new int[1];
@@ -83170,7 +82989,6 @@
 ;       if (win == @curwin)
 ;       {
 ;           @curwin = wp;
-;           @curbuf = @curwin.w_buffer;
 ;           close_curwin = true;
 ;       }
 
@@ -83180,7 +82998,7 @@
 ;           win_comp_pos();
 
 ;       if (close_curwin)
-;           win_enter_ext(wp, false, true);
+;           win_enter_ext(wp, true);
 
         ;; If last window has a status line now and we don't want one,
         ;; remove the status line.
@@ -83835,7 +83653,7 @@
 ;           if (wp != @curwin)               ;; don't close current window
 ;           {
                 ;; Check if it's allowed to abandon this window.
-;               boolean r = can_abandon(wp.w_buffer, forceit);
+;               boolean r = can_abandon(@curbuf, forceit);
 ;               if (!win_valid(wp))         ;; autocommands messed wp up
 ;               {
 ;                   nextwp = @firstwin;
@@ -83843,10 +83661,10 @@
 ;               }
 ;               if (!r)
 ;               {
-;                   if (bufIsChanged(wp.w_buffer))
+;                   if (bufIsChanged(@curbuf))
 ;                       continue;
 ;               }
-;               win_close(wp, !bufIsChanged(wp.w_buffer));
+;               win_close(wp, !bufIsChanged(@curbuf));
 ;           }
 ;       }
 
@@ -83879,7 +83697,6 @@
 
 ;       @curbuf = newBuffer(1L);
 
-;       @curwin.w_buffer = @curbuf;
 ;       @curbuf.b_nwindows = 1;          ;; there is one window
 
 ;       win_init_empty(@curwin);
@@ -83935,12 +83752,10 @@
 ;           return;
 ;       }
 
-;       if (wp.w_buffer != @curbuf)
-;           reset_VIsual_and_resel();
-;       else if (@VIsual_active)
+;       if (@VIsual_active)
 ;           COPY_pos(wp.w_cursor, @curwin.w_cursor);
 
-;       win_enter(wp, true);
+;       win_enter(wp);
 
         ;; Conceal cursor line in previous window, unconceal in current window.
 ;       if (win_valid(owp) && 0 < owp.w_onebuf_opt.@wo_cole && @msg_scrolled == 0)
@@ -84057,39 +83872,29 @@
 
 ;; Make window "wp" the current window.
 
-(defn- #_void win_enter [#_window_C wp, #_boolean undo_sync]
+(defn- #_void win_enter [#_window_C wp]
     (§
-;       win_enter_ext(wp, undo_sync, false);
+;       win_enter_ext(wp, false);
     ))
 
 ;; Make window wp the current window.
 ;; Can be called with "curwin_invalid" true, which means that curwin has just
 ;; been closed and isn't valid.
 
-(defn- #_void win_enter_ext [#_window_C wp, #_boolean undo_sync, #_boolean curwin_invalid]
+(defn- #_void win_enter_ext [#_window_C wp, #_boolean curwin_invalid]
     (§
-;       boolean other_buffer = false;
-
 ;       if (wp == @curwin && !curwin_invalid)        ;; nothing to do
 ;           return;
-
-        ;; sync undo before leaving the current buffer
-;       if (undo_sync && @curbuf != wp.w_buffer)
-;           u_sync(false);
 
         ;; Might need to scroll the old window before switching, e.g., when the cursor was moved.
 ;       update_topline();
 
-        ;; may have to copy the buffer options when 'cpo' contains 'S'
-;       if (wp.w_buffer != @curbuf)
-;           buf_copy_options(wp.w_buffer, BCO_ENTER);
 ;       if (!curwin_invalid)
 ;       {
 ;           @prevwin = @curwin;       ;; remember for CTRL-W p
 ;           @curwin.w_redr_status = true;
 ;       }
 ;       @curwin = wp;
-;       @curbuf = wp.w_buffer;
 ;       check_cursor();
 ;       if (!virtual_active())
 ;           @curwin.w_cursor.coladd = 0;
@@ -85309,36 +85114,6 @@
 ;       return total;
     ))
 
-;; Return true if there is only one window (in the current tab page),
-;; not counting a help or preview window, unless it is the current window.
-
-(defn- #_boolean only_one_window []
-    (§
-;       int count = 0;
-
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer != null)
-;               count++;
-
-;       return (count <= 1);
-    ))
-
-;; Correct the cursor line number in other windows.
-;; Used after changing the current buffer, and before applying autocommands.
-;; When "do_curwin" is true, also check current window.
-
-(defn- #_void check_lnums [#_boolean do_curwin]
-    (§
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if ((do_curwin || wp != @curwin) && wp.w_buffer == @curbuf)
-;           {
-;               if (wp.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
-;                   wp.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;               if (wp.w_topline > @curbuf.b_ml.ml_line_count)
-;                   wp.w_topline = @curbuf.b_ml.ml_line_count;
-;           }
-    ))
-
 ;; Delete all matches in the match list of window 'wp'.
 
 (defn- #_void clear_matches [#_window_C wp]
@@ -85425,7 +85200,7 @@
 ;           done = 0;
 ;       }
 
-;       for ( ; lnum <= wp.w_buffer.b_ml.ml_line_count; lnum++)
+;       for ( ; lnum <= @curbuf.b_ml.ml_line_count; lnum++)
 ;       {
 ;           int n = plines_win(wp, lnum, true);
 ;           if (lnum == wp.w_cursor.lnum)
@@ -86924,7 +86699,6 @@
 ;       boolean set_curswant = @curwin.w_set_curswant;
 
 ;       window_C old_curwin = @curwin;
-;       buffer_C old_curbuf = @curbuf;
 ;       boolean old_VIsual_select = @VIsual_select;
 ;       boolean old_VIsual_active = @VIsual_active;
 
@@ -86933,7 +86707,6 @@
 ;       @VIsual_select = @VIsual_active = false;
 ;       for (@curwin = @firstwin; @curwin != null; @curwin = @curwin.w_next)
 ;       {
-;           @curbuf = @curwin.w_buffer;
             ;; skip original window  and windows with 'noscrollbind'
 ;           if (@curwin != old_curwin && @curwin.w_onebuf_opt.@wo_crb)
 ;           {
@@ -86965,7 +86738,6 @@
 ;       @VIsual_select = old_VIsual_select;
 ;       @VIsual_active = old_VIsual_active;
 ;       @curwin = old_curwin;
-;       @curbuf = old_curbuf;
     ))
 
 ;;; ============================================================================================== VimX
