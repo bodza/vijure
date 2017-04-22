@@ -811,32 +811,29 @@
 ;;                         0           not starting anymore
 
 ;; Values for index in highlight_attr[].
-;; When making changes, also update HL_FLAGS below!
-;; And update the default value of 'highlight' in option.c.
 
 (final int
-    HLF_8        0,     ;; Meta & special keys listed with ":map", text that is displayed different from what it is
+    HLF_8        0,     ;; meta & special keys listed with ":map", text that is displayed different from what it is
     HLF_AT       1,     ;; @ and ~ characters at end of screen, characters that don't really exist in the text
     HLF_E        2,     ;; error messages
     HLF_I        3,     ;; incremental search
     HLF_L        4,     ;; last search string
     HLF_M        5,     ;; "--More--" message
-    HLF_CM       6,     ;; Mode (e.g., "-- INSERT --")
+    HLF_CM       6,     ;; mode (e.g. "-- INSERT --")
     HLF_N        7,     ;; line number for ":number" and ":#" commands
     HLF_CLN      8,     ;; current line number
     HLF_R        9,     ;; return to continue message and yes/no questions
     HLF_S       10,     ;; status lines
     HLF_SNC     11,     ;; status lines of not-current windows
     HLF_C       12,     ;; column to separate vertically split windows
-    HLF_T       13,     ;; Titles for output from ":set all", ":autocmd" etc.
+    HLF_T       13,     ;; titles for output from ":set all", etc.
     HLF_V       14,     ;; Visual mode
     HLF_W       15,     ;; warning messages
-    HLF_CONCEAL 16,     ;; Concealed text
-    HLF_CUC     17,     ;; 'cursorcolumn'
-    HLF_CUL     18,     ;; 'cursorline'
-    HLF_MC      19,     ;; 'colorcolumn'
+    HLF_CUC     16,     ;; 'cursorcolumn'
+    HLF_CUL     17,     ;; 'cursorline'
+    HLF_MC      18,     ;; 'colorcolumn'
 
-    HLF_COUNT   20)     ;; MUST be the last one
+    HLF_COUNT   19)     ;; MUST be the last one
 
 ;; Operator IDs; The order must correspond to opchars[] in ops.c!
 
@@ -2001,7 +1998,7 @@
 
 (atom! boolean  no_smartcase)                   ;; don't use 'smartcase' once
 
-(atom! int*     highlight_attr HLF_COUNT)       ;; highl. attr. for each context
+(atom! int*     highlight_attr      HLF_COUNT)  ;; highl. attr. for each context
 (atom! int      cterm_normal_fg_color)
 (atom! int      cterm_normal_fg_bold)
 (atom! int      cterm_normal_bg_color)
@@ -2170,7 +2167,6 @@
 (atom! Bytes    repeat_cmdline)             ;; command line for "."
 (atom! Bytes    new_last_cmdline)           ;; new value for "last_cmdline"
 (atom! boolean  did_cursorhold)             ;; set when CursorHold t'gerd
-(atom! pos_C    last_cursormoved    (NEW_pos_C)) ;; for CursorMoved event
 (atom! int      last_changedtick)           ;; for TextChanged event
 (atom! buffer_C last_changedtick_buf)
 
@@ -11213,15 +11209,11 @@
 
 (defn- #_cmdarg_C n-opencmd [#_cmdarg_C cap]
     (if (not (checkclearopq (:oap cap)))
-        (let [#_long lold (:lnum (:w_cursor @curwin)) back (== (:cmdchar cap) (byte \O)) fore (== (:cmdchar cap) (byte \o))]
-            (if (and (u-save (- lold (if back 1 0)), (+ lold (if fore 1 0))) (let [[_ ?] (open-line? @curwin, (if back BACKWARD FORWARD), 0, 0)] (reset! curwin _) ?))
-                (do
-                    (when (and hamis (!= lold (:lnum (:w_cursor @curwin))))
-                        (swap! curwin update-single-line lold))
-                    ;; When '#' is in 'cpoptions' ignore the count.
-                    (let [cap (if (some? (vim-strbyte @p_cpo, CPO_HASH)) (assoc cap :count1 1) cap)]
-                        (invoke-edit cap, false, (:cmdchar cap), true))
-                )
+        (let [lnum (:lnum (:w_cursor @curwin)) back (== (:cmdchar cap) (byte \O)) fore (== (:cmdchar cap) (byte \o))]
+            (if (and (u-save (- lnum (if back 1 0)), (+ lnum (if fore 1 0))) (let [[_ ?] (open-line? @curwin, (if back BACKWARD FORWARD), 0, 0)] (reset! curwin _) ?))
+                ;; When '#' is in 'cpoptions', ignore the count.
+                (let [cap (if (some? (vim-strbyte @p_cpo, CPO_HASH)) (assoc cap :count1 1) cap)]
+                    (invoke-edit cap, false, (:cmdchar cap), true))
                 cap
             ))
         cap
@@ -16916,31 +16908,17 @@
 ;; Only redraw when there are no characters available.
 ;; This speeds up inserting sequences of characters (e.g. for CTRL-R).
 
-(defn- #_window_C ins-redraw [#_window_C win, #_boolean ready]
-    ;; ready: not busy with something
+(defn- #_window_C ins-redraw [#_window_C win, #_boolean _ready]
+    ;; _ready: not busy with something
     (if (char-avail)
         win
-        (let [#_boolean lupd (and ready hamis (not (eqpos @last_cursormoved, (:w_cursor win))))
-              ;; Trigger CursorMoved if the cursor moved.
-              [#_long lold #_long lnew]
-                (if lupd
-                    (let [lold (:lnum @last_cursormoved)
-                          _ (reset! last_cursormoved (:w_cursor win))
-                          lnew (:lnum @last_cursormoved)]
-                        [lold lnew])
-                    [0 0])]
-            (cond
+        (do (cond
                 (non-zero? @must_redraw) (update-screen 0)
                 (or @clear_cmdline @redraw_cmdline) (showmode) ;; clear cmdline and show mode
             )
-            (let [win (if (or (and lupd (!= lold lnew)) hamis)
-                        (let [win (if (!= lold lnew) (update-single-line win, lold) win)
-                              win (update-single-line win, (if (zero? lnew) (:lnum (:w_cursor win)) lnew))]
-                            (update win :w_valid & (bit-not VALID_CROW)))
-                        win)
-                  win (showruler win, false)
+            (let [win (showruler win, false)
                   win (setcursor win)]
-                (reset! emsg_on_display false)    ;; may remove error message now
+                (reset! emsg_on_display false) ;; may remove error message now
                 win
             ))
     ))
@@ -36200,7 +36178,7 @@
 (defn- #_void changed-common [#_long lnum, #_int col, #_long lnume, #_long xtra]
     (§
         ;; mark the buffer as modified
-        (changed)
+        (swap! curbuf changed)
 
         ;; set the '. mark
 ;       {
@@ -36244,19 +36222,19 @@
                         (dotimes [#_int i (dec JUMPLISTSIZE)]
                             (COPY-pos (... (:b_changelist @curbuf) i), (... (:b_changelist @curbuf) (inc i)))
                         )
-                        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
+                        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
                             ;; Correct position in changelist for other windows on this buffer.
-                            (if (< 0 (:w_changelistidx wp))
-                                ((ß wp =) (update wp :w_changelistidx dec))
+                            (if (< 0 (:w_changelistidx win))
+                                ((ß win =) (update win :w_changelistidx dec))
                             )
                         )
                     )
 
-                    (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
+                    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
                         ;; For other windows, if the position in the changelist is at the end,
                         ;; it stays at the end.
-                        (if (== (:w_changelistidx wp) (:b_changelistlen @curbuf))
-                            ((ß wp =) (update wp :w_changelistidx inc))
+                        (if (== (:w_changelistidx win) (:b_changelistlen @curbuf))
+                            ((ß win =) (update win :w_changelistidx inc))
                         )
                     )
 
@@ -36268,47 +36246,47 @@
             (swap! curwin assoc :w_changelistidx (:b_changelistlen @curbuf))
 ;       }
 
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
+        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
             ;; Mark this window to be redrawn later.
-            ((ß wp =) (update wp :w_redr_type max VALID))
+            ((ß win =) (update win :w_redr_type max VALID))
 
             ;; Check if a change in the buffer has invalidated the cached values for the cursor.
-            (cond (< lnum (:lnum (:w_cursor wp)))
+            (cond (< lnum (:lnum (:w_cursor win)))
             (do
-                ((ß wp =) (changed-line-abv-curs wp))
+                ((ß win =) (changed-line-abv-curs win))
             )
-            (and (== (:lnum (:w_cursor wp)) lnum) (<= col (:col (:w_cursor wp))))
+            (and (== (:lnum (:w_cursor win)) lnum) (<= col (:col (:w_cursor win))))
             (do
-                ((ß wp =) (changed-cline-bef-curs wp))
+                ((ß win =) (changed-cline-bef-curs win))
             ))
 
-            (when (<= lnum (:w_botline wp))
+            (when (<= lnum (:w_botline win))
                 ;; Assume that botline doesn't change
                 ;; (inserted lines make other lines scroll down below botline).
-                ((ß wp =) (approximate-botline wp))
+                ((ß win =) (approximate-botline win))
             )
 
             ;; Check if any w_lines[] entries have become invalid.
             ;; For entries below the change: Correct the lnums for inserted/deleted lines.
             ;; Makes it possible to stop displaying after the change.
-            (dotimes [#_int i (:w_lines_valid wp)]
-                (when (and (:wl_valid (... (:w_lines wp) i)) (<= lnum (:wl_lnum (... (:w_lines wp) i))))
-                    (cond (< (:wl_lnum (... (:w_lines wp) i)) lnume)
+            (dotimes [#_int i (:w_lines_valid win)]
+                (when (and (:wl_valid (... (:w_lines win) i)) (<= lnum (:wl_lnum (... (:w_lines win) i))))
+                    (cond (< (:wl_lnum (... (:w_lines win) i)) lnume)
                     (do
                         ;; line included in change
-                        ((ß wp.w_lines[i].wl_valid =) false)
+                        ((ß win.w_lines[i].wl_valid =) false)
                     )
                     (non-zero? xtra)
                     (do
                         ;; line below change
-                        ((ß wp.w_lines[i].wl_lnum =) (+ (:wl_lnum (... (:w_lines wp) i)) xtra))
+                        ((ß win.w_lines[i].wl_lnum =) (+ (:wl_lnum (... (:w_lines win) i)) xtra))
                     ))
                 )
             )
 
             ;; relative numbering may require updating more
-            (when @(:wo_rnu (:w_options wp))
-                ((ß wp =) (redraw-later wp, SOME_VALID)))
+            (when @(:wo_rnu (:w_options win))
+                ((ß win =) (redraw-later win, SOME_VALID)))
         )
 
         ;; Call update-screen() later, which checks out what needs to be redrawn,
@@ -36318,25 +36296,21 @@
 
         ;; When the cursor line is changed, always trigger CursorMoved.
         (when (and (<= lnum (:lnum (:w_cursor @curwin))) (< (:lnum (:w_cursor @curwin)) (+ lnume (if (< xtra 0) (- xtra) xtra))))
-            (swap! last_cursormoved assoc :lnum 0))
+            (swap! last_cursormoved assoc :lnum 0))
         nil
     ))
 
-(defn- #_void changed []
-    (when (not @(:b_changed @curbuf))
-        (reset! (:b_changed @curbuf) true)
-        (check-status)
-    )
-    (swap! curbuf update :b_changedtick inc)
-    nil)
+(defn- #_buffer_C changed [#_buffer_C buf]
+    (when (not @(:b_changed buf))
+        (reset! (:b_changed buf) true)
+        (check-status))
+    (update buf :b_changedtick inc))
 
-(defn- #_void unchanged []
-    (when @(:b_changed @curbuf)
-        (reset! (:b_changed @curbuf) false)
-        (check-status)
-    )
-    (swap! curbuf update :b_changedtick inc)
-    nil)
+(defn- #_buffer_C unchanged [#_buffer_C buf]
+    (when @(:b_changed buf)
+        (reset! (:b_changed buf) false)
+        (check-status))
+    (update buf :b_changedtick inc))
 
 ;; called when the status bars for buffer 'buf' need to be updated
 
@@ -36345,7 +36319,7 @@
         (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
             (when (non-zero? (:w_status_height win))
                 ((ß win =) (assoc win :w_redr_status true))
-                (if (< @must_redraw VALID)
+                (when (< @must_redraw VALID)
                     (reset! must_redraw VALID))
             )
         )
@@ -36353,10 +36327,8 @@
     ))
 
 ;; Ask for a reply from the user, a 'y' or a 'n'.
-;; No other characters are accepted, the message is repeated
-;; until a valid reply is entered or CTRL-C is hit.
-;; If direct is true, don't use vgetc() but ui-inchar(),
-;; don't get characters from any buffers but directly from the user.
+;; No other characters are accepted, the message is repeated until a valid reply is entered or CTRL-C is hit.
+;; If "direct" is true, don't use vgetc() but ui-inchar(), don't get characters from any buffers but directly from the user.
 ;;
 ;; Answer 'y' or 'n'.
 
@@ -38052,7 +38024,7 @@
             ((ß bot =) (if (zero? bot) (inc (line-count @curbuf)) bot))
             (when (or (> top (line-count @curbuf)) (<= bot top) (> bot (inc (line-count @curbuf))))
                 (emsg (u8 "E438: u-undo: line numbers wrong"))
-                (changed)          ;; don't want UNCHANGED now
+                (swap! curbuf changed)          ;; don't want UNCHANGED now
                 ((ß RETURN) nil)
             )
 
@@ -38159,8 +38131,8 @@
         (when (and (flag? old_flags UH_EMPTYBUF) (bufempty))
             (swap! curbuf assoc-in [:b_ml :ml_flags] (| (:ml_flags (:b_ml @curbuf)) ML_EMPTY)))
         (if (flag? old_flags UH_CHANGED)
-            (changed)
-            (unchanged))
+            (swap! curbuf changed)
+            (swap! curbuf unchanged))
 
         ;; restore marks from before undo/redo
 
@@ -40811,8 +40783,7 @@
         startrow
         (let [#_int* color_cols (:w_p_cc_cols win) a'cci (atom (int 0))
               a'vcol (atom (int 0))                                 ;; virtual column (for tabs)
-              a'vcol_off (atom (int 0))                             ;; offset for concealed characters
-              a'draw_color_col (atom (boolean (and (some? color_cols) (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci))))
+              a'draw_color_col (atom (boolean (and (some? color_cols) (advance-color-col @a'vcol, color_cols, a'cci))))
               a'lnum_in_visual (atom (boolean false))               ;; handle visual active in this window
               a'fromcol (atom (int -10))                            ;; start/end of inverting
               a'tocol (atom (int MAXCOL))
@@ -41249,11 +41220,7 @@
                                                     (reset! a'n_extra (if (and (== c TAB) (< (:w_width win) (+ @a'n_extra @a'col))) (- ts (% @a'vcol ts) 1) @a'n_extra))
                                                     (reset! a'c_extra (if (< 0 i) MB_FILLER_CHAR (byte \space)))
                                                     (if (vim-iswhite c)
-                                                        (do (when (== c TAB) ;; See "Tab alignment" below.
-                                                                (reset! a'n_extra (+ @a'n_extra @a'vcol_off))
-                                                                (reset! a'vcol (- @a'vcol @a'vcol_off))
-                                                                (reset! a'vcol_off 0))
-                                                            (byte \space))
+                                                        (byte \space)
                                                         c
                                                     ))
                                                 c
@@ -41268,9 +41235,6 @@
                                                   ts @(:b_p_ts @curbuf)]
                                                 ;; tab amount depends on current column
                                                 (reset! a'n_extra (- ts (% vcol' ts) 1))
-                                                (reset! a'n_extra (+ @a'n_extra @a'vcol_off))
-                                                (reset! a'vcol (- @a'vcol @a'vcol_off))
-                                                (reset! a'vcol_off 0)
                                                 (reset! a'c_extra (byte \space))
                                             [(byte \space) mb_c false]) ;; don't draw as UTF-8
 
@@ -41393,9 +41357,9 @@
                                 ;; check if line ends before left margin
                                 ((ß @a'vcol =) (max (- (+ v @a'col) (win-col-off win)) @a'vcol))
 
-                                ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
+                                ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col @a'vcol, color_cols, a'cci)))
 
-                                (when (or (and wo_cuc (<= (- @a'vcol @a'vcol_off @a'eol_hl_off) (:w_virtcol win)) (< (:w_virtcol win) (+ (* (:w_width win) (inc (- @a'row startrow))) v)) (!= lnum (:lnum (:w_cursor win)))) @a'draw_color_col)
+                                (when (or (and wo_cuc (<= (- @a'vcol @a'eol_hl_off) (:w_virtcol win)) (< (:w_virtcol win) (+ (* (:w_width win) (inc (- @a'row startrow))) v)) (!= lnum (:lnum (:w_cursor win)))) @a'draw_color_col)
                                     ((ß int rightmost_vcol =) 0)
 
                                     ((ß rightmost_vcol =) (if wo_cuc (:w_virtcol win) rightmost_vcol))
@@ -41410,14 +41374,14 @@
                                         (.be @screenLines @a'off, (byte \space))
                                         (aset @screenLinesUC @a'off 0)
                                         ((ß @a'col =) (inc @a'col))
-                                        ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
+                                        ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col @a'vcol, color_cols, a'cci)))
 
-                                        (cond (and wo_cuc (== (- @a'vcol @a'vcol_off) (:w_virtcol win)))
+                                        (cond (and wo_cuc (== @a'vcol (:w_virtcol win)))
                                         (do
                                             (aset @screenAttrs @a'off (hl-attr HLF_CUC))
                                             ((ß @a'off =) (inc @a'off))
                                         )
-                                        (and @a'draw_color_col (== (- @a'vcol @a'vcol_off) (... color_cols @a'cci)))
+                                        (and @a'draw_color_col (== @a'vcol (... color_cols @a'cci)))
                                         (do
                                             (aset @screenAttrs @a'off (hl-attr HLF_MC))
                                             ((ß @a'off =) (inc @a'off))
@@ -41428,7 +41392,7 @@
                                             ((ß @a'off =) (inc @a'off))
                                         ))
 
-                                        (if (<= rightmost_vcol (- @a'vcol @a'vcol_off))
+                                        (if (<= rightmost_vcol @a'vcol)
                                             (ß BREAK)
                                         )
 
@@ -41451,19 +41415,19 @@
                             )
 
                             ;; advance to the next 'colorcolumn'
-                            ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
+                            ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col @a'vcol, color_cols, a'cci)))
 
                             ;; Highlight the cursor column if 'cursorcolumn' is set.
                             ;; But don't highlight the cursor position itself.
                             ;; Also highlight the 'colorcolumn' if it is different than 'cursorcolumn'.
                             ((ß int vcol_save_attr =) -1)
                             (when (and (== @a'draw_state WL_LINE) (not @a'lnum_in_visual))
-                                (cond (and wo_cuc (== (- @a'vcol @a'vcol_off) (:w_virtcol win)) (!= lnum (:lnum (:w_cursor win))))
+                                (cond (and wo_cuc (== @a'vcol (:w_virtcol win)) (!= lnum (:lnum (:w_cursor win))))
                                 (do
                                     ((ß vcol_save_attr =) @a'char_attr)
                                     ((ß @a'char_attr =) (hl-combine-attr @a'char_attr, (hl-attr HLF_CUC)))
                                 )
-                                (and @a'draw_color_col (== (- @a'vcol @a'vcol_off) (... color_cols @a'cci)))
+                                (and @a'draw_color_col (== @a'vcol (... color_cols @a'cci)))
                                 (do
                                     ((ß vcol_save_attr =) @a'char_attr)
                                     ((ß @a'char_attr =) (hl-combine-attr @a'char_attr, (hl-attr HLF_MC)))
@@ -45000,7 +44964,7 @@
 
     (init-chartab false)
 
-    (unchanged)
+    (swap! curbuf unchanged)
 
     (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
 
@@ -46811,16 +46775,7 @@
             (cond @skip_redraw
                 (reset! skip_redraw false)
             (or @do_redraw (stuff-empty))
-                (let [#_boolean lupd (and (not @finish_op) hamis (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
-                      ;; Trigger CursorMoved if the cursor moved.
-                      [#_long lold #_long lnew]
-                        (if lupd
-                            (let [lold (:lnum @last_cursormoved)
-                                  _ (reset! last_cursormoved (:w_cursor @curwin))
-                                  lnew (:lnum @last_cursormoved)]
-                                [lold lnew])
-                            [0 0])]
-                    ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
+                (do ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
                     (swap! curwin update-topline)
                     (swap! curwin validate-cursor)
                     (cond
@@ -46838,11 +46793,6 @@
                     (reset! msg_didany false)         ;; reset lines_left in msg-start()
                     (may-clear-sb-text)        ;; clear scroll-back text on next msg
                     (swap! curwin showruler false)
-                    (when (and lupd (or (!= lold lnew) hamis))
-                        (when (and (!= lold lnew) (<= lold (line-count @curbuf)))
-                            (swap! curwin update-single-line lold))
-                        (swap! curwin update-single-line lnew)
-                        (swap! curwin update :w_valid & (bit-not VALID_CROW)))
                     (swap! curwin setcursor)
                     (cursor-on)
                     (reset! do_redraw false)
