@@ -75,7 +75,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info fragnode frame lpos match matcher memline msgchunk nfa_pim nfa_state oparg pos regprog regsave regsubs soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info fragnode frame lpos match matcher memline nfa_pim nfa_state oparg pos regprog regsave regsubs soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr frag frame key_name lpos modmasktable nfa_state nfa_thread nv_cmd pos signalinfo spat termcode typebuf vimoption wline yankreg)))
 
@@ -110,7 +110,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn? set-bool-option set-num-option check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp incl dec-cursor? dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage do-check-cursorbind restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn? set-bool-option set-num-option check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp incl dec-cursor? dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage do-check-cursorbind restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -705,10 +705,8 @@
 
     NORMAL_BUSY  (+ 0x100 NORMAL),  ;; normal mode, busy with a command
     HITRETURN    (+ 0x200 NORMAL),  ;; waiting for return or command
-    ASKMORE         0x300,          ;; asking if you want --more--
     SETWSIZE        0x400,          ;; window size has changed
     SHOWMATCH    (+ 0x700 INSERT),  ;; show matching paren
-    CONFIRM         0x800,          ;; ":confirm" prompt
     SELECTMODE      0x1000)         ;; select mode, only for mappings
 
 ;; directions
@@ -992,7 +990,6 @@
 (atom! long    p_mat)       ;; 'matchtime'
 (atom! long    p_mco)       ;; 'maxcombine'
 (atom! long    p_mmp)       ;; 'maxmempattern'
-(atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
 (atom! boolean p_paste)     ;; 'paste'
 (atom! boolean p_prompt)    ;; 'prompt'
@@ -1865,7 +1862,6 @@
 (atom! boolean  need_wait_return)   ;; need to wait for return later
 (atom! boolean  did_wait_return)    ;; wait-return() was used and nothing written since then
 
-(atom! boolean  quit_more)          ;; 'q' hit at "--more--" msg
 (atom! boolean  newline_on_exit)    ;; did msg in altern. screen
 (atom! int      intr_char)          ;; extra interrupt character
 (atom! int      vgetc_busy)         ;; when inside vgetc() then > 0
@@ -2625,10 +2621,6 @@
 
 ;; message.c: functions for displaying messages on the command line -------------------------------
 
-(atom! int      confirm_msg_used)       ;; displaying "confirm_msg"
-(atom! Bytes    confirm_msg)            ;; ":confirm" message
-(atom! Bytes    confirm_msg_tail)       ;; tail of "confirm_msg"
-
 ;; When writing messages to the screen, there are many different situations.
 ;; A number of variables is used to remember the current state:
 ;; msg_didany       true when messages were written since the last time the user reacted to a prompt.
@@ -2659,7 +2651,7 @@
 ;;                  This is an allocated string or null when not used.
 
 ;; msg(s) - displays the string 's' on the status line.
-;; Return true if wait-return not called.
+;; Return true if wait-return() not called.
 
 (defn- #_boolean msg [#_Bytes s]
     (msg-attr-keep s, 0, false))
@@ -2767,7 +2759,7 @@
 ;;
 ;; Rings the bell, if appropriate, and calls message() to do the real work.
 ;;
-;; Return true if wait-return not called.
+;; Return true if wait-return() not called.
 
 (defn- #_boolean emsg [#_Bytes s]
     ;; Skip this if not giving error messages at the moment.
@@ -2784,7 +2776,7 @@
             (reset! emsg_on_display true)           ;; remember there is an error message
             (reset! msg_scroll true)                ;; don't overwrite a previous message
 
-            ;; needed in case emsg() is called after wait-return has reset need_wait_return
+            ;; needed in case emsg() is called after wait-return() has reset need_wait_return
             ;; and a redraw is expected because msg_scrolled is non-zero
             (when (non-zero? @msg_scrolled)
                 (reset! need_wait_return true))
@@ -2824,52 +2816,30 @@
                 (do (reset! cmdline_row @msg_row) win)
                 (let [#_int o'State @State
                       #_int c
-                        (if @quit_more
-                            (do (reset! quit_more false) (reset! got_int false) CAR) ;; just pretend CR was hit
-                            (do ;; Make sure the hit-return prompt is on screen when 'guioptions' was just changed.
-                                (screen-alloc false)
-                                (reset! State HITRETURN)
-                                (hit-return-msg)
-                                (let [c (loop []
-                                            ;; Remember "got_int": if it is set, vgetc() probably returns a CTRL-C, but we need to loop then.
-                                            ;; Temporarily disable Recording.  If Recording is active, the character will be recorded later,
-                                            ;; since it will be added to the typebuf after the loop.
-                                            (let [o'got_int @got_int o'Recording @Recording
-                                                _ (reset! Recording false)
-                                                ;; Don't do mappings here, we put the character back in the typeahead buffer.
-                                                _ (swap! no_mapping inc) _ (swap! allow_keys inc) c (safe-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)
-                                                _ (reset! Recording o'Recording)
-                                                _ (when o'got_int (reset! got_int false))
-                                                ;; Allow scrolling back in the messages.
-                                                ;; Also accept scroll-down commands when messages fill the screen,
-                                                ;; to avoid that typing one 'j' too many makes the messages disappear.
-                                                c (if @p_more
-                                                        (cond (any == c (byte \b) (byte \k) (byte \u) (byte \g) K_UP K_PAGEUP)
-                                                            (let [c (if (< @Rows @msg_scrolled) ;; scroll back to show older messages
-                                                                        (do (do-more-prompt c) c)
-                                                                        (do (reset! msg_didout false) (reset! msg_col 0) K_IGNORE)
-                                                                    )]
-                                                                (cond
-                                                                    @quit_more (do (reset! quit_more false) (reset! got_int false) CAR) ;; just pretend CR was hit
-                                                                    (!= c K_IGNORE) (do (hit-return-msg) K_IGNORE)
-                                                                    :else c
-                                                                ))
-                                                        (and (< (- @Rows 2) @msg_scrolled) (any == c (byte \j) (byte \d) (byte \f) K_DOWN K_PAGEDOWN))
-                                                            K_IGNORE
-                                                        :else
-                                                            c)
-                                                        c
-                                                    )]
-                                                (recur-if (or (and o'got_int (== c Ctrl_C)) (== c K_IGNORE)) [] => c))
-                                        )]
-                                    (ui-breakcheck)
-                                    (when-not (any == c (byte \return) (byte \newline) (byte \space) Ctrl_C)
-                                        ;; Put the character back in the typeahead buffer.
-                                        ;; Don't use the stuff buffer, because lmaps wouldn't work.
-                                        (ins-char-typebuf c)
-                                        (reset! do_redraw true))    ;; need a redraw even though there is typeahead
-                                    c
-                                ))
+                        (do ;; Make sure the hit-return prompt is on screen when 'guioptions' was just changed.
+                            (screen-alloc false)
+                            (reset! State HITRETURN)
+                            (hit-return-msg)
+                            (let [c (loop []
+                                        ;; Remember "got_int": if it is set, vgetc() probably returns a CTRL-C, but we need to loop then.
+                                        ;; Temporarily disable Recording.  If Recording is active, the character will be recorded later,
+                                        ;; since it will be added to the typebuf after the loop.
+                                        (let [o'got_int @got_int o'Recording @Recording
+                                              _ (reset! Recording false)
+                                              ;; Don't do mappings here, we put the character back in the typeahead buffer.
+                                              _ (swap! no_mapping inc) _ (swap! allow_keys inc) c (safe-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)
+                                              _ (reset! Recording o'Recording)]
+                                            (when o'got_int
+                                                (reset! got_int false))
+                                            (recur-if (or (and o'got_int (== c Ctrl_C)) (== c K_IGNORE)) [] => c))
+                                    )]
+                                (ui-breakcheck)
+                                (when-not (any == c (byte \return) (byte \newline) (byte \space) Ctrl_C)
+                                    ;; Put the character back in the typeahead buffer.
+                                    ;; Don't use the stuff buffer, because lmaps wouldn't work.
+                                    (ins-char-typebuf c)
+                                    (reset! do_redraw true))    ;; need a redraw even though there is typeahead
+                                c)
                         )]
                     ;; If the user hits ':', '?' or '/' we get a command line from the next line.
                     (when (any == c (byte \:) (byte \?) (byte \/))
@@ -2905,15 +2875,13 @@
 ;; Write the hit-return prompt.
 
 (defn- #_void hit-return-msg []
-    (let [o'p_more @p_more _ (reset! p_more false)] ;; don't want see this message when scrolling back
-        (when @msg_didout
-            (msg-putchar (byte \newline)))          ;; start on a new line
-        (when @got_int
-            (msg-puts (u8 "Interrupt: ")))
-        (msg-puts-attr (u8 "Press ENTER or type command to continue"), (hl-attr HLF_R))
-        (when (not (msg-use-printf))
-            (msg-clr-eos))
-        (reset! p_more o'p_more))
+    (when @msg_didout
+        (msg-putchar (byte \newline)))          ;; start on a new line
+    (when @got_int
+        (msg-puts (u8 "Interrupt: ")))
+    (msg-puts-attr (u8 "Press ENTER or type command to continue"), (hl-attr HLF_R))
+    (when (not (msg-use-printf))
+        (msg-clr-eos))
     nil)
 
 ;; Set "keep_msg" to "s".  Free the old value and check for null pointer.
@@ -3063,7 +3031,7 @@
 
 (defn- #_void msg-puts-attr-len [#_Bytes str, #_int maxlen, #_int attr]
     ;; When writing something to the screen after it has scrolled, requires
-    ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
+    ;; a wait-return() prompt later.  Needed when scrolling, resetting need_wait_return
     ;; after some prompt, and then outputting something without scrolling.
 
     (when (and (non-zero? @msg_scrolled) (not @msg_scrolled_ign))
@@ -3085,8 +3053,7 @@
 
 (defn- #_void msg-puts-display [#_Bytes str, #_int maxlen, #_int attr, #_boolean recurse]
     (reset! did_wait_return false)
-    (let-when [a'sb_str (atom (#_Bytes object str)) a'sb_col (atom (int @msg_col))
-          [#_int t_col #_Bytes t_s #_Bytes s :as _]
+    (let-when [[#_int t_col #_Bytes t_s #_Bytes s :as _]
             (loop-when [t_col 0 t_s str s str] (and (or (< maxlen 0) (< (BDIFF s, str) maxlen)) (non-eos? s)) => [t_col t_s s]
                 ;; We are at the end of the screen line when: outputting a newline; outputting a character in the last column.
                 (let [[t_col s _]
@@ -3117,25 +3084,18 @@
                                                         [(screen-puts-mbyte s, len, attr) true])
                                                     [s false]
                                                 )]
-                                            (when @p_more ;; store text for scrolling back
-                                                (store-sb-text a'sb_str, s, attr, a'sb_col, true))
-                                            (inc-msg-scrolled)
-                                            (reset! need_wait_return true)    ;; may need wait-return in main()
+                                            (swap! msg_scrolled inc)
+                                            (reset! need_wait_return true)    ;; may need wait-return() in main()
                                             (when (< @must_redraw VALID)
                                                 (reset! must_redraw VALID))
                                             (reset! redraw_cmdline true)
                                             (when (< 0 @cmdline_row)
                                                 (swap! cmdline_row dec))
-                                            ;; If screen is completely filled and 'more' is set then wait for a character.
+                                            ;; If screen is completely filled and 'more' is set, then wait for a character.
                                             (when (< 0 @lines_left)
                                                 (swap! lines_left dec))
-                                            (let-when [[s _]
-                                                (if (and @p_more (zero? @lines_left) (!= @State HITRETURN) (not @msg_no_more))
-                                                    [(if (do-more-prompt NUL) @confirm_msg_tail s) (when @quit_more :return)]
-                                                    [s nil]
-                                                )] (nil? _) => [t_col s _]
-                                                ;; When we displayed a char in last column need to check if there is still more.
-                                                [t_col s (when did_last_char :continue)])
+                                            ;; When we displayed a char in last column need to check if there is still more.
+                                            [t_col s (when did_last_char :continue)]
                                         ))
                                 ))
                             [t_col s nil]
@@ -3147,30 +3107,27 @@
                         (let [#_boolean wrap (or (at? s (byte \newline)) (<= @Cols (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec @Cols) (+ @msg_col t_col))))
                               ;; output any postponed text
                               t_col (if (and (< 0 t_col) (or wrap (any == (.at s 0) (byte \return) (byte \backspace) TAB BELL))) (t-puts t_col, t_s, s, attr) t_col)
-                              ;; store text for scrolling back
-                              _ (when (and wrap @p_more (not recurse))
-                                    (store-sb-text a'sb_str, s, attr, a'sb_col, true))
-                              [t_col t_s s] (let [_ [t_col t_s (.plus s 1)]]
+                              [t_col t_s s] (let [t* [t_col t_s (.plus s 1)]]
                                 (condp == (.at s 0)
                                     (byte \newline)                                 ;; go to next line
                                         (do (reset! msg_didout false)               ;; remember that line is empty
                                             (reset! msg_col 0)
                                             (when (<= @Rows (swap! msg_row inc))    ;; safety check
                                                 (reset! msg_row (dec @Rows)))
-                                            _)
+                                            t*)
                                     (byte \return)                                  ;; go to column 0
                                         (do (reset! msg_col 0)
-                                            _)
+                                            t*)
                                     (byte \backspace)                               ;; go to previous char
                                         (do (when (< 0 @msg_col)
                                                 (swap! msg_col dec))
-                                            _)
+                                            t*)
                                     TAB                                             ;; translate Tab into spaces
                                         (do (loop [] (msg-screen-putchar (byte \space), attr) (recur-if (non-zero? (& @msg_col 7)) []))
-                                            _)
+                                            t*)
                                     BELL                                            ;; beep (from ":sh")
                                         (do (beep)
-                                            _)
+                                            t*)
                                     (let [#_int cells (us-ptr2cells s)
                                           #_int len (if (<= 0 maxlen) ;; avoid including composing chars after the end
                                                 (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s))
@@ -3193,8 +3150,6 @@
         ;; output any postponed text
         (when (pos? t_col)
             (t-puts t_col, t_s, s, attr))
-        (when (and @p_more (not recurse))
-            (store-sb-text a'sb_str, s, attr, a'sb_col, false))
         (msg-check))
     nil)
 
@@ -3217,113 +3172,6 @@
                 (screen-fill (- rows 2), (- rows 1), (- cols 1), cols, (byte \space), (byte \space), 0))
         ))
     nil)
-
-;; Increment "msg_scrolled".
-
-(defn- #_void inc-msg-scrolled []
-    (swap! msg_scrolled inc)
-    nil)
-
-;; To be able to scroll back at the "more" and "hit-enter" prompts we need to
-;; store the displayed text and remember where screen lines start.
-
-(class! #_final msgchunk_C
-    [
-        (field msgchunk_C   sb_next)
-        (field msgchunk_C   sb_prev)
-        (field boolean      sb_eol)         ;; true when line ends after this text
-        (field int          sb_msg_col)     ;; column in which text starts
-        (field int          sb_attr)        ;; text attributes
-        (field Bytes        sb_text)        ;; text to be displayed, actually longer
-    ])
-
-(atom! msgchunk_C last_msgchunk)    ;; last displayed text
-
-(atom! boolean do_clear_sb_text)    ;; clear text on next msg
-
-;; Store part of a printed message for displaying when scrolling back.
-
-(defn- #_void store-sb-text [#_Bytes' a'sb_str, #_Bytes s, #_int attr, #_int' a'sb_col, #_boolean finish]
-    ;; sb_str: start of string
-    ;; s: just after string
-    ;; finish: line ends
-    (§
-        (when @do_clear_sb_text
-            (clear-sb-text)
-            (reset! do_clear_sb_text false)
-        )
-
-        (cond (BLT @a'sb_str, s)
-        (do
-            ((ß msgchunk_C mp =) (NEW_msgchunk_C))
-
-            ((ß mp =) (assoc mp :sb_eol finish))
-            ((ß mp =) (assoc mp :sb_msg_col @a'sb_col))
-            ((ß mp =) (assoc mp :sb_attr attr))
-            ((ß mp =) (assoc mp :sb_text (STRNDUP @a'sb_str, (BDIFF s, @a'sb_str))))
-
-            (cond (nil? @last_msgchunk)
-            (do
-                (reset! last_msgchunk mp)
-                ((ß mp =) (assoc mp :sb_prev nil))
-            )
-            :else
-            (do
-                ((ß mp =) (assoc mp :sb_prev @last_msgchunk))
-                (swap! last_msgchunk assoc :sb_next mp)
-                (reset! last_msgchunk mp)
-            ))
-            ((ß mp =) (assoc mp :sb_next nil))
-        )
-        (and finish (some? @last_msgchunk))
-        (do
-            (swap! last_msgchunk assoc :sb_eol true)
-        ))
-
-        (reset! a'sb_str s)
-        (reset! a'sb_col 0)
-        nil
-    ))
-
-;; Finished showing messages, clear the scroll-back text on the next message.
-
-(defn- #_void may-clear-sb-text []
-    (reset! do_clear_sb_text true)
-    nil)
-
-;; Clear any text remembered for scrolling back.
-;; Called when redrawing the screen.
-
-(defn- #_void clear-sb-text []
-    (reset! last_msgchunk nil)
-    nil)
-
-;; "g<" command.
-
-(defn- #_window_C show-sb-text [#_window_C win]
-    ;; Only show something if there is more than one line, otherwise it looks weird.
-    ;; Typing a command without output results in one line.
-    (let-when [#_msgchunk_C mp (msg-sb-start @last_msgchunk)] (and (some? mp) (some? (:sb_prev mp))) => (do (beep) win)
-        (do-more-prompt (byte \G))
-        (wait-return win, FALSE)
-    ))
-
-;; Move to the start of screen line in already displayed text.
-
-(defn- #_msgchunk_C msg-sb-start [#_msgchunk_C mp]
-    (loop-when-recur mp (and (some? mp) (some? (:sb_prev mp)) (not (:sb_eol (:sb_prev mp)))) (:sb_prev mp) => mp))
-
-;; Display a screen line from previously displayed text at row "row".
-;; Returns a pointer to the text for the next line (can be null).
-
-(defn- #_msgchunk_C disp-sb-line [#_int row, #_msgchunk_C mp]
-    (loop [mp mp]
-        (reset! msg_row row)
-        (reset! msg_col (:sb_msg_col mp))
-        (let [#_Bytes p (:sb_text mp) p (if (at? p (byte \newline)) (.plus p 1) p)] ;; don't display the line break
-            (msg-puts-display p, -1, (:sb_attr mp), true))
-        (recur-if (and (not (:sb_eol mp)) (some? (:sb_next mp))) (:sb_next mp) => (:sb_next mp))
-    ))
 
 ;; Output any postponed text for msg-puts-attr-len().
 
@@ -3366,178 +3214,27 @@
     (reset! msg_didout true) ;; assume that line is not empty
     nil)
 
-;; Show the more-prompt and handle the user response.
-;; This takes care of scrolling back and displaying previously displayed text.
-;; When at hit-enter prompt, "typed_char" is the already typed character, otherwise it's NUL.
-;; Returns true when jumping ahead to "confirm_msg_tail".
-
-(defn- #_boolean do-more-prompt [#_int typed_char] ;; was typed at hit-enter prompt
-    (let [#_msgchunk_C lm
-            (when (== typed_char (byte \G)) ;; "g<": Find first line on the last page.
-                (loop-when-recur [#_int i 0 lm (msg-sb-start @last_msgchunk)]
-                                 (and (< i (- @Rows 2)) (some? lm) (some? (:sb_prev lm)))
-                                 [(inc i) (msg-sb-start (:sb_prev lm))]
-                              => lm))
-          #_int state' @State _ (reset! State ASKMORE)
-          _ (when (== typed_char NUL) (msg-moremsg false))
-          #_boolean ask?
-            (loop [#_int tc typed_char lm lm ask? false]
-                ;; Get a typed character directly from the user.
-                (let-when [#_int c (if (!= tc NUL) tc (get-keystroke)) tc NUL
-                      esc- (fn [ask?]
-                        (let [ask? (or (non-zero? @confirm_msg_used) ;; Jump to the choices of the dialog.
-                                       (do (reset! got_int true)
-                                           (reset! quit_more true)
-                                           ask?)
-                                   )]
-                            ;; When there is some more output (wrapping line), display that without another prompt.
-                            (reset! lines_left (dec @Rows))
-                            [0 ask?]
-                        ))
-                      [#_int sl ask? :as _]
-                        (condp ==? c
-                           [BS K_BS (byte \k) K_UP] [-1 ask?]               ;; scroll one line back
-                           [CAR NL (byte \j) K_DOWN] [1 ask?]               ;; one extra line
-
-                            (byte \u) [(- (/ @Rows 2)) ask?]                ;; up half a page
-                            (byte \d) [   (/ @Rows 2)  ask?]                ;; down half a page
-
-                           [              (byte \b) K_PAGEUP  ] [(- (dec @Rows)) ask?]  ;; one page back
-                           [(byte \space) (byte \f) K_PAGEDOWN] [   (dec @Rows)  ask?]  ;; one extra page
-
-                            (byte \g) [                  -999999  ask?]     ;; all the way back to the start
-                            (byte \G) [(reset! lines_left 999999) ask?]     ;; all the way to the end
-
-                            (byte \:)                                       ;; start new command line
-                                (do (when (zero? @confirm_msg_used)
-                                        ;; Since got_int is set all typeahead will be flushed, but
-                                        ;; we want to keep this ':', remember that in a special way.
-                                        (typeahead-noflush (byte \:))
-                                        (reset! cmdline_row (dec @Rows))    ;; put ':' on this line
-                                        (reset! skip_redraw true)           ;; skip redraw once
-                                        (reset! need_wait_return false))    ;; don't wait in main()
-                                    (esc- ask?))
-
-                           [(byte \q) Ctrl_C ESC] (esc- ask?)               ;; quit
-
-                            ;; Strange way to allow copying (yanking) a modeless selection at the more prompt.
-                            ;; Use CTRL-Y, because the same is used in Cmdline-mode and at the hit-enter prompt.
-                            ;; However, scrolling one line up might be expected...
-                            Ctrl_Y
-                                nil	;; %% not yet
-
-                            (do (msg-moremsg true) ;; no valid response
-                                nil))
-
-                ] (some? _) => (recur tc lm ask?)
-
-                    (if (zero? sl)
-                        ask?
-                        (let [[lm sl]
-                                (cond (< sl 0) ;; go to start of last line ;; go to start of line at top of the screen
-                                    (let-when [#_msgchunk_C m (cond (nil? lm) (msg-sb-start @last_msgchunk) (some? (:sb_prev lm)) (msg-sb-start (:sb_prev lm)))
-                                               m (loop-when-recur [#_int i 0 m m]
-                                                                   (and (< i (- @Rows 2)) (some? m) (some? (:sb_prev m)))
-                                                                   [(inc i) (msg-sb-start (:sb_prev m))]
-                                                                => m)
-                                    ] (and (some? m) (some? (:sb_prev m))) => [lm sl]
-                                        (let [[m lm] ;; Find line to be displayed at top.
-                                                (loop-when [#_int i 0 m m lm lm] (and (< sl i) (some? m) (some? (:sb_prev m))) => [m lm]
-                                                    (recur (dec i) (msg-sb-start (:sb_prev m)) (msg-sb-start (if (nil? lm) @last_msgchunk (:sb_prev lm))))
-                                                )]
-                                            (if (and (== sl -1) (screen-ins-lines 0, 0, 1, @Rows, nil))
-                                                (disp-sb-line 0, m) ;; display line at top
-                                                (do (screen-clear) ;; redisplay all lines
-                                                    (loop-when [#_int i 0 m m] (and (some? m) (< i (dec @Rows)))
-                                                        (let [m (disp-sb-line i, m)] (swap! msg_scrolled inc) (recur (inc i) m)))
-                                                ))
-                                            [lm 0]))
-                                :else
-                                    ;; First display any text that we scrolled back.
-                                    (loop-when [lm lm sl sl] (and (< 0 sl) (some? lm)) => [lm sl]
-                                        (msg-scroll-up) ;; scroll up, display line at bottom
-                                        (inc-msg-scrolled)
-                                        (screen-fill (- @Rows 2), (dec @Rows), 0, @Cols, (byte \space), (byte \space), 0)
-                                        (recur (disp-sb-line (- @Rows 2), lm) (dec sl)))
-                                )]
-                            (if (<= sl 0)
-                                (do ;; displayed the requested text, more prompt again
-                                    (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
-                                    (msg-moremsg false)
-                                    (recur tc lm ask?))
-                                (do (reset! lines_left sl)
-                                    ask?)
-                            ))
-                    ))
-            )]
-        ;; clear the --more-- message
-        (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
-        (reset! State state')
-        (when @quit_more
-            (reset! msg_row (dec @Rows))
-            (reset! msg_col 0))
-        ask?
-    ))
-
 ;; Put a character on the screen at the current message position and advance to the next position.
 ;; Only for printable ASCII!
 
 (defn- #_void msg-screen-putchar [#_int c, #_int attr]
-    (reset! msg_didout true)          ;; remember that line is not empty
+    (reset! msg_didout true) ;; remember that line is not empty
     (screen-putchar c, @msg_row, @msg_col, attr)
     (when (<= @Cols (swap! msg_col inc))
         (reset! msg_col 0)
         (swap! msg_row inc))
     nil)
 
-(defn- #_void msg-moremsg [#_boolean full]
-    (let [#_Bytes more (u8 "-- More --") #_int attr (hl-attr HLF_M)]
-        (screen-puts more, (dec @Rows), 0, attr)
-        (when full
-            (screen-puts (u8 " SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (dec @Rows), (mb-string2cells more), attr)))
-    nil)
-
-;; Repeat the message for the current mode: ASKMORE or CONFIRM.
-
-(defn- #_void repeat-message []
-    (cond (== @State ASKMORE)
-    (do
-        (msg-moremsg true)      ;; display --more-- message again
-        (reset! msg_row (dec @Rows))
-    )
-    (== @State CONFIRM)
-    (do
-        (display-confirm-msg)  ;; display ":confirm" message again
-        (reset! msg_row (dec @Rows))
-    )
-    (any == @State HITRETURN SETWSIZE)
-    (do
-        (when (== @msg_row (dec @Rows))
-            ;; Avoid drawing the "hit-enter" prompt below the previous one,
-            ;; overwrite it.  Esp. useful when regaining focus and a
-            ;; FocusGained autocmd exists but didn't draw anything.
-            (reset! msg_didout false)
-            (reset! msg_col 0)
-            (msg-clr-eos)
-        )
-        (hit-return-msg)
-        (reset! msg_row (dec @Rows))
-    ))
-    nil)
-
-;; msg-check-screen - check if the screen is initialized.
+;; Check if the screen is initialized.
 ;; Also check msg_row and msg_col, if they are too big it may cause a crash.
 ;; While starting the GUI the terminal codes will be set for the GUI, but the
 ;; output goes to the terminal.  Don't use the terminal codes then.
 
 (defn- #_boolean msg-check-screen []
-    (if (and @full_screen (screen-valid false))
-        (do
-            (swap! msg_row min (dec @Rows))
+    (and (and @full_screen (screen-valid false))
+        (do (swap! msg_row min (dec @Rows))
             (swap! msg_col min (dec @Cols))
-            true
-        )
-        false
+            true)
     ))
 
 ;; Clear from current message position to end of screen.
@@ -3551,20 +3248,16 @@
 ;; Note: msg_col is not updated, so we remember the end of the message for msg-check().
 
 (defn- #_void msg-clr-eos-force []
-    (cond (msg-use-printf)
-    (do
-        (when @full_screen        ;; only when termcap codes are valid
+    (if (msg-use-printf)
+        (when @full_screen ;; only when termcap codes are valid
             (cond
                 (non-eos? @T_CD) (out-str @T_CD)  ;; clear to end of display
                 (non-eos? @T_CE) (out-str @T_CE)  ;; clear to end of line
-            )
-        )
-    )
-    :else
-    (do
-        (screen-fill @msg_row, (inc @msg_row), @msg_col, @Cols, (byte \space), (byte \space), 0)
-        (screen-fill (inc @msg_row), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
-    ))
+            ))
+        (do
+            (screen-fill @msg_row, (inc @msg_row), @msg_col, @Cols, (byte \space), (byte \space), 0)
+            (screen-fill (inc @msg_row), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
+        ))
     nil)
 
 ;; Clear the command line.
@@ -3576,8 +3269,8 @@
     nil)
 
 ;; End putting a message on the screen.
-;; Call wait-return if the message does not fit in the available space.
-;; Return true if wait-return not called.
+;; Call wait-return() if the message does not fit in the available space.
+;; Return true if wait-return() not called.
 
 (defn- #_boolean msg-end []
     ;; If the string is larger than the window, or the ruler option is set and we run into it, we have to redraw the window.
@@ -3611,16 +3304,6 @@
     (reset! msg_col 0)
 
     (swap! no_wait_return dec)
-    nil)
-
-;; Display the ":confirm" message.  Also called when screen resized.
-
-(defn- #_void display-confirm-msg []
-    ;; avoid that 'q' at the more prompt truncates the message here
-    (swap! confirm_msg_used inc)
-    (when (some? @confirm_msg)
-        (msg-puts-attr @confirm_msg, (hl-attr HLF_M)))
-    (swap! confirm_msg_used dec)
     nil)
 
 ;; Code to handle user-settable options.  This is all pretty much table-
@@ -3777,7 +3460,6 @@
         (long-opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       0,          2),
         (long-opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000),
         (bool-opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     nil,         PV_MOD,     false),
-        (bool-opt (u8 "more"),            nil,             0,                           p_more,      0,          true),
         (utf8-opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            nil,         PV_NF,     (u8 "octal,hex")),
         (bool-opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      nil,         PV_NU,      false),
         (long-opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      nil,         PV_NUW,     4),
@@ -4060,7 +3742,7 @@
                         (eos! @ioBuff (+ i (BDIFF arg, startarg))))
                     ;; make sure all characters are printable
                     (trans-characters @ioBuff, IOSIZE)
-                    (swap! no_wait_return inc)  ;; wait-return done later
+                    (swap! no_wait_return inc)  ;; wait-return() done later
                     (emsg @ioBuff)              ;; show error highlighted
                     (swap! no_wait_return dec)
                 false)
@@ -5456,7 +5138,7 @@
         (when (<= firstc 0)
             (swap! ccline assoc :cmdspos 0))
         (let [#_int i @msg_scrolled]
-            (reset! msg_scrolled 0) ;; avoid wait-return message
+            (reset! msg_scrolled 0) ;; avoid wait-return() message
             (gotocmdline true)
             (swap! msg_scrolled + i)
             (redrawcmdprompt)
@@ -5485,7 +5167,6 @@
               a'some_key_typed (atom (boolean false))       ;; one of the keys was typed
               ;; Collect the command string, handling editing keys.
               win (loop [win win]
-                    (reset! quit_more false) ;; reset after CTRL-D which had a more-prompt
                     (cursorcmd)              ;; set the cursor on the right spot
                     ;; Get a character.
                     ;; Ignore K_IGNORE, it should not do anything.
@@ -5952,7 +5633,7 @@
                 ;; If the line is too long, clear it, so ruler and shown command do not get printed in the middle of it.
                 (msg-check)
                 (reset! msg_scroll o'msg_scroll)
-                ;; When the command line was typed, no need for a wait-return prompt.
+                ;; When the command line was typed, no need for a wait-return() prompt.
                 (when @a'some_key_typed
                     (reset! need_wait_return false))
                 (reset! State o'State)
@@ -6478,7 +6159,7 @@
                                 (reset! msg_didout true))
                             (let [cmdline (when use_getline (getexline))]
                                 (if (nil? cmdline)
-                                    (do ;; Don't call wait-return for aborted command line.  The null
+                                    (do ;; Don't call wait-return() for aborted command line.  The null
                                         ;; returned for the end of a sourced file or executed function
                                         ;; doesn't do this.
                                         (when @keyTyped
@@ -6554,7 +6235,7 @@
                 (do (reset! need_wait_return false)
                     (reset! msg_didany false)) ;; don't wait when restarting edit
             @need_wait_return
-                (do ;; The msg-start() above clears msg_didout.  The wait-return we do here
+                (do ;; The msg-start() above clears msg_didout.  The wait-return() we do here
                     ;; should not overwrite the command that may be shown before doing that.
                     (swap! msg_didout | @a'did_out)
                     (swap! curwin wait-return FALSE))
@@ -6760,12 +6441,9 @@
                                                     ;; swap ea.line1 with ea.line2, so it's forwards again.
                                                     (let-when [[ea abort]
                                                             (if (< (:line2 ea) (:line1 ea))
-                                                                (cond verbose
+                                                                (if verbose
                                                                     (do (reset! a'errormsg (u8 "E493: Backwards range given"))
                                                                         [ea :abort])
-                                                                (!= (ask-yesno (u8 "Backwards range given, OK to swap"), false) (byte \y))
-                                                                    [ea :abort]
-                                                                :else
                                                                     [(assoc ea :line1 (:line2 ea) :line2 (:line1 ea)) nil])
                                                                 [ea nil])
                                                     ] (not abort) => [ea abort]
@@ -9955,9 +9633,6 @@
         (byte \8)
             [(if (== (:count0 cap) 8) (utf-find-illegal win) (do (show-utf8 win) win)) cap]
 
-        (byte \<)
-            [(show-sb-text win) cap]
-
         ;; "gg": Goto the first line in file.
         ;;       With a count it goes to that line number like for "G".
 
@@ -11474,12 +11149,7 @@
                                             [(assoc oap :regname 0) (or ? done?)])
                                         [oap done?]
                                     )]
-                                ;; If there's too much stuff to fit in the yank register, then get a
-                                ;; confirmation before doing the delete.  This is crude, but simple.
-                                ;; It avoids doing a delete of something we can't put back if we want.
-                                (if (and (not done?) (!= (ask-yesno (u8 "cannot yank; delete anyway"), true) (byte \y)))
-                                    (do (emsg e_abort) [oap false])
-                                    [oap nil])
+                                [oap (when (not done?) (emsg e_abort) false)]
                             ))
                         [oap nil]
                     )] (nil? _) => [oap _]
@@ -13359,8 +13029,6 @@
 (atom! buffheader_C old_redobuff    (NEW_buffheader_C))
 (atom! buffheader_C recordbuff      (NEW_buffheader_C))
 
-(atom! int typeahead_char)      ;; typeahead char that's not flushed
-
 ;; When block_redo is true redo buffer will not be changed;
 ;; used by edit() to repeat insertions and 'V' command for redoing.
 
@@ -13544,12 +13212,6 @@
 
 (defn- #_boolean stuff-empty []
     (and (nil? (:bb_next (:bh_first @readbuf1))) (nil? (:bb_next (:bh_first @readbuf2)))))
-
-;; Set a typeahead character that won't be flushed.
-
-(defn- #_void typeahead-noflush [#_int c]
-    (reset! typeahead_char c)
-    nil)
 
 ;; Remove the contents of the stuff buffer and the mapped characters
 ;; in the typeahead buffer (used in case of an error).
@@ -14086,9 +13748,7 @@
                   a'mode_deleted (atom (boolean false)) ;; set when mode has been deleted
                   #_int c (loop []
                     ;; Get a character: 1. from the stuffbuffer.
-                    (let [c (if (non-zero? @typeahead_char)
-                                (let [c @typeahead_char] (when advance (reset! typeahead_char 0)) c)
-                                (char_u (read-readbuffers advance)))
+                    (let [c (char_u (read-readbuffers advance))
                           c (if (and (!= c NUL) (not @got_int))
                                 (do (when advance
                                         ;; keyTyped = false;
@@ -20536,7 +20196,7 @@
 
 (ß
 ;   static abstract class fptr_C
-    (§
+    (ß
 ;       public abstract fptr_C flip(int[] d, int c);
     ))
 
@@ -31876,36 +31536,8 @@
         ))
     nil)
 
-;; Ask for a reply from the user, a 'y' or a 'n'.
-;; No other characters are accepted, the message is repeated until a valid reply is entered or CTRL-C is hit.
-;; If "direct" is true, don't use vgetc() but ui-inchar(), don't get characters from any buffers but directly from the user.
-;;
-;; Answer 'y' or 'n'.
-
-(defn- #_int ask-yesno [#_Bytes q, #_boolean direct]
-    (let [_ @State]
-        (when @exiting                          ;; put terminal in raw mode for this question
-            (settmode TMODE_RAW))
-        (swap! no_wait_return inc)
-        (reset! State CONFIRM)                  ;; mouse behaves like with :confirm
-        (swap! no_mapping inc)
-        (swap! allow_keys inc)                  ;; no mapping here, but recognize keys
-        (let [#_int c (loop-when [c (byte \space)] (and (!= c (byte \y)) (!= c (byte \n))) => c
-                        (smsg-attr (hl-attr HLF_R), (u8 "%s (y/n)?"), q) ;; same highlighting as for wait-return
-                        (let [c (if direct (get-keystroke) (plain-vgetc)) c (if (any == c Ctrl_C ESC) (byte \n) c)]
-                            (msg-putchar c)     ;; show what you typed
-                            (out-flush)
-                            (recur c))
-                    )]
-            (swap! no_wait_return dec)
-            (reset! State _)
-            (swap! no_mapping dec)
-            (swap! allow_keys dec)
-        c)
-    ))
-
 ;; Get a key stroke directly from the user.
-;; Ignores mouse clicks and scrollbar events, except a click for the left button (used at the more prompt).
+;;
 ;; Doesn't use vgetc(), because it syncs undo and eats mapped characters.
 ;; Disadvantage: typeahead is ignored.
 ;; Translates the interrupt character for unix to ESC.
@@ -34483,9 +34115,7 @@
                 ;; screen-alloc() (also invoked from screen-clear()).  That is because
                 ;; the "_2_busy" check above may skip this, but not screen-alloc().
 
-                (if (any == @State ASKMORE CONFIRM)
-                    (screen-start)     ;; don't know where cursor is now
-                    (screen-clear))
+                (screen-clear)
 
                 (when (!= @starting NO_SCREEN)
                     (swap! curwin changed-line-abv-curs)
@@ -34497,28 +34127,20 @@
                     ;; - Otherwise, redraw right now, and position the cursor.
                     ;; Always need to call update-screen() or screen-alloc(), to make sure Rows/Cols and the size of screenLines[] is correct!
 
-                    (cond (any == @State ASKMORE CONFIRM)
+                    (when @(:wo_scb (:w_options @curwin))
+                        (swap! curwin do-check-scrollbind true))
+
+                    (cond (flag? @State CMDLINE)
                     (do
-                        (screen-alloc false)
-                        (repeat-message)
+                        (update-screen NOT_VALID)
+                        (redrawcmdline)
                     )
                     :else
                     (do
-                        (when @(:wo_scb (:w_options @curwin))
-                            (swap! curwin do-check-scrollbind true))
-
-                        (cond (flag? @State CMDLINE)
-                        (do
-                            (update-screen NOT_VALID)
-                            (redrawcmdline)
-                        )
-                        :else
-                        (do
-                            (swap! curwin update-topline)
-                            (update-screen NOT_VALID)
-                            (when (redrawing)
-                                (swap! curwin setcursor))
-                        ))
+                        (swap! curwin update-topline)
+                        (update-screen NOT_VALID)
+                        (when (redrawing)
+                            (swap! curwin setcursor))
                     ))
 
                     (cursor-on)        ;; redrawing may have switched it off
@@ -41826,7 +41448,7 @@
     (let [#_oparg_C oa (NEW_oparg_C)]                       ;; operator arguments
         (loop-when oa (or (not cmdwin) (zero? @cmdwin_result))
             (when (stuff-empty)
-                (when @need_wait_return                     ;; if wait-return still needed ...
+                (when @need_wait_return                     ;; if wait-return() still needed ...
                     (swap! curwin wait-return FALSE))       ;; ... call it now
                 (when (and @need_start_insertmode (goto-im) (not @VIsual_active))
                     (reset! need_start_insertmode false)
@@ -41837,11 +41459,9 @@
             ;; For ":g/pat/vi" we reset "got_int" when used once.
             ;; When used a second time we go back to Ex mode and abort the ":g" command.
             (when @got_int
-                (when (not @quit_more)
-                    (vgetc))                ;; flush all buffers
+                (vgetc) ;; flush all buffers
                 (reset! got_int false))
             (reset! msg_scroll false)
-            (reset! quit_more false)
             ;; If skip redraw is set (for ":" in wait-return()), don't redraw now.
             ;; If there is nothing in the stuff_buffer or do_redraw is true, update cursor and redraw.
             (cond @skip_redraw
@@ -41863,7 +41483,6 @@
                     (reset! emsg_on_display false)    ;; can delete error message now
                     (reset! did_emsg false)
                     (reset! msg_didany false)         ;; reset lines_left in msg-start()
-                    (may-clear-sb-text)        ;; clear scroll-back text on next msg
                     (swap! curwin showruler false)
                     (swap! curwin setcursor)
                     (cursor-on)
@@ -41945,7 +41564,7 @@
     (when (and (or @did_emsg @msg_didout) (non-eos? @T_TI))
         (reset! newline_on_exit true))
 
-    ;; When done something that is not allowed or error message call wait-return.
+    ;; When done something that is not allowed or error message call wait-return().
     ;; This must be done before start-termcap(), because it may switch to another screen.
     ;; It must be done after settmode(TMODE_RAW), because we want to react on a single key stroke.
     ;; Call settmode and start-termcap here, so the T_KS and T_TI may be defined by set-term().
