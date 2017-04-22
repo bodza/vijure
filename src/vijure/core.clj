@@ -3424,7 +3424,7 @@
     ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
     ;; after some prompt, and then outputting something without scrolling
 
-    (if (and (non-zero? @msg_scrolled) (not @msg_scrolled_ign))
+    (when (and (non-zero? @msg_scrolled) (not @msg_scrolled_ign))
         (reset! need_wait_return true))
     (reset! msg_didany true)          ;; remember that something was outputted
 
@@ -3442,176 +3442,149 @@
 ;; May be called recursively to display scroll-back text.
 
 (defn- #_void msg-puts-display [#_Bytes str, #_int maxlen, #_int attr, #_boolean recurse]
-    (§
-        ((ß Bytes s =) str)
-        ((ß Bytes t_s =) str)       ;; string from "t_s" to "s" is still todo
-        ((ß int t_col =) 0)          ;; screen cells todo, 0 when "t_s" not used
-        ((ß Bytes[] a'sb_str =) (atom (#_Bytes object str)))
-        ((ß int[] a'sb_col =) (atom (int @msg_col)))
+    (reset! did_wait_return false)
+    (let-when [a'sb_str (atom (#_Bytes object str)) a'sb_col (atom (int @msg_col))
+          [#_int t_col #_Bytes t_s #_Bytes s :as _]
+            (loop-when [t_col 0 t_s str s str] (and (or (< maxlen 0) (< (BDIFF s, str) maxlen)) (non-eos? s)) => [t_col t_s s]
+                ;; We are at the end of the screen line when: outputting a newline; outputting a character in the last column.
+                (let [[t_col s _]
+                        (if (and (not recurse)
+                                 (<= (dec @Rows) @msg_row)
+                                 (or (at? s (byte \newline))
+                                     (<= (dec @Cols) (+ @msg_col t_col))
+                                     (and (at? s TAB) (<= (& (dec @Cols) (bit-not 7)) (+ @msg_col t_col)))
+                                     (and (< 1 (us-ptr2cells s)) (<= (- @Cols 2) (+ @msg_col t_col)))))
+                                  ;; output any postponed text
+                            (let [t_col (if (< 0 t_col) (t-puts t_col, t_s, s, attr) t_col)]
+                                ;; When no more prompt and no more room, truncate here.
+                                (if (and @msg_no_more (zero? @lines_left))
+                                    [t_col s :break]
+                                    (do ;; Scroll the screen up one line.
+                                        (msg-scroll-up)
+                                        (reset! msg_row (- @Rows 2))
+                                        (when (<= @Cols @msg_col)     ;; can happen after screen resize
+                                            (reset! msg_col (dec @Cols)))
+                                        ;; Display char in last column before showing more-prompt.
+                                        (let [[s #_boolean did_last_char]
+                                                (if (<= (byte \space) (.at s 0))
+                                                    (let [#_int len
+                                                            (if (<= 0 maxlen) ;; avoid including composing chars after the end
+                                                                (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s))
+                                                                (us-ptr2len-cc s)
+                                                            )]
+                                                        [(screen-puts-mbyte s, len, attr) true])
+                                                    [s false]
+                                                )]
+                                            (when @p_more ;; store text for scrolling back
+                                                (store-sb-text a'sb_str, s, attr, a'sb_col, true))
+                                            (inc-msg-scrolled)
+                                            (reset! need_wait_return true)    ;; may need wait-return in main()
+                                            (when (< @must_redraw VALID)
+                                                (reset! must_redraw VALID))
+                                            (reset! redraw_cmdline true)
+                                            (when (< 0 @cmdline_row)
+                                                (swap! cmdline_row dec))
+                                            ;; If screen is completely filled and 'more' is set then wait for a character.
+                                            (when (< 0 @lines_left)
+                                                (swap! lines_left dec))
+                                            (let-when [[s _]
+                                                (if (and @p_more (zero? @lines_left) (!= @State HITRETURN) (not @msg_no_more))
+                                                    [(if (do-more-prompt NUL) @confirm_msg_tail s) (when @quit_more :return)]
+                                                    [s nil]
+                                                )] (nil? _) => [t_col s _]
+                                                ;; When we displayed a char in last column need to check if there is still more.
+                                                [t_col s (when did_last_char :continue)])
+                                        ))
+                                ))
+                            [t_col s nil]
+                        )]
+                    (condp == _
+                        :break [t_col t_s s]
+                        :return nil
+                        :continue (recur t_col t_s s)
+                        (let [#_boolean wrap (or (at? s (byte \newline)) (<= @Cols (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec @Cols) (+ @msg_col t_col))))
+                              ;; output any postponed text
+                              t_col (if (and (< 0 t_col) (or wrap (any == (.at s 0) (byte \return) (byte \backspace) TAB BELL))) (t-puts t_col, t_s, s, attr) t_col)
+                        ]
 
-        (reset! did_wait_return false)
-        (loop-when [] (and (or (< maxlen 0) (< (BDIFF s, str) maxlen)) (non-eos? s))
-            ;; We are at the end of the screen line when:
-            ;; - When outputting a newline.
-            ;; - When outputting a character in the last column.
+                            (when (and wrap @p_more (not recurse))
+                                ;; store text for scrolling back
+                                (store-sb-text a'sb_str, s, attr, a'sb_col, true)
+                            )
 
-            (when (and (not recurse) (<= (dec @Rows) @msg_row) (or (at? s (byte \newline)) (<= (dec @Cols) (+ @msg_col t_col)) (and (at? s TAB) (<= (& (dec @Cols) (bit-not 7)) (+ @msg_col t_col))) (and (< 1 (us-ptr2cells s)) (<= (- @Cols 2) (+ @msg_col t_col)))))
-                ;; The screen is scrolled up when at the last row (some terminals scroll
-                ;; automatically, some don't.  To avoid problems we scroll ourselves).
+                            (cond (at? s (byte \newline))                 ;; go to next line
+                            (do
+                                (reset! msg_didout false)         ;; remember that line is empty
+                                (reset! msg_col 0)
+                                (if (<= @Rows (swap! msg_row inc))      ;; safety check
+                                    (reset! msg_row (dec @Rows)))
+                            )
+                            (at? s (byte \return))            ;; go to column 0
+                            (do
+                                (reset! msg_col 0)
+                            )
+                            (at? s (byte \backspace))            ;; go to previous char
+                            (do
+                                (if (< 0 @msg_col)
+                                    (swap! msg_col dec))
+                            )
+                            (at? s TAB)                    ;; translate Tab into spaces
+                            (do
+                                (loop []
+                                    (msg-screen-putchar (byte \space), attr)
+                                    (recur-if (non-zero? (& @msg_col 7)) [])
+                                )
+                            )
+                            (at? s BELL)                   ;; beep (from ":sh")
+                            (do
+                                (vim-beep)
+                            )
+                            :else
+                            (do
+                                ((ß int cells =) (us-ptr2cells s))
 
-                (when (< 0 t_col)
-                    ;; output postponed text
-                    ((ß t_col =) (t-puts t_col, t_s, s, attr))
-                )
+                                (ß int len)
+                                (cond (<= 0 maxlen)
+                                (do
+                                    ;; avoid including composing chars after the end
+                                    ((ß len =) (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s)))
+                                )
+                                :else
+                                (do
+                                    ((ß len =) (us-ptr2len-cc s))
+                                ))
 
-                ;; When no more prompt and no more room, truncate here.
-                (if (and @msg_no_more (zero? @lines_left))
-                    (ß BREAK)
-                )
-
-                ;; Scroll the screen up one line.
-                (msg-scroll-up)
-
-                (reset! msg_row (- @Rows 2))
-                (when (<= @Cols @msg_col)     ;; can happen after screen resize
-                    (reset! msg_col (dec @Cols)))
-
-                (ß boolean did_last_char)
-
-                ;; Display char in last column before showing more-prompt.
-                (cond (<= (byte \space) (.at s 0))
-                (do
-                    (ß int len)
-                    (cond (<= 0 maxlen)
-                    (do
-                        ;; avoid including composing chars after the end
-                        ((ß len =) (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s)))
+                                ;; When a double-wide character doesn't fit, draw a single character here.
+                                ;; Otherwise collect characters and draw them all at once later.
+                                (cond (and (< 1 cells) (<= (dec @Cols) (+ @msg_col t_col)))
+                                (do
+                                    (if (< 1 len)
+                                        ((ß s =) (.minus (screen-puts-mbyte s, len, attr) 1))
+                                        (msg-screen-putchar (.at s 0), attr))
+                                )
+                                :else
+                                (do
+                                    ;; postpone this character until later
+                                    ((ß t_s =) (if (zero? t_col) s t_s))
+                                    ((ß t_col =) (+ t_col cells))
+                                    ((ß s =) (.plus s (dec len)))
+                                ))
+                            ))
+                            ((ß s =) (.plus s 1))
+                            (recur t_col t_s s)
+                        )
                     )
-                    :else
-                    (do
-                        ((ß len =) (us-ptr2len-cc s))
-                    ))
-                    ((ß s =) (screen-puts-mbyte s, len, attr))
-
-                    ((ß did_last_char =) true)
-                )
-                :else
-                (do
-                    ((ß did_last_char =) false)
-                ))
-
-                (when @p_more
-                    ;; store text for scrolling back
-                    (store-sb-text a'sb_str, s, attr, a'sb_col, true)
-                )
-
-                (inc-msg-scrolled)
-                (reset! need_wait_return true)    ;; may need wait-return in main()
-                (when (< @must_redraw VALID)
-                    (reset! must_redraw VALID))
-                (reset! redraw_cmdline true)
-                (when (< 0 @cmdline_row)
-                    (swap! cmdline_row dec))
-
-                ;; If screen is completely filled and 'more' is set then wait for a character.
-
-                (when (< 0 @lines_left)
-                    (swap! lines_left dec))
-                (when (and @p_more (zero? @lines_left) (!= @State HITRETURN) (not @msg_no_more))
-                    ((ß s =) (if (do-more-prompt NUL) @confirm_msg_tail s))
-                    (if @quit_more
-                        ((ß RETURN) nil)
-                    )
-                )
-
-                ;; When we displayed a char in last column need to check if there is still more.
-                (if did_last_char
-                    (ß CONTINUE)
                 )
             )
 
-            ((ß boolean wrap =) (or (at? s (byte \newline)) (<= @Cols (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec @Cols) (+ @msg_col t_col)))))
-
-            (when (and (< 0 t_col) (or wrap (at? s (byte \return)) (at? s (byte \backspace)) (at? s TAB) (at? s BELL)))
-                ;; output any postponed text
-                ((ß t_col =) (t-puts t_col, t_s, s, attr))
-            )
-
-            (when (and wrap @p_more (not recurse))
-                ;; store text for scrolling back
-                (store-sb-text a'sb_str, s, attr, a'sb_col, true)
-            )
-
-            (cond (at? s (byte \newline))                 ;; go to next line
-            (do
-                (reset! msg_didout false)         ;; remember that line is empty
-                (reset! msg_col 0)
-                (if (<= @Rows (swap! msg_row inc))      ;; safety check
-                    (reset! msg_row (dec @Rows)))
-            )
-            (at? s (byte \return))            ;; go to column 0
-            (do
-                (reset! msg_col 0)
-            )
-            (at? s (byte \backspace))            ;; go to previous char
-            (do
-                (if (< 0 @msg_col)
-                    (swap! msg_col dec))
-            )
-            (at? s TAB)                    ;; translate Tab into spaces
-            (do
-                (loop []
-                    (msg-screen-putchar (byte \space), attr)
-                    (recur-if (non-zero? (& @msg_col 7)) [])
-                )
-            )
-            (at? s BELL)                   ;; beep (from ":sh")
-            (do
-                (vim-beep)
-            )
-            :else
-            (do
-                ((ß int cells =) (us-ptr2cells s))
-
-                (ß int len)
-                (cond (<= 0 maxlen)
-                (do
-                    ;; avoid including composing chars after the end
-                    ((ß len =) (us-ptr2len-cc-len s, (BDIFF (.plus str maxlen), s)))
-                )
-                :else
-                (do
-                    ((ß len =) (us-ptr2len-cc s))
-                ))
-
-                ;; When a double-wide character doesn't fit, draw a single character here.
-                ;; Otherwise collect characters and draw them all at once later.
-                (cond (and (< 1 cells) (<= (dec @Cols) (+ @msg_col t_col)))
-                (do
-                    (if (< 1 len)
-                        ((ß s =) (.minus (screen-puts-mbyte s, len, attr) 1))
-                        (msg-screen-putchar (.at s 0), attr))
-                )
-                :else
-                (do
-                    ;; postpone this character until later
-                    ((ß t_s =) (if (zero? t_col) s t_s))
-                    ((ß t_col =) (+ t_col cells))
-                    ((ß s =) (.plus s (dec len)))
-                ))
-            ))
-            ((ß s =) (.plus s 1))
-            (recur)
-        )
-
+    ] (some? _)
         ;; output any postponed text
-        ((ß t_col =) (if (< 0 t_col) (t-puts t_col, t_s, s, attr) t_col))
+        (when (pos? t_col)
+            (t-puts t_col, t_s, s, attr))
         (when (and @p_more (not recurse))
             (store-sb-text a'sb_str, s, attr, a'sb_col, false))
-
-        (msg-check)
-        nil
-    ))
+        (msg-check))
+    nil)
 
 ;; Scroll the screen up one line for displaying the next message line.
 
@@ -3628,11 +3601,10 @@
 
             ;; Also clear the last char of the last but one line
             ;; if it was not cleared before to avoid a scroll-up.
-            (if (== (... @screenAttrs (+ (... @lineOffset (- rows 2)) (- cols 1))) -1)
+            (when (== (... @screenAttrs (+ (... @lineOffset (- rows 2)) (- cols 1))) -1)
                 (screen-fill (- rows 2), (- rows 1), (- cols 1), cols, (byte \space), (byte \space), 0))
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Increment "msg_scrolled".
 
