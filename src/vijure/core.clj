@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -73,8 +73,6 @@
 (final maybean FALSE 0, TRUE 1, MAYBE 2)
 
 (final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
-
-(final Bytes VIMRUNTIME (u8 "./runtime"))
 
 ;;; ============================================================================================== VimC
 
@@ -1489,7 +1487,6 @@
 
 (atom! long    p_aleph)     ;; 'aleph'
 (atom! Bytes   p_ambw)      ;; 'ambiwidth'
-(atom! boolean p_ar)        ;; 'autoread'
 (atom! boolean p_aw)        ;; 'autowrite'
 (atom! boolean p_awa)       ;; 'autowriteall'
 (atom! Bytes   p_bs)        ;; 'backspace'
@@ -1561,7 +1558,6 @@
 (atom! boolean p_ri)        ;; 'revins'
 (atom! boolean p_ru)        ;; 'ruler'
 (atom! Bytes   p_ruf)       ;; 'rulerformat'
-(atom! Bytes   p_rtp)       ;; 'runtimepath'
 (atom! long    p_sj)        ;; 'scrolljump'
 (atom! long    p_so)        ;; 'scrolloff'
 (atom! Bytes   p_sbo)       ;; 'scrollopt'
@@ -1646,7 +1642,7 @@
 
 (final int
     BV_AI     0,
-    BV_AR     1,
+
     BV_BIN    2,
 
     BV_BOMB   4,
@@ -2512,53 +2508,6 @@
 (defn- #_stl_hlrec_C* ARRAY_stl_hlrec [#_int n]
     (vec (repeatedly n §_stl_hlrec_C)))
 
-;; Item for a hashtable.  "hi_key" can be one of three values:
-;; null:           Never been used.
-;; HASH_REMOVED:   Entry was removed.
-;; Otherwise:      Used item, pointer to the actual key; this usually is
-;;                 inside the item, subtract an offset to locate the item.
-;;                 This reduces the size of hashitem by 1/3.
-
-(class! #_final hashitem_C
-    [
-        (field long         hi_hash)        ;; cached hash number of hi_key
-        (field Object       hi_data)
-        (field Bytes        hi_key)
-    ])
-
-(defn- #_void COPY_hashitem [#_hashitem_C hi1, #_hashitem_C hi0]
-    (§
-;       hi1.hi_hash = hi0.hi_hash;
-;       hi1.hi_data = hi0.hi_data;
-;       hi1.hi_key = hi0.hi_key;
-    ))
-
-(defn- #_hashitem_C* ARRAY_hashitem [#_int n]
-    (vec (repeatedly n §_hashitem_C)))
-
-;; Initial size for a hashtable.  Our items are relatively small and growing
-;; is expensive, thus use 16 as a start.  Must be a power of 2.
-
-(final int HT_INIT_SIZE 16)
-
-(class! #_final hashtab_C
-    [
-        (field long         ht_mask)        ;; mask used for hash value (nr of items in array is "ht_mask" + 1)
-        (field long         ht_used)        ;; number of items used
-        (field long         ht_filled)      ;; number of items used + removed
-        (field int          ht_locked)      ;; counter for hash_lock()
-        (field hashitem_C*  ht_buckets)
-    ])
-
-(defn- #_void ZER0_hashtab [#_hashtab_C ht]
-    (§
-;       ht.ht_mask = 0;
-;       ht.ht_used = 0;
-;       ht.ht_filled = 0;
-;       ht.ht_locked = 0;
-;       ht.ht_buckets = null;
-    ))
-
 ;; buffer: structure that holds information about one file
 ;;
 ;; Several windows can share a single Buffer
@@ -2727,7 +2676,6 @@
 
         ;; local values for options which are normally global
         (atom' Bytes        b_p_ep)             ;; 'equalprg' local value
-        (atom' #_"/*int*/"long b_p_ar)          ;; 'autoread' local value
         (atom' long         b_p_ul)             ;; 'undolevels' local value
         (atom' boolean      b_p_udf)            ;; 'undofile'
         (atom' Bytes        b_p_lw)             ;; 'lispwords' local value
@@ -3291,188 +3239,187 @@
     CMD_cabclear 23,
     CMD_center 24,
     CMD_changes 25,
-    CMD_checktime 26,
-    CMD_close 27,
-    CMD_cmap 28,
-    CMD_cmapclear 29,
-    CMD_cnoremap 30,
-    CMD_cnoreabbrev 31,
-    CMD_copy 32,
-    CMD_cquit 33,
-    CMD_cunmap 34,
-    CMD_cunabbrev 35,
-    CMD_delete 36,
-    CMD_delmarks 37,
-    CMD_display 38,
-    CMD_digraphs 39,
-    CMD_edit 40,
-    CMD_earlier 41,
-    CMD_enew 42,
-    CMD_ex 43,
-    CMD_exit 44,
-    CMD_fixdel 45,
-    CMD_global 46,
-    CMD_goto 47,
-    CMD_hide 48,
-    CMD_history 49,
-    CMD_insert 50,
-    CMD_iabbrev 51,
-    CMD_iabclear 52,
-    CMD_imap 53,
-    CMD_imapclear 54,
-    CMD_inoremap 55,
-    CMD_inoreabbrev 56,
-    CMD_iunmap 57,
-    CMD_iunabbrev 58,
-    CMD_join 59,
-    CMD_jumps 60,
-    CMD_k 61,
-    CMD_keepmarks 62,
-    CMD_keepjumps 63,
-    CMD_keeppatterns 64,
-    CMD_keepalt 65,
-    CMD_list 66,
-    CMD_later 67,
-    CMD_left 68,
-    CMD_leftabove 69,
-    CMD_lmap 70,
-    CMD_lmapclear 71,
-    CMD_lnoremap 72,
-    CMD_lockmarks 73,
-    CMD_lunmap 74,
-    CMD_move 75,
-    CMD_mark 76,
-    CMD_map 77,
-    CMD_mapclear 78,
-    CMD_marks 79,
-    CMD_messages 80,
-    CMD_mode 81,
-    CMD_new 82,
-    CMD_nmap 83,
-    CMD_nmapclear 84,
-    CMD_nnoremap 85,
-    CMD_noremap 86,
-    CMD_nohlsearch 87,
-    CMD_noreabbrev 88,
-    CMD_normal 89,
-    CMD_number 90,
-    CMD_nunmap 91,
-    CMD_open 92,
-    CMD_omap 93,
-    CMD_omapclear 94,
-    CMD_only 95,
-    CMD_onoremap 96,
-    CMD_ounmap 97,
-    CMD_print 98,
-    CMD_put 99,
-    CMD_quit 100,
-    CMD_quitall 101,
-    CMD_qall 102,
-    CMD_read 103,
-    CMD_redo 104,
-    CMD_redraw 105,
-    CMD_redrawstatus 106,
-    CMD_registers 107,
-    CMD_resize 108,
-    CMD_retab 109,
-    CMD_right 110,
-    CMD_rightbelow 111,
-    CMD_rundo 112,
-    CMD_substitute 113,
-    CMD_sandbox 114,
-    CMD_saveas 115,
-    CMD_sbuffer 116,
-    CMD_sbNext 117,
-    CMD_sball 118,
-    CMD_sbfirst 119,
-    CMD_sblast 120,
-    CMD_sbmodified 121,
-    CMD_sbnext 122,
-    CMD_sbprevious 123,
-    CMD_sbrewind 124,
-    CMD_set 125,
-    CMD_setglobal 126,
-    CMD_setlocal 127,
-    CMD_silent 128,
-    CMD_smagic 129,
-    CMD_smap 130,
-    CMD_smapclear 131,
-    CMD_snomagic 132,
-    CMD_snoremap 133,
-    CMD_split 134,
-    CMD_stop 135,
-    CMD_startinsert 136,
-    CMD_startgreplace 137,
-    CMD_startreplace 138,
-    CMD_stopinsert 139,
-    CMD_sunhide 140,
-    CMD_sunmap 141,
-    CMD_suspend 142,
-    CMD_sview 143,
-    CMD_syncbind 144,
-    CMD_t 145,
-    CMD_tab 146,
-    CMD_tabclose 147,
-    CMD_tabedit 148,
-    CMD_tabfirst 149,
-    CMD_tabmove 150,
-    CMD_tablast 151,
-    CMD_tabnext 152,
-    CMD_tabnew 153,
-    CMD_tabonly 154,
-    CMD_tabprevious 155,
-    CMD_tabNext 156,
-    CMD_tabrewind 157,
-    CMD_tabs 158,
-    CMD_topleft 159,
-    CMD_undo 160,
-    CMD_undojoin 161,
-    CMD_undolist 162,
-    CMD_unabbreviate 163,
-    CMD_unhide 164,
-    CMD_unmap 165,
-    CMD_unsilent 166,
-    CMD_update 167,
-    CMD_vglobal 168,
-    CMD_verbose 169,
-    CMD_vertical 170,
-    CMD_visual 171,
-    CMD_view 172,
-    CMD_vmap 173,
-    CMD_vmapclear 174,
-    CMD_vnoremap 175,
-    CMD_vnew 176,
-    CMD_vsplit 177,
-    CMD_vunmap 178,
-    CMD_write 179,
-    CMD_wall 180,
-    CMD_wincmd 181,
-    CMD_wq 182,
-    CMD_wqall 183,
-    CMD_wundo 184,
-    CMD_xit 185,
-    CMD_xall 186,
-    CMD_xmap 187,
-    CMD_xmapclear 188,
-    CMD_xnoremap 189,
-    CMD_xunmap 190,
-    CMD_yank 191,
-    CMD_z 192,
+    CMD_close 26,
+    CMD_cmap 27,
+    CMD_cmapclear 28,
+    CMD_cnoremap 29,
+    CMD_cnoreabbrev 30,
+    CMD_copy 31,
+    CMD_cquit 32,
+    CMD_cunmap 33,
+    CMD_cunabbrev 34,
+    CMD_delete 35,
+    CMD_delmarks 36,
+    CMD_display 37,
+    CMD_digraphs 38,
+    CMD_edit 39,
+    CMD_earlier 40,
+    CMD_enew 41,
+    CMD_ex 42,
+    CMD_exit 43,
+    CMD_fixdel 44,
+    CMD_global 45,
+    CMD_goto 46,
+    CMD_hide 47,
+    CMD_history 48,
+    CMD_insert 49,
+    CMD_iabbrev 50,
+    CMD_iabclear 51,
+    CMD_imap 52,
+    CMD_imapclear 53,
+    CMD_inoremap 54,
+    CMD_inoreabbrev 55,
+    CMD_iunmap 56,
+    CMD_iunabbrev 57,
+    CMD_join 58,
+    CMD_jumps 59,
+    CMD_k 60,
+    CMD_keepmarks 61,
+    CMD_keepjumps 62,
+    CMD_keeppatterns 63,
+    CMD_keepalt 64,
+    CMD_list 65,
+    CMD_later 66,
+    CMD_left 67,
+    CMD_leftabove 68,
+    CMD_lmap 69,
+    CMD_lmapclear 70,
+    CMD_lnoremap 71,
+    CMD_lockmarks 72,
+    CMD_lunmap 73,
+    CMD_move 74,
+    CMD_mark 75,
+    CMD_map 76,
+    CMD_mapclear 77,
+    CMD_marks 78,
+    CMD_messages 79,
+    CMD_mode 80,
+    CMD_new 81,
+    CMD_nmap 82,
+    CMD_nmapclear 83,
+    CMD_nnoremap 84,
+    CMD_noremap 85,
+    CMD_nohlsearch 86,
+    CMD_noreabbrev 87,
+    CMD_normal 88,
+    CMD_number 89,
+    CMD_nunmap 90,
+    CMD_open 91,
+    CMD_omap 92,
+    CMD_omapclear 93,
+    CMD_only 94,
+    CMD_onoremap 95,
+    CMD_ounmap 96,
+    CMD_print 97,
+    CMD_put 98,
+    CMD_quit 99,
+    CMD_quitall 100,
+    CMD_qall 101,
+    CMD_read 102,
+    CMD_redo 103,
+    CMD_redraw 104,
+    CMD_redrawstatus 105,
+    CMD_registers 106,
+    CMD_resize 107,
+    CMD_retab 108,
+    CMD_right 109,
+    CMD_rightbelow 110,
+    CMD_rundo 111,
+    CMD_substitute 112,
+    CMD_sandbox 113,
+    CMD_saveas 114,
+    CMD_sbuffer 115,
+    CMD_sbNext 116,
+    CMD_sball 117,
+    CMD_sbfirst 118,
+    CMD_sblast 119,
+    CMD_sbmodified 120,
+    CMD_sbnext 121,
+    CMD_sbprevious 122,
+    CMD_sbrewind 123,
+    CMD_set 124,
+    CMD_setglobal 125,
+    CMD_setlocal 126,
+    CMD_silent 127,
+    CMD_smagic 128,
+    CMD_smap 129,
+    CMD_smapclear 130,
+    CMD_snomagic 131,
+    CMD_snoremap 132,
+    CMD_split 133,
+    CMD_stop 134,
+    CMD_startinsert 135,
+    CMD_startgreplace 136,
+    CMD_startreplace 137,
+    CMD_stopinsert 138,
+    CMD_sunhide 139,
+    CMD_sunmap 140,
+    CMD_suspend 141,
+    CMD_sview 142,
+    CMD_syncbind 143,
+    CMD_t 144,
+    CMD_tab 145,
+    CMD_tabclose 146,
+    CMD_tabedit 147,
+    CMD_tabfirst 148,
+    CMD_tabmove 149,
+    CMD_tablast 150,
+    CMD_tabnext 151,
+    CMD_tabnew 152,
+    CMD_tabonly 153,
+    CMD_tabprevious 154,
+    CMD_tabNext 155,
+    CMD_tabrewind 156,
+    CMD_tabs 157,
+    CMD_topleft 158,
+    CMD_undo 159,
+    CMD_undojoin 160,
+    CMD_undolist 161,
+    CMD_unabbreviate 162,
+    CMD_unhide 163,
+    CMD_unmap 164,
+    CMD_unsilent 165,
+    CMD_update 166,
+    CMD_vglobal 167,
+    CMD_verbose 168,
+    CMD_vertical 169,
+    CMD_visual 170,
+    CMD_view 171,
+    CMD_vmap 172,
+    CMD_vmapclear 173,
+    CMD_vnoremap 174,
+    CMD_vnew 175,
+    CMD_vsplit 176,
+    CMD_vunmap 177,
+    CMD_write 178,
+    CMD_wall 179,
+    CMD_wincmd 180,
+    CMD_wq 181,
+    CMD_wqall 182,
+    CMD_wundo 183,
+    CMD_xit 184,
+    CMD_xall 185,
+    CMD_xmap 186,
+    CMD_xmapclear 187,
+    CMD_xnoremap 188,
+    CMD_xunmap 189,
+    CMD_yank 190,
+    CMD_z 191,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_bang 193,
-    CMD_pound 194,
-    CMD_and 195,
-    CMD_star 196,
-    CMD_lshift 197,
-    CMD_equal 198,
-    CMD_rshift 199,
-    CMD_at 200,
-    CMD_Print 201,
-    CMD_tilde 202,
+    CMD_bang 192,
+    CMD_pound 193,
+    CMD_and 194,
+    CMD_star 195,
+    CMD_lshift 196,
+    CMD_equal 197,
+    CMD_rshift 198,
+    CMD_at 199,
+    CMD_Print 200,
+    CMD_tilde 201,
 
-    CMD_SIZE 203)     ;; MUST be after all real commands!
+    CMD_SIZE 202)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3733,16 +3680,6 @@
 
 (atom! except_C caught_stack)
 
-;; Magic number used for hashitem "hi_key" value indicating a deleted item.
-;; Only the address is used.
-
-(final Bytes HASH_REMOVED (u8 ""))
-
-(defn- #_boolean hashitem_empty [#_hashitem_C hi]
-    (§
-;       return (hi.hi_key == null || hi.hi_key == HASH_REMOVED);
-    ))
-
 (atom! boolean  scroll_region)                  ;; term supports scroll region
 (atom! int      t_colors)                       ;; int value of T_CCO
 
@@ -3772,14 +3709,7 @@
 ;       return @highlight_attr[n];
     ))
 
-(atom! int      autocmd_no_enter)       ;; *Enter autocmds disabled
-(atom! int      autocmd_no_leave)       ;; *Leave autocmds disabled
 (atom! boolean  modified_was_set)       ;; did ":set modified"
-
-;; When deleting the current buffer, another one must be loaded.
-;; If we know which one is preferred, au_new_curbuf is set to it
-
-(atom! buffer_C au_new_curbuf)
 
 ;; Mouse coordinates, set by check_termcode()
 
@@ -4006,10 +3936,6 @@
 
 (atom! boolean  need_highlight_changed true)
 
-(final int NSCRIPT 15)
-(atom! file_C*  scriptin    NSCRIPT)        ;; streams to read script from
-(atom! int      curscript)                  ;; index in scriptin[]
-(atom! file_C   scriptout)                  ;; stream to write script to
 (atom! int      read_cmd_fd)                ;; fd to read commands from
 
 ;; volatile because it is used in signal handler catch_sigint().
@@ -4262,11 +4188,6 @@
 
 ;;; ============================================================================================== VimG
 
-;; values for "window_layout"
-(final int WIN_HOR     1)       ;; "-o" horizontally split windows
-(final int WIN_VER     2)       ;; "-O" vertically split windows
-(final int WIN_TABS    3)       ;; "-p" windows on tab pages
-
 ;; Struct for various parameters passed between main() and other functions.
 (class! #_final mparm_C
     [
@@ -4277,8 +4198,6 @@
 
         (field boolean  stdout_isatty)          ;; is stdout a terminal?
         (field Bytes    term)                   ;; specified terminal name
-        (field int      window_count)           ;; number of windows to use
-        (field int      window_layout)          ;; 0, WIN_HOR, WIN_VER or WIN_TABS
     ])
 
 ;; Values for edit_type.
@@ -4312,7 +4231,6 @@
         ;; copied, so that they can be changed.
 ;       params.argc = argc;
 ;       params.argv = argv;
-;       params.window_count = -1;
 
         ;; Init the table of Normal mode commands.
 ;       init_normal_cmds();
@@ -4797,59 +4715,20 @@
 ;                       @p_write = false;
 ;                       break;
 
-;                   case 'p':                       ;; "-p[N]" open N tab pages
-                        ;; default is 0: open window for each file
-;                       parmp.window_count = get_number_arg(argv[i], ai, 0);
-;                       parmp.window_layout = WIN_TABS;
-;                       break;
-
-;                   case 'o':                       ;; "-o[N]" open N horizontal split windows
-                        ;; default is 0: open window for each file
-;                       parmp.window_count = get_number_arg(argv[i], ai, 0);
-;                       parmp.window_layout = WIN_HOR;
-;                       break;
-
-;                   case 'O':                       ;; "-O[N]" open N vertical split windows
-                        ;; default is 0: open window for each file
-;                       parmp.window_count = get_number_arg(argv[i], ai, 0);
-;                       parmp.window_layout = WIN_VER;
-;                       break;
-
 ;                   case 'R':                       ;; "-R" readonly mode
 ;                       @readonlymode = true;
 ;                       @curbuf.@b_p_ro = true;
-;                       break;
-
-;                   case 's':
-;                       if (@exmode_active != 0)     ;; "-s" silent (batch) mode
-;                           @silent_mode = true;
-;                       else                        ;; "-s {scriptin}" read from script file
-;                           want_argument = true;
 ;                       break;
 
 ;                   case 'v':                       ;; "-v" Vi-mode (as if called "vi")
 ;                       @exmode_active = 0;
 ;                       break;
 
-;                   case 'w':                       ;; "-w{number}" set window height
-                                                    ;; "-w {scriptout}" write to script
-;                   {
-;                       if (asc_isdigit(argv[i].at(ai[0])))
-;                       {
-;                           long n = get_number_arg(argv[i], ai, 10);
-;                           set_option_value(u8("window"), n, null, 0);
-;                           break;
-;                       }
-;                       want_argument = true;
-;                       break;
-;                   }
-
 ;                   case 'Z':                       ;; "-Z" restricted mode
 ;                       @restricted = true;
 ;                       break;
 
 ;                   case 'T':                       ;; "-T {terminal}" terminal name
-;                   case 'W':                       ;; "-W {scriptout}" overwrite
 ;                       want_argument = true;
 ;                       break;
 
@@ -4875,52 +4754,12 @@
 
 ;                   switch (c)
 ;                   {
-;                       case 's':                   ;; "-s {scriptin}" read from script file
-;                           if (@scriptin[0] != null)
-;                           {
-;                               libC.fprintf(stderr, u8("Attempt to open script file again: \"%s %s\"\n"),
-;                                                               argv[i - 1], argv[i]);
-;                               mch_exit(2);
-;                           }
-;                           if ((@scriptin[0] = libC.fopen(argv[i], u8("r"))) == null)
-;                           {
-;                               libC.fprintf(stderr, u8("Cannot open for reading: \"%s\"\n"), argv[i]);
-;                               mch_exit(2);
-;                           }
-;                           save_typebuf();
-;                           break;
-
 ;                       case 'T':                   ;; "-T {terminal}" terminal name
 
                             ;; The -T term argument is always available and when
                             ;; HAVE_TERMLIB is supported it overrides the environment variable TERM.
 
 ;                           parmp.term = argv[i];
-;                           break;
-
-;                       case 'w':                   ;; "-w {nr}" 'window' value
-                                                    ;; "-w {scriptout}" append to script file
-;                           if (asc_isdigit(argv[i].at(0)))
-;                           {
-;                               ai[0] = 0;
-;                               long n = get_number_arg(argv[i], ai, 10);
-;                               set_option_value(u8("window"), n, null, 0);
-;                               ai[0] = -1;
-;                               break;
-;                           }
-                            ;; FALLTHROUGH
-;                       case 'W':                   ;; "-W {scriptout}" overwrite script file
-;                           if (@scriptout != null)
-;                           {
-;                               libC.fprintf(stderr, u8("Attempt to open script file again: \"%s %s\"\n"),
-;                                                               argv[i - 1], argv[i]);
-;                               mch_exit(2);
-;                           }
-;                           if ((@scriptout = libC.fopen(argv[i], (c == 'w') ? u8("a") : u8("w"))) == null)
-;                           {
-;                               libC.fprintf(stderr, u8("Cannot open for script output: \"%s\"\n"), argv[i]);
-;                               mch_exit(2);
-;                           }
 ;                           break;
 ;                   }
 ;               }
@@ -4972,8 +4811,7 @@
 ;           if (!input_isatty)
 ;               libC.fprintf(stderr, u8("Vim: Warning: Input is not from a terminal\n"));
 ;           out_flush();
-;           if (@scriptin[0] == null)
-;               ui_delay(2000L, true);
+;           ui_delay(2000L, true);
 ;       }
     ))
 
@@ -5001,53 +4839,18 @@
     (§
 ;       int done = 0;
 
-        ;; Create the number of windows that was requested.
-
-;       if (parmp.window_count == -1)   ;; was not set
-;           parmp.window_count = 1;
-
-;       if (1 < parmp.window_count)
-;       {
-            ;; Don't change the windows if there was a command in .vimrc that already split some windows.
-;           if (parmp.window_layout == 0)
-;               parmp.window_layout = WIN_HOR;
-;           if (parmp.window_layout == WIN_TABS)
-;           {
-;               parmp.window_count = make_tabpages(parmp.window_count);
-;           }
-;           else if (@firstwin.w_next == null)
-;           {
-;               parmp.window_count = make_windows(parmp.window_count, parmp.window_layout == WIN_VER);
-;           }
-;           else
-;               parmp.window_count = win_count();
-;       }
-;       else
-;           parmp.window_count = 1;
-
         ;; Open a buffer for windows that don't have one yet.
         ;; Commands in the .vimrc might have loaded a file or split the window.
         ;; Watch out for autocommands that delete a window.
 
         ;; Don't execute Win/Buf Enter/Leave autocommands here
 
-;       @autocmd_no_enter++;
-;       @autocmd_no_leave++;
 ;       boolean dorewind = true;
 ;       while (done++ < 1000)
 ;       {
 ;           if (dorewind)
 ;           {
-;               if (parmp.window_layout == WIN_TABS)
-;                   goto_tabpage(1);
-;               else
-;                   @curwin = @firstwin;
-;           }
-;           else if (parmp.window_layout == WIN_TABS)
-;           {
-;               if (@curtab.tp_next == null)
-;                   break;
-;               goto_tabpage(0);
+;               @curwin = @firstwin;
 ;           }
 ;           else
 ;           {
@@ -5071,13 +4874,8 @@
 ;               break;
 ;           }
 ;       }
-;       if (parmp.window_layout == WIN_TABS)
-;           goto_tabpage(1);
-;       else
-;           @curwin = @firstwin;
+;       @curwin = @firstwin;
 ;       @curbuf = @curwin.w_buffer;
-;       --@autocmd_no_enter;
-;       --@autocmd_no_leave;
     ))
 
 ;; If opened more than one window, start editing files in the other windows.
@@ -5085,58 +4883,9 @@
 
 (defn- #_void edit_buffers [#_mparm_C parmp]
     (§
-;       boolean advance = true;
-
-        ;; Don't execute Win/Buf Enter/Leave autocommands here
-
-;       @autocmd_no_enter++;
-;       @autocmd_no_leave++;
-
-;       for (int i = 1; i < parmp.window_count; i++)
-;       {
-;           if (advance)
-;           {
-;               if (parmp.window_layout == WIN_TABS)
-;               {
-;                   if (@curtab.tp_next == null)     ;; just checking
-;                       break;
-;                   goto_tabpage(0);
-;               }
-;               else
-;               {
-;                   if (@curwin.w_next == null)      ;; just checking
-;                       break;
-;                   win_enter(@curwin.w_next, false);
-;               }
-;           }
-;           advance = true;
-
-            ;; Only open the file if there is no file in this window yet
-            ;; (that can happen when .vimrc contains ":sall").
-;           if (@curbuf == @firstwin.w_buffer || @curbuf.b_ffname == null)
-;           {
-                ;; When "Quit" selected at the ATTENTION prompt close the window.
-;               do_ecmd(0, null, null, null, ECMD_LASTL, ECMD_HIDE, @curwin);
-;           }
-;           ui_breakcheck();
-;           if (@got_int)
-;           {
-;               vgetc();        ;; only break the file loading, not the rest
-;               break;
-;           }
-;       }
-
-;       if (parmp.window_layout == WIN_TABS)
-;           goto_tabpage(1);
-;       --@autocmd_no_enter;
-
         ;; make the first window the current window
 ;       window_C win = @firstwin;
 ;       win_enter(win, false);
-
-;       --@autocmd_no_leave;
-;       if (1 < parmp.window_count && parmp.window_layout != WIN_TABS)
-;           win_equal(@curwin, false, 'b');  ;; adjust heights
     ))
 
 ;; Give an error message main_errors[n] and exit.
@@ -5194,7 +4943,6 @@
 ;       main_msg(u8("-v\t\t\tVi mode (like \"vi\")"));
 ;       main_msg(u8("-e\t\t\tEx mode (like \"ex\")"));
 ;       main_msg(u8("-E\t\t\tImproved Ex mode"));
-;       main_msg(u8("-s\t\t\tSilent (batch) mode (only for \"ex\")"));
 ;       main_msg(u8("-R\t\t\tReadonly mode (like \"view\")"));
 ;       main_msg(u8("-Z\t\t\tRestricted mode (like \"rvim\")"));
 ;       main_msg(u8("-m\t\t\tModifications (writing files) not allowed"));
@@ -5202,14 +4950,8 @@
 ;       main_msg(u8("-b\t\t\tBinary mode"));
 ;       main_msg(u8("-l\t\t\tLisp mode"));
 ;       main_msg(u8("-T <terminal>\tSet terminal type to <terminal>"));
-;       main_msg(u8("-p[N]\t\tOpen N tab pages (default: one for each file)"));
-;       main_msg(u8("-o[N]\t\tOpen N windows (default: one for each file)"));
-;       main_msg(u8("-O[N]\t\tLike -o but split vertically"));
 ;       main_msg(u8("+\t\t\tStart at end of file"));
 ;       main_msg(u8("+<lnum>\t\tStart at line <lnum>"));
-;       main_msg(u8("-s <scriptin>\tRead Normal mode commands from file <scriptin>"));
-;       main_msg(u8("-w <scriptout>\tAppend all typed commands to file <scriptout>"));
-;       main_msg(u8("-W <scriptout>\tWrite all typed commands to file <scriptout>"));
 ;       main_msg(u8("-h  or  --help\tPrint Help (this message) and exit"));
 
 ;       mch_exit(0);
@@ -6690,16 +6432,13 @@
                 ;; If Recording is active, the character will be recorded later,
                 ;; since it will be added to the typebuf after the loop.
 ;               boolean save_Recording = @Recording;
-;               file_C save_scriptout = @scriptout;
 ;               @Recording = false;
-;               @scriptout = null;
 ;               c = safe_vgetc();
 ;               if (had_got_int && @global_busy == 0)
 ;                   @got_int = false;
 ;               --@no_mapping;
 ;               --@allow_keys;
 ;               @Recording = save_Recording;
-;               @scriptout = save_scriptout;
 
                 ;; Strange way to allow copying (yanking) a modeless selection at
                 ;; the hit-enter prompt.  Use CTRL-Y, because the same is used in
@@ -9125,7 +8864,7 @@
 
 (final int
     PV_AI   16384,    ;; opt_buf(BV_AI),
-    PV_AR   20481,    ;; opt_both(opt_buf(BV_AR)),
+
     PV_BIN  16386,    ;; opt_buf(BV_BIN),
 
     PV_BOMB 16388,    ;; opt_buf(BV_BOMB),
@@ -9348,7 +9087,6 @@
         (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
         (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
-        (bool_opt (u8 "autoread"),       (u8 "ar"),        0,                           p_ar,        PV_AR,      false),
         (bool_opt (u8 "autowrite"),      (u8 "aw"),        0,                           p_aw,        PV_NONE,    false),
         (bool_opt (u8 "autowriteall"),   (u8 "awa"),       0,                           p_awa,       PV_NONE,    false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
@@ -9455,7 +9193,6 @@
         (utf8_opt (u8 "rightleftcmd"),   (u8 "rlc"),       P_RWIN,                      VAR_WIN,     PV_RLC,    (u8 "search")),
         (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        PV_NONE,    false),
         (utf8_opt (u8 "rulerformat"),    (u8 "ruf"),       P_RSTAT,                     p_ruf,       PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "runtimepath"),    (u8 "rtp"),    (| P_COMMA P_NODUP P_SECURE),   p_rtp,       PV_NONE,    VIMRUNTIME),
         (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           VAR_WIN,     PV_SCROLL,  12#_L),
         (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           VAR_WIN,     PV_SCBIND,  false),
         (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        PV_NONE,    1#_L),
@@ -9617,7 +9354,6 @@
 ;       set_options_default(0);
 
 ;       @curbuf.b_p_initialized = true;
-;       @curbuf.@b_p_ar = -1;     ;; no local 'autoread' value
 ;       @curbuf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       check_buf_options(@curbuf);
 ;       check_win_options(@curwin);
@@ -9682,20 +9418,10 @@
 ;           }
 ;           else    ;; P_BOOL
 ;           {
-                ;; For 'autoread' -1 means to use global value.
-;               if (varp == @curbuf.b_p_ar)
-;                   ((long[])varp)[0] = ((boolean)vimoptions[opt_idx].def_val) ? TRUE : FALSE;
-;               else
-;                   ((boolean[])varp)[0] = (boolean)vimoptions[opt_idx].def_val;
+;               ((boolean[])varp)[0] = (boolean)vimoptions[opt_idx].def_val;
                 ;; May also set global value for local option.
 ;               if (both)
-;               {
-                    ;; For 'autoread' -1 means to use global value.
-;                   if (varp == @curbuf.b_p_ar)
-;                       ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = (((long[])varp)[0] != 0);
-;                   else
-;                       ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
-;               }
+;                   ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
 ;           }
 
             ;; The default value is not insecure.
@@ -10076,13 +9802,7 @@
 ;                               else if (nextchar == '&')
 ;                                   value = (boolean)vimoptions[opt_idx].def_val;
 ;                               else if (nextchar == '<')
-;                               {
-                                    ;; For 'autoread' -1 means to use global value.
-;                                /* if (varp == @curbuf.b_p_ar && opt_flags == OPT_LOCAL)
-;                                       value = -1;
-;                                   else */
-;                                       value = ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
-;                               }
+;                                   value = ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
 ;                               else
 ;                               {
                                     ;; ":set invopt": invert
@@ -10126,10 +9846,6 @@
 ;                                       value = (long)vimoptions[opt_idx].def_val;
 ;                                   else if (nextchar == '<')
 ;                                   {
-                                        ;; For 'autoread' -1 means to use global value.
-;                                       if (varp == @curbuf.b_p_ar && opt_flags == OPT_LOCAL)
-;                                           value = -1;
-;                                       else
                                         ;; For 'undolevels' NO_LOCAL_UNDOLEVEL means to use the global value.
 ;                                       if (varp == @curbuf.b_p_ul && opt_flags == OPT_LOCAL)
 ;                                           value = NO_LOCAL_UNDOLEVEL;
@@ -12679,7 +12395,6 @@
 ;       {
 ;           switch (v.indir)
 ;           {
-;               case PV_AR:   return @curbuf.b_p_ar;
 ;               case PV_EP:   return @curbuf.b_p_ep;
 ;               case PV_KP:   return @curbuf.b_p_kp;
 ;               case PV_LW:   return @curbuf.b_p_lw;
@@ -12707,7 +12422,6 @@
 ;           case PV_NONE:   return v.var;
 
             ;; global option with local value: use local value if it's been set
-;           case PV_AR:     return (-1 < @curbuf.@b_p_ar)                  ? @curbuf.b_p_ar : v.var;
 ;           case PV_EP:     return (@curbuf.@b_p_ep.at(0) != NUL)          ? @curbuf.b_p_ep : v.var;
 ;           case PV_KP:     return (@curbuf.@b_p_kp.at(0) != NUL)          ? @curbuf.b_p_kp : v.var;
 ;           case PV_LW:     return (@curbuf.@b_p_lw.at(0) != NUL)          ? @curbuf.b_p_lw : v.var;
@@ -12959,7 +12673,6 @@
 
                 ;; Options that are normally global but also have a local value
                 ;; are not copied: start using the global value.
-;               buf.@b_p_ar = -1;
 ;               buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;               buf.@b_p_ep = EMPTY_OPTION;
 ;               buf.@b_p_kp = EMPTY_OPTION;
@@ -14864,8 +14577,6 @@
 ;                   if (buf.b_fname != null)
 ;                       new_name = STRDUP(buf.b_fname);
 
-;                   @au_new_curbuf = buf;
-
 ;                   if (!buf_valid(buf))                ;; new buffer has been deleted
 ;                   {
 ;                       delbuf_msg(new_name);
@@ -14917,7 +14628,6 @@
                         ;; Also restores old folding stuff.
 ;                       get_winopts(@curbuf);
 ;                   }
-;                   @au_new_curbuf = null;
 ;               }
 
 ;               @curwin.w_pcmark.lnum = 1;
@@ -15124,7 +14834,6 @@
 (defn- #_void delbuf_msg [#_Bytes name]
     (§
 ;       emsg2(u8("E143: Autocommands unexpectedly deleted new buffer %s"), (name == null) ? u8("") : name);
-;       @au_new_curbuf = null;
     ))
 
 (atom! int append_indent)       ;; autoindent for first line
@@ -20473,7 +20182,6 @@
                 ;; Do allow ":checktime" (it's postponed).
 ;               if ((ea.argt & CMDWIN) == 0
 ;                       && ea.cmdidx != CMD_edit
-;                       && ea.cmdidx != CMD_checktime
 ;                       && curbuf_locked())
 ;                   break doend;
 
@@ -24048,281 +23756,6 @@
 ;           msg(u8("Warning: Entered other buffer unexpectedly (check autocommands)"));
 
 ;       return retval;
-    ))
-
-;; ":checktime [buffer]"
-
-(defn- #_void ex_checktime [#_exarg_C eap]
-    (§
-;       int save_no_check_timestamps = @no_check_timestamps;
-
-;       @no_check_timestamps = 0;
-;       if (eap.addr_count == 0)                            ;; default is all buffers
-;           check_timestamps(false);
-;       else
-;       {
-;           buffer_C buf = buflist_findnr((int)eap.line2);
-;           if (buf != null)                                ;; cannot happen?
-;               buf_check_timestamp(buf);
-;       }
-;       @no_check_timestamps = save_no_check_timestamps;
-    ))
-
-;; hashtab.c: Handling of a hashtable with Vim-specific properties.
-;;
-;; Each item in a hashtable has a NUL terminated string key.
-;; A key can appear only once in the table.
-;;
-;; A hash number is computed from the key for quick lookup.
-;; When the hashes of two different keys point to the same entry
-;; an algorithm is used to iterate over other entries in the table
-;; until the right one is found.
-;; To make the iteration work removed keys are different
-;; from entries where a key was never present.
-;;
-;; The hashtable grows to accommodate more entries when needed.
-;; At least 1/3 of the entries is empty to keep the lookup efficient
-;; (at the cost of extra memory).
-
-;; Magic value for algorithm that walks through the array.
-(final int PERTURB_SHIFT 5)
-
-;; Initialize an empty hash table.
-
-(defn- #_void hash_init [#_hashtab_C ht]
-    (§
-;       ZER0_hashtab(ht);
-;       ht.ht_buckets = ARRAY_hashitem(HT_INIT_SIZE);
-;       ht.ht_mask = HT_INIT_SIZE - 1;
-    ))
-
-;; Free the array of a hash table.  Does not free the items it contains!
-;; If "ht" is not freed then you should call hash_init() next!
-
-(defn- #_void hash_clear [#_hashtab_C ht]
-    (§
-;       ht.ht_buckets = null;
-    ))
-
-;; Find "key" in hashtable "ht".  "key" must not be null.
-;; Always returns a pointer to a hashitem.  If the item was not found then
-;; hashitem_empty() is true.  The pointer is then the place where the key would be added.
-;; WARNING: The returned pointer becomes invalid when the hashtable is changed
-;; (adding, setting or removing an item)!
-
-(defn- #_hashitem_C hash_find [#_hashtab_C ht, #_Bytes key]
-    (§
-;       return hash_lookup(ht, key, hash_hash(key));
-    ))
-
-;; Like hash_find(), but caller computes "hash".
-
-(defn- #_hashitem_C hash_lookup [#_hashtab_C ht, #_Bytes key, #_long hash]
-    (§
-        ;; Quickly handle the most common situations:
-        ;; - return if there is no item at all
-        ;; - skip over a removed item
-        ;; - return if the item matches
-
-;       long idx = (hash & ht.ht_mask);
-;       hashitem_C hi = ht.ht_buckets[(int)idx];
-
-;       if (hi.hi_key == null)
-;           return hi;
-
-;       hashitem_C freeitem;
-;       if (hi.hi_key == HASH_REMOVED)
-;           freeitem = hi;
-;       else if (hi.hi_hash == hash && STRCMP(hi.hi_key, key) == 0)
-;           return hi;
-;       else
-;           freeitem = null;
-
-        ;; Need to search through the table to find the key.  The algorithm to step
-        ;; through the table starts with large steps, gradually becoming smaller down
-        ;; to (1/4 table size + 1).  This means it goes through all table entries in
-        ;; the end.  When we run into a null key, it's clear that the key isn't there.
-        ;; Return the first available slot found (can be a slot of a removed item).
-
-;       for (long perturb = hash; ; perturb = perturb >>> PERTURB_SHIFT)
-;       {
-;           idx = (idx << 2) + idx + perturb + 1;
-;           hi = ht.ht_buckets[(int)(idx & ht.ht_mask)];
-;           if (hi.hi_key == null)
-;               return (freeitem == null) ? hi : freeitem;
-;           if (hi.hi_hash == hash && hi.hi_key != HASH_REMOVED && STRCMP(hi.hi_key, key) == 0)
-;               return hi;
-;           if (hi.hi_key == HASH_REMOVED && freeitem == null)
-;               freeitem = hi;
-;       }
-    ))
-
-;; Add item with key "key" to hashtable "ht".
-;; Returns false when out of memory or the key is already present.
-
-(defn- #_boolean hash_add [#_hashtab_C ht, #_Object data, #_Bytes key]
-    (§
-;       long hash = hash_hash(key);
-;       hashitem_C hi = hash_lookup(ht, key, hash);
-;       if (!hashitem_empty(hi))
-;       {
-;           emsg2(e_intern2, u8("hash_add()"));
-;           return false;
-;       }
-;       return hash_add_item(ht, hi, data, key, hash);
-    ))
-
-;; Add item "hi" with "key" to hashtable "ht".  "key" must not be null and
-;; "hi" must have been obtained with hash_lookup() and point to an empty item.
-;; "hi" is invalid after this!
-;; Returns true or false (out of memory).
-
-(defn- #_boolean hash_add_item [#_hashtab_C ht, #_hashitem_C hi, #_Object data, #_Bytes key, #_long hash]
-    (§
-;       ht.ht_used++;
-;       if (hi.hi_key == null)
-;           ht.ht_filled++;
-;       hi.hi_data = data;
-;       hi.hi_key = key;
-;       hi.hi_hash = hash;
-
-        ;; When the space gets low may resize the array.
-;       return hash_may_resize(ht, 0);
-    ))
-
-;; Remove item "hi" from  hashtable "ht".  "hi" must have been obtained with hash_lookup().
-;; The caller must take care of freeing the item itself.
-
-(defn- #_void hash_remove [#_hashtab_C ht, #_hashitem_C hi]
-    (§
-;       --ht.ht_used;
-;       hi.hi_data = hi.hi_key = HASH_REMOVED;
-;       hash_may_resize(ht, 0);
-    ))
-
-;; Lock a hashtable: prevent that ht_buckets changes.
-;; Don't use this when items are to be added!
-;; Must call hash_unlock() later.
-
-(defn- #_void hash_lock [#_hashtab_C ht]
-    (§
-;       ht.ht_locked++;
-    ))
-
-;; Unlock a hashtable: allow ht_buckets changes again.
-;; Table will be resized (shrink) when necessary.
-;; This must balance a call to hash_lock().
-
-(defn- #_void hash_unlock [#_hashtab_C ht]
-    (§
-;       --ht.ht_locked;
-;       hash_may_resize(ht, 0);
-    ))
-
-;; Shrink a hashtable when there is too much empty space.
-;; Grow a hashtable when there is not enough empty space.
-;; Returns true or false (out of memory).
-
-(defn- #_boolean hash_may_resize [#_hashtab_C ht, #_int minitems]
-    ;; minitems: minimal number of items
-    (§
-        ;; Don't resize a locked table.
-;       if (0 < ht.ht_locked)
-;           return true;
-
-;       long minsize;
-;       if (minitems == 0)
-;       {
-            ;; Return quickly for small tables with at least two null items.
-            ;; NULL items are required for the lookup to decide a key isn't there.
-
-;           if (ht.ht_filled < HT_INIT_SIZE - 1)
-;               return true;
-
-            ;; Grow or refill the array when it's more than 2/3 full
-            ;; (including removed items, so that they get cleaned up).
-            ;; Shrink the array when it's less than 1/5 full.
-            ;; When growing it is at least 1/4 full
-            ;; (avoids repeated grow-shrink operations).
-
-;           long oldsize = ht.ht_mask + 1;
-;           if (ht.ht_filled * 3 < oldsize * 2 && oldsize / 5 < ht.ht_used)
-;               return true;
-
-;           if (1000 < ht.ht_used)
-;               minsize = ht.ht_used * 2;   ;; it's big, don't make too much room
-;           else
-;               minsize = ht.ht_used * 4;   ;; make plenty of room
-;       }
-;       else
-;       {
-            ;; Use specified size.
-;           if ((long)minitems < ht.ht_used)        ;; just in case...
-;               minitems = (int)ht.ht_used;
-;           minsize = minitems * 3 / 2;             ;; array is up to 2/3 full
-;       }
-
-;       long newsize = HT_INIT_SIZE;
-;       while (newsize < minsize)
-;       {
-;           newsize <<= 1;                  ;; make sure it's always a power of 2
-;           if (newsize <= 0)
-;               return false;               ;; overflow
-;       }
-
-;       hashitem_C[] newarray = ARRAY_hashitem((int)newsize), oldarray = ht.ht_buckets;
-
-        ;; Move all the items from the old array to the new one, placing them in the right spot.
-        ;; The new array won't have any removed items, thus this is also a cleanup action.
-
-;       long newmask = newsize - 1;
-;       for (int oldi = 0, todo = (int)ht.ht_used; 0 < todo; oldi++)
-;       {
-;           hashitem_C olditem = oldarray[oldi];
-;           if (!hashitem_empty(olditem))
-;           {
-                ;; The algorithm to find the spot to add the item is identical to
-                ;; the algorithm to find an item in hash_lookup().  But we only
-                ;; need to search for a null key, thus it's simpler.
-
-;               long newi = (olditem.hi_hash & newmask);
-;               hashitem_C newitem = newarray[(int)newi];
-
-;               if (newitem.hi_key != null)
-;                   for (long perturb = olditem.hi_hash; ; perturb = perturb >>> PERTURB_SHIFT)
-;                   {
-;                       newi = (newi << 2) + newi + perturb + 1;
-;                       newitem = newarray[(int)(newi & newmask)];
-;                       if (newitem.hi_key == null)
-;                           break;
-;                   }
-;               COPY_hashitem(newitem, olditem);
-;               --todo;
-;           }
-;       }
-
-;       ht.ht_buckets = newarray;
-;       ht.ht_mask = newmask;
-;       ht.ht_filled = ht.ht_used;
-
-;       return true;
-    ))
-
-;; Get the hash number for a key.
-;; If you think you know a better hash function: compile with HT_DEBUG set
-;; and run a script that uses hashtables a lot.  Vim will then print statistics
-;; when exiting.  Try that with the current hash algorithm and yours.
-;; The lower the percentage the better.
-
-(defn- #_long hash_hash [#_Bytes key]
-    (§
-;       long hash = (key = key.plus(1)).at(-1);
-
-;       if (hash != 0)                          ;; empty keys are not allowed
-;           while (key.at(0) != NUL)            ;; simplistic algorithm that appears to do very well
-;               hash = hash * 101 + (key = key.plus(1)).at(-1);
-
-;       return hash;
     ))
 
 ;;; ============================================================================================== VimK
@@ -38003,7 +37436,7 @@
 
 (defn- #_void may_sync_undo []
     (§
-;       if (((@State & (INSERT + CMDLINE)) == 0 || @arrow_used) && @scriptin[@curscript] == null)
+;       if ((@State & (INSERT + CMDLINE)) == 0 || @arrow_used)
 ;           u_sync(false);
     ))
 
@@ -38035,15 +37468,6 @@
 
 ;; When doing ":so! file", the current typeahead needs to be saved,
 ;; and restored when "file" has been read completely.
-
-(final typebuf_C*   saved_typebuf   (ARRAY_typebuf NSCRIPT))
-
-(defn- #_void save_typebuf []
-    (§
-;       init_typebuf();
-;       COPY_typebuf(saved_typebuf[@curscript], @typebuf);
-;       alloc_typebuf();
-    ))
 
 (atom! int old_char         -1) ;; character put back by vungetc()
 (atom! int old_mod_mask)        ;; mod_mask for ungotten character
@@ -38086,83 +37510,6 @@
 ;       restore_input_buf(tp);
     ))
 
-;; Open a new script file for the ":source!" command.
-
-(defn- #_void openscript [#_Bytes name, #_boolean directly]
-    ;; directly: when true execute directly
-    (§
-;       if (@curscript + 1 == NSCRIPT)
-;       {
-;           emsg(e_nesting);
-;           return;
-;       }
-
-;       if (@ignore_script)
-            ;; Not reading from script, also don't open one.  Warning message?
-;           return;
-
-;       if (@scriptin[@curscript] != null)        ;; already reading script
-;           @curscript++;
-
-;       if ((@scriptin[@curscript] = libC.fopen(name, u8("r"))) == null)
-;       {
-;           emsg2(e_notopen, name);
-;           if (0 < @curscript)
-;               --@curscript;
-;           return;
-;       }
-
-;       save_typebuf();
-
-        ;; Execute the commands from the file right now when using ":source!"
-        ;; after ":global" or ":argdo" or in a loop.  Also when another command
-        ;; follows.  This means the display won't be updated.  Don't do this
-        ;; always, "make test" would fail.
-
-;       if (directly)
-;       {
-;           int save_State = @State;
-;           int save_restart_edit = @restart_edit;
-;           boolean save_insertmode = @p_im;
-;           boolean save_finish_op = @finish_op;
-;           boolean save_msg_scroll = @msg_scroll;
-
-;           @State = NORMAL;
-;           @msg_scroll = false;                         ;; no msg scrolling in Normal mode
-;           @restart_edit = 0;                           ;; don't go to Insert mode
-;           @p_im = false;                               ;; don't use 'insertmode'
-;           oparg_C oa = §_oparg_C();
-;           @finish_op = false;
-
-;           int oldcurscript = @curscript;
-;           do
-;           {
-;               update_topline_cursor();                ;; update cursor position and topline
-;               normal_cmd(oa, false);                  ;; execute one command
-;               vpeekc();                               ;; check for end of file
-;           } while (@scriptin[oldcurscript] != null);
-
-;           @State = save_State;
-;           @msg_scroll = save_msg_scroll;
-;           @restart_edit = save_restart_edit;
-;           @p_im = save_insertmode;
-;           @finish_op = save_finish_op;
-;       }
-    ))
-
-;; Close the currently active input script.
-
-(defn- #_void closescript []
-    (§
-;       free_typebuf();
-;       COPY_typebuf(@typebuf, saved_typebuf[@curscript]);
-
-;       libc.fclose(@scriptin[@curscript]);
-;       @scriptin[@curscript] = null;
-;       if (0 < @curscript)
-;           --@curscript;
-    ))
-
 ;; This function is called just before doing a blocking wait.
 ;; Thus after waiting 'updatetime' for a character to arrive.
 
@@ -38176,8 +37523,7 @@
 
 (defn- #_void updatescript [#_byte c]
     (§
-;       if (c != NUL && @scriptout != null)
-;           libc.putc(c, @scriptout);
+        
     ))
 
 ;; Get the next input character.
@@ -38692,8 +38038,7 @@
 ;                           {
                                 ;; write chars to script file(s)
 ;                               if (@typebuf.tb_maplen < mlen)
-;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen),
-;                                                                       mlen - @typebuf.tb_maplen);
+;                                   gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen), mlen - @typebuf.tb_maplen);
 
 ;                               del_typebuf(mlen, 0);               ;; remove the chars
 ;                               set_option_value(u8("paste"), !@p_paste ? TRUE : FALSE, null, 0);
@@ -38797,8 +38142,7 @@
 ;                       {
                             ;; write chars to script file(s)
 ;                           if (@typebuf.tb_maplen < keylen)
-;                               gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen),
-;                                                                   keylen - @typebuf.tb_maplen);
+;                               gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_maplen), keylen - @typebuf.tb_maplen);
 
 ;                           @cmd_silent = (0 < @typebuf.tb_silent);
 ;                           del_typebuf(keylen, 0);     ;; remove the mapped keys
@@ -39174,70 +38518,39 @@
 ;       int len = 0;
 ;       boolean retesc = false;                     ;; return ESC with gotint
 
-        ;; Get a character from a script file if there is one.
-        ;; If interrupted: Stop reading script files, close them all.
+        ;; If we got an interrupt, skip all previously typed characters
+        ;; and return true if quit reading script file.
+        ;; Stop reading typeahead when a single CTRL-C was read,
+        ;; fill_input_buf() returns this when not able to read from stdin.
+        ;; Don't use *buf here, closescript() may have freed typebuf.tb_buf[]
+        ;; and "buf" may be pointing inside typebuf.tb_buf[].
 
-;       int script_char = -1;
-;       while (@scriptin[@curscript] != null && script_char < 0 && !@ignore_script)
+;       if (@got_int)
 ;       {
-;           if (@got_int || (script_char = libc.getc(@scriptin[@curscript])) < 0)
-;           {
-                ;; Reached EOF.
-                ;; Careful: closescript() frees typebuf.tb_buf[] and *buf may
-                ;; point inside typebuf.tb_buf[].  Don't use *buf after this!
-;               closescript();
+;           final int DUM_LEN = MAXMAPLEN * 3 + 3;
+;           Bytes dum = new Bytes(DUM_LEN + 1);
 
-                ;; When reading script file is interrupted, return an ESC to get back to normal mode.
-                ;; Otherwise return -1, because typebuf.tb_buf[] has changed.
-
-;               if (@got_int)
-;                   retesc = true;
-;               else
-;                   return -1;
-;           }
-;           else
+;           for ( ; ; )
 ;           {
-;               buf.be(0, script_char);
-;               len = 1;
+;               len = ui_inchar(dum, DUM_LEN, 0L, 0);
+;               if (len == 0 || (len == 1 && dum.at(0) == 3))
+;                   break;
 ;           }
+;           return retesc ? 1 : 0;
 ;       }
 
-;       if (script_char < 0)        ;; did not get a character from script
-;       {
-            ;; If we got an interrupt, skip all previously typed characters
-            ;; and return true if quit reading script file.
-            ;; Stop reading typeahead when a single CTRL-C was read,
-            ;; fill_input_buf() returns this when not able to read from stdin.
-            ;; Don't use *buf here, closescript() may have freed typebuf.tb_buf[]
-            ;; and "buf" may be pointing inside typebuf.tb_buf[].
+        ;; Always flush the output characters when getting input characters from the user.
 
-;           if (@got_int)
-;           {
-;               final int DUM_LEN = MAXMAPLEN * 3 + 3;
-;               Bytes dum = new Bytes(DUM_LEN + 1);
+;       out_flush();
 
-;               for ( ; ; )
-;               {
-;                   len = ui_inchar(dum, DUM_LEN, 0L, 0);
-;                   if (len == 0 || (len == 1 && dum.at(0) == 3))
-;                       break;
-;               }
-;               return retesc ? 1 : 0;
-;           }
+        ;; Fill up to a third of the buffer, because each character may be tripled below.
 
-            ;; Always flush the output characters when getting input characters from the user.
-
-;           out_flush();
-
-            ;; Fill up to a third of the buffer, because each character may be tripled below.
-
-;           len = ui_inchar(buf, maxlen / 3, wait_time, tb_change_cnt);
-;       }
+;       len = ui_inchar(buf, maxlen / 3, wait_time, tb_change_cnt);
 
 ;       if (typebuf_changed(tb_change_cnt))
 ;           return 0;
 
-;       return fix_input_buffer(buf, len, 0 <= script_char);
+;       return fix_input_buffer(buf, len, false);
     ))
 
 ;; Fix typed characters for use by vgetc() and check_termcode().
@@ -64678,7 +63991,7 @@
             ;; Deleting the current buffer: Need to find another buffer to go to.
             ;; There should be another, otherwise it would have been handled
             ;; above.  However, autocommands may have deleted all buffers.
-            ;; First use au_new_curbuf, if it is valid.
+            ;; First use au_new_curbuf, if it is valid.
             ;; Then prefer the buffer we most recently visited.
             ;; Else try to find one that is loaded, after the current buffer,
             ;; then before the current buffer.
@@ -64686,9 +63999,7 @@
 
 ;           buf = null;     ;; selected buffer
 ;           bp = null;      ;; used when no loaded buffer found
-;           if (@au_new_curbuf != null && buf_valid(@au_new_curbuf))
-;               buf = @au_new_curbuf;
-;           else if (0 < @curwin.w_jumplistlen)
+;           if (0 < @curwin.w_jumplistlen)
 ;           {
 ;               int jumpidx = @curwin.w_jumplistidx - 1;
 ;               if (jumpidx < 0)
@@ -65124,7 +64435,6 @@
 ;       clear_string_option(buf.b_p_cinw);
 ;       clear_string_option(buf.b_p_ep);
 ;       clear_string_option(buf.b_p_qe);
-;       buf.@b_p_ar = -1;
 ;       buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       clear_string_option(buf.b_p_lw);
     ))
@@ -66744,9 +66054,8 @@
             ;; Watch out for autocommands that delete buffers or windows!
 
             ;; Don't execute Win/Buf Enter/Leave autocommands here.
-;       @autocmd_no_enter++;
 ;       win_enter(@lastwin, false);
-;       @autocmd_no_leave++;
+
 ;       for (buffer_C buf = @firstbuf; buf != null && open_wins < count; buf = buf.b_next)
 ;       {
                 ;; Check if this buffer needs a window.
@@ -66803,9 +66112,8 @@
 ;           if (0 < had_tab && tabpage_index(null) <= @p_tpm)
 ;               @cmdmod.tab = 9999;
 ;       }
-;       --@autocmd_no_enter;
+
 ;       win_enter(@firstwin, false);         ;; back to first window
-;       --@autocmd_no_leave;
 
             ;; Close superfluous windows.
 
@@ -66876,7 +66184,7 @@
 ;       }
 
 ;       if (@curbuf != newbuf)       ;; safety check
-;           wipe_buffer(newbuf, false);
+;           wipe_buffer(newbuf);
 
 ;       return differ;
     ))
@@ -66884,8 +66192,7 @@
 ;; Wipe out a buffer and decrement the last buffer number if it was used for
 ;; this buffer.  Call this to wipe out a temp buffer that does not contain any marks.
 
-(defn- #_void wipe_buffer [#_buffer_C buf, #_boolean aucmd]
-    ;; aucmd: When true trigger autocommands.
+(defn- #_void wipe_buffer [#_buffer_C buf]
     (§
 ;       if (buf.b_fnum == @top_file_num - 1)
 ;           --@top_file_num;
@@ -83318,15 +82625,7 @@
 ;               buf_store_time(buf, st);
 
             ;; Don't do anything for a directory.  Might contain the file explorer.
-;           if (mch_isdir(buf.b_fname))
-                ;
-
-            ;; If 'autoread' is set, the buffer has no changes and the file still exists, reload the buffer.
-            ;; Use the buffer-local option value if it was set, the global option value otherwise.
-
-;           else if (((-1 < buf.@b_p_ar) ? (buf.@b_p_ar != FALSE) : @p_ar) && !bufIsChanged(buf) && 0 <= stat_res)
-;               reload = true;
-;           else
+;           if (!mch_isdir(buf.b_fname))
 ;           {
 ;               Bytes reason;
 ;               if (stat_res < 0)
@@ -83548,7 +82847,7 @@
 ;       }
 
 ;       if (savebuf != null && buf_valid(savebuf))
-;           wipe_buffer(savebuf, false);
+;           wipe_buffer(savebuf);
 
         ;; Restore the topline and cursor position and check it (lines may have been removed).
 ;       if (@curbuf.b_ml.ml_line_count < old_topline)
@@ -103733,7 +103032,6 @@
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "center"),        ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "checktime"),     ex_checktime,     (| RANGE NOTADR BUFNAME COUNT EXTRA),                         ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
