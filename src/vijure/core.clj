@@ -28818,79 +28818,53 @@
         (do (emsgn e_ill_char_class, (long klass)) false) ;; should not be here :P
     ))
 
-;; Check for a match with subexpression "subidx".
+;; Check for a match with subexpression "i".
 ;; Return true if it matches.
 
-(defn- #_boolean match-backref [#_regsub_C sub, #_int subidx, #_int' a'bytelen]
+(defn- #_boolean match-backref [#_regsub_C sub, #_int i, #_int' a'len]
     ;; sub: pointers to subexpressions
-    ;; bytelen: out: length of match in bytes
-    (§
-        (when (<= (:in_use sub) subidx)
-            ;; backref was not set, match an empty string
-            (reset! a'bytelen 0)
-            ((ß RETURN) true)
-        )
-
-        (cond (nil? @reg_match)
-        (do
-            (when (or (< (:start_lnum (... (:rs_multi sub) subidx)) 0) (< (:end_lnum (... (:rs_multi sub) subidx)) 0))
-                ;; backref was not set, match an empty string
-                (reset! a'bytelen 0)
-                ((ß RETURN) true)
-            )
-            (cond (and (== (:start_lnum (... (:rs_multi sub) subidx)) @reglnum) (== (:end_lnum (... (:rs_multi sub) subidx)) @reglnum))
-            (do
-                ((ß int[] a'len =) (atom (int (- (:end_col (... (:rs_multi sub) subidx)) (:start_col (... (:rs_multi sub) subidx))))))
-                (when (zero? (cstrncmp (.plus @regline (:start_col (... (:rs_multi sub) subidx))), @reginput, a'len))
-                    (reset! a'bytelen @a'len)
-                    ((ß RETURN) true)
-                )
-            )
+    ;; len: out: length of match in bytes
+    (cond (<= (:in_use sub) i)
+        (do (reset! a'len 0) true) ;; backref was not set, match an empty string
+    (nil? @reg_match)
+        (let [rsi (... (:rs_multi sub) i)]
+            (cond (or (neg? (:start_lnum rsi)) (neg? (:end_lnum rsi)))
+                (do (reset! a'len 0) true) ;; backref was not set, match an empty string
+            (and (== (:start_lnum rsi) @reglnum) (== (:end_lnum rsi) @reglnum))
+                (let [a'n (atom (int (- (:end_col rsi) (:start_col rsi))))]
+                    (if (zero? (cstrncmp (.plus @regline (:start_col rsi)), @reginput, a'n))
+                        (do (reset! a'len @a'n) true)
+                        false
+                    ))
             :else
-            (do
-                (when (== (match-with-backref (:start_lnum (... (:rs_multi sub) subidx)), (:start_col (... (:rs_multi sub) subidx)), (:end_lnum (... (:rs_multi sub) subidx)), (:end_col (... (:rs_multi sub) subidx)), a'bytelen) RA_MATCH)
-                    ((ß RETURN) true)
-                )
+                (== (match-with-backref (:start_lnum rsi), (:start_col rsi), (:end_lnum rsi), (:end_col rsi), a'len) RA_MATCH)
             ))
-        )
-        :else
-        (do
-            (when (or (nil? (:start (... (:rs_line sub) subidx))) (nil? (:end (... (:rs_line sub) subidx))))
-                ;; backref was not set, match an empty string
-                (reset! a'bytelen 0)
-                ((ß RETURN) true)
-            )
-            ((ß int[] a'len =) (atom (int (BDIFF (:end (... (:rs_line sub) subidx)), (:start (... (:rs_line sub) subidx))))))
-            (when (zero? (cstrncmp (:start (... (:rs_line sub) subidx)), @reginput, a'len))
-                (reset! a'bytelen @a'len)
-                ((ß RETURN) true)
-            )
-        ))
-
-        false
+    :else
+        (let [rsi (... (:rs_line sub) i)]
+            (cond (or (nil? (:start rsi)) (nil? (:end rsi)))
+                (do (reset! a'len 0) true) ;; backref was not set, match an empty string
+            :else
+                (let [a'n (atom (int (BDIFF (:end rsi), (:start rsi))))]
+                    (if (zero? (cstrncmp (:start rsi), @reginput, a'n))
+                        (do (reset! a'len @a'n) true)
+                        false
+                    ))
+            ))
     ))
 
-;; Check for a match with \z subexpression "subidx".
+;; Check for a match with \z subexpression "i".
 ;; Return true if it matches.
 
-(defn- #_boolean match-zref [#_int subidx, #_int' a'bytelen]
-    ;; bytelen: out: length of match in bytes
-    (§
-        (cleanup-zsubexpr)
-
-        (when (or (nil? @re_extmatch_in) (nil? (... (:matches @re_extmatch_in) subidx)))
-            ;; backref was not set, match an empty string
-            (reset! a'bytelen 0)
-            ((ß RETURN) true)
-        )
-
-        ((ß int[] a'len =) (atom (int (STRLEN (... (:matches @re_extmatch_in) subidx)))))
-        (when (zero? (cstrncmp (... (:matches @re_extmatch_in) subidx), @reginput, a'len))
-            (reset! a'bytelen @a'len)
-            ((ß RETURN) true)
-        )
-
-        false
+(defn- #_boolean match-zref [#_int i, #_int' a'len] ;; len: out: length of match in bytes
+    (cleanup-zsubexpr)
+    (if (or (nil? @re_extmatch_in) (nil? (... (:matches @re_extmatch_in) i)))
+        ;; backref was not set, match an empty string
+        (do (reset! a'len 0) true)
+        (let [a'n (atom (int (STRLEN (... (:matches @re_extmatch_in) i))))]
+            (if (zero? (cstrncmp (... (:matches @re_extmatch_in) i), @reginput, a'n))
+                (do (reset! a'len @a'n) true)
+                false
+            ))
     ))
 
 ;; Save list IDs for all NFA states of "prog" into "list".
@@ -37762,381 +37736,253 @@
 
 ;; open-line: Add a new line below or above the current line.
 ;;
-;; For VREPLACE mode, we only add a new line when we get to the end of the
-;; file, otherwise we just start replacing the next line.
+;; For VREPLACE mode, we only add a new line when we get to the end of the file,
+;; otherwise we just start replacing the next line.
 ;;
-;; Caller must take care of undo.  Since VREPLACE may affect any number of
-;; lines however, it may call u-save-cursor() again when starting to change a new line.
+;; Caller must take care of undo.  Since VREPLACE may affect any number of lines however,
+;; it may call u-save-cursor() again when starting to change a new line.
 ;;
 ;; "second_line_indent": indent for after ^^D in Insert mode
 ;;
-;; Return true for success, false for failure
+;; Return true for success, false for failure.
 
 (defn- #_boolean open-line [#_int dir, #_int flags, #_int second_line_indent]
     ;; dir: FORWARD or BACKWARD
-    (§
-        ((ß boolean retval =) false)             ;; return value, default is FAIL
-
-        ((ß boolean do_si =) (and (not @p_paste) @(:b_p_si @curbuf)))
-        ((ß boolean no_si =) false)              ;; reset did_si afterwards
-        ((ß boolean saved_pi =) @(:b_p_pi @curbuf))       ;; copy of preserveindent setting
-
-        ;; make a copy of the current line so we can mess with it
-
-        ((ß Bytes saved_line =) (STRDUP (ml-get-curline)))
-        ((ß Bytes next_line =) nil)            ;; copy of the next line
-
-        (when (flag? @State VREPLACE_FLAG)
-            ;; With VREPLACE we make a copy of the next line, which we will be starting to replace.
-            ;; First make the new line empty and let vim play with the indenting and comment leader
-            ;; to its heart's content.  Then we grab what it ended up putting on the new line, put
-            ;; back the original line, and call ins-char() to put each new character onto the line,
-            ;; replacing what was there before and pushing the right stuff onto the replace stack.
-
-            ((ß next_line =) (if (< (:lnum (:w_cursor @curwin)) @orig_line_count)
-                (STRDUP (ml-get (inc (:lnum (:w_cursor @curwin)))))
-                (STRDUP (u8 ""))
-            ))
-
-            ;; In VREPLACE mode, a NL replaces the rest of the line, and starts replacing the next line,
-            ;; so push all of the characters left on the line onto the replace stack.  We'll push any other
-            ;; characters that might be replaced at the start of the next line (due to autoindent, etc.)
-            ;; a bit later.
-
-            (replace-push NUL)      ;; call twice because BS over NL expects it
-            (replace-push NUL)
-            (loop-when-recur [#_Bytes s (.plus saved_line (:col (:w_cursor @curwin)))] (non-eos? s) [(.plus s (replace-push-mb s))]
-;               ;
-            )
-            (eos! saved_line (:col (:w_cursor @curwin)))
-        )
-
-        ((ß Bytes p_extra =) nil)              ;; what goes to next line
-        ((ß int first_char =) NUL)
-        ((ß int extra_len =) 0)                  ;; length of "p_extra" string
-        ((ß int saved_char =) NUL)
-
-        (when (and (flag? @State INSERT) (non-flag? @State VREPLACE_FLAG))
-            ((ß p_extra =) (.plus saved_line (:col (:w_cursor @curwin))))
-            (when do_si              ;; need first char after new line break
-                ((ß Bytes p =) (skipwhite p_extra))
-                ((ß first_char =) (.at p 0))
-            )
-            ((ß extra_len =) (STRLEN p_extra))
-            ((ß saved_char =) (.at p_extra 0))
-            (eos! p_extra)
-        )
-
+    (let [#_boolean do_si (and (not @p_paste) @(:b_p_si @curbuf))
+          ;; make a copy of the current line so we can mess with it
+          #_Bytes saved_line (STRDUP (ml-get-curline))
+          #_Bytes next_line
+            (when (flag? @State VREPLACE_FLAG)
+                ;; With VREPLACE we make a copy of the next line, which we will be starting to replace.
+                ;; First make the new line empty and let vim play with the indenting and comment leader
+                ;; to its heart's content.  Then we grab what it ended up putting on the new line, put
+                ;; back the original line, and call ins-char() to put each new character onto the line,
+                ;; replacing what was there before and pushing the right stuff onto the replace stack.
+                (let [lnum (:lnum (:w_cursor @curwin)) col (:col (:w_cursor @curwin))
+                      next_line (STRDUP (if (< lnum @orig_line_count) (ml-get (inc lnum)) (u8 "")))]
+                    ;; In VREPLACE mode, a NL replaces the rest of the line, and starts replacing the next line,
+                    ;; so push all of the characters left on the line onto the replace stack.  We'll push any other
+                    ;; characters that might be replaced at the start of the next line (due to autoindent, etc.)
+                    ;; a bit later.
+                    (replace-push NUL)      ;; call twice because BS over NL expects it
+                    (replace-push NUL)
+                    (loop-when-recur [#_Bytes s (.plus saved_line col)] (non-eos? s) [(.plus s (replace-push-mb s))] => (eos! saved_line col))
+                    next_line
+                ))
+          [#_Bytes p_extra #_int first_char #_int saved_char]
+            (if (and (flag? @State INSERT) (non-flag? @State VREPLACE_FLAG))
+                (let [p_extra (.plus saved_line (:col (:w_cursor @curwin)))
+                      first_char (if do_si (.at (skipwhite p_extra) 0) NUL) ;; need first char after new line break
+                      saved_char (.at p_extra 0)]
+                    [(eos! p_extra) first_char saved_char])
+                [nil NUL NUL]
+            )]
         (u-clearline)              ;; cannot do "U" command when adding lines
         (reset! did_si false)
         (reset! ai_col 0)
+        ;; If we just did an auto-indent, we didn't type anything on the prior line, and it should be truncated.
+        ;; Do this even if 'ai' is not set, because automatically inserting a comment leader also sets did_ai.
+        (let [#_boolean trunc_line (and (== dir FORWARD) @did_ai)   ;; truncate current line afterwards
+              ;; If 'autoindent' and/or 'smartindent' is set, try to figure out what indent to use for the new line.
+              #_int ni 0                ;; auto-indent of the new line
+              #_boolean no_si false     ;; reset did_si afterwards
+              [ni no_si]
+                (if (or @(:b_p_ai @curbuf) do_si)
+                    (let [ni (get-indent-str saved_line, @(:b_p_ts @curbuf)) ;; count white space on current line
+                          ni (if (zero? ni) second_line_indent ni) ;; for ^^D command in insert mode
+                          ;; Do smart indenting.
+                          ;; In insert/replace mode (only when dir == FORWARD) we may move some text to the next line.
+                          ;; If it starts with '{', don't add an indent.  Fixes inserting a NL before '{' in line
+                          ;;      "if (condition) {"
+                          [ni no_si]
+                            (if (and (not trunc_line) do_si (non-eos? saved_line) (or (nil? p_extra) (!= first_char (byte \{))))
+                                (let [#_pos_C old_cursor (:w_cursor @curwin) #_Bytes s saved_line
+                                      [ni no_si]
+                                        (cond (== dir FORWARD)
+                                            (let [[s ni] ;; Skip preprocessor directives, unless they are recognised as comments.
+                                                    (if (at? s (byte \#))
+                                                        (let [s (loop-when s (and (at? s (byte \#)) (< 1 (:lnum (:w_cursor @curwin)))) => s
+                                                                    (swap! curwin update-in [:w_cursor :lnum] dec)
+                                                                    (recur (ml-get (:lnum (:w_cursor @curwin))))
+                                                                )]
+                                                            [s (get-indent)])
+                                                        [s ni])
+                                                  ;; Find last non-blank in line.
+                                                  #_Bytes p (loop-when-recur [p (.plus s (dec (STRLEN s)))] (and (BLT s, p) (vim-iswhite (.at p 0))) (.minus p 1) => p)
+                                                  #_byte last_char (.at p 0)
+                                                  ;; find the character just before the '{' or ';'
+                                                  p (if (any == last_char (byte \{) (byte \;))
+                                                        (loop-when-recur [p (if (BLT s, p) (.minus p 1) p)] (and (BLT s, p) (vim-iswhite (.at p 0))) (.minus p 1) => p)
+                                                        p)
+                                                  ;; Try to catch lines that are split over multiple lines.
+                                                  ;;  eg:
+                                                  ;;      if (condition &&
+                                                  ;;                  condition) {
+                                                  ;;          Should line up here!
+                                                  ;;      }
+                                                  [s ni]
+                                                    (if (at? p (byte \)))
+                                                        (let [_ (swap! curwin assoc-in [:w_cursor :col] (BDIFF p, s))
+                                                              #_pos_C pos (findmatch nil, (byte \())]
+                                                            (if (some? pos)
+                                                                (do (swap! curwin assoc-in [:w_cursor :lnum] (:lnum pos))
+                                                                    [(ml-get-curline) (get-indent)])
+                                                                [s ni]
+                                                            ))
+                                                        [s ni])
+                                                  ;; If last character is '{' do indent, without checking for "if" and the like.
+                                                  no_si
+                                                    (cond (== last_char (byte \{))
+                                                        (do (reset! did_si true) true) ;; do indent ;; don't delete it when '{' typed
+                                                    ;; Look for "if" and the like, use 'cinwords'.
+                                                    ;; Don't do this if the previous line ended in ';' or '}'.
+                                                    (and (!= last_char (byte \;)) (!= last_char (byte \})) (cin-is-cinword s))
+                                                        (do (reset! did_si true) no_si)
+                                                    :else
+                                                        no_si
+                                                    )]
+                                                [ni no_si])
+                                        :else ;; (== dir BACKWARD)
+                                            (let [[s ni] ;; Skip preprocessor directives, unless they are recognised as comments.
+                                                    (if (at? s (byte \#))
+                                                        (let [lmax (:ml_line_count (:b_ml @curbuf))
+                                                              [s #_boolean bashed]
+                                                                (loop-when [s s bashed false] (and (or (at? s (byte \#)) bashed) (< (:lnum (:w_cursor @curwin)) lmax)) => [s bashed]
+                                                                    (let [bashed (and (non-eos? s) (at? s (dec (STRLEN s)) (byte \\)))]
+                                                                        (swap! curwin update-in [:w_cursor :lnum] inc)
+                                                                        (recur (ml-get (:lnum (:w_cursor @curwin))) bashed))
+                                                                )]
+                                                            [s (if bashed 0 (get-indent))])
+                                                        [s ni]
+                                                    )]
+                                                (if (at? (skipwhite s) (byte \}))
+                                                    (reset! did_si true)            ;; line starts with '}': do indent
+                                                    (reset! can_si_back true))      ;; can delete indent when '{' typed
+                                                [ni no_si])
+                                        )]
+                                    (swap! curwin assoc :w_cursor old_cursor)
+                                    [ni no_si])
+                                [ni no_si]
+                            )]
+                        (when do_si
+                            (reset! can_si true))
+                        (reset! did_ai true)
+                        [ni no_si])
+                    [ni no_si]
+                )]
 
-        ;; If we just did an auto-indent, then we didn't type anything on the
-        ;; prior line, and it should be truncated.  Do this even if 'ai' is not set
-        ;; because automatically inserting a comment leader also sets did_ai.
+            (let [p_extra
+                    (if (some? p_extra)
+                        (do (.be p_extra 0, saved_char)          ;; restore char that NUL replaced
+                            ;; When 'ai' set, skip to the first non-blank.
+                            ;;
+                            ;; When in REPLACE mode, put the deleted blanks on the replace stack,
+                            ;; preceded by a NUL, so they can be put back when a BS is entered.
+                            (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
+                                (replace-push NUL))      ;; end of extra blanks
+                            (let [p_extra
+                                    (if @(:b_p_ai @curbuf)
+                                        (loop-when p_extra (and (or (at? p_extra (byte \space)) (at? p_extra TAB)) (not (utf-iscomposing (us-ptr2char p_extra, 1)))) => p_extra
+                                            (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
+                                                (replace-push (.at p_extra 0)))
+                                            (recur (.plus p_extra 1)))
+                                        p_extra
+                                    )]
+                                (when (non-eos? p_extra)
+                                    (reset! did_ai false))              ;; append some text, don't truncate now
+                                p_extra
+                            ))
+                        (u8 "") ;; append empty line
+                    )]
 
-        ((ß boolean trunc_line =) (and (== dir FORWARD) @did_ai))         ;; truncate current line afterwards
+                (let [#_pos_C old_cursor (:w_cursor @curwin)]
+                    (when (== dir BACKWARD)
+                        (swap! curwin update-in [:w_cursor :lnum] dec))
+                    (let-when [#_boolean did_append
+                            (cond (and (flag? @State VREPLACE_FLAG) (< (:lnum old_cursor) @orig_line_count))
+                                (do ;; In VREPLACE mode we are starting to replace the next line.
+                                    (swap! curwin update-in [:w_cursor :lnum] inc)
+                                    (when (<= (+ (:lnum @insStart) @vr_lines_changed) (:lnum (:w_cursor @curwin)))
+                                        ;; In case we NL to a new line, BS to the previous one, and NL
+                                        ;; again, we don't want to save the new line for undo twice.
+                                        (u-save-cursor)            ;; errors are ignored!
+                                        (swap! vr_lines_changed inc))
+                                    (ml-replace (:lnum (:w_cursor @curwin)), p_extra)
+                                    (changed-bytes (:lnum (:w_cursor @curwin)), 0)
+                                    (swap! curwin update-in [:w_cursor :lnum] dec)
+                                    false)
+                            (ml-append (:lnum (:w_cursor @curwin)), p_extra)
+                                (do ;; Postpone calling changed-lines(), because it would mess up folding with markers.
+                                    (mark-adjust (inc (:lnum (:w_cursor @curwin))), MAXLNUM, 1, 0)
+                                    true)
+                            )] (some? did_append) => false
 
-        ((ß pos_C old_cursor =) (NEW_pos_C))     ;; old cursor position
-
-        ((ß int newindent =) 0)                  ;; auto-indent of the new line
-
-        ;; If 'autoindent' and/or 'smartindent' is set, try to figure out what
-        ;; indent to use for the new line.
-
-        (when (or @(:b_p_ai @curbuf) do_si)
-            ;; count white space on current line
-
-            ((ß newindent =) (get-indent-str saved_line, (int @(:b_p_ts @curbuf))))
-            ((ß newindent =) (if (zero? newindent) second_line_indent newindent)) ;; for ^^D command in insert mode
-
-            ;; Do smart indenting.
-            ;; In insert/replace mode (only when dir == FORWARD)
-            ;; we may move some text to the next line.  If it starts with '{'
-            ;; don't add an indent.  Fixes inserting a NL before '{' in line
-            ;;      "if (condition) {"
-
-            (when (and (not trunc_line) do_si (non-eos? saved_line) (or (nil? p_extra) (!= first_char (byte \{))))
-                (COPY-pos old_cursor, (:w_cursor @curwin))
-
-                ((ß Bytes s =) saved_line)
-
-                (cond (== dir FORWARD)
-                (do
-                    ;; Skip preprocessor directives, unless they are recognised as comments.
-
-                    (when (at? s (byte \#))
-                        (loop-when [] (and (at? s (byte \#)) (< 1 (:lnum (:w_cursor @curwin))))
-                            ((ß s =) (ml-get (ß --@curwin.w_cursor.lnum)))
-                            (recur)
-                        )
-                        ((ß newindent =) (get-indent))
-                    )
-
-                    ;; Find last non-blank in line.
-                    ((ß Bytes p =) (.plus s (dec (STRLEN s))))
-                    (loop-when [] (and (BLT s, p) (vim-iswhite (.at p 0)))
-                        ((ß p =) (.minus p 1))
-                        (recur)
-                    )
-                    ((ß byte last_char =) (.at p 0))
-
-                    ;; find the character just before the '{' or ';'
-
-                    (when (any == last_char (byte \{) (byte \;))
-                        ((ß p =) (if (BLT s, p) (.minus p 1) p))
-                        (loop-when [] (and (BLT s, p) (vim-iswhite (.at p 0)))
-                            ((ß p =) (.minus p 1))
-                            (recur)
-                        )
-                    )
-
-                    ;; Try to catch lines that are split over multiple
-                    ;; lines.  eg:
-                    ;;      if (condition &&
-                    ;;                  condition) {
-                    ;;          Should line up here!
-                    ;;      }
-
-                    (when (at? p (byte \)))
-                        (swap! curwin assoc-in [:w_cursor :col] (BDIFF p, s))
-                        ((ß pos_C pos =) (findmatch nil, (byte \()))
-                        (when (some? pos)
-                            (swap! curwin assoc-in [:w_cursor :lnum] (:lnum pos))
-                            ((ß newindent =) (get-indent))
-                            ((ß s =) (ml-get-curline))
-                        )
-                    )
-
-                    ;; If last character is '{' do indent, without checking for "if" and the like.
-
-                    (cond (== last_char (byte \{))
-                    (do
-                        (reset! did_si true)  ;; do indent
-                        ((ß no_si =) true)   ;; don't delete it when '{' typed
-                    )
-
-                    ;; Look for "if" and the like, use 'cinwords'.
-                    ;; Don't do this if the previous line ended in ';' or '}'.
-
-                    (and (!= last_char (byte \;)) (!= last_char (byte \})) (cin-is-cinword s))
-                    (do
-                        (reset! did_si true)
+                        (let [#_boolean saved_pi @(:b_p_pi @curbuf)
+                              #_int newcol
+                                (if (or (non-zero? ni) @did_si)
+                                    (let [_ (swap! curwin update-in [:w_cursor :lnum] inc)
+                                          ni (if @did_si (let [#_int sw (get-sw-value)] (+ (if @p_sr (- ni (% ni sw)) ni) sw)) ni)]
+                                        (if @(:b_p_ci @curbuf)
+                                            (do (copy-indent ni, saved_line)
+                                                ;; Set the 'preserveindent' option so that any further screwing with the line
+                                                ;; doesn't entirely destroy our efforts to preserve it.
+                                                ;; It gets restored at the function end.
+                                                (reset! (:b_p_pi @curbuf) true))
+                                            (set-indent ni, SIN_INSERT))
+                                        (reset! ai_col (:col (:w_cursor @curwin)))
+                                        ;; In REPLACE mode, for each character in the new indent, there must
+                                        ;; be a NUL on the replace stack, for when it is deleted with BS.
+                                        (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
+                                            (dotimes [_ (:col (:w_cursor @curwin))]
+                                                (replace-push NUL)
+                                            ))
+                                        (when no_si
+                                            (reset! did_si false))
+                                        (:col (:w_cursor @curwin)))
+                                    0)
+                              _ (swap! curwin assoc :w_cursor old_cursor)
+                              did_append
+                                (if (== dir FORWARD)
+                                    (let [did_append
+                                            (if (or trunc_line (flag? @State INSERT))
+                                                (let [lnum (:lnum (:w_cursor @curwin)) col (:col (:w_cursor @curwin))]
+                                                    ;; Truncate current line at cursor.
+                                                    (eos! saved_line col)
+                                                    ;; Remove trailing white space.
+                                                    (when trunc_line
+                                                        (truncate-spaces saved_line))
+                                                    (ml-replace lnum, saved_line)
+                                                    (if did_append
+                                                        (changed-lines lnum, col, (inc lnum), 1)
+                                                        (changed-bytes lnum, col))
+                                                    false)
+                                                did_append
+                                            )]
+                                        ;; Put the cursor on the new line.
+                                        ;; Careful: the scrollup() above may have moved w_cursor, we must use old_cursor.
+                                        (swap! curwin assoc-in [:w_cursor :lnum] (inc (:lnum old_cursor)))
+                                        did_append)
+                                    did_append
+                                )]
+                            (when did_append
+                                (changed-lines (:lnum (:w_cursor @curwin)), 0, (:lnum (:w_cursor @curwin)), 1))
+                            (swap! curwin update :w_cursor assoc :col newcol :coladd 0)
+                            ;; Finally, VREPLACE gets the stuff on the new line, then puts back the
+                            ;; original line, and inserts the new stuff char by char, pushing old stuff
+                            ;; onto the replace stack (via ins-char()).
+                            (when (flag? @State VREPLACE_FLAG)
+                                ;; Put new line in "p_extra".
+                                (let [p_extra (STRDUP (ml-get-curline))]
+                                    ;; Put back original line.
+                                    (ml-replace (:lnum (:w_cursor @curwin)), next_line)
+                                    ;; Insert new stuff into line again.
+                                    (swap! curwin update :w_cursor assoc :col 0 :coladd 0)
+                                    (ins-bytes p_extra)             ;; will call changed-bytes()
+                                ))
+                            (reset! (:b_p_pi @curbuf) saved_pi)
+                            true)
                     ))
-                )
-                :else ;; dir == BACKWARD
-                (do
-                    ;; Skip preprocessor directives, unless they are recognised as comments.
-
-                    (when (at? s (byte \#))
-                        ((ß boolean was_backslashed =) false)
-
-                        (loop-when [] (and (or (at? s (byte \#)) was_backslashed) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
-                            ((ß was_backslashed =) (and (non-eos? s) (at? s (dec (STRLEN s)) (byte \\))))
-                            ((ß s =) (ml-get (ß ++@curwin.w_cursor.lnum)))
-                            (recur)
-                        )
-                        ((ß newindent =) (if was_backslashed 0 (get-indent)))
-                    )
-
-                    ((ß Bytes p =) (skipwhite s))
-                    (if (at? p (byte \}))
-                        (reset! did_si true)                ;; if line starts with '}': do indent
-                        (reset! can_si_back true))           ;; can delete indent when '{' typed
-                ))
-
-                (swap! curwin assoc :w_cursor old_cursor)
-            )
-            (when do_si
-                (reset! can_si true))
-
-            (reset! did_ai true)
-        )
-
-        ((ß Bytes allocated =) nil)            ;; allocated memory
-
-        ((ß Bytes[] a'lead_flags =) (atom (#_Bytes object)))                  ;; position in 'comments' for comment leader
-        ((ß Bytes leader =) nil)               ;; copy of comment leader
-
-        ((ß int newcol =) 0)                     ;; new cursor column
-
-        ((ß int less_cols_off =) 0)              ;; columns to skip for mark adjust
-        ((ß int less_cols =) 0)                  ;; less columns for mark in new line
-
-        ;; (State == INSERT || State == REPLACE), only when dir == FORWARD
-        (when (some? p_extra)
-            (.be p_extra 0, saved_char)          ;; restore char that NUL replaced
-
-            ;; When 'ai' set, skip to the first non-blank.
-            ;;
-            ;; When in REPLACE mode, put the deleted blanks on the replace stack,
-            ;; preceded by a NUL, so they can be put back when a BS is entered.
-
-            (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
-                (replace-push NUL))      ;; end of extra blanks
-            (when @(:b_p_ai @curbuf)
-                (loop-when [] (and (or (at? p_extra (byte \space)) (at? p_extra TAB)) (not (utf-iscomposing (us-ptr2char p_extra, 1))))
-                    (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
-                        (replace-push (.at p_extra 0)))
-                    ((ß p_extra =) (.plus p_extra 1))
-                    ((ß less_cols_off =) (inc less_cols_off))
-                    (recur)
-                )
-            )
-            (if (non-eos? p_extra)
-                (reset! did_ai false))             ;; append some text, don't truncate now
-
-            ;; columns for marks adjusted for removed columns
-            ((ß less_cols =) (BDIFF p_extra, saved_line))
-        )
-
-        ((ß p_extra =) (if (nil? p_extra) (u8 "") p_extra))                   ;; append empty line
-
-        (COPY-pos old_cursor, (:w_cursor @curwin))
-        (when (== dir BACKWARD)
-            (swap! curwin update-in [:w_cursor :lnum] dec))
-
-;       theend:
-;       {
-            (ß boolean did_append)
-            (cond (or (non-flag? @State VREPLACE_FLAG) (<= @orig_line_count (:lnum old_cursor)))
-            (do
-                (if (not (ml-append (:lnum (:w_cursor @curwin)), p_extra))
-                    (ß BREAK theend)
-                )
-                ;; Postpone calling changed-lines(), because it would mess up folding with markers.
-                (mark-adjust (inc (:lnum (:w_cursor @curwin))), MAXLNUM, 1, 0)
-                ((ß did_append =) true)
-            )
-            :else
-            (do
-                ;; In VREPLACE mode we are starting to replace the next line.
-
-                (swap! curwin update-in [:w_cursor :lnum] inc)
-                (when (<= (+ (:lnum @insStart) @vr_lines_changed) (:lnum (:w_cursor @curwin)))
-                    ;; In case we NL to a new line, BS to the previous one, and NL
-                    ;; again, we don't want to save the new line for undo twice.
-
-                    (u-save-cursor)            ;; errors are ignored!
-                    (swap! vr_lines_changed inc)
-                )
-                (ml-replace (:lnum (:w_cursor @curwin)), p_extra)
-                (changed-bytes (:lnum (:w_cursor @curwin)), 0)
-                (swap! curwin update-in [:w_cursor :lnum] dec)
-                ((ß did_append =) false)
             ))
-
-            (when (or (non-zero? newindent) @did_si)
-                (swap! curwin update-in [:w_cursor :lnum] inc)
-                (when @did_si
-                    ((ß int sw =) (int (get-sw-value)))
-                    ((ß newindent =) (+ (if @p_sr (- newindent (% newindent sw)) newindent) sw))
-                )
-                ;; Copy the indent.
-                (cond @(:b_p_ci @curbuf)
-                (do
-                    (copy-indent newindent, saved_line)
-
-                    ;; Set the 'preserveindent' option so that any further screwing
-                    ;; with the line doesn't entirely destroy our efforts to preserve it.
-                    ;; It gets restored at the function end.
-
-                    (reset! (:b_p_pi @curbuf) true)
-                )
-                :else
-                (do
-                    (set-indent newindent, SIN_INSERT)
-                ))
-                ((ß less_cols =) (- less_cols (:col (:w_cursor @curwin))))
-
-                (reset! ai_col (:col (:w_cursor @curwin)))
-
-                ;; In REPLACE mode, for each character in the new indent, there must
-                ;; be a NUL on the replace stack, for when it is deleted with BS.
-
-                (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
-                    (dotimes [_ (:col (:w_cursor @curwin))]
-                        (replace-push NUL)
-                    )
-                )
-                ((ß newcol =) (+ newcol (:col (:w_cursor @curwin))))
-                (if no_si
-                    (reset! did_si false))
-            )
-
-            (swap! curwin assoc :w_cursor old_cursor)
-
-            (when (== dir FORWARD)
-                (when (or trunc_line (flag? @State INSERT))
-                    ;; truncate current line at cursor
-                    (eos! saved_line (:col (:w_cursor @curwin)))
-                    ;; Remove trailing white space.
-                    (when trunc_line
-                        (truncate-spaces saved_line))
-                    (ml-replace (:lnum (:w_cursor @curwin)), saved_line)
-                    ((ß saved_line =) nil)
-                    (cond did_append
-                    (do
-                        (changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (inc (:lnum (:w_cursor @curwin))), 1)
-                        ((ß did_append =) false)
-                    )
-                    :else
-                    (do
-                        (changed-bytes (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)))
-                    ))
-                )
-
-                ;; Put the cursor on the new line.
-                ;; Careful: the scrollup() above may have moved w_cursor, we must use old_cursor.
-
-                (swap! curwin assoc-in [:w_cursor :lnum] (inc (:lnum old_cursor)))
-            )
-            (when did_append
-                (changed-lines (:lnum (:w_cursor @curwin)), 0, (:lnum (:w_cursor @curwin)), 1))
-
-            (swap! curwin update :w_cursor assoc :col newcol :coladd 0)
-
-            ;; In VREPLACE mode, we are handling the replace stack ourselves,
-            ;; so stop fixthisline() from doing it (via change-indent()) by
-            ;; telling it we're in normal INSERT mode.
-
-            (ß int vreplace_mode)
-            (cond (flag? @State VREPLACE_FLAG)
-            (do
-                ((ß vreplace_mode =) @State)          ;; so we know to put things right later
-                (reset! State INSERT)
-            )
-            :else
-            (do
-                ((ß vreplace_mode =) 0)
-            ))
-
-            (when (non-zero? vreplace_mode)
-                (reset! State vreplace_mode))
-
-            ;; Finally, VREPLACE gets the stuff on the new line, then puts back the
-            ;; original line, and inserts the new stuff char by char, pushing old stuff
-            ;; onto the replace stack (via ins-char()).
-
-            (when (flag? @State VREPLACE_FLAG)
-                ;; Put new line in "p_extra".
-                ((ß p_extra =) (STRDUP (ml-get-curline)))
-
-                ;; Put back original line.
-                (ml-replace (:lnum (:w_cursor @curwin)), next_line)
-
-                ;; Insert new stuff into line again.
-                (swap! curwin assoc-in [:w_cursor :col] 0)
-                (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                (ins-bytes p_extra)             ;; will call changed-bytes()
-                ((ß next_line =) nil)
-            )
-
-            ((ß retval =) true)              ;; success!
-;       }
-
-        (reset! (:b_p_pi @curbuf) saved_pi)
-        retval
     ))
 
 ;; Return the number of screen rows occupied by buffer line "lnum".
