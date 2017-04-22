@@ -22,7 +22,6 @@
 (defn- boolean? [b] (instance? Boolean b))
 
 (def- byte! unchecked-byte)
-(def- int! unchecked-int)
 
 (defn- boolean ([] (boolean nil)) ([b] (cond (nil? b) false (boolean? b) b :else (throw (IllegalArgumentException. (str "fuzzy boolean " b))))))
 (defn- byte    ([] (byte nil))    ([n] (clojure.core/byte (if (nil? n) 0 n))))
@@ -47,9 +46,9 @@
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
-(def- F (map #(symbol (str % "_F")) '(ex_func getline nv_func)))
+(def- F (map #(symbol (str % "_F")) '(ex_func nv_func)))
 
-(let [I '(byte byte! byte* byte** short short* int int! int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
+(let [I '(byte byte! byte* byte** short short* int int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)))]
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (~t ~(second s))) (f t (nnext s))) '(nil)))]
         (defmacro final [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
@@ -872,7 +871,6 @@
 ;; flags for do_cmdline()
 (final int DOCMD_VERBOSE   0x01)    ;; included command in error message
 (final int DOCMD_NOWAIT    0x02)    ;; don't call wait_return() and friends
-(final int DOCMD_REPEAT    0x04)    ;; repeat exec. until getline() returns null
 (final int DOCMD_KEYTYPED  0x08)    ;; don't reset keyTyped
 (final int DOCMD_KEEPLINE  0x20)    ;; keep typed line for repeating with "."
 
@@ -2229,130 +2227,127 @@
     ADDR_WINDOWS        1)
 
 (final int
-    CMD_append 0,
-    CMD_abbreviate 1,
-    CMD_abclear 2,
-    CMD_aboveleft 3,
-    CMD_ascii 4,
-    CMD_belowright 5,
-    CMD_botright 6,
-    CMD_change 7,
-    CMD_cabbrev 8,
-    CMD_cabclear 9,
-    CMD_changes 10,
-    CMD_close 11,
-    CMD_cmap 12,
-    CMD_cmapclear 13,
-    CMD_cnoremap 14,
-    CMD_cnoreabbrev 15,
-    CMD_copy 16,
-    CMD_cunmap 17,
-    CMD_cunabbrev 18,
-    CMD_delete 19,
-    CMD_delmarks 20,
-    CMD_digraphs 21,
-    CMD_earlier 22,
-    CMD_fixdel 23,
-    CMD_global 24,
-    CMD_history 25,
-    CMD_insert 26,
-    CMD_iabbrev 27,
-    CMD_iabclear 28,
-    CMD_imap 29,
-    CMD_imapclear 30,
-    CMD_inoremap 31,
-    CMD_inoreabbrev 32,
-    CMD_iunmap 33,
-    CMD_iunabbrev 34,
-    CMD_join 35,
-    CMD_jumps 36,
-    CMD_k 37,
-    CMD_keepmarks 38,
-    CMD_keepjumps 39,
-    CMD_keeppatterns 40,
-    CMD_list 41,
-    CMD_later 42,
-    CMD_leftabove 43,
-    CMD_lockmarks 44,
-    CMD_move 45,
-    CMD_mark 46,
-    CMD_map 47,
-    CMD_mapclear 48,
-    CMD_marks 49,
-    CMD_nmap 50,
-    CMD_nmapclear 51,
-    CMD_nnoremap 52,
-    CMD_noremap 53,
-    CMD_nohlsearch 54,
-    CMD_noreabbrev 55,
-    CMD_normal 56,
-    CMD_number 57,
-    CMD_nunmap 58,
-    CMD_omap 59,
-    CMD_omapclear 60,
-    CMD_only 61,
-    CMD_onoremap 62,
-    CMD_ounmap 63,
-    CMD_print 64,
-    CMD_put 65,
-    CMD_redo 66,
-    CMD_redraw 67,
-    CMD_redrawstatus 68,
-    CMD_registers 69,
-    CMD_resize 70,
-    CMD_retab 71,
-    CMD_rightbelow 72,
-    CMD_substitute 73,
-    CMD_set 74,
-    CMD_silent 75,
-    CMD_smagic 76,
-    CMD_smap 77,
-    CMD_smapclear 78,
-    CMD_snomagic 79,
-    CMD_snoremap 80,
-    CMD_split 81,
-    CMD_stop 82,
-    CMD_startinsert 83,
-    CMD_startgreplace 84,
-    CMD_startreplace 85,
-    CMD_stopinsert 86,
-    CMD_sunmap 87,
-    CMD_suspend 88,
-    CMD_syncbind 89,
-    CMD_t 90,
-    CMD_topleft 91,
-    CMD_undo 92,
-    CMD_undojoin 93,
-    CMD_undolist 94,
-    CMD_unabbreviate 95,
-    CMD_unmap 96,
-    CMD_unsilent 97,
-    CMD_vglobal 98,
-    CMD_verbose 99,
-    CMD_vertical 100,
-    CMD_vmap 101,
-    CMD_vmapclear 102,
-    CMD_vnoremap 103,
-    CMD_vsplit 104,
-    CMD_vunmap 105,
-    CMD_wincmd 106,
-    CMD_xmap 107,
-    CMD_xmapclear 108,
-    CMD_xnoremap 109,
-    CMD_xunmap 110,
-    CMD_yank 111,
-    CMD_z 112,
+    CMD_abbreviate 0,
+    CMD_abclear 1,
+    CMD_aboveleft 2,
+    CMD_ascii 3,
+    CMD_belowright 4,
+    CMD_botright 5,
+    CMD_cabbrev 6,
+    CMD_cabclear 7,
+    CMD_changes 8,
+    CMD_close 9,
+    CMD_cmap 10,
+    CMD_cmapclear 11,
+    CMD_cnoremap 12,
+    CMD_cnoreabbrev 13,
+    CMD_copy 14,
+    CMD_cunmap 15,
+    CMD_cunabbrev 16,
+    CMD_delete 17,
+    CMD_delmarks 18,
+    CMD_digraphs 19,
+    CMD_earlier 20,
+    CMD_fixdel 21,
+    CMD_global 22,
+    CMD_history 23,
+    CMD_iabbrev 24,
+    CMD_iabclear 25,
+    CMD_imap 26,
+    CMD_imapclear 27,
+    CMD_inoremap 28,
+    CMD_inoreabbrev 29,
+    CMD_iunmap 30,
+    CMD_iunabbrev 31,
+    CMD_join 32,
+    CMD_jumps 33,
+    CMD_k 34,
+    CMD_keepmarks 35,
+    CMD_keepjumps 36,
+    CMD_keeppatterns 37,
+    CMD_list 38,
+    CMD_later 39,
+    CMD_leftabove 40,
+    CMD_lockmarks 41,
+    CMD_move 42,
+    CMD_mark 43,
+    CMD_map 44,
+    CMD_mapclear 45,
+    CMD_marks 46,
+    CMD_nmap 47,
+    CMD_nmapclear 48,
+    CMD_nnoremap 49,
+    CMD_noremap 50,
+    CMD_nohlsearch 51,
+    CMD_noreabbrev 52,
+    CMD_normal 53,
+    CMD_number 54,
+    CMD_nunmap 55,
+    CMD_omap 56,
+    CMD_omapclear 57,
+    CMD_only 58,
+    CMD_onoremap 59,
+    CMD_ounmap 60,
+    CMD_print 61,
+    CMD_put 62,
+    CMD_redo 63,
+    CMD_redraw 64,
+    CMD_redrawstatus 65,
+    CMD_registers 66,
+    CMD_resize 67,
+    CMD_retab 68,
+    CMD_rightbelow 69,
+    CMD_substitute 70,
+    CMD_set 71,
+    CMD_silent 72,
+    CMD_smagic 73,
+    CMD_smap 74,
+    CMD_smapclear 75,
+    CMD_snomagic 76,
+    CMD_snoremap 77,
+    CMD_split 78,
+    CMD_stop 79,
+    CMD_startinsert 80,
+    CMD_startgreplace 81,
+    CMD_startreplace 82,
+    CMD_stopinsert 83,
+    CMD_sunmap 84,
+    CMD_suspend 85,
+    CMD_syncbind 86,
+    CMD_t 87,
+    CMD_topleft 88,
+    CMD_undo 89,
+    CMD_undojoin 90,
+    CMD_undolist 91,
+    CMD_unabbreviate 92,
+    CMD_unmap 93,
+    CMD_unsilent 94,
+    CMD_vglobal 95,
+    CMD_verbose 96,
+    CMD_vertical 97,
+    CMD_vmap 98,
+    CMD_vmapclear 99,
+    CMD_vnoremap 100,
+    CMD_vsplit 101,
+    CMD_vunmap 102,
+    CMD_wincmd 103,
+    CMD_xmap 104,
+    CMD_xmapclear 105,
+    CMD_xnoremap 106,
+    CMD_xunmap 107,
+    CMD_yank 108,
+    CMD_z 109,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 113,
-    CMD_and 114,
-    CMD_lshift 115,
-    CMD_equal 116,
-    CMD_rshift 117,
-    CMD_tilde 118,
+    CMD_pound 110,
+    CMD_and 111,
+    CMD_lshift 112,
+    CMD_equal 113,
+    CMD_rshift 114,
+    CMD_tilde 115,
 
-    CMD_SIZE 119)     ;; MUST be after all real commands!
+    CMD_SIZE 116)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2371,13 +2366,9 @@
         (field long         line2)          ;; the second line number or count
         (field int          addr_type)      ;; type of the count/range
         (field int          flags)          ;; extra flags after count: EXFLAG_
-        (field long         do_ecmd_lnum)   ;; the line number in an edited file
         (field int          amount)         ;; number of '>' or '<' for shift command
         (field int          regname)        ;; register name (NUL if none)
-        (field int          useridx)        ;; user command index
         (field Bytes        errmsg)         ;; returned error message
-        (field getline_F    getline)
-        (field Object       cookie)         ;; argument for getline()
     ])
 
 ;; Values for "flags".
@@ -2542,7 +2533,6 @@
 (atom! boolean  quit_more)          ;; 'q' hit at "--more--" msg
 (atom! boolean  newline_on_exit)    ;; did msg in altern. screen
 (atom! int      intr_char)          ;; extra interrupt character
-(atom! boolean  ex_keep_indent)     ;; getexmodeline(): keep indent
 (atom! int      vgetc_busy)         ;; when inside vgetc() then > 0
 
 ;; Lines left before a "more" message.
@@ -4256,18 +4246,6 @@
 ;       }
 
 ;       return s;
-    ))
-
-;; Call this after prompting the user.  This will avoid a hit-return message and a delay.
-
-(defn- #_void msg_end_prompt []
-    (§
-;       @need_wait_return = false;
-;       @emsg_on_display = false;
-;       @cmdline_row = @msg_row;
-;       @msg_col = 0;
-;       msg_clr_eos();
-;       @lines_left = -1;
     ))
 
 ;; wait for the user to hit a key (normally a return)
@@ -9593,161 +9571,6 @@
 ;       @info_message = false;
     ))
 
-(atom! int append_indent)       ;; autoindent for first line
-
-;; ":insert" and ":append", also used by ":change"
-
-(defn- #_void ex_append [#_exarg_C eap]
-    (§
-;       boolean did_undo = false;
-;       long lnum = eap.line2;
-;       int indent = 0;
-;       boolean empty = ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0);
-
-            ;; the ! flag toggles autoindent
-;       if (eap.forceit)
-;           @curbuf.@b_p_ai = !@curbuf.@b_p_ai;
-
-            ;; First autoindent comes from the line we start on.
-;       if (eap.cmdidx != CMD_change && @curbuf.@b_p_ai && 0 < lnum)
-;           @append_indent = get_indent_lnum(lnum);
-
-;       if (eap.cmdidx != CMD_append)
-;           --lnum;
-
-            ;; when the buffer is empty append to line 0 and delete the dummy line
-;       if (empty && lnum == 1)
-;           lnum = 0;
-
-;       @State = INSERT;                 ;; behave like in Insert mode
-
-;       for ( ; ; )
-;       {
-;           @msg_scroll = true;
-;           @need_wait_return = false;
-;           if (@curbuf.@b_p_ai)
-;           {
-;               if (0 <= @append_indent)
-;               {
-;                   indent = @append_indent;
-;                   @append_indent = -1;
-;               }
-;               else if (0 < lnum)
-;                   indent = get_indent_lnum(lnum);
-;           }
-;           @ex_keep_indent = false;
-;           Bytes theline;
-;           if (eap.getline == null)
-;           {
-                    ;; No getline() function, use the lines that follow.
-                    ;; This ends when there is no more.
-;               if (eap.nextcmd == null || eap.nextcmd.at(0) == NUL)
-;                   break;
-;               Bytes p = vim_strchr(eap.nextcmd, NL);
-;               if (p == null)
-;                   p = eap.nextcmd.plus(STRLEN(eap.nextcmd));
-;               theline = STRNDUP(eap.nextcmd, BDIFF(p, eap.nextcmd));
-;               if (p.at(0) != NUL)
-;                   p = p.plus(1);
-;               eap.nextcmd = p;
-;           }
-;           else
-;           {
-;               int save_State = @State;
-
-                    ;; Set State to avoid the cursor shape to be set to INSERT mode when getline() returns.
-;               @State = CMDLINE;
-;               theline = eap.getline(NUL, eap.cookie, indent);
-;               @State = save_State;
-;           }
-;           @lines_left = (int)@Rows - 1;
-;           if (theline == null)
-;               break;
-
-                ;; Using ^ CTRL-D in getexmodeline() makes us repeat the indent.
-;           if (@ex_keep_indent)
-;               @append_indent = indent;
-
-                ;; Look for the "." after automatic indent.
-;           int vcol = 0;
-;           Bytes p;
-;           for (p = theline; vcol < indent; p = p.plus(1))
-;           {
-;               if (p.at(0) == (byte)' ')
-;                   vcol++;
-;               else if (p.at(0) == TAB)
-;                   vcol += 8 - vcol % 8;
-;               else
-;                   break;
-;           }
-;           if ((p.at(0) == (byte)'.' && p.at(1) == NUL) || (!did_undo && !u_save(lnum, lnum + 1 + (empty ? 1 : 0))))
-;               break;
-
-                ;; don't use autoindent if nothing was typed.
-;           if (p.at(0) == NUL)
-;               theline.be(0, NUL);
-
-;           did_undo = true;
-;           ml_append(lnum, theline);
-;           appended_lines_mark(lnum, 1L);
-
-;           lnum++;
-
-;           if (empty)
-;           {
-;               ml_delete(2L, false);
-;               empty = false;
-;           }
-;       }
-;       @State = NORMAL;
-
-;       if (eap.forceit)
-;           @curbuf.@b_p_ai = !@curbuf.@b_p_ai;
-
-            ;; "start" is set to eap.line2+1 unless that position is invalid
-            ;; (when eap.line2 pointed to the end of the buffer and nothing was appended)
-            ;; "end" is set to lnum when something has been appended,
-            ;; otherwise it is the same than "start"
-;       @curbuf.b_op_start.lnum = (eap.line2 < @curbuf.b_ml.ml_line_count) ? eap.line2 + 1 : @curbuf.b_ml.ml_line_count;
-;       if (eap.cmdidx != CMD_append)
-;           --@curbuf.b_op_start.lnum;
-;       @curbuf.b_op_end.lnum = (eap.line2 < lnum) ? lnum : @curbuf.b_op_start.lnum;
-;       @curbuf.b_op_start.col = @curbuf.b_op_end.col = 0;
-;       @curwin.w_cursor.lnum = lnum;
-;       check_cursor_lnum();
-;       beginline(BL_SOL | BL_FIX);
-
-;       @need_wait_return = false;   ;; don't use wait_return() now
-    ))
-
-;; ":change"
-
-(defn- #_void ex_change [#_exarg_C eap]
-    (§
-;       if (eap.line1 <= eap.line2 && !u_save(eap.line1 - 1, eap.line2 + 1))
-;           return;
-
-            ;; the ! flag toggles autoindent
-;       if (eap.forceit ? !@curbuf.@b_p_ai : @curbuf.@b_p_ai)
-;           @append_indent = get_indent_lnum(eap.line1);
-
-;       long lnum;
-;       for (lnum = eap.line2; eap.line1 <= lnum; --lnum)
-;       {
-;           if ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ;; nothing to delete
-;               break;
-;           ml_delete(eap.line1, false);
-;       }
-
-            ;; make sure the cursor is not beyond the end of the file now
-;       check_cursor_lnum();
-;       deleted_lines_mark(eap.line1, eap.line2 - lnum);
-
-            ;; ":append" on the line above the deleted lines.
-;       eap.line2 = eap.line1;
-;       ex_append(eap);
-    ))
-
 (defn- #_void ex_z [#_exarg_C eap]
     (§
 ;       long lnum = eap.line2;
@@ -10888,9 +10711,9 @@
 ;           @curwin.w_cursor.lnum = lnum;
 ;           @curwin.w_cursor.col = 0;
 ;           if (cmd.at(0) == NUL || cmd.at(0) == (byte)'\n')
-;               do_cmdline(u8("p"), null, null, DOCMD_NOWAIT);
+;               do_cmdline(u8("p"), false, DOCMD_NOWAIT);
 ;           else
-;               do_cmdline(cmd, null, null, DOCMD_NOWAIT);
+;               do_cmdline(cmd, false, DOCMD_NOWAIT);
 ;           ui_breakcheck();
 ;       }
 
@@ -10996,9 +10819,8 @@
 ;;
 ;; Return pointer to allocated string if there is a commandline, null otherwise.
 
-(defn- #_Bytes getcmdline [#_int firstc, #_long count, #_int indent]
+(defn- #_Bytes getcmdline [#_int firstc, #_long count]
     ;; count: only used for incremental search
-    ;; indent: indent for inside conditionals
     (§
 ;       boolean gotesc = false;                 ;; true when <ESC> just typed
 ;       Bytes lookfor = null;                  ;; string to match
@@ -11033,21 +10855,21 @@
         ;; set some variables for redrawcmd()
 
 ;       @ccline.cmdfirstc = (firstc == '@') ? 0 : firstc;
-;       @ccline.cmdindent = (0 < firstc) ? indent : 0;
+;       @ccline.cmdindent = 0;
 
         ;; alloc initial ccline.cmdbuff
-;       alloc_cmdbuff(indent + 1);
+;       alloc_cmdbuff(1);
 ;       @ccline.cmdlen = @ccline.cmdpos = 0;
 ;       @ccline.cmdbuff.be(0, NUL);
 
         ;; autoindent for :insert and :append
 ;       if (firstc <= 0)
 ;       {
-;           copy_spaces(@ccline.cmdbuff, indent);
-;           @ccline.cmdbuff.be(indent, NUL);
-;           @ccline.cmdpos = indent;
-;           @ccline.cmdspos = indent;
-;           @ccline.cmdlen = indent;
+;           copy_spaces(@ccline.cmdbuff, 0);
+;           @ccline.cmdbuff.be(0, NUL);
+;           @ccline.cmdpos = 0;
+;           @ccline.cmdspos = 0;
+;           @ccline.cmdlen = 0;
 ;       }
 
 ;       if (!@cmd_silent)
@@ -11056,7 +10878,7 @@
 ;           @msg_scrolled = 0;               ;; avoid wait_return message
 ;           gotocmdline(true);
 ;           @msg_scrolled += i;
-;           redrawcmdprompt();              ;; draw prompt or indent
+;           redrawcmdprompt();
 ;           set_cmdspos();
 ;       }
 
@@ -11066,12 +10888,6 @@
 ;       @msg_scroll = false;
 
 ;       @State = CMDLINE;
-
-;       if (firstc == '/' || firstc == '?' || firstc == '@')
-;       {
-            ;; Use ":lmap" mappings for search pattern and input().
-            
-;       }
 
 ;       ui_cursor_shape();          ;; may show different cursor shape
 
@@ -11308,7 +11124,7 @@
 ;                               @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
 ;                               redrawcmd();
 ;                           }
-;                           else if (@ccline.cmdlen == 0 && c != Ctrl_W && @ccline.cmdprompt == null && indent == 0)
+;                           else if (@ccline.cmdlen == 0 && c != Ctrl_W && @ccline.cmdprompt == null)
 ;                           {
 ;                               @ccline.cmdbuff = null;      ;; no commandline to return
 ;                               if (!@cmd_silent)
@@ -11932,7 +11748,7 @@
 ;       return mb_ptr2cells(@ccline.cmdbuff.plus(idx));
     ))
 
-;; Compute the offset of the cursor on the command line for the prompt and indent.
+;; Compute the offset of the cursor on the command line for the prompt.
 
 (defn- #_void set_cmdspos []
     (§
@@ -11986,281 +11802,12 @@
 
 ;; Get an Ex command line for the ":" command.
 
-(defn- #_Bytes getexline [#_int c, #_Object _cookie, #_int indent]
-    ;; c: normally ':', NUL for ":append"
-    ;; indent: indent for inside conditionals
+(defn- #_Bytes getexline []
     (§
             ;; When executing a register, remove ':' that's in front of each line.
 ;       if (@exec_from_reg && vpeekc() == ':')
 ;           vgetc();
-;       return getcmdline(c, 1L, indent);
-    ))
-
-;; Get an Ex command line for Ex mode.
-;; In Ex mode we only use the OS supplied line editing features and no mappings or abbreviations.
-;; Returns a string in allocated memory or null.
-
-(defn- #_Bytes getexmodeline [#_int promptc, #_Object _cookie, #_int indent]
-    ;; promptc: normally ':', NUL for ":append" and '?' for :s prompt
-    ;; indent: indent for inside conditionals
-    (§
-            ;; Switch cursor on now.  This avoids that it happens after the "\n",
-            ;; which confuses the system function that computes tabstops.
-;       cursor_on();
-
-            ;; always start in column 0; write a newline if necessary
-;       compute_cmdrow();
-;       if ((@msg_col != 0 || @msg_didout) && promptc != '?')
-;           msg_putchar('\n');
-;       int startcol = 0;
-;       if (promptc == ':')
-;       {
-                ;; indent that is only displayed, not in the line itself
-;           if (@p_prompt)
-;               msg_putchar(':');
-;           while (0 < indent--)
-;               msg_putchar(' ');
-;           startcol = @msg_col;
-;       }
-
-;       barray_C line_ba = new barray_C(30);
-
-            ;; autoindent for :insert and :append is in the line itself
-;       int vcol = 0;
-;       if (promptc <= 0)
-;       {
-;           vcol = indent;
-;           while (8 <= indent)
-;           {
-;               ba_append(line_ba, TAB);
-;               msg_puts(u8("        "));
-;               indent -= 8;
-;           }
-;           while (0 < indent--)
-;           {
-;               ba_append(line_ba, (byte)' ');
-;               msg_putchar(' ');
-;           }
-;       }
-;       @no_mapping++;
-;       @allow_keys++;
-
-;       int c1 = 0;
-;       boolean escaped = false;        ;; CTRL-V typed
-
-            ;; Get the line, one character at a time.
-
-;       @got_int = false;
-;       loop:
-;       while (!@got_int)
-;       {
-                ;; Get one character at a time.
-                ;; Don't use inchar(), it can't handle special characters.
-;           int prev_char = c1;
-;           c1 = vgetc();
-
-                ;; Handle line editing.
-                ;; Previously this was left to the system, putting the terminal in
-                ;; cooked mode, but then CTRL-D and CTRL-T can't be used properly.
-
-;           if (@got_int)
-;           {
-;               msg_putchar('\n');
-;               break loop;
-;           }
-
-;           ba_grow(line_ba, 40);
-
-;           redraw:
-;           {
-;               Bytes p;
-
-;               add_indent:
-;               {
-;                   if (!escaped)
-;                   {
-                            ;; CR typed means "enter", which is NL
-;                       if (c1 == '\r')
-;                           c1 = '\n';
-
-;                       if (c1 == BS || c1 == K_BS || c1 == DEL || c1 == K_DEL || c1 == K_KDEL)
-;                       {
-;                           if (0 < line_ba.ba_len)
-;                           {
-;                               p = new Bytes(line_ba.ba_data);
-;                               p.be(line_ba.ba_len, NUL);
-;                               int len = us_head_off(p, p.plus(line_ba.ba_len - 1)) + 1;
-;                               line_ba.ba_len -= len;
-;                               break redraw;
-;                           }
-;                           continue loop;
-;                       }
-
-;                       if (c1 == Ctrl_U)
-;                       {
-;                           @msg_col = startcol;
-;                           msg_clr_eos();
-;                           line_ba.ba_len = 0;
-;                           break redraw;
-;                       }
-
-;                       if (c1 == Ctrl_T)
-;                       {
-;                           long sw = get_sw_value(@curbuf);
-;                           p = new Bytes(line_ba.ba_data);
-;                           p.be(line_ba.ba_len, NUL);
-;                           indent = get_indent_str(p, 8, false);
-;                           indent += sw - indent % sw;
-;                           break add_indent;
-;                       }
-
-;                       if (c1 == Ctrl_D)
-;                       {
-                                ;; Delete one shiftwidth.
-;                           p = new Bytes(line_ba.ba_data);
-;                           if (prev_char == '0' || prev_char == '^')
-;                           {
-;                               if (prev_char == '^')
-;                                   @ex_keep_indent = true;
-;                               indent = 0;
-;                               p.be(--line_ba.ba_len, NUL);
-;                           }
-;                           else
-;                           {
-;                               p.be(line_ba.ba_len, NUL);
-;                               indent = get_indent_str(p, 8, false);
-;                               if (0 < indent)
-;                               {
-;                                   --indent;
-;                                   indent -= indent % get_sw_value(@curbuf);
-;                               }
-;                           }
-;                           while (indent < get_indent_str(p, 8, false))
-;                           {
-;                               Bytes s = skipwhite(p);
-;                               BCOPY(s, -1, s, 0, line_ba.ba_len - BDIFF(s, p) + 1);
-;                               --line_ba.ba_len;
-;                           }
-;                           break add_indent;
-;                       }
-
-;                       if (c1 == Ctrl_V || c1 == Ctrl_Q)
-;                       {
-;                           escaped = true;
-;                           continue loop;
-;                       }
-
-                            ;; Ignore special key codes: mouse movement, K_IGNORE, etc.
-;                       if (is_special(c1))
-;                           continue loop;
-;                   }
-
-;                   if (is_special(c1))
-;                       c1 = '?';
-;                   int len = utf_char2bytes(c1, new Bytes(line_ba.ba_data, line_ba.ba_len));
-;                   if (c1 == '\n')
-;                       msg_putchar('\n');
-;                   else if (c1 == TAB)
-;                   {
-                            ;; Don't use chartabsize(), 'ts' can be different.
-;                       do
-;                       {
-;                           msg_putchar(' ');
-;                       } while (++vcol % 8 != 0);
-;                   }
-;                   else
-;                   {
-;                       msg_outtrans_len(new Bytes(line_ba.ba_data, line_ba.ba_len), len);
-;                       vcol += mb_char2cells(c1);
-;                   }
-;                   line_ba.ba_len += len;
-;                   escaped = false;
-
-;                   windgoto(@msg_row, @msg_col);
-;                   Bytes pend = new Bytes(line_ba.ba_data, line_ba.ba_len);
-
-                        ;; We are done when a NL is entered, but not when it comes after
-                        ;; an odd number of backslashes, that results in a NUL.
-;                   if (0 < line_ba.ba_len && pend.at(-1) == (byte)'\n')
-;                   {
-;                       int bcount = 0;
-
-;                       while (bcount <= line_ba.ba_len - 2 && pend.at(-2 - bcount) == (byte)'\\')
-;                           bcount++;
-
-;                       if (0 < bcount)
-;                       {
-                                ;; Halve the number of backslashes: "\NL" -> "NUL", "\\NL" -> "\NL", etc.
-;                           line_ba.ba_len -= (bcount + 1) / 2;
-;                           pend = pend.minus((bcount + 1) / 2);
-;                           pend.be(-1, (byte)'\n');
-;                       }
-
-;                       if ((bcount & 1) == 0)
-;                       {
-;                           --line_ba.ba_len;
-;                           pend = pend.minus(1);
-;                           pend.be(0, NUL);
-;                           break loop;
-;                       }
-;                   }
-
-;                   continue loop;
-;               }
-
-;               while (get_indent_str(p, 8, false) < indent)
-;               {
-;                   p = new Bytes(ba_grow(line_ba, 2)); ;; one more for the NUL
-;                   Bytes s = skipwhite(p);
-;                   BCOPY(s, 1, s, 0, line_ba.ba_len - BDIFF(s, p) + 1);
-;                   s.be(0, (byte)' ');
-;                   line_ba.ba_len++;
-;               }
-;           }
-
-                ;; redraw the line
-;           @msg_col = startcol;
-;           vcol = 0;
-;           Bytes p = new Bytes(line_ba.ba_data);
-;           p.be(line_ba.ba_len, NUL);
-;           for (int i = 0; i < line_ba.ba_len; )
-;           {
-;               if (p.at(0) == TAB)
-;               {
-;                   do
-;                   {
-;                       msg_putchar(' ');
-;                   } while (++vcol % 8 != 0);
-;                   p = p.plus(1);
-;                   i++;
-;               }
-;               else
-;               {
-;                   int len = us_ptr2len_cc(p);
-;                   msg_outtrans_len(p, len);
-;                   vcol += mb_ptr2cells(p);
-;                   p = p.plus(len);
-;                   i += len;
-;               }
-;           }
-;           msg_clr_eos();
-;           windgoto(@msg_row, @msg_col);
-;       }
-
-;       --@no_mapping;
-;       --@allow_keys;
-
-            ;; make following messages go to the next line
-;       @msg_didout = false;
-;       @msg_col = 0;
-;       if (@msg_row < @Rows - 1)
-;           @msg_row++;
-;       @emsg_on_display = false;            ;; don't want ui_delay()
-
-;       if (@got_int)
-;           ba_clear(line_ba);
-
-;       return new Bytes(line_ba.ba_data);
+;       return getcmdline(':', 1L);
     ))
 
 ;; Allocate a new command line buffer.
@@ -13082,53 +12629,19 @@
 
 ;; ----------------------------------------------------------------------- ;;
 
-;; Table used to quickly search for a command, based on its first character.
-
-(final int* cmdidxs
-    [
-        CMD_append,
-        CMD_buffer,
-        CMD_change,
-        CMD_delete,
-        CMD_edit,
-        CMD_fixdel,
-        CMD_global,
-        CMD_hide,
-        CMD_insert,
-        CMD_join,
-        CMD_k,
-        CMD_list,
-        CMD_move,
-        CMD_new,
-        CMD_omap,
-        CMD_print,
-        CMD_quit,
-        CMD_redo,
-        CMD_substitute,
-        CMD_t,
-        CMD_undo,
-        CMD_vglobal,
-        CMD_wincmd,
-        CMD_xmap,
-        CMD_yank,
-        CMD_z,
-        CMD_pound
-    ])
-
 ;; Execute a simple command line.  Used for translated commands like "*".
 
 (defn- #_boolean do_cmdline_cmd [#_Bytes cmd]
     (§
-;       return do_cmdline(cmd, null, null, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
+;       return do_cmdline(cmd, false, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
     ))
 
 (atom! int _0_recurse)              ;; recursive depth
-(atom! int call_depth)              ;; recursiveness
 
 ;; do_cmdline(): execute one Ex command line
 ;;
 ;; 1. Execute "cmdline" when it is not null.
-;;    If "cmdline" is null, or more lines are needed, fgetline() is used.
+;;    If "cmdline" is null, or more lines are needed, getexline() is used.
 ;; 2. Split up in parts separated with '|'.
 ;;
 ;; This function can be called recursively!
@@ -13136,31 +12649,20 @@
 ;; flags:
 ;; DOCMD_VERBOSE  - The command will be included in the error message.
 ;; DOCMD_NOWAIT   - Don't call wait_return() and friends.
-;; DOCMD_REPEAT   - Repeat execution until fgetline() returns null.
 ;; DOCMD_KEYTYPED - Don't reset keyTyped.
 ;; DOCMD_KEEPLINE - Store first typed line (for repeating with ".").
 ;;
 ;; return false if cmdline could not be executed, true otherwise
 
-(defn- #_boolean do_cmdline [#_Bytes cmdline, #_getline_F fgetline, #_Object cookie, #_int flags]
-    ;; cookie: argument for fgetline()
+(defn- #_boolean do_cmdline [#_Bytes cmdline, #_boolean use_getline, #_int flags]
     (§
 ;       boolean retval = true;
 
-;       boolean used_getline = false;               ;; used "fgetline" to obtain command
+;       boolean used_getline = false;               ;; used getexline() to obtain command
 
 ;       boolean msg_didout_before_start = false;
 ;       int count = 0;                              ;; line number count
 ;       boolean did_inc = false;                    ;; incremented redrawingDisabled
-
-        ;; It's possible to create an endless loop with ":execute", catch that here.
-        ;; The value of 200 allows nested function calls, ":source", etc.
-;       if (@call_depth == 200)
-;       {
-;           emsg(u8("E169: Command too recursive"));
-;           return false;
-;       }
-;       @call_depth++;
 
         ;; "did_emsg" will be set to true when emsg() is used,
         ;; in which case we cancel the whole command line, and any if/endif or loop.
@@ -13170,7 +12672,7 @@
         ;; keyTyped is only set when calling vgetc().
         ;; Reset it here when not calling vgetc() (sourced command lines).
 
-;       if ((flags & DOCMD_KEYTYPED) == 0 && fgetline != getexline)
+;       if ((flags & DOCMD_KEYTYPED) == 0 && !use_getline)
 ;           @keyTyped = false;
 
 ;       Bytes[] cmdline_copy = { null };                ;; copy of cmd line
@@ -13187,24 +12689,20 @@
 ;           if (next_cmdline == null)
 ;               @did_emsg = false;
 
-            ;; "fgetline" and "cookie" passed to do_one_cmd()
-;           getline_F cmd_getline = fgetline;
-;           Object cmd_cookie = cookie;
-
-            ;; 2. If no line given, get an allocated line with fgetline().
+            ;; 2. If no line given, get an allocated line with getexline().
 ;           if (next_cmdline == null)
 ;           {
                 ;; Need to set msg_didout for the first line after an ":if",
                 ;; otherwise the ":if" will be overwritten.
 
-;               if (count == 1 && fgetline == getexline)
+;               if (count == 1 && use_getline)
 ;                   @msg_didout = true;
-;               if (fgetline == null || (next_cmdline = fgetline(':', cookie, 0)) == null)
+;               if (!use_getline || (next_cmdline = getexline()) == null)
 ;               {
                     ;; Don't call wait_return for aborted command line.  The null
                     ;; returned for the end of a sourced file or executed function
                     ;; doesn't do this.
-;                   if (@keyTyped && (flags & DOCMD_REPEAT) == 0)
+;                   if (@keyTyped)
 ;                       @need_wait_return = false;
 ;                   retval = false;
 ;                   break;
@@ -13252,7 +12750,7 @@
             ;;    "cmdline_copy" can change, e.g. for '%' and '#' expansion.
 
 ;           @_0_recurse++;
-;           next_cmdline = do_one_cmd(cmdline_copy, (flags & DOCMD_VERBOSE) != 0, cmd_getline, cmd_cookie);
+;           next_cmdline = do_one_cmd(cmdline_copy, (flags & DOCMD_VERBOSE) != 0);
 ;           --@_0_recurse;
 
 ;           if (next_cmdline == null)
@@ -13262,7 +12760,7 @@
                 ;; If the command was typed, remember it for the ':' register.
                 ;; Do this AFTER executing the command to make :@: work.
 
-;               if (fgetline == getexline && @new_last_cmdline != null)
+;               if (use_getline && @new_last_cmdline != null)
 ;               {
 ;                   @last_cmdline = @new_last_cmdline;
 ;                   @new_last_cmdline = null;
@@ -13284,9 +12782,7 @@
         ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
         ;;   for ":source" command or function call.
 
-;       while (!@got_int
-;               && !(@did_emsg && used_getline && (fgetline == getexmodeline || fgetline == getexline))
-;               && (next_cmdline != null || (flags & DOCMD_REPEAT) != 0))
+;       while (!@got_int && !(@did_emsg && used_getline && use_getline) && (next_cmdline != null))
 ;           ;
 
 ;       @did_emsg_syntax = false;
@@ -13319,8 +12815,6 @@
 ;           }
 ;       }
 
-;       --@call_depth;
-
 ;       return retval;
     ))
 
@@ -13350,12 +12844,9 @@
 ;; 6. parse arguments
 ;; 7. switch on command name
 ;;
-;; Note: "fgetline" can be null.
-;;
 ;; This function may be called recursively!
 
-(defn- #_Bytes do_one_cmd [#_Bytes* cmdlinep, #_boolean sourcing, #_getline_F fgetline, #_Object cookie]
-    ;; cookie: argument for fgetline()
+(defn- #_Bytes do_one_cmd [#_Bytes* cmdlinep, #_boolean sourcing]
     (§
 ;       Bytes errormsg = null;         ;; error message
 ;       long verbose_save = -1;
@@ -14000,8 +13491,6 @@
             ;; The "ea" structure holds the arguments that can be used.
 
 ;           ea.cmdlinep = cmdlinep;
-;           ea.getline = fgetline;
-;           ea.cookie = cookie;
 
             ;; Call the function to execute the command.
 
@@ -14168,12 +13657,7 @@
 ;               }
 ;           }
 
-;           if (asc_islower(eap.cmd.at(0)))
-;               eap.cmdidx = cmdidxs[charOrdLow(eap.cmd.at(0))];
-;           else
-;               eap.cmdidx = cmdidxs[26];
-
-;           for ( ; eap.cmdidx < CMD_SIZE; eap.cmdidx++)
+;           for (eap.cmdidx = 0; eap.cmdidx < CMD_SIZE; eap.cmdidx++)
 ;               if (STRNCMP(cmdnames[eap.cmdidx].cmd_name, eap.cmd, len) == 0)
 ;               {
 ;                   if (full != null && cmdnames[eap.cmdidx].cmd_name.at(len) == NUL)
@@ -16739,7 +16223,6 @@
 ;           stuffReadbuff(u8("!"));
 
         ;; do_cmdline() does the rest
-
     ))
 
 ;; Handle the "g@" operator: call 'operatorfunc'.
@@ -17814,7 +17297,7 @@
 ;           boolean old_p_im = @p_im;
 
                 ;; get a command line and execute it
-;           boolean cmd_result = do_cmdline(null, getexline, null, (cap.oap.op_type != OP_NOP) ? DOCMD_KEEPLINE : 0);
+;           boolean cmd_result = do_cmdline(null, true, (cap.oap.op_type != OP_NOP) ? DOCMD_KEEPLINE : 0);
 
                 ;; If 'insertmode' changed, enter or exit Insert mode.
 ;           if (@p_im != old_p_im)
@@ -18404,7 +17887,7 @@
 ;           return;
 ;       }
 
-;       cap.searchbuf = getcmdline(cap.cmdchar, cap.count1, 0);
+;       cap.searchbuf = getcmdline(cap.cmdchar, cap.count1);
 
 ;       if (cap.searchbuf == null)
 ;       {
@@ -21523,7 +21006,7 @@
 
 (defn- #_int get_expr_register []
     (§
-;       Bytes new_line = getcmdline('=', 0L, 0);
+;       Bytes new_line = getcmdline('=', 0L);
 ;       if (new_line == null)
 ;           return NUL;
 
@@ -21565,16 +21048,6 @@
 ;       Bytes rv = eval_to_string(expr_copy, null);
 ;       --@__nested;
 ;       return rv;
-    ))
-
-;; Get the '=' register expression itself, without evaluating it.
-
-(defn- #_Bytes get_expr_line_src []
-    (§
-;       if (@expr_line == null)
-;           return null;
-
-;       return STRDUP(@expr_line);
     ))
 
 ;; Check if 'regname' is a valid name of a yank register.
@@ -48492,7 +47965,7 @@
 
         ;; Create an empty line 1.
 
-        %% insert @0 u8("")
+;       %% insert @0 u8("")
 
 ;       return ml;
     ))
@@ -48543,7 +48016,7 @@
 ;       if (lnum <= 0)                      ;; pretend line 0 is line 1
 ;           lnum = 1;
 
-        %% return @(lnum - 1)
+;       %% return @(lnum - 1)
     ))
 
 ;; Append a line after lnum (may be 0 to insert a line in front of the file).
@@ -48561,7 +48034,7 @@
 ;       if (@curbuf.b_ml.ml_line_count < lnum) ;; lnum out of range
 ;           return false;
 
-        %% insert @lnum STRDUP(line)
+;       %% insert @lnum STRDUP(line)
 
 ;       @curbuf.b_ml.ml_line_count++;
 ;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
@@ -48581,7 +48054,7 @@
 ;       if (lnum == 0 || line == null)           ;; just checking...
 ;           return false;
 
-        %% replace @(lnum - 1) STRDUP(line)
+;       %% replace @(lnum - 1) STRDUP(line)
 
 ;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
 
@@ -48607,14 +48080,14 @@
 ;           if (message)
 ;               set_keep_msg(no_lines_msg, 0);
 
-            %% replace @0 u8("")
+;           %% replace @0 u8("")
 
 ;           @curbuf.b_ml.ml_flags |= ML_EMPTY;
 
 ;           return true;
 ;       }
 
-        %% delete @(lnum - 1)
+;       %% delete @(lnum - 1)
 
 ;       --@curbuf.b_ml.ml_line_count;
 
@@ -53575,13 +53048,6 @@
 (defn- #_int get_indent []
     (§
 ;       return get_indent_str(ml_get_curline(), (int)@curbuf.@b_p_ts, false);
-    ))
-
-;; Count the size (in window cells) of the indent in line "lnum".
-
-(defn- #_int get_indent_lnum [#_long lnum]
-    (§
-;       return get_indent_str(ml_get(lnum), (int)@curbuf.@b_p_ts, false);
     ))
 
 ;; count the size (in window cells) of the indent in line "ptr", with 'tabstop' at "ts"
@@ -68210,18 +67676,6 @@
 ;       return false;
     ))
 
-;; Return the number of windows.
-
-(defn- #_int win_count []
-    (§
-;       int count = 0;
-
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           count++;
-
-;       return count;
-    ))
-
 ;; Exchange current and next window
 
 (defn- #_void win_exchange [#_long Prenum]
@@ -72873,14 +72327,12 @@
 
 (final cmdname_C* cmdnames
     [
-        (->cmdname_C (u8 "append"),        ex_append,        (| BANG RANGE ZEROR CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "abbreviate"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "ascii"),         ex_ascii,         (| CMDWIN),                                                   ADDR_LINES),
+        (->cmdname_C (u8 "ascii"),         ex_ascii,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
@@ -72899,7 +72351,6 @@
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "iabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -72927,7 +72378,7 @@
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,    (| CMDWIN),                                                   ADDR_LINES),
+        (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "noreabbrev"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG USECTRLV CMDWIN),                 ADDR_LINES),
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
@@ -73005,7 +72456,7 @@
 ;       {
 ;           Bytes[] argv = new Bytes[1 + args.length];
 
-;           argv[0] = u8("vim");
+;           argv[0] = u8("vijure");
 
 ;           for (int i = 0; i < args.length; i++)
 ;               argv[1 + i] = u8(args[i]);

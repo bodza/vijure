@@ -11,4 +11,4 @@
 ;   :javac-options ["-g"]
     :source-paths ["src"] :java-source-paths ["src"] :resource-paths ["resources"] :test-paths ["src"]
     :main vijure.core
-    :aliases {"vim" ["run" "-m" "vijure.core"]})
+    :aliases {"vijure" ["run" "-m" "vijure.core"]})
