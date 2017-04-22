@@ -20264,8 +20264,6 @@
 ;; Specific version of character class functions.
 ;; Using a table to keep this fast.
 
-(atom! int* class_tab 256)
-
 (final int
     RI_DIGIT    0x01,
     RI_HEX      0x02,
@@ -20277,49 +20275,40 @@
     RI_UPPER    0x80,
     RI_WHITE    0x100)
 
-(atom! boolean class_tab_done)
-
-(defn- #_void init-class-tab []
-    (§
-        (if @class_tab_done
-            ((ß RETURN) nil)
-        )
-
-        (dotimes [#_int i 256]
-            ((ß @class_tab[i] =) (cond
-                (<= (byte \0) i (byte \7)) (+ RI_DIGIT RI_HEX RI_OCTAL RI_WORD)
-                (<= (byte \8) i (byte \9)) (+ RI_DIGIT RI_HEX RI_WORD)
-                (<= (byte \a) i (byte \f)) (+ RI_HEX RI_WORD RI_HEAD RI_ALPHA RI_LOWER)
-                (<= (byte \g) i (byte \z)) (+ RI_WORD RI_HEAD RI_ALPHA RI_LOWER)
-                (<= (byte \A) i (byte \F)) (+ RI_HEX RI_WORD RI_HEAD RI_ALPHA RI_UPPER)
-                (<= (byte \G) i (byte \Z)) (+ RI_WORD RI_HEAD RI_ALPHA RI_UPPER)
-                (== i (byte \_)) (+ RI_WORD RI_HEAD)
+(defn- #_int* init-class-tab []
+    (let [cls- #(cond
+                    (any == % TAB (byte \space))  RI_WHITE
+                    (<= (byte \0) % (byte \7)) (+ RI_DIGIT RI_HEX RI_OCTAL RI_WORD)
+                    (<= (byte \8) % (byte \9)) (+ RI_DIGIT RI_HEX RI_WORD)
+                    (<= (byte \a) % (byte \f)) (+ RI_HEX RI_WORD RI_HEAD RI_ALPHA RI_LOWER)
+                    (<= (byte \g) % (byte \z)) (+ RI_WORD RI_HEAD RI_ALPHA RI_LOWER)
+                    (<= (byte \A) % (byte \F)) (+ RI_HEX RI_WORD RI_HEAD RI_ALPHA RI_UPPER)
+                    (<= (byte \G) % (byte \Z)) (+ RI_WORD RI_HEAD RI_ALPHA RI_UPPER)
+                    (== % (byte \_))           (+ RI_WORD RI_HEAD)
                 :else 0
-            ))
-        )
-        ((ß @class_tab[(byte \space)] =) (| (... @class_tab (byte \space)) RI_WHITE))
-        ((ß @class_tab[TAB] =) (| (... @class_tab TAB) RI_WHITE))
-
-        (reset! class_tab_done true)
-        nil
+            )]
+        (vec (map cls- (range 256)))
     ))
 
-(defn- #_boolean ri-digit [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_DIGIT)))
-(defn- #_boolean ri-hex   [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_HEX)))
-(defn- #_boolean ri-octal [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_OCTAL)))
-(defn- #_boolean ri-word  [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_WORD)))
-(defn- #_boolean ri-head  [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_HEAD)))
-(defn- #_boolean ri-alpha [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_ALPHA)))
-(defn- #_boolean ri-lower [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_LOWER)))
-(defn- #_boolean ri-upper [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_UPPER)))
-(defn- #_boolean ri-white [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_WHITE)))
+(final int* class_tab (init-class-tab))
+
+(defn- #_boolean ri-digit [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_DIGIT)))
+(defn- #_boolean ri-hex   [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_HEX)))
+(defn- #_boolean ri-octal [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_OCTAL)))
+(defn- #_boolean ri-word  [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_WORD)))
+(defn- #_boolean ri-head  [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_HEAD)))
+(defn- #_boolean ri-alpha [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_ALPHA)))
+(defn- #_boolean ri-lower [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_LOWER)))
+(defn- #_boolean ri-upper [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_UPPER)))
+(defn- #_boolean ri-white [#_int c] (and (< c 0x100) (flag? (... class_tab c) RI_WHITE)))
 
 ;; flags for regflags
-(final int RF_ICASE    1)   ;; ignore case
-(final int RF_NOICASE  2)   ;; don't ignore case
-(final int RF_HASNL    4)   ;; can match a NL
-(final int RF_ICOMBINE 8)   ;; ignore combining characters
-(final int RF_LOOKBH   16)  ;; uses "\@<=" or "\@<!"
+(final int
+    RF_ICASE    1,   ;; ignore case
+    RF_NOICASE  2,   ;; don't ignore case
+    RF_HASNL    4,   ;; can match a NL
+    RF_ICOMBINE 8,   ;; ignore combining characters
+    RF_LOOKBH   16)  ;; uses "\@<=" or "\@<!"
 
 ;; Global work variables for vim-regcomp().
 
@@ -20932,8 +20921,6 @@
             ((ß RETURN) nil)
         )
 
-        (init-class-tab)
-
         ;; First pass: determine size, legality.
 
         (regcomp-start expr, re_flags)
@@ -21033,7 +21020,7 @@
 
     (reset! num_complex_braces 0)
     (reset! regnpar 1)
-    (AFILL @had_endbrace, false)
+    (swap! had_endbrace #(into (empty %) (map (constantly false) %)))
     (reset! regnzpar 1)
     (reset! re_has_z 0)
     (reset! regsize 0)
@@ -21048,127 +21035,88 @@
 ;; Combining parenthesis handling with the base level of regular expression
 ;; is a trifle forced, but the need to tie the tails of the branches to what
 ;; follows makes it hard to avoid.
+;;
+;; paren: REG_NOPAREN, REG_PAREN, REG_NPAREN or REG_ZPAREN
 
 (defn- #_Bytes reg [#_int paren, #_int' a'fl]
-    ;; paren: REG_NOPAREN, REG_PAREN, REG_NPAREN or REG_ZPAREN
-    (§
-        (ß Bytes ret)
-
-        (reset! a'fl HASWIDTH)          ;; Tentatively.
-
-        ((ß int parno =) 0)
-        (cond (== paren REG_ZPAREN)
-        (do
-            ;; Make a ZOPEN node.
-            (when (<= NSUBEXP @regnzpar)
-                (emsg (u8 "E50: Too many \\z("))
-                (reset! rc_did_emsg true)
-                ((ß RETURN) nil)
-            )
-            ((ß parno =) @regnzpar)
-            (swap! regnzpar inc)
-            ((ß ret =) (regnode (+ ZOPEN parno)))
-        )
-        (== paren REG_PAREN)
-        (do
-            ;; Make a MOPEN node.
-            (when (<= NSUBEXP @regnpar)
-                (emsg2 (u8 "E51: Too many %s("), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                (reset! rc_did_emsg true)
-                ((ß RETURN) nil)
-            )
-            ((ß parno =) @regnpar)
-            (swap! regnpar inc)
-            ((ß ret =) (regnode (+ MOPEN parno)))
-        )
-        (== paren REG_NPAREN)
-        (do
-            ;; Make a NOPEN node.
-            ((ß ret =) (regnode NOPEN))
-        )
-        :else
-        (do
-            ((ß ret =) nil)
-        ))
-
+    (reset! a'fl HASWIDTH)                      ;; Tentatively.
+    (let-when [[#_int parno #_Bytes ret :as _]
+            (condp == paren
+                REG_ZPAREN                      ;; Make a ZOPEN node.
+                    (if (<= NSUBEXP @regnzpar)
+                        (do (emsg (u8 "E50: Too many \\z("))
+                            (reset! rc_did_emsg true)
+                            nil)
+                        (let [parno @regnzpar]
+                            (swap! regnzpar inc)
+                            [parno (regnode (+ ZOPEN parno))]
+                        ))
+                REG_PAREN                       ;; Make a MOPEN node.
+                    (if (<= NSUBEXP @regnpar)
+                        (do (emsg2 (u8 "E51: Too many %s("), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                            (reset! rc_did_emsg true)
+                            nil)
+                        (let [parno @regnpar]
+                            (swap! regnpar inc)
+                            [parno (regnode (+ MOPEN parno))]
+                        ))
+                REG_NPAREN                      ;; Make a NOPEN node.
+                    [0 (regnode NOPEN)]
+                [0 nil]
+            )] (some? _) => nil
         ;; Pick up the branches, linking them together.
-        ((ß int[] a'flags =) (atom (int)))
-        ((ß Bytes br =) (regbranch a'flags))
-        (if (nil? br)
-            ((ß RETURN) nil)
-        )
-        (if (some? ret)
-            (regtail ret, br)       ;; [MZ]OPEN -> first.
-            ((ß ret =) br)
-        )
-        ;; If one of the branches can be zero-width, the whole thing can.
-        ;; If one of the branches has * at start or matches a line-break, the whole thing can.
-        (when (non-flag? @a'flags HASWIDTH)
-            (swap! a'fl & (bit-not HASWIDTH)))
-        (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
-        (loop-when [] (== (peekchr) (Magic (byte \|)))
-            (skipchr)
-            ((ß br =) (regbranch a'flags))
-            (if (or (nil? br) @reg_toolong)
-                ((ß RETURN) nil)
-            )
-            (regtail ret, br)       ;; BRANCH -> BRANCH.
-            (when (non-flag? @a'flags HASWIDTH)
-                (swap! a'fl & (bit-not HASWIDTH)))
-            (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
-            (recur)
-        )
-
-        ;; Make a closing node, and hook it on the end.
-        ((ß Bytes ender =) (regnode (cond (== paren REG_ZPAREN) (+ ZCLOSE parno) (== paren REG_PAREN) (+ MCLOSE parno) (== paren REG_NPAREN) NCLOSE :else END)))
-
-        (regtail ret, ender)
-
-        ;; Hook the tails of the branches to the closing node.
-        (loop-when-recur [br ret] (some? br) [(regnext br)]
-            (regoptail br, ender)
-        )
-
-        ;; Check for proper termination.
-        (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
-        (do
-            (cond (== paren REG_ZPAREN)
-            (do
-                (emsg (u8 "E52: Unmatched \\z("))
-            )
-            (== paren REG_NPAREN)
-            (do
-                (emsg2 e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-            )
-            :else
-            (do
-                (emsg2 e_unmatchedp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+        (let-when [a'flags (atom (int)) #_Bytes br (regbranch a'flags)] (some? br) => nil
+            ;; [MZ]OPEN -> first.
+            (let [ret (if (some? ret) (do (regtail ret, br) ret) br)]
+                ;; If one of the branches can be zero-width, the whole thing can.
+                ;; If one of the branches has * at start or matches a line-break, the whole thing can.
+                (when (non-flag? @a'flags HASWIDTH)
+                    (swap! a'fl & (bit-not HASWIDTH)))
+                (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
+                (let-when [_
+                        (loop-when [] (== (peekchr) (Magic (byte \|))) => :_
+                            (skipchr)
+                            (let-when [#_Bytes br (regbranch a'flags)] (and (some? br) (not @reg_toolong)) => nil
+                                (regtail ret, br)       ;; BRANCH -> BRANCH.
+                                (when (non-flag? @a'flags HASWIDTH)
+                                    (swap! a'fl & (bit-not HASWIDTH)))
+                                (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
+                                (recur))
+                        )] (some? _) => nil
+                    ;; Make a closing node, and hook it on the end.
+                    (let [#_Bytes ender (regnode (condp == paren REG_ZPAREN (+ ZCLOSE parno) REG_PAREN (+ MCLOSE parno) REG_NPAREN NCLOSE END))]
+                        (regtail ret, ender)
+                        ;; Hook the tails of the branches to the closing node.
+                        (loop-when-recur [#_Bytes br ret] (some? br) [(regnext br)]
+                            (regoptail br, ender))
+                        ;; Check for proper termination.
+                        (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
+                            (do (condp == paren
+                                    REG_ZPAREN (emsg (u8 "E52: Unmatched \\z("))
+                                    REG_NPAREN (emsg2 e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                               (emsg2 e_unmatchedp,  (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\"))))
+                                (reset! rc_did_emsg true)
+                                nil)
+                        (and (== paren REG_NOPAREN) (!= (peekchr) NUL))     ;; "Can't happen".
+                            (do (if (== @curchr (Magic (byte \))))
+                                    (emsg2 e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (emsg e_trailing))
+                                (reset! rc_did_emsg true)
+                                nil)
+                        :else ;; Here we set the flag allowing back references to this set of parentheses.
+                            (do (when (== paren REG_PAREN)
+                                    (swap! had_endbrace assoc parno true))     ;; have seen the close paren
+                                ret
+                            ))
+                    ))
             ))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
-        (and (== paren REG_NOPAREN) (!= (peekchr) NUL))
-        (do
-            (if (== @curchr (Magic (byte \))))
-                (emsg2 e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                (emsg e_trailing))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)                    ;; "Can't happen".
-        ))
-
-        ;; Here we set the flag allowing back references to this set of parentheses.
-
-        (if (== paren REG_PAREN)
-            ((ß @had_endbrace[parno] =) true)     ;; have seen the close paren
-        )
-        ret
     ))
 
 ;; Parse one alternative of an | operator.
 ;; Implements the & operator.
 
 (defn- #_Bytes regbranch [#_int' a'fl]
-    (reset! a'fl (| WORST HASNL))           ;; Tentatively.
+    (reset! a'fl (| WORST HASNL))               ;; Tentatively.
     (let [#_Bytes ret (regnode BRANCH)]
         (loop [#_Bytes chain nil]
             (let-when [a'flags (atom (int)) #_Bytes latest (regconcat a'flags)] (some? latest) => nil
@@ -21198,7 +21146,7 @@
 ;; Implements the concatenation operator.
 
 (defn- #_Bytes regconcat [#_int' a'fl]
-    (reset! a'fl WORST)             ;; Tentatively.
+    (reset! a'fl WORST)                         ;; Tentatively.
     (let-when [[#_Bytes first :as _]
             (loop [first nil #_Bytes chain nil]
                 (condp ==? (peekchr)
@@ -21515,7 +21463,7 @@
 ;; faster to run.  Don't do this when one_exactly is set.
 
 (defn- #_Bytes regatom [#_int' a'fl]
-    (reset! a'fl WORST)             ;; Tentatively.
+    (reset! a'fl WORST)                         ;; Tentatively.
     (let [#_int c (getchr)]
         (condp ==? c
             (Magic (byte \^)) (regnode BOL)
@@ -23531,9 +23479,9 @@
                             (and (<= BRACE_COMPLEX (re-op next)) (< (re-op next) (+ BRACE_COMPLEX 10)))
                             (do
                                 ((ß int no =) (- (re-op next) BRACE_COMPLEX))
-                                ((ß @brace_min[no] =) (operand-min scan))
-                                ((ß @brace_max[no] =) (operand-max scan))
-                                ((ß @brace_count[no] =) 0)
+                                (swap! brace_min assoc no (operand-min scan))
+                                (swap! brace_max assoc no (operand-max scan))
+                                (swap! brace_count assoc no 0)
                             )
                             :else
                             (do
@@ -23555,7 +23503,7 @@
                         (+ BRACE_COMPLEX 9)]
                         (do
                             ((ß int no =) (- op BRACE_COMPLEX))
-                            (ß ++@brace_count[no])
+                            (swap! brace_count update no inc)
 
                             ;; If not matched enough times yet, try one more.
                             (when (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
@@ -23884,7 +23832,7 @@
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             (reg-restore (:rs_regsave rip), @backpos)
-                            (ß --@brace_count[rip.rs_no])       ;; decrement match count
+                            (swap! brace_count update (:rs_no rip) dec)       ;; decrement match count
                         )
                         ((ß scan =) (pop-regitem))
                         (ß BREAK)
@@ -23896,7 +23844,7 @@
                         (when (== status RA_NOMATCH)
                             ;; There was no match, but we did find enough matches.
                             (reg-restore (:rs_regsave rip), @backpos)
-                            (ß --@brace_count[rip.rs_no])
+                            (swap! brace_count update (:rs_no rip) dec)
                             ;; continue with the items after "\{}"
                             ((ß status =) RA_CONT)
                         )
@@ -24255,10 +24203,10 @@
                                         (if (eor- p) [s n] (let [s (reg-nextline)] (if (fast-breakcheck) [s n] (recur s (inc n)))))
                                         (let [#_int l (us-ptr2len-cc s)]
                                             (cond
-                                                (< 1 l)                            (if (zero? v) (recur (.plus s l) (inc n)) [s n])
-                                                (== (& (... @class_tab (char_u (.at s 0))) e) v) (recur (.plus s 1) (inc n))
-                                                (eol- s p)                                       (recur (.plus s 1) (inc n))
-                                                :else                                            [s n]
+                                                (< 1 l)                           (if (zero? v) (recur (.plus s l) (inc n)) [s n])
+                                                (== (& (... class_tab (char_u (.at s 0))) e) v) (recur (.plus s 1) (inc n))
+                                                (eol- s p)                                      (recur (.plus s 1) (inc n))
+                                                :else                                           [s n]
                                             ))
                                     ))]
                         (ret- s n)
@@ -26631,7 +26579,7 @@
 
         (cond (== paren REG_PAREN)
         (do
-            ((ß @had_endbrace[parno] =) true)     ;; have seen the close paren
+            (swap! had_endbrace assoc parno true)     ;; have seen the close paren
             (emc1 (+ NFA_MOPEN parno))
         )
         (== paren REG_ZPAREN)
@@ -30167,8 +30115,6 @@
 
         ((ß nfa_regengine.expr =) expr)
         (reset! nfa_re_flags re_flags)
-
-        (init-class-tab)
 
         (nfa-regcomp-start expr, re_flags)
 
