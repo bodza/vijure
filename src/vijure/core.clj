@@ -5553,7 +5553,7 @@
                                               win (validate-cursor win)
                                               ;; May redraw the status line to show the cursor position.
                                               win (if (and @p_ru (< 0 (:w_status_height win))) (assoc win :w_redr_status true) win)
-                                              o'cli (save-cmdline) _ (update-screen SOME_VALID) _ (restore-cmdline o'cli)
+                                              o'cli (save-cmdline) win (update-screen win, SOME_VALID) _ (restore-cmdline o'cli)
                                               ;; Leave it at the end to make CTRL-R CTRL-W work.
                                               win (if (non-zero? i) (assoc win :w_cursor end) win)]
                                             (msg-starthere)
@@ -6702,6 +6702,18 @@
         [win eap]
     ))
 
+(final cmdname_C* cmdnames
+    [
+        (new cmdname_C (u8 "close"),      ex-close,  (| BANG RANGE NOTADR COUNT CMDWIN), ADDR_WINDOWS),
+        (new cmdname_C (u8 "fixdel"),     ex-fixdel,    CMDWIN,                          ADDR_LINES  ),
+        (new cmdname_C (u8 "only"),       ex-only,   (| BANG NOTADR RANGE COUNT),        ADDR_WINDOWS),
+        (new cmdname_C (u8 "retab"),      ex-retab,  (| RANGE DFLALL BANG WORD1 CMDWIN), ADDR_LINES  ),
+        (new cmdname_C (u8 "substitute"), ex-sub,    (| RANGE EXTRA CMDWIN),             ADDR_LINES  ),
+        (new cmdname_C (u8 "set"),        ex-set,    (| EXTRA CMDWIN),                   ADDR_LINES  ),
+        (new cmdname_C (u8 "stop"),       ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
+        (new cmdname_C (u8 "suspend"),    ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
+    ])
+
 ;;; ============================================================================================== VimJ
 
 ;; Top level evaluation function, returning a string.
@@ -7066,27 +7078,27 @@
                                                 (not @did_wait_return)
                                                 (== (:op_type (:oap ca)) OP_NOP)) => [win ca]
                                         ;; Draw the cursor with the right shape here.
-                                        (let [o'State @State _ (when (non-zero? @restart_edit) (reset! State INSERT))]
-                                            ;; If need to redraw and there is a "keep_msg", redraw before the delay.
-                                            (when (and (non-zero? @must_redraw) (some? @keep_msg) (not @emsg_on_display))
-                                                (let [#_Bytes kmsg @keep_msg _ (reset! keep_msg nil)]
-                                                    ;; showmode() will clear "keep_msg", but we want to use it anyway
-                                                    (update-screen 0)
-                                                    ;; now reset it, otherwise it's put in the history again
-                                                    (reset! keep_msg kmsg)
-                                                    (msg-attr kmsg, @keep_msg_attr)
-                                                ))
-                                            (let [win (setcursor win)]
-                                                (cursor-on)
-                                                (out-flush)
-                                                (when (or @msg_scroll @emsg_on_display)
-                                                    (ui-delay 1000, true)) ;; wait at least one second
-                                                (ui-delay 3000, false)     ;; wait up to three seconds
-                                                (reset! State o'State)
-                                                (reset! msg_scroll false)
-                                                (reset! emsg_on_display false)
-                                                [win ca]
-                                            ))
+                                        (let [o'State @State _ (when (non-zero? @restart_edit) (reset! State INSERT))
+                                              ;; If need to redraw and there is a "keep_msg", redraw before the delay.
+                                              win (when' (and (non-zero? @must_redraw) (some? @keep_msg) (not @emsg_on_display)) => win
+                                                    (let [#_Bytes kmsg @keep_msg _ (reset! keep_msg nil)
+                                                          ;; showmode() will clear "keep_msg", but we want to use it anyway
+                                                          win (update-screen win, 0)]
+                                                        ;; now reset it, otherwise it's put in the history again
+                                                        (reset! keep_msg kmsg)
+                                                        (msg-attr kmsg, @keep_msg_attr)
+                                                        win
+                                                    ))
+                                              win (setcursor win)]
+                                            (cursor-on)
+                                            (out-flush)
+                                            (when (or @msg_scroll @emsg_on_display)
+                                                (ui-delay 1000, true)) ;; wait at least one second
+                                            (ui-delay 3000, false)     ;; wait up to three seconds
+                                            (reset! State o'State)
+                                            (reset! msg_scroll false)
+                                            (reset! emsg_on_display false)
+                                            [win ca])
                                     ))
                             ))
                     ))
@@ -7928,7 +7940,7 @@
           [win #_boolean atend #_boolean moved]
             (if (non-zero? (:w_width win))
                 ;; Instead of sticking at the last character of the buffer line we try to stick in the last column of the screen.
-                (let [#_int linelen (linetabsize (ml-get (:lnum (:w_cursor win))))
+                (let [#_int linelen (linetabsize win, (ml-get (:lnum (:w_cursor win))))
                       [win atend]
                         (if (== (:w_curswant win) MAXCOL)
                             (let [win (validate-virtcol win)]
@@ -7958,7 +7970,7 @@
                                         (if (== (:lnum (:w_cursor win)) 1)
                                             [win nil]
                                             (let [win (update-in win [:w_cursor :lnum] dec)
-                                                  linelen (linetabsize (ml-get (:lnum (:w_cursor win))))
+                                                  linelen (linetabsize win, (ml-get (:lnum (:w_cursor win))))
                                                   win (if (< width1 linelen)
                                                         (update win :w_curswant + (* (inc (/ (- linelen width1 1) width2)) width2))
                                                         win
@@ -7975,7 +7987,7 @@
                                                 [win nil]
                                                 (let [win (update-in win [:w_cursor :lnum] inc)
                                                       win (update win :w_curswant % width2)]
-                                                    [win (linetabsize (ml-get (:lnum (:w_cursor win))))]
+                                                    [win (linetabsize win, (ml-get (:lnum (:w_cursor win))))]
                                                 ))
                                         ))
                                 )]
@@ -10338,7 +10350,7 @@
                             (loop-when [total total bd bd] (vim-iswhite (.at (:textstart bd) 0)) => [total bd]
                                 ;; TODO: is passing bd.textstart for start of the line OK?
                                 (let [__ (atom (#_Bytes object (:textstart bd)))
-                                      #_int n (lbr-chartabsize-adv (:textstart bd), __, (:start_vcol bd))
+                                      #_int n (lbr-chartabsize-adv win, (:textstart bd), __, (:start_vcol bd))
                                       bd (assoc bd :textstart @__)]
                                     (recur (+ total n) (update bd :start_vcol + n))
                                 ))
@@ -10368,7 +10380,7 @@
                           ;; The character's column is in "bd.start_vcol".
                           #_int non_white_col
                             (loop-when [non_white_col (:start_vcol bd)] (vim-iswhite (.at @a'non_white 0)) => non_white_col
-                                (let [#_int n (lbr-chartabsize-adv (:textstart bd), a'non_white, non_white_col)]
+                                (let [#_int n (lbr-chartabsize-adv win, (:textstart bd), a'non_white, non_white_col)]
                                     (recur (+ non_white_col n))
                                 ))
                           #_int block_space_width (- non_white_col (:start_vcol oap))
@@ -10385,7 +10397,7 @@
                           [verb_width verb_end]
                             (loop-when [verb_width verb_width verb_end verb_end] (< verb_width dest_col) => [verb_width verb_end]
                                 ;; TODO: is passing "verb_end" for start of the line OK?
-                                (let [#_int n (lbr-chartabsize verb_end, verb_end, verb_width)]
+                                (let [#_int n (lbr-chartabsize win, verb_end, verb_end, verb_width)]
                                     (if (< dest_col (+ verb_width n))
                                         [verb_width verb_end]
                                         (recur (+ verb_width n) (.plus verb_end (us-ptr2len-cc verb_end)))
@@ -11358,122 +11370,121 @@
 
 (defn- #_[window_C oparg_C] op-insert [#_window_C win, #_oparg_C oap, #_long count1]
     ;; edit() changes this - record it for OP_APPEND
-    (let [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX (== (:w_curswant win) MAXCOL))
+    (let-when [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX (== (:w_curswant win) MAXCOL))
           ;; visual block is still marked, get rid of it now
-          win (assoc-in win [:w_cursor :lnum] (:lnum (:op_start oap)))]
-        (update-screen INVERTED)
-        (let-when [[win [bd #_int pre_textlen :as _]]
-                (when' (:block_mode oap) => [win [bd 0]]
-                    ;; When 'virtualedit' is used, need to insert the extra spaces before doing block-prep().
-                    ;; When only "block" is used, virtual edit is already disabled,
-                    ;; but still need it when calling coladvance-force().
-                    (let-when [[win ?]
-                            (when' (< 0 (:coladd (:w_cursor win))) => [win nil]
-                                (let [o've_flags @ve_flags _ (reset! ve_flags VE_ALL)]
-                                    (if (not (u-save-cursor win))
-                                        (do (reset! ve_flags o've_flags)
-                                            [win :abort])
-                                        (let [win (coladvance-force win, (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol win)))
-                                              win (if (== (:op_type oap) OP_APPEND) (update-in win [:w_cursor :col] dec) win)]
-                                            (reset! ve_flags o've_flags)
-                                            [win nil])
-                                    ))
-                            )] (not ?) => [win nil]
+          win (assoc-in win [:w_cursor :lnum] (:lnum (:op_start oap)))
+          win (update-screen win, INVERTED)
+          [win [bd #_int pre_textlen :as _]]
+            (when' (:block_mode oap) => [win [bd 0]]
+                ;; When 'virtualedit' is used, need to insert the extra spaces before doing block-prep().
+                ;; When only "block" is used, virtual edit is already disabled,
+                ;; but still need it when calling coladvance-force().
+                (let-when [[win ?]
+                        (when' (< 0 (:coladd (:w_cursor win))) => [win nil]
+                            (let [o've_flags @ve_flags _ (reset! ve_flags VE_ALL)]
+                                (if (not (u-save-cursor win))
+                                    (do (reset! ve_flags o've_flags)
+                                        [win :abort])
+                                    (let [win (coladvance-force win, (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol win)))
+                                          win (if (== (:op_type oap) OP_APPEND) (update-in win [:w_cursor :col] dec) win)]
+                                        (reset! ve_flags o've_flags)
+                                        [win nil])
+                                ))
+                        )] (not ?) => [win nil]
 
-                        ;; Get the info about the block before entering the text.
-                        (let [bd (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true)
-                              #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
-                              s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
-                            [win [bd (STRLEN s)]]
+                    ;; Get the info about the block before entering the text.
+                    (let [bd (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true)
+                          #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
+                          s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
+                        [win [bd (STRLEN s)]]
+                    ))
+            )] (some? _) => [win oap]
+
+        (let-when [[win [bd :as _]]
+                (when' (== (:op_type oap) OP_APPEND) => [win [bd]]
+                    (if (and (:block_mode oap) (zero? (:coladd (:w_cursor win))))
+                        ;; Move the cursor to the character right of the block.
+                        (let [win (assoc win :w_set_curswant true)
+                              win (loop-when-recur win
+                                                   (and (non-eos? (ml-get-cursor win)) (< (:col (:w_cursor win)) (+ (:textcol bd) (:textlen bd))))
+                                                   (update-in win [:w_cursor :col] inc)
+                                                => win)]
+                            (when' (and (:is_short bd) (not (:is_MAX bd))) => [win [bd]]
+                                ;; First line was too short, make it longer and adjust the values in "bd".
+                                (when' (u-save-cursor win) => [win nil]
+                                    (let [win (loop-when-recur [win win _ 0] (< _ (:endspaces bd)) [(ins-char win, (byte \space)) (inc _)] => win)]
+                                        [win [(update bd :textlen + (:endspaces bd))]]
+                                    ))
+                            ))
+                        (let [win (-> win (assoc :w_cursor (:op_end oap)) (check-cursor-col))
+                              ;; Works just like an 'i'nsert on the next character.
+                              win (when' (and (not (lineempty (:lnum (:w_cursor win)))) (!= (:start_vcol oap) (:end_vcol oap))) => win
+                                    (inc-cursor win, false)
+                                )]
+                            [win [bd]]
                         ))
                 )] (some? _) => [win oap]
 
-            (let-when [[win [bd :as _]]
-                    (when' (== (:op_type oap) OP_APPEND) => [win [bd]]
-                        (if (and (:block_mode oap) (zero? (:coladd (:w_cursor win))))
-                            ;; Move the cursor to the character right of the block.
-                            (let [win (assoc win :w_set_curswant true)
-                                  win (loop-when-recur win
-                                                       (and (non-eos? (ml-get-cursor win)) (< (:col (:w_cursor win)) (+ (:textcol bd) (:textlen bd))))
-                                                       (update-in win [:w_cursor :col] inc)
-                                                    => win)]
-                                (when' (and (:is_short bd) (not (:is_MAX bd))) => [win [bd]]
-                                    ;; First line was too short, make it longer and adjust the values in "bd".
-                                    (when' (u-save-cursor win) => [win nil]
-                                        (let [win (loop-when-recur [win win _ 0] (< _ (:endspaces bd)) [(ins-char win, (byte \space)) (inc _)] => win)]
-                                            [win [(update bd :textlen + (:endspaces bd))]]
-                                        ))
+            (let [#_pos_C t1 (:op_start oap)
+                  [win _] (edit? win, NUL, false, count1)
+                  ;; When a tab was inserted, and the characters in front of the tab have been converted to a tab
+                  ;; as well, the column of the cursor might have actually been reduced, so need to adjust here.
+                  oap (when' (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1)) => oap
+                        (assoc oap :op_start (:b_op_start_orig @curbuf))
+                    )]
+                ;; If user has moved off this line, we don't know what to do, so do nothing.
+                ;; Also don't repeat the insert when Insert mode ended with CTRL-C.
+                (cond (or (!= (:lnum (:w_cursor win)) (:lnum (:op_start oap))) @got_int)
+                    [win oap]
+                (:block_mode oap)
+                    ;; The user may have moved the cursor before inserting something, try to adjust the block for that.
+                    (let [[oap pre_textlen]
+                            (cond (or (!= (:lnum (:op_start oap)) (:lnum (:b_op_start_orig @curbuf))) (:is_MAX bd))
+                                [oap pre_textlen]
+                            (and (== (:op_type oap) OP_INSERT)
+                                       (!= (+ (:col (:op_start oap)) (:coladd (:op_start oap))) (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf)))))
+                                (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                      oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
+                                      pre_textlen (- pre_textlen (- t (:start_vcol oap)))]
+                                    [(assoc oap :start_vcol t) pre_textlen])
+                            (and (== (:op_type oap) OP_APPEND)
+                                 (<= (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf))) (+ (:col (:op_end oap)) (:coladd (:op_end oap)))))
+                                (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                      oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
+                                      ;; reset "pre_textlen" to the value of OP_INSERT
+                                      pre_textlen (- (+ pre_textlen (:textlen bd)) (- t (:start_vcol oap)))]
+                                    [(assoc oap :start_vcol t :op_type OP_INSERT) pre_textlen])
+                            :else
+                                [oap pre_textlen])
+                          ;; Spaces and tabs in the indent may have changed to other spaces and tabs.
+                          ;; Get the starting column again and correct the length.
+                          ;; Don't do this when "$" used, end-of-line will have changed.
+                          #_block_def_C bd2 (block-prep oap, false, (:lnum (:op_start oap)), true)
+                          [bd bd2 pre_textlen]
+                            (if (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
+                                (let [[bd2 pre_textlen]
+                                        (if (== (:op_type oap) OP_APPEND)
+                                            (let [pre_textlen (+ pre_textlen (- (:textlen bd2) (:textlen bd)))]
+                                                [(if (non-zero? (:endspaces bd2)) (update bd2 :textlen dec) bd2) pre_textlen])
+                                            [bd2 pre_textlen]
+                                        )]
+                                    [(assoc bd :textcol (:textcol bd2) :textlen (:textlen bd2)) bd2 pre_textlen])
+                                [bd bd2 pre_textlen])
+                          ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the required string.
+                          #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
+                          s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
+                        (when' (<= 0 pre_textlen) => [win oap]
+                            (let [#_int ins_len (- (STRLEN s) pre_textlen)]
+                                (when' (< 0 ins_len) => [win oap]
+                                    (let [#_Bytes ins_text (STRNDUP s, ins_len)]
+                                        ;; block handled here
+                                        (when (u-save win, (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
+                                            (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
+                                        [(-> win (assoc-in [:w_cursor :col] (:col (:op_start oap))) (check-cursor)) oap])
                                 ))
-                            (let [win (-> win (assoc :w_cursor (:op_end oap)) (check-cursor-col))
-                                  ;; Works just like an 'i'nsert on the next character.
-                                  win (when' (and (not (lineempty (:lnum (:w_cursor win)))) (!= (:start_vcol oap) (:end_vcol oap))) => win
-                                        (inc-cursor win, false)
-                                    )]
-                                [win [bd]]
-                            ))
-                    )] (some? _) => [win oap]
-
-                (let [#_pos_C t1 (:op_start oap)
-                      [win _] (edit? win, NUL, false, count1)
-                      ;; When a tab was inserted, and the characters in front of the tab have been converted to a tab
-                      ;; as well, the column of the cursor might have actually been reduced, so need to adjust here.
-                      oap (when' (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1)) => oap
-                            (assoc oap :op_start (:b_op_start_orig @curbuf))
-                        )]
-                    ;; If user has moved off this line, we don't know what to do, so do nothing.
-                    ;; Also don't repeat the insert when Insert mode ended with CTRL-C.
-                    (cond (or (!= (:lnum (:w_cursor win)) (:lnum (:op_start oap))) @got_int)
-                        [win oap]
-                    (:block_mode oap)
-                        ;; The user may have moved the cursor before inserting something, try to adjust the block for that.
-                        (let [[oap pre_textlen]
-                                (cond (or (!= (:lnum (:op_start oap)) (:lnum (:b_op_start_orig @curbuf))) (:is_MAX bd))
-                                    [oap pre_textlen]
-                                (and (== (:op_type oap) OP_INSERT)
-                                           (!= (+ (:col (:op_start oap)) (:coladd (:op_start oap))) (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf)))))
-                                    (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
-                                          oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
-                                          pre_textlen (- pre_textlen (- t (:start_vcol oap)))]
-                                        [(assoc oap :start_vcol t) pre_textlen])
-                                (and (== (:op_type oap) OP_APPEND)
-                                     (<= (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf))) (+ (:col (:op_end oap)) (:coladd (:op_end oap)))))
-                                    (let [#_int t (getviscol2 win, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
-                                          oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
-                                          ;; reset "pre_textlen" to the value of OP_INSERT
-                                          pre_textlen (- (+ pre_textlen (:textlen bd)) (- t (:start_vcol oap)))]
-                                        [(assoc oap :start_vcol t :op_type OP_INSERT) pre_textlen])
-                                :else
-                                    [oap pre_textlen])
-                              ;; Spaces and tabs in the indent may have changed to other spaces and tabs.
-                              ;; Get the starting column again and correct the length.
-                              ;; Don't do this when "$" used, end-of-line will have changed.
-                              #_block_def_C bd2 (block-prep oap, false, (:lnum (:op_start oap)), true)
-                              [bd bd2 pre_textlen]
-                                (if (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
-                                    (let [[bd2 pre_textlen]
-                                            (if (== (:op_type oap) OP_APPEND)
-                                                (let [pre_textlen (+ pre_textlen (- (:textlen bd2) (:textlen bd)))]
-                                                    [(if (non-zero? (:endspaces bd2)) (update bd2 :textlen dec) bd2) pre_textlen])
-                                                [bd2 pre_textlen]
-                                            )]
-                                        [(assoc bd :textcol (:textcol bd2) :textlen (:textlen bd2)) bd2 pre_textlen])
-                                    [bd bd2 pre_textlen])
-                              ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the required string.
-                              #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
-                              s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
-                            (when' (<= 0 pre_textlen) => [win oap]
-                                (let [#_int ins_len (- (STRLEN s) pre_textlen)]
-                                    (when' (< 0 ins_len) => [win oap]
-                                        (let [#_Bytes ins_text (STRNDUP s, ins_len)]
-                                            ;; block handled here
-                                            (when (u-save win, (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
-                                                (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
-                                            [(-> win (assoc-in [:w_cursor :col] (:col (:op_start oap))) (check-cursor)) oap])
-                                    ))
-                            ))
-                    :else
-                        [win oap]
-                    ))
+                        ))
+                :else
+                    [win oap])
             ))
     ))
 
@@ -11768,7 +11779,7 @@
                                                             (let [o'line (ml-get (:lnum (:w_cursor win))) o'len (STRLEN o'line) a's (atom (#_Bytes object o'line))
                                                                   [incr #_int vcol]
                                                                     (loop-when [incr incr vcol 0] (and (< vcol @a'col) (non-eos? @a's)) => [incr vcol]
-                                                                        (let [incr (lbr-chartabsize-adv o'line, a's, vcol)] ;; count a tab for what it's worth
+                                                                        (let [incr (lbr-chartabsize-adv win, o'line, a's, vcol)] ;; count a tab for what it's worth
                                                                             (recur incr (+ vcol incr))
                                                                         ))
                                                                   bd (assoc bd :textcol (BDIFF @a's, o'line))
@@ -11793,7 +11804,7 @@
                                                                   ;; calculate number of spaces required to fill right side of block
                                                                   #_int spaces (loop-when-recur [spaces (inc (:y_width reg)) #_int n 0]
                                                                                                 (< n yanklen)
-                                                                                                [(- spaces (lbr-chartabsize nil, (.plus (... (:y_array reg) i) n), 0)) (inc n)]
+                                                                                                [(- spaces (lbr-chartabsize win, nil, (.plus (... (:y_array reg) i) n), 0)) (inc n)]
                                                                                              => (max 0 spaces))
                                                                   _ (reset! a'totlen (+ (* count (+ yanklen spaces)) (:startspaces bd) (:endspaces bd)))
                                                                   #_Bytes line (Bytes. (+ @a'totlen o'len 1)) #_Bytes s line
@@ -12095,7 +12106,7 @@
           [#_int t bd #_Bytes p #_Bytes s]
             (loop-when [t 0 bd bd p line s line] (and (< (:start_vcol bd) (:start_vcol oap)) (non-eos? s)) => [t bd p s]
                 ;; Count a tab for what it's worth (if list mode not on).
-                (let [t (lbr-chartabsize line, s, (:start_vcol bd))
+                (let [t (lbr-chartabsize @curwin, line, s, (:start_vcol bd))
                       bd (update bd :start_vcol + t)
                       bd (if (vim-iswhite (.at s 0))
                             (-> bd (update :pre_whitesp + t) (update :pre_whitesp_c inc))
@@ -12132,7 +12143,7 @@
                             (let [[#_Bytes prev_pend t bd]
                                     (loop-when [prev_pend @a'pend t t bd bd] (and (<= (:end_vcol bd) (:end_vcol oap)) (non-eos? @a'pend)) => [prev_pend t bd]
                                         ;; Count a tab for what it's worth (if list mode not on).
-                                        (let [prev_pend @a'pend t (lbr-chartabsize-adv line, a'pend, (:end_vcol bd))]
+                                        (let [prev_pend @a'pend t (lbr-chartabsize-adv @curwin, line, a'pend, (:end_vcol bd))]
                                             (recur prev_pend t (update bd :end_vcol + t)))
                                     )]
                                 (cond (and (<= (:end_vcol bd) (:end_vcol oap)) (or (not is_del) (== (:op_type oap) OP_APPEND) (== (:op_type oap) OP_REPLACE))) ;; line too short
@@ -12404,7 +12415,7 @@
                         (let [#_Bytes s (ml-get (:lnum (:w_cursor win))) #_Bytes buf1 (Bytes. 50) #_Bytes buf2 (Bytes. 40)
                               win (validate-virtcol win)]
                             (col-print buf1, (.size buf1), (inc (:col (:w_cursor win))), (inc (:w_virtcol win)))
-                            (col-print buf2, (.size buf2), (STRLEN s), (linetabsize s))
+                            (col-print buf2, (.size buf2), (STRLEN s), (linetabsize win, s))
                             (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
                                 (ß vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
                                 (ß vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
@@ -13605,7 +13616,7 @@
                                                                                     (let [win (assoc win :w_wcol 0) #_Bytes s (ml-get (:lnum (:w_cursor win)))
                                                                                           win (loop-when [win win #_int vcol 0 #_int i 0] (< i (:col (:w_cursor win))) => win
                                                                                                 (let [win (if (not (vim-iswhite (.at s i))) (assoc win :w_wcol vcol) win)
-                                                                                                      vcol (+ vcol (lbr-chartabsize s, (.plus s i), vcol))]
+                                                                                                      vcol (+ vcol (lbr-chartabsize win, s, (.plus s i), vcol))]
                                                                                                     (recur win vcol (+ i (us-ptr2len-cc s, i)))
                                                                                                 ))
                                                                                           win (assoc win :w_wrow (+ (:w_cline_row win) (/ (:w_wcol win) (:w_width win))))
@@ -13651,9 +13662,8 @@
                                                             ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
                                                             ;; because there was something in the input buffer (e.g. termresponse).
                                                             (let [win (when' (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance
-                                                                               (non-zero? @must_redraw) (not @need_wait_return)) => win
-                                                                        (update-screen 0)
-                                                                        (setcursor win)) ;; put cursor back where it belongs
+                                                                                  (non-zero? @must_redraw) (not @need_wait_return)) => win
+                                                                        (-> win (update-screen 0) (setcursor))) ;; put cursor back where it belongs
                                                                   ;; If we have a partial match (and are going to wait for more input from the user),
                                                                   ;; show the partially matched characters to the user with showcmd.
                                                                   [win #_int i #_int c1]
@@ -13910,7 +13920,7 @@
                     (when startln
                         (swap! insStart assoc :col 0))
                 ))
-            (reset! insStart_textlen (linetabsize (ml-get (:lnum (:w_cursor win)))))
+            (reset! insStart_textlen (linetabsize win, (ml-get (:lnum (:w_cursor win)))))
             (reset! insStart_blank_vcol MAXCOL)
             (when (not @did_ai)
                 (reset! ai_col 0))
@@ -14335,7 +14345,7 @@
     (if (char-avail)
         win
         (let [win (cond
-                    (non-zero? @must_redraw) (do (update-screen 0) win)
+                    (non-zero? @must_redraw) (update-screen win, 0)
                     (or @clear_cmdline @redraw_cmdline) (showmode win) ;; clear cmdline and show mode
                     :else win)
                 win (showruler win, false)
@@ -14464,7 +14474,7 @@
                       [vcol new_cursor_col]
                         (loop-when [#_int last_vcol 0 #_int i -1 #_int vcol 0] (<= vcol (:w_virtcol win)) => [last_vcol i]
                             (let [i (+ i (if (<= 0 i) (us-ptr2len-cc s, i) 1))]
-                                (recur vcol i (+ vcol (lbr-chartabsize s, (.plus s i), vcol)))
+                                (recur vcol i (+ vcol (lbr-chartabsize win, s, (.plus s i), vcol)))
                             ))
                       ;; May need to insert spaces to be able to position the cursor on the right screen column.
                       [win new_cursor_col]
@@ -14725,7 +14735,7 @@
             ;; Don't update the original insert position when moved to the right,
             ;; except when nothing was inserted yet.
             (reset! update_insStart_orig false))
-        (reset! insStart_textlen (linetabsize (ml-get (:lnum (:w_cursor win)))))
+        (reset! insStart_textlen (linetabsize win, (ml-get (:lnum (:w_cursor win)))))
         (when (u-save-cursor win)
             (reset! arrow_used false)
             (reset! ins_need_undo false))
@@ -15724,7 +15734,7 @@
                           ;; Use as many TABs as possible.  ;; Beware of 'breakindent', 'showbreak' and 'linebreak' adding extra virtual columns.
                           [#_int x fpos s]
                             (loop-when [x -1 fpos fpos s s] (vim-iswhite (.at s 0)) => [x fpos s]
-                                (let-when [#_int i (lbr-chartabsize nil, (u8 "\t"), @a'vcol)] (not (< @a'want_vcol (+ @a'vcol i))) => [x fpos s]
+                                (let-when [#_int i (lbr-chartabsize win, nil, (u8 "\t"), @a'vcol)] (not (< @a'want_vcol (+ @a'vcol i))) => [x fpos s]
                                     (swap! a'vcol + i)
                                     (let [x (if (not-at? s TAB) (do (.be s 0, TAB)
                                                 (if (< x 0)
@@ -15741,7 +15751,7 @@
                               ;; Skip over the spaces we need.
                               [s #_int roff]
                                 (loop-when-recur [s s roff 0] (and (< @a'vcol @a'want_vcol) (at? s (byte \space))) [(.plus s 1) (inc roff)] => [s roff]
-                                    (swap! a'vcol #(+ % (lbr-chartabsize line, s, %))))
+                                    (swap! a'vcol #(+ % (lbr-chartabsize win, line, s, %))))
                               ;; Must have a char with 'showbreak' just before it.
                               [s roff]
                                 (if (< @a'want_vcol @a'vcol) [(.minus s 1) (dec roff)] [s roff])
@@ -15847,7 +15857,7 @@
                       win (validate-virtcol win) vcol (:w_virtcol win)]
                     (loop-when-recur [#_Bytes prior @a's #_int i 0] ;; try to advance to the cursor column
                                      (and (< i vcol) (non-eos? @a's))
-                                     [@a's (+ i (lbr-chartabsize-adv line, a's, i))]
+                                     [@a's (+ i (lbr-chartabsize-adv win, line, a's, i))]
                                   => (when (< vcol i) (reset! a's prior)))
                     [win (us-ptr2char @a's)])
                 [win NUL]
@@ -25731,7 +25741,7 @@
                         ;; save the pos, update-screen() may change it
                         (let [o'lpos lpos o'cursor (:w_cursor win) o'so @p_so o'siso @p_siso
                               win (update win :w_virtcol inc)               ;; do display ')' just before "$"
-                              _ (update-screen VALID)                       ;; show the new char first
+                              win (update-screen win, VALID)                ;; show the new char first
                               o'State @State _ (reset! State SHOWMATCH)
                               _ (ui-cursor-shape)                           ;; may show different cursor shape
                               win (assoc win :w_cursor o'lpos)              ;; move to matching char
@@ -26853,14 +26863,14 @@
 
 ;; Return the number of screen cells for "*s" taking into account the size of TABs.
 
-(defn- #_int linetabsize [#_Bytes s]
-    (linetabsize-col s, 0))
+(defn- #_int linetabsize [#_window_C win, #_Bytes s]
+    (linetabsize-col win, s, 0))
 
 ;; Like linetabsize(), but starting at column "startcol".
 
-(defn- #_int linetabsize-col [#_Bytes _s, #_int startcol]
+(defn- #_int linetabsize-col [#_window_C win, #_Bytes _s, #_int startcol]
     (let [#_Bytes' a's (atom (#_Bytes object _s)) #_Bytes line @a's] ;; pointer to start of line, for breakindent
-        (loop-when-recur [#_int col startcol] (non-eos? @a's) [(+ col (lbr-chartabsize-adv line, a's, col))] => col)
+        (loop-when-recur [#_int col startcol] (non-eos? @a's) [(+ col (lbr-chartabsize-adv win, line, a's, col))] => col)
     ))
 
 ;; Like linetabsize(), but for a given window instead of the current one.
@@ -26904,22 +26914,22 @@
 
 ;; like chartabsize(), but also check for line breaks on the screen
 
-(defn- #_int lbr-chartabsize [#_Bytes line, #_Bytes s, #_int col]
+(defn- #_int lbr-chartabsize [#_window_C win, #_Bytes line, #_Bytes s, #_int col]
     ;; line: start of the line
-    (let [wops (:w_options @curwin)] (cond
+    (let [wops (:w_options win)] (cond
         (or @(:wo_lbr wops) (non-eos? @p_sbr) @(:wo_bri wops))
-            (win-lbr-chartabsize @curwin, (if (nil? line) s line), s, col, nil)
+            (win-lbr-chartabsize win, (if (nil? line) s line), s, col, nil)
         @(:wo_wrap wops)
-            (win-nolbr-chartabsize @curwin, s, col, nil)
+            (win-nolbr-chartabsize win, s, col, nil)
         :else
             (chartabsize s, col)
     )))
 
 ;; Call lbr-chartabsize() and advance the pointer.
 
-(defn- #_int lbr-chartabsize-adv [#_Bytes line, #_Bytes' a's, #_int col]
+(defn- #_int lbr-chartabsize-adv [#_window_C win, #_Bytes line, #_Bytes' a's, #_int col]
     ;; line: start of the line
-    (let [#_int size (lbr-chartabsize line, @a's, col)]
+    (let [#_int size (lbr-chartabsize win, line, @a's, col)]
         (swap! a's #(.plus % (us-ptr2len-cc %)))
         size
     ))
@@ -31349,7 +31359,7 @@
                         nil
                     (== n KEYLEN_REMOVED)                       ;; key code removed
                         (do (when (and (non-zero? @must_redraw) (not @need_wait_return) (non-flag? @State CMDLINE))
-                                (update-screen 0)               ;; redrawing was postponed, do it now
+                                (swap! curwin update-screen 0)  ;; redrawing was postponed, do it now
                                 (swap! curwin setcursor))       ;; put cursor back where it belongs
                             nil)
                     :else
@@ -31554,7 +31564,7 @@
             (if (<= MAXCOL wcol)
                 (let [x (+ (dec (STRLEN line)) (if one_more 1 0))
                       win (if (and (or addspaces finetune) (not @VIsual_active))
-                            (let [win (assoc win :w_curswant (+ (linetabsize line) (if one_more 1 0)))]
+                            (let [win (assoc win :w_curswant (+ (linetabsize win, line) (if one_more 1 0)))]
                                 (if (< 0 (:w_curswant win)) (update win :w_curswant dec) win))
                             win
                         )]
@@ -31563,7 +31573,7 @@
                 (let [#_int width (- (:w_width win) (win-col-off win))
                       [#_int csize wcol]
                         (if (and finetune @(:wo_wrap (:w_options win)) (non-zero? (:w_width win)) (<= width wcol))
-                            (let [csize (linetabsize line) csize (if (< 0 csize) (dec csize) csize)
+                            (let [csize (linetabsize win, line) csize (if (< 0 csize) (dec csize) csize)
                                   wcol (if (and (< (/ csize width) (/ wcol width)) (or (non-flag? @State INSERT) (< (inc csize) wcol)))
                                         ;; In case of line wrapping don't move the cursor beyond the right screen edge.
                                         ;; In Insert mode allow going just beyond the last character
@@ -33498,47 +33508,35 @@
 ;;
 ;; While doing this, until ttest(), some options may be null, be careful.
 
-(defn- #_void set-term []
+(defn- #_window_C set-term [#_window_C win]
     (out-flush)
-
-    ;; Reset a few things before clearing the old options.  This may cause
-    ;; outputting a few things that the terminal doesn't understand, but the
-    ;; screen will be cleared later, so this is OK.
-
+    ;; Reset a few things before clearing the old options.
+    ;; This may cause outputting a few things that the terminal doesn't understand,
+    ;; but the screen will be cleared later, so this is OK.
     (stop-termcap)
     (clear-termcodes)
     (parse-builtin-tcap xterm_tcaps)
-
     ;; Any "stty" settings override the default for t_kb from the termcap.
-
     (get-stty)
-
-    ;; If the termcap has no entry for 'bs' and/or 'del' and the ioctl()
-    ;; also didn't work, use the default CTRL-H.
-    ;; The default for t_kD is DEL, unless t_kb is DEL.
-
+    ;; If the termcap has no entry for 'bs' and/or 'del' and the ioctl() also didn't work,
+    ;; use the default CTRL-H.  The default for t_kD is DEL, unless t_kb is DEL.
     (let [#_Bytes bs (find-termcode (u8 "kb"))
           bs (if (or (nil? bs) (eos? bs)) (let [bs CTRL_H_STR] (add-termcode (u8 "kb"), bs) bs) bs)
           #_Bytes del (find-termcode (u8 "kD"))]
         (when (and (or (nil? del) (eos? del)) (or (nil? bs) (not-at? bs DEL)))
             (add-termcode (u8 "kD"), DEL_STR)
         ))
-
-    (ttest true)                        ;; make sure we have a valid set of terminal codes
-
-    (reset! full_screen true)           ;; we can use termcap codes from now on
-
+    (ttest true)                            ;; make sure we have a valid set of terminal codes
+    (reset! full_screen true)               ;; we can use termcap codes from now on
     ;; Initialize the terminal with the appropriate termcap codes.
-
     (when (!= @starting NO_SCREEN)
-        (start-termcap))                 ;; may change terminal mode
-
-    (swap! curwin set-shellsize 80, 24, false)       ;; may change Rows
-
-    (when (!= @starting NO_SCREEN)
-        (when @scroll_region
-            (scroll-region-reset)))     ;; in case Rows changed
-    nil)
+        (start-termcap))                    ;; may change terminal mode
+    (let [win (set-shellsize win, 80, 24, false)] ;; may change Rows
+        (when (!= @starting NO_SCREEN)
+            (when @scroll_region
+                (scroll-region-reset)))     ;; in case Rows changed
+        win
+    ))
 
 ;; the number of calls to ui-write is reduced by using the buffer "out_buf"
 
@@ -33899,8 +33897,8 @@
                                   ;; Always need to call update-screen() or screen-alloc()
                                   ;; to make sure Rows/Cols and the size of screenLines[] is correct!
                                   win (if (flag? @State CMDLINE)
-                                        (do                             (update-screen NOT_VALID) (redrawcmdline))
-                                        (let [win (update-topline win)] (update-screen NOT_VALID) (if (redrawing) (setcursor win) win))
+                                        (let [                         win (update-screen win, NOT_VALID)]                 (redrawcmdline) win)
+                                        (let [win (update-topline win) win (update-screen win, NOT_VALID)] (if (redrawing) (setcursor win) win))
                                     )]
                                 (cursor-on) ;; redrawing may have switched it off
                                 win)
@@ -34660,15 +34658,15 @@
 
 (defn- #_void update-curbuf [#_int type]
     (redraw-curbuf-later type)
-    (update-screen type)
+    (swap! curwin update-screen type)
     nil)
 
-;; Based on the current value of curwin.w_topline, transfer a screenfull
-;; of stuff from Filemem to screenLines[], and update curwin.w_botline.
+;; Based on the current value of "w_topline", transfer a screenful
+;; of stuff from Filemem to screenLines[], and update "w_botline".
 
-(defn- #_void update-screen [#_int type]
+(defn- #_window_C update-screen [#_window_C win, #_int type]
     ;; Don't do anything if the screen structures are (not yet) valid.
-    (when (screen-valid true)
+    (when' (screen-valid true) => win
         (let [type (if (non-zero? @must_redraw)
                     (let [type (max @must_redraw type)] ;; use maximal type
                         ;; "must_redraw" is reset here, so when we run into some weird reason to redraw
@@ -34678,13 +34676,13 @@
                         type)
                     type)
               ;; Need to update w_lines[].
-              type (if (and (zero? (:w_lines_valid @curwin)) (< type NOT_VALID)) NOT_VALID type)]
+              type (if (and (zero? (:w_lines_valid win)) (< type NOT_VALID)) NOT_VALID type)]
             ;; Postpone the redrawing when it's not needed and when being called recursively.
             (if (or (not (redrawing)) @updating_screen)
-                (do (swap! curwin redraw-later type) ;; remember type for next time
+                (let [win (redraw-later win, type)] ;; remember type for next time
                     (reset! must_redraw type)
-                    (when (< INVERTED_ALL type)
-                        (swap! curwin assoc :w_lines_valid 0) ;; don't use w_lines[].wl_size now
+                    (when' (< INVERTED_ALL type) => win
+                        (assoc win :w_lines_valid 0) ;; don't use w_lines[].wl_size now
                     ))
                 (let [_ (reset! updating_screen true)
                       ;; if the screen was scrolled up when displaying a message, scroll it down
@@ -34694,20 +34692,20 @@
                                         CLEAR
                                     (!= type CLEAR)
                                         (let [_ (check-for-delay false) type (if (not (screen-ins-lines 0, 0, @msg_scrolled, @Rows, nil)) CLEAR type)]
-                                            (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-                                                (§ (ß win =)
-                                                    (cond (<= @msg_scrolled (:w_winrow win))
-                                                        win
-                                                    (and (< @msg_scrolled (+ (:w_winrow win) (:w_height win))) (< (:w_redr_type win) REDRAW_TOP)
-                                                         (< 0 (:w_lines_valid win)) (== (:w_topline win) (:wl_lnum (... (:w_lines win) 0))))
-                                                        (-> win
-                                                            (assoc :w_upd_rows (- @msg_scrolled (:w_winrow win)))
+                                            (loop-when-recur [#_window_C w @firstwin] (some? w) [(:w_next w)]
+                                                (§ (ß w =)
+                                                    (cond (<= @msg_scrolled (:w_winrow w))
+                                                        w
+                                                    (and (< @msg_scrolled (+ (:w_winrow w) (:w_height w))) (< (:w_redr_type w) REDRAW_TOP)
+                                                         (< 0 (:w_lines_valid w)) (== (:w_topline w) (:wl_lnum (... (:w_lines w) 0))))
+                                                        (-> w
+                                                            (assoc :w_upd_rows (- @msg_scrolled (:w_winrow w)))
                                                             (assoc :w_redr_type REDRAW_TOP))
                                                     :else
-                                                        (let [win (assoc win :w_redr_type NOT_VALID)]
-                                                            (if (<= (+ (:w_winrow win) (:w_height win) (:w_status_height win)) @msg_scrolled)
-                                                                (assoc win :w_redr_status true)
-                                                                win
+                                                        (let [w (assoc w :w_redr_type NOT_VALID)]
+                                                            (if (<= (+ (:w_winrow w) (:w_height w) (:w_status_height w)) @msg_scrolled)
+                                                                (assoc w :w_redr_status true)
+                                                                w
                                                             ))
                                                     )))
                                             (reset! redraw_cmdline true)
@@ -34722,50 +34720,49 @@
                       ;; reset "cmdline_row" now (may have been changed temporarily)
                       _ (compute-cmdrow)
                       ;; first clear screen ;; will reset "clear_cmdline"
-                      type (if (== type CLEAR) (do (screen-clear) NOT_VALID) type)]
-
-                    (when @clear_cmdline ;; going to clear cmdline (done below)
-                        (check-for-delay false))
-                    ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-                    (when (and (< (:w_redr_type @curwin) NOT_VALID)
-                               (!= (:w_nrwidth @curwin) (if (or @(:wo_nu (:w_options @curwin)) @(:wo_rnu (:w_options @curwin))) (ß let [[_ ?] (number-width? @curwin)] (reset! curwin _) ?) 0)))
-                        (swap! curwin assoc :w_redr_type NOT_VALID))
-                    ;; Only start redrawing if there is really something to do.
-                    (when (== type INVERTED)
-                        (swap! curwin update-curswant))
-                    (when (and (< (:w_redr_type @curwin) type)
-                               (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0))))
-                                        (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin)))
-                                                                               (== (:w_old_visual_mode @curwin) @VIsual_mode)
-                                                                               (flag? (:w_valid @curwin) VALID_VIRTCOL)
-                                                                               (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
-                        (swap! curwin assoc :w_redr_type type))
-
+                      type (if (== type CLEAR) (do (screen-clear) NOT_VALID) type)
+                      _ (when @clear_cmdline ;; going to clear cmdline (done below)
+                            (check-for-delay false))
+                      [win ?] ;; Force redraw when width of 'number' or 'relativenumber' column changes.
+                        (when' (< (:w_redr_type win) NOT_VALID) => [win false]
+                            (let [wops (:w_options win) [win ?] (if (or @(:wo_nu wops) @(:wo_rnu wops)) (number-width? win) [win 0])]
+                                [win (!= (:w_nrwidth win) ?)]
+                            ))
+                      win (if ? (assoc win :w_redr_type NOT_VALID) win)
+                      ;; Only start redrawing if there is really something to do.
+                      win (if (== type INVERTED) (update-curswant win) win)
+                      win (when' (and (< (:w_redr_type win) type)
+                                      (not (or (and (== type VALID) (:wl_valid (... (:w_lines win) 0)) (== (:w_topline win) (:wl_lnum (... (:w_lines win) 0))))
+                                               (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum win) (:lnum (:w_cursor win)))
+                                                                                      (== (:w_old_visual_mode win) @VIsual_mode)
+                                                                                      (flag? (:w_valid win) VALID_VIRTCOL)
+                                                                                      (== (:w_old_curswant win) (:w_curswant win)))))) => win
+                              (assoc win :w_redr_type type)
+                        )]
                     ;; Go from top to bottom through the windows, redrawing the ones that need it.
                     (swap! search_hl assoc-in [:rmm :regprog] nil)
-                    (loop-when-recur [#_boolean did_one false #_window_C win @firstwin] (some? win) [did_one (:w_next win)]
-                        (§ (ß [win did_one] =)
-                            (let [[win did_one]
-                                    (if (non-zero? (:w_redr_type win))
+                    (loop-when-recur [#_boolean did_one false #_window_C w @firstwin] (some? w) [did_one (:w_next w)]
+                        (§ (ß [w did_one] =)
+                            (let [[w did_one]
+                                    (if (non-zero? (:w_redr_type w))
                                         (let [_ (cursor-off) did_one (or did_one (do (start-search-hl) true))]
-                                            [(win-update win, false) did_one])
-                                        [win did_one]
+                                            [(win-update w, false) did_one])
+                                        [w did_one]
                                     )]
                                 ;; redraw status line after the window to minimize cursor movement
-                                [(if (:w_redr_status win) (do (cursor-off) (win-redr-status win)) win) did_one]
+                                [(if (:w_redr_status w) (do (cursor-off) (win-redr-status w)) w) did_one]
                             )
                         ))
                     (end-search-hl)
-
                     (swap! curbuf assoc :b_mod_set false)
                     (reset! updating_screen false)
                     ;; Clear or redraw the command line.
                     ;; Done last, because scrolling may mess up the command line.
-                    (when (or @clear_cmdline @redraw_cmdline)
-                        (swap! curwin showmode)
+                    (when' (or @clear_cmdline @redraw_cmdline) => win
+                        (showmode win)
                     ))
-            )))
-    nil)
+            ))
+    ))
 
 (defn- #_window_C update-single-line [#_window_C win, #_long lnum]
     (if (and (<= (:w_topline win) lnum) (< lnum (:w_botline win)))
@@ -36236,7 +36233,7 @@
 ;; Mark all status lines for redraw.
 
 (defn- #_void status-redraw-all []
-    (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
         (when (non-zero? (:w_status_height win))
             ((ß win =) (assoc win :w_redr_status true))
             ((ß win =) (redraw-later win, VALID))	;; %% anno @curwin ??
@@ -36246,7 +36243,7 @@
 ;; Redraw all status lines that need to be redrawn.
 
 (defn- #_void redraw-statuslines []
-    (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
         (when (:w_redr_status win)
             ((ß win =) (win-redr-status win))
         ))
@@ -39697,16 +39694,14 @@
 ;; Used to update the screen before printing a message.
 
 (defn- #_window_C update-topline-redraw [#_window_C win]
-    (let [win (update-topline win)]
-        (when (non-zero? @must_redraw)
-            (update-screen 0))
-        win
+    (let-when [win (update-topline win)] (non-zero? @must_redraw) => win
+        (update-screen win, 0)
     ))
 
 ;; Update "w_topline" to move the cursor onto the screen.
 
 (defn- #_window_C update-topline [#_window_C win]
-    (let-when [#_long save_so @p_so] (screen-valid true) => win
+    (let-when [o'p_so @p_so] (screen-valid true) => win
         ;; If the window height is zero, just use the cursor line.
         (if (zero? (:w_height win))
             (let [cln (:lnum (:w_cursor win))]
@@ -39769,7 +39764,7 @@
                                     (if (== (:lnum (:w_cursor win)) (:w_topline win)) (validate-cursor win) win))
                                 win
                             )]
-                        (reset! p_so save_so)
+                        (reset! p_so o'p_so)
                         win
                     ))
             ))
@@ -39869,7 +39864,7 @@
 
 (defn- #_window_C validate-cursor [#_window_C win]
     (let [win (check-cursor-moved win)
-          row|col (| VALID_WROW VALID_WCOL) #_| valid? (== (& (:w_valid @curwin) row|col) row|col)]
+          row|col (| VALID_WROW VALID_WCOL) #_| valid? (== (& (:w_valid win) row|col) row|col)]
         (if (not valid?) (curs-columns win, true) win)
     ))
 
@@ -40518,22 +40513,6 @@
         0
     ))
 
-;;; ============================================================================================== VimY
-
-;; oops!
-
-(final cmdname_C* cmdnames
-    [
-        (new cmdname_C (u8 "close"),      ex-close,  (| BANG RANGE NOTADR COUNT CMDWIN), ADDR_WINDOWS),
-        (new cmdname_C (u8 "fixdel"),     ex-fixdel,    CMDWIN,                          ADDR_LINES  ),
-        (new cmdname_C (u8 "only"),       ex-only,   (| BANG NOTADR RANGE COUNT),        ADDR_WINDOWS),
-        (new cmdname_C (u8 "retab"),      ex-retab,  (| RANGE DFLALL BANG WORD1 CMDWIN), ADDR_LINES  ),
-        (new cmdname_C (u8 "substitute"), ex-sub,    (| RANGE EXTRA CMDWIN),             ADDR_LINES  ),
-        (new cmdname_C (u8 "set"),        ex-set,    (| EXTRA CMDWIN),                   ADDR_LINES  ),
-        (new cmdname_C (u8 "stop"),       ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
-        (new cmdname_C (u8 "suspend"),    ex-stop,   (| BANG CMDWIN),                    ADDR_LINES  ),
-    ])
-
 ;;; ============================================================================================== VimG
 
 ;; Main loop: execute Normal mode commands until exiting Vim.
@@ -40572,7 +40551,7 @@
                         (let [win (-> win (update-topline) (validate-cursor))
                               win (cond
                                     @VIsual_active (do (update-curbuf INVERTED) win) ;; update inverted part
-                                    (non-zero? @must_redraw) (do (update-screen 0) win)
+                                    (non-zero? @must_redraw) (update-screen win, 0)
                                     (or @redraw_cmdline @clear_cmdline) (showmode win)
                                     :else win
                                 )]
@@ -40602,116 +40581,85 @@
 ;; Exit properly.
 (defn- #_void getout [#_int exitval]
     (reset! exiting true)
-
     ;; Position the cursor on the last screen line, below all the text.
     (windgoto (dec @Rows), 0)
-
     (when @did_emsg
         ;; give the user a chance to read the (error) message
         (reset! no_wait_return FALSE)
-        (swap! curwin wait-return FALSE)
-    )
-
+        (swap! curwin wait-return FALSE))
     (mch-exit exitval))
 
 ;;; ============================================================================================== VimZ
 
 (defn #_void -main [& #_String* args]
-    (reset! starttime (ß ._time libC))
-
-    (reset! curbuf (newBuffer))
-    (init-chartab false)
-    (swap! curbuf unchanged)
-
-    (reset! curwin (newWindow nil))
-    (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
-    (swap! curwin redraw-later NOT_VALID)
-
-    (let [fr (-> (newFrame @curwin) (assoc :fr_height (- @Rows @p_ch) :fr_width @Cols))]
-        (swap! curwin assoc :w_frame fr)
-        (reset! topframe fr))
-
-    (reset! ch_used @p_ch)
-    ;; Set the default values for the options.
-    (swap! curwin set-init-1)
-    ;; Don't redraw until much later.
-    (swap! no_redraw inc)
-    ;; mch-init() sets up the terminal (window) for use.
-    ;; This must be done after resetting full_screen, otherwise it may move the cursor (MSDOS).
-    ;; Note that we may use mch-exit() before mch-init()!
-    (mch-init)
-    (set-term)                             ;; set terminal capabilities (will set "full_screen")
-    (screen-start)                         ;; don't know where cursor is now
-    ;; Set the default values for the options that use Rows and Cols.
-    (ui-get-shellsize)                     ;; inits Rows and Cols
-    (win-init-size)
-
-    (reset! cmdline_row (- @Rows @p_ch))
-    (reset! msg_row @cmdline_row)
-    (screen-alloc false)                     ;; allocate screen buffers
-
-    (win-comp-scroll @curwin)
-    (comp-col)
-
-    (reset! msg_scroll true)
-    (reset! no_wait_return TRUE)
-
-    ;; Start putting things on the screen.
-    ;; Scroll screen down before drawing over it.
-    ;; Clear screen now, so file message will not be cleared.
-
-    (reset! starting NO_BUFFERS)
-    (reset! no_wait_return FALSE)
-    (reset! msg_scroll false)
-
-    ;; When switching screens and something caused a message from a vimrc script,
-    ;; need to output an extra newline on exit.
-    (when (and (or @did_emsg @msg_didout) (non-eos? @T_TI))
-        (reset! newline_on_exit true))
-
-    ;; When done something that is not allowed or error message call wait-return().
-    ;; This must be done before start-termcap(), because it may switch to another screen.
-    ;; It must be done after settmode(TMODE_RAW), because we want to react on a single key stroke.
-    ;; Call settmode and start-termcap here, so the T_KS and T_TI may be defined by set-term().
-
-    (settmode TMODE_RAW)
-
-    (when (or @need_wait_return @msg_didany)
-        (swap! curwin wait-return TRUE))
-
-    (start-termcap)                         ;; start termcap if not done by wait-return()
-
-    (when @scroll_region
-        (scroll-region-reset))              ;; in case Rows changed
-    (scroll-start)                         ;; may scroll the screen to the right position
-
-    (screen-clear)                      ;; clear screen
-
-    (reset! no_wait_return TRUE)
-
-    (swap! curwin setpcmark)
-
-    ;; If opened more than one window, start editing files in the other windows.
-
-    ;; make the first window the current window
-    (swap! curwin win-enter @firstwin)
-
-    (reset! no_redraw 0)
-    (redraw-all-later NOT_VALID)
-    (reset! no_wait_return FALSE)
-    (reset! starting 0)
-
-    ;; start in insert mode
-    (when @p_im
-        (reset! need_start_insertmode true))
-
-    ;; If ":startinsert" command used, stuff a dummy command to be
-    ;; able to call normal-cmd(), which will then start Insert mode.
-    (when (non-zero? @restart_edit)
-        (stuff-char K_NOP))
-
-    ;; Call the main command loop.  This never returns.
-
-    (swap! curwin main-loop false)
-
-    #_nil 0)
+    (let [_ (reset! starttime (ß ._time libC))
+          _ (reset! curbuf (newBuffer))
+          _ (init-chartab false)
+          _ (swap! curbuf unchanged)
+          #_window_C win (newWindow nil)
+          _ (swap! curbuf assoc :b_nwindows 1)      ;; there is one window
+          win (redraw-later win, NOT_VALID)
+          win (let [#_frame_C fr (-> (newFrame win) (assoc :fr_height (- @Rows @p_ch) :fr_width @Cols))]
+                (reset! ch_used @p_ch)
+                (reset! topframe fr)
+                (assoc win :w_frame fr))
+          ;; Set the default values for the options.
+          win (set-init-1 win)
+          ;; Don't redraw until much later.
+          _ (swap! no_redraw inc)
+          ;; mch-init() sets up the terminal (window) for use.
+          ;; This must be done after resetting "full_screen", otherwise it may move the cursor (MSDOS).
+          ;; Note that we may use mch-exit() before mch-init()!
+          _ (mch-init)
+          win (set-term win)                        ;; set terminal capabilities (will set "full_screen")
+          _ (screen-start)                          ;; don't know where cursor is now
+          ;; Set the default values for the options that use Rows and Cols.
+          _ (ui-get-shellsize)                      ;; inits Rows and Cols
+          _ (win-init-size)
+          _ (reset! cmdline_row (- @Rows @p_ch))
+          _ (reset! msg_row @cmdline_row)
+          _ (screen-alloc false)                    ;; allocate screen buffers
+          _ (win-comp-scroll win)
+          _ (comp-col)
+          _ (reset! msg_scroll true)
+          _ (reset! no_wait_return TRUE)
+          ;; Start putting things on the screen.
+          ;; Scroll screen down before drawing over it.
+          ;; Clear screen now, so file message will not be cleared.
+          _ (reset! starting NO_BUFFERS)
+          _ (reset! no_wait_return FALSE)
+          _ (reset! msg_scroll false)
+          ;; When switching screens and something caused a message from a vimrc script,
+          ;; need to output an extra newline on exit.
+          _ (when (and (or @did_emsg @msg_didout) (non-eos? @T_TI))
+                (reset! newline_on_exit true))
+          ;; When done something that is not allowed or error message call wait-return().
+          ;; This must be done before start-termcap(), because it may switch to another screen.
+          ;; It must be done after settmode(TMODE_RAW), because we want to react on a single key stroke.
+          ;; Call settmode() and start-termcap() here, so the T_KS and T_TI may be defined by set-term().
+          _ (settmode TMODE_RAW)
+          win (when' (or @need_wait_return @msg_didany) => win
+                (wait-return win, TRUE))
+          _ (start-termcap)                         ;; start termcap if not done by wait-return()
+          _ (when @scroll_region
+                (scroll-region-reset))              ;; in case Rows changed
+          _ (scroll-start)                          ;; may scroll the screen to the right position
+          _ (screen-clear)                          ;; clear screen
+          _ (reset! no_wait_return TRUE)
+          win (setpcmark win)
+          win (win-enter win, @firstwin)            ;; make the first window the current window
+          _ (reset! no_redraw 0)
+          _ (redraw-all-later NOT_VALID)
+          _ (reset! no_wait_return FALSE)
+          _ (reset! starting 0)
+          _ (when @p_im
+                (reset! need_start_insertmode true)) ;; start in insert mode
+          ;; If ":startinsert" command used,
+          ;; stuff a dummy command to be able to call normal-cmd(),
+          ;; which will then start Insert mode.
+          _ (when (non-zero? @restart_edit)
+                (stuff-char K_NOP))
+          ;; Call the main command loop.  This never returns.
+          win (main-loop win, false)]
+        #_nil 0
+    ))
