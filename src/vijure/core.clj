@@ -3225,7 +3225,8 @@
 ;           do
 ;           {
                 ((ß half =) (- half (us-head-off s, (.plus s (dec half))) 1))
-;           } while (utf-iscomposing(us-ptr2char(s.plus(half))) && 0 < half);
+;           }
+            ((ß WHILE) (and (utf-iscomposing (us-ptr2char s, half)) (< 0 half)))
             ((ß int n =) (mb-ptr2cells (.plus s half)))
             (if (< room (+ len n))
                 (ß BREAK)
@@ -3443,7 +3444,8 @@
                         ((ß c =) K_IGNORE)
                     ))
                 )
-;           } while ((had_got_int && c == Ctrl_C) || c == K_IGNORE);
+;           }
+            ((ß WHILE) (or (and had_got_int (== c Ctrl_C)) (== c K_IGNORE)))
             (ui-breakcheck)
 
             (when (and (nil? (vim-strchr (u8 "\r\n "), c)) (!= c Ctrl_C))
@@ -3850,7 +3852,8 @@
 ;               do
 ;               {
                     (msg-screen-putchar (byte \space), attr)
-;               } while ((@msg_col & 7) != 0);
+;               }
+                ((ß WHILE) (non-zero? (& @msg_col 7)))
             )
             (at? s BELL)                   ;; beep (from ":sh")
             (do
@@ -6219,7 +6222,7 @@
 (defn- #_void find-mps-values [#_int' a'initc, #_int' a'findc, #_boolean' a'backwards, #_boolean switchit]
     (loop-if [#_Bytes s @(:b_p_mps @curbuf)] (non-eos? s)
         (if (== (us-ptr2char s) @a'initc)
-            (let [c (us-ptr2char (.plus s (inc (us-ptr2len-cc s))))]
+            (let [c (us-ptr2char s, (inc (us-ptr2len-cc s)))]
                 (if switchit
                     (do (reset! a'findc @a'initc) (reset! a'initc c) (reset! a'backwards true))
                     (do (reset! a'findc c) (reset! a'backwards false)))
@@ -7357,7 +7360,8 @@
 ;           do
 ;           {
                 ((ß c =) (safe-vgetc))
-;           } while (c == K_IGNORE);
+;           }
+            ((ß WHILE) (== c K_IGNORE))
 
             (when @keyTyped
                 ((ß some_key_typed =) true)
@@ -7643,9 +7647,7 @@
                                 (swap! ccline update :cmdspos + i)
                                 (swap! ccline update :cmdpos + (us-ptr2len-cc (:cmdbuff @ccline), (:cmdpos @ccline)))
 ;                           }
-                            (while (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space)))
-;                               ;
-                            )
+                            ((ß WHILE) (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space))))
                             (set-cmdspos-cursor)
                             (ß BREAK cmdline_not_changed)
                         )
@@ -7664,9 +7666,7 @@
                                 (swap! ccline update :cmdpos - (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
                                 (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
 ;                           }
-                            (while (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (- (:cmdpos @ccline) 1) (byte \space)))
-;                               ;
-                            )
+                            ((ß WHILE) (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (- (:cmdpos @ccline) 1) (byte \space))))
                             (set-cmdspos-cursor)
                             (ß BREAK cmdline_not_changed)
                         )
@@ -8233,12 +8233,12 @@
         ;; backup to the character before it.  There could be two of them.
 
         ((ß int i =) 0)
-        ((ß int c =) (us-ptr2char (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
+        ((ß int c =) (us-ptr2char (:cmdbuff @ccline), (:cmdpos @ccline)))
         (while (and (< 0 (:cmdpos @ccline)) (utf-iscomposing c))
             ((ß i =) (inc (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (dec (:cmdpos @ccline))))))
             (swap! ccline update :cmdpos - i)
             ((ß len =) (+ len i))
-            ((ß c =) (us-ptr2char (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
+            ((ß c =) (us-ptr2char (:cmdbuff @ccline), (:cmdpos @ccline)))
         )
         (when (non-zero? i)
             ;; Also backup the cursor position.
@@ -8376,8 +8376,8 @@
                 ;; Locate start of last word in the cmd buffer.
                 (ß Bytes w)
                 ((ß FOR) (ß ((ß w =) (.plus (:cmdbuff @ccline) (:cmdpos @ccline))) (BLT (:cmdbuff @ccline), w) nil)
-                    ((ß int len =) (+ (us-head-off (:cmdbuff @ccline), (.minus w 1)) 1))
-                    (if (not (vim-iswordc (us-ptr2char (.minus w len))))
+                    ((ß int len =) (inc (us-head-off (:cmdbuff @ccline), (.minus w 1))))
+                    (if (not (vim-iswordc (us-ptr2char w, (- len))))
                         (ß BREAK)
                     )
                     ((ß w =) (.minus w len))
@@ -8612,7 +8612,8 @@
             (if (< i 0)
                 ((ß i =) (dec @hislen))
             )
-;       } while (i != @hisidx[type]);
+;       }
+        ((ß WHILE) (!= i (... @hisidx type)))
 
         (when (<= 0 last_i)
             ((ß str =) (:hisstr (... (... @history type) i)))
@@ -8857,18 +8858,16 @@
                 (BCOPY @a'cmdline_copy, next_cmdline, (+ (STRLEN next_cmdline) 1))
                 ((ß next_cmdline =) @a'cmdline_copy)
             ))
+
+            ;; Continue executing command lines when:
+            ;; - no CTRL-C typed, no aborting error, no exception thrown or try conditionals need
+            ;;   to be checked for executing finally clauses or catching an interrupt exception
+            ;; - didn't get an error message or lines are not typed
+            ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
+            ;;   for ":source" command or function call.
+
 ;       }
-
-        ;; Continue executing command lines when:
-        ;; - no CTRL-C typed, no aborting error, no exception thrown or try conditionals need
-        ;;   to be checked for executing finally clauses or catching an interrupt exception
-        ;; - didn't get an error message or lines are not typed
-        ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
-        ;;   for ":source" command or function call.
-
-        (while (and (not @got_int) (not (and @did_emsg used_getline use_getline)) (non-nil? next_cmdline))
-;           ;
-        )
+        ((ß WHILE) (and (not @got_int) (not (and @did_emsg used_getline use_getline)) (non-nil? next_cmdline)))
 
         (reset! did_emsg_syntax false)
 
@@ -9721,7 +9720,8 @@
                 ))
                 ((ß lnum =) ((if (== m (byte \-)) - +) lnum n))
             )
-;       } while (cmd.at(0) == (byte \/) || cmd.at(0) == (byte \?));
+;       }
+        ((ß WHILE) (or (at? cmd (byte \/)) (at? cmd (byte \?))))
 
         (reset! a'ptr cmd)
         lnum
@@ -14131,7 +14131,8 @@
 ;                   do
 ;                   {
                         ((ß i =) (gchar))
-;                   } while (vim-iswhite(i) && oneright());
+;                   }
+                    ((ß WHILE) (and (vim-iswhite i) (oneright)))
                 )
                 (swap! curwin assoc :w_set_curswant true)
                 (ß BREAK)
@@ -18226,7 +18227,8 @@
                         (if @VIsual_active
                             ((ß lnum =) (inc lnum))
                         )
-;                   } while (@VIsual_active && lnum <= @curbuf.b_visual.vi_end.lnum);
+;                   }
+                    ((ß WHILE) (and @VIsual_active (<= lnum (:lnum (:vi_end (:b_visual @curbuf))))))
 
                     (if @VIsual_active ;; reset lnum to the last visual line
                         ((ß lnum =) (dec lnum))
@@ -20604,7 +20606,8 @@
 ;       do
 ;       {
             ((ß c =) (safe-vgetc))
-;       } while (c == K_IGNORE || c == K_VER_SCROLLBAR || c == K_HOR_SCROLLBAR);
+;       }
+        ((ß WHILE) (or (== c K_IGNORE) (== c K_VER_SCROLLBAR) (== c K_HOR_SCROLLBAR)))
 
         c
     ))
@@ -20686,7 +20689,7 @@
 
 ;       do
 ;       {
-;; get a character: 1. from the stuffbuffer
+            ;; get a character: 1. from the stuffbuffer
 
             (cond (non-zero? @typeahead_char)
             (do
@@ -20763,7 +20766,8 @@
                         )
 
                         (when (zero? keylen)        ;; no matching terminal code
-;; get a character: 2. from the typeahead buffer
+
+                            ;; get a character: 2. from the typeahead buffer
 
                             ((ß c =) (& (.at (:tb_buf @typebuf) (:tb_off @typebuf)) 0xff))
                             (when advance    ;; remove chars from tb_buf
@@ -20784,7 +20788,7 @@
                         ((ß keylen =) KEYLEN_PART_KEY)
                     )
 
-;; get a character: 3. from the user - handle <Esc> in Insert mode
+                    ;; get a character: 3. from the user - handle <Esc> in Insert mode
 
                     ;; Special case: if we get an <ESC> in insert mode and there are no more
                     ;; characters at once, we pretend to go out of insert mode.  This prevents
@@ -20869,7 +20873,7 @@
                         (ß CONTINUE)
                     )
 
-;; get a character: 3. from the user - update display
+                    ;; get a character: 3. from the user - update display
 
                     ;; In insert mode a screen update is skipped when characters are still available.
                     ;; But when those available characters are part of a mapping, and we are going
@@ -20918,7 +20922,7 @@
                         )
                     )
 
-;; get a character: 3. from the user - get it
+                    ;; get a character: 3. from the user - get it
 
                     ((ß int wait_tb_len =) (:tb_len @typebuf))
                     ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1), (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))), (:tb_change_cnt @typebuf)))
@@ -20955,7 +20959,8 @@
                     ))
                 )
             ))
-;       } while (c < 0 || (advance && c == NUL));   ;; if advance is false don't loop on NULs
+;       }
+        ((ß WHILE) (or (< c 0) (and advance (== c NUL))))   ;; if advance is false don't loop on NULs
 
         ;; The "INSERT" message is taken care of here:
         ;;   if we return an ESC to exit insert mode, the message is deleted;
@@ -21089,7 +21094,7 @@
                 ;; Add character, possibly multi-byte to destination, escaping KB_SPECIAL.
                   d (loop [#_int c (us-ptr2char s) d (add-char2buf c, d) #_int n (utf-char2len c)] (if (< n end)
                     ;; Add following combining char.
-                    (recur (us-ptr2char (.plus s n)) (add-char2buf c, d) (+ n (utf-char2len c)))
+                    (recur (us-ptr2char s, n) (add-char2buf c, d) (+ n (utf-char2len c)))
                     d))]
                 (recur d (.plus s end))
             ))
@@ -21397,7 +21402,8 @@
 ;               do
 ;               {
                     ((ß c =) (safe-vgetc))
-;               } while (c == K_IGNORE);
+;               }
+                ((ß WHILE) (== c K_IGNORE))
 
                 ;; Don't want K_CURSORHOLD for the second key, e.g., after CTRL-V.
                 (reset! did_cursorhold true)
@@ -22856,7 +22862,8 @@
             ;; a trailing "0" is inserted as "<C-V>048", "^" as "<C-V>^"
             (if (!= last NUL)
                 (stuff-string (if (== last (byte \0)) (u8 "\026\060\064\070") (u8 "\026^"))))
-;       } while (0 < --count);
+;       }
+        ((ß WHILE) (< 0 (ß --count)))
 
         (if (!= last NUL)
             (.be last_ptr 0, last)
@@ -23727,7 +23734,8 @@
                     (if (== mode BACKSPACE_CHAR)
                         (ß BREAK)
                     )
-;               } while (mincol < @curwin.w_cursor.col && (@curwin.w_cursor.lnum != @insStart_orig.lnum || @curwin.w_cursor.col != @insStart_orig.col));
+;               }
+                ((ß WHILE) (and (< mincol (:col (:w_cursor @curwin))) (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (!= (:col (:w_cursor @curwin)) (:col @insStart_orig)))))
             ))
             ((ß did_backspace =) true)
         ))
@@ -24967,7 +24975,7 @@
         (when (at? p 1 (byte \=))
             ((ß int len =) (us-ptr2len-cc p, 2))
             (when (and (at? p (+ len 2) (byte \=)) (at? p (+ len 3) (byte \])))
-                ((ß int c =) (us-ptr2char (.plus p 2)))
+                ((ß int c =) (us-ptr2char p, 2))
                 (reset! a'pp (.plus @a'pp (+ len 4)))
                 ((ß RETURN) c)
             )
@@ -25503,7 +25511,7 @@
         (when (at? p 1 (byte \.))
             ((ß int len =) (us-ptr2len-cc p, 2))
             (when (and (at? p (+ len 2) (byte \.)) (at? p (+ len 3) (byte \])))
-                ((ß int c =) (us-ptr2char (.plus p 2)))
+                ((ß int c =) (us-ptr2char p, 2))
                 (reset! a'pp (.plus @a'pp (+ len 4)))
                 ((ß RETURN) c)
             )
@@ -27134,7 +27142,7 @@
             ;; Need to get composing character too.
             (while true
                 ((ß int l =) (us-ptr2len @regparse))
-                (if (not (utf-iscomposing (us-ptr2char (.plus @regparse l))))
+                (if (not (utf-iscomposing (us-ptr2char @regparse, l)))
                     (ß BREAK)
                 )
                 (regmbc (us-ptr2char @regparse))
@@ -27489,7 +27497,7 @@
                         ;; Next character can never be (made) magic?
                         ;; Then backslashing it won't do anything.
 
-                        (reset! curchr (us-ptr2char (.plus @regparse 1)))
+                        (reset! curchr (us-ptr2char @regparse, 1))
                     ))
                     (ß BREAK)
                 )
@@ -28094,7 +28102,7 @@
             ;; Simplest case: Anchored match need be tried only once.
             (cond (non-zero? (:reganch prog))
             (do
-                ((ß int c =) (us-ptr2char (.plus @regline col)))
+                ((ß int c =) (us-ptr2char @regline, col))
                 (cond (or (== (:regstart prog) NUL) (== (:regstart prog) c) (and @ireg_ic (or (== (utf-fold (:regstart prog)) (utf-fold c)) (and (< c 255) (< (:regstart prog) 255) (== (utf-tolower (:regstart prog)) (utf-tolower c))))))
                 (do
                     ((ß retval =) (regtry prog, col))
@@ -28777,7 +28785,7 @@
                                 ))
                                 ;; Check for following composing character, unless %C
                                 ;; follows (skips over all composing chars).
-                                (when (and (!= status RA_NOMATCH) (utf-iscomposing (us-ptr2char (.plus @reginput @a'len))) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
+                                (when (and (!= status RA_NOMATCH) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
                                     ;; This code makes a composing character get ignored,
                                     ;; which is the correct behavior (sometimes)
                                     ;; for voweled Hebrew texts.
@@ -28823,7 +28831,7 @@
                                 ;; position where that composing char appears.
                                 ((ß status =) RA_NOMATCH)
                                 (loop-if-recur [#_int i 0] (non-eos? @reginput i) [(+ i (us-ptr2len @reginput i))]
-                                    ((ß int inpc =) (us-ptr2char (.plus @reginput i)))
+                                    ((ß int inpc =) (us-ptr2char @reginput, i))
                                     (cond (not (utf-iscomposing inpc))
                                     (do
                                         (if (< 0 i)
@@ -31106,7 +31114,7 @@
                     )
                     :else
                     (do
-                        ((ß c =) (us-ptr2char (.minus src 1)))
+                        ((ß c =) (us-ptr2char src, -1))
                     ))
 
                     ;; Write to buffer, if copy is set.
@@ -31130,7 +31138,7 @@
                         (utf-char2bytes @a'cc, dst))
                     ((ß dst =) (.plus dst (dec (utf-char2len @a'cc))))
 
-                    ((ß int clen =) (us-ptr2len src -1))
+                    ((ß int clen =) (us-ptr2len src, -1))
 
                     ;; If the character length is shorter than "totlen",
                     ;; there are composing characters; copy them as-is.
@@ -33208,7 +33216,7 @@
                 (if (<= plen ((ß i =) (+ i (utf-char2len c))))
                     (ß BREAK)
                 )
-                ((ß c =) (us-ptr2char (.plus old_regparse i)))
+                ((ß c =) (us-ptr2char old_regparse, i))
             )
             (emc1 NFA_COMPOSING)
             (reset! regparse (.plus old_regparse plen))
@@ -36188,8 +36196,8 @@
 
             (ß int c1, c2)
             (loop-if-recur [#_int len1 0] (non-eos? match_text len1) [(+ len1 (utf-char2len c1))]
-                ((ß c1 =) (us-ptr2char (.plus match_text len1)))
-                ((ß c2 =) (us-ptr2char (.plus @regline (+ (... col 0) len2))))
+                ((ß c1 =) (us-ptr2char match_text, len1))
+                ((ß c2 =) (us-ptr2char @regline, (+ (... col 0) len2)))
                 (when (and (!= c1 c2) (or (not @ireg_ic) (!= (utf-tolower c1) (utf-tolower c2))))
                     ((ß match =) false)
                     (ß BREAK)
@@ -36198,7 +36206,7 @@
             )
 
             ;; check that no composing char follows
-            (when (and match (not (utf-iscomposing (us-ptr2char (.plus @regline (+ (... col 0) len2))))))
+            (when (and match (not (utf-iscomposing (us-ptr2char @regline, (+ (... col 0) len2)))))
                 (cleanup-subexpr)
                 (cond (nil? @reg_match)
                 (do
@@ -36660,7 +36668,7 @@
                                 ;; We don't care about the order of composing characters.
                                 ;; Get them into cchars[] first.
                                 (while (< len clen)
-                                    ((ß mc =) (us-ptr2char (.plus @reginput len)))
+                                    ((ß mc =) (us-ptr2char @reginput, len))
                                     ((ß cchars[ccount++] =) mc)
                                     ((ß len =) (+ len (utf-char2len mc)))
                                     (if (== ccount MAX_MCO)
@@ -37421,7 +37429,7 @@
                             (do
                                 ;; Checking if the required start character matches is
                                 ;; cheaper than adding a state that won't match.
-                                ((ß int c =) (us-ptr2char (.plus @reginput clen)))
+                                ((ß int c =) (us-ptr2char @reginput, clen))
                                 (when (and (!= c (:regstart prog)) (or (not @ireg_ic) (!= (utf-tolower c) (utf-tolower (:regstart prog)))))
                                     ((ß add =) false)
                                 )
@@ -39208,7 +39216,7 @@
                         (swap! _2_pos update :col dec)
                     )
                     (while true
-                        (reset! a'initc (us-ptr2char (.plus linep (:col @_2_pos))))
+                        (reset! a'initc (us-ptr2char linep, (:col @_2_pos)))
                         (if (== @a'initc NUL)
                             (ß BREAK)
                         )
@@ -39532,7 +39540,7 @@
             ;;   inquote if the number of quotes in a line is even, unless this
             ;;   line or the previous one ends in a '\'.  Complicated, isn't it?
 
-            ((ß int c =) (us-ptr2char (.plus linep (:col @_2_pos))))
+            ((ß int c =) (us-ptr2char linep, (:col @_2_pos)))
             ((ß SWITCH) c
                 ((ß CASE) NUL)
                 (do
@@ -41836,7 +41844,7 @@
             ;; Cannot put the cursor on part of a wide character.
             ((ß Bytes ptr =) (ml-get (:lnum pos)))
             (when (< (:col pos) (STRLEN ptr))
-                ((ß int c =) (us-ptr2char (.plus ptr (:col pos))))
+                ((ß int c =) (us-ptr2char ptr, (:col pos)))
 
                 (when (and (!= c TAB) (vim-isprintc c))
                     ((ß endadd =) (- (mb-char2cells c) 1))
@@ -44031,7 +44039,7 @@
         ;; Only accept a composing char when the first char isn't illegal.
         ((ß int i =) (us-ptr2len p))
         (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len p i))))
+            ((ß FOR) (ß (ß int cc) (and (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char p, i)))) ((ß i =) (+ i (us-ptr2len p, i))))
                 ((ß pcc[j++] =) cc)
                 (if (== j MAX_MCO)
                     (ß BREAK)
@@ -44058,7 +44066,7 @@
         ;; Only accept a composing char when the first char isn't illegal.
         ((ß int i =) (us-ptr2len-len p, maxlen))
         (when (or (< 1 i) (< (char_u (.at p 0)) 0x80))
-            ((ß FOR) (ß (ß int cc) (and (< i maxlen) (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char (.plus p i))))) ((ß i =) (+ i (us-ptr2len-len p, i, (- maxlen i)))))
+            ((ß FOR) (ß (ß int cc) (and (< i maxlen) (<= 0x80 (char_u (.at p i))) (utf-iscomposing ((ß cc =) (us-ptr2char p, i)))) ((ß i =) (+ i (us-ptr2len-len p, i, (- maxlen i)))))
                 ((ß pcc[j++] =) cc)
                 (if (== j MAX_MCO)
                     (ß BREAK)
@@ -44145,7 +44153,7 @@
                         1
                         (let [a i]
                             ;; Check for composing characters.  We can handle only the first six, but skip all of them (otherwise the cursor would get stuck).
-                            (loop-if-recur [i (+ i n)] (and (<= 0x80 (char_u (.at s i))) (utf-iscomposing (us-ptr2char (.plus s i)))) [(+ i (us-ptr2len s i))] => (- i a)))
+                            (loop-if-recur [i (+ i n)] (and (<= 0x80 (char_u (.at s i))) (utf-iscomposing (us-ptr2char s i))) [(+ i (us-ptr2len s i))] => (- i a)))
                     ))
         )))
 
@@ -44171,7 +44179,7 @@
                             (loop-if [i (+ i n)] (and (< i m) (<= 0x80 (char_u (.at s i)))) => (- i a)
                                 ;; Next character length should not go beyond size to ensure that UTF_COMPOSINGLIKE(...) does not read beyond size.
                                 (let [n (us-ptr2len-len s, i, (- m i))]
-                                    (recur-if (and (<= n (- m i)) (utf-iscomposing (us-ptr2char (.plus s i)))) [(+ i n)] => (- i a))
+                                    (recur-if (and (<= n (- m i)) (utf-iscomposing (us-ptr2char s i))) [(+ i n)] => (- i a))
                                 )))
                     ))
         )))
@@ -45285,7 +45293,7 @@
                     (STRCPY (.plus @ioBuff rlen), (u8 "+ "))
                     ((ß rlen =) (+ rlen 2))
                 )
-                ((ß clen =) (us-ptr2len p i))
+                ((ß clen =) (us-ptr2len p, i))
             )
             ;; NUL is stored as NL
             (.sprintf libC (.plus @ioBuff rlen), (u8 "%02x "), (if (at? p i NL) NUL (.at p i)))
@@ -45433,7 +45441,7 @@
             ((ß Bytes p =) (ml-get (:lnum posp)))
             ((ß posp.col =) (- (:col posp) (us-head-off p, (.plus p (:col posp)))))
             ;; Reset "coladd" when the cursor would be on the right half of a double-wide character.
-            (when (and (== (:coladd posp) 1) (not-at? p (:col posp) TAB) (vim-isprintc (us-ptr2char (.plus p (:col posp)))) (< 1 (mb-ptr2cells (.plus p (:col posp)))))
+            (when (and (== (:coladd posp) 1) (not-at? p (:col posp) TAB) (vim-isprintc (us-ptr2char p, (:col posp))) (< 1 (mb-ptr2cells (.plus p (:col posp)))))
                 ((ß posp.coladd =) 0)
             )
         )
@@ -46108,7 +46116,7 @@
             (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                 (replace-push NUL))      ;; end of extra blanks
             (when @(:b_p_ai @curbuf)
-                (while (and (or (at? p_extra (byte \space)) (at? p_extra TAB)) (not (utf-iscomposing (us-ptr2char (.plus p_extra 1)))))
+                (while (and (or (at? p_extra (byte \space)) (at? p_extra TAB)) (not (utf-iscomposing (us-ptr2char p_extra, 1))))
                     (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                         (replace-push (.at p_extra 0)))
                     ((ß p_extra =) (.plus p_extra 1))
@@ -46600,9 +46608,10 @@
 ;               do
 ;               {
                     ((ß col =) n)
-                    ((ß count =) (us-ptr2len oldp n))
+                    ((ß count =) (us-ptr2len oldp, n))
                     ((ß n =) (+ n count))
-;               } while (utf-iscomposing(us-ptr2char(oldp.plus(n))));
+;               }
+                ((ß WHILE) (utf-iscomposing (us-ptr2char oldp, n)))
                 ((ß fixpos =) false)
             )
         )
@@ -56207,7 +56216,8 @@
 ;       {
             ((ß lnum =) (/ lnum 10))
             ((ß n =) (inc n))
-;       } while (0 < lnum);
+;       }
+        ((ß WHILE) (< 0 lnum))
 
         ;; 'numberwidth' gives the minimal width plus one
         ((ß n =) (max (dec (int @(:wo_nuw (:w_options wp)))) n))
@@ -57908,7 +57918,8 @@
                         (ß BREAK)
                     )
                 )
-;           } while (frp != null);
+;           }
+            ((ß WHILE) (non-nil? frp))
         )
         :else    ;; fr_layout == FR_COL
         (do
@@ -57959,14 +57970,16 @@
 ;                       do
 ;                       {
                             ((ß frp =) (:fr_next frp))
-;                       } while (wfh && frp != null && frame-fixed-height(frp));
+;                       }
+                        ((ß WHILE) (and wfh (non-nil? frp) (frame-fixed-height frp)))
                     )
                     :else
                     (do
 ;                       do
 ;                       {
                             ((ß frp =) (:fr_prev frp))
-;                       } while (wfh && frp != null && frame-fixed-height(frp));
+;                       }
+                        ((ß WHILE) (and wfh (non-nil? frp) (frame-fixed-height frp)))
                     ))
                     ;; Increase "height" if we could not reduce enough frames.
                     (if (nil? frp)
@@ -58118,7 +58131,8 @@
                         (ß BREAK)
                     )
                 )
-;           } while (frp != null);
+;           }
+            ((ß WHILE) (non-nil? frp))
         )
         :else    ;; fr_layout == FR_ROW
         (do
@@ -58169,14 +58183,16 @@
 ;                       do
 ;                       {
                             ((ß frp =) (:fr_next frp))
-;                       } while (wfw && frp != null && frame-fixed-width(frp));
+;                       }
+                        ((ß WHILE) (and wfw (non-nil? frp) (frame-fixed-width frp)))
                     )
                     :else
                     (do
 ;                       do
 ;                       {
                             ((ß frp =) (:fr_prev frp))
-;                       } while (wfw && frp != null && frame-fixed-width(frp));
+;                       }
+                        ((ß WHILE) (and wfw (non-nil? frp) (frame-fixed-width frp)))
                     ))
                     ;; Increase "width" if we could not reduce enough frames.
                     (if (nil? frp)
@@ -60924,7 +60940,8 @@
                     )
                     (swap! curwin update :w_botline inc)
                     ((ß room =) (- room i))
-;               } while (@curwin.w_botline <= @curbuf.b_ml.ml_line_count);
+;               }
+                ((ß WHILE) (<= (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf))))
             )
 
             ;; When hit bottom of the file: move cursor down.
