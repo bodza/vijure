@@ -3005,7 +3005,9 @@
 
         ;; Select on ready for reading and exceptional condition (end of file).
 
-        ((ß FOR) (ß ((ß long[] rfds =) (ß new long[FD_SET_LENGTH], efds = new long[FD_SET_LENGTH])) true nil)
+        ((ß long[] rfds =) (ß new long[FD_SET_LENGTH]))
+        ((ß long[] efds =) (ß new long[FD_SET_LENGTH]))
+        (loop []
             (FD_ZERO rfds)
             (FD_ZERO efds)
             (FD_SET fd, rfds)
@@ -3016,8 +3018,7 @@
             (when (and (== ret -1) (== (.errno libC) EINTR))
                 ;; Check whether window has been resized, EINTR may be caused by SIGWINCH.
 
-                (if @do_resize
-                    (handle-resize))
+                (when @do_resize (handle-resize))
 
                 ;; Interrupted by a signal, need to try again.  We ignore msec here,
                 ;; because we do want to check even after a timeout if characters are available.
@@ -3027,6 +3028,7 @@
             )
 
             ((ß RETURN) (< 0 ret))
+            (recur)
         )
 
         ;; NOTREACHED
@@ -15390,7 +15392,7 @@
 
         (mb-adjust-opend oap)
 
-        (if (not (u-save (- (:lnum (:op_start oap)) 1), (+ (:lnum (:op_end oap)) 1)))
+        (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
             ((ß RETURN) false)
         )
 
@@ -15401,10 +15403,11 @@
             ((ß block_def_C bd =) (NEW_block_def_C))
 
             ((ß bd.is_MAX =) (== (:w_curswant @curwin) MAXCOL))
-            ((ß FOR) (ß nil (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap))) (ß @curwin.w_cursor.lnum++))
+            (loop-when [] (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
                 (swap! curwin assoc-in [:w_cursor :col] 0)    ;; make sure cursor position is valid
                 (block-prep oap, bd, (:lnum (:w_cursor @curwin)), true)
                 (when (and (zero? (:textlen bd)) (or (== @virtual_op FALSE) (:is_MAX bd)))
+                    (swap! curwin update-in [:w_cursor :lnum] inc)
                     (ß CONTINUE)               ;; nothing to replace
                 )
 
@@ -15490,6 +15493,8 @@
                     (appended-lines-mark (:lnum (:w_cursor @curwin)), 1)
                     ((ß oap.op_end.lnum =) (inc (:lnum (:op_end oap))))
                 )
+                (swap! curwin update-in [:w_cursor :lnum] inc)
+                (recur)
             )
         )
         :else
@@ -15588,20 +15593,20 @@
             ((ß RETURN) nil)
         )
 
-        ((ß pos_C pos =) (NEW_pos_C))
-        (COPY-pos pos, (:op_start oap))
+        ((ß pos_C pos =) (:op_start oap))
 
         (cond (:block_mode oap)                     ;; Visual block mode
         (do
-            ((ß FOR) (ß nil (<= (:lnum pos) (:lnum (:op_end oap))) (ß pos.lnum++))
+            (loop-when [] (<= (:lnum pos) (:lnum (:op_end oap)))
                 ((ß block_def_C bd =) (NEW_block_def_C))
                 (block-prep oap, bd, (:lnum pos), false)
                 ((ß pos.col =) (:textcol bd))
-                ((ß boolean one_change =) (swapchars (:op_type oap), pos, (:textlen bd)))
-                ((ß did_change =) (| did_change one_change))
+                ((ß did_change =) (or (swapchars (:op_type oap), pos, (:textlen bd)) did_change))
+                ((ß pos.lnum =) (inc (:lnum pos)))
+                (recur)
             )
-            (if did_change
-                (changed-lines (:lnum (:op_start oap)), 0, (+ (:lnum (:op_end oap)) 1), 0))
+            (when did_change
+                (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
         )
         :else                                    ;; not block mode
         (do
@@ -19345,12 +19350,11 @@
 
         ;; Main loop in Insert mode: repeat until Insert mode is left.
 
-        ((ß FOR) (ß ((ß int lastc =) (ß 0, c = 0)) true nil)
-            (if @arrow_used     ;; don't repeat insert when arrow key used
-                (reset! a'count 0)
-            )
+        (loop [#_int lastc 0 #_int c 0]
+            (when @arrow_used     ;; don't repeat insert when arrow key used
+                (reset! a'count 0))
 
-            (if @update_insStart_orig
+            (when @update_insStart_orig
                 (reset! insStart_orig @insStart))
 
 ;           doESCkey:
@@ -19373,7 +19377,7 @@
                 ;; scroll the window one line up.  This avoids an extra redraw.
                 ;; This is detected when the cursor column is smaller after inserting something.
                 ;; Don't do this when the topline changed already,
-                ;; it has already been adjusted (by insertchar() calling open-line())).
+                ;; it has already been adjusted (by insertchar() calling open-line()).
 
                 (when (and (:b_mod_set @curbuf) @(:wo_wrap (:w_options @curwin)) (not did_backspace) (== (:w_topline @curwin) old_topline))
                     ((ß int mincol =) (:w_wcol @curwin))
@@ -19829,9 +19833,9 @@
 
                     (when (== c (byte \space))
                         (reset! a'inserted_space true)
-                        (if (inindent 0)
+                        (when (inindent 0)
                             (reset! can_cindent false))
-                        (if (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
+                        (when (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
                             (reset! insStart_blank_vcol (get-nolist-virtcol)))
                     )
 
@@ -19857,13 +19861,14 @@
 
             ;; Always update o_lnum, so that a "CTRL-O ." that adds a line
             ;; still puts the cursor back after the inserted text.
-            (if (and @ins_at_eol (== (gchar) NUL))
+            (when (and @ins_at_eol (== (gchar) NUL))
                 (reset! o_lnum (:lnum (:w_cursor @curwin))))
 
             (when (ins-esc a'count, cmdchar, nomove)
                 (reset! did_cursorhold false)
                 ((ß RETURN) (== c Ctrl_O))
             )
+            (recur lastc c)
         )
 
         ;; NOTREACHED
@@ -24285,8 +24290,6 @@
                 )
                 (at? @regparse (byte \[))
                 (do
-                    (ß int cu)
-
                     (ß int c_class)
                     (let [__ (atom (#_Bytes object @regparse))]
                         ((ß c_class =) (get-char-class __))
@@ -24325,16 +24328,16 @@
                         )
                         ((ß CASE) CLASS_ALNUM)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-isalnum cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-isalnum cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_ALPHA)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-isalpha cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-isalpha cu)
                                     (regc cu))
                             )
                             (ß BREAK)
@@ -24347,55 +24350,55 @@
                         )
                         ((ß CASE) CLASS_CNTRL)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-iscntrl cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-iscntrl cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_DIGIT)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-isdigit cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-isdigit cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_GRAPH)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-isgraph cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-isgraph cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_LOWER)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (utf-islower cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (utf-islower cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_PRINT)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (vim-isprintc cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (vim-isprintc cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_PUNCT)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-ispunct cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-ispunct cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_SPACE)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 9) (<= cu 13) ((ß cu =) (inc cu)))
+                            (loop-when-recur [#_int cu 9] (<= cu 13) [(inc cu)]
                                 (regc cu)
                             )
                             (regc (byte \space))
@@ -24403,16 +24406,16 @@
                         )
                         ((ß CASE) CLASS_UPPER)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (utf-isupper cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (utf-isupper cu)
                                     (regc cu))
                             )
                             (ß BREAK)
                         )
                         ((ß CASE) CLASS_XDIGIT)
                         (do
-                            ((ß FOR) (ß ((ß cu =) 1) (<= cu 255) ((ß cu =) (inc cu)))
-                                (if (asc-isxdigit cu)
+                            (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)]
+                                (when (asc-isxdigit cu)
                                     (regc cu))
                             )
                             (ß BREAK)
@@ -24446,9 +24449,8 @@
                     ((ß startc =) (us-ptr2char @regparse))
                     ((ß int len =) (us-ptr2len-cc @regparse))
                     ((ß startc =) (if (!= (utf-char2len startc) len) -1 startc))        ;; composing chars
-                    (loop-when [] (<= 0 ((ß len =) (dec len)))
+                    (loop-when-recur len (< 0 len) (dec len)
                         (regc (.at (swap! regparse plus 1) -1))
-                        (recur)
                     )
                 ))
                 (recur)
@@ -29916,18 +29918,18 @@
                         ;; Emit the characters in the range.
                         ;; "startc" was already emitted, so skip it.
 
-                        ((ß FOR) (ß ((ß c =) (inc startc)) (<= c endc) ((ß c =) (inc c)))
+                        ((ß c =) (loop-when-recur [c (inc startc)] (<= c endc) [(inc c)] => c
                             (emc1 c)
                             (emc1 NFA_CONCAT)
-                        )
+                        ))
                     )
                     :else
                     (do
                         ;; Emit the range. "startc" was already emitted, so skip it.
-                        ((ß FOR) (ß ((ß c =) (inc startc)) (<= c endc) ((ß c =) (inc c)))
+                        ((ß c =) (loop-when-recur [c (inc startc)] (<= c endc) [(inc c)] => c
                             (emc1 c)
                             (emc1 NFA_CONCAT)
-                        )
+                        ))
                     ))
                     ((ß emit_range =) false)
                     ((ß startc =) -1)
@@ -30641,14 +30643,7 @@
 ;; Initialize a frag_C struct and return it.
 
 (defn- #_frag_C alloc-frag [#_nfa_state_C start, #_fragnode_C out]
-    (§
-        ((ß frag_C frag =) (NEW_frag_C))
-
-        ((ß frag.fr_start =) start)
-        ((ß frag.fr_out =) out)
-
-        frag
-    ))
+    (->frag_C start out))
 
 ;; Create singleton list containing just outp.
 
@@ -30662,9 +30657,10 @@
 
 (defn- #_void fr-patch [#_fragnode_C node, #_nfa_state_C start]
     (§
-        ((ß FOR) (ß (ß fragnode_C next) (some? node) ((ß node =) next))
-            ((ß next =) (ß (fragnode_C)(node.fn_next)))
+        (loop-when node (some? node)
+            ((ß fragnode_C next =) (ß (fragnode_C)(node.fn_next)))
             ((ß node.fn_next =) start)
+            (recur next)
         )
         nil
     ))
@@ -30955,8 +30951,7 @@
                     )
 
                     ((ß frag_C e1 =) (alloc-frag nil, nil))     ;; e1.fr_out: stores list with out1's
-                    ((ß nfa_state_C s0 =) nil)
-                    ((ß FOR) (ß ((ß nfa_state_C s1 =) nil) (<= 0 ((ß n =) (dec n))) ((ß s1 =) s0))  ;; s1: previous NFA_SPLIT to connect to
+                    ((ß nfa_state_C s0 =) (loop-when [s0 nil #_nfa_state_C s1 nil n n] (< 0 n) => s0  ;; s1: previous NFA_SPLIT to connect to
                         ((ß frag_C e0 =) (st-pop stack))          ;; get character
                         (if (nil? e0)
                             ((ß RETURN) (st-error postfix, i, over))
@@ -30969,7 +30964,8 @@
                             (COPY-frag e1, e0))
                         (fr-patch (:fr_out e0), s1)
                         (fr-append (:fr_out e1), (fr-single (:out1 s0)))
-                    )
+                        (recur s0 s0 (dec n))
+                    ))
                     (st-push stack, (alloc-frag s0, (:fr_out e1)))
                     (ß BREAK)
                 )
@@ -32269,7 +32265,7 @@
 (defn- #_void nfa-save-listids [#_nfa_regprog_C prog, #_int* list]
     (§
         ;; Order in the list is reverse, it's a bit faster that way.
-        ((ß FOR) (ß ((ß int i =) (ß 0, n = (prog.nstate))) (<= 0 ((ß n =) (dec n))) ((ß i =) (inc i)))
+        (loop-when-recur [#_int i 0 #_int n (dec (:nstate prog))] (<= 0 n) [(inc i) (dec n)]
             ((ß nfa_state_C state =) (... (:states prog) i))
             (when (nil? state)
                 ((ß list[n] =) 0)
@@ -32286,7 +32282,7 @@
 
 (defn- #_void nfa-restore-listids [#_nfa_regprog_C prog, #_int* list]
     (§
-        ((ß FOR) (ß ((ß int i =) (ß 0, n = (prog.nstate))) (<= 0 ((ß n =) (dec n))) ((ß i =) (inc i)))
+        (loop-when-recur [#_int i 0 #_int n (dec (:nstate prog))] (<= 0 n) [(inc i) (dec n)]
             ((ß nfa_state_C state =) (... (:states prog) i))
             (if (nil? state)
                 (ß CONTINUE)
@@ -32728,7 +32724,8 @@
 ;           nextchar:
 ;           {
                 ;; compute nextlist
-                ((ß FOR) (ß ((ß int[] a'lidx =) (atom (int 0))) (< @a'lidx (:n thislist)) (swap! a'lidx inc))
+                ((ß int[] a'lidx =) (atom (int)))
+                (loop-when-recur (reset! a'lidx 0) (< @a'lidx (:n thislist)) (swap! a'lidx inc)
                     ((ß nfa_thread_C thread =) (... (:threads thislist) @a'lidx))
 
                     ;; Handle the possible codes of the current state.
@@ -34687,7 +34684,7 @@
             ))
 
             (loop-when-recur [#_int loop 0] (< loop 2) [(inc loop)]   ;; loop twice if 'wrapscan' set
-                ((ß FOR) (ß nil (and (< 0 lnum) (<= lnum (:ml_line_count (:b_ml @curbuf)))) ((ß lnum =) (+ lnum (ß dir, at_first_line = false))))
+                ((ß lnum =) (loop-when-recur lnum (and (< 0 lnum) (<= lnum (:ml_line_count (:b_ml @curbuf)))) [(+ lnum dir)] => lnum
                     ;; Stop after checking "stop_lnum", if it's set.
                     (if (and (non-zero? stop_lnum) (if (== dir FORWARD) (< stop_lnum lnum) (< lnum stop_lnum)))
                         (ß BREAK)
@@ -34762,7 +34759,8 @@
                                 ((ß ptr =) (ml-get (+ lnum (:lnum matchpos))))
                                 (recur)
                             )
-                            (if (not match_ok)
+                            (when (not match_ok)
+                                ((ß at_first_line =) false)
                                 (ß CONTINUE)
                             )
                         )
@@ -34826,7 +34824,8 @@
 
                             ;; If there is only a match after the cursor, skip this match.
 
-                            (if (not match_ok)
+                            (when (not match_ok)
+                                ((ß at_first_line =) false)
                                 (ß CONTINUE)
                             )
                         )
@@ -34884,7 +34883,8 @@
                     (if (and (non-zero? loop) (== lnum (:lnum start_pos)))
                         (ß BREAK)              ;; if second loop, stop where started
                     )
-                )
+                    ((ß at_first_line =) false)
+                ))
                 ((ß at_first_line =) false)
 
                 ;; Stop the search if wrapscan isn't set, "stop_lnum" is specified,
@@ -53061,42 +53061,25 @@
     ))
 
 ;; Try to close all windows except current one.
-;; Buffers in the other windows become hidden if 'hidden' is set,
-;; or '!' is used and the buffer was modified.
 
 (defn- #_void close-others [#_boolean message, #_boolean forceit]
     ;; forceit: always hide all other windows
-    (§
-        (when (one-window)
-            (if message
-                (msg m_onlyone))
-            ((ß RETURN) nil)
-        )
-
-        ;; Be very careful here: autocommands may change the window layout.
-        ((ß FOR) (ß ((ß window_C win =) (ß @firstwin, nextwp)) (win-valid win) ((ß win =) nextwp))
-            ((ß nextwp =) (:w_next win))
-            (when (!= win @curwin)               ;; don't close current window
-                ;; Check if it's allowed to abandon this window.
-                ((ß boolean r =) (or (not @(:b_changed @curbuf)) (< 1 (:b_nwindows @curbuf)) forceit))
-                (when (not (win-valid win))         ;; autocommands messed win up
-                    ((ß nextwp =) @firstwin)
-                    (ß CONTINUE)
-                )
-                (when (not r)
-                    (if @(:b_changed @curbuf)
-                        (ß CONTINUE)
-                    )
-                )
-                (win-close win, (not @(:b_changed @curbuf)))
-            )
-        )
-
-        (when (and message (!= @lastwin @firstwin))
-            (emsg (u8 "E445: Other window contains changes"))
-        )
-        nil
-    ))
+    (if (one-window)
+        (when message (msg m_onlyone))
+        (do
+            (loop-when [#_window_C win @firstwin] (win-valid win)
+                (let [#_window_C nextw (:w_next win)]
+                    (when (!= win @curwin)               ;; don't close current window
+                        ;; Check if it's allowed to abandon this window.
+                        (let-when [changed @(:b_changed @curbuf)] (or (not changed) (< 1 (:b_nwindows @curbuf)) forceit)
+                            (win-close win, (not changed))
+                        ))
+                    (recur nextw)
+                ))
+            (when (and message (!= @lastwin @firstwin))
+                (emsg (u8 "E445: Other window contains changes")))
+        ))
+    nil)
 
 ;; Allocate the first window and put an empty buffer in it.
 ;; Called from main().
@@ -54598,8 +54581,7 @@
 
 (defn- #_void validate-cursor []
     (when (not (cursor-valid))
-        (curs-columns true)
-    )
+        (curs-columns true))
     nil)
 
 ;; Compute win.w_cline_row and win.w_cline_height, based on the current value of win.w_topline.
@@ -54608,9 +54590,8 @@
     (§
         ;; check if win.w_lines[].wl_size is invalid
         ((ß boolean all_invalid =) (or (not (redrawing)) (== (:w_lines_valid win) 0) (< (:w_topline win) (:wl_lnum (... (:w_lines win) 0)))))
-        ((ß int i =) 0)
         ((ß win.w_cline_row =) 0)
-        ((ß FOR) (ß ((ß long lnum =) (:w_topline win)) (< lnum (:lnum (:w_cursor win))) ((ß i =) (inc i)))
+        ((ß int i =) (loop-when-recur [#_long lnum (:w_topline win) i 0] (< lnum (:lnum (:w_cursor win))) [lnum (inc i)] => i
             ((ß boolean valid =) false)
             (when (and (not all_invalid) (< i (:w_lines_valid win)))
                 (if (or (< (:wl_lnum (... (:w_lines win) i)) lnum) (not (:wl_valid (... (:w_lines win) i))))
@@ -54627,29 +54608,24 @@
             )
             (cond valid
             (do
-                ((ß lnum =) (inc lnum))
                 ((ß win.w_cline_row =) (+ (:w_cline_row win) (:wl_size (... (:w_lines win) i))))
+                ((ß lnum =) (inc lnum))
             )
             :else
             (do
-                ((ß win.w_cline_row =) (+ (:w_cline_row win) (plines-win win, (ß lnum++), true)))
+                ((ß win.w_cline_row =) (+ (:w_cline_row win) (plines-win win, lnum, true)))
+                ((ß lnum =) (inc lnum))
             ))
-        )
+        ))
 
         (check-cursor-moved win)
         (when (non-flag? (:w_valid win) VALID_CHEIGHT)
-            (cond (or all_invalid (== i (:w_lines_valid win)) (and (< i (:w_lines_valid win)) (or (not (:wl_valid (... (:w_lines win) i))) (!= (:wl_lnum (... (:w_lines win) i)) (:lnum (:w_cursor win))))))
-            (do
-                ((ß win.w_cline_height =) (plines-win win, (:lnum (:w_cursor win)), true))
-            )
+            ((ß win.w_cline_height =) (cond (or all_invalid (== i (:w_lines_valid win)) (and (< i (:w_lines_valid win)) (or (not (:wl_valid (... (:w_lines win) i))) (!= (:wl_lnum (... (:w_lines win) i)) (:lnum (:w_cursor win))))))
+                (plines-win win, (:lnum (:w_cursor win)), true)
             (< (:w_lines_valid win) i)
-            (do
-                ;; a line that is too long to fit on the last screen line
-                ((ß win.w_cline_height =) 0)
-            )
+                0 ;; a line that is too long to fit on the last screen line
             :else
-            (do
-                ((ß win.w_cline_height =) (:wl_size (... (:w_lines win) i)))
+                (:wl_size (... (:w_lines win) i))
             ))
         )
 
