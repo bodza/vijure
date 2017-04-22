@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -18251,7 +18251,7 @@
 (defn- #_[window_C long] bt-regtry? [#_window_C win, #_bt_pattern_C pat, #_int col]
     (reset! reginput (.plus @regline col))
     (swap! reg_match cleanup-subexpr)
-    (when' (bt-regmatch (.plus (:program pat) 1), win) => [win 0]
+    (let-when [[win ?] (bt-regmatch? win, (.plus (:program pat) 1))] ? => [win 0]
         (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
             (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col)))
         (let-when [e (:lnum (... (:m_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e) ;; use line number of "\ze"
@@ -18317,6 +18317,494 @@
     RA_BREAK    5,      ;; break inner loop
     RA_MATCH    6)      ;; successful match
 
+(defn- #_[window_C Bytes int] one-regmatch- [#_window_C win, #_Bytes scan, #_int op]
+    (let [a'win (atom (#_window_C object win)) a'next (atom (#_Bytes object (regnext scan)))
+          #_int status RA_CONT #_int c (us-ptr2char @reginput)
+          status
+    ]
+            (condp ==? op
+
+                BT_BOL  (if (BNE @reginput, @regline) RA_NIL status)
+                BT_EOL  (if (!= c NUL)                RA_NIL status)
+
+                ;; We're not at the beginning of the file when below the first line where we started,
+                ;; not at the start of the line or we didn't start at the first line of the buffer.
+                BT_BOF  (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (< 1 @reg_lmin)) RA_NIL status)
+                BT_EOF  (if (or (!= @reglnum @reg_lmax) (!= c NUL))                             RA_NIL status)
+
+                BT_CURSOR ;; compare the cursor position to the match position
+                    (if (or (!= (+ @reglnum @reg_lmin) (:lnum (:w_cursor @a'win))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @a'win)))) RA_NIL status)
+
+                BT_MARK ;; compare the mark position to the match position
+                    (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark @a'win, mark)]
+                        (if (or (nil? pos) (< (:lnum pos) 1)
+                                (if (== (:lnum pos) (+ @reglnum @reg_lmin))
+                                    (if (== (:col pos) (BDIFF @reginput, @regline))
+                                        (any == cmp (byte \<) (byte \>))
+                                        (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<))))
+                                    (if (< (:lnum pos) (+ @reglnum @reg_lmin)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
+                            RA_NIL status
+                        ))
+
+                BT_VISUAL
+                    (if (not (reg-match-visual @a'win)) RA_NIL status)
+
+                BT_LNUM (if (not (re-num-cmp (+ @reglnum @reg_lmin), scan))                                                RA_NIL status)
+                BT_COL  (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                     RA_NIL status)
+                BT_VCOL (if (not (re-num-cmp (inc (win-linetabsize @a'win, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
+
+                BT_BOW ;; \<word; reginput points to w
+                    (if (== c NUL) ;; can't match at end of line
+                        RA_NIL
+                        (let [#_int cls (us-get-class @reginput)]
+                            ;; not on a word at all ;; previous char is in same word
+                            (if (or (<= cls 1) (== (reg-prev-class) cls)) RA_NIL status)
+                        ))
+
+                BT_EOW ;; word\>; reginput points after d
+                    (if (BEQ @reginput, @regline) ;; can't match at start of line
+                        RA_NIL
+                        (let [#_int cls' (reg-prev-class)]
+                            (if (any == cls' (us-get-class @reginput) 0 1) RA_NIL status)
+                        ))
+
+                ANY ;; does not match new lines
+                    (if (== c NUL) RA_NIL RA_STEP)
+
+                IDENT   (if (not (vim-isidentc c))       RA_NIL RA_STEP)    SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))       RA_NIL RA_STEP)
+                KWORD   (if (not (us-iswordp @reginput)) RA_NIL RA_STEP)    SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput))) RA_NIL RA_STEP)
+                FNAME   (if (not (vim-isfnamec c))       RA_NIL RA_STEP)    SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))       RA_NIL RA_STEP)
+                PRINT   (if (not (vim-isprintc c))       RA_NIL RA_STEP)    SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc c)))       RA_NIL RA_STEP)
+
+                WHITE   (if (not (vim-iswhite c))        RA_NIL RA_STEP)    NWHITE  (if (or (== c NUL)                           (vim-iswhite c))         RA_NIL RA_STEP)
+                DIGIT   (if (not (ri-digit c))           RA_NIL RA_STEP)    NDIGIT  (if (or (== c NUL)                           (ri-digit c))            RA_NIL RA_STEP)
+                HEX     (if (not (ri-hex c))             RA_NIL RA_STEP)    NHEX    (if (or (== c NUL)                           (ri-hex c))              RA_NIL RA_STEP)
+                OCTAL   (if (not (ri-octal c))           RA_NIL RA_STEP)    NOCTAL  (if (or (== c NUL)                           (ri-octal c))            RA_NIL RA_STEP)
+                WORD    (if (not (ri-word c))            RA_NIL RA_STEP)    NWORD   (if (or (== c NUL)                           (ri-word c))             RA_NIL RA_STEP)
+                HEAD    (if (not (ri-head c))            RA_NIL RA_STEP)    NHEAD   (if (or (== c NUL)                           (ri-head c))             RA_NIL RA_STEP)
+                ALPHA   (if (not (ri-alpha c))           RA_NIL RA_STEP)    NALPHA  (if (or (== c NUL)                           (ri-alpha c))            RA_NIL RA_STEP)
+                LOWER   (if (not (ri-lower c))           RA_NIL RA_STEP)    NLOWER  (if (or (== c NUL)                           (ri-lower c))            RA_NIL RA_STEP)
+                UPPER   (if (not (ri-upper c))           RA_NIL RA_STEP)    NUPPER  (if (or (== c NUL)                           (ri-upper c))            RA_NIL RA_STEP)
+
+                EXACTLY
+                    (let [#_Bytes opnd (operand scan)]
+                        ;; Inline the first byte for speed.
+                        (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_icase))
+                            RA_NIL
+                        ;; Match empty string always works; happens when "~" is empty.
+                        (eos? opnd)
+                            status
+                        :else
+                            (let [a'len (atom (int))
+                                  status
+                                    (if (and (eos? opnd 1) (not @ireg_icase))
+                                        (do (reset! a'len 1) ;; matched a single byte above
+                                            status)
+                                        ;; Need to match first byte again for multi-byte.
+                                        (do (reset! a'len (STRLEN opnd))
+                                            (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NIL status)
+                                        ))
+                                  ;; Check for following composing character, unless %C follows (skips over all composing chars).
+                                  status
+                                    (if (and (!= status RA_NIL) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op @a'next) BT_COMPOSING))
+                                        ;; This code makes a composing character get ignored, which is the correct behavior (sometimes) for voweled Hebrew texts.
+                                        RA_NIL status
+                                    )]
+                                (when (!= status RA_NIL)
+                                    (swap! reginput plus @a'len))
+                                status)
+                        ))
+
+               [ANYOF ANYBUT]
+                    (if (or (== c NUL) (== (nil? (cstrchr (operand scan), c)) (== op ANYOF))) RA_NIL RA_STEP)
+
+                MULTIBYTECODE
+                    ;; Safety check (just in case 'encoding' was changed since compiling the program).
+                    (let-when [#_Bytes opnd (operand scan) #_int len (us-ptr2len-cc opnd)] (< 1 len) => RA_NIL
+                        (let [#_int opndc (us-ptr2char opnd)
+                              [len status]
+                                (if (utf-iscomposing opndc)
+                                    ;; When only a composing char is given, match at any position where that composing char appears.
+                                    (loop-when [#_int i 0] (non-eos? @reginput i) => [len RA_NIL]
+                                        (let [#_int inpc (us-ptr2char @reginput, i)]
+                                            (if (utf-iscomposing inpc)
+                                                (if (== opndc inpc)
+                                                    [(+ i (us-ptr2len-cc @reginput, i)) RA_MATCH] ;; include all following composing chars
+                                                    (recur (+ i (us-ptr2len @reginput, i)))
+                                                )
+                                                (if (< 0 i)
+                                                    [len RA_NIL]
+                                                    (recur (+ i (us-ptr2len @reginput, i)))
+                                                ))
+                                        ))
+                                    (loop-when [#_int i 0] (< i len) => [len status]
+                                        (recur-if (at? opnd i (.at @reginput i)) [(inc i)] => [len RA_NIL]))
+                                )]
+                            (swap! reginput plus len)
+                            status
+                        ))
+
+                BT_COMPOSING
+                    (do ;; Skip composing characters.
+                        (while (utf-iscomposing (us-ptr2char @reginput))
+                            (swap! reginput #(.plus % (us-ptr2len %))))
+                        status)
+
+                NOTHING
+                    status
+
+                BACK
+                (do
+                    ;; When we run into BACK, we need to check if we don't keep looping without matching any input.
+                    ;; From the second time, it fails if the input is still at the same position as the previous time.
+                    ;; The positions are stored in "backpos" and found by comparing to the current value of "scan".
+
+                    ((ß int n =) (count @backpos))
+                    ((ß int i =) (loop-when-recur [i 0] (and (< i n) (BNE (:bp_scan (... @backpos i)), scan)) [(inc i)] => i))
+
+                    (cond (== i n)
+                    (do
+                        ;; First time at this BACK, make room to store the pos.
+                        (swap! backpos conj (-> (NEW_backpos_C) (assoc :bp_scan scan)))
+                    )
+                    (reg-save-equal (:bp_regsave (... @backpos i)))
+                    (do
+                        ;; Still at same position as last time, fail.
+                        ((ß status =) RA_NIL)
+                    ))
+
+                    (when (and (!= status RA_FAIL) (!= status RA_NIL))
+                        (swap! backpos assoc-in [i :bp_regsave] (reg-save @backpos)))
+
+                    (ß BREAK) status
+                )
+
+               [(+ MOPEN 0)     ;; Match start: \zs
+                (+ MOPEN 1)     ;; \(
+                (+ MOPEN 2)
+                (+ MOPEN 3)
+                (+ MOPEN 4)
+                (+ MOPEN 5)
+                (+ MOPEN 6)
+                (+ MOPEN 7)
+                (+ MOPEN 8)
+                (+ MOPEN 9)]
+                (do
+                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                        (let [
+                        ]
+                            ((ß int no =) (- op MOPEN))
+                            (swap! regstack conj (reg-item RS_MOPEN, scan, no, (... (:m_startpos @reg_match) no), nil))
+                            (swap! reg_match assoc-in [:m_startpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
+                            ;; We simply continue and handle the result when done.
+                            (ß BREAK) status
+                        )
+                    )
+                )
+
+               [NOPEN         ;; \%(                   ;; sic!)
+                NCLOSE]       ;; \) after \%(          ;; sic!)
+                (do
+                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                        (let [
+                        ]
+                            (swap! regstack conj (reg-item RS_NOPEN, scan))
+                            ;; We simply continue and handle the result when done.
+                            (ß BREAK) status
+                        )
+                    )
+                )
+
+               [(+ MCLOSE 0)    ;; Match end: \ze
+                (+ MCLOSE 1)    ;; \)
+                (+ MCLOSE 2)
+                (+ MCLOSE 3)
+                (+ MCLOSE 4)
+                (+ MCLOSE 5)
+                (+ MCLOSE 6)
+                (+ MCLOSE 7)
+                (+ MCLOSE 8)
+                (+ MCLOSE 9)]
+                (do
+                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                        (let [
+                        ]
+                            ((ß int no =) (- op MCLOSE))
+                            (swap! regstack conj (reg-item RS_MCLOSE, scan, no, (... (:m_endpos @reg_match) no), nil))
+                            (swap! reg_match assoc-in [:m_endpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
+                            ;; We simply continue and handle the result when done.
+                            (ß BREAK) status
+                        )
+                    )
+                )
+
+               [(+ BACKREF 1)
+                (+ BACKREF 2)
+                (+ BACKREF 3)
+                (+ BACKREF 4)
+                (+ BACKREF 5)
+                (+ BACKREF 6)
+                (+ BACKREF 7)
+                (+ BACKREF 8)
+                (+ BACKREF 9)]
+                (do
+                    ((ß int[] a'len =) (atom (int)))
+
+                    ((ß int no =) (- op BACKREF))
+                    (cond (or (< (:lnum (... (:m_startpos @reg_match) no)) 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
+                    (do
+                        ;; Backref was not set: Match an empty string.
+                        (reset! a'len 0)
+                    )
+                    :else
+                    (do
+                        (cond (and (== (:lnum (... (:m_startpos @reg_match) no)) @reglnum) (== (:lnum (... (:m_endpos @reg_match) no)) @reglnum))
+                        (do
+                            ;; Compare back-ref within the current line.
+                            (reset! a'len (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no))))
+                            ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... (:m_startpos @reg_match) no))), @reginput, a'len)) RA_NIL status))
+                        )
+                        :else
+                        (do
+                            ;; Messy situation: Need to compare between two lines.
+                            ((ß int r =) (match-with-backref (:lnum (... (:m_startpos @reg_match) no)), (:col (... (:m_startpos @reg_match) no)), (:lnum (... (:m_endpos @reg_match) no)), (:col (... (:m_endpos @reg_match) no)), a'len))
+
+                            ((ß status =) (if (!= r RA_MATCH) r status))
+                        ))
+                    ))
+
+                    ;; Matched the backref, skip over it.
+                    (swap! reginput plus @a'len)
+                    (ß BREAK) status
+                )
+
+                BRANCH
+                (do
+                    (cond (!= (re-op @a'next) BRANCH) ;; No choice.
+                    (do
+                        ((ß @a'next =) (operand scan))       ;; Avoid recursion.
+                        (ß BREAK) status
+                    )
+                    :else
+                    (do
+                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                            (let [
+                            ]
+                                (swap! regstack conj (reg-item RS_BRANCH, scan))
+                                (ß BREAK) RA_BREAK      ;; rest is below
+                            )
+                        )
+                    ))
+                )
+
+                BRACE_LIMITS
+                (do
+                    (cond (== (re-op @a'next) BRACE_SIMPLE)
+                    (do
+                        (reset! bl_minval (operand-min scan))
+                        (reset! bl_maxval (operand-max scan))
+                        (ß BREAK) status
+                    )
+                    (and (<= BRACE_COMPLEX (re-op @a'next)) (< (re-op @a'next) (+ BRACE_COMPLEX 10)))
+                    (do
+                        ((ß int no =) (- (re-op @a'next) BRACE_COMPLEX))
+                        (swap! brace_min assoc no (operand-min scan))
+                        (swap! brace_max assoc no (operand-max scan))
+                        (swap! brace_count assoc no 0)
+                        (ß BREAK) status
+                    )
+                    :else
+                    (do
+                        (emsg e_internal)       ;; Shouldn't happen.
+                        (ß BREAK) RA_FAIL
+                    ))
+                )
+
+               [(+ BRACE_COMPLEX 0)
+                (+ BRACE_COMPLEX 1)
+                (+ BRACE_COMPLEX 2)
+                (+ BRACE_COMPLEX 3)
+                (+ BRACE_COMPLEX 4)
+                (+ BRACE_COMPLEX 5)
+                (+ BRACE_COMPLEX 6)
+                (+ BRACE_COMPLEX 7)
+                (+ BRACE_COMPLEX 8)
+                (+ BRACE_COMPLEX 9)]
+                (do
+                    ((ß int no =) (- op BRACE_COMPLEX))
+                    (swap! brace_count update no inc)
+
+                    ;; If not matched enough times yet, try one more.
+                    (cond (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
+                    (do
+                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                            (let [
+                            ]
+                                (swap! regstack conj (reg-item RS_BRCPLX_MORE, scan, no, nil, (reg-save @backpos)))
+                                ((ß @a'next =) (operand scan))
+                                ;; We continue and handle the result when done.
+                                (ß BREAK) status
+                            )
+                        )
+                    )
+                    ;; If matched enough times, may try matching some more.
+                    (<= (... @brace_min no) (... @brace_max no))
+                    (do
+                        ;; Range is the normal way around, use longest match.
+                        (when (<= (... @brace_count no) (... @brace_max no))
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
+                                (let [
+                                ]
+                                    (swap! regstack conj (reg-item RS_BRCPLX_LONG, scan, no, nil, (reg-save @backpos)))
+                                    ((ß @a'next =) (operand scan))
+                                    ;; We continue and handle the result when done.
+                                )
+                            )
+                        )
+                        (ß BREAK) status
+                    )
+                    :else
+                    (do
+                        ;; Range is backwards, use shortest match first.
+                        (when (<= (... @brace_count no) (... @brace_min no))
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
+                                (let [
+                                ]
+                                    (swap! regstack conj (reg-item RS_BRCPLX_SHORT, scan, 0, nil, (reg-save @backpos)))
+                                    ;; We continue and handle the result when done.
+                                )
+                            )
+                        )
+                        (ß BREAK) status
+                    ))
+                )
+
+               [BRACE_SIMPLE STAR PLUS]
+                (do
+                    ((ß regstar_C rst =) (NEW_regstar_C))
+
+                    ;; Lookahead to avoid useless match attempts when we know what character comes next.
+
+                    (cond (== (re-op @a'next) EXACTLY)
+                    (do
+                        ((ß ? =) (.at (operand @a'next) 0))
+                        ((ß rst =) (assoc rst :rs_nextb ? :rs_nextb_ic (if @ireg_icase (if (utf-isupper ?) (utf-tolower ?) (utf-toupper ?)) ?)))
+                    )
+                    :else
+                    (do
+                        ((ß rst =) (assoc rst :rs_nextb NUL :rs_nextb_ic NUL))
+                    ))
+
+                    (cond (!= op BRACE_SIMPLE)
+                    (do
+                        ((ß rst =) (assoc rst :rs_minval (if (== op STAR) 0 1) :rs_maxval MAX_LIMIT))
+                    )
+                    :else
+                    (do
+                        ((ß rst =) (assoc rst :rs_minval @bl_minval :rs_maxval @bl_maxval))
+                    ))
+
+                    ;; When maxval > minval, try matching as much as possible, up to maxval.
+                    ;; When maxval < minval, try matching at least the minimal number
+                    ;; (since the range is backwards, that's also maxval!).
+
+                    ((ß rst =) (assoc rst :rs_count (regrepeat (operand scan), (:rs_maxval rst))))
+
+                    (cond @got_int
+                    (do
+                        (ß BREAK) RA_FAIL
+                    )
+                    (<= (min (:rs_minval rst) (:rs_maxval rst)) (:rs_count rst))
+                    (do
+                        ;; It could match.  Prepare for trying to match what follows.
+                        ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
+                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                            (let [
+                            ]
+                                (swap! regstack conj rst)
+                                (swap! regstack conj (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
+                                (ß BREAK) RA_BREAK      ;; skip the restore bits
+                            )
+                        )
+                    )
+                    :else
+                    (do
+                        (ß BREAK) RA_NIL
+                    ))
+                )
+
+               [NOMATCH MATCH SUBPAT]
+                (do
+                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                        (let [
+                        ]
+                            (swap! regstack conj (reg-item RS_NOMATCH, scan, op, nil, (reg-save @backpos)))
+                            ((ß @a'next =) (operand scan))
+                            ;; We continue and handle the result when done.
+                            (ß BREAK) status
+                        )
+                    )
+                )
+
+               [BEHIND NOBEHIND]
+                (do
+                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                        (let [
+                        ]
+                            ;; Need to save the subexpr to be able to restore them
+                            ;; when there is a match but we don't use it.
+                            (swap! regstack conj (save-subexpr (NEW_regbehind_C), @reg_match))
+                            (swap! regstack conj (reg-item RS_BEHIND1, scan, op, nil, (reg-save @backpos)))
+                            ;; First try if what follows matches.
+                            ;; If it does, then we check the behind match by looping.
+                            (ß BREAK) status
+                        )
+                    )
+                )
+
+                BHPOS
+                (do
+                    ((ß status =) (if (or (!= (:rs_col @behind_pos) (BDIFF @reginput, @regline)) (!= (:rs_lnum @behind_pos) @reglnum)) RA_NIL status))
+                    (ß BREAK) status
+                )
+
+                BT_NEWL
+                (do
+                    ((ß status =) (if (or (!= c NUL) (< @reg_lmax @reglnum)) RA_NIL RA_JUMP))
+                    (ß BREAK) status
+                )
+
+                BT_END
+                (do
+                    (ß BREAK) RA_MATCH ;; Success!
+                )
+
+                (do
+                    (emsg e_re_corr)
+                    (ß BREAK) RA_FAIL
+                )
+            )
+        [@a'win @a'next status]
+    ))
+
+(defn- #_[window_C Bytes int] seq-regmatch- [#_window_C win, #_Bytes scan]
+    ;; Repeat for items that can be matched sequentially, without using "regstack".
+    (loop-when [win win scan scan] (and (not @got_int) (some? scan)) => [win scan RA_FAIL]
+        (let [#_int op (re-op scan)
+              [win #_Bytes next #_int status] ;; Check for character class with NL added.
+                (if (and (with-nl op) (eos? @reginput) (<= @reglnum @reg_lmax))
+                    [win (regnext scan) RA_JUMP]
+                    (one-regmatch- win, scan, (if (with-nl op) (- op ADD_NL) op)))
+              status
+                (condp == status
+                    RA_JUMP (do (reg-nextline) (fast-breakcheck) RA_CONT)
+                    RA_STEP (do (reg-nextchar) RA_CONT)
+                    status
+                )]
+            (recur-if (== status RA_CONT) [win next] => [win scan status])
+        )
+    ))
+
 ;; bt-regmatch - main matching routine
 ;;
 ;; Conceptually the strategy is simple:
@@ -18332,7 +18820,7 @@
 ;; Returns false when there is no match.
 ;; Leaves "reginput" and "reglnum" in an undefined state!
 
-(defn- #_boolean bt-regmatch [#_Bytes scan, #_window_C win]
+(defn- #_[window_C boolean] bt-regmatch? [#_window_C win, #_Bytes scan]
     (§
         (ß int status)                 ;; one of the RA_ values above
 
@@ -18342,514 +18830,12 @@
 
         ;; Repeat until "regstack" is empty.
 
-        (loop []
+        (loop [win win]
             ;; Some patterns may take a long time to match, e.g., "\([a-z]\+\)\+Q".
             ;; Allow interrupting them with CTRL-C.
             (fast-breakcheck)
 
-            ;; Repeat for items that can be matched sequentially, without using "regstack".
-
-            (loop []
-                (when (or @got_int (nil? scan))
-                    ((ß status =) RA_FAIL)
-                    (ß BREAK)
-                )
-                ((ß status =) RA_CONT)
-
-                ((ß Bytes next =) (regnext scan))        ;; Next node.
-
-                ((ß int op =) (re-op scan))
-                ;; Check for character class with NL added.
-                (cond (and (with-nl op) (eos? @reginput) (<= @reglnum @reg_lmax))
-                (do
-                    ((ß status =) RA_JUMP)
-                )
-                :else
-                (let [op (if (with-nl op) (- op ADD_NL) op) #_int c (us-ptr2char @reginput)]
-                    ((ß status =) (condp ==? op
-
-                        BT_BOL  (if (BNE @reginput, @regline) RA_NIL status)
-                        BT_EOL  (if (!= c NUL)                RA_NIL status)
-
-                        ;; We're not at the beginning of the file when below the first line where we started,
-                        ;; not at the start of the line or we didn't start at the first line of the buffer.
-                        BT_BOF  (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (< 1 @reg_lmin)) RA_NIL status)
-                        BT_EOF  (if (or (!= @reglnum @reg_lmax) (!= c NUL))                             RA_NIL status)
-
-                        BT_CURSOR ;; compare the cursor position to the match position
-                            (if (or (!= (+ @reglnum @reg_lmin) (:lnum (:w_cursor win))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor win)))) RA_NIL status)
-
-                        BT_MARK ;; compare the mark position to the match position
-                            (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark win, mark)]
-                                (if (or (nil? pos) (< (:lnum pos) 1)
-                                        (if (== (:lnum pos) (+ @reglnum @reg_lmin))
-                                            (if (== (:col pos) (BDIFF @reginput, @regline))
-                                                (any == cmp (byte \<) (byte \>))
-                                                (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<))))
-                                            (if (< (:lnum pos) (+ @reglnum @reg_lmin)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
-                                    RA_NIL status
-                                ))
-
-                        BT_VISUAL
-                            (if (not (reg-match-visual win)) RA_NIL status)
-
-                        BT_LNUM (if (not (re-num-cmp (+ @reglnum @reg_lmin), scan))                                             RA_NIL status)
-                        BT_COL  (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                  RA_NIL status)
-                        BT_VCOL (if (not (re-num-cmp (inc (win-linetabsize win, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
-
-                        BT_BOW ;; \<word; reginput points to w
-                            (if (== c NUL) ;; can't match at end of line
-                                RA_NIL
-                                (let [#_int cls (us-get-class @reginput)]
-                                    ;; not on a word at all ;; previous char is in same word
-                                    (if (or (<= cls 1) (== (reg-prev-class) cls)) RA_NIL status)
-                                ))
-
-                        BT_EOW ;; word\>; reginput points after d
-                            (if (BEQ @reginput, @regline) ;; can't match at start of line
-                                RA_NIL
-                                (let [#_int cls' (reg-prev-class)]
-                                    (if (any == cls' (us-get-class @reginput) 0 1) RA_NIL status)
-                                ))
-
-                        ANY ;; does not match new lines
-                            (if (== c NUL) RA_NIL RA_STEP)
-
-                        IDENT   (if (not (vim-isidentc c))       RA_NIL RA_STEP)    SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))       RA_NIL RA_STEP)
-                        KWORD   (if (not (us-iswordp @reginput)) RA_NIL RA_STEP)    SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput))) RA_NIL RA_STEP)
-                        FNAME   (if (not (vim-isfnamec c))       RA_NIL RA_STEP)    SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))       RA_NIL RA_STEP)
-                        PRINT   (if (not (vim-isprintc c))       RA_NIL RA_STEP)    SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc c)))       RA_NIL RA_STEP)
-
-                        WHITE   (if (not (vim-iswhite c))        RA_NIL RA_STEP)    NWHITE  (if (or (== c NUL)                           (vim-iswhite c))         RA_NIL RA_STEP)
-                        DIGIT   (if (not (ri-digit c))           RA_NIL RA_STEP)    NDIGIT  (if (or (== c NUL)                           (ri-digit c))            RA_NIL RA_STEP)
-                        HEX     (if (not (ri-hex c))             RA_NIL RA_STEP)    NHEX    (if (or (== c NUL)                           (ri-hex c))              RA_NIL RA_STEP)
-                        OCTAL   (if (not (ri-octal c))           RA_NIL RA_STEP)    NOCTAL  (if (or (== c NUL)                           (ri-octal c))            RA_NIL RA_STEP)
-                        WORD    (if (not (ri-word c))            RA_NIL RA_STEP)    NWORD   (if (or (== c NUL)                           (ri-word c))             RA_NIL RA_STEP)
-                        HEAD    (if (not (ri-head c))            RA_NIL RA_STEP)    NHEAD   (if (or (== c NUL)                           (ri-head c))             RA_NIL RA_STEP)
-                        ALPHA   (if (not (ri-alpha c))           RA_NIL RA_STEP)    NALPHA  (if (or (== c NUL)                           (ri-alpha c))            RA_NIL RA_STEP)
-                        LOWER   (if (not (ri-lower c))           RA_NIL RA_STEP)    NLOWER  (if (or (== c NUL)                           (ri-lower c))            RA_NIL RA_STEP)
-                        UPPER   (if (not (ri-upper c))           RA_NIL RA_STEP)    NUPPER  (if (or (== c NUL)                           (ri-upper c))            RA_NIL RA_STEP)
-
-                        EXACTLY
-                            (let [#_Bytes opnd (operand scan)]
-                                ;; Inline the first byte for speed.
-                                (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_icase))
-                                    RA_NIL
-                                ;; Match empty string always works; happens when "~" is empty.
-                                (eos? opnd)
-                                    status
-                                :else
-                                    (let [a'len (atom (int))
-                                          status
-                                            (if (and (eos? opnd 1) (not @ireg_icase))
-                                                (do (reset! a'len 1) ;; matched a single byte above
-                                                    status)
-                                                ;; Need to match first byte again for multi-byte.
-                                                (do (reset! a'len (STRLEN opnd))
-                                                    (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NIL status)
-                                                ))
-                                          ;; Check for following composing character, unless %C follows (skips over all composing chars).
-                                          status
-                                            (if (and (!= status RA_NIL) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) BT_COMPOSING))
-                                                ;; This code makes a composing character get ignored, which is the correct behavior (sometimes) for voweled Hebrew texts.
-                                                RA_NIL status
-                                            )]
-                                        (when (!= status RA_NIL)
-                                            (swap! reginput plus @a'len))
-                                        status)
-                                ))
-
-                       [ANYOF ANYBUT]
-                            (if (or (== c NUL) (== (nil? (cstrchr (operand scan), c)) (== op ANYOF))) RA_NIL RA_STEP)
-
-                        MULTIBYTECODE
-                            ;; Safety check (just in case 'encoding' was changed since compiling the program).
-                            (let-when [#_Bytes opnd (operand scan) #_int len (us-ptr2len-cc opnd)] (< 1 len) => RA_NIL
-                                (let [#_int opndc (us-ptr2char opnd)
-                                      [len status]
-                                        (if (utf-iscomposing opndc)
-                                            ;; When only a composing char is given, match at any position where that composing char appears.
-                                            (loop-when [#_int i 0] (non-eos? @reginput i) => [len RA_NIL]
-                                                (let [#_int inpc (us-ptr2char @reginput, i)]
-                                                    (if (utf-iscomposing inpc)
-                                                        (if (== opndc inpc)
-                                                            [(+ i (us-ptr2len-cc @reginput, i)) RA_MATCH] ;; include all following composing chars
-                                                            (recur (+ i (us-ptr2len @reginput, i)))
-                                                        )
-                                                        (if (< 0 i)
-                                                            [len RA_NIL]
-                                                            (recur (+ i (us-ptr2len @reginput, i)))
-                                                        ))
-                                                ))
-                                            (loop-when [#_int i 0] (< i len) => [len status]
-                                                (recur-if (at? opnd i (.at @reginput i)) [(inc i)] => [len RA_NIL]))
-                                        )]
-                                    (swap! reginput plus len)
-                                    status
-                                ))
-
-                        BT_COMPOSING
-                            (do ;; Skip composing characters.
-                                (while (utf-iscomposing (us-ptr2char @reginput))
-                                    (swap! reginput #(.plus % (us-ptr2len %))))
-                                status)
-
-                        NOTHING
-                            status
-
-                        BACK
-                        (do
-                            ;; When we run into BACK, we need to check if we don't keep looping without matching any input.
-                            ;; From the second time, it fails if the input is still at the same position as the previous time.
-                            ;; The positions are stored in "backpos" and found by comparing to the current value of "scan".
-
-                            ((ß int n =) (count @backpos))
-                            ((ß int i =) (loop-when-recur [i 0] (and (< i n) (BNE (:bp_scan (... @backpos i)), scan)) [(inc i)] => i))
-
-                            (cond (== i n)
-                            (do
-                                ;; First time at this BACK, make room to store the pos.
-                                (swap! backpos conj (-> (NEW_backpos_C) (assoc :bp_scan scan)))
-                            )
-                            (reg-save-equal (:bp_regsave (... @backpos i)))
-                            (do
-                                ;; Still at same position as last time, fail.
-                                ((ß status =) RA_NIL)
-                            ))
-
-                            (when (and (!= status RA_FAIL) (!= status RA_NIL))
-                                (swap! backpos assoc-in [i :bp_regsave] (reg-save @backpos)))
-
-                            (ß BREAK) status
-                        )
-
-                       [(+ MOPEN 0)     ;; Match start: \zs
-                        (+ MOPEN 1)     ;; \(
-                        (+ MOPEN 2)
-                        (+ MOPEN 3)
-                        (+ MOPEN 4)
-                        (+ MOPEN 5)
-                        (+ MOPEN 6)
-                        (+ MOPEN 7)
-                        (+ MOPEN 8)
-                        (+ MOPEN 9)]
-                        (do
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                (let [
-                                ]
-                                    ((ß int no =) (- op MOPEN))
-                                    (swap! regstack conj (reg-item RS_MOPEN, scan, no, (... (:m_startpos @reg_match) no), nil))
-                                    (swap! reg_match assoc-in [:m_startpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
-                                    ;; We simply continue and handle the result when done.
-                                    (ß BREAK) status
-                                )
-                            )
-                        )
-
-                       [NOPEN         ;; \%(                   ;; sic!)
-                        NCLOSE]       ;; \) after \%(          ;; sic!)
-                        (do
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                (let [
-                                ]
-                                    (swap! regstack conj (reg-item RS_NOPEN, scan))
-                                    ;; We simply continue and handle the result when done.
-                                    (ß BREAK) status
-                                )
-                            )
-                        )
-
-                       [(+ MCLOSE 0)    ;; Match end: \ze
-                        (+ MCLOSE 1)    ;; \)
-                        (+ MCLOSE 2)
-                        (+ MCLOSE 3)
-                        (+ MCLOSE 4)
-                        (+ MCLOSE 5)
-                        (+ MCLOSE 6)
-                        (+ MCLOSE 7)
-                        (+ MCLOSE 8)
-                        (+ MCLOSE 9)]
-                        (do
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                (let [
-                                ]
-                                    ((ß int no =) (- op MCLOSE))
-                                    (swap! regstack conj (reg-item RS_MCLOSE, scan, no, (... (:m_endpos @reg_match) no), nil))
-                                    (swap! reg_match assoc-in [:m_endpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
-                                    ;; We simply continue and handle the result when done.
-                                    (ß BREAK) status
-                                )
-                            )
-                        )
-
-                       [(+ BACKREF 1)
-                        (+ BACKREF 2)
-                        (+ BACKREF 3)
-                        (+ BACKREF 4)
-                        (+ BACKREF 5)
-                        (+ BACKREF 6)
-                        (+ BACKREF 7)
-                        (+ BACKREF 8)
-                        (+ BACKREF 9)]
-                        (do
-                            ((ß int[] a'len =) (atom (int)))
-
-                            ((ß int no =) (- op BACKREF))
-                            (cond (or (< (:lnum (... (:m_startpos @reg_match) no)) 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
-                            (do
-                                ;; Backref was not set: Match an empty string.
-                                (reset! a'len 0)
-                            )
-                            :else
-                            (do
-                                (cond (and (== (:lnum (... (:m_startpos @reg_match) no)) @reglnum) (== (:lnum (... (:m_endpos @reg_match) no)) @reglnum))
-                                (do
-                                    ;; Compare back-ref within the current line.
-                                    (reset! a'len (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no))))
-                                    ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... (:m_startpos @reg_match) no))), @reginput, a'len)) RA_NIL status))
-                                )
-                                :else
-                                (do
-                                    ;; Messy situation: Need to compare between two lines.
-                                    ((ß int r =) (match-with-backref (:lnum (... (:m_startpos @reg_match) no)), (:col (... (:m_startpos @reg_match) no)), (:lnum (... (:m_endpos @reg_match) no)), (:col (... (:m_endpos @reg_match) no)), a'len))
-
-                                    ((ß status =) (if (!= r RA_MATCH) r status))
-                                ))
-                            ))
-
-                            ;; Matched the backref, skip over it.
-                            (swap! reginput plus @a'len)
-                            (ß BREAK) status
-                        )
-
-                        BRANCH
-                        (do
-                            (cond (!= (re-op next) BRANCH) ;; No choice.
-                            (do
-                                ((ß next =) (operand scan))       ;; Avoid recursion.
-                                (ß BREAK) status
-                            )
-                            :else
-                            (do
-                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                    (let [
-                                    ]
-                                        (swap! regstack conj (reg-item RS_BRANCH, scan))
-                                        (ß BREAK) RA_BREAK      ;; rest is below
-                                    )
-                                )
-                            ))
-                        )
-
-                        BRACE_LIMITS
-                        (do
-                            (cond (== (re-op next) BRACE_SIMPLE)
-                            (do
-                                (reset! bl_minval (operand-min scan))
-                                (reset! bl_maxval (operand-max scan))
-                                (ß BREAK) status
-                            )
-                            (and (<= BRACE_COMPLEX (re-op next)) (< (re-op next) (+ BRACE_COMPLEX 10)))
-                            (do
-                                ((ß int no =) (- (re-op next) BRACE_COMPLEX))
-                                (swap! brace_min assoc no (operand-min scan))
-                                (swap! brace_max assoc no (operand-max scan))
-                                (swap! brace_count assoc no 0)
-                                (ß BREAK) status
-                            )
-                            :else
-                            (do
-                                (emsg e_internal)       ;; Shouldn't happen.
-                                (ß BREAK) RA_FAIL
-                            ))
-                        )
-
-                       [(+ BRACE_COMPLEX 0)
-                        (+ BRACE_COMPLEX 1)
-                        (+ BRACE_COMPLEX 2)
-                        (+ BRACE_COMPLEX 3)
-                        (+ BRACE_COMPLEX 4)
-                        (+ BRACE_COMPLEX 5)
-                        (+ BRACE_COMPLEX 6)
-                        (+ BRACE_COMPLEX 7)
-                        (+ BRACE_COMPLEX 8)
-                        (+ BRACE_COMPLEX 9)]
-                        (do
-                            ((ß int no =) (- op BRACE_COMPLEX))
-                            (swap! brace_count update no inc)
-
-                            ;; If not matched enough times yet, try one more.
-                            (cond (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
-                            (do
-                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                    (let [
-                                    ]
-                                        (swap! regstack conj (reg-item RS_BRCPLX_MORE, scan, no, nil, (reg-save @backpos)))
-                                        ((ß next =) (operand scan))
-                                        ;; We continue and handle the result when done.
-                                        (ß BREAK) status
-                                    )
-                                )
-                            )
-                            ;; If matched enough times, may try matching some more.
-                            (<= (... @brace_min no) (... @brace_max no))
-                            (do
-                                ;; Range is the normal way around, use longest match.
-                                (when (<= (... @brace_count no) (... @brace_max no))
-                                    (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
-                                        (let [
-                                        ]
-                                            (swap! regstack conj (reg-item RS_BRCPLX_LONG, scan, no, nil, (reg-save @backpos)))
-                                            ((ß next =) (operand scan))
-                                            ;; We continue and handle the result when done.
-                                        )
-                                    )
-                                )
-                                (ß BREAK) status
-                            )
-                            :else
-                            (do
-                                ;; Range is backwards, use shortest match first.
-                                (when (<= (... @brace_count no) (... @brace_min no))
-                                    (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
-                                        (let [
-                                        ]
-                                            (swap! regstack conj (reg-item RS_BRCPLX_SHORT, scan, 0, nil, (reg-save @backpos)))
-                                            ;; We continue and handle the result when done.
-                                        )
-                                    )
-                                )
-                                (ß BREAK) status
-                            ))
-                        )
-
-                       [BRACE_SIMPLE STAR PLUS]
-                        (do
-                            ((ß regstar_C rst =) (NEW_regstar_C))
-
-                            ;; Lookahead to avoid useless match attempts when we know what character comes next.
-
-                            (cond (== (re-op next) EXACTLY)
-                            (do
-                                ((ß ? =) (.at (operand next) 0))
-                                ((ß rst =) (assoc rst :rs_nextb ? :rs_nextb_ic (if @ireg_icase (if (utf-isupper ?) (utf-tolower ?) (utf-toupper ?)) ?)))
-                            )
-                            :else
-                            (do
-                                ((ß rst =) (assoc rst :rs_nextb NUL :rs_nextb_ic NUL))
-                            ))
-
-                            (cond (!= op BRACE_SIMPLE)
-                            (do
-                                ((ß rst =) (assoc rst :rs_minval (if (== op STAR) 0 1) :rs_maxval MAX_LIMIT))
-                            )
-                            :else
-                            (do
-                                ((ß rst =) (assoc rst :rs_minval @bl_minval :rs_maxval @bl_maxval))
-                            ))
-
-                            ;; When maxval > minval, try matching as much as possible, up to maxval.
-                            ;; When maxval < minval, try matching at least the minimal number
-                            ;; (since the range is backwards, that's also maxval!).
-
-                            ((ß rst =) (assoc rst :rs_count (regrepeat (operand scan), (:rs_maxval rst))))
-
-                            (cond @got_int
-                            (do
-                                (ß BREAK) RA_FAIL
-                            )
-                            (<= (min (:rs_minval rst) (:rs_maxval rst)) (:rs_count rst))
-                            (do
-                                ;; It could match.  Prepare for trying to match what follows.
-                                ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
-                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                    (let [
-                                    ]
-                                        (swap! regstack conj rst)
-                                        (swap! regstack conj (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
-                                        (ß BREAK) RA_BREAK      ;; skip the restore bits
-                                    )
-                                )
-                            )
-                            :else
-                            (do
-                                (ß BREAK) RA_NIL
-                            ))
-                        )
-
-                       [NOMATCH MATCH SUBPAT]
-                        (do
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                (let [
-                                ]
-                                    (swap! regstack conj (reg-item RS_NOMATCH, scan, op, nil, (reg-save @backpos)))
-                                    ((ß next =) (operand scan))
-                                    ;; We continue and handle the result when done.
-                                    (ß BREAK) status
-                                )
-                            )
-                        )
-
-                       [BEHIND NOBEHIND]
-                        (do
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                                (let [
-                                ]
-                                    ;; Need to save the subexpr to be able to restore them
-                                    ;; when there is a match but we don't use it.
-                                    (swap! regstack conj (save-subexpr (NEW_regbehind_C), @reg_match))
-                                    (swap! regstack conj (reg-item RS_BEHIND1, scan, op, nil, (reg-save @backpos)))
-                                    ;; First try if what follows matches.
-                                    ;; If it does, then we check the behind match by looping.
-                                    (ß BREAK) status
-                                )
-                            )
-                        )
-
-                        BHPOS
-                        (do
-                            ((ß status =) (if (or (!= (:rs_col @behind_pos) (BDIFF @reginput, @regline)) (!= (:rs_lnum @behind_pos) @reglnum)) RA_NIL status))
-                            (ß BREAK) status
-                        )
-
-                        BT_NEWL
-                        (do
-                            ((ß status =) (if (or (!= c NUL) (< @reg_lmax @reglnum)) RA_NIL RA_JUMP))
-                            (ß BREAK) status
-                        )
-
-                        BT_END
-                        (do
-                            (ß BREAK) RA_MATCH ;; Success!
-                        )
-
-                        (do
-                            (emsg e_re_corr)
-                            (ß BREAK) RA_FAIL
-                        )
-                    ))
-                ))
-
-                (when (== status RA_JUMP)
-                    (reg-nextline)
-                    (fast-breakcheck)
-                    ((ß status =) RA_CONT)
-                )
-
-                (when (== status RA_STEP)
-                    (reg-nextchar)
-                    ((ß status =) RA_CONT)
-                )
-
-                ;; Can't continue sequentially, break the inner loop.
-                (if (!= status RA_CONT)
-                    (ß BREAK)
-                )
-
-                ;; Continue in inner loop, advance to next item.
-                ((ß scan =) next)
-                (recur)
-            )
+            ((ß [win scan status] =) (seq-regmatch- win, scan))
 
             ;; If there is something on "regstack", execute the code for the state.
             ;; If the state is popped, then loop and use the older state.
@@ -19190,12 +19176,12 @@
 
             ;; May need to continue with the inner loop, starting at "scan".
             (if (== status RA_CONT)
-                (ß CONTINUE)
+                (ß CONTINUE) win
             )
 
             ;; When "regstack" is empty or something failed, we are done.
 
-            (when (or (zero? (count @regstack)) (== status RA_FAIL))
+            (when' (or (zero? (count @regstack)) (== status RA_FAIL)) => (recur win)
                 (when (nil? scan)
                     ;; We get here only if there's trouble -- normally "case END" is the terminating point.
                     (emsg e_re_corr)
@@ -19206,12 +19192,9 @@
                 (reset! backpos nil)
                 (reset! regstack nil)
 
-                ((ß RETURN) (== status RA_MATCH))
+                [win (== status RA_MATCH)]
             )
-            (recur)
         )
-
-        ;; NOTREACHED
     ))
 
 ;; Create an item for the "regstack".
