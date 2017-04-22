@@ -108,7 +108,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance2 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance3 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -37537,7 +37537,7 @@
 ;; The caller must have saved the cursor line for undo!
 
 (defn- #_boolean coladvance-force [#_int wcol]
-    (let [#_boolean rc (coladvance2 (:w_cursor @curwin), true, false, wcol)]
+    (let [#_boolean rc ((ß [window_C pos_C boolean] =) (coladvance3 @curwin, (:w_cursor @curwin), true, false, wcol))]
         (cond (== wcol MAXCOL)
         (do
             (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
@@ -37578,164 +37578,111 @@
 ;; return true if desired column is reached, false if not
 
 (defn- #_boolean getvpos [#_pos_C pos, #_int wcol]
-    (coladvance2 pos, false, (virtual-active), wcol))
+    ((ß [window_C pos_C boolean] =) (coladvance3 @curwin, pos, false, (virtual-active), wcol)))
 
-(defn- #_boolean coladvance2 [#_pos_C pos, #_boolean addspaces, #_boolean finetune, #_int wcol]
+(defn- #_[window_C pos_C boolean] coladvance3 [#_window_C win, #_pos_C pos, #_boolean addspaces, #_boolean finetune, #_int wcol]
     ;; addspaces: change the text to achieve our goal?
     ;; finetune: change char offset for the exact column
     ;; wcol: column to move to
-    (§
-        ((ß int col =) 0)
-        ((ß int csize =) 0)
-        ((ß int[] a'head =) (atom (int 0)))
-
-        ((ß boolean one_more =) (or (flag? @State INSERT) (!= @restart_edit NUL) (and @VIsual_active (not-at? @p_sel (byte \o))) (and (flag? @ve_flags VE_ONEMORE) (< wcol MAXCOL))))
-
-        ((ß Bytes line =) (ml-get (:lnum pos)))
-
-        (ß int idx)
-        (cond (<= MAXCOL wcol)
-        (do
-            ((ß idx =) (+ (dec (STRLEN line)) (if one_more 1 0)))
-            ((ß col =) wcol)
-
-            (when (and (or addspaces finetune) (not @VIsual_active))
-                (swap! curwin assoc :w_curswant (+ (linetabsize line) (if one_more 1 0)))
-                (when (< 0 (:w_curswant @curwin))
-                    (swap! curwin update :w_curswant dec))
-            )
-        )
-        :else
-        (do
-            ((ß int width =) (- (:w_width @curwin) (win-col-off @curwin)))
-
-            (when (and finetune @(:wo_wrap (:w_options @curwin)) (non-zero? (:w_width @curwin)) (<= width wcol))
-                ((ß csize =) (linetabsize line))
-                ((ß csize =) (if (< 0 csize) (dec csize) csize))
-
-                (when (and (< (/ csize width) (/ wcol width)) (or (non-flag? @State INSERT) (< (inc csize) wcol)))
-                    ;; In case of line wrapping don't move the cursor beyond the
-                    ;; right screen edge.  In Insert mode allow going just beyond
-                    ;; the last character (like what happens when typing and
-                    ;; reaching the right window edge).
-                    ((ß wcol =) (dec (* (inc (/ csize width)) width)))
+    (let-when [#_Bytes line (ml-get (:lnum pos))
+        #_boolean one_more (or (flag? @State INSERT) (!= @restart_edit NUL) (and @VIsual_active (not-at? @p_sel (byte \o))) (and (flag? @ve_flags VE_ONEMORE) (< wcol MAXCOL)))
+        [win wcol #_int x #_int col abort]
+            (if (<= MAXCOL wcol)
+                (let [x (+ (dec (STRLEN line)) (if one_more 1 0))
+                      win (if (and (or addspaces finetune) (not @VIsual_active))
+                            (let [win (assoc win :w_curswant (+ (linetabsize line) (if one_more 1 0)))]
+                                (if (< 0 (:w_curswant win)) (update win :w_curswant dec) win))
+                            win
+                        )]
+                    [win wcol x wcol false]
+                )
+                (let [#_int width (- (:w_width win) (win-col-off win))
+                      [#_int csize wcol]
+                        (if (and finetune @(:wo_wrap (:w_options win)) (non-zero? (:w_width win)) (<= width wcol))
+                            (let [csize (linetabsize line) csize (if (< 0 csize) (dec csize) csize)
+                                  wcol (if (and (< (/ csize width) (/ wcol width)) (or (non-flag? @State INSERT) (< (inc csize) wcol)))
+                                        ;; In case of line wrapping don't move the cursor beyond the right screen edge.
+                                        ;; In Insert mode allow going just beyond the last character
+                                        ;; (like what happens when typing and reaching the right window edge).
+                                        (dec (* (inc (/ csize width)) width))
+                                        wcol
+                                    )]
+                                [csize wcol])
+                            [0 wcol])
+                      a'head (atom (int 0)) [csize x col]
+                        (loop-when [csize csize #_Bytes s line col 0] (and (<= col wcol) (non-eos? s)) => [csize (BDIFF s, line) col]
+                            ;; Count a tab for what it's worth (if list mode not on).
+                            (let [csize (win-lbr-chartabsize win, line, s, col, a'head)]
+                                (recur csize (.plus s (us-ptr2len-cc s)) (+ col csize))
+                            ))
+                      ;; Handle all the special cases.  The virtual-active() check is needed to
+                      ;; ensure that a virtual position off the end of a line has the correct indexing.
+                      ;; The one_more comparison replaces an explicit add of one_more later on.
+                      [csize x col]
+                        (if (or (< wcol col) (and (not (virtual-active)) (not one_more)))
+                            ;; Don't count the chars from 'showbreak'.
+                            (let [csize (- csize @a'head)] [csize (dec x) (- col csize)])
+                            [csize x col])
+                      [x col abort]
+                        (if (and (virtual-active) addspaces (or (and (!= col wcol) (!= col (inc wcol))) (< 1 csize)))
+                            ;; 'virtualedit' is set: The difference between wcol and col is filled with spaces.
+                            (if (eos? line x)
+                                ;; Append spaces.
+                                (let [#_int n (+ x (- wcol col))
+                                      #_Bytes s (Bytes. (inc n))
+                                      _ (loop-when-recur [i 0] (< i x) [(inc i)] (.be s i, (.at line i)))
+                                      _ (loop-when-recur [i x] (< i n) [(inc i)] (.be s i, (byte \space)))
+                                      _ (eos! s n)]
+                                    (ml-replace (:lnum pos), s)
+                                    (changed-bytes (:lnum pos), x)
+                                    [n wcol false]
+                                )
+                                ;; Break a tab.
+                                (let [#_int n (STRLEN line) #_int m (inc (- wcol col csize))] ;; negative!!
+                                    (if (< csize (- m))
+                                        [x col true] ;; abort!!
+                                        (let [#_Bytes s (Bytes. (+ n csize))
+                                              _ (loop-when [i 0 j 0] (< j n)
+                                                    (let [i (if (!= j x)
+                                                                (do (.be s i, (.at line j)) (inc i))
+                                                                (loop-when-recur [i i k 0] (< k csize) [(inc i) (inc k)] => i
+                                                                    (.be s i, (byte \space)))
+                                                            )]
+                                                        (recur i (inc j))
+                                                    ))
+                                              _ (eos! s (dec (+ n csize)))]
+                                            (ml-replace (:lnum pos), s)
+                                            (changed-bytes (:lnum pos), x)
+                                            [(+ x (dec csize) m) (+ col m) false]
+                                        ))
+                                ))
+                            [x col false]
+                        )]
+                    [win wcol x col abort]
                 )
             )
+    ] (not abort) => [win pos false]
 
-            ((ß Bytes ptr =) line)
-            (loop-when [] (and (<= col wcol) (non-eos? ptr))
-                ;; Count a tab for what it's worth (if list mode not on).
-                ((ß csize =) (win-lbr-chartabsize @curwin, line, ptr, col, a'head))
-                ((ß ptr =) (.plus ptr (us-ptr2len-cc ptr)))
-                ((ß col =) (+ col csize))
-                (recur)
-            )
-            ((ß idx =) (BDIFF ptr, line))
-
-            ;; Handle all the special cases.  The virtual-active() check
-            ;; is needed to ensure that a virtual position off the end of
-            ;; a line has the correct indexing.  The one_more comparison
-            ;; replaces an explicit add of one_more later on.
-
-            (when (or (< wcol col) (and (not (virtual-active)) (not one_more)))
-                ((ß idx =) (- idx 1))
-                ;; Don't count the chars from 'showbreak'.
-                ((ß csize =) (- csize @a'head))
-                ((ß col =) (- col csize))
-            )
-
-            (when (and (virtual-active) addspaces (or (and (!= col wcol) (!= col (inc wcol))) (< 1 csize)))
-                ;; 'virtualedit' is set: The difference between wcol and col is filled with spaces.
-
-                (cond (eos? line idx)
-                (do
-                    ;; Append spaces.
-                    ((ß int correct =) (- wcol col))
-                    ((ß Bytes newline =) (Bytes. (+ idx correct 1)))
-
-                    (dotimes [#_int t idx]
-                        (.be newline t, (.at line t))
-                    )
-
-                    (dotimes [#_int t correct]
-                        (.be newline (+ t idx), (byte \space))
-                    )
-
-                    (eos! newline (+ idx correct))
-
-                    (ml-replace (:lnum pos), newline)
-                    (changed-bytes (:lnum pos), idx)
-                    ((ß idx =) (+ idx correct))
-                    ((ß col =) wcol)
-                )
-                :else
-                (do
-                    ;; Break a tab.
-                    ((ß int linelen =) (STRLEN line))
-                    ((ß int correct =) (inc (- wcol col csize))) ;; negative!!
-
-                    (if (< csize (- correct))
-                        ((ß RETURN) false)
-                    )
-
-                    ((ß Bytes newline =) (Bytes. (+ linelen csize)))
-
-                    ((ß int s =) 0)
-                    (dotimes [#_int t linelen]
-                        (cond (!= t idx)
-                        (do
-                            (.be newline (ß s++), (.at line t))
+        (let [pos (assoc pos :col (max 0 x) :coladd 0)
+              [pos col]
+                (if finetune
+                    (if (== wcol MAXCOL)
+                        ;; The width of the last character is used to set coladd.
+                        (if (not one_more)
+                            (let [a'scol (atom (int)) a'ecol (atom (int)) _ (getvcol win, pos, a'scol, nil, a'ecol)]
+                                [(assoc pos :coladd (- @a'ecol @a'scol)) col])
+                            [pos col]
                         )
-                        :else
-                        (do
-                            (dotimes [_ csize]
-                                (.be newline (ß s++), (byte \space))
-                            )
+                        ;; The difference between wcol and col is used to set coladd.
+                        (let [#_int m (- wcol col)
+                              pos (if (< 0 m (- MAXCOL (* 2 (:w_width win)))) (assoc pos :coladd m) pos)]
+                            [pos (+ col m)]
                         ))
-                    )
-
-                    (eos! newline (dec (+ linelen csize)))
-
-                    (ml-replace (:lnum pos), newline)
-                    (changed-bytes (:lnum pos), idx)
-                    ((ß idx =) (+ idx (+ (dec csize) correct)))
-                    ((ß col =) (+ col correct))
-                ))
-            )
-        ))
-
-        ((ß pos.col =) (max 0 idx))
-        ((ß pos.coladd =) 0)
-
-        (when finetune
-            (cond (== wcol MAXCOL)
-            (do
-                ;; The width of the last character is used to set coladd.
-                (when (not one_more)
-                    ((ß int[] a'scol =) (atom (int)))
-                    ((ß int[] a'ecol =) (atom (int)))
-
-                    (getvcol @curwin, pos, a'scol, nil, a'ecol)
-                    ((ß pos.coladd =) (- @a'ecol @a'scol))
-                )
-            )
-            :else
-            (do
-                ((ß int b =) (- wcol col))
-
-                ;; The difference between wcol and col is used to set coladd.
-                (if (and (< 0 b) (< b (- MAXCOL (* 2 (:w_width @curwin)))))
-                    ((ß pos.coladd =) b)
-                )
-
-                ((ß col =) (+ col b))
-            ))
+                    [pos col]
+                )]
+            ;; prevent from moving onto a trail byte
+            [win (mb-adjust-pos pos) (not (< col wcol))]
         )
-
-        ;; prevent from moving onto a trail byte
-        ((ß pos =) (mb-adjust-pos pos))
-
-        (not (< col wcol))
     ))
 
 ;; Increment the cursor position.  See incp() for return values.
@@ -48014,7 +47961,7 @@
                         (assoc :w_scbind_pos 1)))
             (let-when [win (check-cursor-moved win)] (non-flag? (:w_valid win) VALID_TOPLINE) => win
                 (let [o'topline (:w_topline win)
-                      [#_boolean check_botline win] 
+                      [#_boolean check_botline win]
                         (if (bufempty)
                             ;; If the buffer is empty, always set topline to 1.
                             [false (let [win (if (!= (:w_topline win) 1) (redraw-later win, NOT_VALID) win)]
@@ -48224,7 +48171,7 @@
 (defn- #_window_C validate-cheight [#_window_C win]
     (let-when [win (check-cursor-moved win)] (non-flag? (:w_valid win) VALID_CHEIGHT) => win
         (let [n (plines win, (:lnum (:w_cursor win)), true)]
-           (-> win (assoc :w_cline_height n) (update :w_valid | VALID_CHEIGHT)) 
+           (-> win (assoc :w_cline_height n) (update :w_valid | VALID_CHEIGHT))
         )
     ))
 
@@ -48235,7 +48182,7 @@
         (let [col (:w_virtcol win) off (win-col-off win) col (+ col off) off (+ (- (:w_width win) off) (win-col-off2 win)) n (- col (:w_width win))
               wrap @(:wo_wrap (:w_options win))
               col (if (and wrap (<= 0 n) (< 0 off)) (- col (* (inc (/ n off)) off)) col)]
-           (-> win (assoc :w_wcol (max 0 (- col (:w_leftcol win)))) (update :w_valid | VALID_WCOL)) 
+           (-> win (assoc :w_wcol (max 0 (- col (:w_leftcol win)))) (update :w_valid | VALID_WCOL))
         )
     ))
 
@@ -48260,129 +48207,114 @@
 
 (defn- #_window_C curs-columns [#_window_C win, #_boolean may_scroll]
     ;; First make sure that "w_topline" is valid (after moving the cursor).
-    ((ß win =) (update-topline win))
-    ;; Next make sure that "w_cline_row" is valid.
-    (when (non-flag? (:w_valid win) VALID_CROW)
-        ((ß win =) (curs-rows win)))
-    ;; Compute the number of virtual columns.
-    (let [a'startcol (atom (int)) a'vcol (atom (int (:w_virtcol win))) a'endcol (atom (int))
-          _ (getvvcol win, (:w_cursor win), a'startcol, a'vcol, a'endcol)]
-        ((ß win =) (assoc win :w_virtcol @a'vcol))
-        (let [#_int extra (win-col-off win)] ;; offset for first screen line
-            ((ß win =) (assoc win :w_wcol (+ (:w_virtcol win) extra)))
-            (swap! a'endcol + extra)
-            ;; Now compute "w_wrow" counting screen rows from "w_cline_row".
-            ((ß win =) (assoc win :w_wrow (:w_cline_row win)))
-            (let [#_int textwidth (- (:w_width win) extra)
-                  #_int width
-                    (cond (<= textwidth 0) ;; No room for text, put cursor in last char of window.
-                        (do ((ß win =) (assoc win :w_wcol (dec (:w_width win)) :w_wrow (dec (:w_height win))))
-                            0)
-                    (and @(:wo_wrap (:w_options win)) (non-zero? (:w_width win)))
-                        (let [width (+ textwidth (win-col-off2 win))]
-                            ;; long line wrapping, adjust "w_wrow"
-                            (when (<= (:w_width win) (:w_wcol win))
-                                ;; this same formula is used in validate-cursor-col()
-                                (let [#_int n (inc (/ (- (:w_wcol win) (:w_width win)) width))]
-                                    ((ß win =) (update win :w_wcol - (* n width)))
-                                    ((ß win =) (update win :w_wrow + n))
-                                    ;; When cursor wraps to first char of next line in Insert mode,
-                                    ;; the 'showbreak' string isn't shown, backup to first column.
-                                    (when (and (non-eos? @p_sbr) (eos? (ml-get-cursor)) (== (:w_wcol win) (mb-string2cells @p_sbr)))
-                                        ((ß win =) (assoc win :w_wcol 0)))))
-                            width)
-                    ;; No line wrapping: compute "w_leftcol" if scrolling is on and line is not folded.
-                    ;; If scrolling is off, "w_leftcol" is assumed to be 0.
-                    may_scroll
-                        ;; If cursor is left of the screen, scroll rightwards.
-                        ;; If cursor is right of the screen, scroll leftwards.
-                        ;; If we get closer to the edge than 'sidescrolloff', scroll a little extra.
-                        (let [#_int loff (- @a'startcol (:w_leftcol win) @p_siso)
-                              #_int roff (inc (- @a'endcol (- (+ (:w_leftcol win) (:w_width win)) @p_siso)))]
-                            (when (or (< loff 0) (< 0 roff))
-                                (let [#_int diff (if (< loff 0) (- loff) roff)
-                                      ;; When far off or not enough room on either side, put cursor in middle of window.
-                                      #_int lcol
-                                        (if (or (zero? @p_ss) (<= (/ textwidth 2) diff) (<= loff roff))
-                                            (- (:w_wcol win) extra (/ textwidth 2))
-                                            (let [diff (max @p_ss diff)]
-                                                (if (< loff 0) (- (:w_leftcol win) diff) (+ (:w_leftcol win) diff))
-                                            ))
-                                      lcol (max 0 lcol)]
-                                    (when (!= lcol (:w_leftcol win))
-                                        ((ß win =) (assoc win :w_leftcol lcol))
-                                        ;; screen has to be redrawn with new "w_leftcol"
-                                        ((ß win =) (redraw-later win, NOT_VALID)))
+    (let [win (update-topline win)
+          ;; Next make sure that "w_cline_row" is valid.
+          win (if (non-flag? (:w_valid win) VALID_CROW) (curs-rows win) win)
+          ;; Compute the number of virtual columns.
+          a'startcol (atom (int)) a'vcol (atom (int (:w_virtcol win))) a'endcol (atom (int)) _ (getvvcol win, (:w_cursor win), a'startcol, a'vcol, a'endcol)
+          win (assoc win :w_virtcol @a'vcol)
+          #_int extra (win-col-off win) ;; offset for first screen row
+          win (assoc win :w_wcol (+ (:w_virtcol win) extra))
+          _ (swap! a'endcol + extra)
+          ;; Now compute "w_wrow" counting screen rows from "w_cline_row".
+          win (assoc win :w_wrow (:w_cline_row win))
+          #_int textwidth (- (:w_width win) extra)
+          [win #_int width]
+            (cond (<= textwidth 0) ;; No room for text, put cursor in last char of window.
+                [(assoc win :w_wcol (dec (:w_width win)) :w_wrow (dec (:w_height win))) 0]
+            (and @(:wo_wrap (:w_options win)) (non-zero? (:w_width win)))
+                (let [width (+ textwidth (win-col-off2 win))]
+                    ;; long line wrapping, adjust "w_wrow"
+                    (if (<= (:w_width win) (:w_wcol win))
+                        ;; this same formula is used in validate-cursor-col()
+                        (let [#_int n (inc (/ (- (:w_wcol win) (:w_width win)) width))
+                              win (update win :w_wcol - (* n width))
+                              win (update win :w_wrow + n)
+                              ;; When cursor wraps to first char of next line in Insert mode,
+                              ;; the 'showbreak' string isn't shown, backup to first column.
+                              win (if (and (non-eos? @p_sbr) (eos? (ml-get-cursor)) (== (:w_wcol win) (mb-string2cells @p_sbr))) (assoc win :w_wcol 0) win)]
+                            [win width])
+                        [win width]
+                    ))
+            ;; No line wrapping: compute "w_leftcol" if scrolling is on and line is not folded.
+            ;; If scrolling is off, "w_leftcol" is assumed to be 0.
+            may_scroll
+                ;; If cursor is left of the screen, scroll rightwards.
+                ;; If cursor is right of the screen, scroll leftwards.
+                ;; If we get closer to the edge than 'sidescrolloff', scroll a little extra.
+                (let [#_int loff (- @a'startcol (:w_leftcol win) @p_siso) #_int roff (inc (- @a'endcol (- (+ (:w_leftcol win) (:w_width win)) @p_siso)))
+                      win (if (or (< loff 0) (< 0 roff))
+                            (let [#_int diff (if (< loff 0) (- loff) roff)
+                                  #_int lcol ;; When far off or not enough room on either side, put cursor in middle of window.
+                                    (if (or (zero? @p_ss) (<= (/ textwidth 2) diff) (<= loff roff))
+                                        (- (:w_wcol win) extra (/ textwidth 2))
+                                        ((if (< loff 0) - +) (:w_leftcol win) (max @p_ss diff)))
+                                  lcol (max 0 lcol)]
+                                ;; screen has to be redrawn with new "w_leftcol"
+                                (if (!= lcol (:w_leftcol win)) (-> win (assoc :w_leftcol lcol) (redraw-later NOT_VALID)) win))
+                            win)
+                      win (update win :w_wcol - (:w_leftcol win))]
+                    [win 0])
+            (< (:w_leftcol win) (:w_wcol win))
+                (let [win (update win :w_wcol - (:w_leftcol win))]
+                    [win 0])
+            :else
+                [(assoc win :w_wcol 0) 0])
+          o'skipcol (:w_skipcol win) a'plines (atom (int 0))
+          win (if (and (or (<= (:w_height win) (:w_wrow win))
+                         (and (or (< 0 o'skipcol) (<= (:w_height win) (+ (:w_wrow win) @p_so)))
+                              (<= (:w_height win) (dec (reset! a'plines (plines win, (:lnum (:w_cursor win)), false))))))
+                     (!= (:w_height win) 0) (== (:lnum (:w_cursor win)) (:w_topline win)) (< 0 width) (!= (:w_width win) 0))
+                ;; Cursor past end of screen.  Happens with a single line that does not fit on screen.
+                ;; Find a skipcol to show the text around the cursor.  Avoid scrolling all the time.
+                ;; Compute value of "extra":
+                ;; 1: less than "p_so" lines above
+                ;; 2: less than "p_so" lines below
+                ;; 3: both of them
+                (let [extra (if (< (:w_virtcol win) (+ (:w_skipcol win) (* @p_so width))) 1 0)
+                      ;; Compute last display line of the buffer line that we want at the bottom of the window.
+                      _ (swap! a'plines #(dec (if (zero? %) (plines win, (:lnum (:w_cursor win)), false) %)))
+                      #_int n (min (+ (:w_wrow win) @p_so) @a'plines)
+                      extra (if (<= (+ (:w_height win) (/ (:w_skipcol win) width)) n) (+ extra 2) extra)
+                      win (cond (or (== extra 3) (< @a'plines (* @p_so 2)))
+                            ;; not enough room for 'scrolloff', put cursor in the middle
+                            (let [n (max 0 (- (/ (:w_virtcol win) width) (/ (:w_height win) 2)))
+                                  ;; don't skip more than necessary
+                                  n (min n (inc (- @a'plines (:w_height win))))]
+                                (assoc win :w_skipcol (* n width)))
+                        (== extra 1)
+                            ;; less then 'scrolloff' lines above, decrease skipcol
+                            (let [n (/ (dec (+ (- (+ (:w_skipcol win) (* @p_so width)) (:w_virtcol win)) width)) width)]
+                                (if (< 0 n)
+                                    (let [n (min n (/ (:w_skipcol win) width))]
+                                        (update win :w_skipcol - (* n width)))
+                                    win
                                 ))
-                            ((ß win =) (update win :w_wcol - (:w_leftcol win)))
-                            0)
-                    (< (:w_leftcol win) (:w_wcol win))
-                        (do ((ß win =) (update win :w_wcol - (:w_leftcol win)))
-                            0)
-                    :else
-                        (do ((ß win =) (assoc win :w_wcol 0))
-                            0)
-                    )]
-
-                (let [#_int prev_skipcol (:w_skipcol win) a'p_lines (atom (int 0))]
-                    (if (and (or (<= (:w_height win) (:w_wrow win))
-                                 (and (or (< 0 prev_skipcol) (<= (:w_height win) (+ (:w_wrow win) @p_so)))
-                                      (<= (:w_height win) (dec (reset! a'p_lines (plines win, (:lnum (:w_cursor win)), false))))))
-                             (!= (:w_height win) 0) (== (:lnum (:w_cursor win)) (:w_topline win)) (< 0 width) (!= (:w_width win) 0))
-                        ;; Cursor past end of screen.  Happens with a single line that does
-                        ;; not fit on screen.  Find a skipcol to show the text around the
-                        ;; cursor.  Avoid scrolling all the time.  Compute value of "extra":
-                        ;; 1: less than "p_so" lines above
-                        ;; 2: less than "p_so" lines below
-                        ;; 3: both of them
-                        (let [extra (if (< (:w_virtcol win) (+ (:w_skipcol win) (* @p_so width))) 1 0)
-                              ;; Compute last display line of the buffer line that we want at the bottom of the window.
-                              _ (swap! a'p_lines #(dec (if (zero? %) (plines win, (:lnum (:w_cursor win)), false) %)))
-                              #_int n (min (+ (:w_wrow win) @p_so) @a'p_lines)
-                              extra (if (<= (+ (:w_height win) (/ (:w_skipcol win) width)) n) (+ extra 2) extra)]
-                            (cond (or (== extra 3) (< @a'p_lines (* @p_so 2)))
-                                ;; not enough room for 'scrolloff', put cursor in the middle
-                                (let [n (max 0 (- (/ (:w_virtcol win) width) (/ (:w_height win) 2)))
-                                      ;; don't skip more than necessary
-                                      n (min n (inc (- @a'p_lines (:w_height win))))]
-                                    ((ß win =) (assoc win :w_skipcol (* n width))))
-                            (== extra 1)
-                                ;; less then 'scrolloff' lines above, decrease skipcol
-                                (let [n (/ (dec (+ (- (+ (:w_skipcol win) (* @p_so width)) (:w_virtcol win)) width)) width)]
-                                    (when (< 0 n)
-                                        (let [n (min n (/ (:w_skipcol win) width))]
-                                            ((ß win =) (update win :w_skipcol - (* n width))))
-                                    ))
-                            (== extra 2)
-                                (do ;; less then 'scrolloff' lines below, increase skipcol
-                                    (reset! a'endcol (* (inc (- n (:w_height win))) width))
-                                    (while (< (:w_virtcol win) @a'endcol)
-                                        (swap! a'endcol - width))
-                                    ((ß win =) (update win :w_skipcol max @a'endcol))
-                                ))
-                            ((ß win =) (update win :w_wrow - (/ (:w_skipcol win) width)))
-                            (when (<= (:w_height win) (:w_wrow win))
-                                ;; small window, make sure cursor is in it
-                                (let [n (inc (- (:w_wrow win) (:w_height win)))]
-                                    ((ß win =) (update win :w_skipcol + (* n width)))
-                                    ((ß win =) (update win :w_wrow - n))
-                                ))
-                            (let [extra (/ (- prev_skipcol (:w_skipcol win)) width)]
-                                (cond
-                                    (< 0 extra) (win-ins-lines win, 0, extra, false, false)
-                                    (< extra 0) (win-del-lines win, 0, (- extra), false, false)
-                                )
-                            )
-                        )
-                        ((ß win =) (assoc win :w_skipcol 0)))
-                    (when (!= prev_skipcol (:w_skipcol win))
-                        ((ß win =) (redraw-later win, NOT_VALID)))
-                    ;; Redraw when "w_virtcol" changes and 'cursorcolumn' is set.
-                    (when (and @(:wo_cuc (:w_options win)) (non-flag? (:w_valid win) VALID_VIRTCOL))
-                        ((ß win =) (redraw-later win, SOME_VALID)))
-                    ((ß win =) (update win :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL)))
-            ))
-        win
+                        (== extra 2)
+                            (do ;; less then 'scrolloff' lines below, increase skipcol
+                                (reset! a'endcol (* (inc (- n (:w_height win))) width))
+                                (while (< (:w_virtcol win) @a'endcol)
+                                    (swap! a'endcol - width))
+                                (update win :w_skipcol max @a'endcol))
+                        :else
+                            win)
+                      win (update win :w_wrow - (/ (:w_skipcol win) width))
+                      win (if (<= (:w_height win) (:w_wrow win))
+                            ;; small window, make sure cursor is in it
+                            (let [n (inc (- (:w_wrow win) (:w_height win)))] (-> win (update :w_skipcol + (* n width)) (update :w_wrow - n)))
+                            win
+                        )]
+                    (let [extra (/ (- o'skipcol (:w_skipcol win)) width)]
+                        (cond
+                            (< 0 extra) (win-ins-lines win, 0, extra, false, false)
+                            (< extra 0) (win-del-lines win, 0, (- extra), false, false)
+                        ))
+                    win)
+                (assoc win :w_skipcol 0))
+          win (if (!= o'skipcol (:w_skipcol win)) (redraw-later win, NOT_VALID) win)
+          ;; Redraw when "w_virtcol" changes and 'cursorcolumn' is set.
+          win (if (and @(:wo_cuc (:w_options win)) (non-flag? (:w_valid win) VALID_VIRTCOL)) (redraw-later win, SOME_VALID) win)]
+        (update win :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL)
     ))
 
 ;; Scroll the current window down by "n" logical lines.  "CTRL-Y"
