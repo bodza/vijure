@@ -9032,571 +9032,424 @@
 
 ;; Handle an operator after visual mode or when the movement is finished.
 
-(defn- #_cmdarg_C do-pending-operator [#_cmdarg_C cap, #_int old_col]
-    (§
-        ((ß oparg_C oap =) (:oap cap))
-
-        ((ß boolean o'lbr =) @(:wo_lbr (:w_options @curwin)))
-        ((ß boolean include_line_break =) false)
-
-        ;; If an operation is pending, handle it...
-
-        (when (and (or @finish_op @VIsual_active) (!= (:op_type oap) OP_NOP))
-            ;; Avoid a problem with unwanted linebreaks in block mode.
-            (reset! (:wo_lbr (:w_options @curwin)) false)
-            ((ß oap.is_VIsual =) @VIsual_active)
-            (cond (== (:motion_force oap) (byte \V))
-            (do
-                ((ß oap =) (assoc oap :motion_type MLINE))
-            )
-            (== (:motion_force oap) (byte \v))
-            (do
-                ;; If the motion was linewise, "inclusive" will not have been set.
-                ;; Use "exclusive" to be consistent.  Makes "dvj" work nice.
-                (cond (== (:motion_type oap) MLINE)
-                (do
-                    ((ß oap =) (assoc oap :inclusive false))
-                )
-                ;; If the motion already was characterwise, toggle "inclusive".
-                (== (:motion_type oap) MCHAR)
-                (do
-                    ((ß oap =) (update oap :inclusive not))
-                ))
-                ((ß oap =) (assoc oap :motion_type MCHAR))
-            )
-            (== (:motion_force oap) Ctrl_V)
-            (do
-                ;; Change line- or characterwise motion into Visual block mode.
-                (reset! VIsual_active true)
-                (reset! VIsual_cursor (:op_start oap))
-                (reset! VIsual_mode Ctrl_V)
-                (reset! VIsual_select false)
-                (reset! VIsual_reselect false)
-            ))
-
-            ;; Only redo yank when 'y' flag is in 'cpoptions'.
-            ;; Also redo Operator-pending Visual mode mappings.
-            (when (and (or (some? (vim-strbyte @p_cpo, CPO_YANK)) (!= (:op_type oap) OP_YANK)) (or (not @VIsual_active) (!= (:motion_force oap) 0) (and @VIsual_active (== (:cmdchar cap) (byte \:)) (!= (:op_type oap) OP_COLON))) (!= (:cmdchar cap) (byte \D)))
-                (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
-                (cond (any == (:cmdchar cap) (byte \/) (byte \?)) ;; was a search
-                (do
-                    ;; If 'cpoptions' does not contain 'r',
-                    ;; insert the search pattern to really repeat the same command.
-
-                    (if (nil? (vim-strbyte @p_cpo, CPO_REDO))
-                        (append-redo-lit (:searchbuf cap), -1))
-                    (append-redo NL_STR)
-                )
-                (== (:cmdchar cap) (byte \:))
-                (do
-                    ;; do-cmdline() has stored the first typed line in "repeat_cmdline".
-                    ;; When several lines are typed repeating won't be possible.
-
-                    (cond (nil? @repeat_cmdline)
-                    (do
-                        (reset-redo)
-                    )
-                    :else
-                    (do
-                        (append-redo-lit @repeat_cmdline, -1)
-                        (append-redo NL_STR)
-                        (reset! repeat_cmdline nil)
-                    ))
-                ))
-            )
-
-            (cond @redo_VIsual_busy
-            (do
-                ;; Redo of an operation on a Visual area.
-                ;; Use the same size from redo_VIsual_lmax and redo_VIsual_vcol.
-
-                (COPY-pos (:op_start oap), (:w_cursor @curwin))
-                (swap! curwin assoc-in [:w_cursor :lnum] (min (+ (:lnum (:w_cursor @curwin)) (dec @redo_VIsual_lmax)) (line-count @curbuf)))
-                (reset! VIsual_mode @redo_VIsual_mode)
-                (when (or (== @redo_VIsual_vcol MAXCOL) (== @VIsual_mode (byte \v)))
-                    (cond (== @VIsual_mode (byte \v))
-                    (do
-                        (cond (<= @redo_VIsual_lmax 1)
-                        (do
-                            (swap! curwin validate-virtcol)
-                            (swap! curwin assoc :w_curswant (dec (+ (:w_virtcol @curwin) @redo_VIsual_vcol)))
-                        )
-                        :else
-                        (do
-                            (swap! curwin assoc :w_curswant @redo_VIsual_vcol)
+(defn- #_cmdarg_C do-pending-operator [#_cmdarg_C cap, #_int o'col]
+    (let [win @curwin o'lbr @(:wo_lbr (:w_options win))
+          ;; If an operation is pending, handle it...
+          [win cap oap]
+            (let-when [oap (:oap cap)] (and (or @finish_op @VIsual_active) (!= (:op_type oap) OP_NOP)) => [win cap oap]
+                ;; Avoid a problem with unwanted linebreaks in block mode.
+                (let [_ (reset! (:wo_lbr (:w_options win)) false)
+                      oap (assoc oap :is_VIsual @VIsual_active)
+                      oap (condp == (:motion_force oap)
+                            (byte \V)
+                                (assoc oap :motion_type MLINE)
+                            (byte \v)
+                                ;; If the motion was linewise, "inclusive" will not have been set.
+                                ;; Use "exclusive" to be consistent.  Makes "dvj" work nice.
+                                (let [oap (condp == (:motion_type oap)
+                                            MLINE (assoc oap :inclusive false)
+                                            ;; If the motion already was characterwise, toggle "inclusive".
+                                            MCHAR (update oap :inclusive not)
+                                                  oap
+                                        )]
+                                    (assoc oap :motion_type MCHAR))
+                            Ctrl_V
+                                (do ;; Change line- or characterwise motion into Visual block mode.
+                                    (reset! VIsual_active true)
+                                    (reset! VIsual_cursor (:op_start oap))
+                                    (reset! VIsual_mode Ctrl_V)
+                                    (reset! VIsual_select false)
+                                    (reset! VIsual_reselect false)
+                                    oap)
+                            oap
+                        )]
+                    (let-when [t (:op_type oap)]
+                          (and (or (some? (vim-strbyte @p_cpo, CPO_YANK)) (!= t OP_YANK)) ;; Only redo yank when 'y' flag is in 'cpoptions'.
+                               (or (not @VIsual_active) (non-zero? (:motion_force oap)) (and @VIsual_active (== (:cmdchar cap) (byte \:)) (!= t OP_COLON)))
+                               (!= (:cmdchar cap) (byte \D)))
+                        (prep-redo (:regname oap), (:count0 cap), (get-op-char t), (get-extra-op-char t), (:motion_force oap), (:cmdchar cap), (:nchar cap))
+                        (cond (any == (:cmdchar cap) (byte \/) (byte \?)) ;; was a search
+                            (do ;; If 'cpoptions' does not contain 'r',
+                                ;; insert the search pattern to really repeat the same command.
+                                (when (nil? (vim-strbyte @p_cpo, CPO_REDO))
+                                    (append-redo-lit (:searchbuf cap), -1))
+                                (append-redo NL_STR))
+                        (== (:cmdchar cap) (byte \:))
+                            ;; do-cmdline() has stored the first typed line in "repeat_cmdline".
+                            ;; When several lines are typed, repeating won't be possible.
+                            (if (some? @repeat_cmdline)
+                                (do (append-redo-lit @repeat_cmdline, -1)
+                                    (append-redo NL_STR)
+                                    (reset! repeat_cmdline nil))
+                                (reset-redo))
                         ))
-                    )
-                    :else
-                    (do
-                        (swap! curwin assoc :w_curswant MAXCOL)
-                    ))
-                    (swap! curwin coladvance (:w_curswant @curwin))
-                )
-                ((ß cap =) (assoc cap :count0 @redo_VIsual_count))
-                ((ß cap =) (assoc cap :count1 (if (non-zero? @redo_VIsual_count) @redo_VIsual_count 1)))
-            )
-            @VIsual_active
-            (do
-                ;; Save the current VIsual area for '< and '> marks, and "gv".
-                (swap! curbuf update :b_visual assoc :vi_start @VIsual_cursor, :vi_end (:w_cursor @curwin), :vi_mode @VIsual_mode)
-                (when (!= @VIsual_mode_orig NUL)
-                    (swap! curbuf assoc-in [:b_visual :vi_mode] @VIsual_mode_orig)
-                    (reset! VIsual_mode_orig NUL)
-                )
-                (swap! curbuf assoc-in [:b_visual :vi_curswant] (:w_curswant @curwin))
-
-                ;; In Select mode,
-                ;; a linewise selection is operated upon like a characterwise selection.
-                (cond (and @VIsual_select (== @VIsual_mode (byte \V)))
-                (do
-                    (cond (ltpos @VIsual_cursor, (:w_cursor @curwin))
-                    (do
-                        (swap! VIsual_cursor assoc :col 0)
-                        (swap! curwin assoc-in [:w_cursor :col] (STRLEN (ml-get (:lnum (:w_cursor @curwin)))))
-                    )
-                    :else
-                    (do
-                        (swap! curwin assoc-in [:w_cursor :col] 0)
-                        (swap! VIsual_cursor assoc :col (STRLEN (ml-get (:lnum @VIsual_cursor))))
-                    ))
-                    (reset! VIsual_mode (byte \v))
-                )
-                ;; If 'selection' is "exclusive", backup one character for charwise selections.
-                (== @VIsual_mode (byte \v))
-                (do
-                    ((ß include_line_break =) (unadjust-for-sel))
-                ))
-
-                (COPY-pos (:op_start oap), @VIsual_cursor)
-                (if (== @VIsual_mode (byte \V))
-                    ((ß oap =) (assoc-in oap [:op_start :col] 0))
-                )
-            ))
-
-            ;; Set oap.op_start to the first position of the operated text, oap.op_end
-            ;; to the end of the operated text.  "w_cursor" is equal to oap.op_start.
-
-            (cond (ltpos (:op_start oap), (:w_cursor @curwin))
-            (do
-                (COPY-pos (:op_end oap), (:w_cursor @curwin))
-                (swap! curwin assoc :w_cursor (:op_start oap))
-
-                ;; "w_virtcol" may have been updated; if the cursor goes back to its previous
-                ;; position, "w_virtcol" becomes invalid and isn't updated automatically.
-                (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
-            )
-            :else
-            (do
-                (COPY-pos (:op_end oap), (:op_start oap))
-                (COPY-pos (:op_start oap), (:w_cursor @curwin))
-            ))
-
-            ((ß oap =) (assoc oap :line_count (inc (- (:lnum (:op_end oap)) (:lnum (:op_start oap))))))
-
-            ;; Set "virtual_op" before resetting VIsual_active.
-            (reset! virtual_op (if (virtual-active) TRUE FALSE))
-
-            (when (or @VIsual_active @redo_VIsual_busy)
-                (when (== @VIsual_mode Ctrl_V)  ;; block mode
-                    ((ß oap =) (assoc oap :block_mode true))
-
-                    ((ß int[] a'start =) (atom (int (:start_vcol oap))))
-                    ((ß int[] a'end =) (atom (int (:end_vcol oap))))
-                    (getvvcol @curwin, (:op_start oap), a'start, nil, a'end)
-                    ((ß oap =) (assoc oap :start_vcol @a'start))
-                    ((ß oap =) (assoc oap :end_vcol @a'end))
-
-                    (when (not @redo_VIsual_busy)
-                        (getvvcol @curwin, (:op_end oap), a'start, nil, a'end)
-
-                        ((ß oap =) (update oap :start_vcol min @a'start))
-                        (when (< (:end_vcol oap) @a'end)
-                            ((ß oap =) (assoc oap :end_vcol (if (and (at? @p_sel (byte \e)) (<= 1 @a'start) (<= (:end_vcol oap) (dec @a'start))) (dec @a'start) @a'end)))
-                        )
-                    )
-
-                    ;; if '$' was used, get oap.end_vcol from longest line
-                    (cond (== (:w_curswant @curwin) MAXCOL)
-                    (do
-                        ((ß oap =) (assoc oap :end_vcol 0))
-                        (swap! curwin update :w_cursor assoc :lnum (:lnum (:op_start oap)) :col MAXCOL)
-                        (loop-when [] (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
-                            (getvvcol @curwin, (:w_cursor @curwin), nil, nil, a'end)
-                            ((ß oap =) (update oap :end_vcol max @a'end))
-                            (swap! curwin update-in [:w_cursor :lnum] inc)
-                            (recur)
-                        )
-                    )
-                    @redo_VIsual_busy
-                    (do
-                        ((ß oap =) (assoc oap :end_vcol (dec (+ (:start_vcol oap) @redo_VIsual_vcol))))
-                    ))
-
-                    ;; Correct oap.op_end.col and oap.op_start.col to be the
-                    ;; upper-left and lower-right corner of the block area.
-                    ;;
-                    ;; (Actually, this does convert column positions into character positions.)
-
-                    (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_end oap)))
-                    (swap! curwin coladvance (:end_vcol oap))
-                    (COPY-pos (:op_end oap), (:w_cursor @curwin))
-
-                    (swap! curwin assoc :w_cursor (:op_start oap))
-                    (swap! curwin coladvance (:start_vcol oap))
-                    (COPY-pos (:op_start oap), (:w_cursor @curwin))
-                )
-
-                (when (not @redo_VIsual_busy)
-                    ;; Prepare to reselect and redo Visual:
-                    ;; this is based on the size of the Visual text
-
-                    (reset! resel_VIsual_mode @VIsual_mode)
-                    (cond (== (:w_curswant @curwin) MAXCOL)
-                    (do
-                        (reset! resel_VIsual_vcol MAXCOL)
-                    )
-                    :else
-                    (do
-                        (when (!= @VIsual_mode Ctrl_V)
-                            ((ß oap =) (assoc oap :end_vcol (let [__ (atom (int (:end_vcol oap)))] (getvvcol @curwin, (:op_end oap), nil, nil, __) @__)))
-                        )
-                        (cond (or (== @VIsual_mode Ctrl_V) (<= (:line_count oap) 1))
-                        (do
-                            (when (!= @VIsual_mode Ctrl_V)
-                                ((ß oap =) (assoc oap :start_vcol (let [__ (atom (int (:start_vcol oap)))] (getvvcol @curwin, (:op_start oap), __, nil, nil) @__)))
-                            )
-                            (reset! resel_VIsual_vcol (+ (- (:end_vcol oap) (:start_vcol oap)) 1))
-                        )
-                        :else
-                        (do
-                            (reset! resel_VIsual_vcol (:end_vcol oap))
-                        ))
-                    ))
-                    (reset! resel_VIsual_lmax (:line_count oap))
-                )
-
-                ;; can't redo yank (unless 'y' is in 'cpoptions') and ":"
-                (when (and (or (some? (vim-strbyte @p_cpo, CPO_YANK)) (!= (:op_type oap) OP_YANK)) (!= (:op_type oap) OP_COLON) (== (:motion_force oap) NUL))
-                    ;; Prepare for redoing.  Only use the nchar field for "r",
-                    ;; otherwise it might be the second char of the operator.
-
-                    (cond (and (== (:cmdchar cap) (byte \g)) (any == (:nchar cap) (byte \n) (byte \N)))
-                    (do
-                        (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
-                    )
-                    (!= (:cmdchar cap) (byte \:))
-                    (do
-                        (prep-redo (:regname oap), 0, NUL, (byte \v), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (if (== (:op_type oap) OP_REPLACE) (:nchar cap) NUL))
-                    ))
-                    (when (not @redo_VIsual_busy)
-                        (reset! redo_VIsual_mode @resel_VIsual_mode)
-                        (reset! redo_VIsual_vcol @resel_VIsual_vcol)
-                        (reset! redo_VIsual_lmax @resel_VIsual_lmax)
-                        (reset! redo_VIsual_count (:count0 cap))
-                    )
-                )
-
-                ;; oap.inclusive defaults to true.
-                ;; If oap.op_end is on a NUL (empty line) oap.inclusive becomes false.
-                ;; This makes "d}P" and "v}dP" work the same.
-
-                (if (or (== (:motion_force oap) NUL) (== (:motion_type oap) MLINE))
-                    ((ß oap =) (assoc oap :inclusive true))
-                )
-                (cond (== @VIsual_mode (byte \V))
-                (do
-                    ((ß oap =) (assoc oap :motion_type MLINE))
-                )
-                :else
-                (do
-                    ((ß oap =) (assoc oap :motion_type MCHAR))
-                    (when (and (!= @VIsual_mode Ctrl_V) (eos? (ml-get-pos (:op_end oap))) (or include_line_break (== @virtual_op FALSE)))
-                        ((ß oap =) (assoc oap :inclusive false))
-                        ;; Try to include the newline,
-                        ;; unless it's an operator that works on lines only.
-                        (when (and (not-at? @p_sel (byte \o)) (not (op-on-lines (:op_type oap))))
-                            (cond (< (:lnum (:op_end oap)) (line-count @curbuf))
-                            (do
-                                ((ß oap =) (update oap :op_end assoc :lnum (inc (:lnum (:op_end oap))) :col 0 :coladd 0))
-                                ((ß oap =) (update oap :line_count inc))
-                            )
+                    (let [[win cap oap include_eol?]
+                            (cond @redo_VIsual_busy
+                                ;; Redo of an operation on a Visual area.
+                                ;; Use the same size from redo_VIsual_lmax and redo_VIsual_vcol.
+                                (let [oap (assoc oap :op_start (:w_cursor win))
+                                      win (update-in win [:w_cursor :lnum] #(min (+ % (dec @redo_VIsual_lmax)) (line-count @curbuf)))
+                                      _ (reset! VIsual_mode @redo_VIsual_mode)
+                                      win (if (or (== @redo_VIsual_vcol MAXCOL) (== @VIsual_mode (byte \v)))
+                                            (let [win (if (== @VIsual_mode (byte \v))
+                                                        (if (<= @redo_VIsual_lmax 1)
+                                                            (let [win (validate-virtcol win)]
+                                                                (assoc win :w_curswant (dec (+ (:w_virtcol win) @redo_VIsual_vcol))))
+                                                            (assoc win :w_curswant @redo_VIsual_vcol))
+                                                        (assoc win :w_curswant MAXCOL)
+                                                    )]
+                                                (coladvance win, (:w_curswant win)))
+                                            win)
+                                      cap (assoc cap :count0 @redo_VIsual_count, :count1 (if (non-zero? @redo_VIsual_count) @redo_VIsual_count 1))]
+                                    [win cap oap false])
+                            @VIsual_active
+                                (do ;; Save the current VIsual area for '< and '> marks, and "gv".
+                                    (swap! curbuf update :b_visual assoc :vi_start @VIsual_cursor, :vi_end (:w_cursor win), :vi_mode @VIsual_mode)
+                                    (when (!= @VIsual_mode_orig NUL)
+                                        (swap! curbuf assoc-in [:b_visual :vi_mode] @VIsual_mode_orig)
+                                        (reset! VIsual_mode_orig NUL))
+                                    (swap! curbuf assoc-in [:b_visual :vi_curswant] (:w_curswant win))
+                                    ;; In Select mode,
+                                    ;; a linewise selection is operated upon like a characterwise selection.
+                                    (let [[win include_eol?]
+                                            (cond (and @VIsual_select (== @VIsual_mode (byte \V)))
+                                                (let [win (if (ltpos @VIsual_cursor, (:w_cursor win))
+                                                            (let [_ (swap! VIsual_cursor assoc :col 0)
+                                                                  win (assoc-in win [:w_cursor :col] (STRLEN (ml-get (:lnum (:w_cursor win)))))]
+                                                                win)
+                                                            (let [win (assoc-in win [:w_cursor :col] 0)
+                                                                  _ (swap! VIsual_cursor assoc :col (STRLEN (ml-get (:lnum @VIsual_cursor))))]
+                                                                win)
+                                                        )]
+                                                    (reset! VIsual_mode (byte \v))
+                                                    [win false])
+                                            ;; If 'selection' is "exclusive", backup one character for charwise selections.
+                                            (== @VIsual_mode (byte \v))
+                                                [win (unadjust-for-sel)]
+                                            :else
+                                                [win false])
+                                          oap (assoc oap :op_start @VIsual_cursor)
+                                          oap (if (== @VIsual_mode (byte \V)) (assoc-in oap [:op_start :col] 0) oap)]
+                                        [win cap oap include_eol?]
+                                    ))
                             :else
-                            (do
-                                ;; Cannot move below the last line, make the op inclusive
-                                ;; to tell the operation to include the line break.
-                                ((ß oap =) (assoc oap :inclusive true))
-                            ))
-                        )
-                    )
-                ))
+                                [win cap oap false])
+                          ;; Set oap.op_start to the first position of the operated text, oap.op_end
+                          ;; to the end of the operated text.  "w_cursor" is equal to oap.op_start.
+                          [win oap]
+                            (if (ltpos (:op_start oap), (:w_cursor win))
+                                (let [oap (assoc oap :op_end (:w_cursor win))
+                                      win (assoc win :w_cursor (:op_start oap))]
+                                    ;; "w_virtcol" may have been updated;
+                                    ;; if the cursor goes back to its previous position,
+                                    ;; "w_virtcol" becomes invalid and isn't updated automatically.
+                                    [(update win :w_valid & (bit-not VALID_VIRTCOL)) oap])
+                                (let [oap (assoc oap :op_end (:op_start oap))
+                                      oap (assoc oap :op_start (:w_cursor win))]
+                                    [win oap]
+                                ))
+                          oap (assoc oap :line_count (inc (- (:lnum (:op_end oap)) (:lnum (:op_start oap)))))
+                          ;; Set "virtual_op" before resetting VIsual_active.
+                          _ (reset! virtual_op (if (virtual-active) TRUE FALSE))
+                          [win oap]
+                            (if (or @VIsual_active @redo_VIsual_busy)
+                                (let [[win oap]
+                                        (if (== @VIsual_mode Ctrl_V)  ;; block mode
+                                            (let [oap (assoc oap :block_mode true)
+                                                  a'start (atom (int (:start_vcol oap))) a'end (atom (int (:end_vcol oap)))
+                                                  _ (getvvcol win, (:op_start oap), a'start, nil, a'end)
+                                                  oap (assoc oap :start_vcol @a'start :end_vcol @a'end)
+                                                  oap (if (not @redo_VIsual_busy)
+                                                        (let [_ (getvvcol win, (:op_end oap), a'start, nil, a'end)
+                                                              oap (update oap :start_vcol min @a'start)]
+                                                            (if (< (:end_vcol oap) @a'end)
+                                                                (assoc oap :end_vcol
+                                                                    (if (and (at? @p_sel (byte \e)) (<= 1 @a'start) (<= (:end_vcol oap) (dec @a'start))) (dec @a'start) @a'end))
+                                                                oap
+                                                            ))
+                                                        oap)
+                                                  ;; if '$' was used, get oap.end_vcol from longest line
+                                                  [win oap]
+                                                    (cond (== (:w_curswant win) MAXCOL)
+                                                        (let [win (update win :w_cursor assoc :lnum (:lnum (:op_start oap)) :col MAXCOL)]
+                                                            (loop-when [win win oap (assoc oap :end_vcol 0)] (<= (:lnum (:w_cursor win)) (:lnum (:op_end oap))) => [win oap]
+                                                                (let [_ (getvvcol win, (:w_cursor win), nil, nil, a'end)
+                                                                      oap (update oap :end_vcol max @a'end)
+                                                                      win (update-in win [:w_cursor :lnum] inc)]
+                                                                    (recur win oap))
+                                                            ))
+                                                    @redo_VIsual_busy
+                                                        [win (assoc oap :end_vcol (dec (+ (:start_vcol oap) @redo_VIsual_vcol)))]
+                                                    :else
+                                                        [win oap])
+                                                  ;; Correct oap.op_end.col and oap.op_start.col to be the
+                                                  ;; upper-left and lower-right corner of the block area.
+                                                  ;;
+                                                  ;; (Actually, this does convert column positions into character positions.)
+                                                  win (assoc-in win [:w_cursor :lnum] (:lnum (:op_end oap)))
+                                                  win (coladvance win, (:end_vcol oap))
+                                                  oap (assoc oap :op_end (:w_cursor win))
+                                                  win (assoc win :w_cursor (:op_start oap))
+                                                  win (coladvance win, (:start_vcol oap))
+                                                  oap (assoc oap :op_start (:w_cursor win))]
+                                                [win oap])
+                                            [win oap])
+                                      oap (if (not @redo_VIsual_busy)
+                                            ;; Prepare to reselect and redo Visual:
+                                            ;; this is based on the size of the Visual text.
+                                            (let [_ (reset! resel_VIsual_mode @VIsual_mode)
+                                                  oap (if (== (:w_curswant win) MAXCOL)
+                                                        (do (reset! resel_VIsual_vcol MAXCOL)
+                                                            oap)
+                                                        (let [oap (if (!= @VIsual_mode Ctrl_V)
+                                                                    (assoc oap :end_vcol
+                                                                        (let [__ (atom (int (:end_vcol oap)))] (getvvcol win, (:op_end oap), nil, nil, __) @__))
+                                                                    oap
+                                                                )]
+                                                            (if (or (== @VIsual_mode Ctrl_V) (<= (:line_count oap) 1))
+                                                                (let [oap (if (!= @VIsual_mode Ctrl_V)
+                                                                            (assoc oap :start_vcol
+                                                                                (let [__ (atom (int (:start_vcol oap)))] (getvvcol win, (:op_start oap), __, nil, nil) @__))
+                                                                            oap
+                                                                        )]
+                                                                    (reset! resel_VIsual_vcol (inc (- (:end_vcol oap) (:start_vcol oap))))
+                                                                    oap)
+                                                                (do (reset! resel_VIsual_vcol (:end_vcol oap))
+                                                                    oap)
+                                                            ))
+                                                    )]
+                                                (reset! resel_VIsual_lmax (:line_count oap))
+                                                oap)
+                                            oap
+                                        )]
+                                    ;; can't redo yank (unless 'y' is in 'cpoptions') and ":"
+                                    (let-when [t (:op_type oap)] (and (or (some? (vim-strbyte @p_cpo, CPO_YANK)) (!= t OP_YANK)) (!= t OP_COLON) (zero? (:motion_force oap)))
+                                        ;; Prepare for redoing.
+                                        ;; Only use the nchar field for "r", otherwise it might be the second char of the operator.
+                                        (cond (and (== (:cmdchar cap) (byte \g)) (any == (:nchar cap) (byte \n) (byte \N)))
+                                            (prep-redo (:regname oap), (:count0 cap), (get-op-char t), (get-extra-op-char t), (:motion_force oap), (:cmdchar cap), (:nchar cap))
+                                        (!= (:cmdchar cap) (byte \:))
+                                            (prep-redo (:regname oap), 0, NUL, (byte \v), (get-op-char t), (get-extra-op-char t), (if (== t OP_REPLACE) (:nchar cap) NUL))
+                                        )
+                                        (when (not @redo_VIsual_busy)
+                                            (reset! redo_VIsual_mode @resel_VIsual_mode)
+                                            (reset! redo_VIsual_vcol @resel_VIsual_vcol)
+                                            (reset! redo_VIsual_lmax @resel_VIsual_lmax)
+                                            (reset! redo_VIsual_count (:count0 cap))
+                                        ))
+                                    ;; oap.inclusive defaults to true.
+                                    ;; If oap.op_end is on a NUL (empty line) oap.inclusive becomes false.
+                                    ;; This makes "d}P" and "v}dP" work the same.
+                                    (let [oap (if (or (== (:motion_force oap) NUL) (== (:motion_type oap) MLINE)) (assoc oap :inclusive true) oap)
+                                          oap (if (== @VIsual_mode (byte \V))
+                                                (assoc oap :motion_type MLINE)
+                                                (let [oap (assoc oap :motion_type MCHAR)]
+                                                    (if (and (!= @VIsual_mode Ctrl_V) (eos? (ml-get-pos (:op_end oap))) (or include_eol? (== @virtual_op FALSE)))
+                                                        ;; Try to include the newline, unless it's an operator that works on lines only.
+                                                        (cond (or (at? @p_sel (byte \o)) (op-on-lines (:op_type oap)))
+                                                            (assoc oap :inclusive false)
+                                                        (< (:lnum (:op_end oap)) (line-count @curbuf))
+                                                            (let [oap (update oap :op_end assoc :lnum (inc (:lnum (:op_end oap))) :col 0 :coladd 0)
+                                                                  oap (update oap :line_count inc)]
+                                                                (assoc oap :inclusive false))
+                                                        :else
+                                                            ;; Cannot move below the last line, make the op inclusive
+                                                            ;; to tell the operation to include the line break.
+                                                            (assoc oap :inclusive true))
+                                                        oap
+                                                    ))
+                                            )]
+                                        (reset! redo_VIsual_busy false)
+                                        ;; Switch Visual off now, so screen updating does not show inverted text when the screen is redrawn.
+                                        ;; With OP_YANK and sometimes with OP_COLON and OP_FILTER there is no screen redraw,
+                                        ;; so it is done here to remove the inverted part.
+                                        (reset! VIsual_active false)
+                                        (if @mode_displayed
+                                            (reset! clear_cmdline true) ;; unshow visual mode later
+                                            (clear-showcmd win))
+                                        (when (and (any == (:op_type oap) OP_YANK OP_COLON OP_FUNCTION OP_FILTER) (== (:motion_force oap) NUL))
+                                            (reset! (:wo_lbr (:w_options win)) o'lbr) ;; make sure redrawing is correct
+                                            (redraw-curbuf-later INVERTED))
+                                        [win oap]
+                                    ))
+                                [win oap])
+                          ;; Include the trailing byte of a multi-byte char.
+                          oap (if (:inclusive oap)
+                                (let [#_int l (us-ptr2len-cc (ml-get-pos (:op_end oap)))]
+                                    (if (< 1 l) (update-in oap [:op_end :col] + (dec l)) oap))
+                                oap)
+                          win (assoc win :w_set_curswant true)
+                          ;; oap.empty is set when start and end are the same.
+                          ;; The inclusive flag affects this too, unless yanking and the end is on a NUL.
+                          oap (assoc oap :empty (and (== (:motion_type oap) MCHAR)
+                                                     (or (not (:inclusive oap)) (and (== (:op_type oap) OP_YANK) (== (gchar-pos (:op_end oap)) NUL)))
+                                                     (eqpos (:op_start oap), (:op_end oap))
+                                                     (not (and (!= @virtual_op FALSE) (!= (:coladd (:op_start oap)) (:coladd (:op_end oap)))))))
+                          ;; For delete, change and yank, it's an error to operate on an
+                          ;; empty region, when 'E' included in 'cpoptions' (Vi compatible).
+                          empty_region? (and (:empty oap) (some? (vim-strbyte @p_cpo, CPO_EMPTYREGION)))
+                          ;; Force a redraw when operating on an empty Visual region,
+                          ;; when 'modifiable' is off or creating a fold.
+                          _ (when (and (:is_VIsual oap) (:empty oap))
+                                (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                (redraw-curbuf-later INVERTED))
+                          ;; If the end of an operator is in column one while oap.motion_type
+                          ;; is MCHAR and oap.inclusive is false, we put op_end after the last
+                          ;; character in the previous line.  If op_start is on or before the
+                          ;; first non-blank in the line, the operator becomes linewise
+                          ;; (strange, but that's the way vi does it).
+                          oap (if (and (== (:motion_type oap) MCHAR)
+                                     (not (:inclusive oap))
+                                     (non-flag? (:retval cap) CA_NO_ADJ_OP_END)
+                                     (== (:col (:op_end oap)) 0)
+                                     (or (not (:is_VIsual oap)) (at? @p_sel (byte \o)))
+                                     (not (:block_mode oap))
+                                     (< 1 (:line_count oap))
+                                )
+                                (let [oap (assoc oap :end_adjusted true) ;; remember that we did this
+                                      oap (update oap :line_count dec)
+                                      oap (update-in oap [:op_end :lnum] dec)]
+                                    (if (inindent win, 0)
+                                        (assoc oap :motion_type MLINE)
+                                        (let [oap (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap)))))]
+                                            (if (< 0 (:col (:op_end oap)))
+                                                (-> oap (update-in [:op_end :col] dec) (assoc :inclusive true))
+                                                oap
+                                            ))
+                                    ))
+                                (assoc oap :end_adjusted false))
+                          [win cap oap]
+                            (condp ==? (:op_type oap)
 
-                (reset! redo_VIsual_busy false)
+                               [OP_LSHIFT OP_RSHIFT]
+                                    [(op-shift win, oap, true, (if (:is_VIsual oap) (:count1 cap) 1)) cap oap]
 
-                ;; Switch Visual off now, so screen updating does
-                ;; not show inverted text when the screen is redrawn.
-                ;; With OP_YANK and sometimes with OP_COLON and OP_FILTER there is
-                ;; no screen redraw, so it is done here to remove the inverted part.
+                               [OP_JOIN_NS OP_JOIN]
+                                    (let [oap (update oap :line_count max 2)
+                                          win (if (<= (dec (+ (:lnum (:w_cursor win)) (:line_count oap))) (line-count @curbuf))
+                                                (do-join win, (:line_count oap), (== (:op_type oap) OP_JOIN), true, true)
+                                                (do (beep-flush) win)
+                                            )]
+                                        [win cap oap])
 
-                (reset! VIsual_active false)
-                (if @mode_displayed
-                    (reset! clear_cmdline true)   ;; unshow visual mode later
-                    (clear-showcmd @curwin))
-                (when (and (any == (:op_type oap) OP_YANK OP_COLON OP_FUNCTION OP_FILTER) (== (:motion_force oap) NUL))
-                    ;; make sure redrawing is correct
-                    (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                    (redraw-curbuf-later INVERTED)
-                )
-            )
+                                OP_DELETE
+                                    (do (reset! VIsual_reselect false) ;; don't reselect now
+                                        (if empty_region?
+                                            (do (vim-beep) (cancel-redo))
+                                            (op-delete oap))
+                                        [win cap oap])
 
-            ;; Include the trailing byte of a multi-byte char.
-            (when (:inclusive oap)
-                ((ß int l =) (us-ptr2len-cc (ml-get-pos (:op_end oap))))
-                (if (< 1 l)
-                    ((ß oap =) (update-in oap [:op_end :col] + (dec l)))
-                )
-            )
-            (swap! curwin assoc :w_set_curswant true)
+                                OP_YANK
+                                    (do (if empty_region?
+                                            (do (vim-beep) (cancel-redo))
+                                            (do
+                                                (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                (op-yank oap, false, true)
+                                            ))
+                                        [(check-cursor-col win) cap oap])
 
-            ;; oap.empty is set when start and end are the same.
-            ;; The inclusive flag affects this too, unless yanking and the end is on a NUL.
+                                OP_CHANGE
+                                    (let [_ (reset! VIsual_reselect false) ;; don't reselect now
+                                          cap (if empty_region?
+                                                (do (vim-beep) (cancel-redo) cap)
+                                                ;; This is a new edit command, not a restart.
+                                                ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
+                                                ;; But do this only once and not when typed and 'insertmode' isn't set.
+                                                (let [o'restart_edit (if (or @p_im (not @keyTyped)) @restart_edit 0) _ (reset! restart_edit 0)
+                                                      ;; Restore linebreak, so that when the user edits, it looks as before.
+                                                      _ (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                      ;; Reset "finish_op" now, don't want it set inside edit().
+                                                      _ (reset! finish_op false)
+                                                      cap (if (op-change oap) ;; will call edit()
+                                                            (update cap :retval | CA_COMMAND_BUSY)
+                                                            cap
+                                                        )]
+                                                    (when (zero? @restart_edit)
+                                                        (reset! restart_edit o'restart_edit))
+                                                    cap)
+                                            )]
+                                        [win cap oap])
 
-            ((ß oap =) (assoc oap :empty (and (== (:motion_type oap) MCHAR) (or (not (:inclusive oap)) (and (== (:op_type oap) OP_YANK) (== (gchar-pos (:op_end oap)) NUL))) (eqpos (:op_start oap), (:op_end oap)) (not (and (!= @virtual_op FALSE) (!= (:coladd (:op_start oap)) (:coladd (:op_end oap))))))))
+                                OP_INDENT
+                                    (do (§ (op-reindent oap, (ß get_c_indent)))
+                                        [win cap oap])
 
-            ;; For delete, change and yank, it's an error to operate on an
-            ;; empty region, when 'E' included in 'cpoptions' (Vi compatible).
+                                OP_FILTER
+                                    (do (if (some? (vim-strbyte @p_cpo, CPO_FILTER))
+                                            (append-redo (u8 "!\r"))    ;; use any last used !cmd
+                                            (reset! bangredo true))     ;; do_bang() will put cmd in redo buffer
+                                        (op-colon oap)
+                                        [win cap oap])
 
-            ((ß boolean empty_region_error =) (and (:empty oap) (some? (vim-strbyte @p_cpo, CPO_EMPTYREGION))))
+                                OP_COLON
+                                    (do (op-colon oap)
+                                        [win cap oap])
 
-            ;; Force a redraw when operating on an empty Visual region,
-            ;; when 'modifiable' is off or creating a fold.
-            (when (and (:is_VIsual oap) (:empty oap))
-                (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                (redraw-curbuf-later INVERTED)
-            )
+                               [OP_TILDE OP_UPPER OP_LOWER OP_ROT13]
+                                    (let [oap (if empty_region?
+                                                (do (vim-beep) (cancel-redo) oap)
+                                                (op-tilde oap)
+                                            )]
+                                        [(check-cursor-col win) cap oap])
 
-            ;; If the end of an operator is in column one while oap.motion_type
-            ;; is MCHAR and oap.inclusive is false, we put op_end after the last
-            ;; character in the previous line.  If op_start is on or before the
-            ;; first non-blank in the line, the operator becomes linewise
-            ;; (strange, but that's the way vi does it).
+                                OP_FORMAT
+                                    (do (§ op-format oap, false)  ;; use internal function
+                                        [win cap oap])
 
-            (cond (and (== (:motion_type oap) MCHAR) (not (:inclusive oap)) (non-flag? (:retval cap) CA_NO_ADJ_OP_END) (== (:col (:op_end oap)) 0) (or (not (:is_VIsual oap)) (at? @p_sel (byte \o))) (not (:block_mode oap)) (< 1 (:line_count oap)))
-            (do
-                ((ß oap =) (assoc oap :end_adjusted true))    ;; remember that we did this
-                ((ß oap =) (update oap :line_count dec))
-                ((ß oap =) (update-in oap [:op_end :lnum] dec))
-                (cond (inindent @curwin, 0)
-                (do
-                    ((ß oap =) (assoc oap :motion_type MLINE))
-                )
-                :else
-                (do
-                    ((ß oap =) (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap))))))
-                    (when (< 0 (:col (:op_end oap)))
-                        ((ß oap =) (update-in oap [:op_end :col] dec))
-                        ((ß oap =) (assoc oap :inclusive true))
-                    )
-                ))
-            )
-            :else
-            (do
-                ((ß oap =) (assoc oap :end_adjusted false))
-            ))
+                                OP_FORMAT2
+                                    (do (§ op-format oap, true)   ;; use internal function
+                                        [win cap oap])
 
-            (condp ==? (:op_type oap)
-               [OP_LSHIFT OP_RSHIFT]
-                (do
-                    (swap! curwin op-shift oap, true, (if (:is_VIsual oap) (int (:count1 cap)) 1))
-                    (ß BREAK)
-                )
+                                OP_FUNCTION
+                                    (do (op-function oap) ;; call 'operatorfunc'
+                                        [win cap oap])
 
-               [OP_JOIN_NS OP_JOIN]
-                (do
-                    ((ß oap =) (update oap :line_count max 2))
-                    (if (<= (dec (+ (:lnum (:w_cursor @curwin)) (:line_count oap))) (line-count @curbuf))
-                        (swap! curwin do-join (:line_count oap), (== (:op_type oap) OP_JOIN), true, true)
-                        (beep-flush)
-                    )
-                    (ß BREAK)
-                )
+                               [OP_INSERT OP_APPEND]
+                                    (do (reset! VIsual_reselect false) ;; don't reselect now
+                                        (if empty_region?
+                                            (do (vim-beep) (cancel-redo))
+                                            ;; This is a new edit command, not a restart.
+                                            ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
+                                            ;; But do this only once.
+                                            (let [o'restart_edit @restart_edit _ (reset! restart_edit 0)]
+                                                ;; Restore linebreak, so that when the user edits, it looks as before.
+                                                (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                (op-insert oap, (:count1 cap))
+                                                ;; Reset linebreak, so that formatting works correctly.
+                                                (reset! (:wo_lbr (:w_options win)) false)
+                                                (when (zero? @restart_edit)
+                                                    (reset! restart_edit o'restart_edit))
+                                            ))
+                                        [win cap oap])
 
-                OP_DELETE
-                (do
-                    (reset! VIsual_reselect false)        ;; don't reselect now
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        (op-delete oap)
+                                OP_REPLACE
+                                    (do (reset! VIsual_reselect false) ;; don't reselect now
+                                        (if empty_region?
+                                            (do (vim-beep) (cancel-redo))
+                                            (do ;; Restore linebreak, so that when the user edits, it looks as before.
+                                                (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                (op-replace oap, (:nchar cap))
+                                            ))
+                                        [win cap oap])
+
+                                (do (clearopbeep oap) [win cap oap])
+                            )]
+                        (reset! virtual_op MAYBE)
+                        ;; If 'sol' not set, go back to old column for some commands.
+                        (let [win (if (and (not @p_sol) (== (:motion_type oap) MLINE) (not (:end_adjusted oap)) (any == (:op_type oap) OP_LSHIFT OP_RSHIFT OP_DELETE))
+                                    (let [_ (reset! (:wo_lbr (:w_options win)) false)]
+                                        (-> win
+                                            (assoc :w_curswant o'col)
+                                            (coladvance o'col)
+                                        ))
+                                    win)
+                              oap (assoc oap :block_mode false)]
+                            (clearop oap)
+                            [win cap oap])
                     ))
-                    (ß BREAK)
-                )
-
-                OP_YANK
-                (do
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                        (op-yank oap, false, true)
-                    ))
-                    (swap! curwin check-cursor-col)
-                    (ß BREAK)
-                )
-
-                OP_CHANGE
-                (do
-                    (reset! VIsual_reselect false)        ;; don't reselect now
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        ;; This is a new edit command, not a restart.
-                        ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
-                        ;; But do this only once and not when typed and 'insertmode' isn't set.
-                        ((ß int restart_edit_save =) (if (or @p_im (not @keyTyped)) @restart_edit 0))
-                        (reset! restart_edit 0)
-                        ;; Restore linebreak, so that when the user edits it looks as before.
-                        (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                        ;; Reset finish_op now, don't want it set inside edit().
-                        (reset! finish_op false)
-                        (if (op-change oap)         ;; will call edit()
-                            ((ß cap =) (update cap :retval | CA_COMMAND_BUSY))
-                        )
-                        (if (zero? @restart_edit)
-                            (reset! restart_edit restart_edit_save))
-                    ))
-                    (ß BREAK)
-                )
-
-                OP_INDENT
-                (do
-                    (op-reindent oap, (ß get_c_indent))
-                    (ß BREAK)
-                )
-
-                OP_FILTER
-                (do
-                    (if (some? (vim-strbyte @p_cpo, CPO_FILTER))
-                        (append-redo (u8 "!\r"))    ;; use any last used !cmd
-                        (reset! bangredo true))            ;; do_bang() will put cmd in redo buffer
-                    (ß FALLTHROUGH)
-                )
-
-                OP_COLON
-                (do
-                    (op-colon oap)
-                    (ß BREAK)
-                )
-
-               [OP_TILDE OP_UPPER OP_LOWER OP_ROT13]
-                (do
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        ((ß oap =) (op-tilde oap))
-                    ))
-                    (swap! curwin check-cursor-col)
-                    (ß BREAK)
-                )
-
-                OP_FORMAT
-                (do
-;                   op_format(oap, false);              ;; use internal function
-                    (ß BREAK)
-                )
-
-                OP_FORMAT2
-                (do
-;                   op_format(oap, true);               ;; use internal function
-                    (ß BREAK)
-                )
-
-                OP_FUNCTION
-                (do
-                    (op-function oap)                   ;; call 'operatorfunc'
-                    (ß BREAK)
-                )
-
-               [OP_INSERT OP_APPEND]
-                (do
-                    (reset! VIsual_reselect false)           ;; don't reselect now
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        ;; This is a new edit command, not a restart.
-                        ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
-                        ;; But do this only once.
-                        ((ß int restart_edit_save =) @restart_edit)
-                        (reset! restart_edit 0)
-                        ;; Restore linebreak, so that when the user edits it looks as before.
-                        (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                        (op-insert oap, (:count1 cap))
-                        ;; Reset linebreak, so that formatting works correctly.
-                        (reset! (:wo_lbr (:w_options @curwin)) false)
-
-                        (if (zero? @restart_edit)
-                            (reset! restart_edit restart_edit_save))
-                    ))
-                    (ß BREAK)
-                )
-
-                OP_REPLACE
-                (do
-                    (reset! VIsual_reselect false)    ;; don't reselect now
-                    (cond empty_region_error
-                    (do
-                        (vim-beep)
-                        (cancel-redo)
-                    )
-                    :else
-                    (do
-                        ;; Restore linebreak, so that when the user edits it looks as before.
-                        (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-                        (op-replace oap, (:nchar cap))
-                    ))
-                    (ß BREAK)
-                )
-
-                (do
-                    (clearopbeep oap)
-                    (ß BREAK)
-                )
-            )
-
-            (reset! virtual_op MAYBE)
-
-            ;; If 'sol' not set, go back to old column for some commands.
-            (when (and (not @p_sol) (== (:motion_type oap) MLINE) (not (:end_adjusted oap)) (any == (:op_type oap) OP_LSHIFT OP_RSHIFT OP_DELETE))
-                (reset! (:wo_lbr (:w_options @curwin)) false)
-                (swap! curwin assoc :w_curswant old_col)
-                (swap! curwin coladvance old_col)
-            )
-
-            ((ß oap =) (assoc oap :block_mode false))
-            (clearop oap)
-        )
-
-        (reset! (:wo_lbr (:w_options @curwin)) o'lbr)
-        nil
+            )]
+        (reset! (:wo_lbr (:w_options win)) o'lbr)
+        (do (reset! curwin win) (assoc cap :oap oap))
     ))
 
 ;; Handle filter operator and visual mode ":".
@@ -11878,66 +11731,48 @@
 ;; Handle word motion commands "e", "E", "w" and "W".
 ;; cap.arg is TRUE for "E" and "W".
 
-(defn- #_cmdarg_C nv-wordcmd [#_cmdarg_C cap]
-    (§
-        ((ß boolean word_end =) (any == (:cmdchar cap) (byte \e) (byte \E)))
-        ((ß cap =) (assoc-in cap [:oap :inclusive] word_end)) ;; set inclusive for the "E" and "e" command
-
-        ((ß boolean flag =) false)
-
-        ;; "cw" and "cW" are a special case.
-
-        (when (and (not word_end) (== (:op_type (:oap cap)) OP_CHANGE))
-            ((ß int c =) (gchar-cursor @curwin))
-            (when (!= c NUL)                   ;; not an empty line
-                (cond (vim-iswhite c)
-                (do
-                    ;; Reproduce a funny Vi behaviour: "cw" on a blank only
-                    ;; changes one character, not all blanks until the start of
-                    ;; the next word.  Only do this when the 'w' flag is included
-                    ;; in 'cpoptions'.
-
-                    (when (and (== (:count1 cap) 1) (some? (vim-strbyte @p_cpo, CPO_CW)))
-                        ((ß cap =) (assoc-in cap [:oap :inclusive] true))
-                        ((ß cap =) (assoc-in cap [:oap :motion_type] MCHAR))
-                        ((ß RETURN) nil)
-                    )
-                )
-                :else
-                (do
-                    ;; This is a little strange.  To match what the real Vi does,
+(defn- #_cmdarg_C nv-wordcmd [#_cmdarg_C cap]
+    (let-when [win @curwin end? (any == (:cmdchar cap) (byte \e) (byte \E))
+          ;; set inclusive for the "E" and "e" command
+          cap (update cap :oap assoc :motion_type MCHAR :inclusive end?)
+          ;; "cw" and "cW" are special
+          [cap [end? #_boolean flag :as _]]
+            (let-when [__ [cap [end? false]]] (and (not end?) (== (:op_type (:oap cap)) OP_CHANGE)) => __
+                (let-when [c (gchar-cursor win)] (!= c NUL) => __                   ;; empty line
+                    ;; This is a little strange:  To match what the real Vi does,
                     ;; we effectively map 'cw' to 'ce', and 'cW' to 'cE', provided
                     ;; that we are not on a space or a TAB.  This seems impolite
                     ;; at first, but it's really more what we mean when we say 'cw'.
-                    ;; Another strangeness: When standing on the end of a word
-                    ;; "ce" will change until the end of the next word, but "cw"
-                    ;; will change only one character! This is done by setting flag.
+                    ;;
+                    ;; Another strangeness:  When standing on the end of a word,
+                    ;; "ce" will change until the end of the next word, but "cw" will
+                    ;; change only one character!  This is done by setting "flag".
+                    (cond (not (vim-iswhite c))
+                        [(assoc-in cap [:oap :inclusive] true) [true true]]
+                    ;; Reproduce a funny Vi behaviour:  "cw" on a blank only changes
+                    ;; one character, not all blanks until the start of the next word.
+                    ;; Only do this when the 'w' flag is included in 'cpoptions'.
+                    (and (== (:count1 cap) 1) (some? (vim-strbyte @p_cpo, CPO_CW)))
+                        [(assoc-in cap [:oap :inclusive] true) nil]
+                    :else
+                        __
+                    ))
+            )] (some? _) => (do (reset! curwin win) cap)
 
-                    ((ß cap =) (assoc-in cap [:oap :inclusive] true))
-                    ((ß word_end =) true)
-                    ((ß flag =) true)
-                ))
-            )
-        )
-
-        ((ß pos_C startpos =) (:w_cursor @curwin))
-
-        ((ß cap =) (assoc-in cap [:oap :motion_type] MCHAR))
-        (swap! curwin assoc :w_set_curswant true)
-        ((ß [@curwin #_boolean b] =) (if word_end
-            (end-word? @curwin, (:count1 cap), (non-zero? (:arg cap)), flag, false)
-            (fwd-word? @curwin, (:count1 cap), (non-zero? (:arg cap)), (!= (:op_type (:oap cap)) OP_NOP))
-        ))
-
-        ;; Don't leave the cursor on the NUL past the end of line.
-        ;; Unless we didn't move it forward.
-        (when (ltpos startpos, (:w_cursor @curwin))
-            ((ß [@curwin cap] =) (adjust-cursor @curwin, cap)))
-
-        (if (and (not b) (== (:op_type (:oap cap)) OP_NOP))
-            (clearopbeep (:oap cap))
-            ((ß [@curwin cap] =) (adjust-for-sel @curwin, cap)))
-        nil
+        (let [o'cursor (:w_cursor win) win (assoc win :w_set_curswant true)
+              [win ?]
+                (if end?
+                    (end-word? win, (:count1 cap), (non-zero? (:arg cap)), flag, false)
+                    (fwd-word? win, (:count1 cap), (non-zero? (:arg cap)), (!= (:op_type (:oap cap)) OP_NOP)))
+              ;; Don't leave the cursor on the NUL past the end of line.
+              ;; Unless we didn't move it forward.
+              [win cap] (if (ltpos o'cursor, (:w_cursor win)) (adjust-cursor win, cap) [win cap])
+              [win cap]
+                (if (and (not ?) (== (:op_type (:oap cap)) OP_NOP))
+                    (do (clearopbeep (:oap cap)) [win cap])
+                    (adjust-for-sel win, cap)
+                )]
+            (do (reset! curwin win) cap))
     ))
 
 ;; Used after a movement command: if the cursor ends up on the NUL after the end of the line,
