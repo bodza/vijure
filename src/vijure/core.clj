@@ -44577,177 +44577,66 @@
 ;;      %B       BCD, no output.
 ;;      %D       reverse coding (x-2*(x%16)), no output.
 
-(defn- #_Bytes _tgoto [#_Bytes cm, #_int col, #_int row]
-    ;; cm: string, from termcap
-    ;; col: x position
-    ;; row: y position
-    (§
-        (if (nil? cm)
-            ((ß RETURN) (u8 "OOPS"))                          ;; kludge, but standard
+(defn- #_Bytes _tgoto [#_Bytes cm, #_int col, #_int row] ;; cm: string, from termcap ;; col: x position ;; row: y position
+    (if (some? cm)
+        (let-when [a'm (atom {#_boolean :reverse false #_boolean :up false #_boolean :bc false}) ;; reverse flag ;; add upline ;; add backup
+                   #_Bytes p
+                    (loop-when [cm cm col col row row p tgoto_buffer] (non-eos? cm) => (eos! p)
+                        (let-when [#_byte b (.at cm 0) cm (.plus cm 1)] (== b (byte \%)) => (recur cm col row (-> p (.be 0, b) (.plus 1)))  ;; normal char
+                            (let [upbc- (fn [col row] (if (any == row TAB (byte \newline) (byte \u0004) (byte \u0000))              ;; these are chars that UNIX hates
+                                                        (let [row (inc row)]                                                        ;; so go to next pos
+                                                            (swap! a'm assoc (if (== (:reverse @a'm) (== row col)) :up :bc) true)   ;; and mark UP or BC
+                                                            row)
+                                                        row))
+                                  b (.at cm 0) cm (.plus cm 1)] ;; % escape
+                                (condp == b
+                                    (byte \d) (recur cm col col (_addfmt p, (u8 "%d"), row))                                        ;; decimal
+                                    (byte \2) (recur cm col col (_addfmt p, (u8 "%02d"), row))                                      ;; 2 digit decimal
+                                    (byte \3) (recur cm col col (_addfmt p, (u8 "%03d"), row))                                      ;; 3 digit decimal
+
+                                    (byte \>)                                                                                       ;; %>xy: if >x, add y
+                                        (let [#_byte x (.at cm 0) cm (.plus cm 1) #_byte y (.at cm 0) cm (.plus cm 1)]
+                                            (recur cm (if (< x col) (+ col y) col) (if (< x row) (+ row y) row) p))
+
+                                    (byte \+)                                                                                       ;; %+c: add c
+                                        (let [row (+ row (.at cm 0)) cm (.plus cm 1)]
+                                            (recur cm col col (-> p (.be 0, (upbc- col row)) (.plus 1))))                           ;; %% fallthrough
+
+                                    (byte \.)                                                                                       ;; print x/y
+                                        (recur cm col col (-> p (.be 0, (upbc- col row)) (.plus 1)))
+
+                                    (byte \r)                                                                                       ;; r: reverse
+                                        (let [#_int _ row row col col _]
+                                            (swap! a'm assoc :reverse true)
+                                            (recur cm col row p))
+
+                                    (byte \i) (recur cm (inc col) (inc row) p)                                                      ;; increment (1-origin screen)
+                                    (byte \%) (recur cm col row (-> p (.be 0, (byte \%)) (.plus 1)))                                ;; %%=% literally
+                                    (byte \n) (recur cm (bit-xor col 0140) (bit-xor row 0140) p)                                    ;; magic DM2500 code
+                                    (byte \B) (recur cm (+ (<< (/ col 10) 4) (% col 10)) (+ (<< (/ row 10) 4) (% row 10)) p)        ;; bcd encoding
+                                    (byte \D) (recur cm (- col (* 2 (& col 15))) (- row (* 2 (& row 15))) p)                        ;; magic Delta Data code
+
+                                    (byte \p)                                                                                       ;; so, what?
+                                        (let [#_byte d (.at cm 0) cm (.plus cm 1)]
+                                            (recur-if (any == d (byte \1) (byte \2)) [cm col row p] => nil))                        ;; ignore %p1 and %p2
+
+                                    nil ;; unknown escape
+                                ))
+                        ))] (some? p) => (u8 "OOPS")
+            (when (:up @a'm)                                  ;; add upline
+                (when (some? tgoto_UP)
+                    (let [#_Bytes s (loop-when-recur [s tgoto_UP] (or (asc-isdigit (.at s 0)) (at? s (byte \.))) [(.plus s 1)] => s)]
+                        (loop-when-recur [p p s (if (at? s (byte \*)) (.plus s 1) s)] (non-eos? s) [(-> p (.be 0, (.at s 0)) (.plus 1)) (.plus s 1)] => (eos! p)))
+                ))
+            (when (:bc @a'm)                                 ;; add backspace
+                (if (some? tgoto_BC)
+                    (let [#_Bytes s (loop-when-recur [s tgoto_BC] (or (asc-isdigit (.at s 0)) (at? s (byte \.))) [(.plus s 1)] => s)]
+                        (loop-when-recur [p p s (if (at? s (byte \*)) (.plus s 1) s)] (non-eos? s) [(-> p (.be 0, (.at s 0)) (.plus 1)) (.plus s 1)] => (eos! p)))
+                    (-> p (.be 0, (byte \backspace)) (.plus 1) eos!)
+                ))
+            tgoto_buffer
         )
-
-        ((ß boolean reverse =) false)                    ;; reverse flag
-        ((ß boolean addup =) false)                      ;; add upline
-        ((ß boolean addbak =) false)                     ;; add backup
-
-        ((ß Bytes p =) tgoto_buffer)                    ;; pointer in returned string
-
-        (loop-when [] (non-eos? cm)
-            ((ß byte b =) (.at ((ß cm =) (.plus cm 1)) -1))
-            (when (!= b (byte \%))                           ;; normal char
-                (.be ((ß p =) (.plus p 1)) -1, b)
-                (ß CONTINUE)
-            )
-
-            ((ß b =) (.at ((ß cm =) (.plus cm 1)) -1))
-            ((ß SWITCH) b                              ;; % escape
-                ((ß CASE) (byte \d))                           ;; decimal
-                (do
-                    ((ß p =) (_addfmt p, (u8 "%d"), row))
-                    ((ß row =) col)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \2))                           ;; 2 digit decimal
-                (do
-                    ((ß p =) (_addfmt p, (u8 "%02d"), row))
-                    ((ß row =) col)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \3))                           ;; 3 digit decimal
-                (do
-                    ((ß p =) (_addfmt p, (u8 "%03d"), row))
-                    ((ß row =) col)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \>))                           ;; %>xy: if >x, add y
-                (do
-                    ((ß byte x =) (ß (cm = cm.plus(1)).at(-1), y = (cm = cm.plus(1)).at(-1)))
-                    ((ß col =) (if (> col x) (+ col y) col))
-                    ((ß row =) (if (> row x) (+ row y) row))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \+))                           ;; %+c: add c
-                (do
-                    ((ß row =) (+ row (.at ((ß cm =) (.plus cm 1)) -1)))
-                )
-
-                ((ß CASE) (byte \.))                           ;; print x/y
-                (do
-                                                          ;; these are chars that UNIX hates
-                    (when (any == row TAB (byte \newline) (byte \u0004) (byte \u0000))
-                        ((ß row =) (inc row))                      ;; so go to next pos
-                        (if (== reverse (== row col))
-                            ((ß addup =) true)           ;; and mark UP
-                            ((ß addbak =) true)          ;; or BC
-                        )
-                    )
-                    (.be ((ß p =) (.plus p 1)) -1, row)
-                    ((ß row =) col)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \r))                           ;; r: reverse
-                (do
-                    ((ß int r =) row)
-                    ((ß row =) col)
-                    ((ß col =) r)
-                    ((ß reverse =) true)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \i))                           ;; increment (1-origin screen)
-                (do
-                    ((ß col =) (inc col))
-                    ((ß row =) (inc row))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \%))                           ;; %%=% literally
-                (do
-                    (.be ((ß p =) (.plus p 1)) -1, (byte \%))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \n))                           ;; magic DM2500 code
-                (do
-                    ((ß row =) (bit-xor row 0140))
-                    ((ß col =) (bit-xor col 0140))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \B))                           ;; bcd encoding
-                (do
-                    ((ß row =) (+ (<< (/ row 10) 4) (% row 10)))
-                    ((ß col =) (+ (<< (/ col 10) 4) (% col 10)))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \D))                           ;; magic Delta Data code
-                (do
-                    ((ß row =) (- row (* 2 (& row 15))))
-                    ((ß col =) (- col (* 2 (& col 15))))
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (byte \p))                           ;; so, what?
-                (do
-                    ((ß byte d =) (.at ((ß cm =) (.plus cm 1)) -1))
-                    (if (any == d (byte \1) (byte \2))       ;; ignore %p1 and %p2
-                        (ß BREAK)
-                    )
-                    (ß FALLTHROUGH)
-                )
-
-                (ß DEFAULT)                            ;; unknown escape
-                (do
-                    ((ß RETURN) (u8 "OOPS"))
-                )
-            )
-            (recur)
-        )
-
-        (when addup                                  ;; add upline
-            (when (some? tgoto_UP)
-                ((ß cm =) tgoto_UP)
-                (loop-when [] (or (asc-isdigit (.at cm 0)) (at? cm (byte \.)))
-                    ((ß cm =) (.plus cm 1))
-                    (recur)
-                )
-                ((ß cm =) (if (at? cm (byte \*)) (.plus cm 1) cm))
-                (loop-when [] (non-eos? cm)
-                    (.be ((ß p =) (.plus p 1)) -1, (.at ((ß cm =) (.plus cm 1)) -1))
-                    (recur)
-                )
-            )
-        )
-
-        (when addbak                                 ;; add backspace
-            (cond (some? tgoto_BC)
-            (do
-                ((ß cm =) tgoto_BC)
-                (loop-when [] (or (asc-isdigit (.at cm 0)) (at? cm (byte \.)))
-                    ((ß cm =) (.plus cm 1))
-                    (recur)
-                )
-                ((ß cm =) (if (at? cm (byte \*)) (.plus cm 1) cm))
-                (loop-when [] (non-eos? cm)
-                    (.be ((ß p =) (.plus p 1)) -1, (.at ((ß cm =) (.plus cm 1)) -1))
-                    (recur)
-                )
-            )
-            :else
-            (do
-                (.be ((ß p =) (.plus p 1)) -1, (byte \backspace))
-            ))
-        )
-
-        (eos! p)
-
-        tgoto_buffer
+        (u8 "OOPS")                          ;; kludge, but standard
     ))
 
 ;; Note: "s" may have padding information ahead of it, in the form of nnnTEXT or nnn*TEXT.
@@ -45674,105 +45563,65 @@
 (atom! int fib__restlen)
 
 (defn- #_void fill-input-buf [#_boolean exit_on_error]
-    (§
-        (if (is-input-buf-full)
-            ((ß RETURN) nil)
-        )
-
-        ;; Fill_input_buf() is only called when we really need a character.
+    (§ if-not (is-input-buf-full)
+        ;; fill_input_buf() is only called when we really need a character.
         ;; If we can't get any, but there is some in the buffer, just return.
         ;; If we can't get any, and there isn't any in the buffer, we give up and exit Vim.
-
-        (ß int unconverted)
-
-        (cond (some? @fib__rest)
-        (do
-            ;; Use remainder of previous call, starts with an invalid character
-            ;; that may become valid when reading more.
-            ((ß unconverted =) (min @fib__restlen (- INBUFLEN @inbufcount)))
-            (BCOPY inbuf, @inbufcount, @fib__rest, 0, unconverted)
-            (cond (== unconverted @fib__restlen)
-            (do
-                (reset! fib__rest nil)
-            )
-            :else
-            (do
-                (swap! fib__restlen - unconverted)
-                (BCOPY @fib__rest, 0, @fib__rest, unconverted, @fib__restlen)
-            ))
-            (swap! inbufcount + unconverted)
-        )
-        :else
-        (do
-            ((ß unconverted =) 0)
-        ))
-
-        ((ß int len =) 0)
-
-        (dotimes [_ 100]
-            ((ß len =) (int (.read libC @read_cmd_fd, (.plus inbuf @inbufcount), (- INBUFLEN @inbufcount))))
-
+        (let-when [#_int unconverted
+                (if (some? @fib__rest)
+                    ;; Use remainder of previous call, starts with an invalid character that may become valid when reading more.
+                    (let [unconverted (min @fib__restlen (- INBUFLEN @inbufcount))]
+                        (BCOPY inbuf, @inbufcount, @fib__rest, 0, unconverted)
+                        (if (== unconverted @fib__restlen)
+                            (reset! fib__rest nil)
+                            (do
+                                (swap! fib__restlen - unconverted)
+                                (BCOPY @fib__rest, 0, @fib__rest, unconverted, @fib__restlen)
+                            ))
+                        (swap! inbufcount + unconverted)
+                        unconverted)
+                    0)
+              #_int len
+                (loop-when [len 0 #_int i 0] (< i 100) => len
+                    (let-when [len (int (.read libC @read_cmd_fd, (.plus inbuf @inbufcount), (- INBUFLEN @inbufcount)))] (not (or (< 0 len) @got_int)) => len
+                        ;; If reading stdin results in an error, continue reading stderr.
+                        ;; This helps when using "foo | xargs vim".
+                        (when (and (not @did_read_something) (zero? (.isatty libc @read_cmd_fd)) (zero? @read_cmd_fd))
+                            (let [#_int m @cur_tmode]
+                                ;; We probably set the wrong file descriptor to raw mode.
+                                ;; Switch back to cooked mode, use another descriptor and set the mode to what it was.
+                                (settmode TMODE_COOK)
+                                ;; Use stderr for stdin, also works for shell commands.
+                                (.close libc 0)
+                                (.dup libc 2)
+                                (settmode m)
+                            ))
+                        (recur-if exit_on_error [len (inc i)] => nil)
+                    ))] (some? len)
             (if (or (< 0 len) @got_int)
-                (ß BREAK)
-            )
-
-            ;; If reading stdin results in an error, continue reading stderr.
-            ;; This helps when using "foo | xargs vim".
-
-            (when (and (not @did_read_something) (== (.isatty libc @read_cmd_fd) 0) (zero? @read_cmd_fd))
-                ((ß int m =) @cur_tmode)
-
-                ;; We probably set the wrong file descriptor to raw mode.
-                ;; Switch back to cooked mode, use another descriptor
-                ;; and set the mode to what it was.
-                (settmode TMODE_COOK)
-                ;; Use stderr for stdin, also works for shell commands.
-                (.close libc 0)
-                (.dup libc 2)
-                (settmode m)
-            )
-            (if (not exit_on_error)
-                ((ß RETURN) nil)
-            )
-        )
-
-        (when (and (<= len 0) (not @got_int))
-            (STRCPY @ioBuff, (u8 "Vim: Error reading input, exiting...\n"))
-            (preserve-exit)
-        )
-
-        (if (< 0 len)
-            (reset! did_read_something true))
-        (cond @got_int
-        (do
-            ;; Interrupted, pretend a CTRL-C was typed.
-            (.be inbuf 0, 3)
-            (reset! inbufcount 1)
-        )
-        :else
-        (do
-            ;; May perform conversion on the input characters.
-            ;; Include the unconverted rest of the previous call.
-            ;; If there is an incomplete char at the end it is kept for the next
-            ;; time, reading more bytes should make conversion possible.
-            ;; Don't do this in the unlikely event that the input buffer is too
-            ;; small ("fib__rest" still contains more bytes).
-
-            (loop-when [] (<= 0 ((ß len =) (dec len)))
-                ;; if a CTRL-C was typed, remove it from the buffer and set got_int
-
-                (when (at? inbuf @inbufcount Ctrl_C)
-                    ;; remove everything typed before the CTRL-C
-                    (BCOPY inbuf, 0, inbuf, @inbufcount, (inc len))
-                    (reset! inbufcount 0)
-                    (reset! got_int true)
-                )
-                (swap! inbufcount inc)
-                (recur)
-            )
+                (do
+                    (when (< 0 len)
+                        (reset! did_read_something true))
+                    (if @got_int ;; Interrupted, pretend a CTRL-C was typed.
+                        (do (.be inbuf 0, Ctrl_C) (reset! inbufcount 1))
+                        ;; May perform conversion on the input characters.  Include the unconverted rest of the previous call.
+                        ;; If there is an incomplete char at the end, it is kept for the next time: reading more bytes should make conversion possible.
+                        ;; Don't do this in the unlikely event that the input buffer is too small ("fib__rest" still contains more bytes).
+                        (loop-when-recur len (< 0 len) (dec len)
+                            ;; if a CTRL-C was typed, remove it from the buffer and set got_int
+                            (when (at? inbuf @inbufcount Ctrl_C)
+                                ;; remove everything typed before the CTRL-C
+                                (BCOPY inbuf, 0, inbuf, @inbufcount, len)
+                                (reset! inbufcount 0)
+                                (reset! got_int true))
+                            (swap! inbufcount inc))
+                    ))
+                (do
+                    (STRCPY @ioBuff, (u8 "Vim: Error reading input, exiting...\n"))
+                    (preserve-exit)
+                ))
         ))
-        nil
-    ))
+    nil)
 
 ;; May update the shape of the cursor.
 
@@ -49047,63 +48896,34 @@
     nil)
 
 (defn- #_void screen-stop-highlight []
-    (§
-        ((ß boolean do_ME =) false)                          ;; output T_ME code
-
-        (when (non-zero? @screen_attr)
-            (when (< HL_ALL @screen_attr)                   ;; special HL attr.
-                (ß attrentry_C aep)
-
-                (cond (< 1 @t_colors)
-                (do
-                    ;; Assume that t_me restores the original colors!
-
-                    ((ß aep =) (syn-cterm-attr2entry @screen_attr))
-                    ((ß do_ME =) (or (and (some? aep) (or (non-zero? (:ae_fg_color aep)) (non-zero? (:ae_bg_color aep)))) do_ME))
-                )
-                :else
-                (do
-                    ((ß aep =) (syn-term-attr2entry @screen_attr))
-                    (when (and (some? aep) (some? (:ae_esc_stop aep)))
-                        (if (zero? (STRCMP (:ae_esc_stop aep), @T_ME))
-                            ((ß do_ME =) true)
-                            (out-str (:ae_esc_stop aep)))
-                    )
-                ))
-                (reset! screen_attr (if (some? aep) (:ae_attr aep) 0)) ;; did ":syntax clear"
-            )
-
-            ;; Often all ending-codes are equal to T_ME.
-            ;; Avoid outputting the same sequence several times.
-
-            (when (flag? @screen_attr HL_STANDOUT)
-                (if (zero? (STRCMP @T_SE, @T_ME))
-                    ((ß do_ME =) true)
-                    (out-str @T_SE))
-            )
-            (when (flag? @screen_attr (| HL_UNDERLINE HL_UNDERCURL))
-                (if (zero? (STRCMP @T_UE, @T_ME))
-                    ((ß do_ME =) true)
-                    (out-str @T_UE))
-            )
-            (when (flag? @screen_attr HL_ITALIC)
-                (if (zero? (STRCMP @T_CZR, @T_ME))
-                    ((ß do_ME =) true)
-                    (out-str @T_CZR))
-            )
-            (if (or do_ME (flag? @screen_attr (| HL_BOLD HL_INVERSE)))
+    (when (non-zero? @screen_attr)
+        (let [#_boolean me?
+                (and (< HL_ALL @screen_attr) ;; output T_ME code ;; special HL attr.
+                    (let [[#_attrentry_C aep me?]
+                            (if (< 1 @t_colors)
+                                (let [aep (syn-cterm-attr2entry @screen_attr)]
+                                    ;; Assume that t_me restores the original colors!
+                                    [aep (and (some? aep) (or (non-zero? (:ae_fg_color aep)) (non-zero? (:ae_bg_color aep))))])
+                                (let [aep (syn-term-attr2entry @screen_attr)]
+                                    [aep (and (some? aep) (some? (:ae_esc_stop aep)) (or (zero? (STRCMP (:ae_esc_stop aep), @T_ME)) (do (out-str (:ae_esc_stop aep)) false)))])
+                            )]
+                        (reset! screen_attr (if (some? aep) (:ae_attr aep) 0)) ;; did ":syntax clear"
+                        me?))
+              ;; Often all ending-codes are equal to T_ME.
+              ;; Avoid outputting the same sequence several times.
+              me? (if (flag? @screen_attr HL_STANDOUT)                   (or (zero? (STRCMP @T_SE, @T_ME))  (do (out-str @T_SE) me?))  me?)
+              me? (if (flag? @screen_attr (| HL_UNDERLINE HL_UNDERCURL)) (or (zero? (STRCMP @T_UE, @T_ME))  (do (out-str @T_UE) me?))  me?)
+              me? (if (flag? @screen_attr HL_ITALIC)                     (or (zero? (STRCMP @T_CZR, @T_ME)) (do (out-str @T_CZR) me?)) me?)]
+            (when (or me? (flag? @screen_attr (| HL_BOLD HL_INVERSE)))
                 (out-str @T_ME))
-
-            (when (< 1 @t_colors)
-                ;; set Normal cterm colors
-                (when (non-zero? @cterm_normal_fg_color) (term-fg-color (dec @cterm_normal_fg_color)))
-                (when (non-zero? @cterm_normal_bg_color) (term-bg-color (dec @cterm_normal_bg_color)))
-                (when (non-zero? @cterm_normal_fg_bold) (out-str @T_MD))
-            )
         )
-        (reset! screen_attr 0)
-        nil
-    ))
+        (when (< 1 @t_colors) ;; set Normal cterm colors
+            (when (non-zero? @cterm_normal_fg_color) (term-fg-color (dec @cterm_normal_fg_color)))
+            (when (non-zero? @cterm_normal_bg_color) (term-bg-color (dec @cterm_normal_bg_color)))
+            (when (non-zero? @cterm_normal_fg_bold) (out-str @T_MD))
+        ))
+    (reset! screen_attr 0)
+    nil)
 
 ;; Reset the colors for a cterm.  Used when leaving Vim.
 ;; The machine specific code may override this again.
@@ -49587,205 +49407,109 @@
     PLAN_WRITE 4)
 
 (defn- #_void windgoto [#_int row, #_int col]
-    (§
-        ;; Can't use "screenLines" unless initialized.
-        (if (nil? @screenLines)
-            ((ß RETURN) nil)
-        )
-
-        (when (or (!= col @screen_cur_col) (!= row @screen_cur_row))
-            (ß int cost)
-
-            ;; Check for valid position.
-            ((ß row =) (max 0 row))    ;; window without text lines?
-            ((ß row =) (min row (dec @screenRows)))
-            ((ß col =) (min col (dec @screenCols)))
-
-            ;; check if no cursor movement is allowed in highlight mode
-            ((ß int noinvcurs =) (if (and (non-zero? @screen_attr) (eos? @T_MS)) HIGHL_COST 0))
-            ((ß int goto_cost =) (+ GOTO_COST noinvcurs))
-
-            ;; Plan how to do the positioning:
-            ;;
-            ;; 1. Use CR to move it to column 0, same row.
-            ;; 2. Use T_LE to move it a few columns to the left.
-            ;; 3. Use NL to move a few lines down, column 0.
-            ;; 4. Move a few columns to the right with T_ND or by writing chars.
-            ;;
-            ;; Don't do this if the cursor went beyond the last column,
-            ;; the cursor position is unknown then (some terminals wrap, some don't).
-            ;;
-            ;; First check if the highlighting attributes allow us to write
-            ;; characters to move the cursor to the right.
-
-            (cond (and (<= @screen_cur_row row) (< @screen_cur_col @Cols))
-            (do
-                (ß int plan)
-                (ß int wouldbe_col)
-
-                ;; If the cursor is in the same row, bigger col, we can use CR or T_LE.
-
-                ((ß Bytes bs =) nil)
-                ((ß int attr =) @screen_attr)
-                (cond (and (== row @screen_cur_row) (< col @screen_cur_col))
-                (do
-                    ;; "le" is preferred over "bc", because "bc" is obsolete
-                    ((ß bs =) (if (non-eos? @T_LE)
-                        @T_LE              ;; "cursor left"
-                        @T_BC              ;; "backspace character (old)
-                    ))
-                    ((ß cost =) (if (non-eos? bs) (* (- @screen_cur_col col) (STRLEN bs)) 999))
-                    (cond (< (inc col) cost)             ;; using CR is less characters
-                    (do
-                        ((ß plan =) PLAN_CR)
-                        ((ß wouldbe_col =) 0)
-                        ((ß cost =) 1)                   ;; CR is just one character
-                    )
-                    :else
-                    (do
-                        ((ß plan =) PLAN_LE)
-                        ((ß wouldbe_col =) col)
-                    ))
-                    (when (non-zero? noinvcurs)             ;; will stop highlighting
-                        ((ß cost =) (+ cost noinvcurs))
-                        ((ß attr =) 0)
-                    )
-                )
-
-                ;; If the cursor is above where we want to be, we can use CR LF.
-
-                (< @screen_cur_row row)
-                (do
-                    ((ß plan =) PLAN_NL)
-                    ((ß wouldbe_col =) 0)
-                    ((ß cost =) (* (- row @screen_cur_row) 2))  ;; CR LF
-                    (when (non-zero? noinvcurs)                 ;; will stop highlighting
-                        ((ß cost =) (+ cost noinvcurs))
-                        ((ß attr =) 0)
-                    )
-                )
-
-                ;; If the cursor is in the same row, smaller col, just use write.
-
-                :else
-                (do
-                    ((ß plan =) PLAN_WRITE)
-                    ((ß wouldbe_col =) @screen_cur_col)
-                    ((ß cost =) 0)
-                ))
-
-                ;; Check if any characters that need to be written have the
-                ;; correct attributes.  Also avoid UTF-8 characters.
-
-                ((ß int i =) (- col wouldbe_col))
-                ((ß cost =) (if (< 0 i) (+ cost i) cost))
-                (when (and (< cost goto_cost) (< 0 i))
-                    ;; Check if the attributes are correct without additionally
-                    ;; stopping highlighting.
-
-                    ((ß int ai =) (+ (... @lineOffset row) wouldbe_col))
-                    (loop-when [] (and (!= i 0) (== (... @screenAttrs (ß ai++)) attr))
-                        ((ß i =) (dec i))
-                        (recur)
-                    )
-                    (when (non-zero? i)
-                        ;; Try if it works when highlighting is stopped here.
-
-                        (when (zero? (... @screenAttrs ((ß ai =) (dec ai))))
-                            ((ß cost =) (+ cost noinvcurs))
-                            (loop-when [] (and (!= i 0) (== (... @screenAttrs (ß ai++)) 0))
-                                ((ß i =) (dec i))
-                                (recur)
-                            )
-                        )
-                        ((ß cost =) (if (non-zero? i) 999 cost))     ;; different attributes, don't do it
-                    )
-
-                    ;; Don't use an UTF-8 char for positioning, it's slow.
-                    ((ß i =) (loop-when-recur [i wouldbe_col] (< i col) [(inc i)] => i
-                        (when (!= (... @screenLinesUC (+ (... @lineOffset row) i)) 0)
-                            ((ß cost =) 999)
-                            (ß BREAK)
-                        )
-                    ))
-                )
-
-                ;; We can do it without term-windgoto()!
-
-                (when (< cost goto_cost)
-                    (cond (== plan PLAN_LE)
-                    (do
-                        (if (non-zero? noinvcurs)
-                            (screen-stop-highlight))
-                        (while (< col @screen_cur_col)
-                            (out-str bs)
-                            (swap! screen_cur_col dec)
-                        )
-                    )
-                    (== plan PLAN_CR)
-                    (do
-                        (if (non-zero? noinvcurs)
-                            (screen-stop-highlight))
-                        (out-char (byte \return))
-                        (reset! screen_cur_col 0)
-                    )
-                    (== plan PLAN_NL)
-                    (do
-                        (if (non-zero? noinvcurs)
-                            (screen-stop-highlight))
-                        (while (< @screen_cur_row row)
-                            (out-char (byte \newline))
-                            (swap! screen_cur_row inc)
-                        )
-                        (reset! screen_cur_col 0)
-                    ))
-
-                    ((ß i =) (- col @screen_cur_col))
-                    (when (< 0 i)
-                        ;; Use cursor-right if it's one character only.
-                        ;; Avoids removing a line of pixels from the last bold char,
-                        ;; when using the bold trick in the GUI.
-
-                        (cond (and (non-eos? @T_ND) (eos? @T_ND 1))
-                        (do
-                            (loop-when [] (<= 0 ((ß i =) (dec i)))
-                                (out-char (.at @T_ND 0))
-                                (recur)
-                            )
-                        )
+    (when (and (some? @screenLines) (or (!= col @screen_cur_col) (!= row @screen_cur_row)))
+        ;; Check for valid position.
+        (let [row (max 0 row) ;; window without text lines?
+              row (min row (dec @screenRows))
+              col (min col (dec @screenCols))
+              ;; check if no cursor movement is allowed in highlight mode
+              #_int noinvcurs (if (and (non-zero? @screen_attr) (eos? @T_MS)) HIGHL_COST 0)
+              #_int goto_cost (+ GOTO_COST noinvcurs)
+              ;; Plan how to do the positioning:
+              ;;
+              ;; 1. Use CR to move it to column 0, same row.
+              ;; 2. Use T_LE to move it a few columns to the left.
+              ;; 3. Use NL to move a few lines down, column 0.
+              ;; 4. Move a few columns to the right with T_ND or by writing chars.
+              ;;
+              ;; Don't do this if the cursor went beyond the last column,
+              ;; the cursor position is unknown then (some terminals wrap, some don't).
+              ;;
+              ;; First check if the highlighting attributes allow us to write
+              ;; characters to move the cursor to the right.
+              #_int cost
+                (cond (and (<= @screen_cur_row row) (< @screen_cur_col @Cols))
+                (let [#_int attr @screen_attr
+                      ;; If the cursor is in the same row, bigger col, we can use CR or T_LE.
+                      [#_Bytes bs #_int plan #_int wouldbe_col cost attr]
+                        (cond (and (== row @screen_cur_row) (< col @screen_cur_col))
+                            ;; "le" is preferred over "bc", because "bc" is obsolete ;; "cursor left" ;; "backspace character (old)
+                            (let [bs (if (non-eos? @T_LE) @T_LE @T_BC)
+                                  cost (if (non-eos? bs) (* (- @screen_cur_col col) (STRLEN bs)) 999)
+                                  ;; using CR is less characters ;; CR is just one character
+                                  [plan wouldbe_col cost] (if (< (inc col) cost) [PLAN_CR 0 1] [PLAN_LE col cost])
+                                  ;; if ... stop highlighting
+                                  [cost attr] (if (non-zero? noinvcurs) [(+ cost noinvcurs) 0] [cost attr])]
+                                [bs plan wouldbe_col cost attr])
+                        ;; If the cursor is above where we want to be, we can use CR LF.
+                        (< @screen_cur_row row)
+                            (let [cost (* (- row @screen_cur_row) 2) ;; CR LF
+                                  ;; if ... stop highlighting
+                                  [cost attr] (if (non-zero? noinvcurs) [(+ cost noinvcurs) 0] [cost attr])]
+                                [nil PLAN_NL 0 cost attr])
+                        ;; If the cursor is in the same row, smaller col, just use write.
                         :else
+                            [nil PLAN_WRITE @screen_cur_col 0 attr])
+                      ;; Check if any characters that need to be written have the correct attributes.  Also avoid UTF-8 characters.
+                      cost (let-when [#_int i (- col wouldbe_col) cost (if (< 0 i) (+ cost i) cost)] (and (< cost goto_cost) (< 0 i)) => cost
+                            ;; Check if the attributes are correct without additionally stopping highlighting.
+                            (let [[#_int ai i] (loop-when [ai (+ (... @lineOffset row) wouldbe_col) i i] (< 0 i) => [ai i]
+                                                   (recur-if (== (... @screenAttrs ai) attr) [(inc ai) (dec i)] => [(inc ai) i]))
+                                  [i cost] (if (non-zero? i)
+                                                (let [ai (dec ai) ;; Try if it works when highlighting is stopped here.
+                                                    [i cost] (if (zero? (... @screenAttrs ai))
+                                                                    (let [i (loop-when [ai ai i i] (< 0 i) => i
+                                                                                (recur-if (== (... @screenAttrs ai) 0) [(inc ai) (dec i)] => i))] ;; => (inc ai)
+                                                                        [i (+ cost noinvcurs)])
+                                                                    [i cost])]
+                                                    [i (if (non-zero? i) 999 cost)]) ;; different attributes, don't do it
+                                                [i cost])]
+                                ;; Don't use an UTF-8 char for positioning, it's slow.
+                                (loop-when [cost cost #_int i wouldbe_col] (< i col) => cost
+                                    (recur-if (== (... @screenLinesUC (+ (... @lineOffset row) i)) 0) [cost (inc i)] => 999))
+                            ))]
+                    ;; We can do it without term-windgoto()!
+                    (when (< cost goto_cost)
+                        (cond (== plan PLAN_LE)
                         (do
-                            ((ß int off =) (+ (... @lineOffset row) @screen_cur_col))
-
-                            (loop-when [] (<= 0 ((ß i =) (dec i)))
-                                (if (!= (... @screenAttrs off) @screen_attr)
-                                    (screen-stop-highlight))
-                                (out-flush-check)
-                                (out-char (.at @screenLines off))
-                                ((ß off =) (inc off))
-                                (recur)
-                            )
+                            (when (non-zero? noinvcurs) (screen-stop-highlight))
+                            (while (< col @screen_cur_col) (out-str bs) (swap! screen_cur_col dec))
+                        )
+                        (== plan PLAN_CR)
+                        (do
+                            (when (non-zero? noinvcurs) (screen-stop-highlight))
+                            (out-char (byte \return))
+                            (reset! screen_cur_col 0)
+                        )
+                        (== plan PLAN_NL)
+                        (do
+                            (when (non-zero? noinvcurs) (screen-stop-highlight))
+                            (while (< @screen_cur_row row) (out-char (byte \newline)) (swap! screen_cur_row inc))
+                            (reset! screen_cur_col 0)
                         ))
-                    )
+                        (let-when [#_int i (- col @screen_cur_col)] (< 0 i)
+                            ;; Use cursor-right if it's one character only.
+                            ;; Avoids removing a line of pixels from the last bold char, when using the bold trick in the GUI.
+                            (if (and (non-eos? @T_ND) (eos? @T_ND 1))
+                                (loop-when-recur i (< 0 i) (dec i) (out-char (.at @T_ND 0)))
+                                (loop-when-recur [#_int off (+ (... @lineOffset row) @screen_cur_col) i i] (< 0 i) [(inc off) (dec i)]
+                                    (when (!= (... @screenAttrs off) @screen_attr) (screen-stop-highlight))
+                                    (out-flush-check)
+                                    (out-char (.at @screenLines off))
+                                ))
+                        ))
+                    cost
                 )
-            )
-            :else
-            (do
-                ((ß cost =) 999)
-            ))
-
+                :else 999)]
             (when (<= goto_cost cost)
-                (if (non-zero? noinvcurs)
-                    (screen-stop-highlight))
+                (when (non-zero? noinvcurs) (screen-stop-highlight))
                 (if (and (== row @screen_cur_row) (< @screen_cur_col col) (non-eos? @T_CRI))
                     (term-cursor-right (- col @screen_cur_col))
-                    (term-windgoto row, col))
-            )
+                    (term-windgoto row, col)))
             (reset! screen_cur_row row)
             (reset! screen_cur_col col)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Set cursor to its position in the current window.
 
