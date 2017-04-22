@@ -854,14 +854,11 @@
 (final int BACKWARD       -1)
 
 ;; flags for b_flags
-(final int BF_RECOVERED   0x01)     ;; buffer has been recovered
 (final int BF_CHECK_RO    0x02)     ;; need to check readonly when loading file into buffer (set by ":e", may be reset by ":buf")
 (final int BF_NEVERLOADED 0x04)     ;; file has never been loaded into buffer, many variables still need to be set
 (final int BF_NOTEDITED   0x08)     ;; set when file name is changed after starting to edit, reset when file is written out
 (final int BF_NEW         0x10)     ;; file didn't exist when editing started
-(final int BF_NEW_W       0x20)     ;; warned for BF_NEW and file created
 (final int BF_READERR     0x40)     ;; got errors while reading the file
-(final int BF_DUMMY       0x80)     ;; dummy buffer, only used internally
 
 ;; Mask to check for flags that prevent normal writing.
 (final int BF_WRITE_MASK  (+ BF_NOTEDITED BF_NEW BF_READERR))
@@ -941,7 +938,6 @@
 ;; Values for action argument for do_buffer().
 (final int DOBUF_GOTO      0)       ;; go to specified buffer
 (final int DOBUF_UNLOAD    2)       ;; unload specified buffer(s)
-(final int DOBUF_DEL       3)       ;; delete specified buffer(s) from buflist
 (final int DOBUF_WIPE      4)       ;; delete specified buffer(s) really
 
 ;; Values for sub_cmd and which_pat argument for search_regcomp().
@@ -966,7 +962,6 @@
 (final int ECMD_FORCEIT    0x08)    ;; ! used in Ex command
 
 ;; for lnum argument in do_ecmd()
-(final int ECMD_LASTL      0)       ;; use last position in loaded file
 (final int ECMD_LAST       -1)      ;; use last position in all files
 (final int ECMD_ONE        1)       ;; use first line
 
@@ -3003,7 +2998,6 @@
     ZEROR          0x1000,   ;; zero line number allowed
     USECTRLV       0x2000,   ;; do not remove CTRL-V from argument
     NOTADR         0x4000,   ;; number before command is not an address
-    EDITCMD        0x8000,   ;; allow "+command" argument
     BUFNAME       0x10000,   ;; accepts buffer name
     BUFUNL        0x20000,   ;; accepts unlisted buffer too
     CMDWIN       0x100000,   ;; allowed in cmdline window
@@ -3045,123 +3039,120 @@
     CMD_digraphs 23,
     CMD_edit 24,
     CMD_earlier 25,
-    CMD_enew 26,
-    CMD_ex 27,
-    CMD_fixdel 28,
-    CMD_global 29,
-    CMD_goto 30,
-    CMD_hide 31,
-    CMD_history 32,
-    CMD_insert 33,
-    CMD_iabbrev 34,
-    CMD_iabclear 35,
-    CMD_imap 36,
-    CMD_imapclear 37,
-    CMD_inoremap 38,
-    CMD_inoreabbrev 39,
-    CMD_iunmap 40,
-    CMD_iunabbrev 41,
-    CMD_join 42,
-    CMD_jumps 43,
-    CMD_k 44,
-    CMD_keepmarks 45,
-    CMD_keepjumps 46,
-    CMD_keeppatterns 47,
-    CMD_keepalt 48,
-    CMD_list 49,
-    CMD_later 50,
-    CMD_left 51,
-    CMD_leftabove 52,
-    CMD_lockmarks 53,
-    CMD_move 54,
-    CMD_mark 55,
-    CMD_map 56,
-    CMD_mapclear 57,
-    CMD_marks 58,
-    CMD_messages 59,
-    CMD_new 60,
-    CMD_nmap 61,
-    CMD_nmapclear 62,
-    CMD_nnoremap 63,
-    CMD_noremap 64,
-    CMD_nohlsearch 65,
-    CMD_noreabbrev 66,
-    CMD_normal 67,
-    CMD_number 68,
-    CMD_nunmap 69,
-    CMD_omap 70,
-    CMD_omapclear 71,
-    CMD_only 72,
-    CMD_onoremap 73,
-    CMD_ounmap 74,
-    CMD_print 75,
-    CMD_put 76,
-    CMD_quit 77,
-    CMD_quitall 78,
-    CMD_qall 79,
-    CMD_redo 80,
-    CMD_redraw 81,
-    CMD_redrawstatus 82,
-    CMD_registers 83,
-    CMD_resize 84,
-    CMD_retab 85,
-    CMD_right 86,
-    CMD_rightbelow 87,
-    CMD_substitute 88,
-    CMD_set 89,
-    CMD_setglobal 90,
-    CMD_setlocal 91,
-    CMD_silent 92,
-    CMD_smagic 93,
-    CMD_smap 94,
-    CMD_smapclear 95,
-    CMD_snomagic 96,
-    CMD_snoremap 97,
-    CMD_split 98,
-    CMD_stop 99,
-    CMD_startinsert 100,
-    CMD_startgreplace 101,
-    CMD_startreplace 102,
-    CMD_stopinsert 103,
-    CMD_sunmap 104,
-    CMD_suspend 105,
-    CMD_syncbind 106,
-    CMD_t 107,
-    CMD_topleft 108,
-    CMD_undo 109,
-    CMD_undojoin 110,
-    CMD_undolist 111,
-    CMD_unabbreviate 112,
-    CMD_unmap 113,
-    CMD_unsilent 114,
-    CMD_vglobal 115,
-    CMD_verbose 116,
-    CMD_vertical 117,
-    CMD_visual 118,
-    CMD_vmap 119,
-    CMD_vmapclear 120,
-    CMD_vnoremap 121,
-    CMD_vnew 122,
-    CMD_vsplit 123,
-    CMD_vunmap 124,
-    CMD_wincmd 125,
-    CMD_xmap 126,
-    CMD_xmapclear 127,
-    CMD_xnoremap 128,
-    CMD_xunmap 129,
-    CMD_yank 130,
-    CMD_z 131,
+    CMD_ex 26,
+    CMD_fixdel 27,
+    CMD_global 28,
+    CMD_goto 29,
+    CMD_hide 30,
+    CMD_history 31,
+    CMD_insert 32,
+    CMD_iabbrev 33,
+    CMD_iabclear 34,
+    CMD_imap 35,
+    CMD_imapclear 36,
+    CMD_inoremap 37,
+    CMD_inoreabbrev 38,
+    CMD_iunmap 39,
+    CMD_iunabbrev 40,
+    CMD_join 41,
+    CMD_jumps 42,
+    CMD_k 43,
+    CMD_keepmarks 44,
+    CMD_keepjumps 45,
+    CMD_keeppatterns 46,
+    CMD_keepalt 47,
+    CMD_list 48,
+    CMD_later 49,
+    CMD_left 50,
+    CMD_leftabove 51,
+    CMD_lockmarks 52,
+    CMD_move 53,
+    CMD_mark 54,
+    CMD_map 55,
+    CMD_mapclear 56,
+    CMD_marks 57,
+    CMD_messages 58,
+    CMD_nmap 59,
+    CMD_nmapclear 60,
+    CMD_nnoremap 61,
+    CMD_noremap 62,
+    CMD_nohlsearch 63,
+    CMD_noreabbrev 64,
+    CMD_normal 65,
+    CMD_number 66,
+    CMD_nunmap 67,
+    CMD_omap 68,
+    CMD_omapclear 69,
+    CMD_only 70,
+    CMD_onoremap 71,
+    CMD_ounmap 72,
+    CMD_print 73,
+    CMD_put 74,
+    CMD_quit 75,
+    CMD_quitall 76,
+    CMD_qall 77,
+    CMD_redo 78,
+    CMD_redraw 79,
+    CMD_redrawstatus 80,
+    CMD_registers 81,
+    CMD_resize 82,
+    CMD_retab 83,
+    CMD_right 84,
+    CMD_rightbelow 85,
+    CMD_substitute 86,
+    CMD_set 87,
+    CMD_setglobal 88,
+    CMD_setlocal 89,
+    CMD_silent 90,
+    CMD_smagic 91,
+    CMD_smap 92,
+    CMD_smapclear 93,
+    CMD_snomagic 94,
+    CMD_snoremap 95,
+    CMD_split 96,
+    CMD_stop 97,
+    CMD_startinsert 98,
+    CMD_startgreplace 99,
+    CMD_startreplace 100,
+    CMD_stopinsert 101,
+    CMD_sunmap 102,
+    CMD_suspend 103,
+    CMD_syncbind 104,
+    CMD_t 105,
+    CMD_topleft 106,
+    CMD_undo 107,
+    CMD_undojoin 108,
+    CMD_undolist 109,
+    CMD_unabbreviate 110,
+    CMD_unmap 111,
+    CMD_unsilent 112,
+    CMD_vglobal 113,
+    CMD_verbose 114,
+    CMD_vertical 115,
+    CMD_visual 116,
+    CMD_vmap 117,
+    CMD_vmapclear 118,
+    CMD_vnoremap 119,
+    CMD_vsplit 120,
+    CMD_vunmap 121,
+    CMD_wincmd 122,
+    CMD_xmap 123,
+    CMD_xmapclear 124,
+    CMD_xnoremap 125,
+    CMD_xunmap 126,
+    CMD_yank 127,
+    CMD_z 128,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 132,
-    CMD_and 133,
-    CMD_lshift 134,
-    CMD_equal 135,
-    CMD_rshift 136,
-    CMD_tilde 137,
+    CMD_pound 129,
+    CMD_and 130,
+    CMD_lshift 131,
+    CMD_equal 132,
+    CMD_rshift 133,
+    CMD_tilde 134,
 
-    CMD_SIZE 138)     ;; MUST be after all real commands!
+    CMD_SIZE 135)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3180,7 +3171,6 @@
         (field long         line2)          ;; the second line number or count
         (field int          addr_type)      ;; type of the count/range
         (field int          flags)          ;; extra flags after count: EXFLAG_
-        (field Bytes        do_ecmd_cmd)    ;; +command arg to be used in edited file
         (field long         do_ecmd_lnum)   ;; the line number in an edited file
         (field int          amount)         ;; number of '>' or '<' for shift command
         (field int          regname)        ;; register name (NUL if none)
@@ -4254,7 +4244,7 @@
 ;           if (@curbuf.b_ml.ml_mfp == null)
 ;           {
                 ;; create memfile, read file
-;               open_buffer(null);
+;               open_buffer();
 
 ;               dorewind = true;                ;; start again
 ;           }
@@ -11986,7 +11976,6 @@
 ;;
 ;;      eap: contains the command to be executed after loading the file and forced 'ff' and 'fenc'
 ;;  newlnum: if > 0: put cursor on this line number (if possible)
-;;           if ECMD_LASTL: use last position in loaded file
 ;;           if ECMD_LAST: use last position in all files
 ;;           if ECMD_ONE: use first line
 ;;    flags:
@@ -12007,10 +11996,6 @@
 ;       long topline = 0;
 ;       int newcol = -1;
 ;       int solcol = -1;
-
-;       Bytes command = null;
-;       if (eap != null)
-;           command = eap.do_ecmd_cmd;
 
         ;; if the file was changed we may not be allowed to abandon it
         ;; - if we are going to re-edit the same file
@@ -12041,24 +12026,8 @@
 ;           oldwin = @curwin;
 ;       old_curbuf = @curbuf;
 
-;       boolean oldbuf;             ;; true if using existing buffer
-;       if (buf.b_ml.ml_mfp == null)            ;; no memfile yet
-;       {
-;           oldbuf = false;
-;       }
-;       else                                    ;; existing memfile
-;       {
-;           oldbuf = true;
-;           buf_check_timestamp(buf);
-            ;; Check if autocommands made buffer invalid or changed the current buffer.
-;           if (!buf_valid(buf) || @curbuf != old_curbuf)
-;               return false;
-;           if (aborting())                     ;; autocmds may abort script processing
-;               return false;
-;       }
-
         ;; May jump to last used line number for a loaded buffer or when asked for explicitly.
-;       if ((oldbuf && newlnum == ECMD_LASTL) || newlnum == ECMD_LAST)
+;       if (newlnum == ECMD_LAST)
 ;       {
 ;           pos_C pos = buflist_findfpos(buf);
 ;           newlnum = pos.lnum;
@@ -12159,15 +12128,14 @@
 ;           pos_C orig_pos = §_pos_C();
 ;           COPY_pos(orig_pos, @curwin.w_cursor);
 ;           topline = @curwin.w_topline;
-;           if (!oldbuf)                        ;; need to read the file
-;           {
-;               @curbuf.b_flags |= BF_CHECK_RO; ;; set/reset 'ro' flag
 
-                ;; Open the buffer and read the file.
+;           @curbuf.b_flags |= BF_CHECK_RO; ;; set/reset 'ro' flag
 
-;               if (should_abort(open_buffer(eap)))
-;                   retval = false;
-;           }
+            ;; Open the buffer and read the file.
+
+;           open_buffer();
+;           if (aborting())
+;               retval = false;
 
             ;; If autocommands change the cursor position or topline,
             ;; we should keep it.  Also when it moves within a line.
@@ -12183,69 +12151,42 @@
 ;           changed_line_abv_curs();
 ;       }
 
-;       if (command == null)
+;       if (0 <= newcol)        ;; position set by autocommands
 ;       {
-;           if (0 <= newcol)        ;; position set by autocommands
+;           @curwin.w_cursor.lnum = newlnum;
+;           @curwin.w_cursor.col = newcol;
+;           check_cursor();
+;       }
+;       else if (0 < newlnum)   ;; line number from caller or old position
+;       {
+;           @curwin.w_cursor.lnum = newlnum;
+;           check_cursor_lnum();
+;           if (0 <= solcol && !@p_sol)
 ;           {
-;               @curwin.w_cursor.lnum = newlnum;
-;               @curwin.w_cursor.col = newcol;
-;               check_cursor();
+                ;; 'sol' is off: Use last known column.
+;               @curwin.w_cursor.col = solcol;
+;               check_cursor_col();
+;               @curwin.w_cursor.coladd = 0;
+;               @curwin.w_set_curswant = true;
 ;           }
-;           else if (0 < newlnum)   ;; line number from caller or old position
-;           {
-;               @curwin.w_cursor.lnum = newlnum;
-;               check_cursor_lnum();
-;               if (0 <= solcol && !@p_sol)
-;               {
-                    ;; 'sol' is off: Use last known column.
-;                   @curwin.w_cursor.col = solcol;
-;                   check_cursor_col();
-;                   @curwin.w_cursor.coladd = 0;
-;                   @curwin.w_set_curswant = true;
-;               }
-;               else
-;                   beginline(BL_SOL | BL_FIX);
-;           }
-;           else                    ;; no line number, go to last line in Ex mode
-;           {
-;               if (@exmode_active != 0)
-;                   @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;               beginline(BL_WHITE | BL_FIX);
-;           }
+;           else
+;               beginline(BL_SOL | BL_FIX);
+;       }
+;       else                    ;; no line number, go to last line in Ex mode
+;       {
+;           if (@exmode_active != 0)
+;               @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
+;           beginline(BL_WHITE | BL_FIX);
 ;       }
 
         ;; Check if cursors in other windows on the same buffer are still valid.
 ;       check_lnums(false);
 
-        ;; Did not read the file, need to show some info about the file.
-        ;; Do this after setting the cursor.
-
-;       if (oldbuf && !auto_buf)
-;       {
-;           boolean msg_scroll_save = @msg_scroll;
-
-            ;; Obey the 'O' flag in 'cpoptions': overwrite any previous file message.
-;           if (shortmess(SHM_OVERALL) && !@exiting && @p_verbose == 0)
-;               @msg_scroll = false;
-;           if (!@msg_scroll)        ;; wait a bit when overwriting an error msg
-;               check_for_delay(false);
-;           msg_start();
-;           @msg_scroll = msg_scroll_save;
-;           @msg_scrolled_ign = true;
-
-;           fileinfo(0, false);
-
-;           @msg_scrolled_ign = false;
-;       }
-
-;       if (command != null)
-;           do_cmdline(command, null, null, DOCMD_VERBOSE);
-
 ;       --@redrawingDisabled;
 ;       if (!@skip_redraw)
 ;       {
 ;           long n = @p_so;
-;           if (topline == 0 && command == null)
+;           if (topline == 0)
 ;               @p_so = 999;                 ;; force cursor halfway the window
 ;           update_topline();
 ;           @curwin.w_scbind_pos = @curwin.w_topline;
@@ -16384,7 +16325,7 @@
         CMD_k,
         CMD_list,
         CMD_move,
-        CMD_new,
+        CMD_new,
         CMD_omap,
         CMD_print,
         CMD_quit,
@@ -17389,15 +17330,6 @@
 ;               ea.arg = skipwhite(ea.arg);
 ;           }
 
-            ;; Check for "+command" argument, before checking for next command.
-
-;           if ((ea.argt & EDITCMD) != 0)
-;           {
-;               Bytes[] __ = { ea.arg };
-;               ea.do_ecmd_cmd = getargcmd(__);
-;               ea.arg = __[0];
-;           }
-
             ;; Check for <newline> to end a shell command.
             ;; Also do this for ":global".
             ;; Any others?
@@ -18183,54 +18115,6 @@
 ;       }
     ))
 
-;; get + command from ex argument
-
-(final Bytes dollar_command (Bytes. (byte-array [ (byte \$), 0 ])))
-
-(defn- #_Bytes getargcmd [#_Bytes* argp]
-    (§
-;       Bytes arg = argp[0];
-;       Bytes command = null;
-
-;       if (arg.at(0) == (byte)'+')                                ;; +[command]
-;       {
-;           arg = arg.plus(1);
-;           if (vim_isspace(arg.at(0)) || arg.at(0) == NUL)
-;               command = dollar_command;
-;           else
-;           {
-;               command = arg;
-;               arg = skip_cmd_arg(command, true);
-;               if (arg.at(0) != NUL)
-;                   (arg = arg.plus(1)).be(-1, NUL);                ;; terminate command with NUL
-;           }
-
-;           arg = skipwhite(arg);                       ;; skip over spaces
-;           argp[0] = arg;
-;       }
-
-;       return command;
-    ))
-
-;; Find end of "+command" argument.  Skip over "\ " and "\\".
-
-(defn- #_Bytes skip_cmd_arg [#_Bytes p, #_boolean rembs]
-    ;; rembs: true to halve the number of backslashes
-    (§
-;       while (p.at(0) != NUL && !vim_isspace(p.at(0)))
-;       {
-;           if (p.at(0) == (byte)'\\' && p.at(1) != NUL)
-;           {
-;               if (rembs)
-;                   BCOPY(p, 0, p, 1, STRLEN(p, 1) + 1);
-;               else
-;                   p = p.plus(1);
-;           }
-;           p = p.plus(us_ptr2len_cc(p));
-;       }
-;       return p;
-    ))
-
 ;; ":abbreviate" and friends.
 
 (defn- #_void ex_abbreviate [#_exarg_C eap]
@@ -18518,11 +18402,8 @@
 ;       eap.errmsg = e_invcmd;
     ))
 
-;; :sview [+command] file       split window with new file, read-only
 ;; :split [[+command] file]     split window with current or new file
 ;; :vsplit [[+command] file]    split window vertically with current or new file
-;; :new [[+command] file]       split window with no or new file
-;; :vnew [[+command] file]      split vertically window with no or new file
 
 (defn- #_void ex_splitview [#_exarg_C eap]
     (§
@@ -18577,7 +18458,7 @@
 ;       }
     ))
 
-;; ":edit", ":badd", ":visual".
+;; ":edit", ":visual".
 
 (defn- #_void ex_edit [#_exarg_C eap]
     (§
@@ -18629,19 +18510,10 @@
 ;           }
 ;       }
 
-;       if ((eap.cmdidx == CMD_new || eap.cmdidx == CMD_vnew) && eap.arg.at(0) == NUL)
-;       {
-            ;; ":new" without argument: edit an new empty buffer
-;           setpcmark();
-;           do_ecmd(null, eap, ECMD_ONE,
-;                         ECMD_HIDE + (eap.forceit ? ECMD_FORCEIT : 0),
-;                         (old_curwin == null) ? @curwin : null);
-;       }
-;       else if ((eap.cmdidx != CMD_split && eap.cmdidx != CMD_vsplit) || eap.arg.at(0) != NUL)
+;       if ((eap.cmdidx != CMD_split && eap.cmdidx != CMD_vsplit) || eap.arg.at(0) != NUL)
 ;       {
 ;           setpcmark();
-;           if (do_ecmd((eap.cmdidx == CMD_enew) ? null : eap.arg,
-;                       eap,
+;           if (do_ecmd(eap.arg, eap,
                         ;; ":edit" goes to first line if Vi compatible
 ;                       (eap.arg.at(0) == NUL && eap.do_ecmd_lnum == 0 && vim_strbyte(@p_cpo, CPO_GOTO1) != null) ? ECMD_ONE : eap.do_ecmd_lnum,
 ;                       (@cmdmod.hide ? ECMD_HIDE : 0) + (eap.forceit ? ECMD_FORCEIT : 0),
@@ -18666,11 +18538,6 @@
 ;                   }
 ;               }
 ;           }
-;       }
-;       else
-;       {
-;           if (eap.do_ecmd_cmd != null)
-;               do_cmdline_cmd(eap.do_ecmd_cmd);
 ;       }
 
         ;; if ":split file" worked, set alternate file name in old window to new file
@@ -19336,39 +19203,6 @@
 ;       return (@did_emsg && @force_abort) || @got_int || @did_throw;
     ))
 
-;; The value of "force_abort" is temporarily reset by the first emsg() call
-;; during an expression evaluation, and "cause_abort" is used instead.  It might
-;; be necessary to restore "force_abort" even before the throw point for the
-;; error message has been reached.  update_force_abort() should be called then.
-
-(defn- #_void update_force_abort []
-    (§
-;       if (@cause_abort)
-;           @force_abort = true;
-    ))
-
-;; Return true if a command with a subcommand resulting in "retcode" should
-;; abort the script processing.  Can be used to suppress an autocommand after
-;; execution of a failing subcommand as long as the error message has not been
-;; displayed and actually caused the abortion.
-
-(defn- #_boolean should_abort [#_boolean retcode]
-    (§
-;       return aborting();
-    ))
-
-;; Return true if a function with the "abort" flag should not be considered
-;; ended on an error.  This means that parsing commands is continued in order
-;; to find finally clauses to be executed, and that some errors in skipped
-;; commands are still reported.
-
-(defn- #_boolean aborted_in_try []
-    (§
-        ;; This function is only called after an error.  In this case, "force_abort"
-        ;; determines whether searching for finally clauses is necessary.
-;       return @force_abort;
-    ))
-
 ;; cause_errthrow(): Cause a throw of an error exception if appropriate.
 ;; Return true if the error message should not be displayed by emsg().
 ;; Sets "ignore", if the emsg() call should be ignored completely.
@@ -20013,7 +19847,7 @@
 
         ;; Open the changed buffer in the current window.
 ;       if (buf != @curbuf)
-;           set_curbuf(buf, DOBUF_GOTO);
+;           set_curbuf(buf);
 
 ;       return retval;
     ))
@@ -57257,10 +57091,6 @@
 ;           buf.b_ml.ml_stack = null;
 ;           buf.b_ml.ml_chunksize = null;
 ;           buf.b_ml.ml_mfp = null;
-
-            ;; Reset the "recovered" flag,
-            ;; give the ATTENTION prompt the next time this buffer is loaded.
-;           buf.b_flags &= ~BF_RECOVERED;
 ;       }
     ))
 
@@ -57436,7 +57266,7 @@
     ;; newfile: flag, see above
     (§
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(null) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer() == false)
 ;           return false;
 
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
@@ -57867,7 +57697,7 @@
 ;           return false;
 
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(null) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer() == false)
 ;           return false;
 
 ;       if (copy)
@@ -58852,10 +58682,8 @@
 ;; Open current buffer, that is: open the memfile and read the file into memory.
 ;; Return false for failure, true otherwise.
 
-(defn- #_boolean open_buffer [#_exarg_C eap]
-    ;; eap: for forced 'ff' and 'fenc' or null
+(defn- #_boolean open_buffer []
     (§
-;       boolean retval = true;
 ;       long old_tw = @curbuf.@b_p_tw;
 
 ;       if (ml_open(@curbuf) == false)
@@ -58908,7 +58736,7 @@
 ;                   || @modified_was_set     ;; ":set modified" used in autocmd
 ;                   || (aborting() && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
 ;           changed();
-;       else if (retval != false)
+;       else
 ;           unchanged(@curbuf, false);
 
         ;; require "!" to overwrite the file, because it wasn't read completely
@@ -58921,18 +58749,15 @@
 ;           @curwin.w_topline = 1;
 ;       }
 
-;       if (retval != false)
-;       {
-            ;; The autocommands may have changed the current buffer.  Apply the
-            ;; modelines to the correct buffer, if it still exists and is loaded.
+        ;; The autocommands may have changed the current buffer.  Apply the
+        ;; modelines to the correct buffer, if it still exists and is loaded.
 
-;           if (buf_valid(old_curbuf) && old_curbuf.b_ml.ml_mfp != null)
-;           {
-;               @curbuf.b_flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
-;           }
+;       if (buf_valid(old_curbuf) && old_curbuf.b_ml.ml_mfp != null)
+;       {
+;           @curbuf.b_flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
 ;       }
 
-;       return retval;
+;       return true;
     ))
 
 ;; Return true if "buf" points to a valid buffer (in the buffer list).
@@ -58966,7 +58791,6 @@
     ;; win: if not null, set b_last_cursor
     (§
 ;       boolean unload_buf = (action != 0);
-;       boolean del_buf = (action == DOBUF_DEL || action == DOBUF_WIPE);
 ;       boolean wipe_buf = (action == DOBUF_WIPE);
 
 ;       if (win != null && win_valid(win))      ;; in case autocommands closed the window
@@ -59030,15 +58854,12 @@
 ;       if (0 < buf.b_nwindows || !unload_buf)
 ;           return;
 
-        ;; Always remove the buffer when there is no file name.
-;       del_buf = true;
-
         ;; Remember if we are closing the current buffer.  Restore the number of
         ;; windows, so that autocommands in buf_freeall() don't get confused.
 ;       boolean is_curbuf = (buf == @curbuf);
 ;       buf.b_nwindows = nwindows;
 
-;       buf_freeall(buf, (del_buf ? BFA_DEL : 0) + (wipe_buf ? BFA_WIPE : 0));
+;       buf_freeall(buf, BFA_DEL + (wipe_buf ? BFA_WIPE : 0));
 ;       if (win_valid(win) && win.w_buffer == buf)
 ;           win.w_buffer = null;    ;; make sure we don't use the buffer now
 
@@ -59077,18 +58898,16 @@
 ;       }
 ;       else
 ;       {
-;           if (del_buf)
-;           {
-                ;; Free all internal variables and reset option values
-                ;; to make ":bdel" compatible with Vim 5.7.
-;               free_buffer_stuff(buf, true);
+            ;; Free all internal variables and reset option values
+            ;; to make ":bdel" compatible with Vim 5.7.
+;           free_buffer_stuff(buf, true);
 
-                ;; Make it look like a new buffer.
-;               buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
+            ;; Make it look like a new buffer.
+;           buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
 
-                ;; Init the options when loaded again.
-;               buf.b_p_initialized = false;
-;           }
+            ;; Init the options when loaded again.
+;           buf.b_p_initialized = false;
+
 ;           buf_clear_file(buf);
 ;       }
     ))
@@ -59183,50 +59002,11 @@
 ;       }
     ))
 
-;; Make the current buffer empty.
-;; Used when it is wiped out and it's the last buffer.
+;; Set current buffer to "buf".
+;; Closes current buffer.
 
-(defn- #_boolean empty_curbuf [#_boolean close_others, #_boolean forceit, #_int action]
+(defn- #_void set_curbuf [#_buffer_C buf]
     (§
-;       if (action == DOBUF_UNLOAD)
-;       {
-;           emsg(u8("E90: Cannot unload last buffer"));
-;           return false;
-;       }
-
-;       buffer_C buf = @curbuf;
-
-;       if (close_others)
-;       {
-            ;; Close any other windows on this buffer, then make it empty.
-;           close_windows(buf, true);
-;       }
-
-;       setpcmark();
-;       boolean retval = do_ecmd(null, null, ECMD_ONE, forceit ? ECMD_FORCEIT : 0, @curwin);
-
-        ;; do_ecmd() may create a new buffer, then we have to delete the old one.
-        ;; But do_ecmd() may have done that already, check if the buffer still exists.
-
-;       if (buf != @curbuf && buf_valid(buf) && buf.b_nwindows == 0)
-;           close_buffer(null, buf, action, false);
-;       if (!close_others)
-;           @need_fileinfo = false;
-
-;       return retval;
-    ))
-
-;; Set current buffer to "buf".  Executes autocommands and closes current
-;; buffer.  "action" tells how to close the current buffer:
-;; DOBUF_GOTO       free or hide it
-;; DOBUF_UNLOAD     unload it
-;; DOBUF_DEL        delete it
-;; DOBUF_WIPE       wipe it out
-
-(defn- #_void set_curbuf [#_buffer_C buf, #_int action]
-    (§
-;       buffer_C prevbuf;
-;       boolean unload = (action == DOBUF_UNLOAD || action == DOBUF_DEL || action == DOBUF_WIPE);
 ;       long old_tw = @curbuf.@b_p_tw;
 
 ;       setpcmark();
@@ -59237,27 +59017,20 @@
         ;; Don't restart Select mode after switching to another buffer.
 ;       @VIsual_reselect = false;
 
-        ;; close_windows() or apply_autocmds() may change curbuf
-;       prevbuf = @curbuf;
+        ;; close_windows() may change curbuf
+;       buffer_C prevbuf = @curbuf;
 
 ;       if (buf_valid(prevbuf) && !aborting())
 ;       {
-;           if (unload)
-;               close_windows(prevbuf, false);
-;           if (buf_valid(prevbuf) && !aborting())
-;           {
-;               window_C previouswin = @curwin;
-;               if (prevbuf == @curbuf)
-;                   u_sync(false);
-;               close_buffer(prevbuf == @curwin.w_buffer ? @curwin : null, prevbuf,
-;                       unload ? action : (action == DOBUF_GOTO
-;                           && !@cmdmod.hide
-;                           && !bufIsChanged(prevbuf)) ? DOBUF_UNLOAD : 0, false);
-;               if (@curwin != previouswin && win_valid(previouswin))
-                    ;; autocommands changed curwin, Grr!
-;                   @curwin = previouswin;
-;           }
+;           window_C previouswin = @curwin;
+;           if (prevbuf == @curbuf)
+;               u_sync(false);
+;           close_buffer(prevbuf == @curwin.w_buffer ? @curwin : null, prevbuf, (!@cmdmod.hide && !bufIsChanged(prevbuf)) ? DOBUF_UNLOAD : 0, false);
+;           if (@curwin != previouswin && win_valid(previouswin))
+                ;; autocommands changed curwin, Grr!
+;               @curwin = previouswin;
 ;       }
+
         ;; An autocommand may have deleted "buf", already entered it
         ;; (e.g., when it did ":bunload") or aborted the script processing!
         ;; If curwin.w_buffer is null, enter_buffer() will make it valid again
@@ -59297,7 +59070,7 @@
         ;; Make sure the buffer is loaded.
 ;       if (@curbuf.b_ml.ml_mfp == null)     ;; need to load the file
 ;       {
-;           open_buffer(null);
+;           open_buffer();
 ;       }
 ;       else
 ;       {
@@ -85878,29 +85651,6 @@
 ;       }
     ))
 
-;; close all windows for buffer 'buf'
-
-(defn- #_void close_windows [#_buffer_C buf, #_boolean keep_curwin]
-    ;; keep_curwin: don't close "curwin"
-    (§
-;       @redrawingDisabled++;
-
-;       for (window_C wp = @firstwin; wp != null && @lastwin != @firstwin; )
-;       {
-;           if (wp.w_buffer == buf && (!keep_curwin || wp != @curwin) && !(wp.w_closing || wp.w_buffer.b_closing))
-;           {
-;               win_close(wp, false);
-
-                ;; Start all over, autocommands may change the window layout.
-;               wp = @firstwin;
-;           }
-;           else
-;               wp = wp.w_next;
-;       }
-
-;       --@redrawingDisabled;
-    ))
-
 ;; Return true if there is only one window.
 
 (defn- #_boolean one_window []
@@ -90541,10 +90291,9 @@
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
+        (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "enew"),          ex_edit,             BANG,                                                      ADDR_LINES),
-        (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
+        (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT CMDWIN),                                ADDR_LINES),
@@ -90577,7 +90326,6 @@
         (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "messages"),      ex_messages,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "new"),           ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
@@ -90615,7 +90363,7 @@
         (->cmdname_C (u8 "smapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
+        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR),                                  ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
@@ -90635,12 +90383,11 @@
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM CMDWIN),               ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
+        (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
         (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "vmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "vnew"),          ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
-        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
+        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR),                                  ADDR_LINES),
         (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
         (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
