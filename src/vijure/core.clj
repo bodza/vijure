@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec? bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec? bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat ignorecase pat-has-uppercase last-search-expr last-search-matcher searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -4487,6 +4487,8 @@
 (atom! boolean sub_error true)  ;; if false, ignore errors
 (atom! int sub_ic)              ;; ignore case flag
 
+(declare last_expr)
+
 ;; Perform a substitution from line eap.line1 to line eap.line2 using
 ;; the command pointed to by eap.arg which should be of the form:
 ;;
@@ -4609,7 +4611,7 @@
                     (if (:skip eap) ;; not executing commands, only parsing
                         [win eap]
 
-                        (let-when [[#_matcher_C mat ?] (search-regcomp? nil, pat, RE_SUBST, re_use, SEARCH_HIST)
+                        (let-when [[win #_matcher_C mat ?] (search-regcomp? win, nil, pat, RE_SUBST, re_use, SEARCH_HIST)
                               [win mat]
                                 (when' ? => [(if @sub_error (emsg win, e_invcmd) win) nil]
                                     [win mat])
@@ -4962,9 +4964,9 @@
                                                   [win _] (do-sub-msg? win, @a'sub_nsubs, @a'sub_nlines, @sub_count)]
                                                 win)
                                             (cond
-                                                @got_int     (emsg win, e_interr)                      ;; interrupted
-                                                @a'got_match (msg win, (u8 ""))                        ;; found something, but nothing substituted
-                                                @sub_error   (emsg* win, e_patnotf2, (get-search-pat)) ;; nothing found
+                                                @got_int     (emsg win, e_interr)                ;; interrupted
+                                                @a'got_match (msg win, (u8 ""))                  ;; found something, but nothing substituted
+                                                @sub_error   (emsg* win, e_patnotf2, @last_expr) ;; nothing found
                                                 :else        win)
                                         )]
                                     [win eap])
@@ -10749,7 +10751,7 @@
         )
         (byte \/)                                       ;; last search-pattern
         (do
-            (reset! a'value (last-search-pat))
+            (reset! a'value (last-search-expr))
             [(if (nil? @a'value) (emsg win, e_noprevre) win) true]
         )
         (byte \.)                                       ;; last inserted text
@@ -16868,95 +16870,55 @@
 ;; Beware that the optimization-preparation code in here knows about some of the structure of the compiled regexp.
 ;; "re_flags": RE_MAGIC and/or RE_STRING.
 
-(defn- #_pattern_C bt-regcomp [#_Bytes expr, #_int re_flags]
-    (§
-        (when (nil? expr)
-            (emsg e_null)
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
-
+(defn- #_[window_C pattern_C] bt-regcomp? [#_window_C win, #_Bytes expr, #_int re_flags]
+    (when' (some? expr) => (do (reset! rc_did_emsg true) [(emsg win, e_null) nil])
         ;; First pass: determine size, legality.
-
         (regcomp-start expr, re_flags)
         (reset! regcode JUST_CALC_SIZE)
-        ((ß int[] a'flags =) (atom (int)))
-        (if (nil? (bt-reg REG_NOPAREN, a'flags))
-            ((ß RETURN) nil)
-        )
+        (let-when [a'flags (atom (int)) ? (bt-reg REG_NOPAREN, a'flags)] (some? ?) => [win nil]
 
-        ;; Allocate space.
-        ((ß bt_pattern_C r =) (new bt_pattern_C))
-        ((ß r =) (assoc r :program (Bytes. (inc @regsize))))
+            (let-when [#_bt_pattern_C pat (-> (new bt_pattern_C) (assoc :program (Bytes. (inc @regsize))))
+                  ;; Second pass: emit code.
+                  _ (regcomp-start expr, re_flags)
+                  _ (reset! regcode (:program pat))
+                  ? (bt-reg REG_NOPAREN, a'flags)
+            ] (and (some? ?) (not @reg_toolong)) => [(if @reg_toolong (do (reset! rc_did_emsg true) (emsg win, (u8 "E339: Pattern too long"))) win) nil]
 
-        ;; Second pass: emit code.
-
-        (regcomp-start expr, re_flags)
-        (reset! regcode (:program r))
-        (when (or (nil? (bt-reg REG_NOPAREN, a'flags)) @reg_toolong)
-            (when @reg_toolong
-                (emsg (u8 "E339: Pattern too long"))
-                (reset! rc_did_emsg true)
-            )
-            ((ß RETURN) nil)
-        )
-
-        ;; Dig out information for optimizations.
-        ((ß r =) (assoc r :regstart NUL))                   ;; Worst-case defaults.
-        ((ß r =) (assoc r :reganch 0))
-        ((ß r =) (assoc r :regmust nil))
-        ((ß r =) (assoc r :regmlen 0))
-        ((ß r =) (assoc r :regflags @regflags))
-        (if (flag? @a'flags HASNL)
-            ((ß r =) (update r :regflags | RF_HASNL))
-        )
-        (if (flag? @a'flags HASLOOKBH)
-            ((ß r =) (update r :regflags | RF_LOOKBH))
-        )
-
-        ((ß Bytes scan =) (.plus (:program r) 1))        ;; First BRANCH.
-        (when (== (re-op (regnext scan)) BT_END)    ;; Only one top-level choice.
-            ((ß scan =) (operand scan))
-
-            ;; Starting-point info.
-            (when (any == (re-op scan) BT_BOL BT_BOF)
-                ((ß r =) (update r :reganch inc))
-                ((ß scan =) (regnext scan))
-            )
-
-            (cond (== (re-op scan) EXACTLY)
-            (do
-                ((ß r =) (assoc r :regstart (us-ptr2char (operand scan))))
-            )
-            (and (any == (re-op scan) BT_BOW BT_EOW NOTHING (+ MOPEN 0) NOPEN (+ MCLOSE 0) NCLOSE) (== (re-op (regnext scan)) EXACTLY))
-            (do
-                ((ß r =) (assoc r :regstart (us-ptr2char (operand (regnext scan)))))
+                ;; Dig out information for optimizations.  ;; Worst-case defaults.
+                (let [pat (assoc pat :regstart NUL, :reganch 0, :regmust nil, :regmlen 0, :regflags @regflags)
+                      pat (if (flag? @a'flags HASNL)     (update pat :regflags | RF_HASNL)  pat)
+                      pat (if (flag? @a'flags HASLOOKBH) (update pat :regflags | RF_LOOKBH) pat)
+                      #_Bytes scan (.plus (:program pat) 1) ;; First BRANCH.
+                      pat (when' (== (re-op (regnext scan)) BT_END) => pat ;; Only one top-level choice.
+                            (let [scan (operand scan)
+                                  [pat scan] ;; Starting-point info.
+                                    (when' (any == (re-op scan) BT_BOL BT_BOF) => [pat scan]
+                                        [(update pat :reganch inc) (regnext scan)])
+                                  pat (cond (== (re-op scan) EXACTLY)
+                                        (assoc pat :regstart (us-ptr2char (operand scan)))
+                                    (and (any == (re-op scan) BT_BOW BT_EOW NOTHING (+ MOPEN 0) NOPEN (+ MCLOSE 0) NCLOSE) (== (re-op (regnext scan)) EXACTLY))
+                                        (assoc pat :regstart (us-ptr2char (operand (regnext scan))))
+                                    :else
+                                        pat
+                                    )]
+                                ;; If there's something expensive in the r.e., find the longest literal string that must appear and make it the "regmust".
+                                ;; Resolve ties in favor of later strings, since the "regstart" check works with the beginning of the r.e. and avoiding
+                                ;; duplication strengthens checking.  Not a strong reason, but sufficient in the absence of others.
+                                ;; When the r.e. starts with BOW, it is faster to look for a "regmust" first.  Used a lot for "#" and "*" commands.
+                                (when' (and (or (flag? @a'flags SPSTART) (any == (re-op scan) BT_BOW BT_EOW)) (non-flag? @a'flags HASNL)) => pat
+                                    (let [[#_Bytes longest #_int len]
+                                            (loop-when [longest nil len 0 scan scan] (some? scan) => [longest len]
+                                                (let [[longest len]
+                                                        (when' (and (== (re-op scan) EXACTLY) (<= len (STRLEN (operand scan)))) => [longest len]
+                                                            [(operand scan) (STRLEN (operand scan))]
+                                                        )]
+                                                    (recur longest len (regnext scan)))
+                                            )]
+                                        (assoc pat :regmust longest :regmlen len))
+                                ))
+                        )]
+                    [win #_pattern_C (assoc pat :regexec bt-regexec?)])
             ))
-
-            ;; If there's something expensive in the r.e., find the longest literal string
-            ;; that must appear and make it the regmust.  Resolve ties in favor of later strings,
-            ;; since the regstart check works with the beginning of the r.e. and avoiding duplication
-            ;; strengthens checking.  Not a strong reason, but sufficient in the absence of others.
-
-            ;; When the r.e. starts with BOW, it is faster to look for a regmust first.
-            ;; Used a lot for "#" and "*" commands.
-
-            (when (and (or (flag? @a'flags SPSTART) (== (re-op scan) BT_BOW) (== (re-op scan) BT_EOW)) (non-flag? @a'flags HASNL))
-                ((ß Bytes longest =) nil)
-                ((ß int len =) 0)
-                (loop-when-recur scan (some? scan) (regnext scan)
-                    (when (and (== (re-op scan) EXACTLY) (<= len (STRLEN (operand scan))))
-                        ((ß longest =) (operand scan))
-                        ((ß len =) (STRLEN (operand scan)))
-                    )
-                )
-                ((ß r =) (assoc r :regmust longest))
-                ((ß r =) (assoc r :regmlen len))
-            )
-        )
-
-        ((ß r =) (assoc r :regexec bt-regexec?))
-        (ß (pattern_C)r)
     ))
 
 ;; Setup to parse the regexp.  Used once to get the length and once to do it.
@@ -20690,7 +20652,7 @@
 
 (defn- #_boolean emc1 [#_int c]
     (§
-        (when (<= (:length @post_array) @post_index)
+        (when (<= (count @post_array) @post_index)
             (grow-post-array 1000))
 
         ((ß @post_array[@post_index++] =) c)
@@ -22405,13 +22367,12 @@
 
 ;; After building the NFA program, inspect it to add optimization hints.
 
-(defn- #_nfa_pattern_C nfa-postprocess [#_nfa_pattern_C prog]
-    (loop-when [prog prog #_int i 0] (< i (:nstate prog)) => prog
-        (let [#_nfa_state_C state (... (:states prog) i)
-              prog
-                (if (some? state)
+(defn- #_nfa_pattern_C nfa-postprocess [#_nfa_pattern_C pat]
+    (loop-when [pat pat #_int i 0] (< i (:nstate pat)) => pat
+        (let [#_nfa_state_C state (... (:states pat) i)
+              pat (when' (some? state) => pat
                     (let [#_int c (:c state)]
-                        (if (any == c NFA_START_INVISIBLE, NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG)
+                        (when' (any == c NFA_START_INVISIBLE, NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG) => pat
                             ;; Do it directly when what follows is possibly the end of the match.
                             (let [#_boolean directly
                                     (or (match-follows (.. state (out1) (out0)), 0)
@@ -22426,16 +22387,12 @@
                                                 (< ch_follows ch_invisible)
                                             ))
                                     )]
-                                (if directly ;; switch to the _FIRST state
-                                    (update-in prog [:states i :c] inc)
-                                    prog
+                                (when' directly => pat ;; switch to the _FIRST state
+                                    (update-in pat [:states i :c] inc)
                                 ))
-                            prog
                         ))
-                    prog
                 )]
-            (recur prog (inc i))
-        )
+            (recur pat (inc i)))
     ))
 
 ;; NFA execution code.
@@ -24362,79 +24319,53 @@
 ;; Compile a regular expression into internal code for the NFA matcher.
 ;; Returns the program in allocated space.  Returns null for an error.
 
-(defn- #_pattern_C nfa-regcomp [#_Bytes expr, #_int re_flags]
-    (§
-        (if (nil? expr)
-            ((ß RETURN) nil)
-        )
-
-        (ß nfa_pattern_C prog)
-
+(defn- #_[window_C pattern_C] nfa-regcomp? [#_window_C win, #_Bytes expr, #_int re_flags]
+    (when' (some? expr) => [win nil]
         (reset! nfa_re_flags re_flags)
-
         (nfa-regcomp-start expr, re_flags)
-
-;       theend:
-;       {
-;           fail:
-;           {
+        (let [[win #_nfa_pattern_C pat]
                 ;; Build postfix form of the regexp.  Needed to build the NFA (and count its size).
-                ((ß int[] postfix =) (re2post))
-                (when (nil? postfix)
-                    ;; TODO: only give this error for debugging?
-                    (when (<= (:length @post_array) @post_index)
-                        (emsg* (u8 "Internal error: estimated max number of states insufficient: %ld"), (:length @post_array)))
-                    (ß BREAK fail)         ;; cascaded (syntax?) error
-                )
+                (let [#_int* postfix (re2post)]
+                    (if (nil? postfix)
+                        (let [? (count @post_array)
+                              win (when' (<= ? @post_index) => win
+                                    (emsg* win, (u8 "Internal error: estimated max number of states insufficient: %ld"), ?)
+                                )]
+                            [win nil]) ;; cascaded (syntax?) error
 
-                ;; In order to build the NFA, we parse the input regexp twice:
-                ;; 1. first pass to count size (so we can allocate space)
-                ;; 2. second to emit code
+                        ;; In order to build the NFA, we parse the input regexp twice:
+                        ;; 1. first pass to count size (so we can allocate space),
+                        ;; 2. second to emit code.
+                        (let-when [pat (-> (new nfa_pattern_C) (assoc :nstate 0))
+                              ;; PASS 1.  Count number of NFA states in "pat.nstate".  Do not build the NFA.
+                              _ (post2nfa postfix, @post_index, pat, true)
+                              ;; allocate space for the compiled regexp
+                              pat (assoc pat :states (ß new nfa_state_C[(:nstate pat)]))
+                              _ (reset! nfa_states (:states pat))
+                              pat (assoc pat :istate 0)
+                              ;; PASS 2.  Build the NFA.
+                              #_nfa_state_C start (post2nfa postfix, @post_index, pat, false)
+                        ] (some? start) => [win nil]
 
-                ((ß prog =) (new nfa_pattern_C))
-                ((ß prog =) (assoc prog :nstate 0))
-
-                ;; PASS 1
-                ;; Count number of NFA states in "prog.nstate".  Do not build the NFA.
-
-                (post2nfa postfix, @post_index, prog, true)
-
-                ;; allocate space for the compiled regexp
-                ((ß prog =) (assoc prog :states (ß new nfa_state_C[prog.nstate])))
-                (reset! nfa_states (:states prog))
-                ((ß prog =) (assoc prog :istate 0))
-
-                ;; PASS 2
-                ;; Build the NFA
-
-                ((ß prog =) (assoc prog :start (post2nfa postfix, @post_index, prog, false)))
-                (if (nil? (:start prog))
-                    (ß BREAK fail)
-                )
-
-                ((ß prog =) (assoc prog :regflags @regflags))
-                ((ß prog =) (assoc prog :regexec nfa-regexec?))
-                ((ß prog =) (assoc prog :has_zend @nfa_has_zend))
-                ((ß prog =) (assoc prog :has_backref @nfa_has_backref))
-
-                ((ß prog =) (nfa-postprocess prog))
-
-                ((ß prog =) (assoc prog :reganch (if (nfa-get-reganch (:start prog), 0) 1 0)))
-                ((ß prog =) (assoc prog :regstart (nfa-get-regstart (:start prog), 0)))
-                ((ß prog =) (assoc prog :match_text (nfa-get-match-text (:start prog))))
-
-                ((ß prog =) (assoc prog :rex (STRDUP expr)))
-                (ß BREAK theend)
-;           }
-
-            ((ß prog =) nil)
-;       }
-
-        (reset! post_array nil)
-        (reset! post_index 0)
-        (reset! nfa_states nil)
-
-        (ß (pattern_C)prog)
+                            [win (-> pat
+                                (assoc :start       start)
+                                (assoc :regflags    @regflags)
+                                (assoc :regexec     nfa-regexec?)
+                                (assoc :has_zend    @nfa_has_zend)
+                                (assoc :has_backref @nfa_has_backref)
+                                (nfa-postprocess)
+                                (assoc :reganch     (if (nfa-get-reganch start, 0) 1 0))
+                                (assoc :regstart    (nfa-get-regstart start, 0))
+                                (assoc :match_text  (nfa-get-match-text start))
+                                (assoc :rex         (STRDUP expr))
+                            )]
+                        ))
+                )]
+            (reset! post_array nil)
+            (reset! post_index 0)
+            (reset! nfa_states nil)
+            [win #_pattern_C pat]
+        )
     ))
 
 ;; Match a regexp against multiple lines.
@@ -24544,19 +24475,20 @@
                         ))
                 ))
           ;; First try the NFA engine, unless backtracking was requested.
-          #_pattern_C prog
+          [win #_pattern_C pat]
             (if (!= re_engine BACKTRACKING_ENGINE)
-                (nfa-regcomp expr, (+ re_flags (if (== re_engine AUTOMATIC_ENGINE) RE_AUTO 0)))
-                (bt-regcomp expr, re_flags))
+                (nfa-regcomp? win, expr, (+ re_flags (if (== re_engine AUTOMATIC_ENGINE) RE_AUTO 0)))
+                (bt-regcomp? win, expr, re_flags))
           ;; Check for error compiling regexp with initial engine.
-          [re_engine prog]
-            (when' (and (nil? prog) (== re_engine AUTOMATIC_ENGINE)) => [re_engine prog]
+          [win re_engine pat]
+            (when' (and (nil? pat) (== re_engine AUTOMATIC_ENGINE)) => [win re_engine pat]
                 ;; If the NFA engine failed, try the backtracking engine.
                 ;; The NFA engine also fails for patterns that it can't handle well but are still valid patterns, thus a retry should work.
-                [BACKTRACKING_ENGINE (bt-regcomp expr, re_flags)]
+                (let [[win pat] (bt-regcomp? win, expr, re_flags)]
+                    [win BACKTRACKING_ENGINE pat])
             )]
         ;; Store the info needed to call regcomp() again when the engine turns out to be very slow executing it.
-        [win (when (some? prog) (assoc prog :re_engine re_engine, :re_flags re_flags))]
+        [win (when (some? pat) (assoc pat :re_engine re_engine, :re_flags re_flags))]
     ))
 
 (defn- #_void report-re-switch [#_Bytes expr]
@@ -24648,60 +24580,52 @@
     ])
 (atom! int last_idx)        ;; index in spats[] for RE_LAST
 
-(atom! Bytes mr_pattern)    ;; pattern used by search-regcomp()
+(atom! Bytes last_expr)     ;; pattern used by search-regcomp()
 
 ;; Translate search pattern for vim-regcomp().
 ;;
-;; pat_save == RE_SEARCH: save pat in spats[RE_SEARCH].pat (normal search cmd)
-;; pat_save == RE_SUBST: save pat in spats[RE_SUBST].pat (:substitute command)
-;; pat_save == RE_BOTH: save pat in both patterns (:global command)
+;; re_save == RE_SEARCH: save "expr" in spats[RE_SEARCH].pat (normal search cmd)
+;; re_save == RE_SUBST: save "expr" in spats[RE_SUBST].pat (:substitute command)
+;; re_save == RE_BOTH: save "expr" in both patterns (:global command)
 ;;
-;; pat_use  == RE_SEARCH: use previous search pattern if "pat" is null
-;; pat_use  == RE_SUBST: use previous substitute pattern if "pat" is null
-;; pat_use  == RE_LAST: use last used pattern if "pat" is null
+;; re_use  == RE_SEARCH: use previous search pattern if "expr" is null
+;; re_use  == RE_SUBST: use previous substitute pattern if "expr" is null
+;; re_use  == RE_LAST: use last used pattern if "expr" is null
 ;;
 ;; options & SEARCH_HIST: put search string in history
 ;; options & SEARCH_KEEP: keep previous search pattern
 ;;
 ;; returns false if failed, true otherwise
 
-(defn- #_[matcher_C boolean] search-regcomp? [#_matcher_C matcher, #_Bytes pat, #_int pat_save, #_int pat_use, #_int options]
-    (let-when [matcher (if (nil? matcher) (NEW_matcher_C) matcher)
+(defn- #_[window_C matcher_C boolean] search-regcomp? [#_window_C win, #_matcher_C mat, #_Bytes expr, #_int re_save, #_int re_use, #_int options]
+    (let-when [mat (if (nil? mat) (NEW_matcher_C) mat)
           _ (reset! rc_did_emsg false)
           ;; If no pattern given, use a previously defined pattern.
-          [pat magic :as _]
-            (if (or (nil? pat) (eos? pat))
-                (let [i (if (== pat_use RE_LAST) @last_idx pat_use) si (... @spats i)]
+          [win [expr magic :as _]]
+            (if (or (nil? expr) (eos? expr))
+                (let [i (if (== re_use RE_LAST) @last_idx re_use) si (... @spats i)]
                     (if (nil? (:pat si)) ;; pattern was never defined
-                        (do (emsg (if (== pat_use RE_SUBST) e_nopresub e_noprevre))
-                            (reset! rc_did_emsg true)
-                            nil)
+                        (do (reset! rc_did_emsg true)
+                            [(emsg win, (if (== re_use RE_SUBST) e_nopresub e_noprevre)) nil])
                         (do (reset! no_smartcase (:no_scs si))
-                            [(:pat si) (:magic si)])
+                            [win [(:pat si) (:magic si)]])
                     ))
                 (do (when (flag? options SEARCH_HIST) ;; put new pattern in history
-                        (add-to-history HIST_SEARCH, pat, NUL))
-                    [pat @p_magic]
+                        (add-to-history HIST_SEARCH, expr, NUL))
+                    [win [expr @p_magic]]
                 ))
+    ] (some? _) => [win mat false]
 
-    ] (some? _) => [matcher false]
-
-        (reset! mr_pattern pat)
+        (reset! last_expr expr)
         ;; Save the currently used pattern in the appropriate place, unless the pattern should not be remembered.
         (when (non-flag? options SEARCH_KEEP)
-            (when (any == pat_save RE_SEARCH RE_BOTH) (save-re-pat RE_SEARCH, pat, magic)) ;; search or global command
-            (when (any == pat_save RE_SUBST RE_BOTH)  (save-re-pat RE_SUBST, pat, magic))  ;; substitute or global command
+            (when (any == re_save RE_SEARCH RE_BOTH) (save-re-pat RE_SEARCH, expr, magic)) ;; search or global command
+            (when (any == re_save RE_SUBST RE_BOTH)  (save-re-pat RE_SUBST, expr, magic))  ;; substitute or global command
         )
-        (let [[_ ?] (vim-regcomp? @curwin, pat, (if magic RE_MAGIC 0)) _ (reset! curwin _)
-              matcher (assoc matcher :r_icase (ignorecase pat), :r_maxcol 0, :r_pattern ?)]
-            [matcher (some? (:r_pattern matcher))]
+        (let [[win ?] (vim-regcomp? win, expr, (if magic RE_MAGIC 0)) mat (assoc mat :r_icase (ignorecase expr), :r_maxcol 0, :r_pattern ?)]
+            [win mat (some? (:r_pattern mat))]
         )
     ))
-
-;; Get search pattern used by search-regcomp().
-
-(defn- #_Bytes get-search-pat []
-    @mr_pattern)
 
 (defn- #_void save-re-pat [#_int idx, #_Bytes pat, #_boolean magic]
     (when (BNE (:pat (... @spats idx)), pat)
@@ -24743,24 +24667,25 @@
         )
     ))
 
-(defn- #_Bytes last-search-pat []
+(defn- #_Bytes last-search-expr []
     (:pat (... @spats @last_idx)))
 
 ;; Get a regexp program for the last used search pattern.
 ;; This is used for highlighting all matches in a window.
 
-(defn- #_matcher_C last-pat-prog [#_matcher_C m]
+(defn- #_matcher_C last-search-matcher [#_matcher_C m]
     (if (some? (:pat (... @spats @last_idx)))
-        (let [_ (swap! emsg_off inc) [m _] (search-regcomp? m, (u8 ""), 0, @last_idx, SEARCH_KEEP) _ (swap! emsg_off dec)]
+        (let [_ (swap! emsg_off inc) [win m _] (search-regcomp? @curwin, m, (u8 ""), 0, @last_idx, SEARCH_KEEP) _ (reset! curwin win) _ (swap! emsg_off dec)]
             m)
         (assoc m :r_pattern nil)
     ))
 
-(final Bytes top_bot_msg (u8 "search hit TOP, continuing at BOTTOM"))
-(final Bytes bot_top_msg (u8 "search hit BOTTOM, continuing at TOP"))
+(final Bytes
+    top_bot_msg (u8 "search hit TOP, continuing at BOTTOM"),
+    bot_top_msg (u8 "search hit BOTTOM, continuing at TOP"))
 
 ;; Lowest level search function.
-;; Search for "count"th occurrence of pattern "pat" in direction "dir".
+;; Search for "count"th occurrence of pattern "expr" in direction "dir".
 ;; Start at position "pos" and return the found position in "pos".
 ;;
 ;; if (options & SEARCH_MSG) == 0            don't give any messages
@@ -24771,17 +24696,17 @@
 ;; if (options & SEARCH_KEEP)                keep previous search pattern
 ;; if (options & SEARCH_PEEK)                check for typed char, cancel search
 ;;
-;; pat_use:   which pattern to use when "pat" is empty
+;; re_use:    which pattern to use when "expr" is empty
 ;; stop_lnum: stop after this line number when != 0
 ;; nsec:      timeout limit or 0
 ;;
 ;; Returns the index of the first matching subpattern plus one; one if there was none.
 
-(defn- #_[window_C pos_C int] searchit? [#_window_C win, #_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_long nsec]
-    (let [[#_matcher_C mat ?] (search-regcomp? nil, pat, RE_SEARCH, pat_use, (& options (| SEARCH_HIST SEARCH_KEEP)))]
+(defn- #_[window_C pos_C int] searchit? [#_window_C win, #_pos_C pos, #_int dir, #_Bytes expr, #_long count, #_int options, #_int re_use, #_long stop_lnum, #_long nsec]
+    (let [win [#_matcher_C mat ?] (search-regcomp? win, nil, expr, RE_SEARCH, re_use, (& options (| SEARCH_HIST SEARCH_KEEP)))]
         (if (not ?)
             (let [win (when' (and (flag? options SEARCH_MSG) (not @rc_did_emsg)) => win
-                        (emsg* win, (u8 "E383: Invalid search string: %s"), @mr_pattern)
+                        (emsg* win, (u8 "E383: Invalid search string: %s"), @last_expr)
                     )]
                 [win pos 0])
 
@@ -24998,9 +24923,9 @@
                                 (emsg win, e_interr)
                             (== (& options SEARCH_MSG) SEARCH_MSG)
                                 (cond
-                                    @p_ws        (emsg* win, e_patnotf2, @mr_pattern)
-                                    (zero? lnum) (emsg* win, (u8 "E384: search hit TOP without match for: %s"), @mr_pattern)
-                                    :else        (emsg* win, (u8 "E385: search hit BOTTOM without match for: %s"), @mr_pattern))
+                                    @p_ws        (emsg* win, e_patnotf2, @last_expr)
+                                    (zero? lnum) (emsg* win, (u8 "E384: search hit TOP without match for: %s"), @last_expr)
+                                    :else        (emsg* win, (u8 "E385: search hit BOTTOM without match for: %s"), @last_expr))
                             :else
                                 win
                             )]
@@ -26259,7 +26184,7 @@
 
 (defn- #_[window_C int] is-one-char? [#_window_C win, #_Bytes expr, #_boolean move]
     (let-when [o'called_emsg @called_emsg
-               [mat ?] (search-regcomp? nil, expr, RE_SEARCH, RE_SEARCH, SEARCH_KEEP)] ? => [win -1]
+               [win mat ?] (search-regcomp? win, nil, expr, RE_SEARCH, RE_SEARCH, SEARCH_KEEP)] ? => [win -1]
 
         (let [[pos flags] (if move [(NEW_pos_C) 0] [(:w_cursor win) SEARCH_START]) ;; accept a match at the cursor position
               [win pos sm1] (searchit? win, pos, FORWARD, (:pat (... @spats @last_idx)), 1, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
@@ -36233,7 +36158,7 @@
 
 (defn- #_void start-search-hl []
     (when (and @p_hls (not @no_hlsearch))
-        (swap! search_hl update :matcher last-pat-prog)
+        (swap! search_hl update :matcher last-search-matcher)
         (swap! search_hl assoc :attr (hl-attr HLF_L))
         ;; Set the time limit to 'redrawtime'.
         (swap! search_hl assoc :nsec (profile-setlimit @p_rdt)))
