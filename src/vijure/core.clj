@@ -13410,104 +13410,86 @@
 
 (atom! pos_C mark_initpos (->pos_C 1, 0, 0))
 
-;; Adjust marks between line1 and line2 (inclusive) to move 'amount' lines.
-;; Must be called before changed_*(), appended-lines() or deleted-lines().
+;; Adjust marks between "line1" and "line2" (inclusive) to move "amount" lines.
+;;
+;; Must be called before changed-*(), appended-lines() or deleted-lines().
 ;; May be called before or after changing the text.
-;; When deleting lines line1 to line2, use an 'amount' of MAXLNUM:
-;; The marks within this range are made invalid.
-;; If 'amount_after' is non-zero adjust marks after line2.
+;; When deleting lines "line1" to "line2", use an "amount" of MAXLNUM: the marks within this range are made invalid.
+;; If "amount_after" is non-zero, adjust marks after "line2".
 ;; Example: Delete lines 34 and 35: mark-adjust(34, 35, MAXLNUM, -2);
 ;; Example: Insert two lines below 55: mark-adjust(56, MAXLNUM, 2, 0);
 ;;                                 or: mark-adjust(56, 55, MAXLNUM, 2);
 
 (defn- #_void mark-adjust [#_long line1, #_long line2, #_long amount, #_long amount_after]
-    (§
-        (when-not (and (< line2 line1) (zero? amount_after))
-            ;; named marks, lower case and upper case
-            (dotimes [#_int i NMARKS]
-                (swap! curbuf update-in [:b_namedm i :lnum] one-adjust line1, line2, amount, amount_after)
-                (swap! namedfm update-in [i :lnum] one-adjust-nodel line1, line2, amount, amount_after)
+    (when-not (and (< line2 line1) (zero? amount_after))
+        ;; named marks, lower case and upper case
+        (dotimes [#_int i NMARKS]
+            (swap! curbuf update-in [:b_namedm i :lnum] one-adjust line1, line2, amount, amount_after)
+            (swap! namedfm update-in [i :lnum] one-adjust-nodel line1, line2, amount, amount_after))
+
+        (loop-when-recur [#_int i NMARKS] (< i (+ NMARKS EXTRA_MARKS)) [(inc i)]
+            (swap! namedfm update-in [i :lnum] one-adjust-nodel line1, line2, amount, amount_after))
+
+        (swap! curbuf update-in [:b_last_insert :lnum] one-adjust line1, line2, amount, amount_after)   ;; last insert position
+        (swap! curbuf update-in [:b_last_change :lnum] one-adjust line1, line2, amount, amount_after)   ;; last change position
+
+        ;; last cursor position, if it was set
+        (when (not (eqpos (:b_last_cursor @curbuf), @mark_initpos))
+            (swap! curbuf update-in [:b_last_cursor :lnum] one-adjust line1, line2, amount, amount_after))
+
+        ;; list of change positions
+        (dotimes [#_int i (:b_changelistlen @curbuf)]
+            (swap! curbuf update-in [:b_changelist i :lnum] one-adjust-nodel line1, line2, amount, amount_after))
+
+        ;; Visual area.
+        (swap! curbuf update-in [:b_visual :vi_start :lnum] one-adjust-nodel line1, line2, amount, amount_after)
+        (swap! curbuf update-in [:b_visual :vi_end :lnum] one-adjust-nodel line1, line2, amount, amount_after)
+
+        (swap! curwin update-in [:w_pcmark :lnum] one-adjust line1, line2, amount, amount_after)        ;; previous context mark
+        (swap! curwin update-in [:w_prev_pcmark :lnum] one-adjust line1, line2, amount, amount_after)   ;; previous pcmark
+
+        ;; Adjust items in all windows related to the current buffer.
+
+        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+            ;; Marks in the jumplist.
+            ;; When deleting lines, this may create duplicate marks in the jumplist, they will be removed later.
+            (dotimes [#_int i (:w_jumplistlen win)]
+                ((ß win =) (update-in win [:w_jumplist i :lnum] one-adjust-nodel line1, line2, amount, amount_after)))
+
+            ;; the displayed Visual area
+            (when (non-zero? (:w_old_cursor_lnum win))
+                ((ß win =) (update win :w_old_cursor_lnum one-adjust-nodel line1, line2, amount, amount_after))
+                ((ß win =) (update win :w_old_visual_lnum one-adjust-nodel line1, line2, amount, amount_after)))
+
+            ;; topline and cursor position for windows with the same buffer, other than the current window
+            (when (!= win @curwin)
+                ((ß win =) (cond (<= line1 (:w_topline win) line2) ;; topline is deleted ;; keep topline on the same line
+                    (assoc win :w_topline (if (== amount MAXLNUM) (max 1 (dec line1)) (+ (:w_topline win) amount)))
+                (and (non-zero? amount_after) (< line2 (:w_topline win)))
+                    (update win :w_topline + amount_after)
+                :else
+                    win
+                ))
+
+                ((ß win =) (cond (<= line1 (:lnum (:w_cursor win)) line2)
+                    (if (== amount MAXLNUM)
+                        (update win :w_cursor assoc :lnum (max 1 (dec line1)) :col 0)   ;; line with cursor is deleted
+                        (update-in win [:w_cursor :lnum] + amount))                     ;; keep cursor on the same line
+                (and (non-zero? amount_after) (< line2 (:lnum (:w_cursor win))))
+                    (update-in win [:w_cursor :lnum] + amount_after)
+                :else
+                    win
+                ))
             )
-            (loop-when-recur [#_int i NMARKS] (< i (+ NMARKS EXTRA_MARKS)) [(inc i)]
-                (swap! namedfm update-in [i :lnum] one-adjust-nodel line1, line2, amount, amount_after)
-            )
-
-            (swap! curbuf update-in [:b_last_insert :lnum] one-adjust line1, line2, amount, amount_after) ;; last insert position
-            (swap! curbuf update-in [:b_last_change :lnum] one-adjust line1, line2, amount, amount_after) ;; last change position
-
-            ;; last cursor position, if it was set
-            (when (not (eqpos (:b_last_cursor @curbuf), @mark_initpos))
-                (swap! curbuf update-in [:b_last_cursor :lnum] one-adjust line1, line2, amount, amount_after))
-
-            ;; list of change positions
-            (dotimes [#_int i (:b_changelistlen @curbuf)]
-                (swap! curbuf update-in [:b_changelist i :lnum] one-adjust-nodel line1, line2, amount, amount_after)
-            )
-
-            ;; Visual area.
-            (swap! curbuf update-in [:b_visual :vi_start :lnum] one-adjust-nodel line1, line2, amount, amount_after)
-            (swap! curbuf update-in [:b_visual :vi_end :lnum] one-adjust-nodel line1, line2, amount, amount_after)
-
-            (swap! curwin update-in [:w_pcmark :lnum] one-adjust line1, line2, amount, amount_after) ;; previous context mark
-            (swap! curwin update-in [:w_prev_pcmark :lnum] one-adjust line1, line2, amount, amount_after) ;; previous pcmark
-
-            ;; Adjust items in all windows related to the current buffer.
-
-            (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-                ;; Marks in the jumplist.  When deleting lines, this may create
-                ;; duplicate marks in the jumplist, they will be removed later.
-                (dotimes [#_int i (:w_jumplistlen win)]
-                    ((ß win.w_jumplist[i].lnum =) (one-adjust-nodel (:lnum (... (:w_jumplist win) i)), line1, line2, amount, amount_after))
-                )
-
-                ;; the displayed Visual area
-                (when (non-zero? (:w_old_cursor_lnum win))
-                    ((ß win =) (update win :w_old_cursor_lnum one-adjust-nodel line1, line2, amount, amount_after))
-                    ((ß win =) (update win :w_old_visual_lnum one-adjust-nodel line1, line2, amount, amount_after))
-                )
-
-                ;; topline and cursor position for windows with the same buffer
-                ;; other than the current window
-                (when (!= win @curwin)
-                    (cond (<= line1 (:w_topline win) line2)
-                    (do
-                        ;; topline is deleted ;; keep topline on the same line
-                        ((ß win =) (assoc win :w_topline (if (== amount MAXLNUM) (max 1 (dec line1)) (+ (:w_topline win) amount))))
-                    )
-                    (and (non-zero? amount_after) (< line2 (:w_topline win)))
-                    (do
-                        ((ß win =) (update win :w_topline + amount_after))
-                    ))
-
-                    (cond (<= line1 (:lnum (:w_cursor win)) line2)
-                    (do
-                        (cond (== amount MAXLNUM)              ;; line with cursor is deleted
-                        (do
-                            ((ß win =) (update win :w_cursor assoc :lnum (max 1 (dec line1)) :col 0))
-                        )
-                        :else                                ;; keep cursor on the same line
-                        (do
-                            ((ß win =) (update-in win [:w_cursor :lnum] + amount))
-                        ))
-                    )
-                    (and (non-zero? amount_after) (< line2 (:lnum (:w_cursor win))))
-                    (do
-                        ((ß win =) (update-in win [:w_cursor :lnum] + amount_after))
-                    ))
-                )
-            )
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; This code is used often, needs to be fast.
-(defn- #_void col-adjust [#_pos_C posp, #_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
-    (§
-        (when (and (== (:lnum posp) lnum) (<= mincol (:col posp)))
-            ((ß posp =) (update posp :lnum + lnum_amount))
-            ((ß posp =) (assoc posp :col (if (and (< col_amount 0) (<= (:col posp) (- col_amount))) 0 (+ (:col posp) col_amount))))
-        )
-        nil
+(defn- #_pos_C col-adjust [#_pos_C pos, #_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
+    (if (and (== (:lnum pos) lnum) (<= mincol (:col pos)))
+        (let [pos (update pos :lnum + lnum_amount)]
+            (assoc pos :col (max 0 (+ (:col pos) col_amount))))
+        pos
     ))
 
 ;; Adjust marks in line "lnum" at column "mincol" and further: add
@@ -13517,47 +13499,37 @@
     (when-not (and (zero? col_amount) (zero? lnum_amount))
         ;; named marks, lower case and upper case
         (dotimes [#_int i NMARKS]
-            (col-adjust (... (:b_namedm @curbuf) i), lnum, mincol, lnum_amount, col_amount)
-            (col-adjust (... @namedfm i), lnum, mincol, lnum_amount, col_amount)
-        )
+            (swap! curbuf update-in [:b_namedm i] col-adjust lnum, mincol, lnum_amount, col_amount)
+            (swap! namedfm update i col-adjust lnum, mincol, lnum_amount, col_amount))
+
         (loop-when-recur [#_int i NMARKS] (< i (+ NMARKS EXTRA_MARKS)) [(inc i)]
-            (col-adjust (... @namedfm i), lnum, mincol, lnum_amount, col_amount)
-        )
+            (swap! namedfm update i col-adjust lnum, mincol, lnum_amount, col_amount))
 
-        ;; last insert position
-        (col-adjust (:b_last_insert @curbuf), lnum, mincol, lnum_amount, col_amount)
-
-        ;; last change position
-        (col-adjust (:b_last_change @curbuf), lnum, mincol, lnum_amount, col_amount)
+        (swap! curbuf update :b_last_insert col-adjust lnum, mincol, lnum_amount, col_amount)   ;; last insert position
+        (swap! curbuf update :b_last_change col-adjust lnum, mincol, lnum_amount, col_amount)   ;; last change position
 
         ;; list of change positions
         (dotimes [#_int i (:b_changelistlen @curbuf)]
-            (col-adjust (... (:b_changelist @curbuf) i), lnum, mincol, lnum_amount, col_amount)
-        )
+            (swap! curbuf update-in [:b_changelist i] col-adjust lnum, mincol, lnum_amount, col_amount))
 
         ;; Visual area.
-        (col-adjust (:vi_start (:b_visual @curbuf)), lnum, mincol, lnum_amount, col_amount)
-        (col-adjust (:vi_end (:b_visual @curbuf)), lnum, mincol, lnum_amount, col_amount)
+        (swap! curbuf update-in [:b_visual :vi_start] col-adjust lnum, mincol, lnum_amount, col_amount)
+        (swap! curbuf update-in [:b_visual :vi_end] col-adjust lnum, mincol, lnum_amount, col_amount)
 
-        ;; previous context mark
-        (col-adjust (:w_pcmark @curwin), lnum, mincol, lnum_amount, col_amount)
-
-        ;; previous pcmark
-        (col-adjust (:w_prev_pcmark @curwin), lnum, mincol, lnum_amount, col_amount)
+        (swap! curwin update :w_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)        ;; previous context mark
+        (swap! curwin update :w_prev_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)   ;; previous pcmark
 
         ;; Adjust items in all windows related to the current buffer.
 
         (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
             ;; marks in the jumplist
             (dotimes [#_int i (:w_jumplistlen win)]
-                (col-adjust (... (:w_jumplist win) i), lnum, mincol, lnum_amount, col_amount)
-            )
+                ((ß win =) (update-in win [:w_jumplist i] col-adjust lnum, mincol, lnum_amount, col_amount)))
 
             ;; cursor position for other windows with the same buffer
-            (if (!= win @curwin)
-                (col-adjust (:w_cursor win), lnum, mincol, lnum_amount, col_amount))
-        )
-    )
+            (when (!= win @curwin)
+                ((ß win =) (update win :w_cursor col-adjust lnum, mincol, lnum_amount, col_amount)))
+        ))
     nil)
 
 ;; Deleting lines may create duplicate marks in the jumplist.
@@ -28549,6 +28521,7 @@
     ))
 
 ;; Get virtual column number of pos.
+;;
 ;;  start: on the first position of this character (TAB, ctrl)
 ;; cursor: where the cursor is on this character (first char, except for TAB)
 ;;    end: on the last position of this character (TAB, ctrl)
@@ -28558,7 +28531,7 @@
 (defn- #_void getvcol [#_window_C win, #_pos_C pos, #_int' a'start, #_int' a'cursor, #_int' a'end]
     (let [lbr @(:wo_lbr (:w_options win)) bri @(:wo_bri (:w_options win)) wrap @(:wo_wrap (:w_options win))
           #_Bytes line (ml-get (:lnum pos))
-          #_Bytes posp (if (== (:col pos) MAXCOL) nil (.plus line (:col pos)))
+          #_Bytes q (if (== (:col pos) MAXCOL) nil (.plus line (:col pos)))
           a'head (atom (int))
           tabs- (fn [#_Bytes s, #_int col]
                     (if (at? s TAB)
@@ -28578,7 +28551,7 @@
                         [vcol 1 p]          ;; NUL at end of line only takes one column
                         ;; A tab gets expanded, depending on the current column.
                         (let [i (tabs- p, vcol)]
-                            (if (and (some? posp) (BLE posp, p))
+                            (if (and (some? q) (BLE q, p))
                                 [vcol i p]
                                 (recur (+ vcol i) (.plus p (us-ptr2len-cc p)))))
                     ))
@@ -28589,7 +28562,7 @@
                         ;; make sure we don't go past the end of the line
                         (cond (eos? p)
                             [vcol 1 p]       ;; NUL at end of line only takes one column
-                        (and (some? posp) (BLE posp, p))
+                        (and (some? q) (BLE q, p))
                             [vcol i p]
                         :else
                             (recur (+ vcol i) (.plus p (us-ptr2len-cc p))))
@@ -28607,9 +28580,9 @@
 
 ;; Get virtual cursor column in the current window, pretending 'list' is off.
 
-(defn- #_int getvcol-nolist [#_pos_C posp]
+(defn- #_int getvcol-nolist [#_pos_C pos]
     (let [#_int' a'vcol (atom (int))]
-        (getvcol @curwin, posp, nil, a'vcol, nil)
+        (getvcol @curwin, pos, nil, a'vcol, nil)
         @a'vcol
     ))
 
