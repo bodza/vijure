@@ -5667,728 +5667,689 @@
 ;;
 ;; Return pointer to allocated string if there is a command line, null otherwise.
 
-(defn- #_Bytes getcmdline [#_int firstc, #_long count]
+(defn- #_[window_C Bytes] getcmdline [#_window_C win, #_int firstc, #_long count]
     ;; count: only used for incremental search
-    (§
-        ((ß int o'State =) @State)                 ;; remember State when called
-        ((ß boolean o'msg_scroll =) @msg_scroll)
-
-        ((ß boolean break_ctrl_c =) (== firstc -1))
-        ((ß firstc =) (if break_ctrl_c NUL firstc))
-
-        ((ß pos_C o'cursor =) (:w_cursor @curwin))      ;; needs to be restored later
-        ((ß int o'curswant =) (:w_curswant @curwin))
-        ((ß int o'leftcol =) (:w_leftcol @curwin))
-        ((ß long o'topline =) (:w_topline @curwin))
-        ((ß long o'botline =) (:w_botline @curwin))
-
-        (swap! ccline assoc :overstrike false)                  ;; always start in insert mode
-
-        ;; set some variables for redrawcmd()
+    (let [o'State @State o'msg_scroll @msg_scroll
+          o'cursor (:w_cursor win) o'curswant (:w_curswant win) o'leftcol (:w_leftcol win) o'topline (:w_topline win) o'botline (:w_botline win)
+          #_boolean break_ctrl_c (== firstc -1) firstc (if break_ctrl_c NUL firstc)]
+        (swap! ccline assoc :overstrike false) ;; always start in Insert mode
         (swap! ccline assoc :cmdfirstc (if (== firstc (byte \@)) 0 firstc) :cmdindent 0)
-
-        ;; alloc initial ccline.cmdbuff
-        (alloc-cmdbuff 1)
+        (alloc-cmdbuff 1) ;; alloc initial ccline.cmdbuff
         (swap! ccline assoc :cmdpos 0 :cmdlen 0)
         (eos! (:cmdbuff @ccline))
-
         (when (<= firstc 0)
-            (eos! (:cmdbuff @ccline))
-            (swap! ccline assoc :cmdpos 0 :cmdspos 0 :cmdlen 0)
-        )
-
-;       {
-            ((ß int i =) @msg_scrolled)
-            (reset! msg_scrolled 0)               ;; avoid wait-return message
+            (swap! ccline assoc :cmdspos 0))
+        (let [#_int i @msg_scrolled]
+            (reset! msg_scrolled 0) ;; avoid wait-return message
             (gotocmdline true)
             (swap! msg_scrolled + i)
             (redrawcmdprompt)
-            (set-cmdspos)
-;       }
-
+            (set-cmdspos))
         ;; Avoid scrolling when called by a recursive do-cmdline(),
         ;; e.g. when doing ":@0" when register 0 doesn't contain a CR.
-
         (reset! msg_scroll false)
-
         (reset! State CMDLINE)
-
-        (ui-cursor-shape)          ;; may show different cursor shape
-
+        (ui-cursor-shape) ;; may show different cursor shape
         ;; When inside an autocommand for writing "exiting" may be set and terminal mode set to cooked.
         ;; Need to set raw mode here then.
         (settmode TMODE_RAW)
-
         (init-history)
-        ((ß int hiscnt =) @hislen)        ;; current history line in use; set to impossible history value
-        ((ß int histype =) (hist-char2type firstc))   ;; history type to be used
+        (let [#_int histype (hist-char2type firstc)         ;; history type to be used
+              a'hiscnt (atom (int @hislen))                 ;; current history line in use; set to impossible history value
+              _ (do-digraph -1)                             ;; init digraph typeahead
+              ;; If something above caused an error, reset the flags, we do want to type and execute commands.
+              ;; Display may be messed up a bit.
+              _ (when @did_emsg (redrawcmd))
+              _ (reset! did_emsg false)
+              _ (reset! got_int false)
+              a'gotesc (atom (boolean false))               ;; true when <ESC> just typed
+              a'lookfor (atom (#_Bytes object nil))         ;; string to match
+              a'did_incsearch (atom (boolean false))
+              a'incsearch_postponed (atom (boolean false))
+              a'some_key_typed (atom (boolean false))       ;; one of the keys was typed
+              ;; Collect the command string, handling editing keys.
+              win
+        ]
 
-        (do-digraph -1)             ;; init digraph typeahead
+                (loop [win win]
+                    (reset! quit_more false)  ;; reset after CTRL-D which had a more-prompt
 
-        ;; If something above caused an error, reset the flags, we do want to type and execute commands.
-        ;; Display may be messed up a bit.
-        (if @did_emsg
-            (redrawcmd))
-        (reset! did_emsg false)
-        (reset! got_int false)
+                    (cursorcmd)        ;; set the cursor on the right spot
 
-        ((ß boolean gotesc =) false)                 ;; true when <ESC> just typed
-        ((ß Bytes lookfor =) nil)                  ;; string to match
-        ((ß boolean did_incsearch =) false)
-        ((ß boolean incsearch_postponed =) false)
-        ((ß boolean some_key_typed =) false)         ;; one of the keys was typed
+                    ;; Get a character.
+                    ;; Ignore K_IGNORE, it should not do anything, such as stop completion.
+                    ((ß int c =) (loop-when-recur [c (safe-vgetc)] (== c K_IGNORE) [(safe-vgetc)] => c))
 
-        ;; Collect the command string, handling editing keys.
+                    ((ß @a'some_key_typed =) (or @keyTyped @a'some_key_typed))
 
-;       returncmd:
-        (loop []
-            (reset! quit_more false)  ;; reset after CTRL-D which had a more-prompt
+                    ;; Ignore got_int when CTRL-C was typed here.
+                    ;; Don't ignore it in :global, we really need to break then,
+                    ;; e.g. for ":g/pat/normal /pat" (without the <CR>).
+                    ;; Don't ignore it for the input() function.
 
-            (cursorcmd)        ;; set the cursor on the right spot
+                    (when (and (any == c Ctrl_C @intr_char) (!= firstc (byte \@)) (not break_ctrl_c))
+                        (reset! got_int false))
 
-            ;; Get a character.
-            ;; Ignore K_IGNORE, it should not do anything, such as stop completion.
-            ((ß int c =) (loop-when-recur [c (safe-vgetc)] (== c K_IGNORE) [(safe-vgetc)] => c))
+                    ;; free old command line when finished moving around in the history list
+                    ((ß @a'lookfor =) (if (or (nil? @a'lookfor) (any == c K_S_DOWN K_S_UP K_DOWN K_UP K_PAGEDOWN K_PAGEUP K_KPAGEDOWN K_KPAGEUP K_LEFT K_RIGHT Ctrl_P Ctrl_N)) @a'lookfor))
 
-            ((ß some_key_typed =) (or @keyTyped some_key_typed))
-
-            ;; Ignore got_int when CTRL-C was typed here.
-            ;; Don't ignore it in :global, we really need to break then,
-            ;; e.g. for ":g/pat/normal /pat" (without the <CR>).
-            ;; Don't ignore it for the input() function.
-
-            (when (and (any == c Ctrl_C @intr_char) (!= firstc (byte \@)) (not break_ctrl_c))
-                (reset! got_int false))
-
-            ;; free old command line when finished moving around in the history list
-            ((ß lookfor =) (if (or (nil? lookfor) (any == c K_S_DOWN K_S_UP K_DOWN K_UP K_PAGEDOWN K_PAGEUP K_KPAGEDOWN K_KPAGEUP K_LEFT K_RIGHT Ctrl_P Ctrl_N)) lookfor))
-
-;           cmdline_changed:
-;           {
-;               cmdline_not_changed:
-;               {
-                    ;; CTRL-\ CTRL-N goes to Normal mode,
-                    ;; CTRL-\ CTRL-G goes to Insert mode when 'insertmode' is set,
-                    ;; CTRL-\ e prompts for an expression.
-                    (when (== c Ctrl_BSL)
-                        (swap! no_mapping inc)
-                        (swap! allow_keys inc)
-                        ((ß c =) (plain-vgetc))
-                        (swap! no_mapping dec)
-                        (swap! allow_keys dec)
-                        ;; CTRL-\ e doesn't work when obtaining an expression, unless it is in a mapping.
-                        (cond (and (!= c Ctrl_N) (!= c Ctrl_G) (or (!= c (byte \e)) (and (== (:cmdfirstc @ccline) (byte \=)) @keyTyped)))
-                        (do
-                            (vungetc c)
-                            ((ß c =) Ctrl_BSL)
-                        )
-                        (== c (byte \e))
-                        (do
-                            ;; Replace the command line with the result of an expression.
-                            ;; Need to save and restore the current command line, to be able to enter a new one...
-
-                            (reset! new_cmdpos (if (== (:cmdpos @ccline) (:cmdlen @ccline)) 99999 (:cmdpos @ccline))) ;; 99999: keep it at the end
-
-                            ((ß cmdline_info_C save_cli =) (save-cmdline))
-                            ((ß c =) (get-expr-register))
-                            (restore-cmdline save_cli)
-
-                            (when (== c (byte \=))
-                                ;; Need to save and restore ccline, and set "textlock" to avoid nasty things
-                                ;; like going to another buffer when evaluating an expression.
-                                ((ß cmdline_info_C save_cli =) (save-cmdline))
-                                (swap! textlock inc)
-                                ((ß Bytes p =) (get-expr-line))
-                                (swap! textlock dec)
-                                (restore-cmdline save_cli)
-
-                                (when (some? p)
-                                    ((ß int len =) (STRLEN p))
-                                    (realloc-cmdbuff (inc len))
-
-                                    (swap! ccline assoc :cmdlen len)
-                                    (STRCPY (:cmdbuff @ccline), p)
-
-                                    ;; Restore the cursor or use the position set with set_cmdline_pos().
-                                    (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
-
-                                    (reset! keyTyped false)   ;; Don't do 'wildchar' completion.
-                                    (redrawcmd)
-                                    (ß BREAK cmdline_changed)
-                                )
-                            )
-
-                            (beep-flush)
-                            (reset! got_int false)        ;; don't abandon the command line
-                            (reset! did_emsg false)
-                            (reset! emsg_on_display false)
-                            (redrawcmd)
-                            (ß BREAK cmdline_not_changed)
-                        )
-                        :else
-                        (do
-                            (if (and (== c Ctrl_G) @p_im (zero? @restart_edit))
-                                (reset! restart_edit (byte \a)))
-                            ((ß gotesc =) true)          ;; will free ccline.cmdbuff after putting it in history
-                            (ß BREAK returncmd)        ;; back to Normal mode
-                        ))
-                    )
-
-                    (cond (any == c @cedit_key K_CMDWIN)
-                    (do
-                        (when (not @got_int)
-                            ;; Open a window to edit the command line (and history).
-                            ((ß c =) (ex-window))
-                            ((ß some_key_typed =) true)
-                        )
-                    )
-                    :else
-                    (do
-                        ((ß c =) (do-digraph c))
-                    ))
-
-                    (when (or (any == c (byte \newline) (byte \return) K_KENTER) (and (== c ESC) (or (not @keyTyped) (some? (vim-strbyte @p_cpo, CPO_ESC)))))
-                        ((ß gotesc =) false)                     ;; Might have typed ESC previously, don't truncate the cmdline now.
-                        (windgoto @msg_row, 0)
-                        (out-flush)
-                        (ß BREAK)
-                    )
-
-                    ((ß gotesc =) false)
-
-                    ((ß c =) (if (any == c NUL K_ZERO) NL c))        ;; NUL is stored as NL
-
-                    ((ß boolean do_abbr =) true)             ;; default: check for abbreviation
-
-                    ;; Big switch for a typed command line character.
-
-                    (condp ==? c
-                       [K_BS Ctrl_H K_DEL K_KDEL Ctrl_W]
-                        (do
-                            ((ß c =) (if (== c K_KDEL) K_DEL c))
-
-                            ;; Delete current character is the same as backspace on next character, except at end of line.
-
-                            (when (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
-                                (swap! ccline update :cmdpos inc))
-                            (when (== c K_DEL)
-                                (swap! ccline update :cmdpos #(+ % (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %)))))
-                            (cond (< 0 (:cmdpos @ccline))
-                            (do
-                                ((ß int j =) (:cmdpos @ccline))
-                                ((ß Bytes p =) (us-prevptr (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) j)))
-
-                                (when (== c Ctrl_W)
-                                    ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (vim-isspace (.at p 0))) (us-prevptr (:cmdbuff @ccline), p) => p))
-                                    ((ß int cls =) (us-get-class p))
-                                    ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (== (us-get-class p) cls)) (us-prevptr (:cmdbuff @ccline), p) => p))
-                                    ((ß p =) (if (!= (us-get-class p) cls) (.plus p (us-ptr2len-cc p)) p))
-                                )
-
-                                (swap! ccline assoc :cmdpos (BDIFF p, (:cmdbuff @ccline)))
-                                (swap! ccline update :cmdlen - (- j (:cmdpos @ccline)))
-                                (loop-when-recur [#_int i (:cmdpos @ccline) j j] (< i (:cmdlen @ccline)) [(inc i) (inc j)]
-                                    (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
-                                )
-                                ;; Truncate at the end, required for multi-byte chars.
-                                (eos! (:cmdbuff @ccline) (:cmdlen @ccline))
-                                (redrawcmd)
-                            )
-                            (and (zero? (:cmdlen @ccline)) (!= c Ctrl_W) (nil? (:cmdprompt @ccline)))
-                            (do
-                                (swap! ccline assoc :cmdbuff nil)     ;; no commandline to return
-
-                                (reset! msg_col 0)
-                                (msg-putchar (byte \space))           ;; delete ':'
-
-                                (reset! redraw_cmdline true)
-                                (ß BREAK returncmd)            ;; back to cmd mode
-                            ))
-                            (ß BREAK cmdline_changed)
-                        )
-
-                       [K_INS K_KINS]
-                        (do
-                            (swap! ccline update :overstrike not)
-                            (ui-cursor-shape)              ;; may show different cursor shape
-                            (ß BREAK cmdline_not_changed)
-                        )
-
-                        Ctrl_HAT
-                        (do
-                            (ß BREAK cmdline_not_changed)
-                        )
-
-                        Ctrl_U
-                        (do
-                            ;; delete all characters left of the cursor
-                            ((ß int i =) 0)
-                            ((ß int j =) (:cmdpos @ccline))
-                            (swap! ccline assoc :cmdpos i)
-                            (swap! ccline update :cmdlen - j)
-                            ((ß int n =) (:cmdlen @ccline))
-                            (loop-when-recur [i i j j] (< i n) [(inc i) (inc j)]
-                                (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
-                            )
-                            ;; Truncate at the end, required for multi-byte chars.
-                            (eos! (:cmdbuff @ccline) n)
-                            (redrawcmd)
-                            (ß BREAK cmdline_changed)
-                        )
-
-                       [ESC Ctrl_C]       ;; get here when ESC typed twice
-                        (do
-                            ((ß gotesc =) true)              ;; will free ccline.cmdbuff after putting it in history
-                            (ß BREAK returncmd)            ;; back to cmd mode
-                        )
-
-                        Ctrl_R                    ;; insert register
-                        (do
-                            (putcmdline (byte \"), true)    ;; """
-                            (swap! no_mapping inc)
-                            ((ß int k =) ((ß c =) (plain-vgetc)))  ;; CTRL-R <char>
-                            ((ß k =) (if (== k Ctrl_O) Ctrl_R k))             ;; CTRL-R CTRL-O == CTRL-R CTRL-R
-                            ((ß c =) (if (== k Ctrl_R) (plain-vgetc) c))      ;; CTRL-R CTRL-R <char>
-                            (swap! no_mapping dec)
-
-                            ;; Insert the result of an expression.
-                            ;; Need to save the current command line, to be able to enter a new one...
-
-                            (reset! new_cmdpos -1)
-                            (when (== c (byte \=))
-                                (cond (== (:cmdfirstc @ccline) (byte \=))    ;; can't do this recursively
+        ;           cmdline_changed:
+        ;           {
+        ;               cmdline_not_changed:
+        ;               {
+                            ;; CTRL-\ CTRL-N goes to Normal mode,
+                            ;; CTRL-\ CTRL-G goes to Insert mode when 'insertmode' is set,
+                            ;; CTRL-\ e prompts for an expression.
+                            (when (== c Ctrl_BSL)
+                                (swap! no_mapping inc)
+                                (swap! allow_keys inc)
+                                ((ß c =) (plain-vgetc))
+                                (swap! no_mapping dec)
+                                (swap! allow_keys dec)
+                                ;; CTRL-\ e doesn't work when obtaining an expression, unless it is in a mapping.
+                                (cond (and (!= c Ctrl_N) (!= c Ctrl_G) (or (!= c (byte \e)) (and (== (:cmdfirstc @ccline) (byte \=)) @keyTyped)))
                                 (do
-                                    (beep-flush)
-                                    ((ß c =) ESC)
+                                    (vungetc c)
+                                    ((ß c =) Ctrl_BSL)
                                 )
-                                :else
+                                (== c (byte \e))
                                 (do
+                                    ;; Replace the command line with the result of an expression.
+                                    ;; Need to save and restore the current command line, to be able to enter a new one...
+
+                                    (reset! new_cmdpos (if (== (:cmdpos @ccline) (:cmdlen @ccline)) 99999 (:cmdpos @ccline))) ;; 99999: keep it at the end
+
                                     ((ß cmdline_info_C save_cli =) (save-cmdline))
                                     ((ß c =) (get-expr-register))
                                     (restore-cmdline save_cli)
-                                ))
-                            )
-                            (when (!= c ESC)               ;; use ESC to cancel inserting register
-                                (cmdline-paste c, (== k Ctrl_R), false)
 
-                                ;; When there was a serious error abort getting the command line.
-                                (when @got_int
-                                    ((ß gotesc =) true)      ;; will free ccline.cmdbuff after putting it in history
-                                    (ß BREAK returncmd)    ;; back to cmd mode
-                                )
-                                (reset! keyTyped false)       ;; Don't do 'wildchar' completion.
-                                (when (<= 0 @new_cmdpos)
-                                    ;; set_cmdline_pos() was used
-                                    (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
-                                )
-                            )
-                            (redrawcmd)
-                            (ß BREAK cmdline_changed)
-                        )
+                                    (when (== c (byte \=))
+                                        ;; Need to save and restore ccline, and set "textlock" to avoid nasty things
+                                        ;; like going to another buffer when evaluating an expression.
+                                        ((ß cmdline_info_C save_cli =) (save-cmdline))
+                                        (swap! textlock inc)
+                                        ((ß Bytes p =) (get-expr-line))
+                                        (swap! textlock dec)
+                                        (restore-cmdline save_cli)
 
-                       [K_RIGHT K_S_RIGHT K_C_RIGHT]
-                        (do
-                            (loop-when [] (< (:cmdpos @ccline) (:cmdlen @ccline))
-                                ((ß int n =) (cmdline-charsize (:cmdpos @ccline)))
-                                (if (and @keyTyped (<= (* @Cols @Rows) (+ (:cmdspos @ccline) n)))
-                                    (ß BREAK)
-                                )
-                                (swap! ccline update :cmdspos + n)
-                                (swap! ccline update :cmdpos #(+ % (us-ptr2len-cc (:cmdbuff @ccline), %)))
-                                (recur-if (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space))) [])
-                            )
-                            (set-cmdspos-cursor)
-                            (ß BREAK cmdline_not_changed)
-                        )
+                                        (when (some? p)
+                                            ((ß int len =) (STRLEN p))
+                                            (realloc-cmdbuff (inc len))
 
-                       [K_LEFT K_S_LEFT K_C_LEFT]
-                        (do
-                            (if (zero? (:cmdpos @ccline))
-                                (ß BREAK cmdline_not_changed)
-                            )
-                            (loop []
-                                (swap! ccline update :cmdpos dec)
-                                ;; move to first byte of char
-                                (swap! ccline update :cmdpos #(- % (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %))))
-                                (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
-                                (recur-if (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (dec (:cmdpos @ccline)) (byte \space))) [])
-                            )
-                            (set-cmdspos-cursor)
-                            (ß BREAK cmdline_not_changed)
-                        )
+                                            (swap! ccline assoc :cmdlen len)
+                                            (STRCPY (:cmdbuff @ccline), p)
 
-                        K_IGNORE
-                        (do
-                            (ß BREAK cmdline_not_changed)          ;; Ignore mouse event or ex-window() result.
-                        )
+                                            ;; Restore the cursor or use the position set with set_cmdline_pos().
+                                            (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
 
-                        K_DROP
-                        (do
-                            (cmdline-paste (byte \~), true, false)
-                            (redrawcmd)
-                            (ß BREAK cmdline_changed)
-                        )
-
-                        K_SELECT      ;; end of Select mode mapping - ignore
-                        (do
-                            (ß BREAK cmdline_not_changed)
-                        )
-
-                       [Ctrl_B K_HOME K_KHOME K_S_HOME K_C_HOME]        ;; begin of command line
-                        (do
-                            (swap! ccline assoc :cmdpos 0)
-                            (set-cmdspos)
-                            (ß BREAK cmdline_not_changed)
-                        )
-
-                       [Ctrl_E K_END K_KEND K_S_END K_C_END]        ;; end of command line
-                        (do
-                            (swap! ccline assoc :cmdpos (:cmdlen @ccline))
-                            (set-cmdspos-cursor)
-                            (ß BREAK cmdline_not_changed)
-                        )
-
-                        Ctrl_L
-                        (do
-                            (when (and @p_is (any == firstc (byte \/) (byte \?)))
-                                ;; Add a character from under the cursor for 'incsearch'.
-                                (when (and did_incsearch (not (eqpos (:w_cursor @curwin), o'cursor)))
-                                    ((ß c =) (gchar-cursor @curwin))
-                                    ;; If 'ignorecase' and 'smartcase' are set and the command line
-                                    ;; has no uppercase characters, convert the character to lowercase.
-                                    ((ß c =) (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline)))) (utf-tolower c) c))
-                                    (when (!= c NUL)
-                                        (when (or (== c firstc) (!= (vim-strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c) nil))
-                                            ;; put a backslash before special characters
-                                            (stuff-char c)
-                                            ((ß c =) (byte \\))
+                                            (reset! keyTyped false)   ;; Don't do 'wildchar' completion.
+                                            (redrawcmd)
+                                            (ß BREAK cmdline_changed)
                                         )
-                                        (ß BREAK)
                                     )
-                                )
-                                (ß BREAK cmdline_not_changed)
-                            )
 
-                            (ß BREAK)
-                        )
-
-                       [Ctrl_P K_UP   K_S_UP   K_PAGEUP   K_KPAGEUP     ;; previous match
-                        Ctrl_N K_DOWN K_S_DOWN K_PAGEDOWN K_KPAGEDOWN]  ;; next match
-                        (do
-                            (if (or (zero? @hislen) (== firstc NUL))    ;; no history
-                                (ß BREAK cmdline_not_changed)
-                            )
-
-                            ((ß int i =) hiscnt)
-
-                            ;; save current command string so it can be restored later
-                            (when (nil? lookfor)
-                                ((ß lookfor =) (STRDUP (:cmdbuff @ccline)))
-                                (if (nil? lookfor)
+                                    (beep-flush)
+                                    (reset! got_int false)        ;; don't abandon the command line
+                                    (reset! did_emsg false)
+                                    (reset! emsg_on_display false)
+                                    (redrawcmd)
                                     (ß BREAK cmdline_not_changed)
-                                )
-                                (eos! lookfor (:cmdpos @ccline))
-                            )
-
-                            (loop []
-                                ;; one step backwards
-                                (cond (any == c K_UP K_S_UP Ctrl_P K_PAGEUP K_KPAGEUP)
-                                (do
-                                    (cond (== hiscnt @hislen)   ;; first time
-                                    (do
-                                        ((ß hiscnt =) (... @hisidx histype))
-                                    )
-                                    (and (zero? hiscnt) (!= (... @hisidx histype) (dec @hislen)))
-                                    (do
-                                        ((ß hiscnt =) (dec @hislen))
-                                    )
-                                    (!= hiscnt (inc (... @hisidx histype)))
-                                    (do
-                                        ((ß hiscnt =) (dec hiscnt))
-                                    )
-                                    :else                    ;; at top of list
-                                    (do
-                                        ((ß hiscnt =) i)
-                                        (ß BREAK)
-                                    ))
-                                )
-                                :else    ;; one step forwards
-                                (do
-                                    ;; on last entry, clear the line
-                                    (when (== hiscnt (... @hisidx histype))
-                                        ((ß hiscnt =) @hislen)
-                                        (ß BREAK)
-                                    )
-
-                                    ;; not on a history line, nothing to do
-                                    (if (== hiscnt @hislen)
-                                        (ß BREAK)
-                                    )
-                                    ((ß hiscnt =) (if (== hiscnt (dec @hislen)) 0 (inc hiscnt)))   ;; wrap around
-                                ))
-                                (when (or (< hiscnt 0) (nil? (... (... @history histype) hiscnt)))
-                                    ((ß hiscnt =) i)
-                                    (ß BREAK)
-                                )
-                                (when (or (and (!= c K_UP) (!= c K_DOWN)) (== hiscnt i) (zero? (STRNCMP (... (... @history histype) hiscnt), lookfor, (STRLEN lookfor))))
-                                    (ß BREAK)
-                                )
-                                (recur)
-                            )
-
-                            (when (!= hiscnt i)        ;; jumped to other entry
-                                (swap! ccline assoc :cmdbuff nil)
-
-                                ((ß Bytes p =) (if (== hiscnt @hislen)
-                                    lookfor    ;; back to the old one
-                                    (... (... @history histype) hiscnt)
-                                ))
-
-                                (ß int old_firstc)
-                                (cond (and (== histype HIST_SEARCH) (BNE p, lookfor) (!= ((ß old_firstc =) (.at p (inc (STRLEN p)))) firstc))
-                                (do
-                                    ;; Correct for the separator character used when
-                                    ;; adding the history entry vs the one used now.
-                                    ;; First loop: count length.
-                                    ;; Second loop: copy the characters.
-                                    (dotimes [round 2]
-                                        (let [n (loop-when-recur [n 0 i 0] (non-eos? p i) [(inc n) (inc i)] => n
-                                                    (if (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                                        ;; Replace old sep with new sep, unless it is escaped.
-                                                        (if (< 0 round) (.be (:cmdbuff @ccline) n, firstc))
-                                                        (do
-                                                            ;; Escape new sep, unless it is already escaped.
-                                                            (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                                                (if (< 0 round) (.be (:cmdbuff @ccline) n, (byte \\)))
-                                                                ((ß n =) (inc n))
-                                                            )
-                                                            (if (< 0 round) (.be (:cmdbuff @ccline) n, (.at p i)))
-                                                        ))
-                                                )]
-                                            (if (< 0 round) (eos! (:cmdbuff @ccline) n) (alloc-cmdbuff n))
-                                        ))
                                 )
                                 :else
                                 (do
-                                    (alloc-cmdbuff (STRLEN p))
-                                    (STRCPY (:cmdbuff @ccline), p)
+                                    (if (and (== c Ctrl_G) @p_im (zero? @restart_edit))
+                                        (reset! restart_edit (byte \a)))
+                                    ((ß @a'gotesc =) true)          ;; will free ccline.cmdbuff after putting it in history
+                                    (ß BREAK :quit)        ;; back to Normal mode
                                 ))
-
-                                (let [n (STRLEN (:cmdbuff @ccline))] (swap! ccline assoc :cmdpos n :cmdlen n))
-                                (redrawcmd)
-                                (ß BREAK cmdline_changed)
                             )
-                            (beep-flush)
-                            (ß BREAK cmdline_not_changed)
-                        )
 
-                       [Ctrl_V Ctrl_Q]
-                        (do
-                            (putcmdline (byte \^), true)
-                            ((ß c =) (get-literal))          ;; get next (two) character(s)
-                            ((ß do_abbr =) false)            ;; don't do abbreviation now
-                            ;; may need to remove ^ when composing char was typed
-                            (when (utf-iscomposing c)
-                                (draw-cmdline (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
-                                (msg-putchar (byte \space))
-                                (cursorcmd)
+                            (cond (any == c @cedit_key K_CMDWIN)
+                            (do
+                                (when (not @got_int)
+                                    ;; Open a window to edit the command line (and history).
+                                    ((ß c =) (ex-window))
+                                    ((ß @a'some_key_typed =) true)
+                                )
                             )
-                            (ß BREAK)
-                        )
+                            :else
+                            (do
+                                ((ß c =) (do-digraph c))
+                            ))
 
-                        Ctrl_K
-                        (do
-                            (putcmdline (byte \?), true)
-                            ((ß c =) (get-digraph true))
-                            (if (!= c NUL)
+                            (when (or (any == c (byte \newline) (byte \return) K_KENTER) (and (== c ESC) (or (not @keyTyped) (some? (vim-strbyte @p_cpo, CPO_ESC)))))
+                                ((ß @a'gotesc =) false)                     ;; Might have typed ESC previously, don't truncate the cmdline now.
+                                (windgoto @msg_row, 0)
+                                (out-flush)
                                 (ß BREAK)
                             )
 
-                            (redrawcmd)
-                            (ß BREAK cmdline_not_changed)
-                        )
+                            ((ß @a'gotesc =) false)
 
-                        (do
-                            (when (== c @intr_char)
-                                ((ß gotesc =) true)      ;; will free ccline.cmdbuff after putting it in history
-                                (ß BREAK returncmd)    ;; back to Normal mode
+                            ((ß c =) (if (any == c NUL K_ZERO) NL c))        ;; NUL is stored as NL
+
+                            ((ß boolean do_abbr =) true)             ;; default: check for abbreviation
+
+                            ;; Big switch for a typed command line character.
+
+                            (condp ==? c
+                            [K_BS Ctrl_H K_DEL K_KDEL Ctrl_W]
+                                (do
+                                    ((ß c =) (if (== c K_KDEL) K_DEL c))
+
+                                    ;; Delete current character is the same as backspace on next character, except at end of line.
+
+                                    (when (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
+                                        (swap! ccline update :cmdpos inc))
+                                    (when (== c K_DEL)
+                                        (swap! ccline update :cmdpos #(+ % (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %)))))
+                                    (cond (< 0 (:cmdpos @ccline))
+                                    (do
+                                        ((ß int j =) (:cmdpos @ccline))
+                                        ((ß Bytes p =) (us-prevptr (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) j)))
+
+                                        (when (== c Ctrl_W)
+                                            ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (vim-isspace (.at p 0))) (us-prevptr (:cmdbuff @ccline), p) => p))
+                                            ((ß int cls =) (us-get-class p))
+                                            ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (== (us-get-class p) cls)) (us-prevptr (:cmdbuff @ccline), p) => p))
+                                            ((ß p =) (if (!= (us-get-class p) cls) (.plus p (us-ptr2len-cc p)) p))
+                                        )
+
+                                        (swap! ccline assoc :cmdpos (BDIFF p, (:cmdbuff @ccline)))
+                                        (swap! ccline update :cmdlen - (- j (:cmdpos @ccline)))
+                                        (loop-when-recur [#_int i (:cmdpos @ccline) j j] (< i (:cmdlen @ccline)) [(inc i) (inc j)]
+                                            (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
+                                        )
+                                        ;; Truncate at the end, required for multi-byte chars.
+                                        (eos! (:cmdbuff @ccline) (:cmdlen @ccline))
+                                        (redrawcmd)
+                                    )
+                                    (and (zero? (:cmdlen @ccline)) (!= c Ctrl_W) (nil? (:cmdprompt @ccline)))
+                                    (do
+                                        (swap! ccline assoc :cmdbuff nil)     ;; no commandline to return
+
+                                        (reset! msg_col 0)
+                                        (msg-putchar (byte \space))           ;; delete ':'
+
+                                        (reset! redraw_cmdline true)
+                                        (ß BREAK :quit)            ;; back to cmd mode
+                                    ))
+                                    (ß BREAK cmdline_changed)
+                                )
+
+                            [K_INS K_KINS]
+                                (do
+                                    (swap! ccline update :overstrike not)
+                                    (ui-cursor-shape)              ;; may show different cursor shape
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                                Ctrl_HAT
+                                (do
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                                Ctrl_U
+                                (do
+                                    ;; delete all characters left of the cursor
+                                    ((ß int i =) 0)
+                                    ((ß int j =) (:cmdpos @ccline))
+                                    (swap! ccline assoc :cmdpos i)
+                                    (swap! ccline update :cmdlen - j)
+                                    ((ß int n =) (:cmdlen @ccline))
+                                    (loop-when-recur [i i j j] (< i n) [(inc i) (inc j)]
+                                        (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
+                                    )
+                                    ;; Truncate at the end, required for multi-byte chars.
+                                    (eos! (:cmdbuff @ccline) n)
+                                    (redrawcmd)
+                                    (ß BREAK cmdline_changed)
+                                )
+
+                            [ESC Ctrl_C]       ;; get here when ESC typed twice
+                                (do
+                                    ((ß @a'gotesc =) true)              ;; will free ccline.cmdbuff after putting it in history
+                                    (ß BREAK :quit)            ;; back to cmd mode
+                                )
+
+                                Ctrl_R                    ;; insert register
+                                (do
+                                    (putcmdline (byte \"), true)    ;; """
+                                    (swap! no_mapping inc)
+                                    ((ß int k =) ((ß c =) (plain-vgetc)))  ;; CTRL-R <char>
+                                    ((ß k =) (if (== k Ctrl_O) Ctrl_R k))             ;; CTRL-R CTRL-O == CTRL-R CTRL-R
+                                    ((ß c =) (if (== k Ctrl_R) (plain-vgetc) c))      ;; CTRL-R CTRL-R <char>
+                                    (swap! no_mapping dec)
+
+                                    ;; Insert the result of an expression.
+                                    ;; Need to save the current command line, to be able to enter a new one...
+
+                                    (reset! new_cmdpos -1)
+                                    (when (== c (byte \=))
+                                        (cond (== (:cmdfirstc @ccline) (byte \=))    ;; can't do this recursively
+                                        (do
+                                            (beep-flush)
+                                            ((ß c =) ESC)
+                                        )
+                                        :else
+                                        (do
+                                            ((ß cmdline_info_C save_cli =) (save-cmdline))
+                                            ((ß c =) (get-expr-register))
+                                            (restore-cmdline save_cli)
+                                        ))
+                                    )
+                                    (when (!= c ESC)               ;; use ESC to cancel inserting register
+                                        (cmdline-paste c, (== k Ctrl_R), false)
+
+                                        ;; When there was a serious error abort getting the command line.
+                                        (when @got_int
+                                            ((ß @a'gotesc =) true)      ;; will free ccline.cmdbuff after putting it in history
+                                            (ß BREAK :quit)    ;; back to cmd mode
+                                        )
+                                        (reset! keyTyped false)       ;; Don't do 'wildchar' completion.
+                                        (when (<= 0 @new_cmdpos)
+                                            ;; set_cmdline_pos() was used
+                                            (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
+                                        )
+                                    )
+                                    (redrawcmd)
+                                    (ß BREAK cmdline_changed)
+                                )
+
+                            [K_RIGHT K_S_RIGHT K_C_RIGHT]
+                                (do
+                                    (loop-when [] (< (:cmdpos @ccline) (:cmdlen @ccline))
+                                        ((ß int n =) (cmdline-charsize (:cmdpos @ccline)))
+                                        (if (and @keyTyped (<= (* @Cols @Rows) (+ (:cmdspos @ccline) n)))
+                                            (ß BREAK)
+                                        )
+                                        (swap! ccline update :cmdspos + n)
+                                        (swap! ccline update :cmdpos #(+ % (us-ptr2len-cc (:cmdbuff @ccline), %)))
+                                        (recur-if (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space))) [])
+                                    )
+                                    (set-cmdspos-cursor)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                            [K_LEFT K_S_LEFT K_C_LEFT]
+                                (do
+                                    (if (zero? (:cmdpos @ccline))
+                                        (ß BREAK cmdline_not_changed)
+                                    )
+                                    (loop []
+                                        (swap! ccline update :cmdpos dec)
+                                        ;; move to first byte of char
+                                        (swap! ccline update :cmdpos #(- % (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %))))
+                                        (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
+                                        (recur-if (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (dec (:cmdpos @ccline)) (byte \space))) [])
+                                    )
+                                    (set-cmdspos-cursor)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                                K_IGNORE
+                                (do
+                                    (ß BREAK cmdline_not_changed)          ;; Ignore mouse event or ex-window() result.
+                                )
+
+                                K_DROP
+                                (do
+                                    (cmdline-paste (byte \~), true, false)
+                                    (redrawcmd)
+                                    (ß BREAK cmdline_changed)
+                                )
+
+                                K_SELECT      ;; end of Select mode mapping - ignore
+                                (do
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                            [Ctrl_B K_HOME K_KHOME K_S_HOME K_C_HOME]        ;; begin of command line
+                                (do
+                                    (swap! ccline assoc :cmdpos 0)
+                                    (set-cmdspos)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                            [Ctrl_E K_END K_KEND K_S_END K_C_END]        ;; end of command line
+                                (do
+                                    (swap! ccline assoc :cmdpos (:cmdlen @ccline))
+                                    (set-cmdspos-cursor)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                                Ctrl_L
+                                (do
+                                    (when (and @p_is (any == firstc (byte \/) (byte \?)))
+                                        ;; Add a character from under the cursor for 'incsearch'.
+                                        (when (and @a'did_incsearch (not (eqpos (:w_cursor win), o'cursor)))
+                                            ((ß c =) (gchar-cursor win))
+                                            ;; If 'ignorecase' and 'smartcase' are set and the command line
+                                            ;; has no uppercase characters, convert the character to lowercase.
+                                            ((ß c =) (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline)))) (utf-tolower c) c))
+                                            (when (!= c NUL)
+                                                (when (or (== c firstc) (!= (vim-strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c) nil))
+                                                    ;; put a backslash before special characters
+                                                    (stuff-char c)
+                                                    ((ß c =) (byte \\))
+                                                )
+                                                (ß BREAK)
+                                            )
+                                        )
+                                        (ß BREAK cmdline_not_changed)
+                                    )
+
+                                    (ß BREAK)
+                                )
+
+                            [Ctrl_P K_UP   K_S_UP   K_PAGEUP   K_KPAGEUP     ;; previous match
+                                Ctrl_N K_DOWN K_S_DOWN K_PAGEDOWN K_KPAGEDOWN]  ;; next match
+                                (do
+                                    (if (or (zero? @hislen) (== firstc NUL))    ;; no history
+                                        (ß BREAK cmdline_not_changed)
+                                    )
+
+                                    ((ß int i =) @a'hiscnt)
+
+                                    ;; save current command string so it can be restored later
+                                    (when (nil? @a'lookfor)
+                                        ((ß @a'lookfor =) (STRDUP (:cmdbuff @ccline)))
+                                        (if (nil? @a'lookfor)
+                                            (ß BREAK cmdline_not_changed)
+                                        )
+                                        (eos! @a'lookfor (:cmdpos @ccline))
+                                    )
+
+                                    (loop []
+                                        ;; one step backwards
+                                        (cond (any == c K_UP K_S_UP Ctrl_P K_PAGEUP K_KPAGEUP)
+                                        (do
+                                            (cond (== @a'hiscnt @hislen)   ;; first time
+                                            (do
+                                                ((ß @a'hiscnt =) (... @hisidx histype))
+                                            )
+                                            (and (zero? @a'hiscnt) (!= (... @hisidx histype) (dec @hislen)))
+                                            (do
+                                                ((ß @a'hiscnt =) (dec @hislen))
+                                            )
+                                            (!= @a'hiscnt (inc (... @hisidx histype)))
+                                            (do
+                                                ((ß @a'hiscnt =) (dec @a'hiscnt))
+                                            )
+                                            :else                    ;; at top of list
+                                            (do
+                                                ((ß @a'hiscnt =) i)
+                                                (ß BREAK)
+                                            ))
+                                        )
+                                        :else    ;; one step forwards
+                                        (do
+                                            ;; on last entry, clear the line
+                                            (when (== @a'hiscnt (... @hisidx histype))
+                                                ((ß @a'hiscnt =) @hislen)
+                                                (ß BREAK)
+                                            )
+
+                                            ;; not on a history line, nothing to do
+                                            (if (== @a'hiscnt @hislen)
+                                                (ß BREAK)
+                                            )
+                                            ((ß @a'hiscnt =) (if (== @a'hiscnt (dec @hislen)) 0 (inc @a'hiscnt)))   ;; wrap around
+                                        ))
+                                        (when (or (< @a'hiscnt 0) (nil? (... (... @history histype) @a'hiscnt)))
+                                            ((ß @a'hiscnt =) i)
+                                            (ß BREAK)
+                                        )
+                                        (when (or (and (!= c K_UP) (!= c K_DOWN)) (== @a'hiscnt i) (zero? (STRNCMP (... (... @history histype) @a'hiscnt), @a'lookfor, (STRLEN @a'lookfor))))
+                                            (ß BREAK)
+                                        )
+                                        (recur)
+                                    )
+
+                                    (when (!= @a'hiscnt i)        ;; jumped to other entry
+                                        (swap! ccline assoc :cmdbuff nil)
+
+                                        ((ß Bytes p =) (if (== @a'hiscnt @hislen)
+                                            @a'lookfor    ;; back to the old one
+                                            (... (... @history histype) @a'hiscnt)
+                                        ))
+
+                                        (ß int old_firstc)
+                                        (cond (and (== histype HIST_SEARCH) (BNE p, @a'lookfor) (!= ((ß old_firstc =) (.at p (inc (STRLEN p)))) firstc))
+                                        (do
+                                            ;; Correct for the separator character used when
+                                            ;; adding the history entry vs the one used now.
+                                            ;; First loop: count length.
+                                            ;; Second loop: copy the characters.
+                                            (dotimes [round 2]
+                                                (let [n (loop-when-recur [n 0 i 0] (non-eos? p i) [(inc n) (inc i)] => n
+                                                            (if (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                                ;; Replace old sep with new sep, unless it is escaped.
+                                                                (if (< 0 round) (.be (:cmdbuff @ccline) n, firstc))
+                                                                (do
+                                                                    ;; Escape new sep, unless it is already escaped.
+                                                                    (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                                        (if (< 0 round) (.be (:cmdbuff @ccline) n, (byte \\)))
+                                                                        ((ß n =) (inc n))
+                                                                    )
+                                                                    (if (< 0 round) (.be (:cmdbuff @ccline) n, (.at p i)))
+                                                                ))
+                                                        )]
+                                                    (if (< 0 round) (eos! (:cmdbuff @ccline) n) (alloc-cmdbuff n))
+                                                ))
+                                        )
+                                        :else
+                                        (do
+                                            (alloc-cmdbuff (STRLEN p))
+                                            (STRCPY (:cmdbuff @ccline), p)
+                                        ))
+
+                                        (let [n (STRLEN (:cmdbuff @ccline))] (swap! ccline assoc :cmdpos n :cmdlen n))
+                                        (redrawcmd)
+                                        (ß BREAK cmdline_changed)
+                                    )
+                                    (beep-flush)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                            [Ctrl_V Ctrl_Q]
+                                (do
+                                    (putcmdline (byte \^), true)
+                                    ((ß c =) (get-literal))          ;; get next (two) character(s)
+                                    ((ß do_abbr =) false)            ;; don't do abbreviation now
+                                    ;; may need to remove ^ when composing char was typed
+                                    (when (utf-iscomposing c)
+                                        (draw-cmdline (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
+                                        (msg-putchar (byte \space))
+                                        (cursorcmd)
+                                    )
+                                    (ß BREAK)
+                                )
+
+                                Ctrl_K
+                                (do
+                                    (putcmdline (byte \?), true)
+                                    ((ß c =) (get-digraph true))
+                                    (if (!= c NUL)
+                                        (ß BREAK)
+                                    )
+
+                                    (redrawcmd)
+                                    (ß BREAK cmdline_not_changed)
+                                )
+
+                                (do
+                                    (when (== c @intr_char)
+                                        ((ß @a'gotesc =) true)      ;; will free ccline.cmdbuff after putting it in history
+                                        (ß BREAK :quit)    ;; back to Normal mode
+                                    )
+
+                                    ;; Normal character with no special meaning.  Just set mod_mask
+                                    ;; to 0x0 so that typing Shift-Space in the GUI doesn't enter
+                                    ;; the string <S-Space>.  This should only happen after ^V.
+
+                                    (if (not (is-special c))
+                                        (reset! mod_mask 0x0))
+                                    (ß BREAK)
+                                )
                             )
 
-                            ;; Normal character with no special meaning.  Just set mod_mask
-                            ;; to 0x0 so that typing Shift-Space in the GUI doesn't enter
-                            ;; the string <S-Space>.  This should only happen after ^V.
+                            ;; End of switch on command line character.
+                            ;; We come here if we have a normal character.
 
-                            (if (not (is-special c))
-                                (reset! mod_mask 0x0))
-                            (ß BREAK)
+                            (if (and do_abbr (or (is-special c) (not (vim-iswordc c))) (== c Ctrl_RSB))
+                                (ß BREAK cmdline_changed)
+                            )
+
+                            ;; put the character in the command line
+
+                            (cond (or (is-special c) (non-zero? @mod_mask))
+                            (do
+                                (put-on-cmdline (get-special-key-name c, @mod_mask), -1, true)
+                            )
+                            :else
+                            (do
+                                ((ß int j =) (utf-char2bytes c, @ioBuff))
+                                (eos! @ioBuff j)          ;; exclude composing chars
+                                (put-on-cmdline @ioBuff, j, true)
+                            ))
+                            (ß BREAK cmdline_changed)
+        ;               }
+
+                        ;; This part implements incremental searches for "/" and "?"
+                        ;; Jump to cmdline_not_changed when a character has been read but the command
+                        ;; line did not change.  Then we only search and redraw if something changed in the past.
+                        ;; Jump to cmdline_changed when the command line did change.
+
+                        (if (not @a'incsearch_postponed)
+                            (ß CONTINUE)
                         )
+        ;           }
+
+                    ;; 'incsearch' highlighting.
+
+                    (when (and @p_is (any == firstc (byte \/) (byte \?)))
+                        ;; if there is a character waiting, search and redraw later
+                        (when (char-avail)
+                            ((ß @a'incsearch_postponed =) true)
+                            (ß CONTINUE)
+                        )
+                        ((ß @a'incsearch_postponed =) false)
+                        (swap! curwin assoc :w_cursor o'cursor) ;; start at old position
+
+                        ;; If there is no command line, don't do anything.
+                        (ß int i)
+                        (cond (zero? (:cmdlen @ccline))
+                        (do
+                            ((ß i =) 0)
+                        )
+                        :else
+                        (do
+                            (cursor-off)               ;; so the user knows we're busy
+                            (out-flush)
+                            (swap! emsg_off inc)                 ;; so it doesn't beep if bad expr
+                            ;; Set the time limit to half a second.
+                            ((ß long nsec =) (profile-setlimit 500))
+                            ((ß i =) (do-search nil, (byte firstc), (:cmdbuff @ccline), count, (+ SEARCH_KEEP SEARCH_OPT SEARCH_NOOF SEARCH_PEEK), nsec))
+                            (swap! emsg_off dec)
+                            ;; if interrupted while searching, behave like it failed
+                            (cond @got_int
+                            (do
+                                (vpeekc)               ;; remove <C-C> from input stream
+                                (reset! got_int false)        ;; don't abandon the command line
+                                ((ß i =) 0)
+                            )
+                            (char-avail)
+                            (do
+                                ;; cancelled searching because a char was typed
+                                ((ß @a'incsearch_postponed =) true)
+                            ))
+                        ))
+                        (reset! highlight_match (non-zero? i))
+
+                        ;; First restore the old "win" values, so the screen is positioned in the same way as the actual search command.
+                        (swap! curwin assoc :w_leftcol o'leftcol, :w_topline o'topline, :w_botline o'botline)
+                        (swap! curwin changed-cline-bef-curs)
+                        (swap! curwin update-topline)
+
+                        ((ß pos_C end_pos =) (NEW_pos_C))
+                        (cond (non-zero? i)
+                        (do
+                            ((ß pos_C save_pos =) (:w_cursor win))
+
+                            ;; First move the cursor to the end of the match, then to the start.
+                            ;; This moves the whole match onto the screen when 'nowrap' is set.
+
+                            (swap! curwin update-in [:w_cursor :lnum] + @search_match_lines)
+                            (swap! curwin assoc-in [:w_cursor :col] @search_match_endcol)
+                            (when (< (line-count @curbuf) (:lnum (:w_cursor win)))
+                                (swap! curwin assoc-in [:w_cursor :lnum] (line-count @curbuf))
+                                (swap! curwin coladvance MAXCOL)
+                            )
+                            (swap! curwin validate-cursor)
+                            ((ß end_pos =) (:w_cursor win))
+                            (swap! curwin assoc :w_cursor save_pos)
+                        )
+                        :else
+                        (do
+                            ((ß end_pos =) (:w_cursor win))
+                        ))
+
+                        (swap! curwin validate-cursor)
+                        ;; May redraw the status line to show the cursor position.
+                        (when (and @p_ru (< 0 (:w_status_height win)))
+                            (swap! curwin assoc :w_redr_status true))
+
+                        ((ß cmdline_info_C save_cli =) (save-cmdline))
+                        (update-screen SOME_VALID)
+                        (restore-cmdline save_cli)
+
+                        ;; Leave it at the end to make CTRL-R CTRL-W work.
+                        (when (non-zero? i)
+                            (swap! curwin assoc :w_cursor end_pos))
+
+                        (msg-starthere)
+                        (redrawcmdline)
+                        ((ß @a'did_incsearch =) true)
                     )
+                    (recur win)
+                )
 
-                    ;; End of switch on command line character.
-                    ;; We come here if we have a normal character.
-
-                    (if (and do_abbr (or (is-special c) (not (vim-iswordc c))) (== c Ctrl_RSB))
-                        (ß BREAK cmdline_changed)
-                    )
-
-                    ;; put the character in the command line
-
-                    (cond (or (is-special c) (non-zero? @mod_mask))
-                    (do
-                        (put-on-cmdline (get-special-key-name c, @mod_mask), -1, true)
-                    )
-                    :else
-                    (do
-                        ((ß int j =) (utf-char2bytes c, @ioBuff))
-                        (eos! @ioBuff j)          ;; exclude composing chars
-                        (put-on-cmdline @ioBuff, j, true)
+            (let [win (if @a'did_incsearch
+                        (let [win (assoc win :w_cursor o'cursor, :w_curswant o'curswant, :w_leftcol o'leftcol, :w_topline o'topline, :w_botline o'botline)]
+                            (reset! highlight_match false)
+                            ;; needed for TAB
+                            (-> win (validate-cursor) (redraw-later SOME_VALID)))
+                        win
+                    )]
+                (when (some? (:cmdbuff @ccline))
+                    ;; Put line in history buffer (":" and "=" only when it was typed).
+                    (when (and (non-zero? (:cmdlen @ccline)) (!= firstc NUL) (or @a'some_key_typed (== histype HIST_SEARCH)))
+                        (add-to-history histype, (:cmdbuff @ccline), (if (== histype HIST_SEARCH) firstc NUL))
+                        (when (== firstc (byte \:))
+                            (reset! new_last_cmdline (STRDUP (:cmdbuff @ccline)))
+                        ))
+                    (when @a'gotesc ;; abandon command line
+                        (swap! ccline assoc :cmdbuff nil)
+                        (when (zero? @msg_scrolled)
+                            (compute-cmdrow))
+                        (msg (u8 ""))
+                        (reset! redraw_cmdline true)
                     ))
-                    (ß BREAK cmdline_changed)
-;               }
-
-                ;; This part implements incremental searches for "/" and "?"
-                ;; Jump to cmdline_not_changed when a character has been read but the command
-                ;; line did not change.  Then we only search and redraw if something changed in the past.
-                ;; Jump to cmdline_changed when the command line did change.
-
-                (if (not incsearch_postponed)
-                    (ß CONTINUE)
-                )
-;           }
-
-            ;; 'incsearch' highlighting.
-
-            (when (and @p_is (any == firstc (byte \/) (byte \?)))
-                ;; if there is a character waiting, search and redraw later
-                (when (char-avail)
-                    ((ß incsearch_postponed =) true)
-                    (ß CONTINUE)
-                )
-                ((ß incsearch_postponed =) false)
-                (swap! curwin assoc :w_cursor o'cursor) ;; start at old position
-
-                ;; If there is no command line, don't do anything.
-                (ß int i)
-                (cond (zero? (:cmdlen @ccline))
-                (do
-                    ((ß i =) 0)
-                )
-                :else
-                (do
-                    (cursor-off)               ;; so the user knows we're busy
-                    (out-flush)
-                    (swap! emsg_off inc)                 ;; so it doesn't beep if bad expr
-                    ;; Set the time limit to half a second.
-                    ((ß long nsec =) (profile-setlimit 500))
-                    ((ß i =) (do-search nil, (byte firstc), (:cmdbuff @ccline), count, (+ SEARCH_KEEP SEARCH_OPT SEARCH_NOOF SEARCH_PEEK), nsec))
-                    (swap! emsg_off dec)
-                    ;; if interrupted while searching, behave like it failed
-                    (cond @got_int
-                    (do
-                        (vpeekc)               ;; remove <C-C> from input stream
-                        (reset! got_int false)        ;; don't abandon the command line
-                        ((ß i =) 0)
-                    )
-                    (char-avail)
-                    (do
-                        ;; cancelled searching because a char was typed
-                        ((ß incsearch_postponed =) true)
-                    ))
-                ))
-                (reset! highlight_match (non-zero? i))
-
-                ;; First restore the old curwin values, so the screen is
-                ;; positioned in the same way as the actual search command.
-                (swap! curwin assoc :w_leftcol o'leftcol, :w_topline o'topline, :w_botline o'botline)
-                (swap! curwin changed-cline-bef-curs)
-                (swap! curwin update-topline)
-
-                ((ß pos_C end_pos =) (NEW_pos_C))
-                (cond (non-zero? i)
-                (do
-                    ((ß pos_C save_pos =) (:w_cursor @curwin))
-
-                    ;; First move the cursor to the end of the match, then to the start.
-                    ;; This moves the whole match onto the screen when 'nowrap' is set.
-
-                    (swap! curwin update-in [:w_cursor :lnum] + @search_match_lines)
-                    (swap! curwin assoc-in [:w_cursor :col] @search_match_endcol)
-                    (when (< (line-count @curbuf) (:lnum (:w_cursor @curwin)))
-                        (swap! curwin assoc-in [:w_cursor :lnum] (line-count @curbuf))
-                        (swap! curwin coladvance MAXCOL)
-                    )
-                    (swap! curwin validate-cursor)
-                    ((ß end_pos =) (:w_cursor @curwin))
-                    (swap! curwin assoc :w_cursor save_pos)
-                )
-                :else
-                (do
-                    ((ß end_pos =) (:w_cursor @curwin))
-                ))
-
-                (swap! curwin validate-cursor)
-                ;; May redraw the status line to show the cursor position.
-                (when (and @p_ru (< 0 (:w_status_height @curwin)))
-                    (swap! curwin assoc :w_redr_status true))
-
-                ((ß cmdline_info_C save_cli =) (save-cmdline))
-                (update-screen SOME_VALID)
-                (restore-cmdline save_cli)
-
-                ;; Leave it at the end to make CTRL-R CTRL-W work.
-                (when (non-zero? i)
-                    (swap! curwin assoc :w_cursor end_pos))
-
-                (msg-starthere)
-                (redrawcmdline)
-                ((ß did_incsearch =) true)
-            )
-            (recur)
-        )
-
-        (when did_incsearch
-            (swap! curwin assoc :w_cursor o'cursor, :w_curswant o'curswant, :w_leftcol o'leftcol, :w_topline o'topline, :w_botline o'botline)
-            (reset! highlight_match false)
-            (swap! curwin validate-cursor)      ;; needed for TAB
-            (swap! curwin redraw-later SOME_VALID)
-        )
-
-        (when (some? (:cmdbuff @ccline))
-            ;; Put line in history buffer (":" and "=" only when it was typed).
-
-            (when (and (non-zero? (:cmdlen @ccline)) (!= firstc NUL) (or some_key_typed (== histype HIST_SEARCH)))
-                (add-to-history histype, (:cmdbuff @ccline), (if (== histype HIST_SEARCH) firstc NUL))
-                (if (== firstc (byte \:))
-                    (reset! new_last_cmdline (STRDUP (:cmdbuff @ccline))))
-            )
-
-            (when gotesc         ;; abandon command line
-                (swap! ccline assoc :cmdbuff nil)
-                (if (zero? @msg_scrolled)
-                    (compute-cmdrow))
-                (msg (u8 ""))
-                (reset! redraw_cmdline true)
-            )
-        )
-
-        ;; If the screen was shifted up, redraw the whole screen (later).
-        ;; If the line is too long, clear it, so ruler and shown command
-        ;; do not get printed in the middle of it.
-
-        (msg-check)
-        (reset! msg_scroll o'msg_scroll)
-
-        ;; When the command line was typed, no need for a wait-return prompt.
-        (when some_key_typed
-            (reset! need_wait_return false))
-
-        (reset! State o'State)
-        (ui-cursor-shape)          ;; may show different cursor shape
-
-        ((ß Bytes p =) (:cmdbuff @ccline))
-        ;; Make ccline empty, getcmdline() may try to use it.
-        (swap! ccline assoc :cmdbuff nil)
-        p
+                ;; If the screen was shifted up, redraw the whole screen (later).
+                ;; If the line is too long, clear it, so ruler and shown command do not get printed in the middle of it.
+                (msg-check)
+                (reset! msg_scroll o'msg_scroll)
+                ;; When the command line was typed, no need for a wait-return prompt.
+                (when @a'some_key_typed
+                    (reset! need_wait_return false))
+                (reset! State o'State)
+                (ui-cursor-shape) ;; may show different cursor shape
+                (let [#_Bytes s (:cmdbuff @ccline)]
+                    ;; Make "ccline" empty, getcmdline() may try to use it.
+                    (swap! ccline assoc :cmdbuff nil)
+                    [win s])
+            ))
     ))
 
 ;; Return true when the text must not be changed and we can't switch to
@@ -6448,7 +6409,7 @@
     ;; When executing a register, remove ':' that's in front of each line.
     (when (and @exec_from_reg (== (vpeekc) (byte \:)))
         (vgetc))
-    (getcmdline (byte \:), 1))
+    (let [[_ ?] (getcmdline @curwin, (byte \:), 1)] (reset! curwin _) ?))
 
 ;; Allocate a new command line buffer.
 ;; Assigns the new buffer to ccline.cmdbuff and ccline.cmdbufflen.
@@ -9497,7 +9458,7 @@
 (defn- #_[window_C cmdarg_C] nv-search [#_window_C win, #_cmdarg_C cap]
     (if (and (== (:cmdchar cap) (byte \?)) (== (:op_type (:oap cap)) OP_ROT13))
         (nv-operator win, (assoc cap :cmdchar (byte \g) :nchar (byte \?))) ;; translate "g??" to "g?g?"
-        (let [cap (assoc cap :searchbuf (getcmdline (:cmdchar cap), (:count1 cap)))]
+        (let [[win ?] (getcmdline win, (:cmdchar cap), (:count1 cap)) cap (assoc cap :searchbuf ?)]
             (if (some? (:searchbuf cap))
                 (let [[win cap _] (normal-search? win, cap, (:cmdchar cap), (:searchbuf cap), (if (zero? (:arg cap)) SEARCH_MARK 0))] [win cap])
                 [win (clearop cap)]
@@ -11475,7 +11436,7 @@
 ;; Returns '=' when OK, NUL otherwise.
 
 (defn- #_int get-expr-register []
-    (let-when [#_Bytes s (getcmdline (byte \=), 0)] (some? s) => NUL
+    (let-when [[_ #_Bytes s] (getcmdline @curwin, (byte \=), 0) _ (reset! curwin _)] (some? s) => NUL
         (when (non-eos? s)
             (reset! expr_line s)) ;; else use previous line
         (byte \=)
