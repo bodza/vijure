@@ -41,7 +41,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
@@ -856,8 +856,6 @@
 ;; directions
 (final int FORWARD        1)
 (final int BACKWARD       -1)
-(final int FORWARD_FILE   3)
-(final int BACKWARD_FILE  -3)
 
 ;; flags for b_flags
 (final int BF_RECOVERED   0x01)     ;; buffer has been recovered
@@ -932,23 +930,6 @@
 (final int REMAP_NONE      -1)      ;; no remapping
 (final int REMAP_SCRIPT    -2)      ;; remap script-local mappings only
 (final int REMAP_SKIP      -3)      ;; no remapping for first char
-
-;; Values for mch_call_shell() second argument.
-(final int SHELL_FILTER    1)       ;; filtering text
-(final int SHELL_COOKED    4)       ;; set term to cooked mode
-(final int SHELL_DOOUT     8)       ;; redirecting output
-(final int SHELL_READ      32)      ;; read lines and insert into buffer
-(final int SHELL_WRITE     64)      ;; write lines from buffer
-
-;; Values returned by mch_nodetype().
-(final int NODE_NORMAL     0)       ;; file or directory, check with mch_isdir()
-(final int NODE_WRITABLE   1)       ;; something we can write to (character device, fifo, socket, ..)
-(final int NODE_OTHER      2)       ;; non-writable thing (e.g., block device)
-
-;; Values for readfile() flags.
-(final int READ_NEW        0x01)    ;; read a file into a new buffer
-(final int READ_FILTER     0x02)    ;; read filter output
-(final int READ_STDIN      0x04)    ;; read from stdin
 
 ;; Values for change_indent().
 (final int INDENT_SET      1)       ;; set indent
@@ -2617,14 +2598,7 @@
 ; %%    (field int          b_mapped_ctrl_c)    ;; modes where CTRL-C is mapped
     ])
 
-;; Tab pages point to the top frame of each tab page.
-;; Note: Most values are NOT valid for the current tab page!  Use "curwin", "firstwin", etc. for that.
-
-(class! #_final tabpage_C
-    [
-        (field window_C     tp_curwin)          ;; current window in this Tab page
-        (field long         tp_ch_used)         ;; value of 'cmdheight' when frame size was set
-    ])
+(atom! long         ch_used)         ;; value of 'cmdheight' when frame size was set
 
 ;; Structure to cache info for displayed lines in w_lines[].
 ;; Each logical line has one entry.
@@ -3158,104 +3132,103 @@
     CMD_mapclear 70,
     CMD_marks 71,
     CMD_messages 72,
-    CMD_mode 73,
-    CMD_new 74,
-    CMD_nmap 75,
-    CMD_nmapclear 76,
-    CMD_nnoremap 77,
-    CMD_noremap 78,
-    CMD_nohlsearch 79,
-    CMD_noreabbrev 80,
-    CMD_normal 81,
-    CMD_number 82,
-    CMD_nunmap 83,
-    CMD_omap 84,
-    CMD_omapclear 85,
-    CMD_only 86,
-    CMD_onoremap 87,
-    CMD_ounmap 88,
-    CMD_print 89,
-    CMD_put 90,
-    CMD_quit 91,
-    CMD_quitall 92,
-    CMD_qall 93,
-    CMD_redo 94,
-    CMD_redraw 95,
-    CMD_redrawstatus 96,
-    CMD_registers 97,
-    CMD_resize 98,
-    CMD_retab 99,
-    CMD_right 100,
-    CMD_rightbelow 101,
-    CMD_substitute 102,
-    CMD_sandbox 103,
-    CMD_sbuffer 104,
-    CMD_sbNext 105,
-    CMD_sball 106,
-    CMD_sbfirst 107,
-    CMD_sblast 108,
-    CMD_sbmodified 109,
-    CMD_sbnext 110,
-    CMD_sbprevious 111,
-    CMD_sbrewind 112,
-    CMD_set 113,
-    CMD_setglobal 114,
-    CMD_setlocal 115,
-    CMD_silent 116,
-    CMD_smagic 117,
-    CMD_smap 118,
-    CMD_smapclear 119,
-    CMD_snomagic 120,
-    CMD_snoremap 121,
-    CMD_split 122,
-    CMD_stop 123,
-    CMD_startinsert 124,
-    CMD_startgreplace 125,
-    CMD_startreplace 126,
-    CMD_stopinsert 127,
-    CMD_sunhide 128,
-    CMD_sunmap 129,
-    CMD_suspend 130,
-    CMD_sview 131,
-    CMD_syncbind 132,
-    CMD_t 133,
-    CMD_topleft 134,
-    CMD_undo 135,
-    CMD_undojoin 136,
-    CMD_undolist 137,
-    CMD_unabbreviate 138,
-    CMD_unhide 139,
-    CMD_unmap 140,
-    CMD_unsilent 141,
-    CMD_vglobal 142,
-    CMD_verbose 143,
-    CMD_vertical 144,
-    CMD_visual 145,
-    CMD_view 146,
-    CMD_vmap 147,
-    CMD_vmapclear 148,
-    CMD_vnoremap 149,
-    CMD_vnew 150,
-    CMD_vsplit 151,
-    CMD_vunmap 152,
-    CMD_wincmd 153,
-    CMD_xmap 154,
-    CMD_xmapclear 155,
-    CMD_xnoremap 156,
-    CMD_xunmap 157,
-    CMD_yank 158,
-    CMD_z 159,
+    CMD_new 73,
+    CMD_nmap 74,
+    CMD_nmapclear 75,
+    CMD_nnoremap 76,
+    CMD_noremap 77,
+    CMD_nohlsearch 78,
+    CMD_noreabbrev 79,
+    CMD_normal 80,
+    CMD_number 81,
+    CMD_nunmap 82,
+    CMD_omap 83,
+    CMD_omapclear 84,
+    CMD_only 85,
+    CMD_onoremap 86,
+    CMD_ounmap 87,
+    CMD_print 88,
+    CMD_put 89,
+    CMD_quit 90,
+    CMD_quitall 91,
+    CMD_qall 92,
+    CMD_redo 93,
+    CMD_redraw 94,
+    CMD_redrawstatus 95,
+    CMD_registers 96,
+    CMD_resize 97,
+    CMD_retab 98,
+    CMD_right 99,
+    CMD_rightbelow 100,
+    CMD_substitute 101,
+    CMD_sandbox 102,
+    CMD_sbuffer 103,
+    CMD_sbNext 104,
+    CMD_sball 105,
+    CMD_sbfirst 106,
+    CMD_sblast 107,
+    CMD_sbmodified 108,
+    CMD_sbnext 109,
+    CMD_sbprevious 110,
+    CMD_sbrewind 111,
+    CMD_set 112,
+    CMD_setglobal 113,
+    CMD_setlocal 114,
+    CMD_silent 115,
+    CMD_smagic 116,
+    CMD_smap 117,
+    CMD_smapclear 118,
+    CMD_snomagic 119,
+    CMD_snoremap 120,
+    CMD_split 121,
+    CMD_stop 122,
+    CMD_startinsert 123,
+    CMD_startgreplace 124,
+    CMD_startreplace 125,
+    CMD_stopinsert 126,
+    CMD_sunhide 127,
+    CMD_sunmap 128,
+    CMD_suspend 129,
+    CMD_sview 130,
+    CMD_syncbind 131,
+    CMD_t 132,
+    CMD_topleft 133,
+    CMD_undo 134,
+    CMD_undojoin 135,
+    CMD_undolist 136,
+    CMD_unabbreviate 137,
+    CMD_unhide 138,
+    CMD_unmap 139,
+    CMD_unsilent 140,
+    CMD_vglobal 141,
+    CMD_verbose 142,
+    CMD_vertical 143,
+    CMD_visual 144,
+    CMD_view 145,
+    CMD_vmap 146,
+    CMD_vmapclear 147,
+    CMD_vnoremap 148,
+    CMD_vnew 149,
+    CMD_vsplit 150,
+    CMD_vunmap 151,
+    CMD_wincmd 152,
+    CMD_xmap 153,
+    CMD_xmapclear 154,
+    CMD_xnoremap 155,
+    CMD_xunmap 156,
+    CMD_yank 157,
+    CMD_z 158,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 160,
-    CMD_and 161,
-    CMD_lshift 162,
-    CMD_equal 163,
-    CMD_rshift 164,
-    CMD_tilde 165,
+    CMD_pound 159,
+    CMD_and 160,
+    CMD_lshift 161,
+    CMD_equal 162,
+    CMD_rshift 163,
+    CMD_tilde 164,
 
-    CMD_SIZE 166)     ;; MUST be after all real commands!
+    CMD_SIZE 165)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3351,8 +3324,8 @@
 ;; They may have different values when the screen wasn't (re)allocated yet
 ;; after setting Rows or Columns (e.g., when starting up).
 
-(atom! long   Rows 24#_L)     ;; nr of rows in the screen
-(atom! long   Columns 80#_L)  ;; nr of columns in the screen
+(atom! long   Rows      24#_L)      ;; nr of rows in the screen
+(atom! long   Columns   80#_L)      ;; nr of columns in the screen
 
 ;; The characters that are currently on the screen are kept in screenLines[].
 ;; It is a single block of characters, the size of the screen plus one line.
@@ -3366,7 +3339,7 @@
 (atom! Bytes    screenLines)
 (atom! int*     screenAttrs)
 (atom! int*     lineOffset)
-(atom! boolean* lineWraps)         ;; line wraps to next line
+(atom! boolean* lineWraps)          ;; line wraps to next line
 
 ;; When using Unicode characters (in UTF-8 encoding) the character in
 ;; screenLinesUC[] contains the Unicode for the character at this position,
@@ -3586,10 +3559,6 @@
 ;; The window layout is kept in a tree of frames.  "topframe" points to the top of the tree.
 
 (atom! frame_C  topframe)               ;; top of the window frame tree
-
-;; Tab pages are alternative topframes.
-
-(atom! tabpage_C    curtab)
 
 ;; All buffers are linked in a list.  'firstbuf' points to the first entry,
 ;; 'lastbuf' to the last entry and 'curbuf' to the currently active buffer.
@@ -3894,12 +3863,10 @@
     e_number_exp      (u8 "E39: Number expected"),
     e_patnotf2        (u8 "E486: Pattern not found: %s"),
     e_positive        (u8 "E487: Argument must be positive"),
-    e_prev_dir        (u8 "E459: Cannot go back to previous directory"),
     e_re_damg         (u8 "E43: Damaged match string"),
     e_re_corr         (u8 "E44: Corrupted regexp program"),
     e_sandbox         (u8 "E48: Not allowed in sandbox"),
     e_secure          (u8 "E523: Not allowed here"),
-    e_screenmode      (u8 "E359: Screen mode setting not supported"),
     e_scroll          (u8 "E49: Invalid scroll size"),
     e_toocompl        (u8 "E74: Command too complex"),
     e_toomsbra        (u8 "E76: Too many ["),
@@ -4787,11 +4754,6 @@
         (->signalinfo_C -1,        (u8 "Unknown!"), false)
     ])
 
-(defn- #_int mch_chdir [#_Bytes path]
-    (§
-;       return libC.chdir(path);
-    ))
-
 ;; Write s[len] to the screen.
 
 (defn- #_void mch_write [#_Bytes s, #_int len]
@@ -5208,182 +5170,6 @@
 ;       return (STRNCASECMP(name, u8("screen"), 6) == 0);
     ))
 
-;; Get name of current directory into buffer 'buf' of length 'len' bytes.
-;; Return true for success, false for failure.
-
-(defn- #_boolean mch_dirname [#_Bytes buf, #_int len]
-    (§
-;       if (!libC._getcwd(buf, len))
-;       {
-;           STRCPY(buf, libC.strerror(libC.errno()));
-;           return false;
-;       }
-;       return true;
-    ))
-
-(atom! boolean dont_fchdir)     ;; true when fchdir() doesn't work
-
-;; Get absolute file name into "buf[len]".
-;;
-;; return false for failure, true for success
-
-(defn- #_boolean mch_fullName [#_Bytes fname, #_Bytes buf, #_int len, #_boolean force]
-    ;; force: also expand when already absolute path
-    (§
-;       boolean retval = true;
-
-        ;; expand it if forced or not an absolute path
-;       if (force || !mch_isFullName(fname))
-;       {
-;           int fd = -1;
-;           Bytes olddir = new Bytes(MAXPATHL);
-
-            ;; If the file name has a path, change to that directory for a moment,
-            ;; and then do the getwd() (and get back to where we were).
-            ;; This will get the correct path name with "../" things.
-
-;           Bytes p = vim_strrchr(fname, (byte)'/');
-;           if (p != null)
-;           {
-                ;; Use fchdir() if possible, it's said to be faster and more reliable.
-                ;; But on SunOS 4 it might not work.  Check this by doing a fchdir() right now.
-
-;               if (!@dont_fchdir)
-;               {
-;                   fd = libC.open(u8("."), O_RDONLY, 0);
-;                   if (0 <= fd && libc.fchdir(fd) < 0)
-;                   {
-;                       libc.close(fd);
-;                       fd = -1;
-;                       @dont_fchdir = true;     ;; don't try again
-;                   }
-;               }
-
-                ;; Only change directory when we are sure we can return to where we are now.
-                ;; After doing "su" chdir(".") might not work.
-;               if (fd < 0 && (mch_dirname(olddir, MAXPATHL) == false || mch_chdir(olddir) != 0))
-;               {
-;                   p = null;       ;; can't get current dir: don't chdir
-;                   retval = false;
-;               }
-;               else
-;               {
-                    ;; The directory is copied into buf[], to be able to remove the file name
-                    ;; without changing it (could be a string in read-only memory)
-;                   if (len <= BDIFF(p, fname))
-;                       retval = false;
-;                   else
-;                   {
-;                       vim_strncpy(buf, fname, BDIFF(p, fname));
-;                       if (mch_chdir(buf) != 0)
-;                           retval = false;
-;                       else
-;                           fname = p.plus(1);
-;                       buf.be(0, NUL);
-;                   }
-;               }
-;           }
-;           if (mch_dirname(buf, len) == false)
-;           {
-;               retval = false;
-;               buf.be(0, NUL);
-;           }
-;           if (p != null)
-;           {
-;               int l;
-;               if (0 <= fd)
-;               {
-;                   l = libc.fchdir(fd);
-;                   libc.close(fd);
-;               }
-;               else
-;                   l = mch_chdir(olddir);
-;               if (l != 0)
-;                   emsg(e_prev_dir);
-;           }
-
-;           int l = STRLEN(buf);
-;           if (len - 1 <= l)
-;               retval = false; ;; no space for trailing "/"
-;           else if (0 < l && buf.at(l - 1) != (byte)'/' && fname.at(0) != NUL && STRCMP(fname, u8(".")) != 0)
-;               STRCAT(buf, u8("/"));
-;       }
-
-        ;; Catch file names which are too long.
-;       if (retval == false || len <= STRLEN(buf) + STRLEN(fname))
-;           return false;
-
-        ;; Do not append ".", "/dir/." is equal to "/dir".
-;       if (STRCMP(fname, u8(".")) != 0)
-;           STRCAT(buf, fname);
-
-;       return true;
-    ))
-
-;; Return true if "fname" does not depend on the current directory.
-
-(defn- #_boolean mch_isFullName [#_Bytes fname]
-    (§
-;       return (fname.at(0) == (byte)'/' || fname.at(0) == (byte)'~');
-    ))
-
-;; Get file permissions for 'name'.
-;; Returns -1 when it doesn't exist.
-
-(defn- #_int mch_getperm [#_Bytes name]
-    (§
-;       stat_C st = new stat_C();
-
-;       if (libC.stat(name, st) != 0)
-;           return -1;
-
-;       return st.st_mode();
-    ))
-
-;; set file permission for 'name' to 'perm'
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean mch_setperm [#_Bytes name, #_int perm]
-    (§
-;       return (libC.chmod(name, perm) == 0);
-    ))
-
-;; return true if "name" is a directory
-;; return false if "name" is not a directory
-;; return false for error
-
-(defn- #_boolean mch_isdir [#_Bytes name]
-    (§
-;       if (name.at(0) == NUL)       ;; Some stat()s don't flag "" as an error.
-;           return false;
-
-;       stat_C st = new stat_C();
-;       if (libC.stat(name, st) != 0)
-;           return false;
-
-;       return S_ISDIR(st.st_mode());
-    ))
-
-;; Check what "name" is:
-;; NODE_NORMAL: file or directory (or doesn't exist)
-;; NODE_WRITABLE: writable device, socket, fifo, etc.
-;; NODE_OTHER: non-writable things
-
-(defn- #_int mch_nodetype [#_Bytes name]
-    (§
-;       stat_C st = new stat_C();
-
-;       if (libC.stat(name, st) != 0)
-;           return NODE_NORMAL;
-;       if (S_ISREG(st.st_mode()) || S_ISDIR(st.st_mode()))
-;           return NODE_NORMAL;
-;       if (S_ISBLK(st.st_mode()))  ;; block device isn't writable
-;           return NODE_OTHER;
-        ;; Everything else is writable?
-;       return NODE_WRITABLE;
-    ))
-
 ;; Output a newline when exiting.
 ;; Make sure the newline goes to the same stream as the text.
 
@@ -5549,14 +5335,6 @@
 ;       }
 ;       else
 ;           del_mouse_termcode(KS_MOUSE);
-    ))
-
-;; set screen mode, always fails.
-
-(defn- #_boolean mch_screenmode [#_Bytes _arg]
-    (§
-;       emsg(e_screenmode);
-;       return false;
     ))
 
 ;; Try to get the current window size:
@@ -13137,7 +12915,7 @@
 ;                   @curbuf = buf;
 ;                   @curbuf.b_nwindows++;
 
-                    ;; Set 'fileformat' and 'binary' when forced.
+                    ;; Set 'binary' when forced.
 ;                   if (!oldbuf && eap != null)
 ;                       set_file_options(eap);
 ;               }
@@ -20052,30 +19830,6 @@
 ;       }
     ))
 
-;; Open a new tab page.
-
-(defn- #_void tabpage_new []
-    (§
-;       exarg_C ea = §_exarg_C();
-
-;       ea.cmdidx = CMD_tabnew;
-;       ea.cmd = u8("tabn");
-;       ea.arg = u8("");
-
-;       ex_splitview(ea);
-    ))
-
-;; ":mode": Set screen mode.
-;; If no argument given, just get the screen size and redraw.
-
-(defn- #_void ex_mode [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) == NUL)
-;           shell_resized();
-;       else
-;           mch_screenmode(eap.arg);
-    ))
-
 ;; ":resize".
 ;; set, increment or decrement current window height
 
@@ -24318,120 +24072,8 @@
     (§
 ;       Bytes[] ptr = new Bytes[1];
 ;       int len = find_ident_under_cursor(ptr, FIND_IDENT);
-;       if (len == 0 || find_decl(ptr[0], len, nchar == 'd', thisblock, 0) == false)
+;       if (len == 0 || find_decl(ptr[0], len, nchar == 'd', thisblock, 0) == false)
 ;           clearopbeep(oap);
-    ))
-
-;; Search for variable declaration of "ptr[len]".
-;; When "locally" is true in the current function ("gd"), otherwise in the current file ("gD").
-;; When "thisblock" is true check the {} block scope.
-;; Return false when not found.
-
-(defn- #_boolean find_decl [#_Bytes ptr, #_int len, #_boolean locally, #_boolean thisblock, #_int searchflags]
-    ;; searchflags: flags passed to searchit()
-    (§
-;       boolean retval = true;
-
-;       Bytes pat = new Bytes(len + 7);
-
-        ;; Put "\V" before the pattern
-        ;; to avoid that the special meaning of "." and "~" causes trouble.
-;       libC.sprintf(pat, us_iswordp(ptr, @curbuf) ? u8("\\V\\<%.*s\\>") : u8("\\V%.*s"), len, ptr);
-;       pos_C old_pos = §_pos_C();
-;       COPY_pos(old_pos, @curwin.w_cursor);
-;       boolean save_p_ws = @p_ws;
-;       boolean save_p_scs = @p_scs;
-;       @p_ws = false;       ;; don't wrap around end of file now
-;       @p_scs = false;      ;; don't switch ignorecase off now
-
-;       pos_C par_pos = §_pos_C();
-
-        ;; With "gD" go to line 1.
-        ;; With "gd" Search back for the start of the current function,
-        ;; then go back until a blank line.  If this fails go to line 1.
-
-;       boolean[] incll = new boolean[1];
-;       if (!locally || !findpar(incll, BACKWARD, 1L, '{', false))
-;       {
-;           setpcmark();                    ;; set in findpar() otherwise
-;           @curwin.w_cursor.lnum = 1;
-;           COPY_pos(par_pos, @curwin.w_cursor);
-;       }
-;       else
-;       {
-;           COPY_pos(par_pos, @curwin.w_cursor);
-;           while (1 < @curwin.w_cursor.lnum && skipwhite(ml_get_curline()).at(0) != NUL)
-;               --@curwin.w_cursor.lnum;
-;       }
-;       @curwin.w_cursor.col = 0;
-
-;       boolean found;
-        ;; Search forward for the identifier, ignore comment lines.
-;       pos_C found_pos = §_pos_C();
-;       for ( ; ; )
-;       {
-;           int i = searchit(@curwin, @curbuf, @curwin.w_cursor, FORWARD, pat, 1L, searchflags, RE_LAST, 0, null);
-
-;           found = (i != 0 && @curwin.w_cursor.lnum < old_pos.lnum);    ;; match after start is failure too
-
-;           if (thisblock && found)
-;           {
-                ;; Check that the block the match is in doesn't end before
-                ;; the position where we started the search from.
-;               pos_C pos = findmatchlimit(null, '}', FM_FORWARD, (int)(old_pos.lnum - @curwin.w_cursor.lnum + 1));
-;               if (pos != null && pos.lnum < old_pos.lnum)
-;                   continue;
-;           }
-
-;           if (!found)
-;           {
-                ;; If we previously found a valid position, use it.
-;               if (found_pos.lnum != 0)
-;               {
-;                   COPY_pos(@curwin.w_cursor, found_pos);
-;                   found = true;
-;               }
-;               break;
-;           }
-;           if (0 < get_leader_len(ml_get_curline(), null, false, true))
-;           {
-                ;; Ignore this line, continue at start of next line.
-;               @curwin.w_cursor.lnum++;
-;               @curwin.w_cursor.col = 0;
-;               continue;
-;           }
-;           if (!locally)   ;; global search: use first match found
-;               break;
-;           if (par_pos.lnum <= @curwin.w_cursor.lnum)
-;           {
-                ;; If we previously found a valid position, use it.
-;               if (found_pos.lnum != 0)
-;                   COPY_pos(@curwin.w_cursor, found_pos);
-;               break;
-;           }
-
-            ;; For finding a local variable and the match is before the "{" search
-            ;; to find a later match.  For K&R style function declarations this
-            ;; skips the function header without types.
-;           COPY_pos(found_pos, @curwin.w_cursor);
-;       }
-
-;       if (!found)
-;       {
-;           retval = false;
-;           COPY_pos(@curwin.w_cursor, old_pos);
-;       }
-;       else
-;       {
-;           @curwin.w_set_curswant = true;
-            ;; "n" searches forward now
-;           reset_search_dir();
-;       }
-
-;       @p_ws = save_p_ws;
-;       @p_scs = save_p_scs;
-
-;       return retval;
     ))
 
 ;; Move 'dist' lines in direction 'dir',
@@ -69251,9 +68893,7 @@
 
 ;           if (!@p_paste
 ;                   && @curbuf.@b_p_cin
-;                   && in_cinkeys(dir == FORWARD
-;                       ? KEY_OPEN_FORW
-;                       : KEY_OPEN_BACK, ' ', linewhite(@curwin.w_cursor.lnum)))
+;                   && in_cinkeys(dir == FORWARD ? KEY_OPEN_FORW : KEY_OPEN_BACK, ' ', linewhite(@curwin.w_cursor.lnum)))
 ;           {
 ;               do_c_expr_indent();
 ;               Bytes p = ml_get_curline();
@@ -76095,37 +75735,6 @@
 ;       return emsg(@ioBuff);
     ))
 
-;; Read 2 bytes from "fd" and turn them into an int, MSB first.
-
-(defn- #_int get2c [#_file_C fd]
-    (§
-;       int        n = libc.getc(fd);
-;       n = (n << 8) + libc.getc(fd);
-;       return n;
-    ))
-
-;; Read 4 bytes from "fd" and turn them into an int, MSB first.
-
-(defn- #_int get4c [#_file_C fd]
-    (§
-        ;; Use long rather than int otherwise result is undefined when left-shift sets the MSB.
-;       long       n = libc.getc(fd);
-;       n = (n << 8) + libc.getc(fd);
-;       n = (n << 8) + libc.getc(fd);
-;       n = (n << 8) + libc.getc(fd);
-;       return (int)n;
-    ))
-
-;; Read 8 bytes from "fd" and turn them into a time_t, MSB first.
-
-(defn- #_long get8c [#_file_C fd]
-    (§
-;       long n = 0;
-;       for (int i = 0; i < 8; i++)
-;           n = (n << 8) + libc.getc(fd);
-;       return n;
-    ))
-
 ;;; ============================================================================================== VimT
 
 ;; fileio.c: read from and write to a file --------------------------------------------------------
@@ -76144,78 +75753,17 @@
 ;       }
     ))
 
-(defn- #_void buf_store_time [#_buffer_C buf, #_stat_C st]
-    (§
-;       buf.b_mtime = st.st_mtime();
-;       buf.b_orig_size = st.st_size();
-;       buf.b_orig_mode = st.st_mode();
-    ))
-
-;; Adjust the line with missing eol, used for the next write.
-;; Used for do_filter(), when the input lines for the filter are deleted.
-
-(defn- #_void write_lnum_adjust [#_long offset]
-    (§
-;       if (@curbuf.b_no_eol_lnum != 0)      ;; only if there is a missing eol
-;           @curbuf.b_no_eol_lnum += offset;
-    ))
-
-;; Return true when there is a CursorHold autocommand defined.
-
-(defn- #_boolean has_cursorhold []
-    (§
-;       return false;
-    ))
-
 ;; Return true if the CursorHold event can be triggered.
 
 (defn- #_boolean trigger_cursorhold []
     (§
-;       if (!@did_cursorhold && has_cursorhold() && !@Recording && @typebuf.tb_len == 0)
+;       if (!@did_cursorhold && hamis && !@Recording && @typebuf.tb_len == 0)
 ;       {
 ;           int state = get_real_state();
 ;           if (state == NORMAL_BUSY || (state & INSERT) != 0)
 ;               return true;
 ;       }
 ;       return false;
-    ))
-
-;; Version of read() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-
-(defn- #_int read_eintr [#_int fd, #_Bytes buf, #_int bufsize]
-    (§
-;       int ret;
-
-;       for ( ; ; )
-;       {
-;           ret = (int)libC.read(fd, buf, bufsize);
-;           if (0 <= ret || libC.errno() != EINTR)
-;               break;
-;       }
-
-;       return ret;
-    ))
-
-;; Version of write() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-
-(defn- #_int write_eintr [#_int fd, #_Bytes buf, #_int bufsize]
-    (§
-;       int ret = 0;
-
-        ;; Repeat the write() so long it didn't fail, other than being interrupted by a signal.
-;       while (ret < bufsize)
-;       {
-;           int wlen = (int)libC.write(fd, buf.plus(ret), bufsize - ret);
-;           if (wlen < 0)
-;           {
-;               if (libC.errno() != EINTR)
-;                   break;
-;           }
-;           else
-;               ret += wlen;
-;       }
-
-;       return ret;
     ))
 
 ;;; ============================================================================================== VimU
@@ -82587,16 +82135,12 @@
     (§
 ;       buffer_C buf = wp.w_buffer;
 
-;       int top_end = 0;                    ;; Below last row of the top area that needs
-                                            ;; updating.  0 when no top area updating.
-;       int mid_start = 999;                ;; First row of the mid area that needs
-                                            ;; updating.  999 when no mid area updating.
-;       int mid_end = 0;                    ;; Below last row of the mid area that needs
-                                            ;; updating.  0 when no mid area updating.
-;       int bot_start = 999;                ;; First row of the bot area that needs
-                                            ;; updating.  999 when no bot area updating.
-;       boolean scrolled_down = false;      ;; true when scrolled down when
-                                            ;; w_topline got smaller a bit
+;       int top_end = 0;                    ;; Below last row of the top area that needs updating.  0 when no top area updating.
+;       int mid_start = 999;                ;; First row of the mid area that needs updating.     999 when no mid area updating.
+;       int mid_end = 0;                    ;; Below last row of the mid area that needs updating.  0 when no mid area updating.
+;       int bot_start = 999;                ;; First row of the bot area that needs updating.     999 when no bot area updating.
+
+;       boolean scrolled_down = false;      ;; true when scrolled down when w_topline got smaller a bit
 ;       boolean top_to_mod = false;         ;; redraw above mod_top
 
 ;       boolean eof = false;                ;; if true, we hit the end of the file
@@ -82613,7 +82157,6 @@
 ;           DID_FOLD = 3;                   ;; updated a folded line
 ;       int did_update = DID_NONE;
 
-;       long syntax_last_parsed = 0;        ;; last parsed text line
 ;       long mod_top = 0;
 ;       long mod_bot = 0;
 
@@ -83295,7 +82838,6 @@
 ;                   row = win_line(wp, lnum, srow, wp.w_height, mod_top == 0);
 
 ;                   did_update = DID_LINE;
-;                   syntax_last_parsed = lnum;
 ;               }
 
 ;               wp.w_lines[idx].wl_lnum = lnum;
@@ -85539,100 +85081,6 @@
 ;           }
 ;       }
 ;       return false;
-    ))
-
-(atom! boolean _3_entered)
-
-;; Redraw the tab pages line from 'tabline'.
-
-(defn- #_void win_redr_custom []
-    (§
-        ;; There is a tiny chance that this gets called recursively:
-        ;; when redrawing a status line triggers redrawing the ruler or tabline.
-        ;; Avoid trouble by not allowing recursion.
-;       if (@_3_entered)
-;           return;
-;       @_3_entered = true;
-
-;       stl_hlrec_C[] hltab = ARRAY_stl_hlrec(STL_MAX_ITEM);
-;       stl_hlrec_C[] tabtab = ARRAY_stl_hlrec(STL_MAX_ITEM);
-
-;       int col = 0;
-
-        ;; Use 'tabline'.  Always at the first line of the screen.
-;       Bytes stl = @p_tal;
-;       int row = 0;
-;       int fillchar = ' ';
-;       int[] attr = new int[1];
-;           attr[0] = hl_attr(HLF_TPF);
-;       int maxwidth = (int)@Columns;
-;       boolean use_sandbox = was_set_insecurely(u8("tabline"), 0);
-
-;       if (0 < maxwidth)
-;       {
-            ;; Temporarily reset 'cursorbind',
-            ;; we don't want a side effect from moving the cursor away and back.
-;           window_C ewp = @curwin;
-;           boolean p_crb_save = ewp.w_onebuf_opt.@wo_crb;
-;           ewp.w_onebuf_opt.@wo_crb = false;
-
-;           Bytes buf = new Bytes(MAXPATHL);
-            ;; Make a copy, because the statusline may include a function call that
-            ;; might change the option value and free the memory.
-;           stl = STRDUP(stl);
-;           int width = build_stl_str_hl(ewp, buf, buf.size(), stl, use_sandbox, fillchar, maxwidth, hltab, tabtab);
-;           ewp.w_onebuf_opt.@wo_crb = p_crb_save;
-
-            ;; Make all characters printable.
-;           vim_strncpy(buf, transstr(buf), buf.size() - 1);
-
-            ;; fill up with "fillchar"
-;           int len = STRLEN(buf);
-;           while (width < maxwidth && len < buf.size() - 1)
-;           {
-;               len += utf_char2bytes(fillchar, buf.plus(len));
-;               width++;
-;           }
-;           buf.be(len, NUL);
-
-            ;; Draw each snippet with the specified highlighting.
-
-;           int curattr = attr[0];
-;           Bytes p = buf;
-;           for (int n = 0; hltab[n].start != null; n++)
-;           {
-;               len = BDIFF(hltab[n].start, p);
-;               screen_puts_len(p, len, row, col, curattr);
-;               col += mb_string2cells(p, len);
-;               p = hltab[n].start;
-
-;               if (hltab[n].userhl == 0)
-;                   curattr = attr[0];
-;               else if (hltab[n].userhl < 0)
-;                   curattr = syn_id2attr(-hltab[n].userhl);
-;               else
-;                   curattr = @highlight_user[hltab[n].userhl - 1];
-;           }
-;           screen_puts(p, row, col, curattr);
-
-            ;; Fill the tabPageIdxs[] array for clicking in the tab pagesline.
-;           col = 0;
-;           len = 0;
-;           p = buf;
-;           fillchar = 0;
-;           for (int n = 0; tabtab[n].start != null; n++)
-;           {
-;               len += mb_string2cells(p, BDIFF(tabtab[n].start, p));
-;               while (col < len)
-;                   @tabPageIdxs[col++] = (short)fillchar;
-;               p = tabtab[n].start;
-;               fillchar = tabtab[n].userhl;
-;           }
-;           while (col < (int)@Columns)
-;               @tabPageIdxs[col++] = (short)fillchar;
-;       }
-
-;       @_3_entered = false;
     ))
 
 ;; Output a single character directly to the screen and update "screenLines".
@@ -89839,8 +89287,7 @@
 (defn- #_frame_C win_altframe [#_window_C win]
     (§
 ;       if (@firstwin == @lastwin)
-            ;; Last window in this tab page, will go to next tab page.
-;           return @curtab.tp_curwin.w_frame;
+;           return @curwin.w_frame;
 
 ;       frame_C frp = win.w_frame;
 ;       boolean b;
@@ -90370,17 +89817,6 @@
 ;       wp.w_botline = 2;
     ))
 
-;; Allocate a new tabpage_C and init the values.
-
-(defn- #_tabpage_C newTabpage []
-    (§
-;       tabpage_C tp = §_tabpage_C();
-
-;       tp.tp_ch_used = @p_ch;
-
-;       return tp;
-    ))
-
 ;; Allocate the first window and put an empty buffer in it.
 ;; Called from main().
 
@@ -90388,7 +89824,7 @@
     (§
 ;       win_alloc_firstwin(null);
 
-;       @curtab = newTabpage();
+;       @ch_used = @p_ch;
     ))
 
 ;; Allocate the first window.
@@ -90834,7 +90270,7 @@
 
 ;       win_comp_pos();                 ;; recompute w_winrow and w_wincol
 ;       compute_cmdrow();
-;       @curtab.tp_ch_used = @p_ch;
+;       @ch_used = @p_ch;
     ))
 
 ;; Called from win_new_shellsize() after Columns changed.
@@ -91436,7 +90872,7 @@
 ;       @p_ch = @Rows - @cmdline_row;
 ;       if (@p_ch < 1)
 ;           @p_ch = 1;
-;       @curtab.tp_ch_used = @p_ch;
+;       @ch_used = @p_ch;
 
 ;       redraw_all_later(SOME_VALID);
 ;       showmode();
@@ -91697,12 +91133,12 @@
 
 (defn- #_void command_height []
     (§
-;       long old_p_ch = @curtab.tp_ch_used;
+;       long old_p_ch = @ch_used;
 
         ;; Use the value of "p_ch" that we remembered.  This is needed for when the
         ;; GUI starts up, we can't be sure in what order things happen.  And when
         ;; "p_ch" was changed in another tab page.
-;       @curtab.tp_ch_used = @p_ch;
+;       @ch_used = @p_ch;
 
         ;; Find bottom frame with width of screen.
 ;       frame_C frp = @lastwin.w_frame;
@@ -91725,7 +91161,7 @@
 ;                   {
 ;                       emsg(e_noroom);
 ;                       @p_ch = old_p_ch;
-;                       @curtab.tp_ch_used = @p_ch;
+;                       @ch_used = @p_ch;
 ;                       @cmdline_row = (int)(@Rows - @p_ch);
 ;                       break;
 ;                   }
@@ -94252,7 +93688,6 @@
         (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "messages"),      ex_messages,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "mode"),          ex_mode,          (| WORD1 CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "new"),           ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
