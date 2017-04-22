@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -223,7 +223,6 @@
 ;; These are used for the GUI
 ;;      KB_SPECIAL  KS_xxx      KE_FILLER
 
-(final byte! KS_MOUSE           251)
 (final byte! KS_VER_SCROLLBAR   249)
 (final byte! KS_HOR_SCROLLBAR   248)
 
@@ -320,19 +319,7 @@
     KE_S_F36 41,
     KE_S_F37 42,
 
-    KE_MOUSE 43,          ;; mouse event start
-
 ;; Symbols for pseudo keys which are translated from the real key symbols above.
-
-    KE_LEFTMOUSE 44,      ;; left mouse button click
-    KE_LEFTDRAG 45,       ;; drag with left mouse button down
-    KE_LEFTRELEASE 46,    ;; left mouse button release
-    KE_MIDDLEMOUSE 47,    ;; middle mouse button click
-    KE_MIDDLEDRAG 48,     ;; drag with middle mouse button down
-    KE_MIDDLERELEASE 49,  ;; middle mouse button release
-    KE_RIGHTMOUSE 50,     ;; right mouse button click
-    KE_RIGHTDRAG 51,      ;; drag with right mouse button down
-    KE_RIGHTRELEASE 52,   ;; right mouse button release
 
     KE_IGNORE 53,         ;; ignored mouse drag/release
 
@@ -352,21 +339,10 @@
     KE_XLEFT 66,
     KE_XRIGHT 67,
 
-    KE_LEFTMOUSE_NM 68,   ;; non-mappable left mouse button click
-    KE_LEFTRELEASE_NM 69, ;; non-mappable left mouse button release
-
     KE_S_XF1 70,          ;; extra vt100 shifted function keys for xterm
     KE_S_XF2 71,
     KE_S_XF3 72,
     KE_S_XF4 73,
-
-        ;; NOTE: The scroll wheel events are inverted: i.e. UP is the same as moving the
-        ;; actual scroll wheel down, LEFT is the same as moving the scroll wheel right.
-
-    KE_MOUSEDOWN 74,      ;; scroll wheel pseudo-button Down
-    KE_MOUSEUP 75,        ;; scroll wheel pseudo-button Up
-    KE_MOUSELEFT 76,      ;; scroll wheel pseudo-button Left
-    KE_MOUSERIGHT 77,     ;; scroll wheel pseudo-button Right
 
     KE_KINS 78,           ;; keypad Insert key
     KE_KDEL 79,           ;; keypad Delete key
@@ -380,13 +356,6 @@
     KE_C_RIGHT 85,        ;; control-right
     KE_C_HOME 86,         ;; control-home
     KE_C_END 87,          ;; control-end
-
-    KE_X1MOUSE 88,        ;; X1/X2 mouse-buttons
-    KE_X1DRAG 89,
-    KE_X1RELEASE 90,
-    KE_X2MOUSE 91,
-    KE_X2DRAG 92,
-    KE_X2RELEASE 93,
 
     KE_DROP 94,           ;; DnD data is available
     KE_CURSORHOLD 95,     ;; CursorHold event
@@ -533,7 +502,6 @@
     K_K8            -19275,   ;; TERMCAP2KEY((byte)'K', (byte)'K'),   ;; keypad 8
     K_K9            -19531,   ;; TERMCAP2KEY((byte)'K', (byte)'L'),   ;; keypad 9
 
-    K_MOUSE         -22523,   ;; TERMCAP2KEY(KS_MOUSE, KE_FILLER),
     K_VER_SCROLLBAR -22521,   ;; TERMCAP2KEY(KS_VER_SCROLLBAR, KE_FILLER),
     K_HOR_SCROLLBAR -22520,   ;; TERMCAP2KEY(KS_HOR_SCROLLBAR, KE_FILLER),
 
@@ -541,31 +509,8 @@
 
 ;; Symbols for pseudo keys which are translated from the real key symbols above.
 
-    K_LEFTMOUSE     -11261,   ;; TERMCAP2KEY(KS_EXTRA, KE_LEFTMOUSE),
-    K_LEFTMOUSE_NM  -17405,   ;; TERMCAP2KEY(KS_EXTRA, KE_LEFTMOUSE_NM),
-    K_LEFTDRAG      -11517,   ;; TERMCAP2KEY(KS_EXTRA, KE_LEFTDRAG),
-    K_LEFTRELEASE   -11773,   ;; TERMCAP2KEY(KS_EXTRA, KE_LEFTRELEASE),
-    K_LEFTRELEASE_NM -17661,  ;; TERMCAP2KEY(KS_EXTRA, KE_LEFTRELEASE_NM),
-    K_MIDDLEMOUSE   -12029,   ;; TERMCAP2KEY(KS_EXTRA, KE_MIDDLEMOUSE),
-    K_MIDDLEDRAG    -12285,   ;; TERMCAP2KEY(KS_EXTRA, KE_MIDDLEDRAG),
-    K_MIDDLERELEASE -12541,   ;; TERMCAP2KEY(KS_EXTRA, KE_MIDDLERELEASE),
-    K_RIGHTMOUSE    -12797,   ;; TERMCAP2KEY(KS_EXTRA, KE_RIGHTMOUSE),
-    K_RIGHTDRAG     -13053,   ;; TERMCAP2KEY(KS_EXTRA, KE_RIGHTDRAG),
-    K_RIGHTRELEASE  -13309,   ;; TERMCAP2KEY(KS_EXTRA, KE_RIGHTRELEASE),
-    K_X1MOUSE       -22525,   ;; TERMCAP2KEY(KS_EXTRA, KE_X1MOUSE),
-    K_X1DRAG        -22781,   ;; TERMCAP2KEY(KS_EXTRA, KE_X1DRAG),
-    K_X1RELEASE     -23037,   ;; TERMCAP2KEY(KS_EXTRA, KE_X1RELEASE),
-    K_X2MOUSE       -23293,   ;; TERMCAP2KEY(KS_EXTRA, KE_X2MOUSE),
-    K_X2DRAG        -23549,   ;; TERMCAP2KEY(KS_EXTRA, KE_X2DRAG),
-    K_X2RELEASE     -23805,   ;; TERMCAP2KEY(KS_EXTRA, KE_X2RELEASE),
-
     K_IGNORE        -13565,   ;; TERMCAP2KEY(KS_EXTRA, KE_IGNORE),
     K_NOP           -25085,   ;; TERMCAP2KEY(KS_EXTRA, KE_NOP),
-
-    K_MOUSEDOWN     -18941,   ;; TERMCAP2KEY(KS_EXTRA, KE_MOUSEDOWN),
-    K_MOUSEUP       -19197,   ;; TERMCAP2KEY(KS_EXTRA, KE_MOUSEUP),
-    K_MOUSELEFT     -19453,   ;; TERMCAP2KEY(KS_EXTRA, KE_MOUSELEFT),
-    K_MOUSERIGHT    -19709,   ;; TERMCAP2KEY(KS_EXTRA, KE_MOUSERIGHT),
 
     K_CSI           -20477,   ;; TERMCAP2KEY(KS_EXTRA, KE_CSI),
     K_SNR           -20733,   ;; TERMCAP2KEY(KS_EXTRA, KE_SNR),
@@ -599,7 +544,7 @@
 ;; The longest event is something like <M-C-S-T-4-LeftDrag> which would be the
 ;; following string of tokens:
 ;;
-;; <KB_SPECIAL> <KS_MODIFIER> bitmask <KB_SPECIAL> <KS_EXTRA> <KE_LEFTDRAG>.
+;; <KB_SPECIAL> <KS_MODIFIER> bitmask <KB_SPECIAL> <KS_EXTRA> <KE_LEFTDRAG>.
 ;;
 ;; This is a total of 6 tokens, and is currently the longest one possible.
 
@@ -1271,7 +1216,6 @@
 (atom! long    p_mmd)       ;; 'maxmapdepth'
 (atom! long    p_mmp)       ;; 'maxmempattern'
 (atom! boolean p_more)      ;; 'more'
-(atom! long    p_mouset)    ;; 'mousetime'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
 (atom! Bytes   p_para)      ;; 'paragraphs'
 (atom! boolean p_paste)     ;; 'paste'
@@ -2525,60 +2469,6 @@
 
 ;; ----------------------------------------------------------------------- ;;
 
-;; Codes for mouse button events in lower three bits:
-(final int MOUSE_LEFT     0x00)
-(final int MOUSE_MIDDLE   0x01)
-(final int MOUSE_RIGHT    0x02)
-(final int MOUSE_RELEASE  0x03)
-
-;; bit masks for modifiers:
-(final int MOUSE_SHIFT    0x04)
-(final int MOUSE_ALT      0x08)
-(final int MOUSE_CTRL     0x10)
-
-;; mouse buttons that are handled like a key press (GUI only)
-
-;; Note that the scroll wheel keys are inverted: MOUSE_5 scrolls lines up but
-;; the result of this is that the window moves down, similarly MOUSE_6 scrolls
-;; columns left but the window moves right.
-
-(final int MOUSE_4    0x100)    ;; scroll wheel down
-(final int MOUSE_5    0x200)    ;; scroll wheel up
-
-(final int MOUSE_X1   0x300)    ;; Mouse-button X1 (6th)
-(final int MOUSE_X2   0x400)    ;; Mouse-button X2
-
-(final int MOUSE_6    0x500)    ;; scroll wheel left
-(final int MOUSE_7    0x600)    ;; scroll wheel right
-
-;; 0x20 is reserved by xterm
-(final int MOUSE_DRAG_XTERM 0x40)
-
-(final int MOUSE_DRAG (| 0x40 MOUSE_RELEASE))
-
-;; Lowest button code for using the mouse wheel (xterm only).
-(final int MOUSEWHEEL_LOW     0x60)
-
-(final int MOUSE_CLICK_MASK   0x03)
-
-;; jump_to_mouse() returns one of first four these values, possibly with
-;; some of the other three added.
-
-(final int IN_UNKNOWN         0)
-(final int IN_BUFFER          1)
-(final int IN_STATUS_LINE     2)        ;; on status or command line
-(final int IN_SEP_LINE        4)        ;; on vertical separator line
-(final int IN_OTHER_WIN       8)        ;; in other window but can't go there
-(final int CURSOR_MOVED       0x100)
-
-;; flags for jump_to_mouse()
-(final int MOUSE_FOCUS        0x01)     ;; need to stay in this window
-(final int MOUSE_MAY_VIS      0x02)     ;; may start Visual mode
-(final int MOUSE_DID_MOVE     0x04)     ;; only act when mouse has moved
-(final int MOUSE_SETPOS       0x08)     ;; only set current mouse position
-(final int MOUSE_MAY_STOP_VIS 0x10)     ;; may stop Visual mode
-(final int MOUSE_RELEASED     0x20)     ;; button was released
-
 ;; Selection states for modeless selection.
 (final int SELECT_CLEARED     0)
 (final int SELECT_IN_PROGRESS 1)
@@ -2996,14 +2886,6 @@
 ;       return @highlight_attr[n];
     ))
 
-;; Mouse coordinates, set by check_termcode()
-
-(atom! int      mouse_row)
-(atom! int      mouse_col)
-(atom! boolean  mouse_past_bottom)      ;; mouse below last line
-(atom! boolean  mouse_past_eol)         ;; mouse right of line
-(atom! int      mouse_dragging)         ;; extending Visual area with mouse dragging
-
 ;; While redrawing the screen this flag is set.
 ;; It means the screen size ('lines' and 'rows') must not be changed.
 
@@ -3338,12 +3220,6 @@
 ;; values for vim_handle_signal() that are not a signal
 (final int SIGNAL_BLOCK    -1)
 (final int SIGNAL_UNBLOCK  -2)
-
-;; direction for nv_mousescroll() and ins_mousescroll()
-(final int MSCR_DOWN       0)       ;; DOWN must be false
-(final int MSCR_UP         1)
-(final int MSCR_LEFT       -1)
-(final int MSCR_RIGHT      -2)
 
 (final int KEYLEN_PART_KEY -1)      ;; keylen value for incomplete key-code
 (final int KEYLEN_PART_MAP -2)      ;; keylen value for incomplete mapping
@@ -4119,15 +3995,6 @@
 ;            || STRCMP(name, u8("builtin_xterm")) == 0);
     ))
 
-;; Return true if "name" appears to be that of a terminal
-;; known to support the xterm-style mouse protocol.
-;; Relies on term_is_xterm having been set to its correct value.
-
-(defn- #_boolean use_xterm_like_mouse [#_Bytes name]
-    (§
-;       return (name != null && (@term_is_xterm || STRNCASECMP(name, u8("screen"), 6) == 0));
-    ))
-
 (defn- #_boolean vim_is_vt300 [#_Bytes name]
     (§
 ;       if (name == null)
@@ -4859,26 +4726,10 @@
 ;                   else if (@Rows - 2 < @msg_scrolled && (c == 'j' || c == 'd' || c == 'f' || c == K_DOWN || c == K_PAGEDOWN))
 ;                       c = K_IGNORE;
 ;               }
-;           } while ((had_got_int && c == Ctrl_C)
-;                                 || c == K_IGNORE
-;                                 || c == K_LEFTDRAG   || c == K_LEFTRELEASE
-;                                 || c == K_MIDDLEDRAG || c == K_MIDDLERELEASE
-;                                 || c == K_RIGHTDRAG  || c == K_RIGHTRELEASE
-;                                 || c == K_MOUSELEFT  || c == K_MOUSERIGHT
-;                                 || c == K_MOUSEDOWN  || c == K_MOUSEUP
-;                                 || (@mouse_row < @msg_row
-;                                     && (c == K_LEFTMOUSE
-;                                      || c == K_MIDDLEMOUSE
-;                                      || c == K_RIGHTMOUSE
-;                                      || c == K_X1MOUSE
-;                                      || c == K_X2MOUSE)));
+;           } while ((had_got_int && c == Ctrl_C) || c == K_IGNORE);
 ;           ui_breakcheck();
 
-            ;; Avoid that the mouse-up event causes visual mode to start.
-
-;           if (c == K_LEFTMOUSE || c == K_MIDDLEMOUSE || c == K_RIGHTMOUSE || c == K_X1MOUSE || c == K_X2MOUSE)
-;               jump_to_mouse(MOUSE_SETPOS, null, 0);
-;           else if (vim_strchr(u8("\r\n "), c) == null && c != Ctrl_C)
+;           if (vim_strchr(u8("\r\n "), c) == null && c != Ctrl_C)
 ;           {
                 ;; Put the character back in the typeahead buffer.
                 ;; Don't use the stuff buffer, because lmaps wouldn't work.
@@ -5903,7 +5754,6 @@
 ;               case ' ':                   ;; one extra page
 ;               case 'f':
 ;               case K_PAGEDOWN:
-;               case K_LEFTMOUSE:
 ;                   toscroll = (int)@Rows - 1;
 ;                   break;
 
@@ -7312,7 +7162,6 @@
         (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000#_L),
         (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     null,        PV_MOD,     false),
         (bool_opt (u8 "more"),            null,            0,                           p_more,      0,          true),
-        (long_opt (u8 "mousetime"),      (u8 "mouset"),    0,                           p_mouset,    0,          500#_L),
         (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            null,        PV_NF,     (u8 "octal,hex")),
         (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      null,        PV_NU,      false),
         (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4#_L),
@@ -7450,7 +7299,7 @@
     p_bg_values     [ (u8 "light"), (u8 "dark"), null ],
     p_nf_values     [ (u8 "octal"), (u8 "hex"), (u8 "alpha"), null ],
     p_sel_values    [ (u8 "inclusive"), (u8 "exclusive"), (u8 "old"), null ],
-    p_slm_values    [ (u8 "mouse"), (u8 "key"), (u8 "cmd"), null ],
+    p_slm_values    [ (u8 "key"), (u8 "cmd"), null ],
     p_km_values     [ (u8 "startsel"), (u8 "stopsel"), null ],
     p_scbopt_values [ (u8 "ver"), (u8 "hor"), (u8 "jump"), null ],
     p_ead_values    [ (u8 "both"), (u8 "ver"), (u8 "hor"), null ],
@@ -9599,8 +9448,6 @@
         ;; Reset a few things before clearing the old options.  This may cause
         ;; outputting a few things that the terminal doesn't understand, but the
         ;; screen will be cleared later, so this is OK.
-
-;       mch_setmouse(false);            ;; switch mouse off
 
 ;       stoptermcap();                  ;; stop termcap mode
 
@@ -12473,43 +12320,12 @@
 ;                       case K_IGNORE:
 ;                           break cmdline_not_changed;          ;; Ignore mouse event or ex_window() result.
 
-;                       case K_MIDDLEDRAG:
-;                       case K_MIDDLERELEASE:
-;                           break cmdline_not_changed;          ;; Ignore mouse.
-
-;                       case K_MIDDLEMOUSE:
-;                           break cmdline_not_changed;          ;; Ignore mouse.
-
 ;                       case K_DROP:
 ;                       {
 ;                           cmdline_paste('~', true, false);
 ;                           redrawcmd();
 ;                           break cmdline_changed;
 ;                       }
-
-;                       case K_LEFTDRAG:
-;                       case K_LEFTRELEASE:
-;                       case K_RIGHTDRAG:
-;                       case K_RIGHTRELEASE:
-                            ;; FALLTHROUGH
-
-;                       case K_LEFTMOUSE:
-;                       case K_RIGHTMOUSE:
-;                           break cmdline_not_changed;          ;; Ignore mouse.
-
-                        ;; Mouse scroll wheel: ignored here.
-;                       case K_MOUSEDOWN:
-;                       case K_MOUSEUP:
-;                       case K_MOUSELEFT:
-;                       case K_MOUSERIGHT:
-                        ;; Alternate buttons ignored here.
-;                       case K_X1MOUSE:
-;                       case K_X1DRAG:
-;                       case K_X1RELEASE:
-;                       case K_X2MOUSE:
-;                       case K_X2DRAG:
-;                       case K_X2RELEASE:
-;                           break cmdline_not_changed;
 
 ;                       case K_SELECT:      ;; end of Select mode mapping - ignore
 ;                           break cmdline_not_changed;
@@ -17781,7 +17597,6 @@
 ;               if (!gui_yank)
 ;               {
 ;                   @VIsual_active = false;
-;                   @mouse_dragging = 0;
 ;                   if (@mode_displayed)
 ;                       @clear_cmdline = true;   ;; unshow visual mode later
 ;                   else
@@ -18231,7 +18046,6 @@
 ;           clip_auto_select();
 
 ;       @VIsual_active = false;
-;       @mouse_dragging = 0;
 
         ;; Save the current VIsual area for '< and '> marks, and "gv".
 ;       @curbuf.b_visual.vi_mode = @VIsual_mode;
@@ -18558,11 +18372,6 @@
 (final int* ignore_showcmd
     [
         K_IGNORE,
-        K_LEFTMOUSE, K_LEFTDRAG, K_LEFTRELEASE,
-        K_MIDDLEMOUSE, K_MIDDLEDRAG, K_MIDDLERELEASE,
-        K_RIGHTMOUSE, K_RIGHTDRAG, K_RIGHTRELEASE,
-        K_MOUSEDOWN, K_MOUSEUP, K_MOUSELEFT, K_MOUSERIGHT,
-        K_X1MOUSE, K_X1DRAG, K_X1RELEASE, K_X2MOUSE, K_X2DRAG, K_X2RELEASE,
         K_CURSORHOLD,
         0
     ])
@@ -18954,50 +18763,6 @@
 ;           @curwin.w_curswant = MAXCOL;     ;; stick in the last column
 
 ;       return retval;
-    ))
-
-;; Mouse scroll wheel: Default action is to scroll three lines,
-;; or one page when Shift or Ctrl is used.
-;; K_MOUSEUP (cap.arg == 1) or K_MOUSEDOWN (cap.arg == 0) or
-;; K_MOUSELEFT (cap.arg == -1) or K_MOUSERIGHT (cap.arg == -2)
-
-(defn- #_void nv_mousescroll [#_cmdarg_C cap]
-    (§
-;       window_C old_curwin = @curwin;
-
-;       if (0 <= @mouse_row && 0 <= @mouse_col)
-;       {
-;           int[] row = { @mouse_row };
-;           int[] col = { @mouse_col };
-
-                ;; find the window at the pointer coordinates
-;           @curwin = mouse_find_win(row, col);
-;       }
-
-;       if (cap.arg == MSCR_UP || cap.arg == MSCR_DOWN)
-;       {
-;           if ((@mod_mask & (MOD_MASK_SHIFT | MOD_MASK_CTRL)) != 0)
-;           {
-;               onepage((cap.arg != 0) ? FORWARD : BACKWARD, 1L);
-;           }
-;           else
-;           {
-;               cap.count1 = 3;
-;               cap.count0 = 3;
-;               nv_scroll_line(cap);
-;           }
-;       }
-
-;       @curwin.w_redr_status = true;
-
-;       @curwin = old_curwin;
-    ))
-
-;; Mouse clicks and drags.
-
-(defn- #_void nv_mouse [#_cmdarg_C cap]
-    (§
-;       do_mouse(cap.oap, cap.cmdchar, BACKWARD, (int)cap.count1, 0);
     ))
 
 ;; Handle CTRL-E and CTRL-Y commands: scroll a line up or down.
@@ -20201,14 +19966,6 @@
 ;           if (pos == null)
 ;               pos = prev_pos;
 ;           nv_cursormark(cap, cap.@nchar == '\'', pos);
-;       }
-
-            ;; [ or ] followed by a middle mouse click: put selected text with indent adjustment.
-            ;; Any other button just does as usual.
-
-;       else if (K_RIGHTRELEASE <= cap.@nchar && cap.@nchar <= K_LEFTMOUSE)
-;       {
-;           do_mouse(cap.oap, cap.@nchar, (cap.cmdchar == ']') ? FORWARD : BACKWARD, (int)cap.count1, PUT_FIXINDENT);
 ;       }
 
             ;; Not a valid cap.nchar.
@@ -21415,27 +21172,6 @@
 ;               nv_gd(oap, cap.@nchar, cap.count0 == 1);
 ;               break;
 
-                ;; g<*Mouse> : <C-*mouse>
-
-;           case K_MIDDLEMOUSE:
-;           case K_MIDDLEDRAG:
-;           case K_MIDDLERELEASE:
-;           case K_LEFTMOUSE:
-;           case K_LEFTDRAG:
-;           case K_LEFTRELEASE:
-;           case K_RIGHTMOUSE:
-;           case K_RIGHTDRAG:
-;           case K_RIGHTRELEASE:
-;           case K_X1MOUSE:
-;           case K_X1DRAG:
-;           case K_X1RELEASE:
-;           case K_X2MOUSE:
-;           case K_X2DRAG:
-;           case K_X2RELEASE:
-;               @mod_mask = MOD_MASK_CTRL;
-;               do_mouse(oap, cap.@nchar, BACKWARD, (int)cap.count1, 0);
-;               break;
-
 ;           case K_IGNORE:
 ;               break;
 
@@ -22415,27 +22151,6 @@
 
         ;; pound sign
 ;       new nv_cmd_C(char_u(POUND),    nv_ident,       0,                     0               ),
-        (->nv_cmd_C K_MOUSEUP,        nv_mousescroll, 0,                      MSCR_UP         ),
-        (->nv_cmd_C K_MOUSEDOWN,      nv_mousescroll, 0,                      MSCR_DOWN       ),
-        (->nv_cmd_C K_MOUSELEFT,      nv_mousescroll, 0,                      MSCR_LEFT       ),
-        (->nv_cmd_C K_MOUSERIGHT,     nv_mousescroll, 0,                      MSCR_RIGHT      ),
-        (->nv_cmd_C K_LEFTMOUSE,      nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_LEFTMOUSE_NM,   nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_LEFTDRAG,       nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_LEFTRELEASE,    nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_LEFTRELEASE_NM, nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_MIDDLEMOUSE,    nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_MIDDLEDRAG,     nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_MIDDLERELEASE,  nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_RIGHTMOUSE,     nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_RIGHTDRAG,      nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_RIGHTRELEASE,   nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X1MOUSE,        nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X1DRAG,         nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X1RELEASE,      nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X2MOUSE,        nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X2DRAG,         nv_mouse,       0,                      0               ),
-        (->nv_cmd_C K_X2RELEASE,      nv_mouse,       0,                      0               ),
         (->nv_cmd_C K_IGNORE,         nv_ignore,      NV_KEEPREG,             0               ),
         (->nv_cmd_C K_NOP,            nv_nop,         0,                      0               ),
         (->nv_cmd_C K_INS,            nv_edit,        0,                      0               ),
@@ -29296,8 +29011,6 @@
 
 (atom! int old_char         -1) ;; character put back by vungetc()
 (atom! int old_mod_mask)        ;; mod_mask for ungotten character
-(atom! int old_mouse_row)       ;; mouse_row related to old_char
-(atom! int old_mouse_col)       ;; mouse_col related to old_char
 
 ;; Save all three kinds of typeahead, so that the user must type at a prompt.
 
@@ -29370,8 +29083,6 @@
 ;           c = @old_char;
 ;           @old_char = -1;
 ;           @mod_mask = @old_mod_mask;
-;           @mouse_row = @old_mouse_row;
-;           @mouse_col = @old_mouse_col;
 ;       }
 ;       else
 ;       {
@@ -29585,8 +29296,6 @@
     (§
 ;       @old_char = c;
 ;       @old_mod_mask = @mod_mask;
-;       @old_mouse_row = @mouse_row;
-;       @old_mouse_col = @mouse_col;
     ))
 
 (atom! int __tc)
@@ -32070,42 +31779,6 @@
 ;                           did_backspace = ins_bs(c, BACKSPACE_LINE, inserted_space);
 ;                           auto_format(false, true);
 ;                           inserted_space[0] = false;
-;                           break normalchar;
-
-;                       case K_LEFTMOUSE:                   ;; mouse keys
-;                       case K_LEFTMOUSE_NM:
-;                       case K_LEFTDRAG:
-;                       case K_LEFTRELEASE:
-;                       case K_LEFTRELEASE_NM:
-;                       case K_MIDDLEMOUSE:
-;                       case K_MIDDLEDRAG:
-;                       case K_MIDDLERELEASE:
-;                       case K_RIGHTMOUSE:
-;                       case K_RIGHTDRAG:
-;                       case K_RIGHTRELEASE:
-;                       case K_X1MOUSE:
-;                       case K_X1DRAG:
-;                       case K_X1RELEASE:
-;                       case K_X2MOUSE:
-;                       case K_X2DRAG:
-;                       case K_X2RELEASE:
-;                           ins_mouse(c);
-;                           break normalchar;
-
-;                       case K_MOUSEDOWN:                   ;; default action for scroll wheel up: scroll up
-;                           ins_mousescroll(MSCR_DOWN);
-;                           break normalchar;
-
-;                       case K_MOUSEUP:                     ;; default action for scroll wheel down: scroll down
-;                           ins_mousescroll(MSCR_UP);
-;                           break normalchar;
-
-;                       case K_MOUSELEFT:                   ;; scroll wheel left
-;                           ins_mousescroll(MSCR_LEFT);
-;                           break normalchar;
-
-;                       case K_MOUSERIGHT:                  ;; scroll wheel right
-;                           ins_mousescroll(MSCR_RIGHT);
 ;                           break normalchar;
 
 ;                       case K_IGNORE:                      ;; something mapped to nothing
@@ -34940,44 +34613,6 @@
 ;           @dollar_vcol = @curwin.w_virtcol;
 
 ;       return did_backspace;
-    ))
-
-(defn- #_void ins_mousescroll [#_int dir]
-    (§
-;       window_C old_curwin = @curwin;
-
-;       pos_C tpos = §_pos_C();
-;       COPY_pos(tpos, @curwin.w_cursor);
-
-;       if (0 <= @mouse_row && 0 <= @mouse_col)
-;       {
-;           int[] row = { @mouse_row };
-;           int[] col = { @mouse_col };
-
-            ;; find the window at the pointer coordinates
-;           @curwin = mouse_find_win(row, col);
-;       }
-
-;       if (@curwin == old_curwin)
-;           undisplay_dollar();
-
-;       if (dir == MSCR_DOWN || dir == MSCR_UP)
-;       {
-;           if ((@mod_mask & (MOD_MASK_SHIFT | MOD_MASK_CTRL)) != 0)
-;               scroll_redraw(dir != MSCR_DOWN, @curwin.w_botline - @curwin.w_topline);
-;           else
-;               scroll_redraw(dir != MSCR_DOWN, 3L);
-;       }
-
-;       @curwin.w_redr_status = true;
-
-;       @curwin = old_curwin;
-
-;       if (!eqpos(@curwin.w_cursor, tpos))
-;       {
-;           start_arrow(tpos);
-;           @can_cindent = true;
-;       }
     ))
 
 (defn- #_void ins_left []
@@ -62026,33 +61661,6 @@
 ;       return c;
     ))
 
-;; Return true if "c" is a mouse key.
-
-(defn- #_boolean is_mouse_key [#_int c]
-    (§
-;       return c == K_LEFTMOUSE
-;           || c == K_LEFTMOUSE_NM
-;           || c == K_LEFTDRAG
-;           || c == K_LEFTRELEASE
-;           || c == K_LEFTRELEASE_NM
-;           || c == K_MIDDLEMOUSE
-;           || c == K_MIDDLEDRAG
-;           || c == K_MIDDLERELEASE
-;           || c == K_RIGHTMOUSE
-;           || c == K_RIGHTDRAG
-;           || c == K_RIGHTRELEASE
-;           || c == K_MOUSEDOWN
-;           || c == K_MOUSEUP
-;           || c == K_MOUSELEFT
-;           || c == K_MOUSERIGHT
-;           || c == K_X1MOUSE
-;           || c == K_X1DRAG
-;           || c == K_X1RELEASE
-;           || c == K_X2MOUSE
-;           || c == K_X2DRAG
-;           || c == K_X2RELEASE;
-    ))
-
 ;; Get a key stroke directly from the user.
 ;; Ignores mouse clicks and scrollbar events, except a click for the left button (used at the more prompt).
 ;; Doesn't use vgetc(), because it syncs undo and eats mapped characters.
@@ -62131,7 +61739,7 @@
 ;           if (buf.at(0) == KB_SPECIAL)
 ;           {
 ;               c = toSpecial(buf.at(1), buf.at(2));
-;               if (buf.at(1) == KS_MODIFIER || c == K_IGNORE || (is_mouse_key(c) && c != K_LEFTMOUSE))
+;               if (buf.at(1) == KS_MODIFIER || c == K_IGNORE)
 ;               {
 ;                   if (buf.at(1) == KS_MODIFIER)
 ;                       @mod_mask = char_u(buf.at(2));
@@ -62157,102 +61765,6 @@
 ;       @mapped_ctrl_c = save_mapped_ctrl_c;
 
 ;       return c;
-    ))
-
-;; Get a number from the user.
-;; When "mouse_used" is not null allow using the mouse.
-
-(defn- #_int get_number [#_boolean colon, #_boolean* mouse_used]
-    ;; colon: allow colon to abort
-    (§
-;       int n = 0;
-;       int typed = 0;
-
-;       if (mouse_used != null)
-;           mouse_used[0] = false;
-
-        ;; When not printing messages, the user won't know what to type,
-        ;; return a zero (as if CR was hit).
-;       if (@msg_silent != 0)
-;           return 0;
-
-;       @no_mapping++;
-;       @allow_keys++;               ;; no mapping here, but recognize keys
-
-;       for ( ; ; )
-;       {
-;           windgoto(@msg_row, @msg_col);
-;           int c = safe_vgetc();
-;           if (asc_isdigit(c))
-;           {
-;               n = n * 10 + c - '0';
-;               msg_putchar(c);
-;               typed++;
-;           }
-;           else if (c == K_DEL || c == K_KDEL || c == K_BS || c == Ctrl_H)
-;           {
-;               if (0 < typed)
-;               {
-;                   msg_puts(u8("\b \b"));
-;                   --typed;
-;               }
-;               n /= 10;
-;           }
-;           else if (mouse_used != null && c == K_LEFTMOUSE)
-;           {
-;               mouse_used[0] = true;
-;               n = @mouse_row + 1;
-;               break;
-;           }
-;           else if (n == 0 && c == ':' && colon)
-;           {
-;               stuffcharReadbuff(':');
-;               @cmdline_row = @msg_row;
-;               @skip_redraw = true;     ;; skip redraw once
-;               @do_redraw = false;
-;               break;
-;           }
-;           else if (c == CAR || c == NL || c == Ctrl_C || c == ESC)
-;               break;
-;       }
-
-;       --@no_mapping;
-;       --@allow_keys;
-;       return n;
-    ))
-
-;; Ask the user to enter a number.
-;; When "mouse_used" is not null allow using the mouse and in that case return the line number.
-
-(defn- #_int prompt_for_number [#_boolean* mouse_used]
-    (§
-        ;; When using ":silent" assume that <CR> was entered.
-;       if (mouse_used != null)
-;           msg_puts(u8("Type number and <Enter> or click with mouse (empty cancels): "));
-;       else
-;           msg_puts(u8("Type number and <Enter> (empty cancels): "));
-
-        ;; Set the state such that text can be selected/copied/pasted and we still get mouse events.
-;       int save_cmdline_row = @cmdline_row;
-;       @cmdline_row = 0;
-;       int save_State = @State;
-;       @State = CMDLINE;
-
-;       int i = get_number(true, mouse_used);
-;       if (@keyTyped)
-;       {
-            ;; don't call wait_return() now
-            ;; msg_putchar('\n');
-;           @cmdline_row = @msg_row - 1;
-;           @need_wait_return = false;
-;           @msg_didany = false;
-;           @msg_didout = false;
-;       }
-;       else
-;           @cmdline_row = save_cmdline_row;
-;       @State = save_State;
-
-;       return i;
     ))
 
 (defn- #_void msgmore [#_long n]
@@ -63198,7 +62710,6 @@
     ])
 
 ;; Shifted key terminal codes and their unshifted equivalent.
-;; Don't add mouse codes here, they are handled separately!
 
 (final int MOD_KEYS_ENTRY_SIZE 5)
 
@@ -63413,66 +62924,11 @@
 
         (->key_name_C (int \<),         (u8 "lt")              ),
 
-        (->key_name_C K_MOUSE,          (u8 "Mouse")           ),
-        (->key_name_C K_LEFTMOUSE,      (u8 "LeftMouse")       ),
-        (->key_name_C K_LEFTMOUSE_NM,   (u8 "LeftMouseNM")     ),
-        (->key_name_C K_LEFTDRAG,       (u8 "LeftDrag")        ),
-        (->key_name_C K_LEFTRELEASE,    (u8 "LeftRelease")     ),
-        (->key_name_C K_LEFTRELEASE_NM, (u8 "LeftReleaseNM")   ),
-        (->key_name_C K_MIDDLEMOUSE,    (u8 "MiddleMouse")     ),
-        (->key_name_C K_MIDDLEDRAG,     (u8 "MiddleDrag")      ),
-        (->key_name_C K_MIDDLERELEASE,  (u8 "MiddleRelease")   ),
-        (->key_name_C K_RIGHTMOUSE,     (u8 "RightMouse")      ),
-        (->key_name_C K_RIGHTDRAG,      (u8 "RightDrag")       ),
-        (->key_name_C K_RIGHTRELEASE,   (u8 "RightRelease")    ),
-        (->key_name_C K_MOUSEDOWN,      (u8 "ScrollWheelUp")   ),
-        (->key_name_C K_MOUSEUP,        (u8 "ScrollWheelDown") ),
-        (->key_name_C K_MOUSELEFT,      (u8 "ScrollWheelRight")),
-        (->key_name_C K_MOUSERIGHT,     (u8 "ScrollWheelLeft") ),
-        (->key_name_C K_MOUSEDOWN,      (u8 "MouseDown")       ),  ;; OBSOLETE: use
-        (->key_name_C K_MOUSEUP,        (u8 "MouseUp")         ),  ;; ScrollWheelXXX instead
-        (->key_name_C K_X1MOUSE,        (u8 "X1Mouse")         ),
-        (->key_name_C K_X1DRAG,         (u8 "X1Drag")          ),
-        (->key_name_C K_X1RELEASE,      (u8 "X1Release")       ),
-        (->key_name_C K_X2MOUSE,        (u8 "X2Mouse")         ),
-        (->key_name_C K_X2DRAG,         (u8 "X2Drag")          ),
-        (->key_name_C K_X2RELEASE,      (u8 "X2Release")       ),
         (->key_name_C K_DROP,           (u8 "Drop")            ),
         (->key_name_C K_ZERO,           (u8 "Nul")             ),
         (->key_name_C K_SNR,            (u8 "SNR")             ),
         (->key_name_C K_PLUG,           (u8 "Plug")            ),
         (->key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
-    ])
-
-(class! #_final mousetable_C
-    [
-        (field int      pseudo_code)    ;; Code for pseudo mouse event.
-        (field int      button)         ;; Which mouse button is it?
-        (field boolean  is_click)       ;; Is it a mouse button click event?
-        (field boolean  is_drag)        ;; Is it a mouse drag event?
-    ])
-
-(final mousetable_C* mouse_table
-    [
-        (->mousetable_C KE_LEFTMOUSE,     MOUSE_LEFT,    true,  false),
-        (->mousetable_C KE_LEFTDRAG,      MOUSE_LEFT,    false, true ),
-        (->mousetable_C KE_LEFTRELEASE,   MOUSE_LEFT,    false, false),
-        (->mousetable_C KE_MIDDLEMOUSE,   MOUSE_MIDDLE,  true,  false),
-        (->mousetable_C KE_MIDDLEDRAG,    MOUSE_MIDDLE,  false, true ),
-        (->mousetable_C KE_MIDDLERELEASE, MOUSE_MIDDLE,  false, false),
-        (->mousetable_C KE_RIGHTMOUSE,    MOUSE_RIGHT,   true,  false),
-        (->mousetable_C KE_RIGHTDRAG,     MOUSE_RIGHT,   false, true ),
-        (->mousetable_C KE_RIGHTRELEASE,  MOUSE_RIGHT,   false, false),
-        (->mousetable_C KE_X1MOUSE,       MOUSE_X1,      true,  false),
-        (->mousetable_C KE_X1DRAG,        MOUSE_X1,      false, true ),
-        (->mousetable_C KE_X1RELEASE,     MOUSE_X1,      false, false),
-        (->mousetable_C KE_X2MOUSE,       MOUSE_X2,      true,  false),
-        (->mousetable_C KE_X2DRAG,        MOUSE_X2,      false, true ),
-        (->mousetable_C KE_X2RELEASE,     MOUSE_X2,      false, false),
-        ;; DRAG without CLICK
-        (->mousetable_C KE_IGNORE,        MOUSE_RELEASE, false, true ),
-        ;; RELEASE without CLICK
-        (->mousetable_C KE_IGNORE,        MOUSE_RELEASE, false, false),
     ])
 
 ;; Return the modifier mask bit (MOD_MASK_*) which corresponds to the given
@@ -63875,39 +63331,6 @@
 ;           return key_names_table[i].name;
 
 ;       return null;
-    ))
-
-;; Look up the given mouse code to return the relevant information in the other arguments.
-;; Return which button is down or was released.
-
-(defn- #_int get_mouse_button [#_int code, #_boolean* is_click, #_boolean* is_drag]
-    (§
-;       is_click[0] = is_drag[0] = false;
-
-;       for (int i = 0; i < mouse_table.length; i++)
-;           if (code == mouse_table[i].pseudo_code)
-;           {
-;               is_click[0] = mouse_table[i].is_click;
-;               is_drag[0] = mouse_table[i].is_drag;
-
-;               return mouse_table[i].button;
-;           }
-
-;       return 0;       ;; Shouldn't get here.
-    ))
-
-;; Return the appropriate pseudo mouse event token (KE_LEFTMOUSE, etc.)
-;; based on which mouse button is down, and whether it was clicked, dragged or released.
-
-(defn- #_int get_pseudo_mouse_code [#_int button, #_boolean is_click, #_boolean is_drag]
-    ;; button: e.g. MOUSE_LEFT
-    (§
-;       for (int i = 0; i < mouse_table.length; i++)
-;           if (mouse_table[i].button == button
-;                   && mouse_table[i].is_click == is_click && mouse_table[i].is_drag == is_drag)
-;               return mouse_table[i].pseudo_code;
-
-;       return KE_IGNORE;          ;; not recognized, ignore it
     ))
 
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
@@ -65906,9 +65329,6 @@
 ;       @crv_status = CRV_GET;           ;; get terminal version later
 
         ;; Initialize the terminal with the appropriate termcap codes.
-        ;; Set the mouse and window title if possible.
-        ;; Don't do this when starting, need to parse the .vimrc first,
-        ;; because it may redefine t_TI etc.
 
 ;       if (@starting != NO_SCREEN)
 ;       {
@@ -67143,26 +66563,6 @@
 ;       @detected_8bit = true;
     ))
 
-;; Checking for double clicks ourselves.
-;; "orig_topline" is used to avoid detecting a double-click when the window contents scrolled
-;; (e.g., when 'scrolloff' is non-zero).
-
-(atom! long orig_topline)
-
-;; Set orig_topline.  Used when jumping to another window, so that a double click still works.
-
-(defn- #_void set_mouse_topline [#_window_C wp]
-    (§
-;       @orig_topline = wp.w_topline;
-    ))
-
-(atom! int held_button MOUSE_RELEASE)
-(atom! int orig_num_clicks 1)
-(atom! int orig_mouse_code)
-(atom! int orig_mouse_col)
-(atom! int orig_mouse_row)
-(atom! timeval_C orig_mouse_time (timeval_C.))  ;; time of previous mouse click
-
 ;; Check if typebuf.tb_buf[] contains a terminal key code.
 ;; Check from typebuf.tb_buf[typebuf.tb_off] to typebuf.tb_buf[typebuf.tb_off + max_offset].
 ;; Return 0 for no match, -1 for partial match, > 0 for full match.
@@ -67185,8 +66585,6 @@
 ;           gather_termleader();
 
 ;       int slen = 0;
-;       int mouse_code = 0;
-;       int wheel_code = 0;
 
         ;; Check at several positions in typebuf.tb_buf[], to catch something like "x<Up>"
         ;; that can be mapped.  Stop at max_offset, because characters after that cannot be
@@ -67453,150 +66851,6 @@
 ;               continue;           ;; no match at this position, try next one
 
             ;; We only get here when we have a complete termcode match.
-
-            ;; If it is a mouse click, get the coordinates.
-
-;           if (key_name.at(0) == KS_MOUSE)
-;           {
-                ;; For xterm and MSDOS we get "<t_mouse>scr", where
-                ;;  s == encoded button state:
-                ;;         0x20 = left button down
-                ;;         0x21 = middle button down
-                ;;         0x22 = right button down
-                ;;         0x23 = any button release
-                ;;         0x60 = button 4 down (scroll wheel down)
-                ;;         0x61 = button 5 down (scroll wheel up)
-                ;;      add 0x04 for SHIFT
-                ;;      add 0x08 for ALT
-                ;;      add 0x10 for CTRL
-                ;;      add 0x20 for mouse drag (0x40 is drag with left button)
-                ;;  c == column + ' ' + 1 == column + 33
-                ;;  r == row + ' ' + 1 == row + 33
-                ;;
-                ;; The coordinates are passed on through global variables.
-                ;; Ugly, but this avoids trouble with mouse clicks at an
-                ;; unexpected moment and allows for mapping them.
-
-;               for ( ; ; )
-;               {
-;                   Bytes bytes = new Bytes(6);
-;                   int n = get_bytes_from_buf(tp.plus(slen), bytes, 3);
-;                   if (n == -1)    ;; not enough coordinates
-;                       return -1;
-
-;                   mouse_code = bytes.at(0);
-;                   @mouse_col = bytes.at(1) - ' ' - 1;
-;                   @mouse_row = bytes.at(2) - ' ' - 1;
-
-;                   slen += n;
-
-                    ;; If the following bytes is also a mouse code
-                    ;; and it has the same code, dump this one and get the next.
-                    ;; This makes dragging a whole lot faster.
-;                   n = @termcodes[idx].len;
-;                   if (STRNCMP(tp, tp.plus(slen), n) == 0
-;                           && tp.at(slen + n) == mouse_code
-;                           && tp.at(slen + n + 1) != NUL
-;                           && tp.at(slen + n + 2) != NUL)
-;                       slen += n;
-;                   else
-;                       break;
-;               }
-
-                ;; Handle mouse events.
-                ;; Recognize the xterm mouse wheel, but not in the GUI, the Linux console
-                ;; with GPM and the MS-DOS or Win32 console (multi-clicks use >= 0x60).
-
-;               if (MOUSEWHEEL_LOW <= mouse_code)
-;               {
-                    ;; Keep the mouse_code before it's changed,
-                    ;; so that we remember that it was a mouse wheel click.
-;                   wheel_code = mouse_code;
-;               }
-;               else if (@held_button == MOUSE_RELEASE && (mouse_code == 0x23 || mouse_code == 0x24))
-;               {
-                    ;; Apparently used by rxvt scroll wheel.
-;                   wheel_code = mouse_code - 0x23 + MOUSEWHEEL_LOW;
-;               }
-
-;               boolean is_click = false, is_drag = false;
-
-                ;; Interpret the mouse code.
-;               int current_button = (mouse_code & MOUSE_CLICK_MASK);
-;               if (current_button == MOUSE_RELEASE && wheel_code == 0)
-;               {
-                    ;; If we get a mouse drag or release event when there is no mouse button
-                    ;; held down (held_button == MOUSE_RELEASE), produce a K_IGNORE below.
-                    ;; (can happen when you hold down two buttons and then let them go, or
-                    ;; click in the menu bar, but not on a menu, and drag into the text).
-
-;                   if ((mouse_code & MOUSE_DRAG) == MOUSE_DRAG)
-;                       is_drag = true;
-;                   current_button = @held_button;
-;               }
-;               else if (wheel_code == 0)
-;               {
-;                   timeval_C mouse_time = new timeval_C();     ;; time of current mouse click
-;                   long timediff;                              ;; elapsed time in msec
-
-                    ;; Compute the time elapsed since the previous mouse click.
-
-;                   libC._gettimeofday(mouse_time);
-;                   timediff = (mouse_time.tv_usec() - @orig_mouse_time.tv_usec()) / 1000;
-;                   if (timediff < 0)
-;                       @orig_mouse_time.tv_sec(@orig_mouse_time.tv_sec() - 1);
-;                   timediff += (mouse_time.tv_sec() - @orig_mouse_time.tv_sec()) * 1000;
-;                   COPY_timeval(@orig_mouse_time, mouse_time);
-;                   if (mouse_code == @orig_mouse_code
-;                           && timediff < @p_mouset
-;                           && @orig_num_clicks != 4
-;                           && @orig_mouse_col == @mouse_col
-;                           && @orig_mouse_row == @mouse_row
-;                           && (@orig_topline == @curwin.w_topline
-                                ;; Double click in tab pages line also works when window contents changes.
-;                               || (@mouse_row == 0 && 0 < @firstwin.w_winrow)))
-;                       @orig_num_clicks++;
-;                   else
-;                       @orig_num_clicks = 1;
-;                   @orig_mouse_col = @mouse_col;
-;                   @orig_mouse_row = @mouse_row;
-;                   @orig_topline = @curwin.w_topline;
-
-;                   is_click = true;
-;                   @orig_mouse_code = mouse_code;
-;               }
-;               if (!is_drag)
-;                   @held_button = (mouse_code & MOUSE_CLICK_MASK);
-
-                ;; Translate the actual mouse event into a pseudo mouse event.
-                ;; First work out what modifiers are to be used.
-
-;               if ((@orig_mouse_code & MOUSE_SHIFT) != 0)
-;                   modifiers[0] |= MOD_MASK_SHIFT;
-;               if ((@orig_mouse_code & MOUSE_CTRL) != 0)
-;                   modifiers[0] |= MOD_MASK_CTRL;
-;               if ((@orig_mouse_code & MOUSE_ALT) != 0)
-;                   modifiers[0] |= MOD_MASK_ALT;
-;               if (@orig_num_clicks == 2)
-;                   modifiers[0] |= MOD_MASK_2CLICK;
-;               else if (@orig_num_clicks == 3)
-;                   modifiers[0] |= MOD_MASK_3CLICK;
-;               else if (@orig_num_clicks == 4)
-;                   modifiers[0] |= MOD_MASK_4CLICK;
-
-                ;; Work out our pseudo mouse event.
-;               key_name.be(0, KS_EXTRA);
-;               if (wheel_code != 0)
-;               {
-;                   if ((wheel_code & MOUSE_CTRL) != 0)
-;                       modifiers[0] |= MOD_MASK_CTRL;
-;                   if ((wheel_code & MOUSE_ALT) != 0)
-;                       modifiers[0] |= MOD_MASK_ALT;
-;                   key_name.be(1, (wheel_code & 1) != 0 ? KE_MOUSEUP : KE_MOUSEDOWN);
-;               }
-;               else
-;                   key_name.be(1, get_pseudo_mouse_code(current_button, is_click, is_drag));
-;           }
 
             ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
 
@@ -68297,7 +67551,7 @@
 ;       mch_set_shellsize();
     ))
 
-;; Called when Rows and/or Columns changed.  Adjust scroll region and mouse region.
+;; Called when Rows and/or Columns changed.
 
 (defn- #_void ui_new_shellsize []
     (§
@@ -68495,42 +67749,10 @@
 ;       return @clip_autoselect_plus;
     ))
 
-;; Stuff for general mouse selection, without using Visual mode.
-
 ;; flags for clip_invert_area()
 (final int CLIP_CLEAR      1)
 (final int CLIP_SET        2)
 (final int CLIP_TOGGLE     3)
-
-;; Start, continue or end a modeless selection.
-;; Used when editing the command-line and in the cmdline window.
-
-(defn- #_void clip_modeless [#_int button, #_boolean is_click, #_boolean is_drag]
-    (§
-;       boolean repeat = ((@clip_star.mode == SELECT_MODE_CHAR || @clip_star.mode == SELECT_MODE_LINE)
-;                                                   && (@mod_mask & MOD_MASK_2CLICK) != 0)
-;                      || (@clip_star.mode == SELECT_MODE_WORD
-;                                                   && (@mod_mask & MOD_MASK_3CLICK) != 0);
-;       if (is_click && button == MOUSE_RIGHT)
-;       {
-            ;; Right mouse button: if there was no selection, start one;
-            ;; otherwise extend the existing selection.
-;           if (@clip_star.state == SELECT_CLEARED)
-;               clip_start_selection(@mouse_col, @mouse_row, false);
-;           clip_process_selection(button, @mouse_col, @mouse_row, repeat);
-;       }
-;       else if (is_click)
-;           clip_start_selection(@mouse_col, @mouse_row, repeat);
-;       else if (is_drag)
-;       {
-            ;; Don't try extending a selection if there isn't one.  Happens when
-            ;; button-down is in the cmdline and them moving mouse upwards.
-;           if (@clip_star.state != SELECT_CLEARED)
-;               clip_process_selection(button, @mouse_col, @mouse_row, repeat);
-;       }
-;       else ;; release
-;           clip_process_selection(MOUSE_RELEASE, @mouse_col, @mouse_row, false);
-    ))
 
 ;; Compare two screen positions ala strcmp()
 
@@ -68598,141 +67820,6 @@
 ;       }
 
 ;       COPY_pos(cbd.cbd_prev, cbd.cbd_start);
-    ))
-
-;; Continue processing the selection
-
-(defn- #_void clip_process_selection [#_int button, #_int col, #_int row, #_boolean repeated_click]
-    (§
-;       clipboard_C cbd = @clip_star;
-
-;       if (button == MOUSE_RELEASE)
-;       {
-            ;; Check to make sure we have something selected.
-;           if (cbd.cbd_start.lnum == cbd.cbd_end.lnum && cbd.cbd_start.col == cbd.cbd_end.col)
-;           {
-;               cbd.state = SELECT_CLEARED;
-;               return;
-;           }
-
-;           if (clip_isautosel_star() || (@clip_autoselectml))
-;               clip_copy_modeless_selection(false);
-
-;           cbd.state = SELECT_DONE;
-;           return;
-;       }
-
-;       row = check_row(row);
-;       col = check_col(col);
-;       col = mb_fix_col(col, row);
-
-;       if (col == cbd.cbd_prev.col && row == cbd.cbd_prev.lnum && !repeated_click)
-;           return;
-
-        ;; When extending the selection with the right mouse button, swap the
-        ;; start and end if the position is before half the selection
-
-;       if (cbd.state == SELECT_DONE && button == MOUSE_RIGHT)
-;       {
-            ;; If the click is before the start, or the click is inside the
-            ;; selection and the start is the closest side, set the origin to the
-            ;; end of the selection.
-
-;           int diff;
-;           if (clip_compare_pos(row, col, (int)cbd.cbd_start.lnum, cbd.cbd_start.col) < 0
-;                   || (clip_compare_pos(row, col, (int)cbd.cbd_end.lnum, cbd.cbd_end.col) < 0
-;                       && (((cbd.cbd_start.lnum == cbd.cbd_end.lnum
-;                               && col - cbd.cbd_start.col < cbd.cbd_end.col - col))
-;                           || (0 < (diff = ((int)cbd.cbd_end.lnum - row) - (row - (int)cbd.cbd_start.lnum))
-;                                   || (diff == 0 && col < (cbd.cbd_start.col + cbd.cbd_end.col) / 2)))))
-;           {
-;               cbd.origin_row = (int)cbd.cbd_end.lnum;
-;               cbd.origin_start_col = cbd.cbd_end.col - 1;
-;               cbd.origin_end_col = cbd.cbd_end.col;
-;           }
-;           else
-;           {
-;               cbd.origin_row = (int)cbd.cbd_start.lnum;
-;               cbd.origin_start_col = cbd.cbd_start.col;
-;               cbd.origin_end_col = cbd.cbd_start.col;
-;           }
-;           if (cbd.mode == SELECT_MODE_WORD && !repeated_click)
-;               cbd.mode = SELECT_MODE_CHAR;
-;       }
-
-        ;; set state, for when using the right mouse button
-;       cbd.state = SELECT_IN_PROGRESS;
-
-;       if (repeated_click && SELECT_MODE_LINE < ++cbd.mode)
-;           cbd.mode = SELECT_MODE_CHAR;
-
-;       switch (cbd.mode)
-;       {
-;           case SELECT_MODE_CHAR:
-                ;; If we're on a different line, find where the line ends.
-;               if (row != cbd.cbd_prev.lnum)
-;                   cbd.word_end_col = clip_get_line_end(row);
-
-                ;; See if we are before or after the origin of the selection.
-;               if (0 <= clip_compare_pos(row, col, cbd.origin_row, cbd.origin_start_col))
-;               {
-;                   if (cbd.word_end_col <= col)
-;                       clip_update_modeless_selection(cbd,
-;                           cbd.origin_row, cbd.origin_start_col, row, (int)@Columns);
-;                   else
-;                   {
-;                       int slen = 1;       ;; cursor shape width
-;                       if (mb_lefthalve(row, col))
-;                           slen = 2;
-;                       clip_update_modeless_selection(cbd,
-;                           cbd.origin_row, cbd.origin_start_col, row, col + slen);
-;                   }
-;               }
-;               else
-;               {
-;                   int slen = 1;       ;; cursor shape width
-;                   if (mb_lefthalve(cbd.origin_row, cbd.origin_start_col))
-;                       slen = 2;
-;                   if (cbd.word_end_col <= col)
-;                       clip_update_modeless_selection(cbd,
-;                           row, cbd.word_end_col, cbd.origin_row, cbd.origin_start_col + slen);
-;                   else
-;                       clip_update_modeless_selection(cbd,
-;                           row, col, cbd.origin_row, cbd.origin_start_col + slen);
-;               }
-;               break;
-
-;           case SELECT_MODE_WORD:
-                ;; If we are still within the same word, do nothing.
-;               if (row == cbd.cbd_prev.lnum
-;                       && cbd.word_start_col <= col && col < cbd.word_end_col && !repeated_click)
-;                   return;
-
-                ;; Get new word boundaries.
-;               clip_get_word_boundaries(cbd, row, col);
-
-                ;; Handle being after the origin point of selection.
-;               if (0 <= clip_compare_pos(row, col, cbd.origin_row, cbd.origin_start_col))
-;                   clip_update_modeless_selection(cbd,
-;                       cbd.origin_row, cbd.origin_start_col, row, cbd.word_end_col);
-;               else
-;                   clip_update_modeless_selection(cbd,
-;                       row, cbd.word_start_col, cbd.origin_row, cbd.origin_end_col);
-;               break;
-
-;           case SELECT_MODE_LINE:
-;               if (row == cbd.cbd_prev.lnum && !repeated_click)
-;                   return;
-
-;               if (0 <= clip_compare_pos(row, col, cbd.origin_row, cbd.origin_start_col))
-;                   clip_update_modeless_selection(cbd, cbd.origin_row, 0, row, (int)@Columns);
-;               else
-;                   clip_update_modeless_selection(cbd, row, 0, cbd.origin_row, (int)@Columns);
-;               break;
-;       }
-
-;       cbd.cbd_prev.lnum = row;
-;       cbd.cbd_prev.col  = col;
     ))
 
 ;; Called from outside to clear selected region from the display
@@ -69280,393 +68367,6 @@
 ;           return @screenRows - 1;
 
 ;       return row;
-    ))
-
-(atom! int on_status_line)      ;; #lines below bottom of window
-(atom! int on_sep_line)         ;; on separator right of window
-
-(atom! int jm__prev_row -1)
-(atom! int jm__prev_col -1)
-
-(atom! window_C jm__dragwin)    ;; window being dragged
-(atom! boolean jm__did_drag)    ;; drag was noticed
-
-;; Move the cursor to the specified row and column on the screen.
-;; Change current window if necessary.  Returns an integer with the
-;; CURSOR_MOVED bit set if the cursor has moved or unset otherwise.
-;;
-;; If flags has MOUSE_FOCUS, then the current window will not be changed, and
-;; if the mouse is outside the window then the text will scroll, or if the
-;; mouse was previously on a status line, then the status line may be dragged.
-;;
-;; If flags has MOUSE_MAY_VIS, then VIsual mode will be started before the
-;; cursor is moved unless the cursor was on a status line.
-;; This function returns one of IN_UNKNOWN, IN_BUFFER, IN_STATUS_LINE or
-;; IN_SEP_LINE depending on where the cursor was clicked.
-;;
-;; If flags has MOUSE_MAY_STOP_VIS, then Visual mode will be stopped, unless
-;; the mouse is on the status line of the same window.
-;;
-;; If flags has MOUSE_DID_MOVE, nothing is done if the mouse didn't move since
-;; the last call.
-;;
-;; If flags has MOUSE_SETPOS, nothing is done, only the current position is
-;; remembered.
-
-(defn- #_int jump_to_mouse [#_int flags, #_boolean* inclusive, #_int which_button]
-    ;; inclusive: used for inclusive operator, can be null
-    ;; which_button: MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
-    (§
-;       int count;
-
-;       int[] row = { @mouse_row };
-;       int[] col = { @mouse_col };
-
-;       @mouse_past_bottom = false;
-;       @mouse_past_eol = false;
-
-;       if ((flags & MOUSE_RELEASED) != 0)
-;       {
-            ;; On button release we may change window focus if positioned
-            ;; on a status line and no dragging happened.
-;           if (@jm__dragwin != null && !@jm__did_drag)
-;               flags &= ~(MOUSE_FOCUS | MOUSE_DID_MOVE);
-;           @jm__dragwin = null;
-;           @jm__did_drag = false;
-;       }
-
-;       if ((flags & MOUSE_DID_MOVE) != 0 && @jm__prev_row == @mouse_row && @jm__prev_col == @mouse_col)
-;       {
-            ;; Before moving the cursor for a left click which is NOT in a status line,
-            ;; stop Visual mode.
-;           if (@on_status_line != 0)
-;               return IN_STATUS_LINE;
-;           if (@on_sep_line != 0)
-;               return IN_SEP_LINE;
-;           if ((flags & MOUSE_MAY_STOP_VIS) != 0)
-;           {
-;               end_visual_mode();
-;               redraw_curbuf_later(INVERTED);      ;; delete the inversion
-;           }
-            ;; Continue a modeless selection in another window.
-;           if (@cmdwin_type != 0 && row[0] < @curwin.w_winrow)
-;               return IN_OTHER_WIN;
-
-;           return IN_BUFFER;
-;       }
-
-;       @jm__prev_row = @mouse_row;
-;       @jm__prev_col = @mouse_col;
-
-;       if ((flags & MOUSE_SETPOS) != 0)
-;       {
-            ;; Before moving the cursor for a left click which is NOT in a status line,
-            ;; stop Visual mode.
-;           if (@on_status_line != 0)
-;               return IN_STATUS_LINE;
-;           if (@on_sep_line != 0)
-;               return IN_SEP_LINE;
-;           if ((flags & MOUSE_MAY_STOP_VIS) != 0)
-;           {
-;               end_visual_mode();
-;               redraw_curbuf_later(INVERTED);      ;; delete the inversion
-;           }
-            ;; Continue a modeless selection in another window.
-;           if (@cmdwin_type != 0 && row[0] < @curwin.w_winrow)
-;               return IN_OTHER_WIN;
-
-;           return IN_BUFFER;
-;       }
-
-;       window_C old_curwin = @curwin;
-;       pos_C old_cursor = §_pos_C();
-;       COPY_pos(old_cursor, @curwin.w_cursor);
-
-;       if ((flags & MOUSE_FOCUS) == 0)
-;       {
-;           if (row[0] < 0 || col[0] < 0)                 ;; check if it makes sense
-;               return IN_UNKNOWN;
-
-            ;; find the window where the row is in
-;           window_C wp = mouse_find_win(row, col);
-;           @jm__dragwin = null;
-
-            ;; winpos and height may change in win_enter()!
-
-;           if (wp.w_height <= row[0])                 ;; in (or below) status line
-;           {
-;               @on_status_line = row[0] - wp.w_height + 1;
-;               @jm__dragwin = wp;
-;           }
-;           else
-;               @on_status_line = 0;
-;           if (wp.w_width <= col[0])                  ;; in separator line
-;           {
-;               @on_sep_line = col[0] - wp.w_width + 1;
-;               @jm__dragwin = wp;
-;           }
-;           else
-;               @on_sep_line = 0;
-
-            ;; The rightmost character of the status line might be a vertical
-            ;; separator character if there is no connecting window to the right.
-;           if (@on_status_line != 0 && @on_sep_line != 0)
-;           {
-;               if (stl_connected(wp))
-;                   @on_sep_line = 0;
-;               else
-;                   @on_status_line = 0;
-;           }
-
-            ;; Before jumping to another buffer, or moving the cursor for a left click,
-            ;; stop Visual mode.
-;           if (@VIsual_active && (@on_status_line == 0 && @on_sep_line == 0 && (flags & MOUSE_MAY_STOP_VIS) != 0))
-;           {
-;               end_visual_mode();
-;               redraw_curbuf_later(INVERTED);      ;; delete the inversion
-;           }
-;           if (@cmdwin_type != 0 && wp != @curwin)
-;           {
-                ;; A click outside the command-line window: use modeless selection if possible.
-                ;; Allow dragging the status lines.
-;               @on_sep_line = 0;
-;               if (@on_status_line != 0)
-;                   return IN_STATUS_LINE;
-
-;               return IN_OTHER_WIN;
-;           }
-            ;; Only change window focus when not clicking on or dragging the
-            ;; status line.  Do change focus when releasing the mouse button
-            ;; (MOUSE_FOCUS was set above if we dragged first).
-;           if (@jm__dragwin == null || (flags & MOUSE_RELEASED) != 0)
-;               win_enter(wp);                ;; can make wp invalid!
-            ;; set topline, to be able to check for double click ourselves
-;           if (@curwin != old_curwin)
-;               set_mouse_topline(@curwin);
-;           if (@on_status_line != 0)                    ;; in (or below) status line
-;           {
-                ;; Don't use start_arrow() if we're in the same window.
-;               if (@curwin == old_curwin)
-;                   return IN_STATUS_LINE;
-;               else
-;                   return IN_STATUS_LINE | CURSOR_MOVED;
-;           }
-;           if (@on_sep_line != 0)                       ;; in (or below) status line
-;           {
-                ;; Don't use start_arrow() if we're in the same window.
-;               if (@curwin == old_curwin)
-;                   return IN_SEP_LINE;
-;               else
-;                   return IN_SEP_LINE | CURSOR_MOVED;
-;           }
-
-;           @curwin.w_cursor.lnum = @curwin.w_topline;
-;       }
-;       else if (@on_status_line != 0 && which_button == MOUSE_LEFT)
-;       {
-;           if (@jm__dragwin != null)
-;           {
-                ;; Drag the status line.
-;               count = row[0] - @jm__dragwin.w_winrow - @jm__dragwin.w_height + 1 - @on_status_line;
-;               win_drag_status_line(@jm__dragwin, count);
-;               @jm__did_drag |= (count != 0);
-;           }
-;           return IN_STATUS_LINE;                  ;; Cursor didn't move
-;       }
-;       else if (@on_sep_line != 0 && which_button == MOUSE_LEFT)
-;       {
-;           if (@jm__dragwin != null)
-;           {
-                ;; Drag the separator column.
-;               count = col[0] - @jm__dragwin.w_wincol - @jm__dragwin.w_width + 1 - @on_sep_line;
-;               win_drag_vsep_line(@jm__dragwin, count);
-;               @jm__did_drag |= (count != 0);
-;           }
-;           return IN_SEP_LINE;                     ;; Cursor didn't move
-;       }
-;       else ;; keep_window_focus must be true
-;       {
-            ;; before moving the cursor for a left click, stop Visual mode
-;           if ((flags & MOUSE_MAY_STOP_VIS) != 0)
-;           {
-;               end_visual_mode();
-;               redraw_curbuf_later(INVERTED);      ;; delete the inversion
-;           }
-
-            ;; Continue a modeless selection in another window.
-;           if (@cmdwin_type != 0 && row[0] < @curwin.w_winrow)
-;               return IN_OTHER_WIN;
-
-;           row[0] -= @curwin.w_winrow;
-;           col[0] -= @curwin.w_wincol;
-
-            ;; When clicking beyond the end of the window, scroll the screen.
-            ;; Scroll by however many rows outside the window we are.
-
-;           if (row[0] < 0)
-;           {
-;               count = 0;
-;               for (boolean first = true; 1 < @curwin.w_topline; )
-;               {
-;                   count += plines(@curwin.w_topline - 1);
-;                   if (!first && -row[0] < count)
-;                       break;
-;                   first = false;
-;                   --@curwin.w_topline;
-;               }
-;               @curwin.w_valid &= ~(VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
-;               redraw_later(VALID);
-;               row[0] = 0;
-;           }
-;           else if (@curwin.w_height <= row[0])
-;           {
-;               count = 0;
-;               for (boolean first = true; @curwin.w_topline < @curbuf.b_ml.ml_line_count; )
-;               {
-;                   count += plines(@curwin.w_topline);
-;                   if (!first && row[0] - @curwin.w_height + 1 < count)
-;                       break;
-;                   first = false;
-;                   @curwin.w_topline++;
-;               }
-;               redraw_later(VALID);
-;               @curwin.w_valid &= ~(VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
-;               row[0] = @curwin.w_height - 1;
-;           }
-;           else if (row[0] == 0)
-;           {
-                ;; When dragging the mouse, while the text has been scrolled up as
-                ;; far as it goes, moving the mouse in the top line should scroll
-                ;; the text down (done later when recomputing w_topline).
-;               if (0 < @mouse_dragging
-;                       && @curwin.w_cursor.lnum == @curbuf.b_ml.ml_line_count
-;                       && @curwin.w_cursor.lnum == @curwin.w_topline)
-;                   @curwin.w_valid &= ~(VALID_TOPLINE);
-;           }
-;       }
-
-        ;; compute the position in the buffer line from the posn on the screen
-;       boolean b;
-;       { long[] __ = { @curwin.w_cursor.lnum }; b = mouse_comp_pos(@curwin, row, col, __); @curwin.w_cursor.lnum = __[0]; }
-;       if (b)
-;           @mouse_past_bottom = true;
-
-        ;; Start Visual mode before coladvance(), for when 'sel' != "old".
-;       if ((flags & MOUSE_MAY_VIS) != 0 && !@VIsual_active)
-;       {
-;           check_visual_highlight();
-;           COPY_pos(@VIsual, old_cursor);
-;           @VIsual_active = true;
-;           @VIsual_reselect = true;
-            ;; if 'selectmode' contains "mouse", start Select mode
-;           may_start_select('o');
-;           if (@p_smd && @msg_silent == 0)
-;               @redraw_cmdline = true;          ;; show visual mode later
-;       }
-
-;       @curwin.w_curswant = col[0];
-;       @curwin.w_set_curswant = false;          ;; May still have been true
-;       if (coladvance(col[0]) == false)           ;; Mouse click beyond end of line
-;       {
-;           if (inclusive != null)
-;               inclusive[0] = true;
-;           @mouse_past_eol = true;
-;       }
-;       else if (inclusive != null)
-;           inclusive[0] = false;
-
-;       count = IN_BUFFER;
-;       if (@curwin != old_curwin || @curwin.w_cursor.lnum != old_cursor.lnum
-;               || @curwin.w_cursor.col != old_cursor.col)
-;           count |= CURSOR_MOVED;              ;; Cursor has moved
-
-;       return count;
-    ))
-
-;; Compute the position in the buffer line from the posn on the screen in window "win".
-;; Returns true if the position is below the last line.
-
-(defn- #_boolean mouse_comp_pos [#_window_C win, #_int* rowp, #_int* colp, #_long* lnump]
-    (§
-;       boolean retval = false;
-
-;       int col = colp[0];
-;       int row = rowp[0];
-
-;       long lnum = win.w_topline;
-
-;       while (0 < row)
-;       {
-;           int count = plines_win(win, lnum, true);
-;           if (row < count)
-;               break;          ;; position is in this buffer line
-;           if (lnum == @curbuf.b_ml.ml_line_count)
-;           {
-;               retval = true;
-;               break;              ;; past end of file
-;           }
-;           row -= count;
-;           lnum++;
-;       }
-
-;       if (!retval)
-;       {
-            ;; Compute the column without wrapping.
-;           int off = win_col_off(win) - win_col_off2(win);
-;           if (col < off)
-;               col = off;
-;           col += row * (win.w_width - off);
-            ;; add skip column (for long wrapping line)
-;           col += win.w_skipcol;
-;       }
-
-;       if (!win.w_options.@wo_wrap)
-;           col += win.w_leftcol;
-
-        ;; skip line number and fold column in front of the line
-;       col -= win_col_off(win);
-;       if (col < 0)
-;       {
-;           col = 0;
-;       }
-
-;       colp[0] = col;
-;       rowp[0] = row;
-;       lnump[0] = lnum;
-;       return retval;
-    ))
-
-;; Find the window at screen position "*rowp" and "*colp".  The positions are
-;; updated to become relative to the top-left of the window.
-
-(defn- #_window_C mouse_find_win [#_int* rowp, #_int* colp]
-    (§
-;       frame_C fp = @topframe;
-;       rowp[0] -= @firstwin.w_winrow;
-;       for ( ; ; )
-;       {
-;           if (fp.fr_layout == FR_LEAF)
-;               break;
-;           if (fp.fr_layout == FR_ROW)
-;           {
-;               for (fp = fp.fr_child; fp.fr_next != null; fp = fp.fr_next)
-;               {
-;                   if (colp[0] < fp.fr_width)
-;                       break;
-;                   colp[0] -= fp.fr_width;
-;               }
-;           }
-;           else    ;; fr_layout == FR_COL
-;           {
-;               for (fp = fp.fr_child; fp.fr_next != null; fp = fp.fr_next)
-;               {
-;                   if (rowp[0] < fp.fr_height)
-;                       break;
-;                   rowp[0] -= fp.fr_height;
-;               }
-;           }
-;       }
-;       return fp.fr_win;
     ))
 
 ;; screen.c: code for displaying on the screen
@@ -79096,10 +77796,6 @@
 ;       if ((@curwin.w_valid & VALID_TOPLINE) != 0)
 ;           return;
 
-        ;; When dragging with the mouse, don't scroll that quickly.
-;       if (0 < @mouse_dragging)
-;           @p_so = @mouse_dragging - 1;
-
 ;       long old_topline = @curwin.w_topline;
 
         ;; If the buffer is empty, always set topline to 1.
@@ -79857,8 +78553,6 @@
 ;       long old_topline = @curwin.w_topline;
 
 ;       int off = (int)@p_so;
-;       if (0 < @mouse_dragging)
-;           off = @mouse_dragging - 1;
 
         ;; Decrease topline until:
         ;; - it has become 1
@@ -79998,9 +78692,9 @@
             ;; Stop when scrolled nothing or at least "min_scroll", found "extra"
             ;; context for 'scrolloff' and counted all lines below the window.
 ;           if ((((scrolled <= 0 || min_scroll <= scrolled)
-;                           && (0 < @mouse_dragging ? @mouse_dragging - 1 : @p_so) <= extra)
-;                       || @curbuf.b_ml.ml_line_count < boff.lnum + 1)
-;                   && loff.lnum <= @curwin.w_botline)
+;               && @p_so <= extra)
+;                   || @curbuf.b_ml.ml_line_count < boff.lnum + 1)
+;                       && loff.lnum <= @curwin.w_botline)
 ;               break;
 
             ;; Add one line above.
@@ -80026,7 +78720,7 @@
 ;               used += boff.height;
 ;               if (@curwin.w_height < used)
 ;                   break;
-;               if (extra < (0 < @mouse_dragging ? @mouse_dragging - 1 : @p_so) || scrolled < min_scroll)
+;               if (extra < @p_so || scrolled < min_scroll)
 ;               {
 ;                   extra += boff.height;
 ;                   if (@curwin.w_botline <= boff.lnum)
@@ -80146,11 +78840,6 @@
 
 ;       int above_wanted = (int)@p_so;
 ;       int below_wanted = (int)@p_so;
-;       if (0 < @mouse_dragging)
-;       {
-;           above_wanted = @mouse_dragging - 1;
-;           below_wanted = @mouse_dragging - 1;
-;       }
 ;       if (@curwin.w_topline == 1)
 ;       {
 ;           above_wanted = 0;
@@ -80159,7 +78848,7 @@
 ;               below_wanted = max_off;
 ;       }
 ;       validate_botline();
-;       if (@curwin.w_botline == @curbuf.b_ml.ml_line_count + 1 && @mouse_dragging == 0)
+;       if (@curwin.w_botline == @curbuf.b_ml.ml_line_count + 1)
 ;       {
 ;           below_wanted = 0;
 ;           int max_off = (@curwin.w_height - 1) / 2;
