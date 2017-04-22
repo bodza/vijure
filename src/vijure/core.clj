@@ -8170,10 +8170,8 @@
 ;; Compute the offset of the cursor on the command line for the prompt.
 
 (defn- #_void set-cmdspos []
-    (§
-        (swap! ccline assoc :cmdspos (+ (if (!= (:cmdfirstc @ccline) NUL) 1 0) (:cmdindent @ccline)))
-        nil
-    ))
+    (swap! ccline assoc :cmdspos (+ (if (!= (:cmdfirstc @ccline) NUL) 1 0) (:cmdindent @ccline)))
+    nil)
 
 ;; Compute the screen position for the cursor on the command line.
 
@@ -8202,7 +8200,7 @@
                 (swap! ccline update :cmdspos - c)
                 (ß BREAK)
             )
-            ((ß i =) (+ i (- (us-ptr2len-cc (.plus (:cmdbuff @ccline) i)) 1)))
+            ((ß i =) (+ i (dec (us-ptr2len-cc (.plus (:cmdbuff @ccline) i)))))
         )
         nil
     ))
@@ -8211,12 +8209,11 @@
 ;; character that doesn't fit, so that a ">" must be displayed.
 
 (defn- #_void correct-cmdspos [#_int idx, #_int cells]
-    (§
-        (when (and (< 1 (us-ptr2len-cc (.plus (:cmdbuff @ccline) idx))) (< 1 (us-ptr2cells (.plus (:cmdbuff @ccline) idx))) (< (int @Cols) (+ (% (:cmdspos @ccline) (int @Cols)) cells)))
+    (let [pos (.plus (:cmdbuff @ccline) idx) cols (int @Cols)]
+        (when (and (< 1 (us-ptr2len-cc pos)) (< 1 (us-ptr2cells pos)) (< cols (+ (% (:cmdspos @ccline) cols) cells)))
             (swap! ccline update :cmdspos inc)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Get an Ex command line for the ":" command.
 
@@ -8394,17 +8391,14 @@
 ;; But get_cmdline_str() may need it, thus make it available globally in prev_ccline.
 
 (defn- #_void save-cmdline [#_cmdline_info_C cli]
-    (§
-        (if (nil? @prev_ccline)
-            (reset! prev_ccline (NEW_cmdline_info_C)))
+    (if (nil? @prev_ccline)
+        (reset! prev_ccline (NEW_cmdline_info_C)))
 
-        (COPY-cmdline-info cli, @prev_ccline)
-        (COPY-cmdline-info @prev_ccline, @ccline)
+    (COPY-cmdline-info cli, @prev_ccline)
+    (COPY-cmdline-info @prev_ccline, @ccline)
 
-        (swap! ccline assoc :cmdbuff nil)
-        (swap! ccline assoc :cmdprompt nil)
-        nil
-    ))
+    (swap! ccline assoc :cmdbuff nil :cmdprompt nil)
+    nil)
 
 ;; Restore ccline after it has been saved with save-cmdline().
 
@@ -8538,26 +8532,20 @@
     nil)
 
 (defn- #_void redrawcmdprompt []
-    (§
-        (if (!= (:cmdfirstc @ccline) NUL)
-            (msg-putchar (:cmdfirstc @ccline)))
-        (cond (non-nil? (:cmdprompt @ccline))
-        (do
-            (msg-puts-attr (:cmdprompt @ccline), (:cmdattr @ccline))
-            (swap! ccline assoc :cmdindent (+ @msg_col (* (- @msg_row @cmdline_row) (int @Cols))))
-            ;; do the reverse of set-cmdspos()
-            (if (!= (:cmdfirstc @ccline) NUL)
-                (swap! ccline update :cmdindent dec)
+    (let [firstc (:cmdfirstc @ccline) prompt (:cmdprompt @ccline)]
+        (if (!= firstc NUL)
+            (msg-putchar firstc))
+        (if (non-nil? prompt)
+            (do
+                (msg-puts-attr prompt, (:cmdattr @ccline))
+                (swap! ccline assoc :cmdindent (+ @msg_col (* (- @msg_row @cmdline_row) (int @Cols))))
+                ;; do the reverse of set-cmdspos()
+                (if (!= firstc NUL)
+                    (swap! ccline update :cmdindent dec))
             )
+            (dotimes [_ (:cmdindent @ccline)] (msg-putchar (byte \space)))
         )
-        :else
-        (do
-            (dotimes [_ (:cmdindent @ccline)]
-                (msg-putchar (byte \space))
-            )
-        ))
-        nil
-    ))
+        nil))
 
 ;; Redraw what is currently on the command line.
 
@@ -11685,42 +11673,38 @@
 ;; Called from normal-cmd() and edit().
 
 (defn- #_void do-check-scrollbind [#_boolean check]
-    (§
-        (when (and check @(:wo_scb (:w_options @curwin)))
+    (when (and check @(:wo_scb (:w_options @curwin)))
+        (cond @did_syncbind
+        (do
             ;; If a ":syncbind" command was just used, don't scroll, only reset the values.
-            (cond @did_syncbind
-            (do
-                (reset! did_syncbind false)
-            )
-            (== @curwin @scr_old_curwin)
-            (do
-                ;; Synchronize other windows, as necessary according to 'scrollbind'.
-
-                (when (or (!= (:w_topline @curwin) @scr_old_topline) (!= (:w_leftcol @curwin) @scr_old_leftcol))
-                    (check-scrollbind (- (:w_topline @curwin) @scr_old_topline), (long (- (:w_leftcol @curwin) @scr_old_leftcol)))
-                )
-            )
-            (non-nil? (vim-strchr @p_sbo, (byte \j))) ;; jump flag set in 'scrollopt'
-            (do
-                ;; When switching between windows, make sure that the relative
-                ;; vertical offset is valid for the new window.  The relative
-                ;; offset is invalid whenever another 'scrollbind' window has
-                ;; scrolled to a point that would force the current window to
-                ;; scroll past the beginning or end of its buffer.  When the
-                ;; resync is performed, some of the other 'scrollbind' windows may
-                ;; need to jump so that the current window's relative position is
-                ;; visible on-screen.
-
-                (check-scrollbind (- (:w_topline @curwin) (:w_scbind_pos @curwin)), 0)
-            ))
-            (swap! curwin assoc :w_scbind_pos (:w_topline @curwin))
+            (reset! did_syncbind false)
         )
+        (== @curwin @scr_old_curwin)
+        (do
+            ;; Synchronize other windows, as necessary according to 'scrollbind'.
+            (when (or (!= (:w_topline @curwin) @scr_old_topline) (!= (:w_leftcol @curwin) @scr_old_leftcol))
+                (check-scrollbind (- (:w_topline @curwin) @scr_old_topline), (long (- (:w_leftcol @curwin) @scr_old_leftcol)))
+            )
+        )
+        (non-nil? (vim-strchr @p_sbo, (byte \j))) ;; jump flag set in 'scrollopt'
+        (do
+            ;; When switching between windows, make sure that the relative
+            ;; vertical offset is valid for the new window.  The relative
+            ;; offset is invalid whenever another 'scrollbind' window has
+            ;; scrolled to a point that would force the current window to
+            ;; scroll past the beginning or end of its buffer.  When the
+            ;; resync is performed, some of the other 'scrollbind' windows may
+            ;; need to jump so that the current window's relative position is
+            ;; visible on-screen.
+            (check-scrollbind (- (:w_topline @curwin) (:w_scbind_pos @curwin)), 0)
+        ))
+        (swap! curwin assoc :w_scbind_pos (:w_topline @curwin))
+    )
 
-        (reset! scr_old_curwin @curwin)
-        (reset! scr_old_topline (:w_topline @curwin))
-        (reset! scr_old_leftcol (:w_leftcol @curwin))
-        nil
-    ))
+    (reset! scr_old_curwin @curwin)
+    (reset! scr_old_topline (:w_topline @curwin))
+    (reset! scr_old_leftcol (:w_leftcol @curwin))
+    nil)
 
 ;; Synchronize any windows that have "scrollbind" set,
 ;; based on the number of rows by which the current window has changed.
@@ -12218,19 +12202,13 @@
 ;; "Q" command.
 
 (defn- #_void nv-exmode [#_cmdarg_C cap]
-    (§
-        ;; Ignore 'Q' in Visual mode, just give a beep.
-
-        (cond @VIsual_active
-        (do
-            (vim-beep)
-        )
-        (not (checkclearop (:oap cap)))
-        (do
-;           do_exmode(false);
-        ))
-        nil
-    ))
+    ;; Ignore 'Q' in Visual mode, just give a beep.
+    (cond @VIsual_active
+        (vim-beep)
+;%% (not (checkclearop (:oap cap)))
+;       do_exmode(false);
+    )
+    nil)
 
 ;; Handle a ":" command.
 
@@ -12349,12 +12327,10 @@
 ;; CTRL-^ command, short for ":e #"
 
 (defn- #_void nv-hat [#_cmdarg_C cap]
-    (§
-        (when (not (checkclearopq (:oap cap)))
-;           buflist_getfile((int)cap.count0, 0, GETF_SETMARK|GETF_ALT, false);
-        )
-        nil
-    ))
+    (when (not (checkclearopq (:oap cap)))
+;       buflist_getfile((int)cap.count0, 0, GETF_SETMARK|GETF_ALT, false);
+    )
+    nil)
 
 ;; "Z" commands.
 
@@ -13349,13 +13325,11 @@
 ;; <Undo> command.
 
 (defn- #_void nv-kundo [#_cmdarg_C cap]
-    (§
-        (when (not (checkclearopq (:oap cap)))
-            (u-undo (int (:count1 cap)))
-            (swap! curwin assoc :w_set_curswant true)
-        )
-        nil
-    ))
+    (when (not (checkclearopq (:oap cap)))
+        (u-undo (int (:count1 cap)))
+        (swap! curwin assoc :w_set_curswant true)
+    )
+    nil)
 
 ;; Handle the "r" command.
 
@@ -14018,36 +13992,34 @@
 ;; Should set VIsual_select before calling this.
 
 (defn- #_void n-start-visual-mode [#_int c]
-    (§
-        ;; Check for redraw before changing the state.
-        (conceal-check-cursor-line)
+    ;; Check for redraw before changing the state.
+    (conceal-check-cursor-line)
 
-        (reset! VIsual_mode c)
-        (reset! VIsual_active true)
-        (reset! VIsual_reselect true)
-        ;; Corner case: the 0 position in a tab may change when going into
-        ;; virtualedit.  Recalculate curwin.w_cursor to avoid bad hilighting.
+    (reset! VIsual_mode c)
+    (reset! VIsual_active true)
+    (reset! VIsual_reselect true)
+    ;; Corner case: the 0 position in a tab may change when going into
+    ;; virtualedit.  Recalculate curwin.w_cursor to avoid bad hilighting.
 
-        (when (and (== c Ctrl_V) (flag? @ve_flags VE_BLOCK) (== (gchar) TAB))
-            (validate-virtcol)
-            (coladvance (:w_virtcol @curwin))
-        )
-        (COPY-pos @VIsual, (:w_cursor @curwin))
+    (when (and (== c Ctrl_V) (flag? @ve_flags VE_BLOCK) (== (gchar) TAB))
+        (validate-virtcol)
+        (coladvance (:w_virtcol @curwin))
+    )
+    (COPY-pos @VIsual, (:w_cursor @curwin))
 
-        ;; Check for redraw after changing the state.
-        (conceal-check-cursor-line)
+    ;; Check for redraw after changing the state.
+    (conceal-check-cursor-line)
 
-        (if @p_smd
-            (reset! redraw_cmdline true))  ;; show visual mode later
+    (if @p_smd
+        (reset! redraw_cmdline true))  ;; show visual mode later
 
-        ;; Only need to redraw this line, unless still need to redraw
-        ;; an old Visual area (when 'lazyredraw' is set).
-        (when (< (:w_redr_type @curwin) INVERTED)
-            (swap! curwin assoc :w_old_cursor_lnum (:lnum (:w_cursor @curwin)))
-            (swap! curwin assoc :w_old_visual_lnum (:lnum (:w_cursor @curwin)))
-        )
-        nil
-    ))
+    ;; Only need to redraw this line, unless still need to redraw
+    ;; an old Visual area (when 'lazyredraw' is set).
+    (when (< (:w_redr_type @curwin) INVERTED)
+        (let [lnum (:lnum (:w_cursor @curwin))]
+            (swap! curwin assoc :w_old_cursor_lnum lnum :w_old_visual_lnum lnum))
+    )
+    nil)
 
 ;; CTRL-W: Window commands
 
@@ -14647,13 +14619,11 @@
 ;; CTRL-R: undo undo
 
 (defn- #_void nv-redo [#_cmdarg_C cap]
-    (§
-        (when (not (checkclearopq (:oap cap)))
-            (u-redo (int (:count1 cap)))
-            (swap! curwin assoc :w_set_curswant true)
-        )
-        nil
-    ))
+    (when (not (checkclearopq (:oap cap)))
+        (u-redo (int (:count1 cap)))
+        (swap! curwin assoc :w_set_curswant true)
+    )
+    nil)
 
 ;; Handle "U" command.
 
@@ -16320,12 +16290,10 @@
 ;; Put "reg" into register "name".  Free any previous contents and "reg".
 
 (defn- #_void put-register [#_int name, #_yankreg_C reg]
-    (§
-        (get-yank-register name, false)
-        (swap! y_current assoc :y_array nil)
-        (COPY-yankreg @y_current, reg)
-        nil
-    ))
+    (get-yank-register name, false)
+    (swap! y_current assoc :y_array nil)
+    (COPY-yankreg @y_current, reg)
+    nil)
 
 (atom! int rec__regname)
 
@@ -16752,25 +16720,13 @@
 ;; Adjust the register name "reg" for the clipboard being used always and the clipboard being available.
 
 (defn- #_int adjust-clip-reg [#_int reg]
-    (§
-        (if (or (== reg (byte \*)) (== reg (byte \+)))
-            ((ß reg =) 0)
-        )
-
-        reg
-    ))
+    (if (or (== reg (byte \*)) (== reg (byte \+))) 0 reg))
 
 ;; When "reg" is a clipboard register, obtain the selection.
 ;; If it's not available return zero, otherwise return "reg".
 
 (defn- #_int may-get-selection [#_int reg]
-    (§
-        (if (or (== reg (byte \*)) (== reg (byte \+)))
-            ((ß reg =) 0)
-        )
-
-        reg
-    ))
+    (if (or (== reg (byte \*)) (== reg (byte \+))) 0 reg))
 
 ;; Handle a delete operation.
 ;;
@@ -19821,11 +19777,7 @@
 ;; "lnum_amount" to the line number and add "col_amount" to the column position.
 
 (defn- #_void mark-col-adjust [#_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
-    (§
-        (if (and (zero? col_amount) (zero? lnum_amount))
-            ((ß RETURN) nil) ;; nothing to do
-        )
-
+    (when-not (and (zero? col_amount) (zero? lnum_amount))
         ;; named marks, lower case and upper case
         (dotimes [#_int i NMARKS]
             (col-adjust (... (:b_namedm @curbuf) i), lnum, mincol, lnum_amount, col_amount)
@@ -19835,7 +19787,7 @@
             (col-adjust (:mark (... namedfm i)), lnum, mincol, lnum_amount, col_amount)
         )
 
-        ;; last Insert position
+        ;; last insert position
         (col-adjust (:b_last_insert @curbuf), lnum, mincol, lnum_amount, col_amount)
 
         ;; last change position
@@ -19861,18 +19813,18 @@
 
         ;; Adjust items in all windows related to the current buffer.
 
-        (robin [#_window_C wp @firstwin] (non-nil? wp) [(:w_next wp)]
+        (robin [#_window_C win @firstwin] (non-nil? win) [(:w_next win)]
             ;; marks in the jumplist
-            (dotimes [#_int i (:w_jumplistlen wp)]
-                (col-adjust (:mark (... (:w_jumplist wp) i)), lnum, mincol, lnum_amount, col_amount)
+            (dotimes [#_int i (:w_jumplistlen win)]
+                (col-adjust (:mark (... (:w_jumplist win) i)), lnum, mincol, lnum_amount, col_amount)
             )
 
             ;; cursor position for other windows with the same buffer
-            (if (!= wp @curwin)
-                (col-adjust (:w_cursor wp), lnum, mincol, lnum_amount, col_amount))
+            (if (!= win @curwin)
+                (col-adjust (:w_cursor win), lnum, mincol, lnum_amount, col_amount))
         )
-        nil
-    ))
+    )
+    nil)
 
 ;; When deleting lines, this may create duplicate marks in the jumplist.
 ;; They will be removed here for the current window.
@@ -20167,17 +20119,9 @@
 ;; Prepare the read buffers for reading (if they contain something).
 
 (defn- #_void start-stuff []
-    (§
-        (when (non-nil? (:bb_next (:bh_first @readbuf1)))
-            (swap! readbuf1 assoc :bh_curr (:bh_first @readbuf1))
-            (swap! readbuf1 assoc :bh_space 0)
-        )
-        (when (non-nil? (:bb_next (:bh_first @readbuf2)))
-            (swap! readbuf2 assoc :bh_curr (:bh_first @readbuf2))
-            (swap! readbuf2 assoc :bh_space 0)
-        )
-        nil
-    ))
+    (when (non-nil? (:bb_next (:bh_first @readbuf1))) (swap! readbuf1 assoc :bh_curr (:bh_first @readbuf1) :bh_space 0))
+    (when (non-nil? (:bb_next (:bh_first @readbuf2))) (swap! readbuf2 assoc :bh_curr (:bh_first @readbuf2) :bh_space 0))
+    nil)
 
 ;; Return true if the stuff buffer is empty.
 
@@ -20196,26 +20140,23 @@
 ;; (used when interrupted by a CTRL-C).
 
 (defn- #_void flush-buffers [#_boolean flush_typeahead]
-    (§
-        (init-typebuf)
+    (init-typebuf)
 
-        (start-stuff)
-        (while (!= (read-readbuffers true) NUL)
+    (start-stuff)
+    (while (!= (read-readbuffers true) NUL)
+        ;
+    )
+
+    (when flush_typeahead            ;; remove all typeahead
+        ;; We have to get all characters, because we may delete the first part of an escape sequence.
+        ;; In an xterm we get one char at a time and we have to get them all.
+
+        (while (non-zero? (inchar (:tb_buf @typebuf), (dec (:tb_buflen @typebuf)), 10, (:tb_change_cnt @typebuf)))
             ;
         )
-
-        (when flush_typeahead            ;; remove all typeahead
-            ;; We have to get all characters, because we may delete the first part of an escape sequence.
-            ;; In an xterm we get one char at a time and we have to get them all.
-
-            (while (!= (inchar (:tb_buf @typebuf), (- (:tb_buflen @typebuf) 1), 10, (:tb_change_cnt @typebuf)) 0)
-                ;
-            )
-            (swap! typebuf assoc :tb_off MAXMAPLEN)
-            (swap! typebuf assoc :tb_len 0)
-        )
-        nil
-    ))
+        (swap! typebuf assoc :tb_off MAXMAPLEN :tb_len 0)
+    )
+    nil)
 
 ;; The previous contents of the redo buffer is kept in old_redobuffer.
 ;; This is used for the CTRL-O <.> command in insert mode.
@@ -20499,16 +20440,15 @@
 ;; Initialize typebuf.
 
 (defn- #_void init-typebuf []
-    (§
-        (when (nil? (:tb_buf @typebuf))
-            (swap! typebuf assoc :tb_buf (Bytes. TYPELEN_INIT))
-            (swap! typebuf assoc :tb_buflen TYPELEN_INIT)
-            (swap! typebuf assoc :tb_len 0)
-            (swap! typebuf assoc :tb_off 0)
-            (swap! typebuf assoc :tb_change_cnt 1)
-        )
-        nil
-    ))
+    (when (nil? (:tb_buf @typebuf))
+        (swap! typebuf assoc
+            :tb_buf (Bytes. TYPELEN_INIT)
+            :tb_buflen TYPELEN_INIT
+            :tb_len 0
+            :tb_off 0
+            :tb_change_cnt 1)
+    )
+    nil)
 
 ;; Insert a string in the typeahead buffer.
 
@@ -20661,10 +20601,8 @@
 ;; or when we have waited some time for a character (c == 0)
 
 (defn- #_void updatescript [#_byte c]
-    (§
-;       
-        nil
-    ))
+;   
+    nil)
 
 ;; Get the next input character.
 ;; Can return a special key or a multi-byte character.
@@ -22277,17 +22215,15 @@
 ;; Undo the previous edit-putchar().
 
 (defn- #_void edit-unputchar []
-    (§
-        (when (and (!= @pc_status PC_STATUS_UNSET) (<= @msg_scrolled @pc_row))
-            (if (== @pc_status PC_STATUS_RIGHT)
-                (swap! curwin update :w_wcol inc)
-            )
-            (if (or (== @pc_status PC_STATUS_RIGHT) (== @pc_status PC_STATUS_LEFT))
-                (redrawWinline (:lnum (:w_cursor @curwin)))
-                (screen-puts pc_bytes, (- @pc_row @msg_scrolled), @pc_col, @pc_attr))
+    (when (and (!= @pc_status PC_STATUS_UNSET) (<= @msg_scrolled @pc_row))
+        (if (== @pc_status PC_STATUS_RIGHT)
+            (swap! curwin update :w_wcol inc)
         )
-        nil
-    ))
+        (if (or (== @pc_status PC_STATUS_RIGHT) (== @pc_status PC_STATUS_LEFT))
+            (redrawWinline (:lnum (:w_cursor @curwin)))
+            (screen-puts pc_bytes, (- @pc_row @msg_scrolled), @pc_col, @pc_attr))
+    )
+    nil)
 
 ;; Insert an indent (for <Tab> or CTRL-T) or delete an indent (for CTRL-D).
 ;; Keep the cursor on the same character.
@@ -23563,11 +23499,9 @@
 ;; CTRL-^ in Insert mode.
 
 (defn- #_void ins-ctrl-hat []
-    (§
-;       
-        (showmode)
-        nil
-    ))
+;   
+    (showmode)
+    nil)
 
 (atom! boolean disabled_redraw)
 
@@ -24123,19 +24057,15 @@
     ))
 
 (defn- #_void ins-s-left []
-    (§
-        (cond (or (< 1 (:lnum (:w_cursor @curwin))) (< 0 (:col (:w_cursor @curwin))))
+    (if (or (< 1 (:lnum (:w_cursor @curwin))) (< 0 (:col (:w_cursor @curwin))))
         (do
             (start-arrow (:w_cursor @curwin))
             (bck-word 1, false, false)
             (swap! curwin assoc :w_set_curswant true)
         )
-        :else
-        (do
-            (vim-beep)
-        ))
-        nil
-    ))
+        (vim-beep)
+    )
+    nil)
 
 (defn- #_void ins-right []
     (§
@@ -24164,19 +24094,15 @@
     ))
 
 (defn- #_void ins-s-right []
-    (§
-        (cond (or (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))) (!= (gchar) NUL))
+    (if (or (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))) (!= (gchar) NUL))
         (do
             (start-arrow (:w_cursor @curwin))
             (fwd-word 1, false, false)
             (swap! curwin assoc :w_set_curswant true)
         )
-        :else
-        (do
-            (vim-beep)
-        ))
-        nil
-    ))
+        (vim-beep)
+    )
+    nil)
 
 (defn- #_void ins-up [#_boolean startcol]
     ;; startcol: when true move to insStart.col
@@ -41406,13 +41332,11 @@
     ))
 
 (defn- #_void col-print [#_Bytes buf, #_int buflen, #_int col, #_int vcol]
-    (§
-        (if (== col vcol)
-;%%         (vim_snprintf buf, buflen, (u8 "%d"), col)
-;%%         (vim_snprintf buf, buflen, (u8 "%d-%d"), col, vcol)
-        )
-        nil
-    ))
+;%% (if (== col vcol)
+;%%     (vim_snprintf buf, buflen, (u8 "%d"), col)
+;%%     (vim_snprintf buf, buflen, (u8 "%d-%d"), col, vcol)
+;%% )
+    nil)
 
 ;; Get relative cursor position in window into "buf[buflen]", in the form 99%,
 ;; using "Top", "Bot" or "All" when appropriate.
@@ -48844,13 +48768,12 @@
 ;; This is not in message.c to avoid a warning for prototypes.
 
 (defn- #_boolean emsgn [#_Bytes s, #_long n]
-    (§
-        (if (emsg-not-now)
-            ((ß RETURN) true)            ;; no error messages at the moment
+    (if (emsg-not-now)
+        true            ;; no error messages at the moment
+        (do
+;%%         (vim_snprintf @ioBuff, IOSIZE, s, n)
+            (emsg @ioBuff)
         )
-
-;%%     (vim_snprintf @ioBuff, IOSIZE, s, n)
-        (emsg @ioBuff)
     ))
 
 ;;; ============================================================================================== VimT
@@ -50056,33 +49979,24 @@
 ;; save the line "lnum" for the "U" command
 
 (defn- #_void u-saveline [#_long lnum]
-    (§
-        (if (== lnum (:b_u_line_lnum @curbuf))                   ;; line is already saved
-            ((ß RETURN) nil)
-        )
-        (if (or (< lnum 1) (< (:ml_line_count (:b_ml @curbuf)) lnum))   ;; should never happen
-            ((ß RETURN) nil)
-        )
-
+    (when (and (!= lnum (:b_u_line_lnum @curbuf)) (<= 1 lnum (:ml_line_count (:b_ml @curbuf))))
         (u-clearline)
-
-        (swap! curbuf assoc :b_u_line_lnum lnum)
-        (swap! curbuf assoc :b_u_line_colnr (if (== (:lnum (:w_cursor @curwin)) lnum) (:col (:w_cursor @curwin)) 0))
-        (swap! curbuf assoc :b_u_line_ptr (STRDUP (ml-get lnum)))
-        nil
-    ))
+        (let [cursor (:w_cursor @curwin)]
+            (swap! curbuf assoc
+                :b_u_line_lnum lnum
+                :b_u_line_colnr (if (== (:lnum cursor) lnum) (:col cursor) 0)
+                :b_u_line_ptr (STRDUP (ml-get lnum))))
+    )
+    nil)
 
 ;; clear the line saved for the "U" command
 ;; (this is used externally for crossing a line while in insert mode)
 
 (defn- #_void u-clearline []
-    (§
-        (when (non-nil? (:b_u_line_ptr @curbuf))
-            (swap! curbuf assoc :b_u_line_ptr nil)
-            (swap! curbuf assoc :b_u_line_lnum 0)
-        )
-        nil
-    ))
+    (when (non-nil? (:b_u_line_ptr @curbuf))
+        (swap! curbuf assoc :b_u_line_ptr nil :b_u_line_lnum 0)
+    )
+    nil)
 
 ;; Implementation of the "U" command.
 ;; Differentiation from vi: "U" can be undone with the next "U".
@@ -51823,9 +51737,9 @@
     nil)
 
 (defn- #_void redraw-buf-later [#_buffer_C buf, #_int type]
-    (robin [#_window_C wp @firstwin] (non-nil? wp) [(:w_next wp)]
+    (robin [#_window_C win @firstwin] (non-nil? win) [(:w_next win)]
         (when (== @curbuf buf)
-            (redraw-win-later wp, type)
+            (redraw-win-later win, type)
         )
     )
     nil)
@@ -51838,17 +51752,10 @@
 ;; may become invalid and the whole window will have to be redrawn.
 
 (defn- #_void redrawWinline [#_long lnum]
-    (§
-        (if (or (zero? (:w_redraw_top @curwin)) (> (:w_redraw_top @curwin) lnum))
-            (swap! curwin assoc :w_redraw_top lnum)
-        )
-        (if (or (zero? (:w_redraw_bot @curwin)) (< (:w_redraw_bot @curwin) lnum))
-            (swap! curwin assoc :w_redraw_bot lnum)
-        )
-
-        (redraw-later VALID)
-        nil
-    ))
+    (let [top (:w_redraw_top @curwin)] (if (or (zero? top) (> top lnum)) (swap! curwin assoc :w_redraw_top lnum)))
+    (let [bot (:w_redraw_bot @curwin)] (if (or (zero? bot) (< bot lnum)) (swap! curwin assoc :w_redraw_bot lnum)))
+    (redraw-later VALID)
+    nil)
 
 ;; update all windows that are editing the current buffer
 
@@ -52870,31 +52777,27 @@
 ;; Clear the rest of the window and mark the unused lines with "c1".
 ;; Use "c2" as the filler character.
 
-(defn- #_void win-draw-end [#_window_C wp, #_int c1, #_int c2, #_int row, #_int endrow, #_int hl]
-    (§
-        ((ß int n =) 0)
-
-        (when (and (non-zero? @cmdwin_type) (== wp @curwin))
-            ;; draw the cmdline character in the leftmost column
-            ((ß n =) (min 1 (:w_width wp)))
-            (screen-fill (+ (:w_winrow wp) row), (+ (:w_winrow wp) endrow), (:w_wincol wp), (+ (:w_wincol wp) n), @cmdwin_type, (byte \space), (hl-attr HLF_AT))
+(defn- #_void win-draw-end [#_window_C win, #_int c1, #_int c2, #_int row, #_int endrow, #_int hl]
+    (let [r (:w_winrow win) c (:w_wincol win) w (:w_width win)]
+        (let [#_int n
+            (if (and (non-zero? @cmdwin_type) (== win @curwin))
+                ;; draw the cmdline character in the leftmost column
+                (let [n (min 1 w)]
+                    (screen-fill (+ r row), (+ r endrow), c, (+ c n), @cmdwin_type, (byte \space), (hl-attr HLF_AT)) n)
+                0)]
+            (screen-fill (+ r row), (+ r endrow), (+ c n), (+ c w), c1, c2, (hl-attr hl))
         )
-        (screen-fill (+ (:w_winrow wp) row), (+ (:w_winrow wp) endrow), (+ (:w_wincol wp) n), (+ (:w_wincol wp) (:w_width wp)), c1, c2, (hl-attr hl))
-
-        (set-empty-rows wp, row)
+        (set-empty-rows win, row)
         nil
     ))
 
 ;; Advance **color_cols and return true when there are columns to draw.
 
 (defn- #_boolean advance-color-col [#_int vcol, #_int* color_cols, #_int' a'cci]
-    (§
-        (while (and (<= 0 (... color_cols @a'cci)) (< (... color_cols @a'cci) vcol))
-            (swap! a'cci inc)
-        )
-
-        (<= 0 (... color_cols @a'cci))
-    ))
+    (while (< -1 (... color_cols @a'cci) vcol)
+        (swap! a'cci inc)
+    )
+    (< -1 (... color_cols @a'cci)))
 
 ;; used for p_extra when displaying lcs_eol at end-of-line
 (final Bytes at_end_str (u8 ""))
@@ -54832,15 +54735,13 @@
 ;; Prepare for 'hlsearch' highlighting.
 
 (defn- #_void start-search-hl []
-    (§
-        (when (and @p_hls (not @no_hlsearch))
-            (last-pat-prog (:rmm @search_hl))
-            (swap! search_hl assoc :attr (hl-attr HLF_L))
-            ;; Set the time limit to 'redrawtime'.
-            (swap! search_hl assoc :nsec (profile-setlimit @p_rdt))
-        )
-        nil
-    ))
+    (when (and @p_hls (not @no_hlsearch))
+        (last-pat-prog (:rmm @search_hl))
+        (swap! search_hl assoc :attr (hl-attr HLF_L))
+        ;; Set the time limit to 'redrawtime'.
+        (swap! search_hl assoc :nsec (profile-setlimit @p_rdt))
+    )
+    nil)
 
 ;; Clean up for 'hlsearch' highlighting.
 
@@ -56669,10 +56570,8 @@
 ;; Get its attributes in "*attr".
 
 (defn- #_int fillchar-vsep [#_int' a'attr]
-    (§
-        (reset! a'attr (hl-attr HLF_C))
-        (if (and (zero? @a'attr) (== @fill_vert (byte \space))) (byte \|) @fill_vert)
-    ))
+    (reset! a'attr (hl-attr HLF_C))
+    (if (and (zero? @a'attr) (== @fill_vert (byte \space))) (byte \|) @fill_vert))
 
 ;; Return true if redrawing should currently be done.
 
@@ -59011,31 +58910,29 @@
 ;; Called from main().
 
 (defn- #_void win-alloc-first []
-    (§
-        (reset! curwin (newWindow nil))
+    (reset! curwin (newWindow nil))
 
-        (reset! curbuf (newBuffer))
+    (reset! curbuf (newBuffer))
 
-        (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
+    (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
 
-        ;; mark cursor position as being invalid
-        (swap! curwin assoc :w_valid 0)
+    ;; mark cursor position as being invalid
+    (swap! curwin assoc :w_valid 0)
 
-        ;; need to set w_topline
-        (swap! curwin assoc :w_topline 1)
+    ;; need to set w_topline
+    (swap! curwin assoc :w_topline 1)
 
-        (win-init-empty @curwin)
+    (win-init-empty @curwin)
 
-        (swap! curwin assoc :w_frame (newFrame @curwin))
+    (swap! curwin assoc :w_frame (newFrame @curwin))
 
-        (reset! topframe (:w_frame @curwin))
-        (swap! topframe assoc :fr_width (int @Cols))
-        (swap! topframe assoc :fr_height (int (- @Rows @p_ch)))
-        (swap! topframe assoc :fr_win @curwin)
+    (reset! topframe (:w_frame @curwin))
+    (swap! topframe assoc :fr_width (int @Cols))
+    (swap! topframe assoc :fr_height (int (- @Rows @p_ch)))
+    (swap! topframe assoc :fr_win @curwin)
 
-        (reset! ch_used @p_ch)
-        nil
-    ))
+    (reset! ch_used @p_ch)
+    nil)
 
 ;; Create a frame for window "wp".
 
@@ -59052,15 +58949,10 @@
 ;; Initialize the window and frame size to the maximum.
 
 (defn- #_void win-init-size []
-    (§
-        ((ß long rows_avail =) (- @Rows @p_ch))
-
-        (swap! firstwin assoc :w_height (int rows_avail))
-        (swap! topframe assoc :fr_height (int rows_avail))
-        (swap! firstwin assoc :w_width (int @Cols))
-        (swap! topframe assoc :fr_width (int @Cols))
-        nil
-    ))
+    (let [#_int rows (int (- @Rows @p_ch)) #_int cols (int @Cols)]
+        (swap! firstwin assoc :w_height rows :w_width cols)
+        (swap! topframe assoc :fr_height rows :fr_width cols)
+        nil))
 
 ;; Go to another window.
 ;; When jumping to another buffer, stop Visual mode.  Do this before
@@ -60458,14 +60350,12 @@
     ))
 
 (defn- #_void update-curswant []
-    (§
-        (when (:w_set_curswant @curwin)
-            (validate-virtcol)
-            (swap! curwin assoc :w_curswant (:w_virtcol @curwin))
-            (swap! curwin assoc :w_set_curswant false)
-        )
-        nil
-    ))
+    (when (:w_set_curswant @curwin)
+        (validate-virtcol)
+        (swap! curwin assoc :w_curswant (:w_virtcol @curwin))
+        (swap! curwin assoc :w_set_curswant false)
+    )
+    nil)
 
 ;; Check if the cursor has moved.  Set the w_valid flag accordingly.
 
@@ -60523,10 +60413,8 @@
 ;; Need to take care of w_botline separately!
 
 (defn- #_void changed-cline-bef-curs []
-    (§
-        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CHEIGHT VALID_TOPLINE)))
-        nil
-    ))
+    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CHEIGHT VALID_TOPLINE)))
+    nil)
 
 (defn- #_void changed-cline-bef-curs-win [#_window_C wp]
     (§
@@ -60539,10 +60427,8 @@
 ;; Need to take care of w_botline separately!
 
 (defn- #_void changed-line-abv-curs []
-    (§
-        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CROW VALID_CHEIGHT VALID_TOPLINE)))
-        nil
-    ))
+    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CROW VALID_CHEIGHT VALID_TOPLINE)))
+    nil)
 
 (defn- #_void changed-line-abv-curs-win [#_window_C wp]
     (§
@@ -60561,10 +60447,8 @@
 ;; Mark curwin.w_botline as invalid (because of some change in the buffer).
 
 (defn- #_void invalidate-botline []
-    (§
-        (swap! curwin update :w_valid & (bit-not (| VALID_BOTLINE VALID_BOTLINE_AP)))
-        nil
-    ))
+    (swap! curwin update :w_valid & (bit-not (| VALID_BOTLINE VALID_BOTLINE_AP)))
+    nil)
 
 (defn- #_void invalidate-botline-win [#_window_C wp]
     (§
@@ -60676,14 +60560,12 @@
 ;; Validate curwin.w_cline_height only.
 
 (defn- #_void validate-cheight []
-    (§
-        (check-cursor-moved @curwin)
-        (when (non-flag? (:w_valid @curwin) VALID_CHEIGHT)
-            (swap! curwin assoc :w_cline_height (plines (:lnum (:w_cursor @curwin))))
-            (swap! curwin update :w_valid | VALID_CHEIGHT)
-        )
-        nil
-    ))
+    (check-cursor-moved @curwin)
+    (when (non-flag? (:w_valid @curwin) VALID_CHEIGHT)
+        (swap! curwin assoc :w_cline_height (plines (:lnum (:w_cursor @curwin))))
+        (swap! curwin update :w_valid | VALID_CHEIGHT)
+    )
+    nil)
 
 ;; Validate w_wcol and w_virtcol only.
 
