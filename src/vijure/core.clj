@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state nfa-max-width alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state nfa-max-width alloc-frag fr-single fr-patch fr-append fr-push fr-pop post2nfa nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -1200,9 +1200,7 @@
         (field boolean      has_backref)    ;; pattern contains \1 .. \9
         (field Bytes        rex)
 
-        (field int          nstate)         ;; states.length
         (field nfa_state_C* states)
-        (field int          istate)         ;; index in states == number of states allocated
     ])
 
 ;; Structure to be used for multi-line matching.
@@ -1321,18 +1319,12 @@
         (field int          bh_space)       ;; space in bh_curr for appending
     ])
 
-;; things used in memline.c
-
-;; 'ml_flags':
-(final int ML_EMPTY        1)   ;; empty buffer
-
 ;; The memline structure holds all the information about a memline.
 
 (class! #_final memline_C
     [
         (field long         ml_line_count)      ;; number of lines in the buffer
-
-        (field int          ml_flags)
+        (field boolean      ml_empty)
     ])
 
 ;; Used for the typeahead buffer: typebuf.
@@ -9879,7 +9871,7 @@
                             (reset! VIsual_active true) ;; may have been reset in do-put()
                             [win cap dir flags regname reg2])
                         [win cap dir flags 0 nil])
-                  empty? (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+                  empty? (:ml_empty (:b_ml @curbuf))
                   win (do-put win, (:regname (:oap cap)), dir, (:count1 cap), flags)]
                 ;; If a register was saved, put it back now.
                 (when (some? reg2)
@@ -10809,7 +10801,7 @@
 ;; Return false if undo failed, true otherwise.
 
 (defn- #_[window_C oparg_C boolean] op-delete? [#_window_C win, #_oparg_C oap]
-    (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) ;; nothing to do
+    (cond (:ml_empty (:b_ml @curbuf)) ;; nothing to do
         [win oap true]
     ;; Nothing to delete, return here.  Do prepare undo, for op-change().
     (:empty oap)
@@ -11035,7 +11027,7 @@
 ;; Replace a whole area with one character.
 
 (defn- #_[window_C oparg_C boolean] op-replace? [#_window_C win, #_oparg_C oap, #_int c]
-    (if (or (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) (:empty oap))
+    (if (or (:ml_empty (:b_ml @curbuf)) (:empty oap))
         [win oap true] ;; nothing to do
         (let [oap (mb-adjust-opend oap)]
             (if (not (u-save win, (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
@@ -11428,7 +11420,7 @@
                     (reset! can_si true)) ;; it's like opening a new line, do 'si'
                 0)
           ;; First delete the text in the region.  In an empty buffer only need to save for undo.
-          [win oap ?] (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) [win oap (u-save-cursor win)] (op-delete? win, oap))
+          [win oap ?] (if (:ml_empty (:b_ml @curbuf)) [win oap (u-save-cursor win)] (op-delete? win, oap))
     ] ? => [win oap false]
 
         (let [win (when' (and (< (:col (:w_cursor win)) l) (not (lineempty (:lnum (:w_cursor win)))) (== @virtual_op FALSE)) => win
@@ -12269,7 +12261,7 @@
 ;; the *_count_cursor variables store running totals for the selection.)
 
 (defn- #_window_C cursor-pos-info [#_window_C win]
-    (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+    (if (:ml_empty (:b_ml @curbuf))
         (msg win, no_lines_msg)
         (let-when [[#_pos_C min_pos #_pos_C max_pos #_oparg_C oparg #_long selected_lines]
                 (if @VIsual_active
@@ -16038,7 +16030,7 @@
 
 (final int BRACE_COMPLEX   140) ;; -149 node Match nodes between m & n times.
 
-(final int NOPEN           150)     ;;      Mark this point in input as start of \%( subexpr.
+(final int NOPEN           150)     ;;      Mark this point in input as start of \%( subexpr.   ;; sic!)
 (final int NCLOSE          151)     ;;      Analogous to NOPEN.
 
 (final int MULTIBYTECODE   200)     ;; mbc  Match one multi-byte character.
@@ -16365,7 +16357,7 @@
 ;; arguments for bt-reg()
 (final int REG_NOPAREN     0)           ;; toplevel bt-reg()
 (final int REG_PAREN       1)           ;; \(\)
-(final int REG_NPAREN      2)           ;; \%(\)
+(final int REG_NPAREN      2)           ;; \%(\)    ;; sic!)
 
 (class! #_final parse_state_C
     [
@@ -19594,8 +19586,8 @@
     NFA_NEWL -1002,
     NFA_ZSTART -1001,                     ;; Used for \zs
     NFA_ZEND -1000,                       ;; Used for \ze
-    NFA_NOPEN -999,                       ;; Start of subexpression marked with \%(
-    NFA_NCLOSE -998,                      ;; End of subexpr. marked with \%( ... \)
+    NFA_NOPEN -999,                       ;; Start of subexpression marked with \%(     ;; sic!)
+    NFA_NCLOSE -998,                      ;; End of subexpr. marked with \%( ... \)     ;; sic!)
     NFA_START_INVISIBLE -997,
     NFA_START_INVISIBLE_FIRST -996,
     NFA_START_INVISIBLE_NEG -995,
@@ -19754,7 +19746,7 @@
 (atom! lpos_C nfa_endp)
 
 ;; "nfa_listid" is global, so that it increases on recursive calls to nfa-regmatch(),
-;; which means we don't have to clear the lastlist field of all the states.
+;; which means we don't have to clear the "lastlist" field of all the states.
 
 (atom! int nfa_listid)
 (atom! int nfa_alt_listid)
@@ -20760,19 +20752,17 @@
 ;; If c < 256, labeled arrow with character c to out0.
 
 (defn- #_nfa_state_C alloc-state [#_nfa_pattern_C pat, #_int c, #_nfa_state_C out0, #_nfa_state_C out1]
-    (when' (< (:istate pat) (:nstate pat)) => nil
-        (let [#_nfa_state_C state (NEW_nfa_state_C)
-              state (assoc state :c c)
-              _ ((ß state =) (.out0 state out0))
-              _ ((ß state =) (.out1 state out1))
-              state (assoc state :val 0)
-              state (assoc state :id (inc (:istate pat)))
-              _ ((ß state.lastlist[0] =) 0)
-              _ ((ß state.lastlist[1] =) 0)
-              _ ((ß pat.states[pat.istate++] =) state)]
-;             %% poor "pat" !!
-            state
-        )
+    (let [#_nfa_state_C state (NEW_nfa_state_C)
+          state (assoc state :c c)
+          _ ((ß _ =) (.out0 state out0))
+          _ ((ß _ =) (.out1 state out1))
+          state (assoc state :val 0)
+          state (assoc state :id (inc (count (:states pat))))
+          _ ((ß state.lastlist[0] =) 0)
+          _ ((ß state.lastlist[1] =) 0)
+          _ ((ß pat =) (update pat :states conj state))]
+;         %% poor "pat" !!
+        state
     ))
 
 ;; Estimate the maximum byte length of anything matching "state".
@@ -20975,567 +20965,301 @@
         list
     ))
 
-;; Stack used for transforming postfix form into NFA.
-
-(class! #_final nfa_stack_C
-    [
-        (field frag_C*      st_base)
-        (field int          st_next)
-        (field int          st_over)
-    ])
-
-(defn- #_nfa_stack_C new-nfa-stack [#_int n]
-    (nfa_stack_C. (frag_C* n) 0 n))
-
 ;; Push an item onto the stack.
 
-(defn- #_boolean st-push [#_nfa_stack_C stack, #_frag_C frag]
-    (§
-        (when (< (:st_next stack) (:st_over stack))
-            ((ß stack.st_base[stack.st_next++] =) frag)
-            ((ß RETURN) true)
-        )
-
-        false
-    ))
+(defn- #_frag_C* fr-push [#_frag_C* stack, #_frag_C frag]
+    (conj stack frag))
 
 ;; Pop an item from the stack.
 
-(defn- #_frag_C st-pop [#_nfa_stack_C stack]
-    (§
-        (if (< (ß --stack.st_next) 0)
-            ((ß RETURN) nil)
-        )
-
-        ((ß frag_C frag =) (... (:st_base stack) (:st_next stack)))
-        ((ß stack.st_base[stack.st_next] =) nil)
-        frag
-    ))
-
-(defn- #_nfa_state_C st-error [#_int* _postfix, #_int _i, #_int _over]
-    (emsg (u8 "E874: (NFA) Could not pop the stack !"))
-    nil)
+(defn- #_[frag_C frag_C*] fr-pop [#_frag_C* stack]
+    [(peek stack) (pop stack)])
 
 ;; Convert a postfix form into its equivalent NFA.
 ;; Return the NFA start state on success, null otherwise.
 
-(defn- #_nfa_state_C post2nfa [#_int* postfix, #_nfa_pattern_C pat, #_boolean nfa_calc_size]
-    (§
-        (if (nil? postfix)
-            ((ß RETURN) nil)
-        )
+(defn- #_nfa_state_C post2nfa [#_int* postfix, #_nfa_pattern_C pat]
+    (when' (some? postfix) => nil
+        (let [#_int over (count postfix)
+              #_frag_C* stack
+        ]
+                (loop-when [stack [] #_int i 0] (< i over) => stack
+                    (condp ==? (... postfix i)
 
-        ((ß nfa_stack_C stack =) (if nfa_calc_size nil (new-nfa-stack (inc (:nstate pat)))))
+                        NFA_CONCAT
+                            ;; Concatenation.
+                            ;; Pay attention: this operator does not exist in the r.e. itself (it is implicit, really).
+                            ;; It is added when r.e. is translated to postfix form in re2post().
+                            (let [[#_frag_C e2 stack] (fr-pop stack) [#_frag_C e1 stack] (fr-pop stack)]
+                                (fr-patch (:fr_out e1), (:fr_start e2))
+                                (recur (fr-push stack, (alloc-frag (:fr_start e1), (:fr_out e2))) (inc i)))
 
-        ((ß int over =) (count postfix))
-        ((ß int i =) (loop-when-recur [i 0] (< i over) [(inc i)] => i
-            (condp ==? (... postfix i)
-                NFA_CONCAT
-                (do
-                    ;; Concatenation.
-                    ;; Pay attention: this operator does not exist in the r.e. itself (it is implicit, really).
-                    ;; It is added when r.e. is translated to postfix form in re2post().
-                    (when nfa_calc_size
-                        ;; pat.nstate += 0;
-                        (ß BREAK)
-                    )
+                        NFA_OR
+                            ;; Alternation.
+                            (let [[#_frag_C e2 stack] (fr-pop stack) [#_frag_C e1 stack] (fr-pop stack)
+                                  #_nfa_state_C s0 (alloc-state pat, NFA_SPLIT, (:fr_start e1), (:fr_start e2))]
+                                (recur (fr-push stack, (alloc-frag s0, (fr-append (:fr_out e1), (:fr_out e2)))) (inc i)))
 
-                    ((ß frag_C e2 =) (st-pop stack))
-                    (if (nil? e2)
-                        ((ß RETURN) (st-error postfix, i, over))
+                        NFA_STAR
+                            ;; Zero or more, prefer more.
+                            (let [[#_frag_C e0 stack] (fr-pop stack) #_nfa_state_C s0 (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil)]
+                                (fr-patch (:fr_out e0), s0)
+                                (recur (fr-push stack, (alloc-frag s0, (fr-single (:out1 s0)))) (inc i)))
+
+                        NFA_STAR_NONGREEDY
+                            ;; Zero or more, prefer zero.
+                            (let [[#_frag_C e0 stack] (fr-pop stack) #_nfa_state_C s0 (alloc-state pat, NFA_SPLIT, nil, (:fr_start e0))]
+                                (fr-patch (:fr_out e0), s0)
+                                (recur (fr-push stack, (alloc-frag s0, (fr-single (:out0 s0)))) (inc i)))
+
+                        NFA_QUEST
+                            ;; One or zero atoms => greedy match.
+                            (let [[#_frag_C e0 stack] (fr-pop stack) #_nfa_state_C s0 (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil)]
+                                (recur (fr-push stack, (alloc-frag s0, (fr-append (:fr_out e0), (fr-single (:out1 s0))))) (inc i)))
+
+                        NFA_QUEST_NONGREEDY
+                            ;; Zero or one atoms => non-greedy match.
+                            (let [[#_frag_C e0 stack] (fr-pop stack) #_nfa_state_C s0 (alloc-state pat, NFA_SPLIT, nil, (:fr_start e0))]
+                                (recur (fr-push stack, (alloc-frag s0, (fr-append (:fr_out e0), (fr-single (:out0 s0))))) (inc i)))
+
+                       [NFA_END_COLL NFA_END_NEG_COLL]
+                            ;; On the stack the sequence is starting with NFA_START_COLL or NFA_START_NEG_COLL and all possible characters.
+                            ;; Patch it to add the output to the start.
+                            (let [[#_frag_C e0 stack] (fr-pop stack) #_nfa_state_C s0 (alloc-state pat, NFA_END_COLL, nil, nil)]
+                                (fr-patch (:fr_out e0), s0)
+                                ((ß _ =) (.out1 (:fr_start e0) s0))
+                                (recur (fr-push stack, (alloc-frag (:fr_start e0), (fr-single (:out0 s0)))) (inc i)))
+
+                        NFA_RANGE
+                            ;; There are two characters before this: the low and high end of a range.
+                            ;; Turn them into two states with MIN and MAX.
+                            (let [[#_frag_C e2 stack] (fr-pop stack) [#_frag_C e1 stack] (fr-pop stack)]
+                                ((ß e2.fr_start.val =) (:c (:fr_start e2)))
+                                ((ß e2.fr_start.c =) NFA_RANGE_MAX)
+                                ((ß e1.fr_start.val =) (:c (:fr_start e1)))
+                                ((ß e1.fr_start.c =) NFA_RANGE_MIN)
+                                (fr-patch (:fr_out e1), (:fr_start e2))
+                                (recur (fr-push stack, (alloc-frag (:fr_start e1), (:fr_out e2))) (inc i)))
+
+                        NFA_EMPTY
+                            ;; 0-length, used in a repetition with max/min count of 0
+                            (let [#_nfa_state_C s0 (alloc-state pat, NFA_EMPTY, nil, nil)]
+                                (recur (fr-push stack, (alloc-frag s0, (fr-single (:out0 s0)))) (inc i)))
+
+                        NFA_OPT_CHARS
+                            ;; \%[abc] implemented as:
+                            ;;    NFA_SPLIT
+                            ;;    +-CHAR(a)
+                            ;;    | +-NFA_SPLIT
+                            ;;    |   +-CHAR(b)
+                            ;;    |   | +-NFA_SPLIT
+                            ;;    |   |   +-CHAR(c)
+                            ;;    |   |   | +-next
+                            ;;    |   |   +- next
+                            ;;    |   +- next
+                            ;;    +- next
+                            (let [i (inc i) #_int n (... postfix i)
+                                  [stack #_nfa_state_C s0 #_frag_C e1] ;; s1: previous NFA_SPLIT to connect to ;; e1.fr_out: stores list with out1's
+                                    (loop-when [stack stack s0 nil #_nfa_state_C s1 nil e1 (alloc-frag nil, nil) n n] (< 0 n) => [stack s0 e1]
+                                        (let [[#_frag_C e0 stack] (fr-pop stack) s0 (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil)
+                                              e1 (if (some? (:fr_out e1)) e1 e0)]
+                                            (fr-patch (:fr_out e0), s1)
+                                            (fr-append (:fr_out e1), (fr-single (:out1 s0)))
+                                            (recur stack s0 s0 e1 (dec n)))
+                                    )]
+                                (recur (fr-push stack, (alloc-frag s0, (:fr_out e1))) (inc i)))
+
+                       [NFA_PREV_ATOM_NO_WIDTH
+                        NFA_PREV_ATOM_NO_WIDTH_NEG
+                        NFA_PREV_ATOM_JUST_BEFORE
+                        NFA_PREV_ATOM_JUST_BEFORE_NEG
+                        NFA_PREV_ATOM_LIKE_PATTERN]
+                            (let [#_boolean before (any == (... postfix i) NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
+                                  #_boolean pattern (== (... postfix i) NFA_PREV_ATOM_LIKE_PATTERN)
+                                  [#_int start_state #_int end_state]
+                                    (condp == (... postfix i)
+                                        NFA_PREV_ATOM_NO_WIDTH        [NFA_START_INVISIBLE            NFA_END_INVISIBLE    ]
+                                        NFA_PREV_ATOM_NO_WIDTH_NEG    [NFA_START_INVISIBLE_NEG        NFA_END_INVISIBLE_NEG]
+                                        NFA_PREV_ATOM_JUST_BEFORE     [NFA_START_INVISIBLE_BEFORE     NFA_END_INVISIBLE    ]
+                                        NFA_PREV_ATOM_JUST_BEFORE_NEG [NFA_START_INVISIBLE_BEFORE_NEG NFA_END_INVISIBLE_NEG]
+                                        NFA_PREV_ATOM_LIKE_PATTERN    [NFA_START_PATTERN              NFA_END_PATTERN      ]
+                                    )
+                                  i (inc i) #_int n (if before (... postfix i) 0)
+                                  ;; The \@= operator: match the preceding atom with zero width.
+                                  ;; The \@! operator: no match for the preceding atom.
+                                  ;; The \@<= operator: match for the preceding atom.
+                                  ;; The \@<! operator: no match for the preceding atom.
+                                  ;; Surrounds the preceding atom with START_INVISIBLE and END_INVISIBLE, similarly to MOPEN.
+                                  [#_frag_C e0 stack] (fr-pop stack)
+                                  #_nfa_state_C s1 (alloc-state pat, end_state, nil, nil)
+                                  #_nfa_state_C s0 (alloc-state pat, start_state, (:fr_start e0), s1)]
+                                (cond pattern
+                                    ;; NFA_ZEND -> NFA_END_PATTERN -> NFA_SKIP -> what follows.
+                                    (let [#_nfa_state_C skip (alloc-state pat, NFA_SKIP, nil, nil)
+                                          #_nfa_state_C zend (alloc-state pat, NFA_ZEND, s1, nil)]
+                                        ((ß _ =) (.out0 s1 skip))
+                                        (fr-patch (:fr_out e0), zend)
+                                        (recur (fr-push stack, (alloc-frag s0, (fr-single (:out0 skip)))) (inc i)))
+                                :else
+                                    (let [_ (fr-patch (:fr_out e0), s1)
+                                          stack (fr-push stack, (alloc-frag s0, (fr-single (:out0 s1))))]
+                                        ;; See if we can guess the maximum width, it avoids a lot of pointless tries.
+                                        (when before
+                                            ((ß s0.val =) (if (< 0 n) n (nfa-max-width (:fr_start e0), 0))))
+                                        (recur stack (inc i)))
+                                ))
+
+                        NFA_COMPOSING     ;; char with composing char
+                            (do
+                                (when (flag? @regflags RF_ICOMBINE)
+                                    ;; TODO: use the base character only
+                                )
+                                (ß FALLTHROUGH)
+                            )
+
+                       [NFA_MOPEN ;; \( \) Submatch
+                        NFA_MOPEN1
+                        NFA_MOPEN2
+                        NFA_MOPEN3
+                        NFA_MOPEN4
+                        NFA_MOPEN5
+                        NFA_MOPEN6
+                        NFA_MOPEN7
+                        NFA_MOPEN8
+                        NFA_MOPEN9
+                        NFA_NOPEN] ;; \%( \) "Invisible Submatch"   ;; sic!)
+                            (do
+                                ((ß int mopen =) (... postfix i))
+                                ((ß int mclose =) (condp == mopen
+                                    NFA_NOPEN     NFA_NCLOSE
+                                    NFA_COMPOSING NFA_END_COMPOSING
+                                    (+ mopen NSUBEXP) ;; NFA_MOPEN, NFA_MOPEN1 .. NFA_MOPEN9
+                                ))
+
+                                ;; Allow "NFA_MOPEN" as a valid postfix representation for the empty regexp "".
+                                ;; In this case, the NFA will be NFA_MOPEN -> NFA_MCLOSE.  Note that this also
+                                ;; allows empty groups of parenthesis, and empty mbyte chars.
+                                (when (zero? (:st_next stack))
+                                    ((ß nfa_state_C s0 =) (alloc-state pat, mopen, nil, nil))
+                                    ((ß nfa_state_C s1 =) (alloc-state pat, mclose, nil, nil))
+                                    (fr-patch (fr-single (:out0 s0)), s1)
+                                    ((ß stack =) (fr-push stack, (alloc-frag s0, (fr-single (:out0 s1)))))
+                                    (ß BREAK)
+                                )
+
+                                ;; At least one node was emitted before NFA_MOPEN, so
+                                ;; at least one node will be between NFA_MOPEN and NFA_MCLOSE.
+                                ((ß frag_C e0, stack =) (fr-pop stack))
+                                ((ß nfa_state_C s0 =) (alloc-state pat, mopen, (:fr_start e0), nil))   ;; `('
+
+                                ((ß nfa_state_C s1 =) (alloc-state pat, mclose, nil, nil))         ;; `)'
+                                (fr-patch (:fr_out e0), s1)
+
+                                (when (== mopen NFA_COMPOSING)
+                                    ;; COMPOSING.out1 = END_COMPOSING
+                                    (fr-patch (fr-single (:out1 s0)), s1)
+                                )
+
+                                ((ß stack =) (fr-push stack, (alloc-frag s0, (fr-single (:out0 s1)))))
+                                (ß BREAK)
+                                (recur stack (inc i))
+                            )
+
+                       [NFA_BACKREF1
+                        NFA_BACKREF2
+                        NFA_BACKREF3
+                        NFA_BACKREF4
+                        NFA_BACKREF5
+                        NFA_BACKREF6
+                        NFA_BACKREF7
+                        NFA_BACKREF8
+                        NFA_BACKREF9]
+                            (do
+                                ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix i), nil, nil))
+                                ((ß nfa_state_C s1 =) (alloc-state pat, NFA_SKIP, nil, nil))
+                                (fr-patch (fr-single (:out0 s0)), s1)
+                                ((ß stack =) (fr-push stack, (alloc-frag s0, (fr-single (:out0 s1)))))
+                                (ß BREAK)
+                                (recur stack (inc i))
+                            )
+
+                       [NFA_LNUM NFA_LNUM_GT NFA_LNUM_LT
+                        NFA_VCOL NFA_VCOL_GT NFA_VCOL_LT
+                        NFA_COL  NFA_COL_GT  NFA_COL_LT
+                        NFA_MARK NFA_MARK_GT NFA_MARK_LT]
+                            (do
+                                ((ß int n =) (... postfix ((ß i =) (inc i)))) ;; lnum, col or mark name
+
+                                ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix (dec i)), nil, nil))
+                                ((ß s0.val =) n)
+                                ((ß stack =) (fr-push stack, (alloc-frag s0, (fr-single (:out0 s0)))))
+                                (ß BREAK)
+                                (recur stack (inc i))
+                            )
+
+                       [NFA_ZSTART NFA_ZEND]
+                        (ß DEFAULT)
+                            (do
+                                ;; Operands.
+
+                                ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix i), nil, nil))
+                                ((ß stack =) (fr-push stack, (alloc-frag s0, (fr-single (:out0 s0)))))
+                                (ß BREAK)
+                                (recur stack (inc i))
+                            )
                     )
-                    ((ß frag_C e1 =) (st-pop stack))
-                    (if (nil? e1)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    (fr-patch (:fr_out e1), (:fr_start e2))
-                    (st-push stack, (alloc-frag (:fr_start e1), (:fr_out e2)))
-                    (ß BREAK)
                 )
 
-                NFA_OR
-                (do
-                    ;; Alternation.
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e2 =) (st-pop stack))
-                    (if (nil? e2)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß frag_C e1 =) (st-pop stack))
-                    (if (nil? e1)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_SPLIT, (:fr_start e1), (:fr_start e2)))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (st-push stack, (alloc-frag s0, (fr-append (:fr_out e1), (:fr_out e2))))
-                    (ß BREAK)
-                )
-
-                NFA_STAR
-                (do
-                    ;; Zero or more, prefer more.
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (fr-patch (:fr_out e0), s0)
-                    (st-push stack, (alloc-frag s0, (fr-single (:out1 s0))))
-                    (ß BREAK)
-                )
-
-                NFA_STAR_NONGREEDY
-                (do
-                    ;; Zero or more, prefer zero.
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_SPLIT, nil, (:fr_start e0)))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (fr-patch (:fr_out e0), s0)
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s0))))
-                    (ß BREAK)
-                )
-
-                NFA_QUEST
-                (do
-                    ;; one or zero atoms=> greedy match
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (st-push stack, (alloc-frag s0, (fr-append (:fr_out e0), (fr-single (:out1 s0)))))
-                    (ß BREAK)
-                )
-
-                NFA_QUEST_NONGREEDY
-                (do
-                    ;; zero or one atoms => non-greedy match
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_SPLIT, nil, (:fr_start e0)))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (st-push stack, (alloc-frag s0, (fr-append (:fr_out e0), (fr-single (:out0 s0)))))
-                    (ß BREAK)
-                )
-
-               [NFA_END_COLL NFA_END_NEG_COLL]
-                (do
-                    ;; On the stack is the sequence starting with NFA_START_COLL or
-                    ;; NFA_START_NEG_COLL and all possible characters.  Patch it to
-                    ;; add the output to the start.
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_END_COLL, nil, nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (fr-patch (:fr_out e0), s0)
-;                   e0.fr_start.out1(s0);
-                    (st-push stack, (alloc-frag (:fr_start e0), (fr-single (:out0 s0))))
-                    (ß BREAK)
-                )
-
-                NFA_RANGE
-                (do
-                    ;; Before this are two characters, the low and high end of a range.
-                    ;; Turn them into two states with MIN and MAX.
-                    (when nfa_calc_size
-                        ;; pat.nstate += 0;
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e2 =) (st-pop stack))
-                    (if (nil? e2)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß frag_C e1 =) (st-pop stack))
-                    (if (nil? e1)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß e2.fr_start.val =) (:c (:fr_start e2)))
-                    ((ß e2.fr_start.c =) NFA_RANGE_MAX)
-                    ((ß e1.fr_start.val =) (:c (:fr_start e1)))
-                    ((ß e1.fr_start.c =) NFA_RANGE_MIN)
-                    (fr-patch (:fr_out e1), (:fr_start e2))
-                    (st-push stack, (alloc-frag (:fr_start e1), (:fr_out e2)))
-                    (ß BREAK)
-                )
-
-                NFA_EMPTY
-                (do
-                    ;; 0-length, used in a repetition with max/min count of 0
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß nfa_state_C s0 =) (alloc-state pat, NFA_EMPTY, nil, nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s0))))
-                    (ß BREAK)
-                )
-
-                NFA_OPT_CHARS
-                (do
-                    ;; \%[abc] implemented as:
-                    ;;    NFA_SPLIT
-                    ;;    +-CHAR(a)
-                    ;;    | +-NFA_SPLIT
-                    ;;    |   +-CHAR(b)
-                    ;;    |   | +-NFA_SPLIT
-                    ;;    |   |   +-CHAR(c)
-                    ;;    |   |   | +-next
-                    ;;    |   |   +- next
-                    ;;    |   +- next
-                    ;;    +- next
-
-                    ((ß int n =) (... postfix ((ß i =) (inc i))))                           ;; get number of characters
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate + n))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e1 =) (alloc-frag nil, nil))     ;; e1.fr_out: stores list with out1's
-                    ((ß nfa_state_C s0 =) (loop-when [s0 nil #_nfa_state_C s1 nil n n] (< 0 n) => s0  ;; s1: previous NFA_SPLIT to connect to
-                        ((ß frag_C e0 =) (st-pop stack))          ;; get character
-                        (if (nil? e0)
-                            ((ß RETURN) (st-error postfix, i, over))
-                        )
-                        ((ß s0 =) (alloc-state pat, NFA_SPLIT, (:fr_start e0), nil))
-                        (if (nil? s0)
-                            ((ß RETURN) nil)
-                        )
-                        (if (nil? (:fr_out e1))
-                            (COPY-frag e1, e0))
-                        (fr-patch (:fr_out e0), s1)
-                        (fr-append (:fr_out e1), (fr-single (:out1 s0)))
-                        (recur s0 s0 (dec n))
-                    ))
-                    (st-push stack, (alloc-frag s0, (:fr_out e1)))
-                    (ß BREAK)
-                )
-
-               [NFA_PREV_ATOM_NO_WIDTH
-                NFA_PREV_ATOM_NO_WIDTH_NEG
-                NFA_PREV_ATOM_JUST_BEFORE
-                NFA_PREV_ATOM_JUST_BEFORE_NEG
-                NFA_PREV_ATOM_LIKE_PATTERN]
-                (do
-                    ((ß boolean before =) (any == (... postfix i) NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG))
-                    ((ß boolean pattern =) (== (... postfix i) NFA_PREV_ATOM_LIKE_PATTERN))
-
-                    ((ß int start_state, end_state =)
-                        (condp == (... postfix i)
-                            NFA_PREV_ATOM_NO_WIDTH        [NFA_START_INVISIBLE            NFA_END_INVISIBLE]
-                            NFA_PREV_ATOM_NO_WIDTH_NEG    [NFA_START_INVISIBLE_NEG        NFA_END_INVISIBLE_NEG]
-                            NFA_PREV_ATOM_JUST_BEFORE     [NFA_START_INVISIBLE_BEFORE     NFA_END_INVISIBLE]
-                            NFA_PREV_ATOM_JUST_BEFORE_NEG [NFA_START_INVISIBLE_BEFORE_NEG NFA_END_INVISIBLE_NEG]
-                            NFA_PREV_ATOM_LIKE_PATTERN    [NFA_START_PATTERN              NFA_END_PATTERN]
-                        ))
-
-                    ((ß int n =) (if before (... postfix ((ß i =) (inc i))) 0))    ;; get the count
-
-                    ;; The \@= operator: match the preceding atom with zero width.
-                    ;; The \@! operator: no match for the preceding atom.
-                    ;; The \@<= operator: match for the preceding atom.
-                    ;; The \@<! operator: no match for the preceding atom.
-                    ;; Surrounds the preceding atom with START_INVISIBLE and END_INVISIBLE, similarly to MOPEN.
-
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate + (if pattern 4 2)))
-                        (ß BREAK)
-                    )
-
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-
-                    ((ß nfa_state_C s1 =) (alloc-state pat, end_state, nil, nil))
-                    (if (nil? s1)
-                        ((ß RETURN) nil)
-                    )
-
-                    ((ß nfa_state_C s0 =) (alloc-state pat, start_state, (:fr_start e0), s1))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-
-                    (cond pattern
-                    (do
-                        ;; NFA_ZEND -> NFA_END_PATTERN -> NFA_SKIP -> what follows.
-                        ((ß nfa_state_C skip =) (alloc-state pat, NFA_SKIP, nil, nil))
-                        ((ß nfa_state_C zend =) (alloc-state pat, NFA_ZEND, s1, nil))
-                        (.out0 s1 skip)
-                        (fr-patch (:fr_out e0), zend)
-                        (st-push stack, (alloc-frag s0, (fr-single (:out0 skip))))
-                    )
-                    :else
-                    (do
-                        (fr-patch (:fr_out e0), s1)
-                        (st-push stack, (alloc-frag s0, (fr-single (:out0 s1))))
-                        (when before
-                            ;; See if we can guess the maximum width, it avoids a lot of pointless tries.
-                            ((ß n =) (if (<= n 0) (nfa-max-width (:fr_start e0), 0) n))
-                            ((ß s0.val =) n) ;; store the count
-                        )
-                    ))
-                    (ß BREAK)
-                )
-
-                NFA_COMPOSING     ;; char with composing char
-                (do
-                    (when (flag? @regflags RF_ICOMBINE)
-                        ;; TODO: use the base character only
-                    )
-                    (ß FALLTHROUGH)
-                )
-
-               [NFA_MOPEN ;; \( \) Submatch
-                NFA_MOPEN1
-                NFA_MOPEN2
-                NFA_MOPEN3
-                NFA_MOPEN4
-                NFA_MOPEN5
-                NFA_MOPEN6
-                NFA_MOPEN7
-                NFA_MOPEN8
-                NFA_MOPEN9
-                NFA_NOPEN] ;; \%( \) "Invisible Submatch"
-                (do
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate + 2))
-                        (ß BREAK)
-                    )
-
-                    ((ß int mopen =) (... postfix i))
-                    ((ß int mclose =) (condp == mopen
-                        NFA_NOPEN     NFA_NCLOSE
-                        NFA_COMPOSING NFA_END_COMPOSING
-                        (+ mopen NSUBEXP) ;; NFA_MOPEN, NFA_MOPEN1 .. NFA_MOPEN9
-                    ))
-
-                    ;; Allow "NFA_MOPEN" as a valid postfix representation for the empty regexp "".
-                    ;; In this case, the NFA will be NFA_MOPEN -> NFA_MCLOSE.  Note that this also
-                    ;; allows empty groups of parenthesis, and empty mbyte chars.
-                    (when (zero? (:st_next stack))
-                        ((ß nfa_state_C s0 =) (alloc-state pat, mopen, nil, nil))
-                        (if (nil? s0)
-                            ((ß RETURN) nil)
-                        )
-                        ((ß nfa_state_C s1 =) (alloc-state pat, mclose, nil, nil))
-                        (if (nil? s1)
-                            ((ß RETURN) nil)
-                        )
-                        (fr-patch (fr-single (:out0 s0)), s1)
-                        (st-push stack, (alloc-frag s0, (fr-single (:out0 s1))))
-                        (ß BREAK)
-                    )
-
-                    ;; At least one node was emitted before NFA_MOPEN, so
-                    ;; at least one node will be between NFA_MOPEN and NFA_MCLOSE.
-                    ((ß frag_C e0 =) (st-pop stack))
-                    (if (nil? e0)
-                        ((ß RETURN) (st-error postfix, i, over))
-                    )
-                    ((ß nfa_state_C s0 =) (alloc-state pat, mopen, (:fr_start e0), nil))   ;; `('
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-
-                    ((ß nfa_state_C s1 =) (alloc-state pat, mclose, nil, nil))         ;; `)'
-                    (if (nil? s1)
-                        ((ß RETURN) nil)
-                    )
-                    (fr-patch (:fr_out e0), s1)
-
-                    (when (== mopen NFA_COMPOSING)
-                        ;; COMPOSING.out1 = END_COMPOSING
-                        (fr-patch (fr-single (:out1 s0)), s1)
-                    )
-
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s1))))
-                    (ß BREAK)
-                )
-
-               [NFA_BACKREF1
-                NFA_BACKREF2
-                NFA_BACKREF3
-                NFA_BACKREF4
-                NFA_BACKREF5
-                NFA_BACKREF6
-                NFA_BACKREF7
-                NFA_BACKREF8
-                NFA_BACKREF9]
-                (do
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate + 2))
-                        (ß BREAK)
-                    )
-
-                    ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix i), nil, nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    ((ß nfa_state_C s1 =) (alloc-state pat, NFA_SKIP, nil, nil))
-                    (if (nil? s1)
-                        ((ß RETURN) nil)
-                    )
-                    (fr-patch (fr-single (:out0 s0)), s1)
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s1))))
-                    (ß BREAK)
-                )
-
-               [NFA_LNUM NFA_LNUM_GT NFA_LNUM_LT
-                NFA_VCOL NFA_VCOL_GT NFA_VCOL_LT
-                NFA_COL  NFA_COL_GT  NFA_COL_LT
-                NFA_MARK NFA_MARK_GT NFA_MARK_LT]
-                (do
-                    ((ß int n =) (... postfix ((ß i =) (inc i)))) ;; lnum, col or mark name
-
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix (dec i)), nil, nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    ((ß s0.val =) n)
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s0))))
-                    (ß BREAK)
-                )
-
-               [NFA_ZSTART NFA_ZEND]
-                (ß DEFAULT)
-                (do
-                    ;; Operands.
-                    (when nfa_calc_size
-                        ((ß pat =) (update pat :nstate inc))
-                        (ß BREAK)
-                    )
-
-                    ((ß nfa_state_C s0 =) (alloc-state pat, (... postfix i), nil, nil))
-                    (if (nil? s0)
-                        ((ß RETURN) nil)
-                    )
-                    (st-push stack, (alloc-frag s0, (fr-single (:out0 s0))))
-                    (ß BREAK)
-                )
+            ((ß frag_C e0, stack =) (fr-pop stack))
+            (when (< 0 (:st_next stack))
+                (emsg (u8 "E875: (NFA regexp) (While converting from postfix to NFA), too many states left on stack"))
+                (reset! rc_did_emsg true)
+                ((ß RETURN) nil)
             )
-        ))
 
-        (when nfa_calc_size
-            ((ß pat =) (update pat :nstate inc))
-            ((ß RETURN) nil)  ;; Return value when counting size is ignored anyway.
+            ((ß nfa_state_C state =) (NEW_nfa_state_C))
+            ((ß state =) (assoc state :c NFA_MATCH))
+            ((ß _ =) (.out0 state nil))
+            ((ß _ =) (.out1 state nil))
+            ((ß state =) (assoc state :id 0))
+            ((ß pat =) (update pat :states conj state))
+    ;       %% poor "pat" !!
+
+            (fr-patch (:fr_out e0), state)
+            (:fr_start e0)
         )
-
-        ((ß frag_C e0 =) (st-pop stack))
-        (if (nil? e0)
-            ((ß RETURN) (st-error postfix, i, over))
-        )
-        (when (< 0 (:st_next stack))
-            (emsg (u8 "E875: (NFA regexp) (While converting from postfix to NFA), too many states left on stack"))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
-
-        (when (<= (:nstate pat) (:istate pat))
-            (emsg (u8 "E876: (NFA regexp) Not enough space to store the whole NFA"))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
-
-        ((ß nfa_state_C state =) (NEW_nfa_state_C))
-        ((ß state =) (assoc state :c NFA_MATCH))
-        (.out0 state nil)
-        (.out1 state nil)
-        ((ß state =) (assoc state :id 0))
-        ((ß pat.states[pat.istate++] =) state)
-
-        (fr-patch (:fr_out e0), state)
-        (:fr_start e0)
     ))
 
 ;; After building the NFA program, inspect it to add optimization hints.
 
 (defn- #_nfa_pattern_C nfa-postprocess [#_nfa_pattern_C pat]
-    (loop-when [pat pat #_int i 0] (< i (:nstate pat)) => pat
-        (let [#_nfa_state_C state (... (:states pat) i)
-              pat (when' (some? state) => pat
-                    (let [#_int c (:c state)]
-                        (when' (any == c NFA_START_INVISIBLE, NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG) => pat
-                            ;; Do it directly when what follows is possibly the end of the match.
-                            (let [#_boolean directly
-                                    (or (match-follows (.. state (out1) (out0)), 0)
-                                        (let [#_int ch_invisible (failure-chance (.out0 state), 0) #_int ch_follows (failure-chance (.. state (out1) (out0)), 0)]
-                                            ;; Postpone when the invisible match is expensive or has a lower chance of failing.
-                                            (if (any == c NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG)
-                                                ;; "before" matches are very expensive when unbounded,
-                                                ;; always prefer what follows then, unless what follows will always match.
-                                                ;; Otherwise strongly prefer what follows.
-                                                (and (or (< 0 (:val state)) (<= ch_follows 0)) (< (* ch_follows 10) ch_invisible))
-                                                ;; Normal invisible, first do the one with the highest failure chance.
-                                                (< ch_follows ch_invisible)
-                                            ))
-                                    )]
-                                (when' directly => pat ;; switch to the _FIRST state
-                                    (update-in pat [:states i :c] inc)
-                                ))
-                        ))
-                )]
-            (recur pat (inc i)))
+    (let [#_int n (count (:states pat))]
+        (loop-when [pat pat #_int i 0] (< i n) => pat
+            (let [#_nfa_state_C state (... (:states pat) i)
+                  pat (when' (some? state) => pat
+                        (let [#_int c (:c state)]
+                            (when' (any == c NFA_START_INVISIBLE, NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG) => pat
+                                ;; Do it directly when what follows is possibly the end of the match.
+                                (let [#_boolean directly
+                                        (or (match-follows (.. state (out1) (out0)), 0)
+                                            (let [#_int ch_invisible (failure-chance (.out0 state), 0) #_int ch_follows (failure-chance (.. state (out1) (out0)), 0)]
+                                                ;; Postpone when the invisible match is expensive or has a lower chance of failing.
+                                                (if (any == c NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG)
+                                                    ;; "before" matches are very expensive when unbounded,
+                                                    ;; always prefer what follows then, unless what follows will always match.
+                                                    ;; Otherwise strongly prefer what follows.
+                                                    (and (or (< 0 (:val state)) (<= ch_follows 0)) (< (* ch_follows 10) ch_invisible))
+                                                    ;; Normal invisible, first do the one with the highest failure chance.
+                                                    (< ch_follows ch_invisible)
+                                                ))
+                                        )]
+                                    (when' directly => pat ;; switch to the _FIRST state
+                                        (update-in pat [:states i :c] inc)
+                                    ))
+                            ))
+                    )]
+                (recur pat (inc i))
+            ))
     ))
 
 ;; NFA execution code.
@@ -21905,24 +21629,26 @@
 ;; Only used for the recursive value lastlist[1].
 
 (defn- #_nfa_pattern_C nfa-save-listids [#_nfa_pattern_C pat, #_int* list]
-    (loop-when [pat pat i 0] (< i (:nstate pat)) => pat
-        (let [#_nfa_state_C state (... (:states pat) i)
-              pat (if (some? state)
-                    (do (aset list i (... (:lastlist state) 1)) (assoc-in pat [:states i :lastlist 1] 0))
-                    (do (aset list i 0) pat)
-                )]
-            (recur pat (inc i))
-        )
+    (let [#_int n (count (:states pat))]
+        (loop-when [pat pat i 0] (< i n) => pat
+            (let [#_nfa_state_C state (... (:states pat) i)
+                  pat (if (some? state)
+                        (do (aset list i (... (:lastlist state) 1)) (assoc-in pat [:states i :lastlist 1] 0))
+                        (do (aset list i 0) pat)
+                    )]
+                (recur pat (inc i))
+            ))
     ))
 
 ;; Restore list IDs from "list" to all NFA states.
 
 (defn- #_nfa_pattern_C nfa-restore-listids [#_nfa_pattern_C pat, #_int* list]
-    (loop-when [pat pat i 0] (< i (:nstate pat)) => pat
-        (let [#_nfa_state_C state (... (:states pat) i)
-              pat (if (some? state) (assoc-in pat [:states i :lastlist 1] (aget list i)) pat)]
-            (recur pat (inc i))
-        )
+    (let [#_int n (count (:states pat))]
+        (loop-when [pat pat i 0] (< i n) => pat
+            (let [#_nfa_state_C state (... (:states pat) i)
+                  pat (if (some? state) (assoc-in pat [:states i :lastlist 1] (aget list i)) pat)]
+                (recur pat (inc i))
+            ))
     ))
 
 (defn- #_boolean nfa-re-num-cmp [#_long val, #_int op, #_long pos]
@@ -21970,7 +21696,7 @@
                 (if (== @nfa_ll_index 1)
                     ;; Already calling nfa-regmatch() recursively.
                     ;; Save the lastlist[1] values and clear them.
-                    (let [o'listids (int-array (:nstate pat))]
+                    (let [o'listids (int-array (count (:states pat)))]
                         ;; any value of "nfa_listid" will do
                         [(nfa-save-listids pat, o'listids) o'listids])
                     ;; First recursive nfa-regmatch() call, switch to the second lastlist entry.
@@ -22756,35 +22482,26 @@
         (reset! nfa_re_flags re_flags)
         (nfa-regcomp-start expr, re_flags)
         (let [[win #_nfa_pattern_C pat]
-                ;; Build postfix form of the regexp.  Needed to build the NFA (and count its size).
-                (let [[win #_int* postfix] (re2post? win)]
-                    (when' (some? postfix) => [win nil] ;; cascaded (syntax?) error
-                        ;; In order to build the NFA, we parse the input regexp twice:
-                        ;; 1. first pass to count size (so we can allocate space),
-                        ;; 2. second to emit code.
-                        (let-when [pat (-> (NEW_nfa_pattern_C) (assoc :nstate 0))
-                              ;; PASS 1.  Count number of NFA states in "pat.nstate".  Do not build the NFA.
-                              _ (post2nfa postfix, pat, true)
-                              ;; allocate space for the compiled regexp
-                              pat (assoc pat :states (ß new nfa_state_C[(:nstate pat)]))
-                              pat (assoc pat :istate 0)
-                              ;; PASS 2.  Build the NFA.
-                              #_nfa_state_C start (post2nfa postfix, pat, false)
-                        ] (some? start) => [win nil]
+                ;; Build postfix form of the regexp.  Needed to build the NFA.
+                (let-when [[win #_int* postfix] (re2post? win)] (some? postfix) => [win nil] ;; cascaded (syntax?) error
+                    (let-when [pat (-> (NEW_nfa_pattern_C) (assoc :states []))
+                          ;; Build the NFA.
+                          #_nfa_state_C start (post2nfa postfix, pat)
+                    ] (some? start) => [win nil]
 
-                            [win (-> pat
-                                (assoc :start       start)
-                                (assoc :regflags    @regflags)
-                                (assoc :regexec     nfa-regexec?)
-                                (assoc :has_zend    @nfa_has_zend)
-                                (assoc :has_backref @nfa_has_backref)
-                                (nfa-postprocess)
-                                (assoc :reganch     (nfa-get-reganch start, 0))
-                                (assoc :regstart    (nfa-get-regstart start, 0))
-                                (assoc :match_text  (nfa-get-match-text start))
-                                (assoc :rex         (STRDUP expr))
-                            )]
-                        ))
+                        [win (-> pat
+                            (assoc :start       start)
+                            (assoc :regflags    @regflags)
+                            (assoc :regexec     nfa-regexec?)
+                            (assoc :has_zend    @nfa_has_zend)
+                            (assoc :has_backref @nfa_has_backref)
+                            (nfa-postprocess)
+                            (assoc :reganch     (nfa-get-reganch start, 0))
+                            (assoc :regstart    (nfa-get-regstart start, 0))
+                            (assoc :match_text  (nfa-get-match-text start))
+                            (assoc :rex         (STRDUP expr))
+                        )]
+                    )
                 )]
             (reset! post_array nil)
             [win #_pattern_C pat]
@@ -22841,7 +22558,8 @@
 
                 ;; If the start column is past the maximum column: no need to try.
                 (when' (not (<= 1 @ireg_maxcol @a'col)) => [win matcher 0]
-                    (let [pat (loop-when [pat pat #_int i 0] (< i (:nstate pat)) => pat
+                    (let [#_int n (count (:states pat))
+                          pat (loop-when [pat pat #_int i 0] (< i n) => pat
                                 (let [#_nfa_state_C state (... (:states pat) i)
                                       pat (when' (some? state) => pat
                                             (let [state (assoc state :id i) _ ((ß state.lastlist[0] =) 0) _ ((ß state.lastlist[1] =) 0)]
@@ -24607,7 +24325,7 @@
 ;; Open a new memline.
 
 (defn- #_memline_C ml-open []
-    (let [#_memline_C ml (-> (NEW_memline_C) (assoc :ml_flags ML_EMPTY :ml_line_count 1))]
+    (let [#_memline_C ml (-> (NEW_memline_C) (assoc :ml_empty true :ml_line_count 1))]
         ;; Create an empty line 1.
 ;       %% insert @0 (u8 "")
         ml
@@ -24655,7 +24373,7 @@
         (do
 ;           %% insert @lnum STRDUP(line)
             (swap! curbuf update-in [:b_ml :ml_line_count] inc)
-            (swap! curbuf update-in [:b_ml :ml_flags] & (bit-not ML_EMPTY))
+            (swap! curbuf assoc-in [:b_ml :ml_empty] false)
             true
         )
     ))
@@ -24672,7 +24390,7 @@
         false
         (do
 ;           %% replace @(lnum - 1) STRDUP(line)
-            (swap! curbuf update-in [:b_ml :ml_flags] & (bit-not ML_EMPTY))
+            (swap! curbuf assoc-in [:b_ml :ml_empty] false)
             true
         )
     ))
@@ -24693,7 +24411,7 @@
                 (if message
                     (set-keep-msg no_lines_msg, 0))
 ;               %% replace @0 (u8 "")
-                (swap! curbuf update-in [:b_ml :ml_flags] | ML_EMPTY)
+                (swap! curbuf assoc-in [:b_ml :ml_empty] true)
                 true
             )
         :else
@@ -24707,12 +24425,7 @@
 
 ;; buffer.c: functions for dealing with the buffer structure --------------------------------------
 
-;; The buffer list is a double linked list of all buffers.
-;; Each buffer can be in one of these states:
-;;       hidden: b_nwindows == 0, loaded but not displayed in a window
-;;       normal: loaded and displayed in a window
-
-;; Close the link to a buffer.
+;; Close the link to the buffer.
 
 (defn- #_void close-buffer [#_window_C win]
     ;; decrease the link count from windows (unless not in any window)
@@ -24739,7 +24452,7 @@
         (let [#_int len (STRLEN buf)
               _ (ß .sprintf libC (.plus buf len), (u8 "\"%s"), (if changed (u8 " [Modified] ") (u8 " ")))
               #_long n (/ (* lnum 100) lmax)
-              win (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+              win (cond (:ml_empty (:b_ml @curbuf))
                     (let [len (STRLEN buf)]
                         (ß .sprintf libC (.plus buf len), (u8 "%s"), no_lines_msg)
                         win)
@@ -29224,7 +28937,7 @@
 (defn- #_window_C del-lines [#_window_C win, #_long nof, #_boolean undo]
     (let [cln (:lnum (:w_cursor win))]
         (if (and (pos? nof) (or (not undo) (u-savedel win, cln, nof))) ;; save the deleted lines for undo
-            (let [n (loop-when [n 0] (and (< n nof) (non-flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)) => n
+            (let [n (loop-when [n 0] (and (< n nof) (not (:ml_empty (:b_ml @curbuf)))) => n
                         (ml-delete cln, true)
                         ;; If we delete the last line in the file, stop.
                         (recur-if (<= cln (line-count @curbuf)) [(inc n)] => (inc n)))
@@ -30643,7 +30356,7 @@
             ((ß uhp =) (assoc uhp :uh_cursor_vcol (if (and (virtual-active) (< 0 (:coladd (:w_cursor win)))) (getviscol win) -1)))
 
             ;; save changed and buffer empty flag for undo
-            ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) UH_EMPTYBUF 0))))
+            ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))))
 
             ;; save named marks and Visual marks for undo
             (dotimes [#_int i NMARKS]
@@ -30799,7 +30512,7 @@
 (defn- #_window_C u-doit [#_window_C win, #_int count]
     (let-when [[win ?] (undo-allowed? win)] ? => win
         (reset! u_newcount 0)
-        (reset! u_oldcount (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) -1 0))
+        (reset! u_oldcount (if (:ml_empty (:b_ml @curbuf)) -1 0))
         (let [[win e]
                 (loop-when [win win n count] (< 0 n) => [win nil]
                     (cond @undo_undoes
@@ -30847,7 +30560,7 @@
 
         (reset! u_newcount 0)
         (reset! u_oldcount 0)
-        (when (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+        (when (:ml_empty (:b_ml @curbuf))
             (reset! u_oldcount -1))
 
         ((ß u_header_C uhp =) nil) ;; %% anno dunno
@@ -31086,7 +30799,7 @@
         ((ß u_header_C curhead =) (:b_u_curhead @curbuf))
 
         ((ß int old_flags =) (:uh_flags curhead))
-        ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) UH_EMPTYBUF 0)))
+        ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0)))
         ((ß win =) (setpcmark win))
 
         ;; save marks before undo/redo
@@ -31212,7 +30925,7 @@
         ((ß curhead =) (assoc curhead :uh_entry newlist))
         ((ß curhead =) (assoc curhead :uh_flags new_flags))
         (when (and (flag? old_flags UH_EMPTYBUF) (bufempty))
-            (swap! curbuf assoc-in [:b_ml :ml_flags] (| (:ml_flags (:b_ml @curbuf)) ML_EMPTY)))
+            (swap! curbuf assoc-in [:b_ml :ml_empty] true))
         (if (flag? old_flags UH_CHANGED)
             (swap! curbuf changed)
             (swap! curbuf unchanged))
@@ -31287,7 +31000,7 @@
     ;; did_undo: just did an undo
     ;; absolute: used ":undo N"
     (when' (messaging) => win
-        (when (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+        (when (:ml_empty (:b_ml @curbuf))
             (swap! u_newcount dec))
         (swap! u_oldcount - @u_newcount)
         (let [#_Bytes msgstr
@@ -35680,7 +35393,7 @@
                         [(+ (:w_winrow win) (:w_height win)) (fillchar-status a'attr, (:w_focused win)) (:w_wincol win) (:w_width win)]
                         [(dec @Rows) (do (reset! a'attr 0) (byte \space)) 0 @Cols])
                   #_final #_int RULER_BUF_LEN 70 #_Bytes s (Bytes. RULER_BUF_LEN)
-                  _ (ß .sprintf libC s, (u8 "%ld,"), (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0 (:lnum (:w_cursor win))))
+                  _ (ß .sprintf libC s, (u8 "%ld,"), (if (:ml_empty (:b_ml @curbuf)) 0 (:lnum (:w_cursor win))))
                   #_int n (STRLEN s)
                   _ (col-print (.plus s n), (if empty 0 (inc (:col (:w_cursor win)))), (inc (:w_virtcol win)))
                   ;; Add a "50%" if there is room for it.
