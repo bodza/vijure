@@ -4,10 +4,10 @@
     (:import [java.util Arrays Comparator])
     (:gen-class))
 
-(org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes, vijure.VimB$timeval_C 'timeval_C})
+(org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes})
 
 (import-static vijure.VimA char_u u8)
-(import-static vijure.VimB SIGHUP SIGQUIT SIGILL SIGTRAP SIGABRT SIGFPE SIGBUS SIGSEGV SIGSYS SIGALRM SIGTERM SIGVTALRM SIGPROF SIGXCPU SIGXFSZ SIGUSR1 SIGUSR2 SIGINT SIGWINCH SIGTSTP SIGPIPE)
+; %% (import-static vijure.VimB SIGHUP SIGQUIT SIGILL SIGTRAP SIGABRT SIGFPE SIGBUS SIGSEGV SIGSYS SIGALRM SIGTERM SIGVTALRM SIGPROF SIGXCPU SIGXFSZ SIGUSR1 SIGUSR2 SIGINT SIGWINCH SIGTSTP SIGPIPE)
 
 (defmacro § [& _])
 
@@ -41,7 +41,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave termcode typebuf vimoption wline yankreg)))
 
@@ -194,11 +194,6 @@
     (§
 ;       return (c < 0);
     ))
-
-;; Characters 0x0100 - 0x01ff have a special meaning for abbreviations.
-;; Multi-byte characters also have ABBR_OFF added, thus are above 0x0200.
-
-(final int ABBR_OFF           0x100)
 
 ;; NUL cannot be in the input string, therefore it is replaced by
 ;;      KB_SPECIAL  KS_ZERO     KE_FILLER
@@ -692,7 +687,6 @@
     HITRETURN       (+ 0x200 NORMAL), ;; waiting for return or command
     ASKMORE         0x300,            ;; asking if you want --more--
     SETWSIZE        0x400,            ;; window size has changed
-    ABBREV          0x500,            ;; abbreviation instead of mapping
     SHOWMATCH       (+ 0x700 INSERT), ;; show matching paren
     CONFIRM         0x800,            ;; ":confirm" prompt
     SELECTMODE      0x1000)           ;; select mode, only for mappings
@@ -1384,7 +1378,7 @@
 
 ;       public abstract regprog_C regcomp(Bytes expr, int re_flags);
 ;       public abstract long regexec_nl(regmatch_C rmp, Bytes line, int col, boolean line_lbr);
-;       public abstract long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, timeval_C tm);
+;       public abstract long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, long nsec);
     ))
 
 ;; ----------------------------------------------------------------------- ;;
@@ -1690,10 +1684,8 @@
         (field int*         b_chartab)
 
         ;; Table used for mappings local to a buffer.
-        (field mapblock_C** b_maphash)
 
-        ;; First abbreviation local to a buffer.
-        (atom' mapblock_C   b_first_abbr)
+        (field mapblock_C** b_maphash)
 
         ;; start and end of an operator, also used for '[ and ']
 
@@ -1826,7 +1818,7 @@
         (field long         first_lnum)                 ;; first lnum to search for multi-line pat
         (field int          startcol)                   ;; in win_line() points to char where HL starts
         (field int          endcol)                     ;; in win_line() points to char where HL ends
-        (field timeval_C    tm      (timeval_C.))       ;; for a time limit
+        (field long         nsec)                       ;; for a time limit
     ])
 
 ;; number of positions supported by matchaddpos()
@@ -2095,127 +2087,115 @@
     ADDR_WINDOWS        1)
 
 (final int
-    CMD_abbreviate 0,
-    CMD_abclear 1,
-    CMD_aboveleft 2,
-    CMD_ascii 3,
-    CMD_belowright 4,
-    CMD_botright 5,
-    CMD_cabbrev 6,
-    CMD_cabclear 7,
-    CMD_changes 8,
-    CMD_close 9,
-    CMD_cmap 10,
-    CMD_cmapclear 11,
-    CMD_cnoremap 12,
-    CMD_cnoreabbrev 13,
-    CMD_copy 14,
-    CMD_cunmap 15,
-    CMD_cunabbrev 16,
-    CMD_delete 17,
-    CMD_delmarks 18,
-    CMD_digraphs 19,
-    CMD_earlier 20,
-    CMD_fixdel 21,
-    CMD_global 22,
-    CMD_history 23,
-    CMD_iabbrev 24,
-    CMD_iabclear 25,
-    CMD_imap 26,
-    CMD_imapclear 27,
-    CMD_inoremap 28,
-    CMD_inoreabbrev 29,
-    CMD_iunmap 30,
-    CMD_iunabbrev 31,
-    CMD_join 32,
-    CMD_jumps 33,
-    CMD_k 34,
-    CMD_keepmarks 35,
-    CMD_keepjumps 36,
-    CMD_keeppatterns 37,
-    CMD_list 38,
-    CMD_later 39,
-    CMD_leftabove 40,
-    CMD_lockmarks 41,
-    CMD_move 42,
-    CMD_mark 43,
-    CMD_map 44,
-    CMD_mapclear 45,
-    CMD_marks 46,
-    CMD_nmap 47,
-    CMD_nmapclear 48,
-    CMD_nnoremap 49,
-    CMD_noremap 50,
-    CMD_nohlsearch 51,
-    CMD_noreabbrev 52,
-    CMD_normal 53,
-    CMD_number 54,
-    CMD_nunmap 55,
-    CMD_omap 56,
-    CMD_omapclear 57,
-    CMD_only 58,
-    CMD_onoremap 59,
-    CMD_ounmap 60,
-    CMD_print 61,
-    CMD_put 62,
-    CMD_redo 63,
-    CMD_redraw 64,
-    CMD_redrawstatus 65,
-    CMD_registers 66,
-    CMD_resize 67,
-    CMD_retab 68,
-    CMD_rightbelow 69,
-    CMD_substitute 70,
-    CMD_set 71,
-    CMD_silent 72,
-    CMD_smagic 73,
-    CMD_smap 74,
-    CMD_smapclear 75,
-    CMD_snomagic 76,
-    CMD_snoremap 77,
-    CMD_split 78,
-    CMD_stop 79,
-    CMD_startinsert 80,
-    CMD_startgreplace 81,
-    CMD_startreplace 82,
-    CMD_stopinsert 83,
-    CMD_sunmap 84,
-    CMD_suspend 85,
-    CMD_syncbind 86,
-    CMD_t 87,
-    CMD_topleft 88,
-    CMD_undo 89,
-    CMD_undojoin 90,
-    CMD_undolist 91,
-    CMD_unabbreviate 92,
-    CMD_unmap 93,
-    CMD_unsilent 94,
-    CMD_vglobal 95,
-    CMD_verbose 96,
-    CMD_vertical 97,
-    CMD_vmap 98,
-    CMD_vmapclear 99,
-    CMD_vnoremap 100,
-    CMD_vsplit 101,
-    CMD_vunmap 102,
-    CMD_wincmd 103,
-    CMD_xmap 104,
-    CMD_xmapclear 105,
-    CMD_xnoremap 106,
-    CMD_xunmap 107,
-    CMD_yank 108,
-    CMD_z 109,
+    CMD_aboveleft 0,
+    CMD_ascii 1,
+    CMD_belowright 2,
+    CMD_botright 3,
+    CMD_changes 4,
+    CMD_close 5,
+    CMD_cmap 6,
+    CMD_cmapclear 7,
+    CMD_cnoremap 8,
+    CMD_copy 9,
+    CMD_cunmap 10,
+    CMD_delete 11,
+    CMD_delmarks 12,
+    CMD_digraphs 13,
+    CMD_earlier 14,
+    CMD_fixdel 15,
+    CMD_global 16,
+    CMD_history 17,
+    CMD_imap 18,
+    CMD_imapclear 19,
+    CMD_inoremap 20,
+    CMD_iunmap 21,
+    CMD_join 22,
+    CMD_jumps 23,
+    CMD_k 24,
+    CMD_keepmarks 25,
+    CMD_keepjumps 26,
+    CMD_keeppatterns 27,
+    CMD_list 28,
+    CMD_later 29,
+    CMD_leftabove 30,
+    CMD_lockmarks 31,
+    CMD_move 32,
+    CMD_mark 33,
+    CMD_map 34,
+    CMD_mapclear 35,
+    CMD_marks 36,
+    CMD_nmap 37,
+    CMD_nmapclear 38,
+    CMD_nnoremap 39,
+    CMD_noremap 40,
+    CMD_nohlsearch 41,
+    CMD_normal 42,
+    CMD_number 43,
+    CMD_nunmap 44,
+    CMD_omap 45,
+    CMD_omapclear 46,
+    CMD_only 47,
+    CMD_onoremap 48,
+    CMD_ounmap 49,
+    CMD_print 50,
+    CMD_put 51,
+    CMD_redo 52,
+    CMD_redraw 53,
+    CMD_redrawstatus 54,
+    CMD_registers 55,
+    CMD_resize 56,
+    CMD_retab 57,
+    CMD_rightbelow 58,
+    CMD_substitute 59,
+    CMD_set 60,
+    CMD_silent 61,
+    CMD_smagic 62,
+    CMD_smap 63,
+    CMD_smapclear 64,
+    CMD_snomagic 65,
+    CMD_snoremap 66,
+    CMD_split 67,
+    CMD_stop 68,
+    CMD_startinsert 69,
+    CMD_startgreplace 70,
+    CMD_startreplace 71,
+    CMD_stopinsert 72,
+    CMD_sunmap 73,
+    CMD_suspend 74,
+    CMD_syncbind 75,
+    CMD_t 76,
+    CMD_topleft 77,
+    CMD_undo 78,
+    CMD_undojoin 79,
+    CMD_undolist 80,
+    CMD_unmap 81,
+    CMD_unsilent 82,
+    CMD_vglobal 83,
+    CMD_verbose 84,
+    CMD_vertical 85,
+    CMD_vmap 86,
+    CMD_vmapclear 87,
+    CMD_vnoremap 88,
+    CMD_vsplit 89,
+    CMD_vunmap 90,
+    CMD_wincmd 91,
+    CMD_xmap 92,
+    CMD_xmapclear 93,
+    CMD_xnoremap 94,
+    CMD_xunmap 95,
+    CMD_yank 96,
+    CMD_z 97,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 110,
-    CMD_and 111,
-    CMD_lshift 112,
-    CMD_equal 113,
-    CMD_rshift 114,
-    CMD_tilde 115,
+    CMD_pound 98,
+    CMD_and 99,
+    CMD_lshift 100,
+    CMD_equal 101,
+    CMD_rshift 102,
+    CMD_tilde 103,
 
-    CMD_SIZE 116)     ;; MUST be after all real commands!
+    CMD_SIZE 104)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2553,8 +2533,6 @@
                                     ;; Used by vgetorpeek() to decide when to call u_sync()
 (atom! boolean  ins_at_eol)         ;; put cursor after eol when restarting edit after CTRL-O
 
-(atom! boolean  no_abbr     true)   ;; true when no abbreviations loaded
-
 (atom! int      mapped_ctrl_c)              ;; modes where CTRL-C is mapped
 (atom! boolean  ctrl_c_interrupts true)     ;; CTRL-C sets got_int
 
@@ -2695,7 +2673,6 @@
     e_invcmd          (u8 "E476: Invalid command"),
     e_markinval       (u8 "E19: Mark has invalid line number"),
     e_marknotset      (u8 "E20: Mark not set"),
-    e_noabbr          (u8 "E24: No such abbreviation"),
     e_nobang          (u8 "E477: No ! allowed"),
     e_noinstext       (u8 "E29: No inserted text yet"),
     e_nolastcmd       (u8 "E30: No previous command line"),
@@ -2850,8 +2827,6 @@
 
 ;       @msg_scroll = true;
 ;       @no_wait_return = TRUE;
-
-;       init_mappings();                        ;; set up initial mappings
 
         ;; Start putting things on the screen.
         ;; Scroll screen down before drawing over it.
@@ -3098,27 +3073,27 @@
 
 (final signalinfo_C* signal_info
     [
-        (->signalinfo_C SIGHUP,    (u8 "HUP"),      true ),
-        (->signalinfo_C SIGQUIT,   (u8 "QUIT"),     true ),
-        (->signalinfo_C SIGILL,    (u8 "ILL"),      true ),
-        (->signalinfo_C SIGTRAP,   (u8 "TRAP"),     true ),
-        (->signalinfo_C SIGABRT,   (u8 "ABRT"),     true ),
-        (->signalinfo_C SIGFPE,    (u8 "FPE"),      true ),
-        (->signalinfo_C SIGBUS,    (u8 "BUS"),      true ),
-        (->signalinfo_C SIGSEGV,   (u8 "SEGV"),     true ),
-        (->signalinfo_C SIGSYS,    (u8 "SYS"),      true ),
-        (->signalinfo_C SIGALRM,   (u8 "ALRM"),     false),
-        (->signalinfo_C SIGTERM,   (u8 "TERM"),     true ),
-        (->signalinfo_C SIGVTALRM, (u8 "VTALRM"),   true ),
-        (->signalinfo_C SIGPROF,   (u8 "PROF"),     true ),
-        (->signalinfo_C SIGXCPU,   (u8 "XCPU"),     true ),
-        (->signalinfo_C SIGXFSZ,   (u8 "XFSZ"),     true ),
-        (->signalinfo_C SIGUSR1,   (u8 "USR1"),     true ),
-        (->signalinfo_C SIGUSR2,   (u8 "USR2"),     true ),
-        (->signalinfo_C SIGINT,    (u8 "INT"),      false),
-        (->signalinfo_C SIGWINCH,  (u8 "WINCH"),    false),
-        (->signalinfo_C SIGTSTP,   (u8 "TSTP"),     false),
-        (->signalinfo_C SIGPIPE,   (u8 "PIPE"),     false),
+; %%    (->signalinfo_C SIGHUP,    (u8 "HUP"),      true ),
+; %%    (->signalinfo_C SIGQUIT,   (u8 "QUIT"),     true ),
+; %%    (->signalinfo_C SIGILL,    (u8 "ILL"),      true ),
+; %%    (->signalinfo_C SIGTRAP,   (u8 "TRAP"),     true ),
+; %%    (->signalinfo_C SIGABRT,   (u8 "ABRT"),     true ),
+; %%    (->signalinfo_C SIGFPE,    (u8 "FPE"),      true ),
+; %%    (->signalinfo_C SIGBUS,    (u8 "BUS"),      true ),
+; %%    (->signalinfo_C SIGSEGV,   (u8 "SEGV"),     true ),
+; %%    (->signalinfo_C SIGSYS,    (u8 "SYS"),      true ),
+; %%    (->signalinfo_C SIGALRM,   (u8 "ALRM"),     false),
+; %%    (->signalinfo_C SIGTERM,   (u8 "TERM"),     true ),
+; %%    (->signalinfo_C SIGVTALRM, (u8 "VTALRM"),   true ),
+; %%    (->signalinfo_C SIGPROF,   (u8 "PROF"),     true ),
+; %%    (->signalinfo_C SIGXCPU,   (u8 "XCPU"),     true ),
+; %%    (->signalinfo_C SIGXFSZ,   (u8 "XFSZ"),     true ),
+; %%    (->signalinfo_C SIGUSR1,   (u8 "USR1"),     true ),
+; %%    (->signalinfo_C SIGUSR2,   (u8 "USR2"),     true ),
+; %%    (->signalinfo_C SIGINT,    (u8 "INT"),      false),
+; %%    (->signalinfo_C SIGWINCH,  (u8 "WINCH"),    false),
+; %%    (->signalinfo_C SIGTSTP,   (u8 "TSTP"),     false),
+; %%    (->signalinfo_C SIGPIPE,   (u8 "PIPE"),     false),
 
         (->signalinfo_C -1,        (u8 "Unknown!"), false)
     ])
@@ -3739,13 +3714,14 @@
 ;           if (ret == -1 && libC.errno() == EINTR)
 ;           {
                 ;; Check whether window has been resized, EINTR may be caused by SIGWINCH.
+
 ;               if (@do_resize)
 ;                   handle_resize();
 
-                ;; Interrupted by a signal, need to try again.  We ignore msec
-                ;; here, because we do want to check even after a timeout if
-                ;; characters are available.  Needed for reading output of an
-                ;; external command after the process has finished.
+                ;; Interrupted by a signal, need to try again.  We ignore msec here,
+                ;; because we do want to check even after a timeout if characters are available.
+                ;; Needed for reading output of an external command after the process has finished.
+
 ;               continue;
 ;           }
 
@@ -10023,8 +9999,6 @@
 ;                   {
 ;                       gotesc = false;                     ;; Might have typed ESC previously,
                                                             ;; don't truncate the cmdline now.
-;                       if (ccheck_abbr(c + ABBR_OFF))
-;                           break cmdline_changed;
 ;                       if (!@cmd_silent)
 ;                       {
 ;                           windgoto(@msg_row, 0);
@@ -10499,9 +10473,7 @@
                     ;; End of switch on command line character.
                     ;; We come here if we have a normal character.
 
-;                   if (do_abbr && (is_special(c) || !vim_iswordc(c, @curbuf))
-                            ;; Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
-;                           && (ccheck_abbr((0x100 <= c) ? (c + ABBR_OFF) : c) || c == Ctrl_RSB))
+;                   if (do_abbr && (is_special(c) || !vim_iswordc(c, @curbuf)) && c == Ctrl_RSB)
 ;                       break cmdline_changed;
 
                     ;; put the character in the command line
@@ -10550,10 +10522,8 @@
 ;                   out_flush();
 ;                   @emsg_off++;                 ;; so it doesn't beep if bad expr
                     ;; Set the time limit to half a second.
-;                   timeval_C tm = new timeval_C();
-;                   profile_setlimit(500, tm);
-;                   i = do_search(null, (byte)firstc, @ccline.cmdbuff, count,
-;                           SEARCH_KEEP + SEARCH_OPT + SEARCH_NOOF + SEARCH_PEEK, tm);
+;                   long nsec = profile_setlimit(500);
+;                   i = do_search(null, (byte)firstc, @ccline.cmdbuff, count, SEARCH_KEEP + SEARCH_OPT + SEARCH_NOOF + SEARCH_PEEK, nsec);
 ;                   --@emsg_off;
                     ;; if interrupted while searching, behave like it failed
 ;                   if (@got_int)
@@ -11188,19 +11158,6 @@
 ;           msg_clr_eos();      ;; will reset clear_cmdline
 
 ;       windgoto(@cmdline_row, 0);
-    ))
-
-;; Check the word in front of the cursor for an abbreviation.
-;; Called when the non-id character "c" has been entered.
-;; When an abbreviation is recognized it is removed from the text with
-;; backspaces and the replacement string is inserted, followed by "c".
-
-(defn- #_boolean ccheck_abbr [#_int c]
-    (§
-;       if (@p_paste || @no_abbr)         ;; no abbreviations or in paste mode
-;           return false;
-
-;       return check_abbr(c, @ccline.cmdbuff, @ccline.cmdpos, 0);
     ))
 
 ;; Command line history stuff
@@ -12985,39 +12942,25 @@
 ;       }
     ))
 
-;; ":abbreviate" and friends.
-
-(defn- #_void ex_abbreviate [#_exarg_C eap]
-    (§
-;       do_exmap(eap, true);        ;; almost the same as mapping
-    ))
-
 ;; ":map" and friends.
 
 (defn- #_void ex_map [#_exarg_C eap]
     (§
-;       do_exmap(eap, false);
+;       do_exmap(eap);
     ))
 
 ;; ":unmap" and friends.
 
 (defn- #_void ex_unmap [#_exarg_C eap]
     (§
-;       do_exmap(eap, false);
+;       do_exmap(eap);
     ))
 
 ;; ":mapclear" and friends.
 
 (defn- #_void ex_mapclear [#_exarg_C eap]
     (§
-;       map_clear(eap.cmd, eap.arg, eap.forceit, false);
-    ))
-
-;; ":abclear" and friends.
-
-(defn- #_void ex_abclear [#_exarg_C eap]
-    (§
-;       map_clear(eap.cmd, eap.arg, true, true);
+;       map_clear(eap.cmd, eap.arg, eap.forceit);
     ))
 
 ;; Check if *p is a separator between Ex commands.
@@ -13277,16 +13220,16 @@
 ;       }
     ))
 
-(defn- #_void do_exmap [#_exarg_C eap, #_boolean isabbrev]
+(defn- #_void do_exmap [#_exarg_C eap]
     (§
 ;       Bytes[] cmdp = { eap.cmd };
-;       int mode = get_map_mode(cmdp, eap.forceit || isabbrev);
+;       int mode = get_map_mode(cmdp, eap.forceit);
 
-;       switch (do_map((cmdp[0].at(0) == (byte)'n') ? 2 : (cmdp[0].at(0) == (byte)'u') ? 1 : 0, eap.arg, mode, isabbrev))
+;       switch (do_map((cmdp[0].at(0) == (byte)'n') ? 2 : (cmdp[0].at(0) == (byte)'u') ? 1 : 0, eap.arg, mode))
 ;       {
 ;           case 1: emsg(e_invarg);
 ;                   break;
-;           case 2: emsg(isabbrev ? e_noabbr : e_nomap);
+;           case 2: emsg(e_nomap);
 ;                   break;
 ;       }
     ))
@@ -13773,42 +13716,19 @@
 ;       return null;
     ))
 
-;; Put the time "msec" past now in "tm".
+;; Return the time 'msec' past now.
 
-(defn- #_void profile_setlimit [#_long msec, #_timeval_C tm]
-    (§
-;       if (msec <= 0)      ;; no limit
-;           profile_zero(tm);
-;       else
-;       {
-;           libC._gettimeofday(tm);
+(defn- #_long profile_setlimit [#_long msec]
+    (if (< 0 msec)
+        (+ (System/nanoTime) (* msec 1000 1000))
+        0)) ;; no limit
 
-;           long usec = tm.tv_usec() + msec * 1000;
-;           tm.tv_usec(usec % 1000000);
-;           tm.tv_sec(tm.tv_sec() + usec / 1000000);
-;       }
-    ))
+;; Return true if the current time is past 'nsec'.
 
-;; Return true if the current time is past "tm".
-
-(defn- #_boolean profile_passed_limit [#_timeval_C tm]
-    (§
-;       if (tm.tv_sec() == 0)       ;; timer was not set
-;           return false;
-
-;       timeval_C now = new timeval_C();
-
-;       libC._gettimeofday(now);
-;       return (tm.tv_sec() < now.tv_sec() || (now.tv_sec() == tm.tv_sec() && tm.tv_usec() < now.tv_usec()));
-    ))
-
-;; Set the time in "tm" to zero.
-
-(defn- #_void profile_zero [#_timeval_C tm]
-    (§
-;       tm.tv_usec(0);
-;       tm.tv_sec(0);
-    ))
+(defn- #_boolean profile_passed_limit [#_long nsec]
+    (if (zero? nsec) ;; timer was not set
+        false
+        (< nsec (System/nanoTime))))
 
 ;; Return true if the buffer "buf" can be abandoned, either by making it
 ;; hidden, autowriting it or unloading it.
@@ -24153,10 +24073,6 @@
 
 ;   static mapblock_C[][] maphash = new mapblock_C[256][1];
 
-;; List used for abbreviations.
-
-;   static mapblock_C[] first_abbr = new mapblock_C[1];     ;; first entry in abbrlist
-
 (atom! int keyNoremap)          ;; remapping flags
 
 ;; Variables used by vgetorpeek() and flush_buffers().
@@ -26170,11 +26086,6 @@
 ;; map[!] {lhs} {rhs}       : set key mapping for {lhs} to {rhs}
 ;; noremap[!] {lhs} {rhs}   : same, but no remapping for {rhs}
 ;; unmap[!] {lhs}           : remove key mapping for {lhs}
-;; abbr                     : show all abbreviations
-;; abbr {lhs}               : show abbreviations for {lhs}
-;; abbr {lhs} {rhs}         : set abbreviation for {lhs} to {rhs}
-;; noreabbr {lhs} {rhs}     : same, but no remapping for {rhs}
-;; unabbr {lhs}             : remove abbreviation for {lhs}
 ;;
 ;; maptype: 0 for :map, 1 for :unmap, 2 for noremap.
 ;;
@@ -26191,18 +26102,13 @@
 ;; for :smap  mode is SELECTMODE
 ;; for :omap  mode is OP_PENDING
 ;;
-;; for :abbr  mode is INSERT + CMDLINE
-;; for :iabbr mode is INSERT
-;; for :cabbr mode is CMDLINE
-;;
 ;; Return 0 for success
 ;;        1 for invalid arguments
 ;;        2 for no match
 ;;        4 for out of mem
 ;;        5 for entry not unique
 
-(defn- #_int do_map [#_int maptype, #_Bytes arg, #_int mode, #_boolean abbrev]
-    ;; abbrev: not a mapping but an abbreviation
+(defn- #_int do_map [#_int maptype, #_Bytes arg, #_int mode]
     (§
 ;       int retval = 0;
 
@@ -26217,7 +26123,6 @@
 
 ;       Bytes keys = arg;
 ;       mapblock_C[][] map_table = maphash;
-;       mapblock_C[] abbr_table = first_abbr;
 
         ;; For ":noremap" don't remap, otherwise do remap.
 ;       int noremap;
@@ -26235,7 +26140,6 @@
 ;           {
 ;               keys = skipwhite(keys.plus(8));
 ;               map_table = @curbuf.b_maphash;
-;               abbr_table = @curbuf.b_first_abbr;
 ;               continue;
 ;           }
 
@@ -26344,40 +26248,7 @@
 ;           len = STRLEN(keys);
 ;           if (MAXMAPLEN < len)            ;; maximum length of MAXMAPLEN chars
 ;               return 1;
-
-;           if (abbrev && maptype != 1)
-;           {
-                ;; If an abbreviation ends in a keyword character,
-                ;; the rest must be all keyword-char or all non-keyword-char.
-                ;; Otherwise we won't be able to find the start of it
-                ;; in a vi-compatible way.
-
-;               int same = -1;
-
-;               boolean first = us_iswordp(keys, @curbuf);
-;               boolean last = first;
-;               p = keys.plus(us_ptr2len_cc(keys));
-;               int n = 1;
-;               while (BLT(p, keys.plus(len)))
-;               {
-;                   n++;                                ;; nr of (multi-byte) chars
-;                   last = us_iswordp(p, @curbuf);       ;; type of last char
-;                   if (same == -1 && last != first)
-;                       same = n - 1;                   ;; count of same char type
-;                   p = p.plus(us_ptr2len_cc(p));
-;               }
-;               if (last && 2 < n && 0 <= same && same < n - 1)
-;                   return 1;
-
-                ;; An abbreviation cannot contain white space.
-;               for (/*int */n = 0; n < len; n++)
-;                   if (vim_iswhite(keys.at(n)))
-;                       return 1;
-;           }
 ;       }
-
-;       if (haskey && hasarg && abbrev)     ;; if we will add an abbreviation
-;           @no_abbr = false;                ;; reset flag that indicates there are no abbreviations
 
 ;       if (!haskey || (maptype != 1 && !hasarg))
 ;           msg_start();
@@ -26389,28 +26260,14 @@
             ;; need to loop over all global hash lists
 ;           for (int hash = 0; hash < 256 && !@got_int; hash++)
 ;           {
-;               mapblock_C mp;
-;               if (abbrev)
-;               {
-;                   if (hash != 0)  ;; there is only one abbreviation list
-;                       break;
-;                   mp = first_abbr[0];
-;               }
-;               else
-;                   mp = maphash[hash][0];
+;               mapblock_C mp = maphash[hash][0];
 
 ;               for ( ; mp != null && !@got_int; mp = mp.m_next)
 ;               {
                     ;; check entries with the same mode
-;                   if ((mp.m_mode & mode) != 0
-;                           && mp.m_keylen == len
-;                           && unique
-;                           && STRNCMP(mp.m_keys, keys, len) == 0)
+;                   if ((mp.m_mode & mode) != 0 && mp.m_keylen == len && unique && STRNCMP(mp.m_keys, keys, len) == 0)
 ;                   {
-;                       if (abbrev)
-;                           emsg2(u8("E224: global abbreviation already exists for %s"), mp.m_keys);
-;                       else
-;                           emsg2(u8("E225: global mapping already exists for %s"), mp.m_keys);
+;                       emsg2(u8("E225: global mapping already exists for %s"), mp.m_keys);
 ;                       return 5;
 ;                   }
 ;               }
@@ -26424,15 +26281,7 @@
             ;; need to loop over all global hash lists
 ;           for (int hash = 0; hash < 256 && !@got_int; hash++)
 ;           {
-;               mapblock_C mp;
-;               if (abbrev)
-;               {
-;                   if (hash != 0)  ;; there is only one abbreviation list
-;                       break;
-;                   mp = @curbuf.@b_first_abbr;
-;               }
-;               else
-;                   mp = @curbuf.b_maphash[hash][0];
+;               mapblock_C mp = @curbuf.b_maphash[hash][0];
 ;               for ( ; mp != null && !@got_int; mp = mp.m_next)
 ;               {
                     ;; check entries with the same mode
@@ -26469,15 +26318,7 @@
             ;; need to loop over all hash lists
 ;           for (int hash = 0; hash < 256 && !@got_int; hash++)
 ;           {
-;               mapblock_C[] mpp0;
-;               if (abbrev)
-;               {
-;                   if (0 < hash)   ;; there is only one abbreviation list
-;                       break;
-;                   mpp0 = abbr_table;
-;               }
-;               else
-;                   mpp0 = map_table[hash];
+;               mapblock_C[] mpp0 = map_table[hash];
 ;               for (mapblock_C mpp = null, mp = mpp0[0]; mp != null && !@got_int; mp = mpp.m_next)
 ;               {
 ;                   if ((mp.m_mode & mode) == 0)    ;; skip entries with wrong mode
@@ -26507,10 +26348,8 @@
 ;                       {
 ;                           if (maptype == 1)       ;; delete entry
 ;                           {
-                                ;; Only accept a full match.  For abbreviations we
-                                ;; ignore trailing space when matching with the
-                                ;; "lhs", since an abbreviation can't have trailing space.
-;                               if (n != len && (!abbrev || round != 0 || len < n || skipwhite(keys.plus(n)).at(0) != NUL))
+                                ;; Only accept a full match.
+;                               if (n != len)
 ;                               {
 ;                                   mpp = mp;
 ;                                   continue;
@@ -26534,10 +26373,7 @@
 ;                           }
 ;                           else if (unique)
 ;                           {
-;                               if (abbrev)
-;                                   emsg2(u8("E226: abbreviation already exists for %s"), p);
-;                               else
-;                                   emsg2(u8("E227: mapping already exists for %s"), p);
+;                               emsg2(u8("E227: mapping already exists for %s"), p);
 ;                               return 5;
 ;                           }
 ;                           else                    ;; new "rhs" for existing entry
@@ -26568,7 +26404,7 @@
                             ;; May need to put this entry into another hash list.
 
 ;                           int new_hash = map_hash(mp.m_mode, mp.m_keys.at(0));
-;                           if (!abbrev && new_hash != hash)
+;                           if (new_hash != hash)
 ;                           {
 ;                               if (mpp == null)
 ;                                   mpp0[0] = mp.m_next;
@@ -26605,10 +26441,7 @@
 ;       {
 ;           if (!did_it && !did_local)
 ;           {
-;               if (abbrev)
-;                   msg(u8("No abbreviation found"));
-;               else
-;                   msg(u8("No mapping found"));
+;               msg(u8("No mapping found"));
 ;           }
 ;           return retval;                      ;; listing finished
 ;       }
@@ -26639,13 +26472,7 @@
 ;       mp.m_mode = mode;
 ;       mp.m_expr = expr;
 
-        ;; add the new entry in front of the abbrlist or maphash[] list
-;       if (abbrev)
-;       {
-;           mp.m_next = abbr_table[0];
-;           abbr_table[0] = mp;
-;       }
-;       else
+        ;; add the new entry in front of the maphash[] list
 ;       {
 ;           int n = map_hash(mp.m_mode, mp.m_keys.at(0));
 ;           mp.m_next = map_table[n][0];
@@ -26655,7 +26482,7 @@
 ;       return retval;
     ))
 
-;; Delete one entry from the abbrlist or maphash[].
+;; Delete one entry from the maphash[].
 ;; "mpp" is a pointer to the m_next field of the PREVIOUS entry!
 
 (defn- #_mapblock_C map_free [#_mapblock_C mp]
@@ -26703,10 +26530,9 @@
 ;       return mode;
     ))
 
-;; Clear all mappings or abbreviations.
-;; 'abbr' should be false for mappings, true for abbreviations.
+;; Clear all mappings.
 
-(defn- #_void map_clear [#_Bytes _cmdp, #_Bytes arg, #_boolean forceit, #_boolean abbr]
+(defn- #_void map_clear [#_Bytes _cmdp, #_Bytes arg, #_boolean forceit]
     (§
 ;       Bytes[] cmdp = { _cmdp };
 
@@ -26718,37 +26544,24 @@
 ;       }
 
 ;       int mode = get_map_mode(cmdp, forceit);
-;       map_clear_int(@curbuf, mode, local, abbr);
+;       map_clear_int(@curbuf, mode, local);
     ))
 
 ;; Clear all mappings in "mode".
 
-(defn- #_void map_clear_int [#_buffer_C buf, #_int mode, #_boolean local, #_boolean abbr]
+(defn- #_void map_clear_int [#_buffer_C buf, #_int mode, #_boolean local]
     ;; buf: buffer for local mappings
     ;; mode: mode in which to delete
     ;; local: true for buffer-local mappings
-    ;; abbr: true for abbreviations
     (§
 ;       for (int hash = 0; hash < 256; hash++)
 ;       {
 ;           mapblock_C[] mpp0;
 
-;           if (abbr)
-;           {
-;               if (0 < hash)       ;; there is only one abbrlist
-;                   break;
-;               if (local)
-;                   mpp0 = buf.b_first_abbr;
-;               else
-;                   mpp0 = first_abbr;
-;           }
+;           if (local)
+;               mpp0 = buf.b_maphash[hash];
 ;           else
-;           {
-;               if (local)
-;                   mpp0 = buf.b_maphash[hash];
-;               else
-;                   mpp0 = maphash[hash];
-;           }
+;               mpp0 = maphash[hash];
 
 ;           for (mapblock_C mpp = null, mp = mpp0[0]; mp != null; mp = mpp.m_next)
 ;           {
@@ -26767,7 +26580,7 @@
                     ;; May need to put this entry into another hash list.
 
 ;                   int new_hash = map_hash(mp.m_mode, mp.m_keys.at(0));
-;                   if (!abbr && new_hash != hash)
+;                   if (new_hash != hash)
 ;                   {
 ;                       if (mpp == null)
 ;                           mpp0[0] = mp.m_next;
@@ -26884,157 +26697,7 @@
 ;       out_flush();                        ;; show one line at a time
     ))
 
-;; Check for an abbreviation.
-;; Cursor is at ptr[col].  When inserting, mincol is where insert started.
-;; "c" is the character typed before check_abbr was called.
-;; It may have ABBR_OFF added to avoid prepending a CTRL-V to it.
-;;
-;; Historic vi practice:
-;; The last character of an abbreviation must be an id character ([a-zA-Z0-9_]).
-;; The characters in front of it must be all id characters or all non-id characters.
-;; This allows for abbr. "#i" to "#include".
-;;
-;; Vim addition:
-;; Allow for abbreviations that end in a non-keyword character.
-;; Then there must be white space before the abbr.
-;;
-;; Return true if there is an abbreviation, false if not.
-
-(defn- #_boolean check_abbr [#_int c, #_Bytes ptr, #_int col, #_int mincol]
-    (§
-;       if (@typebuf.tb_no_abbr_cnt != 0)            ;; abbrev. are not recursive
-;           return false;
-
-        ;; no remapping implies no abbreviation, except for CTRL-]
-;       if ((@keyNoremap & (RM_NONE|RM_SCRIPT)) != 0 && c != Ctrl_RSB)
-;           return false;
-
-        ;; Check for word before the cursor: if it ends in a keyword char, all chars
-        ;; before it must be keyword chars or non-keyword chars, but not white space.
-        ;; If it ends in a non-keyword char, we accept any characters before it except white space.
-
-;       if (col == 0)                               ;; cannot be an abbr.
-;           return false;
-
-;       Bytes p = us_prevptr(ptr, ptr.plus(col));
-
-;       boolean vim_abbr = true;                    ;; Vim added abbr.
-;       boolean is_id = true;
-;       if (us_iswordp(p, @curbuf))
-;       {
-;           vim_abbr = false;                       ;; vi compatible abbr.
-;           if (BLT(ptr, p))
-;               is_id = us_iswordp(us_prevptr(ptr, p), @curbuf);
-;       }
-
-;       int clen = 1;                               ;; length in characters
-;       while (BLT(ptr.plus(mincol), p))
-;       {
-;           p = us_prevptr(ptr, p);
-;           if (vim_isspace(p.at(0)) || (!vim_abbr && is_id != us_iswordp(p, @curbuf)))
-;           {
-;               p = p.plus(us_ptr2len_cc(p));
-;               break;
-;           }
-;           clen++;
-;       }
-
-;       int scol = BDIFF(p, ptr);              ;; starting column of the abbr.
-;       if (scol < mincol)
-;           scol = mincol;
-
-;       if (scol < col)                     ;; there is a word in front of the cursor
-;       {
-;           ptr = ptr.plus(scol);
-;           int len = col - scol;
-;           mapblock_C mp = @curbuf.@b_first_abbr;
-;           mapblock_C mp2 = first_abbr[0];
-;           if (mp == null)
-;           {
-;               mp = mp2;
-;               mp2 = null;
-;           }
-;           boolean __;
-;           for ( ; mp != null; mp = mp.m_next, __ = (mp == null && (mp = mp2) == mp2 && (mp2 = null) == null))
-;           {
-;               int qlen = mp.m_keylen;
-;               Bytes q = mp.m_keys;
-
-;               if (vim_strbyte(mp.m_keys, KB_SPECIAL) != null)
-;               {
-                    ;; might have CSI escaped mp.m_keys
-;                   q = STRDUP(mp.m_keys);
-;                   vim_unescape_csi(q);
-;                   qlen = STRLEN(q);
-;               }
-
-                ;; find entries with right mode and keys
-;               boolean match = ((mp.m_mode & @State) != 0 && qlen == len && STRNCMP(q, ptr, len) == 0);
-;               if (match)
-;                   break;
-;           }
-;           if (mp != null)
-;           {
-;               Bytes tb = new Bytes(MB_MAXBYTES + 4);
-
-                ;; Found a match:
-                ;; insert the rest of the abbreviation in typebuf.tb_buf[].
-                ;; This goes from end to start.
-                ;;
-                ;; Characters 0x000 - 0x100: normal chars, may need CTRL-V,
-                ;; except KB_SPECIAL: becomes KB_SPECIAL KS_SPECIAL KE_FILLER.
-                ;; Characters where is_special() == true: key codes, need KB_SPECIAL.
-                ;; Other characters (with ABBR_OFF): don't use CTRL-V.
-                ;;
-                ;; Character CTRL-] is treated specially - it completes the
-                ;; abbreviation, but is not inserted into the input stream.
-
-;               int i = 0;
-;               if (c != Ctrl_RSB)
-;               {
-;                   if (is_special(c) || c == char_u(KB_SPECIAL))   ;; special key code, split up
-;                   {
-;                       tb.be(i++, KB_SPECIAL);
-;                       tb.be(i++, KB_SECOND(c));
-;                       tb.be(i++, KB_THIRD(c));
-;                   }
-;                   else
-;                   {
-;                       if (c < ABBR_OFF && (c < ' ' || '~' < c))
-;                           tb.be(i++, Ctrl_V);                       ;; special char needs CTRL-V
-
-                        ;; if ABBR_OFF has been added, remove it here
-;                       if (ABBR_OFF <= c)
-;                           c -= ABBR_OFF;
-;                       i += utf_char2bytes(c, tb.plus(i));
-;                   }
-;                   tb.be(i, NUL);
-;                   ins_typebuf(tb, 1, 0, true, mp.m_silent);       ;; insert the last typed char
-;               }
-
-;               Bytes s = mp.m_str;
-;               if (mp.m_expr)
-;                   s = eval_map_expr(s, c);
-;               if (s != null)
-;               {
-;                   ins_typebuf(s, mp.m_noremap, 0, true, mp.m_silent); ;; insert the to string
-;                   @typebuf.tb_no_abbr_cnt += STRLEN(s) + i + 1;   ;; no abbrev. for these chars
-;               }
-
-;               tb.be(0, Ctrl_H);
-;               tb.be(1, NUL);
-;               len = clen;                                         ;; delete characters instead of bytes
-;               while (0 < len--)                                   ;; delete the from string
-;                   ins_typebuf(tb, 1, 0, true, mp.m_silent);
-
-;               return true;
-;           }
-;       }
-
-;       return false;
-    ))
-
-;; Evaluate the RHS of a mapping or abbreviations and take care of escaping special characters.
+;; Evaluate the RHS of a mapping and take care of escaping special characters.
 
 (defn- #_Bytes eval_map_expr [#_Bytes str, #_int c]
     ;; c: NUL or typed character for abbreviation
@@ -27142,72 +26805,54 @@
 (defn- #_void check_map_keycodes []
     (§
         ;; This this once for each buffer,
-        ;; and then once for global mappings/abbreviations with bp == null.
+        ;; and then once for global mappings with bp == null.
 ;       for (buffer_C bp = @curbuf; ; bp = null)
 ;       {
-            ;; Do the loop twice: Once for mappings, once for abbreviations.
-            ;; Then loop over all map hash lists.
+            ;; Loop over all map hash lists.
 
-;           for (int abbr = 0; abbr <= 1; abbr++)
-;               for (int hash = 0; hash < 256; hash++)
+;           for (int hash = 0; hash < 256; hash++)
+;           {
+;               mapblock_C mp;
+
+;               if (bp != null)
+;                   mp = bp.b_maphash[hash][0];
+;               else
+;                   mp = maphash[hash][0];
+
+;               for ( ; mp != null; mp = mp.m_next)
 ;               {
-;                   mapblock_C mp;
-;                   if (abbr != 0)
+;                   for (int i = 0; i <= 1; i++)        ;; do this twice
 ;                   {
-;                       if (hash != 0)                  ;; there is only one abbr list
-;                           break;
-;                       if (bp != null)
-;                           mp = bp.@b_first_abbr;
+;                       Bytes p;
+;                       if (i == 0)
+;                           p = mp.m_keys;              ;; once for the "from" part
 ;                       else
-;                           mp = first_abbr[0];
-;                   }
-;                   else
-;                   {
-;                       if (bp != null)
-;                           mp = bp.b_maphash[hash][0];
-;                       else
-;                           mp = maphash[hash][0];
-;                   }
-;                   for ( ; mp != null; mp = mp.m_next)
-;                   {
-;                       for (int i = 0; i <= 1; i++)        ;; do this twice
+;                           p = mp.m_str;               ;; and once for the "to" part
+;                       while (p.at(0) != NUL)
 ;                       {
-;                           Bytes p;
-;                           if (i == 0)
-;                               p = mp.m_keys;              ;; once for the "from" part
-;                           else
-;                               p = mp.m_str;               ;; and once for the "to" part
-;                           while (p.at(0) != NUL)
+;                           if (p.at(0) == KB_SPECIAL)
 ;                           {
-;                               if (p.at(0) == KB_SPECIAL)
+;                               p = p.plus(1);
+;                               if (char_u(p.at(0)) < 0x80)     ;; for "normal" tcap entries
 ;                               {
-;                                   p = p.plus(1);
-;                                   if (char_u(p.at(0)) < 0x80)     ;; for "normal" tcap entries
-;                                   {
-;                                       Bytes buf = new Bytes(3);
+;                                   Bytes buf = new Bytes(3);
 
-;                                       buf.be(0, p.at(0));
-;                                       buf.be(1, p.at(1));
-;                                       buf.be(2, NUL);
-;                                       add_termcap_entry(buf, false);
-;                                   }
-;                                   p = p.plus(1);
+;                                   buf.be(0, p.at(0));
+;                                   buf.be(1, p.at(1));
+;                                   buf.be(2, NUL);
+;                                   add_termcap_entry(buf, false);
 ;                               }
 ;                               p = p.plus(1);
 ;                           }
+;                           p = p.plus(1);
 ;                       }
 ;                   }
 ;               }
+;           }
 
 ;           if (bp == null)
 ;               break;
 ;       }
-    ))
-
-;; Set up default mappings.
-
-(defn- #_void init_mappings []
-    (§
     ))
 
 ;;; ============================================================================================== VimM
@@ -27554,8 +27199,6 @@
 ;                   switch (c)
 ;                   {
 ;                       case ESC:                           ;; end input mode
-;                           if (echeck_abbr(ESC + ABBR_OFF))
-;                               break normalchar;
                             ;; FALLTHROUGH
 
 ;                       case Ctrl_C:                        ;; end input mode
@@ -27590,8 +27233,6 @@
                             ;; FALLTHROUGH
 
 ;                       case Ctrl_O:                        ;; execute one command
-;                           if (echeck_abbr(Ctrl_O + ABBR_OFF))
-;                               break normalchar;
 ;                           ins_ctrl_o();
 
                             ;; Don't move the cursor left when 'virtualedit' has "onemore".
@@ -27780,11 +27421,7 @@
 ;                       {
                             ;; CTRL-L with 'insertmode' set: Leave Insert mode.
 ;                           if (@p_im)
-;                           {
-;                               if (echeck_abbr(Ctrl_L + ABBR_OFF))
-;                                   break normalchar;
 ;                               break doESCkey;
-;                           }
 ;                           break;
 ;                       }
 
@@ -27857,8 +27494,7 @@
 
                     ;; Insert a normal character and check for abbreviations on a special character.
                     ;; Let CTRL-] expand abbreviations without inserting it.
-                    ;; Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
-;                   if (vim_iswordc(c, @curbuf) || (!echeck_abbr((0x100 <= c) ? (c + ABBR_OFF) : c) && c != Ctrl_RSB))
+;                   if (vim_iswordc(c, @curbuf) || c != Ctrl_RSB)
 ;                   {
 ;                       insert_special(c, false, false);
 ;                   }
@@ -28498,13 +28134,8 @@
             ;; - finding a special character (command key)
             ;; - buffer is full
             ;; - running into the 'textwidth' boundary
-            ;; - need to check for abbreviation: A non-word char after a word-char
 
-;           while ((c = vpeekc()) != NUL
-;                   && !isspecial(c)
-;                   && mb_byte2len(c) == 1
-;                   && i < INPUT_BUFLEN
-;                   && !(!@no_abbr && !vim_iswordc(c, @curbuf) && vim_iswordc(buf.at(i - 1), @curbuf)))
+;           while ((c = vpeekc()) != NUL && !isspecial(c) && mb_byte2len(c) == 1 && i < INPUT_BUFLEN)
 ;           {
 ;               c = vgetc();
 ;               buf.be(i++, c);
@@ -28982,22 +28613,6 @@
 ;       if (0 < len && s.at(len - 1) == ESC)       ;; remove trailing ESC
 ;           s.be(len - 1, NUL);
 ;       return s;
-    ))
-
-;; Check the word in front of the cursor for an abbreviation.
-;; Called when the non-id character "c" has been entered.
-;; When an abbreviation is recognized it is removed from the text and
-;; the replacement string is inserted in typebuf.tb_buf[], followed by "c".
-
-(defn- #_boolean echeck_abbr [#_int c]
-    (§
-        ;; Don't check for abbreviation in paste mode, when disabled,
-        ;; or just after moving around with cursor keys.
-;       if (@p_paste || @no_abbr || @arrow_used)
-;           return false;
-
-;       return check_abbr(c, ml_get_curline(), @curwin.w_cursor.col,
-;                   (@curwin.w_cursor.lnum == @insStart.lnum) ? @insStart.col : 0);
     ))
 
 ;; replace-stack functions
@@ -30074,8 +29689,6 @@
     (§
 ;       if (@insStart_blank_vcol == MAXCOL && @curwin.w_cursor.lnum == @insStart.lnum)
 ;           @insStart_blank_vcol = get_nolist_virtcol();
-;       if (echeck_abbr(TAB + ABBR_OFF))
-;           return false;
 
 ;       boolean ind = inindent(0);
 ;       if (ind)
@@ -30256,8 +29869,6 @@
 
 (defn- #_boolean ins_eol [#_int c]
     (§
-;       if (echeck_abbr(c + ABBR_OFF))
-;           return false;
 ;       if (!stop_arrow())
 ;           return true;
 
@@ -31134,9 +30745,9 @@
 ;           return bt_regexec_nl(rmp, line, col, line_lbr);
 ;       }
 
-;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, timeval_C tm)
+;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, long nsec)
 ;       {
-;           return bt_regexec_multi(rmp, win, buf, lnum, col, tm);
+;           return bt_regexec_multi(rmp, win, buf, lnum, col, nsec);
 ;       }
 ;   };
 
@@ -31152,9 +30763,9 @@
 ;           return nfa_regexec_nl(rmp, line, col, line_lbr);
 ;       }
 
-;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, timeval_C tm)
+;       public long regexec_multi(regmmatch_C rmp, window_C win, buffer_C buf, long lnum, int col, long nsec)
 ;       {
-;           return nfa_regexec_multi(rmp, win, buf, lnum, col, tm);
+;           return nfa_regexec_multi(rmp, win, buf, lnum, col, nsec);
 ;       }
 ;   };
 
@@ -34113,12 +33724,12 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long bt_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_timeval_C tm]
+(defn- #_long bt_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_long nsec]
     ;; win: window in which to search or null
     ;; buf: buffer in which to search
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       @reg_match = null;
 ;       @reg_mmatch = rmp;
@@ -34131,16 +33742,16 @@
 ;       @ireg_icombine = false;
 ;       @ireg_maxcol = rmp.rmm_maxcol;
 
-;       return bt_regexec_both(null, col, tm);
+;       return bt_regexec_both(null, col, nsec);
     ))
 
 ;; Match a regexp against a string ("line" points to the string)
 ;; or multiple lines ("line" is null, use reg_getline()).
 ;; Returns 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long bt_regexec_both [#_Bytes line, #_int col, #_timeval_C tm]
+(defn- #_long bt_regexec_both [#_Bytes line, #_int col, #_long nsec]
     ;; col: column to start looking for match
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       long retval = 0;
 
@@ -34277,10 +33888,10 @@
 ;                       break;
 ;                   col += us_ptr2len_cc(@regline.plus(col));
                     ;; Check for timeout once in a twenty times to avoid overhead.
-;                   if (tm != null && ++tm_count == 20)
+;                   if (nsec != 0 && ++tm_count == 20)
 ;                   {
 ;                       tm_count = 0;
-;                       if (profile_passed_limit(tm))
+;                       if (profile_passed_limit(nsec))
 ;                           break;
 ;                   }
 ;               }
@@ -40550,7 +40161,7 @@
 
 ;; Used during execution: whether a match has been found.
 (atom! int nfa_match)
-(atom! timeval_C nfa_time_limit)
+(atom! long nfa_time_limit)
 (atom! int nfa_time_count)
 
 ;; Copy postponed invisible match info from "from" to "to".
@@ -41918,7 +41529,7 @@
 ;       fast_breakcheck();
 ;       if (@got_int)
 ;           return FALSE;
-;       if (@nfa_time_limit != null && profile_passed_limit(@nfa_time_limit))
+;       if (@nfa_time_limit != 0 && profile_passed_limit(@nfa_time_limit))
 ;           return FALSE;
 
 ;       @nfa_match = FALSE;
@@ -43199,7 +42810,7 @@
 ;               break;
 
             ;; Check for timeout once in a twenty times to avoid overhead.
-;           if (@nfa_time_limit != null && ++@nfa_time_count == 20)
+;           if (@nfa_time_limit != 0 && ++@nfa_time_count == 20)
 ;           {
 ;               @nfa_time_count = 0;
 ;               if (profile_passed_limit(@nfa_time_limit))
@@ -43213,15 +42824,15 @@
 ;; Try match of "prog" with at regline[col].
 ;; Returns <= 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long nfa_regtry [#_nfa_regprog_C prog, #_int col, #_timeval_C tm]
-    ;; tm: timeout limit or null
+(defn- #_long nfa_regtry [#_nfa_regprog_C prog, #_int col, #_long nsec]
+    ;; nsec: timeout limit or 0
     (§
 ;       regsubs_C subs = §_regsubs_C();
 ;       regsubs_C m = §_regsubs_C();
 ;       nfa_state_C start = prog.start;
 
 ;       @reginput = @regline.plus(col);
-;       @nfa_time_limit = tm;
+;       @nfa_time_limit = nsec;
 ;       @nfa_time_count = 0;
 
 ;       clear_sub(subs.rs_norm);
@@ -43312,9 +42923,9 @@
 ;;
 ;; Returns <= 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long nfa_regexec_both [#_Bytes line, #_int startcol, #_timeval_C tm]
+(defn- #_long nfa_regexec_both [#_Bytes line, #_int startcol, #_long nsec]
     ;; startcol: column to start looking for match
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       int[] col = { startcol };
 
@@ -43401,7 +43012,7 @@
 ;           state.lastlist[1] = 0;
 ;       }
 
-;       long retval = nfa_regtry(prog, col[0], tm);
+;       long retval = nfa_regtry(prog, col[0], nsec);
 
 ;       nfa_regengine.expr = null;
 
@@ -43539,12 +43150,12 @@
 ;;
 ;; FIXME if this behavior is not compatible.
 
-(defn- #_long nfa_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_timeval_C tm]
+(defn- #_long nfa_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_long nsec]
     ;; win: window in which to search or null
     ;; buf: buffer in which to search
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       @reg_match = null;
 ;       @reg_mmatch = rmp;
@@ -43557,7 +43168,7 @@
 ;       @ireg_icombine = false;
 ;       @ireg_maxcol = rmp.rmm_maxcol;
 
-;       return nfa_regexec_both(null, col, tm);
+;       return nfa_regexec_both(null, col, nsec);
     ))
 
 ;; ----------------------------------------------------------------------- ;;
@@ -43714,14 +43325,14 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long vim_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_timeval_C tm]
+(defn- #_long vim_regexec_multi [#_regmmatch_C rmp, #_window_C win, #_buffer_C buf, #_long lnum, #_int col, #_long nsec]
     ;; win: window in which to search or null
     ;; buf: buffer in which to search
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
-;       long result = rmp.regprog.engine.regexec_multi(rmp, win, buf, lnum, col, tm);
+;       long result = rmp.regprog.engine.regexec_multi(rmp, win, buf, lnum, col, nsec);
 
         ;; NFA engine aborted because it's very slow.
 ;       if (rmp.regprog.re_engine == AUTOMATIC_ENGINE && result == NFA_TOO_EXPENSIVE)
@@ -43737,7 +43348,7 @@
 ;               report_re_switch(pat);
 ;               rmp.regprog = vim_regcomp(pat, re_flags);
 ;               if (rmp.regprog != null)
-;                   result = rmp.regprog.engine.regexec_multi(rmp, win, buf, lnum, col, tm);
+;                   result = rmp.regprog.engine.regexec_multi(rmp, win, buf, lnum, col, nsec);
 ;           }
 ;           @p_re = save_p_re;
 ;       }
@@ -43996,11 +43607,11 @@
 ;; When FEAT_EVAL is defined, returns the index of the first matching
 ;; subpattern plus one; one if there was none.
 
-(defn- #_int searchit [#_window_C win, #_buffer_C buf, #_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_timeval_C tm]
+(defn- #_int searchit [#_window_C win, #_buffer_C buf, #_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_long nsec]
     ;; win: window to search in; can be null for a buffer without a window!
     ;; pat_use: which pattern to use when "pat" is empty
     ;; stop_lnum: stop after this line number when != 0
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       int submatch = 0;
 
@@ -44076,13 +43687,13 @@
                     ;; Stop after checking "stop_lnum", if it's set.
 ;                   if (stop_lnum != 0 && (dir == FORWARD ? stop_lnum < lnum : lnum < stop_lnum))
 ;                       break;
-                    ;; Stop after passing the "tm" time limit.
-;                   if (tm != null && profile_passed_limit(tm))
+                    ;; Stop after passing the 'nsec' time limit.
+;                   if (nsec != 0 && profile_passed_limit(nsec))
 ;                       break;
 
                     ;; Look for a match somewhere in line "lnum".
 
-;                   long nmatched = vim_regexec_multi(regmatch, win, buf, lnum, 0, tm);
+;                   long nmatched = vim_regexec_multi(regmatch, win, buf, lnum, 0, nsec);
                     ;; Abort searching on an error (e.g., out of stack).
 ;                   if (@called_emsg)
 ;                       break;
@@ -44144,8 +43755,7 @@
 ;                               if (matchcol == 0 && (options & SEARCH_START) != 0)
 ;                                   break;
 ;                               if (ptr.at(matchcol) == NUL
-;                                       || (nmatched = vim_regexec_multi(regmatch,
-;                                                 win, buf, lnum + matchpos.lnum, matchcol, tm)) == 0)
+;                                       || (nmatched = vim_regexec_multi(regmatch, win, buf, lnum + matchpos.lnum, matchcol, nsec)) == 0)
 ;                               {
 ;                                   match_ok = false;
 ;                                   break;
@@ -44217,8 +43827,7 @@
 ;                                       matchcol += us_ptr2len_cc(ptr.plus(matchcol));
 ;                               }
 ;                               if (ptr.at(matchcol) == NUL
-;                                       || (nmatched = vim_regexec_multi(regmatch,
-;                                                 win, buf, lnum + matchpos.lnum, matchcol, tm)) == 0)
+;                                       || (nmatched = vim_regexec_multi(regmatch, win, buf, lnum + matchpos.lnum, matchcol, nsec)) == 0)
 ;                                   break;
 
                                 ;; Need to get the line pointer again,
@@ -44381,10 +43990,10 @@
 ;;
 ;; Return 0 for failure, 1 for found, 2 for found and line offset added.
 
-(defn- #_int do_search [#_oparg_C oap, #_byte dirc, #_Bytes pat, #_long count, #_int options, #_timeval_C tm]
+(defn- #_int do_search [#_oparg_C oap, #_byte dirc, #_Bytes pat, #_long count, #_int options, #_long nsec]
     ;; oap: can be null
     ;; dirc: '/' or '?'
-    ;; tm: timeout limit or null
+    ;; nsec: timeout limit or 0
     (§
 ;       int retval;
 
@@ -44602,7 +44211,7 @@
 ;                           (@spats[0].sp_off.end ? SEARCH_REV : 0)
 ;                               + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG + SEARCH_START
 ;                                   + ((pat != null && pat.at(0) == (byte)';') ? 0 : SEARCH_NOOF))),
-;                                       RE_LAST, 0, tm);
+;                                       RE_LAST, 0, nsec);
 
 ;               if (dircp != null)
 ;                   dircp.be(0, dirc);          ;; restore second '/' or '?' for normal_cmd()
@@ -61866,7 +61475,7 @@
 ;           last_pat_prog(@search_hl.rmm);
 ;           @search_hl.attr = hl_attr(HLF_L);
             ;; Set the time limit to 'redrawtime'.
-;           profile_setlimit(@p_rdt, @search_hl.tm);
+;           @search_hl.nsec = profile_setlimit(@p_rdt);
 ;       }
     ))
 
@@ -61891,7 +61500,7 @@
 ;           mi.mi_hl.lnum = 0;
 ;           mi.mi_hl.first_lnum = 0;
             ;; Set the time limit to 'redrawtime'.
-;           profile_setlimit(@p_rdt, mi.mi_hl.tm);
+;           mi.mi_hl.nsec = profile_setlimit(@p_rdt);
 ;       }
 ;       @search_hl.buf = @curbuf;
 ;       @search_hl.lnum = 0;
@@ -61980,7 +61589,7 @@
 ;       for ( ; ; )
 ;       {
             ;; Stop searching after passing the time limit.
-;           if (profile_passed_limit(shl.tm))
+;           if (profile_passed_limit(shl.nsec))
 ;           {
 ;               shl.lnum = 0;   ;; no match found in time
 ;               break;
@@ -62020,7 +61629,7 @@
 ;                                       && shl == mi.mi_hl
 ;                                       && mi.mi_match.regprog == mi.mi_hl.rmm.regprog);
 
-;               nmatched = vim_regexec_multi(shl.rmm, win, shl.buf, lnum, matchcol, shl.tm);
+;               nmatched = vim_regexec_multi(shl.rmm, win, shl.buf, lnum, matchcol, shl.nsec);
                 ;; Copy the regprog, in case it got freed and recompiled.
 ;               if (regprog_is_copy)
 ;                   mi.mi_match.regprog = mi.mi_hl.rmm.regprog;
@@ -69517,23 +69126,17 @@
 
 (final cmdname_C* cmdnames
     [
-        (->cmdname_C (u8 "abbreviate"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "ascii"),         ex_ascii,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "cnoreabbrev"),   ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
@@ -69541,14 +69144,10 @@
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "iabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "imapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "inoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "inoreabbrev"),   ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "iunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
-        (->cmdname_C (u8 "iunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
@@ -69569,7 +69168,6 @@
         (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "noreabbrev"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG USECTRLV CMDWIN),                 ADDR_LINES),
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "nunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -69609,7 +69207,6 @@
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "unabbreviate"),  ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA CMDWIN),                                     ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
