@@ -1138,7 +1138,7 @@
 
 (ß
 ;   static abstract class regprog_C
-    (§
+    (ß
 ;       regengine_C         engine;
 ;       int                 regflags;
 ;       int                 re_engine;      ;; automatic, backtracking or nfa engine
@@ -1155,7 +1155,7 @@
 
 (ß
 ;   static final class bt_regprog_C extends regprog_C
-    (§
+    (ß
 ;       int                 reganch;
 ;       int                 regstart;
 ;       Bytes               regmust;
@@ -1202,7 +1202,7 @@
 
 (ß
 ;   static final class nfa_regprog_C extends regprog_C
-    (§
+    (ß
 ;       nfa_state_C         start;          ;; points into state[]
 
 ;       int                 reganch;        ;; pattern starts with ^
@@ -1234,7 +1234,7 @@
 
 (ß
 ;   static abstract class regengine_C
-    (§
+    (ß
         ((ß Bytes expr =) (u8 ""))
 
 ;       protected regengine_C()
@@ -4837,7 +4837,7 @@
             (when (!= @(:b_p_ts @curbuf) ts)
                 (redraw-curbuf-later NOT_VALID))
             (when (non-zero? (:first_line m))
-                (changed-lines (:first_line m), 0, (inc (:last_line m)), 0))
+                (swap! curbuf changed-lines (:first_line m), 0, (inc (:last_line m)), 0))
             (reset! (:b_p_ts @curbuf) ts)
             (swap! curwin coladvance (:w_curswant @curwin))
             (u-clearline)
@@ -5337,7 +5337,7 @@
                                     ;; Need to subtract the number of added lines from "last_line" to get the line number
                                     ;; before the change (same as adding the number of deleted lines).
                                     (let [n (- (line-count @curbuf) o'line_count)]
-                                        (changed-lines @a'first_line, 0, (- @a'last_line n), n)
+                                        (swap! curbuf changed-lines @a'first_line, 0, (- @a'last_line n), n)
                                     ))
                                 ;; ":s/pat//n" doesn't move the cursor
                                 (let [win (if @sub_count (assoc win :w_cursor o'cursor) win)
@@ -9443,7 +9443,7 @@
                             ))
                       win (-> win (check-cursor) (assoc :w_set_curswant true))]
                     (when changed
-                        (changed-lines (:lnum startpos), (:col startpos), (inc (:lnum (:w_cursor win))), 0)
+                        (swap! curbuf changed-lines (:lnum startpos), (:col startpos), (inc (:lnum (:w_cursor win))), 0)
                         (let [endpos (update (:w_cursor win) :col #(max 0 (dec %)))]
                             (swap! curbuf assoc :b_op_start startpos, :b_op_end endpos)
                         ))
@@ -10807,7 +10807,7 @@
                             )]
                         (recur (update-in win [:w_cursor :lnum] inc) (dec n))
                     ))
-              _ (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0)
+              _ (swap! curbuf changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0)
               win (cond (:block_mode oap)
                     (update win :w_cursor assoc :lnum (:lnum (:op_start oap)) :col block_col)
                 curs_top ;; put cursor on first line, for ">>"
@@ -11002,7 +11002,7 @@
                         (recur ct es (inc y))
                     ))
             ))
-        (changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
+        (swap! curbuf changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
         (reset! State state'))
     nil)
 
@@ -11026,7 +11026,7 @@
         ;; When Visual highlighting was present, need to continue until the last line.
         ;; When there is no change, still need to remove the Visual highlighting.
         (cond
-            (non-zero? y)    (changed-lines x, 0, (if (:is_VIsual oap) (+ n m) (inc y)), 0)
+            (non-zero? y)    (swap! curbuf changed-lines x, 0, (if (:is_VIsual oap) (+ n m) (inc y)), 0)
             (:is_VIsual oap) (redraw-curbuf-later INVERTED)
         )
         (when (< @p_report m)
@@ -11510,7 +11510,7 @@
                                                 ))
                                         ))
                                     (swap! curwin check-cursor-col)
-                                    (changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (inc (:lnum (:op_end oap))), 0)
+                                    (swap! curbuf changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (inc (:lnum (:op_end oap))), 0)
                                     [(assoc oap :line_count 0) nil] ;; no lines deleted
                                 ))
                         (== (:motion_type oap) MLINE)
@@ -11796,7 +11796,7 @@
                             ))]
                     (swap! curwin assoc :w_cursor (:op_start oap))
                     (swap! curwin check-cursor)
-                    (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
+                    (swap! curbuf changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
                     ;; Set '[ and '] marks.
                     (swap! curbuf assoc :b_op_start (:op_start oap) :b_op_end (:op_end oap))
                     [oap true])
@@ -11818,7 +11818,7 @@
                                     (recur (update pos :lnum inc) changed))
                             )]
                         (when changed
-                            (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
+                            (swap! curbuf changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
                         [oap changed]
                     )
                     (let [#_pos_C pos (:op_start oap)
@@ -11846,7 +11846,7 @@
                                     ))
                             )]
                         (when changed
-                            (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0))
+                            (swap! curbuf changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0))
                         [oap changed])
                 )]
             ;; No change: need to remove the Visual selection.
@@ -12106,7 +12106,7 @@
                                         ))
                                 ))
                             (swap! curwin check-cursor)
-                            (changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
+                            (swap! curbuf changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
                         ))
                     [oap retval]
                 )
@@ -12395,7 +12395,7 @@
                                                                     (recur win bd incr (inc i))
                                                                 ))
                                                         )]
-                                                    (changed-lines lnum, 0, (:lnum (:w_cursor win)), @a'nr_lines)
+                                                    (swap! curbuf changed-lines lnum, 0, (:lnum (:w_cursor win)), @a'nr_lines)
                                                     ;; Set '[ and '] marks.
                                                     (swap! curbuf assoc :b_op_start (assoc (:w_cursor win) :lnum lnum))
                                                     (swap! curbuf assoc :b_op_end (->pos_C (dec (:lnum (:w_cursor win))) (dec (+ (:textcol bd) @a'totlen)) 0))
@@ -12519,8 +12519,8 @@
                                                             (mark-adjust (+ (:lnum (:b_op_start @curbuf)) (if (== (:y_type reg) MCHAR) 1 0)), MAXLNUM, @a'nr_lines, 0)
                                                             ;; note changed text for displaying
                                                             (if (== (:y_type reg) MCHAR)
-                                                                (changed-lines (:lnum (:w_cursor win)), @a'col, (inc (:lnum (:w_cursor win))), @a'nr_lines)
-                                                                (changed-lines (:lnum (:b_op_start @curbuf)), 0, (:lnum (:b_op_start @curbuf)), @a'nr_lines))
+                                                                (swap! curbuf changed-lines (:lnum (:w_cursor win)), @a'col, (inc (:lnum (:w_cursor win))), @a'nr_lines)
+                                                                (swap! curbuf changed-lines (:lnum (:b_op_start @curbuf)), 0, (:lnum (:b_op_start @curbuf)), @a'nr_lines))
                                                             ;; put '] mark at last inserted character
                                                             (swap! curbuf assoc-in [:b_op_end :lnum] lnum)
                                                             ;; correct length for change in indent
@@ -12627,7 +12627,7 @@
                 (when setmark? ;; Set the '] mark.
                     (swap! curbuf update :b_op_end assoc :lnum lnum :col (STRLEN line)))
                 ;; Only report the change in the first line here, del-lines() will report the deleted lines.
-                (changed-lines lnum, n, (inc lnum), 0)
+                (swap! curbuf changed-lines lnum, n, (inc lnum), 0)
                 ;; Delete following lines.  To do this we move the cursor there briefly, and then move it back.
                 ;; After del-lines() the cursor may have moved up (last line deleted), so the current lnum is kept.
                 [(-> win
@@ -31354,7 +31354,7 @@
                                                         (truncate-spaces saved_line))
                                                     (ml-replace lnum, saved_line)
                                                     (if did_append
-                                                        (changed-lines lnum, col, (inc lnum), 1)
+                                                        (swap! curbuf changed-lines lnum, col, (inc lnum), 1)
                                                         (changed-bytes lnum, col))
                                                     false)
                                                 did_append
@@ -31365,7 +31365,7 @@
                                     [win did_append]
                                 )]
                             (when did_append
-                                (changed-lines (:lnum (:w_cursor win)), 0, (:lnum (:w_cursor win)), 1))
+                                (swap! curbuf changed-lines (:lnum (:w_cursor win)), 0, (:lnum (:w_cursor win)), 1))
                             (let [win (update win :w_cursor assoc :col newcol :coladd 0)
                                   ;; Finally, VREPLACE gets the stuff on the new line, puts back the original line, inserts
                                   ;; the new stuff char by char pushing old stuff onto the replace stack (via ins-char()).
@@ -31676,7 +31676,7 @@
 
 (defn- #_void changed-bytes [#_long lnum, #_int col]
     (changed-one-line lnum)
-    (changed-common lnum, col, (inc lnum), 0)
+    (swap! curbuf changed-common lnum, col, (inc lnum), 0)
     nil)
 
 (defn- #_void changed-one-line [#_long lnum]
@@ -31693,14 +31693,14 @@
 ;; Takes care of marking the buffer to be redrawn and sets the changed flag.
 
 (defn- #_void appended-lines [#_long lnum, #_long count]
-    (changed-lines (inc lnum), 0, (inc lnum), count)
+    (swap! curbuf changed-lines (inc lnum), 0, (inc lnum), count)
     nil)
 
 ;; Like appended-lines(), but adjust marks first.
 
 (defn- #_void appended-lines-mark [#_long lnum, #_long count]
     (mark-adjust (inc lnum), MAXLNUM, count, 0)
-    (changed-lines (inc lnum), 0, (inc lnum), count)
+    (swap! curbuf changed-lines (inc lnum), 0, (inc lnum), count)
     nil)
 
 ;; Deleted "count" lines at line "lnum" in the current buffer.
@@ -31708,7 +31708,7 @@
 ;; Takes care of marking the buffer to be redrawn and sets the changed flag.
 
 (defn- #_void deleted-lines [#_long lnum, #_long count]
-    (changed-lines lnum, 0, (+ lnum count), (- count))
+    (swap! curbuf changed-lines lnum, 0, (+ lnum count), (- count))
     nil)
 
 ;; Like deleted-lines(), but adjust marks first.
@@ -31717,7 +31717,7 @@
 
 (defn- #_void deleted-lines-mark [#_long lnum, #_long count]
     (mark-adjust lnum, (dec (+ lnum count)), MAXLNUM, (- count))
-    (changed-lines lnum, 0, (+ lnum count), (- count))
+    (swap! curbuf changed-lines lnum, 0, (+ lnum count), (- count))
     nil)
 
 ;; Changed lines for the current buffer.
@@ -31730,163 +31730,127 @@
 ;; When only inserting lines, "lnum" and "lnume" are equal.
 ;; Takes care of calling changed() and updating b_mod_*.
 
-(defn- #_void changed-lines [#_long lnum, #_int col, #_long lnume, #_long xtra]
+(defn- #_buffer_C changed-lines [#_buffer_C buf, #_long lnum, #_int col, #_long lnume, #_long xtra]
     ;; lnum: first line with change
     ;; col: column in first line with change
     ;; lnume: line below last changed line
     ;; xtra: number of extra lines (negative when deleting)
-    (changed-lines-buf lnum, lnume, xtra)
-    (changed-common lnum, col, lnume, xtra)
-    nil)
+    (-> buf
+        (changed-lines-buf lnum, lnume, xtra)
+        (changed-common lnum, col, lnume, xtra)
+    ))
 
-(defn- #_void changed-lines-buf [#_long lnum, #_long lnume, #_long xtra]
+(defn- #_buffer_C changed-lines-buf [#_buffer_C buf, #_long lnum, #_long lnume, #_long xtra]
     ;; lnum: first line with change
     ;; lnume: line below last changed line
     ;; xtra: number of extra lines (negative when deleting)
-    (cond (:b_mod_set @curbuf)
-    (do
+    (if (:b_mod_set buf)
         ;; find the maximum area that must be redisplayed
-        (swap! curbuf update :b_mod_top min lnum)
-        (when (< lnum (:b_mod_bot @curbuf))
-            ;; adjust old bot position for xtra lines
-            (swap! curbuf assoc :b_mod_bot (max lnum (+ (:b_mod_bot @curbuf) xtra)))
-        )
-        (swap! curbuf assoc :b_mod_bot (max (+ lnume xtra) (:b_mod_bot @curbuf)))
-        (swap! curbuf update :b_mod_xlines + xtra)
-    )
-    :else
-    (do
+        (let [buf (update buf :b_mod_top min lnum)
+              buf (if (< lnum (:b_mod_bot buf)) ;; adjust old bot position for xtra lines
+                    (assoc buf :b_mod_bot (max lnum (+ (:b_mod_bot buf) xtra)))
+                    buf)
+              buf (assoc buf :b_mod_bot (max (+ lnume xtra) (:b_mod_bot buf)))]
+            (update buf :b_mod_xlines + xtra))
         ;; set the area that must be redisplayed
-        (swap! curbuf assoc :b_mod_top lnum :b_mod_bot (+ lnume xtra) :b_mod_xlines xtra :b_mod_set true)
+        (assoc buf :b_mod_top lnum, :b_mod_bot (+ lnume xtra), :b_mod_xlines xtra, :b_mod_set true)
     ))
-    nil)
 
-;; Common code for when a change is was made.
+;; Common code for when a change was made.
 ;; See changed-lines() for the arguments.
 
-(defn- #_void changed-common [#_long lnum, #_int col, #_long lnume, #_long xtra]
-    (§
-        ;; mark the buffer as modified
-        (swap! curbuf changed)
+(defn- #_buffer_C changed-common [#_buffer_C buf, #_long lnum, #_int col, #_long lnume, #_long xtra]
+    ;; mark the buffer as modified ;; set the '. mark
+    (let [buf (changed buf) buf (update buf :b_last_change assoc :lnum lnum :col col)
+          ;; Create a new entry if a new undo-able change was started or we don't have an entry yet.
+          buf (if (or (:b_new_change buf) (zero? (:b_changelistlen buf)))
+                (let-when [#_boolean add
+                        (or (zero? (:b_changelistlen buf))
+                            ;; Don't create a new entry when the line number is the
+                            ;; same as the last one and the column is not too far away.
+                            ;; Avoids creating many entries for typing "xxxxx".
+                            (let [#_pos_C pos (... (:b_changelist buf) (dec (:b_changelistlen buf)))]
+                                (or (!= (:lnum pos) lnum)
+                                    (let [#_int cols 79]
+                                        (or (< (+ (:col pos) cols) col) (< (+ col cols) (:col pos))))
+                                ))
+                        )] add => buf
 
-        ;; set the '. mark
-;       {
-            (swap! curbuf assoc-in [:b_last_change :lnum] lnum)
-            (swap! curbuf assoc-in [:b_last_change :col] col)
-
-            ;; Create a new entry if a new undo-able change was started
-            ;; or we don't have an entry yet.
-            (when (or (:b_new_change @curbuf) (zero? (:b_changelistlen @curbuf)))
-                (ß boolean add)
-                (cond (zero? (:b_changelistlen @curbuf))
-                (do
-                    ((ß add =) true)
-                )
-                :else
-                (do
-                    ;; Don't create a new entry when the line number is the
-                    ;; same as the last one and the column is not too far away.
-                    ;; Avoids creating many entries for typing "xxxxx".
-                    ((ß pos_C p =) (... (:b_changelist @curbuf) (dec (:b_changelistlen @curbuf))))
-                    (cond (!= (:lnum p) lnum)
-                    (do
-                        ((ß add =) true)
-                    )
-                    :else
-                    (do
-                        ((ß int cols =) 79)
-                        ((ß add =) (or (< (+ (:col p) cols) col) (< (+ col cols) (:col p))))
-                    ))
-                ))
-
-                (when add
                     ;; This is the first of a new sequence of undo-able changes
                     ;; and it's at some distance of the last change.  Use a new
                     ;; position in the changelist.
-                    (swap! curbuf assoc :b_new_change false)
-
-                    (when (== (:b_changelistlen @curbuf) JUMPLISTSIZE)
-                        ;; If changelist is full: remove oldest entry.
-                        (swap! curbuf assoc :b_changelistlen (dec JUMPLISTSIZE))
-                        (dotimes [#_int i (dec JUMPLISTSIZE)]
-                            (swap! curbuf assoc-in [:b_changelist i] (... (:b_changelist @curbuf) (inc i)))
-                        )
+                    (let [buf (assoc buf :b_new_change false)
+                          buf (if (== (:b_changelistlen buf) JUMPLISTSIZE)
+                                ;; If changelist is full: remove oldest entry.
+                                (let [buf (assoc buf :b_changelistlen (dec JUMPLISTSIZE))
+                                      buf (loop-when-recur [buf buf #_int i 0]
+                                                           (< i (dec JUMPLISTSIZE))
+                                                           [(assoc-in buf [:b_changelist i] (... (:b_changelist buf) (inc i))) (inc i)]
+                                                        => buf
+                                        )]
+                                    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+                                        ;; Correct position in changelist for other windows on this buffer.
+                                        (when (< 0 (:w_changelistidx win))
+                                            ((ß win =) (update win :w_changelistidx dec))
+                                        ))
+                                    buf)
+                                buf
+                            )]
                         (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-                            ;; Correct position in changelist for other windows on this buffer.
-                            (if (< 0 (:w_changelistidx win))
-                                ((ß win =) (update win :w_changelistidx dec))
-                            )
-                        )
-                    )
-
-                    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-                        ;; For other windows, if the position in the changelist is at the end,
-                        ;; it stays at the end.
-                        (if (== (:w_changelistidx win) (:b_changelistlen @curbuf))
-                            ((ß win =) (update win :w_changelistidx inc))
-                        )
-                    )
-
-                    (swap! curbuf update :b_changelistlen inc)
-                )
-            )
-            (swap! curbuf assoc-in [:b_changelist (dec (:b_changelistlen @curbuf))] (:b_last_change @curbuf))
-            ;; The current window is always after the last change, so that "g," takes you back to it.
-            (swap! curwin assoc :w_changelistidx (:b_changelistlen @curbuf))
-;       }
+                            ;; For other windows, if the position in the changelist is at the end,
+                            ;; it stays at the end.
+                            (when (== (:w_changelistidx win) (:b_changelistlen buf))
+                                ((ß win =) (update win :w_changelistidx inc))
+                            ))
+                        (update buf :b_changelistlen inc)
+                    ))
+                buf)
+          buf (assoc-in buf [:b_changelist (dec (:b_changelistlen buf))] (:b_last_change buf))]
+        ;; The current window is always after the last change, so that "g," takes you back to it.
+        (swap! curwin assoc :w_changelistidx (:b_changelistlen buf))
 
         (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
             ;; Mark this window to be redrawn later.
             ((ß win =) (update win :w_redr_type max VALID))
-
             ;; Check if a change in the buffer has invalidated the cached values for the cursor.
             (cond (< lnum (:lnum (:w_cursor win)))
-            (do
                 ((ß win =) (changed-line-abv-curs win))
-            )
             (and (== (:lnum (:w_cursor win)) lnum) (<= col (:col (:w_cursor win))))
-            (do
                 ((ß win =) (changed-cline-bef-curs win))
-            ))
-
+            )
             (when (<= lnum (:w_botline win))
                 ;; Assume that botline doesn't change
                 ;; (inserted lines make other lines scroll down below botline).
                 ((ß win =) (approximate-botline win))
             )
-
             ;; Check if any w_lines[] entries have become invalid.
-            ;; For entries below the change: Correct the lnums for inserted/deleted lines.
+            ;; For entries below the change: correct the lnums for inserted/deleted lines.
             ;; Makes it possible to stop displaying after the change.
             (dotimes [#_int i (:w_lines_valid win)]
-                (when (and (:wl_valid (... (:w_lines win) i)) (<= lnum (:wl_lnum (... (:w_lines win) i))))
-                    (cond (< (:wl_lnum (... (:w_lines win) i)) lnume)
-                    (do
+                (let-when [wli (... (:w_lines win) i)] (and (:wl_valid wli) (<= lnum (:wl_lnum wli)))
+                    (cond (< (:wl_lnum wli) lnume)
                         ;; line included in change
-                        ((ß win.w_lines[i].wl_valid =) false)
-                    )
+                        ((ß win =) (assoc-in win [:w_lines i :wl_valid] false))
                     (non-zero? xtra)
-                    (do
                         ;; line below change
-                        ((ß win.w_lines[i].wl_lnum =) (+ (:wl_lnum (... (:w_lines win) i)) xtra))
-                    ))
-                )
-            )
-
+                        ((ß win =) (update-in win [:w_lines i :wl_lnum] + xtra))
+                    )
+                ))
             ;; relative numbering may require updating more
             (when @(:wo_rnu (:w_options win))
                 ((ß win =) (redraw-later win, SOME_VALID)))
         )
 
         ;; Call update-screen() later, which checks out what needs to be redrawn,
-        ;; since it notices b_mod_set and then uses b_mod_*.
+        ;; since it notices "b_mod_set" and then uses "b_mod_*".
         (when (< @must_redraw VALID)
             (reset! must_redraw VALID))
 
         ;; When the cursor line is changed, always trigger CursorMoved.
         (when (and (<= lnum (:lnum (:w_cursor @curwin))) (< (:lnum (:w_cursor @curwin)) (+ lnume (if (< xtra 0) (- xtra) xtra))))
-            (swap! last_cursormoved assoc :lnum 0))
-        nil
+            (ß swap! last_cursormoved assoc :lnum 0))
+
+        buf
     ))
 
 (defn- #_buffer_C changed [#_buffer_C buf]
@@ -31904,16 +31868,13 @@
 ;; called when the status bars for buffer 'buf' need to be updated
 
 (defn- #_void check-status []
-    (§
-        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-            (when (non-zero? (:w_status_height win))
-                ((ß win =) (assoc win :w_redr_status true))
-                (when (< @must_redraw VALID)
-                    (reset! must_redraw VALID))
-            )
-        )
-        nil
-    ))
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+        (when (non-zero? (:w_status_height win))
+            ((ß win =) (assoc win :w_redr_status true))
+            (when (< @must_redraw VALID)
+                (reset! must_redraw VALID))
+        ))
+    nil)
 
 ;; Ask for a reply from the user, a 'y' or a 'n'.
 ;; No other characters are accepted, the message is repeated until a valid reply is entered or CTRL-C is hit.
@@ -33680,7 +33641,7 @@
                     (swap! curbuf update-in [:b_op_end :lnum] + (- newsize oldsize)))
             )
 
-            (changed-lines (inc top), 0, bot, (- newsize oldsize))
+            (swap! curbuf changed-lines (inc top), 0, bot, (- newsize oldsize))
 
             ;; set '[ and '] mark
             (swap! curbuf assoc-in [:b_op_start :lnum] (min (:lnum (:b_op_start @curbuf)) (inc top)))
