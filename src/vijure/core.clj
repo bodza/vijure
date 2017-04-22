@@ -22554,172 +22554,92 @@
                                                                     [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                             NFA_COMPOSING
-                                                                (let [#_int c curc #_int* cc (int-array MAX_MCO) #_int k 0
-                                                                      #_nfa_state_C s (.. t state (out0))
+                                                                (let [#_nfa_state_C s (.. t state (out0)) #_nfa_state_C e (.. t state (out1)) ;; NFA_END_COMPOSING
                                                                       ;; Only match composing character(s), ignoring the base character.
                                                                       ;; Used for ".{composing}" and "{composing}" (no preceding character).
-                                                                      #_int n (if (utf-iscomposing (:c s)) (utf-char2len c) 0)
-                                                                ]
-
-                                                                    (ß boolean result)
-                                                                    (cond (and @ireg_icombine (zero? n))
-                                                                    (do
-                                                                        ;; If \Z was present, then ignore composing characters.
-                                                                        ;; When ignoring the base character this always matches.
-                                                                        ((ß result =) (not (and (zero? n) (!= (:c s) curc))))
-                                                                        (loop-when [] (!= (:c s) NFA_END_COMPOSING)
-                                                                            ((ß s =) (.out0 s))
-                                                                            (recur)
-                                                                        )
-                                                                    )
-                                                                    ;; Check base character matches first, unless ignored.
-                                                                    (or (< 0 n) (== c (:c s)))
-                                                                    (do
-                                                                        (when (zero? n)
-                                                                            ((ß n =) (+ n (utf-char2len c)))
-                                                                            ((ß s =) (.out0 s))
-                                                                        )
-
-                                                                        ;; We don't care about the order of composing characters.
-                                                                        ;; Get them into cc[] first.
-                                                                        (loop-when [] (< n clen)
-                                                                            ((ß c =) (us-ptr2char @reginput, n))
-                                                                            ((ß cc[k++] =) c)
-                                                                            ((ß n =) (+ n (utf-char2len c)))
-                                                                            (if (== k MAX_MCO)
-                                                                                (ß BREAK)
-                                                                            )
-                                                                            (recur)
-                                                                        )
-
-                                                                        ;; Check that each composing char in the pattern matches
-                                                                        ;; a composing char in the text.
-                                                                        ;; We do not check if all composing chars are matched.
-                                                                        ((ß result =) true)
-                                                                        (loop-when [] (!= (:c s) NFA_END_COMPOSING)
-                                                                            ((ß int j =) (loop-when-recur [j 0] (< j k) [(inc j)] => j
-                                                                                (if (== (... cc j) (:c s))
-                                                                                    (ß BREAK)
-                                                                                )
-                                                                            ))
-                                                                            (when (== j k)
-                                                                                ((ß result =) false)
-                                                                                (ß BREAK)
-                                                                            )
-                                                                            ((ß s =) (.out0 s))
-                                                                            (recur)
-                                                                        )
-                                                                    )
-                                                                    :else
-                                                                    (do
-                                                                        ((ß result =) false)
-                                                                    ))
-
-                                                                    ((ß nfa_state_C end =) (.. t state (out1)))    ;; NFA_END_COMPOSING
-
-                                                                    (when result
-                                                                        ((ß m =) (assoc m :add_state (.out0 end) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                      #_int n (if (utf-iscomposing (:c s)) (utf-char2len curc) 0)
+                                                                      ? (cond (and @ireg_icombine (zero? n))
+                                                                            ;; If \Z was present, then ignore composing characters.
+                                                                            ;; When ignoring the base character, this always matches.
+                                                                            (not (and (zero? n) (!= (:c s) curc)))
+                                                                        (or (< 0 n) (== (:c s) curc))
+                                                                            ;; Check base character matches first, unless ignored.
+                                                                            (let [[n s] (if (zero? n) [(+ n (utf-char2len curc)) (.out0 s)] [n s])
+                                                                                  ;; We don't care about the order of composing characters.
+                                                                                  #_int* cc (int-array MAX_MCO) ;; Get them into cc[] first.
+                                                                                  #_int k
+                                                                                    (loop-when [n n k 0] (< n clen) => k
+                                                                                        (let [#_int c (us-ptr2char @reginput, n) _ (aset cc k c) k (inc k) n (+ n (utf-char2len c))]
+                                                                                            (recur-if (< k MAX_MCO) [n k] => k))
+                                                                                    )]
+                                                                                ;; Check that each composing char in the pattern matches a composing char in the text.
+                                                                                ;; We do not check if all composing chars are matched.
+                                                                                (loop-when s (!= (:c s) NFA_END_COMPOSING) => true
+                                                                                    (let [#_int j (loop-when-recur [j 0] (and (< j k) (!= (aget cc j) (:c s))) [(inc j)] => j)]
+                                                                                        (recur-if (< j k) (.out0 s) => false))
+                                                                                ))
+                                                                        :else
+                                                                            false
+                                                                        )]
+                                                                    [win (if ? (assoc m :add_state (.out0 e) :add_off clen) m) nil])
 
                                                             NFA_NEWL
-                                                                (do
-                                                                    (when (and (== curc NUL) (<= @reglnum @reg_lmax))
-                                                                        ((ß @a'go_to_nextline =) true)
-                                                                        ;; Pass -1 for the offset, which means taking the position at the start of the next line.
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off -1))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [m (when' (and (== curc NUL) (<= @reglnum @reg_lmax)) => m
+                                                                            (reset! a'go_to_nextline true)
+                                                                            ;; Pass -1 for the offset, which means taking the position at the start of the next line.
+                                                                            (assoc m :add_state (.. t state (out0)) :add_off -1)
+                                                                        )]
+                                                                    [win m nil])
 
                                                            [NFA_START_COLL NFA_START_NEG_COLL]
-                                                                (do
-                                                                    ;; What follows is a list of characters, until NFA_END_COLL.
-                                                                    ;; One of them must match or none of them must match.
-
-                                                                    ;; Never match EOL.
-                                                                    ;; If it's part of the collection it is added as a separate state with an OR.
-                                                                    (if (== curc NUL)
-                                                                        (ß BREAK) [win m nil]
-                                                                    )
-
-                                                                    ((ß boolean result_if_matched =) (== (:c (:th_state t)) NFA_START_COLL))
-
-                                                                    ((ß boolean result =) false)        ;; %% anno dunno
-                                                                    (loop [#_nfa_state_C s (.. t state (out0))]
-                                                                        (when (== (:c s) NFA_END_COLL)
-                                                                            ((ß result =) (not result_if_matched))
-                                                                            (ß BREAK)
-                                                                        )
-                                                                        (cond (== (:c s) NFA_RANGE_MIN)
-                                                                        (do
-                                                                            ((ß int c1 =) (:val s))
-                                                                            ((ß s =) (.out0 s)) ;; advance to NFA_RANGE_MAX
-                                                                            ((ß int c2 =) (:val s))
-                                                                            (when (<= c1 curc c2)
-                                                                                ((ß result =) result_if_matched)
-                                                                                (ß BREAK)
-                                                                            )
-                                                                            (when @ireg_icase
-                                                                                ((ß int curc_low =) (utf-tolower curc))
-                                                                                ((ß boolean done =) false)
-
-                                                                                (loop-when c1 (<= c1 c2)
-                                                                                    (when (== (utf-tolower c1) curc_low)
-                                                                                        ((ß result =) result_if_matched)
-                                                                                        ((ß done =) true)
-                                                                                        (ß BREAK)
-                                                                                    )
-                                                                                    (recur (inc c1))
-                                                                                )
-                                                                                (if done
-                                                                                    (ß BREAK)
-                                                                                )
-                                                                            )
-                                                                        )
-                                                                        (if (< (:c s) 0) (check-char-class (:c s), curc) (or (== curc (:c s)) (and @ireg_icase (== (utf-tolower curc) (utf-tolower (:c s))))))
-                                                                        (do
-                                                                            ((ß result =) result_if_matched)
-                                                                            (ß BREAK)
-                                                                        ))
-                                                                        (recur (.out0 s))
-                                                                    )
-                                                                    (when result
-                                                                        ;; next state is in out of the NFA_END_COLL,
-                                                                        ;; out1 of START points to the END state
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out1) (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                ;; What follows is a list of characters, until NFA_END_COLL.
+                                                                ;; One of them must match or none of them must match.
+                                                                ;;
+                                                                ;; Never match EOL.
+                                                                ;; If it's part of the collection, it is added as a separate state with an OR.
+                                                                (when' (!= curc NUL) => [win m nil]
+                                                                    (let [! (== (:c (:th_state t)) NFA_START_COLL)
+                                                                          ? (loop [#_nfa_state_C s (.. t state (out0))]
+                                                                                (condp == (:c s)
+                                                                                    NFA_END_COLL
+                                                                                        (not !)
+                                                                                    NFA_RANGE_MIN
+                                                                                        (let [#_int c1 (:val s) s (.out0 s) #_int c2 (:val s)] ;; advance to NFA_RANGE_MAX
+                                                                                            (cond (<= c1 curc c2)
+                                                                                                !
+                                                                                            @ireg_icase
+                                                                                                (let [#_int l (utf-tolower curc)
+                                                                                                      ? (loop-when c1 (<= c1 c2) => false
+                                                                                                            (recur-if (!= (utf-tolower c1) l) (inc c1) => true)
+                                                                                                        )]
+                                                                                                    (recur-if (not ?) [(.out0 s)] => !))
+                                                                                            :else
+                                                                                                (recur (.out0 s))
+                                                                                            ))
+                                                                                    (let [? (if (< (:c s) 0)
+                                                                                                (check-char-class (:c s), curc)
+                                                                                                (or (== (:c s) curc)
+                                                                                                    (and @ireg_icase (== (utf-tolower (:c s)) (utf-tolower curc)))))]
+                                                                                        (recur-if (not ?) [(.out0 s)] => !)
+                                                                                    ))
+                                                                            )]
+                                                                        ;; Next state is in out0 of the NFA_END_COLL, out1 of START points to the END state.
+                                                                        [win (if ? (assoc m :add_state (.. t state (out1) (out0)) :add_off clen) m) nil]
+                                                                    ))
 
                                                             NFA_ANY
-                                                                (do
-                                                                    ;; Any char except NUL, (end of input) does not match.
-                                                                    (when (< 0 curc)
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                ;; Any char except NUL, (end of input) does not match.
+                                                                (let [? (< 0 curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off clen) m) nil])
 
                                                             NFA_ANY_COMPOSING
-                                                                (do
-                                                                    ;; On a composing character skip over it.
-                                                                    ;; Otherwise do nothing.
-                                                                    ;; Always matches.
-                                                                    (cond (utf-iscomposing curc)
-                                                                    (do
-                                                                        ((ß m =) (assoc m :add_off clen))
-                                                                    )
-                                                                    :else
-                                                                    (do
-                                                                        ((ß m =) (assoc m :add_here true :add_off 0))
-                                                                    ))
-                                                                    ((ß m =) (assoc m :add_state (.. t state (out0))))
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                ;; On a composing character, skip over it.
+                                                                ;; Otherwise do nothing.
+                                                                ;; Always matches.
+                                                                (let [m (if (utf-iscomposing curc) (assoc m :add_off clen) (assoc m :add_here true :add_off 0))]
+                                                                    [win (assoc m :add_state (.. t state (out0))) nil])
 
-                                                            ;; Character classes like \a for alpha, \d for digit etc.
+                                                            ;; Character classes like \a for alpha, \d for digit, etc.
 
                                                             NFA_IDENT     ;;  \i
                                                                 (do
