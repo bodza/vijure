@@ -25383,49 +25383,37 @@
 
 ;; After building the NFA program, inspect it to add optimization hints.
 
-(defn- #_void nfa-postprocess [#_nfa_regprog_C prog]
-    (§
-        (dotimes [#_int i (:nstate prog)]
-            ((ß nfa_state_C state =) (... (:states prog) i))
-            (if (nil? state)
-                (ß CONTINUE)
-            )
-
-            ((ß int c =) (:c state))
-            (when (any == c NFA_START_INVISIBLE NFA_START_INVISIBLE_NEG NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
-                (ß boolean directly)
-
-                ;; Do it directly when what follows is possibly the end of the match.
-                (cond (match-follows (.. state (out1) (out0)), 0)
-                (do
-                    ((ß directly =) true)
-                )
-                :else
-                (do
-                    ((ß int ch_invisible =) (failure-chance (.out0 state), 0))
-                    ((ß int ch_follows =) (failure-chance (.. state (out1) (out0)), 0))
-
-                    ;; Postpone when the invisible match is expensive or has a lower chance of failing.
-                    (cond (any == c NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
-                    (do
-                        ;; "before" matches are very expensive when unbounded,
-                        ;; always prefer what follows then, unless what follows will always match.
-                        ;; Otherwise strongly prefer what follows.
-                        ((ß directly =) (if (and (<= (:val state) 0) (< 0 ch_follows)) false (< (* ch_follows 10) ch_invisible)))
-                    )
-                    :else
-                    (do
-                        ;; normal invisible, first do the one with the highest failure chance
-                        ((ß directly =) (< ch_follows ch_invisible))
-                    ))
-                ))
-                (when directly
-                    ;; switch to the _FIRST state
-                    ((ß state =) (update state :c inc))
-                )
-            )
+(defn- #_nfa_regprog_C nfa-postprocess [#_nfa_regprog_C prog]
+    (loop-when [prog prog #_int i 0] (< i (:nstate prog)) => prog
+        (let [#_nfa_state_C state (... (:states prog) i)
+              prog
+                (if (some? state)
+                    (let [#_int c (:c state)]
+                        (if (any == c NFA_START_INVISIBLE NFA_START_INVISIBLE_NEG NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
+                            ;; Do it directly when what follows is possibly the end of the match.
+                            (let [#_boolean directly
+                                    (or (match-follows (.. state (out1) (out0)), 0)
+                                        (let [#_int ch_invisible (failure-chance (.out0 state), 0) #_int ch_follows (failure-chance (.. state (out1) (out0)), 0)]
+                                            ;; Postpone when the invisible match is expensive or has a lower chance of failing.
+                                            (if (any == c NFA_START_INVISIBLE_BEFORE NFA_START_INVISIBLE_BEFORE_NEG)
+                                                ;; "before" matches are very expensive when unbounded,
+                                                ;; always prefer what follows then, unless what follows will always match.
+                                                ;; Otherwise strongly prefer what follows.
+                                                (and (or (< 0 (:val state)) (<= ch_follows 0)) (< (* ch_follows 10) ch_invisible))
+                                                ;; Normal invisible, first do the one with the highest failure chance.
+                                                (< ch_follows ch_invisible)
+                                            ))
+                                    )]
+                                (if directly ;; switch to the _FIRST state
+                                    (update-in prog [:states i :c] inc)
+                                    prog
+                                ))
+                            prog
+                        ))
+                    prog
+                )]
+            (recur prog (inc i))
         )
-        nil
     ))
 
 ;; NFA execution code.
@@ -26442,53 +26430,39 @@
         (if (some? s) (do (reset! a'col (BDIFF s, @regline)) true) false)
     ))
 
-;; Check for a match with match_text.
-;; Called after skip-to-start() has found regstart.
+;; Check for a match with "match_text".
+;; Called after skip-to-start() has found "regstart".
 ;; Returns zero for no match, 1 for a match.
 
 (defn- #_long find-match-text [#_int startcol, #_int regstart, #_Bytes match_text]
-    (§
-        ((ß int[] a'col =) (atom (int startcol)))
+    (let [a'col (atom (int startcol))]
         (loop []
-            ((ß boolean match =) true)
-
-            ((ß int len2 =) (loop-when [#_int len1 0 len2 (utf-char2len regstart)] (non-eos? match_text len1) => len2 ;; skip regstart
-                ((ß int c1 =) (us-ptr2char match_text, len1))
-                ((ß int c2 =) (us-ptr2char @regline, (+ @a'col len2)))
-                (when (and (!= c1 c2) (or (not @ireg_ic) (!= (utf-tolower c1) (utf-tolower c2))))
-                    ((ß match =) false)
-                    (ß BREAK)
-                )
-                (recur (+ len1 (utf-char2len c1)) (+ len2 (utf-char2len c2)))
+            (let [[#_boolean match #_int n2]
+                    (loop-when [#_int n1 0 n2 (utf-char2len regstart)] (non-eos? match_text n1) => [true n2] ;; skip regstart
+                        (let [#_int c1 (us-ptr2char match_text, n1) #_int c2 (us-ptr2char @regline, (+ @a'col n2))]
+                            (if (or (== c1 c2) (and @ireg_ic (== (utf-tolower c1) (utf-tolower c2))))
+                                (recur (+ n1 (utf-char2len c1)) (+ n2 (utf-char2len c2)))
+                                [false n2]
+                            ))
+                    )]
+                ;; check that no composing char follows
+                (if (and match (not (utf-iscomposing (us-ptr2char @regline, (+ @a'col n2)))))
+                    (do (cleanup-subexpr)
+                        (if (nil? @reg_match)
+                            (do
+                                (swap! reg_startpos assoc 0 (->lpos_C @reglnum @a'col))
+                                (swap! reg_endpos assoc 0 (->lpos_C @reglnum (+ @a'col n2)))
+                            )
+                            (do
+                                (swap! reg_startp assoc 0 (.plus @regline @a'col))
+                                (swap! reg_endp assoc 0 (.plus @regline (+ @a'col n2)))
+                            ))
+                        1)
+                    (do ;; Try finding regstart after the current match.
+                        (swap! a'col + (utf-char2len regstart)) ;; skip regstart
+                        (recur-if (skip-to-start regstart, a'col) [] => 0)
+                    ))
             ))
-
-            ;; check that no composing char follows
-            (when (and match (not (utf-iscomposing (us-ptr2char @regline, (+ @a'col len2)))))
-                (cleanup-subexpr)
-                (cond (nil? @reg_match)
-                (do
-                    ((ß @reg_startpos[0].lnum =) @reglnum)
-                    ((ß @reg_startpos[0].col =) @a'col)
-                    ((ß @reg_endpos[0].lnum =) @reglnum)
-                    ((ß @reg_endpos[0].col =) (+ @a'col len2))
-                )
-                :else
-                (do
-                    ((ß @reg_startp[0] =) (.plus @regline @a'col))
-                    ((ß @reg_endp[0] =) (.plus @regline (+ @a'col len2)))
-                ))
-                ((ß RETURN) 1)
-            )
-
-            ;; Try finding regstart after the current match.
-            (swap! a'col + (utf-char2len regstart))                          ;; skip regstart
-            (if (not (skip-to-start regstart, a'col))
-                (ß BREAK)
-            )
-            (recur)
-        )
-
-        0
     ))
 
 ;; Main matching routine.
@@ -26650,8 +26624,7 @@
                         NFA_START_INVISIBLE_BEFORE_NEG
                         NFA_START_INVISIBLE_BEFORE_NEG_FIRST]
                         (do
-                            ;; Do it directly if there already is a PIM or when
-                            ;; nfa-postprocess() detected it will work better.
+                            ;; Do it directly if there already is a PIM or when nfa-postprocess() detected it will work better.
                             (cond (or (!= (:np_result (:th_pim thread)) NFA_PIM_UNUSED) (== (:c (:th_state thread)) NFA_START_INVISIBLE_FIRST) (== (:c (:th_state thread)) NFA_START_INVISIBLE_NEG_FIRST) (== (:c (:th_state thread)) NFA_START_INVISIBLE_BEFORE_FIRST) (== (:c (:th_state thread)) NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
                             (do
                                 ((ß int in_use =) (:in_use m))
@@ -27895,7 +27868,7 @@
                 ((ß prog =) (assoc prog :has_backref @nfa_has_backref))
                 ((ß prog =) (assoc prog :nsubexp @regnpar))
 
-                (nfa-postprocess prog)
+                ((ß prog =) (nfa-postprocess prog))
 
                 ((ß prog =) (assoc prog :reganch (if (nfa-get-reganch (:start prog), 0) 1 0)))
                 ((ß prog =) (assoc prog :regstart (nfa-get-regstart (:start prog), 0)))
