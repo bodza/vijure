@@ -7661,6 +7661,8 @@
         (field int          cmd_arg)            ;; value for ca.arg
     ])
 
+(declare nv_cmds)
+
 ;; Search for a command in the commands table.
 ;; Returns -1 for invalid command.
 
@@ -7674,483 +7676,338 @@
 
 ;; Execute a command in Normal mode.
 
-(defn- #_void normal-cmd [#_oparg_C oap, #_boolean toplevel]
+(defn- #_oparg_C normal-cmd [#_oparg_C oap, #_boolean toplevel]
     ;; toplevel: true when called from main()
-    (§
-        ((ß int old_col =) (:w_curswant @curwin))
-
-        ((ß cmdarg_C ca =) (NEW_cmdarg_C))   ;; command arguments
-        ((ß ca =) (assoc ca :oap oap))
-
-        ;; Use a count remembered from before entering an operator.
-        ;; After typing "3d" we return from normal-cmd() and come back here,
-        ;; the "3" is remembered in "opcount".
-        ((ß ca =) (assoc ca :opcount @opcount))
-
-        ;; If there is an operator pending, then the command we take this time
-        ;; will terminate it.  finish_op tells us to finish the operation before
-        ;; returning this time (unless the operation was cancelled).
-
-        ((ß boolean save_finish_op =) @finish_op)
-        (reset! finish_op (!= (:op_type oap) OP_NOP))
-        (when (!= @finish_op save_finish_op)
-            (ui-cursor-shape)              ;; may show different cursor shape
-        )
-
-        ;; When not finishing an operator and no register name typed, reset the count.
-        (when (and (not @finish_op) (zero? (:regname oap)))
-            ((ß ca =) (assoc ca :opcount 0))
-        )
-
-        ;; Restore counts from before receiving K_CURSORHOLD.
-        ;; This means after typing "3", handling K_CURSORHOLD
-        ;; and then typing "2" we get "32", not "3 * 2".
-        (when (or (< 0 (:prev_opcount oap)) (< 0 (:prev_count0 oap)))
-            ((ß ca =) (assoc ca :opcount (:prev_opcount oap)))
-            ((ß ca =) (assoc ca :count0 (:prev_count0 oap)))
-            ((ß oap =) (assoc oap :prev_opcount 0))
-            ((ß oap =) (assoc oap :prev_count0 0))
-        )
-
-        (reset! State NORMAL_BUSY)
-
-        ;; Get the command character from the user.
-
-        ((ß int c =) (safe-vgetc))
-
-        ((ß c =) (if (== c NUL) K_ZERO c))
-
-        ;; In Select mode, typed text replaces the selection.
-
-        (when (and @VIsual_active @VIsual_select (or (vim-isprintc c) (== c NL) (== c CAR) (== c K_KENTER)))
-            ;; Fake a "c"hange command.
-            ;; When "restart_edit" is set (e.g., because 'insertmode' is set)
-            ;; fake a "d"elete command, Insert mode will restart automatically.
-            ;; Insert the typed character in the typeahead buffer, so it can be
-            ;; mapped in Insert mode.  Required for ":lmap" to work.
-            (ins-char-typebuf c)
-            ((ß c =) (if (non-zero? @restart_edit) (byte \d) (byte \c)))
-            (reset! msg_nowait true)      ;; don't delay going to insert mode
-        )
-
-        ((ß boolean need_flushbuf =) (add-to-showcmd c))      ;; need to call out-flush()
-        ((ß boolean ctrl_w =) false)                         ;; got CTRL-W command
-
-;       getcount:
-        (loop []
-            (when (not (and @VIsual_active @VIsual_select))
+    (let [o'curswant (:w_curswant @curwin)
+          #_cmdarg_C ca (assoc (NEW_cmdarg_C) :oap oap)
+          ;; Use a count remembered from before entering an operator.
+          ;; After typing "3d" we return from normal-cmd() and come back here,
+          ;; the "3" is remembered in "opcount".
+          ca (assoc ca :opcount @opcount)
+          ;; If there is an operator pending, then the command we take this time
+          ;; will terminate it.  "finish_op" tells us to finish the operation before
+          ;; returning this time (unless the operation was cancelled).
+          o'finish_op @finish_op _ (reset! finish_op (!= (:op_type (:oap ca)) OP_NOP))
+          _ (when (!= @finish_op o'finish_op)
+                (ui-cursor-shape)) ;; may show different cursor shape
+          ;; When not finishing an operator and no register name typed, reset the count.
+          ca (if (and (not @finish_op) (zero? (:regname (:oap ca)))) (assoc ca :opcount 0) ca)
+          ;; Restore counts from before receiving K_CURSORHOLD.  This means after typing "3",
+          ;; handling K_CURSORHOLD and then typing "2" we get "32", not "3 * 2".
+          ca (let-when [x (:prev_opcount (:oap ca)) y (:prev_count0 (:oap ca))] (or (< 0 x) (< 0 y)) => ca
+                (-> ca
+                    (assoc :opcount x :count0 y)
+                    (update :oap assoc :prev_opcount 0 :prev_count0 0)
+                ))
+          _ (reset! State NORMAL_BUSY)
+          ;; Get the command character from the user.
+          #_int c (safe-vgetc) c (if (== c NUL) K_ZERO c)
+          ;; In Select mode, typed text replaces the selection.
+          c (if (and @VIsual_active @VIsual_select (or (vim-isprintc c) (== c NL) (== c CAR) (== c K_KENTER)))
+                (do ;; Fake a "c"hange command.
+                    ;; When "restart_edit" is set (e.g. because 'insertmode' is set),
+                    ;; fake a "d"elete command, Insert mode will restart automatically.
+                    ;; Insert the typed character in the typeahead buffer, so it can be
+                    ;; mapped in Insert mode.
+                    (ins-char-typebuf c)
+                    (let [c (if (non-zero? @restart_edit) (byte \d) (byte \c))]
+                        (reset! msg_nowait true) ;; don't delay going to insert mode
+                        c
+                    ))
+                c)
+          a'flush (atom (boolean (add-to-showcmd c))) ;; need to call out-flush()
+          [ca c #_boolean ctrl_w]
+            (loop-when [ca ca c c ctrl_w false] (not (and @VIsual_active @VIsual_select)) => [ca c ctrl_w]
                 ;; Handle a count before a command and compute ca.count0.
-                ;; Note that '0' is a command and not the start of a count,
-                ;; but it's part of a count after other digits.
-
-                (loop-when [] (or (<= (byte \1) c (byte \9)) (and (!= (:count0 ca) 0) (any == c K_DEL K_KDEL (byte \0))))
-                    (cond (any == c K_DEL K_KDEL)
-                    (do
-                        ((ß ca =) (assoc ca :count0 (/ (:count0 ca) 10)))
-                        (del-from-showcmd 4)    ;; delete the digit and ~@%
-                    )
-                    :else
-                    (do
-                        ((ß ca =) (assoc ca :count0 (+ (* (:count0 ca) 10) (- c (byte \0)))))
-                    ))
-                    (if (< (:count0 ca) 0)          ;; got too large!
-                        ((ß ca =) (assoc ca :count0 999999999))
-                    )
-
-                    (when ctrl_w
-                        (swap! no_mapping inc)
-                        (swap! allow_keys inc)           ;; no mapping for nchar, but keys
-                    )
-                    ((ß c =) (plain-vgetc))
-                    (when ctrl_w
-                        (swap! no_mapping dec)
-                        (swap! allow_keys dec)
-                    )
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd c)))
-                    (recur)
-                )
-
-                ;; If we got CTRL-W there may be a/another count
-
-                (when (and (== c Ctrl_W) (not ctrl_w) (== (:op_type oap) OP_NOP))
-                    ((ß ctrl_w =) true)
-                    ((ß ca =) (assoc ca :opcount (:count0 ca)))     ;; remember first count
-                    ((ß ca =) (assoc ca :count0 0))
-                    (swap! no_mapping inc)
-                    (swap! allow_keys inc)               ;; no mapping for nchar, but keys
-                    ((ß c =) (plain-vgetc))          ;; get next character
-                    (swap! no_mapping dec)
-                    (swap! allow_keys dec)
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd c)))
-                    (ß CONTINUE getcount)              ;; jump back
-                )
-            )
-
-            (ß BREAK)
-            (recur)
-        )
-
-        (cond (== c K_CURSORHOLD)
-        (do
-            ;; Save the count values so that ca.opcount and ca.count0 are exactly
-            ;; the same when coming back here after handling K_CURSORHOLD.
-            ((ß oap =) (assoc oap :prev_opcount (:opcount ca)))
-            ((ß oap =) (assoc oap :prev_count0 (:count0 ca)))
-        )
-        (non-zero? (:opcount ca))
-        (do
-            ;; If we're in the middle of an operator (including after entering a
-            ;; yank buffer with '"') AND we had a count before the operator, then
-            ;; that count overrides the current value of ca.count0.
-            ;; What this means effectively, is that commands like "3dw" get turned
-            ;; into "d3w" which makes things fall into place pretty neatly.
-            ;; If you give a count before AND after the operator, they are multiplied.
-
-            ((ß ca =) (assoc ca :count0 (if (non-zero? (:count0 ca)) (* (:count0 ca) (:opcount ca)) (:opcount ca))))
-        ))
-
-        ;; Always remember the count.
-        ;; It will be set to zero (on the next call, above) when there is no pending operator.
-        ;; When called from main(), save the count for use by the "count" built-in variable.
-
-        ((ß ca =) (assoc ca :opcount (:count0 ca)))
-        ((ß ca =) (assoc ca :count1 (if (zero? (:count0 ca)) 1 (:count0 ca))))
-
-        ;; Find the command character in the table of commands.
-        ;; For CTRL-W we already got nchar when looking for a count.
-
-        (cond ctrl_w
-        (do
-            ((ß ca =) (assoc ca :nchar c))
-            ((ß ca =) (assoc ca :cmdchar Ctrl_W))
-        )
-        :else
-        (do
-            ((ß ca =) (assoc ca :cmdchar c))
-        ))
-
-;       normal_end:
-;       {
-            ((ß int idx =) (find--command (:cmdchar ca)))
-            (when (< idx 0)
-                ;; Not a known command: beep.
-                (clearopbeep oap)
-                (ß BREAK normal_end)
-            )
-
-            (when (and (text-locked) (flag? (:cmd_flags (... nv_cmds idx)) NV_NCW))
-                ;; This command is not allowed while editing a cmdline: beep.
-                (clearopbeep oap)
-                (text-locked-msg)
-                (ß BREAK normal_end)
-            )
-
-            ;; In Visual/Select mode, a few keys are handled in a special way.
-
-            (when @VIsual_active
-                ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-                (when (and @km_stopsel (flag? (:cmd_flags (... nv_cmds idx)) NV_STS) (non-flag? @mod_mask MOD_MASK_SHIFT))
-                    (swap! curwin end-visual-mode)
-                    (redraw-curbuf-later INVERTED)
-                )
-
-                ;; Keys that work different when 'keymodel' contains "startsel".
-                (when @km_startsel
-                    (cond (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
-                    (do
-                        ((ß ca =) (unshift-special ca))
-                        ((ß idx =) (find--command (:cmdchar ca)))
-                        (when (< idx 0)
-                            ;; Just in case.
-                            (clearopbeep oap)
-                            (ß BREAK normal_end)
-                        )
-                    )
-                    (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
-                    (do
-                        (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
-                    ))
-                )
-            )
-
-            ;; Get an additional character if we need one.
-
-            (when (and (!= (& (:cmd_flags (... nv_cmds idx)) NV_NCH) 0) (or (and (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_NOP) NV_NCH_NOP) (== (:op_type oap) OP_NOP)) (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_ALW) NV_NCH_ALW) (and (== (:cmdchar ca) (byte \q)) (== (:op_type oap) OP_NOP) (not @Recording) (not @execReg)) (and (any == (:cmdchar ca) (byte \a) (byte \i)) (or (!= (:op_type oap) OP_NOP) @VIsual_active))))
-                ((ß boolean repl =) false)                   ;; get character for replace mode
-                ((ß boolean lit =) false)                    ;; get extra character literally
-
-                (swap! no_mapping inc)
-                (swap! allow_keys inc)                           ;; no mapping for nchar, but allow key codes
-                ;; Don't generate a CursorHold event here,
-                ;; most commands can't handle it, e.g. nv-replace(), nv-csearch().
-                (reset! did_cursorhold true)
-                (ß keyword k'char)
-                (cond (== (:cmdchar ca) (byte \g))
-                (do
-                    ;; For 'g' get the next character now, so that we can check for "gr", "g'" and "g`".
-
-                    ((ß ca =) (assoc ca :nchar (plain-vgetc)))
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (:nchar ca))))
-                    (cond (any == (:nchar ca) (byte \r) (byte \') (byte \`) Ctrl_BSL)
-                    (do
-                        ((ß k'char =) :extra_char)            ;; need to get a third character
-                        (if (!= (:nchar ca) (byte \r))
-                            ((ß lit =) true)                 ;; get it literally
-                            ((ß repl =) true)                ;; get it in replace mode
-                        )
-                    )
-                    :else
-                    (do
-                        ((ß k'char =) nil)                      ;; no third character needed
-                    ))
-                )
-                :else
-                (do
-                    ((ß repl =) (or (== (:cmdchar ca) (byte \r)) repl))              ;; get it in replace mode
-                    ((ß k'char =) :nchar)
-                ))
-
-                ((ß boolean lang =) (or repl (!= (& (:cmd_flags (... nv_cmds idx)) NV_LANG) 0)))
-
-                ;; Get a second or third character.
-
-                (when (some? k'char)
-                    (when repl
-                        (reset! State REPLACE)                ;; pretend Replace mode
-                        (ui-cursor-shape)              ;; show different cursor shape
-                    )
-
-                    ((ß ca.k'char =) (plain-vgetc))
-
-                    (reset! State NORMAL_BUSY)
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (k'char ca))))
-
-                    (when (not lit)
-                        ;; Typing CTRL-K gets a digraph.
-                        (when (and (== (k'char ca) Ctrl_K) (or (flag? (:cmd_flags (... nv_cmds idx)) NV_LANG) (== k'char :extra_char)) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
-                            ((ß c =) (get-digraph false))
-                            (when (< 0 c)
-                                ((ß ca.k'char =) c)
-                                ;; Guessing how to update showcmd here...
-                                (del-from-showcmd 3)
-                                ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (k'char ca))))
-                            )
-                        )
-                    )
-
-                    ;; When the next character is CTRL-\ a following CTRL-N means
-                    ;; the command is aborted and we go to Normal mode.
-
-                    (cond (and (== k'char :extra_char) (== (:nchar ca) Ctrl_BSL) (any == (:extra_char ca) Ctrl_N Ctrl_G))
-                    (do
-                        ((ß ca =) (assoc ca :cmdchar Ctrl_BSL))
-                        ((ß ca =) (assoc ca :nchar (:extra_char ca)))
-                        ((ß idx =) (find--command (:cmdchar ca)))
-                    )
-                    (and (any == (:nchar ca) (byte \n) (byte \N)) (== (:cmdchar ca) (byte \g)))
-                    (do
-                        ((ß ca =) (assoc-in ca [:oap :op_type] (get-op-type (k'char ca), NUL)))
-                    )
-                    (== (k'char ca) Ctrl_BSL)
-                    (do
-                        ((ß long towait =) (if (<= 0 @p_ttm) @p_ttm @p_tm))
-
-                        ;; There is a busy wait here when typing "f<C-\>" and then
-                        ;; something different from CTRL-N.  Can't be avoided.
-                        (loop-when [] (and (<= ((ß c =) (vpeekc)) 0) (< 0 towait))
-                            (do-sleep (min towait 50))
-                            ((ß towait =) (- towait 50))
-                            (recur)
-                        )
-                        (when (< 0 c)
-                            ((ß c =) (plain-vgetc))
-                            (cond (and (!= c Ctrl_N) (!= c Ctrl_G))
-                            (do
-                                (vungetc c)
-                            )
-                            :else
-                            (do
-                                ((ß ca =) (assoc ca :cmdchar Ctrl_BSL))
-                                ((ß ca =) (assoc ca :nchar c))
-                                ((ß idx =) (find--command (:cmdchar ca)))
+                ;; Note that '0' is a command and not the start of a count, but it's part of a count after other digits.
+                (let-when [[ca c]
+                        (loop-when [ca ca c c] (or (<= (byte \1) c (byte \9)) (and (!= (:count0 ca) 0) (any == c K_DEL K_KDEL (byte \0)))) => [ca c]
+                            (let [ca (if (any == c K_DEL K_KDEL)
+                                        (let [ca (assoc ca :count0 (/ (:count0 ca) 10))] (del-from-showcmd 4) ca) ;; delete the digit and ~@%
+                                        (assoc ca :count0 (+ (* (:count0 ca) 10) (- c (byte \0)))))
+                                  ca (if (< (:count0 ca) 0) (assoc ca :count0 999999999) ca) ;; got too large!
+                                  _ (when ctrl_w (swap! no_mapping inc) (swap! allow_keys inc)) ;; no mapping for nchar, but keys
+                                  c (plain-vgetc)
+                                  _ (when ctrl_w (swap! no_mapping dec) (swap! allow_keys dec))]
+                                (reset! a'flush (or (add-to-showcmd c) @a'flush))
+                                (recur ca c)
                             ))
-                        )
-                    ))
+                ;; If we got CTRL-W, there may be a/another count.
+                ] (and (== c Ctrl_W) (not ctrl_w) (== (:op_type (:oap ca)) OP_NOP)) => [ca c ctrl_w]
 
-                    ;; When getting a text character and the next character is a multi-byte character,
-                    ;; it could be a composing character.  However, don't wait for it to arrive.
-                    ;; Also, do enable mapping, because if it's put back with vungetc() it's too late
-                    ;; to apply mapping.
-                    (swap! no_mapping dec)
-                    (loop-when [] (and lang (< 0 ((ß c =) (vpeekc))) (or (<= 0x100 c) (< 1 (mb-byte2len (vpeekc)))))
-                        ((ß c =) (plain-vgetc))
-                        (cond (not (utf-iscomposing c))
-                        (do
-                            (vungetc c)         ;; it wasn't, put it back
-                            (ß BREAK)
-                        )
-                        (zero? (:ncharC1 ca))
-                        (do
-                            ((ß ca.ncharC1 =) c)
-                        )
-                        :else
-                        (do
-                            ((ß ca.ncharC2 =) c)
-                        ))
-                        (recur)
-                    )
-                    (swap! no_mapping inc)
-                )
-                (swap! no_mapping dec)
-                (swap! allow_keys dec)
-            )
-
-            ;; Flush the showcmd characters onto the screen so we can see them while the command
-            ;; is being executed.  Only do this when the shown command was actually displayed,
-            ;; otherwise this will slow down a lot when executing mappings.
-
-            (when need_flushbuf
-                (out-flush))
-            (when (!= (:cmdchar ca) K_IGNORE)
-                (reset! did_cursorhold false))
-
-            (reset! State NORMAL)
-
-            (when (== (:nchar ca) ESC)
-                (clearop oap)
-                (if (and (zero? @restart_edit) (goto-im))
-                    (reset! restart_edit (byte \a)))
-                (ß BREAK normal_end)
-            )
-
-            (when (!= (:cmdchar ca) K_IGNORE)
-                (reset! msg_didout false)         ;; don't scroll screen up for normal command
-                (reset! msg_col 0)
-            )
-
-            ((ß pos_C old_pos =) (:w_cursor @curwin)) ;; remember where cursor was
-
-            ;; When 'keymodel' contains "startsel" some keys start Select/Visual mode.
-            (when (and (not @VIsual_active) @km_startsel)
-                (cond (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
-                (do
-                    (swap! curwin start-selection)
-                    ((ß ca =) (unshift-special ca))
-                    ((ß idx =) (find--command (:cmdchar ca)))
-                )
-                (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
-                (do
-                    (swap! curwin start-selection)
-                    (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
+                    (let [ca (assoc ca :opcount (:count0 ca) :count0 0) ;; remember first count
+                          _ (swap! no_mapping inc) _ (swap! allow_keys inc) ;; no mapping for nchar, but keys
+                          c (plain-vgetc) ;; get next character
+                          _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+                        (reset! a'flush (or (add-to-showcmd c) @a'flush))
+                        (recur ca c true))
                 ))
-            )
+          ca (cond (== c K_CURSORHOLD)
+                ;; Save the count values so that ca.opcount and ca.count0 are exactly
+                ;; the same when coming back here after handling K_CURSORHOLD.
+                (update ca :oap assoc :prev_opcount (:opcount ca) :prev_count0 (:count0 ca))
+            (non-zero? (:opcount ca))
+                ;; If we're in the middle of an operator (including after entering a yank buffer with '"') AND
+                ;; we had a count before the operator, then that count overrides the current value of ca.count0.
+                ;; Commands like "3dw" get turned into "d3w", which makes things fall into place pretty neatly.
+                ;; If you give a count before AND after the operator, they are multiplied.
+                (assoc ca :count0 (if (non-zero? (:count0 ca)) (* (:count0 ca) (:opcount ca)) (:opcount ca)))
+            :else
+                ca)
+          ;; Always remember the count.
+          ;; It will be set to zero (on the next call, above) when there is no pending operator.
+          ;; When called from main(), save the count for use by the "count" built-in variable.
+          ca (assoc ca :opcount (:count0 ca) :count1 (if (zero? (:count0 ca)) 1 (:count0 ca)))
+          ;; Find the command character in the table of commands.
+          ;; For CTRL-W we already got nchar when looking for a count.
+          ca (if ctrl_w (assoc ca :cmdchar Ctrl_W :nchar c) (assoc ca :cmdchar c))
+          ca (let [#_int idx (find--command (:cmdchar ca))]
+                (cond (< idx 0)
+                    (do ;; Not a known command: beep.
+                        (clearopbeep (:oap ca))
+                        ca)
 
-            ;; Execute the command!
-            ;; Call the command function found in the commands table.
+                (and (text-locked) (flag? (:cmd_flags (... nv_cmds idx)) NV_NCW))
+                    (do ;; This command is not allowed while editing a cmdline: beep.
+                        (clearopbeep (:oap ca))
+                        (text-locked-msg)
+                        ca)
 
-            ((ß ca =) (assoc ca :arg (:cmd_arg (... nv_cmds idx))))
-;           ca = nv_cmds[idx].cmd_func(ca);
+                :else
+                    ;; In Visual/Select mode, a few keys are handled in a special way.
+                    (let-when [[ca idx abort]
+                            (if @VIsual_active
+                                (do ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
+                                    (when (and @km_stopsel (flag? (:cmd_flags (... nv_cmds idx)) NV_STS) (non-flag? @mod_mask MOD_MASK_SHIFT))
+                                        (swap! curwin end-visual-mode)
+                                        (redraw-curbuf-later INVERTED))
+                                    ;; Keys that work different when 'keymodel' contains "startsel".
+                                    (if @km_startsel
+                                        (if (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
+                                            (let [ca (unshift-special ca) idx (find--command (:cmdchar ca))]
+                                                (if (< idx 0) ;; Just in case.
+                                                    (do (clearopbeep (:oap ca)) [ca idx :abort])
+                                                    [ca idx nil]
+                                                ))
+                                            (do (when (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
+                                                    (swap! mod_mask & (bit-not MOD_MASK_SHIFT)))
+                                                [ca idx nil]
+                                            ))
+                                        [ca idx nil]
+                                    ))
+                                [ca idx nil])
+                    ] (not abort) => ca
 
-            ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
+                        ;; Get an additional character if we need one.
+                        (let [[ca idx]
+                                (if (and (flag? (:cmd_flags (... nv_cmds idx)) NV_NCH)
+                                         (or (and (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_NOP) NV_NCH_NOP) (== (:op_type (:oap ca)) OP_NOP))
+                                             (== (& (:cmd_flags (... nv_cmds idx)) NV_NCH_ALW) NV_NCH_ALW)
+                                             (and (== (:cmdchar ca) (byte \q)) (== (:op_type (:oap ca)) OP_NOP) (not @Recording) (not @execReg))
+                                             (and (any == (:cmdchar ca) (byte \a) (byte \i)) (or (!= (:op_type (:oap ca)) OP_NOP) @VIsual_active))))
+                                    (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) ;; no mapping for nchar, but allow key codes
+                                          ;; Don't generate a CursorHold event here, most commands can't handle it, e.g. nv-replace(), nv-csearch().
+                                          _ (reset! did_cursorhold true)
+                                          [#_keyword k'char #_boolean repl #_boolean lit] ;; get char for replace mode ;; get extra char literally
+                                            (if (== (:cmdchar ca) (byte \g))
+                                                ;; For 'g' get the next character now, so that we can check for "gr", "g'" and "g`".
+                                                (let [ca (assoc ca :nchar (plain-vgetc))]
+                                                    (reset! a'flush (or (add-to-showcmd (:nchar ca)) @a'flush))
+                                                    (condp ==? (:nchar ca)
+                                                        (byte \r)                     [:extra_char true false] ;; get it in replace mode
+                                                       [(byte \') (byte \`) Ctrl_BSL] [:extra_char false true] ;; get it literally
+                                                                                      [nil false false]        ;; no third character needed
+                                                    ))
+                                                [:nchar (== (:cmdchar ca) (byte \r)) false]) ;; get it in replace mode
+                                          #_boolean lang (or repl (flag? (:cmd_flags (... nv_cmds idx)) NV_LANG))
+                                          ;; Get a second or third character.
+                                          [ca idx]
+                                            (if (some? k'char)
+                                                (let-when [_ (when repl (reset! State REPLACE) (ui-cursor-shape)) ;; pretend Replace mode ;; show different cursor shape
+                                                      ca (assoc ca k'char (plain-vgetc))
+                                                      _ (reset! State NORMAL_BUSY)
+                                                      _ (reset! a'flush (or (add-to-showcmd (k'char ca)) @a'flush))
+                                                      ca (cond lit
+                                                            ca
+                                                        (and (== (k'char ca) Ctrl_K) ;; Typing CTRL-K gets a digraph.
+                                                             (or (flag? (:cmd_flags (... nv_cmds idx)) NV_LANG) (== k'char :extra_char)) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
+                                                            (let-when [#_int c (get-digraph false)] (< 0 c) => ca
+                                                                (let [ca (assoc ca k'char c)]
+                                                                    (del-from-showcmd 3) ;; Guessing how to update showcmd here...
+                                                                    (reset! a'flush (or (add-to-showcmd (k'char ca)) @a'flush))
+                                                                    ca
+                                                                ))
+                                                        :else
+                                                            ca)
+                                                      ;; When the next char is CTRL-\, a following CTRL-N means the command is aborted and we go to Normal mode.
+                                                      [ca idx]
+                                                        (cond (and (== k'char :extra_char) (== (:nchar ca) Ctrl_BSL) (any == (:extra_char ca) Ctrl_N Ctrl_G))
+                                                            [(assoc ca :cmdchar Ctrl_BSL :nchar (:extra_char ca)) (find--command Ctrl_BSL)]
+                                                        (and (any == (:nchar ca) (byte \n) (byte \N)) (== (:cmdchar ca) (byte \g)))
+                                                            [(assoc-in ca [:oap :op_type] (get-op-type (k'char ca), NUL)) idx]
+                                                        (== (k'char ca) Ctrl_BSL)
+                                                            ;; There is a busy wait here when typing "f<C-\>" and then something different from CTRL-N.
+                                                            ;; Can't be avoided.
+                                                            (let [#_int c
+                                                                    (loop-when [#_long msec (if (<= 0 @p_ttm) @p_ttm @p_tm) c (vpeekc)] (and (<= c 0) (< 0 msec)) => c
+                                                                        (do-sleep (min msec 50))
+                                                                        (recur (- msec 50) (vpeekc))
+                                                                    )]
+                                                                (if (< 0 c)
+                                                                    (let [c (plain-vgetc)]
+                                                                        (if (any == c Ctrl_N Ctrl_G)
+                                                                            [(assoc ca :cmdchar Ctrl_BSL :nchar c) (find--command Ctrl_BSL)]
+                                                                            (do (vungetc c) [ca idx])
+                                                                        ))
+                                                                    [ca idx]
+                                                                ))
+                                                        :else
+                                                            [ca idx])
+                                                ] lang => [ca idx]
 
-            (when (and (not @finish_op) (== (:op_type oap) OP_NOP) (or (< idx 0) (zero? (& (:cmd_flags (... nv_cmds idx)) NV_KEEPREG))))
-                (clearop oap)
-            )
+                                                    ;; When getting a text character and the next character is a multi-byte character,
+                                                    ;; it could be a composing character.  However, don't wait for it to arrive.
+                                                    ;; Also, do enable mapping, because if it's put back with vungetc() it's too late
+                                                    ;; to apply mapping.
+                                                    (let [_ (swap! no_mapping dec)
+                                                          ca (loop-when [ca ca #_int c (vpeekc)] (and (< 0 c) (or (<= 0x100 c) (< 1 (mb-byte2len c)))) => ca
+                                                                (let [c (plain-vgetc)]
+                                                                    (recur-if (utf-iscomposing c)
+                                                                              [(assoc ca (if (zero? (:ncharC1 ca)) :ncharC1 :ncharC2) c) (vpeekc)]
+                                                                           => (do (vungetc c) ca)) ;; it wasn't, put it back
+                                                                ))
+                                                          _ (swap! no_mapping inc)]
+                                                        [ca idx]
+                                                    ))
+                                                [ca idx])
+                                          _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+                                        [ca idx])
+                                    [ca idx]
+                                )]
+                            ;; Flush the showcmd characters onto the screen so we can see them while the command
+                            ;; is being executed.  Only do this when the shown command was actually displayed,
+                            ;; otherwise this will slow down a lot when executing mappings.
+                            (when @a'flush
+                                (out-flush))
+                            (when (!= (:cmdchar ca) K_IGNORE)
+                                (reset! did_cursorhold false))
+                            (reset! State NORMAL)
+                            (if (== (:nchar ca) ESC)
+                                (do (clearop (:oap ca))
+                                    (when (and (zero? @restart_edit) (goto-im))
+                                        (reset! restart_edit (byte \a)))
+                                    ca)
 
-            ;; If an operation is pending, handle it...
+                                (let [_ (when (!= (:cmdchar ca) K_IGNORE)
+                                            (reset! msg_didout false) ;; don't scroll screen up for normal command
+                                            (reset! msg_col 0))
+                                      o'cursor (:w_cursor @curwin) ;; remember where cursor was
+                                      ;; When 'keymodel' contains "startsel", some keys start Select/Visual mode.
+                                      [ca idx]
+                                        (cond (or @VIsual_active (not @km_startsel))
+                                            [ca idx]
+                                        (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
+                                            (let [_ (swap! curwin start-selection) ca (unshift-special ca)] [ca (find--command (:cmdchar ca))])
+                                        (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
+                                            (do (swap! curwin start-selection)
+                                                (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
+                                                [ca idx])
+                                        :else
+                                            [ca idx])
+                                      ;; Execute the command!  ;; Call the command function found in the commands table.
+                                      ca (assoc ca :arg (:cmd_arg (... nv_cmds idx)))
+                                      ca ((:cmd_func (... nv_cmds idx)) ca)
+                                      ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
+                                      _ (when (and (not @finish_op) (== (:op_type (:oap ca)) OP_NOP) (or (< idx 0) (non-flag? (:cmd_flags (... nv_cmds idx)) NV_KEEPREG)))
+                                            (clearop (:oap ca)))
+                                      ;; If an operation is pending, handle it...
+                                      ca (do-pending-operator ca, o'curswant)]
 
-            ((ß ca =) (do-pending-operator ca, old_col))
+                                    ;; Wait for a moment when a message is displayed that will be overwritten by the mode message.
+                                    ;; In Visual mode and with "^O" in Insert mode, a short message will be overwritten by the mode message.  Wait a bit, until a key is hit.
+                                    ;; In Visual mode, it's more important to keep the Visual area updated than keeping a message (e.g. from a /pat search).
+                                    ;; Only do this if the command was typed, not from a mapping.
+                                    ;; Also wait a bit after an error message, e.g. for "^O:".
+                                    ;; Don't redraw the screen, it would remove the message.
 
-            ;; Wait for a moment when a message is displayed that will be overwritten by the mode message.
-            ;; In Visual mode and with "^O" in Insert mode, a short message will be
-            ;; overwritten by the mode message.  Wait a bit, until a key is hit.
-            ;; In Visual mode, it's more important to keep the Visual area updated
-            ;; than keeping a message (e.g. from a /pat search).
-            ;; Only do this if the command was typed, not from a mapping.
-            ;; Also wait a bit after an error message, e.g. for "^O:".
-            ;; Don't redraw the screen, it would remove the message.
-
-            (when (and (or (and @p_smd (or (!= @restart_edit 0) (and @VIsual_active (== (:lnum old_pos) (:lnum (:w_cursor @curwin))) (== (:col old_pos) (:col (:w_cursor @curwin))))) (or @clear_cmdline @redraw_cmdline) (or @msg_didout (and @msg_didany @msg_scroll)) (not @msg_nowait) @keyTyped) (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display))) (== (:regname oap) 0) (non-flag? (:retval ca) CA_COMMAND_BUSY) (stuff-empty) (not @did_wait_return) (== (:op_type oap) OP_NOP))
-                ((ß int save_State =) @State)
-
-                ;; Draw the cursor with the right shape here.
-                (when (non-zero? @restart_edit)
-                    (reset! State INSERT))
-
-                ;; If need to redraw, and there is a "keep_msg", redraw before the delay.
-                (when (and (non-zero? @must_redraw) (some? @keep_msg) (not @emsg_on_display))
-                    ((ß Bytes kmsg =) @keep_msg)
-                    (reset! keep_msg nil)
-                    ;; showmode() will clear "keep_msg", but we want to use it anyway
-                    (update-screen 0)
-                    ;; now reset it, otherwise it's put in the history again
-                    (reset! keep_msg kmsg)
-                    (msg-attr kmsg, @keep_msg_attr)
-                )
-                (swap! curwin setcursor)
-                (cursor-on)
-                (out-flush)
-                (if (or @msg_scroll @emsg_on_display)
-                    (ui-delay 1000, true))      ;; wait at least one second
-                (ui-delay 3000, false)         ;; wait up to three seconds
-                (reset! State save_State)
-
-                (reset! msg_scroll false)
-                (reset! emsg_on_display false)
-            )
-;       }
-
+                                    (when (and (or (and @p_smd
+                                                        (or (!= @restart_edit 0)
+                                                            (and @VIsual_active (== (:lnum o'cursor) (:lnum (:w_cursor @curwin))) (== (:col o'cursor) (:col (:w_cursor @curwin)))))
+                                                        (or @clear_cmdline @redraw_cmdline)
+                                                        (or @msg_didout (and @msg_didany @msg_scroll))
+                                                        (not @msg_nowait)
+                                                        @keyTyped)
+                                                   (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display)))
+                                               (== (:regname (:oap ca)) 0)
+                                               (non-flag? (:retval ca) CA_COMMAND_BUSY)
+                                               (stuff-empty)
+                                               (not @did_wait_return)
+                                               (== (:op_type (:oap ca)) OP_NOP))
+                                        ;; Draw the cursor with the right shape here.
+                                        (let [o'State @State _ (when (non-zero? @restart_edit) (reset! State INSERT))]
+                                            ;; If need to redraw and there is a "keep_msg", redraw before the delay.
+                                            (when (and (non-zero? @must_redraw) (some? @keep_msg) (not @emsg_on_display))
+                                                (let [#_Bytes kmsg @keep_msg _ (reset! keep_msg nil)]
+                                                    ;; showmode() will clear "keep_msg", but we want to use it anyway
+                                                    (update-screen 0)
+                                                    ;; now reset it, otherwise it's put in the history again
+                                                    (reset! keep_msg kmsg)
+                                                    (msg-attr kmsg, @keep_msg_attr)
+                                                ))
+                                            (swap! curwin setcursor)
+                                            (cursor-on)
+                                            (out-flush)
+                                            (when (or @msg_scroll @emsg_on_display)
+                                                (ui-delay 1000, true)) ;; wait at least one second
+                                            (ui-delay 3000, false)     ;; wait up to three seconds
+                                            (reset! State o'State)
+                                            (reset! msg_scroll false)
+                                            (reset! emsg_on_display false)
+                                        ))
+                                    ca)
+                            ))
+                    ))
+            )]
         ;; Finish up after executing a Normal mode command.
-
         (reset! msg_nowait false)
-
-        ;; Reset finish_op, in case it was set.
-        ((ß save_finish_op =) @finish_op)
+        ;; Reset "finish_op", in case it was set.
+        (reset! o'finish_op @finish_op)
         (reset! finish_op false)
-        ;; Redraw the cursor with another shape,
-        ;; if we were in Operator-pending mode or did a replace command.
-        (when (or save_finish_op (== (:cmdchar ca) (byte \r)))
-            (ui-cursor-shape)              ;; may show different cursor shape
-        )
-
-        (when (and (== (:op_type oap) OP_NOP) (zero? (:regname oap)) (!= (:cmdchar ca) K_CURSORHOLD))
+        ;; Redraw the cursor with another shape if we were in Operator-pending mode or did a replace command.
+        (when (or o'finish_op (== (:cmdchar ca) (byte \r)))
+            (ui-cursor-shape)) ;; may show different cursor shape
+        (when (and (== (:op_type (:oap ca)) OP_NOP) (zero? (:regname (:oap ca))) (!= (:cmdchar ca) K_CURSORHOLD))
             (clear-showcmd @curwin))
-
-        (swap! curwin checkpcmark)                      ;; check if we moved since setting pcmark
-        ((ß ca =) (assoc ca :searchbuf nil))
-
-        (swap! curwin update :w_cursor mb-adjust-pos)
-
-        (when (and @(:wo_scb (:w_options @curwin)) toplevel)
-            (swap! curwin validate-cursor)              ;; may need to update "w_leftcol"
-            (swap! curwin do-check-scrollbind true)
+        (swap! curwin checkpcmark) ;; check if we moved since setting pcmark
+        (let [ca (assoc ca :searchbuf nil)]
+            (swap! curwin update :w_cursor mb-adjust-pos)
+            (when (and @(:wo_scb (:w_options @curwin)) toplevel)
+                (swap! curwin validate-cursor) ;; may need to update "w_leftcol"
+                (swap! curwin do-check-scrollbind true))
+            (when (and @(:wo_crb (:w_options @curwin)) toplevel)
+                (swap! curwin validate-cursor) ;; may need to update "w_leftcol"
+                (do-check-cursorbind))
+            ;; May restart edit(), if we got here with CTRL-O in Insert mode
+            ;; (but not if still inside a mapping that started in Visual mode).
+            ;; May switch from Visual to Select mode after CTRL-O command.
+            (when (and (== (:op_type (:oap ca)) OP_NOP)
+                       (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1))
+                       (non-flag? (:retval ca) CA_COMMAND_BUSY)
+                       (stuff-empty)
+                       (zero? (:regname (:oap ca))))
+                (when (== @restart_VIsual_select 1)
+                    (reset! VIsual_select true)
+                    (showmode)
+                    (reset! restart_VIsual_select 0))
+                (when (and (non-zero? @restart_edit) (not @VIsual_active))
+                    (edit @restart_edit, false, 1)
+                ))
+            (when (== @restart_VIsual_select 2)
+                (reset! restart_VIsual_select 1))
+            ;; Save count before an operator for next time.
+            (reset! opcount (:opcount ca))
+            (:oap ca)
         )
-
-        (when (and @(:wo_crb (:w_options @curwin)) toplevel)
-            (swap! curwin validate-cursor)              ;; may need to update "w_leftcol"
-            (do-check-cursorbind)
-        )
-
-        ;; May restart edit(), if we got here with CTRL-O in Insert mode
-        ;; (but not if still inside a mapping that started in Visual mode).
-        ;; May switch from Visual to Select mode after CTRL-O command.
-
-        (when (and (== (:op_type oap) OP_NOP) (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1)) (non-flag? (:retval ca) CA_COMMAND_BUSY) (stuff-empty) (zero? (:regname oap)))
-            (when (== @restart_VIsual_select 1)
-                (reset! VIsual_select true)
-                (showmode)
-                (reset! restart_VIsual_select 0)
-            )
-            (if (and (non-zero? @restart_edit) (not @VIsual_active))
-                (edit @restart_edit, false, 1))
-        )
-
-        (when (== @restart_VIsual_select 2)
-            (reset! restart_VIsual_select 1))
-
-        ;; Save count before an operator for next time.
-        (reset! opcount (:opcount ca))
-        nil
     ))
 
 ;; The visual area is remembered for redo.
@@ -14730,7 +14587,7 @@
 ;; Return true if a character is available, false otherwise.
 
 (defn- #_boolean char-avail []
-    (swap! no_mapping inc) (let [#_int c (vpeekc)] (swap! no_mapping dec) (!= c NUL)))
+    (let [_ (swap! no_mapping inc) #_int c (vpeekc) _ (swap! no_mapping dec)] (!= c NUL)))
 
 ;; unget one character (can only be done once!)
 (defn- #_void vungetc [#_int c]
@@ -43476,7 +43333,7 @@
 (defn- #_void main-loop [#_boolean cmdwin]
     ;; cmdwin: true when working in the command-line window
     (let [#_oparg_C oa (NEW_oparg_C)]                       ;; operator arguments
-        (while (or (not cmdwin) (zero? @cmdwin_result))
+        (loop-when oa (or (not cmdwin) (zero? @cmdwin_result))
             (when (stuff-empty)
                 (when @need_wait_return                     ;; if wait-return still needed ...
                     (swap! curwin wait-return FALSE))       ;; ... call it now
@@ -43525,7 +43382,7 @@
             ;; Postponed until here to avoid computing "w_virtcol" too often.
             (swap! curwin update-curswant)
             ;; Get and execute a normal mode command.
-            (normal-cmd oa, true)
+            (recur (normal-cmd oa, true))
         ))
     nil)
 
