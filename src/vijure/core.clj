@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep? msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek? inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -2645,35 +2645,32 @@
 ;; Return true if wait-return() not called.
 
 (defn- #_boolean msg [#_Bytes s]
-    (msg-attr-keep s, 0, false))
+    (let [[_ ?] (msg-attr-keep? @curwin, s, 0, false)] (reset! curwin _) ?))
 
 (defn- #_boolean msg-attr [#_Bytes s, #_int attr]
-    (msg-attr-keep s, attr, false))
+    (let [[_ ?] (msg-attr-keep? @curwin, s, attr, false)] (reset! curwin _) ?))
 
 (atom! int msg__entered)
 
-(defn- #_boolean msg-attr-keep [#_Bytes s, #_int attr, #_boolean keep] ;; keep: true: set "keep_msg" if it doesn't scroll
-    ;; It is possible that displaying a messages causes a problem
+(defn- #_[window_C boolean] msg-attr-keep? [#_window_C win, #_Bytes s, #_int attr, #_boolean keep] ;; keep: true: set "keep_msg" if it doesn't scroll
+    ;; It is possible that displaying a message causes a problem
     ;; (e.g. when redrawing the window), which causes another message, etc.
     ;; To break this loop, limit the recursiveness to 3 levels.
-    (or (<= 3 @msg__entered)
-        (do
-            (swap! msg__entered inc)
-            ;; When displaying "keep_msg", don't let msg-start() free it, caller must do that.
-            (when (BEQ s, @keep_msg)
-                (reset! keep_msg nil))
-            ;; Truncate the message if needed.
-            (msg-start)
-            (let [#_Bytes buf (msg-strtrunc s) s (if (some? buf) buf s)]
-                (msg-outtrans-attr s, attr)
-                (msg-clr-eos)
-                (let [#_boolean retval (msg-end)]
-                    (when (and keep retval (< (mb-string2cells s) (+ (* (- @Rows @cmdline_row 1) @Cols) @sc_col)))
-                        (set-keep-msg s, 0))
-                    (swap! msg__entered dec)
-                    retval
-                )
-            )
+    (when' (< @msg__entered 3) => [win true]
+        (swap! msg__entered inc)
+        ;; When displaying "keep_msg", don't let msg-start() free it, caller must do that.
+        (when (BEQ s, @keep_msg)
+            (reset! keep_msg nil))
+        ;; Truncate the message if needed.
+        (msg-start)
+        (let [#_Bytes buf (msg-strtrunc s) s (if (some? buf) buf s)
+              _ (msg-outtrans-attr s, attr)
+              _ (msg-clr-eos)
+              [win ?] (msg-end? win)]
+            (when (and keep ? (< (mb-string2cells s) (+ (* (- @Rows @cmdline_row 1) @Cols) @sc_col)))
+                (set-keep-msg s, 0))
+            (swap! msg__entered dec)
+            [win ?]
         )
     ))
 
@@ -3263,12 +3260,12 @@
 ;; Call wait-return() if the message does not fit in the available space.
 ;; Return true if wait-return() not called.
 
-(defn- #_boolean msg-end []
+(defn- #_[window_C boolean] msg-end? [#_window_C win]
     ;; If the string is larger than the window, or the ruler option is set and we run into it, we have to redraw the window.
     ;; Do not do this if we are abandoning the file or editing the command line.
     (if (and (not @exiting) @need_wait_return (non-flag? @State CMDLINE))
-        (do (swap! curwin wait-return FALSE) false)
-        (do (out-flush) true)
+        [(wait-return win, FALSE) false]
+        (do (out-flush) [win true])
     ))
 
 ;; If the written message runs into the shown command or ruler, we have to wait for hit-return and redraw the window later.
@@ -5283,7 +5280,7 @@
                                                                                     [win c])
                                                                             ))
                                                                       ? (when (!= c ESC)                    ;; use ESC to cancel inserting register
-                                                                            (cmdline-paste c, (== k Ctrl_R), false)
+                                                                            (cmdline-paste win, c, (== k Ctrl_R), false)
                                                                             ;; When there was a serious error, abort getting the command line.
                                                                             (if @got_int
                                                                                 (do (reset! a'gotesc true)  ;; will free ccline.cmdbuff after putting it in history
@@ -5330,7 +5327,7 @@
                                                                 [win c :cmdline_not_changed]
 
                                                             K_DROP
-                                                                (do (cmdline-paste (byte \~), true, false)
+                                                                (do (cmdline-paste win, (byte \~), true, false)
                                                                     (redrawcmd)
                                                                     [win c :cmdline_changed])
 
@@ -5820,7 +5817,7 @@
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean cmdline-paste [#_int regname, #_boolean literally, #_boolean remcr]
+(defn- #_boolean cmdline-paste [#_window_C win, #_int regname, #_boolean literally, #_boolean remcr]
     ;; literally: insert text literally instead of "as typed"
     ;; remcr: remove trailing CR
     (and
@@ -5830,13 +5827,13 @@
         (not (slow-breakcheck))
         (let [regname (may-get-selection regname)
                 ;; Need to save and restore ccline.
-                #_cmdline_info_C save_cli (save-cmdline)
+                o'cli (save-cmdline)
                 ;; Also set "textlock" to avoid nasty things like going to another buffer when evaluating an expression.
                 _ (swap! textlock inc)
                 a'arg (atom (#_Bytes object))
-                #_boolean got (get-spec-reg regname, a'arg, true)
+                #_boolean got (get-spec-reg win, regname, a'arg, true)
                 _ (swap! textlock dec)
-                _ (restore-cmdline save_cli)]
+                _ (restore-cmdline o'cli)]
             (if got ;; Got the value of a special register in "arg".
                 (and (some? @a'arg)
                     (let [#_Bytes p ;; When 'incsearch' is set and CTRL-R CTRL-W used: skip the duplicate part of the word.
@@ -9851,11 +9848,10 @@
             (let [nchar (:nchar cap)]
                 (cond (any == nchar (byte \:) (byte \/) (byte \?))
                     (do (stuff-char nchar) (stuff-char K_CMDWIN) [win cap])
-                ;; (stop) recording into a named register, unless executing a register
-                (and (not @execReg) (not (do-record nchar)))
-                    [win (clearopbeep cap)]
-                :else
-                    [win cap])
+                :else ;; (stop) recording into a named register, unless executing a register
+                    (let-when [[win ?] (if (not @execReg) (do-record? win, nchar) [win true])] (not ?) => [win cap]
+                        [win (clearopbeep cap)]
+                    ))
             ))
     ))
 
@@ -10610,27 +10606,23 @@
 ;;
 ;; Return false for failure, true otherwise.
 
-(defn- #_boolean do-record [#_int c]
-    (cond (not @Recording)          ;; start recording
-    (do ;; registers 0-9, a-z and " are allowed
-        (and (or (asc-isalnum c) (== c (byte \"))) ;; """
-            (do (reset! Recording true)
-                (swap! curwin showmode)
-                (reset! rec__regname c)
-                true)
-        ))
-    :else                           ;; stop recording
-    (do ;; Get the recorded key hits.
-        ;; KB_SPECIAL will be escaped, this needs to be removed again to put it in a register.
-        ;; exec_reg then adds the escaping back later.
-        (reset! Recording false)
-        (msg (u8 ""))
-        (let-when [#_Bytes s (get-recorded)] (some? s) => false
-            ;; Remove escaping for KB_SPECIAL in multi-byte chars.
-            (vim-unescape-special s)
-            ;; We don't want to change the default register here, so save and restore the current register name.
-            (let [o'prev @y_prev o'curr @y_curr #_boolean ? (stuff-yank @rec__regname, s) _ (reset! y_prev o'prev) _ (reset! y_curr o'curr)] ?)
-        ))
+(defn- #_[window_C boolean] do-record? [#_window_C win, #_int regname]
+    (if (not @Recording)
+        ;; start recording ;; registers 0-9, a-z and " are allowed
+        (when' (or (asc-isalnum regname) (== regname (byte \"))) => [win false] ;; """
+            (reset! Recording true)
+            (reset! rec__regname regname)
+            [(showmode win) true])
+        ;; stop recording
+        (do (reset! Recording false)
+            (msg (u8 ""))
+            ;; Get the recorded key hits.
+            (let-when [#_Bytes s (get-recorded)] (some? s) => [win false]
+                ;; Remove escaping for KB_SPECIAL in multi-byte chars.
+                (vim-unescape-special s)
+                ;; We don't want to change the default register here, so save and restore the current register name.
+                (let [o'prev @y_prev o'curr @y_curr ? (stuff-yank @rec__regname, s) _ (reset! y_prev o'prev) _ (reset! y_curr o'curr)] [win ?])
+            ))
     ))
 
 ;; Stuff "s" into yank register "regname" as a single line (append if uppercase).
@@ -10736,11 +10728,12 @@
     nil)
 
 ;; Insert a yank register: copy it into the Read buffer.
-;; Used by CTRL-R command and middle mouse button in insert mode.
+;; Used by CTRL-R command and middle mouse button in Insert mode.
 ;;
+;; literally: insert literally, not as if typed
 ;; return false for failure, true otherwise
 
-(defn- #_boolean insert-reg [#_int regname, #_boolean literally] ;; literally: insert literally, not as if typed
+(defn- #_boolean insert-reg [#_window_C win, #_int regname, #_boolean literally]
     ;; It is possible to get into an endless loop by having CTRL-R a in register a and then, in insert mode, doing CTRL-R a.
     ;; If you hit CTRL-C, the loop will be broken here.
     (ui-breakcheck)
@@ -10749,7 +10742,7 @@
         (let [regname (may-get-selection regname) a'arg (atom (#_Bytes object))]
             (cond (== regname (byte \.))                 ;; insert last inserted text
                 (stuff-inserted NUL, 1, true)
-            (get-spec-reg regname, a'arg, true)
+            (get-spec-reg win, regname, a'arg, true)
                 (if (some? @a'arg) (do (stuffescaped @a'arg, literally) true) false)
             :else                                ;; name or number register
                 (let [#_int y (get-yank-register regname, false)]
@@ -10791,7 +10784,7 @@
 
 ;; If "regname" is a special register, return true and store a pointer to its value in "value".
 
-(defn- #_boolean get-spec-reg [#_int regname, #_Bytes' a'value, #_boolean errmsg]
+(defn- #_boolean get-spec-reg [#_window_C win, #_int regname, #_Bytes' a'value, #_boolean errmsg]
     (condp ==? regname
         (byte \=)                                       ;; result of expression
         (do
@@ -10820,7 +10813,7 @@
         (do
             (reset! a'value nil)
             (when errmsg
-                (let [#_int n (find-ident-under-cursor @curwin, a'value, (if (== regname Ctrl_W) (| FIND_IDENT FIND_STRING) FIND_STRING))]
+                (let [#_int n (find-ident-under-cursor win, a'value, (if (== regname Ctrl_W) (| FIND_IDENT FIND_STRING) FIND_STRING))]
                     (reset! a'value (if (pos? n) (STRNDUP @a'value, n) nil))
                 ))
             errmsg
@@ -11657,7 +11650,7 @@
                     (stuff-char (byte \l)))
                 win)
             ;; For special registers, like ':' (last command line), we have to create a fake yank register.
-            (let-when [a'content (atom (#_Bytes object nil))] (or (not (get-spec-reg regname, a'content, true)) (some? @a'content)) => win
+            (let-when [a'content (atom (#_Bytes object nil))] (or (not (get-spec-reg win, regname, a'content, true)) (some? @a'content)) => win
                 (u-save (:lnum (:w_cursor win)), (inc (:lnum (:w_cursor win))))
                 (let [#_yankreg_C reg
                         (if (some? @a'content)
@@ -13383,13 +13376,13 @@
             (let [#_int c
                     (loop []                     ;; this is done twice if there are modifiers
                         (when (non-zero? @mod_mask) (swap! no_mapping inc) (swap! allow_keys inc)) ;; no mapping after modifier has been read
-                        (let [c1 (vgetorpeek true)]
+                        (let [c1 (let [[_ ?] (vgetorpeek? @curwin, true)] (reset! curwin _) ?)]
                             (when (non-zero? @mod_mask) (swap! no_mapping dec) (swap! allow_keys dec))
                             (if (== c1 (char_u KB_SPECIAL)) ;; get two extra bytes for special keys
                                 (let [_ @allow_keys]
                                     (swap! no_mapping inc)
                                     (reset! allow_keys 0)                 ;; make sure BS is not found
-                                    (let [c2 (vgetorpeek true) c3 (vgetorpeek true)] ;; no mapping for these chars
+                                    (let [c2 (let [[_ ?] (vgetorpeek? @curwin, true)] (reset! curwin _) ?) c3 (let [[_ ?] (vgetorpeek? @curwin, true)] (reset! curwin _) ?)] ;; no mapping for these chars
                                         (swap! no_mapping dec)
                                         (reset! allow_keys _)
                                         (if (== c2 (char_u KS_MODIFIER))
@@ -13437,9 +13430,9 @@
                         (.be buf 0, c)
                         (swap! no_mapping inc)
                         (loop-when-recur [i 1] (< i n) [(inc i)]
-                            (.be buf i, (vgetorpeek true))
+                            (.be buf i, (let [[_ ?] (vgetorpeek? @curwin, true)] (reset! curwin _) ?))
                             ;; Must be a KB_SPECIAL - KS_SPECIAL - KE_FILLER sequence, which represents a KB_SPECIAL (0x80).
-                            (when (at? buf i KB_SPECIAL) (vgetorpeek true))
+                            (when (at? buf i KB_SPECIAL) (let [[_ ?] (vgetorpeek? @curwin, true)] (reset! curwin _) ?))
                         )
                         (swap! no_mapping dec)
                         (us-ptr2char buf)
@@ -13465,7 +13458,7 @@
 ;; If the next character is a special character or multi-byte, the returned character is not valid!
 
 (defn- #_int vpeekc []
-    (if (!= @old_char -1) @old_char (vgetorpeek false)))
+    (if (!= @old_char -1) @old_char (let [[_ ?] (vgetorpeek? @curwin, false)] (reset! curwin _) ?)))
 
 ;; Call vpeekc() without causing anything to be mapped.
 ;; Return true if a character is available, false otherwise.
@@ -13504,7 +13497,7 @@
 ;; Only returns one byte (of a multi-byte character).
 ;; KB_SPECIAL may be escaped, need to get two more bytes then.
 
-(defn- #_int vgetorpeek [#_boolean advance]
+(defn- #_[window_C int] vgetorpeek? [#_window_C win, #_boolean advance]
     ;; This function doesn't work very well when called recursively.
     ;; It may happen though, because of:
     ;;
@@ -13516,29 +13509,32 @@
     ;; Using ":normal" can also do this, but it saves the typeahead buffer,
     ;; thus it should be OK.  But don't get a key from the user then.
     (if (pos? @vgetc_busy)
-        NUL
-        (do (swap! vgetc_busy inc)
-            (when advance
-                (reset! keyStuffed false))
-            (init-typebuf)
-            (start-stuff)
-            (when advance
-                (reset! execReg false))
-            (let [a'timedout (atom (boolean false))     ;; waited for more than 1 second for mapping to complete
-                  a'mode_deleted (atom (boolean false)) ;; set when mode has been deleted
-                  #_int c (loop []
+        [win NUL]
+
+        (let [_ (swap! vgetc_busy inc)
+              _ (when advance
+                    (reset! keyStuffed false))
+              _ (init-typebuf)
+              _ (start-stuff)
+              _ (when advance
+                    (reset! execReg false))
+              a'timedout (atom (boolean false))     ;; waited for more than 1 second for mapping to complete
+              a'mode_deleted (atom (boolean false)) ;; set when mode has been deleted
+              [win #_int c]
+                (loop [win win]
                     ;; Get a character: 1. from the stuffbuffer.
                     (let [c (char_u (read-readbuffers advance))
-                          c (if (and (!= c NUL) (not @got_int))
-                                (do (when advance
+                          [win c]
+                            (if (and (!= c NUL) (not @got_int))
+                                (do (when advance ;; [sic!
                                         ;; keyTyped = false;
                                         ;; When the command that stuffed something was typed, behave like the stuffed command was typed;
                                         ;; needed e.g. for CTRL-W CTRl-] to open a fold.
                                         (reset! keyStuffed true))
-                                    c)
+                                    [win c])
                                 ;; Loop until we either find a matching mapped key or we are sure that it is not a mapped key.
                                 ;; If a mapped key sequence is found, we go back to the start to try re-mapping.
-                                (loop []
+                                (loop [win win]
                                     (ui-breakcheck) ;; check for CTRL-C
                                     (cond @got_int
                                         (let [#_int len (inchar (:tb_buf @typebuf), (dec (:tb_buflen @typebuf)), 0, (:tb_change_cnt @typebuf)) ;; flush all input
@@ -13551,7 +13547,7 @@
                                                 ;; Also record this character, it might be needed to get out of Insert mode.
                                                 (.be (:tb_buf @typebuf) 0, c)
                                                 (gotchars (:tb_buf @typebuf), 1))
-                                            c)
+                                            [win c])
                                     :else
                                         (let-when [[#_int keylen ?]
                                                 (if (< 0 (:tb_len @typebuf))
@@ -13585,7 +13581,7 @@
                                                             [KEYLEN_PART_KEY nil]
                                                         ))
                                                     [0 nil]
-                                                )] (not ?) => (if (== ? :recur) (recur) c)
+                                                )] (not ?) => (if (== ? :recur) (recur win) [win c])
 
                                             ;; Get a character: 3. from the user - handle <Esc> in Insert mode.
 
@@ -13594,65 +13590,61 @@
                                             ;; after typing an <ESC>.  If we get something after all, we may have to redisplay
                                             ;; the mode.  That the cursor is in the wrong place does not matter.
                                             (let [a'len (atom (int 0))
-                                                  [#_int new_wcol #_int new_wrow]
+                                                  [win #_int new_wcol #_int new_wrow]
                                                     (if (and advance
                                                              (== (:tb_len @typebuf) 1) (at? (:tb_buf @typebuf) (:tb_off @typebuf) ESC) (zero? @no_mapping) (flag? @State INSERT)
                                                              (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout))
                                                              (zero? (reset! a'len (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25,
                                                                                           (:tb_change_cnt @typebuf)))))
                                                         (let [_ (when @mode_displayed (unshowmode true) (reset! a'mode_deleted true))
-                                                              _ (swap! curwin validate-cursor) o'wcol (:w_wcol @curwin) o'wrow (:w_wrow @curwin)
+                                                              win (validate-cursor win) o'wcol (:w_wcol win) o'wrow (:w_wrow win)
                                                               ;; move cursor left, if possible
-                                                              _ (when (non-zero? (:col (:w_cursor @curwin)))
-                                                                    (let [#_int col
-                                                                            (cond (< 0 (:w_wcol @curwin))
+                                                              win (when' (non-zero? (:col (:w_cursor win))) => win
+                                                                    (let [[win #_int col]
+                                                                            (cond (< 0 (:w_wcol win))
                                                                                 (if @did_ai
                                                                                     ;; We are expecting to truncate the trailing white-space,
                                                                                     ;; so find the last non-white character.
-                                                                                    (let [_ (swap! curwin assoc :w_wcol 0) #_Bytes s (ml-get (:lnum (:w_cursor @curwin)))]
-                                                                                        (loop-when [#_int vcol 0 #_int i 0] (< i (:col (:w_cursor @curwin)))
-                                                                                            (when (not (vim-iswhite (.at s i)))
-                                                                                                (swap! curwin assoc :w_wcol vcol))
-                                                                                            (recur (+ vcol (lbr-chartabsize s, (.plus s i), vcol)) (+ i (us-ptr2len-cc s, i))))
-                                                                                        (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
-                                                                                        (swap! curwin update :w_wcol % (:w_width @curwin))
-                                                                                        (swap! curwin update :w_wcol + (win-col-off @curwin))
-                                                                                        0) ;; no correction needed
-                                                                                    (do
-                                                                                        (swap! curwin update :w_wcol dec)
-                                                                                        (dec (:col (:w_cursor @curwin)))
+                                                                                    (let [win (assoc win :w_wcol 0) #_Bytes s (ml-get (:lnum (:w_cursor win)))
+                                                                                          win (loop-when [win win #_int vcol 0 #_int i 0] (< i (:col (:w_cursor win))) => win
+                                                                                                (let [win (if (not (vim-iswhite (.at s i))) (assoc win :w_wcol vcol) win)
+                                                                                                      vcol (+ vcol (lbr-chartabsize s, (.plus s i), vcol))]
+                                                                                                    (recur win vcol (+ i (us-ptr2len-cc s, i)))
+                                                                                                ))
+                                                                                          win (assoc win :w_wrow (+ (:w_cline_row win) (/ (:w_wcol win) (:w_width win))))
+                                                                                          win (update win :w_wcol % (:w_width win))
+                                                                                          win (update win :w_wcol + (win-col-off win))]
+                                                                                        [win 0]) ;; no correction needed
+                                                                                    (let [win (update win :w_wcol dec)]
+                                                                                        [win (dec (:col (:w_cursor win)))]
                                                                                     ))
-                                                                            (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
-                                                                                (do
-                                                                                    (swap! curwin update :w_wrow dec)
-                                                                                    (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
-                                                                                    (dec (:col (:w_cursor @curwin))))
+                                                                            (and @(:wo_wrap (:w_options win)) (< 0 (:w_wrow win)))
+                                                                                (let [win (update win :w_wrow dec) win (assoc win :w_wcol (dec (:w_width win)))]
+                                                                                    [win (dec (:col (:w_cursor win)))])
                                                                             :else
-                                                                                0
+                                                                                [win 0]
                                                                             )]
-
-                                                                        (when (and (< 0 col) (< 0 (:w_wcol @curwin)))
+                                                                        (when' (and (< 0 col) (< 0 (:w_wcol win))) => win
                                                                             ;; Correct when the cursor is on the right halve of a double-wide character.
-                                                                            (let [#_Bytes s (ml-get (:lnum (:w_cursor @curwin))) col (- col (us-head-off s, (.plus s col)))]
-                                                                                (when (< 1 (us-ptr2cells s, col))
-                                                                                    (swap! curwin update :w_wcol dec))
+                                                                            (let [#_Bytes s (ml-get (:lnum (:w_cursor win))) col (- col (us-head-off s, (.plus s col)))]
+                                                                                (when' (< 1 (us-ptr2cells s, col)) => win
+                                                                                    (update win :w_wcol dec))
                                                                             ))
                                                                     ))
-                                                              _ (swap! curwin setcursor)
+                                                              win (setcursor win)
                                                               _ (out-flush)
-                                                              new_wcol (:w_wcol @curwin) new_wrow (:w_wrow @curwin)]
-                                                            (swap! curwin assoc :w_wcol o'wcol :w_wrow o'wrow)
-                                                            [new_wcol new_wrow])
-                                                        [(:w_wcol @curwin) (:w_wrow @curwin)]
+                                                              new_wcol (:w_wcol win) new_wrow (:w_wrow win)]
+                                                            [(assoc win :w_wcol o'wcol :w_wrow o'wrow) new_wcol new_wrow])
+                                                        [win (:w_wcol win) (:w_wrow win)]
                                                     )]
                                                 (if (< @a'len 0)
-                                                    (recur) ;; end of input script reached
+                                                    (recur win) ;; end of input script reached
 
                                                     (do (swap! typebuf update :tb_len + @a'len)
                                                         ;; buffer full, don't map
                                                         (if (<= MAXMAPLEN (:tb_len @typebuf))
                                                             (do (reset! a'timedout true)
-                                                                (recur))
+                                                                (recur win))
 
                                                             ;; Get a character: 3. from the user - update display.
 
@@ -13661,94 +13653,96 @@
                                                             ;; to do a blocking wait here.  Need to update the screen to display the changed
                                                             ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
                                                             ;; because there was something in the input buffer (e.g. termresponse).
-                                                            (let [_ (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance
-                                                                               (non-zero? @must_redraw) (not @need_wait_return))
+                                                            (let [win (when' (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance
+                                                                               (non-zero? @must_redraw) (not @need_wait_return)) => win
                                                                         (update-screen 0)
-                                                                        (swap! curwin setcursor)) ;; put cursor back where it belongs
+                                                                        (setcursor win)) ;; put cursor back where it belongs
                                                                   ;; If we have a partial match (and are going to wait for more input from the user),
                                                                   ;; show the partially matched characters to the user with showcmd.
-                                                                  [#_int i #_int c1]
-                                                                    (if (and (< 0 (:tb_len @typebuf)) advance)
-                                                                        (let [[i c1]
-                                                                                (if (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
+                                                                  [win #_int i #_int c1]
+                                                                    (when' (and (< 0 (:tb_len @typebuf)) advance) => [win 0 0]
+                                                                        (let [[win i c1]
+                                                                                (when' (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN)) => [win 0 0]
                                                                                     ;; this looks nice when typing a dead character map
-                                                                                    (let [c1 (if (and (flag? @State INSERT)
-                                                                                                      (== (mb-ptr2cells (:tb_buf @typebuf),
-                                                                                                                        (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
-                                                                                                (let [_ (swap! curwin edit-putchar (.at (:tb_buf @typebuf)
-                                                                                                                                        (dec (+ (:tb_off @typebuf)
-                                                                                                                                                (:tb_len @typebuf)))), false)
-                                                                                                      _ (swap! curwin setcursor)] ;; put cursor back where it belongs
-                                                                                                    1)
-                                                                                                0)
+                                                                                    (let [[win c1]
+                                                                                            (if (and (flag? @State INSERT)
+                                                                                                     (== (mb-ptr2cells (:tb_buf @typebuf),
+                                                                                                                       (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
+                                                                                                (let [win (edit-putchar win, (.at (:tb_buf @typebuf)
+                                                                                                                                  (dec (+ (:tb_off @typebuf)
+                                                                                                                                          (:tb_len @typebuf)))), false)
+                                                                                                      win (setcursor win)] ;; put cursor back where it belongs
+                                                                                                    [win 1])
+                                                                                                [win 0])
                                                                                           ;; need to use the col and row from above here
-                                                                                          o'wcol (:w_wcol @curwin) o'wrow (:w_wrow @curwin)
-                                                                                          _ (swap! curwin assoc :w_wcol new_wcol :w_wrow new_wrow)
+                                                                                          o'wcol (:w_wcol win) o'wrow (:w_wrow win)
+                                                                                          win (assoc win :w_wcol new_wcol :w_wrow new_wrow)
                                                                                           _ (push-showcmd)
                                                                                           i (if (< SHOWCMD_COLS (:tb_len @typebuf)) (- (:tb_len @typebuf) SHOWCMD_COLS) 0)
-                                                                                          i (loop-when-recur i (< i (:tb_len @typebuf)) (inc i) => i
-                                                                                                (swap! curwin add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i))))
-                                                                                          _ (swap! curwin assoc :w_wcol o'wcol :w_wrow o'wrow)]
-                                                                                        [i c1])
-                                                                                    [0 0]
+                                                                                          [win i]
+                                                                                            (loop-when [win win i i] (< i (:tb_len @typebuf)) => [win i]
+                                                                                                (let [win (add-to-showcmd win, (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i)))]
+                                                                                                    (recur win (inc i)))
+                                                                                            )]
+                                                                                        [(assoc win :w_wcol o'wcol :w_wrow o'wrow) i c1])
                                                                                 )]
                                                                             ;; this looks nice when typing a dead character map
                                                                             (if (and (flag? @State CMDLINE)
                                                                                      (== (mb-ptr2cells (:tb_buf @typebuf), (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))) 1))
                                                                                 (do (putcmdline (.at (:tb_buf @typebuf) (dec (+ (:tb_off @typebuf) (:tb_len @typebuf)))), false)
-                                                                                    [i 1])
-                                                                                [i c1]
-                                                                            ))
-                                                                        [0 0])
+                                                                                    [win i 1])
+                                                                                [win i c1]
+                                                                            )))
                                                                   ;; Get a character: 3. from the user - get it.
-                                                                  #_int wait_tb_len (:tb_len @typebuf)]
-                                                                (reset! a'len (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))),
-                                                                                      (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1),
-                                                                                      (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))),
-                                                                                      (:tb_change_cnt @typebuf)))
-                                                                (when (non-zero? i)
-                                                                    (swap! curwin pop-showcmd))
-                                                                (when (== c1 1)
-                                                                    (when (flag? @State INSERT)
-                                                                        (swap! curwin edit-unputchar))
-                                                                    (if (flag? @State CMDLINE)
-                                                                        (unputcmdline)
-                                                                        (swap! curwin setcursor) ;; put cursor back where it belongs
-                                                                    ))
+                                                                  #_int wait_tb_len (:tb_len @typebuf)
+                                                                  _ (reset! a'len (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))),
+                                                                                          (- (:tb_buflen @typebuf) (:tb_off @typebuf) (:tb_len @typebuf) 1),
+                                                                                          (if (not advance) 0 (if (or (zero? (:tb_len @typebuf)) (not (or @p_timeout (and @p_ttimeout (== keylen KEYLEN_PART_KEY))))) -1 (if (and (== keylen KEYLEN_PART_KEY) (<= 0 @p_ttm)) @p_ttm @p_tm))),
+                                                                                          (:tb_change_cnt @typebuf)))
+                                                                  win (if (non-zero? i) (pop-showcmd win) win)
+                                                                  win (when' (== c1 1) => win
+                                                                        (let [win (if (flag? @State INSERT) (edit-unputchar win) win)]
+                                                                            (if (flag? @State CMDLINE)
+                                                                                (do (unputcmdline) win)
+                                                                                (setcursor win) ;; put cursor back where it belongs
+                                                                            ))
+                                                                    )]
                                                                 (cond (< @a'len 0) ;; end of input script reached
-                                                                    (recur)
+                                                                    (recur win)
                                                                 (< 0 @a'len) ;; no character available
                                                                     (do (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
                                                                             (swap! typebuf update :tb_len inc))
-                                                                        (recur))
+                                                                        (recur win))
                                                                 advance
                                                                     (do (when (< 0 wait_tb_len) ;; timed out
                                                                             (reset! a'timedout true))
-                                                                        (recur))
+                                                                        (recur win))
                                                                 :else
-                                                                    NUL)
+                                                                    [win NUL])
                                                             ))
                                                     ))
                                             ))
                                     ))
                             )]
-                        (recur-if (or (< c 0) (and advance (== c NUL))) [] => c) ;; if advance is false, don't loop on NULs
-                    ))]
-                ;; The "INSERT" message is taken care of here:
-                ;;   if we return an ESC to exit Insert mode, the message is deleted;
-                ;;   if we don't return an ESC, but deleted the message before, redisplay it.
-                (when (and advance @p_smd (flag? @State INSERT))
+                        (recur-if (or (< c 0) (and advance (== c NUL))) [win] => [win c]) ;; if advance is false, don't loop on NULs
+                    ))
+              ;; The "INSERT" message is taken care of here:
+              ;;   if we return an ESC to exit Insert mode, the message is deleted;
+              ;;   if we don't return an ESC, but deleted the message before, redisplay it.
+              win (when' (and advance @p_smd (flag? @State INSERT)) => win
                     (cond (and (== c ESC) (not @a'mode_deleted) (zero? @no_mapping) @mode_displayed)
                         (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
-                            (reset! redraw_cmdline true)          ;; delete mode later
-                            (unshowmode false))
+                            (do (reset! redraw_cmdline true) win)   ;; delete mode later
+                            (do (unshowmode false) win))
                     (and (!= c ESC) @a'mode_deleted)
                         (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
-                            (reset! redraw_cmdline true)          ;; show mode later
-                            (swap! curwin showmode))
-                    ))
-                (swap! vgetc_busy dec)
-            c))
+                            (do (reset! redraw_cmdline true) win)   ;; show mode later
+                            (showmode win))
+                    :else
+                        win)
+                )]
+            (swap! vgetc_busy dec)
+            [win c])
     ))
 
 ;; inchar() - get one character from
@@ -15191,7 +15185,7 @@
                 (do ;; Append the command to the redo buffer.
                     (append-redo-char Ctrl_R) (append-redo-char literally) (append-redo-char regname)
                     [(do-put win, regname, BACKWARD, 1, (| (if (== literally Ctrl_P) PUT_FIXINDENT 0) PUT_CURSEND)) false])
-            (not (insert-reg regname, (non-zero? literally)))
+            (not (insert-reg win, regname, (non-zero? literally)))
                 (do (beep) [win true]) ;; remove the '"'
             :else ;; When the '=' register was used and a function was invoked that did ":stopinsert",
                 ;; then stuff-empty() returns false, but we won't insert anything, need to remove the '"'.
@@ -37504,8 +37498,8 @@
     (reset! msg_row (dec @Rows))
     nil)
 
-;; Delete mode message.  Used when ESC is typed which is expected to end
-;; Insert mode (but Insert mode didn't end yet!).
+;; Delete mode message.
+;; Used when ESC is typed which is expected to end Insert mode (but Insert mode didn't end yet!).
 ;; Caller should check "mode_displayed".
 
 (defn- #_void unshowmode [#_boolean force]
@@ -37515,14 +37509,14 @@
             (when @Recording
                 (msg-puts-attr (u8 "recording"), (hl-attr HLF_CM)))
             (msg-clr-eos))
-        (reset! redraw_cmdline true))       ;; delete mode later
+        (reset! redraw_cmdline true)) ;; delete mode later
     nil)
 
 ;; Get the character to use in a status line.  Get its attributes in "*attr".
 
 (defn- #_int fillchar-status [#_int' a'attr, #_boolean is_curwin]
     (let [#_int fill (if is_curwin
-                (do (reset! a'attr (hl-attr HLF_S)) @fill_stl)
+                (do (reset! a'attr (hl-attr HLF_S))   @fill_stl)
                 (do (reset! a'attr (hl-attr HLF_SNC)) @fill_stlnc)
             )]
         ;; Use fill when there is highlighting, and highlighting of current window differs, or the fillchars differ, or this is not the current window.
