@@ -860,7 +860,6 @@
 (final int FM_BACKWARD     0x01)    ;; search backwards
 (final int FM_FORWARD      0x02)    ;; search forwards
 (final int FM_BLOCKSTOP    0x04)    ;; stop at start/end of block
-(final int FM_SKIPCOMM     0x08)    ;; skip comments
 
 ;; Values for sub_cmd and which_pat argument for search_regcomp().
 ;; Also used for which_pat argument for searchit().
@@ -905,18 +904,7 @@
 (final int SIN_UNDO        4)       ;; save line for undo before changing it
 
 ;; flags for insertchar()
-(final int INSCHAR_FORMAT  1)       ;; force formatting
-(final int INSCHAR_DO_COM  2)       ;; format comments
 (final int INSCHAR_CTRLV   4)       ;; char typed just after CTRL-V
-(final int INSCHAR_NO_FEX  8)       ;; don't use 'formatexpr'
-(final int INSCHAR_COM_LIST 16)     ;; format comments with list/2nd line indent
-
-;; flags for open_line()
-(final int OPENLINE_DELSPACES  1)   ;; delete spaces after cursor
-(final int OPENLINE_DO_COM     2)   ;; format comments
-(final int OPENLINE_KEEPTRAIL  4)   ;; keep trailing spaces
-(final int OPENLINE_MARKFIX    8)   ;; fix mark positions
-(final int OPENLINE_COM_LIST  16)   ;; format comments with list/2nd line indent
 
 ;; There are four history tables:
 
@@ -1076,29 +1064,6 @@
 
 ;; option.h: definition of global variables for settable options
 
-;; Formatting options for 'formatoptions'.
-(final byte
-    FO_WRAP         \t,
-    FO_WRAP_COMS    \c,
-    FO_RET_COMS     \r,
-    FO_OPEN_COMS    \o,
-    FO_Q_COMS       \q,
-    FO_Q_NUMBER     \n,
-    FO_Q_SECOND     \2,
-    FO_INS_VI       \v,
-    FO_INS_LONG     \l,
-    FO_INS_BLANK    \b,
-    FO_MBYTE_BREAK  \m,  ;; break before/after multi-byte char
-    FO_MBYTE_JOIN   \M,  ;; no space before/after multi-byte char
-    FO_MBYTE_JOIN2  \B,  ;; no space between multi-byte chars
-    FO_ONE_LETTER   \1,
-    FO_WHITE_PAR    \w,  ;; trailing white space continues paragr.
-    FO_AUTO         \a,  ;; automatic formatting
-    FO_REMOVE_COMS  \j)  ;; remove comment leaders when joining lines
-
-(final Bytes DFLT_FO_VIM  (u8 "tcq"))
-(final Bytes FO_ALL       (u8 "tcroq2vlb1mMBn,awj"))    ;; for do_set()
-
 ;; characters for the "p_cpo" option:
 (final byte
     CPO_BSLASH      \B,  ;; backslash in mapping is not special
@@ -1149,20 +1114,6 @@
 (final Bytes WW_ALL   (u8 "bshl<>[],~"))
 
 (final Bytes COCU_ALL     (u8 "nvic"))     ;; flags for 'concealcursor'
-
-;; flags for 'comments' option
-(final byte COM_NEST      \n)              ;; comments strings nest
-(final byte COM_BLANK     \b)              ;; needs blank after string
-(final byte COM_START     \s)              ;; start of comment
-(final byte COM_MIDDLE    \m)              ;; middle of comment
-(final byte COM_END       \e)              ;; end of comment
-(final byte COM_AUTO_END  \x)              ;; last char of end closes comment
-(final byte COM_FIRST     \f)              ;; first line comment only
-(final byte COM_LEFT      \l)              ;; left adjusted
-(final byte COM_RIGHT     \r)              ;; right adjusted
-(final byte COM_NOBACK    \O)              ;; don't use for "O" command
-(final Bytes COM_ALL      (u8 "nbsmexflrO")) ;; all flags for 'comments' option
-(final int COM_MAX_LEN    50)              ;; maximum length of a part
 
 ;; arguments for can_bs()
 (final byte BS_INDENT     \i)      ;; "Indent"
@@ -1249,7 +1200,6 @@
 (atom! long    p_tm)        ;; 'timeoutlen'
 (atom! boolean p_ttimeout)  ;; 'ttimeout'
 (atom! long    p_ttm)       ;; 'ttimeoutlen'
-(atom! boolean p_tf)        ;; 'ttyfast'
 (atom! long    p_ttyscroll) ;; 'ttyscroll'
 (atom! long    p_ut)        ;; 'updatetime'
 (atom! long    p_verbose)   ;; 'verbose'
@@ -1279,10 +1229,7 @@
     BV_AI     0,
     BV_CI     5,
     BV_CINW   9,
-    BV_COM   11,
     BV_ET    14,
-    BV_FLP   18,
-    BV_FO    19,
     BV_INF   25,
     BV_ISK   26,
     BV_KP    27,
@@ -1295,9 +1242,7 @@
     BV_STS   40,
     BV_SW    41,
     BV_TS    42,
-    BV_TW    43,
-    BV_UL    46,
-    BV_WM    47)
+    BV_UL    46)
 
 ;; "indir" values for window-local options.
 
@@ -2113,10 +2058,7 @@
         (field boolean      b_p_ai_nopaste)     ;; "b_p_ai" saved for paste mode
         (atom' boolean      b_p_ci)             ;; 'copyindent'
         (atom' Bytes        b_p_cinw)           ;; 'cinwords'
-        (atom' Bytes        b_p_com)            ;; 'comments'
         (atom' boolean      b_p_et)             ;; 'expandtab'
-        (atom' Bytes        b_p_fo)             ;; 'formatoptions'
-        (atom' Bytes        b_p_flp)            ;; 'formatlistpat'
         (atom' boolean      b_p_inf)            ;; 'infercase'
         (atom' Bytes        b_p_isk)            ;; 'iskeyword'
         (atom' Bytes        b_p_kp)             ;; 'keywordprg'
@@ -2129,11 +2071,7 @@
         (atom' long         b_p_sts)            ;; 'softtabstop'
         (field long         b_p_sts_nopaste)    ;; "b_p_sts" saved for paste mode
         (atom' long         b_p_ts)             ;; 'tabstop'
-        (atom' long         b_p_tw)             ;; 'textwidth'
-        (field long         b_p_tw_nopaste)     ;; "b_p_tw" saved for paste mode
         (atom' long         b_p_ul)             ;; 'undolevels'
-        (atom' long         b_p_wm)             ;; 'wrapmargin'
-        (field long         b_p_wm_nopaste)     ;; "b_p_wm" saved for paste mode
 
         ;; end of buffer options
 
@@ -2536,7 +2474,7 @@
     CMD_change 7,
     CMD_cabbrev 8,
     CMD_cabclear 9,
-    CMD_center 10,
+
     CMD_changes 11,
     CMD_close 12,
     CMD_cmap 13,
@@ -2574,7 +2512,7 @@
 
     CMD_list 46,
     CMD_later 47,
-    CMD_left 48,
+
     CMD_leftabove 49,
     CMD_lockmarks 50,
     CMD_move 51,
@@ -2608,7 +2546,7 @@
     CMD_registers 79,
     CMD_resize 80,
     CMD_retab 81,
-    CMD_right 82,
+
     CMD_rightbelow 83,
     CMD_substitute 84,
     CMD_set 85,
@@ -2964,13 +2902,6 @@
 ;; Used when 'backspace' is 0, to avoid backspacing over autoindent.
 
 (atom! int      ai_col)
-
-;; This is a character which will end a start-middle-end comment when typed as
-;; the first character on a new line.  It is taken from the last character of
-;; the "end" comment leader when the COM_AUTO_END flag is given for that
-;; comment end in 'comments'.  It is only valid when did_ai is true.
-
-(atom! int      end_comment_pending     NUL)
 
 ;; This flag is set after a ":syncbind" to let the check_scrollbind() function
 ;; know that it should not attempt to perform scrollbinding due to the scroll
@@ -3990,32 +3921,7 @@
 ;       if (name == null)
 ;           return false;
 
-;       return (STRNCASECMP(name, u8("xterm"), 5) == 0
-;            || STRNCASECMP(name, u8("rxvt"), 4) == 0
-;            || STRCMP(name, u8("builtin_xterm")) == 0);
-    ))
-
-(defn- #_boolean vim_is_vt300 [#_Bytes name]
-    (§
-;       if (name == null)
-;           return false;           ;; actually all ANSI comp. terminals should be here
-
-        ;; catch VT100 - VT5xx
-;       return ((STRNCASECMP(name, u8("vt"), 2) == 0 && vim_strbyte(u8("12345"), name.at(2)) != null)
-;           || STRCMP(name, u8("builtin_vt320")) == 0);
-    ))
-
-;; Return true if "name" is a terminal for which 'ttyfast' should be set.
-;; This should include all windowed terminal emulators.
-
-(defn- #_boolean vim_is_fastterm [#_Bytes name]
-    (§
-;       if (name == null)
-;           return false;
-;       if (vim_is_xterm(name) || vim_is_vt300(name))
-;           return true;
-
-;       return (STRNCASECMP(name, u8("screen"), 6) == 0);
+;       return (STRNCASECMP(name, u8("xterm"), 5) == 0 || STRNCASECMP(name, u8("rxvt"), 4) == 0);
     ))
 
 ;; Output a newline when exiting.
@@ -6978,10 +6884,7 @@
     PV_AI   (| BV_AI   PV_BUF),
     PV_CI   (| BV_CI   PV_BUF),
     PV_CINW (| BV_CINW PV_BUF),
-    PV_COM  (| BV_COM  PV_BUF),
     PV_ET   (| BV_ET   PV_BUF),
-    PV_FLP  (| BV_FLP  PV_BUF),
-    PV_FO   (| BV_FO   PV_BUF),
     PV_INF  (| BV_INF  PV_BUF),
     PV_ISK  (| BV_ISK  PV_BUF),
     PV_KP   (| BV_KP   PV_BUF),
@@ -6994,9 +6897,7 @@
     PV_STS  (| BV_STS  PV_BUF),
     PV_SW   (| BV_SW   PV_BUF),
     PV_TS   (| BV_TS   PV_BUF),
-    PV_TW   (| BV_TW   PV_BUF),
-    PV_UL   (| BV_UL   PV_BUF),
-    PV_WM   (| BV_WM   PV_BUF))
+    PV_UL   (| BV_UL   PV_BUF))
 
 ;; Definition of the PV_ values for window-local options.
 ;; The WV_ values are defined in option.h.
@@ -7066,8 +6967,6 @@
 
 (final int P_CURSWANT      0x2000000)   ;; update curswant required; not needed when there is a redraw flag
 
-(final Bytes COMMENTS_INIT (u8 "s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-"))
-
 (final Bytes HIGHLIGHT_INIT (u8 "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,V:VisualNOS,w:WarningMsg,W:WildMenu,f:Folded,F:FoldColumn,A:DiffAdd,C:DiffChange,D:DiffDelete,T:DiffText,>:SignColumn,-:Conceal,B:SpellBad,P:SpellCap,R:SpellRare,L:SpellLocal,+:Pmenu,=:PmenuSel,x:PmenuSbar,X:PmenuThumb,*:TabLine,#:TabLineSel,_:TabLineFill,!:CursorColumn,.:CursorLine,o:ColorColumn"))
 
 (defn- #_vimoption_C bool_opt [#_Bytes fname, #_Bytes sname, #_long flags, #_"/*boolean[]*/Object" var, #_int indir, #_boolean def]
@@ -7114,7 +7013,6 @@
         (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7#_L),
         (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     null,        PV_CC,     (u8 "")),
         (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     0,          80#_L),
-        (utf8_opt (u8 "comments"),       (u8 "com"),    (| P_COMMA P_NODUP P_CURSWANT), null,        PV_COM,     COMMENTS_INIT),
         (utf8_opt (u8 "concealcursor"),  (u8 "cocu"),      P_RWIN,                      null,        PV_COCU,   (u8 "")),
         (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      null,        PV_COLE,    0#_L),
         (bool_opt (u8 "copyindent"),     (u8 "ci"),        0,                           null,        PV_CI,      false),
@@ -7131,8 +7029,6 @@
         (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        0,          true),
         (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           null,        PV_ET,      false),
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       0,         (u8 "vert:|,fold:-")),
-        (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  null,        PV_FO,      DFLT_FO_VIM),
-        (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           null,        PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        0,          false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        0,          HIGHLIGHT_INIT),
         (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50#_L),
@@ -7203,13 +7099,11 @@
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       0,          true),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      null,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      0,         (u8 "")),
-        (long_opt (u8 "textwidth"),      (u8 "tw"),        P_RBUF,                      null,        PV_TW,      0#_L),
         (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        0,          false),
         (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   0,          true),
         (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        0,          1000#_L),
         (bool_opt (u8 "ttimeout"),        null,            0,                           p_ttimeout,  0,          false),
         (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       0,          -1#_L),
-        (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        0,          false),
         (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, 0,          999#_L),
         (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           null,        PV_UL,      1000#_L),
         (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000#_L),
@@ -7225,7 +7119,6 @@
         (long_opt (u8 "winminwidth"),    (u8 "wmw"),       0,                           p_wmw,       0,          1#_L),
         (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       0,          20#_L),
         (bool_opt (u8 "wrap"),            null,            P_RWIN,                      null,        PV_WRAP,    true),
-        (long_opt (u8 "wrapmargin"),     (u8 "wm"),        0,                           null,        PV_WM,      0#_L),
         (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        0,          true),
         (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0#_L),
 
@@ -8084,10 +7977,7 @@
     (§
 ;       check_string_option(buf.b_p_kp);
 ;       check_string_option(buf.b_p_mps);
-;       check_string_option(buf.b_p_fo);
-;       check_string_option(buf.b_p_flp);
 ;       check_string_option(buf.b_p_isk);
-;       check_string_option(buf.b_p_com);
 ;       check_string_option(buf.b_p_nf);
 ;       check_string_option(buf.b_p_qe);
 ;       check_string_option(buf.b_p_cinw);
@@ -8272,36 +8162,6 @@
 ;           }
 ;       }
 
-        ;; 'comments'
-;       else if (varp == @curbuf.b_p_com)
-;       {
-;           for (Bytes s = varp[0]; s.at(0) != NUL; )
-;           {
-;               while (s.at(0) != NUL && s.at(0) != (byte)':')
-;               {
-;                   if (vim_strchr(COM_ALL, s.at(0)) == null && !asc_isdigit(s.at(0)) && s.at(0) != (byte)'-')
-;                   {
-;                       errmsg = illegal_char(errbuf, s.at(0));
-;                       break;
-;                   }
-;                   s = s.plus(1);
-;               }
-;               if ((s = s.plus(1)).at(-1) == NUL)
-;                   errmsg = u8("E524: Missing colon");
-;               else if (s.at(0) == (byte)',' || s.at(0) == NUL)
-;                   errmsg = u8("E525: Zero length string");
-;               if (errmsg != null)
-;                   break;
-;               while (s.at(0) != NUL && s.at(0) != (byte)',')
-;               {
-;                   if (s.at(0) == (byte)'\\' && s.at(1) != NUL)
-;                       s = s.plus(1);
-;                   s = s.plus(1);
-;               }
-;               s = skip_to_option_part(s);
-;           }
-;       }
-
         ;; 'listchars'
 ;       else if (varp == p_lcs)
 ;       {
@@ -8445,8 +8305,6 @@
 ;               p = WW_ALL;
 ;           else if (varp == p_cpo)
 ;               p = CPO_ALL;
-;           else if (varp == @curbuf.b_p_fo)
-;               p = FO_ALL;
 ;           else if (varp == @curwin.w_options.wo_cocu)
 ;               p = COCU_ALL;
 ;           if (p != null)
@@ -8481,7 +8339,7 @@
 ;       return errmsg;
     ))
 
-;; Handle setting 'colorcolumn' or 'textwidth' in window "wp".
+;; Handle setting 'colorcolumn' in window "wp".
 ;; Returns error message, null if it's OK.
 
 (defn- #_Bytes check_colorcolumn [#_window_C wp]
@@ -8491,31 +8349,13 @@
 
 ;       for (Bytes s = wp.w_options.@wo_cc; s.at(0) != NUL && count < 255; )
 ;       {
-;           skip:
-;           {
-;               int col;
-;               if (s.at(0) == (byte)'-' || s.at(0) == (byte)'+')
-;               {
-                    ;; -N and +N: add to 'textwidth'
-;                   col = (s.at(0) == (byte)'-') ? -1 : 1;
-;                   s = s.plus(1);
-;                   if (!asc_isdigit(s.at(0)))
-;                       return e_invarg;
-;                   { Bytes[] __ = { s }; col *= getdigits(__); s = __[0]; }
-;                   if (@curbuf.@b_p_tw == 0)
-;                       break skip;     ;; 'textwidth' not set, skip this item
-;                   col += @curbuf.@b_p_tw;
-;                   if (col < 0)
-;                       break skip;
-;               }
-;               else if (asc_isdigit(s.at(0)))
-;               {
-;                   Bytes[] __ = { s }; col = (int)getdigits(__); s = __[0];
-;               }
-;               else
-;                   return e_invarg;
-;               color_cols[count++] = col - 1;  ;; 1-based to 0-based
-;           }
+;           if (!asc_isdigit(s.at(0)))
+;               return e_invarg;
+
+;           int col;
+;           Bytes[] __ = { s }; col = (int)getdigits(__); s = __[0];
+
+;           color_cols[count++] = col - 1;  ;; 1-based to 0-based
 
 ;           if (s.at(0) == NUL)
 ;               break;
@@ -8989,18 +8829,6 @@
 ;               @curwin.w_options.@wo_nuw = 10;
 ;           }
 ;           @curwin.w_nrwidth_line_count = 0;    ;; trigger a redraw
-;       }
-
-;       else if (varp == @curbuf.b_p_tw)
-;       {
-;           if (@curbuf.@b_p_tw < 0)
-;           {
-;               errmsg = e_positive;
-;               @curbuf.@b_p_tw = 0;
-;           }
-
-;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;               check_colorcolumn(wp);
 ;       }
 
         ;; Check the bounds for numeric options here.
@@ -9561,10 +9389,7 @@
 ;           case PV_AI:     return @curbuf.b_p_ai;
 ;           case PV_CI:     return @curbuf.b_p_ci;
 ;           case PV_CINW:   return @curbuf.b_p_cinw;
-;           case PV_COM:    return @curbuf.b_p_com;
 ;           case PV_ET:     return @curbuf.b_p_et;
-;           case PV_FLP:    return @curbuf.b_p_flp;
-;           case PV_FO:     return @curbuf.b_p_fo;
 ;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
 ;           case PV_KP:     return @curbuf.b_p_kp;
@@ -9577,9 +9402,7 @@
 ;           case PV_STS:    return @curbuf.b_p_sts;
 ;           case PV_SW:     return @curbuf.b_p_sw;
 ;           case PV_TS:     return @curbuf.b_p_ts;
-;           case PV_TW:     return @curbuf.b_p_tw;
 ;           case PV_UL:     return @curbuf.b_p_ul;
-;           case PV_WM:     return @curbuf.b_p_wm;
 ;       }
 
 ;       return v.var;
@@ -9691,17 +9514,6 @@
 ;       return false;
     ))
 
-;; Return true if format option 'x' is in effect.
-;; Take care of no formatting when 'paste' is set.
-
-(defn- #_boolean has_format_option [#_int x]
-    (§
-;       if (@p_paste)
-;           return false;
-
-;       return (vim_strchr(@curbuf.@b_p_fo, x) != null);
-    ))
-
 (atom! boolean old_p_paste)
 (atom! boolean save_sm)
 (atom! boolean save_ru)
@@ -9720,8 +9532,6 @@
                 ;; save options
 ;               buffer_C buf = @curbuf;
 ;               {
-;                   buf.b_p_tw_nopaste = buf.@b_p_tw;
-;                   buf.b_p_wm_nopaste = buf.@b_p_wm;
 ;                   buf.b_p_sts_nopaste = buf.@b_p_sts;
 ;                   buf.b_p_ai_nopaste = buf.@b_p_ai;
 ;               }
@@ -9736,8 +9546,6 @@
             ;; set options
 ;           buffer_C buf = @curbuf;
 ;           {
-;               buf.@b_p_tw = 0;         ;; textwidth is 0
-;               buf.@b_p_wm = 0;         ;; wrapmargin is 0
 ;               buf.@b_p_sts = 0;        ;; softtabstop is 0
 ;               buf.@b_p_ai = false;         ;; no auto-indent
 ;           }
@@ -9756,8 +9564,6 @@
             ;; restore options
 ;           buffer_C buf = @curbuf;
 ;           {
-;               buf.@b_p_tw = buf.b_p_tw_nopaste;
-;               buf.@b_p_wm = buf.b_p_wm_nopaste;
 ;               buf.@b_p_sts = buf.b_p_sts_nopaste;
 ;               buf.@b_p_ai = buf.b_p_ai_nopaste;
 ;           }
@@ -10025,87 +9831,6 @@
 ;       }
 
 ;       msg(@ioBuff);
-    ))
-
-;; ":left", ":center" and ":right": align text.
-
-(defn- #_void ex_align [#_exarg_C eap]
-    (§
-;       int indent = 0;
-
-;       int width = libC.atoi(eap.arg);
-;       pos_C save_curpos = §_pos_C();
-;       COPY_pos(save_curpos, @curwin.w_cursor);
-;       if (eap.cmdidx == CMD_left)     ;; width is used for new indent
-;       {
-;           if (0 <= width)
-;               indent = width;
-;       }
-;       else
-;       {
-                ;; if 'textwidth' set, use it
-                ;; else if 'wrapmargin' set, use it
-                ;; if invalid value, use 80
-
-;           if (width <= 0)
-;               width = (int)@curbuf.@b_p_tw;
-;           if (width == 0 && 0 < @curbuf.@b_p_wm)
-;               width = @curwin.w_width - (int)@curbuf.@b_p_wm;
-;           if (width <= 0)
-;               width = 80;
-;       }
-
-;       if (!u_save(eap.line1 - 1, eap.line2 + 1))
-;           return;
-
-;       for (@curwin.w_cursor.lnum = eap.line1; @curwin.w_cursor.lnum <= eap.line2; @curwin.w_cursor.lnum++)
-;       {
-;           int new_indent;
-;           if (eap.cmdidx == CMD_left)             ;; left align
-;               new_indent = indent;
-;           else
-;           {
-;               boolean[] has_tab = { false };      ;; avoid uninit warnings
-
-;               int len = linelen(eap.cmdidx == CMD_right ? has_tab : null) - get_indent();
-;               if (len <= 0)                       ;; skip blank lines
-;                   continue;
-
-;               if (eap.cmdidx == CMD_center)
-;                   new_indent = (width - len) / 2;
-;               else
-;               {
-;                   new_indent = width - len;       ;; right align
-
-                        ;; Make sure that embedded TABs don't make the text go too far to the right.
-
-;                   if (has_tab[0])
-;                       while (0 < new_indent)
-;                       {
-;                           set_indent(new_indent, 0);
-;                           if (linelen(null) <= width)
-;                           {
-                                    ;; Now try to move the line as much as possible to the right.
-                                    ;; Stop when it moves too far.
-
-;                               do
-;                               {
-;                                   set_indent(++new_indent, 0);
-;                               } while (linelen(null) <= width);
-;                               --new_indent;
-;                               break;
-;                           }
-;                           --new_indent;
-;                       }
-;               }
-;           }
-;           if (new_indent < 0)
-;               new_indent = 0;
-;           set_indent(new_indent, 0);                  ;; set indent
-;       }
-;       changed_lines(eap.line1, 0, eap.line2 + 1, 0L);
-;       COPY_pos(@curwin.w_cursor, save_curpos);
-;       beginline(BL_WHITE | BL_FIX);
     ))
 
 ;; Get the length of the current line, excluding trailing white space.
@@ -17681,7 +17406,6 @@
 ;               case OP_LSHIFT:
 ;               case OP_RSHIFT:
 ;                   op_shift(oap, true, oap.is_VIsual ? (int)cap.count1 : 1);
-;                   auto_format(false, true);
 ;                   break;
 
 ;               case OP_JOIN_NS:
@@ -17691,10 +17415,7 @@
 ;                   if (@curbuf.b_ml.ml_line_count < @curwin.w_cursor.lnum + oap.line_count - 1)
 ;                       beep_flush();
 ;                   else
-;                   {
 ;                       do_join((int)oap.line_count, oap.op_type == OP_JOIN, true, true, true);
-;                       auto_format(false, true);
-;                   }
 ;                   break;
 
 ;               case OP_DELETE:
@@ -17705,12 +17426,7 @@
 ;                       cancelRedo();
 ;                   }
 ;                   else
-;                   {
 ;                       op_delete(oap);
-;                       if (oap.motion_type == MLINE && has_format_option(FO_AUTO))
-;                           u_save_cursor();        ;; cursor line wasn't saved yet
-;                       auto_format(false, true);
-;                   }
 ;                   break;
 
 ;               case OP_YANK:
@@ -17789,11 +17505,11 @@
 ;                   break;
 
 ;               case OP_FORMAT:
-;                   op_format(oap, false);              ;; use internal function
+;                   op_format(oap, false);              ;; use internal function
 ;                   break;
 
 ;               case OP_FORMAT2:
-;                   op_format(oap, true);               ;; use internal function
+;                   op_format(oap, true);               ;; use internal function
 ;                   break;
 
 ;               case OP_FUNCTION:
@@ -17820,9 +17536,6 @@
 ;                       op_insert(oap, cap.count1);
                         ;; Reset linebreak, so that formatting works correctly.
 ;                       @curwin.w_options.@wo_lbr = false;
-
-                        ;; TODO: when inserting in several lines, should format all the lines.
-;                       auto_format(false, true);
 
 ;                       if (@restart_edit == 0)
 ;                           @restart_edit = restart_edit_save;
@@ -21233,8 +20946,7 @@
 ;       {
 ;           if (u_save(@curwin.w_cursor.lnum - (cap.cmdchar == 'O' ? 1 : 0),
 ;                      @curwin.w_cursor.lnum + (cap.cmdchar == 'o' ? 1 : 0))
-;                   && open_line(cap.cmdchar == 'O' ? BACKWARD : FORWARD,
-;                       has_format_option(FO_OPEN_COMS) ? OPENLINE_DO_COM : 0, 0))
+;                   && open_line(cap.cmdchar == 'O' ? BACKWARD : FORWARD, 0, 0))
 ;           {
 ;               if (0 < @curwin.w_options.@wo_cole && oldline != @curwin.w_cursor.lnum)
 ;                   update_single_line(@curwin, oldline);
@@ -21986,7 +21698,6 @@
 ;                   coladvance(MAXCOL);
 ;               }
 ;           }
-;           auto_format(false, true);
 ;       }
     ))
 
@@ -25448,64 +25159,6 @@
 ;       ui_breakcheck();
     ))
 
-;; If "process" is true and the line begins with a comment leader (possibly
-;; after some white space), return a pointer to the text after it.  Put a boolean
-;; value indicating whether the line ends with an unclosed comment in "is_comment".
-;; line - line to be processed,
-;; process - if false, will only check whether the line ends with an unclosed comment,
-;; include_space - whether to also skip space following the comment leader,
-;; is_comment - will indicate whether the current line ends with an unclosed comment.
-
-(defn- #_Bytes skip_comment [#_Bytes line, #_boolean process, #_boolean include_space, #_boolean* is_comment]
-    (§
-;       Bytes[] flags = { null };
-;       int leader_offset = get_last_leader_offset(line, flags);
-
-;       is_comment[0] = false;
-;       if (leader_offset != -1)
-;       {
-            ;; Let's check whether the line ends with an unclosed comment.
-            ;; If the last comment leader has COM_END in flags, there's no comment.
-
-;           while (flags[0].at(0) != NUL)
-;           {
-;               if (flags[0].at(0) == COM_END || flags[0].at(0) == (byte)':')
-;                   break;
-;               flags[0] = flags[0].plus(1);
-;           }
-;           if (flags[0].at(0) != COM_END)
-;               is_comment[0] = true;
-;       }
-
-;       if (process == false)
-;           return line;
-
-;       int lead_len = get_leader_len(line, flags, false, include_space);
-;       if (lead_len == 0)
-;           return line;
-
-        ;; Find:
-        ;; - COM_END,
-        ;; - colon,
-        ;; whichever comes first.
-
-;       while (flags[0].at(0) != NUL)
-;       {
-;           if (flags[0].at(0) == COM_END || flags[0].at(0) == (byte)':')
-;               break;
-;           flags[0] = flags[0].plus(1);
-;       }
-
-        ;; If we found a colon, it means that we are not processing a line
-        ;; starting with a closing part of a three-part comment.  That's good,
-        ;; because we don't want to remove those as this would be annoying.
-
-;       if (flags[0].at(0) == (byte)':' || flags[0].at(0) == NUL)
-;           line = line.plus(lead_len);
-
-;       return line;
-    ))
-
 ;; Join 'count' lines (minimal 2) at cursor position.
 ;; When "save_undo" is true save lines for undo first.
 ;; Set "use_formatoptions" to false when e.g. processing backspace and comment
@@ -25527,8 +25180,6 @@
 ;       int sumsize = 0;                ;; size of the long new line
 ;       int col = 0;
 
-;       boolean remove_comments = (use_formatoptions == true) && has_format_option(FO_REMOVE_COMS);
-
 ;       if (save_undo && !u_save(@curwin.w_cursor.lnum - 1, @curwin.w_cursor.lnum + count))
 ;           return false;
 
@@ -25536,10 +25187,6 @@
         ;; We will use it to pre-compute the length of the new line and the
         ;; proper placement of each original line in the new one.
 ;       int[] spaces = new int[count];
-
-;       int[] comments = null;
-;       if (remove_comments)
-;           comments = new int[count];
 
         ;; Don't move anything, just compute the final line length
         ;; and setup the array of space strings lengths.
@@ -25553,29 +25200,11 @@
 ;               @curbuf.b_op_start.lnum = @curwin.w_cursor.lnum;
 ;               @curbuf.b_op_start.col  = STRLEN(curr);
 ;           }
-;           if (remove_comments)
-;           {
-;               boolean[] prev_was_comment = new boolean[1];
-
-                ;; We don't want to remove the comment leader if the previous line is not a comment.
-;               if (0 < t && prev_was_comment[0])
-;               {
-;                   Bytes new_curr = skip_comment(curr, true, insert_space, prev_was_comment);
-;                   comments[t] = BDIFF(new_curr, curr);
-;                   curr = new_curr;
-;               }
-;               else
-;                   curr = skip_comment(curr, false, insert_space, prev_was_comment);
-;           }
 
 ;           if (insert_space && 0 < t)
 ;           {
 ;               curr = skipwhite(curr);
-;               if (curr.at(0) != (byte)')' && currsize != 0 && endcurr1 != TAB
-;                       && (!has_format_option(FO_MBYTE_JOIN)
-;                           || (us_ptr2char(curr) < 0x100 && endcurr1 < 0x100))
-;                       && (!has_format_option(FO_MBYTE_JOIN2)
-;                           || us_ptr2char(curr) < 0x100 || endcurr1 < 0x100))
+;               if (curr.at(0) != (byte)')' && currsize != 0 && endcurr1 != TAB)
 ;               {
                     ;; don't add a space if the line is ending in a space
 ;                   if (endcurr1 == ' ')
@@ -25583,10 +25212,7 @@
 ;                   else
 ;                       ++spaces[t];
                     ;; extra space when 'joinspaces' set and line ends in '.'
-;                   if (@p_js
-;                           && (endcurr1 == '.'
-;                               || (vim_strbyte(@p_cpo, CPO_JOINSP) == null
-;                                   && (endcurr1 == '?' || endcurr1 == '!'))))
+;                   if (@p_js && (endcurr1 == '.' || (vim_strbyte(@p_cpo, CPO_JOINSP) == null && (endcurr1 == '?' || endcurr1 == '!'))))
 ;                       ++spaces[t];
 ;               }
 ;           }
@@ -25636,8 +25262,6 @@
 ;           if (t == 0)
 ;               break;
 ;           curr = curr_start = ml_get(@curwin.w_cursor.lnum + t - 1);
-;           if (remove_comments)
-;               curr = curr.plus(comments[t - 1]);
 ;           if (insert_space && 1 < t)
 ;               curr = skipwhite(curr);
 ;           currsize = STRLEN(curr);
@@ -25675,422 +25299,6 @@
 ;       @curwin.w_set_curswant = true;
 
 ;       return retval;
-    ))
-
-;; Return true if the two comment leaders given are the same.
-;; "lnum" is the first line.  White-space is ignored.
-;; Note that the whole of 'leader1' must match 'leader2_len' characters from 'leader2'.
-
-(defn- #_boolean same_leader [#_long lnum, #_int leader1_len, #_Bytes leader1_flags, #_int leader2_len, #_Bytes leader2_flags]
-    (§
-;       int idx1 = 0, idx2 = 0;
-
-;       if (leader1_len == 0)
-;           return (leader2_len == 0);
-
-        ;; If first leader has 'f' flag, the lines can be joined only
-        ;; if the second line does not have a leader.
-        ;; If first leader has 'e' flag, the lines can never be joined.
-        ;; If first leader has 's' flag, the lines can only be joined
-        ;; if there is some text after it and the second line has the 'm' flag.
-
-;       if (leader1_flags != null)
-;       {
-;           for (Bytes p = leader1_flags; p.at(0) != NUL && p.at(0) != (byte)':'; p = p.plus(1))
-;           {
-;               if (p.at(0) == COM_FIRST)
-;                   return (leader2_len == 0);
-;               if (p.at(0) == COM_END)
-;                   return false;
-;               if (p.at(0) == COM_START)
-;               {
-;                   if (ml_get(lnum).at(leader1_len) == NUL)
-;                       return false;
-;                   if (leader2_flags == null || leader2_len == 0)
-;                       return false;
-;                   for (p = leader2_flags; p.at(0) != NUL && p.at(0) != (byte)':'; p = p.plus(1))
-;                       if (p.at(0) == COM_MIDDLE)
-;                           return true;
-
-;                   return false;
-;               }
-;           }
-;       }
-
-        ;; Get current line and next line, compare the leaders.
-        ;; The first line has to be saved, only one line can be locked at a time.
-
-;       Bytes line1 = STRDUP(ml_get(lnum));
-
-;       for (idx1 = 0; vim_iswhite(line1.at(idx1)); ++idx1)
-        ;
-;       Bytes line2 = ml_get(lnum + 1);
-;       for (idx2 = 0; idx2 < leader2_len; ++idx2)
-;       {
-;           if (!vim_iswhite(line2.at(idx2)))
-;           {
-;               if (line1.at(idx1++) != line2.at(idx2))
-;                   break;
-;           }
-;           else
-;               while (vim_iswhite(line1.at(idx1)))
-;                   idx1++;
-;       }
-
-;       return (idx2 == leader2_len && idx1 == leader1_len);
-    ))
-
-;; Implementation of the format operator 'gq'.
-
-(defn- #_void op_format [#_oparg_C oap, #_boolean keep_cursor]
-    ;; keep_cursor: keep cursor on same text char
-    (§
-;       long old_line_count = @curbuf.b_ml.ml_line_count;
-
-        ;; Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
-;       COPY_pos(@curwin.w_cursor, oap.cursor_start);
-
-;       if (!u_save(oap.op_start.lnum - 1, oap.op_end.lnum + 1))
-;           return;
-;       COPY_pos(@curwin.w_cursor, oap.op_start);
-
-;       if (oap.is_VIsual)
-            ;; When there is no change: need to remove the Visual selection.
-;           redraw_curbuf_later(INVERTED);
-
-        ;; Set '[ mark at the start of the formatted area.
-;       COPY_pos(@curbuf.b_op_start, oap.op_start);
-
-        ;; For "gw" remember the cursor position and put it back below (adjusted for joined and split lines).
-;       if (keep_cursor)
-;           COPY_pos(@saved_cursor, oap.cursor_start);
-
-;       format_lines(oap.line_count, keep_cursor);
-
-        ;; Leave the cursor at the first non-blank of the last formatted line.
-        ;; If the cursor was moved one line back (e.g. with "Q}") go to the next line,
-        ;; so "." will do the next lines.
-
-;       if (oap.end_adjusted && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
-;           @curwin.w_cursor.lnum++;
-;       beginline(BL_WHITE | BL_FIX);
-;       old_line_count = @curbuf.b_ml.ml_line_count - old_line_count;
-;       msgmore(old_line_count);
-
-        ;; put '] mark on the end of the formatted area
-;       COPY_pos(@curbuf.b_op_end, @curwin.w_cursor);
-
-;       if (keep_cursor)
-;       {
-;           COPY_pos(@curwin.w_cursor, @saved_cursor);
-;           @saved_cursor.lnum = 0;
-;       }
-
-;       if (oap.is_VIsual)
-;       {
-;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           {
-;               if (wp.w_old_cursor_lnum != 0)
-;               {
-                    ;; When lines have been inserted or deleted,
-                    ;; adjust the end of the Visual area to be redrawn.
-;                   if (wp.w_old_visual_lnum < wp.w_old_cursor_lnum)
-;                       wp.w_old_cursor_lnum += old_line_count;
-;                   else
-;                       wp.w_old_visual_lnum += old_line_count;
-;               }
-;           }
-;       }
-    ))
-
-;; Format "line_count" lines, starting at the cursor position.
-;; When "line_count" is negative, format until the end of the paragraph.
-;; Lines after the cursor line are saved for undo, caller must have saved the first line.
-
-(defn- #_void format_lines [#_long line_count, #_boolean avoid_fex]
-    ;; avoid_fex: don't use 'formatexpr'
-    (§
-;       boolean prev_is_end_par = false;        ;; prev. line not part of parag.
-;       boolean next_is_start_par = false;
-;       boolean do_comments_list = false;               ;; format comments with 'n' or '2'
-;       boolean advance = true;
-;       int second_indent = -1;                 ;; indent for second line (comment aware)
-;       boolean first_par_line = true;
-;       boolean need_set_indent = true;         ;; set indent of next paragraph
-;       boolean force_format = false;
-
-;       int old_State = @State;
-
-        ;; length of a line to force formatting: 3 * 'tw'
-;       int max_len = comp_textwidth(true) * 3;
-
-        ;; check for 'q', '2' and '1' in 'formatoptions'
-;       boolean do_comments = has_format_option(FO_Q_COMS);         ;; format comments
-;       boolean do_second_indent = has_format_option(FO_Q_SECOND);
-;       boolean do_number_indent = has_format_option(FO_Q_NUMBER);
-;       boolean do_trail_white = has_format_option(FO_WHITE_PAR);
-
-        ;; Get info about the previous and current line.
-
-;       boolean is_not_par = true;                      ;; current line not part of parag.
-;       int[] leader_len = { 0 };                       ;; leader len of current line
-;       Bytes[] leader_flags = { null };                ;; flags for leader of current line
-;       if (1 < @curwin.w_cursor.lnum)
-;           is_not_par = fmt_check_par(@curwin.w_cursor.lnum - 1, leader_len, leader_flags, do_comments);
-
-;       boolean next_is_not_par;                        ;; next line not part of paragraph
-;       int[] next_leader_len = new int[1];             ;; leader len of next line
-;       Bytes[] next_leader_flags = new Bytes[1];       ;; flags for leader of next line
-;       next_is_not_par = fmt_check_par(@curwin.w_cursor.lnum, next_leader_len, next_leader_flags, do_comments);
-
-;       boolean is_end_par = (is_not_par || next_is_not_par);       ;; at end of paragraph
-;       if (!is_end_par && do_trail_white)
-;           is_end_par = !ends_in_white(@curwin.w_cursor.lnum - 1);
-
-;       --@curwin.w_cursor.lnum;
-;       for (long count = line_count; count != 0 && !@got_int; --count)
-;       {
-            ;; Advance to next paragraph.
-
-;           if (advance)
-;           {
-;               @curwin.w_cursor.lnum++;
-;               prev_is_end_par = is_end_par;
-;               is_not_par = next_is_not_par;
-;               leader_len[0] = next_leader_len[0];
-;               leader_flags[0] = next_leader_flags[0];
-;           }
-
-            ;; The last line to be formatted.
-
-;           if (count == 1 || @curwin.w_cursor.lnum == @curbuf.b_ml.ml_line_count)
-;           {
-;               next_is_not_par = true;
-;               next_leader_len[0] = 0;
-;               next_leader_flags[0] = null;
-;           }
-;           else
-;           {
-;               next_is_not_par = fmt_check_par(@curwin.w_cursor.lnum + 1,
-;                                       next_leader_len, next_leader_flags, do_comments);
-;               if (do_number_indent)
-;                   next_is_start_par = (0 < get_number_indent(@curwin.w_cursor.lnum + 1));
-;           }
-;           advance = true;
-;           is_end_par = (is_not_par || next_is_not_par || next_is_start_par);
-;           if (!is_end_par && do_trail_white)
-;               is_end_par = !ends_in_white(@curwin.w_cursor.lnum);
-
-            ;; Skip lines that are not in a paragraph.
-
-;           if (is_not_par)
-;           {
-;               if (line_count < 0)
-;                   break;
-;           }
-;           else
-;           {
-                ;; For the first line of a paragraph, check indent of second line.
-                ;; Don't do this for comments and empty lines.
-
-;               if (first_par_line
-;                       && (do_second_indent || do_number_indent)
-;                       && prev_is_end_par
-;                       && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
-;               {
-;                   if (do_second_indent && !lineempty(@curwin.w_cursor.lnum + 1))
-;                   {
-;                       if (leader_len[0] == 0 && next_leader_len[0] == 0)
-;                       {
-                            ;; no comment found
-;                           second_indent = get_indent_lnum(@curwin.w_cursor.lnum + 1);
-;                       }
-;                       else
-;                       {
-;                           second_indent = next_leader_len[0];
-;                           do_comments_list = true;
-;                       }
-;                   }
-;                   else if (do_number_indent)
-;                   {
-;                       if (leader_len[0] == 0 && next_leader_len[0] == 0)
-;                       {
-                            ;; no comment found
-;                           second_indent = get_number_indent(@curwin.w_cursor.lnum);
-;                       }
-;                       else
-;                       {
-                            ;; get_number_indent() is now "comment aware"...
-;                           second_indent = get_number_indent(@curwin.w_cursor.lnum);
-;                           do_comments_list = true;
-;                       }
-;                   }
-;               }
-
-                ;; When the comment leader changes, it's the end of the paragraph.
-
-;               if (@curbuf.b_ml.ml_line_count <= @curwin.w_cursor.lnum
-;                       || !same_leader(@curwin.w_cursor.lnum, leader_len[0], leader_flags[0],
-;                                                       next_leader_len[0], next_leader_flags[0]))
-;                   is_end_par = true;
-
-                ;; If we have got to the end of a paragraph, or the line is getting long, format it.
-
-;               if (is_end_par || force_format)
-;               {
-;                   if (need_set_indent)
-                        ;; Replace indent in first line with minimal number of tabs and spaces,
-                        ;; according to current options.
-;                       set_indent(get_indent(), SIN_CHANGED);
-
-                    ;; put cursor on last non-space
-;                   @State = NORMAL; ;; don't go past end-of-line
-;                   coladvance(MAXCOL);
-;                   while (@curwin.w_cursor.col != 0 && vim_isspace(gchar_cursor()))
-;                       dec_cursor();
-
-                    ;; do the formatting, without 'showmode'
-;                   @State = INSERT; ;; for open_line()
-;                   boolean smd_save = @p_smd;
-;                   @p_smd = false;
-;                   insertchar(NUL, INSCHAR_FORMAT
-;                           + (do_comments ? INSCHAR_DO_COM : 0)
-;                           + (do_comments && do_comments_list ? INSCHAR_COM_LIST : 0)
-;                           + (avoid_fex ? INSCHAR_NO_FEX : 0), second_indent);
-;                   @State = old_State;
-;                   @p_smd = smd_save;
-;                   second_indent = -1;
-                    ;; at end of par.: need to set indent of next par.
-;                   need_set_indent = is_end_par;
-;                   if (is_end_par)
-;                   {
-                        ;; When called with a negative line count,
-                        ;; break at the end of the paragraph.
-;                       if (line_count < 0)
-;                           break;
-;                       first_par_line = true;
-;                   }
-;                   force_format = false;
-;               }
-
-                ;; When still in same paragraph, join the lines together.
-                ;; But first delete the leader from the second line.
-
-;               if (!is_end_par)
-;               {
-;                   advance = false;
-;                   @curwin.w_cursor.lnum++;
-;                   @curwin.w_cursor.col = 0;
-;                   if (line_count < 0 && !u_save_cursor())
-;                       break;
-;                   if (0 < next_leader_len[0])
-;                   {
-;                       del_bytes(next_leader_len[0], false, false);
-;                       mark_col_adjust(@curwin.w_cursor.lnum, 0, 0L, (long)-next_leader_len[0]);
-;                   }
-;                   else if (0 < second_indent)     ;; the "leader" for FO_Q_SECOND
-;                   {
-;                       Bytes p = ml_get_curline();
-;                       int indent = BDIFF(skipwhite(p), p);
-
-;                       if (0 < indent)
-;                       {
-;                           del_bytes(indent, false, false);
-;                           mark_col_adjust(@curwin.w_cursor.lnum, 0, 0L, (long)-indent);
-;                       }
-;                   }
-;                   --@curwin.w_cursor.lnum;
-;                   if (do_join(2, true, false, false, false) == false)
-;                   {
-;                       beep_flush();
-;                       break;
-;                   }
-;                   first_par_line = false;
-                    ;; If the line is getting long, format it next time.
-;                   force_format = (max_len < STRLEN(ml_get_curline()));
-;               }
-;           }
-;           line_breakcheck();
-;       }
-    ))
-
-;; Return true if line "lnum" ends in a white character.
-
-(defn- #_boolean ends_in_white [#_long lnum]
-    (§
-;       Bytes s = ml_get(lnum);
-;       if (s.at(0) == NUL)
-;           return false;
-
-;       return vim_iswhite(s.at(STRLEN(s) - 1));
-    ))
-
-;; Blank lines, and lines containing only the comment leader, are left untouched
-;; by the formatting.  The function returns true in this case.
-;; It also returns true when a line starts with the end of a comment ('e' in comment flags),
-;; so that this line is skipped, and not joined to the previous line.
-;; A new paragraph starts after a blank line, or when the comment leader changes.
-
-(defn- #_boolean fmt_check_par [#_long lnum, #_int* leader_len, #_Bytes* leader_flags, #_boolean do_comments]
-    (§
-;       Bytes flags = null;
-;       Bytes ptr = ml_get(lnum);
-;       if (do_comments)
-;           leader_len[0] = get_leader_len(ptr, leader_flags, false, true);
-;       else
-;           leader_len[0] = 0;
-
-;       if (0 < leader_len[0])
-;       {
-            ;; Search for 'e' flag in comment leader flags.
-
-;           flags = leader_flags[0];
-;           while (flags.at(0) != NUL && flags.at(0) != (byte)':' && flags.at(0) != COM_END)
-;               flags = flags.plus(1);
-;       }
-
-;       return (skipwhite(ptr.plus(leader_len[0])).at(0) == NUL
-;                   || (0 < leader_len[0] && flags.at(0) == COM_END)
-;                   || startPS(lnum, NUL, false));
-    ))
-
-;; Return true when a paragraph starts in line "lnum".
-;; Return false when the previous line is in the same paragraph.
-;; Used for auto-formatting.
-
-(defn- #_boolean paragraph_start [#_long lnum]
-    (§
-;       if (lnum <= 1)
-;           return true;                ;; start of the file
-
-;       Bytes p = ml_get(lnum - 1);
-;       if (p.at(0) == NUL)
-;           return true;                ;; after empty line
-
-;       boolean do_comments = has_format_option(FO_Q_COMS);     ;; format comments
-
-;       int[] leader_len = { 0 };               ;; leader len of current line
-;       Bytes[] leader_flags = { null };        ;; flags for leader of current line
-
-;       if (fmt_check_par(lnum - 1, leader_len, leader_flags, do_comments))
-;           return true;                ;; after non-paragraph line
-
-;       int[] next_leader_len = new int[1];         ;; leader len of next line
-;       Bytes[] next_leader_flags = new Bytes[1];   ;; flags for leader of next line
-
-;       if (fmt_check_par(lnum, next_leader_len, next_leader_flags, do_comments))
-;           return true;                ;; "lnum" is not a paragraph line
-
-;       if (has_format_option(FO_WHITE_PAR) && !ends_in_white(lnum - 1))
-;           return true;                ;; missing trailing space in previous line.
-
-;       if (has_format_option(FO_Q_NUMBER) && (0 < get_number_indent(lnum)))
-;           return true;                ;; numbered item starts in "lnum".
-
-;       if (!same_leader(lnum - 1, leader_len[0], leader_flags[0], next_leader_len[0], next_leader_flags[0]))
-;           return true;                ;; change of comment leader.
-
-;       return false;
     ))
 
 ;; prepare a few things for block mode yank/delete/tilde
@@ -31340,8 +30548,6 @@
                                                             ;; set when edit() is called;
                                                             ;; after that arrow_used is used
 
-(atom! boolean  did_add_space)          ;; auto_format() added an extra space under the cursor
-
 (atom! long     o_lnum)
 
 ;; edit(): Start inserting text.
@@ -31735,7 +30941,6 @@
 
 ;                       case Ctrl_R:                        ;; insert the contents of a register
 ;                           ins_reg();
-;                           auto_format(false, true);
 ;                           inserted_space[0] = false;
 ;                           break normalchar;
 
@@ -31754,30 +30959,25 @@
                             ;; FALLTHROUGH
 ;                       case Ctrl_T:                        ;; make indent one shiftwidth greater
 ;                           ins_shift(c, lastc);
-;                           auto_format(false, true);
 ;                           inserted_space[0] = false;
 ;                           break normalchar;
 
 ;                       case K_DEL:                         ;; delete character under the cursor
 ;                       case K_KDEL:
 ;                           ins_del();
-;                           auto_format(false, true);
 ;                           break normalchar;
 
 ;                       case K_BS:                          ;; delete character before the cursor
 ;                       case Ctrl_H:
 ;                           did_backspace = ins_bs(c, BACKSPACE_CHAR, inserted_space);
-;                           auto_format(false, true);
 ;                           break normalchar;
 
 ;                       case Ctrl_W:                        ;; delete word before the cursor
 ;                           did_backspace = ins_bs(c, BACKSPACE_WORD, inserted_space);
-;                           auto_format(false, true);
 ;                           break normalchar;
 
 ;                       case Ctrl_U:                        ;; delete all inserted text in current line
 ;                           did_backspace = ins_bs(c, BACKSPACE_LINE, inserted_space);
-;                           auto_format(false, true);
 ;                           inserted_space[0] = false;
 ;                           break normalchar;
 
@@ -31863,7 +31063,6 @@
 ;                           inserted_space[0] = false;
 ;                           if (ins_tab())
 ;                               break;            ;; insert TAB as a normal char
-;                           auto_format(false, true);
 ;                           break normalchar;
 
 ;                       case K_KENTER:                      ;; <Enter>
@@ -31879,7 +31078,6 @@
 ;                           }
 ;                           if (ins_eol(c) && !@p_im)
 ;                               break doESCkey;             ;; out of memory
-;                           auto_format(false, false);
 ;                           inserted_space[0] = false;
 ;                           break normalchar;
 
@@ -31975,8 +31173,6 @@
 ;                   {
 ;                       insert_special(c, false, false);
 ;                   }
-
-;                   auto_format(false, true);
 ;               }
 
                 ;; If typed something may trigger CursorHoldI again.
@@ -32563,7 +31759,7 @@
 ;           }
 ;       }
 ;       if (stop_arrow())
-;           insertchar(c, ctrlv ? INSCHAR_CTRLV : 0, -1);
+;           insertchar(c, ctrlv ? INSCHAR_CTRLV : 0);
     ))
 
 ;; Special characters in this context are those that need processing other
@@ -32584,101 +31780,13 @@
 ;       return (vim_iswhite(cc) && !utf_iscomposing(us_ptr2char(ml_get_cursor().plus(1))));
     ))
 
-;; "flags": INSCHAR_FORMAT - force formatting
-;;          INSCHAR_CTRLV  - char typed just after CTRL-V
-;;          INSCHAR_NO_FEX - don't use 'formatexpr'
-;;
-;;   NOTE: passes the flags value straight through to internal_format() which,
-;;         beside INSCHAR_FORMAT (above), is also looking for these:
-;;          INSCHAR_DO_COM   - format comments
-;;          INSCHAR_COM_LIST - format comments with num list or 2nd line indent
+;; "flags": INSCHAR_CTRLV  - char typed just after CTRL-V
 
-(defn- #_void insertchar [#_int c, #_int flags, #_int second_indent]
+(defn- #_void insertchar [#_int c, #_int flags]
     ;; c: character to insert or NUL
-    ;; flags: INSCHAR_FORMAT, etc.
-    ;; second_indent: indent for second line if >= 0
     (§
-;       boolean force_format = ((flags & INSCHAR_FORMAT) != 0);
-
-;       int textwidth = comp_textwidth(force_format);
-;       boolean fo_ins_blank = has_format_option(FO_INS_BLANK);
-
-        ;; Try to break the line in two or more pieces when:
-        ;; - Always do this if we have been called to do formatting only.
-        ;; - Always do this when 'formatoptions' has the 'a' flag and the line ends in white space.
-        ;; - Otherwise:
-        ;;   - Don't do this if inserting a blank
-        ;;   - Don't do this if an existing character is being replaced, unless we're in VREPLACE mode.
-        ;;   - Do this if the cursor is not on the line where insert started
-        ;;   or - 'formatoptions' doesn't have 'l' or the line was not too long before the insert.
-        ;;      - 'formatoptions' doesn't have 'b' or a blank was inserted at or before 'textwidth'
-
-;       if (0 < textwidth
-;               && (force_format
-;                   || (!vim_iswhite(c)
-;                       && !((@State & REPLACE_FLAG) != 0
-;                           && (@State & VREPLACE_FLAG) == 0
-;                           && ml_get_cursor().at(0) != NUL)
-;                       && (@curwin.w_cursor.lnum != @insStart.lnum
-;                           || ((!has_format_option(FO_INS_LONG) || @insStart_textlen <= textwidth)
-;                               && (!fo_ins_blank || @insStart_blank_vcol <= textwidth))))))
-;       {
-;           internal_format(textwidth, second_indent, flags, c == NUL, c);
-;       }
-
 ;       if (c == NUL)           ;; only formatting was wanted
 ;           return;
-
-        ;; Check whether this character should end a comment.
-;       if (@did_ai && c == @end_comment_pending)
-;       {
-;           Bytes line;
-;           Bytes[] p = new Bytes[1];
-
-            ;; Need to remove existing (middle) comment leader and insert end
-            ;; comment leader.  First, check what comment leader we can find.
-
-;           int i = get_leader_len(line = ml_get_curline(), p, false, true);
-;           if (0 < i && vim_strchr(p[0], COM_MIDDLE) != null)
-;           {
-;               Bytes lead_end = new Bytes(COM_MAX_LEN);    ;; end-comment string
-
-                ;; Skip middle-comment string.
-;               while (p[0].at(0) != NUL && p[0].at(-1) != (byte)':')           ;; find end of middle flags
-;                   p[0] = p[0].plus(1);
-;               int middle_len = copy_option_part(p, lead_end, COM_MAX_LEN, u8(","));
-                ;; Don't count trailing white space for middle_len.
-;               while (0 < middle_len && vim_iswhite(lead_end.at(middle_len - 1)))
-;                   --middle_len;
-
-                ;; Find the end-comment string.
-;               while (p[0].at(0) != NUL && p[0].at(-1) != (byte)':')           ;; find end of end flags
-;                   p[0] = p[0].plus(1);
-;               int end_len = copy_option_part(p, lead_end, COM_MAX_LEN, u8(","));
-
-                ;; Skip white space before the cursor.
-;               i = @curwin.w_cursor.col;
-;               while (0 <= --i && vim_iswhite(line.at(i)))
-                ;
-;               i++;
-
-                ;; Skip to before the middle leader.
-;               i -= middle_len;
-
-                ;; Check some expected things before we go on.
-;               if (0 <= i && lead_end.at(end_len - 1) == @end_comment_pending)
-;               {
-                    ;; Backspace over all the stuff we want to replace.
-;                   backspace_until_column(i);
-
-                    ;; Insert the end-comment string, except for the last
-                    ;; character, which will get inserted as normal later.
-
-;                   ins_bytes_len(lead_end, end_len - 1);
-;               }
-;           }
-;       }
-;       @end_comment_pending = NUL;
 
 ;       @did_ai = false;
 ;       @did_si = false;
@@ -32700,8 +31808,6 @@
 
 ;           buf.be(0, c);
 ;           int i = 1;
-;           if (0 < textwidth)
-;               virtcol = get_nolist_virtcol();
 
             ;; Stop the string when:
             ;; - no more chars available
@@ -32714,7 +31820,6 @@
 ;                   && !isspecial(c)
 ;                   && mb_byte2len(c) == 1
 ;                   && i < INPUT_BUFLEN
-;                   && (textwidth == 0 || (virtcol += mb_byte2cells(buf.at(i - 1))) < textwidth)
 ;                   && !(!@no_abbr && !vim_iswordc(c, @curbuf) && vim_iswordc(buf.at(i - 1), @curbuf)))
 ;           {
 ;               c = vgetc();
@@ -32756,485 +31861,6 @@
 ;                   appendCharToRedobuff(c);
 ;           }
 ;       }
-    ))
-
-;; Format text at the current insert position.
-;;
-;; If the INSCHAR_COM_LIST flag is present, then the value of second_indent
-;; will be the comment leader length sent to open_line().
-
-(defn- #_void internal_format [#_int textwidth, #_int second_indent, #_int flags, #_boolean format_only, #_int c]
-    ;; c: character to be inserted (can be NUL)
-    (§
-;       boolean haveto_redraw = false;
-;       boolean fo_ins_blank = has_format_option(FO_INS_BLANK);
-;       boolean fo_multibyte = has_format_option(FO_MBYTE_BREAK);
-;       boolean fo_white_par = has_format_option(FO_WHITE_PAR);
-;       boolean first_line = true;
-;       boolean no_leader = false;
-;       boolean do_comments = ((flags & INSCHAR_DO_COM) != 0);
-;       boolean has_lbr = @curwin.w_options.@wo_lbr;
-
-        ;; make sure win_lbr_chartabsize() counts correctly
-;       @curwin.w_options.@wo_lbr = false;
-
-        ;; When 'ai' is off we don't want a space under the cursor to be deleted.
-        ;; Replace it with an 'x' temporarily.
-
-;       int save_char = NUL;
-;       if (!@curbuf.@b_p_ai && (@State & VREPLACE_FLAG) == 0)
-;       {
-;           int cc = gchar_cursor();
-;           if (vim_iswhite(cc))
-;           {
-;               save_char = cc;
-;               pchar_cursor('x');
-;           }
-;       }
-
-        ;; Repeat breaking lines, until the current line is not too long.
-
-;       while (!@got_int)
-;       {
-;           int end_foundcol = 0;       ;; column for start of word
-;           int orig_col = 0;
-;           Bytes saved_text = null;
-
-;           int virtcol = get_nolist_virtcol() + mb_char2cells(c != NUL ? c : gchar_cursor());
-;           if (virtcol <= textwidth)
-;               break;
-
-;           if (no_leader)
-;               do_comments = false;
-;           else if ((flags & INSCHAR_FORMAT) == 0 && has_format_option(FO_WRAP_COMS))
-;               do_comments = true;
-
-            ;; Don't break until after the comment leader.
-;           int leader_len = 0;
-;           if (do_comments)
-;               leader_len = get_leader_len(ml_get_curline(), null, false, true);
-
-            ;; If the line doesn't start with a comment leader, then don't start one
-            ;; in a following broken line.  Avoids that a %word moved to the start
-            ;; of the next line causes all following lines to start with %.
-;           if (leader_len == 0)
-;               no_leader = true;
-;           if ((flags & INSCHAR_FORMAT) == 0 && leader_len == 0 && !has_format_option(FO_WRAP))
-;               break;
-
-;           int startcol = @curwin.w_cursor.col;     ;; cursor column at entry
-;           if (startcol == 0)
-;               break;
-
-            ;; find column of textwidth border
-;           coladvance(textwidth);
-;           int wantcol = @curwin.w_cursor.col;      ;; column at textwidth border
-
-;           @curwin.w_cursor.col = startcol;
-;           int foundcol = 0;                       ;; column for start of spaces
-
-            ;; Find position to break at.
-            ;; Stop at first entered white when 'formatoptions' has 'v'.
-
-;           while ((!fo_ins_blank && !has_format_option(FO_INS_VI))
-;                       || (flags & INSCHAR_FORMAT) != 0
-;                       || @curwin.w_cursor.lnum != @insStart.lnum
-;                       || @insStart.col <= @curwin.w_cursor.col)
-;           {
-;               int cc;
-;               if (@curwin.w_cursor.col == startcol && c != NUL)
-;                   cc = c;
-;               else
-;                   cc = gchar_cursor();
-
-;               if (whitechar(cc))
-;               {
-                    ;; remember position of blank just before text
-;                   int end_col = @curwin.w_cursor.col;
-
-                    ;; find start of sequence of blanks
-;                   while (0 < @curwin.w_cursor.col && whitechar(cc))
-;                   {
-;                       dec_cursor();
-;                       cc = gchar_cursor();
-;                   }
-;                   if (@curwin.w_cursor.col == 0 && whitechar(cc))
-;                       break;                      ;; only spaces in front of text
-
-                    ;; Don't break until after the comment leader.
-;                   if (@curwin.w_cursor.col < leader_len)
-;                       break;
-
-;                   if (has_format_option(FO_ONE_LETTER))
-;                   {
-                        ;; do not break after one-letter words
-;                       if (@curwin.w_cursor.col == 0)
-;                           break;                  ;; one-letter word at begin
-
-                        ;; do not break "#a b" when 'tw' is 2
-;                       if (@curwin.w_cursor.col <= leader_len)
-;                           break;
-
-;                       int col = @curwin.w_cursor.col;
-;                       dec_cursor();
-;                       if (whitechar(gchar_cursor()))
-;                           continue;               ;; one-letter, continue
-
-;                       @curwin.w_cursor.col = col;
-;                   }
-
-;                   inc_cursor();
-
-;                   end_foundcol = end_col + 1;
-;                   foundcol = @curwin.w_cursor.col;
-
-;                   if (@curwin.w_cursor.col <= wantcol)
-;                       break;
-;               }
-;               else if (0x100 <= cc && fo_multibyte)
-;               {
-                    ;; Break after or before a multi-byte character.
-;                   if (@curwin.w_cursor.col != startcol)
-;                   {
-                        ;; Don't break until after the comment leader.
-;                       if (@curwin.w_cursor.col < leader_len)
-;                           break;
-
-;                       int col = @curwin.w_cursor.col;
-;                       inc_cursor();
-                        ;; Don't change end_foundcol if already set.
-;                       if (foundcol != @curwin.w_cursor.col)
-;                       {
-;                           foundcol = @curwin.w_cursor.col;
-;                           end_foundcol = foundcol;
-;                           if (@curwin.w_cursor.col <= wantcol)
-;                               break;
-;                       }
-;                       @curwin.w_cursor.col = col;
-;                   }
-
-;                   if (@curwin.w_cursor.col == 0)
-;                       break;
-
-;                   int col = @curwin.w_cursor.col;
-
-;                   dec_cursor();
-;                   if (whitechar(gchar_cursor()))
-;                       continue;           ;; break with space
-
-                    ;; Don't break until after the comment leader.
-;                   if (@curwin.w_cursor.col < leader_len)
-;                       break;
-
-;                   @curwin.w_cursor.col = col;
-
-;                   foundcol = @curwin.w_cursor.col;
-;                   end_foundcol = foundcol;
-;                   if (@curwin.w_cursor.col <= wantcol)
-;                       break;
-;               }
-
-;               if (@curwin.w_cursor.col == 0)
-;                   break;
-
-;               dec_cursor();
-;           }
-
-;           if (foundcol == 0)              ;; no spaces, cannot break line
-;           {
-;               @curwin.w_cursor.col = startcol;
-;               break;
-;           }
-
-            ;; Going to break the line, remove any "$" now.
-;           undisplay_dollar();
-
-            ;; Offset between cursor position and line break is used by replace stack functions.
-            ;; VREPLACE does not use this, and backspaces over the text instead.
-
-;           if ((@State & VREPLACE_FLAG) != 0)
-;               orig_col = startcol;        ;; will start backspacing from here
-;           else
-;               @replace_offset = startcol - end_foundcol;
-
-            ;; Adjust startcol for spaces that will be deleted and
-            ;; characters that will remain on top line.
-
-;           @curwin.w_cursor.col = foundcol;
-;           while (whitechar(gchar_cursor()) && (!fo_white_par || @curwin.w_cursor.col < startcol))
-;               inc_cursor();
-;           startcol -= @curwin.w_cursor.col;
-;           if (startcol < 0)
-;               startcol = 0;
-
-;           if ((@State & VREPLACE_FLAG) != 0)
-;           {
-                ;; In VREPLACE mode, we will backspace over the text to be
-                ;; wrapped, so save a copy now to put on the next line.
-
-;               saved_text = STRDUP(ml_get_cursor());
-;               @curwin.w_cursor.col = orig_col;
-;               saved_text.be(startcol, NUL);
-
-                ;; Backspace over characters that will move to the next line.
-;               if (!fo_white_par)
-;                   backspace_until_column(foundcol);
-;           }
-;           else
-;           {
-                ;; Put cursor after pos to break line.
-;               if (!fo_white_par)
-;                   @curwin.w_cursor.col = foundcol;
-;           }
-
-            ;; Split the line just before the margin.
-            ;; Only insert/delete lines, but don't really redraw the window.
-
-;           open_line(FORWARD, OPENLINE_DELSPACES + OPENLINE_MARKFIX
-;                   + (fo_white_par ? OPENLINE_KEEPTRAIL : 0)
-;                   + (do_comments ? OPENLINE_DO_COM : 0)
-;                   + ((flags & INSCHAR_COM_LIST) != 0 ? OPENLINE_COM_LIST : 0)
-;                   , ((flags & INSCHAR_COM_LIST) != 0 ? second_indent : @old_indent));
-;           if ((flags & INSCHAR_COM_LIST) == 0)
-;               @old_indent = 0;
-
-;           @replace_offset = 0;
-;           if (first_line)
-;           {
-;               if ((flags & INSCHAR_COM_LIST) == 0)
-;               {
-                    ;; This section is for auto-wrap of numeric lists.  When not
-                    ;; in insert mode (i.e. format_lines()), the INSCHAR_COM_LIST
-                    ;; flag will be set and open_line() will handle it (as seen
-                    ;; above).  The code here (and in get_number_indent()) will
-                    ;; recognize comments if needed...
-
-;                   if (second_indent < 0 && has_format_option(FO_Q_NUMBER))
-;                       second_indent = get_number_indent(@curwin.w_cursor.lnum - 1);
-;                   if (0 <= second_indent)
-;                   {
-;                       if ((@State & VREPLACE_FLAG) != 0)
-;                           change_indent(INDENT_SET, second_indent, false, NUL, true);
-;                       else if (0 < leader_len && 0 < second_indent - leader_len)
-;                       {
-;                           int padding = second_indent - leader_len;
-
-                            ;; We started at the first_line of a numbered list
-                            ;; that has a comment.  the open_line() function has
-                            ;; inserted the proper comment leader and positioned
-                            ;; the cursor at the end of the split line.  Now we
-                            ;; add the additional whitespace needed after the
-                            ;; comment leader for the numbered list.
-;                           for (int i = 0; i < padding; i++)
-;                               ins_str(u8(" "));
-;                           changed_bytes(@curwin.w_cursor.lnum, leader_len);
-;                       }
-;                       else
-;                           set_indent(second_indent, SIN_CHANGED);
-;                   }
-;               }
-;               first_line = false;
-;           }
-
-;           if ((@State & VREPLACE_FLAG) != 0)
-;           {
-                ;; In VREPLACE mode we have backspaced over the text to be
-                ;; moved, now we re-insert it into the new line.
-
-;               ins_bytes(saved_text);
-;           }
-;           else
-;           {
-                ;; Check if cursor is not past the NUL off the line, cindent
-                ;; may have added or removed indent.
-
-;               @curwin.w_cursor.col += startcol;
-;               int len = STRLEN(ml_get_curline());
-;               if (@curwin.w_cursor.col > len)
-;                   @curwin.w_cursor.col = len;
-;           }
-
-;           haveto_redraw = true;
-;           @can_cindent = true;
-            ;; moved the cursor, don't autoindent or cindent now
-;           @did_ai = false;
-;           @did_si = false;
-;           @can_si = false;
-;           @can_si_back = false;
-;           line_breakcheck();
-;       }
-
-;       if (save_char != NUL)               ;; put back space after cursor
-;           pchar_cursor(save_char);
-
-;       @curwin.w_options.@wo_lbr = has_lbr;
-;       if (!format_only && haveto_redraw)
-;       {
-;           update_topline();
-;           redraw_curbuf_later(VALID);
-;       }
-    ))
-
-;; Called after inserting or deleting text: When 'formatoptions' includes
-;; the 'a' flag format from the current line until the end of the paragraph.
-;; Keep the cursor at the same position relative to the text.
-;; The caller must have saved the cursor line for undo, following ones will be saved here.
-
-(defn- #_void auto_format [#_boolean trailblank, #_boolean prev_line]
-    ;; trailblank: when true also format with trailing blank
-    ;; prev_line: may start in previous line
-    (§
-;       if (!has_format_option(FO_AUTO))
-;           return;
-
-;       pos_C pos = §_pos_C();
-;       COPY_pos(pos, @curwin.w_cursor);
-;       Bytes old = ml_get_curline();
-
-        ;; may remove added space
-;       check_auto_format(false);
-
-        ;; Don't format in Insert mode when the cursor is on a trailing blank, the
-        ;; user might insert normal text next.  Also skip formatting when "1" is
-        ;; in 'formatoptions' and there is a single character before the cursor.
-        ;; Otherwise the line would be broken and when typing another non-white
-        ;; next they are not joined back together.
-;       boolean wasatend = (pos.col == STRLEN(old));
-;       if (old.at(0) != NUL && !trailblank && wasatend)
-;       {
-;           dec_cursor();
-;           int cc = gchar_cursor();
-;           if (!whitechar(cc) && 0 < @curwin.w_cursor.col && has_format_option(FO_ONE_LETTER))
-;               dec_cursor();
-;           cc = gchar_cursor();
-;           if (whitechar(cc))
-;           {
-;               COPY_pos(@curwin.w_cursor, pos);
-;               return;
-;           }
-;           COPY_pos(@curwin.w_cursor, pos);
-;       }
-
-        ;; With the 'c' flag in 'formatoptions' and 't' missing: only format comments.
-;       if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
-;                                        && get_leader_len(old, null, false, true) == 0)
-;       {
-;           return;
-;       }
-
-        ;; May start formatting in a previous line, so that after "x" a word is
-        ;; moved to the previous line if it fits there now.  Only when this is not
-        ;; the start of a paragraph.
-
-;       if (prev_line && !paragraph_start(@curwin.w_cursor.lnum))
-;       {
-;           --@curwin.w_cursor.lnum;
-;           if (!u_save_cursor())
-;               return;
-;       }
-
-        ;; Do the formatting and restore the cursor position.
-        ;; "saved_cursor" will be adjusted for the text formatting.
-
-;       COPY_pos(@saved_cursor, pos);
-;       format_lines(-1, false);
-;       COPY_pos(@curwin.w_cursor, @saved_cursor);
-;       @saved_cursor.lnum = 0;
-
-;       if (@curwin.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
-;       {
-            ;; "cannot happen"
-;           @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;           coladvance(MAXCOL);
-;       }
-;       else
-;           check_cursor_col();
-
-        ;; Insert mode: If the cursor is now after the end of the line while it previously
-        ;; wasn't, the line was broken.  Because of the rule above we need to add a space
-        ;; when 'w' is in 'formatoptions' to keep a paragraph formatted.
-;       if (!wasatend && has_format_option(FO_WHITE_PAR))
-;       {
-;           Bytes p = ml_get_curline();
-;           int len = STRLEN(p);
-;           if (@curwin.w_cursor.col == len)
-;           {
-;               p = STRNDUP(p, len + 2);
-;               p.be(len, (byte)' ');
-;               p.be(len + 1, NUL);
-;               ml_replace(@curwin.w_cursor.lnum, p, false);
-                ;; remove the space later
-;               @did_add_space = true;
-;           }
-;           else
-                ;; may remove added space
-;               check_auto_format(false);
-;       }
-
-;       check_cursor();
-    ))
-
-;; When an extra space was added to continue a paragraph for auto-formatting,
-;; delete it now.  The space must be under the cursor, just after the insert position.
-
-(defn- #_void check_auto_format [#_boolean end_insert]
-    ;; end_insert: true when ending Insert mode
-    (§
-;       if (@did_add_space)
-;       {
-;           int cc = gchar_cursor();
-;           if (!whitechar(cc))
-                ;; Somehow the space was removed already.
-;               @did_add_space = false;
-;           else
-;           {
-;               int c = ' ';
-
-;               if (!end_insert)
-;               {
-;                   inc_cursor();
-;                   c = gchar_cursor();
-;                   dec_cursor();
-;               }
-;               if (c != NUL)
-;               {
-                    ;; The space is no longer at the end of the line, delete it.
-;                   del_char(false);
-;                   @did_add_space = false;
-;               }
-;           }
-;       }
-    ))
-
-;; Find out textwidth to be used for formatting:
-;;      if 'textwidth' option is set, use it
-;;      else if 'wrapmargin' option is set, use curwin.w_width - 'wrapmargin'
-;;      if invalid value, use 0.
-;;      Set default to window width (maximum 79) for "gq" operator.
-
-(defn- #_int comp_textwidth [#_boolean ff]
-    ;; ff: force formatting (for "gq" command)
-    (§
-;       int textwidth = (int)@curbuf.@b_p_tw;
-;       if (textwidth == 0 && @curbuf.@b_p_wm != 0)
-;       {
-            ;; The width is the window width minus 'wrapmargin' minus
-            ;; all the things that add to the margin.
-;           textwidth = @curwin.w_width - (int)@curbuf.@b_p_wm;
-;           if (@cmdwin_type != 0)
-;               textwidth -= 1;
-;           if (@curwin.w_options.@wo_nu || @curwin.w_options.@wo_rnu)
-;               textwidth -= 8;
-;       }
-;       if (textwidth < 0)
-;           textwidth = 0;
-;       if (ff && textwidth == 0)
-;       {
-;           textwidth = @curwin.w_width - 1;
-;           if (79 < textwidth)
-;               textwidth = 79;
-;       }
-;       return textwidth;
     ))
 
 ;; Put a character in the redo buffer, for when just after a CTRL-V.
@@ -33331,55 +31957,16 @@
 
 ;       if (!@arrow_used && end_insert_pos != null)
 ;       {
-;           int cc;
-
-            ;; Auto-format now.  It may seem strange to do this when stopping an
-            ;; insertion (or moving the cursor), but it's required when appending
-            ;; a line and having it end in a space.  But only do it when something
-            ;; was actually inserted, otherwise undo won't work.
-;           if (!@ins_need_undo && has_format_option(FO_AUTO))
-;           {
-;               pos_C tpos = §_pos_C();
-;               COPY_pos(tpos, @curwin.w_cursor);
-
-                ;; When the cursor is at the end of the line after a space
-                ;; the formatting will move it to the following word.
-                ;; Avoid that by moving the cursor onto the space.
-;               cc = 'x';
-;               if (0 < @curwin.w_cursor.col && gchar_cursor() == NUL)
-;               {
-;                   dec_cursor();
-;                   cc = gchar_cursor();
-;                   if (!vim_iswhite(cc))
-;                       COPY_pos(@curwin.w_cursor, tpos);
-;               }
-
-;               auto_format(true, false);
-
-;               if (vim_iswhite(cc))
-;               {
-;                   if (gchar_cursor() != NUL)
-;                       inc_cursor();
-                    ;; If the cursor is still at the same character, also keep the "coladd".
-;                   if (gchar_cursor() == NUL
-;                           && @curwin.w_cursor.lnum == tpos.lnum
-;                           && @curwin.w_cursor.col == tpos.col)
-;                       @curwin.w_cursor.coladd = tpos.coladd;
-;               }
-;           }
-
-            ;; If a space was inserted for auto-formatting, remove it now.
-;           check_auto_format(true);
-
             ;; If we just did an auto-indent, remove the white space from the end of the line,
             ;; and put the cursor back.  Do this when ESC was used or moving the cursor up/down.
             ;; Check for the old position still being valid, just in case the text got changed
             ;; unexpectedly.
 ;           if (!nomove && @did_ai
-;                   && (esc || (vim_strbyte(@p_cpo, CPO_INDENT) == null
-;                                   && @curwin.w_cursor.lnum != end_insert_pos.lnum))
+;                   && (esc || (vim_strbyte(@p_cpo, CPO_INDENT) == null && @curwin.w_cursor.lnum != end_insert_pos.lnum))
 ;                   && end_insert_pos.lnum <= @curbuf.b_ml.ml_line_count)
 ;           {
+;               int cc;
+
 ;               pos_C tpos = §_pos_C();
 ;               COPY_pos(tpos, @curwin.w_cursor);
 
@@ -34361,7 +32948,6 @@
 ;       boolean in_indent = inindent(0);
 ;       if (in_indent)
 ;           @can_cindent = false;
-;       @end_comment_pending = NUL;  ;; after BS, don't auto-end comment
 
         ;; Virtualedit:
         ;;  BACKSPACE_CHAR eats a virtual space
@@ -34416,18 +33002,6 @@
 ;               {
 ;                   int temp = gchar_cursor();      ;; remember current char
 ;                   --@curwin.w_cursor.lnum;
-
-                    ;; When "aw" is in 'formatoptions' we must delete the space at the end of
-                    ;; the line, otherwise the line will be broken again when auto-formatting.
-
-;                   if (has_format_option(FO_AUTO) && has_format_option(FO_WHITE_PAR))
-;                   {
-;                       Bytes ptr = ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true);
-
-;                       int len = STRLEN(ptr);
-;                       if (0 < len && ptr.at(len - 1) == (byte)' ')
-;                           ptr.be(len - 1, NUL);
-;                   }
 
 ;                   do_join(2, false, false, false, false);
 ;                   if (temp == NUL && gchar_cursor() != NUL)
@@ -35023,7 +33597,7 @@
 ;           coladvance(getviscol());
 
 ;       appendToRedobuff(NL_STR);
-;       boolean b = open_line(FORWARD, has_format_option(FO_RET_COMS) ? OPENLINE_DO_COM : 0, @old_indent);
+;       boolean b = open_line(FORWARD, 0, @old_indent);
 ;       @old_indent = 0;
 ;       @can_cindent = true;
 
@@ -35143,19 +33717,14 @@
 ;       int c = ins_copychar(@curwin.w_cursor.lnum + (tc == Ctrl_Y ? -1 : 1));
 ;       if (c != NUL)
 ;       {
-            ;; The character must be taken literally, insert like it was typed after a CTRL-V,
-            ;; and pretend 'textwidth' wasn't set.  Digits, 'o' and 'x' are special after a
-            ;; CTRL-V, don't use it for these.
+            ;; The character must be taken literally, insert like it was typed after a CTRL-V.
+            ;; Digits, 'o' and 'x' are special after a CTRL-V, don't use it for these.
 ;           if (c < 256 && !asc_isalnum(c))
 ;               appendToRedobuff(CTRL_V_STR); ;; CTRL-V
 
-;           long tw_save = @curbuf.@b_p_tw;
-;           @curbuf.@b_p_tw = -1;
 ;           insert_special(c, true, false);
-;           @curbuf.@b_p_tw = tw_save;
 
 ;           c = Ctrl_V;                     ;; pretend CTRL-V is last character
-;           auto_format(false, true);
 ;       }
 
 ;       return c;
@@ -49628,7 +48197,6 @@
 ;; flags: FM_BACKWARD   search backwards (when initc is '/', '*' or '#')
 ;;        FM_FORWARD    search forwards (when initc is '/', '*' or '#')
 ;;        FM_BLOCKSTOP  stop at start/end of block ({ or } in column 0)
-;;        FM_SKIPCOMM   skip comments (not implemented yet!)
 ;;
 ;; "oap" is only used to set oap.motion_type for a linewise motion, it be null
 
@@ -59608,47 +58176,6 @@
 ;       return true;
     ))
 
-;; Return the indent of the current line after a number.  Return -1 if no
-;; number was found.  Used for 'n' in 'formatoptions': numbered list.
-;; Since a pattern is used it can actually handle more than numbers.
-
-(defn- #_int get_number_indent [#_long lnum]
-    (§
-;       if (@curbuf.b_ml.ml_line_count < lnum)
-;           return -1;
-
-;       pos_C pos = §_pos_C();
-;       pos.lnum = 0;
-
-        ;; In format_lines() (i.e. not insert mode), fo+=q is needed too...
-;       int lead_len = 0;       ;; length of comment leader
-;       if ((@State & INSERT) != 0 || has_format_option(FO_Q_COMS))
-;           lead_len = get_leader_len(ml_get(lnum), null, false, true);
-
-;       regmatch_C regmatch = §_regmatch_C();
-;       regmatch.regprog = vim_regcomp(@curbuf.@b_p_flp, RE_MAGIC);
-;       if (regmatch.regprog != null)
-;       {
-;           regmatch.rm_ic = false;
-
-            ;; vim_regexec() expects a pointer to a line.
-            ;; This lets us start matching for the "flp" beyond any comment leader...
-;           if (vim_regexec(regmatch, ml_get(lnum).plus(lead_len), 0))
-;           {
-;               pos.lnum = lnum;
-;               pos.col = BDIFF(regmatch.endp[0], ml_get(lnum));
-;               pos.coladd = 0;
-;           }
-;       }
-
-;       if (pos.lnum == 0 || ml_get_pos(pos).at(0) == NUL)
-;           return -1;
-
-;       int[] col = new int[1];
-;       getvcol(@curwin, pos, col, null, null);
-;       return col[0];
-    ))
-
 (atom! int      bri_prev_indent)    ;; cached indent value
 (atom! long     bri_prev_ts)        ;; cached tabstop value
 (atom! Bytes    bri_prev_line)      ;; cached pointer to line
@@ -59723,14 +58250,8 @@
 ;;
 ;; Caller must take care of undo.  Since VREPLACE may affect any number of
 ;; lines however, it may call u_save_cursor() again when starting to change a new line.
-;; "flags": OPENLINE_DELSPACES  delete spaces after cursor
-;;          OPENLINE_DO_COM     format comments
-;;          OPENLINE_KEEPTRAIL  keep trailing spaces
-;;          OPENLINE_MARKFIX    adjust mark positions after the line break
-;;          OPENLINE_COM_LIST   format comments with list or 2nd line indent
 ;;
-;; "second_line_indent": indent for after ^^D in Insert mode or if flag
-;;                        OPENLINE_COM_LIST
+;; "second_line_indent": indent for after ^^D in Insert mode
 ;;
 ;; Return true for success, false for failure
 
@@ -59815,7 +58336,7 @@
             ;; count white space on current line
 
 ;           newindent = get_indent_str(saved_line, (int)@curbuf.@b_p_ts, false);
-;           if (newindent == 0 && (flags & OPENLINE_COM_LIST) == 0)
+;           if (newindent == 0)
 ;               newindent = second_line_indent; ;; for ^^D command in insert mode
 
             ;; Do smart indenting.
@@ -59828,116 +58349,73 @@
 ;           {
 ;               COPY_pos(old_cursor, @curwin.w_cursor);
 
-;               int lead_len;                   ;; length of comment leader
 ;               Bytes s = saved_line;
-;               if ((flags & OPENLINE_DO_COM) != 0)
-;                   lead_len = get_leader_len(s, null, false, true);
-;               else
-;                   lead_len = 0;
 
 ;               if (dir == FORWARD)
 ;               {
                     ;; Skip preprocessor directives, unless they are recognised as comments.
 
-;                   if (lead_len == 0 && s.at(0) == (byte)'#')
+;                   if (s.at(0) == (byte)'#')
 ;                   {
 ;                       while (s.at(0) == (byte)'#' && 1 < @curwin.w_cursor.lnum)
 ;                           s = ml_get(--@curwin.w_cursor.lnum);
 ;                       newindent = get_indent();
 ;                   }
-;                   if ((flags & OPENLINE_DO_COM) != 0)
-;                       lead_len = get_leader_len(s, null, false, true);
-;                   else
-;                       lead_len = 0;
-;                   if (0 < lead_len)
-;                   {
-                        ;; This case gets the following right:
-                        ;;      \*
-                        ;;       * A comment (read '\' as '/').
-                        ;;       *\
-                        ;; #define IN_THE_WAY
-                        ;;      This should line up here;
 
-;                       Bytes p = skipwhite(s);
-;                       if (p.at(0) == (byte)'/' && p.at(1) == (byte)'*')
-;                           p = p.plus(1);
-;                       if (p.at(0) == (byte)'*')
-;                       {
-;                           for (p = p.plus(1); p.at(0) != NUL; p = p.plus(1))
-;                           {
-;                               if (p.at(0) == (byte)'/' && p.at(-1) == (byte)'*')
-;                               {
-                                    ;; End of C comment, indent should line up with
-                                    ;; the line containing the start of the comment.
+                    ;; Find last non-blank in line.
+;                   Bytes p = s.plus(STRLEN(s) - 1);
+;                   while (BLT(s, p) && vim_iswhite(p.at(0)))
+;                       p = p.minus(1);
+;                   byte last_char = p.at(0);
 
-;                                   @curwin.w_cursor.col = BDIFF(p, s);
-;                                   pos_C pos = findmatch(null, NUL);
-;                                   if (pos != null)
-;                                   {
-;                                       @curwin.w_cursor.lnum = pos.lnum;
-;                                       newindent = get_indent();
-;                                   }
-;                               }
-;                           }
-;                       }
-;                   }
-;                   else    ;; Not a comment line.
+                    ;; find the character just before the '{' or ';'
+
+;                   if (last_char == '{' || last_char == ';')
 ;                   {
-                        ;; Find last non-blank in line.
-;                       Bytes p = s.plus(STRLEN(s) - 1);
+;                       if (BLT(s, p))
+;                           p = p.minus(1);
 ;                       while (BLT(s, p) && vim_iswhite(p.at(0)))
 ;                           p = p.minus(1);
-;                       byte last_char = p.at(0);
-
-                        ;; find the character just before the '{' or ';'
-
-;                       if (last_char == '{' || last_char == ';')
-;                       {
-;                           if (BLT(s, p))
-;                               p = p.minus(1);
-;                           while (BLT(s, p) && vim_iswhite(p.at(0)))
-;                               p = p.minus(1);
-;                       }
-
-                        ;; Try to catch lines that are split over multiple
-                        ;; lines.  eg:
-                        ;;      if (condition &&
-                        ;;                  condition) {
-                        ;;          Should line up here!
-                        ;;      }
-
-;                       if (p.at(0) == (byte)')')
-;                       {
-;                           @curwin.w_cursor.col = BDIFF(p, s);
-;                           pos_C pos = findmatch(null, '(');
-;                           if (pos != null)
-;                           {
-;                               @curwin.w_cursor.lnum = pos.lnum;
-;                               newindent = get_indent();
-;                               s = ml_get_curline();
-;                           }
-;                       }
-
-                        ;; If last character is '{' do indent, without checking for "if" and the like.
-
-;                       if (last_char == '{')
-;                       {
-;                           @did_si = true;  ;; do indent
-;                           no_si = true;   ;; don't delete it when '{' typed
-;                       }
-
-                        ;; Look for "if" and the like, use 'cinwords'.
-                        ;; Don't do this if the previous line ended in ';' or '}'.
-
-;                       else if (last_char != ';' && last_char != '}' && cin_is_cinword(s))
-;                           @did_si = true;
 ;                   }
+
+                    ;; Try to catch lines that are split over multiple
+                    ;; lines.  eg:
+                    ;;      if (condition &&
+                    ;;                  condition) {
+                    ;;          Should line up here!
+                    ;;      }
+
+;                   if (p.at(0) == (byte)')')
+;                   {
+;                       @curwin.w_cursor.col = BDIFF(p, s);
+;                       pos_C pos = findmatch(null, '(');
+;                       if (pos != null)
+;                       {
+;                           @curwin.w_cursor.lnum = pos.lnum;
+;                           newindent = get_indent();
+;                           s = ml_get_curline();
+;                       }
+;                   }
+
+                    ;; If last character is '{' do indent, without checking for "if" and the like.
+
+;                   if (last_char == '{')
+;                   {
+;                       @did_si = true;  ;; do indent
+;                       no_si = true;   ;; don't delete it when '{' typed
+;                   }
+
+                    ;; Look for "if" and the like, use 'cinwords'.
+                    ;; Don't do this if the previous line ended in ';' or '}'.
+
+;                   else if (last_char != ';' && last_char != '}' && cin_is_cinword(s))
+;                       @did_si = true;
 ;               }
 ;               else ;; dir == BACKWARD
 ;               {
                     ;; Skip preprocessor directives, unless they are recognised as comments.
 
-;                   if (lead_len == 0 && s.at(0) == (byte)'#')
+;                   if (s.at(0) == (byte)'#')
 ;                   {
 ;                       boolean was_backslashed = false;
 
@@ -59952,6 +58430,7 @@
 ;                       else
 ;                           newindent = get_indent();
 ;                   }
+
 ;                   Bytes p = skipwhite(s);
 ;                   if (p.at(0) == (byte)'}')                      ;; if line starts with '}': do indent
 ;                       @did_si = true;
@@ -59969,381 +58448,10 @@
 
 ;       Bytes allocated = null;            ;; allocated memory
 
-;       int lead_len;                       ;; length of comment leader
 ;       Bytes[] lead_flags = new Bytes[1];                  ;; position in 'comments' for comment leader
 ;       Bytes leader = null;               ;; copy of comment leader
 
 ;       int newcol = 0;                     ;; new cursor column
-
-        ;; Find out if the current line starts with a comment leader.
-        ;; This may then be inserted in front of the new line.
-
-;       @end_comment_pending = NUL;
-;       if ((flags & OPENLINE_DO_COM) != 0)
-;           lead_len = get_leader_len(saved_line, lead_flags, dir == BACKWARD, true);
-;       else
-;           lead_len = 0;
-;       if (0 < lead_len)
-;       {
-;           Bytes lead_repl = null;                    ;; replaces comment leader
-;           int lead_repl_len = 0;                      ;; length of *lead_repl
-;           Bytes lead_middle = new Bytes(COM_MAX_LEN); ;; middle-comment string
-;           Bytes lead_end = new Bytes(COM_MAX_LEN);    ;; end-comment string
-;           Bytes comment_end = null;                  ;; where lead_end has been found
-;           boolean extra_space = false;                ;; append extra space
-;           boolean require_blank = false;              ;; requires blank after middle
-
-            ;; If the comment leader has the start, middle or end flag,
-            ;; it may not be used or may be replaced with the middle leader.
-
-;           for (Bytes[] p = { lead_flags[0] }; p[0].at(0) != NUL && p[0].at(0) != (byte)':'; p[0] = p[0].plus(1))
-;           {
-;               if (p[0].at(0) == COM_BLANK)
-;               {
-;                   require_blank = true;
-;                   continue;
-;               }
-;               if (p[0].at(0) == COM_START || p[0].at(0) == COM_MIDDLE)
-;               {
-;                   byte current_flag = p[0].at(0);
-;                   if (p[0].at(0) == COM_START)
-;                   {
-                        ;; Doing "O" on a start of comment does not insert leader.
-
-;                       if (dir == BACKWARD)
-;                       {
-;                           lead_len = 0;
-;                           break;
-;                       }
-
-                        ;; find start of middle part
-;                       copy_option_part(p, lead_middle, COM_MAX_LEN, u8(","));
-;                       require_blank = false;
-;                   }
-
-                    ;; Isolate the strings of the middle and end leader.
-
-;                   while (p[0].at(0) != NUL && p[0].at(-1) != (byte)':')          ;; find end of middle flags
-;                   {
-;                       if (p[0].at(0) == COM_BLANK)
-;                           require_blank = true;
-;                       p[0] = p[0].plus(1);
-;                   }
-;                   copy_option_part(p, lead_middle, COM_MAX_LEN, u8(","));
-
-;                   while (p[0].at(0) != NUL && p[0].at(-1) != (byte)':')          ;; find end of end flags
-;                   {
-                        ;; Check whether we allow automatic ending of comments.
-;                       if (p[0].at(0) == COM_AUTO_END)
-;                           @end_comment_pending = -1;   ;; means we want to set it
-;                       p[0] = p[0].plus(1);
-;                   }
-;                   int n = copy_option_part(p, lead_end, COM_MAX_LEN, u8(","));
-
-;                   if (@end_comment_pending == -1)      ;; we can set it now
-;                       @end_comment_pending = lead_end.at(n - 1);
-
-                    ;; If the end of the comment is in the same line, don't use the comment leader.
-
-;                   if (dir == FORWARD)
-;                   {
-;                       for (p[0] = saved_line.plus(lead_len); p[0].at(0) != NUL; p[0] = p[0].plus(1))
-;                           if (STRNCMP(p[0], lead_end, n) == 0)
-;                           {
-;                               comment_end = p[0];
-;                               lead_len = 0;
-;                               break;
-;                           }
-;                   }
-
-                    ;; Doing "o" on a start of comment inserts the middle leader.
-
-;                   if (0 < lead_len)
-;                   {
-;                       if (current_flag == COM_START)
-;                       {
-;                           lead_repl = lead_middle;
-;                           lead_repl_len = STRLEN(lead_middle);
-;                       }
-
-                        ;; If we have hit RETURN immediately after the start comment leader,
-                        ;; then put a space after the middle comment leader on the next line.
-
-;                       if (!vim_iswhite(saved_line.at(lead_len - 1))
-;                               && ((p_extra != null && @curwin.w_cursor.col == lead_len)
-;                                   || (p_extra == null && saved_line.at(lead_len) == NUL)
-;                                   || require_blank))
-;                           extra_space = true;
-;                   }
-;                   break;
-;               }
-;               if (p[0].at(0) == COM_END)
-;               {
-                    ;; Doing "o" on the end of a comment does not insert leader.
-                    ;; Remember where the end is, might want to use it to find the
-                    ;; start (for C-comments).
-
-;                   if (dir == FORWARD)
-;                   {
-;                       comment_end = skipwhite(saved_line);
-;                       lead_len = 0;
-;                       break;
-;                   }
-
-                    ;; Doing "O" on the end of a comment inserts the middle leader.
-                    ;; Find the string for the middle leader, searching backwards.
-
-;                   while (BLT(@curbuf.@b_p_com, p[0]) && p[0].at(0) != (byte)',')
-;                       p[0] = p[0].minus(1);
-;                   for (lead_repl = p[0]; BLT(@curbuf.@b_p_com, lead_repl) && lead_repl.at(-1) != (byte)':'; lead_repl = lead_repl.minus(1))
-                    ;
-;                   lead_repl_len = BDIFF(p[0], lead_repl);
-
-                    ;; We can probably always add an extra space when doing "O" on the comment-end.
-;                   extra_space = true;
-
-                    ;; Check whether we allow automatic ending of comments.
-;                   Bytes p2;
-;                   for (p2 = p[0]; p2.at(0) != NUL && p2.at(0) != (byte)':'; p2 = p2.plus(1))
-;                   {
-;                       if (p2.at(0) == COM_AUTO_END)
-;                           @end_comment_pending = -1;   ;; means we want to set it
-;                   }
-;                   if (@end_comment_pending == -1)
-;                   {
-                        ;; Find last character in end-comment string.
-;                       while (p2.at(0) != NUL && p2.at(0) != (byte)',')
-;                           p2 = p2.plus(1);
-;                       @end_comment_pending = p2.at(-1);
-;                   }
-;                   break;
-;               }
-;               if (p[0].at(0) == COM_FIRST)
-;               {
-                    ;; Comment leader for first line only:
-                    ;; don't repeat leader when using "O",
-                    ;; blank out leader when using "o".
-
-;                   if (dir == BACKWARD)
-;                       lead_len = 0;
-;                   else
-;                   {
-;                       lead_repl = u8("");
-;                       lead_repl_len = 0;
-;                   }
-;                   break;
-;               }
-;           }
-
-;           if (0 < lead_len)
-;           {
-                ;; allocate buffer (may concatenate "p_extra" later)
-;               leader = new Bytes(lead_len + lead_repl_len + (extra_space ? 1 : 0) + extra_len + (0 < second_line_indent ? second_line_indent : 0) + 1);
-;               allocated = leader;             ;; remember to free it later
-
-;               if (leader == null)
-;                   lead_len = 0;
-;               else
-;               {
-;                   vim_strncpy(leader, saved_line, lead_len);
-
-                    ;; Replace leader with "lead_repl", right or left adjusted.
-
-;                   if (lead_repl != null)
-;                   {
-;                       int c = 0;
-;                       int off = 0;
-
-;                       for (Bytes p = lead_flags[0]; p.at(0) != NUL && p.at(0) != (byte)':'; )
-;                       {
-;                           if (p.at(0) == COM_RIGHT || p.at(0) == COM_LEFT)
-;                               c = (p = p.plus(1)).at(-1);
-;                           else if (asc_isdigit(p.at(0)) || p.at(0) == (byte)'-')
-;                           {
-;                               Bytes[] __ = { p }; off = (int)getdigits(__); p = __[0];
-;                           }
-;                           else
-;                               p = p.plus(1);
-;                       }
-;                       if (c == COM_RIGHT)     ;; right adjusted leader
-;                       {
-                            ;; find last non-white in the leader to line up with
-;                           Bytes p;
-;                           for (p = leader.plus(lead_len - 1); BLT(leader, p) && vim_iswhite(p.at(0)); p = p.minus(1))
-                            ;
-;                           p = p.plus(1);
-
-                            ;; Compute the length of the replaced characters in
-                            ;; screen characters, not bytes.
-;                           {
-;                               int repl_size = mb_string2cells(lead_repl, lead_repl_len);
-;                               int old_size = 0;
-;                               Bytes endp = p;
-
-;                               while (old_size < repl_size && BLT(leader, p))
-;                               {
-;                                   p = p.minus(us_ptr_back(leader, p));
-;                                   old_size += mb_ptr2cells(p);
-;                               }
-;                               int l = lead_repl_len - BDIFF(endp, p);
-;                               if (l != 0)
-;                                   BCOPY(endp, l, endp, 0, BDIFF(leader, endp) + lead_len);
-;                               lead_len += l;
-;                           }
-;                           BCOPY(p, lead_repl, lead_repl_len);
-;                           if (BLT(leader.plus(lead_len), p.plus(lead_repl_len)))
-;                               p.be(lead_repl_len, NUL);
-
-                            ;; Blank-out any other chars from the old leader.
-;                           for (p = p.minus(1); BLE(leader, p); p = p.minus(1))
-;                           {
-;                               int l = us_head_off(leader, p);
-
-;                               if (1 < l)
-;                               {
-;                                   p = p.minus(l);
-;                                   if (1 < mb_ptr2cells(p))
-;                                   {
-;                                       p.be(1, (byte)' ');
-;                                       --l;
-;                                   }
-;                                   Bytes pl = p.plus(l);
-;                                   BCOPY(p, 1, pl, 1, BDIFF(leader.plus(lead_len), pl.plus(1)));
-;                                   lead_len -= l;
-;                                   p.be(0, (byte)' ');
-;                               }
-;                               else if (!vim_iswhite(p.at(0)))
-;                                   p.be(0, (byte)' ');
-;                           }
-;                       }
-;                       else                    ;; left adjusted leader
-;                       {
-;                           Bytes p = skipwhite(leader);
-                            ;; Compute the length of the replaced characters in screen characters,
-                            ;; not bytes.  Move the part that is not to be overwritten.
-;                           {
-;                               int repl_size = mb_string2cells(lead_repl, lead_repl_len);
-
-;                               int i, l;
-;                               for (i = 0; p.at(i) != NUL && i < lead_len; i += l)
-;                               {
-;                                   l = us_ptr2len_cc(p.plus(i));
-;                                   if (repl_size < mb_string2cells(p, i + l))
-;                                       break;
-;                               }
-;                               if (i != lead_repl_len)
-;                               {
-;                                   BCOPY(p, lead_repl_len, p, i, BDIFF(leader.plus(lead_len), p.plus(i)));
-;                                   lead_len += lead_repl_len - i;
-;                               }
-;                           }
-;                           BCOPY(p, lead_repl, lead_repl_len);
-
-                            ;; Replace any remaining non-white chars in the old leader by spaces.
-                            ;; Keep Tabs, the indent must remain the same.
-;                           for (p = p.plus(lead_repl_len); BLT(p, leader.plus(lead_len)); p = p.plus(1))
-;                               if (!vim_iswhite(p.at(0)))
-;                               {
-                                    ;; Don't put a space before a TAB.
-;                                   if (BLT(p.plus(1), leader.plus(lead_len)) && p.at(1) == TAB)
-;                                   {
-;                                       --lead_len;
-;                                       BCOPY(p, 0, p, 1, BDIFF(leader.plus(lead_len), p));
-;                                   }
-;                                   else
-;                                   {
-;                                       int l = us_ptr2len_cc(p);
-
-;                                       if (1 < l)
-;                                       {
-;                                           if (1 < mb_ptr2cells(p))
-;                                           {
-                                                ;; Replace a double-wide char with two spaces.
-;                                               --l;
-;                                               (p = p.plus(1)).be(-1, (byte)' ');
-;                                           }
-;                                           BCOPY(p, 1, p, l, BDIFF(leader.plus(lead_len), p));
-;                                           lead_len -= l - 1;
-;                                       }
-;                                       p.be(0, (byte)' ');
-;                                   }
-;                               }
-;                           p.be(0, NUL);
-;                       }
-
-                        ;; Recompute the indent, it may have changed.
-;                       if (@curbuf.@b_p_ai || do_si)
-;                           newindent = get_indent_str(leader, (int)@curbuf.@b_p_ts, false);
-
-                        ;; Add the indent offset.
-;                       if (newindent + off < 0)
-;                       {
-;                           off = -newindent;
-;                           newindent = 0;
-;                       }
-;                       else
-;                           newindent += off;
-
-                        ;; Correct trailing spaces for the shift,
-                        ;; so that alignment remains equal.
-;                       while (0 < off && 0 < lead_len && leader.at(lead_len - 1) == (byte)' ')
-;                       {
-                            ;; Don't do it when there is a tab before the space.
-;                           if (vim_strchr(skipwhite(leader), '\t') != null)
-;                               break;
-;                           --lead_len;
-;                           --off;
-;                       }
-
-                        ;; If the leader ends in white space, don't add an extra space.
-;                       if (0 < lead_len && vim_iswhite(leader.at(lead_len - 1)))
-;                           extra_space = false;
-;                       leader.be(lead_len, NUL);
-;                   }
-
-;                   if (extra_space)
-;                   {
-;                       leader.be(lead_len++, (byte)' ');
-;                       leader.be(lead_len, NUL);
-;                   }
-
-;                   newcol = lead_len;
-
-                    ;; If a new indent will be set below,
-                    ;; remove the indent that is in the comment leader.
-
-;                   if (newindent != 0 || @did_si)
-;                   {
-;                       while (0 < lead_len && vim_iswhite(leader.at(0)))
-;                       {
-;                           --lead_len;
-;                           --newcol;
-;                           leader = leader.plus(1);
-;                       }
-;                   }
-;               }
-;               @did_si = @can_si = false;
-;           }
-;           else if (comment_end != null)
-;           {
-                ;; We have finished a comment, so we don't use the leader.
-                ;; If this was a C-comment and 'ai' or 'si' is set do a normal
-                ;; indent to align with the line containing the start of the comment.
-
-;               if (comment_end.at(0) == (byte)'*' && comment_end.at(1) == (byte)'/' && (@curbuf.@b_p_ai || do_si))
-;               {
-;                   COPY_pos(old_cursor, @curwin.w_cursor);
-;                   @curwin.w_cursor.col = BDIFF(comment_end, saved_line);
-;                   pos_C pos = findmatch(null, NUL);
-;                   if (pos != null)
-;                   {
-;                       @curwin.w_cursor.lnum = pos.lnum;
-;                       newindent = get_indent();
-;                   }
-;                   COPY_pos(@curwin.w_cursor, old_cursor);
-;               }
-;           }
-;       }
 
 ;       int less_cols_off = 0;              ;; columns to skip for mark adjust
 ;       int less_cols = 0;                  ;; less columns for mark in new line
@@ -60353,14 +58461,14 @@
 ;       {
 ;           p_extra.be(0, saved_char);          ;; restore char that NUL replaced
 
-            ;; When 'ai' set or "flags" has OPENLINE_DELSPACES, skip to the first non-blank.
+            ;; When 'ai' set, skip to the first non-blank.
             ;;
             ;; When in REPLACE mode, put the deleted blanks on the replace stack,
             ;; preceded by a NUL, so they can be put back when a BS is entered.
 
 ;           if ((@State & REPLACE_FLAG) != 0 && (@State & VREPLACE_FLAG) == 0)
 ;               replace_push(NUL);      ;; end of extra blanks
-;           if (@curbuf.@b_p_ai || (flags & OPENLINE_DELSPACES) != 0)
+;           if (@curbuf.@b_p_ai)
 ;           {
 ;               while ((p_extra.at(0) == (byte)' ' || p_extra.at(0) == (byte)'\t') && !utf_iscomposing(us_ptr2char(p_extra.plus(1))))
 ;               {
@@ -60379,32 +58487,6 @@
 
 ;       if (p_extra == null)
 ;           p_extra = u8("");                   ;; append empty line
-
-        ;; concatenate leader and "p_extra", if there is a leader
-;       if (0 < lead_len)
-;       {
-;           if ((flags & OPENLINE_COM_LIST) != 0 && 0 < second_line_indent)
-;           {
-;               int i;
-;               int padding = second_line_indent - (newindent + STRLEN(leader));
-
-                ;; Here whitespace is inserted after the comment char.
-                ;; Below, set_indent(newindent, SIN_INSERT) will insert
-                ;; the whitespace needed before the comment char.
-;               for (i = 0; i < padding; i++)
-;               {
-;                   STRCAT(leader, u8(" "));
-;                   less_cols--;
-;                   newcol++;
-;               }
-;           }
-;           STRCAT(leader, p_extra);
-;           p_extra = leader;
-;           @did_ai = true;                  ;; so truncating blanks works with comments
-;           less_cols -= lead_len;
-;       }
-;       else
-;           @end_comment_pending = NUL;      ;; turns out there was no leader
 
 ;       COPY_pos(old_cursor, @curwin.w_cursor);
 ;       if (dir == BACKWARD)
@@ -60479,13 +58561,6 @@
 ;                   @did_si = false;
 ;           }
 
-            ;; In REPLACE mode, for each character in the extra leader, there must
-            ;; be a NUL on the replace stack, for when it is deleted with BS.
-
-;           if ((@State & REPLACE_FLAG) != 0 && (@State & VREPLACE_FLAG) == 0)
-;               while (0 < lead_len--)
-;                   replace_push(NUL);
-
 ;           COPY_pos(@curwin.w_cursor, old_cursor);
 
 ;           if (dir == FORWARD)
@@ -60494,8 +58569,8 @@
 ;               {
                     ;; truncate current line at cursor
 ;                   saved_line.be(@curwin.w_cursor.col, NUL);
-                    ;; Remove trailing white space, unless OPENLINE_KEEPTRAIL used.
-;                   if (trunc_line && (flags & OPENLINE_KEEPTRAIL) == 0)
+                    ;; Remove trailing white space.
+;                   if (trunc_line)
 ;                       truncate_spaces(saved_line);
 ;                   ml_replace(@curwin.w_cursor.lnum, saved_line, false);
 ;                   saved_line = null;
@@ -60503,10 +58578,6 @@
 ;                   {
 ;                       changed_lines(@curwin.w_cursor.lnum, @curwin.w_cursor.col, @curwin.w_cursor.lnum + 1, 1L);
 ;                       did_append = false;
-
-                        ;; Move marks after the line break to the new line.
-;                       if ((flags & OPENLINE_MARKFIX) != 0)
-;                           mark_col_adjust(@curwin.w_cursor.lnum, @curwin.w_cursor.col + less_cols_off, 1L, (long)-less_cols);
 ;                   }
 ;                   else
 ;                       changed_bytes(@curwin.w_cursor.lnum, @curwin.w_cursor.col);
@@ -60563,260 +58634,6 @@
 
 ;       @curbuf.@b_p_pi = saved_pi;
 ;       return retval;
-    ))
-
-;; get_leader_len() returns the length in bytes of the prefix of the given string,
-;; which introduces a comment.  If this string is not a comment then 0 is returned.
-;; When "flags" is not null, it is set to point to the flags of the recognized comment leader.
-;; "backward" must be true for the "O" command.
-;; If "include_space" is set, include trailing whitespace while calculating the length.
-
-(defn- #_int get_leader_len [#_Bytes line, #_Bytes* flags, #_boolean backward, #_boolean include_space]
-    (§
-;       int length = 0;
-
-;       int i = length;
-;       while (vim_iswhite(line.at(i)))                ;; leading white space is ignored
-;           i++;
-
-;       Bytes part_buf = new Bytes(COM_MAX_LEN);    ;; buffer for one option part
-
-;       boolean got_com = false;
-;       int middle_match_len = 0;
-;       Bytes saved_flags = null;
-
-        ;; Repeat to match several nested comment strings.
-
-;       while (line.at(i) != NUL)
-;       {
-            ;; Scan through the 'comments' option for a match.
-
-;           boolean found_one = false;
-;           for (Bytes[] p = { @curbuf.@b_p_com }; p[0].at(0) != NUL; )
-;           {
-;               if (!got_com && flags != null)
-;                   flags[0] = p[0];                ;; remember where flags started
-;               Bytes q = p[0];
-;               copy_option_part(p, part_buf, COM_MAX_LEN, u8(","));
-
-;               Bytes s = vim_strchr(part_buf, ':');
-;               if (s == null)              ;; missing ':', ignore this part
-;                   continue;
-;               (s = s.plus(1)).be(-1, NUL);        ;; isolate flags from string
-
-                ;; If we found a middle match previously, use that match when this is not a middle or end.
-;               if (middle_match_len != 0
-;                       && vim_strchr(part_buf, COM_MIDDLE) == null
-;                       && vim_strchr(part_buf, COM_END) == null)
-;                   break;
-
-                ;; When we already found a nested comment, only accept further nested comments.
-;               if (got_com && vim_strchr(part_buf, COM_NEST) == null)
-;                   continue;
-
-                ;; When 'O' flag present and using "O" command skip this one.
-;               if (backward && vim_strchr(part_buf, COM_NOBACK) != null)
-;                   continue;
-
-                ;; Line contents and string must match.
-                ;; When "s" starts with white space, must have some white space
-                ;; (but the amount does not need to match, there might be a mix of TABs and spaces).
-;               if (vim_iswhite(s.at(0)))
-;               {
-;                   if (i == 0 || !vim_iswhite(line.at(i - 1)))
-;                       continue;           ;; missing white space
-;                   while (vim_iswhite(s.at(0)))
-;                       s = s.plus(1);
-;               }
-;               int j;
-;               for (j = 0; s.at(j) != NUL && s.at(j) == line.at(i + j); j++)
-                ;
-;               if (s.at(j) != NUL)
-;                   continue;               ;; string doesn't match
-
-                ;; When 'b' flag used, there must be white space
-                ;; or an end-of-line after the string in the line.
-;               if (vim_strchr(part_buf, COM_BLANK) != null && !vim_iswhite(line.at(i + j)) && line.at(i + j) != NUL)
-;                   continue;
-
-                ;; We have found a match, stop searching unless this is a middle
-                ;; comment.  The middle comment can be a substring of the end
-                ;; comment in which case it's better to return the length of the
-                ;; end comment and its flags.  Thus we keep searching with middle
-                ;; and end matches and use an end match if it matches better.
-;               if (vim_strchr(part_buf, COM_MIDDLE) != null)
-;               {
-;                   if (middle_match_len == 0)
-;                   {
-;                       middle_match_len = j;
-;                       saved_flags = q;
-;                   }
-;                   continue;
-;               }
-;               if (middle_match_len != 0 && middle_match_len < j)
-                    ;; Use this match instead of the middle match, since it's a longer thus better match.
-;                   middle_match_len = 0;
-
-;               if (middle_match_len == 0)
-;                   i += j;
-;               found_one = true;
-;               break;
-;           }
-
-;           if (middle_match_len != 0)
-;           {
-                ;; Use the previously found middle match after failing to find a match with an end.
-;               if (!got_com && flags != null)
-;                   flags[0] = saved_flags;
-;               i += middle_match_len;
-;               found_one = true;
-;           }
-
-            ;; No match found, stop scanning.
-;           if (!found_one)
-;               break;
-
-;           length = i;
-
-            ;; Include any trailing white space.
-;           while (vim_iswhite(line.at(i)))
-;               i++;
-
-;           if (include_space)
-;               length = i;
-
-            ;; If this comment doesn't nest, stop here.
-;           got_com = true;
-;           if (vim_strchr(part_buf, COM_NEST) == null)
-;               break;
-;       }
-
-;       return length;
-    ))
-
-;; Return the offset at which the last comment in line starts.
-;; If there is no comment in the whole line, -1 is returned.
-;;
-;; When "flags" is not null,
-;; it is set to point to the flags describing the recognized comment leader.
-
-(defn- #_int get_last_leader_offset [#_Bytes line, #_Bytes* flags]
-    (§
-;       int offset = -1;
-
-;       Bytes com_leader = null, com_flags = null;	// %% anno dunno
-
-        ;; Repeat to match several nested comment strings.
-
-;       for (int lower_check_bound = 0, n = STRLEN(line); lower_check_bound <= --n; )
-;       {
-;           boolean found_one = false;
-
-;           Bytes part_buf = new Bytes(COM_MAX_LEN);    ;; buffer for one option part
-
-            ;; Scan through the 'comments' option for a match.
-
-;           for (Bytes[] p = { @curbuf.@b_p_com }; p[0].at(0) != NUL; )
-;           {
-;               Bytes flags_save = p[0];
-
-;               copy_option_part(p, part_buf, COM_MAX_LEN, u8(","));
-
-;               Bytes s = vim_strchr(part_buf, ':');
-;               if (s == null)      ;; if everything is fine, this cannot actually happen
-;                   continue;
-;               (s = s.plus(1)).be(-1, NUL);            ;; isolate flags from string
-
-;               com_leader = s;
-
-                ;; Line contents and string must match.
-                ;; When "s" starts with white space, must have some white space
-                ;; (but the amount does not need to match, there might be a mix of TABs and spaces).
-
-;               if (vim_iswhite(s.at(0)))
-;               {
-;                   if (n == 0 || !vim_iswhite(line.at(n - 1)))
-;                       continue;
-;                   while (vim_iswhite(s.at(0)))
-;                       s = s.plus(1);
-;               }
-
-;               int i;
-;               for (i = 0; s.at(i) != NUL && s.at(i) == line.at(n + i); i++)
-;                   /* do nothing */;
-;               if (s.at(i) != NUL)
-;                   continue;
-
-                ;; When 'b' flag used, there must be white space
-                ;; or an end-of-line after the string in the line.
-
-;               if (vim_strchr(part_buf, COM_BLANK) != null && !vim_iswhite(line.at(n + i)) && line.at(n + i) != NUL)
-;                   continue;
-
-                ;; We have found a match, stop searching.
-
-;               found_one = true;
-
-;               if (flags != null)
-;                   flags[0] = flags_save;
-
-;               com_flags = flags_save;
-;               break;
-;           }
-
-;           if (found_one)
-;           {
-;               offset = n;
-
-                ;; If this comment nests, continue searching.
-
-;               if (vim_strchr(part_buf, COM_NEST) != null)
-;                   continue;
-
-;               lower_check_bound = n;
-
-                ;; Let's verify whether the comment leader found is a substring of other comment leaders.
-                ;; If it is, let's adjust the lower_check_bound so that we make sure that we have determined
-                ;; the comment leader correctly.
-
-;               while (vim_iswhite(com_leader.at(0)))
-;                   com_leader = com_leader.plus(1);
-;               int len1 = STRLEN(com_leader);
-
-;               Bytes part_buf2 = new Bytes(COM_MAX_LEN);   ;; buffer for one option part
-
-;               for (Bytes[] p = { @curbuf.@b_p_com }; p[0].at(0) != NUL; )
-;               {
-;                   Bytes flags_save = p[0];
-
-;                   copy_option_part(p, part_buf2, COM_MAX_LEN, u8(","));
-
-;                   if (BEQ(flags_save, com_flags))
-;                       continue;
-
-;                   Bytes s = vim_strchr(part_buf2, ':');
-;                   s = s.plus(1);
-;                   while (vim_iswhite(s.at(0)))
-;                       s = s.plus(1);
-;                   int len2 = STRLEN(s);
-;                   if (len2 == 0)
-;                       continue;
-
-                    ;; Now we have to verify whether "s" ends with a substring beginning the "com_leader".
-;                   for (int off = (n < len2) ? n : len2; 0 < off && len2 < off + len1; )
-;                   {
-;                       --off;
-;                       if (STRNCMP(s.plus(off), com_leader, len2 - off) == 0)
-;                       {
-;                           if (n - off < lower_check_bound)
-;                               lower_check_bound = n - off;
-;                       }
-;                   }
-;               }
-;           }
-;       }
-
-;       return offset;
     ))
 
 ;; Return the number of window lines occupied by buffer line "lnum".
@@ -61492,9 +59309,7 @@
 ;                       add = true;
 ;                   else
 ;                   {
-;                       int cols = comp_textwidth(false);
-;                       if (cols == 0)
-;                           cols = 79;
+;                       int cols = 79;
 ;                       add = (p.col + cols < col || col + cols < p.col);
 ;                   }
 ;               }
@@ -65316,11 +63131,6 @@
 ;       @term_is_xterm = vim_is_xterm(term);
 
 ;       clip_init(false);
-
-        ;; 'ttyfast' is default on for xterm and a few others.
-
-;       if (vim_is_fastterm(term))
-;           @p_tf = true;
 
 ;       ttest(true);                ;; make sure we have a valid set of terminal codes
 
@@ -71259,18 +69069,13 @@
                     ;; Special trick to make copy/paste of wrapped lines work with xterm/screen:
                     ;; write an extra character beyond the end of the line.
                     ;; This will work with all terminal types (regardless of the xn,am settings).
-                    ;; Only do this on a fast tty.
-                    ;; Only do this if the cursor is on the current line
-                    ;; (something has been written in it).
+                    ;; Only do this if the cursor is on the current line (something has been written in it).
                     ;; Don't do this for the GUI.
                     ;; Don't do this for double-width characters.
                     ;; Don't do this for a window not at the right screen border.
 
-;                   if (@p_tf
-;                            && !(utf_off2cells(@lineOffset[screen_row],
-;                                        @lineOffset[screen_row] + @screenColumns) == 2
-;                                    || utf_off2cells(@lineOffset[screen_row - 1] + ((int)@Columns - 2),
-;                                        @lineOffset[screen_row] + @screenColumns) == 2))
+;                   if (!(utf_off2cells(@lineOffset[screen_row], @lineOffset[screen_row] + @screenColumns) == 2
+;                      || utf_off2cells(@lineOffset[screen_row - 1] + ((int)@Columns - 2), @lineOffset[screen_row] + @screenColumns) == 2))
 ;                   {
 ;                       int eoff = @lineOffset[screen_row - 1] + ((int)@Columns - 1);
 
@@ -73174,7 +70979,7 @@
 ;           return r ? TRUE : FALSE;
 ;       }
 
-;       if (wp.w_next != null && @p_tf) ;; don't delete/insert on fast terminal
+;       if (wp.w_next != null)
 ;           return FALSE;
 
 ;       return MAYBE;
@@ -79899,7 +77704,7 @@
         (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "center"),        ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -79937,7 +77742,7 @@
 
         (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
@@ -79962,21 +77767,21 @@
         (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
-    
-    
-    
+
+
+
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-    
-    
+
+
         (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
