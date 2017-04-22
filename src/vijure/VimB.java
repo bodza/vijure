@@ -54,7 +54,7 @@ public class VimB
     /*private*/ static @interface time_ptr_t     { }
     /*private*/ static @interface timezone_ptr_t { }
 
-    /*private*/ static final int
+    public/*private*/ static final int
         SIGHUP    =  1,
         SIGINT    =  2,
         SIGQUIT   =  3,
