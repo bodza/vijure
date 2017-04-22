@@ -6,7 +6,7 @@
 
 (org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes, vijure.VimB$timeval_C 'timeval_C})
 
-(import-static vijure.VimA u8)
+(import-static vijure.VimA char_u u8)
 (import-static vijure.VimB SIGHUP SIGQUIT SIGILL SIGTRAP SIGABRT SIGFPE SIGBUS SIGSEGV SIGSYS SIGALRM SIGTERM SIGVTALRM SIGPROF SIGXCPU SIGXFSZ SIGUSR1 SIGUSR2 SIGINT SIGWINCH SIGTSTP SIGPIPE)
 
 (defmacro § [& _])
@@ -18,6 +18,7 @@
 (def- & bit-and)
 (def- | bit-or)
 (def- << bit-shift-left)
+(def- >>> unsigned-bit-shift-right)
 
 (defn- boolean? [b] (instance? Boolean b))
 
@@ -42,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -241,19 +242,13 @@
 ;; Translation of three byte code "KB_SPECIAL a b" into int "K_xxx" and back.
 
 (defn- #_int TERMCAP2KEY [#_byte a, #_byte b]
-    (§
-;       return (int)(-(int_u(a) + (int_u(b) << 8)));
-    ))
+    (int (- (+ (char_u a) (<< (char_u b) 8)))))
 
 (defn- #_byte KEY2TERMCAP0 [#_int x]
-    (§
-;       return (byte)((-(x)) & 0xff);
-    ))
+    (byte! (& (- x) 0xff)))
 
 (defn- #_byte KEY2TERMCAP1 [#_int x]
-    (§
-;       return (byte)((int_u(-(x)) >>> 8) & 0xff);
-    ))
+    (byte! (& (>>> (- x) 8) 0xff)))
 
 ;; Get second or third byte when translating special key code into three bytes.
 
@@ -290,40 +285,12 @@
 
     KE_S_F11 16,
     KE_S_F12 17,
-    KE_S_F13 18,
-    KE_S_F14 19,
-    KE_S_F15 20,
-    KE_S_F16 21,
-    KE_S_F17 22,
-    KE_S_F18 23,
-    KE_S_F19 24,
-    KE_S_F20 25,
-
-    KE_S_F21 26,
-    KE_S_F22 27,
-    KE_S_F23 28,
-    KE_S_F24 29,
-    KE_S_F25 30,
-    KE_S_F26 31,
-    KE_S_F27 32,
-    KE_S_F28 33,
-    KE_S_F29 34,
-    KE_S_F30 35,
-
-    KE_S_F31 36,
-    KE_S_F32 37,
-    KE_S_F33 38,
-    KE_S_F34 39,
-    KE_S_F35 40,
-    KE_S_F36 41,
-    KE_S_F37 42,
 
 ;; Symbols for pseudo keys which are translated from the real key symbols above.
 
     KE_IGNORE 53,         ;; ignored mouse drag/release
 
     KE_TAB 54,            ;; unshifted TAB key
-    KE_S_TAB_OLD 55,      ;; shifted TAB key (no longer used)
 
     KE_XF1 56,            ;; extra vt100 function keys for xterm
     KE_XF2 57,
@@ -348,7 +315,7 @@
 
     KE_CSI 80,            ;; CSI typed directly
     KE_SNR 81,            ;; <SNR>
-    KE_PLUG 82,           ;; <Plug>
+
     KE_CMDWIN 83,         ;; open command-line window from Command-line Mode
 
     KE_C_LEFT 84,         ;; control-left
@@ -358,169 +325,135 @@
 
     KE_DROP 94,           ;; DnD data is available
     KE_CURSORHOLD 95,     ;; CursorHold event
-    KE_FOCUSGAINED 96,    ;; focus gained
-    KE_FOCUSLOST 97,      ;; focus lost
 
     KE_NOP 98)            ;; doesn't do anything
 
 ;; the three byte codes are replaced with the following int when using vgetc()
 
 (final int
-    K_ZERO          -22527,   ;; TERMCAP2KEY(KS_ZERO, KE_FILLER),
+    K_ZERO          (TERMCAP2KEY KS_ZERO KE_FILLER),
 
-    K_UP            -30059,   ;; TERMCAP2KEY((byte)'k', (byte)'u'),
-    K_DOWN          -25707,   ;; TERMCAP2KEY((byte)'k', (byte)'d'),
-    K_LEFT          -27755,   ;; TERMCAP2KEY((byte)'k', (byte)'l'),
-    K_RIGHT         -29291,   ;; TERMCAP2KEY((byte)'k', (byte)'r'),
-    K_S_UP          -1021,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_UP),
-    K_S_DOWN        -1277,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_DOWN),
-    K_S_LEFT        -13347,   ;; TERMCAP2KEY((byte)'#', (byte)'4'),
-    K_C_LEFT        -21501,   ;; TERMCAP2KEY(KS_EXTRA, KE_C_LEFT),
-    K_S_RIGHT       -26917,   ;; TERMCAP2KEY((byte)'%', (byte)'i'),
-    K_C_RIGHT       -21757,   ;; TERMCAP2KEY(KS_EXTRA, KE_C_RIGHT),
-    K_S_HOME        -12835,   ;; TERMCAP2KEY((byte)'#', (byte)'2'),
-    K_C_HOME        -22013,   ;; TERMCAP2KEY(KS_EXTRA, KE_C_HOME),
-    K_S_END         -14122,   ;; TERMCAP2KEY((byte)'*', (byte)'7'),
-    K_C_END         -22269,   ;; TERMCAP2KEY(KS_EXTRA, KE_C_END),
-    K_TAB           -13821,   ;; TERMCAP2KEY(KS_EXTRA, KE_TAB),
-    K_S_TAB         -17003,   ;; TERMCAP2KEY((byte)'k', (byte)'B'),
+    K_UP            (TERMCAP2KEY (byte \k) (byte \u)),
+    K_DOWN          (TERMCAP2KEY (byte \k) (byte \d)),
+    K_LEFT          (TERMCAP2KEY (byte \k) (byte \l)),
+    K_RIGHT         (TERMCAP2KEY (byte \k) (byte \r)),
+    K_S_UP          (TERMCAP2KEY KS_EXTRA KE_S_UP),
+    K_S_DOWN        (TERMCAP2KEY KS_EXTRA KE_S_DOWN),
+    K_S_LEFT        (TERMCAP2KEY (byte \#) (byte \4)),
+    K_C_LEFT        (TERMCAP2KEY KS_EXTRA KE_C_LEFT),
+    K_S_RIGHT       (TERMCAP2KEY (byte \%) (byte \i)),
+    K_C_RIGHT       (TERMCAP2KEY KS_EXTRA KE_C_RIGHT),
+    K_S_HOME        (TERMCAP2KEY (byte \#) (byte \2)),
+    K_C_HOME        (TERMCAP2KEY KS_EXTRA KE_C_HOME),
+    K_S_END         (TERMCAP2KEY (byte \*) (byte \7)),
+    K_C_END         (TERMCAP2KEY KS_EXTRA KE_C_END),
+    K_TAB           (TERMCAP2KEY KS_EXTRA KE_TAB),
+    K_S_TAB         (TERMCAP2KEY (byte \k) (byte \B)),
 
 ;; extra set of function keys F1-F4, for vt100 compatible xterm
-    K_XF1           -14333,   ;; TERMCAP2KEY(KS_EXTRA, KE_XF1),
-    K_XF2           -14589,   ;; TERMCAP2KEY(KS_EXTRA, KE_XF2),
-    K_XF3           -14845,   ;; TERMCAP2KEY(KS_EXTRA, KE_XF3),
-    K_XF4           -15101,   ;; TERMCAP2KEY(KS_EXTRA, KE_XF4),
+    K_XF1           (TERMCAP2KEY KS_EXTRA KE_XF1),
+    K_XF2           (TERMCAP2KEY KS_EXTRA KE_XF2),
+    K_XF3           (TERMCAP2KEY KS_EXTRA KE_XF3),
+    K_XF4           (TERMCAP2KEY KS_EXTRA KE_XF4),
 
 ;; extra set of cursor keys for vt100 compatible xterm
-    K_XUP           -16381,   ;; TERMCAP2KEY(KS_EXTRA, KE_XUP),
-    K_XDOWN         -16637,   ;; TERMCAP2KEY(KS_EXTRA, KE_XDOWN),
-    K_XLEFT         -16893,   ;; TERMCAP2KEY(KS_EXTRA, KE_XLEFT),
-    K_XRIGHT        -17149,   ;; TERMCAP2KEY(KS_EXTRA, KE_XRIGHT),
+    K_XUP           (TERMCAP2KEY KS_EXTRA KE_XUP),
+    K_XDOWN         (TERMCAP2KEY KS_EXTRA KE_XDOWN),
+    K_XLEFT         (TERMCAP2KEY KS_EXTRA KE_XLEFT),
+    K_XRIGHT        (TERMCAP2KEY KS_EXTRA KE_XRIGHT),
 
-    K_F0            -12395,   ;; TERMCAP2KEY((byte)'k', (byte)'0'),
+    K_F1            (TERMCAP2KEY (byte \k) (byte \1)),   ;; function keys
+    K_F2            (TERMCAP2KEY (byte \k) (byte \2)),
+    K_F3            (TERMCAP2KEY (byte \k) (byte \3)),
+    K_F4            (TERMCAP2KEY (byte \k) (byte \4)),
+    K_F5            (TERMCAP2KEY (byte \k) (byte \5)),
+    K_F6            (TERMCAP2KEY (byte \k) (byte \6)),
+    K_F7            (TERMCAP2KEY (byte \k) (byte \7)),
+    K_F8            (TERMCAP2KEY (byte \k) (byte \8)),
+    K_F9            (TERMCAP2KEY (byte \k) (byte \9)),
+    K_F10           (TERMCAP2KEY (byte \k) (byte \;)),
 
-    K_F1            -12651,   ;; TERMCAP2KEY((byte)'k', (byte)'1'),   ;; function keys
-    K_F2            -12907,   ;; TERMCAP2KEY((byte)'k', (byte)'2'),
-    K_F3            -13163,   ;; TERMCAP2KEY((byte)'k', (byte)'3'),
-    K_F4            -13419,   ;; TERMCAP2KEY((byte)'k', (byte)'4'),
-    K_F5            -13675,   ;; TERMCAP2KEY((byte)'k', (byte)'5'),
-    K_F6            -13931,   ;; TERMCAP2KEY((byte)'k', (byte)'6'),
-    K_F7            -14187,   ;; TERMCAP2KEY((byte)'k', (byte)'7'),
-    K_F8            -14443,   ;; TERMCAP2KEY((byte)'k', (byte)'8'),
-    K_F9            -14699,   ;; TERMCAP2KEY((byte)'k', (byte)'9'),
-    K_F10           -15211,   ;; TERMCAP2KEY((byte)'k', (byte)';'),
-
-    K_F11           -12614,   ;; TERMCAP2KEY((byte)'F', (byte)'1'),
-    K_F12           -12870,   ;; TERMCAP2KEY((byte)'F', (byte)'2'),
-    K_F13           -13126,   ;; TERMCAP2KEY((byte)'F', (byte)'3'),
-    K_F14           -13382,   ;; TERMCAP2KEY((byte)'F', (byte)'4'),
-    K_F15           -13638,   ;; TERMCAP2KEY((byte)'F', (byte)'5'),
-    K_F16           -13894,   ;; TERMCAP2KEY((byte)'F', (byte)'6'),
-    K_F17           -14150,   ;; TERMCAP2KEY((byte)'F', (byte)'7'),
-    K_F18           -14406,   ;; TERMCAP2KEY((byte)'F', (byte)'8'),
-    K_F19           -14662,   ;; TERMCAP2KEY((byte)'F', (byte)'9'),
-    K_F20           -16710,   ;; TERMCAP2KEY((byte)'F', (byte)'A'),
-
-    K_F21           -16966,   ;; TERMCAP2KEY((byte)'F', (byte)'B'),
-    K_F22           -17222,   ;; TERMCAP2KEY((byte)'F', (byte)'C'),
-    K_F23           -17478,   ;; TERMCAP2KEY((byte)'F', (byte)'D'),
-    K_F24           -17734,   ;; TERMCAP2KEY((byte)'F', (byte)'E'),
-    K_F25           -17990,   ;; TERMCAP2KEY((byte)'F', (byte)'F'),
-    K_F26           -18246,   ;; TERMCAP2KEY((byte)'F', (byte)'G'),
-    K_F27           -18502,   ;; TERMCAP2KEY((byte)'F', (byte)'H'),
-    K_F28           -18758,   ;; TERMCAP2KEY((byte)'F', (byte)'I'),
-    K_F29           -19014,   ;; TERMCAP2KEY((byte)'F', (byte)'J'),
-    K_F30           -19270,   ;; TERMCAP2KEY((byte)'F', (byte)'K'),
-
-    K_F31           -19526,   ;; TERMCAP2KEY((byte)'F', (byte)'L'),
-    K_F32           -19782,   ;; TERMCAP2KEY((byte)'F', (byte)'M'),
-    K_F33           -20038,   ;; TERMCAP2KEY((byte)'F', (byte)'N'),
-    K_F34           -20294,   ;; TERMCAP2KEY((byte)'F', (byte)'O'),
-    K_F35           -20550,   ;; TERMCAP2KEY((byte)'F', (byte)'P'),
-    K_F36           -20806,   ;; TERMCAP2KEY((byte)'F', (byte)'Q'),
-    K_F37           -21062,   ;; TERMCAP2KEY((byte)'F', (byte)'R'),
+    K_F11           (TERMCAP2KEY (byte \F) (byte \1)),
+    K_F12           (TERMCAP2KEY (byte \F) (byte \2)),
 
 ;; extra set of shifted function keys F1-F4, for vt100 compatible xterm
-    K_S_XF1         -17917,   ;; TERMCAP2KEY(KS_EXTRA, KE_S_XF1),
-    K_S_XF2         -18173,   ;; TERMCAP2KEY(KS_EXTRA, KE_S_XF2),
-    K_S_XF3         -18429,   ;; TERMCAP2KEY(KS_EXTRA, KE_S_XF3),
-    K_S_XF4         -18685,   ;; TERMCAP2KEY(KS_EXTRA, KE_S_XF4),
+    K_S_XF1         (TERMCAP2KEY KS_EXTRA KE_S_XF1),
+    K_S_XF2         (TERMCAP2KEY KS_EXTRA KE_S_XF2),
+    K_S_XF3         (TERMCAP2KEY KS_EXTRA KE_S_XF3),
+    K_S_XF4         (TERMCAP2KEY KS_EXTRA KE_S_XF4),
 
-    K_S_F1          -1533,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F1),  ;; shifted func. keys
-    K_S_F2          -1789,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F2),
-    K_S_F3          -2045,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F3),
-    K_S_F4          -2301,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F4),
-    K_S_F5          -2557,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F5),
-    K_S_F6          -2813,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F6),
-    K_S_F7          -3069,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F7),
-    K_S_F8          -3325,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F8),
-    K_S_F9          -3581,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F9),
-    K_S_F10         -3837,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F10),
+    K_S_F1          (TERMCAP2KEY KS_EXTRA KE_S_F1),  ;; shifted func. keys
+    K_S_F2          (TERMCAP2KEY KS_EXTRA KE_S_F2),
+    K_S_F3          (TERMCAP2KEY KS_EXTRA KE_S_F3),
+    K_S_F4          (TERMCAP2KEY KS_EXTRA KE_S_F4),
+    K_S_F5          (TERMCAP2KEY KS_EXTRA KE_S_F5),
+    K_S_F6          (TERMCAP2KEY KS_EXTRA KE_S_F6),
+    K_S_F7          (TERMCAP2KEY KS_EXTRA KE_S_F7),
+    K_S_F8          (TERMCAP2KEY KS_EXTRA KE_S_F8),
+    K_S_F9          (TERMCAP2KEY KS_EXTRA KE_S_F9),
+    K_S_F10         (TERMCAP2KEY KS_EXTRA KE_S_F10),
 
-    K_S_F11         -4093,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F11),
-    K_S_F12         -4349,    ;; TERMCAP2KEY(KS_EXTRA, KE_S_F12),
-;; K_S_F13 to K_S_F37 are currently not used
+    K_S_F11         (TERMCAP2KEY KS_EXTRA KE_S_F11),
+    K_S_F12         (TERMCAP2KEY KS_EXTRA KE_S_F12),
 
-    K_HELP          -12581,   ;; TERMCAP2KEY((byte)'%', (byte)'1'),
-    K_UNDO          -14374,   ;; TERMCAP2KEY((byte)'&', (byte)'8'),
+    K_HELP          (TERMCAP2KEY (byte \%) (byte \1)),
+    K_UNDO          (TERMCAP2KEY (byte \&) (byte \8)),
 
-    K_BS            -25195,   ;; TERMCAP2KEY((byte)'k', (byte)'b'),
+    K_BS            (TERMCAP2KEY (byte \k) (byte \b)),
 
-    K_INS           -18795,   ;; TERMCAP2KEY((byte)'k', (byte)'I'),
-    K_KINS          -19965,   ;; TERMCAP2KEY(KS_EXTRA, KE_KINS),
-    K_DEL           -17515,   ;; TERMCAP2KEY((byte)'k', (byte)'D'),
-    K_KDEL          -20221,   ;; TERMCAP2KEY(KS_EXTRA, KE_KDEL),
-    K_HOME          -26731,   ;; TERMCAP2KEY((byte)'k', (byte)'h'),
-    K_KHOME         -12619,   ;; TERMCAP2KEY((byte)'K', (byte)'1'),   ;; keypad home (upper left)
-    K_XHOME         -15869,   ;; TERMCAP2KEY(KS_EXTRA, KE_XHOME),
-    K_ZHOME         -16125,   ;; TERMCAP2KEY(KS_EXTRA, KE_ZHOME),
-    K_END           -14144,   ;; TERMCAP2KEY((byte)'@', (byte)'7'),
-    K_KEND          -13387,   ;; TERMCAP2KEY((byte)'K', (byte)'4'),   ;; keypad end (lower left)
-    K_XEND          -15357,   ;; TERMCAP2KEY(KS_EXTRA, KE_XEND),
-    K_ZEND          -15613,   ;; TERMCAP2KEY(KS_EXTRA, KE_ZEND),
-    K_PAGEUP        -20587,   ;; TERMCAP2KEY((byte)'k', (byte)'P'),
-    K_PAGEDOWN      -20075,   ;; TERMCAP2KEY((byte)'k', (byte)'N'),
-    K_KPAGEUP       -13131,   ;; TERMCAP2KEY((byte)'K', (byte)'3'),   ;; keypad pageup (upper R.)
-    K_KPAGEDOWN     -13643,   ;; TERMCAP2KEY((byte)'K', (byte)'5'),   ;; keypad pagedown (lower R.)
+    K_INS           (TERMCAP2KEY (byte \k) (byte \I)),
+    K_KINS          (TERMCAP2KEY KS_EXTRA KE_KINS),
+    K_DEL           (TERMCAP2KEY (byte \k) (byte \D)),
+    K_KDEL          (TERMCAP2KEY KS_EXTRA KE_KDEL),
+    K_HOME          (TERMCAP2KEY (byte \k) (byte \h)),
+    K_KHOME         (TERMCAP2KEY (byte \K) (byte \1)),   ;; keypad home (upper left)
+    K_XHOME         (TERMCAP2KEY KS_EXTRA KE_XHOME),
+    K_ZHOME         (TERMCAP2KEY KS_EXTRA KE_ZHOME),
+    K_END           (TERMCAP2KEY (byte \@) (byte \7)),
+    K_KEND          (TERMCAP2KEY (byte \K) (byte \4)),   ;; keypad end (lower left)
+    K_XEND          (TERMCAP2KEY KS_EXTRA KE_XEND),
+    K_ZEND          (TERMCAP2KEY KS_EXTRA KE_ZEND),
+    K_PAGEUP        (TERMCAP2KEY (byte \k) (byte \P)),
+    K_PAGEDOWN      (TERMCAP2KEY (byte \k) (byte \N)),
+    K_KPAGEUP       (TERMCAP2KEY (byte \K) (byte \3)),   ;; keypad pageup (upper R.)
+    K_KPAGEDOWN     (TERMCAP2KEY (byte \K) (byte \5)),   ;; keypad pagedown (lower R.)
 
-    K_KPLUS         -13899,   ;; TERMCAP2KEY((byte)'K', (byte)'6'),   ;; keypad plus
-    K_KMINUS        -14155,   ;; TERMCAP2KEY((byte)'K', (byte)'7'),   ;; keypad minus
-    K_KDIVIDE       -14411,   ;; TERMCAP2KEY((byte)'K', (byte)'8'),   ;; keypad /
-    K_KMULTIPLY     -14667,   ;; TERMCAP2KEY((byte)'K', (byte)'9'),   ;; keypad *
-    K_KENTER        -16715,   ;; TERMCAP2KEY((byte)'K', (byte)'A'),   ;; keypad Enter
-    K_KPOINT        -16971,   ;; TERMCAP2KEY((byte)'K', (byte)'B'),   ;; keypad . or ,
+    K_KPLUS         (TERMCAP2KEY (byte \K) (byte \6)),   ;; keypad plus
+    K_KMINUS        (TERMCAP2KEY (byte \K) (byte \7)),   ;; keypad minus
+    K_KDIVIDE       (TERMCAP2KEY (byte \K) (byte \8)),   ;; keypad /
+    K_KMULTIPLY     (TERMCAP2KEY (byte \K) (byte \9)),   ;; keypad *
+    K_KENTER        (TERMCAP2KEY (byte \K) (byte \A)),   ;; keypad Enter
+    K_KPOINT        (TERMCAP2KEY (byte \K) (byte \B)),   ;; keypad . or ,
 
-    K_K0            -17227,   ;; TERMCAP2KEY((byte)'K', (byte)'C'),   ;; keypad 0
-    K_K1            -17483,   ;; TERMCAP2KEY((byte)'K', (byte)'D'),   ;; keypad 1
-    K_K2            -17739,   ;; TERMCAP2KEY((byte)'K', (byte)'E'),   ;; keypad 2
-    K_K3            -17995,   ;; TERMCAP2KEY((byte)'K', (byte)'F'),   ;; keypad 3
-    K_K4            -18251,   ;; TERMCAP2KEY((byte)'K', (byte)'G'),   ;; keypad 4
-    K_K5            -18507,   ;; TERMCAP2KEY((byte)'K', (byte)'H'),   ;; keypad 5
-    K_K6            -18763,   ;; TERMCAP2KEY((byte)'K', (byte)'I'),   ;; keypad 6
-    K_K7            -19019,   ;; TERMCAP2KEY((byte)'K', (byte)'J'),   ;; keypad 7
-    K_K8            -19275,   ;; TERMCAP2KEY((byte)'K', (byte)'K'),   ;; keypad 8
-    K_K9            -19531,   ;; TERMCAP2KEY((byte)'K', (byte)'L'),   ;; keypad 9
+    K_K0            (TERMCAP2KEY (byte \K) (byte \C)),   ;; keypad 0
+    K_K1            (TERMCAP2KEY (byte \K) (byte \D)),   ;; keypad 1
+    K_K2            (TERMCAP2KEY (byte \K) (byte \E)),   ;; keypad 2
+    K_K3            (TERMCAP2KEY (byte \K) (byte \F)),   ;; keypad 3
+    K_K4            (TERMCAP2KEY (byte \K) (byte \G)),   ;; keypad 4
+    K_K5            (TERMCAP2KEY (byte \K) (byte \H)),   ;; keypad 5
+    K_K6            (TERMCAP2KEY (byte \K) (byte \I)),   ;; keypad 6
+    K_K7            (TERMCAP2KEY (byte \K) (byte \J)),   ;; keypad 7
+    K_K8            (TERMCAP2KEY (byte \K) (byte \K)),   ;; keypad 8
+    K_K9            (TERMCAP2KEY (byte \K) (byte \L)),   ;; keypad 9
 
-    K_VER_SCROLLBAR -22521,   ;; TERMCAP2KEY(KS_VER_SCROLLBAR, KE_FILLER),
-    K_HOR_SCROLLBAR -22520,   ;; TERMCAP2KEY(KS_HOR_SCROLLBAR, KE_FILLER),
+    K_VER_SCROLLBAR (TERMCAP2KEY KS_VER_SCROLLBAR KE_FILLER),
+    K_HOR_SCROLLBAR (TERMCAP2KEY KS_HOR_SCROLLBAR KE_FILLER),
 
-    K_SELECT        -22517,   ;; TERMCAP2KEY(KS_SELECT, KE_FILLER),
+    K_SELECT        (TERMCAP2KEY KS_SELECT KE_FILLER),
 
 ;; Symbols for pseudo keys which are translated from the real key symbols above.
 
-    K_IGNORE        -13565,   ;; TERMCAP2KEY(KS_EXTRA, KE_IGNORE),
-    K_NOP           -25085,   ;; TERMCAP2KEY(KS_EXTRA, KE_NOP),
+    K_IGNORE        (TERMCAP2KEY KS_EXTRA KE_IGNORE),
+    K_NOP           (TERMCAP2KEY KS_EXTRA KE_NOP),
 
-    K_CSI           -20477,   ;; TERMCAP2KEY(KS_EXTRA, KE_CSI),
-    K_SNR           -20733,   ;; TERMCAP2KEY(KS_EXTRA, KE_SNR),
-    K_PLUG          -20989,   ;; TERMCAP2KEY(KS_EXTRA, KE_PLUG),
-    K_CMDWIN        -21245,   ;; TERMCAP2KEY(KS_EXTRA, KE_CMDWIN),
+    K_CSI           (TERMCAP2KEY KS_EXTRA KE_CSI),
+    K_SNR           (TERMCAP2KEY KS_EXTRA KE_SNR),
 
-    K_DROP          -24061,   ;; TERMCAP2KEY(KS_EXTRA, KE_DROP),
-    K_FOCUSGAINED   -24573,   ;; TERMCAP2KEY(KS_EXTRA, KE_FOCUSGAINED),
-    K_FOCUSLOST     -24829,   ;; TERMCAP2KEY(KS_EXTRA, KE_FOCUSLOST),
+    K_CMDWIN        (TERMCAP2KEY KS_EXTRA KE_CMDWIN),
 
-    K_CURSORHOLD    -24317)   ;; TERMCAP2KEY(KS_EXTRA, KE_CURSORHOLD);
+    K_DROP          (TERMCAP2KEY KS_EXTRA KE_DROP),
+
+    K_CURSORHOLD    (TERMCAP2KEY KS_EXTRA KE_CURSORHOLD))
 
 ;; Bits for modifier mask.
 ;; 0x01 cannot be used, because the modifier must be 0x02 or higher
@@ -589,42 +522,30 @@
     KS_CZR  21,     ;; italic mode end
     KS_UE   22,     ;; exit underscore (underline) mode
     KS_US   23,     ;; underscore (underline) mode
-    KS_UCE  24,     ;; exit undercurl mode
-    KS_UCS  25,     ;; undercurl mode
-    KS_MS   26,     ;; save to move cur in reverse mode
-    KS_CM   27,     ;; cursor motion
-    KS_SR   28,     ;; scroll reverse (backward)
-    KS_CRI  29,     ;; cursor number of chars right
-    KS_VB   30,     ;; visual bell
-    KS_KS   31,     ;; put term in "keypad transmit" mode
-    KS_KE   32,     ;; out of "keypad transmit" mode
-    KS_TI   33,     ;; put terminal in termcap mode
-    KS_TE   34,     ;; out of termcap mode
-    KS_BC   35,     ;; backspace character (cursor left)
-    KS_CCS  36,     ;; cur is relative to scroll region
-    KS_CCO  37,     ;; number of colors
-    KS_CSF  38,     ;; set foreground color
-    KS_CSB  39,     ;; set background color
-    KS_XS   40,     ;; standout not erased by overwriting (hpterm)
-    KS_XN   41,     ;; newline glitch
-    KS_MB   42,     ;; blink mode
-    KS_CAF  43,     ;; set foreground color (ANSI)
-    KS_CAB  44,     ;; set background color (ANSI)
-    KS_LE   45,     ;; cursor left (mostly backspace)
-    KS_ND   46,     ;; cursor right
-    KS_CIS  47,     ;; set icon text start
-    KS_CIE  48,     ;; set icon text end
-    KS_TS   49,     ;; set window title start (to status line)
-    KS_FS   50,     ;; set window title end (from status line)
-    KS_CWP  51,     ;; set window position in pixels
-    KS_CWS  52,     ;; set window size in characters
-    KS_CRV  53,     ;; request version string
-    KS_CSI  54,     ;; start insert mode (bar cursor)
-    KS_CEI  55,     ;; end insert mode (block cursor)
-    KS_CSR  56,     ;; start replace mode (underline cursor)
-    KS_CSV  57,     ;; scroll region vertical
-    KS_OP   58,     ;; original color pair
-    KS_U7   59)     ;; request cursor position
+    KS_MS   24,     ;; save to move cur in reverse mode
+    KS_CM   25,     ;; cursor motion
+    KS_SR   26,     ;; scroll reverse (backward)
+    KS_CRI  27,     ;; cursor number of chars right
+    KS_VB   28,     ;; visual bell
+    KS_KS   29,     ;; put term in "keypad transmit" mode
+    KS_KE   30,     ;; out of "keypad transmit" mode
+    KS_TI   31,     ;; put terminal in termcap mode
+    KS_TE   32,     ;; out of termcap mode
+    KS_BC   33,     ;; backspace character (cursor left)
+    KS_CCO  34,     ;; number of colors
+    KS_CSF  35,     ;; set foreground color
+    KS_CSB  36,     ;; set background color
+    KS_XN   37,     ;; newline glitch
+    KS_CAF  38,     ;; set foreground color (ANSI)
+    KS_CAB  39,     ;; set background color (ANSI)
+    KS_LE   40,     ;; cursor left (mostly backspace)
+    KS_ND   41,     ;; cursor right
+    KS_CWS  42,     ;; set window size in characters
+    KS_CSI  43,     ;; start insert mode (bar cursor)
+    KS_CEI  44,     ;; end insert mode (block cursor)
+    KS_CSR  45,     ;; start replace mode (underline cursor)
+    KS_CSV  46,     ;; scroll region vertical
+    KS_OP   47)     ;; original color pair
 
 ;; The terminal capabilities are stored in this array.
 ;; IMPORTANT: When making changes, note the following:
@@ -659,8 +580,6 @@
     T_CZR   nil,    ;; italic mode end
     T_UE    nil,    ;; exit underscore (underline) mode
     T_US    nil,    ;; underscore (underline) mode
-    T_UCE   nil,    ;; exit undercurl mode
-    T_UCS   nil,    ;; undercurl mode
     T_MS    nil,    ;; save to move cur in reverse mode
     T_CM    nil,    ;; cursor motion
     T_SR    nil,    ;; scroll reverse (backward)
@@ -671,41 +590,31 @@
     T_TI    nil,    ;; put terminal in termcap mode
     T_TE    nil,    ;; out of termcap mode
     T_BC    nil,    ;; backspace character
-    T_CCS   nil,    ;; cur is relative to scroll region
     T_CCO   nil,    ;; number of colors
     T_CSF   nil,    ;; set foreground color
     T_CSB   nil,    ;; set background color
-    T_XS    nil,    ;; standout not erased by overwriting
     T_XN    nil,    ;; newline glitch
-    T_MB    nil,    ;; blink mode
     T_CAF   nil,    ;; set foreground color (ANSI)
     T_CAB   nil,    ;; set background color (ANSI)
     T_LE    nil,    ;; cursor left
     T_ND    nil,    ;; cursor right
-    T_CIS   nil,    ;; set icon text start
-    T_CIE   nil,    ;; set icon text end
-    T_TS    nil,    ;; set window title start
-    T_FS    nil,    ;; set window title end
-    T_CWP   nil,    ;; window position
     T_CWS   nil,    ;; window size
-    T_CRV   nil,    ;; request version string
     T_CSI   nil,    ;; start insert mode
     T_CEI   nil,    ;; end insert mode
     T_CSR   nil,    ;; start replace mode
     T_CSV   nil,    ;; scroll region vertical
-    T_OP    nil,    ;; original color pair
-    T_U7    nil)    ;; request cursor position
+    T_OP    nil)    ;; original color pair
 
 ;; 'term_strings' contains currently used terminal output strings.
 ;; It is initialized with the default values by parse_builtin_tcap().
 ;; The values can be changed by setting the option with the same name.
 
-(final Bytes*' term_strings [ T_NAME T_CE  T_AL  T_CAL T_DL  T_CDL T_CS  T_CL  T_CD  T_UT
-                              T_DA   T_DB  T_VI  T_VE  T_VS  T_ME  T_MR  T_MD  T_SE  T_SO
-                              T_CZH  T_CZR T_UE  T_US  T_UCE T_UCS T_MS  T_CM  T_SR  T_CRI
-                              T_VB   T_KS  T_KE  T_TI  T_TE  T_BC  T_CCS T_CCO T_CSF T_CSB
-                              T_XS   T_XN  T_MB  T_CAF T_CAB T_LE  T_ND  T_CIS T_CIE T_TS
-                              T_FS   T_CWP T_CWS T_CRV T_CSI T_CEI T_CSR T_CSV T_OP  T_U7 ])
+(final Bytes*' term_strings [ T_NAME T_CE T_AL  T_CAL T_DL  T_CDL T_CS  T_CL
+                              T_CD   T_UT T_DA  T_DB  T_VI  T_VE  T_VS  T_ME
+                              T_MR   T_MD T_SE  T_SO  T_CZH T_CZR T_UE  T_US
+                              T_MS   T_CM T_SR  T_CRI T_VB  T_KS  T_KE  T_TI
+                              T_TE   T_BC T_CCO T_CSF T_CSB T_XN  T_CAF T_CAB
+                              T_LE   T_ND T_CWS T_CSI T_CEI T_CSR T_CSV T_OP ])
 
 (final int TMODE_COOK  0)   ;; terminal mode for external cmds and Ex mode
 (final int TMODE_SLEEP 1)   ;; terminal mode for sleeping (cooked but no echo)
@@ -1024,7 +933,7 @@
 ;; Size in bytes of the hash used in the undo file.
 (final int UNDO_HASH_SIZE 32)
 
-(final long MAXLNUM 0x7fffffff#_L)      ;; maximum (invalid) line number
+(final long MAXLNUM 0x7fffffff)      ;; maximum (invalid) line number
 (final int MAXCOL 0x7fffffff)           ;; maximum column number, 31 bits
 
 (final int SHOWCMD_COLS 10)             ;; columns needed by shown command
@@ -1107,8 +1016,6 @@
 
 ;; The following are actual variables for the options:
 
-(atom! Bytes   p_ambw)      ;; 'ambiwidth'
-(atom! Bytes   p_bg)        ;; 'background'
 (atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_breakat)   ;; 'breakat'
 (atom! Bytes   p_cedit)     ;; 'cedit'
@@ -1197,7 +1104,6 @@
 
 (atom! boolean p_vb)        ;; 'visualbell'
 (atom! Bytes   p_ww)        ;; 'whichwrap'
-(atom! long    p_wc)        ;; 'wildchar'
 (atom! long    p_wh)        ;; 'winheight'
 (atom! long    p_wmh)       ;; 'winminheight'
 (atom! long    p_wmw)       ;; 'winminwidth'
@@ -1580,7 +1486,6 @@
         (field pos_C*       uh_namedm       (ARRAY_pos NMARKS)) ;; marks before undo/after redo
         (field visualinfo_C uh_visual       (§_visualinfo_C))   ;; Visual areas before undo/after redo
         (field long         uh_time)                            ;; timestamp when the change was made
-        (field long         uh_save_nr)                         ;; set when the file was saved after changes in this block
     ])
 
 ;; values for uh_flags
@@ -1799,16 +1704,13 @@
         ;; The following only used in undo.c.
 
         (field u_header_C   b_u_oldhead)        ;; pointer to oldest header
-        (field u_header_C   b_u_newhead)        ;; pointer to newest header; may not be valid
-                                                ;; if b_u_curhead is not null
+        (field u_header_C   b_u_newhead)        ;; pointer to newest header; may not be valid if b_u_curhead is not null
         (field u_header_C   b_u_curhead)        ;; pointer to current header
         (field int          b_u_numhead)        ;; current number of headers
         (field boolean      b_u_synced)         ;; entry lists are synced
         (field long         b_u_seq_last)       ;; last used undo sequence number
-        (field long         b_u_save_nr_last)   ;; counter for last file write
         (field long         b_u_seq_cur)        ;; hu_seq of header below which we are now
         (field long         b_u_time_cur)       ;; uh_time of header below which we are now
-        (field long         b_u_save_nr_cur)    ;; file write nr after which we are now
 
         ;; variables for "U" command in undo.c
 
@@ -2083,7 +1985,6 @@
 
         (field winopt_C     w_options    (§_winopt_C))
 
-        ;; A few options have local flags for P_INSECURE.
         (field int*         w_p_cc_cols)        ;; array of columns to highlight or null
         (field int          w_p_brimin)         ;; minimum width for breakindent
         (field int          w_p_brishift)       ;; additional shift for breakindent
@@ -2399,8 +2300,8 @@
 ;; They may have different values when the screen wasn't (re)allocated yet
 ;; after setting Rows or Columns (e.g., when starting up).
 
-(atom! long   Rows      24#_L)      ;; nr of rows in the screen
-(atom! long   Columns   80#_L)      ;; nr of columns in the screen
+(atom! long   Rows      24)      ;; nr of rows in the screen
+(atom! long   Columns   80)      ;; nr of columns in the screen
 
 ;; The characters that are currently on the screen are kept in screenLines[].
 ;; It is a single block of characters, the size of the screen plus one line.
@@ -2733,9 +2634,7 @@
 (atom! int
     fill_stl    \space,
     fill_stlnc  \space,
-    fill_vert   \space,
-    fill_fold   \-,
-    fill_diff   \-)
+    fill_vert   \space)
 
 ;; Characters from 'listchars' option.
 (atom! int
@@ -2752,7 +2651,7 @@
 (atom! boolean  km_stopsel)
 (atom! boolean  km_startsel)
 
-(atom! int      cedit_key -1)         ;; key value of 'cedit' option
+(atom! int      cedit_key   -1)         ;; key value of 'cedit' option
 (atom! int      cmdwin_type)            ;; type of cmdline window or 0
 (atom! int      cmdwin_result)          ;; result of cmdline window or 0
 
@@ -2954,8 +2853,6 @@
 
 ;       init_mappings();                        ;; set up initial mappings
 
-;       init_highlight(true, false);            ;; set the default highlight groups
-
         ;; Start putting things on the screen.
         ;; Scroll screen down before drawing over it.
         ;; Clear screen now, so file message will not be cleared.
@@ -2981,7 +2878,6 @@
 ;           wait_return(TRUE);
 
 ;       starttermcap();                         ;; start termcap if not done by wait_return()
-;       may_req_ambiguous_char_width();
 
 ;       if (@scroll_region)
 ;           scroll_region_reset();              ;; in case Rows changed
@@ -3002,10 +2898,6 @@
 ;       redraw_all_later(NOT_VALID);
 ;       @no_wait_return = FALSE;
 ;       @starting = 0;
-
-        ;; Requesting the termresponse is postponed until here, so that a "-c q"
-        ;; argument doesn't make it appear in the shell Vim was started from.
-;       may_req_termresponse();
 
         ;; start in insert mode
 ;       if (@p_im)
@@ -3180,7 +3072,7 @@
 ;           if (!input_isatty)
 ;               libC.fprintf(stderr, u8("Vim: Warning: Input is not from a terminal\n"));
 ;           out_flush();
-;           ui_delay(2000L, true);
+;           ui_delay(2000, true);
 ;       }
     ))
 
@@ -3290,7 +3182,7 @@
             ;; We want to be interrupted by the winch signal
             ;; or by an event on the monitored file descriptors.
 
-;           if (waitForChar(-1L) == false)
+;           if (waitForChar(-1) == false)
 ;           {
 ;               if (@do_resize)                      ;; interrupted by SIGWINCH signal
 ;                   handle_resize();
@@ -3638,8 +3530,6 @@
 ;       if (swapping_screen() && !@newline_on_exit)
 ;           exit_scroll();
 
-        ;; Stop termcap: may need to check for T_CRV response,
-        ;; which requires RAW mode.
 ;       stoptermcap();
 
         ;; A newline is only required after a message in the alternate screen.
@@ -3714,7 +3604,7 @@
 ;           buf.be(0, keys.c_verase());
 ;           @intr_char = keys.c_vintr();
 ;           buf.be(1, NUL);
-;           add_termcode(u8("kb"), buf, FALSE);
+;           add_termcode(u8("kb"), buf);
 
             ;; If <BS> and <DEL> are now the same, redefine <DEL>.
 
@@ -3807,7 +3697,7 @@
 
 (defn- #_void mch_breakcheck []
     (§
-;       if (@curr_tmode == TMODE_RAW && realWaitForChar(@read_cmd_fd, 0L))
+;       if (@curr_tmode == TMODE_RAW && realWaitForChar(@read_cmd_fd, 0))
 ;           fill_input_buf(false);
     ))
 
@@ -4057,7 +3947,7 @@
 
 (defn- #_boolean smsg_attr [#_int attr, #_Bytes s, #_Object... args]
     (§
-;       vim_snprintf(@ioBuff, IOSIZE, s, args);
+;       vim_snprintf(@ioBuff, IOSIZE, s, args);
 
 ;       return msg_attr(@ioBuff, attr);
     ))
@@ -5625,602 +5515,6 @@
 ;       --@confirm_msg_used;
     ))
 
-;; This code was included to provide a portable snprintf().
-;; Some systems may provide their own, but we always use this one for consistency.
-;;
-;; This code is based on snprintf.c - a portable implementation of snprintf
-;; by Mark Martinec <mark.martinec@ijs.si>, Version 2.2, 2000-10-06.
-;; Included with permission.  It was heavily modified to fit in Vim.
-;; The original code, including useful comments, can be found here:
-;;      http://www.ijs.si/software/snprintf/
-;;
-;; This snprintf() only supports the following conversion specifiers:
-;; s, c, d, u, o, x, X, p  (and synonyms: i, D, U, O - see below)
-;; with flags: '-', '+', ' ', '0' and '#'.
-;; An asterisk is supported for field width as well as precision.
-;;
-;; Limited support for floating point was added: 'f', 'e', 'E', 'g', 'G'.
-;;
-;; Length modifiers 'h' (short int) and 'l' (long int) are supported.
-;; 'll' (long long int) is not supported.
-;;
-;; The locale is not used, the string is used as a byte string.  This is only
-;; relevant for double-byte encodings where the second byte may be '%'.
-;;
-;; It is permitted for "str_m" to be zero, and it is permitted to specify null
-;; pointer for resulting string argument if "str_m" is zero (as per ISO C99).
-;;
-;; The return value is the number of characters which would be generated
-;; for the given input, excluding the trailing NUL.  If this value
-;; is greater or equal to "str_m", not all characters from the result
-;; have been stored in str, output bytes beyond the ("str_m"-1) -th character
-;; are discarded.  If "str_m" is greater than zero it is guaranteed
-;; the resulting string will be NUL-terminated.
-
-;; Like vim_snprintf() but append to the string.
-(defn- #_int vim_snprintf_add [#_Bytes str, #_int str_m, #_Bytes fmt, #_Object... args]
-    (§
-;       int len = STRLEN(str), space = (len < str_m) ? str_m - len : 0;
-
-;       return vim_snprintf(str.plus(len), space, fmt, args);
-    ))
-
-(defn- #_int vim_snprintf [#_Bytes str, #_int str_m, #_Bytes fmt, #_Object... args]
-    (§
-;       int str_l = 0;
-;       int ai = 0;
-
-;       Bytes p = fmt;
-;       if (p == null)
-;           p = u8("");
-
-;       while (p.at(0) != NUL)
-;       {
-;           if (p.at(0) != (byte)'%')
-;           {
-;               Bytes q = STRCHR(p.plus(1), (byte)'%');
-;               int n = (q == null) ? STRLEN(p) : BDIFF(q, p);
-
-                ;; Copy up to the next '%' or NUL without any changes.
-;               if (str_l < str_m)
-;               {
-;                   int avail = str_m - str_l;
-
-;                   BCOPY(str, str_l, p, 0, (avail < n) ? avail : n);
-;               }
-;               p = p.plus(n);
-;               str_l += n;
-;           }
-;           else
-;           {
-;               int min_field_width = 0, precision = 0;
-;               boolean precision_specified = false;
-;               boolean zero_padding = false, justify_left = false;
-;               boolean alternate_form = false, force_sign = false;
-
-                ;; If both the ' ' and '+' flags appear, the ' ' flag should be ignored.
-;               boolean space_for_positive = true;
-
-                ;; allowed values: \0, h, l, L
-;               byte length_modifier = NUL;
-
-                ;; On my system 1e308 is the biggest number possible.
-                ;; That sounds reasonable to use as the maximum printable.
-
-;               final int TMP_LEN = 350;
-                ;; temporary buffer for simple numeric -> string conversion
-;               Bytes tmp = new Bytes(TMP_LEN);
-
-                ;; natural field width of arg without padding and sign
-;               int str_arg_l;
-
-                ;; unsigned char argument value - only defined for c conversion.
-                ;; N.B. standard explicitly states the char argument for the c conversion is unsigned
-;               Bytes uchar_arg = new Bytes(1);
-
-                ;; number of zeros to be inserted for numeric conversions
-                ;; as required by the precision or minimal field width
-;               int number_of_zeros_to_pad = 0;
-
-                ;; index into 'tmp' where zero padding is to be inserted
-;               int zero_padding_insertion_ind = 0;
-
-                ;; current conversion specifier character
-;               byte fmt_spec = NUL;
-
-                ;; string address in case of string argument
-;               Bytes str_arg = null;
-
-;               p = p.plus(1);              ;; skip '%'
-
-                ;; parse flags
-;               while (p.at(0) == (byte)'0' || p.at(0) == (byte)'-' || p.at(0) == (byte)'+' || p.at(0) == (byte)' ' || p.at(0) == (byte)'#' || p.at(0) == (byte)'\'')
-;               {
-;                   switch (p.at(0))
-;                   {
-;                       case '0': zero_padding = true; break;
-;                       case '-': justify_left = true; break;
-;                       case '+': force_sign = true; space_for_positive = false; break;
-;                       case ' ': force_sign = true;
-                                  ;; If both the ' ' and '+' flags appear,
-                                  ;; the ' ' flag should be ignored.
-;                                 break;
-;                       case '#': alternate_form = true; break;
-;                       case '\'': break;
-;                   }
-;                   p = p.plus(1);
-;               }
-                ;; If the '0' and '-' flags both appear, the '0' flag should be ignored.
-
-                ;; parse field width
-;               if (p.at(0) == (byte)'*')
-;               {
-;                   p = p.plus(1);
-;                   int j = (int)args[ai++];
-;                   if (0 <= j)
-;                       min_field_width = j;
-;                   else
-;                   {
-;                       min_field_width = -j;
-;                       justify_left = true;
-;                   }
-;               }
-;               else if (asc_isdigit((int)p.at(0)))
-;               {
-                    ;; size_t could be wider than unsigned int;
-                    ;; make sure we treat argument like common implementations do
-;                   long uj = (p = p.plus(1)).at(-1) - '0';
-
-;                   while (asc_isdigit((int)p.at(0)))
-;                       uj = 10 * uj + (long)((p = p.plus(1)).at(-1) - '0');
-
-;                   min_field_width = (int)(uj & 0x7fffffffL);
-;               }
-
-                ;; parse precision
-;               if (p.at(0) == (byte)'.')
-;               {
-;                   p = p.plus(1);
-;                   precision_specified = true;
-;                   if (p.at(0) == (byte)'*')
-;                   {
-;                       int j = (int)args[ai++];
-;                       p = p.plus(1);
-;                       if (0 <= j)
-;                           precision = j;
-;                       else
-;                       {
-;                           precision_specified = false;
-;                           precision = 0;
-;                       }
-;                   }
-;                   else if (asc_isdigit((int)p.at(0)))
-;                   {
-                        ;; size_t could be wider than unsigned int;
-                        ;; make sure we treat argument like common implementations do
-;                       long uj = (p = p.plus(1)).at(-1) - '0';
-
-;                       while (asc_isdigit((int)p.at(0)))
-;                           uj = 10 * uj + (long)((p = p.plus(1)).at(-1) - '0');
-
-;                       precision = (int)(uj & 0x7fffffffL);
-;                   }
-;               }
-
-                ;; parse 'h', 'l' and 'll' length modifiers
-;               if (p.at(0) == (byte)'h' || p.at(0) == (byte)'l')
-;               {
-;                   length_modifier = p.at(0);
-;                   p = p.plus(1);
-;                   if (length_modifier == 'l' && p.at(0) == (byte)'l')
-;                   {
-                        ;; double l = long long
-;                       length_modifier = 'l';      ;; treat it as a single 'l'
-;                       p = p.plus(1);
-;                   }
-;               }
-;               fmt_spec = p.at(0);
-
-                ;; common synonyms:
-;               switch (fmt_spec)
-;               {
-;                   case 'i': fmt_spec = 'd'; break;
-;                   case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
-;                   case 'U': fmt_spec = 'u'; length_modifier = 'l'; break;
-;                   case 'O': fmt_spec = 'o'; length_modifier = 'l'; break;
-;                   case 'F': fmt_spec = 'f'; break;
-;                   default: break;
-;               }
-
-                ;; get parameter value, do initial processing
-;               switch (fmt_spec)
-;               {
-                    ;; '%' and 'c' behave similar to 's' regarding flags and field widths
-;                   case '%':
-;                   case 'c':
-;                   case 's':
-;                   case 'S':
-;                   {
-;                       length_modifier = NUL;
-;                       str_arg_l = 1;
-;                       switch (fmt_spec)
-;                       {
-;                           case '%':
-;                               str_arg = p;
-;                               break;
-
-;                           case 'c':
-;                           {
-;                               int c = (int)args[ai++];
-
-                                ;; standard demands unsigned char
-;                               uchar_arg.be(0, /*char_u(*/c/*)*/);
-;                               str_arg = uchar_arg;
-;                               break;
-;                           }
-
-;                           case 's':
-;                           case 'S':
-;                           {
-;                               str_arg = (Bytes)args[ai++];
-;                               if (str_arg == null)
-;                               {
-;                                   str_arg = u8("[NULL]");
-;                                   str_arg_l = 6;
-;                               }
-                                ;; make sure not to address string beyond the specified precision !!!
-;                               else if (!precision_specified)
-;                                   str_arg_l = STRLEN(str_arg);
-                                ;; truncate string if necessary as requested by precision
-;                               else if (precision == 0)
-;                                   str_arg_l = 0;
-;                               else
-;                               {
-;                                   final int roof = 0x7fffffff;
-                                    ;; memchr() on HP does not like n > 2^31 !!!
-;                                   Bytes q = MEMCHR(str_arg, NUL, (precision <= roof) ? precision : roof);
-;                                   str_arg_l = (q == null) ? precision : BDIFF(q, str_arg);
-;                               }
-;                               if (fmt_spec == 'S')
-;                               {
-;                                   if (min_field_width != 0)
-;                                       min_field_width += STRLEN(str_arg) - us_string2cells(str_arg, -1);
-;                                   if (precision != 0)
-;                                   {
-;                                       Bytes q = str_arg;
-
-;                                       for (int i = 0; i < precision && q.at(0) != NUL; i++)
-;                                           q = q.plus(us_ptr2len_cc(q));
-
-;                                       str_arg_l = precision = BDIFF(q, str_arg);
-;                                   }
-;                               }
-;                               break;
-;                           }
-
-;                           default:
-;                               break;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'd': case 'u': case 'o': case 'x': case 'X': case 'p':
-;                   {
-                        ;; u, o, x, X and p conversion specifiers imply the value is unsigned;
-                        ;; d implies a signed value
-
-                        ;; 0 if numeric argument is zero (or if pointer is null for 'p'),
-                        ;; +1 if greater than zero (or nonzero for unsigned arguments),
-                        ;; -1 if negative (unsigned argument is never negative)
-;                       int arg_sign = 0;
-
-                        ;; only defined for length modifier h, or for no length modifiers
-;                       int int_arg = 0;
-
-                        ;; only defined for length modifier l
-;                       long long_arg = 0;
-
-;                       if (fmt_spec == 'd')
-;                       {
-                            ;; signed
-;                           switch (length_modifier)
-;                           {
-;                               case NUL:
-;                               case 'h':
-;                               {
-                                    ;; char and short arguments are passed as int.
-;                                   int_arg = (int)args[ai++];
-;                                   if (0 < int_arg)
-;                                       arg_sign =  1;
-;                                   else if (int_arg < 0)
-;                                       arg_sign = -1;
-;                                   break;
-;                               }
-;                               case 'l':
-;                               {
-;                                   long_arg = (long)args[ai++];
-;                                   if (0 < long_arg)
-;                                       arg_sign =  1;
-;                                   else if (long_arg < 0)
-;                                       arg_sign = -1;
-;                                   break;
-;                               }
-;                           }
-;                       }
-;                       else
-;                       {
-                            ;; unsigned
-;                           switch (length_modifier)
-;                           {
-;                               case NUL:
-;                               case 'h':
-;                               {
-;                                   int_arg = (int)args[ai++];
-;                                   if (int_arg != 0)
-;                                       arg_sign = 1;
-;                                   break;
-;                               }
-;                               case 'l':
-;                               {
-;                                   long_arg = (long)args[ai++];
-;                                   if (long_arg != 0)
-;                                       arg_sign = 1;
-;                                   break;
-;                               }
-;                           }
-;                       }
-
-;                       str_arg = tmp;
-;                       str_arg_l = 0;
-
-                        ;; NOTE:
-                        ;;   For d, i, u, o, x, and X conversions, if precision is
-                        ;;   specified, the '0' flag should be ignored.  This is so
-                        ;;   with Solaris 2.6, Digital UNIX 4.0, HPUX 10, Linux,
-                        ;;   FreeBSD, NetBSD; but not with Perl.
-
-;                       if (precision_specified)
-;                           zero_padding = false;
-;                       if (fmt_spec == 'd')
-;                       {
-;                           if (force_sign && 0 <= arg_sign)
-;                               tmp.be(str_arg_l++, space_for_positive ? (byte)' ' : (byte)'+');
-                            ;; leave negative numbers for sprintf to handle, to
-                            ;; avoid handling tricky cases like (short int)-32768
-;                       }
-;                       else if (alternate_form)
-;                       {
-;                           if (arg_sign != 0 && (fmt_spec == 'x' || fmt_spec == 'X') )
-;                           {
-;                               tmp.be(str_arg_l++, (byte)'0');
-;                               tmp.be(str_arg_l++, fmt_spec);
-;                           }
-                            ;; alternate form should have no effect for 'p' conversion, but ...
-;                       }
-
-;                       zero_padding_insertion_ind = str_arg_l;
-;                       if (!precision_specified)
-;                           precision = 1;      ;; default precision is 1
-;                       if (precision == 0 && arg_sign == 0)
-;                       {
-                            ;; When zero value is formatted with an explicit precision 0,
-                            ;; the resulting formatted string is empty (d, i, u, o, x, X, p).
-
-;                       }
-;                       else
-;                       {
-;                           Bytes f = new Bytes(5);
-;                           int f_l = 0;
-
-                            ;; construct a simple format string for sprintf
-;                           f.be(f_l++, (byte)'%');
-;                           if (length_modifier == NUL)
-                            ;
-;                           else if (length_modifier == '2')
-;                           {
-;                               f.be(f_l++, (byte)'l');
-;                               f.be(f_l++, (byte)'l');
-;                           }
-;                           else
-;                               f.be(f_l++, length_modifier);
-;                           f.be(f_l++, fmt_spec);
-;                           f.be(f_l++, NUL);
-
-;                           if (fmt_spec == 'd')
-;                           {
-                                ;; signed
-;                               switch (length_modifier)
-;                               {
-;                                   case NUL:
-;                                   case 'h':
-;                                       str_arg_l += libC.sprintf(tmp.plus(str_arg_l), f, int_arg);
-;                                       break;
-;                                   case 'l':
-;                                       str_arg_l += libC.sprintf(tmp.plus(str_arg_l), f, long_arg);
-;                                       break;
-;                               }
-;                           }
-;                           else
-;                           {
-                                ;; unsigned
-;                               switch (length_modifier)
-;                               {
-;                                   case NUL:
-;                                   case 'h':
-;                                       str_arg_l += libC.sprintf(tmp.plus(str_arg_l), f, int_arg);
-;                                       break;
-;                                   case 'l':
-;                                       str_arg_l += libC.sprintf(tmp.plus(str_arg_l), f, long_arg);
-;                                       break;
-;                               }
-;                           }
-
-                            ;; include the optional minus sign and possible "0x"
-                            ;; in the region before the zero padding insertion point
-;                           if (zero_padding_insertion_ind < str_arg_l
-;                                   && tmp.at(zero_padding_insertion_ind) == (byte)'-')
-;                               zero_padding_insertion_ind++;
-;                           if (zero_padding_insertion_ind + 1 < str_arg_l
-;                                   && tmp.at(zero_padding_insertion_ind) == (byte)'0'
-;                                   && (tmp.at(zero_padding_insertion_ind + 1) == (byte)'x'
-;                                           || tmp.at(zero_padding_insertion_ind + 1) == (byte)'X'))
-;                               zero_padding_insertion_ind += 2;
-;                       }
-
-;                       int num_of_digits = str_arg_l - zero_padding_insertion_ind;
-
-;                       if (alternate_form && fmt_spec == 'o'
-                            ;; unless zero is already the first character
-;                           && !(zero_padding_insertion_ind < str_arg_l && tmp.at(zero_padding_insertion_ind) == (byte)'0'))
-;                       {
-                            ;; assure leading zero for alternate-form octal numbers
-;                           if (!precision_specified || precision < num_of_digits + 1)
-;                           {
-                                ;; precision is increased to force the first character to be zero,
-                                ;; except if a zero value is formatted with an explicit precision of zero
-
-;                               precision = num_of_digits + 1;
-;                               precision_specified = true;
-;                           }
-;                       }
-                        ;; zero padding to specified precision?
-;                       if (num_of_digits < precision)
-;                           number_of_zeros_to_pad = precision - num_of_digits;
-
-                        ;; zero padding to specified minimal field width?
-;                       if (!justify_left && zero_padding)
-;                       {
-;                           int n = min_field_width - (str_arg_l + number_of_zeros_to_pad);
-;                           if (0 < n)
-;                               number_of_zeros_to_pad += n;
-;                       }
-;                       break;
-;                   }
-
-;                   default:
-;                   {
-                        ;; unrecognized conversion specifier, keep format string as-is
-;                       zero_padding = false;       ;; turn zero padding off for non-numeric conversion
-;                       justify_left = true;
-;                       min_field_width = 0;                ;; reset flags
-
-                        ;; discard the unrecognized conversion,
-                        ;; just keep the unrecognized conversion character
-;                       str_arg = p;
-;                       str_arg_l = 0;
-;                       if (p.at(0) != NUL)
-;                           str_arg_l++;        ;; include invalid conversion specifier
-                                                ;; unchanged if not at end-of-string
-;                       break;
-;                   }
-;               }
-
-;               if (p.at(0) != NUL)
-;                   p = p.plus(1);              ;; step over the just processed conversion specifier
-
-                ;; insert padding to the left as requested by min_field_width;
-                ;; this does not include the zero padding in case of numerical conversions
-;               if (!justify_left)
-;               {
-                    ;; left padding with blank or zero
-;                   int pn = min_field_width - (str_arg_l + number_of_zeros_to_pad);
-;                   if (0 < pn)
-;                   {
-;                       if (str_l < str_m)
-;                       {
-;                           int avail = str_m - str_l;
-
-;                           BFILL(str, str_l, zero_padding ? (byte)'0' : (byte)' ', (avail < pn) ? avail : pn);
-;                       }
-;                       str_l += pn;
-;                   }
-;               }
-
-                ;; zero padding as requested by the precision or by the minimal
-                ;; field width for numeric conversions required?
-;               if (number_of_zeros_to_pad == 0)
-;               {
-                    ;; will not copy first part of numeric right now,
-                    ;; force it to be copied later in its entirety
-;                   zero_padding_insertion_ind = 0;
-;               }
-;               else
-;               {
-                    ;; insert first part of numerics (sign or '0x') before zero padding
-;                   int zn = zero_padding_insertion_ind;
-;                   if (0 < zn)
-;                   {
-;                       if (str_l < str_m)
-;                       {
-;                           int avail = str_m - str_l;
-
-;                           BCOPY(str, str_l, str_arg, 0, (avail < zn) ? avail : zn);
-;                       }
-;                       str_l += zn;
-;                   }
-
-                    ;; insert zero padding as requested by the precision or min field width
-;                   zn = number_of_zeros_to_pad;
-;                   if (0 < zn)
-;                   {
-;                       if (str_l < str_m)
-;                       {
-;                           int avail = str_m - str_l;
-
-;                           BFILL(str, str_l, (byte)'0', (avail < zn) ? avail : zn);
-;                       }
-;                       str_l += zn;
-;                   }
-;               }
-
-                ;; insert formatted string (or as-is conversion specifier for unknown conversions)
-;               {
-;                   int sn = str_arg_l - zero_padding_insertion_ind;
-;                   if (0 < sn)
-;                   {
-;                       if (str_l < str_m)
-;                       {
-;                           int avail = str_m - str_l;
-
-;                           BCOPY(str, str_l, str_arg, zero_padding_insertion_ind, (avail < sn) ? avail : sn);
-;                       }
-;                       str_l += sn;
-;                   }
-;               }
-
-                ;; insert right padding
-;               if (justify_left)
-;               {
-                    ;; right blank padding to the field width
-;                   int pn = min_field_width - (str_arg_l + number_of_zeros_to_pad);
-;                   if (0 < pn)
-;                   {
-;                       if (str_l < str_m)
-;                       {
-;                           int avail = str_m - str_l;
-
-;                           BFILL(str, str_l, (byte)' ', (avail < pn) ? avail : pn);
-;                       }
-;                       str_l += pn;
-;                   }
-;               }
-;           }
-;       }
-
-;       if (0 < str_m)
-;       {
-            ;; make sure the string is nul-terminated even at the expense of
-            ;; overwriting the last character (shouldn't happen, but just in case)
-
-;           str.be((str_l <= str_m - 1) ? str_l : str_m - 1, NUL);
-;       }
-
-        ;; Return the number of characters formatted (excluding trailing nul character), that is,
-        ;; the number of characters that would have been written to the buffer if it were large enough.
-
-;       return str_l;
-    ))
-
 ;; Code to handle user-settable options.  This is all pretty much table-
 ;; driven.  Checklist for adding a new option:
 ;; - Put it in the options array below (copy an existing entry).
@@ -6295,7 +5589,7 @@
     [
         (field Bytes    fullname)   ;; full option name
         (field Bytes    shortname)  ;; permissible abbreviation
-        (atom' long     flags)      ;; see below
+        (field long     flags)      ;; see below
         (field Object   var)        ;; pointer to variable
         (field int      indir)      ;; indirect option index
         (field Object   def_val)    ;; default value for variable
@@ -6307,7 +5601,7 @@
 
 ;       v.fullname = fullname;
 ;       v.shortname = shortname;
-;       v.@flags = flags;
+;       v.flags = flags;
 ;       v.var = var;
 ;       v.indir = indir;
 ;       v.def_val = def_val;
@@ -6366,21 +5660,19 @@
 
 (final vimoption_C* vimoptions
     [
-        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      0,         (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           null,        PV_AI,      false),
-        (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        0,         (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        0,         (u8 "")),
         (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   0,         (u8 " \t!@*-+;:,./?")),
         (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      null,        PV_BRI,     false),
         (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
         (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     0,          CTRL_F_STR),
         (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            null,        PV_CINW,   (u8 "if,else,while,do,for,switch")),
-        (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        0,          1#_L),
-        (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7#_L),
+        (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        0,          1),
+        (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7),
         (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     null,        PV_CC,     (u8 "")),
-        (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     0,          80#_L),
+        (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     0,          80),
         (utf8_opt (u8 "concealcursor"),  (u8 "cocu"),      P_RWIN,                      null,        PV_COCU,   (u8 "")),
-        (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      null,        PV_COLE,    0#_L),
+        (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      null,        PV_COLE,    0),
         (bool_opt (u8 "copyindent"),     (u8 "ci"),        0,                           null,        PV_CI,      false),
         (utf8_opt (u8 "cpoptions"),      (u8 "cpo"),    (| P_RALL P_FLAGLIST),          p_cpo,       0,          CPO_VIM),
         (bool_opt (u8 "cursorbind"),     (u8 "crb"),       0,                           null,        PV_CRBIND,  false),
@@ -6397,7 +5689,7 @@
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       0,         (u8 "vert:|,fold:-")),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        0,          false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        0,          HIGHLIGHT_INIT),
-        (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50#_L),
+        (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50),
         (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       0,          false),
         (bool_opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        0,          false),
         (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        0,          false),
@@ -6409,81 +5701,80 @@
         (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        0,          true),
         (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        0,         (u8 "")),
         (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           null,        PV_KP,     (u8 ":echo")),
-        (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        0,          1#_L),
+        (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        0,          1),
         (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        0,          false),
         (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      null,        PV_LBR,     false),
-        (long_opt (u8 "lines"),           null,         (| P_NODEFAULT P_RCLR),         Rows,        0,          24#_L),
+        (long_opt (u8 "lines"),           null,         (| P_NODEFAULT P_RCLR),         Rows,        0,          24),
         (bool_opt (u8 "list"),            null,            P_RWIN,                      null,        PV_LIST,    false),
         (utf8_opt (u8 "listchars"),      (u8 "lcs"),    (| P_RALL P_COMMA P_NODUP),     p_lcs,       0,         (u8 "eol:$")),
         (bool_opt (u8 "magic"),           null,            0,                           p_magic,     0,          true),
         (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            null,        PV_MPS,    (u8 "(:),{:},[:]")),
-        (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       0,          5#_L),
-        (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       0,          2#_L),
-        (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       0,          1000#_L),
-        (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000#_L),
+        (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       0,          5),
+        (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       0,          2),
+        (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       0,          1000),
+        (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000),
         (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     null,        PV_MOD,     false),
         (bool_opt (u8 "more"),            null,            0,                           p_more,      0,          true),
         (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            null,        PV_NF,     (u8 "octal,hex")),
         (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      null,        PV_NU,      false),
-        (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4#_L),
+        (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4),
         (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    0,         (u8 "")),
         (bool_opt (u8 "paste"),           null,            0,                           p_paste,     0,          false),
         (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        0,         (u8 "")),
         (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           null,        PV_PI,      false),
         (bool_opt (u8 "prompt"),          null,            0,                           p_prompt,    0,          true),
         (utf8_opt (u8 "quoteescape"),    (u8 "qe"),        0,                           null,        PV_QE,     (u8 "\\")),
-        (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       0,          2000#_L),
-        (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        0,          0#_L),
+        (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       0,          2000),
+        (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        0,          0),
         (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      null,        PV_RNU,     false),
         (bool_opt (u8 "remap"),           null,            0,                           p_remap,     0,          true),
-        (long_opt (u8 "report"),          null,            0,                           p_report,    0,          2#_L),
+        (long_opt (u8 "report"),          null,            0,                           p_report,    0,          2),
         (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        0,          false),
-        (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           null,        PV_SCROLL,  12#_L),
+        (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           null,        PV_SCROLL,  12),
         (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           null,        PV_SCBIND,  false),
-        (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        0,          1#_L),
-        (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        0,          0#_L),
+        (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        0,          1),
+        (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        0,          0),
         (utf8_opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       0,         (u8 "ver,jump")),
         (utf8_opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       0,         (u8 "inclusive")),
         (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       0,         (u8 "")),
         (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        0,          false),
-        (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           null,        PV_SW,      8#_L),
+        (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           null,        PV_SW,      8),
         (utf8_opt (u8 "showbreak"),      (u8 "sbr"),       P_RALL,                      p_sbr,       0,         (u8 "")),
         (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        0,          false),
         (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        0,          false),
         (bool_opt (u8 "showmode"),       (u8 "smd"),       0,                           p_smd,       0,          true),
-        (long_opt (u8 "sidescroll"),     (u8 "ss"),        0,                           p_ss,        0,          0#_L),
-        (long_opt (u8 "sidescrolloff"),  (u8 "siso"),      P_RBUF,                      p_siso,      0,          0#_L),
+        (long_opt (u8 "sidescroll"),     (u8 "ss"),        0,                           p_ss,        0,          0),
+        (long_opt (u8 "sidescrolloff"),  (u8 "siso"),      P_RBUF,                      p_siso,      0,          0),
         (bool_opt (u8 "smartcase"),      (u8 "scs"),       0,                           p_scs,       0,          false),
         (bool_opt (u8 "smartindent"),    (u8 "si"),        0,                           null,        PV_SI,      false),
         (bool_opt (u8 "smarttab"),       (u8 "sta"),       0,                           p_sta,       0,          false),
-        (long_opt (u8 "softtabstop"),    (u8 "sts"),       0,                           null,        PV_STS,     0#_L),
+        (long_opt (u8 "softtabstop"),    (u8 "sts"),       0,                           null,        PV_STS,     0),
         (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        0,          false),
         (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       0,          false),
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       0,          true),
-        (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      null,        PV_TS,      8#_L),
+        (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      null,        PV_TS,      8),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      0,         (u8 "")),
         (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        0,          false),
         (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   0,          true),
-        (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        0,          1000#_L),
+        (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        0,          1000),
         (bool_opt (u8 "ttimeout"),        null,            0,                           p_ttimeout,  0,          false),
-        (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       0,          -1#_L),
-        (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, 0,          999#_L),
-        (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           null,        PV_UL,      1000#_L),
-        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000#_L),
-        (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   0,          0#_L),
+        (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       0,          -1),
+        (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, 0,          999),
+        (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           null,        PV_UL,      1000),
+        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000),
+        (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   0,          0),
         (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        0,         (u8 "")),
         (bool_opt (u8 "visualbell"),     (u8 "vb"),        0,                           p_vb,        0,          false),
         (utf8_opt (u8 "whichwrap"),      (u8 "ww"),     (| P_COMMA P_FLAGLIST),         p_ww,        0,         (u8 "b,s")),
-        (long_opt (u8 "wildchar"),       (u8 "wc"),        0,                           p_wc,        0,         (long TAB)),
-        (long_opt (u8 "winheight"),      (u8 "wh"),        0,                           p_wh,        0,          1#_L),
+        (long_opt (u8 "winheight"),      (u8 "wh"),        0,                           p_wh,        0,          1),
         (bool_opt (u8 "winfixheight"),   (u8 "wfh"),       P_RSTAT,                     null,        PV_WFH,     false),
         (bool_opt (u8 "winfixwidth"),    (u8 "wfw"),       P_RSTAT,                     null,        PV_WFW,     false),
-        (long_opt (u8 "winminheight"),   (u8 "wmh"),       0,                           p_wmh,       0,          1#_L),
-        (long_opt (u8 "winminwidth"),    (u8 "wmw"),       0,                           p_wmw,       0,          1#_L),
-        (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       0,          20#_L),
+        (long_opt (u8 "winminheight"),   (u8 "wmh"),       0,                           p_wmh,       0,          1),
+        (long_opt (u8 "winminwidth"),    (u8 "wmw"),       0,                           p_wmw,       0,          1),
+        (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       0,          20),
         (bool_opt (u8 "wrap"),            null,            P_RWIN,                      null,        PV_WRAP,    true),
         (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        0,          true),
-        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0#_L),
+        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0),
 
         ;; terminal output codes
 
@@ -6497,7 +5788,6 @@
         (term_opt (u8 "t_cl"), T_CL),
         (term_opt (u8 "t_cm"), T_CM),
         (term_opt (u8 "t_Co"), T_CCO),
-        (term_opt (u8 "t_CS"), T_CCS),
         (term_opt (u8 "t_cs"), T_CS),
         (term_opt (u8 "t_CV"), T_CSV),
         (term_opt (u8 "t_ut"), T_UT),
@@ -6505,13 +5795,9 @@
         (term_opt (u8 "t_db"), T_DB),
         (term_opt (u8 "t_DL"), T_CDL),
         (term_opt (u8 "t_dl"), T_DL),
-        (term_opt (u8 "t_fs"), T_FS),
-        (term_opt (u8 "t_IE"), T_CIE),
-        (term_opt (u8 "t_IS"), T_CIS),
         (term_opt (u8 "t_ke"), T_KE),
         (term_opt (u8 "t_ks"), T_KS),
         (term_opt (u8 "t_le"), T_LE),
-        (term_opt (u8 "t_mb"), T_MB),
         (term_opt (u8 "t_md"), T_MD),
         (term_opt (u8 "t_me"), T_ME),
         (term_opt (u8 "t_mr"), T_MR),
@@ -6519,14 +5805,11 @@
         (term_opt (u8 "t_nd"), T_ND),
         (term_opt (u8 "t_op"), T_OP),
         (term_opt (u8 "t_RI"), T_CRI),
-        (term_opt (u8 "t_RV"), T_CRV),
-        (term_opt (u8 "t_u7"), T_U7),
         (term_opt (u8 "t_Sb"), T_CSB),
         (term_opt (u8 "t_Sf"), T_CSF),
         (term_opt (u8 "t_se"), T_SE),
         (term_opt (u8 "t_so"), T_SO),
         (term_opt (u8 "t_sr"), T_SR),
-        (term_opt (u8 "t_ts"), T_TS),
         (term_opt (u8 "t_te"), T_TE),
         (term_opt (u8 "t_ti"), T_TI),
         (term_opt (u8 "t_ue"), T_UE),
@@ -6535,13 +5818,11 @@
         (term_opt (u8 "t_ve"), T_VE),
         (term_opt (u8 "t_vi"), T_VI),
         (term_opt (u8 "t_vs"), T_VS),
-        (term_opt (u8 "t_WP"), T_CWP),
         (term_opt (u8 "t_WS"), T_CWS),
         (term_opt (u8 "t_SI"), T_CSI),
         (term_opt (u8 "t_EI"), T_CEI),
         (term_opt (u8 "t_SR"), T_CSR),
         (term_opt (u8 "t_xn"), T_XN),
-        (term_opt (u8 "t_xs"), T_XS),
         (term_opt (u8 "t_ZH"), T_CZH),
         (term_opt (u8 "t_ZR"), T_CZR)
 
@@ -6549,8 +5830,6 @@
     ])
 
 (final Bytes*
-    p_ambw_values   [ (u8 "single"), (u8 "double"), null ],
-    p_bg_values     [ (u8 "light"), (u8 "dark"), null ],
     p_nf_values     [ (u8 "octal"), (u8 "hex"), (u8 "alpha"), null ],
     p_sel_values    [ (u8 "inclusive"), (u8 "exclusive"), (u8 "old"), null ],
     p_slm_values    [ (u8 "key"), (u8 "cmd"), null ],
@@ -6602,17 +5881,17 @@
 
 ;       Object varp = get_varp(v);
 
-;       if ((v.@flags & P_STRING) != 0)
-;           ((Bytes[])varp)[0] = STRDUP((Bytes)v.def_val);
-;       else if ((v.@flags & P_NUM) != 0)
+;       if ((v.flags & P_STRING) != 0)
+;           (Bytes)@varp = STRDUP((Bytes)v.def_val);
+;       else if ((v.flags & P_NUM) != 0)
 ;       {
 ;           if (v.indir == PV_SCROLL)
 ;               win_comp_scroll(@curwin);
 ;           else
-;               ((long[])varp)[0] = (long)v.def_val;
+;               (long)@varp = (long)v.def_val;
 ;       }
-;       else    ;; P_BOOL
-;           ((boolean[])varp)[0] = (boolean)v.def_val;
+;       else if ((v.flags & P_BOOL) != 0)
+;           (boolean)@varp = (boolean)v.def_val;
     ))
 
 ;; Set all options (except terminal options) to their default value.
@@ -6620,7 +5899,7 @@
 (defn- #_void set_options_default []
     (§
 ;       for (int i = 0; i < vimoptions.length && !istermoption(vimoptions[i]); i++)
-;           if ((vimoptions[i].@flags & P_NODEFAULT) == 0)
+;           if ((vimoptions[i].flags & P_NODEFAULT) == 0)
 ;               set_option_default(i);
 
         ;; The 'scroll' option must be computed for all windows.
@@ -6658,27 +5937,6 @@
 ;       set_number_default(u8("scroll"), @Rows >>> 1);
 ;       win_comp_scroll(@curwin);
 ;       comp_col();
-
-        ;; If 'background' wasn't set by the user, try guessing the value,
-        ;; depending on the terminal name.  Only need to check for terminals
-        ;; with a dark background, that can handle color.
-
-;       idx = findoption(u8("bg"));
-;       if (0 <= idx && term_bg_default().at(0) == (byte)'d')
-;           set_string_option_direct(null, idx, u8("dark"));
-    ))
-
-;; Return "dark" or "light" depending on the kind of terminal.
-;; This is just guessing!  Recognized are:
-;; "linux"          Linux console
-;; "screen.linux"   Linux console with screen
-
-(defn- #_Bytes term_bg_default []
-    (§
-;       if (STRCMP(@T_NAME, u8("linux")) == 0 || STRCMP(@T_NAME, u8("screen.linux")) == 0)
-;           return u8("dark");
-
-;       return u8("light");
     ))
 
 ;; Parse 'arg' for option settings.
@@ -6839,7 +6097,7 @@
 ;                       {
 ;                           vimoption_C v = vimoptions[opt_idx];
 
-;                           flags = v.@flags;
+;                           flags = v.flags;
 ;                           varp = get_varp(v);
 ;                       }
 ;                       else
@@ -6921,7 +6179,7 @@
                                 ;; ":set opt&": reset to default value
 
 ;                               if (nextchar == '!')
-;                                   value = !((boolean[])varp)[0];
+;                                   value = !(boolean)@varp;
 ;                               else if (nextchar == '&')
 ;                                   value = (boolean)vimoptions[opt_idx].def_val;
 ;                               else
@@ -6935,7 +6193,7 @@
 ;                                       break skip;
 ;                                   }
 ;                                   if (prefix == 2)            ;; inv
-;                                       value = !((boolean[])varp)[0];
+;                                       value = !(boolean)@varp;
 ;                                   else
 ;                                       value = (prefix != 0);
 ;                               }
@@ -6963,18 +6221,8 @@
 
 ;                                   arg = arg.plus(1);
 ;                                   if (nextchar == '&')
-;                                       value = (long)vimoptions[opt_idx].def_val;
-;                                   else if ((varp == p_wc)
-;                                           && (arg.at(0) == (byte)'<' || arg.at(0) == (byte)'^'
-;                                               || ((arg.at(1) == NUL || vim_iswhite(arg.at(1)))
-;                                                   && !asc_isdigit(arg.at(0)))))
 ;                                   {
-;                                       value = parse_key(arg);
-;                                       if (value == 0)
-;                                       {
-;                                           errmsg = e_invarg;
-;                                           break skip;
-;                                       }
+;                                       value = (long)vimoptions[opt_idx].def_val;
 ;                                   }
 ;                                   else if (arg.at(0) == (byte)'-' || asc_isdigit(arg.at(0)))
 ;                                   {
@@ -6995,11 +6243,11 @@
 ;                                   }
 
 ;                                   if (adding)
-;                                       value = ((long[])varp)[0] + value;
+;                                       value = (long)@varp + value;
 ;                                   if (prepending)
-;                                       value = ((long[])varp)[0] * value;
+;                                       value = (long)@varp * value;
 ;                                   if (removing)
-;                                       value = ((long[])varp)[0] - value;
+;                                       value = (long)@varp - value;
 
 ;                                   errmsg = set_num_option(opt_idx, (long[])varp, value, errbuf, errbuf.size());
 ;                               }
@@ -7009,15 +6257,10 @@
 
 ;                                   Bytes newval;
                                     ;; The old value is kept until we are sure that the new value is valid.
-;                                   Bytes oldval = ((Bytes[])varp)[0];
+;                                   Bytes oldval = (Bytes)@varp;
 ;                                   if (nextchar == '&')    ;; set to default val
 ;                                   {
 ;                                       newval = (Bytes)vimoptions[opt_idx].def_val;
-;                                       if (varp == p_bg)
-;                                       {
-                                            ;; guess the value of 'background'
-;                                           newval = term_bg_default();
-;                                       }
 
 ;                                       if (newval == null)
 ;                                           newval = EMPTY_OPTION;
@@ -7173,7 +6416,7 @@
 ;                                   }
 
                                     ;; Set the new value.
-;                                   ((Bytes[])varp)[0] = newval;
+;                                   (Bytes)@varp = newval;
 
                                     ;; Handle side effects, and set the global value for ":set" on local options.
 ;                                   errmsg = did_set_string_option(opt_idx, (Bytes[])varp, oldval, errbuf);
@@ -7198,7 +6441,7 @@
 ;                                               p = p.plus(1);
 ;                                       nextchar = p.at(0);
 ;                                       p.be(0, NUL);
-;                                       add_termcode(key_name, arg, FALSE);
+;                                       add_termcode(key_name, arg);
 ;                                       p.be(0, nextchar);
 ;                                   }
 ;                                   if (@full_screen)
@@ -7323,7 +6566,7 @@
 (defn- #_void check_options []
     (§
 ;       for (int opt_idx = 0; opt_idx < vimoptions.length; opt_idx++)
-;           if ((vimoptions[opt_idx].@flags & P_STRING) != 0)
+;           if ((vimoptions[opt_idx].flags & P_STRING) != 0)
 ;               check_string_option((Bytes[])get_varp(vimoptions[opt_idx]));
     ))
 
@@ -7458,28 +6701,6 @@
 ;               errmsg = e_invarg;
 ;       }
 
-        ;; 'ambiwidth'
-;       else if (varp == p_ambw)
-;       {
-;           if (check_opt_strings(@p_ambw, p_ambw_values, false) != true)
-;               errmsg = e_invarg;
-;           else if (set_chars_option(p_lcs) != null)
-;               errmsg = u8("E834: Conflicts with value of 'listchars'");
-;           else if (set_chars_option(p_fcs) != null)
-;               errmsg = u8("E835: Conflicts with value of 'fillchars'");
-;       }
-
-        ;; 'background'
-;       else if (varp == p_bg)
-;       {
-;           if (check_opt_strings(@p_bg, p_bg_values, false) == true)
-;           {
-;               init_highlight(false, false);
-;           }
-;           else
-;               errmsg = e_invarg;
-;       }
-
         ;; 'matchpairs'
 ;       else if (varp == @curbuf.b_p_mps)
 ;       {
@@ -7541,9 +6762,6 @@
 ;                   @t_colors = colors;
 ;                   if (@t_colors <= 1)
 ;                       @T_CCO = EMPTY_OPTION;
-
-                    ;; We now have a different color setup, initialize it again.
-;                   init_highlight(true, false);
 ;               }
 ;           }
 ;           ttest(false);
@@ -7673,9 +6891,9 @@
 ;               highlight_changed();
 ;       }
 
-;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(v.@flags);
+;       check_redraw(v.flags);
 
 ;       return errmsg;
     ))
@@ -7739,8 +6957,6 @@
         (->charstab_C fill_stl,    (u8 "stl")     ),
         (->charstab_C fill_stlnc,  (u8 "stlnc")   ),
         (->charstab_C fill_vert,   (u8 "vert")    ),
-        (->charstab_C fill_fold,   (u8 "fold")    ),
-        (->charstab_C fill_diff,   (u8 "diff")    ),
     ])
 
 (final charstab_C* lcstab
@@ -7786,8 +7002,6 @@
 ;                       tab[i].@cp = (varp == p_lcs) ? NUL : ' ';
 ;               if (varp == p_lcs)
 ;                   lcs_tab1[0] = NUL;
-;               else
-;                   @fill_diff = '-';
 ;           }
 
 ;           for (Bytes p = varp[0]; p.at(0) != NUL; )
@@ -7917,9 +7131,9 @@
         ;; End of handling side effects for bool options.
 
 ;       comp_col();                     ;; in case 'ruler' or 'showcmd' changed
-;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(v.@flags);
+;       check_redraw(v.flags);
 
 ;       return null;
     ))
@@ -8102,7 +7316,7 @@
 ;           {
 ;               if (errbuf != null)
 ;               {
-;                   vim_snprintf(errbuf, errbuflen, u8("E593: Need at least %d lines"), min);
+;                   vim_snprintf(errbuf, errbuflen, u8("E593: Need at least %d lines"), min);
 ;                   errmsg = errbuf;
 ;               }
 ;               @Rows = min;
@@ -8111,7 +7325,7 @@
 ;           {
 ;               if (errbuf != null)
 ;               {
-;                   vim_snprintf(errbuf, errbuflen, u8("E594: Need at least %d columns"), MIN_COLUMNS);
+;                   vim_snprintf(errbuf, errbuflen, u8("E594: Need at least %d columns"), MIN_COLUMNS);
 ;                   errmsg = errbuf;
 ;               }
 ;               @Columns = MIN_COLUMNS;
@@ -8220,9 +7434,9 @@
 ;       vimoption_C v = vimoptions[opt_idx];
 
 ;       comp_col();                     ;; in case 'columns' or 'ls' changed
-;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(v.@flags);
+;       check_redraw(v.flags);
 
 ;       return errmsg;
     ))
@@ -8289,7 +7503,7 @@
 ;           return null;
 ;       }
 
-;       long flags = vimoptions[opt_idx].@flags;
+;       long flags = vimoptions[opt_idx].flags;
 
 ;       if ((flags & P_STRING) != 0)
 ;           return set_string_option(opt_idx, string);
@@ -8386,7 +7600,7 @@
 ;               if ((all == 2 && isterm) || (all == 1 && !isterm) || (all == 0 && !optval_default(vimoptions[i], varp)))
 ;               {
 ;                   int len;
-;                   if ((vimoptions[i].@flags & P_BOOL) != 0)
+;                   if ((vimoptions[i].flags & P_BOOL) != 0)
 ;                       len = 1;            ;; a toggle option fits always
 ;                   else
 ;                   {
@@ -8435,11 +7649,11 @@
     (§
 ;       if (varp == null)
 ;           return true;        ;; hidden option is always at default
-;       if ((v.@flags & P_NUM) != 0)
+;       if ((v.flags & P_NUM) != 0)
 ;           return (((long[])varp)[0] == (long)v.def_val);
-;       if ((v.@flags & P_BOOL) != 0)
+;       if ((v.flags & P_BOOL) != 0)
 ;           return (((boolean[])varp)[0] == (boolean)v.def_val);
-;       if ((v.@flags & P_STRING) != 0)
+;       if ((v.flags & P_STRING) != 0)
 ;           return (STRCMP(((Bytes[])varp)[0], (Bytes)v.def_val) == 0);
 
 ;       throw new IllegalArgumentException("invalid option type");
@@ -8457,12 +7671,12 @@
 
 ;       Object varp = get_varp(v);
 
-;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !@curbuf.@b_changed : !((boolean[])varp)[0]))
+;       if ((v.flags & P_BOOL) != 0 && !(boolean)@varp)
 ;           msg_puts(u8("no"));
 ;       else
 ;           msg_puts(u8("  "));
 ;       msg_puts(v.fullname);
-;       if ((v.@flags & P_BOOL) == 0)
+;       if ((v.flags & P_BOOL) == 0)
 ;       {
 ;           msg_putchar('=');
             ;; put value string in nameBuff
@@ -8675,26 +7889,18 @@
     ))
 
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
-;; Must not be called with a hidden option!
 
 (defn- #_void option_value2string [#_vimoption_C v]
     (§
 ;       Object varp = get_varp(v);
 
-;       if ((v.@flags & P_NUM) != 0)
+;       if ((v.flags & P_NUM) != 0)
 ;       {
-;           long[] wc = { 0 };
-
-;           if (wc_use_keyname((long[])varp, wc))
-;               STRCPY(@nameBuff, get_special_key_name((int)wc[0], 0));
-;           else if (wc[0] != 0)
-;               STRCPY(@nameBuff, transchar((int)wc[0]));
-;           else
-;               libC.sprintf(@nameBuff, u8("%ld"), ((long[])varp)[0]);
+;           libC.sprintf(@nameBuff, u8("%ld"), (long)@varp);
 ;       }
-;       else    ;; P_STRING
+;       else if ((v.flags & P_STRING) != 0)
 ;       {
-;           Bytes s = ((Bytes[])varp)[0];
+;           Bytes s = (Bytes)@varp;
 
 ;           if (s == null)              ;; just in case
 ;               @nameBuff.be(0, NUL);
@@ -8704,20 +7910,6 @@
 ;           else
 ;               vim_strncpy(@nameBuff, s, MAXPATHL - 1);
 ;       }
-    ))
-
-;; Return true if "varp" points to 'wildchar' or 'wildcharm' and it can be printed as a keyname.
-;; "*wcp" is set to the value of the option if it's 'wildchar' or 'wildcharm'.
-
-(defn- #_boolean wc_use_keyname [#_long* varp, #_long* wcp]
-    (§
-;       if (varp == p_wc)
-;       {
-;           wcp[0] = varp[0];
-;           if (is_special((int)wcp[0]) || 0 <= find_special_key_in_table((int)wcp[0]))
-;               return true;
-;       }
-;       return false;
     ))
 
 (atom! boolean old_p_paste)
@@ -8986,18 +8178,18 @@
 ;           {
 ;               Bytes buf3 = new Bytes(7);
 ;               transchar_nonprint(buf3, c);
-;               vim_snprintf(buf1, buf1.size(), u8("  <%s>"), buf3);
+;               vim_snprintf(buf1, buf1.size(), u8("  <%s>"), buf3);
 ;           }
 ;           else
 ;               buf1.be(0, NUL);
 
 ;           Bytes buf2 = new Bytes(20);
 ;           if (0x80 <= c)
-;               vim_snprintf(buf2, buf2.size(), u8("  <M-%s>"), transchar(c & 0x7f));
+;               vim_snprintf(buf2, buf2.size(), u8("  <M-%s>"), transchar(c & 0x7f));
 ;           else
 ;               buf2.be(0, NUL);
 
-;           vim_snprintf(@ioBuff, IOSIZE, u8("<%s>%s%s  %d,  Hex %02x,  Octal %03o"), transchar(c), buf1, buf2, cval, cval, cval);
+;           vim_snprintf(@ioBuff, IOSIZE, u8("<%s>%s%s  %d,  Hex %02x,  Octal %03o"), transchar(c), buf1, buf2, cval, cval, cval);
 ;           c = cc[ci++];
 ;       }
 
@@ -9012,7 +8204,7 @@
 ;           if (utf_iscomposing(c))
 ;               @ioBuff.be(len++, (byte)' ');                ;; draw composing char on top of a space
 ;           len += utf_char2bytes(c, @ioBuff.plus(len));
-;           vim_snprintf(@ioBuff.plus(len), IOSIZE - len,
+;           vim_snprintf(@ioBuff.plus(len), IOSIZE - len,
 ;                       (c < 0x10000) ? u8("> %d, Hex %04x, Octal %o")
 ;                                       : u8("> %d, Hex %08x, Octal %o"), c, c, c);
 ;           if (ci == MAX_MCO)
@@ -9156,7 +8348,7 @@
 ;       if (@curbuf.@b_p_ts != new_ts)
 ;           redraw_curbuf_later(NOT_VALID);
 ;       if (first_line != 0)
-;           changed_lines(first_line, 0, last_line + 1, 0L);
+;           changed_lines(first_line, 0, last_line + 1, 0);
 
 ;       @curwin.w_options.@wo_list = save_list;     ;; restore 'list'
 
@@ -9211,22 +8403,22 @@
         ;; their final destination at the new text position.
 
 ;       long last_line = @curbuf.b_ml.ml_line_count; ;; last line in file after adding new text
-;       mark_adjust(line1, line2, last_line - line2, 0L);
+;       mark_adjust(line1, line2, last_line - line2, 0);
 ;       changed_lines(last_line - num_lines + 1, 0, last_line + 1, num_lines);
 ;       if (line2 <= dest)
 ;       {
-;           mark_adjust(line2 + 1, dest, -num_lines, 0L);
+;           mark_adjust(line2 + 1, dest, -num_lines, 0);
 ;           @curbuf.b_op_start.lnum = dest - num_lines + 1;
 ;           @curbuf.b_op_end.lnum = dest;
 ;       }
 ;       else
 ;       {
-;           mark_adjust(dest + 1, line1 - 1, num_lines, 0L);
+;           mark_adjust(dest + 1, line1 - 1, num_lines, 0);
 ;           @curbuf.b_op_start.lnum = dest + 1;
 ;           @curbuf.b_op_end.lnum = dest + num_lines;
 ;       }
 ;       @curbuf.b_op_start.col = @curbuf.b_op_end.col = 0;
-;       mark_adjust(last_line - num_lines + 1, last_line, -(last_line - dest - extra), 0L);
+;       mark_adjust(last_line - num_lines + 1, last_line, -(last_line - dest - extra), 0);
 ;       changed_lines(last_line - num_lines + 1, 0, last_line + 1, -extra);
 
         ;; Now we delete the original text.
@@ -9258,10 +8450,10 @@
 ;           last_line = @curbuf.b_ml.ml_line_count;
 ;           if (dest > last_line + 1)
 ;               dest = last_line + 1;
-;           changed_lines(line1, 0, dest, 0L);
+;           changed_lines(line1, 0, dest, 0);
 ;       }
 ;       else
-;           changed_lines(dest + 1, 0, line1 + num_lines, 0L);
+;           changed_lines(dest + 1, 0, line1 + num_lines, 0);
 
 ;       return true;
     ))
@@ -9318,7 +8510,7 @@
 (defn- #_void ex_fixdel [#_exarg_C _eap]
     (§
 ;       Bytes p = find_termcode(u8("kb"));
-;       add_termcode(u8("kD"), (p != null && p.at(0) == DEL) ? CTRL_H_STR : DEL_STR, FALSE);
+;       add_termcode(u8("kD"), (p != null && p.at(0) == DEL) ? CTRL_H_STR : DEL_STR);
     ))
 
 (defn- #_void print_line_no_prefix [#_long lnum, #_boolean use_number, #_boolean list]
@@ -9327,7 +8519,7 @@
 ;       {
 ;           Bytes numbuf = new Bytes(30);
 
-;           vim_snprintf(numbuf, numbuf.size(), u8("%*ld "), number_width(@curwin), lnum);
+;           vim_snprintf(numbuf, numbuf.size(), u8("%*ld "), number_width(@curwin), lnum);
 ;           msg_puts_attr(numbuf, hl_attr(HLF_N));      ;; Highlight line nrs
 ;       }
 ;       msg_prt_line(ml_get(lnum), list);
@@ -9845,8 +9037,7 @@
                             ;; This reproduces the strange vi behaviour.
                             ;; This also catches endless loops.
 
-;                       if (matchcol == prev_matchcol
-;                                   && regmatch.endpos[0].lnum == 0 && matchcol == regmatch.endpos[0].col)
+;                       if (matchcol == prev_matchcol && regmatch.endpos[0].lnum == 0 && matchcol == regmatch.endpos[0].col)
 ;                       {
 ;                           if (sub_firstline.at(matchcol) == NUL)
                                     ;; We already were at the end of the line.
@@ -10133,9 +9324,9 @@
 ;                               {
 ;                                   p1.be(0, NUL);                  ;; truncate up to the CR
 ;                                   ml_append(lnum - 1, new_start);
-;                                   mark_adjust(lnum + 1, MAXLNUM, 1L, 0L);
+;                                   mark_adjust(lnum + 1, MAXLNUM, 1, 0);
 ;                                   if (@do__ask)
-;                                       appended_lines(lnum - 1, 1L);
+;                                       appended_lines(lnum - 1, 1);
 ;                                   else
 ;                                   {
 ;                                       if (first_line == 0)
@@ -10334,13 +9525,13 @@
 ;           else
 ;               msg_buf.be(0, NUL);
 ;           if (@sub_nsubs == 1)
-;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8("%s"), (count_only) ? u8("1 match") : u8("1 substitution"));
+;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8("%s"), (count_only) ? u8("1 match") : u8("1 substitution"));
 ;           else
-;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, (count_only) ? u8("%ld matches") : u8("%ld substitutions"), @sub_nsubs);
+;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, (count_only) ? u8("%ld matches") : u8("%ld substitutions"), @sub_nsubs);
 ;           if (@sub_nlines == 1)
-;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8("%s"), u8(" on 1 line"));
+;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8("%s"), u8(" on 1 line"));
 ;           else
-;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8(" on %ld lines"), @sub_nlines);
+;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8(" on %ld lines"), @sub_nlines);
 ;           if (msg(msg_buf))
                 ;; save message to display it after redraw
 ;               set_keep_msg(msg_buf, 0);
@@ -10794,7 +9985,7 @@
 ;                                   else
 ;                                       @ccline.cmdpos = @new_cmdpos;
 
-;                                   @keyTyped = false;   ;; Don't do "p_wc" completion.
+;                                   @keyTyped = false;   ;; Don't do 'wildchar' completion.
 ;                                   redrawcmd();
 ;                                   break cmdline_changed;
 ;                               }
@@ -10840,17 +10031,6 @@
 ;                           out_flush();
 ;                       }
 ;                       break;
-;                   }
-
-                    ;; Completion for 'wildchar' or 'wildcharm' key.
-                    ;; - hitting <ESC> twice means: abandon command line.
-                    ;; - wildcard expansion is only done when the 'wildchar' key is really
-                    ;;   typed, not when it comes from a macro
-
-;                   if (c == @p_wc && !gotesc && @keyTyped)
-;                   {
-;                       if (c == ESC)
-;                           gotesc = true;
 ;                   }
 
 ;                   gotesc = false;
@@ -10956,7 +10136,7 @@
 ;                           break;
 ;                       }
 
-;                       case ESC:       ;; get here if p_wc != ESC or when ESC typed twice
+;                       case ESC:       ;; get here when ESC typed twice
 ;                       case Ctrl_C:
 ;                       {
 ;                           gotesc = true;              ;; will free ccline.cmdbuff after putting it in history
@@ -11002,7 +10182,7 @@
 ;                                   gotesc = true;      ;; will free ccline.cmdbuff after putting it in history
 ;                                   break returncmd;    ;; back to cmd mode
 ;                               }
-;                               @keyTyped = false;       ;; Don't do "p_wc" completion.
+;                               @keyTyped = false;       ;; Don't do 'wildchar' completion.
 ;                               if (0 <= @new_cmdpos)
 ;                               {
                                     ;; set_cmdline_pos() was used
@@ -11371,7 +10551,7 @@
 ;                   @emsg_off++;                 ;; so it doesn't beep if bad expr
                     ;; Set the time limit to half a second.
 ;                   timeval_C tm = new timeval_C();
-;                   profile_setlimit(500L, tm);
+;                   profile_setlimit(500, tm);
 ;                   i = do_search(null, (byte)firstc, @ccline.cmdbuff, count,
 ;                           SEARCH_KEEP + SEARCH_OPT + SEARCH_NOOF + SEARCH_PEEK, tm);
 ;                   --@emsg_off;
@@ -11583,7 +10763,7 @@
             ;; When executing a register, remove ':' that's in front of each line.
 ;       if (@exec_from_reg && vpeekc() == ':')
 ;           vgetc();
-;       return getcmdline(':', 1L);
+;       return getcmdline(':', 1);
     ))
 
 ;; Allocate a new command line buffer.
@@ -13636,7 +12816,7 @@
 
 ;                       @curwin.w_cursor.col = (c == '/') ? MAXCOL : 0;
 ;                       @searchcmdlen = 0;
-;                       if (do_search(null, c, cmd, 1L, SEARCH_HIS | SEARCH_MSG, null) == 0)
+;                       if (do_search(null, c, cmd, 1, SEARCH_HIS | SEARCH_MSG, null) == 0)
 ;                       {
 ;                           COPY_pos(@curwin.w_cursor, save_pos);
 ;                           cmd = null;
@@ -13683,7 +12863,7 @@
 
 ;                       pos.col = (cmd.at(0) != (byte)'?') ? MAXCOL : 0;
 
-;                       if (searchit(@curwin, @curbuf, pos, (cmd.at(0) == (byte)'?') ? BACKWARD : FORWARD, u8(""), 1L, SEARCH_MSG, i, 0, null) != 0)
+;                       if (searchit(@curwin, @curbuf, pos, (cmd.at(0) == (byte)'?') ? BACKWARD : FORWARD, u8(""), 1, SEARCH_MSG, i, 0, null) != 0)
 ;                           lnum = pos.lnum;
 ;                       else
 ;                       {
@@ -14090,9 +13270,9 @@
     (§
 ;       cursor_on();
 ;       out_flush();
-;       for (long done = 0; !@got_int && done < msec; done += 1000L)
+;       for (long done = 0; !@got_int && done < msec; done += 1000)
 ;       {
-;           ui_delay(1000L < msec - done ? 1000L : msec - done, true);
+;           ui_delay(1000 < msec - done ? 1000 : msec - done, true);
 ;           ui_breakcheck();
 ;       }
     ))
@@ -14138,7 +13318,7 @@
 ;       {
                 ;; Pass flags on for ":vertical wincmd ]".
 ;           @postponed_split_flags = @cmdmod.split;
-;           do_window(eap.arg.at(0), (0 < eap.addr_count) ? eap.line2 : 0L, xchar);
+;           do_window(eap.arg.at(0), (0 < eap.addr_count) ? eap.line2 : 0, xchar);
 ;           @postponed_split_flags = 0;
 ;       }
     ))
@@ -14283,7 +13463,7 @@
 (defn- #_void ex_undo [#_exarg_C eap]
     (§
 ;       if (eap.addr_count == 1)    ;; :undo 123
-;           undo_time(eap.line2, false, false, true);
+;           undo_time(eap.line2, false, true);
 ;       else
 ;           u_undo(1);
     ))
@@ -14301,7 +13481,6 @@
     (§
 ;       long count = 0;
 ;       boolean sec = false;
-;       boolean file = false;
 ;       Bytes p = eap.arg;
 
 ;       if (p.at(0) == NUL)
@@ -14315,14 +13494,13 @@
 ;               case 'm': p = p.plus(1); sec = true; count *= 60; break;
 ;               case 'h': p = p.plus(1); sec = true; count *= 60 * 60; break;
 ;               case 'd': p = p.plus(1); sec = true; count *= 24 * 60 * 60; break;
-;               case 'f': p = p.plus(1); file = true; break;
 ;           }
 ;       }
 
 ;       if (p.at(0) != NUL)
 ;           emsg2(e_invarg2, eap.arg);
 ;       else
-;           undo_time(eap.cmdidx == CMD_earlier ? -count : count, sec, file, false);
+;           undo_time((eap.cmdidx == CMD_earlier) ? -count : count, sec, false);
     ))
 
 ;; ":redraw": force redraw
@@ -14606,8 +13784,8 @@
 ;           libC._gettimeofday(tm);
 
 ;           long usec = tm.tv_usec() + msec * 1000;
-;           tm.tv_usec(usec % 1000000L);
-;           tm.tv_sec(tm.tv_sec() + usec / 1000000L);
+;           tm.tv_usec(usec % 1000000);
+;           tm.tv_sec(tm.tv_sec() + usec / 1000000);
 ;       }
     ))
 
@@ -14810,7 +13988,7 @@
 ;                   else
 ;                       ca.count0 = ca.count0 * 10 + (c - '0');
 ;                   if (ca.count0 < 0)          ;; got too large!
-;                       ca.count0 = 999999999L;
+;                       ca.count0 = 999999999;
 
 ;                   if (ctrl_w)
 ;                   {
@@ -15038,10 +14216,10 @@
 
                         ;; There is a busy wait here when typing "f<C-\>" and then
                         ;; something different from CTRL-N.  Can't be avoided.
-;                       while ((c = vpeekc()) <= 0 && 0L < towait)
+;                       while ((c = vpeekc()) <= 0 && 0 < towait)
 ;                       {
-;                           do_sleep(50L < towait ? 50L : towait);
-;                           towait -= 50L;
+;                           do_sleep(50 < towait ? 50 : towait);
+;                           towait -= 50;
 ;                       }
 ;                       if (0 < c)
 ;                       {
@@ -15199,8 +14377,8 @@
 ;               cursor_on();
 ;               out_flush();
 ;               if (@msg_scroll || @emsg_on_display)
-;                   ui_delay(1000L, true);      ;; wait at least one second
-;               ui_delay(3000L, false);         ;; wait up to three seconds
+;                   ui_delay(1000, true);      ;; wait at least one second
+;               ui_delay(3000, false);         ;; wait up to three seconds
 ;               @State = save_State;
 
 ;               @msg_scroll = false;
@@ -15260,7 +14438,7 @@
 ;               @restart_VIsual_select = 0;
 ;           }
 ;           if (@restart_edit != 0 && !@VIsual_active && @old_mapped_len == 0)
-;               edit(@restart_edit, false, 1L);
+;               edit(@restart_edit, false, 1);
 ;       }
 
 ;       if (@restart_VIsual_select == 2)
@@ -15557,7 +14735,7 @@
 ;                               get_op_char(oap.op_type), get_extra_op_char(oap.op_type),
 ;                               oap.motion_force, cap.cmdchar, cap.@nchar);
 ;                   else if (cap.cmdchar != ':')
-;                       prep_redo(oap.regname, 0L, NUL, 'v',
+;                       prep_redo(oap.regname, 0, NUL, 'v',
 ;                                           get_op_char(oap.op_type),
 ;                                           get_extra_op_char(oap.op_type),
 ;                                           oap.op_type == OP_REPLACE ? cap.@nchar : NUL);
@@ -16438,7 +15616,7 @@
                 ;; need to jump so that the current window's relative position is
                 ;; visible on-screen.
 
-;               check_scrollbind(@curwin.w_topline - @curwin.w_scbind_pos, 0L);
+;               check_scrollbind(@curwin.w_topline - @curwin.w_scbind_pos, 0);
 ;           }
 ;           @curwin.w_scbind_pos = @curwin.w_topline;
 ;       }
@@ -16727,12 +15905,12 @@
 ;           {
 ;               if (up)
 ;               {
-;                   if (prev_lnum < @curwin.w_cursor.lnum || cursor_down(1L, false) == false)
+;                   if (prev_lnum < @curwin.w_cursor.lnum || cursor_down(1, false) == false)
 ;                       break;
 ;               }
 ;               else
 ;               {
-;                   if (@curwin.w_cursor.lnum < prev_lnum || prev_topline == 1L || cursor_up(1L, false) == false)
+;                   if (@curwin.w_cursor.lnum < prev_lnum || prev_topline == 1 || cursor_up(1, false) == false)
 ;                       break;
 ;               }
                 ;; Mark w_topline as valid, otherwise the screen jumps back at the end of the file.
@@ -17916,9 +17094,9 @@
                     ;; Round up, so CTRL-G will give same value.
                     ;; Watch out for a large line count, the line number must not go negative!
 ;               if (1000000 < @curbuf.b_ml.ml_line_count)
-;                   @curwin.w_cursor.lnum = (@curbuf.b_ml.ml_line_count + 99L) / 100L * cap.count0;
+;                   @curwin.w_cursor.lnum = (@curbuf.b_ml.ml_line_count + 99) / 100 * cap.count0;
 ;               else
-;                   @curwin.w_cursor.lnum = (@curbuf.b_ml.ml_line_count * cap.count0 + 99L) / 100L;
+;                   @curwin.w_cursor.lnum = (@curbuf.b_ml.ml_line_count * cap.count0 + 99) / 100;
 ;               if (@curwin.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
 ;                   @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
 ;               beginline(BL_SOL | BL_FIX);
@@ -18306,7 +17484,7 @@
 
 ;       if (did_change)
 ;       {
-;           changed_lines(startpos.lnum, startpos.col, @curwin.w_cursor.lnum + 1, 0L);
+;           changed_lines(startpos.lnum, startpos.col, @curwin.w_cursor.lnum + 1, 0);
 ;           COPY_pos(@curbuf.b_op_start, startpos);
 ;           COPY_pos(@curbuf.b_op_end, @curwin.w_cursor);
 ;           if (0 < @curbuf.b_op_end.col)
@@ -19030,7 +18208,7 @@
                 ;; "gs": Goto sleep.
 
 ;           case 's':
-;               do_sleep(cap.count1 * 1000L);
+;               do_sleep(cap.count1 * 1000);
 ;               break;
 
                 ;; "ga": Display the ascii value of the character under the cursor.
@@ -19135,7 +18313,7 @@
 ;           case '+':
 ;           case '-':
 ;               if (!checkclearopq(oap))
-;                   undo_time(cap.@nchar == '-' ? -cap.count1 : cap.count1, false, false, false);
+;                   undo_time(cap.@nchar == '-' ? -cap.count1 : cap.count1, false, false);
 ;               break;
 
 ;           default:
@@ -19248,7 +18426,7 @@
 (defn- #_void nv_lineop [#_cmdarg_C cap]
     (§
 ;       cap.oap.motion_type = MLINE;
-;       if (cursor_down(cap.count1 - 1L, cap.oap.op_type == OP_NOP) == false)
+;       if (cursor_down(cap.count1 - 1, cap.oap.op_type == OP_NOP) == false)
 ;           clearopbeep(cap.oap);
 ;       else if (  (cap.oap.op_type == OP_DELETE    ;; only with linewise motions
 ;                   && cap.oap.motion_force != 'v'
@@ -19477,7 +18655,7 @@
 ;       if (cap.arg != 0)
 ;           lnum = @curbuf.b_ml.ml_line_count;
 ;       else
-;           lnum = 1L;
+;           lnum = 1;
 
 ;       cap.oap.motion_type = MLINE;
 ;       setpcmark();
@@ -19485,8 +18663,8 @@
             ;; When a count is given, use it instead of the default lnum.
 ;       if (cap.count0 != 0)
 ;           lnum = cap.count0;
-;       if (lnum < 1L)
-;           lnum = 1L;
+;       if (lnum < 1)
+;           lnum = 1;
 ;       else if (@curbuf.b_ml.ml_line_count < lnum)
 ;           lnum = @curbuf.b_ml.ml_line_count;
 ;       @curwin.w_cursor.lnum = lnum;
@@ -20266,7 +19444,7 @@
 ;           }
 ;       }
 
-;       changed_lines(oap.op_start.lnum, 0, oap.op_end.lnum + 1, 0L);
+;       changed_lines(oap.op_start.lnum, 0, oap.op_end.lnum + 1, 0);
 
 ;       if (oap.block_mode)
 ;       {
@@ -20604,7 +19782,7 @@
 ;           }
 ;       }
 
-;       changed_lines(oap.op_start.lnum + 1, 0, oap.op_end.lnum + 1, 0L);
+;       changed_lines(oap.op_start.lnum + 1, 0, oap.op_end.lnum + 1, 0);
 
 ;       @State = oldstate;
     ))
@@ -20651,7 +19829,7 @@
         ;; When Visual highlighting was present, need to continue until the last line.
         ;; When there is no change still need to remove the Visual highlighting.
 ;       if (last_changed != 0)
-;           changed_lines(first_changed, 0, oap.is_VIsual ? start_lnum + oap.line_count : last_changed + 1, 0L);
+;           changed_lines(first_changed, 0, oap.is_VIsual ? start_lnum + oap.line_count : last_changed + 1, 0);
 ;       else if (oap.is_VIsual)
 ;           redraw_curbuf_later(INVERTED);
 
@@ -20677,7 +19855,7 @@
 
 (defn- #_int get_expr_register []
     (§
-;       Bytes new_line = getcmdline('=', 0L);
+;       Bytes new_line = getcmdline('=', 0);
 ;       if (new_line == null)
 ;           return NUL;
 
@@ -21098,7 +20276,7 @@
 ;       boolean[] allocated = new boolean[1];
 
 ;       if (regname == '.')                 ;; insert last inserted text
-;           retval = stuff_inserted(NUL, 1L, true);
+;           retval = stuff_inserted(NUL, 1, true);
 ;       else if (get_spec_reg(regname, arg, allocated, true))
 ;       {
 ;           if (arg[0] == null)
@@ -21439,7 +20617,7 @@
 ;               }
 
 ;               check_cursor_col();
-;               changed_lines(@curwin.w_cursor.lnum, @curwin.w_cursor.col, oap.op_end.lnum + 1, 0L);
+;               changed_lines(@curwin.w_cursor.lnum, @curwin.w_cursor.col, oap.op_end.lnum + 1, 0);
 ;               oap.line_count = 0;     ;; no lines deleted
 ;           }
 ;           else if (oap.motion_type == MLINE)
@@ -21556,7 +20734,7 @@
 ;                           && STRLEN(ml_get(oap.op_end.lnum)) < n)
 ;                   {
                         ;; Special case: gH<Del> deletes the last line.
-;                       del_lines(1L, false);
+;                       del_lines(1, false);
 ;                   }
 ;                   else
 ;                   {
@@ -21585,7 +20763,7 @@
 ;                   if (oap.inclusive && delete_last_line && STRLEN(ml_get(oap.op_end.lnum)) < n)
 ;                   {
                         ;; Special case: gH<Del> deletes the last line.
-;                       del_lines(1L, false);
+;                       del_lines(1, false);
 ;                       COPY_pos(@curwin.w_cursor, curpos);
 ;                       if (@curwin.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
 ;                           @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
@@ -21742,7 +20920,7 @@
 ;               if (after_p != null)
 ;               {
 ;                   ml_append(@curwin.w_cursor.lnum++, after_p);
-;                   appended_lines_mark(@curwin.w_cursor.lnum, 1L);
+;                   appended_lines_mark(@curwin.w_cursor.lnum, 1);
 ;                   oap.op_end.lnum++;
 ;               }
 ;           }
@@ -21826,7 +21004,7 @@
 
 ;       COPY_pos(@curwin.w_cursor, oap.op_start);
 ;       check_cursor();
-;       changed_lines(oap.op_start.lnum, oap.op_start.col, oap.op_end.lnum + 1, 0L);
+;       changed_lines(oap.op_start.lnum, oap.op_start.col, oap.op_end.lnum + 1, 0);
 
         ;; Set "'[" and "']" marks.
 ;       COPY_pos(@curbuf.b_op_start, oap.op_start);
@@ -21858,7 +21036,7 @@
 ;               did_change |= one_change;
 ;           }
 ;           if (did_change)
-;               changed_lines(oap.op_start.lnum, 0, oap.op_end.lnum + 1, 0L);
+;               changed_lines(oap.op_start.lnum, 0, oap.op_end.lnum + 1, 0);
 ;       }
 ;       else                                    ;; not block mode
 ;       {
@@ -21886,7 +21064,7 @@
 
 ;           if (did_change)
 ;           {
-;               changed_lines(oap.op_start.lnum, oap.op_start.col, oap.op_end.lnum + 1, 0L);
+;               changed_lines(oap.op_start.lnum, oap.op_start.col, oap.op_end.lnum + 1, 0);
 ;           }
 ;       }
 
@@ -22249,7 +21427,7 @@
 ;               }
 ;               check_cursor();
 
-;               changed_lines(oap.op_start.lnum + 1, 0, oap.op_end.lnum + 1, 0L);
+;               changed_lines(oap.op_start.lnum + 1, 0, oap.op_end.lnum + 1, 0);
 ;           }
 ;       }
 
@@ -23034,7 +22212,7 @@
 ;                       if (dir == FORWARD)
 ;                           @curbuf.b_op_start.lnum++;
 ;                   }
-;                   mark_adjust(@curbuf.b_op_start.lnum + (y_type == MCHAR ? 1 : 0), MAXLNUM, nr_lines, 0L);
+;                   mark_adjust(@curbuf.b_op_start.lnum + (y_type == MCHAR ? 1 : 0), MAXLNUM, nr_lines, 0);
 
                     ;; note changed text for displaying and folding
 ;                   if (y_type == MCHAR)
@@ -23387,7 +22565,7 @@
 
         ;; Only report the change in the first line here,
         ;; del_lines() will report the deleted line.
-;       changed_lines(@curwin.w_cursor.lnum, currsize, @curwin.w_cursor.lnum + 1, 0L);
+;       changed_lines(@curwin.w_cursor.lnum, currsize, @curwin.w_cursor.lnum + 1, 0);
 
         ;; Delete following lines.  To do this we move the cursor there
         ;; briefly, and then move it back.  After del_lines() the cursor may
@@ -23990,19 +23168,19 @@
 ;                   min_pos.col = _1[0];
 ;                   max_pos.col = _2[0];
 ;               }
-;               vim_snprintf(buf1, buf1.size(), u8("%ld Cols; "), oparg.end_vcol - oparg.start_vcol + 1);
+;               vim_snprintf(buf1, buf1.size(), u8("%ld Cols; "), oparg.end_vcol - oparg.start_vcol + 1);
 ;           }
 ;           else
 ;               buf1.be(0, NUL);
 
 ;           if (char_count_cursor[0] == byte_count_cursor && char_count[0] == byte_count)
-;               vim_snprintf(@ioBuff, IOSIZE,
+;               vim_snprintf(@ioBuff, IOSIZE,
 ;                       u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"),
 ;                       buf1, line_count_selected, @curbuf.b_ml.ml_line_count,
 ;                       word_count_cursor[0], word_count[0],
 ;                       byte_count_cursor, byte_count);
 ;           else
-;               vim_snprintf(@ioBuff, IOSIZE,
+;               vim_snprintf(@ioBuff, IOSIZE,
 ;                       u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"),
 ;                       buf1, line_count_selected, @curbuf.b_ml.ml_line_count,
 ;                       word_count_cursor[0], word_count[0],
@@ -24017,14 +23195,14 @@
 ;           col_print(buf2, buf2.size(), STRLEN(p), linetabsize(p));
 
 ;           if (char_count_cursor[0] == byte_count_cursor && char_count[0] == byte_count)
-;               vim_snprintf(@ioBuff, IOSIZE,
+;               vim_snprintf(@ioBuff, IOSIZE,
 ;                   u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"),
 ;                   buf1, buf2,
 ;                   @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count,
 ;                   word_count_cursor[0], word_count[0],
 ;                   byte_count_cursor, byte_count);
 ;           else
-;               vim_snprintf(@ioBuff, IOSIZE,
+;               vim_snprintf(@ioBuff, IOSIZE,
 ;                   u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"),
 ;                   buf1, buf2,
 ;                   @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count,
@@ -24272,7 +23450,7 @@
 ;           @listcmd_busy = true;                    ;; avoid that '' is changed
 ;           oparg_C oa = §_oparg_C();
 ;           boolean b;
-;           { boolean[] __ = { oa.inclusive }; b = findpar(__, (c == '}') ? FORWARD : BACKWARD, 1L, NUL, false); oa.inclusive = __[0]; }
+;           { boolean[] __ = { oa.inclusive }; b = findpar(__, (c == '}') ? FORWARD : BACKWARD, 1, NUL, false); oa.inclusive = __[0]; }
 ;           if (b)
 ;           {
 ;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
@@ -24288,7 +23466,7 @@
 ;           pos_C pos = §_pos_C();
 ;           COPY_pos(pos, @curwin.w_cursor);
 ;           @listcmd_busy = true;                    ;; avoid that '' is changed
-;           if (findsent(c == ')' ? FORWARD : BACKWARD, 1L))
+;           if (findsent(c == ')' ? FORWARD : BACKWARD, 1))
 ;           {
 ;               COPY_pos(@_1_pos_copy, @curwin.w_cursor);
 ;               posp = @_1_pos_copy;
@@ -24713,7 +23891,7 @@
 
 (defn- #_void mark_adjust [#_long line1, #_long line2, #_long amount, #_long amount_after]
     (§
-;       if (line2 < line1 && amount_after == 0L)                ;; nothing to do
+;       if (line2 < line1 && amount_after == 0)                ;; nothing to do
 ;           return;
 
 ;       if (!@cmdmod.lockmarks)
@@ -24831,7 +24009,7 @@
 
 (defn- #_void mark_col_adjust [#_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
     (§
-;       if ((col_amount == 0L && lnum_amount == 0L) || @cmdmod.lockmarks)
+;       if ((col_amount == 0 && lnum_amount == 0) || @cmdmod.lockmarks)
 ;           return; ;; nothing to do
 
         ;; named marks, lower case and upper case
@@ -25144,7 +24322,7 @@
 ;       Bytes number = new Bytes(32);
 
 ;       libC.sprintf(number, u8("%ld"), n);
-;       add_buff(buf, number, -1L);
+;       add_buff(buf, number, -1);
     ))
 
 ;; Add character 'c' to buffer "buf".
@@ -25177,7 +24355,7 @@
 ;               temp.be(1, NUL);
 ;           }
 
-;           add_buff(buf, temp, -1L);
+;           add_buff(buf, temp, -1);
 ;       }
     ))
 
@@ -25269,7 +24447,7 @@
             ;; We have to get all characters, because we may delete the first part of an escape sequence.
             ;; In an xterm we get one char at a time and we have to get them all.
 
-;           while (inchar(@typebuf.tb_buf, @typebuf.tb_buflen - 1, 10L, @typebuf.tb_change_cnt) != 0)
+;           while (inchar(@typebuf.tb_buf, @typebuf.tb_buflen - 1, 10, @typebuf.tb_change_cnt) != 0)
             ;
 ;           @typebuf.tb_off = MAXMAPLEN;
 ;           @typebuf.tb_len = 0;
@@ -25319,7 +24497,7 @@
 (defn- #_void appendToRedobuff [#_Bytes s]
     (§
 ;       if (!@block_redo)
-;           add_buff(@redobuff, s, -1L);
+;           add_buff(@redobuff, s, -1);
     ))
 
 ;; Append to Redo buffer literally, escaping special characters with CTRL-V.
@@ -25355,7 +24533,7 @@
 
             ;; CTRL-V '0' must be inserted as CTRL-V 048
 ;           if (s[0].at(0) == NUL && c == '0')
-;               add_buff(@redobuff, u8("048"), 3L);
+;               add_buff(@redobuff, u8("048"), 3);
 ;           else
 ;               add_char_buff(@redobuff, c);
 ;       }
@@ -25383,7 +24561,7 @@
 
 (defn- #_void stuffReadbuff [#_Bytes s]
     (§
-;       add_buff(@readbuf1, s, -1L);
+;       add_buff(@readbuf1, s, -1);
     ))
 
 ;; Append string "s" to the redo stuff buffer.
@@ -25391,7 +24569,7 @@
 
 (defn- #_void stuffRedoReadbuff [#_Bytes s]
     (§
-;       add_buff(@readbuf2, s, -1L);
+;       add_buff(@readbuf2, s, -1);
     ))
 
 (defn- #_void stuffReadbuffLen [#_Bytes s, #_long len]
@@ -25505,7 +24683,7 @@
         ;; copy the buffer name, if present
 ;       if (c == '"')
 ;       {
-;           add_buff(@readbuf2, u8("\""), 1L);
+;           add_buff(@readbuf2, u8("\""), 1);
 ;           c = read_redo();
 
             ;; if a numbered buffer is used, increment the number
@@ -25557,7 +24735,7 @@
 ;           if (vim_strchr(u8("AaIiRrOo"), c) != null)
 ;           {
 ;               if (c == 'O' || c == 'o')
-;                   add_buff(@readbuf2, NL_STR, -1L);
+;                   add_buff(@readbuf2, NL_STR, -1);
 ;               break;
 ;           }
 ;       }
@@ -25830,7 +25008,7 @@
 ;           if (@Recording)
 ;           {
 ;               buf.be(0, c);
-;               add_buff(@recordbuff, buf, 1L);
+;               add_buff(@recordbuff, buf, 1);
 ;           }
 ;       }
 ;       may_sync_undo();
@@ -26262,7 +25440,7 @@
 ;                   if (@got_int)
 ;                   {
                         ;; flush all input
-;                       int len = inchar(@typebuf.tb_buf, @typebuf.tb_buflen - 1, 0L, @typebuf.tb_change_cnt);
+;                       int len = inchar(@typebuf.tb_buf, @typebuf.tb_buflen - 1, 0, @typebuf.tb_change_cnt);
 
                         ;; If inchar() returns true (script file was active)
                         ;; or we are inside a mapping, get out of insert mode.
@@ -26636,8 +25814,7 @@
 ;                           && @typebuf.tb_maplen == 0
 ;                           && (@State & INSERT) != 0
 ;                           && (@p_timeout || (keylen == KEYLEN_PART_KEY && @p_ttimeout))
-;                           && (len = inchar(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len), 3, 25L,
-;                                                                                   @typebuf.tb_change_cnt)) == 0)
+;                           && (len = inchar(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len), 3, 25, @typebuf.tb_change_cnt)) == 0)
 ;                   {
 ;                       if (@mode_displayed)
 ;                       {
@@ -26809,7 +25986,7 @@
 ;                               ? 0
 ;                               : ((@typebuf.tb_len == 0
 ;                                       || !(@p_timeout || (@p_ttimeout && keylen == KEYLEN_PART_KEY)))
-;                                       ? -1L
+;                                       ? -1
 ;                                       : ((keylen == KEYLEN_PART_KEY && 0 <= @p_ttm)
 ;                                               ? @p_ttm
 ;                                               : @p_tm)), @typebuf.tb_change_cnt);
@@ -26901,7 +26078,7 @@
 (defn- #_int inchar [#_Bytes buf, #_int maxlen, #_long wait_time, #_int tb_change_cnt]
     ;; wait_time: milli seconds
     (§
-;       if (wait_time == -1L || 100L < wait_time)   ;; flush output before waiting
+;       if (wait_time == -1 || 100 < wait_time)   ;; flush output before waiting
 ;       {
 ;           cursor_on();
 ;           out_flush();
@@ -26926,7 +26103,7 @@
 
 ;           for ( ; ; )
 ;           {
-;               len = ui_inchar(dum, DUM_LEN, 0L, 0);
+;               len = ui_inchar(dum, DUM_LEN, 0, 0);
 ;               if (len == 0 || (len == 1 && dum.at(0) == 3))
 ;                   break;
 ;           }
@@ -26944,29 +26121,26 @@
 ;       if (typebuf_changed(tb_change_cnt))
 ;           return 0;
 
-;       return fix_input_buffer(buf, len, false);
+;       return fix_input_buffer(buf, len);
     ))
 
 ;; Fix typed characters for use by vgetc() and check_termcode().
 ;; buf[] must have room to triple the number of bytes!
 ;; Returns the new length.
 
-(defn- #_int fix_input_buffer [#_Bytes buf, #_int len, #_boolean script]
-    ;; script: true when reading from a script
+(defn- #_int fix_input_buffer [#_Bytes buf, #_int len]
     (§
         ;; Two characters are special: NUL and KB_SPECIAL.
         ;; When compiled With the GUI CSI is also special.
         ;; Replace        NUL by KB_SPECIAL KS_ZERO    KE_FILLER
         ;; Replace KB_SPECIAL by KB_SPECIAL KS_SPECIAL KE_FILLER
         ;; Replace        CSI by KB_SPECIAL KS_EXTRA   KE_CSI
-        ;; Don't replace KB_SPECIAL when reading a script file.
 
 ;       Bytes p = buf;
 ;       for (int i = len; 0 <= --i; p = p.plus(1))
 ;       {
-;           if (p.at(0) == NUL || (p.at(0) == KB_SPECIAL && !script
-                    ;; timeout may generate K_CURSORHOLD
-;                   && (i < 2 || p.at(1) != KS_EXTRA || p.at(2) != KE_CURSORHOLD)))
+            ;; timeout may generate K_CURSORHOLD
+;           if (p.at(0) == NUL || (p.at(0) == KB_SPECIAL && (i < 2 || p.at(1) != KS_EXTRA || p.at(2) != KE_CURSORHOLD)))
 ;           {
 ;               BCOPY(p, 3, p, 1, i);
 ;               p.be(2, KB_THIRD(char_u(p.at(0))));
@@ -28449,7 +27623,7 @@
 ;                       case NUL:
 ;                       case Ctrl_A:
                             ;; For ^@ the trailing ESC will end the insert, unless there is an error.
-;                           if (!stuff_inserted(NUL, 1L, (c == Ctrl_A)) && c != Ctrl_A && !@p_im)
+;                           if (!stuff_inserted(NUL, 1, (c == Ctrl_A)) && c != Ctrl_A && !@p_im)
 ;                               break doESCkey;             ;; quit insert mode
 ;                           inserted_space[0] = false;
 ;                           break normalchar;
@@ -29382,7 +28556,7 @@
         ;; Only digits need special treatment.  Translate them into a string of three digits.
 ;       if (asc_isdigit(c))
 ;       {
-;           vim_snprintf(buf, buf.size(), u8("%03d"), c);
+;           vim_snprintf(buf, buf.size(), u8("%03d"), c);
 ;           appendToRedobuff(buf);
 ;       }
 ;       else
@@ -29590,8 +28764,7 @@
 
 ;           if ((flags & (BL_WHITE | BL_SOL)) != 0)
 ;           {
-;               for (Bytes ptr = ml_get_curline(); vim_iswhite(ptr.at(0))
-;                                  && !((flags & BL_FIX) != 0 && ptr.at(1) == NUL); ptr = ptr.plus(1))
+;               for (Bytes ptr = ml_get_curline(); vim_iswhite(ptr.at(0)) && !((flags & BL_FIX) != 0 && ptr.at(1) == NUL); ptr = ptr.plus(1))
 ;                   @curwin.w_cursor.col++;
 ;           }
 ;           @curwin.w_set_curswant = true;
@@ -30759,7 +29932,7 @@
 ;       if (1 < @curwin.w_cursor.lnum || 0 < @curwin.w_cursor.col)
 ;       {
 ;           start_arrow(@curwin.w_cursor);
-;           bck_word(1L, false, false);
+;           bck_word(1, false, false);
 ;           @curwin.w_set_curswant = true;
 ;       }
 ;       else
@@ -30798,7 +29971,7 @@
 ;       if (@curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count || gchar_cursor() != NUL)
 ;       {
 ;           start_arrow(@curwin.w_cursor);
-;           fwd_word(1L, false, false);
+;           fwd_word(1, false, false);
 ;           @curwin.w_set_curswant = true;
 ;       }
 ;       else
@@ -30815,7 +29988,7 @@
 ;       pos_C tpos = §_pos_C();
 ;       COPY_pos(tpos, @curwin.w_cursor);
 
-;       if (cursor_up(1L, true) == true)
+;       if (cursor_up(1, true) == true)
 ;       {
 ;           if (startcol)
 ;               coladvance(getvcol_nolist(@insStart));
@@ -30837,7 +30010,7 @@
 ;           pos_C tpos = §_pos_C();
 ;           COPY_pos(tpos, @curwin.w_cursor);
 
-;           if (onepage(BACKWARD, 1L) == true)
+;           if (onepage(BACKWARD, 1) == true)
 ;           {
 ;               start_arrow(tpos);
 ;               @can_cindent = true;
@@ -30857,7 +30030,7 @@
 ;       pos_C tpos = §_pos_C();
 ;       COPY_pos(tpos, @curwin.w_cursor);
 
-;       if (cursor_down(1L, true) == true)
+;       if (cursor_down(1, true) == true)
 ;       {
 ;           if (startcol)
 ;               coladvance(getvcol_nolist(@insStart));
@@ -30879,7 +30052,7 @@
 ;           pos_C tpos = §_pos_C();
 ;           COPY_pos(tpos, @curwin.w_cursor);
 
-;           if (onepage(FORWARD, 1L) == true)
+;           if (onepage(FORWARD, 1) == true)
 ;           {
 ;               start_arrow(tpos);
 ;               @can_cindent = true;
@@ -31636,7 +30809,7 @@
 ;       return p.at(7);
     ))
 
-(final long MAX_LIMIT       (<< 32767#_L 16#_L))
+(final long MAX_LIMIT       (<< 32767 16))
 
 (final Bytes e_missingbracket  (u8 "E769: Missing ] after %s["))
 (final Bytes e_unmatchedpp     (u8 "E53: Unmatched %s%%("))
@@ -32991,46 +32164,46 @@
 ;           switch (peekchr())
 ;           {
 ;               case NUL:
-;               case -132: // case Magic('|'):
-;               case -218: // case Magic('&'):
-;               case -215: // case Magic(')'):
+;               case Magic('|'):
+;               case Magic('&'):
+;               case Magic(')'):
 ;                   cont = false;
 ;                   break;
 
-;               case -166: // case Magic('Z'):
+;               case Magic('Z'):
 ;                   @regflags |= RF_ICOMBINE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -157: // case Magic('c'):
+;               case Magic('c'):
 ;                   @regflags |= RF_ICASE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -189: // case Magic('C'):
+;               case Magic('C'):
 ;                   @regflags |= RF_NOICASE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -138: // case Magic('v'):
+;               case Magic('v'):
 ;                   @reg_magic = MAGIC_ALL;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -147: // case Magic('m'):
+;               case Magic('m'):
 ;                   @reg_magic = MAGIC_ON;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -179: // case Magic('M'):
+;               case Magic('M'):
 ;                   @reg_magic = MAGIC_OFF;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -170: // case Magic('V'):
+;               case Magic('V'):
 ;                   @reg_magic = MAGIC_NONE;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
@@ -33089,7 +32262,7 @@
 ;       skipchr();
 ;       switch (op)
 ;       {
-;           case -214: // case Magic('*'):
+;           case Magic('*'):
 ;           {
 ;               if ((flags[0] & SIMPLE) != 0)
 ;                   reginsert(STAR, ret);
@@ -33105,7 +32278,7 @@
 ;               break;
 ;           }
 
-;           case -213: // case Magic('+'):
+;           case Magic('+'):
 ;           {
 ;               if ((flags[0] & SIMPLE) != 0)
 ;                   reginsert(PLUS, ret);
@@ -33122,7 +32295,7 @@
 ;               break;
 ;           }
 
-;           case -192: // case Magic('@'):
+;           case Magic('@'):
 ;           {
 ;               int lop = END;
 ;               int nr = getdecchrs();
@@ -33163,8 +32336,8 @@
 ;               break;
 ;           }
 
-;           case -193: // case Magic('?'):
-;           case -195: // case Magic('='):
+;           case Magic('?'):
+;           case Magic('='):
 ;           {
                 ;; Emit x= as (x|).
 ;               reginsert(BRANCH, ret);                 ;; Either x
@@ -33175,7 +32348,7 @@
 ;               break;
 ;           }
 
-;           case -133: // case Magic('{'):
+;           case Magic('{'):
 ;           {
 ;               long[] minval = new long[1];
 ;               long[] maxval = new long[1];
@@ -33263,24 +32436,24 @@
 ;       {
 ;           switch (c)
 ;           {
-;               case -162: // case Magic('^'):
+;               case Magic('^'):
 ;                   ret = regnode(BOL);
 ;                   break;
 
-;               case -220: // case Magic('$'):
+;               case Magic('$'):
 ;                   ret = regnode(EOL);
 ;                   @had_eol = true;
 ;                   break;
 
-;               case -196: // case Magic('<'):
+;               case Magic('<'):
 ;                   ret = regnode(BOW);
 ;                   break;
 
-;               case -194: // case Magic('>'):
+;               case Magic('>'):
 ;                   ret = regnode(EOW);
 ;                   break;
 
-;               case -161: // case Magic('_'):
+;               case Magic('_'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   if (c == '^')           ;; "\_^" is start-of-line
@@ -33308,33 +32481,33 @@
 
                 ;; Character classes.
 
-;               case -210: // case Magic('.'):
-;               case -151: // case Magic('i'):
-;               case -183: // case Magic('I'):
-;               case -149: // case Magic('k'):
-;               case -181: // case Magic('K'):
-;               case -154: // case Magic('f'):
-;               case -186: // case Magic('F'):
-;               case -144: // case Magic('p'):
-;               case -176: // case Magic('P'):
-;               case -141: // case Magic('s'):
-;               case -173: // case Magic('S'):
-;               case -156: // case Magic('d'):
-;               case -188: // case Magic('D'):
-;               case -136: // case Magic('x'):
-;               case -168: // case Magic('X'):
-;               case -145: // case Magic('o'):
-;               case -177: // case Magic('O'):
-;               case -137: // case Magic('w'):
-;               case -169: // case Magic('W'):
-;               case -152: // case Magic('h'):
-;               case -184: // case Magic('H'):
-;               case -159: // case Magic('a'):
-;               case -191: // case Magic('A'):
-;               case -148: // case Magic('l'):
-;               case -180: // case Magic('L'):
-;               case -139: // case Magic('u'):
-;               case -171: // case Magic('U'):
+;               case Magic('.'):
+;               case Magic('i'):
+;               case Magic('I'):
+;               case Magic('k'):
+;               case Magic('K'):
+;               case Magic('f'):
+;               case Magic('F'):
+;               case Magic('p'):
+;               case Magic('P'):
+;               case Magic('s'):
+;               case Magic('S'):
+;               case Magic('d'):
+;               case Magic('D'):
+;               case Magic('x'):
+;               case Magic('X'):
+;               case Magic('o'):
+;               case Magic('O'):
+;               case Magic('w'):
+;               case Magic('W'):
+;               case Magic('h'):
+;               case Magic('H'):
+;               case Magic('a'):
+;               case Magic('A'):
+;               case Magic('l'):
+;               case Magic('L'):
+;               case Magic('u'):
+;               case Magic('U'):
 ;               {
 ;                   Bytes p = vim_strchr(classchars, no_Magic(c));
 ;                   if (p == null)
@@ -33358,7 +32531,7 @@
 ;                   break;
 ;               }
 
-;               case -146: // case Magic('n'):
+;               case Magic('n'):
 ;               {
 ;                   if (@reg_string)
 ;                   {
@@ -33377,7 +32550,7 @@
 ;                   break;
 ;               }
 
-;               case -216: // case Magic('('):
+;               case Magic('('):
 ;               {
 ;                   if (@one_exactly)
 ;                   {
@@ -33394,9 +32567,9 @@
 ;               }
 
 ;               case NUL:
-;               case -132: // case Magic('|'):
-;               case -218: // case Magic('&'):
-;               case -215: // case Magic(')'):
+;               case Magic('|'):
+;               case Magic('&'):
+;               case Magic(')'):
 ;               {
 ;                   if (@one_exactly)
 ;                       emsg2(u8("E369: invalid item in %s%%[]"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\"));
@@ -33406,12 +32579,12 @@
 ;                   return null;
 ;               }
 
-;               case -195: // case Magic('='):
-;               case -193: // case Magic('?'):
-;               case -213: // case Magic('+'):
-;               case -192: // case Magic('@'):
-;               case -133: // case Magic('{'):
-;               case -214: // case Magic('*'):
+;               case Magic('='):
+;               case Magic('?'):
+;               case Magic('+'):
+;               case Magic('@'):
+;               case Magic('{'):
+;               case Magic('*'):
 ;               {
 ;                   c = no_Magic(c);
 ;                   libC.sprintf(@ioBuff, u8("E64: %s%c follows nothing"),
@@ -33422,7 +32595,7 @@
 ;                   return null;
 ;               }
 
-;               case -130: // case Magic('~'):                    ;; previous substitute pattern
+;               case Magic('~'):                    ;; previous substitute pattern
 ;               {
 ;                   if (@reg_prev_sub != null)
 ;                   {
@@ -33447,15 +32620,15 @@
 ;                   break;
 ;               }
 
-;               case -207: // case Magic('1'):
-;               case -206: // case Magic('2'):
-;               case -205: // case Magic('3'):
-;               case -204: // case Magic('4'):
-;               case -203: // case Magic('5'):
-;               case -202: // case Magic('6'):
-;               case -201: // case Magic('7'):
-;               case -200: // case Magic('8'):
-;               case -199: // case Magic('9'):
+;               case Magic('1'):
+;               case Magic('2'):
+;               case Magic('3'):
+;               case Magic('4'):
+;               case Magic('5'):
+;               case Magic('6'):
+;               case Magic('7'):
+;               case Magic('8'):
+;               case Magic('9'):
 ;               {
 ;                   int refnum = c - Magic('0');
 
@@ -33482,7 +32655,7 @@
 ;                   break;
 ;               }
 
-;               case -134: // case Magic('z'):
+;               case Magic('z'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
@@ -33553,7 +32726,7 @@
 ;                   break;
 ;               }
 
-;               case -219: // case Magic('%'):
+;               case Magic('%'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
@@ -33753,7 +32926,7 @@
 ;                   break;
 ;               }
 
-;               case -165: // case Magic('['):
+;               case Magic('['):
 ;                   break collection;
 
 ;               default:
@@ -34969,7 +34142,7 @@
     ;; col: column to start looking for match
     ;; tm: timeout limit or null
     (§
-;       long retval = 0L;
+;       long retval = 0;
 
 ;       if (@regstack == null)
 ;           create_regstack();
@@ -36607,7 +35780,7 @@
                                     ;; Range is backwards, use shortest match first.
                                     ;; Careful: maxval and minval are exchanged!
                                     ;; Couldn't or didn't match: try advancing one char.
-;                                   if (rst.count == rst.minval || regrepeat(operand(rip.rs_scan), 1L) == 0)
+;                                   if (rst.count == rst.minval || regrepeat(operand(rip.rs_scan), 1) == 0)
 ;                                       break;
 ;                                   rst.count++;
 ;                               }
@@ -39136,24 +38309,24 @@
 ;                   @rc_did_emsg = true;
 ;                   return false;
 
-;               case -162: // case Magic('^'):
+;               case Magic('^'):
 ;                   emc1(NFA_BOL);
 ;                   break;
 
-;               case -220: // case Magic('$'):
+;               case Magic('$'):
 ;                   emc1(NFA_EOL);
 ;                   @had_eol = true;
 ;                   break;
 
-;               case -196: // case Magic('<'):
+;               case Magic('<'):
 ;                   emc1(NFA_BOW);
 ;                   break;
 
-;               case -194: // case Magic('>'):
+;               case Magic('>'):
 ;                   emc1(NFA_EOW);
 ;                   break;
 
-;               case -161: // case Magic('_'):
+;               case Magic('_'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   if (c == NUL)
@@ -39187,33 +38360,33 @@
 
                 ;; Character classes.
 
-;               case -210: // case Magic('.'):
-;               case -151: // case Magic('i'):
-;               case -183: // case Magic('I'):
-;               case -149: // case Magic('k'):
-;               case -181: // case Magic('K'):
-;               case -154: // case Magic('f'):
-;               case -186: // case Magic('F'):
-;               case -144: // case Magic('p'):
-;               case -176: // case Magic('P'):
-;               case -141: // case Magic('s'):
-;               case -173: // case Magic('S'):
-;               case -156: // case Magic('d'):
-;               case -188: // case Magic('D'):
-;               case -136: // case Magic('x'):
-;               case -168: // case Magic('X'):
-;               case -145: // case Magic('o'):
-;               case -177: // case Magic('O'):
-;               case -137: // case Magic('w'):
-;               case -169: // case Magic('W'):
-;               case -152: // case Magic('h'):
-;               case -184: // case Magic('H'):
-;               case -159: // case Magic('a'):
-;               case -191: // case Magic('A'):
-;               case -148: // case Magic('l'):
-;               case -180: // case Magic('L'):
-;               case -139: // case Magic('u'):
-;               case -171: // case Magic('U'):
+;               case Magic('.'):
+;               case Magic('i'):
+;               case Magic('I'):
+;               case Magic('k'):
+;               case Magic('K'):
+;               case Magic('f'):
+;               case Magic('F'):
+;               case Magic('p'):
+;               case Magic('P'):
+;               case Magic('s'):
+;               case Magic('S'):
+;               case Magic('d'):
+;               case Magic('D'):
+;               case Magic('x'):
+;               case Magic('X'):
+;               case Magic('o'):
+;               case Magic('O'):
+;               case Magic('w'):
+;               case Magic('W'):
+;               case Magic('h'):
+;               case Magic('H'):
+;               case Magic('a'):
+;               case Magic('A'):
+;               case Magic('l'):
+;               case Magic('L'):
+;               case Magic('u'):
+;               case Magic('U'):
 ;               {
 ;                   Bytes p = vim_strchr(classchars, no_Magic(c));
 ;                   if (p == null)
@@ -39245,7 +38418,7 @@
 ;                   break;
 ;               }
 
-;               case -146: // case Magic('n'):
+;               case Magic('n'):
 ;               {
 ;                   if (@reg_string)
                         ;; In a string "\n" matches a newline character.
@@ -39259,28 +38432,28 @@
 ;                   break;
 ;               }
 
-;               case -216: // case Magic('('):
+;               case Magic('('):
 ;                   if (nfa_reg(REG_PAREN) == false)
 ;                       return false;           ;; cascaded error
 ;                   break;
 
-;               case -132: // case Magic('|'):
-;               case -218: // case Magic('&'):
-;               case -215: // case Magic(')'):
+;               case Magic('|'):
+;               case Magic('&'):
+;               case Magic(')'):
 ;                   emsgn(e_misplaced, (long)no_Magic(c));
 ;                   return false;
 
-;               case -195: // case Magic('='):
-;               case -193: // case Magic('?'):
-;               case -213: // case Magic('+'):
-;               case -192: // case Magic('@'):
-;               case -214: // case Magic('*'):
-;               case -133: // case Magic('{'):
+;               case Magic('='):
+;               case Magic('?'):
+;               case Magic('+'):
+;               case Magic('@'):
+;               case Magic('*'):
+;               case Magic('{'):
                     ;; these should follow an atom, not form an atom
 ;                   emsgn(e_misplaced, (long)no_Magic(c));
 ;                   return false;
 
-;               case -130: // case Magic('~'):
+;               case Magic('~'):
 ;               {
                     ;; Previous substitute pattern.
                     ;; Generated as "\%(pattern\)".
@@ -39299,20 +38472,20 @@
 ;                   break;
 ;               }
 
-;               case -207: // case Magic('1'):
-;               case -206: // case Magic('2'):
-;               case -205: // case Magic('3'):
-;               case -204: // case Magic('4'):
-;               case -203: // case Magic('5'):
-;               case -202: // case Magic('6'):
-;               case -201: // case Magic('7'):
-;               case -200: // case Magic('8'):
-;               case -199: // case Magic('9'):
+;               case Magic('1'):
+;               case Magic('2'):
+;               case Magic('3'):
+;               case Magic('4'):
+;               case Magic('5'):
+;               case Magic('6'):
+;               case Magic('7'):
+;               case Magic('8'):
+;               case Magic('9'):
 ;                   emc1(NFA_BACKREF1 + (no_Magic(c) - '1'));
 ;                   @nfa_has_backref = true;
 ;                   break;
 
-;               case -134: // case Magic('z'):
+;               case Magic('z'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
@@ -39376,7 +38549,7 @@
 ;                   break;
 ;               }
 
-;               case -219: // case Magic('%'):
+;               case Magic('%'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
@@ -39517,7 +38690,7 @@
 ;                   break;
 ;               }
 
-;               case -165: // case Magic('['):
+;               case Magic('['):
 ;                   break collection;
 
 ;               default:
@@ -39900,13 +39073,13 @@
 ;       skipchr();
 ;       switch (op)
 ;       {
-;           case -214: // case Magic('*'):
+;           case Magic('*'):
 ;           {
 ;               emc1(NFA_STAR);
 ;               break;
 ;           }
 
-;           case -213: // case Magic('+'):
+;           case Magic('+'):
 ;           {
                 ;; Trick: Normally, (a*)\+ would match the whole input "aaa".  The first and
                 ;; only submatch would be "aaa".  But the backtracking engine interprets the
@@ -39926,7 +39099,7 @@
 ;               break;
 ;           }
 
-;           case -192: // case Magic('@'):
+;           case Magic('@'):
 ;           {
 ;               int c2 = getdecchrs();
 ;               op = no_Magic(getchr());
@@ -39966,14 +39139,14 @@
 ;               break;
 ;           }
 
-;           case -193: // case Magic('?'):
-;           case -195: // case Magic('='):
+;           case Magic('?'):
+;           case Magic('='):
 ;           {
 ;               emc1(NFA_QUEST);
 ;               break;
 ;           }
 
-;           case -133: // case Magic('{'):
+;           case Magic('{'):
 ;           {
                 ;; a{2,5} will expand to 'aaa?a?a?'
                 ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
@@ -40096,46 +39269,46 @@
 ;           switch (peekchr())
 ;           {
 ;               case NUL:
-;               case -132: // case Magic('|'):
-;               case -218: // case Magic('&'):
-;               case -215: // case Magic(')'):
+;               case Magic('|'):
+;               case Magic('&'):
+;               case Magic(')'):
 ;                   cont = false;
 ;                   break;
 
-;               case -166: // case Magic('Z'):
+;               case Magic('Z'):
 ;                   @regflags |= RF_ICOMBINE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -157: // case Magic('c'):
+;               case Magic('c'):
 ;                   @regflags |= RF_ICASE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -189: // case Magic('C'):
+;               case Magic('C'):
 ;                   @regflags |= RF_NOICASE;
 ;                   skipchr_keepstart();
 ;                   break;
 
-;               case -138: // case Magic('v'):
+;               case Magic('v'):
 ;                   @reg_magic = MAGIC_ALL;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -147: // case Magic('m'):
+;               case Magic('m'):
 ;                   @reg_magic = MAGIC_ON;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -179: // case Magic('M'):
+;               case Magic('M'):
 ;                   @reg_magic = MAGIC_OFF;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
 ;                   break;
 
-;               case -170: // case Magic('V'):
+;               case Magic('V'):
 ;                   @reg_magic = MAGIC_NONE;
 ;                   skipchr_keepstart();
 ;                   @curchr = -1;
@@ -42714,7 +41887,7 @@
 ;                   @reg_startp[0] = @regline.plus(col[0]);
 ;                   @reg_endp[0] = @regline.plus(col[0] + len2);
 ;               }
-;               return 1L;
+;               return 1;
 ;           }
 
             ;; Try finding regstart after the current match.
@@ -42723,7 +41896,7 @@
 ;               break;
 ;       }
 
-;       return 0L;
+;       return 0;
     ))
 
 ;; Main matching routine.
@@ -44164,7 +43337,7 @@
 ;       if (prog == null || line == null)
 ;       {
 ;           emsg(e_null);
-;           return 0L;
+;           return 0;
 ;       }
 
         ;; If pattern contains "\c" or "\C": overrule value of ireg_ic.
@@ -44188,7 +43361,7 @@
 ;       nfa_regengine.expr = prog.pattern;
 
 ;       if (prog.reganch != 0 && 0 < col[0])
-;           return 0L;
+;           return 0;
 
 ;       @need_clear_subexpr = true;
         ;; Clear the external match subpointers if necessary.
@@ -44205,7 +43378,7 @@
             ;; Skip ahead until a character we know the match must start with.
             ;; When there is none there is no match.
 ;           if (skip_to_start(prog.regstart, col) == false)
-;               return 0L;
+;               return 0;
 
             ;; If match_text is set, it contains the full text that must match.
             ;; Nothing else to try.  Doesn't handle combining chars well.
@@ -44215,7 +43388,7 @@
 
         ;; If the start column is past the maximum column: no need to try.
 ;       if (0 < @ireg_maxcol && @ireg_maxcol <= col[0])
-;           return 0L;
+;           return 0;
 
 ;       for (int i = 0; i < prog.nstate; i++)
 ;       {
@@ -46261,9 +45434,9 @@
                 ;; brief pause, unless 'm' is present in 'cpo' and a character is available.
 
 ;               if (vim_strbyte(@p_cpo, CPO_SHOWMATCH) != null)
-;                   ui_delay(@p_mat * 100L, true);
+;                   ui_delay(@p_mat * 100, true);
 ;               else if (!char_avail())
-;                   ui_delay(@p_mat * 100L, false);
+;                   ui_delay(@p_mat * 100, false);
 ;               COPY_pos(@curwin.w_cursor, save_cursor); ;; restore cursor position
 ;               @p_so = save_so;
 ;               @p_siso = save_siso;
@@ -46580,7 +45753,7 @@
 
 ;           if ((cls() == 0) == include)
 ;           {
-;               if (end_word(1L, bigword, true, true) == false)
+;               if (end_word(1, bigword, true, true) == false)
 ;                   return false;
 ;           }
 ;           else
@@ -46591,7 +45764,7 @@
                 ;; If we end up in the first column of the next line (single char word)
                 ;; back up to end of the line.
 
-;               fwd_word(1L, bigword, true);
+;               fwd_word(1, bigword, true);
 ;               if (@curwin.w_cursor.col == 0)
 ;                   decl(@curwin.w_cursor);
 ;               else
@@ -46629,12 +45802,12 @@
 
 ;               if (include != (cls() != 0))
 ;               {
-;                   if (bck_word(1L, bigword, true) == false)
+;                   if (bck_word(1, bigword, true) == false)
 ;                       return false;
 ;               }
 ;               else
 ;               {
-;                   if (bckend_word(1L, bigword, true) == false)
+;                   if (bckend_word(1, bigword, true) == false)
 ;                       return false;
 ;                   incl(@curwin.w_cursor);
 ;               }
@@ -46648,7 +45821,7 @@
 
 ;               if (include != (cls() == 0))
 ;               {
-;                   if (fwd_word(1L, bigword, true) == false && 1 < count)
+;                   if (fwd_word(1, bigword, true) == false && 1 < count)
 ;                       return false;
 
                     ;; If end is just past a new-line,
@@ -46660,7 +45833,7 @@
 ;               }
 ;               else
 ;               {
-;                   if (end_word(1L, bigword, true, true) == false)
+;                   if (end_word(1, bigword, true, true) == false)
 ;                       return false;
 ;               }
 ;           }
@@ -47218,7 +46391,7 @@
         ;; in which case, we are already on the next match.
 ;       if (one_char == 0)
 ;           searchit(@curwin, @curbuf, pos, (forward ? FORWARD : BACKWARD),
-;               @spats[@last_idx].pat, 0L, flags | SEARCH_KEEP, RE_SEARCH, 0, null);
+;               @spats[@last_idx].pat, 0, flags | SEARCH_KEEP, RE_SEARCH, 0, null);
 
 ;       if (!@VIsual_active)
 ;           COPY_pos(@VIsual, start_pos);
@@ -47512,25 +46685,25 @@
 ;       (p = p.plus(1)).be(-1, (byte)'"');
 ;       vim_strncpy(p, buf_spname(@curbuf), IOSIZE - BDIFF(p, buffer) - 1);
 
-;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s"), @curbuf.@b_changed ? u8(" [Modified] ") : u8(" "));
+;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s"), @curbuf.@b_changed ? u8(" [Modified] ") : u8(" "));
 
-;       int n = (int)((@curwin.w_cursor.lnum * 100L) / @curbuf.b_ml.ml_line_count);
+;       int n = (int)((@curwin.w_cursor.lnum * 100) / @curbuf.b_ml.ml_line_count);
 
 ;       if ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0)
 ;       {
-;           vim_snprintf_add(buffer, IOSIZE, u8("%s"), no_lines_msg);
+;           vim_snprintf_add(buffer, IOSIZE, u8("%s"), no_lines_msg);
 ;       }
 ;       else if (@p_ru)
 ;       {
             ;; Current line and column are already on the screen.
 ;           if (@curbuf.b_ml.ml_line_count == 1)
-;               vim_snprintf_add(buffer, IOSIZE, u8("1 line --%d%%--"), n);
+;               vim_snprintf_add(buffer, IOSIZE, u8("1 line --%d%%--"), n);
 ;           else
-;               vim_snprintf_add(buffer, IOSIZE, u8("%ld lines --%d%%--"), @curbuf.b_ml.ml_line_count, n);
+;               vim_snprintf_add(buffer, IOSIZE, u8("%ld lines --%d%%--"), @curbuf.b_ml.ml_line_count, n);
 ;       }
 ;       else
 ;       {
-;           vim_snprintf_add(buffer, IOSIZE, u8("line %ld of %ld --%d%%-- col "), @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, n);
+;           vim_snprintf_add(buffer, IOSIZE, u8("line %ld of %ld --%d%%-- col "), @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, n);
 ;           validate_virtcol();
 ;           int len = STRLEN(buffer);
 ;           col_print(buffer.plus(len), IOSIZE - len, @curwin.w_cursor.col + 1, @curwin.w_virtcol + 1);
@@ -47560,9 +46733,9 @@
 (defn- #_void col_print [#_Bytes buf, #_int buflen, #_int col, #_int vcol]
     (§
 ;       if (col == vcol)
-;           vim_snprintf(buf, buflen, u8("%d"), col);
+;           vim_snprintf(buf, buflen, u8("%d"), col);
 ;       else
-;           vim_snprintf(buf, buflen, u8("%d-%d"), col, vcol);
+;           vim_snprintf(buf, buflen, u8("%d-%d"), col, vcol);
     ))
 
 ;; Get relative cursor position in window into "buf[buflen]", in the form 99%,
@@ -47583,10 +46756,10 @@
 ;           vim_strncpy(buf, u8("Top"), buflen - 1);
 ;       else
 ;       {
-;           int cent = (1000000L < above)
-;               ? (int)(above / ((above + below) / 100L))
-;               : (int)(above * 100L / (above + below));
-;           vim_snprintf(buf, buflen, u8("%2d%%"), cent);
+;           int cent = (1000000 < above)
+;               ? (int)(above / ((above + below) / 100))
+;               : (int)(above * 100 / (above + below));
+;           vim_snprintf(buf, buflen, u8("%2d%%"), cent);
 ;       }
     ))
 
@@ -50310,7 +49483,7 @@
 
 ;           if (mb_char2cells(dp.result) == 1)
 ;               (p = p.plus(1)).be(-1, (byte)' ');
-;           vim_snprintf(p, buf.size() - BDIFF(p, buf), u8(" %3d"), dp.result);
+;           vim_snprintf(p, buf.size() - BDIFF(p, buf), u8(" %3d"), dp.result);
 ;           msg_outtrans(buf);
 ;       }
     ))
@@ -50655,7 +49828,6 @@
 ;; For UTF-8 character "c" return 2 for a double-width character, 1 for others.
 ;; Returns 4 or 6 for an unprintable character.
 ;; Is only correct for characters >= 0x80.
-;; When "p_ambw" is 'double', return 2 for a character with East Asian Width class 'A'(mbiguous).
 
 (defn- #_int utf_char2cells [#_int c]
     (§
@@ -50675,7 +49847,7 @@
 ;                   return 2;
 ;           }
 
-;           if (@p_ambw.at(0) == (byte)'d' && intable(ambiguous, c))
+;           if (hamis && intable(ambiguous, c))
 ;               return 2;
 ;       }
 
@@ -53062,7 +52234,7 @@
 ;               if (!ml_append(@curwin.w_cursor.lnum, p_extra))
 ;                   break theend;
                 ;; Postpone calling changed_lines(), because it would mess up folding with markers.
-;               mark_adjust(@curwin.w_cursor.lnum + 1, MAXLNUM, 1L, 0L);
+;               mark_adjust(@curwin.w_cursor.lnum + 1, MAXLNUM, 1, 0);
 ;               did_append = true;
 ;           }
 ;           else
@@ -53138,7 +52310,7 @@
 ;                   saved_line = null;
 ;                   if (did_append)
 ;                   {
-;                       changed_lines(@curwin.w_cursor.lnum, @curwin.w_cursor.col, @curwin.w_cursor.lnum + 1, 1L);
+;                       changed_lines(@curwin.w_cursor.lnum, @curwin.w_cursor.col, @curwin.w_cursor.lnum + 1, 1);
 ;                       did_append = false;
 ;                   }
 ;                   else
@@ -53151,7 +52323,7 @@
 ;               @curwin.w_cursor.lnum = old_cursor.lnum + 1;
 ;           }
 ;           if (did_append)
-;               changed_lines(@curwin.w_cursor.lnum, 0, @curwin.w_cursor.lnum, 1L);
+;               changed_lines(@curwin.w_cursor.lnum, 0, @curwin.w_cursor.lnum, 1);
 
 ;           @curwin.w_cursor.col = newcol;
 ;           @curwin.w_cursor.coladd = 0;
@@ -53707,7 +52879,7 @@
 (defn- #_void changed_bytes [#_long lnum, #_int col]
     (§
 ;       changed_one_line(@curbuf, lnum);
-;       changed_common(lnum, col, lnum + 1, 0L);
+;       changed_common(lnum, col, lnum + 1, 0);
     ))
 
 (defn- #_void changed_one_line [#_buffer_C buf, #_long lnum]
@@ -53743,7 +52915,7 @@
 
 (defn- #_void appended_lines_mark [#_long lnum, #_long count]
     (§
-;       mark_adjust(lnum + 1, MAXLNUM, count, 0L);
+;       mark_adjust(lnum + 1, MAXLNUM, count, 0);
 ;       changed_lines(lnum + 1, 0, lnum + 1, count);
     ))
 
@@ -54059,11 +53231,11 @@
 
             ;; First time: blocking wait.
             ;; Second time: wait up to 100ms for a terminal code to complete.
-;           int n = ui_inchar(buf.plus(len[0]), maxlen, (len[0] == 0) ? -1L : 100L, 0);
+;           int n = ui_inchar(buf.plus(len[0]), maxlen, (len[0] == 0) ? -1 : 100, 0);
 ;           if (0 < n)
 ;           {
                 ;; Replace zero and CSI by a special key code.
-;               n = fix_input_buffer(buf.plus(len[0]), n, false);
+;               n = fix_input_buffer(buf.plus(len[0]), n);
 ;               len[0] += n;
 ;               waited = 0;
 ;           }
@@ -54072,7 +53244,7 @@
 
             ;; Incomplete termcode and not timed out yet: get more characters.
 ;           n = check_termcode(1, buf, buflen, len);
-;           if (n < 0 && (!@p_ttimeout || waited * 100L < (@p_ttm < 0 ? @p_tm : @p_ttm)))
+;           if (n < 0 && (!@p_ttimeout || waited * 100 < (@p_ttm < 0 ? @p_tm : @p_ttm)))
 ;               continue;
 
 ;           if (n == KEYLEN_REMOVED)        ;; key code removed
@@ -54152,9 +53324,9 @@
 ;           else
 ;           {
 ;               if (0 < n)
-;                   vim_snprintf(msg_buf, MSG_BUF_LEN, u8("%ld more lines"), pn);
+;                   vim_snprintf(msg_buf, MSG_BUF_LEN, u8("%ld more lines"), pn);
 ;               else
-;                   vim_snprintf(msg_buf, MSG_BUF_LEN, u8("%ld fewer lines"), pn);
+;                   vim_snprintf(msg_buf, MSG_BUF_LEN, u8("%ld fewer lines"), pn);
 ;           }
 ;           if (@got_int)
 ;               vim_strcat(msg_buf, u8(" (Interrupted)"), MSG_BUF_LEN);
@@ -55071,36 +54243,8 @@
 
         MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F11,     (byte \F), (byte \1),
         MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F12,     (byte \F), (byte \2),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F13,     (byte \F), (byte \3),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F14,     (byte \F), (byte \4),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F15,     (byte \F), (byte \5),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F16,     (byte \F), (byte \6),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F17,     (byte \F), (byte \7),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F18,     (byte \F), (byte \8),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F19,     (byte \F), (byte \9),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F20,     (byte \F), (byte \A),
 
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F21,     (byte \F), (byte \B),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F22,     (byte \F), (byte \C),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F23,     (byte \F), (byte \D),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F24,     (byte \F), (byte \E),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F25,     (byte \F), (byte \F),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F26,     (byte \F), (byte \G),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F27,     (byte \F), (byte \H),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F28,     (byte \F), (byte \I),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F29,     (byte \F), (byte \J),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F30,     (byte \F), (byte \K),
-
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F31,     (byte \F), (byte \L),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F32,     (byte \F), (byte \M),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F33,     (byte \F), (byte \N),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F34,     (byte \F), (byte \O),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F35,     (byte \F), (byte \P),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F36,     (byte \F), (byte \Q),
-        MOD_MASK_SHIFT,     KS_EXTRA, KE_S_F37,     (byte \F), (byte \R),
-
-                                                                            ;; TAB pseudo code
-        MOD_MASK_SHIFT,     (byte \k), (byte \B),   KS_EXTRA, KE_TAB,
+        MOD_MASK_SHIFT,     (byte \k), (byte \B),   KS_EXTRA, KE_TAB,       ;; TAB pseudo code
 
         NUL
     ])
@@ -55126,7 +54270,7 @@
         (->key_name_C K_BS,             (u8 "BS")              ),
         (->key_name_C K_BS,             (u8 "BackSpace")       ),  ;; alternative name
         (->key_name_C ESC,              (u8 "Esc")             ),
-;       new key_name_C(char_u(CSI),      u8("CSI")             ),
+        (->key_name_C (char_u CSI),     (u8 "CSI")             ),
         (->key_name_C K_CSI,            (u8 "xCSI")            ),
         (->key_name_C (int \|),         (u8 "Bar")             ),
         (->key_name_C (int \\),         (u8 "Bslash")          ),
@@ -55155,33 +54299,6 @@
 
         (->key_name_C K_F11,            (u8 "F11")             ),
         (->key_name_C K_F12,            (u8 "F12")             ),
-        (->key_name_C K_F13,            (u8 "F13")             ),
-        (->key_name_C K_F14,            (u8 "F14")             ),
-        (->key_name_C K_F15,            (u8 "F15")             ),
-        (->key_name_C K_F16,            (u8 "F16")             ),
-        (->key_name_C K_F17,            (u8 "F17")             ),
-        (->key_name_C K_F18,            (u8 "F18")             ),
-        (->key_name_C K_F19,            (u8 "F19")             ),
-        (->key_name_C K_F20,            (u8 "F20")             ),
-
-        (->key_name_C K_F21,            (u8 "F21")             ),
-        (->key_name_C K_F22,            (u8 "F22")             ),
-        (->key_name_C K_F23,            (u8 "F23")             ),
-        (->key_name_C K_F24,            (u8 "F24")             ),
-        (->key_name_C K_F25,            (u8 "F25")             ),
-        (->key_name_C K_F26,            (u8 "F26")             ),
-        (->key_name_C K_F27,            (u8 "F27")             ),
-        (->key_name_C K_F28,            (u8 "F28")             ),
-        (->key_name_C K_F29,            (u8 "F29")             ),
-        (->key_name_C K_F30,            (u8 "F30")             ),
-
-        (->key_name_C K_F31,            (u8 "F31")             ),
-        (->key_name_C K_F32,            (u8 "F32")             ),
-        (->key_name_C K_F33,            (u8 "F33")             ),
-        (->key_name_C K_F34,            (u8 "F34")             ),
-        (->key_name_C K_F35,            (u8 "F35")             ),
-        (->key_name_C K_F36,            (u8 "F36")             ),
-        (->key_name_C K_F37,            (u8 "F37")             ),
 
         (->key_name_C K_XF1,            (u8 "xF1")             ),
         (->key_name_C K_XF2,            (u8 "xF2")             ),
@@ -55229,7 +54346,7 @@
         (->key_name_C K_DROP,           (u8 "Drop")            ),
         (->key_name_C K_ZERO,           (u8 "Nul")             ),
         (->key_name_C K_SNR,            (u8 "SNR")             ),
-        (->key_name_C K_PLUG,           (u8 "Plug")            ),
+
         (->key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
     ])
 
@@ -55300,15 +54417,10 @@
 ;       return key;
     ))
 
-(final Bytes key__name (Bytes. (inc MAX_KEY_NAME_LEN)))
-
 ;; Return a string which contains the name of the given key when the given modifiers are down.
 
 (defn- #_Bytes get_special_key_name [#_int c, #_int modifiers]
     (§
-;       key__name.be(0, (byte)'<');
-;       int idx = 1;
-
         ;; Key that stands for a normal character.
 ;       if (is_special(c) && KEY2TERMCAP0(c) == KS_KEY)
 ;           c = char_u(KEY2TERMCAP1(c));
@@ -55351,6 +54463,11 @@
 ;           }
 ;       }
 
+;       Bytes key__name = new Bytes(MAX_KEY_NAME_LEN + 1);
+;       int idx = 0;
+
+;       key__name.be(idx++, (byte)'<');
+
         ;; translate the modifier into a string
 ;       for (int i = 0; i < mod_mask_table.length && mod_mask_table[i].name != 'A'; i++)
 ;           if ((modifiers & mod_mask_table[i].mod_mask) == mod_mask_table[i].mod_flag)
@@ -55388,8 +54505,10 @@
 ;           STRCPY(key__name.plus(idx), key_names_table[table_idx].name);
 ;           idx = STRLEN(key__name);
 ;       }
+
 ;       key__name.be(idx++, (byte)'>');
 ;       key__name.be(idx, NUL);
+
 ;       return key__name;
     ))
 
@@ -55670,7 +54789,7 @@
 ;       if (emsg_not_now())
 ;           return true;            ;; no error messages at the moment
 
-;       vim_snprintf(@ioBuff, IOSIZE, s, a1, a2);
+;       vim_snprintf(@ioBuff, IOSIZE, s, a1, a2);
 ;       return emsg(@ioBuff);
     ))
 
@@ -55682,7 +54801,7 @@
 ;       if (emsg_not_now())
 ;           return true;            ;; no error messages at the moment
 
-;       vim_snprintf(@ioBuff, IOSIZE, s, n);
+;       vim_snprintf(@ioBuff, IOSIZE, s, n);
 ;       return emsg(@ioBuff);
     ))
 
@@ -55969,7 +55088,6 @@
 ;           uhp.uh_seq = ++@curbuf.b_u_seq_last;
 ;           @curbuf.b_u_seq_cur = uhp.uh_seq;
 ;           uhp.uh_time = libC._time();
-;           uhp.uh_save_nr = 0;
 ;           @curbuf.b_u_time_cur = uhp.uh_time + 1;
 
 ;           uhp.uh_walk = 0;
@@ -56210,14 +55328,12 @@
 ;; Undo or redo over the timeline.
 ;; When "step" is negative go back in time, otherwise goes forward in time.
 ;; When "sec" is false make "step" steps, when "sec" is true use "step" as seconds.
-;; When "file" is true use "step" as a number of file writes.
 ;; When "absolute" is true use "step" as the sequence number to jump to.
 ;; "sec" must be false then.
 
-(defn- #_void undo_time [#_long step, #_boolean sec, #_boolean file, #_boolean absolute]
+(defn- #_void undo_time [#_long step, #_boolean sec, #_boolean absolute]
     (§
 ;       boolean dosec = sec;
-;       boolean dofile = file;
 ;       boolean above = false;
 ;       boolean did_undo = true;
 
@@ -56247,43 +55363,6 @@
             ;; time_t converted to a long may result in a wrong number.
 ;           if (dosec)
 ;               target = @curbuf.b_u_time_cur - @starttime + step;
-;           else if (dofile)
-;           {
-;               if (step < 0)
-;               {
-                    ;; Going back to a previous write.  If there were changes after
-                    ;; the last write, count that as moving one file-write, so
-                    ;; that ":earlier 1f" undoes all changes since the last save.
-;                   uhp = @curbuf.b_u_curhead;
-;                   if (uhp != null)
-;                       uhp = uhp.uh_next.ptr;
-;                   else
-;                       uhp = @curbuf.b_u_newhead;
-;                   if (uhp != null && uhp.uh_save_nr != 0)
-                        ;; "uh_save_nr" was set in the last block, that means
-                        ;; there were no changes since the last write
-;                       target = @curbuf.b_u_save_nr_cur + step;
-;                   else
-                        ;; count the changes since the last write as one step
-;                       target = @curbuf.b_u_save_nr_cur + step + 1;
-;                   if (target <= 0)
-                        ;; Go to before first write: before the oldest change.
-                        ;; Use the sequence number for that.
-;                       dofile = false;
-;               }
-;               else
-;               {
-                    ;; Moving forward to a newer write.
-;                   target = @curbuf.b_u_save_nr_cur + step;
-;                   if (@curbuf.b_u_save_nr_last < target)
-;                   {
-                        ;; Go to after last write: after the latest change.
-                        ;; Use the sequence number for that.
-;                       target = @curbuf.b_u_seq_last + 1;
-;                       dofile = false;
-;                   }
-;               }
-;           }
 ;           else
 ;               target = @curbuf.b_u_seq_cur + step;
 ;           if (step < 0)
@@ -56296,8 +55375,6 @@
 ;           {
 ;               if (dosec)
 ;                   closest = libC._time() - @starttime + 1;
-;               else if (dofile)
-;                   closest = @curbuf.b_u_save_nr_last + 2;
 ;               else
 ;                   closest = @curbuf.b_u_seq_last + 2;
 ;               if (closest <= target)
@@ -56336,12 +55413,10 @@
 ;               long val;
 ;               if (dosec)
 ;                   val = uhp.uh_time - @starttime;
-;               else if (dofile)
-;                   val = uhp.uh_save_nr;
 ;               else
 ;                   val = uhp.uh_seq;
 
-;               if (round == 1 && !(dofile && val == 0))
+;               if (round == 1)
 ;               {
                     ;; Remember the header that is closest to the target.
                     ;; It must be at least in the right direction (checked with "b_u_seq_cur").
@@ -56428,7 +55503,6 @@
 
 ;           target = closest_seq;
 ;           dosec = false;
-;           dofile = false;
 ;           if (step < 0)
 ;               above = true;       ;; stop above the header
 ;       }
@@ -56739,15 +55813,6 @@
             ;; work we compute this as being just above the just undone change.
 ;           --@curbuf.b_u_seq_cur;
 
-        ;; Remember where we are for ":earlier 1f" and ":later 1f".
-;       if (curhead.uh_save_nr != 0)
-;       {
-;           if (undo)
-;               @curbuf.b_u_save_nr_cur = curhead.uh_save_nr - 1;
-;           else
-;               @curbuf.b_u_save_nr_cur = curhead.uh_save_nr;
-;       }
-
         ;; The timestamp can be the same for multiple changes,
         ;; just use the one of the undone/redone change.
 ;       @curbuf.b_u_time_cur = curhead.uh_time;
@@ -56820,7 +55885,7 @@
 ;               (@u_oldcount < 0) ? -@u_oldcount : @u_oldcount,
 ;               msgstr,
 ;               did_undo ? u8("before") : u8("after"),
-;               (uhp == null) ? 0L : uhp.uh_seq,
+;               (uhp == null) ? 0 : uhp.uh_seq,
 ;               msgbuf);
     ))
 
@@ -56861,14 +55926,8 @@
 ;       {
 ;           if (uhp.uh_prev.ptr == null && uhp.uh_walk != nomark && uhp.uh_walk != mark)
 ;           {
-;               vim_snprintf(@ioBuff, IOSIZE, u8("%6ld %7ld  "), uhp.uh_seq, changes);
+;               vim_snprintf(@ioBuff, IOSIZE, u8("%6ld %7ld  "), uhp.uh_seq, changes);
 ;               u_add_time(@ioBuff.plus(STRLEN(@ioBuff)), IOSIZE - STRLEN(@ioBuff), uhp.uh_time);
-;               if (0 < uhp.uh_save_nr)
-;               {
-;                   while (STRLEN(@ioBuff) < 33)
-;                       STRCAT(@ioBuff, u8(" "));
-;                   vim_snprintf_add(@ioBuff, IOSIZE, u8("  %3ld"), uhp.uh_save_nr);
-;               }
 
 ;               ga.ga_grow(1);
 ;               ga.ga_data[ga.ga_len++] = STRDUP(@ioBuff);
@@ -56941,7 +56000,7 @@
 ;       if (100 <= libC._time() - seconds)
 ;       {
 ;           tm_C curtime = libC._localtime(seconds);
-;           if (libC._time() - seconds < (60L * 60L * 12L))
+;           if (libC._time() - seconds < (60 * 60 * 12))
                 ;; within 12 hours
 ;               libC.strftime(buf, buflen, u8("%H:%M:%S"), curtime);
 ;           else
@@ -56949,7 +56008,7 @@
 ;               libC.strftime(buf, buflen, u8("%Y/%m/%d %H:%M:%S"), curtime);
 ;       }
 ;       else
-;           vim_snprintf(buf, buflen, u8("%ld seconds ago"), libC._time() - seconds);
+;           vim_snprintf(buf, buflen, u8("%ld seconds ago"), libC._time() - seconds);
     ))
 
 ;; ":undojoin": continue adding to the last entry list
@@ -57181,23 +56240,6 @@
         (field Bytes    bt_seq)
     ])
 
-;; start of keys that are not directly used by Vim but can be mapped
-(final int BT_EXTRA_KEYS   0x101)
-
-;; Request Terminal Version status:
-(final int CRV_GET       1)         ;; send T_CRV when switched to RAW mode
-(final int CRV_SENT      2)         ;; did send T_CRV, waiting for answer
-(final int CRV_GOT       3)         ;; received T_CRV response
-(atom! int crv_status CRV_GET)
-
-;; Request Cursor position report:
-(final int U7_GET        1)         ;; send T_U7 when switched to RAW mode
-(final int U7_SENT       2)         ;; did send T_U7, waiting for answer
-(final int U7_GOT        3)         ;; received T_U7 response
-(atom! int u7_status U7_GET)
-
-(atom! boolean detected_8bit)   ;; detected 8-bit terminal
-
 (defn- #_final #_btcap_C tcap [#_int key, #_Bytes seq]
     (§
 ;       return new btcap_C(key, seq);
@@ -57248,14 +56290,7 @@
         (tcap KS_KE,        (u8 "\033[?1l\033>")        ),
         (tcap KS_TI,        (u8 "\0337\033[?47h")       ),
         (tcap KS_TE,        (u8 "\033[2J\033[?47l\0338")),
-        (tcap KS_CIS,       (u8 "\033]1;")              ),
-        (tcap KS_CIE,       (u8 "\007")                 ),
-        (tcap KS_TS,        (u8 "\033]2;")              ),
-        (tcap KS_FS,        (u8 "\007")                 ),
         (tcap KS_CWS,       (u8 "\033[8;%p1%d;%p2%dt")  ),
-        (tcap KS_CWP,       (u8 "\033[3;%p1%d;%p2%dt")  ),
-        (tcap KS_CRV,       (u8 "\033[>c")              ),
-        (tcap KS_U7,        (u8 "\033[6n")              ),
 
         (tcap K_UP,         (u8 "\033O*A")              ),
         (tcap K_DOWN,       (u8 "\033O*B")              ),
@@ -57309,37 +56344,6 @@
         (tcap K_KPOINT,     (u8 "\033O*n")              ),      ;; keypad .
         (tcap K_KDEL,       (u8 "\033[3;*~")            ),      ;; keypad Del
 
-        (tcap BT_EXTRA_KEYS, (u8 "")                    ),
-
-        (tcap K_F0,         (u8 "\033[10;*~")           ),
-        (tcap K_F13,        (u8 "\033[25;*~")           ),
-        ;; F14 and F15 are missing, because they send the same codes as the undo and help key,
-        ;; although they don't work on all keyboards.
-        (tcap K_F16,        (u8 "\033[29;*~")           ),
-        (tcap K_F17,        (u8 "\033[31;*~")           ),
-        (tcap K_F18,        (u8 "\033[32;*~")           ),
-        (tcap K_F19,        (u8 "\033[33;*~")           ),
-        (tcap K_F20,        (u8 "\033[34;*~")           ),
-
-        (tcap K_F21,        (u8 "\033[42;*~")           ),
-        (tcap K_F22,        (u8 "\033[43;*~")           ),
-        (tcap K_F23,        (u8 "\033[44;*~")           ),
-        (tcap K_F24,        (u8 "\033[45;*~")           ),
-        (tcap K_F25,        (u8 "\033[46;*~")           ),
-        (tcap K_F26,        (u8 "\033[47;*~")           ),
-        (tcap K_F27,        (u8 "\033[48;*~")           ),
-        (tcap K_F28,        (u8 "\033[49;*~")           ),
-        (tcap K_F29,        (u8 "\033[50;*~")           ),
-        (tcap K_F30,        (u8 "\033[51;*~")           ),
-
-        (tcap K_F31,        (u8 "\033[52;*~")           ),
-        (tcap K_F32,        (u8 "\033[53;*~")           ),
-        (tcap K_F33,        (u8 "\033[54;*~")           ),
-        (tcap K_F34,        (u8 "\033[55;*~")           ),
-        (tcap K_F35,        (u8 "\033[56;*~")           ),
-        (tcap K_F36,        (u8 "\033[57;*~")           ),
-        (tcap K_F37,        (u8 "\033[58;*~")           ),
-
         ;; The most minimal terminal: only clear screen and cursor positioning; always included.
 
         (tcap KS_NAME,      (u8 "dumb")                 ),
@@ -57357,7 +56361,6 @@
 
 (atom! boolean need_gather)                     ;; need to fill termleader[]
 (final Bytes termleader (Bytes. (inc 256)))     ;; for check_termcode()
-(atom! boolean check_for_codes)                 ;; check for key code response
 
 (defn- #_int find_builtin_term [#_Bytes term]
     (§
@@ -57383,9 +56386,7 @@
 ;       if (i < 0)
 ;           return;
 
-;       boolean term_8bit = term_is_8bit(term);
-
-;       for (++i; bts[i].bt_key != KS_NAME && bts[i].bt_key != BT_EXTRA_KEYS; i++)
+;       for (++i; bts[i].bt_key != KS_NAME; i++)
 ;       {
 ;           if (bts[i].bt_key < 0)
 ;           {
@@ -57394,30 +56395,14 @@
 ;               name.be(1, KEY2TERMCAP1(bts[i].bt_key));
 
 ;               if (find_termcode(name) == null)
-;                   add_termcode(name, bts[i].bt_seq, term_8bit ? TRUE : FALSE);
+;                   add_termcode(name, bts[i].bt_seq);
 ;           }
 ;           else ;; KS_xx entry
 ;           {
                 ;; Only set the value if it wasn't set yet.
 ;               if (term_strings[bts[i].bt_key][0] == null || term_strings[bts[i].bt_key][0] == EMPTY_OPTION)
 ;               {
-                    ;; 8bit terminal: use CSI instead of <Esc>[
-;                   if (term_8bit && term_7to8bit(bts[i].bt_seq) != NUL)
-;                   {
-;                       Bytes s = STRDUP(bts[i].bt_seq);
-;                       for (Bytes t = s; t.at(0) != NUL; t = t.plus(1))
-;                       {
-;                           byte b = term_7to8bit(t);
-;                           if (b != NUL)
-;                           {
-;                               t.be(0, b);
-;                               STRCPY(t.plus(1), t.plus(2));
-;                           }
-;                       }
-;                       term_strings[bts[i].bt_key][0] = s;
-;                   }
-;                   else
-;                       term_strings[bts[i].bt_key][0] = bts[i].bt_seq;
+;                   term_strings[bts[i].bt_key][0] = bts[i].bt_seq;
 ;               }
 ;           }
 ;       }
@@ -57453,40 +56438,6 @@
         null
     ])
 
-(class! #_final tcname_C
-    [
-        (field int      dest)       ;; index in term_strings[]
-        (field Bytes    name)       ;; termcap name for string
-    ])
-
-(defn- #_final #_tcname_C tcname [#_int dest, #_Bytes name]
-    (§
-;       return new tcname_C(dest, name);
-    ))
-
-(final tcname_C* tcap_names
-    [
-        (tcname KS_CE,  (u8 "ce")), (tcname KS_AL,  (u8 "al")), (tcname KS_CAL, (u8 "AL")),
-        (tcname KS_DL,  (u8 "dl")), (tcname KS_CDL, (u8 "DL")), (tcname KS_CS,  (u8 "cs")),
-        (tcname KS_CL,  (u8 "cl")), (tcname KS_CD,  (u8 "cd")),
-        (tcname KS_VI,  (u8 "vi")), (tcname KS_VE,  (u8 "ve")), (tcname KS_MB,  (u8 "mb")),
-        (tcname KS_VS,  (u8 "vs")), (tcname KS_ME,  (u8 "me")), (tcname KS_MR,  (u8 "mr")),
-        (tcname KS_MD,  (u8 "md")), (tcname KS_SE,  (u8 "se")), (tcname KS_SO,  (u8 "so")),
-        (tcname KS_CZH, (u8 "ZH")), (tcname KS_CZR, (u8 "ZR")), (tcname KS_UE,  (u8 "ue")),
-        (tcname KS_US,  (u8 "us")), (tcname KS_UCE, (u8 "Ce")), (tcname KS_UCS, (u8 "Cs")),
-        (tcname KS_CM,  (u8 "cm")), (tcname KS_SR,  (u8 "sr")),
-        (tcname KS_CRI, (u8 "RI")), (tcname KS_VB,  (u8 "vb")), (tcname KS_KS,  (u8 "ks")),
-        (tcname KS_KE,  (u8 "ke")), (tcname KS_TI,  (u8 "ti")), (tcname KS_TE,  (u8 "te")),
-        (tcname KS_BC,  (u8 "bc")), (tcname KS_CSB, (u8 "Sb")), (tcname KS_CSF, (u8 "Sf")),
-        (tcname KS_CAB, (u8 "AB")), (tcname KS_CAF, (u8 "AF")), (tcname KS_LE,  (u8 "le")),
-        (tcname KS_ND,  (u8 "nd")), (tcname KS_OP,  (u8 "op")), (tcname KS_CRV, (u8 "RV")),
-        (tcname KS_CIS, (u8 "IS")), (tcname KS_CIE, (u8 "IE")),
-        (tcname KS_TS,  (u8 "ts")), (tcname KS_FS,  (u8 "fs")),
-        (tcname KS_CWP, (u8 "WP")), (tcname KS_CWS, (u8 "WS")),
-        (tcname KS_CSI, (u8 "SI")), (tcname KS_CEI, (u8 "EI")),
-        (tcname KS_U7,  (u8 "u7"))
-    ])
-
 ;; Set terminal options for terminal "term".
 ;; Return true if terminal 'term' was found in a termcap, false otherwise.
 ;;
@@ -57497,8 +56448,6 @@
         ;; In silent mode (ex -s) we don't use the 'term' option.
 ;       if (@silent_mode)
 ;           return true;
-
-;       @detected_8bit = false;                  ;; reset 8-bit detection
 
 ;       if (STRNCMP(term, u8("builtin_"), 8) == 0)
 ;           term = term.plus(8);
@@ -57526,7 +56475,7 @@
 ;           {
 ;               screen_start();         ;; don't know where cursor is now
 ;               out_flush();
-;               ui_delay(2000L, true);
+;               ui_delay(2000, true);
 ;           }
 ;           set_string_option_direct(u8("term"), -1, term);
 ;           libc.fflush(stderr);
@@ -57534,15 +56483,6 @@
 ;       out_flush();
 ;       clear_termoptions();            ;; clear old options
 ;       parse_builtin_tcap(term);
-
-        ;; special: There is no info in the termcap about whether the cursor positioning
-        ;; is relative to the start of the screen or to the start of the scrolling region.
-        ;; We just guess here.  Only msdos pcterm is known to do it relative.
-
-;       if (STRCMP(term, u8("pcterm")) == 0)
-;           @T_CCS = u8("yes");
-;       else
-;           @T_CCS = EMPTY_OPTION;
 
         ;; Any "stty" settings override the default for t_kb from the termcap.
         ;; Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
@@ -57557,10 +56497,10 @@
 
 ;       Bytes bs_p = find_termcode(u8("kb"));
 ;       if (bs_p == null || bs_p.at(0) == NUL)
-;           add_termcode(u8("kb"), (bs_p = CTRL_H_STR), FALSE);
+;           add_termcode(u8("kb"), (bs_p = CTRL_H_STR));
 ;       Bytes del_p = find_termcode(u8("kD"));
 ;       if ((del_p == null || del_p.at(0) == NUL) && (bs_p == null || bs_p.at(0) != DEL))
-;           add_termcode(u8("kD"), DEL_STR, FALSE);
+;           add_termcode(u8("kD"), DEL_STR);
 
 ;       @term_is_xterm = vim_is_xterm(term);
 
@@ -57568,7 +56508,6 @@
 
 ;       @full_screen = true;             ;; we can use termcap codes from now on
 ;       set_term_defaults();            ;; use current values as defaults
-;       @crv_status = CRV_GET;           ;; get terminal version later
 
         ;; Initialize the terminal with the appropriate termcap codes.
 
@@ -57588,8 +56527,6 @@
 
 ;           check_map_keycodes();       ;; check mappings for terminal codes used
 ;       }
-
-;       may_req_termresponse();
 
 ;       return true;
     ))
@@ -57623,7 +56560,7 @@
 ;           for (++i; bts[i].bt_key != KS_NAME; i++)
 ;               if (bts[i].bt_key == key)
 ;               {
-;                   add_termcode(name, bts[i].bt_seq, term_is_8bit(term) ? TRUE : FALSE);
+;                   add_termcode(name, bts[i].bt_seq);
 ;                   return true;
 ;               }
 ;       }
@@ -57631,31 +56568,6 @@
 ;       emsg2(u8("E436: No \"%s\" entry in termcap"), name);
 
 ;       return false;
-    ))
-
-;; Return true if terminal "name" uses CSI instead of <Esc>[.
-;; Assume that the terminal is using 8-bit controls when the name contains "8bit", like in "xterm-8bit".
-
-(defn- #_boolean term_is_8bit [#_Bytes name]
-    (§
-;       return (@detected_8bit || STRSTR(name, u8("8bit")) != null);
-    ))
-
-;; Translate terminal control chars from 7-bit to 8-bit:
-;; <Esc>[ -> CSI
-;; <Esc>] -> <M-C-]>
-;; <Esc>O -> <M-C-O>
-
-(defn- #_byte term_7to8bit [#_Bytes p]
-    (§
-;       if (p.at(0) == ESC)
-;           switch (p.at(1))
-;           {
-;               case '[': return CSI;
-;               case ']': return (byte)0x9d;
-;               case 'O': return (byte)0x8f;
-;           }
-;       return NUL;
     ))
 
 ;; Set the terminal name and initialize the terminal options.
@@ -58010,16 +56922,6 @@
 ;       out_str(_tgoto(@T_CDL, 0, line_count));
     ))
 
-(defn- #_void term_set_winpos [#_int x, #_int y]
-    (§
-        ;; Can't handle a negative value here.
-;       if (x < 0)
-;           x = 0;
-;       if (y < 0)
-;           y = 0;
-;       out_str(_tgoto(@T_CWP, y, x));
-    ))
-
 (defn- #_void term_set_winsize [#_int width, #_int height]
     (§
 ;       out_str(_tgoto(@T_CWS, height, width));
@@ -58045,14 +56947,12 @@
 
 (defn- #_void term_color [#_Bytes s, #_int n]
     (§
-;       int i = 2;  ;; index in s[] just after <Esc>[ or CSI
+;       int i = 2;  ;; index in s just after <Esc>[
 
         ;; Special handling of 16 colors, because termcap can't handle it.
         ;; Also accept "\e[3%dm" for TERMINFO, it is sometimes used.
-        ;; Also accept CSI instead of <Esc>[.
 ;       if (8 <= n && 16 <= @t_colors
-;                 && ((s.at(0) == ESC && s.at(1) == (byte)'[') || (s.at(0) == CSI && (i = 1) == 1))
-;                 && s.at(i) != NUL
+;                 && s.at(0) == ESC && s.at(1) == (byte)'[' && s.at(i) != NUL
 ;                 && (STRCMP(s.plus(i + 1), u8("%p1%dm")) == 0 || STRCMP(s.plus(i + 1), u8("%dm")) == 0)
 ;                 && (s.at(i) == (byte)'3' || s.at(i) == (byte)'4'))
 ;       {
@@ -58089,7 +56989,7 @@
 ;       {
             ;; TP goes to normal mode for TI (invert) and TB (bold).
 ;           if (@T_ME.at(0) == NUL)
-;               @T_ME = @T_MR = @T_MD = @T_MB = EMPTY_OPTION;
+;               @T_ME = @T_MR = @T_MD = EMPTY_OPTION;
 ;           if (@T_SO.at(0) == NUL || @T_SE.at(0) == NUL)
 ;               @T_SO = @T_SE = EMPTY_OPTION;
 ;           if (@T_US.at(0) == NUL || @T_UE.at(0) == NUL)
@@ -58304,18 +57204,11 @@
 
 ;           if (tmode != TMODE_COOK || @cur_tmode != TMODE_COOK)
 ;           {
-                ;; May need to check for T_CRV response and termcodes,
-                ;; it doesn't work in Cooked mode, an external program may get them.
-;               if (tmode != TMODE_RAW && (@crv_status == CRV_SENT || @u7_status == U7_SENT))
-;                   vpeekc_nomap();
-;               check_for_codes_from_term();
-
 ;               out_flush();
 ;               mch_settmode(tmode);                ;; machine specific function
 ;               @cur_tmode = tmode;
 ;               out_flush();
 ;           }
-;           may_req_termresponse();
 ;       }
     ))
 
@@ -58328,12 +57221,6 @@
 ;           out_flush();
 ;           @termcap_active = true;
 ;           screen_start();                 ;; don't know where cursor is now
-
-;           may_req_termresponse();
-            ;; Immediately check for a response.
-            ;; If t_Co changes, we don't want to redraw with wrong colors first.
-;           if (@crv_status == CRV_SENT)
-;               check_for_codes_from_term();
 ;       }
     ))
 
@@ -58343,18 +57230,6 @@
 ;       reset_cterm_colors();
 ;       if (@termcap_active)
 ;       {
-            ;; May need to discard T_CRV or T_U7 response.
-;           if (@crv_status == CRV_SENT || @u7_status == U7_SENT)
-;           {
-                ;; Give the terminal a chance to respond.
-;               mch_delay(100L, false);
-                ;; Discard data received but not read.
-;               if (@exiting)
-;                   libc.tcflush(libc.fileno(stdin), TCIFLUSH);
-;           }
-            ;; Check for termcodes first, otherwise an external program may get them.
-;           check_for_codes_from_term();
-
 ;           out_str(@T_KE);                  ;; stop "keypad transmit" mode
 ;           out_flush();
 ;           @termcap_active = false;
@@ -58362,74 +57237,6 @@
 ;           out_str(@T_TE);                  ;; stop termcap mode
 ;           screen_start();                 ;; don't know where cursor is now
 ;           out_flush();
-;       }
-    ))
-
-;; Request version string (for xterm) when needed.
-;; Only do this after switching to raw mode, otherwise the result will be echoed.
-;; Only do this after startup has finished, to avoid that the response comes
-;; while executing "-c !cmd" or even after "-c quit".
-;; Only do this after termcap mode has been started, otherwise the codes for
-;; the cursor keys may be wrong.
-;; Only do this when 'esckeys' is on, otherwise the response causes trouble in Insert mode.
-;; On Unix only do it when both output and input are a tty (avoid writing
-;; request to terminal while reading from a file).
-;; The result is caught in check_termcode().
-
-(defn- #_void may_req_termresponse []
-    (§
-;       if (@crv_status == CRV_GET
-;               && @cur_tmode == TMODE_RAW
-;               && @starting == 0
-;               && @termcap_active
-;               && @p_ek
-;               && libc.isatty(1) != 0
-;               && libc.isatty(@read_cmd_fd) != 0
-;               && @T_CRV.at(0) != NUL)
-;       {
-;           out_str(@T_CRV);
-;           @crv_status = CRV_SENT;
-            ;; check for the characters now, otherwise they might be eaten by get_keystroke()
-;           out_flush();
-;           vpeekc_nomap();
-;       }
-    ))
-
-;; Check how the terminal treats ambiguous character width (UAX #11).
-;; First, we move the cursor to (1, 0) and print a test ambiguous character
-;; \u25bd (WHITE DOWN-POINTING TRIANGLE) and query current cursor position.
-;; If the terminal treats \u25bd as single width, the position is (1, 1),
-;; or if it is treated as double width, that will be (1, 2).
-;; This function has the side effect that changes cursor position, so
-;; it must be called immediately after entering termcap mode.
-
-(defn- #_void may_req_ambiguous_char_width []
-    (§
-;       if (@u7_status == U7_GET
-;               && @cur_tmode == TMODE_RAW
-;               && @termcap_active
-;               && @p_ek
-;               && libc.isatty(1) != 0
-;               && libc.isatty(@read_cmd_fd) != 0
-;               && @T_U7.at(0) != NUL
-;               && !option_was_set(u8("ambiwidth")))
-;       {
-;           Bytes buf = new Bytes(16);
-
-            ;; Do this in the second row.
-            ;; In the first row the returned sequence may be CSI 1;2R, which is the same as <S-F3>.
-;           term_windgoto(1, 0);
-;           buf.be(utf_char2bytes(0x25bd, buf), 0);
-;           out_str(buf);
-;           out_str(@T_U7);
-;           @u7_status = U7_SENT;
-;           out_flush();
-;           term_windgoto(1, 0);
-;           out_str(u8("  "));
-;           term_windgoto(0, 0);
-            ;; check for the characters now, otherwise they might be eaten by get_keystroke()
-;           out_flush();
-;           vpeekc_nomap();
 ;       }
     ))
 
@@ -58582,14 +57389,10 @@
 ;       @need_gather = true;         ;; need to fill termleader[]
     ))
 
-(final int ATC_FROM_TERM 55)
-
 ;; Add a new entry to the list of terminal codes.
 ;; The list is kept alphabetical for ":set termcap"
-;; "flags" is true when replacing 7-bit by 8-bit controls is desired.
-;; "flags" can also be ATC_FROM_TERM for got_code_from_term().
 
-(defn- #_void add_termcode [#_Bytes name, #_Bytes string, #_int flags]
+(defn- #_void add_termcode [#_Bytes name, #_Bytes string]
     (§
 ;       if (string == null || string.at(0) == NUL)
 ;       {
@@ -58598,17 +57401,6 @@
 ;       }
 
 ;       Bytes code = STRDUP(string);
-
-        ;; Change leading <Esc>[ to CSI, change <Esc>O to <M-O>.
-;       if (flags != 0 && flags != ATC_FROM_TERM)
-;       {
-;           byte esc = term_7to8bit(code);
-;           if (esc != NUL)
-;           {
-;               code.be(0, esc);
-;               BCOPY(code, 1, code, 2, STRLEN(code, 2) + 1);
-;           }
-;       }
 
 ;       int len = STRLEN(code);
 
@@ -58642,26 +57434,10 @@
 
 ;               if (@termcodes[i].name.at(1) == name.at(1))
 ;               {
-;                   int j;
-;                   if (flags == ATC_FROM_TERM && 0 < (j = termcode_star(@termcodes[i].code, @termcodes[i].len)))
-;                   {
-                        ;; Don't replace ESC[123;*X or ESC O*X with another
-                        ;; when invoked from got_code_from_term().
-;                       if (len == @termcodes[i].len - j
-;                               && STRNCMP(code, @termcodes[i].code, len - 1) == 0
-;                               && code.at(len - 1) == @termcodes[i].code.at(@termcodes[i].len - 1))
-;                       {
-                            ;; They are equal but for the ";*": don't add it.
-;                           return;
-;                       }
-;                   }
-;                   else
-;                   {
-                        ;; Replace old code.
-;                       @termcodes[i].code = null;
-;                       --@tc_len;
-;                       break;
-;                   }
+                    ;; Replace old code.
+;                   @termcodes[i].code = null;
+;                   --@tc_len;
+;                   break;
 ;               }
 ;           }
 
@@ -58735,31 +57511,6 @@
 ;           COPY_termcode(@termcodes[i], @termcodes[i + 1]);
     ))
 
-;; Called when detected that the terminal sends 8-bit codes.
-;; Convert all 7-bit codes to their 8-bit equivalent.
-
-(defn- #_void switch_to_8bit []
-    (§
-        ;; Only need to do something when not already using 8-bit codes.
-;       if (!term_is_8bit(@T_NAME))
-;       {
-;           for (int i = 0; i < @tc_len; i++)
-;           {
-;               Bytes code = @termcodes[i].code;
-;               byte esc = term_7to8bit(code);
-;               if (esc != NUL)
-;               {
-;                   code.be(0, esc);
-;                   BCOPY(code, 1, code, 2, STRLEN(code, 2) + 1);
-;               }
-;           }
-
-;           @need_gather = true;             ;; need to fill termleader[]
-;       }
-
-;       @detected_8bit = true;
-    ))
-
 ;; Check if typebuf.tb_buf[] contains a terminal key code.
 ;; Check from typebuf.tb_buf[typebuf.tb_off] to typebuf.tb_buf[typebuf.tb_off + max_offset].
 ;; Return 0 for no match, -1 for partial match, > 0 for full match.
@@ -58818,7 +57569,7 @@
 ;           }
 
             ;; Skip this position if the character does not appear as the first character in 'term_strings'.
-            ;; This speeds up a lot, since most termcodes start with the same character (ESC or CSI).
+            ;; This speeds up a lot, since most termcodes start with the same character (ESC).
 
 ;           Bytes q;
 ;           for (q = termleader; q.at(0) != NUL && q.at(0) != tp.at(0); q = q.plus(1))
@@ -58919,128 +57670,6 @@
 ;                       key_name.be(1, @termcodes[idx].name.at(1));
 ;                       break;
 ;                   }
-;               }
-;           }
-
-            ;; Mouse codes of DEC, pterm, and URXVT start with <ESC>[.
-            ;; When detecting the start of these mouse codes they might
-            ;; as well be another key code or terminal response.
-;           if (key_name.at(0) == NUL)
-;           {
-                ;; Check for some responses from the terminal starting with "<Esc>[" or CSI:
-                ;;
-                ;; - Xterm version string: <Esc>[>{x};{vers};{y}c
-                ;;   Also eat other possible responses to t_RV, rxvt returns "<Esc>[?1;2c".
-                ;;   Also accept CSI instead of <Esc>[.
-                ;;   mrxvt has been reported to have "+" in the version.
-                ;;   Assume the escape sequence ends with a letter or one of "{|}~".
-                ;;
-                ;; - Cursor position report: <Esc>[{row};{col}R
-                ;;   The final byte must be 'R'.
-                ;;   It is used for checking the ambiguous-width character state.
-
-;               Bytes p = (tp.at(0) == CSI) ? tp.plus(1) : tp.plus(2);
-;               if ((@T_CRV.at(0) != NUL || @T_U7.at(0) != NUL)
-;                           && ((tp.at(0) == ESC && tp.at(1) == (byte)'[' && 3 <= len) || (tp.at(0) == CSI && 2 <= len))
-;                           && (asc_isdigit(p.at(0)) || p.at(0) == (byte)'>' || p.at(0) == (byte)'?'))
-;               {
-;                   int j = 0;
-;                   int extra = 0;
-;                   byte row_char = NUL;
-
-;                   int i;
-;                   for (i = 2 + ((tp.at(0) != CSI) ? 1 : 0); i < len && !('{' <= tp.at(i) && tp.at(i) <= '~') && !asc_isalpha(tp.at(i)); i++)
-;                       if (tp.at(i) == (byte)';' && ++j == 1)
-;                       {
-;                           extra = i + 1;
-;                           row_char = tp.at(i - 1);
-;                       }
-;                   if (i == len)
-;                       return -1;
-
-;                   int col = (0 < extra) ? libC.atoi(tp.plus(extra)) : 0;
-
-                    ;; Eat it when it has 2 arguments and ends in 'R'.  Also when u7_status is not
-                    ;; "sent", it may be from a previous Vim that just exited.  But not for <S-F3>,
-                    ;; it sends something similar, check for row and column to make sense.
-;                   if (j == 1 && tp.at(i) == (byte)'R')
-;                   {
-;                       if (row_char == '2' && 2 <= col)
-;                       {
-;                           @u7_status = U7_GOT;
-;                           @did_cursorhold = true;
-
-;                           Bytes aw = null;
-;                           if (col == 2)
-;                               aw = u8("single");
-;                           else if (col == 3)
-;                               aw = u8("double");
-;                           if (aw != null && STRCMP(aw, @p_ambw) != 0)
-;                           {
-                                ;; Setting the option causes a screen redraw.
-                                ;; Do that right away if possible, keeping any messages.
-;                               set_option_value(u8("ambw"), 0L, aw);
-;                               redraw_asap(CLEAR);
-;                           }
-;                       }
-;                       key_name.be(0, KS_EXTRA);
-;                       key_name.be(1, KE_IGNORE);
-;                       slen = i + 1;
-;                   }
-
-                    ;; Eat it when at least one digit and ending in 'c'.
-;                   else if (@T_CRV.at(0) != NUL && 2 + ((tp.at(0) != CSI) ? 1 : 0) < i && tp.at(i) == (byte)'c')
-;                   {
-;                       @crv_status = CRV_GOT;
-;                       @did_cursorhold = true;
-
-                        ;; If this code starts with CSI, you can bet that the terminal uses 8-bit codes.
-;                       if (tp.at(0) == CSI)
-;                           switch_to_8bit();
-
-                        ;; rxvt sends its version number: "20703" is 2.7.3.
-                        ;; Ignore it for when the user has set 'term' to xterm, even though it's an rxvt.
-;                       if (0 < extra)
-;                           extra = libC.atoi(tp.plus(extra));
-;                       if (20000 < extra)
-;                           extra = 0;
-
-;                       if (tp.at(1 + ((tp.at(0) != CSI) ? 1 : 0)) == '>' && j == 2)
-;                       {
-                            ;; if xterm version >= 141 try to get termcap codes
-;                           if (141 <= extra)
-;                           {
-;                               @check_for_codes = true;
-;                               @need_gather = true;
-;                               req_codes_from_term();
-;                           }
-;                       }
-;                       key_name.be(0, KS_EXTRA);
-;                       key_name.be(1, KE_IGNORE);
-;                       slen = i + 1;
-;                   }
-;               }
-
-                ;; Check for '<Esc>P1+r<hex bytes><Esc>\'.
-                ;; A "0" instead of the "1" means an invalid request.
-;               else if (@check_for_codes && ((tp.at(0) == ESC && tp.at(1) == (byte)'P' && 2 <= len) || tp.at(0) == DCS))
-;               {
-;                   int i;
-
-;                   int j = 1 + ((tp.at(0) != DCS) ? 1 : 0);
-;                   for (i = j; i < len; i++)
-;                       if ((tp.at(i) == ESC && tp.at(i + 1) == (byte)'\\' && i + 1 < len) || tp.at(i) == STERM)
-;                       {
-;                           if (3 <= i - j && tp.at(j + 1) == (byte)'+' && tp.at(j + 2) == (byte)'r')
-;                               got_code_from_term(tp.plus(j), i);
-;                           key_name.be(0, KS_EXTRA);
-;                           key_name.be(1, KE_IGNORE);
-;                           slen = i + 1 + (tp.at(i) == ESC ? 1 : 0);
-;                           break;
-;                       }
-
-;                   if (i == len)
-;                       return -1;          ;; not enough characters
 ;               }
 ;           }
 
@@ -59254,7 +57883,6 @@
 ;           for (int n = us_ptr2len_cc(src[0]); 0 < n--; src[0] = src[0].plus(1))
 ;           {
                 ;; If the character is KB_SPECIAL, replace it with KB_SPECIAL KS_SPECIAL KE_FILLER.
-                ;; If compiled with the GUI replace CSI with K_CSI.
 
 ;               if (src[0].at(0) == KB_SPECIAL)
 ;               {
@@ -59295,8 +57923,6 @@
     (§
 ;       int len = 0;
 
-;       if (@check_for_codes)
-;           termleader.be(len++, DCS);    ;; the termcode response starts with DCS in 8-bit mode
 ;       termleader.be(len, NUL);
 
 ;       for (int i = 0; i < @tc_len; i++)
@@ -59420,151 +58046,6 @@
 ;       return len;
     ))
 
-;; For Xterm >= 140 compiled with OPT_TCAP_QUERY:
-;; obtain the actually used termcap codes from the terminal itself.
-;; We get them one by one to avoid a very long response string.
-
-(atom! int xt_index_in)
-(atom! int xt_index_out)
-
-(defn- #_void req_codes_from_term []
-    (§
-;       @xt_index_in = 0;
-;       @xt_index_out = 0;
-;       req_more_codes_from_term();
-    ))
-
-(defn- #_void req_more_codes_from_term []
-    (§
-        ;; Don't do anything when going to exit.
-;       if (@exiting)
-;           return;
-
-;       int old_idx = @xt_index_out;
-
-        ;; Send up to 10 more requests out than we received.
-        ;; Avoid sending too many, there can be a buffer overflow somewhere.
-;       for ( ; @xt_index_out < @xt_index_in + 10 && key_names[@xt_index_out] != null; @xt_index_out++)
-;       {
-;           Bytes buf = new Bytes(10 + 1);
-
-;           libC.sprintf(buf, u8("\033P+q%02x%02x\033\\"), key_names[@xt_index_out].at(0), key_names[@xt_index_out].at(1));
-;           out_str_nf(buf);
-;       }
-
-        ;; Send the codes out right away.
-;       if (@xt_index_out != old_idx)
-;           out_flush();
-    ))
-
-;; Decode key code response from xterm: '<Esc>P1+r<name>=<string><Esc>\'.
-;; A "0" instead of the "1" indicates a code that isn't supported.
-;; Both <name> and <string> are encoded in hex.
-;; "code" points to the "0" or "1".
-
-(defn- #_void got_code_from_term [#_Bytes code, #_int len]
-    (§
-;       final int XT_LEN = 100;
-;       Bytes str = new Bytes(XT_LEN);
-
-        ;; A '1' means the code is supported, a '0' means it isn't.
-        ;; When half the length is > XT_LEN we can't use it.
-        ;; Our names are currently all 2 characters.
-;       if (code.at(0) == (byte)'1' && code.at(7) == (byte)'=' && len / 2 < XT_LEN)
-;       {
-;           Bytes name = new Bytes(3);
-
-            ;; Get the name from the response and find it in the table.
-;           name.be(0, hexhex2nr(code.plus(3)));
-;           name.be(1, hexhex2nr(code.plus(5)));
-;           name.be(2, NUL);
-
-;           int k;
-;           for (k = 0; key_names[k] != null; k++)
-;               if (STRCMP(key_names[k], name) == 0)
-;               {
-;                   @xt_index_in = k;
-;                   break;
-;               }
-
-;           if (key_names[k] != null)
-;           {
-;               int j = 0;
-;               for (int i = 8; ; i += 2)
-;               {
-;                   int x = hexhex2nr(code.plus(i));
-;                   if (x < 0)
-;                       break;
-;                   str.be(j++, x);
-;               }
-;               str.be(j, NUL);
-
-;               if (name.at(0) == (byte)'C' && name.at(1) == (byte)'o')
-;               {
-                    ;; Color count is not a key code.
-;                   int i = libC.atoi(str);
-;                   if (i != @t_colors)
-;                   {
-                        ;; Nr of colors changed, initialize highlighting and redraw everything.
-                        ;; This causes a redraw, which usually clears the message.
-;                       set_color_count(i);
-;                       init_highlight(true, false);
-;                       redraw_asap(CLEAR);
-;                   }
-;               }
-;               else
-;               {
-                    ;; First delete any existing entry with the same code.
-;                   int i = find_term_bykeys(str);
-;                   if (0 <= i)
-;                       del_termcode_idx(i);
-;                   add_termcode(name, str, ATC_FROM_TERM);
-;               }
-;           }
-;       }
-
-        ;; May request more codes now that we received one.
-;       @xt_index_in++;
-;       req_more_codes_from_term();
-    ))
-
-;; Check if there are any unanswered requests and deal with them.
-;; This is called before starting an external program or getting direct keyboard input.
-;; We don't want responses to be send to that program or handled as typed text.
-
-(defn- #_void check_for_codes_from_term []
-    (§
-        ;; If no codes requested or all are answered, no need to wait.
-;       if (@xt_index_out == 0 || @xt_index_out == @xt_index_in)
-;           return;
-
-        ;; vgetc() will check for and handle any response.
-        ;; Keep calling vpeekc() until we don't get any responses.
-;       @no_mapping++;
-;       @allow_keys++;
-;       for ( ; ; )
-;       {
-;           int c = vpeekc();
-;           if (c == NUL)       ;; nothing available
-;               break;
-
-            ;; If a response is recognized it's replaced with K_IGNORE, must read it from the input stream.
-            ;; If there is no K_IGNORE we can't do anything, break here
-            ;; (there might be some responses further on, but we don't want to throw away any typed chars).
-
-;           if (c != char_u(KB_SPECIAL) && c != K_IGNORE)
-;               break;
-;           c = vgetc();
-;           if (c != K_IGNORE)
-;           {
-;               vungetc(c);
-;               break;
-;           }
-;       }
-;       --@no_mapping;
-;       --@allow_keys;
-    ))
-
 ;; ui.c: functions that handle the user interface.
 ;; 1. Keyboard input stuff, and a bit of windowing stuff.  These are called
 ;;    before the machine specific stuff (mch_*) so that we can call the GUI
@@ -59596,7 +58077,7 @@
     ;; wtime: don't use "time", MIPS cannot handle it
     (§
         ;; If we are going to wait for some time or block...
-;       if (wtime == -1 || 100L < wtime)
+;       if (wtime == -1 || 100 < wtime)
 ;       {
             ;; ... allow signals to kill us.
 ;           vim_handle_signal(SIGNAL_UNBLOCK);
@@ -59609,7 +58090,7 @@
 
 ;       int len = mch_inchar(buf, maxlen, wtime, tb_change_cnt);
 
-;       if (wtime == -1 || 100L < wtime)
+;       if (wtime == -1 || 100 < wtime)
             ;; block SIGHUP et al.
 ;           vim_handle_signal(SIGNAL_BLOCK);
 
@@ -62821,7 +61302,7 @@
 ;               saved_char_attr = char_attr;
 ;               n_extra = 0;
 ;               lcs_prec_todo = @lcs_prec;
-;                   need_showbreak = true;
+;               need_showbreak = true;
 ;           }
 ;       }
 
@@ -64018,7 +62499,7 @@
 ;       if ((@emsg_on_display || (check_msg_scroll && @msg_scroll)) && !@did_wait_return && @emsg_silent == 0)
 ;       {
 ;           out_flush();
-;           ui_delay(1000L, true);
+;           ui_delay(1000, true);
 ;           @emsg_on_display = false;
 ;           if (check_msg_scroll)
 ;               @msg_scroll = false;
@@ -64797,11 +63278,7 @@
 ;       if (@T_DB.at(0) != NUL)
 ;           screen_del_lines(off, end - line_count, line_count, end, false, wp);
 
-;       int cursor_row;
-;       if (@T_CCS.at(0) != NUL)      ;; cursor relative to region
-;           cursor_row = row;
-;       else
-;           cursor_row = row + off;
+;       int cursor_row = row + off;
 
         ;; Shift lineOffset[] line_count down to reflect the inserted lines.
         ;; Clear the inserted lines in screenLines[].
@@ -64941,18 +63418,8 @@
 ;       else
 ;           return false;
 
-;       int cursor_row;
-;       int cursor_end;
-;       if (@T_CCS.at(0) != NUL)      ;; cursor relative to region
-;       {
-;           cursor_row = row;
-;           cursor_end = end;
-;       }
-;       else
-;       {
-;           cursor_row = row + off;
-;           cursor_end = end + off;
-;       }
+;       int cursor_row = row + off;
+;       int cursor_end = end + off;
 
         ;; Now shift lineOffset[] line_count up to reflect the deleted lines.
         ;; Clear the inserted lines in screenLines[].
@@ -65329,7 +63796,7 @@
             ;; Some sprintfs return the length, some return a pointer.
             ;; To avoid portability problems we use STRLEN() here.
 
-;           vim_snprintf(buffer, RULER_BUF_LEN, u8("%ld,"), ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ? 0L : wp.w_cursor.lnum);
+;           vim_snprintf(buffer, RULER_BUF_LEN, u8("%ld,"), ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ? 0 : wp.w_cursor.lnum);
 ;           int len = STRLEN(buffer);
 ;           col_print(buffer.plus(len), RULER_BUF_LEN - len, (empty_line) ? 0 : wp.w_cursor.col + 1, virtcol[0] + 1);
 
@@ -65506,7 +63973,7 @@
 ;               reset_VIsual_and_resel();
 ;               if (Prenum != 0)
                     ;; window height
-;                   vim_snprintf(cbuf, cbuf.size() - 5, u8("%ld"), Prenum);
+;                   vim_snprintf(cbuf, cbuf.size() - 5, u8("%ld"), Prenum);
 ;               else
 ;                   cbuf.be(0, NUL);
 ;               STRCAT(cbuf, u8("new"));
@@ -65891,7 +64358,7 @@
 
 ;       STRCPY(bufp, cmd);
 ;       if (0 < Prenum)
-;           vim_snprintf(bufp.plus(len), bufsize - len, u8("%ld"), Prenum);
+;           vim_snprintf(bufp.plus(len), bufsize - len, u8("%ld"), Prenum);
     ))
 
 ;; split the current window, implements CTRL-W s and :split
@@ -68501,7 +66968,7 @@
 ;       }
     ))
 
-(final long FRACTION_MULT 16384#_L)
+(final long FRACTION_MULT 16384)
 
 ;; Set wp.w_fraction for the current w_wrow and w_height.
 
@@ -68534,8 +67001,7 @@
 
 ;           if (wp.w_height != prev_height)
 ;               return;                         ;; Recursive call already changed the size,
-                                                ;; bail out here to avoid the following
-                                                ;; to mess things up.
+                                                ;; bail out here to avoid the following to mess things up.
 
 ;           if (wp.w_wrow != wp.w_prev_fraction_row)
 ;               set_fraction(wp);
@@ -68554,7 +67020,7 @@
 ;           long lnum = wp.w_cursor.lnum;
 ;           if (lnum < 1)           ;; can happen when starting up
 ;               lnum = 1;
-;           wp.w_wrow = (int)(((long)wp.w_fraction * (long)height - 1L + FRACTION_MULT / 2) / FRACTION_MULT);
+;           wp.w_wrow = (int)(((long)wp.w_fraction * (long)height - 1 + FRACTION_MULT / 2) / FRACTION_MULT);
 ;           int line_size = plines_win_col(wp, lnum, (long)wp.w_cursor.col) - 1;
 ;           int sline = wp.w_wrow - line_size;
 
@@ -70480,14 +68946,6 @@
 (defn- #_int syn_get_sub_char []
     (§
 ;       return @current_sub_char;
-    ))
-
-;; Highlighting stuff
-
-(defn- #_void init_highlight [#_boolean both, #_boolean reset]
-    ;; both: include groups where 'bg' doesn't matter
-    ;; reset: clear group first
-    (§
     ))
 
 ;; Reset the cterm colors to what they were before Vim was started,
