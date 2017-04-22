@@ -30362,13 +30362,14 @@
                         (reset! u_oldcount @u_newcount)
                         (if (== @u_newcount 1) (u8 "change") (u8 "changes"))
                     ))
+              #_int i (:b_u_current @curbuf) #_int n (count (:b_u_headers @curbuf))
               [#_u_header_C uhp did_undo]
                 (cond
-                    (nil? (:b_u_curhead @curbuf))                            [(:b_u_newhead @curbuf) did_undo]
+                    (== i n)               [(when (< 0 n) (... (:b_u_headers @curbuf) (dec n))) did_undo]
                     ;; For ":undo N" we prefer a "after #N" message.
-                    (and absolute (some? (:uh_next (:b_u_curhead @curbuf)))) [(:uh_next (:b_u_curhead @curbuf)) false]
-                    did_undo                                                 [(:b_u_curhead @curbuf) did_undo]
-                    :else                                                    [(:uh_next (:b_u_curhead @curbuf)) did_undo]
+                    (and absolute (< 0 i)) [(... (:b_u_headers @curbuf) (dec i)) false]
+                    did_undo               [(... (:b_u_headers @curbuf) i) did_undo]
+                    :else                  [(when (< 0 i) (... (:b_u_headers @curbuf) (dec i))) did_undo]
                 )
               #_Bytes msgbuf (Bytes. 80)]
             (if (some? uhp)
