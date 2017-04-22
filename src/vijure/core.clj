@@ -9684,7 +9684,7 @@
                 (ß BREAK normal_end)
             )
 
-            (when (and (text-locked) (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_NCW)))
+            (when (and (text-locked) (flag? (:cmd_flags (... nv_cmds idx)) NV_NCW))
                 ;; This command is not allowed while editing a cmdline: beep.
                 (clearopbeep oap)
                 (text-locked-msg)
@@ -9695,14 +9695,14 @@
 
             (when @VIsual_active
                 ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-                (when (and @km_stopsel (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_STS)) (non-flag? @mod_mask MOD_MASK_SHIFT))
+                (when (and @km_stopsel (flag? (:cmd_flags (... nv_cmds idx)) NV_STS) (non-flag? @mod_mask MOD_MASK_SHIFT))
                     (end-visual-mode)
                     (redraw-curbuf-later INVERTED)
                 )
 
                 ;; Keys that work different when 'keymodel' contains "startsel".
                 (when @km_startsel
-                    (cond (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SS))
+                    (cond (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
                     (do
                         ((ß ca =) (unshift-special ca))
                         ((ß idx =) (find--command (:cmdchar ca)))
@@ -9712,7 +9712,7 @@
                             (ß BREAK normal_end)
                         )
                     )
-                    (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
+                    (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
                     (do
                         (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
                     ))
@@ -9773,7 +9773,7 @@
 
                     (when (not lit)
                         ;; Typing CTRL-K gets a digraph.
-                        (when (and (== (k'char ca) Ctrl_K) (or (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_LANG)) (== k'char :extra_char)) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
+                        (when (and (== (k'char ca) Ctrl_K) (or (flag? (:cmd_flags (... nv_cmds idx)) NV_LANG) (== k'char :extra_char)) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
                             ((ß c =) (get-digraph false))
                             (when (< 0 c)
                                 ((ß ca.k'char =) c)
@@ -9879,13 +9879,13 @@
 
             ;; When 'keymodel' contains "startsel" some keys start Select/Visual mode.
             (when (and (not @VIsual_active) @km_startsel)
-                (cond (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SS))
+                (cond (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
                 (do
                     (start-selection)
                     ((ß ca =) (unshift-special ca))
                     ((ß idx =) (find--command (:cmdchar ca)))
                 )
-                (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
+                (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
                 (do
                     (start-selection)
                     (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
@@ -14137,8 +14137,7 @@
         ((ß int oldstate =) @State)
         (reset! State INSERT)             ;; don't want REPLACE for State
 
-        ((ß block_def_C bd =) (NEW_block_def_C))
-        (block-prep oap, bd, (:lnum (:w_cursor @curwin)), true)
+        ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), (:lnum (:w_cursor @curwin)), true))
         (if (:is_short bd)
             ((ß RETURN) nil)
         )
@@ -14176,7 +14175,7 @@
             ((ß int j =) (if (non-zero? i) (% (+ (% ws_vcol q_ts) total) q_ts) total)) ;; number of spp
             ;; if we're splitting a TAB, allow for it
             ((ß bd.textcol =) (- (:textcol bd) (- (:pre_whitesp_c bd) (if (non-zero? (:startspaces bd)) 1 0))))
-            ((ß int len =) (+ (STRLEN (:textstart bd)) 1))
+            ((ß int len =) (inc (STRLEN (:textstart bd))))
             ((ß newp =) (Bytes. (+ (:textcol bd) i j len)))
 
             (BCOPY newp, oldp, (:textcol bd))
@@ -14281,8 +14280,8 @@
 
         ((ß int s_len =) (STRLEN s))
 
-        (loop-when-recur [#_long lnum (+ (:lnum (:op_start oap)) 1)] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-            (block-prep oap, bdp, lnum, true)
+        (loop-when-recur [#_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
+            ((ß bdp =) (block-prep oap, bdp, lnum, true))
             (if (and (:is_short bdp) b_insert)
                 (ß CONTINUE)                               ;; OP_INSERT, line ends before block start
             )
@@ -14367,7 +14366,7 @@
             )
         )
 
-        (changed-lines (+ (:lnum (:op_start oap)) 1), 0, (+ (:lnum (:op_end oap)) 1), 0)
+        (changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
 
         (reset! State oldstate)
         nil
@@ -14910,7 +14909,7 @@
         ((ß boolean did_yank =) false)
         ((ß int orig_regname =) (:regname oap))
 
-        (if (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY)) ;; nothing to do
+        (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) ;; nothing to do
             ((ß RETURN) true)
         )
 
@@ -15008,22 +15007,19 @@
 
             (cond (:block_mode oap)
             (do
-                (if (not (u-save (- (:lnum (:op_start oap)) 1), (+ (:lnum (:op_end oap)) 1)))
+                (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
                     ((ß RETURN) false)
                 )
 
-                ((ß block_def_C bd =) (NEW_block_def_C))
                 (loop-when-recur [#_long lnum (:lnum (:w_cursor @curwin))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-                    (block-prep oap, bd, lnum, true)
+                    ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), lnum, true))
                     (if (zero? (:textlen bd))    ;; nothing to delete
                         (ß CONTINUE)
                     )
 
                     ;; Adjust cursor position for tab replaced by spaces and 'lbr'.
                     (when (== lnum (:lnum (:w_cursor @curwin)))
-                        (swap! curwin assoc-in [:w_cursor :col] (+ (:textcol bd) (:startspaces bd)))
-                        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                    )
+                        (swap! curwin update :w_cursor assoc :col (+ (:textcol bd) (:startspaces bd)) :coladd 0))
 
                     ;; n == number of chars deleted
                     ;; If we delete a TAB, it may be replaced by several characters.
@@ -15045,7 +15041,7 @@
                 )
 
                 (check-cursor-col)
-                (changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (+ (:lnum (:op_end oap)) 1), 0)
+                (changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (inc (:lnum (:op_end oap))), 0)
                 ((ß oap.line_count =) 0)     ;; no lines deleted
             )
             (== (:motion_type oap) MLINE)
@@ -15111,7 +15107,7 @@
                     ;; Break a tab only when it's included in the area.
                     (when (and (== (gchar (:op_end oap)) TAB) (< (:coladd (:op_end oap)) (if (:inclusive oap) 1 0)))
                         ;; save last line for undo
-                        (if (not (u-save (- (:lnum (:op_end oap)) 1), (+ (:lnum (:op_end oap)) 1)))
+                        (if (not (u-save (dec (:lnum (:op_end oap))), (inc (:lnum (:op_end oap)))))
                             ((ß RETURN) false)
                         )
                         (swap! curwin assoc :w_cursor (:op_end oap))
@@ -15157,7 +15153,7 @@
                 :else                                    ;; delete characters between lines
                 (do
                     ;; save deleted and changed lines for undo
-                    (if (not (u-save (- (:lnum (:w_cursor @curwin)) 1), (+ (:lnum (:w_cursor @curwin)) (:line_count oap))))
+                    (if (not (u-save (dec (:lnum (:w_cursor @curwin))), (+ (:lnum (:w_cursor @curwin)) (:line_count oap))))
                         ((ß RETURN) false)
                     )
 
@@ -15174,7 +15170,7 @@
                         ((ß oap.op_end.lnum =) (:ml_line_count (:b_ml @curbuf)))
                     )
 
-                    ((ß int n =) (- (+ (:col (:op_end oap)) 1) (if (not (:inclusive oap)) 1 0)))
+                    ((ß int n =) (- (inc (:col (:op_end oap))) (if (not (:inclusive oap)) 1 0)))
                     (cond (and (:inclusive oap) delete_last_line (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
                     (do
                         ;; Special case: gH<Del> deletes the last line.
@@ -15230,7 +15226,7 @@
         ((ß Bytes after_p =) nil)
         ((ß boolean had_ctrl_v_cr =) (any == c -1 -2))
 
-        (if (or (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY)) (:empty oap))
+        (if (or (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) (:empty oap))
             ((ß RETURN) true)            ;; nothing to do
         )
 
@@ -15247,11 +15243,11 @@
         (cond (:block_mode oap)
         (do
             ((ß block_def_C bd =) (NEW_block_def_C))
-
             ((ß bd.is_MAX =) (== (:w_curswant @curwin) MAXCOL))
+
             (loop-when [] (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
                 (swap! curwin assoc-in [:w_cursor :col] 0)    ;; make sure cursor position is valid
-                (block-prep oap, bd, (:lnum (:w_cursor @curwin)), true)
+                ((ß bd =) (block-prep oap, bd, (:lnum (:w_cursor @curwin)), true))
                 (when (and (zero? (:textlen bd)) (or (== @virtual_op FALSE) (:is_MAX bd)))
                     (swap! curwin update-in [:w_cursor :lnum] inc)
                     (ß CONTINUE)               ;; nothing to replace
@@ -15435,7 +15431,7 @@
     (§
         ((ß boolean did_change =) false)
 
-        (if (not (u-save (- (:lnum (:op_start oap)) 1), (+ (:lnum (:op_end oap)) 1)))
+        (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
             ((ß RETURN) nil)
         )
 
@@ -15444,8 +15440,7 @@
         (cond (:block_mode oap)                     ;; Visual block mode
         (do
             (loop-when [] (<= (:lnum pos) (:lnum (:op_end oap)))
-                ((ß block_def_C bd =) (NEW_block_def_C))
-                (block-prep oap, bd, (:lnum pos), false)
+                ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), (:lnum pos), false))
                 ((ß pos.col =) (:textcol bd))
                 ((ß did_change =) (or (swapchars (:op_type oap), pos, (:textlen bd)) did_change))
                 ((ß pos.lnum =) (inc (:lnum pos)))
@@ -15477,7 +15472,7 @@
             :else
             (do
                 (loop []
-                    ((ß did_change =) (| did_change (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (+ (:col (:op_end oap)) 1) (STRLEN (ml-get-pos pos))))))
+                    ((ß did_change =) (| did_change (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (inc (:col (:op_end oap))) (STRLEN (ml-get-pos pos))))))
                     (if (or (ltoreq (:op_end oap), pos) (== (incp pos) -1))
                         (ß BREAK)
                     )
@@ -15486,7 +15481,7 @@
             ))
 
             (when did_change
-                (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (+ (:lnum (:op_end oap)) 1), 0)
+                (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
             )
         ))
 
@@ -15592,7 +15587,7 @@
                 (reset! ve_flags old_ve_flags)
             )
             ;; Get the info about the block before entering the text.
-            (block-prep oap, bd, (:lnum (:op_start oap)), true)
+            ((ß bd =) (block-prep oap, bd, (:lnum (:op_start oap)), true))
             ((ß Bytes firstline =) (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd)))
             ((ß firstline =) (if (== (:op_type oap) OP_APPEND) (.plus firstline (:textlen bd)) firstline))
             ((ß pre_textlen =) (STRLEN firstline))
@@ -15645,7 +15640,6 @@
         )
 
         (when (:block_mode oap)
-            ((ß block_def_C bd2 =) (NEW_block_def_C))
 
             ;; The user may have moved the cursor before inserting something,
             ;; try to adjust the block for that.
@@ -15673,7 +15667,7 @@
             ;; Get the starting column again and correct the length.
             ;; Don't do this when "$" used, end-of-line will have changed.
 
-            (block-prep oap, bd2, (:lnum (:op_start oap)), true)
+            ((ß block_def_C bd2 =) (block-prep oap, (NEW_block_def_C), (:lnum (:op_start oap)), true))
             (when (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
                 (when (== (:op_type oap) OP_APPEND)
                     ((ß pre_textlen =) (+ pre_textlen (- (:textlen bd2) (:textlen bd))))
@@ -15696,7 +15690,7 @@
                 ((ß Bytes ins_text =) (STRNDUP firstline, ins_len))
 
                 ;; block handled here
-                (when (u-save (:lnum (:op_start oap)), (+ (:lnum (:op_end oap)) 1))
+                (when (u-save (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
                     (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), bd))
 
                 (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
@@ -15723,7 +15717,7 @@
         )
 
         ;; First delete the text in the region.  In an empty buffer only need to save for undo.
-        (cond (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
+        (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
         (do
             (if (not (u-save-cursor))
                 ((ß RETURN) false)
@@ -15737,16 +15731,16 @@
         (when (and (< (:col (:w_cursor @curwin)) l) (not (lineempty (:lnum (:w_cursor @curwin)))) (== @virtual_op FALSE))
             (inc-cursor))
 
-        ((ß block_def_C bd =) (NEW_block_def_C))
+        ((ß int textcol =) 0)
         ;; check for still on same line (<CR> in inserted text meaningless); skip blank lines too
         (when (:block_mode oap)
             ;; Add spaces before getting the current line length.
             (if (and (!= @virtual_op FALSE) (or (< 0 (:coladd (:w_cursor @curwin))) (== (gchar) NUL)))
                 (coladvance-force (getviscol)))
-            ((ß Bytes firstline =) (ml-get (:lnum (:op_start oap))))
-            ((ß pre_textlen =) (STRLEN firstline))
-            ((ß pre_indent =) (BDIFF (skipwhite firstline), firstline))
-            ((ß bd.textcol =) (:col (:w_cursor @curwin)))
+            ((ß Bytes s =) (ml-get (:lnum (:op_start oap))))
+            ((ß pre_textlen =) (STRLEN s))
+            ((ß pre_indent =) (BDIFF (skipwhite s), s))
+            ((ß textcol =) (:col (:w_cursor @curwin)))
         )
 
         ((ß boolean retval =) (edit NUL, false, 1))
@@ -15757,22 +15751,22 @@
         (when (and (:block_mode oap) (!= (:lnum (:op_start oap)) (:lnum (:op_end oap))) (not @got_int))
             ;; Auto-indenting may have changed the indent.  If the cursor was past
             ;; the indent, exclude that indent change from the inserted text.
-            ((ß Bytes firstline =) (ml-get (:lnum (:op_start oap))))
-            (when (< pre_indent (:textcol bd))
-                ((ß int new_indent =) (BDIFF (skipwhite firstline), firstline))
+            ((ß Bytes s =) (ml-get (:lnum (:op_start oap))))
+            (when (< pre_indent textcol)
+                ((ß int new_indent =) (BDIFF (skipwhite s), s))
 
                 ((ß pre_textlen =) (+ pre_textlen (- new_indent pre_indent)))
-                ((ß bd.textcol =) (+ (:textcol bd) (- new_indent pre_indent)))
+                ((ß textcol =) (+ textcol (- new_indent pre_indent)))
             )
 
-            ((ß int ins_len =) (- (STRLEN firstline) pre_textlen))
+            ((ß int ins_len =) (- (STRLEN s) pre_textlen))
             (when (< 0 ins_len)
-                ;; Subsequent calls to ml-get() flush the "firstline" data
+                ;; Subsequent calls to ml-get() flush the "s" data
                 ;; -- take a copy of the inserted text.
-                ((ß Bytes ins_text =) (STRNDUP (.plus firstline (:textcol bd)), ins_len))
+                ((ß Bytes ins_text =) (STRNDUP (.plus s textcol), ins_len))
 
-                (loop-when-recur [#_long linenr (+ (:lnum (:op_start oap)) 1)] (<= linenr (:lnum (:op_end oap))) [(inc linenr)]
-                    (block-prep oap, bd, linenr, true)
+                (loop-when-recur [#_long linenr (inc (:lnum (:op_start oap)))] (<= linenr (:lnum (:op_end oap))) [(inc linenr)]
+                    ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), linenr, true))
                     (when (or (not (:is_short bd)) (!= @virtual_op FALSE))
                         ((ß pos_C vpos =) (NEW_pos_C))
 
@@ -15804,7 +15798,7 @@
                 )
                 (check-cursor)
 
-                (changed-lines (+ (:lnum (:op_start oap)) 1), 0, (+ (:lnum (:op_end oap)) 1), 0)
+                (changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
             )
         )
 
@@ -15894,7 +15888,7 @@
             ((ß SWITCH) (:y_type @y_current)
                 ((ß CASE) MBLOCK)
                 (do
-                    (block-prep oap, bd, lnum, false)
+                    ((ß bd =) (block-prep oap, bd, lnum, false))
                     (yank-copy-line bd, y_idx)
                     (ß BREAK)
                 )
@@ -16354,7 +16348,7 @@
                     (copy-spaces p, (:endspaces bd))
                     ((ß p =) (.plus p (:endspaces bd)))
                     ;; move the text after the cursor to the end of the line.
-                    (BCOPY p, 0, oldp, (+ (:textcol bd) delcount), (+ (- oldlen (:textcol bd) delcount) 1))
+                    (BCOPY p, 0, oldp, (+ (:textcol bd) delcount), (inc (- oldlen (:textcol bd) delcount)))
                     (ml-replace (:lnum (:w_cursor @curwin)), newp)
 
                     (swap! curwin update-in [:w_cursor :lnum] inc)
@@ -16529,7 +16523,7 @@
 
                     ;; note changed text for displaying and folding
                     (if (== y_type MCHAR)
-                        (changed-lines (:lnum (:w_cursor @curwin)), @a'col, (+ (:lnum (:w_cursor @curwin)) 1), nr_lines)
+                        (changed-lines (:lnum (:w_cursor @curwin)), @a'col, (inc (:lnum (:w_cursor @curwin))), nr_lines)
                         (changed-lines (:lnum (:b_op_start @curbuf)), 0, (:lnum (:b_op_start @curbuf)), nr_lines))
 
                     ;; put '] mark at last inserted character
@@ -16620,7 +16614,7 @@
         ((ß int sumsize =) 0)                ;; size of the long new line
         ((ß int col =) 0)
 
-        (if (and save_undo (not (u-save (- (:lnum (:w_cursor @curwin)) 1), (+ (:lnum (:w_cursor @curwin)) count))))
+        (if (and save_undo (not (u-save (dec (:lnum (:w_cursor @curwin))), (+ (:lnum (:w_cursor @curwin)) count))))
             ((ß RETURN) false)
         )
 
@@ -16711,7 +16705,7 @@
 
         ;; Only report the change in the first line here,
         ;; del-lines() will report the deleted line.
-        (changed-lines (:lnum (:w_cursor @curwin)), currsize, (+ (:lnum (:w_cursor @curwin)) 1), 0)
+        (changed-lines (:lnum (:w_cursor @curwin)), currsize, (inc (:lnum (:w_cursor @curwin))), 0)
 
         ;; Delete following lines.  To do this we move the cursor there
         ;; briefly, and then move it back.  After del-lines() the cursor may
@@ -16741,15 +16735,14 @@
 ;; - textlen includes the first/last char to be (partly) deleted
 ;; - start/endspaces is the number of columns that are taken by the
 ;;   first/last deleted char minus the number of columns that have to be deleted.
+;;
 ;; for yank and tilde:
 ;; - textlen includes the first/last char to be wholly yanked
 ;; - start/endspaces is the number of columns of the first/last yanked char
 ;;   that are to be yanked.
 
-(defn- #_void block-prep [#_oparg_C oap, #_block_def_C bdp, #_long lnum, #_boolean is_del]
+(defn- #_block_def_C block-prep [#_oparg_C oap, #_block_def_C bdp, #_long lnum, #_boolean is_del]
     (§
-        ((ß int incr =) 0)
-
         ((ß bdp.startspaces =) 0)
         ((ß bdp.endspaces =) 0)
         ((ß bdp.textlen =) 0)
@@ -16761,6 +16754,8 @@
         ((ß bdp.pre_whitesp_c =) 0)
         ((ß bdp.end_char_vcols =) 0)
         ((ß bdp.start_char_vcols =) 0)
+
+        ((ß int incr =) 0)
 
         ((ß Bytes line =) (ml-get lnum))
 
@@ -16868,233 +16863,115 @@
 
         ((ß bdp.textcol =) (BDIFF pstart, line))
         ((ß bdp.textstart =) pstart)
-        nil
+        bdp
     ))
 
 (final int NUMBUFLEN 30)        ;; length of a buffer to store a number in ASCII
 
 (atom! boolean hexupper)                                ;; 0xABC
 
-;; add or subtract 'Prenum1' from a number in a line
+;; add/subtract 'Prenum1' to/from a number in a line
 ;; 'command' is CTRL-A for add, CTRL-X for subtract
 ;;
 ;; return false for failure, true otherwise
 
 (defn- #_boolean do-addsub [#_int command, #_long Prenum1]
-    (§
-        ((ß boolean dohex =) (some? (vim-strchr @(:b_p_nf @curbuf), (byte \x))))   ;; "heX"
-        ((ß boolean dooct =) (some? (vim-strchr @(:b_p_nf @curbuf), (byte \o))))   ;; "Octal"
-        ((ß boolean doalp =) (some? (vim-strchr @(:b_p_nf @curbuf), (byte \p))))   ;; "alPha"
-
-        ((ß Bytes ptr =) (ml-get-curline))
-
-        ;; First check if we are on a hexadecimal number, after the "0x".
-
-        ((ß int col =) (:col (:w_cursor @curwin)))
-        (when dohex
-            (loop-when [] (and (< 0 col) (asc-isxdigit (.at ptr col)))
-                ((ß col =) (dec col))
-                (recur)
-            )
-        )
-        (cond (and dohex (< 0 col) (or (at? ptr col (byte \X)) (at? ptr col (byte \x))) (at? ptr (dec col) (byte \0)) (asc-isxdigit (.at ptr (inc col))))
-        (do
-            ;; Found hexadecimal number, move to its start.
-
-            ((ß col =) (dec col))
-        )
-        :else
-        (do
-            ;; Search forward and then backward to find the start of number.
-
-            ((ß col =) (:col (:w_cursor @curwin)))
-
-            (loop-when [] (and (non-eos? ptr col) (not (asc-isdigit (.at ptr col))) (not (and doalp (asc-isalpha (.at ptr col)))))
-                ((ß col =) (inc col))
-                (recur)
-            )
-
-            (loop-when [] (and (< 0 col) (asc-isdigit (.at ptr (dec col))) (not (and doalp (asc-isalpha (.at ptr col)))))
-                ((ß col =) (dec col))
-                (recur)
-            )
-        ))
-
-        ;; If a number was found, and saving for undo works, replace the number.
-
-        ((ß int firstdigit =) (.at ptr col))
-
-        (when (or (and (not (asc-isdigit firstdigit)) (not (and doalp (asc-isalpha firstdigit)))) (not (u-save-cursor)))
-            (beep-flush)
-            ((ß RETURN) false)
-        )
-
-        ;; get 'ptr' again, because u-save() may have changed it
-        ((ß ptr =) (ml-get-curline))
-
-        (cond (and doalp (asc-isalpha firstdigit))
-        (do
-            ;; decrement or increment alphabetic character
-            (cond (== command Ctrl_X)
-            (do
-                (cond (< (alphaOrd firstdigit) Prenum1)
-                (do
-                    ((ß firstdigit =) (if (asc-isupper firstdigit) (byte \A) (byte \a)))
-                )
-                :else
-                (do
-                    ((ß firstdigit =) (- firstdigit Prenum1))
-                ))
-            )
+    (let-when [nf @(:b_p_nf @curbuf)
+          #_boolean dohex (some? (vim-strchr nf, (byte \x)))   ;; "heXadecimal"
+          #_boolean dooct (some? (vim-strchr nf, (byte \o)))   ;; "Octal"
+          #_boolean doalp (some? (vim-strchr nf, (byte \p)))   ;; "alPha"
+          #_Bytes s (ml-get-curline)
+          ;; First check if we are on a hexadecimal number, after the "0x".
+          #_int col (:col (:w_cursor @curwin))
+          col (if dohex (loop-when-recur col (and (< 0 col) (asc-isxdigit (.at s col))) (dec col) => col) col)
+          col (if (and dohex (< 0 col) (or (at? s col (byte \X)) (at? s col (byte \x))) (at? s (dec col) (byte \0)) (asc-isxdigit (.at s (inc col))))
+                ;; Found hexadecimal number, move to its start.
+                (dec col)
+                ;; Search forward and then backward to find the start of number.
+                (let [col (:col (:w_cursor @curwin))
+                      col (loop-when-recur col (and (non-eos? s col) (not (asc-isdigit (.at s col))) (not (and doalp (asc-isalpha (.at s col))))) (inc col) => col)
+                      col (loop-when-recur col (and (< 0 col) (asc-isdigit (.at s (dec col))) (not (and doalp (asc-isalpha (.at s col))))) (dec col) => col)]
+                    col))
+          ;; If a number was found, and saving for undo works, replace the number.
+          #_int d (.at s col)
+    ] (and (or (asc-isdigit d) (and doalp (asc-isalpha d))) (u-save-cursor)) => (do (beep-flush) false)
+        ;; get 's' again, because u-save() may have changed it
+        (let [s (ml-get-curline)]
+            (cond (and doalp (asc-isalpha d))
+                ;; decrement or increment alphabetic character
+                (let [d (if (== command Ctrl_X)
+                            (if (<       (alphaOrd d)    Prenum1) (if (asc-isupper d) (byte \A) (byte \a)) (- d Prenum1))
+                            (if (< (- 26 (alphaOrd d) 1) Prenum1) (if (asc-isupper d) (byte \Z) (byte \z)) (+ d Prenum1))
+                        )]
+                    (swap! curwin assoc-in [:w_cursor :col] col)
+                    (del-char false)
+                    (ins-char d))
             :else
-            (do
-                (cond (< (- 26 (alphaOrd firstdigit) 1) Prenum1)
-                (do
-                    ((ß firstdigit =) (if (asc-isupper firstdigit) (byte \Z) (byte \z)))
-                )
-                :else
-                (do
-                    ((ß firstdigit =) (+ firstdigit Prenum1))
+                (let [[col #_boolean negative] (if (and (< 0 col) (at? s (dec col) (byte \-))) [(dec col) true] [col false])
+                      a'hex (atom (int))            ;; 'X' or 'x': hex; '0': octal
+                      a'len (atom (int 0))          ;; character length of the number
+                      a'n (atom (long))]
+                    ;; get the number value (unsigned)
+                    (vim-str2nr (.plus s col), a'hex, a'len, dooct, dohex, a'n)
+                    (when (neg? @a'n) (swap! a'n -))
+                    ;; ignore leading '-' for hex and octal numbers
+                    (let [[col negative] (if (and (non-zero? @a'hex) negative) (do (swap! a'len dec) [(inc col) false]) [col negative])
+                          #_boolean subtract (== command Ctrl_X) subtract (if negative (not subtract) subtract)
+                          #_long oldn @a'n
+                          _ (swap! a'n (if subtract - +) Prenum1)
+                          #_final #_long roof 0x7fffffffffffffff
+                          _ (swap! a'n & roof)
+                          ;; handle wraparound for decimal numbers
+                          negative
+                            (if (zero? @a'hex)
+                                (let [negative (if subtract
+                                            (if (< oldn @a'n) (do (swap! a'n #(inc (bit-xor % roof))) (not negative)) negative)
+                                            (if (< @a'n oldn) (do (swap! a'n        bit-xor   roof)   (not negative)) negative)
+                                        )]
+                                    (if (zero? @a'n) false negative))
+                                negative
+                            )]
+                        ;; Delete the old number.
+                        (swap! curwin assoc-in [:w_cursor :col] col)
+                        (let [#_int n @a'len #_int c (gchar)]
+                            ;; Don't include the '-' in the length.
+                            (when (== c (byte \-)) (swap! a'len dec))
+                            (loop-when-recur [n n c c] (< 0 n) [(dec n) (gchar)]
+                                (when (and (< c 0x100) (asc-isalpha c))
+                                    (reset! hexupper (asc-isupper c)))
+                                ;; del-char() will mark line needing displaying
+                                (del-char false)
+                            ))
+                        ;; Prepare the leading characters in buf1[].
+                        ;; When there are many leading zeros it could be very long.
+                        ;; Allocate a bit too much.
+                        (let [#_Bytes buf1 (Bytes. (+ @a'len NUMBUFLEN)) s buf1
+                              s (if negative (-> s (.be 0, (byte \-)) (.plus 1)) s)
+                              s (if (non-zero? @a'hex) (do (swap! a'len dec) (-> s (.be 0, (byte \0)) (.plus 1))) s)
+                              s (if (or (== @a'hex (byte \x)) (== @a'hex (byte \X))) (do (swap! a'len dec) (-> s (.be 0, @a'hex) (.plus 1))) s)
+                              ;; Put the number characters in buf2[].
+                              #_Bytes buf2 (Bytes. NUMBUFLEN)]
+                            (§ cond
+                                (zero? @a'hex)                     (.sprintf libC buf2, (u8 "%ld"), @a'n)
+                                (== @a'hex (byte \0))              (.sprintf libC buf2, (u8 "%lo"), @a'n)
+                                (and (non-zero? @a'hex) @hexupper) (.sprintf libC buf2, (u8 "%lX"), @a'n)
+                                :else                              (.sprintf libC buf2, (u8 "%lx"), @a'n)
+                            )
+                            (swap! a'len - (STRLEN buf2))
+                            ;; Adjust number of zeros to the new number of digits,
+                            ;; so the total length of the number remains the same.
+                            ;; Don't do this when the result may look like an octal number.
+                            (let [s (if (and (== d (byte \0)) (not (and dooct (zero? @a'hex))))
+                                        (loop-when-recur s (<= 0 (swap! a'len dec)) (-> s (.be 0, (byte \0)) (.plus 1)) => s)
+                                        s)]
+                                (eos! s)
+                                (STRCAT buf1, buf2)
+                                (ins-str buf1))          ;; insert the new number
+                        ))
                 ))
-            ))
-            (swap! curwin assoc-in [:w_cursor :col] col)
-            (del-char false)
-            (ins-char firstdigit)
-        )
-        :else
-        (do
-            ((ß boolean negative =) false)
-            (when (and (< 0 col) (at? ptr (dec col) (byte \-)))        ;; negative number
-                ((ß col =) (dec col))
-                ((ß negative =) true)
-            )
-
-            ((ß int[] a'hex =) (atom (int)))                             ;; 'X' or 'x': hex; '0': octal
-            ((ß int[] a'length =) (atom (int 0)))                               ;; character length of the number
-            ((ß long[] a'n =) (atom (long)))
-            ;; get the number value (unsigned)
-            (vim-str2nr (.plus ptr col), a'hex, a'length, dooct, dohex, a'n)
-            (when (< @a'n 0)
-                (reset! a'n (- @a'n)))
-
-            ;; ignore leading '-' for hex and octal numbers
-            (when (and (non-zero? @a'hex) negative)
-                ((ß col =) (inc col))
-                (ß --length[0])
-                ((ß negative =) false)
-            )
-
-            ;; add or subtract
-            ((ß boolean subtract =) false)
-            ((ß subtract =) (if (== command Ctrl_X) (not subtract) subtract))
-            ((ß subtract =) (if negative (not subtract) subtract))
-
-            ((ß long oldn =) @a'n)
-            (reset! a'n ((if subtract - +) @a'n Prenum1))
-
-            ((ß final long roof =) 0x7fffffffffffffff)
-            (swap! a'n & roof)
-
-            ;; handle wraparound for decimal numbers
-            (when (zero? @a'hex)
-                (cond subtract
-                (do
-                    (when (< oldn @a'n)
-                        (reset! a'n (inc (bit-xor @a'n roof)))
-                        ((ß negative =) (not negative))
-                    )
-                )
-                :else ;; add
-                (do
-                    (when (< @a'n oldn)
-                        (swap! a'n bit-xor roof)
-                        ((ß negative =) (not negative))
-                    )
-                ))
-                ((ß negative =) (if (zero? @a'n) false negative))
-            )
-
-            ;; Delete the old number.
-
-            (swap! curwin assoc-in [:w_cursor :col] col)
-            ((ß int todel =) @a'length)
-            ((ß int c =) (gchar))
-
-            ;; Don't include the '-' in the length, only the length of the part
-            ;; after it is kept the same.
-
-            (if (== c (byte \-))
-                (ß --length[0])
-            )
-            (loop-when [] (<= 0 ((ß todel =) (dec todel)))
-                (when (and (< c 0x100) (asc-isalpha c))
-                    (reset! hexupper (asc-isupper c)))
-                ;; del-char() will mark line needing displaying
-                (del-char false)
-                ((ß c =) (gchar))
-                (recur)
-            )
-
-            ;; Prepare the leading characters in buf1[].
-            ;; When there are many leading zeros it could be very long.
-            ;; Allocate a bit too much.
-
-            ((ß Bytes buf1 =) (Bytes. (+ @a'length NUMBUFLEN)))
-
-            ((ß ptr =) buf1)
-            (when negative
-                (.be ((ß ptr =) (.plus ptr 1)) -1, (byte \-))
-            )
-            (when (non-zero? @a'hex)
-                (.be ((ß ptr =) (.plus ptr 1)) -1, (byte \0))
-                (ß --length[0])
-            )
-            (when (or (== @a'hex (byte \x)) (== @a'hex (byte \X)))
-                (.be ((ß ptr =) (.plus ptr 1)) -1, @a'hex)
-                (ß --length[0])
-            )
-
-            ;; Put the number characters in buf2[].
-
-            ((ß Bytes buf2 =) (Bytes. NUMBUFLEN))
-            (cond (zero? @a'hex)
-            (do
-                (.sprintf libC buf2, (u8 "%ld"), @a'n)
-            )
-            (== @a'hex (byte \0))
-            (do
-                (.sprintf libC buf2, (u8 "%lo"), @a'n)
-            )
-            (and (non-zero? @a'hex) @hexupper)
-            (do
-                (.sprintf libC buf2, (u8 "%lX"), @a'n)
-            )
-            :else
-            (do
-                (.sprintf libC buf2, (u8 "%lx"), @a'n)
-            ))
-            (swap! a'length - (STRLEN buf2))
-
-            ;; Adjust number of zeros to the new number of digits,
-            ;; so the total length of the number remains the same.
-            ;; Don't do this when the result may look like an octal number.
-
-            (when (and (== firstdigit (byte \0)) (not (and dooct (zero? @a'hex))))
-                (loop-when [] (<= 0 (swap! a'length dec))
-                    (.be ((ß ptr =) (.plus ptr 1)) -1, (byte \0))
-                    (recur)
-                )
-            )
-            (eos! ptr)
-            (STRCAT buf1, buf2)
-            (ins-str buf1)          ;; insert the new number
-        ))
-
-        (swap! curwin update-in [:w_cursor :col] dec)
-        (swap! curwin assoc :w_set_curswant true)
-        ((ß ptr =) (ml-get (:lnum (:w_cursor @curwin))))
-
-        true
+            (swap! curwin update-in [:w_cursor :col] dec)
+            (swap! curwin assoc :w_set_curswant true)
+        true)
     ))
 
 ;; Count the number of bytes, characters and "words" in a line.
@@ -17164,10 +17041,9 @@
                             (let [[#_Bytes s #_int n]
                                     (condp == @VIsual_mode
                                         Ctrl_V
-                                            (let [#_block_def_C bd (NEW_block_def_C)]
-                                                (reset! virtual_op (if (virtual-active) TRUE FALSE))
-                                                (block-prep oparg, bd, lnum, false)
-                                                (reset! virtual_op MAYBE)
+                                            (let [_ (reset! virtual_op (if (virtual-active) TRUE FALSE))
+                                                  #_block_def_C bd (block-prep oparg, (NEW_block_def_C), lnum, false)
+                                                  _ (reset! virtual_op MAYBE)]
                                                 [(:textstart bd) (:textlen bd)])
                                         (byte \V)
                                             [(ml-get lnum) MAXCOL]
@@ -30464,7 +30340,7 @@
         )
         (< 1 count)
         (do
-            (cond (<= (:len nfl) (- (+ (:n nfl) count) 1))
+            (cond (<= (:len nfl) (dec (+ (:n nfl) count)))
             (do
                 ;; not enough space to move the new states,
                 ;; reallocate the list and move the states to the right position
@@ -33508,7 +33384,7 @@
                     (do
                         ((ß long c =) (loop-when-recur [c (:off (:sp_off (... @spats 0)))] (and (non-zero? c) (!= (incl pos) -1)) [(inc c)] => c))
                         (when (non-zero? c)                 ;; at end of buffer
-                            ((ß pos.lnum =) (+ (:ml_line_count (:b_ml @curbuf)) 1))
+                            ((ß pos.lnum =) (inc (:ml_line_count (:b_ml @curbuf))))
                             ((ß pos.col =) 0)
                         )
                     ))
@@ -39797,7 +39673,7 @@
                     (ß BREAK theend)
                 )
                 ;; Postpone calling changed-lines(), because it would mess up folding with markers.
-                (mark-adjust (+ (:lnum (:w_cursor @curwin)) 1), MAXLNUM, 1, 0)
+                (mark-adjust (inc (:lnum (:w_cursor @curwin))), MAXLNUM, 1, 0)
                 ((ß did_append =) true)
             )
             :else
@@ -41825,7 +41701,7 @@
                 ((ß RETURN) false)
             )
 
-            (when (< (+ (:ml_line_count (:b_ml @curbuf)) 1) bot)
+            (when (< (inc (:ml_line_count (:b_ml @curbuf))) bot)
                 ;; This happens when the FileChangedRO autocommand changes
                 ;; the file in a way it becomes shorter.
                 (emsg (u8 "E881: Line count changed unexpectedly"))
@@ -41955,7 +41831,7 @@
 
                     ;; If lines have been inserted/deleted we give up.
                     ;; Also when the line was included in a multi-line save.
-                    (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (+ (:ml_line_count (:b_ml @curbuf)) 1) (:ue_bot uep))) (!= (:ue_lcount uep) (:ml_line_count (:b_ml @curbuf)))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
+                    (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc (:ml_line_count (:b_ml @curbuf))) (:ue_bot uep))) (!= (:ue_lcount uep) (:ml_line_count (:b_ml @curbuf)))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
                         (ß BREAK)
                     )
 
@@ -42133,7 +42009,7 @@
 
         (reset! u_newcount 0)
         (reset! u_oldcount 0)
-        (when (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
+        (when (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
             (reset! u_oldcount -1))
 
 ;       u_header_C uhp = null;	// %% anno dunno
@@ -42410,7 +42286,7 @@
                 (cond (and (<= top lnum) (<= lnum (+ top newsize 1)))
                 (do
                     (swap! curwin assoc :w_cursor (:uh_cursor curhead))
-                    ((ß newlnum =) (- (:lnum (:w_cursor @curwin)) 1))
+                    ((ß newlnum =) (dec (:lnum (:w_cursor @curwin))))
                 )
                 :else
                 (do
@@ -42524,7 +42400,7 @@
         ;; put it at the same position as before starting the change (for the "o" command).
         ;; Otherwise the cursor should go to the first undone line.
 
-        (when (and (== (+ (:lnum (:uh_cursor curhead)) 1) (:lnum (:w_cursor @curwin))) (< 1 (:lnum (:w_cursor @curwin))))
+        (when (and (== (inc (:lnum (:uh_cursor curhead))) (:lnum (:w_cursor @curwin))) (< 1 (:lnum (:w_cursor @curwin))))
             (swap! curwin update-in [:w_cursor :lnum] dec))
         (cond (<= (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
         (do
@@ -45169,7 +45045,7 @@
             (draw-vsep-win win, row)
             (cond eof                                ;; we hit the end of the file
             (do
-                ((ß win.w_botline =) (+ (:ml_line_count (:b_ml buf)) 1))
+                ((ß win.w_botline =) (inc (:ml_line_count (:b_ml buf))))
             )
             :else
             (do
@@ -48724,7 +48600,7 @@
 
 ;%%         (vim_snprintf buffer, RULER_BUF_LEN, (u8 "%ld,"), (if (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0) 0 (:lnum (:w_cursor win))))
             ((ß int len =) (STRLEN buffer))
-            (col-print (.plus buffer len), (- RULER_BUF_LEN len), (if empty_line 0 (+ (:col (:w_cursor win)) 1)), (inc (:w_virtcol win)))
+            (col-print (.plus buffer len), (- RULER_BUF_LEN len), (if empty_line 0 (inc (:col (:w_cursor win)))), (inc (:w_virtcol win)))
 
             ;; Add a "50%" if there is room for it.
             ;; On the last line, don't print in the last column
