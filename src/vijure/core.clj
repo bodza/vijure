@@ -799,11 +799,11 @@
 
 ;; arguments for win-split()
 
-(final int WSP_VERT        2)       ;; split vertically
-(final int WSP_TOP         4)       ;; window at top-left of shell
-(final int WSP_BOT         8)       ;; window at bottom-right of shell
-(final int WSP_BELOW       32)      ;; put new window below/right
-(final int WSP_ABOVE       64)      ;; put new window above/left
+(final int WSP_VERT        0x02)    ;; split vertically
+(final int WSP_TOP         0x04)    ;; window at top-left of shell
+(final int WSP_BOT         0x08)    ;; window at bottom-right of shell
+(final int WSP_BELOW       0x20)    ;; put new window below/right
+(final int WSP_ABOVE       0x40)    ;; put new window above/left
 
 ;; Values for "starting".
 (final int NO_SCREEN       2)       ;; no screen updating yet
@@ -18608,28 +18608,26 @@
 ;; The opcodes are:
 
 ;; definition   number             opnd?    meaning
-(final int END             0)       ;;      End of program or NOMATCH operand.
-(final int BOL             1)       ;;      Match "" at beginning of line.
-(final int EOL             2)       ;;      Match "" at end of line.
-(final int BRANCH          3)       ;; node Match this alternative, or the next...
-(final int BACK            4)       ;;      Match "", "next" ptr points backward.
-(final int EXACTLY         5)       ;; str  Match this string.
-(final int NOTHING         6)       ;;      Match empty string.
-(final int STAR            7)       ;; node Match this (simple) thing 0 or more times.
-(final int PLUS            8)       ;; node Match this (simple) thing 1 or more times.
-(final int MATCH           9)       ;; node match the operand zero-width
-(final int NOMATCH         10)      ;; node check for no match with operand
-(final int BEHIND          11)      ;; node look behind for a match with operand
-(final int NOBEHIND        12)      ;; node look behind for no match with operand
-(final int SUBPAT          13)      ;; node match the operand here
-(final int BRACE_SIMPLE    14)      ;; node Match this (simple) thing between m and
-                                    ;;      n times (\{m,n\}).
-(final int BOW             15)      ;;      Match "" after [^a-zA-Z0-9_]
-(final int EOW             16)      ;;      Match "" at    [^a-zA-Z0-9_]
-(final int BRACE_LIMITS    17)      ;; nr nr  define the min & max for BRACE_SIMPLE
-                                    ;;      and BRACE_COMPLEX.
-(final int NEWL            18)      ;;      Match line-break
-(final int BHPOS           19)      ;;      End position for BEHIND or NOBEHIND
+(final int RE_END           0)      ;;      End of program or NOMATCH operand.
+(final int RE_BOL           1)      ;;      Match "" at beginning of line.
+(final int RE_EOL           2)      ;;      Match "" at end of line.
+(final int BRANCH           3)      ;; node Match this alternative, or the next...
+(final int BACK             4)      ;;      Match "", "next" ptr points backward.
+(final int EXACTLY          5)      ;; str  Match this string.
+(final int NOTHING          6)      ;;      Match empty string.
+(final int STAR             7)      ;; node Match this (simple) thing 0 or more times.
+(final int PLUS             8)      ;; node Match this (simple) thing 1 or more times.
+(final int MATCH            9)      ;; node Match the operand zero-width.
+(final int NOMATCH         10)      ;; node Check for no match with operand.
+(final int BEHIND          11)      ;; node Look behind for a match with operand.
+(final int NOBEHIND        12)      ;; node Look behind for no match with operand.
+(final int SUBPAT          13)      ;; node Match the operand here.
+(final int BRACE_SIMPLE    14)      ;; node Match this (simple) thing between m and n times (\{m,n\}).
+(final int RE_BOW          15)      ;;      Match "" after [^a-zA-Z0-9_].
+(final int RE_EOW          16)      ;;      Match "" at    [^a-zA-Z0-9_].
+(final int BRACE_LIMITS    17)      ;; nr nr  Define the min & max for BRACE_SIMPLE and BRACE_COMPLEX.
+(final int RE_NEWL         18)      ;;      Match line-break.
+(final int BHPOS           19)      ;;      End position for BEHIND or NOBEHIND.
 
 ;; character classes: 20-48 normal, 50-78 include a line-break
 (final int ADD_NL          30)
@@ -18637,32 +18635,32 @@
 (final int ANY             20)      ;;      Match any one character.
 (final int ANYOF           21)      ;; str  Match any character in this string.
 (final int ANYBUT          22)      ;; str  Match any character not in this string.
-(final int IDENT           23)      ;;      Match identifier char
-(final int SIDENT          24)      ;;      Match identifier char but no digit
-(final int KWORD           25)      ;;      Match keyword char
-(final int SKWORD          26)      ;;      Match word char but no digit
-(final int FNAME           27)      ;;      Match file name char
-(final int SFNAME          28)      ;;      Match file name char but no digit
-(final int PRINT           29)      ;;      Match printable char
-(final int SPRINT          30)      ;;      Match printable char but no digit
-(final int WHITE           31)      ;;      Match whitespace char
-(final int NWHITE          32)      ;;      Match non-whitespace char
-(final int DIGIT           33)      ;;      Match digit char
-(final int NDIGIT          34)      ;;      Match non-digit char
-(final int HEX             35)      ;;      Match hex char
-(final int NHEX            36)      ;;      Match non-hex char
-(final int OCTAL           37)      ;;      Match octal char
-(final int NOCTAL          38)      ;;      Match non-octal char
-(final int WORD            39)      ;;      Match word char
-(final int NWORD           40)      ;;      Match non-word char
-(final int HEAD            41)      ;;      Match head char
-(final int NHEAD           42)      ;;      Match non-head char
-(final int ALPHA           43)      ;;      Match alpha char
-(final int NALPHA          44)      ;;      Match non-alpha char
-(final int LOWER           45)      ;;      Match lowercase char
-(final int NLOWER          46)      ;;      Match non-lowercase char
-(final int UPPER           47)      ;;      Match uppercase char
-(final int NUPPER          48)      ;;      Match non-uppercase char
+(final int IDENT           23)      ;;      Match identifier char.
+(final int SIDENT          24)      ;;      Match identifier char but no digit.
+(final int KWORD           25)      ;;      Match keyword char.
+(final int SKWORD          26)      ;;      Match word char but no digit.
+(final int FNAME           27)      ;;      Match file name char.
+(final int SFNAME          28)      ;;      Match file name char but no digit.
+(final int PRINT           29)      ;;      Match printable char.
+(final int SPRINT          30)      ;;      Match printable char but no digit.
+(final int WHITE           31)      ;;      Match whitespace char.
+(final int NWHITE          32)      ;;      Match non-whitespace char.
+(final int DIGIT           33)      ;;      Match digit char.
+(final int NDIGIT          34)      ;;      Match non-digit char.
+(final int HEX             35)      ;;      Match hex char.
+(final int NHEX            36)      ;;      Match non-hex char.
+(final int OCTAL           37)      ;;      Match octal char.
+(final int NOCTAL          38)      ;;      Match non-octal char.
+(final int WORD            39)      ;;      Match word char.
+(final int NWORD           40)      ;;      Match non-word char.
+(final int HEAD            41)      ;;      Match head char.
+(final int NHEAD           42)      ;;      Match non-head char.
+(final int ALPHA           43)      ;;      Match alpha char.
+(final int NALPHA          44)      ;;      Match non-alpha char.
+(final int LOWER           45)      ;;      Match lowercase char.
+(final int NLOWER          46)      ;;      Match non-lowercase char.
+(final int UPPER           47)      ;;      Match uppercase char.
+(final int NUPPER          48)      ;;      Match non-uppercase char.
 
 (final int FIRST_NL        (+ ANY ADD_NL))
 (final int LAST_NL         (+ NUPPER ADD_NL))
@@ -18670,30 +18668,30 @@
 (defn- #_boolean with-nl [#_int op]
     (<= FIRST_NL op LAST_NL))
 
-(final int MOPEN           80)  ;; -89       Mark this point in input as start of \( subexpr.  MOPEN + 0 marks start of match.
-(final int MCLOSE          90)  ;; -99       Analogous to MOPEN.  MCLOSE + 0 marks end of match.
+(final int MOPEN            80) ;;  -89      Mark this point in input as start of \( subexpr.  MOPEN + 0 marks start of match.
+(final int MCLOSE           90) ;;  -99      Analogous to MOPEN.  MCLOSE + 0 marks end of match.
 (final int BACKREF         100) ;; -109 node Match same string again \1-\9
 
 (final int ZOPEN           110) ;; -119      Mark this point in input as start of \z( subexpr.
 (final int ZCLOSE          120) ;; -129      Analogous to ZOPEN.
 (final int ZREF            130) ;; -139 node Match external submatch \z1-\z9
 
-(final int BRACE_COMPLEX   140) ;; -149 node Match nodes between m & n times
+(final int BRACE_COMPLEX   140) ;; -149 node Match nodes between m & n times.
 
 (final int NOPEN           150)     ;;      Mark this point in input as start of \%( subexpr.
 (final int NCLOSE          151)     ;;      Analogous to NOPEN.
 
-(final int MULTIBYTECODE   200)     ;; mbc  Match one multi-byte character
+(final int MULTIBYTECODE   200)     ;; mbc  Match one multi-byte character.
 (final int RE_BOF          201)     ;;      Match "" at beginning of file.
 (final int RE_EOF          202)     ;;      Match "" at end of file.
-(final int CURSOR          203)     ;;      Match location of cursor.
+(final int RE_CURSOR       203)     ;;      Match location of cursor.
 
-(final int RE_LNUM         204)     ;; nr cmp  Match line number
-(final int RE_COL          205)     ;; nr cmp  Match column number
-(final int RE_VCOL         206)     ;; nr cmp  Match virtual column number
+(final int RE_LNUM         204)     ;; nr cmp  Match line number.
+(final int RE_COL          205)     ;; nr cmp  Match column number.
+(final int RE_VCOL         206)     ;; nr cmp  Match virtual column number.
 
-(final int RE_MARK         207)     ;; mark cmp  Match mark position
-(final int RE_VISUAL       208)     ;;      Match Visual area
+(final int RE_MARK         207)     ;; mark cmp  Match mark position.
+(final int RE_VISUAL       208)     ;;      Match Visual area.
 (final int RE_COMPOSING    209)     ;; any composing characters
 
 ;; Magic characters have a special meaning, they don't match literally.
@@ -19605,11 +19603,11 @@
         ((ß r =) (assoc r :reghasz @re_has_z))
 
         ((ß Bytes scan =) (.plus (:program r) 1))        ;; First BRANCH.
-        (when (== (re-op (regnext scan)) END)    ;; Only one top-level choice.
+        (when (== (re-op (regnext scan)) RE_END)    ;; Only one top-level choice.
             ((ß scan =) (operand scan))
 
             ;; Starting-point info.
-            (when (any == (re-op scan) BOL RE_BOF)
+            (when (any == (re-op scan) RE_BOL RE_BOF)
                 ((ß r =) (update r :reganch inc))
                 ((ß scan =) (regnext scan))
             )
@@ -19618,7 +19616,7 @@
             (do
                 ((ß r =) (assoc r :regstart (us-ptr2char (operand scan))))
             )
-            (and (any == (re-op scan) BOW EOW NOTHING (+ MOPEN 0) NOPEN (+ MCLOSE 0) NCLOSE) (== (re-op (regnext scan)) EXACTLY))
+            (and (any == (re-op scan) RE_BOW RE_EOW NOTHING (+ MOPEN 0) NOPEN (+ MCLOSE 0) NCLOSE) (== (re-op (regnext scan)) EXACTLY))
             (do
                 ((ß r =) (assoc r :regstart (us-ptr2char (operand (regnext scan)))))
             ))
@@ -19631,7 +19629,7 @@
             ;; When the r.e. starts with BOW, it is faster to look for a regmust first.
             ;; Used a lot for "#" and "*" commands.
 
-            (when (and (or (flag? @a'flags SPSTART) (== (re-op scan) BOW) (== (re-op scan) EOW)) (non-flag? @a'flags HASNL))
+            (when (and (or (flag? @a'flags SPSTART) (== (re-op scan) RE_BOW) (== (re-op scan) RE_EOW)) (non-flag? @a'flags HASNL))
                 ((ß Bytes longest =) nil)
                 ((ß int len =) 0)
                 (loop-when-recur scan (some? scan) (regnext scan)
@@ -19725,7 +19723,7 @@
                                 (recur))
                         )] (some? _) => nil
                     ;; Make a closing node, and hook it on the end.
-                    (let [#_Bytes ender (regnode (condp == paren REG_ZPAREN (+ ZCLOSE parno) REG_PAREN (+ MCLOSE parno) REG_NPAREN NCLOSE END))]
+                    (let [#_Bytes ender (regnode (condp == paren REG_ZPAREN (+ ZCLOSE parno) REG_PAREN (+ MCLOSE parno) REG_NPAREN NCLOSE RE_END))]
                         (regtail ret, ender)
                         ;; Hook the tails of the branches to the closing node.
                         (loop-when-recur [#_Bytes br ret] (some? br) [(regnext br)]
@@ -19772,7 +19770,7 @@
                 (if (!= (peekchr) (Magic (byte \&)))
                     ret
                     (do (skipchr)
-                        (regtail latest, (regnode END)) ;; operand ends
+                        (regtail latest, (regnode RE_END)) ;; operand ends
                         (if @reg_toolong
                             ret
                             (do
@@ -19866,9 +19864,9 @@
                                                     (condp == (no-Magic (getchr))
                                                         (byte \=) BEHIND            ;; \@<=
                                                         (byte \!) NOBEHIND          ;; \@<!
-                                                        END)
-                                                END)]
-                                        (if (== lop END)
+                                                        RE_END)
+                                                RE_END)]
+                                        (if (== lop RE_END)
                                             (do (emsg2 (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                                                 (reset! rc_did_emsg true)
                                                 nil)
@@ -19876,7 +19874,7 @@
                                                 (when (any == lop BEHIND NOBEHIND)
                                                     (regtail ret, (regnode BHPOS))
                                                     (swap! a'fl | HASLOOKBH))
-                                                (regtail ret, (regnode END))                ;; operand ends
+                                                (regtail ret, (regnode RE_END))             ;; operand ends
                                                 (if (any == lop BEHIND NOBEHIND)
                                                     (reginsert-nr lop, (max 0 nr), ret)     ;; no limit is same as zero limit
                                                     (reginsert lop, ret))
@@ -20107,16 +20105,16 @@
     (reset! a'fl WORST)                         ;; Tentatively.
     (let [#_int c (getchr)]
         (condp ==? c
-            (Magic (byte \^)) (regnode BOL)
-            (Magic (byte \$)) (regnode EOL)
-            (Magic (byte \<)) (regnode BOW)
-            (Magic (byte \>)) (regnode EOW)
+            (Magic (byte \^)) (regnode RE_BOL)
+            (Magic (byte \$)) (regnode RE_EOL)
+            (Magic (byte \<)) (regnode RE_BOW)
+            (Magic (byte \>)) (regnode RE_EOW)
 
             (Magic (byte \_))
                 (let [c (no-Magic (getchr))]
                     (condp == c
-                        (byte \^) (regnode BOL)             ;; "\_^" is start-of-line
-                        (byte \$) (regnode EOL)             ;; "\_$" is end-of-line
+                        (byte \^) (regnode RE_BOL)          ;; "\_^" is start-of-line
+                        (byte \$) (regnode RE_EOL)          ;; "\_$" is end-of-line
                         (let [#_int extra ADD_NL]
                             (swap! a'fl | HASNL)
                             (if (== c (byte \[))
@@ -20145,7 +20143,7 @@
                     ;; In a string "\n" matches a newline character.
                     (let [#_Bytes ret (regnode EXACTLY)] (regc NL) (regc NUL) (swap! a'fl | HASWIDTH SIMPLE) ret)
                     ;; In buffer text "\n" matches the end of a line.
-                    (let [#_Bytes ret (regnode NEWL)] (swap! a'fl | HASWIDTH HASNL) ret))
+                    (let [#_Bytes ret (regnode RE_NEWL)] (swap! a'fl | HASWIDTH HASNL) ret))
 
             (Magic (byte \())
                 (if @one_exactly
@@ -20255,7 +20253,7 @@
                         ;; Catch \%^ and \%$ regardless of where they appear in the pattern -- regardless of whether or not it makes sense.
                         (byte \^) (regnode RE_BOF)
                         (byte \$) (regnode RE_EOF)
-                        (byte \#) (regnode CURSOR)
+                        (byte \#) (regnode RE_CURSOR)
                         (byte \V) (regnode RE_VISUAL)
                         (byte \C) (regnode RE_COMPOSING)
 
@@ -21375,15 +21373,15 @@
 ;; whether the rest of the match failed) by a nested loop.
 ;;
 ;; Returns true when there is a match.
-;; Leaves reginput and reglnum just after the last matched character.
+;; Leaves "reginput" and "reglnum" just after the last matched character.
 ;;
 ;; Returns false when there is no match.
-;; Leaves reginput and reglnum in an undefined state!
+;; Leaves "reginput" and "reglnum" in an undefined state!
 
 (defn- #_boolean regmatch [#_Bytes scan]
     ;; scan: Current node.
     (§
-        (ß int status)                 ;; one of the RA_ values:
+        (ß int status)                 ;; one of the RA_ values above
 
         ;; Make "regstack" and "backpos" empty.
         ;; They are allocated and freed in bt-regexec-both() to reduce calloc()/free() calls.
@@ -21420,124 +21418,69 @@
                     (reg-nextchar)
                 )
                 :else
-                (do
-                    ((ß op =) (if (with-nl op) (- op ADD_NL) op))
-                    ((ß int c =) (us-ptr2char @reginput))
-                    (condp ==? op
-                        BOL
-                        (do
-                            ((ß status =) (if (BNE @reginput, @regline) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                (let [op (if (with-nl op) (- op ADD_NL) op) #_int c (us-ptr2char @reginput)]
+                    ((ß status =) (condp ==? op
+                        RE_BOL
+                            (if (BNE @reginput, @regline) RA_NOMATCH status)
 
-                        EOL
-                        (do
-                            ((ß status =) (if (!= c NUL) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                        RE_EOL
+                            (if (!= c NUL) RA_NOMATCH status)
 
+                        ;; We're not at the beginning of the file when below the first line where we started,
+                        ;; not at the start of the line or we didn't start at the first line of the buffer.
                         RE_BOF
-                        (do
-                            ;; We're not at the beginning of the file when below the first
-                            ;; line where we started, not at the start of the line or we
-                            ;; didn't start at the first line of the buffer.
-                            ((ß status =) (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NOMATCH status)
 
                         RE_EOF
-                        (do
-                            ((ß status =) (if (or (!= @reglnum @reg_maxline) (!= c NUL)) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (or (!= @reglnum @reg_maxline) (!= c NUL)) RA_NOMATCH status)
 
-                        CURSOR
-                        (do
-                            ;; Compare the cursor position to the match position.
-                            ((ß status =) (if (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                        RE_CURSOR ;; compare the cursor position to the match position
+                            (if (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NOMATCH status)
 
-                        RE_MARK
-                        (do
-                            ;; Compare the mark position to the match position.
-                            ((ß int mark =) (.at (operand scan) 0))
-                            ((ß int cmp =) (.at (operand scan) 1))
-
-                            ((ß pos_C pos =) (getmark mark, false))
-                            ((ß status =) (if (or (nil? pos) (< (:lnum pos) 1) (if (== (:lnum pos) (+ @reglnum @reg_firstlnum)) (if (== (:col pos) (BDIFF @reginput, @regline)) (any == cmp (byte \<) (byte \>)) (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<)))) (if (< (:lnum pos) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<))))) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                        RE_MARK ;; compare the mark position to the match position
+                            (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark mark, false)]
+                                (if (or (nil? pos) (< (:lnum pos) 1)
+                                        (if (== (:lnum pos) (+ @reglnum @reg_firstlnum))
+                                            (if (== (:col pos) (BDIFF @reginput, @regline))
+                                                (any == cmp (byte \<) (byte \>))
+                                                (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<))))
+                                            (if (< (:lnum pos) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
+                                    RA_NOMATCH status
+                                ))
 
                         RE_VISUAL
-                        (do
-                            ((ß status =) (if (not (reg-match-visual)) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (not (reg-match-visual)) RA_NOMATCH status)
 
                         RE_LNUM
-                        (do
-                            ((ß status =) (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan))) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan))) RA_NOMATCH status)
 
                         RE_COL
-                        (do
-                            ((ß status =) (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan)) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan)) RA_NOMATCH status)
 
                         RE_VCOL
-                        (do
-                            ((ß status =) (if (not (re-num-cmp (+ (long (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))) 1), scan)) RA_NOMATCH status))
-                            (ß BREAK)
-                        )
+                            (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NOMATCH status)
 
-                        BOW                           ;; \<word; reginput points to w
-                        (do
-                            (cond (== c NUL)                   ;; can't match at end of line
-                            (do
-                                ((ß status =) RA_NOMATCH)
-                            )
-                            :else
-                            (do
-                                ;; Get class of current and previous char (if it exists).
-                                ((ß int this_class =) (us-get-class @reginput))
-                                (cond (<= this_class 1)
-                                (do
-                                    ((ß status =) RA_NOMATCH)    ;; not on a word at all
-                                )
-                                (== (reg-prev-class) this_class)
-                                (do
-                                    ((ß status =) RA_NOMATCH)    ;; previous char is in same word
+                        RE_BOW ;; \<word; reginput points to w
+                            (if (== c NUL) ;; can't match at end of line
+                                RA_NOMATCH
+                                (let [#_int cls (us-get-class @reginput)]
+                                    ;; not on a word at all ;; previous char is in same word
+                                    (if (or (<= cls 1) (== (reg-prev-class) cls)) RA_NOMATCH status)
                                 ))
-                            ))
-                            (ß BREAK)
-                        )
 
-                        EOW                           ;; word\>; reginput points after d
-                        (do
-                            (cond (BEQ @reginput, @regline)        ;; can't match at start of line
-                            (do
-                                ((ß status =) RA_NOMATCH)
-                            )
-                            :else
-                            (do
-                                ;; Get class of current and previous char (if it exists).
-                                ((ß int this_class =) (us-get-class @reginput))
-                                ((ß int prev_class =) (reg-prev-class))
-                                ((ß status =) (if (or (== this_class prev_class) (zero? prev_class) (== prev_class 1)) RA_NOMATCH status))
-                            ))
-                            (ß BREAK) ;; Matched with EOW.
-                        )
+                        RE_EOW ;; word\>; reginput points after d
+                            (if (BEQ @reginput, @regline) ;; can't match at start of line
+                                RA_NOMATCH
+                                (let [#_int cls' (reg-prev-class)]
+                                    (if (any == cls' (us-get-class @reginput) 0 1) RA_NOMATCH status)
+                                ))
 
-                        ANY
+                        ANY ;; does not match new lines
                         (do
-                            ;; ANY does not match new lines.
                             (if (== c NUL)
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         IDENT
@@ -21545,7 +21488,7 @@
                             (if (not (vim-isidentc c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         SIDENT
@@ -21553,7 +21496,7 @@
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         KWORD
@@ -21561,7 +21504,7 @@
                             (if (not (us-iswordp @reginput))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         SKWORD
@@ -21569,7 +21512,7 @@
                             (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput)))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         FNAME
@@ -21577,7 +21520,7 @@
                             (if (not (vim-isfnamec c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         SFNAME
@@ -21585,7 +21528,7 @@
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         PRINT
@@ -21593,7 +21536,7 @@
                             (if (not (vim-isprintc (us-ptr2char @reginput)))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         SPRINT
@@ -21601,7 +21544,7 @@
                             (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc (us-ptr2char @reginput))))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         WHITE
@@ -21609,7 +21552,7 @@
                             (if (not (vim-iswhite c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NWHITE
@@ -21617,7 +21560,7 @@
                             (if (or (== c NUL) (vim-iswhite c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         DIGIT
@@ -21625,7 +21568,7 @@
                             (if (not (ri-digit c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NDIGIT
@@ -21633,7 +21576,7 @@
                             (if (or (== c NUL) (ri-digit c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         HEX
@@ -21641,7 +21584,7 @@
                             (if (not (ri-hex c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NHEX
@@ -21649,7 +21592,7 @@
                             (if (or (== c NUL) (ri-hex c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         OCTAL
@@ -21657,7 +21600,7 @@
                             (if (not (ri-octal c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NOCTAL
@@ -21665,7 +21608,7 @@
                             (if (or (== c NUL) (ri-octal c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         WORD
@@ -21673,7 +21616,7 @@
                             (if (not (ri-word c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NWORD
@@ -21681,7 +21624,7 @@
                             (if (or (== c NUL) (ri-word c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         HEAD
@@ -21689,7 +21632,7 @@
                             (if (not (ri-head c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NHEAD
@@ -21697,7 +21640,7 @@
                             (if (or (== c NUL) (ri-head c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         ALPHA
@@ -21705,7 +21648,7 @@
                             (if (not (ri-alpha c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NALPHA
@@ -21713,7 +21656,7 @@
                             (if (or (== c NUL) (ri-alpha c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         LOWER
@@ -21721,7 +21664,7 @@
                             (if (not (ri-lower c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NLOWER
@@ -21729,7 +21672,7 @@
                             (if (or (== c NUL) (ri-lower c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         UPPER
@@ -21737,7 +21680,7 @@
                             (if (not (ri-upper c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NUPPER
@@ -21745,7 +21688,7 @@
                             (if (or (== c NUL) (ri-upper c))
                                 ((ß status =) RA_NOMATCH)
                                 (reg-nextchar))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         EXACTLY
@@ -21783,7 +21726,7 @@
                                 (if (!= status RA_NOMATCH)
                                     (swap! reginput plus @a'len))
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [ANYOF ANYBUT]
@@ -21800,7 +21743,7 @@
                             (do
                                 (reg-nextchar)
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         MULTIBYTECODE
@@ -21810,7 +21753,7 @@
                             ((ß int len =) (us-ptr2len-cc opnd))
                             (when (< len 2)
                                 ((ß status =) RA_NOMATCH)
-                                (ß BREAK)
+                                (ß BREAK) status
                             )
                             ((ß int opndc =) (us-ptr2char opnd))
                             (cond (utf-iscomposing opndc)
@@ -21846,7 +21789,7 @@
                             ))
 
                             (swap! reginput plus len)
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         RE_COMPOSING
@@ -21854,22 +21797,19 @@
                             ;; Skip composing characters.
                             (while (utf-iscomposing (us-ptr2char @reginput))
                                 (swap! reginput #(.plus % (us-ptr2len %))))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         NOTHING
                         (do
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         BACK
                         (do
-                            ;; When we run into BACK we need to check if we don't keep
-                            ;; looping without matching any input.  The second and later
-                            ;; times a BACK is encountered it fails if the input is still
-                            ;; at the same position as the previous time.
-                            ;; The positions are stored in "backpos" and found by the
-                            ;; current value of "scan", the position in the RE program.
+                            ;; When we run into BACK, we need to check if we don't keep looping without matching any input.
+                            ;; From the second time, it fails if the input is still at the same position as the previous time.
+                            ;; The positions are stored in "backpos" and found by comparing to the current value of "scan".
 
                             ((ß backpos_C[] bpp =) (:ga_data @backpos))
 
@@ -21895,7 +21835,7 @@
                             (when (and (!= status RA_FAIL) (!= status RA_NOMATCH))
                                 (reg-save (:bp_pos (... bpp i)), @backpos))
 
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ MOPEN 0)     ;; Match start: \zs
@@ -21922,7 +21862,7 @@
                                 ((ß @reg_startp[no] =) (save-se (:rs_sesave rip), (... @reg_startpos no), (... @reg_startp no)))
                                 ;; We simply continue and handle the result when done.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [NOPEN         ;; \%(                   ;; sic!)
@@ -21930,7 +21870,7 @@
                         (do
                             ((ß status =) (if (nil? (push-regitem RS_NOPEN, scan)) RA_FAIL status))
                             ;; We simply continue and handle the result when done.
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ ZOPEN 1)
@@ -21956,7 +21896,7 @@
                                 ((ß reg_startzp[no] =) (save-se (:rs_sesave rip), (... reg_startzpos no), (... reg_startzp no)))
                                 ;; We simply continue and handle the result when done.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ MCLOSE 0)    ;; Match end: \ze
@@ -21983,7 +21923,7 @@
                                 ((ß @reg_endp[no] =) (save-se (:rs_sesave rip), (... @reg_endpos no), (... @reg_endp no)))
                                 ;; We simply continue and handle the result when done.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ ZCLOSE 1)    ;; \) after \z(        ;; sic!)
@@ -22009,7 +21949,7 @@
                                 ((ß reg_endzp[no] =) (save-se (:rs_sesave rip), (... reg_endzpos no), (... reg_endzp no)))
                                 ;; We simply continue and handle the result when done.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ BACKREF 1)
@@ -22067,7 +22007,7 @@
 
                             ;; Matched the backref, skip over it.
                             (swap! reginput plus @a'len)
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ ZREF 1)
@@ -22093,7 +22033,7 @@
                             (do
                                 ;; Backref was not set: Match an empty string.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         BRANCH
@@ -22107,7 +22047,7 @@
                                 ((ß regitem_C rip =) (push-regitem RS_BRANCH, scan))
                                 ((ß status =) (if (nil? rip) RA_FAIL RA_BREAK))      ;; rest is below
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         BRACE_LIMITS
@@ -22129,7 +22069,7 @@
                                 (emsg e_internal)       ;; Shouldn't happen.
                                 ((ß status =) RA_FAIL)
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [(+ BRACE_COMPLEX 0)
@@ -22160,7 +22100,7 @@
                                     ((ß next =) (operand scan))
                                     ;; We continue and handle the result when done.
                                 ))
-                                (ß BREAK)
+                                (ß BREAK) status
                             )
 
                             ;; If matched enough times, may try matching some more.
@@ -22198,7 +22138,7 @@
                                     ))
                                 )
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [BRACE_SIMPLE STAR PLUS]
@@ -22222,19 +22162,16 @@
                             )
                             :else
                             (do
-                                ((ß rst =) (assoc rst :nextb NUL))
-                                ((ß rst =) (assoc rst :nextb_ic NUL))
+                                ((ß rst =) (assoc rst :nextb NUL :nextb_ic NUL))
                             ))
 
                             (cond (!= op BRACE_SIMPLE)
                             (do
-                                ((ß rst =) (assoc rst :minval (if (== op STAR) 0 1)))
-                                ((ß rst =) (assoc rst :maxval MAX_LIMIT))
+                                ((ß rst =) (assoc rst :minval (if (== op STAR) 0 1) :maxval MAX_LIMIT))
                             )
                             :else
                             (do
-                                ((ß rst =) (assoc rst :minval @bl_minval))
-                                ((ß rst =) (assoc rst :maxval @bl_maxval))
+                                ((ß rst =) (assoc rst :minval @bl_minval :maxval @bl_maxval))
                             ))
 
                             ;; When maxval > minval, try matching as much as possible, up to maxval.
@@ -22244,7 +22181,7 @@
                             ((ß rst =) (assoc rst :count (regrepeat (operand scan), (:maxval rst))))
                             (when @got_int
                                 ((ß status =) RA_FAIL)
-                                (ß BREAK)
+                                (ß BREAK) status
                             )
 
                             (cond (if (<= (:minval rst) (:maxval rst)) (<= (:minval rst) (:count rst)) (<= (:maxval rst) (:count rst)))
@@ -22272,7 +22209,7 @@
                                 ((ß status =) RA_NOMATCH)
                             ))
 
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [NOMATCH MATCH SUBPAT]
@@ -22289,7 +22226,7 @@
                                 ((ß next =) (operand scan))
                                 ;; We continue and handle the result when done.
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                        [BEHIND NOBEHIND]
@@ -22324,7 +22261,7 @@
                                     ;; If it does, then we check the behind match by looping.
                                 ))
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         BHPOS
@@ -22337,10 +22274,10 @@
                             (do
                                 ((ß status =) RA_NOMATCH)
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
-                        NEWL
+                        RE_NEWL
                         (do
                             (cond (and (or (!= c NUL) (some? @reg_match) (< @reg_maxline @reglnum) @reg_line_lbr) (or (!= c (byte \newline)) (not @reg_line_lbr)))
                             (do
@@ -22355,21 +22292,21 @@
                                 (reg-nextline)
                                 (fast-breakcheck)
                             ))
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
-                        END
+                        RE_END
                         (do
                             ((ß status =) RA_MATCH)  ;; Success!
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
 
                         (do
                             (emsg e_re_corr)
                             ((ß status =) RA_FAIL)
-                            (ß BREAK)
+                            (ß BREAK) status
                         )
-                    )
+                    ))
                 ))
 
                 ;; If we can't continue sequentially, break the inner loop.
@@ -22759,9 +22696,7 @@
 
             (when (or (zero? (:ga_len @regstack)) (== status RA_FAIL))
                 (when (nil? scan)
-                    ;; We get here only if there's trouble -- normally
-                    ;; "case END" is the terminating point.
-
+                    ;; We get here only if there's trouble -- normally "case END" is the terminating point.
                     (emsg e_re_corr)
                 )
                 (if (== status RA_FAIL)
@@ -22927,7 +22862,7 @@
 
             [ANYOF (+ ANYOF ADD_NL)] (any- s n m p true)                [ANYBUT (+ ANYBUT ADD_NL)] (any- s n m p false)
 
-            NEWL
+            RE_NEWL
                 (let [[s n] (loop-when [s s n n] (and (< n m) (or (and (eos? s) (<= @reglnum @reg_maxline) (not @reg_line_lbr) (nil? @reg_match))
                                                                   (and (at? s (byte \newline)) @reg_line_lbr))) => [s n]
                                 (let [s (if @reg_line_lbr (reg-nextchar) (reg-nextline)) n (inc n)]
@@ -42835,9 +42770,10 @@
 
 (final Bytes m_onlyone (u8 "Already only one window"))
 
-;; all CTRL-W window commands are handled here, called from normal-cmd().
+;; All CTRL-W window commands are handled here, called from normal-cmd().
 
-(defn- #_void do-window [#_int nchar, #_long Prenum, #_int xchar] ;; xchar: extra char from ":wincmd gx" or NUL
+(defn- #_void do-window [#_int nchar, #_long Prenum, #_int xchar]
+    ;; xchar: extra char from ":wincmd gx" or NUL
     (let [#_Bytes cbuf (Bytes. 40) #_long Prenum1 (if (zero? Prenum) 1 Prenum)]
         (condp ==? nchar
             ;; split current window in two parts, horizontally
@@ -42858,28 +42794,27 @@
 
             ;; close all but current window
             [Ctrl_O (byte \o)]
-                (if (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
+                (if (zero? @cmdwin_type)
                     (do (reset-VIsual-and-resel) (cmd-with-count (u8 "only"), cbuf, (.size cbuf), Prenum) (do-cmdline-cmd cbuf))
-                )
+                    (emsg e_cmdwin))
 
             ;; cursor to next window with wrap around ;; cursor to previous window with wrap around
             [Ctrl_W (byte \w) (byte \W)]
                 (cond (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
-                (and (== @firstwin @lastwin) (!= Prenum 1)) ;; just one window
+                (and (== @firstwin @lastwin) (!= Prenum 1))         ;; just one window
                     (beep-flush)
                 :else
-                (let [#_window_C win
-                        (cond (non-zero? Prenum)                    ;; go to specified window
-                            (loop-when-recur [win @firstwin n Prenum] (and (< 1 n) (some? (:w_next win))) [(:w_next win) (dec n)] => win)
-                        (== nchar (byte \W))           ;; go to previous window
-                            (or (:w_prev @curwin) @lastwin)       ;; wrap around
-                        :else                        ;; go to next window
-                            (or (:w_next @curwin) @firstwin)      ;; wrap around
-                        )]
-                    (win-goto win)
-                ))
+                    (let [#_window_C win
+                            (cond (non-zero? Prenum)                ;; go to specified window
+                                (loop-when-recur [win @firstwin n Prenum] (and (< 1 n) (some? (:w_next win))) [(:w_next win) (dec n)] => win)
+                            (== nchar (byte \W))                    ;; go to previous window
+                                (or (:w_prev @curwin) @lastwin)     ;; wrap around
+                            :else                                   ;; go to next window
+                                (or (:w_next @curwin) @firstwin)    ;; wrap around
+                            )]
+                        (win-goto win)
+                    ))
 
             ;; cursor to window below
             [(byte \j) K_DOWN Ctrl_J]
@@ -42923,10 +42858,9 @@
 
             ;; move window to the very top/bottom/left/right
             [(byte \K) (byte \J) (byte \H) (byte \L)]
-                (if (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
+                (if (zero? @cmdwin_type)
                     (win-totop Prenum, (| (if (any == nchar (byte \H) (byte \L)) WSP_VERT 0) (if (any == nchar (byte \H) (byte \K)) WSP_TOP WSP_BOT)))
-                )
+                    (emsg e_cmdwin))
 
             ;; make all windows the same height
             (byte \=)
@@ -42959,29 +42893,25 @@
             [K_KENTER CAR]
                 nil
 
-         ;; :else
-                (beep-flush)
-        )
-        nil
-    ))
+            (beep-flush)
+        ))
+    nil)
 
 (defn- #_void cmd-with-count [#_Bytes cmd, #_Bytes bufp, #_int bufsize, #_long Prenum]
     (let [#_int len (STRLEN cmd)]
         (STRCPY bufp, cmd)
-        (when (< 0 Prenum)
+        (when (pos? Prenum)
 ;%%         (vim_snprintf (.plus bufp len), (- bufsize len), (u8 "%ld"), Prenum)
-        )
-        nil
-    ))
+        ))
+    nil)
 
-;; split the current window, implements CTRL-W s and :split
+;; Split the current window.  Implements CTRL-W s and :split.
 ;;
 ;; "size" is the height or width for the new window, 0 to use half of current height or width.
-;;
-;; "flags":
-;; WSP_VERT: vertical split.
-;; WSP_TOP:  open window at the top-left of the shell (help window).
-;; WSP_BOT:  open window at the bottom-right of the shell (quickfix window).
+;; "flags" are:
+;;   WSP_VERT   vertical split.
+;;   WSP_TOP    open window at the top-left of the shell (help window).
+;;   WSP_BOT    open window at the bottom-right of the shell (quickfix window).
 ;;
 ;; return false for failure, true otherwise
 
@@ -42991,27 +42921,28 @@
         (win-split-ins size, flags, nil, 0)
     ))
 
-;; When "new_wp" is null: split the current window in two.
-;; When "new_wp" is not null: insert this window at the far top/left/right/bottom.
+;; When "new_win" is null: split the current window in two.
+;; When "new_win" is not null: insert this window at the far top/left/right/bottom.
+;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean win-split-ins [#_int size, #_int flags, #_window_C new_wp, #_int dir]
+(defn- #_boolean win-split-ins [#_int size, #_int flags, #_window_C new_win, #_int dir]
     (§
-        ((ß int new_size =) size)
-        ((ß boolean do_equal =) false)
-        ((ß int oldwin_height =) 0)
-
-        ((ß window_C oldwin =) (cond (flag? flags WSP_TOP) @firstwin (flag? flags WSP_BOT) @lastwin :else @curwin))
+        ((ß window_C o'win =) (cond (flag? flags WSP_TOP) @firstwin (flag? flags WSP_BOT) @lastwin :else @curwin))
 
         ((ß int need_status =) 0)
         ;; add a status line when p_ls == 1 and splitting the first window
-        (when (and (== @lastwin @firstwin) (== @p_ls 1) (zero? (:w_status_height oldwin)))
-            (when (and (<= (:w_height oldwin) @p_wmh) (nil? new_wp))
+        (when (and (== @lastwin @firstwin) (== @p_ls 1) (zero? (:w_status_height o'win)))
+            (when (and (<= (:w_height o'win) @p_wmh) (nil? new_win))
                 (emsg e_noroom)
                 ((ß RETURN) false)
             )
             ((ß need_status =) STATUS_HEIGHT)
         )
+
+        ((ß int o'win_height =) 0)
+        ((ß int new_size =) size)
+        ((ß boolean do_equal =) false)
 
         (ß byte layout)
         (cond (flag? flags WSP_VERT)
@@ -43033,9 +42964,9 @@
             )
             @p_ea
             (do
-                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), :NOWIN))
-                ((ß frame_C prevfrp =) (:w_frame oldwin))
-                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame oldwin))] (some? fr) [(:fr_parent fr)]
+                ((ß minwidth =) (frame-minwidth (:w_frame o'win), :NOWIN))
+                ((ß frame_C prevfrp =) (:w_frame o'win))
+                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame o'win))] (some? fr) [(:fr_parent fr)]
                     (when (== (:fr_layout fr) FR_ROW)
                         (loop-when-recur [#_frame_C fr2 (:fr_child fr)] (some? fr2) [(:fr_next fr2)]
                             ((ß minwidth =) (if (!= fr2 prevfrp) (+ minwidth (frame-minwidth fr2, :NOWIN)) minwidth))
@@ -43048,31 +42979,31 @@
             )
             :else
             (do
-                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), :NOWIN))
-                ((ß available =) (:fr_width (:w_frame oldwin)))
+                ((ß minwidth =) (frame-minwidth (:w_frame o'win), :NOWIN))
+                ((ß available =) (:fr_width (:w_frame o'win)))
                 ((ß needed =) (+ needed minwidth))
             ))
-            (when (and (< available needed) (nil? new_wp))
+            (when (and (< available needed) (nil? new_win))
                 (emsg e_noroom)
                 ((ß RETURN) false)
             )
-            ((ß new_size =) (if (zero? new_size) (/ (:w_width oldwin) 2) new_size))
+            ((ß new_size =) (if (zero? new_size) (/ (:w_width o'win) 2) new_size))
             ((ß new_size =) (max wmw1 (min new_size (- available minwidth 1))))
 
             ;; if it doesn't fit in the current window, need win-equal()
-            ((ß do_equal =) (or (< (- (:w_width oldwin) new_size 1) @p_wmw) do_equal))
+            ((ß do_equal =) (or (< (- (:w_width o'win) new_size 1) @p_wmw) do_equal))
 
             ;; We don't like to take lines for the new window from a 'winfixwidth' window.
             ;; Take them from a window to the left or right instead, if possible.
-            (when @(:wo_wfw (:w_options oldwin))
-                (win-setwidth oldwin, (+ (:w_width oldwin) new_size)))
+            (when @(:wo_wfw (:w_options o'win))
+                (win-setwidth o'win, (+ (:w_width o'win) new_size)))
 
-            ;; Only make all windows the same width if one of them (except oldwin)
+            ;; Only make all windows the same width if one of them (except o'win)
             ;; is wider than one of the split windows.
-            (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \v)) (some? (:fr_parent (:w_frame oldwin))))
-                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame oldwin))))
+            (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \v)) (some? (:fr_parent (:w_frame o'win))))
+                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame o'win))))
                 (loop-when [] (some? fr)
-                    (when (and (!= (:fr_win fr) oldwin) (some? (:fr_win fr)) (or (< new_size (:w_width (:fr_win fr))) (< (- (:w_width oldwin) new_size 1) (:w_width (:fr_win fr)))))
+                    (when (and (!= (:fr_win fr) o'win) (some? (:fr_win fr)) (or (< new_size (:w_width (:fr_win fr))) (< (- (:w_width o'win) new_size 1) (:w_width (:fr_win fr)))))
                         ((ß do_equal =) true)
                         (ß BREAK)
                     )
@@ -43100,9 +43031,9 @@
             )
             @p_ea
             (do
-                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), :NOWIN) need_status))
-                ((ß frame_C prevfrp =) (:w_frame oldwin))
-                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame oldwin))] (some? fr) [(:fr_parent fr)]
+                ((ß minheight =) (+ (frame-minheight (:w_frame o'win), :NOWIN) need_status))
+                ((ß frame_C prevfrp =) (:w_frame o'win))
+                (loop-when-recur [#_frame_C fr (:fr_parent (:w_frame o'win))] (some? fr) [(:fr_parent fr)]
                     (when (== (:fr_layout fr) FR_COL)
                         (loop-when-recur [#_frame_C fr2 (:fr_child fr)] (some? fr2) [(:fr_next fr2)]
                             ((ß minheight =) (if (!= fr2 prevfrp) (+ minheight (frame-minheight fr2, :NOWIN)) minheight))
@@ -43115,39 +43046,39 @@
             )
             :else
             (do
-                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), :NOWIN) need_status))
-                ((ß available =) (:fr_height (:w_frame oldwin)))
+                ((ß minheight =) (+ (frame-minheight (:w_frame o'win), :NOWIN) need_status))
+                ((ß available =) (:fr_height (:w_frame o'win)))
                 ((ß needed =) (+ needed minheight))
             ))
-            (when (and (< available needed) (nil? new_wp))
+            (when (and (< available needed) (nil? new_win))
                 (emsg e_noroom)
                 ((ß RETURN) false)
             )
-            ((ß oldwin_height =) (:w_height oldwin))
+            ((ß o'win_height =) (:w_height o'win))
             (when (non-zero? need_status)
-                ((ß oldwin =) (assoc oldwin :w_status_height STATUS_HEIGHT))
-                ((ß oldwin_height =) (- oldwin_height STATUS_HEIGHT))
+                ((ß o'win =) (assoc o'win :w_status_height STATUS_HEIGHT))
+                ((ß o'win_height =) (- o'win_height STATUS_HEIGHT))
             )
-            ((ß new_size =) (if (zero? new_size) (/ oldwin_height 2) new_size))
+            ((ß new_size =) (if (zero? new_size) (/ o'win_height 2) new_size))
             ((ß new_size =) (max wmh1 (min new_size (- available minheight STATUS_HEIGHT))))
 
             ;; if it doesn't fit in the current window, need win-equal()
-            ((ß do_equal =) (or (< (- oldwin_height new_size STATUS_HEIGHT) @p_wmh) do_equal))
+            ((ß do_equal =) (or (< (- o'win_height new_size STATUS_HEIGHT) @p_wmh) do_equal))
 
             ;; We don't like to take lines for the new window from a 'winfixheight' window.
             ;; Take them from a window above or below instead, if possible.
-            (when @(:wo_wfh (:w_options oldwin))
-                (win-setheight oldwin, (+ (:w_height oldwin) new_size STATUS_HEIGHT))
-                ((ß oldwin_height =) (:w_height oldwin))
-                ((ß oldwin_height =) (if (non-zero? need_status) (- oldwin_height STATUS_HEIGHT) oldwin_height))
+            (when @(:wo_wfh (:w_options o'win))
+                (win-setheight o'win, (+ (:w_height o'win) new_size STATUS_HEIGHT))
+                ((ß o'win_height =) (:w_height o'win))
+                ((ß o'win_height =) (if (non-zero? need_status) (- o'win_height STATUS_HEIGHT) o'win_height))
             )
 
-            ;; Only make all windows the same height if one of them (except oldwin)
+            ;; Only make all windows the same height if one of them (except o'win)
             ;; is higher than one of the split windows.
-            (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \h)) (some? (:fr_parent (:w_frame oldwin))))
-                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame oldwin))))
+            (when (and (not do_equal) @p_ea (zero? size) (not-at? @p_ead (byte \h)) (some? (:fr_parent (:w_frame o'win))))
+                ((ß frame_C fr =) (:fr_child (:fr_parent (:w_frame o'win))))
                 (loop-when [] (some? fr)
-                    (when (and (!= (:fr_win fr) oldwin) (some? (:fr_win fr)) (or (< new_size (:w_height (:fr_win fr))) (< (- oldwin_height new_size STATUS_HEIGHT) (:w_height (:fr_win fr)))))
+                    (when (and (!= (:fr_win fr) o'win) (some? (:fr_win fr)) (or (< new_size (:w_height (:fr_win fr))) (< (- o'win_height new_size STATUS_HEIGHT) (:w_height (:fr_win fr)))))
                         ((ß do_equal =) true)
                         (ß BREAK)
                     )
@@ -43157,33 +43088,33 @@
             )
         ))
 
-        ((ß window_C wp =) new_wp)
+        ((ß window_C win =) new_win)
 
         ;; allocate new window structure and link it in the window list
 
         (cond (and (non-flag? flags WSP_TOP) (or (flag? flags WSP_BOT) (flag? flags WSP_BELOW) (and (non-flag? flags WSP_ABOVE) (if (flag? flags WSP_VERT) @p_spr @p_sb))))
         (do
             ;; new window below/right of current one
-            (if (nil? new_wp)
-                ((ß wp =) (newWindow oldwin))
-                (win-append oldwin, wp))
+            (if (nil? new_win)
+                ((ß win =) (newWindow o'win))
+                (win-append o'win, win))
         )
         :else
         (do
-            (if (nil? new_wp)
-                ((ß wp =) (newWindow (:w_prev oldwin)))
-                (win-append (:w_prev oldwin), wp))
+            (if (nil? new_win)
+                ((ß win =) (newWindow (:w_prev o'win)))
+                (win-append (:w_prev o'win), win))
         ))
 
-        (when (nil? new_wp)
-            (if (nil? wp)
+        (when (nil? new_win)
+            (if (nil? win)
                 ((ß RETURN) false)
             )
 
-            ((ß wp =) (assoc wp :w_frame (newFrame wp)))
+            ((ß win =) (assoc win :w_frame (newFrame win)))
 
             ;; make the contents of the new window the same as the current one
-            ((ß wp =) (win-init wp, @curwin))
+            ((ß win =) (win-init win, @curwin))
         )
 
         ;; Reorganise the tree of frames to insert the new window.
@@ -43210,7 +43141,7 @@
         )
         :else
         (do
-            ((ß curfrp =) (:w_frame oldwin))
+            ((ß curfrp =) (:w_frame o'win))
             ((ß before =) (cond (flag? flags WSP_BELOW) false (flag? flags WSP_ABOVE) true (flag? flags WSP_VERT) (not @p_spr) :else (not @p_sb)))
         ))
 
@@ -43227,7 +43158,7 @@
             ((ß curfrp =) fr)
             (cond (some? (:fr_win fr))
             (do
-                ((ß oldwin =) (assoc oldwin :w_frame fr))
+                ((ß o'win =) (assoc o'win :w_frame fr))
             )
             :else
             (do
@@ -43237,7 +43168,7 @@
             ))
         )
 
-        ((ß frame_C fr =) (if (nil? new_wp) (:w_frame wp) (:w_frame new_wp)))
+        ((ß frame_C fr =) (if (nil? new_win) (:w_frame win) (:w_frame new_win)))
         ((ß fr =) (assoc fr :fr_parent (:fr_parent curfrp)))
 
         ;; Insert the new frame at the right place in the frame list.
@@ -43246,45 +43177,45 @@
             (frame-append curfrp, fr))
 
         ;; Set "w_fraction" now so that the cursor keeps the same relative vertical position.
-        (if (< 0 (:w_height oldwin))
-            ((ß oldwin =) (set-fraction oldwin)))
-        ((ß wp =) (assoc wp :w_fraction (:w_fraction oldwin)))
+        (if (< 0 (:w_height o'win))
+            ((ß o'win =) (set-fraction o'win)))
+        ((ß win =) (assoc win :w_fraction (:w_fraction o'win)))
 
         (cond (flag? flags WSP_VERT)
         (do
-            ((ß wp.w_options.@wo_scr =) @(:wo_scr (:w_options @curwin)))
+            ((ß win.w_options.@wo_scr =) @(:wo_scr (:w_options @curwin)))
 
             (when (non-zero? need_status)
-                ((ß oldwin =) (win-new-height oldwin, (dec (:w_height oldwin))))
-                ((ß oldwin =) (assoc oldwin :w_status_height need_status))
+                ((ß o'win =) (win-new-height o'win, (dec (:w_height o'win))))
+                ((ß o'win =) (assoc o'win :w_status_height need_status))
             )
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
                 ;; set height and row of new window to full height
-                ((ß wp =) (assoc wp :w_winrow 0))
-                ((ß wp =) (win-new-height wp, (- (:fr_height curfrp) (if (< 0 @p_ls) 1 0))))
-                ((ß wp =) (assoc wp :w_status_height (if (< 0 @p_ls) 1 0)))
+                ((ß win =) (assoc win :w_winrow 0))
+                ((ß win =) (win-new-height win, (- (:fr_height curfrp) (if (< 0 @p_ls) 1 0))))
+                ((ß win =) (assoc win :w_status_height (if (< 0 @p_ls) 1 0)))
             )
             :else
             (do
                 ;; height and row of new window is same as current window
-                ((ß wp =) (assoc wp :w_winrow (:w_winrow oldwin)))
-                ((ß wp =) (win-new-height wp, (:w_height oldwin)))
-                ((ß wp =) (assoc wp :w_status_height (:w_status_height oldwin)))
+                ((ß win =) (assoc win :w_winrow (:w_winrow o'win)))
+                ((ß win =) (win-new-height win, (:w_height o'win)))
+                ((ß win =) (assoc win :w_status_height (:w_status_height o'win)))
             ))
             ((ß fr =) (assoc fr :fr_height (:fr_height curfrp)))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one column for the vertical separator
-            ((ß wp =) (win-new-width wp, new_size))
+            ((ß win =) (win-new-width win, new_size))
             (cond before
             (do
-                ((ß wp =) (assoc wp :w_vsep_width 1))
+                ((ß win =) (assoc win :w_vsep_width 1))
             )
             :else
             (do
-                ((ß wp =) (assoc wp :w_vsep_width (:w_vsep_width oldwin)))
-                ((ß oldwin =) (assoc oldwin :w_vsep_width 1))
+                ((ß win =) (assoc win :w_vsep_width (:w_vsep_width o'win)))
+                ((ß o'win =) (assoc o'win :w_vsep_width 1))
             ))
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
@@ -43295,59 +43226,59 @@
             )
             :else
             (do
-                ((ß oldwin =) (win-new-width oldwin, (- (:w_width oldwin) (inc new_size))))
+                ((ß o'win =) (win-new-width o'win, (- (:w_width o'win) (inc new_size))))
             ))
             (cond before     ;; new window left of current one
             (do
-                ((ß wp =) (assoc wp :w_wincol (:w_wincol oldwin)))
-                ((ß oldwin =) (update oldwin :w_wincol + (inc new_size)))
+                ((ß win =) (assoc win :w_wincol (:w_wincol o'win)))
+                ((ß o'win =) (update o'win :w_wincol + (inc new_size)))
             )
             :else            ;; new window right of current one
             (do
-                ((ß wp =) (assoc wp :w_wincol (+ (:w_wincol oldwin) (:w_width oldwin) 1)))
+                ((ß win =) (assoc win :w_wincol (+ (:w_wincol o'win) (:w_width o'win) 1)))
             ))
-            ((ß oldwin =) (frame-fix-width oldwin))
-            ((ß wp =) (frame-fix-width wp))
+            ((ß o'win =) (frame-fix-width o'win))
+            ((ß win =) (frame-fix-width win))
         )
         :else
         (do
             ;; width and column of new window is same as current window
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
-                ((ß wp =) (assoc wp :w_wincol 0))
-                ((ß wp =) (win-new-width wp, @Cols))
-                ((ß wp =) (assoc wp :w_vsep_width 0))
+                ((ß win =) (assoc win :w_wincol 0))
+                ((ß win =) (win-new-width win, @Cols))
+                ((ß win =) (assoc win :w_vsep_width 0))
             )
             :else
             (do
-                ((ß wp =) (assoc wp :w_wincol (:w_wincol oldwin)))
-                ((ß wp =) (win-new-width wp, (:w_width oldwin)))
-                ((ß wp =) (assoc wp :w_vsep_width (:w_vsep_width oldwin)))
+                ((ß win =) (assoc win :w_wincol (:w_wincol o'win)))
+                ((ß win =) (win-new-width win, (:w_width o'win)))
+                ((ß win =) (assoc win :w_vsep_width (:w_vsep_width o'win)))
             ))
             ((ß fr =) (assoc fr :fr_width (:fr_width curfrp)))
 
             ;; "new_size" of the current window goes to the new window,
             ;; use one row for the status line
-            ((ß wp =) (win-new-height wp, new_size))
+            ((ß win =) (win-new-height win, new_size))
             (if (flag? flags (| WSP_TOP WSP_BOT))
                 (frame-new-height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (flag? flags WSP_TOP), false)
-                ((ß oldwin =) (win-new-height oldwin, (- oldwin_height (+ new_size STATUS_HEIGHT)))))
+                ((ß o'win =) (win-new-height o'win, (- o'win_height (+ new_size STATUS_HEIGHT)))))
             (cond before     ;; new window above current one
             (do
-                ((ß wp =) (assoc wp :w_winrow (:w_winrow oldwin)))
-                ((ß wp =) (assoc wp :w_status_height STATUS_HEIGHT))
-                ((ß oldwin =) (update oldwin :w_winrow + (:w_height wp) STATUS_HEIGHT))
+                ((ß win =) (assoc win :w_winrow (:w_winrow o'win)))
+                ((ß win =) (assoc win :w_status_height STATUS_HEIGHT))
+                ((ß o'win =) (update o'win :w_winrow + (:w_height win) STATUS_HEIGHT))
             )
             :else            ;; new window below current one
             (do
-                ((ß wp =) (assoc wp :w_winrow (+ (:w_winrow oldwin) (:w_height oldwin) STATUS_HEIGHT)))
-                ((ß wp =) (assoc wp :w_status_height (:w_status_height oldwin)))
-                ((ß oldwin =) (assoc oldwin :w_status_height STATUS_HEIGHT))
+                ((ß win =) (assoc win :w_winrow (+ (:w_winrow o'win) (:w_height o'win) STATUS_HEIGHT)))
+                ((ß win =) (assoc win :w_status_height (:w_status_height o'win)))
+                ((ß o'win =) (assoc o'win :w_status_height STATUS_HEIGHT))
             ))
             (if (flag? flags WSP_BOT)
                 (frame-add-statusline curfrp))
-            ((ß wp =) (frame-fix-height wp))
-            ((ß oldwin =) (frame-fix-height oldwin))
+            ((ß win =) (frame-fix-height win))
+            ((ß o'win =) (frame-fix-height o'win))
         ))
 
         (when (flag? flags (| WSP_TOP WSP_BOT))
@@ -43355,10 +43286,10 @@
 
         ;; Both windows need redrawing
 
-        ((ß wp =) (redraw-later wp, NOT_VALID))
-        ((ß wp =) (assoc wp :w_redr_status true))
-        ((ß oldwin =) (redraw-later oldwin, NOT_VALID))
-        ((ß oldwin =) (assoc oldwin :w_redr_status true))
+        ((ß win =) (redraw-later win, NOT_VALID))
+        ((ß win =) (assoc win :w_redr_status true))
+        ((ß o'win =) (redraw-later o'win, NOT_VALID))
+        ((ß o'win =) (assoc o'win :w_redr_status true))
 
         (when (non-zero? need_status)
             (reset! msg_row (dec @Rows))
@@ -43372,7 +43303,7 @@
         ;; equalize the window sizes.
 
         (when (or do_equal (non-zero? dir))
-            (win-equal wp, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
+            (win-equal win, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
 
         ;; Don't change the window height/width to 'winheight' / 'winwidth' if a size was given.
         (ß int i)
@@ -43390,11 +43321,11 @@
         ))
 
         ;; Keep same changelist position in new window.
-        ((ß wp =) (assoc wp :w_changelistidx (:w_changelistidx oldwin)))
+        ((ß win =) (assoc win :w_changelistidx (:w_changelistidx o'win)))
 
         ;; make the new window the current window
 
-        (win-enter wp)
+        (win-enter win)
         (if (flag? flags WSP_VERT)
             (reset! p_wiw i)
             (reset! p_wh i))
