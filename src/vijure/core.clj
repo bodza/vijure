@@ -5728,11 +5728,11 @@
     (if (<= (byte \a) (.at arg 0) (byte \z))
         (or
             ;; match full name
-            (loop-when [#_int i 0] [< i (:length vimoptions)] => nil
+            (loop-when [#_int i 0] (< i (:length vimoptions)) => nil
                 (let [#_Bytes s (:fullname (... vimoptions i))] (if (zero? (STRCMP arg, s)) i (recur (inc i))))
             )
             ;; match short name
-            (loop-when [#_int i 0] [< i (:length vimoptions)] => nil
+            (loop-when [#_int i 0] (< i (:length vimoptions)) => nil
                 (let [#_Bytes s (:shortname (... vimoptions i))] (if (and (some? s) (zero? (STRCMP arg, s))) i (recur (inc i))))
             )
             -1
@@ -12716,7 +12716,7 @@
 ;; Translate a command into another command.
 
 (defn- #_cmdarg_C nv-optrans [#_cmdarg_C cap]
-    (let [cap 
+    (let [cap
             (if (checkclearopq (:oap cap))
                 cap
                 (if (and (== (:cmdchar cap) (byte \D)) (some? (vim-strbyte @p_cpo, CPO_HASH)))
@@ -18186,7 +18186,7 @@
 
 (defn- #_void dedupe-jumplist []
     (let [j* (:w_jumplist @curwin) n (:w_jumplistlen @curwin)
-          e (loop-when [e 0 i 0] [< i n] => e
+          e (loop-when [e 0 i 0] (< i n) => e
                 (when (== (:w_jumplistidx @curwin) i)
                     (swap! curwin assoc :w_jumplistidx e))
                 (let [m (loop-when-recur [m (inc i)] (and (< m n) (!= (:lnum (:mark (... j* m))) (:lnum (:mark (... j* i))))) [(inc m)] => m)
@@ -18378,7 +18378,7 @@
 
 (defn- #_void add-char-buff [#_buffheader_C buf, #_int c]
     (let [bytes (Bytes. (inc MB_MAXBYTES)) n (if (is-special c) 1 (utf-char2bytes c, bytes)) temp (Bytes. 4)]
-        (loop-when [c c i 0] [< i n]
+        (loop-when [c c i 0] (< i n)
             (let [c (if (not (is-special c)) (char_u (.at bytes i)) c)]
                 (if (or (is-special c) (== c (char_u KB_SPECIAL)) (== c NUL))
                     (-> temp (.be 0, KB_SPECIAL) (.be 1, (KB-SECOND c)) (.be 2, (KB-THIRD c)) (eos! 3)) ;; translate special key code into three byte sequence
@@ -20469,141 +20469,64 @@
 ;; For Unicode a character > 255 may be returned.
 
 (defn- #_int get-literal []
-    (§
-        (if @got_int
-            ((ß RETURN) Ctrl_C)
-        )
-
-        ((ß boolean hex =) false)
-        ((ß boolean octal =) false)
-        ((ß int unicode =) 0)
-
-        (ß int nc)
-        (swap! no_mapping inc)               ;; don't map the next key hits
-
-        ((ß int cc =) 0)
-        ((ß int i =) 0)
-        (while true
-            ((ß nc =) (plain-vgetc))
-
-            (if (and (non-flag? @State CMDLINE) (== (mb-byte2len nc) 1))
-                (add-to-showcmd nc))
-
-            (cond (any == nc (byte \x) (byte \X))
-            (do
-                ((ß hex =) true)
-            )
-            (any == nc (byte \o) (byte \O))
-            (do
-                ((ß octal =) true)
-            )
-            (any == nc (byte \u) (byte \U))
-            (do
-                ((ß unicode =) nc)
-            )
-            :else
-            (do
-                (cond (or hex (non-zero? unicode))
-                (do
-                    (if (not (asc-isxdigit nc))
-                        (ß BREAK)
-                    )
-                    ((ß cc =) (+ (* cc 16) (hex2nr nc)))
-                )
-                octal
-                (do
-                    (if (or (< nc (byte \0)) (< (byte \7) nc))
-                        (ß BREAK)
-                    )
-                    ((ß cc =) (+ (* cc 8) (- nc (byte \0))))
-                )
-                :else
-                (do
-                    (if (not (asc-isdigit nc))
-                        (ß BREAK)
-                    )
-                    ((ß cc =) (+ (* cc 10) (- nc (byte \0))))
-                ))
-
-                ((ß i =) (inc i))
-            ))
-
-            (if (and (> cc 255) (zero? unicode))
-                ((ß cc =) 255)           ;; limit range to 0-255
-            )
-            ((ß nc =) 0)
-
-            (cond hex                ;; hex: up to two chars
-            (do
-                (if (<= 2 i)
-                    (ß BREAK)
-                )
-            )
-            (non-zero? unicode)  ;; Unicode: up to four or eight chars
-            (do
-                (if (or (and (== unicode (byte \u)) (<= 4 i)) (and (== unicode (byte \U)) (<= 8 i)))
-                    (ß BREAK)
-                )
-            )
-            (<= 3 i)        ;; decimal or octal: up to three chars
-            (do
-                (ß BREAK)
-            ))
-        )
-        (when (zero? i)                 ;; no number entered
-            (cond (== nc K_ZERO)       ;; NUL is stored as NL
-            (do
-                ((ß cc =) (byte \newline))
-                ((ß nc =) 0)
-            )
-            :else
-            (do
-                ((ß cc =) nc)
-                ((ß nc =) 0)
-            ))
-        )
-
-        (if (zero? cc)                ;; NUL is stored as NL
-            ((ß cc =) (byte \newline))
-        )
-
-        (swap! no_mapping dec)
-        (if (non-zero? nc)
-            (vungetc nc))
-
-        (reset! got_int false)            ;; CTRL-C typed after CTRL-V is not an interrupt
-        cc
+    (if @got_int
+        Ctrl_C
+        (do (swap! no_mapping inc)                  ;; don't map the next key hits
+            (let [[#_int i #_int nc #_int cc]
+                    (loop [i 0 cc 0 m {#_boolean :hex false, #_boolean :oct false, #_int :unicode 0}]
+                        (let [nc (plain-vgetc)]
+                            (when (and (non-flag? @State CMDLINE) (== (mb-byte2len nc) 1))
+                                (add-to-showcmd nc))
+                            (let-when [[m cc i :as _]
+                                    (cond
+                                        (any == nc (byte \x) (byte \X)) [(assoc m :hex true) cc i]
+                                        (any == nc (byte \o) (byte \O)) [(assoc m :oct true) cc i]
+                                        (any == nc (byte \u) (byte \U)) [(assoc m :unicode nc) cc i]
+                                    :else (cond
+                                        (or (:hex m) (non-zero? (:unicode m))) (when (asc-isxdigit nc) [m (+ (* cc 16) (hex2nr nc)) (inc i)])
+                                        (:oct m)                               (when (asc-isodigit nc) [m (+ (* cc 8) (- nc (byte \0))) (inc i)])
+                                        :else                                  (when (asc-isdigit nc) [m (+ (* cc 10) (- nc (byte \0))) (inc i)])
+                                    ))] (some? _) => [i nc cc]
+                                (let-when [cc (if (and (< 255 cc) (zero? (:unicode m))) 255 cc) ;; limit range to 0-255
+                                      nc 0
+                                      _ (cond (:hex m)              ;; hex: up to two chars
+                                            (when (< i 2) :_)
+                                        (non-zero? (:unicode m))    ;; unicode: up to four or eight chars
+                                            (when-not (or (and (== (:unicode m) (byte \u)) (<= 4 i)) (and (== (:unicode m) (byte \U)) (<= 8 i))) :_)
+                                        (< i 3)                     ;; decimal or octal: up to three chars
+                                            :_
+                                        )] (some? _) => [i nc cc]
+                                    (recur i cc m)
+                                ))
+                        ))]
+                (swap! no_mapping dec)
+                (let [cc (if (zero? i) (if (== nc K_ZERO) 0 nc) cc)]    ;; no number entered
+                    (let-when [nc (if (zero? i) 0 nc)] (non-zero? nc) (vungetc nc))
+                    (reset! got_int false)                              ;; CTRL-C typed after CTRL-V is not an interrupt
+                    (if (zero? cc) (byte \newline) cc)                  ;; NUL is stored as NL
+                )))
     ))
 
-;; Insert character, taking care of special keys and mod_mask
+;; Insert character, taking care of special keys and mod_mask.
 
 (defn- #_void insert-special [#_int c, #_boolean allow_modmask, #_boolean ctrlv]
     ;; ctrlv: c was typed after CTRL-V
-    (§
-        ;; Special function key, translate into "<Key>".  Up to the last '>' is
-        ;; inserted with ins-str(), so as not to replace characters in replace mode.
-        ;; Only use mod_mask for special keys, to avoid things like <S-Space>,
-        ;; unless 'allow_modmask' is true.
-
-        (when (or (is-special c) (and (non-zero? @mod_mask) allow_modmask))
-            ((ß Bytes p =) (get-special-key-name c, @mod_mask))
-            ((ß int len =) (STRLEN p))
-            ((ß c =) (.at p (dec len)))
-            (when (< 2 len)
-                (if (not (stop-arrow))
-                    ((ß RETURN) nil)
-                )
-                (eos! p (dec len))
-                (ins-str p)
-                (appendToRedobuffLit p, -1)
-                ((ß ctrlv =) false)
-            )
-        )
+    (let-when [[c ctrlv :as _]
+          ;; Special function key, translate into "<Key>".
+          ;; Up to the last '>' is inserted with ins-str(), so as not to replace characters in replace mode.
+          ;; Only use mod_mask for special keys, to avoid things like <S-Space>, unless 'allow_modmask' is true.
+            (if (or (is-special c) (and (non-zero? @mod_mask) allow_modmask))
+                (let-when [#_Bytes s (get-special-key-name c, @mod_mask) #_int n (STRLEN s) c (.at s (dec n))] (< 2 n) => [c ctrlv]
+                    (when (stop-arrow)
+                        (-> (eos! s (dec n)) (ins-str) (appendToRedobuffLit -1))
+                        [c false]
+                    ))
+                [c ctrlv]
+            )] (some? _)
         (when (stop-arrow)
             (insertchar c, (if ctrlv INSCHAR_CTRLV 0))
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Special characters in this context are those that need processing other
 ;; than the simple insertion that can be performed here.  This includes ESC
@@ -20616,15 +20539,10 @@
 (defn- #_boolean isspecial [#_int c]
     (or (< c (byte \space)) (<= DEL c) (== c (byte \0)) (== c (byte \^))))
 
-;; "flags": INSCHAR_CTRLV  - char typed just after CTRL-V
+;; "flags": INSCHAR_CTRLV - char typed just after CTRL-V
 
 (defn- #_void insertchar [#_int c, #_int flags]
-    ;; c: character to insert or NUL
-    (§
-        (if (== c NUL)           ;; only formatting was wanted
-            ((ß RETURN) nil)
-        )
-
+    (when (!= c NUL)           ;; !only formatting was wanted
         (reset! did_ai false)
         (reset! did_si false)
         (reset! can_si false)
@@ -20632,56 +20550,30 @@
 
         ;; If there's any pending input, grab up to INPUT_BUFLEN at once.
         ;; This speeds up normal text input considerably.
-        ;; Don't do this when 'cindent' or 'indentexpr' is set, because we might
-        ;; need to re-indent at a ':', or any other character (but not what 'paste' is set)..
-        ;; Don't do this when there an InsertCharPre autocommand is defined,
-        ;; because we need to fire the event for every character.
 
         (cond (and (not (isspecial c)) (== (utf-char2len c) 1) (!= (vpeekc) NUL) (non-flag? @State REPLACE_FLAG))
-        (do
-            ((ß final int INPUT_BUFLEN =) 100)
-            ((ß Bytes buf =) (Bytes. (inc INPUT_BUFLEN)))
-
-            (.be buf 0, c)
-            ((ß int i =) 1)
-
-            ;; Stop the string when:
-            ;; - no more chars available
-            ;; - finding a special character (command key)
-            ;; - buffer is full
-            ;; - running into the 'textwidth' boundary
-
-            (while (and (!= ((ß c =) (vpeekc)) NUL) (not (isspecial c)) (== (mb-byte2len c) 1) (< i INPUT_BUFLEN))
-                ((ß c =) (vgetc))
-                (.be buf (ß i++), c)
-            )
-
-            (do-digraph -1)                 ;; clear digraphs
+        (let [#_final #_int INPUT_BUFLEN 100 #_Bytes buf (-> (Bytes. (inc INPUT_BUFLEN)) (.be 0, c))
+              ;; Stop the string when:
+              ;; - no more chars available
+              ;; - finding a special character (command key)
+              ;; - buffer is full
+              ;; - running into the 'textwidth' boundary
+              #_int i (loop-when-recur [i 1 c (vpeekc)] (and (!= c NUL) (not (isspecial c)) (== (mb-byte2len c) 1) (< i INPUT_BUFLEN)) [(inc i) (vpeekc)] => i
+                    (.be buf i, (vgetc))
+                )]
+            (do-digraph -1)                     ;; clear digraphs
             (do-digraph (.at buf (dec i)))      ;; may be the start of a digraph
             (eos! buf i)
             (ins-str buf)
-            (cond (flag? flags INSCHAR_CTRLV)
-            (do
-                (redo-literal (.at buf 0))
-                ((ß i =) 1)
-            )
-            :else
-            (do
-                ((ß i =) 0)
-            ))
-            (if (non-eos? buf i)
-                (appendToRedobuffLit (.plus buf i), -1))
+            (let-when [i (if (flag? flags INSCHAR_CTRLV) (do (redo-literal (.at buf 0)) 1) 0)] (non-eos? buf i) (appendToRedobuffLit (.plus buf i), -1))
         )
         :else
-        (do
-            ((ß int cc =) (utf-char2len c))
-            (cond (< 1 cc)
-            (do
-                ((ß Bytes buf =) (Bytes. (inc MB_MAXBYTES)))
-
+        (let [#_int n (utf-char2len c)]
+            (cond (< 1 n)
+            (let [#_Bytes buf (Bytes. (inc MB_MAXBYTES))]
                 (utf-char2bytes c, buf)
-                (eos! buf cc)
-                (ins-char-bytes buf, cc)
+                (eos! buf n)
+                (ins-char-bytes buf, n)
                 (appendCharToRedobuff c)
             )
             :else
@@ -20692,8 +20584,8 @@
                     (appendCharToRedobuff c))
             ))
         ))
-        nil
-    ))
+    )
+    nil)
 
 ;; Put a character in the redo buffer, for when just after a CTRL-V.
 
@@ -20846,20 +20738,12 @@
 ;; Used for the replace command.
 
 (defn- #_void set-last-insert [#_int c]
-    (§
-        (reset! last_insert (Bytes. (+ (* MB_MAXBYTES 3) 5)))
-
-        ((ß Bytes s =) @last_insert)
-        ;; Use the CTRL-V only when entering a special char.
-        (if (or (< c (byte \space)) (== c DEL))
-            (.be ((ß s =) (.plus s 1)) -1, Ctrl_V)
-        )
-        ((ß s =) (add-char2buf c, s))
-        (.be ((ß s =) (.plus s 1)) -1, ESC)
-        (eos! ((ß s =) (.plus s 1)) -1)
-        (reset! last_insert_skip 0)
-        nil
-    ))
+    (let [#_Bytes s (reset! last_insert (Bytes. (+ (* MB_MAXBYTES 3) 5)))
+          ;; Use the CTRL-V only when entering a special char.
+          s (if (or (< c (byte \space)) (== c DEL)) (-> s (.be 0, Ctrl_V) (.plus 1)) s)]
+        (-> (add-char2buf c, s) (.be 0, ESC) (eos! 1))
+        (reset! last_insert_skip 0))
+    nil)
 
 ;; Add character "c" to buffer "s".
 ;; Escape the special meaning of KB_SPECIAL.
@@ -20867,24 +20751,15 @@
 ;; Returns a pointer to after the added bytes.
 
 (defn- #_Bytes add-char2buf [#_int c, #_Bytes s]
-    (§
-        ((ß Bytes temp =) (Bytes. (inc MB_MAXBYTES)))
-        ((ß int len =) (utf-char2bytes c, temp))
-        (dotimes [#_int i len]
-            ((ß byte b =) (.at temp i))
-            ;; Need to escape KB_SPECIAL like in the typeahead buffer.
-            (cond (== b KB_SPECIAL)
-            (do
-                (.be ((ß s =) (.plus s 1)) -1, KB_SPECIAL)
-                (.be ((ß s =) (.plus s 1)) -1, KS_SPECIAL)
-                (.be ((ß s =) (.plus s 1)) -1, KE_FILLER)
-            )
-            :else
-            (do
-                (.be ((ß s =) (.plus s 1)) -1, b)
+    (let [#_Bytes bytes (Bytes. (inc MB_MAXBYTES)) #_int n (utf-char2bytes c, bytes)]
+        (loop-when [s s #_int i 0] (< i n) => s
+            (let [#_byte b (.at bytes i)
+                  ;; Need to escape KB_SPECIAL like in the typeahead buffer.
+                  s (if (== b KB_SPECIAL)
+                        (-> s (.be 0, KB_SPECIAL) (.be 1, KS_SPECIAL) (.be 2, KE_FILLER) (.plus 3))
+                        (-> s (.be 0, b) (.plus 1)))]
+                (recur s (inc i))
             ))
-        )
-        s
     ))
 
 ;; Move cursor to start of line:
@@ -23019,23 +22894,15 @@
 (defn- #_boolean re-lookbehind [#_regprog_C prog]
     (flag? (:regflags prog) RF_LOOKBH))
 
-;; Check for an equivalence class name "[=a=]".  "pp" points to the '['.
-;; Returns a character representing the class.  Zero means that no item was
-;; recognized.  Otherwise "pp" is advanced to after the item.
+;; Check for an equivalence class name "[=a=]".  "s" points to the '['.
+;; Returns a character representing the class.  Zero means that no item
+;; was recognized.  Otherwise "s" is advanced to after the item.
 
-(defn- #_int get-equi-class [#_Bytes' a'pp]
-    (§
-        ((ß Bytes p =) @a'pp)
-        (when (at? p 1 (byte \=))
-            ((ß int len =) (us-ptr2len-cc p, 2))
-            (when (and (at? p (+ len 2) (byte \=)) (at? p (+ len 3) (byte \])))
-                ((ß int c =) (us-ptr2char p, 2))
-                (reset! a'pp (.plus @a'pp (+ len 4)))
-                ((ß RETURN) c)
-            )
-        )
-        0
-    ))
+(defn- #_int get-equi-class [#_Bytes' a's]
+    (let-when [s @a's] (at? s 1 (byte \=)) => 0
+        (let-when [n (us-ptr2len-cc s, 2)] (and (at? s (+ n 2) (byte \=)) (at? s (+ n 3) (byte \]))) => 0
+            (let [c (us-ptr2char s, 2)] (swap! a's plus (+ n 4)) c)
+        )))
 
 ;; Produce the bytes for equivalence class "c".
 ;; Currently only handles latin1, latin9 and utf-8.
@@ -23412,26 +23279,16 @@
             (regmbc c))
     nil)
 
-;; Check for a collating element "[.a.]".  "pp" points to the '['.
+;; Check for a collating element "[.a.]".  "s" points to the '['.
 ;; Returns a character.  Zero means that no item was recognized.
-;; Otherwise "pp" is advanced to after the item.
+;; Otherwise "s" is advanced to after the item.
 ;; Currently only single characters are recognized!
 
-(defn- #_int get-coll-element [#_Bytes' a'pp]
-    (§
-        ((ß Bytes p =) @a'pp)
-
-        (when (at? p 1 (byte \.))
-            ((ß int len =) (us-ptr2len-cc p, 2))
-            (when (and (at? p (+ len 2) (byte \.)) (at? p (+ len 3) (byte \])))
-                ((ß int c =) (us-ptr2char p, 2))
-                (reset! a'pp (.plus @a'pp (+ len 4)))
-                ((ß RETURN) c)
-            )
-        )
-
-        0
-    ))
+(defn- #_int get-coll-element [#_Bytes' a's]
+    (let-when [s @a's] (at? s 1 (byte \.)) => 0
+        (let-when [n (us-ptr2len-cc s, 2)] (and (at? s (+ n 2) (byte \.)) (at? s (+ n 3) (byte \]))) => 0
+            (let [c (us-ptr2char s, 2)] (swap! a's plus (+ n 4)) c)
+        )))
 
 (atom! boolean reg_cpo_lit)     ;; 'cpoptions' contains 'l' flag
 (atom! boolean reg_cpo_bsl)     ;; 'cpoptions' contains '\' flag
@@ -23442,109 +23299,56 @@
     nil)
 
 ;; Skip over a "[]" range.
-;; "p" must point to the character after the '['.
+;; "s" must point to the character after the '['.
 ;; The returned pointer is on the matching ']', or the terminating NUL.
 
-(defn- #_Bytes skip-anyof [#_Bytes p]
-    (§
-        (if (at? p (byte \^))      ;; Complement of range.
-            ((ß p =) (.plus p 1))
-        )
-        (if (or (at? p (byte \])) (at? p (byte \-)))
-            ((ß p =) (.plus p 1))
-        )
-        (while (and (non-eos? p) (not-at? p (byte \])))
-            ((ß int l =) (us-ptr2len-cc p))
-            (cond (< 1 l)
-            (do
-                ((ß p =) (.plus p l))
-            )
-            (at? p (byte \-))
-            (do
-                ((ß p =) (.plus p 1))
-                (if (and (not-at? p (byte \])) (non-eos? p))
-                    ((ß p =) (.plus p (us-ptr2len-cc p)))
-                )
-            )
-            (and (at? p (byte \\)) (not @reg_cpo_bsl) (or (some? (vim-strchr REGEXP_INRANGE, (.at p 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at p 1))))))
-            (do
-                ((ß p =) (.plus p 2))
-            )
-            (at? p (byte \[))
-            (do
-                (ß boolean b)
-                (let [__ (atom (#_Bytes object p))]
-                    ((ß b =) (and (== (get-char-class __) CLASS_NONE) (zero? (get-equi-class __)) (zero? (get-coll-element __))))
-                    ((ß p =) @__))
-                (if b
-                    ((ß p =) (.plus p 1)) ;; not a class name
-                )
-            )
-            :else
-            (do
-                ((ß p =) (.plus p 1))
+(defn- #_Bytes skip-anyof [#_Bytes s]
+    (let [s (if (at? s (byte \^)) (.plus s 1) s) ;; complement of range
+          s (if (or (at? s (byte \])) (at? s (byte \-))) (.plus s 1) s)]
+        (loop-when s (and (non-eos? s) (not-at? s (byte \]))) => s
+            (let [#_int n (us-ptr2len-cc s)
+                  s (cond (< 1 n)
+                        (.plus s n)
+                    (at? s (byte \-))
+                        (let [s (.plus s 1)]
+                            (if (and (not-at? s (byte \])) (non-eos? s)) (.plus s (us-ptr2len-cc s)) s))
+                    (and (at? s (byte \\))
+                            (not @reg_cpo_bsl)
+                                (or (some? (vim-strchr REGEXP_INRANGE, (.at s 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at s 1))))))
+                        (.plus s 2)
+                    (at? s (byte \[))
+                        (let [[#_boolean b s]
+                                (let [__ (atom (#_Bytes object s))]
+                                    [(and (== (get-char-class __) CLASS_NONE) (zero? (get-equi-class __)) (zero? (get-coll-element __))) @__])]
+                            (if b (.plus s 1) s)) ;; not a class name
+                    :else
+                        (.plus s 1)
+                    )]
+                (recur s)
             ))
-        )
-
-        p
     ))
 
 ;; Skip past regular expression.
-;; Stop at end of "startp" or where "dirc" is found ('/', '?', etc).
+;; Stop at end of "s" or where "dirc" is found ('/', '?', etc).
 ;; Take care of characters with a backslash in front of it.
 ;; Skip strings inside [ and ].
-;; When "newp" is not null and "dirc" is '?', make an allocated copy of the expression
-;; and change "\?" to "?".  If "*newp" is not null the expression is changed in-place.
+;; When "q" is not null and "dirc" is '?', make an allocated copy of the expression
+;; and change "\?" to "?".  If "*q" is not null the expression is changed in-place.
 
-(defn- #_Bytes skip-regexp [#_Bytes startp, #_byte dirc, #_boolean magic, #_Bytes' a'newp]
-    (§
-        ((ß Bytes p =) startp)
-
-        ((ß int mymagic =) (if magic MAGIC_ON MAGIC_OFF))
-
-        (get-cpo-flags)
-
-        ((ß FOR) (ß nil (non-eos? p) ((ß p =) (.plus p (us-ptr2len-cc p))))
-            (if (at? p dirc)       ;; found end of regexp
-                (ß BREAK)
-            )
-            (cond (or (and (at? p (byte \[)) (<= MAGIC_ON mymagic)) (and (at? p (byte \\)) (at? p 1 (byte \[)) (<= mymagic MAGIC_OFF)))
-            (do
-                ((ß p =) (skip-anyof (.plus p 1)))
-                (if (eos? p)
-                    (ß BREAK)
-                )
-            )
-            (and (at? p (byte \\)) (non-eos? p 1))
-            (do
-                (cond (and (== dirc (byte \?)) (some? a'newp) (at? p 1 (byte \?)))
-                (do
-                    ;; change "\?" to "?", make a copy first.
-                    (when (nil? @a'newp)
-                        (reset! a'newp (STRDUP startp))
-                        ((ß p =) (.plus @a'newp (BDIFF p, startp)))
-                    )
-                    (if (some? @a'newp)
-                        (BCOPY p, 0, p, 1, (inc (STRLEN p, 1)))
-                        ((ß p =) (.plus p 1))
-                    )
-                )
-                :else
-                (do
-                    ((ß p =) (.plus p 1))    ;; skip next character
-                ))
-                (cond (at? p (byte \v))
-                (do
-                    ((ß mymagic =) MAGIC_ALL)
-                )
-                (at? p (byte \V))
-                (do
-                    ((ß mymagic =) MAGIC_NONE)
-                ))
-            ))
-        )
-
-        p
+(defn- #_Bytes skip-regexp [#_Bytes s, #_byte dirc, #_boolean magic, #_Bytes' a'q]
+    (get-cpo-flags)
+    (loop-when [#_int m (if magic MAGIC_ON MAGIC_OFF) #_Bytes p s] (and (non-eos? p) (not-at? p dirc)) => p
+        (let-when [[m p]
+                (cond (or (and (at? p (byte \[)) (<= MAGIC_ON m)) (and (at? p (byte \\)) (at? p 1 (byte \[)) (<= m MAGIC_OFF)))
+                    (let [p (skip-anyof (.plus p 1))]
+                        [(if (eos? p) nil m) p])
+                (and (at? p (byte \\)) (non-eos? p 1))
+                    (let [p (if (and (== dirc (byte \?)) (some? a'q) (at? p 1 (byte \?))) ;; change "\?" to "?", make a copy first
+                                (let [p (if (nil? @a'q) (do (reset! a'q (STRDUP s)) (.plus @a'q (BDIFF p, s))) p)] (BCOPY p, 0, p, 1, (inc (STRLEN p, 1))) p)
+                                (.plus p 1))] ;; skip next character
+                        [(cond (at? p (byte \v)) MAGIC_ALL (at? p (byte \V)) MAGIC_NONE :else m) p])
+                :else [m p])] (some? m) => p
+            (recur m (.plus p (us-ptr2len-cc p))))
     ))
 
 ;; bt-regcomp() - compile a regular expression into internal code for the
@@ -25090,42 +24894,30 @@
 ;; Means relocating the operand.
 
 (defn- #_void reginsert [#_int op, #_Bytes opnd]
-    (§
-        (if (== @regcode JUST_CALC_SIZE)
-            (swap! regsize + 3)
-            (do
-                ((ß Bytes src =) @regcode)
-                ((ß Bytes dst =) (swap! regcode plus 3))
-                (while (BLT opnd, src)
-                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-                )
-                ;; Op node, where operand used to be.
-                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
-            )
-        )
-        nil
-    ))
+    (if (== @regcode JUST_CALC_SIZE)
+        (swap! regsize + 3)
+        (do
+            (loop-when-recur [src @regcode dst (swap! regcode plus 3)] (BLT opnd, src) [(.minus src 1) (.minus dst 1)]
+                (.be dst -1, (.at src -1)))
+            ;; Op node, where operand used to be.
+            (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+        ))
+    nil)
 
 ;; Insert an operator in front of already-emitted operand.
 ;; Add a number to the operator.
 
 (defn- #_void reginsert-nr [#_int op, #_long val, #_Bytes opnd]
-    (§
-        (if (== @regcode JUST_CALC_SIZE)
-            (swap! regsize + 7)
-            (do
-                ((ß Bytes src =) @regcode)
-                ((ß Bytes dst =) (swap! regcode plus 7))
-                (while (BLT opnd, src)
-                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-                )
-                ;; Op node, where operand used to be.
-                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
-                (re-put-long (.plus opnd 3), val)
-            )
-        )
-        nil
-    ))
+    (if (== @regcode JUST_CALC_SIZE)
+        (swap! regsize + 7)
+        (do
+            (loop-when-recur [src @regcode dst (swap! regcode plus 7)] (BLT opnd, src) [(.minus src 1) (.minus dst 1)]
+                (.be dst -1, (.at src -1)))
+            ;; Op node, where operand used to be.
+            (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+            (re-put-long (.plus opnd 3), val)
+        ))
+    nil)
 
 ;; Insert an operator in front of already-emitted operand.
 ;; The operator has the given limit values as operands.
@@ -25134,22 +24926,16 @@
 ;; Means relocating the operand.
 
 (defn- #_void reginsert-limits [#_int op, #_long minval, #_long maxval, #_Bytes opnd]
-    (§
-        (if (== @regcode JUST_CALC_SIZE)
-            (swap! regsize + 11)
-            (do
-                ((ß Bytes src =) @regcode)
-                ((ß Bytes dst =) (swap! regcode plus 11))
-                (while (BLT opnd, src)
-                    (.be ((ß dst =) (.minus dst 1)) 0, (.at ((ß src =) (.minus src 1)) 0))
-                )
-                ;; Op node, where operand used to be.
-                (-> opnd (.be 0, op) (eos! 1) (eos! 2))
-                (regtail opnd, (-> (.plus opnd 3) (re-put-long minval) (re-put-long maxval)))
-            )
-        )
-        nil
-    ))
+    (if (== @regcode JUST_CALC_SIZE)
+        (swap! regsize + 11)
+        (do
+            (loop-when-recur [src @regcode dst (swap! regcode plus 11)] (BLT opnd, src) [(.minus src 1) (.minus dst 1)]
+                (.be dst -1, (.at src -1)))
+            ;; Op node, where operand used to be.
+            (-> opnd (.be 0, op) (eos! 1) (eos! 2))
+            (regtail opnd, (-> (.plus opnd 3) (re-put-long minval) (re-put-long maxval)))
+        ))
+    nil)
 
 ;; Write a long as four bytes at "p" and return pointer to the next char.
 
@@ -25163,33 +24949,19 @@
 ;; Set the next-pointer at the end of a node chain.
 
 (defn- #_void regtail [#_Bytes p, #_Bytes val]
-    (§
-        (when-not (== p JUST_CALC_SIZE)
-            ;; Find last node.
-            ((ß Bytes scan =) p)
-            (while true
-                ((ß Bytes temp =) (regnext scan))
-                (if (nil? temp)
-                    (ß BREAK)
-                )
-                ((ß scan =) temp)
-            )
-
-            ((ß int offset =) (if (== (re-op scan) BACK) (BDIFF scan, val) (BDIFF val, scan)))
+    (when-not (== p JUST_CALC_SIZE)
+        (let [p (loop [p p] (let [#_Bytes q (regnext p)] (if (some? q) (recur q) p))) ;; find last node
+              #_int offset (if (== (re-op p) BACK) (BDIFF p, val) (BDIFF val, p))]
             ;; When the offset uses more than 16 bits it can no longer fit in the two bytes available.
             ;; Use a global flag to avoid having to check return values in too many places.
-            (cond (< 0xffff offset)
-            (do
+            (if (< 0xffff offset)
                 (reset! reg_toolong true)
-            )
-            :else
-            (do
-                (.be scan 1, (byte (& (>>> offset 8) 0xff)))
-                (.be scan 2, (byte (&      offset    0xff)))
-            ))
-        )
-        nil
-    ))
+                (-> p
+                    (.be 1, (byte (& (>>> offset 8) 0xff)))
+                    (.be 2, (byte (&      offset    0xff)))
+                ))
+        ))
+    nil)
 
 ;; Like regtail, on item after a BRANCH; nop if none.
 
@@ -25198,9 +24970,8 @@
         ;; When op is neither BRANCH nor BRACE_COMPLEX0-9, it is "operandless".
         (when-not (or (nil? p) (== p JUST_CALC_SIZE) (and (!= op BRANCH) (or (< op BRACE_COMPLEX) (< (+ BRACE_COMPLEX 9) op))))
             (regtail (operand p), val)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Functions for getting characters from the regexp input.
 
@@ -25425,80 +25196,44 @@
 ;; 2 when reading a \%x20 sequence and 4 when reading a \%u20AC sequence.
 
 (defn- #_int gethexchrs [#_int maxinputlen]
-    (§
-        ((ß int nr =) 0)
-        (ß int i)
-
-        ((ß FOR) (ß ((ß i =) 0) (< i maxinputlen) ((ß i =) (inc i)))
-            ((ß int c =) (.at @regparse 0))
-            (if (not (asc-isxdigit c))
-                (ß BREAK)
-            )
-;           nr <<= 4;
-            ((ß nr =) (| nr (hex2nr c)))
-            (swap! regparse plus 1)
-        )
-
-        (if (zero? i)
-            ((ß RETURN) -1)
-        )
-
-        nr
+    (let [[#_int n #_int i]
+            (loop-when [n 0 i 0] (< i maxinputlen) => [n i]
+                (let-when [#_int c (.at @regparse 0)] (asc-isxdigit c) => [n i]
+                    (swap! regparse plus 1)
+                    (recur (| (<< n 4) (hex2nr c)) (inc i))
+                ))]
+        (if (zero? i) -1 n)
     ))
 
 ;; Get and return the value of the decimal string immediately after the
 ;; current position.  Return -1 for invalid.  Consumes all digits.
 
 (defn- #_int getdecchrs []
-    (§
-        ((ß int nr =) 0)
-        (ß int i)
-
-        ((ß FOR) (ß ((ß i =) 0) true ((ß i =) (inc i)))
-            ((ß int c =) (.at @regparse 0))
-            (if (or (< c (byte \0)) (< (byte \9) c))
-                (ß BREAK)
-            )
-            ((ß nr =) (* nr 10))
-            ((ß nr =) (+ nr (- c (byte \0))))
-            (swap! regparse plus 1)
-            (reset! curchr -1)    ;; no longer valid
-        )
-
-        (if (zero? i)
-            ((ß RETURN) -1)
-        )
-
-        nr
+    (let [[#_int n #_int i]
+            (loop [n 0 i 0]
+                (let-when [#_int c (.at @regparse 0)] (asc-isdigit c) => [n i]
+                    (swap! regparse plus 1)
+                    (reset! curchr -1)    ;; no longer valid
+                    (recur (+ (* n 10) (- c (byte \0))) (inc i))
+                ))]
+        (if (zero? i) -1 n)
     ))
 
-;; get and return the value of the octal string immediately after the current
-;; position. Return -1 for invalid, or 0-255 for valid.  Smart enough to handle
+;; Get and return the value of the octal string immediately after the current
+;; position.  Return -1 for invalid, or 0-255 for valid.  Smart enough to handle
 ;; numbers > 377 correctly (for example, 400 is treated as 40) and doesn't
 ;; treat 8 or 9 as recognised characters.  Position is updated:
 ;;     blahblah\%o210asdf
 ;;         before-^  ^-after
 
 (defn- #_int getoctchrs []
-    (§
-        ((ß int nr =) 0)
-        (ß int i)
-
-        ((ß FOR) (ß ((ß i =) 0) (and (< i 3) (< nr 040)) ((ß i =) (inc i)))
-            ((ß int c =) (.at @regparse 0))
-            (if (or (< c (byte \0)) (< (byte \7) c))
-                (ß BREAK)
-            )
-;           nr <<= 3;
-            ((ß nr =) (| nr (hex2nr c)))
-            (swap! regparse plus 1)
-        )
-
-        (if (zero? i)
-            ((ß RETURN) -1)
-        )
-
-        nr
+    (let [[#_int n #_int i]
+            (loop-when [n 0 i 0] (and (< i 3) (< n 040)) => [n i]
+                (let-when [#_int c (.at @regparse 0)] (asc-isodigit c) => [n i]
+                    (swap! regparse plus 1)
+                    (recur (| (<< n 3) (hex2nr c)) (inc i))
+                ))]
+        (if (zero? i) -1 n)
     ))
 
 ;; Get a number after a backslash that is inside [].
@@ -25523,59 +25258,29 @@
 ;; Should end with 'end'.  If minval is missing, zero is default,
 ;; if maxval is missing, a very big number is the default.
 
-(defn- #_boolean read-limits [#_long' a'minval, #_long' a'maxval]
-    (§
-        ((ß boolean reverse =) false)
-
-        (when (at? @regparse (byte \-))
-            ;; starts with '-', so reverse the range later
-            (swap! regparse plus 1)
-            ((ß reverse =) true)
-        )
-        ((ß Bytes first_char =) @regparse)
-        (let [__ (atom (#_Bytes object @regparse))]
-            (reset! a'minval (getdigits __))
-            (reset! regparse @__))
-        (cond (at? @regparse (byte \,))                       ;; there is a comma
-        (do
-            (cond (asc-isdigit (.at (swap! regparse plus 1) 0))
-            (do
-                (let [__ (atom (#_Bytes object @regparse))]
-                    (reset! a'maxval (getdigits __))
-                    (reset! regparse @__))
-            )
-            :else
-            (do
-                (reset! a'maxval MAX_LIMIT)
-            ))
-        )
-        (asc-isdigit (.at first_char 0))
-        (do
-            (reset! a'maxval @a'minval)                      ;; it was \{n} or \{-n}
-        )
-        :else
-        (do
-            (reset! a'maxval MAX_LIMIT)                      ;; it was \{} or \{-}
+(defn- #_boolean read-limits [#_long' a'min, #_long' a'max]
+    (let [#_boolean reverse (at? @regparse (byte \-))
+          _ (when reverse (swap! regparse plus 1))
+          #_Bytes start @regparse]
+        (reset! a'min (getdigits regparse))
+        (reset! a'max (cond
+            (at? @regparse (byte \,)) (if (asc-isdigit (.at (swap! regparse plus 1) 0)) (getdigits regparse) MAX_LIMIT)
+            (asc-isdigit (.at start 0)) @a'min                      ;; it was \{n} or \{-n}
+            :else MAX_LIMIT                                         ;; it was \{} or \{-}
         ))
-        (if (at? @regparse (byte \\))
-            (swap! regparse plus 1))                ;; allow either \{...} or \{...\}
-        (when (not-at? @regparse (byte \}))
-            (.sprintf libC @ioBuff, (u8 "E554: Syntax error in %s{...}"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-
-            (emsg @ioBuff)
-            (reset! rc_did_emsg true)
-            ((ß RETURN) false)
+        (when (at? @regparse (byte \\)) (swap! regparse plus 1))    ;; allow either \{...} or \{...\}
+        (if (not-at? @regparse (byte \}))
+            (do
+;%%             (.sprintf libC @ioBuff, (u8 "E554: Syntax error in %s{...}"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                (emsg @ioBuff)
+                (reset! rc_did_emsg true)
+                false)
+            (do ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
+                (when (or (and (not reverse) (< @a'max @a'min)) (and reverse (< @a'min @a'max)))
+                    (let [_ @a'min] (reset! a'min @a'max) (reset! a'max _)))
+                (skipchr)          ;; let's be friends with the lexer again
+                true)
         )
-
-        ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
-
-        (when (or (and (not reverse) (< @a'maxval @a'minval)) (and reverse (< @a'minval @a'maxval)))
-            ((ß long tmp =) @a'minval)
-            (reset! a'minval @a'maxval)
-            (reset! a'maxval tmp)
-        )
-        (skipchr)          ;; let's be friends with the lexer again
-        true
     ))
 
 ;; Global work variables for vim-regexec().
@@ -35632,21 +35337,9 @@
 
 ;; Return the number of the first subpat that matched.
 
-(defn- #_int first-submatch [#_regmmatch_C rp]
-    (§
-        (ß int submatch)
-
-        ((ß FOR) (ß ((ß submatch =) 1) true ((ß submatch =) (inc submatch)))
-            (if (<= 0 (:lnum (... (:startpos rp) submatch)))
-                (ß BREAK)
-            )
-            (when (== submatch 9)
-                ((ß submatch =) 0)
-                (ß BREAK)
-            )
-        )
-
-        submatch
+(defn- #_int first-submatch [#_regmmatch_C mm]
+    (loop-when [#_int submatch 1] (neg? (:lnum (... (:startpos mm) submatch))) => submatch
+        (recur-if (< submatch 9) [(inc submatch)] => 0)
     ))
 
 ;; Highest level string search function.
@@ -36687,28 +36380,18 @@
         nil    ;; never found it
     ))
 
-;; Check if line[] contains a / / comment.
+;; Check if line contains a / / comment.
 ;; Return MAXCOL if not, otherwise return the column.
 ;; TODO: skip strings.
 
 (defn- #_int check-linecomment [#_Bytes line]
-    (§
-        ((ß Bytes p =) line)
-
-        (while (!= ((ß p =) (vim-strchr p, (byte \/))) nil)
-            ;; Accept a double /, unless it's preceded with * and followed by *,
-            ;; because * / / * is an end and start of a C comment.
-            (if (and (at? p 1 (byte \/)) (or (BEQ p, line) (not-at? p -1 (byte \*)) (not-at? p 2 (byte \*))))
-                (ß BREAK)
-            )
-            ((ß p =) (.plus p 1))
-        )
-
-        (if (nil? p)
-            ((ß RETURN) MAXCOL)
-        )
-
-        (BDIFF p, line)
+    (let [#_Bytes p
+            (loop [p line]
+                (let [p (vim-strchr p, (byte \/))]
+                    ;; Accept a double /, unless it's preceded with * and followed by *, because * / / * is an end and start of a C comment.
+                    (if (or (== p nil) (and (at? p 1 (byte \/)) (or (BEQ p, line) (not-at? p -1 (byte \*)) (not-at? p 2 (byte \*))))) p (recur (.plus p 1)))
+                ))]
+        (if (some? p) (BDIFF p, line) MAXCOL)
     ))
 
 ;; Move cursor briefly to character matching the one under the cursor.
@@ -36807,19 +36490,7 @@
 ;; white space boundaries are of interest.
 
 (defn- #_int cls []
-    (§
-        ((ß int c =) (gchar))
-        (if (any == c (byte \space) TAB NUL)
-            ((ß RETURN) 0)
-        )
-
-        ((ß c =) (utf-class c))
-        (if (and (non-zero? c) @cls_bigword)
-            ((ß RETURN) 1)
-        )
-
-        c
-    ))
+    (let [#_int c (gchar)] (if (any == c (byte \space) TAB NUL) 0 (let [c (utf-class c)] (if (and (non-zero? c) @cls_bigword) 1 c)))))
 
 ;; fwd-word(count, type, eol) - move forward one word
 ;;
@@ -46252,13 +45923,8 @@
     nil)
 
 (defn- #_Bytes _addfmt [#_Bytes buf, #_Bytes fmt, #_int val]
-    (§
-        (.sprintf libC buf, fmt, val)
-        (while (non-eos? buf)
-            ((ß buf =) (.plus buf 1))
-        )
-        buf
-    ))
+;%% (.sprintf libC buf, fmt, val)
+    (loop-when-recur buf (non-eos? buf) (.plus buf 1) => buf))
 
 (final Bytes tgoto_UP)	;; %% nada!
 (final Bytes tgoto_BC)	;; %% nada!
