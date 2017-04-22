@@ -2542,7 +2542,7 @@
             ;; Also done when interrupted by SIGWINCH.
 
             (when §(!waitForChar(@p_ut))
-                (when §(trigger_cursorhold() && 3 <= maxlen && !typebuf_changed(tb_change_cnt))
+                (when (and §(trigger_cursorhold()) §(3 <= maxlen) §(!typebuf_changed(tb_change_cnt)))
 ;                   buf.be(0, KB_SPECIAL);
 ;                   buf.be(1, KS_EXTRA);
 ;                   buf.be(2, KE_CURSORHOLD);
@@ -2670,17 +2670,9 @@
         ;; When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return here.
         ;; This avoids that a non-reentrant function is interrupted, e.g. free().
         ;; Calling free() again may then cause a crash.
-;       if (@trap__entered == 0
-;               && (sigarg == SIGHUP
-;                || sigarg == SIGQUIT
-;                || sigarg == SIGTERM
-;                || sigarg == SIGPWR
-;                || sigarg == SIGUSR1
-;                || sigarg == SIGUSR2)
-;               && !vim_handle_signal(sigarg))
-;       {
+        (if (and §(@trap__entered == 0) (or §(sigarg == SIGHUP) §(sigarg == SIGQUIT) §(sigarg == SIGTERM) §(sigarg == SIGPWR) §(sigarg == SIGUSR1) §(sigarg == SIGUSR2)) §(!vim_handle_signal(sigarg)))
 ;           return;
-;       }
+        )
 
         ;; Remember how often we have been called.
         (swap! trap__entered inc)
@@ -3192,7 +3184,7 @@
 
 ;       boolean retval = msg_end();
 
-        (if §(keep && retval && mb_string2cells(s, -1) < (int)(@Rows - @cmdline_row - 1) * (int)@Columns + @sc_col)
+        (if (and §(keep) §(retval) §(mb_string2cells(s, -1) < (int)(@Rows - @cmdline_row - 1) * (int)@Columns + @sc_col))
             (set_keep_msg s, 0))
 
         (swap! msg__entered dec)
@@ -3515,7 +3507,7 @@
                             (hit_return_msg)
                         ))
                     )
-                    §(@Rows - 2 < @msg_scrolled && (c == 'j' || c == 'd' || c == 'f' || c == K_DOWN || c == K_PAGEDOWN))
+                    (and §(@Rows - 2 < @msg_scrolled) (or §(c == 'j') §(c == 'd') §(c == 'f') §(c == K_DOWN) §(c == K_PAGEDOWN)))
                     (§
 ;                       c = K_IGNORE;
                     ))
@@ -3565,7 +3557,7 @@
             (starttermcap)             ;; start termcap before redrawing
             (shell_resized)
         )
-        §(!@skip_redraw && (redraw == TRUE || (@msg_scrolled != 0 && redraw != -1)))
+        (and §(!@skip_redraw) (or §(redraw == TRUE) (and §(@msg_scrolled != 0) §(redraw != -1))))
         (§
             (starttermcap)             ;; start termcap before redrawing
             (redraw_later VALID)
@@ -3841,12 +3833,7 @@
             ;; - When outputting a newline.
             ;; - When outputting a character in the last column.
 
-;           if (!recurse && @Rows - 1 <= @msg_row
-;                        && (s.at(0) == (byte)'\n'
-;                           || (int)@Columns - 1 <= @msg_col + t_col
-;                           || (s.at(0) == TAB && (((int)@Columns - 1) & ~7) <= @msg_col + t_col)
-;                           || (1 < us_ptr2cells(s) && (int)@Columns - 2 <= @msg_col + t_col)))
-;           {
+            (when (and §(!recurse) §(@Rows - 1 <= @msg_row) (or §(s.at(0) == (byte)'\n') §((int)@Columns - 1 <= @msg_col + t_col) (and §(s.at(0) == TAB) §((((int)@Columns - 1) & ~7) <= @msg_col + t_col)) (and §(1 < us_ptr2cells(s)) §((int)@Columns - 2 <= @msg_col + t_col))))
                 ;; The screen is scrolled up when at the last row (some terminals scroll
                 ;; automatically, some don't.  To avoid problems we scroll ourselves).
 
@@ -3921,13 +3908,11 @@
                 (if did_last_char
 ;                   continue;
                 )
-;           }
+            )
 
-;           boolean wrap = (s.at(0) == (byte)'\n')
-;                       || (int)@Columns <= @msg_col + t_col
-;                       || (1 < us_ptr2cells(s) && (int)@Columns - 1 <= @msg_col + t_col);
+;           boolean wrap = (s.at(0) == (byte)'\n') || (int)@Columns <= @msg_col + t_col || (1 < us_ptr2cells(s) && (int)@Columns - 1 <= @msg_col + t_col);
 
-            (when §(0 < t_col && (wrap || s.at(0) == (byte)'\r' || s.at(0) == (byte)'\b' || s.at(0) == (byte)'\t' || s.at(0) == BELL))
+            (when (and §(0 < t_col) (or §(wrap) §(s.at(0) == (byte)'\r') §(s.at(0) == (byte)'\b') §(s.at(0) == (byte)'\t') §(s.at(0) == BELL)))
                 ;; output any postponed text
 ;               t_col = t_puts(t_col, t_s, s, attr);
             )
@@ -4575,7 +4560,7 @@
         ;; we have to redraw the window.
         ;; Do not do this if we are abandoning the file or editing the command line.
 
-        (when §(!@exiting && @need_wait_return && (@State & CMDLINE) == 0)
+        (when (and §(!@exiting) §(@need_wait_return) §((@State & CMDLINE) == 0))
             (wait_return FALSE)
 ;           return false;
         )
@@ -5049,7 +5034,7 @@
                 ;; allow '=' and ':' as MSDOS command.com allows
                 ;; only one '=' character per "set" command line
 
-                (cond §(nextchar == '?' || (prefix == 1 && vim_strchr(u8("=:&<"), nextchar) == null && (v.flags & P_BOOL) == 0))
+                (cond (or §(nextchar == '?') (and §(prefix == 1) §(vim_strchr(u8("=:&<"), nextchar) == null) §((v.flags & P_BOOL) == 0)))
                 (§
                     ;; print value
                     (cond did_show
@@ -5064,7 +5049,7 @@
 
                     (showoneopt v)
 
-                    (if §(nextchar != '?' && nextchar != NUL && !vim_iswhite(afterchar))
+                    (if (and §(nextchar != '?') §(nextchar != NUL) §(!vim_iswhite(afterchar)))
 ;                       errmsg = e_trailing;
                     )
                 )
@@ -5109,7 +5094,7 @@
                     )
                     :else                                ;; numeric or string
                     (§
-                        (when §(vim_strchr(u8("=:&"), nextchar) == null || prefix != 1)
+                        (when (or §(vim_strchr(u8("=:&"), nextchar) == null) §(prefix != 1))
 ;                           errmsg = e_invarg;
 ;                           break skip;
                         )
@@ -5213,14 +5198,11 @@
 ;                                   int bs = 0;
 ;                                   for (s = origval; s.at(0) != NUL; s = s.plus(1))
 ;                                   {
-;                                       if (((v.flags & P_COMMA) == 0 || BEQ(s, origval) || (s.at(-1) == (byte)',' && (bs & 1) == 0))
-;                                               && STRNCMP(s, newval, i) == 0
-;                                               && ((v.flags & P_COMMA) == 0 || s.at(i) == (byte)',' || s.at(i) == NUL))
-;                                       {
+                                        (if (and (or §((v.flags & P_COMMA) == 0) §(BEQ(s, origval)) (and §(s.at(-1) == (byte)',') §((bs & 1) == 0))) §(STRNCMP(s, newval, i) == 0) (or §((v.flags & P_COMMA) == 0) §(s.at(i) == (byte)',') §(s.at(i) == NUL)))
 ;                                           break;
-;                                       }
+                                        )
                                         ;; Count backslashes.
-                                        ;; Only a comma with an even number of backslashes before it is recognized as a separator
+                                        ;; Only a comma with an even number of backslashes before it is recognized as a separator.
                                         (if (and §(BLT(origval, s)) §(s.at(-1) == (byte)'\\'))
 ;                                           bs++;
 ;                                           bs = 0;
@@ -5231,7 +5213,7 @@
                                 (when §((v.flags & P_FLAGLIST) != 0)
                                     ;; Remove flags that appear twice.
 ;                                   for (s = newval; s.at(0) != NUL; s = s.plus(1))
-                                        (when §(((v.flags & P_COMMA) == 0 || s.at(0) != (byte)',') && vim_strbyte(s.plus(1), s.at(0)) != null)
+                                        (when (and (or §((v.flags & P_COMMA) == 0) §(s.at(0) != (byte)',')) §(vim_strbyte(s.plus(1), s.at(0)) != null))
                                             (BCOPY s, 0, s, 1, §(STRLEN(s, 1) + 1))
 ;                                           s = s.minus(1);
                                         )
@@ -5570,7 +5552,7 @@
                 (highlight_changed))
         )
 
-        (if §(@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
+        (if (and §(@curwin.w_curswant != MAXCOL) §((v.flags & (P_CURSWANT | P_RALL)) != 0))
 ;           @curwin.w_set_curswant = true;
         )
         (check_redraw §(v.flags))
@@ -5712,7 +5694,7 @@
         ;; End of handling side effects for bool options.
 
         (comp_col)                     ;; in case 'ruler' or 'showcmd' changed
-        (if §(@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
+        (if (and §(@curwin.w_curswant != MAXCOL) §((v.flags & (P_CURSWANT | P_RALL)) != 0))
 ;           @curwin.w_set_curswant = true;
         )
         (check_redraw §(v.flags))
@@ -5930,7 +5912,7 @@
 ;           errmsg = e_positive;
             (reset! p_tm 0)
         )
-        (when §((@curwin.w_options.@wo_scr <= 0 || (@curwin.w_height < @curwin.w_options.@wo_scr && 0 < @curwin.w_height)) && @full_screen)
+        (when (and (or §(@curwin.w_options.@wo_scr <= 0) (and §(@curwin.w_height < @curwin.w_options.@wo_scr) §(0 < @curwin.w_height))) §(@full_screen))
             (cond §(varp == @curwin.w_options.wo_scr)
             (§
                 (if §(@curwin.w_options.@wo_scr != 0)
@@ -6001,7 +5983,7 @@
 ;       vimoption_C v = vimoptions[opt_idx];
 
         (comp_col)                     ;; in case 'columns' or 'ls' changed
-        (if §(@curwin.w_curswant != MAXCOL && (v.flags & (P_CURSWANT | P_RALL)) != 0)
+        (if (and §(@curwin.w_curswant != MAXCOL) §((v.flags & (P_CURSWANT | P_RALL)) != 0))
 ;           @curwin.w_set_curswant = true;
         )
         (check_redraw §(v.flags))
@@ -6017,10 +5999,10 @@
 ;       boolean doclear = ((flags & P_RCLR) == P_RCLR);
 ;       boolean all = ((flags & P_RALL) == P_RALL || doclear);
 
-        (if §((flags & P_RSTAT) != 0 || all)      ;; mark all status lines dirty
+        (if (or §((flags & P_RSTAT) != 0) §(all))      ;; mark all status lines dirty
             (status_redraw_all))
 
-        (if §((flags & P_RBUF) != 0 || (flags & P_RWIN) != 0 || all)
+        (if (or §((flags & P_RBUF) != 0) §((flags & P_RWIN) != 0) §(all))
             (changed_window_setting))
         (if §((flags & P_RBUF) != 0)
             (redraw_curbuf_later NOT_VALID))
@@ -6354,7 +6336,7 @@
                 )
 
 ;               int len = STRLEN(values[i]);
-                (when §(STRNCMP(values[i], val, len) == 0 && ((list && val.at(len) == (byte)',') || val.at(len) == NUL))
+                (when (and §(STRNCMP(values[i], val, len) == 0) (or (and §(list) §(val.at(len) == (byte)',')) §(val.at(len) == NUL)))
 ;                   val = val.plus(len + ((val.at(len) == (byte)',') ? 1 : 0));
 ;                   new_flags |= (1 << i);
 ;                   break;                  ;; check next item in "val" list
@@ -6508,7 +6490,7 @@
 ;           int cval = c;
 
 ;           Bytes buf1 = new Bytes(20);
-            (cond §(vim_isprintc(c) && (c < ' ' || '~' < c))
+            (cond (and §(vim_isprintc(c)) (or §(c < ' ') §('~' < c)))
             (§
 ;               Bytes buf3 = new Bytes(7);
                 (transchar_nonprint buf3, c)
@@ -6620,7 +6602,7 @@
                 )
                 :else
                 (§
-                    (when §(got_tab || (eap.forceit && 1 < num_spaces))
+                    (when (or §(got_tab) (and §(eap.forceit) §(1 < num_spaces)))
                         ;; Retabulate this string of white-space.
 
                         ;; len is virtual length of white string
@@ -7258,11 +7240,7 @@
                     ;; When the match starts below where we start searching
                     ;; also need to replace the line first (using \zs after \n).
 
-;                   if (lastone
-;                       || 0 < nmatch_tl
-;                       || (nmatch = vim_regexec_multi(regmatch, @curwin, @curbuf, sub_firstlnum, matchcol, null)) == 0
-;                       || 0 < regmatch.startpos[0].lnum)
-;                   {
+                    (when (or §(lastone) §(0 < nmatch_tl) §((nmatch = vim_regexec_multi(regmatch, @curwin, @curbuf, sub_firstlnum, matchcol, null)) == 0) §(0 < regmatch.startpos[0].lnum))
                         (when §(new_start != null)
                             ;; Copy the rest of the line, that didn't match.
                             ;; "matchcol" has to be adjusted, we use the end of the line as reference,
@@ -7322,7 +7300,7 @@
                             )
 ;                           break;
                         )
-;                   }
+                    )
 
                     (line_breakcheck)
 ;               }
@@ -7388,7 +7366,7 @@
         ;; - command was typed by user, or number of changed lines > 'report'
         ;; - giving messages is not disabled by 'lazyredraw'
 
-        (when §(((@p_report < @sub_nsubs && (@keyTyped || 1 < @sub_nlines || @p_report < 1)) || count_only) && messaging())
+        (when (and (or (and §(@p_report < @sub_nsubs) (or §(@keyTyped) §(1 < @sub_nlines) §(@p_report < 1))) §(count_only)) §(messaging()))
 ;           Bytes msg_buf = new Bytes(MSG_BUF_LEN);
             (if @got_int
                 (STRCPY msg_buf, (u8 "(Interrupted) "))
@@ -7636,7 +7614,7 @@
                         (swap! no_mapping dec)
                         (swap! allow_keys dec)
                         ;; CTRL-\ e doesn't work when obtaining an expression, unless it is in a mapping.
-                        (cond §(c != Ctrl_N && c != Ctrl_G && (c != 'e' || (@ccline.cmdfirstc == '=' && @keyTyped)))
+                        (cond (and §(c != Ctrl_N) §(c != Ctrl_G) (or §(c != 'e') (and §(@ccline.cmdfirstc == '=') §(@keyTyped))))
                         (§
                             (vungetc c)
 ;                           c = Ctrl_BSL;
@@ -7712,7 +7690,7 @@
 ;                       c = do_digraph(c);
                     ))
 
-                    (when §(c == '\n' || c == '\r' || c == K_KENTER || (c == ESC && (!@keyTyped || vim_strbyte(@p_cpo, CPO_ESC) != null)))
+                    (when (or §(c == '\n') §(c == '\r') §(c == K_KENTER) (and §(c == ESC) (or §(!@keyTyped) §(vim_strbyte(@p_cpo, CPO_ESC) != null))))
 ;                       gotesc = false;                     ;; Might have typed ESC previously,
                                                             ;; don't truncate the cmdline now.
                         (windgoto @msg_row, 0)
@@ -7957,13 +7935,13 @@
 
 ;                       case Ctrl_L:
 ;                       {
-                            (when §(@p_is && (firstc == '/' || firstc == '?'))
+                            (when (and §(@p_is) (or §(firstc == '/') §(firstc == '?')))
                                 ;; Add a character from under the cursor for 'incsearch'.
                                 (when (and §(did_incsearch) §(!eqpos(@curwin.w_cursor, old_cursor)))
 ;                                   c = gchar_cursor();
                                     ;; If 'ignorecase' and 'smartcase' are set and the command line
                                     ;; has no uppercase characters, convert the character to lowercase.
-                                    (if §(@p_ic && @p_scs && !pat_has_uppercase(@ccline.cmdbuff))
+                                    (if (and §(@p_ic) §(@p_scs) §(!pat_has_uppercase(@ccline.cmdbuff)))
 ;                                       c = utf_tolower(c);
                                     )
                                     (when §(c != NUL)
@@ -8052,7 +8030,7 @@
 ;                                   hiscnt = i;
 ;                                   break;
                                 )
-                                (when §((c != K_UP && c != K_DOWN) || hiscnt == i || STRNCMP(@history[histype][hiscnt].hisstr, lookfor, n) == 0)
+                                (when (or (and §(c != K_UP) §(c != K_DOWN)) §(hiscnt == i) §(STRNCMP(@history[histype][hiscnt].hisstr, lookfor, n) == 0))
 ;                                   break;
                                 )
 ;                           }
@@ -8080,7 +8058,7 @@
 ;                                       for (/*int */i = 0; p.at(i) != NUL; i++)
 ;                                       {
                                             ;; Replace old sep with new sep, unless it is escaped.
-                                            (cond §(p.at(i) == old_firstc && (i == 0 || p.at(i - 1) != (byte)'\\'))
+                                            (cond (and §(p.at(i) == old_firstc) (or §(i == 0) §(p.at(i - 1) != (byte)'\\')))
                                             (§
                                                 (if §(0 < round)
 ;                                                   @ccline.cmdbuff.be(len, firstc);
@@ -8089,7 +8067,7 @@
                                             :else
                                             (§
                                                 ;; Escape new sep, unless it is already escaped.
-                                                (when §(p.at(i) == firstc && (i == 0 || p.at(i - 1) != (byte)'\\'))
+                                                (when (and §(p.at(i) == firstc) (or §(i == 0) §(p.at(i - 1) != (byte)'\\')))
                                                     (if §(0 < round)
 ;                                                       @ccline.cmdbuff.be(len, (byte)'\\');
                                                     )
@@ -8199,7 +8177,7 @@
 
             ;; 'incsearch' highlighting.
 
-            (when §(@p_is && (firstc == '/' || firstc == '?'))
+            (when (and §(@p_is) (or §(firstc == '/') §(firstc == '?')))
                 ;; if there is a character waiting, search and redraw later
                 (when (char_avail)
 ;                   incsearch_postponed = true;
@@ -8306,7 +8284,7 @@
         (when §(@ccline.cmdbuff != null)
             ;; Put line in history buffer (":" and "=" only when it was typed).
 
-            (when §(@ccline.cmdlen != 0 && firstc != NUL && (some_key_typed || histype == HIST_SEARCH))
+            (when (and §(@ccline.cmdlen != 0) §(firstc != NUL) (or §(some_key_typed) §(histype == HIST_SEARCH)))
                 (add_to_history histype, §(@ccline.cmdbuff), §((histype == HIST_SEARCH) ? firstc : NUL))
                 (if §(firstc == ':')
                     (reset! new_last_cmdline §(STRDUP(@ccline.cmdbuff))))
@@ -8685,7 +8663,7 @@
     ;; remcr: remove trailing CR
     (§
         ;; check for valid regname; also accept special characters for CTRL-R in the command line
-        (if §(regname != Ctrl_F && regname != Ctrl_P && regname != Ctrl_W && regname != Ctrl_A && !valid_yank_reg(regname, false))
+        (if (and §(regname != Ctrl_F) §(regname != Ctrl_P) §(regname != Ctrl_W) §(regname != Ctrl_A) §(!valid_yank_reg(regname, false)))
 ;           return false;
         )
 
@@ -8764,7 +8742,7 @@
 ;                   s[0] = s[0].plus(1);
                 )
 ;               int c = us_ptr2char_adv(s, false);
-                (when §(cv == Ctrl_V || c == ESC || c == Ctrl_C || c == CAR || c == NL || c == Ctrl_L || c == @intr_char || (c == Ctrl_BSL && s[0].at(0) == Ctrl_N))
+                (when (or §(cv == Ctrl_V) §(c == ESC) §(c == Ctrl_C) §(c == CAR) §(c == NL) §(c == Ctrl_L) §(c == @intr_char) (and §(c == Ctrl_BSL) §(s[0].at(0) == Ctrl_N)))
                     (stuffcharReadbuff Ctrl_V)
                 )
                 (stuffcharReadbuff c)
@@ -8965,7 +8943,7 @@
 
             ;; For search history, check that the separator character matches as well.
 ;           Bytes p = @history[type][i].hisstr;
-            (when §(STRCMP(str, p) == 0 && (type != HIST_SEARCH || sep == p.at(STRLEN(p) + 1)))
+            (when (and §(STRCMP(str, p) == 0) (or §(type != HIST_SEARCH) §(sep == p.at(STRLEN(p) + 1))))
                 (if §(!move_to_front)
 ;                   return true;
                 )
@@ -9573,7 +9551,7 @@
 ;           ea.argt = cmdnames[ea.cmdidx].cmd_argt;
 
             (when §(!ea.skip)
-                (when §(text_locked() && (ea.argt & CMDWIN) == 0)
+                (when (and §(text_locked()) §((ea.argt & CMDWIN) == 0))
                     ;; Command not allowed when editing the command line.
                     (if §(@cmdwin_type != 0)
 ;                       errormsg = e_cmdwin;
@@ -9649,7 +9627,7 @@
 ;               long n;
 ;               { Bytes[] __ = { ea.arg }; n = getdigits(__); ea.arg = __[0]; }
 ;               ea.arg = skipwhite(ea.arg);
-                (when §(n <= 0 && (ea.argt & ZEROR) == 0)
+                (when (and §(n <= 0) §((ea.argt & ZEROR) == 0))
 ;                   errormsg = e_zerocount;
 ;                   break doend;
                 )
@@ -9780,23 +9758,18 @@
         ;;      but :sre[wind] is another command, as are :scr[iptnames], :scs[cope], :sim[alt], :sig[ns] and :sil[ent].
 
 ;       Bytes p = eap.cmd;
-;       if (p.at(0) == (byte)'s'
-;               && ((p.at(1) == (byte)'c' && p.at(2) != (byte)'s' && p.at(2) != (byte)'r' && p.at(3) != (byte)'i' && p.at(4) != (byte)'p')
-;                   || p.at(1) == (byte)'g'
-;                   || (p.at(1) == (byte)'i' && p.at(2) != (byte)'m' && p.at(2) != (byte)'l' && p.at(2) != (byte)'g')
-;                   || p.at(1) == (byte)'I'
-;                   || (p.at(1) == (byte)'r' && p.at(2) != (byte)'e')))
-;       {
+;       (cond (and §(p.at(0) == (byte)'s') (or (and §(p.at(1) == (byte)'c') §(p.at(2) != (byte)'s') §(p.at(2) != (byte)'r') §(p.at(3) != (byte)'i') §(p.at(4) != (byte)'p')) §(p.at(1) == (byte)'g') (and §(p.at(1) == (byte)'i') §(p.at(2) != (byte)'m') §(p.at(2) != (byte)'l') §(p.at(2) != (byte)'g')) §(p.at(1) == (byte)'I') (and §(p.at(1) == (byte)'r') §(p.at(2) != (byte)'e'))))
+        (§
 ;           eap.cmdidx = CMD_substitute;
 ;           p = p.plus(1);
-;       }
-;       else
-;       {
+        )
+        :else
+        (§
 ;           while (asc_isalpha(p.at(0)))
 ;               p = p.plus(1);
 
             ;; check for non-alpha command
-            (if §(BEQ(p, eap.cmd) && vim_strbyte(u8("@*!=><&~#"), p.at(0)) != null)
+            (if (and §(BEQ(p, eap.cmd)) §(vim_strbyte(u8("@*!=><&~#"), p.at(0)) != null))
 ;               p = p.plus(1);
             )
 
@@ -9817,7 +9790,7 @@
             (if §(BEQ(p, eap.cmd))
 ;               eap.cmdidx = CMD_SIZE;
             )
-;       }
+        ))
 
         p
     ))
@@ -10147,7 +10120,7 @@
 (defn- #_Bytes check_nextcmd [#_Bytes p]
     (§
 ;       p = skipwhite(p);
-        (if §(p.at(0) == (byte)'|' || p.at(0) == (byte)'\n')
+        (if (or §(p.at(0) == (byte)'|') §(p.at(0) == (byte)'\n'))
 ;           return p.plus(1);
 ;           return null;
         )
@@ -10589,7 +10562,7 @@
 ;               break normal_end;
             )
 
-            (when §(text_locked() && (nv_cmds[idx].cmd_flags & NV_NCW) != 0)
+            (when (and §(text_locked()) §((nv_cmds[idx].cmd_flags & NV_NCW) != 0))
                 ;; This command is not allowed while editing a cmdline: beep.
                 (clearopbeep oap)
                 (text_locked_msg)
@@ -10600,7 +10573,7 @@
 
             (when @VIsual_active
                 ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-                (when §(@km_stopsel && (nv_cmds[idx].cmd_flags & NV_STS) != 0 && (@mod_mask & MOD_MASK_SHIFT) == 0)
+                (when (and §(@km_stopsel) §((nv_cmds[idx].cmd_flags & NV_STS) != 0) §((@mod_mask & MOD_MASK_SHIFT) == 0))
                     (end_visual_mode)
                     (redraw_curbuf_later INVERTED)
                 )
@@ -10690,7 +10663,7 @@
 
                     (when §(!lit)
                         ;; Typing CTRL-K gets a digraph.
-                        (when §(cp[0] == Ctrl_K && ((nv_cmds[idx].cmd_flags & NV_LANG) != 0 || cp == ca.extra_char) && vim_strbyte(@p_cpo, CPO_DIGRAPH) == null)
+                        (when (and §(cp[0] == Ctrl_K) (or §((nv_cmds[idx].cmd_flags & NV_LANG) != 0) §(cp == ca.extra_char)) §(vim_strbyte(@p_cpo, CPO_DIGRAPH) == null))
 ;                           c = get_digraph(false);
                             (when §(0 < c)
 ;                               cp[0] = c;
@@ -10704,7 +10677,7 @@
                     ;; When the next character is CTRL-\ a following CTRL-N means
                     ;; the command is aborted and we go to Normal mode.
 
-                    (cond §(cp == ca.extra_char && ca.@nchar == Ctrl_BSL && (ca.@extra_char == Ctrl_N || ca.@extra_char == Ctrl_G))
+                    (cond (and §(cp == ca.extra_char) §(ca.@nchar == Ctrl_BSL) (or §(ca.@extra_char == Ctrl_N) §(ca.@extra_char == Ctrl_G)))
                     (§
 ;                       ca.cmdchar = Ctrl_BSL;
 ;                       ca.@nchar = ca.@extra_char;
@@ -10817,7 +10790,7 @@
 
             ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
 
-            (when §(!@finish_op && oap.op_type == OP_NOP && (idx < 0 || (nv_cmds[idx].cmd_flags & NV_KEEPREG) == 0))
+            (when (and §(!@finish_op) §(oap.op_type == OP_NOP) (or §(idx < 0) §((nv_cmds[idx].cmd_flags & NV_KEEPREG) == 0)))
                 (clearop oap)
             )
 
@@ -10916,12 +10889,7 @@
         ;; (but not if still inside a mapping that started in Visual mode).
         ;; May switch from Visual to Select mode after CTRL-O command.
 
-;       if (oap.op_type == OP_NOP
-;               && ((@restart_edit != 0 && !@VIsual_active) || @restart_VIsual_select == 1)
-;               && (ca.retval & CA_COMMAND_BUSY) == 0
-;               && stuff_empty()
-;               && oap.regname == 0)
-;       {
+        (when (and §(oap.op_type == OP_NOP) (or (and §(@restart_edit != 0) §(!@VIsual_active)) §(@restart_VIsual_select == 1)) §((ca.retval & CA_COMMAND_BUSY) == 0) §(stuff_empty()) §(oap.regname == 0))
             (when §(@restart_VIsual_select == 1)
                 (reset! VIsual_select true)
                 (showmode)
@@ -10929,7 +10897,7 @@
             )
             (if (and §(@restart_edit != 0) §(!@VIsual_active))
                 (edit @restart_edit, false, 1))
-;       }
+        )
 
         (if §(@restart_VIsual_select == 2)
             (reset! restart_VIsual_select 1))
@@ -11147,7 +11115,7 @@
 ;                           oap.start_vcol = start[0];
                         )
                         (when §(oap.end_vcol < end[0])
-                            (if §(@p_sel.at(0) == (byte)'e' && 1 <= start[0] && oap.end_vcol <= start[0] - 1)
+                            (if (and §(@p_sel.at(0) == (byte)'e') §(1 <= start[0]) §(oap.end_vcol <= start[0] - 1))
 ;                               oap.end_vcol = start[0] - 1;
 ;                               oap.end_vcol = end[0];
                             )
@@ -11226,7 +11194,7 @@
                     ;; Prepare for redoing.  Only use the nchar field for "r",
                     ;; otherwise it might be the second char of the operator.
 
-                    (cond §(cap.cmdchar == 'g' && (cap.@nchar == 'n' || cap.@nchar == 'N'))
+                    (cond (and §(cap.cmdchar == 'g') (or §(cap.@nchar == 'n') §(cap.@nchar == 'N')))
                     (§
 ;                       prep_redo(oap.regname, cap.count0, get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.motion_force, cap.cmdchar, cap.@nchar);
                     )
@@ -11290,16 +11258,11 @@
                     (if @mode_displayed
                         (reset! clear_cmdline true)   ;; unshow visual mode later
                         (clear_showcmd))
-;                   if ((oap.op_type == OP_YANK
-;                               || oap.op_type == OP_COLON
-;                               || oap.op_type == OP_FUNCTION
-;                               || oap.op_type == OP_FILTER)
-;                           && oap.motion_force == NUL)
-;                   {
+                    (when (and (or §(oap.op_type == OP_YANK) §(oap.op_type == OP_COLON) §(oap.op_type == OP_FUNCTION) §(oap.op_type == OP_FILTER)) §(oap.motion_force == NUL))
                         ;; make sure redrawing is correct
 ;                       @curwin.w_options.@wo_lbr = lbr_saved;
                         (redraw_curbuf_later INVERTED)
-;                   }
+                    )
                 )
             )
 
@@ -11537,14 +11500,10 @@
             (§
                 ;; if 'sol' not set, go back to old column for some commands
 
-;               if (!@p_sol && oap.motion_type == MLINE && !oap.end_adjusted
-;                       && (oap.op_type == OP_LSHIFT
-;                        || oap.op_type == OP_RSHIFT
-;                        || oap.op_type == OP_DELETE))
-;               {
+                (when (and §(!@p_sol) §(oap.motion_type == MLINE) §(!oap.end_adjusted) (or §(oap.op_type == OP_LSHIFT) §(oap.op_type == OP_RSHIFT) §(oap.op_type == OP_DELETE)))
 ;                   @curwin.w_options.@wo_lbr = false;
                     (coladvance §(@curwin.w_curswant = old_col))
-;               }
+                )
             )
             :else
             (§
@@ -11751,7 +11710,7 @@
 ;           while (p.at(col) != NUL)
 ;           {
 ;               this_class = us_get_class(p.plus(col), @curbuf);
-                (if §(this_class != 0 && (round == 1 || this_class != 1))
+                (if (and §(this_class != 0) (or §(round == 1) §(this_class != 1)))
 ;                   break;
                 )
 ;               col += us_ptr2len_cc(p.plus(col));
@@ -11765,7 +11724,7 @@
 ;           {
 ;               int prevcol = col - 1 - us_head_off(p, p.plus(col - 1));
 ;               int prev_class = us_get_class(p.plus(prevcol), @curbuf);
-                (if §(this_class != prev_class && (round == 0 || prev_class == 0 || (find_type & FIND_IDENT) != 0))
+                (if (and §(this_class != prev_class) (or §(round == 0) §(prev_class == 0) §((find_type & FIND_IDENT) != 0)))
 ;                   break;
                 )
 ;               col = prevcol;
@@ -11775,12 +11734,12 @@
             (if §(2 < this_class)
 ;               this_class = 2;
             )
-            (if §((find_type & FIND_STRING) == 0 || this_class == 2)
+            (if (or §((find_type & FIND_STRING) == 0) §(this_class == 2))
 ;               break;
             )
 ;       }
 
-        (when §(p.at(col) == NUL || (round == 0 && this_class != 2))
+        (when (or §(p.at(col) == NUL) (and §(round == 0) §(this_class != 2)))
             ;; didn't find an identifier or string
 
             (if §((find_type & FIND_STRING) != 0)
@@ -12516,7 +12475,7 @@
         ;; For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":
         ;; If line number given, set cursor.
 
-        (when §(vim_strchr(u8("+\r\nt.z^-b"), nchar) != null && cap.count0 != 0 && cap.count0 != @curwin.w_cursor.lnum)
+        (when (and §(vim_strchr(u8("+\r\nt.z^-b"), nchar) != null) §(cap.count0 != 0) §(cap.count0 != @curwin.w_cursor.lnum))
             (setpcmark)
             (if §(@curbuf.b_ml.ml_line_count < cap.count0)
 ;               @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
@@ -12714,7 +12673,7 @@
                 ;; The Ex command failed, do not execute the operator.
                 (clearop §(cap.oap))
             )
-            §(cap.oap.op_type != OP_NOP && (@curbuf.b_ml.ml_line_count < cap.oap.op_start.lnum || STRLEN(ml_get(cap.oap.op_start.lnum)) < cap.oap.op_start.col || @did_emsg))
+            (and §(cap.oap.op_type != OP_NOP) (or §(@curbuf.b_ml.ml_line_count < cap.oap.op_start.lnum) §(STRLEN(ml_get(cap.oap.op_start.lnum)) < cap.oap.op_start.col) §(@did_emsg)))
             (§
                 ;; The start of the operator has become invalid by the Ex command.
                 (clearopbeep §(cap.oap))
@@ -12857,7 +12816,7 @@
         )
 
         (when §(ident[0] == null)
-;           int type = (cmdchar == '*' || cmdchar == '#') ? FIND_IDENT|FIND_STRING : FIND_IDENT;
+;           int type = (cmdchar == '*' || cmdchar == '#') ? (FIND_IDENT | FIND_STRING) : FIND_IDENT;
 ;           n[0] = find_ident_under_cursor(ident, type);
             (when §(n[0] == 0)
                 (clearop §(cap.oap))
@@ -13113,15 +13072,11 @@
                 ;;        'l' wraps to next line if 'whichwrap' has 'l'.
                 ;; CURS_RIGHT wraps to next line if 'whichwrap' has '>'.
 
-;               if (((cap.cmdchar == ' ' && vim_strchr(@p_ww, 's') != null)
-;                   || (cap.cmdchar == 'l' && vim_strchr(@p_ww, 'l') != null)
-;                   || (cap.cmdchar == K_RIGHT && vim_strchr(@p_ww, '>') != null))
-;                       && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
-;               {
+                (when (and (or (and §(cap.cmdchar == ' ') §(vim_strchr(@p_ww, 's') != null)) (and §(cap.cmdchar == 'l') §(vim_strchr(@p_ww, 'l') != null)) (and §(cap.cmdchar == K_RIGHT) §(vim_strchr(@p_ww, '>') != null))) §(@curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count))
                     ;; When deleting we also count the NL as a character.
                     ;; Set cap.oap.inclusive when last char in the line is
                     ;; included, move to next line after that
-                    (cond §(cap.oap.op_type != OP_NOP && !cap.oap.inclusive && !lineempty(@curwin.w_cursor.lnum))
+                    (cond (and §(cap.oap.op_type != OP_NOP) §(!cap.oap.inclusive) §(!lineempty(@curwin.w_cursor.lnum)))
                     (§
 ;                       cap.oap.inclusive = true;
                     )
@@ -13134,7 +13089,7 @@
 ;                       cap.oap.inclusive = false;
                     ))
 ;                   continue;
-;               }
+                )
                 (cond §(cap.oap.op_type == OP_NOP)
                 (§
                     ;; Only beep and flush if not moved at all.
@@ -13185,11 +13140,8 @@
                 ;;           'h' wraps to previous line if 'whichwrap' has 'h'.
                 ;;     CURS_LEFT wraps to previous line if 'whichwrap' has '<'.
 
-;               if ((((cap.cmdchar == K_BS || cap.cmdchar == Ctrl_H) && vim_strchr(@p_ww, 'b') != null)
-;                   || (cap.cmdchar == 'h' && vim_strchr(@p_ww, 'h') != null)
-;                   || (cap.cmdchar == K_LEFT && vim_strchr(@p_ww, '<') != null))
-;                       && 1 < @curwin.w_cursor.lnum)
-;               {
+                (cond (and (or (and (or §(cap.cmdchar == K_BS) §(cap.cmdchar == Ctrl_H)) §(vim_strchr(@p_ww, 'b') != null)) (or (and §(cap.cmdchar == 'h') §(vim_strchr(@p_ww, 'h') != null)) (and §(cap.cmdchar == K_LEFT) §(vim_strchr(@p_ww, '<') != null)))) §(1 < @curwin.w_cursor.lnum))
+                (§
 ;                   --@curwin.w_cursor.lnum;
                     (coladvance MAXCOL)
 ;                   @curwin.w_set_curswant = true;
@@ -13207,12 +13159,12 @@
 ;                       cap.retval |= CA_NO_ADJ_OP_END;
                     )
 ;                   continue;
-;               }
+                )
                 ;; Only beep and flush if not moved at all.
-;               else if (cap.oap.op_type == OP_NOP && n == cap.count1)
-;               {
+                (and §(cap.oap.op_type == OP_NOP) §(n == cap.count1))
+                (§
                     (beep_flush)
-;               }
+                ))
 ;               break;
             )
 ;       }
@@ -13280,7 +13232,7 @@
 
 (defn- #_void nv_end [#_cmdarg_C cap]
     (§
-        (when §(cap.arg != 0 || (@mod_mask & MOD_MASK_CTRL) != 0)    ;; CTRL-END = goto last line
+        (when (or §(cap.arg != 0) §((@mod_mask & MOD_MASK_CTRL) != 0))    ;; CTRL-END = goto last line
 ;           cap.arg = TRUE;
             (nv_goto cap)
 ;           cap.count1 = 1;             ;; to end of current line
@@ -13433,7 +13385,7 @@
         ;; "[m" or "]m" search for prev/next start of (Java) method.
         ;; "[M" or "]M" search for prev/next end of (Java) method.
 
-        (cond §((cap.cmdchar == '[' && vim_strchr(u8("{(*/#mM"), cap.@nchar) != null) || (cap.cmdchar == ']' && vim_strchr(u8("})*/#mM"), cap.@nchar) != null))
+        (cond (or (and §(cap.cmdchar == '[') §(vim_strchr(u8("{(*/#mM"), cap.@nchar) != null)) (and §(cap.cmdchar == ']') §(vim_strchr(u8("})*/#mM"), cap.@nchar) != null)))
         (§
             (if §(cap.@nchar == '*')
 ;               cap.@nchar = '/';
@@ -13518,7 +13470,7 @@
                         (when (or §(c == '{') §(c == '}'))
                             ;; Must have found end/start of class: use it.
                             ;; Or found the place to be at.
-                            (cond §((c == findc && norm) || (n == 1 && !norm))
+                            (cond (or (and §(c == findc) §(norm)) (and §(n == 1) §(!norm)))
                             (§
                                 (COPY_pos new_pos, §(@curwin.w_cursor))
 ;                               pos = new_pos;
@@ -13859,7 +13811,7 @@
         ;; Other characters are done below to avoid problems with things like
         ;; CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
 
-        (when §(had_ctrl_v != Ctrl_V && cap.@nchar == '\t' && (@curbuf.@b_p_et || @p_sta))
+        (when (and §(had_ctrl_v != Ctrl_V) §(cap.@nchar == '\t') (or §(@curbuf.@b_p_et) §(@p_sta)))
             (stuffnumReadbuff §(cap.count1))
             (stuffcharReadbuff §('R'))
             (stuffcharReadbuff §('\t'))
@@ -13872,7 +13824,7 @@
 ;           return;
         )
 
-        (cond §(had_ctrl_v != Ctrl_V && (cap.@nchar == '\r' || cap.@nchar == '\n'))
+        (cond (and §(had_ctrl_v != Ctrl_V) (or §(cap.@nchar == '\r') §(cap.@nchar == '\n')))
         (§
             ;; Replace character(s) by a single newline.
             ;; Strange vi behaviour: Only one newline is inserted.
@@ -14041,7 +13993,7 @@
 ;           return;
         )
 
-        (when §(lineempty(@curwin.w_cursor.lnum) && vim_strchr(@p_ww, '~') == null)
+        (when (and §(lineempty(@curwin.w_cursor.lnum)) §(vim_strchr(@p_ww, '~') == null))
             (clearopbeep §(cap.oap))
 ;           return;
         )
@@ -14062,7 +14014,7 @@
 ;           did_change |= swapchar(cap.oap.op_type, @curwin.w_cursor);
             (inc_cursor)
             (when §(gchar_cursor() == NUL)
-                (cond §(vim_strchr(@p_ww, '~') != null && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
+                (cond (and §(vim_strchr(@p_ww, '~') != null) §(@curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count))
                 (§
 ;                   @curwin.w_cursor.lnum++;
 ;                   @curwin.w_cursor.col = 0;
@@ -14433,7 +14385,7 @@
 
 (defn- #_void may_start_select [#_int c]
     (§
-        (reset! VIsual_select §(stuff_empty() && vim_strchr(@p_slm, c) != null))
+        (reset! VIsual_select (and §(stuff_empty()) §(vim_strchr(@p_slm, c) != null)))
     ))
 
 ;; Start Visual mode "c".
@@ -14450,7 +14402,7 @@
         ;; Corner case: the 0 position in a tab may change when going into
         ;; virtualedit.  Recalculate curwin.w_cursor to avoid bad hilighting.
 
-        (when §(c == Ctrl_V && (@ve_flags & VE_BLOCK) != 0 && gchar_cursor() == TAB)
+        (when (and §(c == Ctrl_V) §((@ve_flags & VE_BLOCK) != 0) §(gchar_cursor() == TAB))
             (validate_virtcol)
             (coladvance §(@curwin.w_virtcol))
         )
@@ -14972,7 +14924,7 @@
 ;       long oldline = @curwin.w_cursor.lnum;
 
         (when §(!checkclearopq(cap.oap))
-            (when §(u_save(@curwin.w_cursor.lnum - (cap.cmdchar == 'O' ? 1 : 0), @curwin.w_cursor.lnum + (cap.cmdchar == 'o' ? 1 : 0)) && open_line(cap.cmdchar == 'O' ? BACKWARD : FORWARD, 0, 0))
+            (when (and §(u_save(@curwin.w_cursor.lnum - (cap.cmdchar == 'O' ? 1 : 0), @curwin.w_cursor.lnum + (cap.cmdchar == 'o' ? 1 : 0))) §(open_line(cap.cmdchar == 'O' ? BACKWARD : FORWARD, 0, 0)))
                 (if (and §(0 < @curwin.w_options.@wo_cole) §(oldline != @curwin.w_cursor.lnum))
                     (update_single_line @curwin, oldline))
                 ;; When '#' is in 'cpoptions' ignore the count.
@@ -14993,7 +14945,7 @@
             ;; instead of the last command (inserting text).  This is used for
             ;; CTRL-O <.> in insert mode.
 
-            (if §(!start_redo(cap.count0, @restart_edit != 0 && !@arrow_used))
+            (if (not (start_redo §(cap.count0), (and §(@restart_edit != 0) §(!@arrow_used))))
                 (clearopbeep §(cap.oap)))
         )
     ))
@@ -15065,22 +15017,19 @@
 (defn- #_void nv_lineop [#_cmdarg_C cap]
     (§
 ;       cap.oap.motion_type = MLINE;
-;       if (!cursor_down(cap.count1 - 1, cap.oap.op_type == OP_NOP))
-;       {
+        (cond §(!cursor_down(cap.count1 - 1, cap.oap.op_type == OP_NOP))
+        (§
             (clearopbeep §(cap.oap))
-;       }
-;       else if (  (cap.oap.op_type == OP_DELETE    ;; only with linewise motions
-;                   && cap.oap.motion_force != 'v'
-;                   && cap.oap.motion_force != Ctrl_V)
-;               || cap.oap.op_type == OP_LSHIFT
-;               || cap.oap.op_type == OP_RSHIFT)
-;       {
+        )
+        ;; only with linewise motions
+        (or (and §(cap.oap.op_type == OP_DELETE) §(cap.oap.motion_force != 'v') §(cap.oap.motion_force != Ctrl_V)) §(cap.oap.op_type == OP_LSHIFT) §(cap.oap.op_type == OP_RSHIFT))
+        (§
             (beginline §(BL_SOL | BL_FIX))
-;       }
-;       else if (cap.oap.op_type != OP_YANK)        ;; 'Y' does not move cursor
-;       {
+        )
+        §(cap.oap.op_type != OP_YANK)        ;; 'Y' does not move cursor
+        (§
             (beginline §(BL_WHITE | BL_FIX))
-;       }
+        ))
     ))
 
 ;; <Home> command.
@@ -15237,7 +15186,7 @@
 
 (defn- #_void adjust_for_sel [#_cmdarg_C cap]
     (§
-        (when §(@VIsual_active && cap.oap.inclusive && @p_sel.at(0) == (byte)'e' && gchar_cursor() != NUL && ltpos(@VIsual, @curwin.w_cursor))
+        (when (and §(@VIsual_active) §(cap.oap.inclusive) §(@p_sel.at(0) == (byte)'e') §(gchar_cursor() != NUL) §(ltpos(@VIsual, @curwin.w_cursor)))
             (inc_cursor)
 ;           cap.oap.inclusive = false;
         )
@@ -15249,7 +15198,7 @@
 
 (defn- #_boolean unadjust_for_sel []
     (§
-        (when §(@p_sel.at(0) == (byte)'e' && !eqpos(@VIsual, @curwin.w_cursor))
+        (when (and §(@p_sel.at(0) == (byte)'e') §(!eqpos(@VIsual, @curwin.w_cursor)))
 ;           pos_C pp;
             (if §(ltpos(@VIsual, @curwin.w_cursor))
 ;               pp = @curwin.w_cursor;
@@ -15402,7 +15351,7 @@
         )
 
         ;; in Visual mode "A" and "I" are an operator
-        (cond §(@VIsual_active && (cap.cmdchar == 'A' || cap.cmdchar == 'I'))
+        (cond (and §(@VIsual_active) (or §(cap.cmdchar == 'A') §(cap.cmdchar == 'I')))
         (§
             (v_visop cap)
         )
@@ -15442,7 +15391,7 @@
 ;               case 'a':   ;; "a"ppend is like "i"nsert on the next character
                     ;; Increment coladd when in virtual space, increment the
                     ;; column otherwise, also to append after an unprintable char.
-                    (cond §(virtual_active() && (0 < @curwin.w_cursor.coladd || ml_get_cursor().at(0) == NUL || ml_get_cursor().at(0) == TAB))
+                    (cond (and §(virtual_active()) (or §(0 < @curwin.w_cursor.coladd) §(ml_get_cursor().at(0) == NUL) §(ml_get_cursor().at(0) == TAB)))
                     (§
 ;                       @curwin.w_cursor.coladd++;
                     )
@@ -15611,7 +15560,7 @@
 
 (defn- #_void nv_halfpage [#_cmdarg_C cap]
     (§
-        (cond §((cap.cmdchar == Ctrl_U && @curwin.w_cursor.lnum == 1) || (cap.cmdchar == Ctrl_D && @curwin.w_cursor.lnum == @curbuf.b_ml.ml_line_count))
+        (cond (or (and §(cap.cmdchar == Ctrl_U) §(@curwin.w_cursor.lnum == 1)) (and §(cap.cmdchar == Ctrl_D) §(@curwin.w_cursor.lnum == @curbuf.b_ml.ml_line_count)))
         (§
             (clearopbeep §(cap.oap))
         )
@@ -15716,7 +15665,7 @@
 ;                   flags |= PUT_LINE_FORWARD;
                 )
 ;               dir = BACKWARD;
-                (when §((@VIsual_mode != 'V' && @curwin.w_cursor.col < @curbuf.b_op_start.col) || (@VIsual_mode == 'V' && @curwin.w_cursor.lnum < @curbuf.b_op_start.lnum))
+                (when (or (and §(@VIsual_mode != 'V') §(@curwin.w_cursor.col < @curbuf.b_op_start.col)) (and §(@VIsual_mode == 'V') §(@curwin.w_cursor.lnum < @curbuf.b_op_start.lnum)))
                     ;; cursor is at the end of the line or end of file, put forward.
 ;                   dir = FORWARD;
                 )
@@ -16489,7 +16438,7 @@
             ;; It's a slow thing to do, so give feedback,
             ;; so there's no worry that the computer's just hung.
 
-            (if §(1 < i && (i % 50 == 0 || i == oap.line_count - 1) && @p_report < oap.line_count)
+            (if (and §(1 < i) (or §(i % 50 == 0) §(i == oap.line_count - 1)) §(@p_report < oap.line_count))
                 (smsg (u8 "%ld lines to indent... "), i))
 
 ;           int count = 0;
@@ -16595,15 +16544,7 @@
 (defn- #_boolean valid_yank_reg [#_int regname, #_boolean writing]
     ;; writing: if true check for writable registers
     (§
-;       return ((0 < regname && asc_isalnum(regname))
-;               || (!writing && vim_strchr(u8("/.%:="), regname) != null)
-;               || regname == '#'
-;               || regname == '"'
-;               || regname == '-'
-;               || regname == '_'
-;               || regname == '*'
-;               || regname == '+'
-;               || (!writing && regname == '~'));
+        (or (and §(0 < regname) §(asc_isalnum(regname))) (and §(!writing) §(vim_strchr(u8("/.%:="), regname) != null)) §(regname == '#') §(regname == '"') §(regname == '-') §(regname == '_') §(regname == '*') §(regname == '+') (and §(!writing) §(regname == '~')))
     ))
 
 ;; Set y_current and y_append, according to the value of "regname".
@@ -16712,7 +16653,7 @@
         (cond §(!@Recording)         ;; start recording
         (§
             ;; registers 0-9, a-z and " are allowed
-            (cond (or §(c < 0) §(!asc_isalnum(c) && c != '"'))
+            (cond (or §(c < 0) (and §(!asc_isalnum(c)) §(c != '"')))
             (§
 ;               retval = false;
             )
@@ -17019,7 +16960,7 @@
             ;; stuff a single special character
             (when §(arg[0].at(0) != NUL)
 ;               int c = us_ptr2char_adv(arg, false);
-                (if §(literally && ((c < ' ' && c != TAB) || c == DEL))
+                (if (and §(literally) (or (and §(c < ' ') §(c != TAB)) §(c == DEL)))
                     (stuffcharReadbuff Ctrl_V))
                 (stuffcharReadbuff c)
             )
@@ -17054,7 +16995,7 @@
 ;               return true;
 
 ;           case '/':                                       ;; last search-pattern
-                (if §(last_search_pat() == null && errmsg)
+                (if (and §(last_search_pat() == null) §(errmsg))
                     (emsg e_noprevre))
 ;               argp[0] = last_search_pat();
 ;               return true;
@@ -17109,7 +17050,7 @@
 
             ;; Insert ^M between lines and after last line if type is MLINE.
             ;; Don't do this when "remcr" is true and the next line is empty.
-            (when §(@y_current.y_type == MLINE || (i < @y_current.y_size - 1 && !(remcr && i == @y_current.y_size - 2 && @y_current.y_array[i + 1].at(0) == NUL)))
+            (when (or §(@y_current.y_type == MLINE) (and §(i < @y_current.y_size - 1) (not (and §(remcr) §(i == @y_current.y_size - 2) §(@y_current.y_array[i + 1].at(0) == NUL)))))
                 (cmdline_paste_str (u8 "\r"), literally)
             )
 
@@ -17182,11 +17123,11 @@
 ;               && oap.op_type == OP_DELETE)
 ;       {
 ;           Bytes ptr = ml_get(oap.op_end.lnum).plus(oap.op_end.col);
-            (if §(ptr.at(0) != NUL && oap.inclusive)
+            (if (and §(ptr.at(0) != NUL) §(oap.inclusive))
 ;               ptr = ptr.plus(1);
             )
 ;           ptr = skipwhite(ptr);
-            (if §(ptr.at(0) == NUL && inindent(0))
+            (if (and §(ptr.at(0) == NUL) §(inindent(0)))
 ;               oap.motion_type = MLINE;
             )
 ;       }
@@ -17196,7 +17137,7 @@
             ;; Check for trying to delete (e.g. "D") in an empty line.
             ;; Note: For the change operator it is ok.
 
-            (when §(oap.motion_type == MCHAR && oap.line_count == 1 && oap.op_type == OP_DELETE && ml_get(oap.op_start.lnum).at(0) == NUL)
+            (when (and §(oap.motion_type == MCHAR) §(oap.line_count == 1) §(oap.op_type == OP_DELETE) §(ml_get(oap.op_start.lnum).at(0) == NUL))
                 ;; It's an error to operate on an empty region,
                 ;; when 'E' included in 'cpoptions' (Vi compatible).
 
@@ -17372,7 +17313,7 @@
                     )
 
                     ;; Break a tab only when it's included in the area.
-                    (when §(gchar_pos(oap.op_end) == '\t' && oap.op_end.coladd < (oap.inclusive ? 1 : 0))
+                    (when (and §(gchar_pos(oap.op_end) == '\t') §(oap.op_end.coladd < (oap.inclusive ? 1 : 0)))
                         ;; save last line for undo
                         (if §(!u_save(oap.op_end.lnum - 1, oap.op_end.lnum + 1))
 ;                           return false;
@@ -17399,7 +17340,7 @@
 ;                       Bytes curline = ml_get_curline();
 ;                       int len = STRLEN(curline);
 
-                        (when §(oap.op_end.coladd != 0 && len - 1 <= oap.op_end.col && !(oap.op_start.coladd != 0 && len - 1 <= oap.op_end.col))
+                        (when (and §(oap.op_end.coladd != 0) §(len - 1 <= oap.op_end.col) (not (and §(oap.op_start.coladd != 0) §(len - 1 <= oap.op_end.col))))
 ;                           n++;
                         )
                         ;; Delete at least one char (e.g, when on a control char).
@@ -17412,7 +17353,7 @@
 ;                           @curwin.w_cursor.coladd = 0;
                         )
                     )
-                    (cond §(oap.op_type == OP_DELETE && oap.inclusive && oap.op_end.lnum == @curbuf.b_ml.ml_line_count && STRLEN(ml_get(oap.op_end.lnum)) < n)
+                    (cond (and §(oap.op_type == OP_DELETE) §(oap.inclusive) §(oap.op_end.lnum == @curbuf.b_ml.ml_line_count) §(STRLEN(ml_get(oap.op_end.lnum)) < n))
                     (§
                         ;; Special case: gH<Del> deletes the last line.
                         (del_lines 1, false)
@@ -17443,7 +17384,7 @@
                     )
 
 ;                   int n = (oap.op_end.col + 1 - (!oap.inclusive ? 1 : 0));
-                    (cond §(oap.inclusive && delete_last_line && STRLEN(ml_get(oap.op_end.lnum)) < n)
+                    (cond (and §(oap.inclusive) §(delete_last_line) §(STRLEN(ml_get(oap.op_end.lnum)) < n))
                     (§
                         ;; Special case: gH<Del> deletes the last line.
                         (del_lines 1, false)
@@ -17499,7 +17440,7 @@
 ;       Bytes after_p = null;
 ;       boolean had_ctrl_v_cr = (c == -1 || c == -2);
 
-        (if §((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0 || oap.empty)
+        (if (or §((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) §(oap.empty))
 ;           return true;            ;; nothing to do
         )
 
@@ -17524,7 +17465,7 @@
 ;           {
 ;               @curwin.w_cursor.col = 0;    ;; make sure cursor position is valid
                 (block_prep oap, bd, §(@curwin.w_cursor.lnum), true)
-                (when §(bd.textlen == 0 && (@virtual_op == FALSE || bd.is_MAX))
+                (when (and §(bd.textlen == 0) (or §(@virtual_op == FALSE) §(bd.is_MAX)))
 ;                   continue;               ;; nothing to replace
                 )
 
@@ -17535,7 +17476,7 @@
                 ;; If the range starts in virtual space,
                 ;; count the initial coladd offset as part of "startspaces".
 ;               int n;
-                (cond §(@virtual_op != FALSE && bd.is_short && bd.textstart.at(0) == NUL)
+                (cond (and §(@virtual_op != FALSE) §(bd.is_short) §(bd.textstart.at(0) == NUL))
                 (§
 ;                   pos_C vpos = §_pos_C();
 
@@ -17555,7 +17496,7 @@
 ;                       ? bd.end_char_vcols - 1 : 0;
                 ;; Figure out how many characters to replace.
 ;               int numc = oap.end_vcol - oap.start_vcol + 1;
-                (if §(bd.is_short && (@virtual_op == FALSE || bd.is_MAX))
+                (if (and §(bd.is_short) (or §(@virtual_op == FALSE) §(bd.is_MAX)))
 ;                   numc -= (oap.end_vcol - bd.end_vcol) + 1;
                 )
 
@@ -17585,7 +17526,7 @@
                 (copy_spaces §(newp.plus(bd.textcol)), §(bd.startspaces))
                 ;; insert replacement chars CHECK FOR ALLOCATED SPACE
                 ;; -1/-2 is used for entering CR literally.
-                (cond §(had_ctrl_v_cr || (c != '\r' && c != '\n'))
+                (cond (or §(had_ctrl_v_cr) (and §(c != '\r') §(c != '\n')))
                 (§
 ;                   n = STRLEN(newp);
 ;                   while (0 <= --num_chars)
@@ -17949,7 +17890,7 @@
                 (check_cursor_col)
 
                 ;; Works just like an 'i'nsert on the next character.
-                (if §(!lineempty(@curwin.w_cursor.lnum) && oap.start_vcol != oap.end_vcol)
+                (if (and §(!lineempty(@curwin.w_cursor.lnum)) §(oap.start_vcol != oap.end_vcol))
                     (inc_cursor))
             ))
         )
@@ -18062,14 +18003,14 @@
 ;           return false;
         ))
 
-        (if §((@curwin.w_cursor.col < l) && !lineempty(@curwin.w_cursor.lnum) && @virtual_op == FALSE)
+        (if (and §(@curwin.w_cursor.col < l) §(!lineempty(@curwin.w_cursor.lnum)) §(@virtual_op == FALSE))
             (inc_cursor))
 
 ;       block_def_C bd = §_block_def_C();
         ;; check for still on same line (<CR> in inserted text meaningless); skip blank lines too
         (when §(oap.block_mode)
             ;; Add spaces before getting the current line length.
-            (if §(@virtual_op != FALSE && (0 < @curwin.w_cursor.coladd || gchar_cursor() == NUL))
+            (if (and §(@virtual_op != FALSE) (or §(0 < @curwin.w_cursor.coladd) §(gchar_cursor() == NUL)))
                 (coladvance_force (getviscol)))
 ;           Bytes firstline = ml_get(oap.op_start.lnum);
 ;           pre_textlen = STRLEN(firstline);
@@ -18192,18 +18133,11 @@
         ;; If the cursor was in column 1 before and after the movement,
         ;; and the operator is not inclusive, the yank is always linewise.
 
-;       if (       oap.motion_type == MCHAR
-;               && oap.op_start.col == 0
-;               && !oap.inclusive
-;               && (!oap.is_VIsual || @p_sel.at(0) == (byte)'o')
-;               && !oap.block_mode
-;               && oap.op_end.col == 0
-;               && 1 < yanklines)
-;       {
+        (when (and §(oap.motion_type == MCHAR) §(oap.op_start.col == 0) §(!oap.inclusive) (or §(!oap.is_VIsual) §(@p_sel.at(0) == (byte)'o')) §(!oap.block_mode) §(oap.op_end.col == 0) §(1 < yanklines))
 ;           yanktype = MLINE;
 ;           --yankendlnum;
 ;           --yanklines;
-;       }
+        )
 
 ;       @y_current.y_size = yanklines;
 ;       @y_current.y_type = yanktype;                    ;; set the yank register type
@@ -18271,7 +18205,7 @@
 ;                               int[] ce = new int[1];
                                 (getvcol @curwin, §(oap.op_end), cs, null, ce)
                                 ;; Don't add space for double-wide char; endcol will be on last byte of multi-byte char.
-                                (when §(p.at(endcol) == NUL || (cs[0] + oap.op_end.coladd < ce[0] && us_head_off(p, p.plus(endcol)) == 0))
+                                (when (or §(p.at(endcol) == NUL) (and §(cs[0] + oap.op_end.coladd < ce[0]) §(us_head_off(p, p.plus(endcol)) == 0)))
                                     (cond (and §(oap.op_start.lnum == oap.op_end.lnum) §(oap.op_start.col == oap.op_end.col))
                                     (§
                                         ;; Special case: inside a single char.
@@ -18619,7 +18553,7 @@
                 ))
 
 ;               col[0] += @curwin.w_cursor.coladd;
-                (when §(@ve_flags == VE_ALL && (0 < @curwin.w_cursor.coladd || endcol2[0] == @curwin.w_cursor.col))
+                (when (and §(@ve_flags == VE_ALL) (or §(0 < @curwin.w_cursor.coladd) §(endcol2[0] == @curwin.w_cursor.col)))
                     (if (and §(dir == FORWARD) §(c == NUL))
 ;                       col[0]++;
                     )
@@ -18825,7 +18759,7 @@
 
                     (COPY_pos §(@curbuf.b_op_end), §(@curwin.w_cursor))
                     ;; For "CTRL-O p" in Insert mode, put cursor after last char.
-                    (if §(totlen != 0 && (@restart_edit != 0 || (flags & PUT_CURSEND) != 0))
+                    (if (and §(totlen != 0) (or §(@restart_edit != 0) §((flags & PUT_CURSEND) != 0)))
 ;                       @curwin.w_cursor.col++;
                     )
                     (changed_bytes lnum, §(col[0]))
@@ -19040,14 +18974,14 @@
 
             (when (and §(insert_space) §(0 < t))
 ;               curr = skipwhite(curr);
-                (when §(curr.at(0) != (byte)')' && currsize != 0 && endcurr1 != TAB)
+                (when (and §(curr.at(0) != (byte)')') §(currsize != 0) §(endcurr1 != TAB))
                     ;; don't add a space if the line is ending in a space
                     (if §(endcurr1 == ' ')
 ;                       endcurr1 = endcurr2;
 ;                       ++spaces[t];
                     )
                     ;; extra space when 'joinspaces' set and line ends in '.'
-                    (if §(@p_js && (endcurr1 == '.' || (vim_strbyte(@p_cpo, CPO_JOINSP) == null && (endcurr1 == '?' || endcurr1 == '!'))))
+                    (if (and §(@p_js) (or §(endcurr1 == '.') (and §(vim_strbyte(@p_cpo, CPO_JOINSP) == null) (or §(endcurr1 == '?') §(endcurr1 == '!')))))
 ;                       ++spaces[t];
                     )
                 )
@@ -19240,7 +19174,7 @@
 ;                   incr = lbr_chartabsize_adv(line, pend, bdp.end_vcol);
 ;                   bdp.end_vcol += incr;
 ;               }
-                (cond §(bdp.end_vcol <= oap.end_vcol && (!is_del || oap.op_type == OP_APPEND || oap.op_type == OP_REPLACE)) ;; line too short
+                (cond (and §(bdp.end_vcol <= oap.end_vcol) (or §(!is_del) §(oap.op_type == OP_APPEND) §(oap.op_type == OP_REPLACE))) ;; line too short
                 (§
 ;                   bdp.is_short = true;
                     ;; Alternative: include spaces to fill up the block.
@@ -19298,7 +19232,7 @@
 ;           while (0 < col && asc_isxdigit(ptr.at(col)))
 ;               --col;
         )
-        (cond §(dohex && 0 < col && (ptr.at(col) == (byte)'X' || ptr.at(col) == (byte)'x') && ptr.at(col - 1) == (byte)'0' && asc_isxdigit(ptr.at(col + 1)))
+        (cond (and §(dohex) §(0 < col) (or §(ptr.at(col) == (byte)'X') §(ptr.at(col) == (byte)'x')) §(ptr.at(col - 1) == (byte)'0') §(asc_isxdigit(ptr.at(col + 1))))
         (§
             ;; Found hexadecimal number, move to its start.
 
@@ -19321,7 +19255,7 @@
 
 ;       int firstdigit = ptr.at(col);
 
-        (when §((!asc_isdigit(firstdigit) && !(doalp && asc_isalpha(firstdigit))) || !u_save_cursor())
+        (when (or (and §(!asc_isdigit(firstdigit)) (not (and §(doalp) §(asc_isalpha(firstdigit))))) §(!u_save_cursor()))
             (beep_flush)
 ;           return false;
         )
@@ -19495,7 +19429,7 @@
             ;; so the total length of the number remains the same.
             ;; Don't do this when the result may look like an octal number.
 
-            (when §(firstdigit == '0' && !(dooct && hex[0] == 0))
+            (when (and §(firstdigit == '0') (not (and §(dooct) §(hex[0] == 0))))
 ;               while (0 < length[0]--)
 ;                   (ptr = ptr.plus(1)).be(-1, (byte)'0');
             )
@@ -19605,7 +19539,7 @@
                 (COPY_pos min_pos, §(@curwin.w_cursor))
                 (COPY_pos max_pos, @VIsual)
             ))
-            (if §(@p_sel.at(0) == (byte)'e' && 0 < max_pos.col)
+            (if (and §(@p_sel.at(0) == (byte)'e') §(0 < max_pos.col))
 ;               --max_pos.col;
             )
 
@@ -20515,7 +20449,7 @@
 
         ;; When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
 
-        (if §(0 < len && @restart_edit != 0 && p.at(len - 1) == Ctrl_O)
+        (if (and §(0 < len) §(@restart_edit != 0) §(p.at(len - 1) == Ctrl_O))
 ;           p.be(len - 1, NUL);
         )
 
@@ -20777,13 +20711,13 @@
 ;               s[0] = s[0].plus(1);
 
             ;; Don't put '0' or '^' as last character, just in case a CTRL-D is typed next.
-            (if §(s[0].at(0) == NUL && (s[0].at(-1) == (byte)'0' || s[0].at(-1) == (byte)'^'))
+            (if (and §(s[0].at(0) == NUL) (or §(s[0].at(-1) == (byte)'0') §(s[0].at(-1) == (byte)'^')))
 ;               s[0] = s[0].minus(1);
             )
             (if §(BLT(start, s[0]))
                 (add_buff @redobuff, start, §(BDIFF(s[0], start))))
 
-            (if §(s[0].at(0) == NUL || (0 <= len && len <= BDIFF(s[0], str)))
+            (if (or §(s[0].at(0) == NUL) (and §(0 <= len) §(len <= BDIFF(s[0], str))))
 ;               break;
             )
 
@@ -20794,7 +20728,7 @@
                 (add_char_buff @redobuff, Ctrl_V))
 
             ;; CTRL-V '0' must be inserted as CTRL-V 048
-            (if §(s[0].at(0) == NUL && c == '0')
+            (if (and §(s[0].at(0) == NUL) §(c == '0'))
                 (add_buff @redobuff, (u8 "048"), 3)
                 (add_char_buff @redobuff, c))
 ;       }
@@ -20904,7 +20838,7 @@
                     (reset! redo_sp §(@redo_sp.plus(1)))
                 ))
 
-                (when §(@redo_sp.at(0) == NUL && @redo_bp.bb_next != null)
+                (when (and §(@redo_sp.at(0) == NUL) §(@redo_bp.bb_next != null))
                     (reset! redo_bp §(@redo_bp.bb_next))
                     (reset! redo_sp §(@redo_bp.bb_str))
                 )
@@ -21178,7 +21112,7 @@
 
 (defn- #_void may_sync_undo []
     (§
-        (when §((@State & (INSERT + CMDLINE)) == 0 || @arrow_used)
+        (when (or §((@State & (INSERT + CMDLINE)) == 0) §(@arrow_used))
             (u_sync false)
         )
     ))
@@ -21508,7 +21442,7 @@
                         ;; Otherwise we behave like having gotten a CTRL-C.
                         ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
 
-                        (if §(len != 0 && (@State & (INSERT + CMDLINE)) != 0)
+                        (if (and §(len != 0) §((@State & (INSERT + CMDLINE)) != 0))
 ;                           c = ESC;
 ;                           c = Ctrl_C;
                         )
@@ -21669,7 +21603,7 @@
                     ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
                     ;; because there was something in the input buffer (e.g., termresponse).
 
-                    (when §(((@State & INSERT) != 0 || @p_lz) && (@State & CMDLINE) == 0 && advance && @must_redraw != 0 && !@need_wait_return)
+                    (when (and (or §((@State & INSERT) != 0) §(@p_lz)) §((@State & CMDLINE) == 0) §(advance) §(@must_redraw != 0) §(!@need_wait_return))
                         (update_screen 0)
                         (setcursor)            ;; put cursor back where it belongs
                     )
@@ -21760,7 +21694,7 @@
         ;;   if we return an ESC to exit insert mode, the message is deleted;
         ;;   if we don't return an ESC, but deleted the message before, redisplay it.
 
-        (when §(advance && @p_smd && (@State & INSERT) != 0)
+        (when (and §(advance) §(@p_smd) §((@State & INSERT) != 0))
             (cond (and §(c == ESC) §(!mode_deleted) §(@no_mapping == 0) §(@mode_displayed))
             (§
                 (if (and §(@typebuf.tb_len != 0) §(!@keyTyped))
@@ -21826,7 +21760,7 @@
 ;           for ( ; ; )
 ;           {
 ;               len = ui_inchar(dum, DUM_LEN, 0, 0);
-                (if §(len == 0 || (len == 1 && dum.at(0) == 3))
+                (if (or §(len == 0) (and §(len == 1) §(dum.at(0) == 3)))
 ;                   break;
                 )
 ;           }
@@ -21893,7 +21827,7 @@
 ;       Bytes d = res;
 ;       for (Bytes s = p; s.at(0) != NUL; )
 ;       {
-            (cond §(s.at(0) == KB_SPECIAL && s.at(1) != NUL && s.at(2) != NUL)
+            (cond (and §(s.at(0) == KB_SPECIAL) §(s.at(1) != NUL) §(s.at(2) != NUL))
             (§
                 ;; Copy special key unmodified.
 ;               (d = d.plus(1)).be(-1, (s = s.plus(1)).at(-1));
@@ -21928,7 +21862,7 @@
 ;       Bytes d = p;
 ;       for (Bytes s = p; s.at(0) != NUL; )
 ;       {
-            (cond §(s.at(0) == KB_SPECIAL && s.at(1) == KS_SPECIAL && s.at(2) == KE_FILLER)
+            (cond (and §(s.at(0) == KB_SPECIAL) §(s.at(1) == KS_SPECIAL) §(s.at(2) == KE_FILLER))
             (§
 ;               (d = d.plus(1)).be(-1, KB_SPECIAL);
 ;               s = s.plus(3);
@@ -22105,7 +22039,7 @@
 
             (validate_virtcol)
             (update_curswant)
-            (when §((@ins_at_eol && @curwin.w_cursor.lnum == @o_lnum) || @curwin.w_virtcol < @curwin.w_curswant)
+            (when (or (and §(@ins_at_eol) §(@curwin.w_cursor.lnum == @o_lnum)) §(@curwin.w_virtcol < @curwin.w_curswant))
 ;               Bytes p = ml_get_curline().plus(@curwin.w_cursor.col);
                 (when §(p.at(0) != NUL)
                     (cond §(p.at(1) == NUL)
@@ -22357,7 +22291,7 @@
 ;                       case NUL:
 ;                       case Ctrl_A:
                             ;; For ^@ the trailing ESC will end the insert, unless there is an error.
-                            (if §(!stuff_inserted(NUL, 1, (c == Ctrl_A)) && c != Ctrl_A && !@p_im)
+                            (if (and §(!stuff_inserted(NUL, 1, (c == Ctrl_A))) §(c != Ctrl_A) §(!@p_im))
 ;                               break doESCkey;             ;; quit insert mode
                             )
 ;                           inserted_space[0] = false;
@@ -22496,7 +22430,7 @@
                                 (reset! cmdwin_result CAR)
 ;                               break doESCkey;
                             )
-                            (if §(ins_eol(c) && !@p_im)
+                            (if (and §(ins_eol(c)) §(!@p_im))
 ;                               break doESCkey;             ;; out of memory
                             )
 ;                           inserted_space[0] = false;
@@ -22550,7 +22484,7 @@
 ;                       Bytes s = do_insert_char_pre(c);
 
                         (when §(s != null)
-                            (when §(s.at(0) != NUL && stop_arrow())
+                            (when (and §(s.at(0) != NUL) §(stop_arrow()))
                                 ;; Insert the new value of v:char literally.
 ;                               for (Bytes p = s; p.at(0) != NUL; p = p.plus(us_ptr2len_cc(p)))
 ;                               {
@@ -22634,7 +22568,7 @@
 
         ;; Trigger CursorMoved if the cursor moved.
         ;; Not when the popup menu is visible, the command might delete it.
-        (when §(ready && 0 < @curwin.w_options.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
+        (when (and §(ready) §(0 < @curwin.w_options.@wo_cole) §(!eqpos(@last_cursormoved, @curwin.w_cursor)))
 ;           conceal_old_cursor_line = @last_cursormoved.lnum;
 ;           conceal_new_cursor_line = @curwin.w_cursor.lnum;
 ;           conceal_update_lines = true;
@@ -22650,7 +22584,7 @@
         (§
             (showmode)             ;; clear cmdline and show mode
         ))
-        (when §((conceal_update_lines && (conceal_old_cursor_line != conceal_new_cursor_line || conceal_cursor_line(@curwin))) || @need_cursor_line_redraw)
+        (when (or (and §(conceal_update_lines) (or §(conceal_old_cursor_line != conceal_new_cursor_line) §(conceal_cursor_line(@curwin)))) §(@need_cursor_line_redraw))
             (if §(conceal_old_cursor_line != conceal_new_cursor_line)
                 (update_single_line @curwin, conceal_old_cursor_line))
             (update_single_line @curwin, §(conceal_new_cursor_line == 0 ? @curwin.w_cursor.lnum : conceal_new_cursor_line))
@@ -22670,7 +22604,7 @@
         ;; may need to redraw when no more chars available now
         (ins_redraw false)
 
-        (when §(redrawing() && !char_avail())
+        (when (and §(redrawing()) §(!char_avail()))
             (edit_putchar §('^'), true)
 ;           did_putchar = true;
         )
@@ -23093,7 +23027,7 @@
             )
             §(unicode != 0)  ;; Unicode: up to four or eight chars
             (§
-                (if §((unicode == 'u' && 4 <= i) || (unicode == 'U' && 8 <= i))
+                (if (or (and §(unicode == 'u') §(4 <= i)) (and §(unicode == 'U') §(8 <= i)))
 ;                   break;
                 )
             )
@@ -23137,7 +23071,7 @@
         ;; Only use mod_mask for special keys, to avoid things like <S-Space>,
         ;; unless 'allow_modmask' is true.
 
-        (when §(is_special(c) || (@mod_mask != 0 && allow_modmask))
+        (when (or §(is_special(c)) (and §(@mod_mask != 0) §(allow_modmask)))
 ;           Bytes p = get_special_key_name(c, @mod_mask);
 ;           int len = STRLEN(p);
 ;           c = p.at(len - 1);
@@ -23190,7 +23124,7 @@
         ;; Don't do this when there an InsertCharPre autocommand is defined,
         ;; because we need to fire the event for every character.
 
-        (cond §(!isspecial(c) && utf_char2len(c) == 1 && vpeekc() != NUL && (@State & REPLACE_FLAG) == 0)
+        (cond (and §(!isspecial(c)) §(utf_char2len(c) == 1) §(vpeekc() != NUL) §((@State & REPLACE_FLAG) == 0))
         (§
 ;           final int INPUT_BUFLEN = 100;
 ;           Bytes buf = new Bytes(INPUT_BUFLEN + 1);
@@ -23334,7 +23268,7 @@
         ;; otherwise CTRL-O w and then <Left> will clear "last_insert".
 
 ;       Bytes ptr = get_inserted();
-        (when §(@did_restart_edit == 0 || (ptr != null && @new_insert_skip < STRLEN(ptr)))
+        (when (or §(@did_restart_edit == 0) (and §(ptr != null) §(@new_insert_skip < STRLEN(ptr))))
             (reset! last_insert ptr)
             (reset! last_insert_skip @new_insert_skip)
         )
@@ -23344,7 +23278,7 @@
             ;; and put the cursor back.  Do this when ESC was used or moving the cursor up/down.
             ;; Check for the old position still being valid, just in case the text got changed
             ;; unexpectedly.
-            (when §(!nomove && @did_ai && (esc || (vim_strbyte(@p_cpo, CPO_INDENT) == null && @curwin.w_cursor.lnum != end_insert_pos.lnum)) && end_insert_pos.lnum <= @curbuf.b_ml.ml_line_count)
+            (when (and §(!nomove) §(@did_ai) (or §(esc) (and §(vim_strbyte(@p_cpo, CPO_INDENT) == null) §(@curwin.w_cursor.lnum != end_insert_pos.lnum))) §(end_insert_pos.lnum <= @curbuf.b_ml.ml_line_count))
 ;               int cc;
 
 ;               pos_C tpos = §_pos_C();
@@ -23354,7 +23288,7 @@
                 (check_cursor_col)                     ;; make sure it is not past the line
 ;               for ( ; ; )
 ;               {
-                    (if §(gchar_cursor() == NUL && 0 < @curwin.w_cursor.col)
+                    (if (and §(gchar_cursor() == NUL) §(0 < @curwin.w_cursor.col))
 ;                       --@curwin.w_cursor.col;
                     )
 ;                   cc = gchar_cursor();
@@ -23488,7 +23422,7 @@
 
             ;; Adjust for multi-wide char (excluding TAB).
 ;           Bytes ptr = ml_get_cursor();
-            (coladvance §(getviscol() + ((ptr.at(0) != TAB && vim_isprintc(us_ptr2char(ptr))) ? mb_ptr2cells(ptr) : 1)))
+            (coladvance §(getviscol() + (if (and §(ptr.at(0) != TAB) §(vim_isprintc(us_ptr2char(ptr)))) §(mb_ptr2cells(ptr)) §(1))))
 ;           @curwin.w_set_curswant = true;
             ;; Return true if the cursor moved, false otherwise (at window edge).
 ;           return (prevpos.col != @curwin.w_cursor.col || prevpos.coladd != @curwin.w_cursor.coladd);
@@ -23502,7 +23436,7 @@
 ;       int l = us_ptr2len_cc(ptr);
 
         ;; Move "l" bytes right, but don't end up on the NUL, unless 'virtualedit' contains "onemore".
-        (if §(ptr.at(l) == NUL && (@ve_flags & VE_ONEMORE) == 0)
+        (if (and §(ptr.at(l) == NUL) §((@ve_flags & VE_ONEMORE) == 0))
 ;           return false;
         )
 ;       @curwin.w_cursor.col += l;
@@ -23534,7 +23468,7 @@
             (when §(@curwin.w_cursor.coladd == 1)
                 ;; Adjust for multi-wide char (not a TAB).
 ;               Bytes ptr = ml_get_cursor();
-                (if §(ptr.at(0) != TAB && vim_isprintc(us_ptr2char(ptr)) && 1 < mb_ptr2cells(ptr))
+                (if (and §(ptr.at(0) != TAB) §(vim_isprintc(us_ptr2char(ptr))) §(1 < mb_ptr2cells(ptr)))
 ;                   @curwin.w_cursor.coladd = 0;
                 )
             )
@@ -23563,7 +23497,7 @@
 ;           long lnum = @curwin.w_cursor.lnum;
             ;; This fails if the cursor is already in the first line or the count
             ;; is larger than the line number and '-' is in 'cpoptions'.
-            (if §(lnum <= 1 || (lnum <= n && vim_strbyte(@p_cpo, CPO_MINUS) != null))
+            (if (or §(lnum <= 1) (and §(lnum <= n) §(vim_strbyte(@p_cpo, CPO_MINUS) != null)))
 ;               return false;
             )
             (if §(lnum <= n)
@@ -23591,7 +23525,7 @@
 ;           long lnum = @curwin.w_cursor.lnum;
             ;; This fails if the cursor is already in the last line
             ;; or would move beyond the last line and '-' is in 'cpoptions'.
-            (if §(@curbuf.b_ml.ml_line_count <= lnum || (@curbuf.b_ml.ml_line_count < lnum + n && vim_strbyte(@p_cpo, CPO_MINUS) != null))
+            (if (or §(@curbuf.b_ml.ml_line_count <= lnum) (and §(@curbuf.b_ml.ml_line_count < lnum + n) §(vim_strbyte(@p_cpo, CPO_MINUS) != null)))
 ;               return false;
             )
             (if §(@curbuf.b_ml.ml_line_count <= lnum + n)
@@ -23639,7 +23573,7 @@
         ;; after it OR if it will inserted more than once and "ptr" starts with ^D.
 
 ;       Bytes last_ptr = (esc_ptr != null) ? esc_ptr.minus(1) : ptr.plus(STRLEN(ptr) - 1);
-        (when §(BLE(ptr, last_ptr) && (last_ptr.at(0) == (byte)'0' || last_ptr.at(0) == (byte)'^') && (no_esc || (ptr.at(0) == Ctrl_D && 1 < count)))
+        (when (and §(BLE(ptr, last_ptr)) (or §(last_ptr.at(0) == (byte)'0') §(last_ptr.at(0) == (byte)'^')) (or §(no_esc) (and §(ptr.at(0) == Ctrl_D) §(1 < count))))
 ;           last = last_ptr.at(0);
 ;           last_ptr.be(0, NUL);
         )
@@ -23769,7 +23703,7 @@
     ;; off: offset for which NUL to remove
     (§
 ;       for (int i = @replace_stack_nr; 0 <= --i; )
-            (when §(@replace_stack.at(i) == NUL && off-- <= 0)
+            (when (and §(@replace_stack.at(i) == NUL) §(off-- <= 0))
                 (swap! replace_stack_nr dec)
                 (BCOPY @replace_stack, i, @replace_stack, §(i + 1), §(@replace_stack_nr - i))
 ;               return;
@@ -23927,7 +23861,7 @@
         ;; If we are going to wait for a character, show a '"'.
 
         (reset! pc_status PC_STATUS_UNSET)
-        (when §(redrawing() && !char_avail())
+        (when (and §(redrawing()) §(!char_avail()))
             ;; May need to redraw when no more chars available now.
             (ins_redraw false)
 
@@ -24107,7 +24041,7 @@
         ;; The cursor should end up on the last inserted character.
         ;; Don't do it for CTRL-O, unless past the end of the line.
 
-        (when §(!nomove && (@curwin.w_cursor.col != 0 || 0 < @curwin.w_cursor.coladd) && (@restart_edit == NUL || (gchar_cursor() == NUL && !@VIsual_active)))
+        (when (and §(!nomove) (or §(@curwin.w_cursor.col != 0) §(0 < @curwin.w_cursor.coladd)) (or §(@restart_edit == NUL) (and §(gchar_cursor() == NUL) §(!@VIsual_active))))
             (cond (or §(0 < @curwin.w_cursor.coladd) §(@ve_flags == VE_ALL))
             (§
                 (oneleft)
@@ -24240,7 +24174,7 @@
 
         ;; 0^D and ^^D: remove all indent.
 
-        (cond §(c == Ctrl_D && (lastc == '0' || lastc == '^') && 0 < @curwin.w_cursor.col)
+        (cond (and §(c == Ctrl_D) (or §(lastc == '0') §(lastc == '^')) §(0 < @curwin.w_cursor.col))
         (§
 ;           --@curwin.w_cursor.col;
             (del_char false)                ;; delete the '^' or '0'
@@ -24325,18 +24259,10 @@
         ;; can't backup past starting point unless 'backspace' > 1
         ;; can backup to a previous line if 'backspace' == 0
 
-;       if (bufempty()
-;           || ((@curwin.w_cursor.lnum == 1 && @curwin.w_cursor.col == 0)
-;                   || (!can_bs(BS_START)
-;                       && (@arrow_used
-;                           || (@curwin.w_cursor.lnum == @insStart_orig.lnum
-;                               && @curwin.w_cursor.col <= @insStart_orig.col)))
-;                   || (!can_bs(BS_INDENT) && !@arrow_used && 0 < @ai_col && @curwin.w_cursor.col <= @ai_col)
-;                   || (!can_bs(BS_EOL) && @curwin.w_cursor.col == 0)))
-;       {
+        (when (or §(bufempty()) (and §(@curwin.w_cursor.lnum == 1) §(@curwin.w_cursor.col == 0)) (and §(!can_bs(BS_START)) (or §(@arrow_used) (and §(@curwin.w_cursor.lnum == @insStart_orig.lnum) §(@curwin.w_cursor.col <= @insStart_orig.col)))) (and §(!can_bs(BS_INDENT)) §(!@arrow_used) §(0 < @ai_col) §(@curwin.w_cursor.col <= @ai_col)) (and §(!can_bs(BS_EOL)) §(@curwin.w_cursor.col == 0)))
             (vim_beep)
 ;           return false;
-;       }
+        )
 
         (if §(!stop_arrow())
 ;           return false;
@@ -24387,13 +24313,13 @@
 
             ;; In replace mode, in the line we started replacing, we only move the cursor.
 
-            (cond §((@State & REPLACE_FLAG) != 0 && @curwin.w_cursor.lnum <= lnum)
+            (cond (and §((@State & REPLACE_FLAG) != 0) §(@curwin.w_cursor.lnum <= lnum))
             (§
                 (dec_cursor)
             )
             :else
             (§
-                (cond §((@State & VREPLACE_FLAG) == 0 || @orig_line_count < @curwin.w_cursor.lnum)
+                (cond (or §((@State & VREPLACE_FLAG) == 0) §(@orig_line_count < @curwin.w_cursor.lnum))
                 (§
 ;                   int temp = gchar_cursor();      ;; remember current char
 ;                   --@curwin.w_cursor.lnum;
@@ -24451,15 +24377,8 @@
 
             ;; Handle deleting one 'shiftwidth' or 'softtabstop'.
 
-;           if (mode == BACKSPACE_CHAR
-;                   && ((@p_sta && in_indent)
-;                       || (get_sts_value() != 0
-;                           && 0 < @curwin.w_cursor.col
-;                           && (ml_get_cursor().at(-1) == TAB
-;                               || (ml_get_cursor().at(-1) == (byte)' '
-;                                   && (!inserted_space_p[0]
-;                                       || @arrow_used))))))
-;           {
+            (cond (and §(mode == BACKSPACE_CHAR) (or (and §(@p_sta) §(in_indent)) (and §(get_sts_value() != 0) §(0 < @curwin.w_cursor.col) (or §(ml_get_cursor().at(-1) == TAB) (and §(ml_get_cursor().at(-1) == (byte)' ') (or §(!inserted_space_p[0]) §(@arrow_used)))))))
+            (§
 ;               inserted_space_p[0] = false;
 
 ;               int ts;
@@ -24508,12 +24427,9 @@
                 ;; Can happen when using 'sts' and 'linebreak'.
                 (if §(start_vcol <= vcol[0])
                     (ins_bs_one vcol))
-;           }
-
-            ;; Delete upto starting point, start of line or previous word.
-
-;           else
-;           {
+            )
+            :else ;; Delete upto starting point, start of line or previous word.
+            (§
 ;               int prev_cclass = 0;
 ;               int cclass = us_get_class(ml_get_cursor(), @curbuf);
 
@@ -24562,7 +24478,7 @@
 ;                       break;
                     )
 ;               } while (mincol < @curwin.w_cursor.col && (@curwin.w_cursor.lnum != @insStart_orig.lnum || @curwin.w_cursor.col != @insStart_orig.col));
-;           }
+            ))
 ;           did_backspace = true;
         ))
 
@@ -24595,7 +24511,7 @@
             (start_arrow tpos)
         )
         ;; if 'whichwrap' set for cursor in insert mode may go to previous line
-        §(vim_strchr(@p_ww, '[') != null && 1 < @curwin.w_cursor.lnum)
+        (and §(vim_strchr(@p_ww, '[') != null) §(1 < @curwin.w_cursor.lnum))
         (§
             (start_arrow tpos)
 ;           --@curwin.w_cursor.lnum;
@@ -24663,7 +24579,7 @@
             )
         )
         ;; if 'whichwrap' set for cursor in insert mode, may move the cursor to the next line
-        §(vim_strchr(@p_ww, ']') != null && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
+        (and §(vim_strchr(@p_ww, ']') != null) §(@curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count))
         (§
             (start_arrow §(@curwin.w_cursor))
 ;           @curwin.w_set_curswant = true;
@@ -24791,7 +24707,7 @@
 
         ;; When nothing special, insert TAB like a normal character
 
-        (when §(!@curbuf.@b_p_et && !(@p_sta && ind && @curbuf.@b_p_ts != get_sw_value(@curbuf)) && get_sts_value() == 0)
+        (when (and §(!@curbuf.@b_p_et) (not (and §(@p_sta) §(ind) §(@curbuf.@b_p_ts != get_sw_value(@curbuf)))) §(get_sts_value() == 0))
 ;           return true;
         )
 
@@ -24976,7 +24892,7 @@
         ;; This is not done here though, it is done in open_line().
 
         ;; Put cursor on NUL if on the last char and coladd is 1 (happens after CTRL-O).
-        (if §(virtual_active() && 0 < @curwin.w_cursor.coladd)
+        (if (and §(virtual_active()) §(0 < @curwin.w_cursor.coladd))
             (coladvance (getviscol)))
 
         (appendToRedobuff NL_STR)
@@ -24995,7 +24911,7 @@
 ;       boolean did_putchar = false;
 
         (reset! pc_status PC_STATUS_UNSET)
-        (when §(redrawing() && !char_avail())
+        (when (and §(redrawing()) §(!char_avail()))
             ;; May need to redraw when no more chars available now.
             (ins_redraw false)
 
@@ -25025,7 +24941,7 @@
 
         (when §(c != ESC)
 ;           did_putchar = false;
-            (when §(redrawing() && !char_avail())
+            (when (and §(redrawing()) §(!char_avail()))
                 ;; May need to redraw when no more chars available now.
                 (ins_redraw false)
 
@@ -25138,7 +25054,7 @@
                 )
 ;               @curwin.w_cursor.lnum = pos.lnum;
 ;               @curwin.w_cursor.col = i;
-                (if §(ptr.at(i) == (byte)')' && (pos = findmatch(null, '(')) != null)
+                (if (and §(ptr.at(i) == (byte)')') §((pos = findmatch(null, '(')) != null))
                     (COPY_pos §(@curwin.w_cursor), pos))
 ;               i = get_indent();
                 (COPY_pos §(@curwin.w_cursor), old_pos)
@@ -25161,7 +25077,7 @@
 ;                       Bytes ptr = skipwhite(ml_get(--@curwin.w_cursor.lnum));
 
                         ;; ignore empty lines and lines starting with '#'.
-                        (if §(ptr.at(0) != (byte)'#' && ptr.at(0) != NUL)
+                        (if (and §(ptr.at(0) != (byte)'#') §(ptr.at(0) != NUL))
 ;                           break;
                         )
 ;                   }
@@ -25703,47 +25619,47 @@
 
 (defn- #_boolean ri_digit [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_DIGIT) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_DIGIT) != 0))
     ))
 
 (defn- #_boolean ri_hex [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_HEX) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_HEX) != 0))
     ))
 
 (defn- #_boolean ri_octal [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_OCTAL) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_OCTAL) != 0))
     ))
 
 (defn- #_boolean ri_word [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_WORD) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_WORD) != 0))
     ))
 
 (defn- #_boolean ri_head [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_HEAD) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_HEAD) != 0))
     ))
 
 (defn- #_boolean ri_alpha [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_ALPHA) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_ALPHA) != 0))
     ))
 
 (defn- #_boolean ri_lower [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_LOWER) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_LOWER) != 0))
     ))
 
 (defn- #_boolean ri_upper [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_UPPER) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_UPPER) != 0))
     ))
 
 (defn- #_boolean ri_white [#_int c]
     (§
-        §(c < 0x100 && (@class_tab[c] & RI_WHITE) != 0)
+        (and §(c < 0x100) §((@class_tab[c] & RI_WHITE) != 0))
     ))
 
 ;; flags for regflags
@@ -25892,7 +25808,7 @@
 ;       Bytes p = pp[0];
         (when §(p.at(1) == (byte)'=')
 ;           int len = us_ptr2len_cc(p.plus(2));
-            (when §(p.at(len + 2) == (byte)'=' && p.at(len + 3) == (byte)']')
+            (when (and §(p.at(len + 2) == (byte)'=') §(p.at(len + 3) == (byte)']'))
 ;               int c = us_ptr2char(p.plus(2));
 ;               pp[0] = pp[0].plus(len + 4);
 ;               return c;
@@ -26428,7 +26344,7 @@
 
         (when §(p.at(1) == (byte)'.')
 ;           int len = us_ptr2len_cc(p.plus(2));
-            (when §(p.at(len + 2) == (byte)'.' && p.at(len + 3) == (byte)']')
+            (when (and §(p.at(len + 2) == (byte)'.') §(p.at(len + 3) == (byte)']'))
 ;               int c = us_ptr2char(p.plus(2));
 ;               pp[0] = pp[0].plus(len + 4);
 ;               return c;
@@ -26469,11 +26385,11 @@
             §(p.at(0) == (byte)'-')
             (§
 ;               p = p.plus(1);
-                (if §(p.at(0) != (byte)']' && p.at(0) != NUL)
+                (if (and §(p.at(0) != (byte)']') §(p.at(0) != NUL))
 ;                   p = p.plus(us_ptr2len_cc(p));
                 )
             )
-            §(p.at(0) == (byte)'\\' && !@reg_cpo_bsl && (vim_strchr(REGEXP_INRANGE, p.at(1)) != null || (!@reg_cpo_lit && vim_strchr(REGEXP_ABBR, p.at(1)) != null)))
+            (and §(p.at(0) == (byte)'\\') §(!@reg_cpo_bsl) (or §(vim_strchr(REGEXP_INRANGE, p.at(1)) != null) (and §(!@reg_cpo_lit) §(vim_strchr(REGEXP_ABBR, p.at(1)) != null))))
             (§
 ;               p = p.plus(2);
             )
@@ -26518,16 +26434,16 @@
             (if §(p.at(0) == dirc)       ;; found end of regexp
 ;               break;
             )
-            (cond §((p.at(0) == (byte)'[' && MAGIC_ON <= mymagic) || (p.at(0) == (byte)'\\' && p.at(1) == (byte)'[' && mymagic <= MAGIC_OFF))
+            (cond (or (and §(p.at(0) == (byte)'[') §(MAGIC_ON <= mymagic)) (and §(p.at(0) == (byte)'\\') §(p.at(1) == (byte)'[') §(mymagic <= MAGIC_OFF)))
             (§
 ;               p = skip_anyof(p.plus(1));
                 (if §(p.at(0) == NUL)
 ;                   break;
                 )
             )
-            §(p.at(0) == (byte)'\\' && p.at(1) != NUL)
+            (and §(p.at(0) == (byte)'\\') §(p.at(1) != NUL))
             (§
-                (cond §(dirc == '?' && newp != null && p.at(1) == (byte)'?')
+                (cond (and §(dirc == '?') §(newp != null) §(p.at(1) == (byte)'?'))
                 (§
                     ;; change "\?" to "?", make a copy first.
                     (when §(newp[0] == null)
@@ -26638,19 +26554,14 @@
 ;               scan = regnext(scan);
             )
 
-;           if (re_op(scan) == EXACTLY)
-;           {
+            (cond §(re_op(scan) == EXACTLY)
+            (§
 ;               r.regstart = us_ptr2char(operand(scan));
-;           }
-;           else if ((re_op(scan) == BOW
-;                       || re_op(scan) == EOW
-;                       || re_op(scan) == NOTHING
-;                       || re_op(scan) == MOPEN + 0 || re_op(scan) == NOPEN
-;                       || re_op(scan) == MCLOSE + 0 || re_op(scan) == NCLOSE)
-;                    && re_op(regnext(scan)) == EXACTLY)
-;           {
+            )
+            (and (or §(re_op(scan) == BOW) §(re_op(scan) == EOW) §(re_op(scan) == NOTHING) §(re_op(scan) == MOPEN + 0) §(re_op(scan) == NOPEN) §(re_op(scan) == MCLOSE + 0) §(re_op(scan) == NCLOSE)) §(re_op(regnext(scan)) == EXACTLY))
+            (§
 ;               r.regstart = us_ptr2char(operand(regnext(scan)));
-;           }
+            ))
 
             ;; If there's something expensive in the r.e., find the longest literal string
             ;; that must appear and make it the regmust.  Resolve ties in favor of later strings,
@@ -26660,11 +26571,11 @@
             ;; When the r.e. starts with BOW, it is faster to look for a regmust first.
             ;; Used a lot for "#" and "*" commands.
 
-            (when §(((flags[0] & SPSTART) != 0 || re_op(scan) == BOW || re_op(scan) == EOW) && (flags[0] & HASNL) == 0)
+            (when (and (or §((flags[0] & SPSTART) != 0) §(re_op(scan) == BOW) §(re_op(scan) == EOW)) §((flags[0] & HASNL) == 0))
 ;               Bytes longest = null;
 ;               int len = 0;
 ;               for ( ; scan != null; scan = regnext(scan))
-                    (when §(re_op(scan) == EXACTLY && len <= STRLEN(operand(scan)))
+                    (when (and §(re_op(scan) == EXACTLY) §(len <= STRLEN(operand(scan))))
 ;                       longest = operand(scan);
 ;                       len = STRLEN(operand(scan));
                     )
@@ -27240,7 +27151,7 @@
                     )
                     ;; When '.' is followed by a composing char ignore the dot,
                     ;; so that the composing char is matched here.
-                    (when §(c == Magic('.') && utf_iscomposing(peekchr()))
+                    (when (and §(c == Magic('.')) §(utf_iscomposing(peekchr())))
 ;                       c = getchr();
 ;                       ret = regnode(MULTIBYTECODE);
                         (regmbc c)
@@ -27360,7 +27271,7 @@
                         ;; the \1 can appear before the referenced match.
 ;                       Bytes p;
 ;                       for (p = @regparse; p.at(0) != NUL; p = p.plus(1))
-                            (if §(p.at(0) == (byte)'@' && p.at(1) == (byte)'<' && (p.at(2) == (byte)'!' || p.at(2) == (byte)'='))
+                            (if (and §(p.at(0) == (byte)'@') §(p.at(1) == (byte)'<') (or §(p.at(2) == (byte)'!') §(p.at(2) == (byte)'=')))
 ;                               break;
                             )
                         (when §(p.at(0) == NUL)
@@ -27694,7 +27605,7 @@
                 (§
                     (reset! regparse §(@regparse.plus(1)))
                     ;; The '-' is not used for a range at the end and after or before a '\n'.
-                    (cond (or §(@regparse.at(0) == (byte)']') §(@regparse.at(0) == NUL) §(startc == -1) §(@regparse.at(0) == (byte)'\\' && @regparse.at(1) == (byte)'n'))
+                    (cond (or §(@regparse.at(0) == (byte)']') §(@regparse.at(0) == NUL) §(startc == -1) (and §(@regparse.at(0) == (byte)'\\') §(@regparse.at(1) == (byte)'n')))
                     (§
                         (regc §('-'))
 ;                       startc = '-';       ;; [--x] is a range
@@ -27749,7 +27660,7 @@
                 ;; 'cpoptions' is not included.
                 ;; Posix doesn't recognize backslash at all.
 
-                §(@regparse.at(0) == (byte)'\\' && !@reg_cpo_bsl && (vim_strchr(REGEXP_INRANGE, @regparse.at(1)) != null || (!@reg_cpo_lit && vim_strchr(REGEXP_ABBR, @regparse.at(1)) != null)))
+                (and §(@regparse.at(0) == (byte)'\\') §(!@reg_cpo_bsl) (or §(vim_strchr(REGEXP_INRANGE, @regparse.at(1)) != null) (and §(!@reg_cpo_lit) §(vim_strchr(REGEXP_ABBR, @regparse.at(1)) != null))))
                 (§
                     (reset! regparse §(@regparse.plus(1)))
                     (cond §(@regparse.at(0) == (byte)'n')
@@ -27981,7 +27892,7 @@
 
 (defn- #_boolean use_multibytecode [#_int c]
     (§
-        §((1 < utf_char2len(c)) && (re_multi_type(peekchr()) != NOT_MULTI || utf_iscomposing(c)))
+        (and §(1 < utf_char2len(c)) (or §(re_multi_type(peekchr()) != NOT_MULTI) §(utf_iscomposing(c))))
     ))
 
 ;; Emit a node.
@@ -28320,7 +28231,7 @@
                     (§
                         (reset! curchr §('\\'))      ;; trailing '\'
                     )
-                    §(char_u((byte)c) <= '~' && META_flags[c] != 0)
+                    (and §(char_u((byte)c) <= '~') §(META_flags[c] != 0))
                     (§
                         ;; META contains everything that may be magic sometimes,
                         ;; except ^ and $ ("\^" and "\$" are only magic after "\v").
@@ -28343,7 +28254,7 @@
 
                         (reset! curchr (backslash_trans c))
                     )
-                    §(@reg_magic == MAGIC_NONE && (c == '$' || c == '^'))
+                    (and §(@reg_magic == MAGIC_NONE) (or §(c == '$') §(c == '^')))
                     (§
                         (reset! curchr (toggle_Magic c))
                     )
@@ -28588,7 +28499,7 @@
 
         ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
 
-        (when §((!reverse && maxval[0] < minval[0]) || (reverse && minval[0] < maxval[0]))
+        (when (or (and §(!reverse) §(maxval[0] < minval[0])) (and §(reverse) §(minval[0] < maxval[0])))
 ;           long tmp = minval[0];
 ;           minval[0] = maxval[0];
 ;           maxval[0] = tmp;
@@ -28964,7 +28875,7 @@
             (cond §(prog.reganch != 0)
             (§
 ;               int c = us_ptr2char(@regline.plus(col));
-                (cond §(prog.regstart == NUL || prog.regstart == c || (@ireg_ic && ((utf_fold(prog.regstart) == utf_fold(c)) || (c < 255 && prog.regstart < 255 && utf_tolower(prog.regstart) == utf_tolower(c)))))
+                (cond (or §(prog.regstart == NUL) §(prog.regstart == c) (and §(@ireg_ic) (or §(utf_fold(prog.regstart) == utf_fold(c)) (and §(c < 255) §(prog.regstart < 255) §(utf_tolower(prog.regstart) == utf_tolower(c))))))
                 (§
 ;                   retval = regtry(prog, col);
                 )
@@ -28976,7 +28887,7 @@
             :else
             (§
 ;               int tm_count = 0;
-                ;; Messy cases:  unanchored match.
+                ;; Messy cases: Unanchored match.
 ;               while (!@got_int)
 ;               {
                     (when §(prog.regstart != NUL)
@@ -29182,7 +29093,7 @@
         (cond §(mode == 'v')
         (§
 ;           int col = BDIFF(@reginput, @regline);
-            (if §((lnum == top.lnum && col < top.col) || (lnum == bot.lnum && col >= bot.col + ((@p_sel.at(0) != (byte)'e') ? 1 : 0)))
+            (if (or (and §(lnum == top.lnum) §(col < top.col)) (and §(lnum == bot.lnum) §(col >= bot.col + ((@p_sel.at(0) != (byte)'e') ? 1 : 0))))
 ;               return false;
             )
         )
@@ -29584,7 +29495,7 @@
 ;                       {
 ;                           Bytes opnd = operand(scan);
                             ;; Inline the first byte, for speed.
-                            (cond §(opnd.at(0) != @reginput.at(0) && !@ireg_ic)
+                            (cond (and §(opnd.at(0) != @reginput.at(0)) §(!@ireg_ic))
                             (§
 ;                               status = RA_NOMATCH;
                             )
@@ -29595,7 +29506,7 @@
                             :else
                             (§
 ;                               int[] len = new int[1];
-                                (cond §(opnd.at(1) == NUL && !@ireg_ic)
+                                (cond (and §(opnd.at(1) == NUL) §(!@ireg_ic))
                                 (§
 ;                                   len[0] = 1;        ;; matched a single byte above
                                 )
@@ -29963,7 +29874,7 @@
                                 (reset! bl_minval (operand_min scan))
                                 (reset! bl_maxval (operand_max scan))
                             )
-                            §(BRACE_COMPLEX <= re_op(next) && re_op(next) < BRACE_COMPLEX + 10)
+                            (and §(BRACE_COMPLEX <= re_op(next)) §(re_op(next) < BRACE_COMPLEX + 10))
                             (§
 ;                               int no = re_op(next) - BRACE_COMPLEX;
 ;                               @brace_min[no] = operand_min(scan);
@@ -30703,7 +30614,7 @@
 ;               case SIDENT + ADD_NL:
 ;                   while (count < maxcount)
 ;                   {
-                        (cond §(vim_isIDc(us_ptr2char(scan)) && (testval != 0 || !asc_isdigit(scan.at(0))))
+                        (cond (and §(vim_isIDc(us_ptr2char(scan))) (or §(testval != 0) §(!asc_isdigit(scan.at(0)))))
                         (§
 ;                           scan = scan.plus(us_ptr2len_cc(scan));
                         )
@@ -30738,7 +30649,7 @@
 ;               case SKWORD + ADD_NL:
 ;                   while (count < maxcount)
 ;                   {
-                        (cond §(us_iswordp(scan, @reg_buf) && (testval != 0 || !asc_isdigit(scan.at(0))))
+                        (cond (and §(us_iswordp(scan, @reg_buf)) (or §(testval != 0) §(!asc_isdigit(scan.at(0)))))
                         (§
 ;                           scan = scan.plus(us_ptr2len_cc(scan));
                         )
@@ -30773,7 +30684,7 @@
 ;               case SFNAME + ADD_NL:
 ;                   while (count < maxcount)
 ;                   {
-                        (cond §(vim_isfilec(us_ptr2char(scan)) && (testval != 0 || !asc_isdigit(scan.at(0))))
+                        (cond (and §(vim_isfilec(us_ptr2char(scan))) (or §(testval != 0) §(!asc_isdigit(scan.at(0)))))
                         (§
 ;                           scan = scan.plus(us_ptr2len_cc(scan));
                         )
@@ -30819,7 +30730,7 @@
 ;                               break;
                             )
                         )
-                        §(vim_isprintc(us_ptr2char(scan)) && (testval != 0 || !asc_isdigit(scan.at(0))))
+                        (and §(vim_isprintc(us_ptr2char(scan))) (or §(testval != 0) §(!asc_isdigit(scan.at(0)))))
                         (§
 ;                           scan = scan.plus(us_ptr2len_cc(scan));
                         )
@@ -30967,7 +30878,7 @@
                                 (if §(opnd.at(i) != scan.at(i))
 ;                                   break;
                                 )
-                            (if §(i < len && (!@ireg_ic || utf_fold(us_ptr2char(scan)) != cf))
+                            (if (and §(i < len) (or §(!@ireg_ic) §(utf_fold(us_ptr2char(scan)) != cf)))
 ;                               break;
                             )
 ;                           scan = scan.plus(len);
@@ -31515,7 +31426,7 @@
                 ;; Decompose the character if necessary into 'base' characters,
                 ;; because I don't care about Arabic, I will hard-code the Hebrew
                 ;; which I *do* care about!  So sue me...
-                (when §(c1 != c2 && (!@ireg_ic || utf_fold(c1) != utf_fold(c2)))
+                (when (and §(c1 != c2) (or §(!@ireg_ic) §(utf_fold(c1) != utf_fold(c2))))
 ;                   int[] c11 = new int[1];
 ;                   int[] c12 = new int[1];
 ;                   int[] junk = new int[1];
@@ -31525,7 +31436,7 @@
                     (mb_decompose c2, c12, junk, junk)
 ;                   c1 = c11[0];
 ;                   c2 = c12[0];
-                    (if §(c11[0] != c12[0] && (!@ireg_ic || utf_fold(c11[0]) != utf_fold(c12[0])))
+                    (if (and §(c11[0] != c12[0]) (or §(!@ireg_ic) §(utf_fold(c11[0]) != utf_fold(c12[0]))))
 ;                       break;
                     )
                 )
@@ -31631,7 +31542,7 @@
 
 ;       for (Bytes p = newsub; p.at(0) != NUL; p = p.plus(1))
 ;       {
-            (cond §((p.at(0) == (byte)'~' && magic) || (p.at(0) == (byte)'\\' && p.at(1) == (byte)'~' && !magic))
+            (cond (or (and §(p.at(0) == (byte)'~') §(magic)) (and §(p.at(0) == (byte)'\\') §(p.at(1) == (byte)'~') §(!magic)))
             (§
                 (cond §(@reg_prev_sub != null)
                 (§
@@ -31665,7 +31576,7 @@
             )
             :else
             (§
-                (if §(p.at(0) == (byte)'\\' && p.at(1) != NUL)        ;; skip escaped characters
+                (if (and §(p.at(0) == (byte)'\\') §(p.at(1) != NUL))        ;; skip escaped characters
 ;                   p = p.plus(1);
                 )
 ;               p = p.plus(us_ptr2len_cc(p) - 1);
@@ -31744,7 +31655,7 @@
 
         ;; When the substitute part starts with "\=" evaluate it as an expression.
 
-        (cond §(source.at(0) == (byte)'\\' && source.at(1) == (byte)'=' && !@can_f_submatch)   ;; can't do this recursively
+        (cond (and §(source.at(0) == (byte)'\\') §(source.at(1) == (byte)'=') §(!@can_f_submatch))   ;; can't do this recursively
         (§
             ;; To make sure that the length doesn't change between checking the length
             ;; and copying the string, and to speed up things, the resulting string is saved
@@ -31782,11 +31693,11 @@
                         ;; Change NL to CR, so that it becomes a line break,
                         ;; unless called from vim_regexec_nl().
                         ;; Skip over a backslashed character.
-                        (cond §(s.at(0) == NL && !@submatch_line_lbr)
+                        (cond (and §(s.at(0) == NL) §(!@submatch_line_lbr))
                         (§
 ;                           s.be(0, CAR);
                         )
-                        §(s.at(0) == (byte)'\\' && s.at(1) != NUL)
+                        (and §(s.at(0) == (byte)'\\') §(s.at(1) != NUL))
                         (§
 ;                           s = s.plus(1);
                             ;; Change NL to CR here too, so that this works:
@@ -31795,7 +31706,7 @@
                             ;;   def
                             ;; Not when called from vim_regexec_nl().
 
-                            (if §(s.at(0) == NL && !@submatch_line_lbr)
+                            (if (and §(s.at(0) == NL) §(!@submatch_line_lbr))
 ;                               s.be(0, CAR);
                             )
 ;                           had_backslash = true;
@@ -31843,7 +31754,7 @@
 ;                       src = src.plus(1);
 ;                       no = 0;
                     )
-                    §('0' <= src.at(0) && src.at(0) <= '9')
+                    (and §('0' <= src.at(0)) §(src.at(0) <= '9'))
                     (§
 ;                       no = (src = src.plus(1)).at(-1) - '0';
                     )
@@ -32551,7 +32462,7 @@
 
 ;       while (BLT(p, end))
 ;       {
-            (cond §(BLT(p.plus(2), end) && p.at(1) == (byte)'-')
+            (cond (and §(BLT(p.plus(2), end)) §(p.at(1) == (byte)'-'))
             (§
 ;               switch (p.at(0))
 ;               {
@@ -32594,7 +32505,7 @@
 ;               }
 ;               p = p.plus(3);
             )
-            §(BLT(p.plus(1), end) && p.at(0) == (byte)'\\' && p.at(1) == (byte)'n')
+            (and §(BLT(p.plus(1), end)) §(p.at(0) == (byte)'\\') §(p.at(1) == (byte)'n'))
             (§
 ;               newl = true;
 ;               p = p.plus(2);
@@ -32674,7 +32585,7 @@
 
 (defn- #_boolean emc2 [#_int c]
     (§
-        §(emc1(c) && emc1(NFA_CONCAT))
+        (and §(emc1(c)) §(emc1(NFA_CONCAT)))
     ))
 
 ;; Produce the bytes for equivalence class "c".
@@ -33269,7 +33180,7 @@
                     )
                     ;; When '.' is followed by a composing char ignore the dot,
                     ;; so that the composing char is matched here.
-                    (when §(c == Magic('.') && utf_iscomposing(peekchr()))
+                    (when (and §(c == Magic('.')) §(utf_iscomposing(peekchr())))
 ;                       old_regparse = @regparse;
 ;                       c = getchr();
 ;                       return nfa_do_multibyte(c, old_regparse);
@@ -33719,7 +33630,7 @@
                     )
                 )
                 ;; Try a range like 'a-x' or '\t-z'.  Also allows '-' as a start character.
-                (when §(@regparse.at(0) == (byte)'-' && oldstartc != -1)
+                (when (and §(@regparse.at(0) == (byte)'-') §(oldstartc != -1))
 ;                   emit_range = true;
 ;                   startc = oldstartc;
                     (reset! regparse §(@regparse.plus(us_ptr2len_cc(@regparse))))
@@ -33731,12 +33642,7 @@
                 ;; Vim accepts "\t", "\e", etc., but only when the 'l' flag in 'cpoptions' is not included.
                 ;; Posix doesn't recognize backslash at all.
 
-;               if (@regparse.at(0) == (byte)'\\'
-;                       && !@reg_cpo_bsl
-;                       && BLE(@regparse.plus(1), endp)
-;                       && (vim_strchr(REGEXP_INRANGE, @regparse.at(1)) != null
-;                           || (!@reg_cpo_lit && vim_strchr(REGEXP_ABBR, @regparse.at(1)) != null)))
-;               {
+                (when (and §(@regparse.at(0) == (byte)'\\') §(!@reg_cpo_bsl) §(BLE(@regparse.plus(1), endp)) (or §(vim_strchr(REGEXP_INRANGE, @regparse.at(1)) != null) (and §(!@reg_cpo_lit) §(vim_strchr(REGEXP_ABBR, @regparse.at(1)) != null))))
                     (reset! regparse §(@regparse.plus(us_ptr2len_cc(@regparse))))
 
                     (cond §(@regparse.at(0) == (byte)'n')
@@ -33755,7 +33661,7 @@
                         ;; \r,\t,\e,\b
 ;                       startc = backslash_trans(@regparse.at(0));
                     ))
-;               }
+                )
 
                 ;; Normal printable char.
                 (if §(startc == -1)
@@ -34065,7 +33971,7 @@
                 ;; The engine is very inefficient (uses too many states) when the
                 ;; maximum is much larger than the minimum and when the maximum is
                 ;; large.  Bail out if we can use the other engine.
-                (if §((@nfa_re_flags & RE_AUTO) != 0 && (minval[0] + 200 < maxval[0] || 500 < maxval[0]))
+                (if (and §((@nfa_re_flags & RE_AUTO) != 0) (or §(minval[0] + 200 < maxval[0]) §(500 < maxval[0])))
 ;                   return false;
                 )
 
@@ -35256,11 +35162,7 @@
             )
 
 ;           int c = state.c;
-;           if (c == NFA_START_INVISIBLE
-;            || c == NFA_START_INVISIBLE_NEG
-;            || c == NFA_START_INVISIBLE_BEFORE
-;            || c == NFA_START_INVISIBLE_BEFORE_NEG)
-;           {
+            (when (or §(c == NFA_START_INVISIBLE) §(c == NFA_START_INVISIBLE_NEG) §(c == NFA_START_INVISIBLE_BEFORE) §(c == NFA_START_INVISIBLE_BEFORE_NEG))
 ;               boolean directly;
 
                 ;; Do it directly when what follows is possibly the end of the match.
@@ -35294,7 +35196,7 @@
                     ;; switch to the _FIRST state
 ;                   state.c++;
                 )
-;           }
+            )
 ;       }
     ))
 
@@ -35830,7 +35732,7 @@
                 ;; "^" won't match past end-of-line, don't bother trying.
                 ;; Except when at the end of the line, or when we are going
                 ;; to the next line for a look-behind match.
-                (when §(BLT(@regline, @reginput) && @reginput.at(0) != NUL && (@nfa_endp == null || @reg_match != null || @reglnum == @nfa_endp.se_pos.lnum))
+                (when (and §(BLT(@regline, @reginput)) §(@reginput.at(0) != NUL) (or §(@nfa_endp == null) §(@reg_match != null) §(@reglnum == @nfa_endp.se_pos.lnum)))
 ;                   return subs;
                 )
                 ;; FALLTHROUGH
@@ -36234,13 +36136,13 @@
 ;       switch (klass)
 ;       {
 ;           case NFA_CLASS_ALNUM:
-                (if §(1 <= c && c <= 255 && asc_isalnum(c))
+                (if (and §(1 <= c) §(c <= 255) §(asc_isalnum(c)))
 ;                   return true;
                 )
 ;               break;
 
 ;           case NFA_CLASS_ALPHA:
-                (if §(1 <= c && c <= 255 && asc_isalpha(c))
+                (if (and §(1 <= c) §(c <= 255) §(asc_isalpha(c)))
 ;                   return true;
                 )
 ;               break;
@@ -36252,7 +36154,7 @@
 ;               break;
 
 ;           case NFA_CLASS_CNTRL:
-                (if §(1 <= c && c <= 255 && asc_iscntrl(c))
+                (if (and §(1 <= c) §(c <= 255) §(asc_iscntrl(c)))
 ;                   return true;
                 )
 ;               break;
@@ -36264,7 +36166,7 @@
 ;               break;
 
 ;           case NFA_CLASS_GRAPH:
-                (if §(1 <= c && c <= 255 && asc_isgraph(c))
+                (if (and §(1 <= c) §(c <= 255) §(asc_isgraph(c)))
 ;                   return true;
                 )
 ;               break;
@@ -36282,13 +36184,13 @@
 ;               break;
 
 ;           case NFA_CLASS_PUNCT:
-                (if §(1 <= c && c <= 255 && asc_ispunct(c))
+                (if (and §(1 <= c) §(c <= 255) §(asc_ispunct(c)))
 ;                   return true;
                 )
 ;               break;
 
 ;           case NFA_CLASS_SPACE:
-                (if §((9 <= c && c <= 13) || (c == ' '))
+                (if (or (and §(9 <= c) §(c <= 13)) §(c == ' '))
 ;                   return true;
                 )
 ;               break;
@@ -36481,11 +36383,7 @@
                 (reset! reginput §(pim.end_ptr)))
         )
 
-;       if (state.c == NFA_START_INVISIBLE_BEFORE
-;        || state.c == NFA_START_INVISIBLE_BEFORE_FIRST
-;        || state.c == NFA_START_INVISIBLE_BEFORE_NEG
-;        || state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
-;       {
+        (when (or §(state.c == NFA_START_INVISIBLE_BEFORE) §(state.c == NFA_START_INVISIBLE_BEFORE_FIRST) §(state.c == NFA_START_INVISIBLE_BEFORE_NEG) §(state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
             ;; The recursive match must end at the current position.
             ;; When "pim" is not null it specifies the current position.
 ;           endposp = endpos;
@@ -36550,7 +36448,7 @@
                     (reset! reginput @regline)
                 ))
             ))
-;       }
+        )
 
         ;; Have to clear the lastlist field of the NFA nodes, so that
         ;; nfa_regmatch() and addstate() can run properly after recursion.
@@ -36794,7 +36692,7 @@
 ;           {
 ;               c1 = us_ptr2char(match_text.plus(len1));
 ;               c2 = us_ptr2char(@regline.plus(col[0] + len2));
-                (when §(c1 != c2 && (!@ireg_ic || utf_tolower(c1) != utf_tolower(c2)))
+                (when (and §(c1 != c2) (or §(!@ireg_ic) §(utf_tolower(c1) != utf_tolower(c2))))
 ;                   match = false;
 ;                   break;
                 )
@@ -36975,12 +36873,9 @@
                             ;; Submatches are stored in *m, and used in the parent call.
 
                             ;; If "nfa_endp" is set it's only a match if it ends at "nfa_endp".
-;                           if (@nfa_endp != null && ((@reg_match == null)
-;                                   ? (@reglnum != @nfa_endp.se_pos.lnum || BDIFF(@reginput, @regline) != @nfa_endp.se_pos.col)
-;                                   : BNE(@reginput, @nfa_endp.se_ptr)))
-;                           {
+                            (if (and §(@nfa_endp != null) (if §(@reg_match == null) (or §(@reglnum != @nfa_endp.se_pos.lnum) §(BDIFF(@reginput, @regline) != @nfa_endp.se_pos.col)) §(BNE(@reginput, @nfa_endp.se_ptr))))
 ;                               break;
-;                           }
+                            )
 
                             ;; do not set submatches for \@!
                             (when §(thread.state.c != NFA_END_INVISIBLE_NEG)
@@ -37007,12 +36902,8 @@
 ;                       {
                             ;; Do it directly if there already is a PIM or when
                             ;; nfa_postprocess() detected it will work better.
-;                           if (thread.th_pim.result != NFA_PIM_UNUSED
-;                               || thread.state.c == NFA_START_INVISIBLE_FIRST
-;                               || thread.state.c == NFA_START_INVISIBLE_NEG_FIRST
-;                               || thread.state.c == NFA_START_INVISIBLE_BEFORE_FIRST
-;                               || thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST)
-;                           {
+                            (cond (or §(thread.th_pim.result != NFA_PIM_UNUSED) §(thread.state.c == NFA_START_INVISIBLE_FIRST) §(thread.state.c == NFA_START_INVISIBLE_NEG_FIRST) §(thread.state.c == NFA_START_INVISIBLE_BEFORE_FIRST) §(thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+                            (§
 ;                               int in_use = m.rs_norm.in_use;
 
                                 ;; Copy submatch info for the recursive call,
@@ -37030,11 +36921,7 @@
                                 )
 
                                 ;; for \@! and \@<! it is a match when the result is false
-;                               if ((result != FALSE) != (thread.state.c == NFA_START_INVISIBLE_NEG
-;                                   || thread.state.c == NFA_START_INVISIBLE_NEG_FIRST
-;                                   || thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG
-;                                   || thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
-;                               {
+                                (when §((result != FALSE) != (thread.state.c == NFA_START_INVISIBLE_NEG || thread.state.c == NFA_START_INVISIBLE_NEG_FIRST || thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG || thread.state.c == NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
                                     ;; Copy submatch info from the recursive call.
                                     (copy_sub_off §(thread.th_subs.rs_norm), §(m.rs_norm))
                                     (if @nfa_has_zsubexpr
@@ -37046,11 +36933,11 @@
                                     ;; Add its out0 to the current list (zero-width match).
 ;                                   add_here = true;
 ;                                   add_state = thread.state.out1().out0();
-;                               }
+                                )
 ;                               m.rs_norm.in_use = in_use;
-;                           }
-;                           else
-;                           {
+                            )
+                            :else
+                            (§
 ;                               nfa_pim_C pim = §_nfa_pim_C();
 
                                 ;; First try matching what follows.  Only if a match
@@ -37075,7 +36962,7 @@
                                 ;; thread.state.out1 is the corresponding END_INVISIBLE node.
                                 ;; Add its out0 to the current list (zero-width match).
                                 (addstate_here thislist, §(thread.state.out1().out0(), thread.th_subs, pim, lidx))
-;                           }
+                            ))
 ;                           break;
 ;                       }
 
@@ -37381,7 +37268,7 @@
                                         )
                                     )
                                 )
-                                §(state.c < 0 ? check_char_class(state.c, curc) : (curc == state.c || (@ireg_ic && utf_tolower(curc) == utf_tolower(state.c))))
+                                (if §(state.c < 0) §(check_char_class(state.c, curc)) (or §(curc == state.c) (and §(@ireg_ic) §(utf_tolower(curc) == utf_tolower(state.c)))))
                                 (§
 ;                                   result = result_if_matched;
 ;                                   break;
@@ -37959,7 +37846,7 @@
 
                         ;; Handle the postponed invisible match if the match might end
                         ;; without advancing and before the end of the line.
-                        (when §(pim != null && (clen == 0 || match_follows(add_state, 0)))
+                        (when (and §(pim != null) (or §(clen == 0) §(match_follows(add_state, 0))))
 ;                           int result;
                             (cond §(pim.result == NFA_PIM_TODO)
                             (§
@@ -38068,7 +37955,7 @@
                                 ;; Checking if the required start character matches is
                                 ;; cheaper than adding a state that won't match.
 ;                               int c = us_ptr2char(@reginput.plus(clen));
-                                (when §(c != prog.regstart && (!@ireg_ic || utf_tolower(c) != utf_tolower(prog.regstart)))
+                                (when (and §(c != prog.regstart) (or §(!@ireg_ic) §(utf_tolower(c) != utf_tolower(prog.regstart))))
 ;                                   add = false;
                                 )
                             ))
@@ -38094,7 +37981,7 @@
             (§
                 (reset! reginput §(@reginput.plus(clen)))
             )
-            §(go_to_nextline || (@nfa_endp != null && @reg_match == null && @reglnum < @nfa_endp.se_pos.lnum))
+            (or §(go_to_nextline) (and §(@nfa_endp != null) §(@reg_match == null) §(@reglnum < @nfa_endp.se_pos.lnum)))
             (§
                 (reg_nextline)
             )
@@ -38858,11 +38745,11 @@
             )
             §(p.at(0) == (byte)'\\')
             (§
-                (cond §(p.at(1) == (byte)'_' && p.at(2) != NUL)         ;; skip "\_X"
+                (cond (and §(p.at(1) == (byte)'_') §(p.at(2) != NUL))         ;; skip "\_X"
                 (§
 ;                   p = p.plus(3);
                 )
-                §(p.at(1) == (byte)'%' && p.at(2) != NUL)    ;; skip "\%X"
+                (and §(p.at(1) == (byte)'%') §(p.at(2) != NUL))    ;; skip "\%X"
                 (§
 ;                   p = p.plus(3);
                 )
@@ -38963,7 +38850,7 @@
             ;; When not accepting a match at the start position, set "extra_col" to a non-zero value.
             ;; Don't do that when starting at MAXCOL, since MAXCOL + 1 is zero.
 ;           int extra_col;
-            (cond §((options & SEARCH_START) != 0 || pos.col == MAXCOL)
+            (cond (or §((options & SEARCH_START) != 0) §(pos.col == MAXCOL))
             (§
 ;               extra_col = 0;
             )
@@ -38995,7 +38882,7 @@
             ;; current position, gain some efficiency by skipping back a line.
             ;; Otherwise begin the search in the current line.
 
-            (cond §(dir == BACKWARD && start_pos.col == 0 && (options & SEARCH_START) == 0)
+            (cond (and §(dir == BACKWARD) §(start_pos.col == 0) §((options & SEARCH_START) == 0))
             (§
 ;               lnum = pos.lnum - 1;
 ;               at_first_line = false;
@@ -39079,7 +38966,7 @@
 ;                                       matchcol += us_ptr2len_cc(ptr.plus(matchcol));
                                     )
                                 ))
-                                (if §(matchcol == 0 && (options & SEARCH_START) != 0)
+                                (if (and §(matchcol == 0) §((options & SEARCH_START) != 0))
 ;                                   break;
                                 )
                                 (when (or §(ptr.at(matchcol) == NUL) §((nmatched = vim_regexec_multi(regmatch, win, buf, lnum + matchpos.lnum, matchcol, nsec)) == 0))
@@ -39176,7 +39063,7 @@
 
                         ;; With the SEARCH_END option move to the last character of the match.
                         ;; Don't do it for an empty match, end should be same as start then.
-                        (cond §((options & SEARCH_END) != 0 && (options & SEARCH_NOOF) == 0 && (matchpos.lnum != endpos.lnum || matchpos.col != endpos.col))
+                        (cond (and §((options & SEARCH_END) != 0) §((options & SEARCH_NOOF) == 0) (or §(matchpos.lnum != endpos.lnum) §(matchpos.col != endpos.col)))
                         (§
                             ;; For a match in the first column,
                             ;; set the position on the NUL in the previous line.
@@ -39370,7 +39257,7 @@
 
         ;; Turn 'hlsearch' highlighting back on.
 
-        (when §(@no_hlsearch && (options & SEARCH_KEEP) == 0)
+        (when (and §(@no_hlsearch) §((options & SEARCH_KEEP) == 0))
             (redraw_all_later SOME_VALID)
             (reset! no_hlsearch false)
         )
@@ -39432,7 +39319,7 @@
                     (§
 ;                       @spats[0].sp_off.line = true;
                     )
-                    §((options & SEARCH_OPT) != 0 && (p.at(0) == (byte)'e' || p.at(0) == (byte)'s' || p.at(0) == (byte)'b'))
+                    (and §((options & SEARCH_OPT) != 0) (or §(p.at(0) == (byte)'e') §(p.at(0) == (byte)'s') §(p.at(0) == (byte)'b')))
                     (§
                         (if §(p.at(0) == (byte)'e')                           ;; end
 ;                           @spats[0].sp_off.end = (SEARCH_END != 0);
@@ -39571,7 +39458,7 @@
 
                 ;; Add character and/or line offset
 
-                (when §((options & SEARCH_NOOF) == 0 || (pat != null && pat.at(0) == (byte)';'))
+                (when (or §((options & SEARCH_NOOF) == 0) (and §(pat != null) §(pat.at(0) == (byte)';')))
                     (cond §(@spats[0].sp_off.line)       ;; add the offset to the line number
                     (§
 ;                       long c = pos.lnum + @spats[0].sp_off.off;
@@ -39618,7 +39505,7 @@
                 ;; - When an error happens the cursor isn't moved at all.
                 ;; Don't do this when called by get_address() (it handles ';' itself).
 
-                (if §((options & SEARCH_OPT) == 0 || pat == null || pat.at(0) != (byte)';')
+                (if (or §((options & SEARCH_OPT) == 0) §(pat == null) §(pat.at(0) != (byte)';'))
 ;                   break;
                 )
 
@@ -39696,7 +39583,7 @@
 
             ;; Force a move of at least one char, so ";" and "," will move the cursor,
             ;; even if the cursor is right in front of char we are looking at.
-            (if §(vim_strbyte(@p_cpo, CPO_SCOLON) == null && count == 1 && t_cmd)
+            (if (and §(vim_strbyte(@p_cpo, CPO_SCOLON) == null) §(count == 1) §(t_cmd))
 ;               stop = false;
             )
         ))
@@ -39730,13 +39617,13 @@
                 ))
                 (cond §(@sc__bytelen == 1)
                 (§
-                    (if §(p.at(col) == c && stop)
+                    (if (and §(p.at(col) == c) §(stop))
 ;                       break;
                     )
                 )
                 :else
                 (§
-                    (if §(MEMCMP(p.plus(col), sc__bytes, @sc__bytelen) == 0 && stop)
+                    (if (and §(MEMCMP(p.plus(col), sc__bytes, @sc__bytelen) == 0) §(stop))
 ;                       break;
                     )
                 ))
@@ -39878,7 +39765,7 @@
                 (when §(!cpo_match)
                     ;; Are we before or at #if, #else etc.?
 ;                   Bytes p = skipwhite(linep);
-                    (cond §(p.at(0) == (byte)'#' && @_2_pos.col <= BDIFF(p, linep))
+                    (cond (and §(p.at(0) == (byte)'#') §(@_2_pos.col <= BDIFF(p, linep)))
                     (§
 ;                       p = skipwhite(p.plus(1));
                         (if (or §(STRNCMP(p, u8("if"), 2) == 0) §(STRNCMP(p, u8("endif"), 5) == 0) §(STRNCMP(p, u8("el"), 2) == 0))
@@ -39923,7 +39810,7 @@
                     ;; Find the brace under or after the cursor.
                     ;; If beyond the end of the line, use the last character in the line.
 
-                    (if §(linep.at(@_2_pos.col) == NUL && @_2_pos.col != 0)
+                    (if (and §(linep.at(@_2_pos.col) == NUL) §(@_2_pos.col != 0))
 ;                       --@_2_pos.col;
                     )
 ;                   for ( ; ; )
@@ -40116,8 +40003,8 @@
 
             ;; If FM_BLOCKSTOP given, stop at a '{' or '}' in column 0.
 
-            (when §(@_2_pos.col == 0 && (flags & FM_BLOCKSTOP) != 0 && (linep.at(0) == (byte)'{' || linep.at(0) == (byte)'}'))
-                (if §(linep.at(0) == findc[0] && count == 0)        ;; match!
+            (when (and §(@_2_pos.col == 0) §((flags & FM_BLOCKSTOP) != 0) (or §(linep.at(0) == (byte)'{') §(linep.at(0) == (byte)'}')))
+                (if (and §(linep.at(0) == findc[0]) §(count == 0))        ;; match!
 ;                   return @_2_pos;
                 )
 ;               break;                                      ;; out of scope
@@ -40128,7 +40015,7 @@
                 ;; TODO: ignore comment brackets inside strings.
                 (cond §(comment_dir == FORWARD)
                 (§
-                    (when §(linep.at(@_2_pos.col) == (byte)'*' && linep.at(@_2_pos.col + 1) == (byte)'/')
+                    (when (and §(linep.at(@_2_pos.col) == (byte)'*') §(linep.at(@_2_pos.col + 1) == (byte)'/'))
 ;                       @_2_pos.col++;
 ;                       return @_2_pos;
                     )
@@ -40142,13 +40029,13 @@
                     (§
 ;                       continue;
                     )
-                    §(linep.at(@_2_pos.col - 1) == (byte)'/' && linep.at(@_2_pos.col) == (byte)'*' && @_2_pos.col < comment_col)
+                    (and §(linep.at(@_2_pos.col - 1) == (byte)'/') §(linep.at(@_2_pos.col) == (byte)'*') §(@_2_pos.col < comment_col))
                     (§
 ;                       count++;
                         (COPY_pos match_pos, @_2_pos)
 ;                       match_pos.col--;
                     )
-                    §(linep.at(@_2_pos.col - 1) == (byte)'*' && linep.at(@_2_pos.col) == (byte)'/')
+                    (and §(linep.at(@_2_pos.col - 1) == (byte)'*') §(linep.at(@_2_pos.col) == (byte)'/'))
                     (§
                         (cond §(0 < count)
                         (§
@@ -40192,10 +40079,10 @@
 ;               {
                     (if §(BEQ(p, linep.plus(@_2_pos.col + (backwards[0] ? 1 : 0))))
                         (reset! at_start §(do_quotes & 1)))
-                    (if §(p.at(0) == (byte)'"' && (BEQ(p, linep) || p.at(-1) != (byte)'\'' || p.at(1) != (byte)'\''))
+                    (if (and §(p.at(0) == (byte)'"') (or §(BEQ(p, linep)) §(p.at(-1) != (byte)'\'') §(p.at(1) != (byte)'\'')))
 ;                       do_quotes++;
                     )
-                    (if §(p.at(0) == (byte)'\\' && p.at(1) != NUL)
+                    (if (and §(p.at(0) == (byte)'\\') §(p.at(1) != NUL))
 ;                       p = p.plus(1);
                     )
 ;               }
@@ -40220,7 +40107,7 @@
                     )
                     (when §(1 < @_2_pos.lnum)
 ;                       p = ml_get(@_2_pos.lnum - 1);
-                        (when §(p.at(0) != NUL && p.at(STRLEN(p) - 1) == '\\')
+                        (when (and §(p.at(0) != NUL) §(p.at(STRLEN(p) - 1) == '\\'))
 ;                           do_quotes = 1;
                             (cond §(start_in_quotes == MAYBE)
                             (§
@@ -40297,7 +40184,7 @@
 ;                                   @_2_pos.col -= 2;
 ;                                   break;
                                 )
-                                §(linep.at(@_2_pos.col - 2) == (byte)'\\' && 2 < @_2_pos.col && linep.at(@_2_pos.col - 3) == (byte)'\'')
+                                (and §(linep.at(@_2_pos.col - 2) == (byte)'\\') §(2 < @_2_pos.col) §(linep.at(@_2_pos.col - 3) == (byte)'\''))
                                 (§
 ;                                   @_2_pos.col -= 3;
 ;                                   break;
@@ -40306,7 +40193,7 @@
                         )
                         §(linep.at(@_2_pos.col + 1) != NUL) ;; forward search
                         (§
-                            (cond §(linep.at(@_2_pos.col + 1) == (byte)'\\' && linep.at(@_2_pos.col + 2) != NUL && linep.at(@_2_pos.col + 3) == (byte)'\'')
+                            (cond (and §(linep.at(@_2_pos.col + 1) == (byte)'\\') §(linep.at(@_2_pos.col + 2) != NUL) §(linep.at(@_2_pos.col + 3) == (byte)'\''))
                             (§
 ;                               @_2_pos.col += 3;
 ;                               break;
@@ -40333,7 +40220,7 @@
                         )
                         ;; Only accept a match when 'M' is in 'cpo'
                         ;; or when escaping is what we expect.
-                        (when §(cpo_bsl || (bslcnt & 1) == match_escaped)
+                        (when (or §(cpo_bsl) §((bslcnt & 1) == match_escaped))
                             (cond §(c == initc[0])
                             (§
 ;                               count++;
@@ -40371,7 +40258,7 @@
 ;       {
             ;; Accept a double /, unless it's preceded with * and followed by *,
             ;; because * / / * is an end and start of a C comment.
-            (if §(p.at(1) == (byte)'/' && (BEQ(p, line) || p.at(-1) != (byte)'*' || p.at(2) != (byte)'*'))
+            (if (and §(p.at(1) == (byte)'/') (or §(BEQ(p, line)) §(p.at(-1) != (byte)'*') §(p.at(2) != (byte)'*')))
 ;               break;
             )
 ;           p = p.plus(1);
@@ -40417,7 +40304,7 @@
 ;           int[] vcol = new int[1];
             (if §(!@curwin.w_options.@wo_wrap)
                 (getvcol @curwin, lpos, null, vcol, null))
-            (when §(@curwin.w_options.@wo_wrap || (@curwin.w_leftcol <= vcol[0] && vcol[0] < @curwin.w_leftcol + @curwin.w_width))
+            (when (or §(@curwin.w_options.@wo_wrap) (and §(@curwin.w_leftcol <= vcol[0]) §(vcol[0] < @curwin.w_leftcol + @curwin.w_width)))
 ;               pos_C save_cursor = §_pos_C();
 ;               pos_C mpos = §_pos_C();
 
@@ -40635,7 +40522,7 @@
 ;           {
                 ;; If we're in the middle of a word, we just have to move to the end of it.
 
-                (cond §(cls() == sclass && sclass != 0)
+                (cond (and §(cls() == sclass) §(sclass != 0))
                 (§
                     ;; Move forward to end of the current word
 
@@ -40650,7 +40537,7 @@
 
 ;                   while (cls() == 0)
 ;                   {
-                        (if §(empty && @curwin.w_cursor.col == 0 && lineempty(@curwin.w_cursor.lnum))
+                        (if (and §(empty) §(@curwin.w_cursor.col == 0) §(lineempty(@curwin.w_cursor.lnum)))
 ;                           break finished;
                         )
                         (if §(inc_cursor() == -1)     ;; hit end of file, stop here
@@ -40859,7 +40746,7 @@
 
                 (cond §(include != (cls() == 0))
                 (§
-                    (if §(!fwd_word(1, bigword, true) && 1 < count)
+                    (if (and §(!fwd_word(1, bigword, true)) §(1 < count))
 ;                       return false;
                     )
 
@@ -40893,7 +40780,7 @@
             (COPY_pos §(@curwin.w_cursor), start_pos)
             (when (oneleft)
                 (back_in_line)
-                (when §(cls() == 0 && 0 < @curwin.w_cursor.col)
+                (when (and §(cls() == 0) §(0 < @curwin.w_cursor.col))
                     (if @VIsual_active
                         (COPY_pos @VIsual, §(@curwin.w_cursor))
                         (COPY_pos §(oap.op_start), §(@curwin.w_cursor)))
@@ -40904,7 +40791,7 @@
 
         (cond @VIsual_active
         (§
-            (if §(@p_sel.at(0) == (byte)'e' && inclusive && ltoreq(@VIsual, @curwin.w_cursor))
+            (if (and §(@p_sel.at(0) == (byte)'e') §(inclusive) §(ltoreq(@VIsual, @curwin.w_cursor)))
                 (inc_cursor))
             (when §(@VIsual_mode == 'V')
                 (reset! VIsual_mode §('v'))
@@ -41010,7 +40897,7 @@
             ;; In Visual mode, when the resulting area is not bigger than what we
             ;; started with, extend it to the next block, and then exclude again.
 
-            (cond §(!ltpos(start_pos, old_start) && !ltpos(old_end, @curwin.w_cursor) && @VIsual_active)
+            (cond (and §(!ltpos(start_pos, old_start)) §(!ltpos(old_end, @curwin.w_cursor)) §(@VIsual_active))
             (§
                 (COPY_pos §(@curwin.w_cursor), old_start)
                 (decl §(@curwin.w_cursor))
@@ -41145,7 +41032,7 @@
         ;; Correct cursor when 'selection' is exclusive.
         (when @VIsual_active
 ;           vis_bef_curs = ltpos(@VIsual, @curwin.w_cursor);
-            (if §(@p_sel.at(0) == (byte)'e' && vis_bef_curs)
+            (if (and §(@p_sel.at(0) == (byte)'e') §(vis_bef_curs))
                 (dec_cursor))
 ;           vis_empty = eqpos(@VIsual, @curwin.w_cursor);
         )
@@ -41284,7 +41171,7 @@
 
         ;; Set start position.  After vi" another i" must include the ".
         ;; For v2i" include the quotes.
-        (if §(!include && count < 2 && (vis_empty || !inside_quotes))
+        (if (and §(!include) §(count < 2) (or §(vis_empty) §(!inside_quotes)))
 ;           col_start++;
         )
 ;       @curwin.w_cursor.col = col_start;
@@ -41942,7 +41829,7 @@
 ;           {
 ;               boolean tilde = false;
 ;               boolean do_isalpha = false;
-                (when §(p.at(0) == (byte)'^' && p.at(1) != NUL)
+                (when (and §(p.at(0) == (byte)'^') §(p.at(1) != NUL))
 ;                   tilde = true;
 ;                   p = p.plus(1);
                 )
@@ -41956,7 +41843,7 @@
 ;                   Bytes[] __ = { p }; c = us_ptr2char_adv(__, true); p = __[0];
                 ))
 ;               int c2 = -1;
-                (when §(p.at(0) == (byte)'-' && p.at(1) != NUL)
+                (when (and §(p.at(0) == (byte)'-') §(p.at(1) != NUL))
 ;                   p = p.plus(1);
                     (cond §(asc_isdigit(p.at(0)))
                     (§
@@ -42101,7 +41988,7 @@
 ;           c = char_u(KB_SECOND(c));
         )
 
-        (cond §((!@chartab_initialized && (' ' <= c && c <= '~')) || (c < 256 && vim_isprintc(c)))
+        (cond (or (and §(!@chartab_initialized) §(' ' <= c) §(c <= '~')) (and §(c < 256) §(vim_isprintc(c))))
         (§
             ;; printable character
 ;           transchar_buf.be(i, c);
@@ -42311,7 +42198,7 @@
 
 (defn- #_boolean vim_isIDc [#_int c]
     (§
-        §(0 < c && c < 0x100 && (chartab[c] & CT_ID_CHAR) != 0)
+        (and §(0 < c) §(c < 0x100) §((chartab[c] & CT_ID_CHAR) != 0))
     ))
 
 ;; Return true if 'c' is a keyword character:
@@ -42324,7 +42211,7 @@
 ;           return (2 <= utf_class(c));
         )
 
-        §(0 < c && c < 0x100 && get_chartab(buf, c) != 0)
+        (and §(0 < c) §(c < 0x100) §(get_chartab(buf, c) != 0))
     ))
 
 (defn- #_boolean us_iswordb [#_byte b, #_buffer_C buf]
@@ -42400,7 +42287,7 @@
 
         ;; No 'linebreak', 'showbreak' and 'breakindent': return quickly.
 
-        (when §(!wp.w_options.@wo_lbr && !wp.w_options.@wo_bri && @p_sbr.at(0) == NUL)
+        (when (and §(!wp.w_options.@wo_lbr) §(!wp.w_options.@wo_bri) §(@p_sbr.at(0) == NUL))
             (if §(wp.w_options.@wo_wrap)
 ;               return win_nolbr_chartabsize(wp, s, col, headp);
             )
@@ -42621,7 +42508,7 @@
 
                     ;; If a double-cell char doesn't fit at the end of a line,
                     ;; it wraps to the next line, it's like this char is three cells wide.
-                    (when §(incr == 2 && wp.w_options.@wo_wrap && 1 < us_byte2len(p.at(0), false) && in_win_border(wp, vcol))
+                    (when (and §(incr == 2) §(wp.w_options.@wo_wrap) §(1 < us_byte2len(p.at(0), false)) §(in_win_border(wp, vcol)))
 ;                       incr++;
 ;                       head[0] = 1;
                     )
@@ -42661,7 +42548,7 @@
 ;           end[0] = vcol + incr - 1;
         )
         (when §(cursor != null)
-            (cond §(p.at(0) == TAB && (@State & NORMAL) != 0 && !virtual_active() && !(@VIsual_active && (@p_sel.at(0) == (byte)'e' || ltoreq(pos, @VIsual))))
+            (cond (and §(p.at(0) == TAB) §((@State & NORMAL) != 0) §(!virtual_active()) (not (and §(@VIsual_active) (or §(@p_sel.at(0) == (byte)'e') §(ltoreq(pos, @VIsual))))))
             (§
 ;               cursor[0] = vcol + incr - 1;        ;; cursor at end
             )
@@ -42749,7 +42636,7 @@
         )
         (cond §(to1[0] < to2[0])
         (§
-            (if §(@p_sel.at(0) == (byte)'e' && to1[0] <= from2[0] - 1)
+            (if (and §(@p_sel.at(0) == (byte)'e') §(to1[0] <= from2[0] - 1))
 ;               right[0] = from2[0] - 1;
 ;               right[0] = to2[0];
             )
@@ -42854,9 +42741,9 @@
 ;       int hex = 0;                        ;; default is decimal
 
         ;; Recognize hex and octal.
-        (when §(ptr.at(0) == (byte)'0' && ptr.at(1) != (byte)'8' && ptr.at(1) != (byte)'9')
+        (when (and §(ptr.at(0) == (byte)'0') §(ptr.at(1) != (byte)'8') §(ptr.at(1) != (byte)'9'))
 ;           hex = ptr.at(1);
-            (cond §(dohex != 0 && (hex == 'X' || hex == 'x') && asc_isxdigit(ptr.at(2)))
+            (cond (and §(dohex != 0) (or §(hex == 'X') §(hex == 'x')) §(asc_isxdigit(ptr.at(2))))
             (§
 ;               ptr = ptr.plus(2);          ;; hexadecimal
             )
@@ -44371,7 +44258,7 @@
             )
             (cond cmdline
             (§
-                (if §(mb_char2cells(c) == 1 && @cmdline_star == 0)
+                (if (and §(mb_char2cells(c) == 1) §(@cmdline_star == 0))
                     (putcmdline c, true))
             )
             :else
@@ -44404,7 +44291,7 @@
 
 ;       digr_C[] dgs = digraphdefault;
 ;       for (int i = 0; i < dgs.length; i++)
-            (when §((int)dgs[i].char1 == char1 && (int)dgs[i].char2 == char2)
+            (when (and §((int)dgs[i].char1 == char1) §((int)dgs[i].char2 == char2))
 ;               retval = dgs[i].result;
 ;               break;
             )
@@ -44427,7 +44314,7 @@
     (§
 ;       int retval;
 
-        (when §(((retval = getexactdigraph(char1, char2, meta_char)) == char2) && (char1 != char2) && ((retval = getexactdigraph(char2, char1, meta_char)) == char1))
+        (when (and §((retval = getexactdigraph(char1, char2, meta_char)) == char2) §(char1 != char2) §((retval = getexactdigraph(char2, char1, meta_char)) == char1))
 ;           return char2;
         )
 
@@ -44845,7 +44732,7 @@
 
 (defn- #_int utf_off2cells [#_int off, #_int max_off]
     (§
-        §((off + 1 < max_off && @screenLines.at(off + 1) == 0) ? 2 : 1)
+        (if (and §(off + 1 < max_off) §(@screenLines.at(off + 1) == 0)) 2 1)
     ))
 
 ;; Convert a UTF-8 byte sequence to a wide character.
@@ -45077,7 +44964,7 @@
         (if §(p.at(0) == NUL)
 ;           return 0;
         )
-        (if §(char_u(p.at(0)) < 0x80 && char_u(p.at(1)) < 0x80)     ;; be quick for ASCII
+        (if (and §(char_u(p.at(0)) < 0x80) §(char_u(p.at(1)) < 0x80))     ;; be quick for ASCII
 ;           return 1;
         )
 
@@ -45111,7 +44998,7 @@
         (if (or §(size < 1) §(p.at(0) == NUL))
 ;           return 0;
         )
-        (if §(char_u(p.at(0)) < 0x80 && (size == 1 || char_u(p.at(1)) < 0x80))    ;; be quick for ASCII
+        (if (and §(char_u(p.at(0)) < 0x80) (or §(size == 1) §(char_u(p.at(1)) < 0x80)))    ;; be quick for ASCII
 ;           return 1;
         )
 
@@ -45119,7 +45006,7 @@
 ;       int len = us_ptr2len_len(p, size);
 
         ;; Check for illegal byte and incomplete byte sequence.
-        (if §((len == 1 && 0x80 <= char_u(p.at(0))) || size < len)
+        (if (or (and §(len == 1) §(0x80 <= char_u(p.at(0)))) §(size < len))
 ;           return 1;
         )
 
@@ -45631,7 +45518,7 @@
 
         (when §(start < entries)
 ;           int i = 4 * start;
-            (if §(table[i] <= c && c <= table[i + 1] && (c - table[i]) % table[i + 2] == 0)
+            (if (and §(table[i] <= c) §(c <= table[i + 1]) §((c - table[i]) % table[i + 2] == 0))
 ;               return c + table[i + 3];
             )
         )
@@ -46343,7 +46230,7 @@
 ;               q = q.minus(1);
             ;; Check for illegal sequence.  Do allow an illegal byte after where we started.
 ;           int len = us_byte2len(q.at(0), false);
-            (if §(len != BDIFF(s, q) + 1 && len != BDIFF(p, q) + 1)
+            (if (and §(len != BDIFF(s, q) + 1) §(len != BDIFF(p, q) + 1))
 ;               return 0;
             )
 
@@ -46426,7 +46313,7 @@
                 ;; Illegal means that there are not enough trail bytes (checked
                 ;; by us_ptr2len()) or too many of them (overlong sequence).
 ;               int len = us_ptr2len(p);
-                (when §(0x80 <= char_u(p.at(0)) && (len == 1 || utf_char2len(us_ptr2char(p)) != len))
+                (when (and §(0x80 <= char_u(p.at(0))) (or §(len == 1) §(utf_char2len(us_ptr2char(p)) != len)))
 ;                   cursor.col += BDIFF(p, ml_get_cursor());
 ;                   return;
                 )
@@ -46508,7 +46395,7 @@
 ;       col = check_col(col);
 ;       row = check_row(row);
 
-        (if §(@screenLines != null && 0 < col && @screenLines.at(@lineOffset[row] + col) == 0)
+        (if (and §(@screenLines != null) §(0 < col) §(@screenLines.at(@lineOffset[row] + col) == 0))
 ;           return col - 1;
         )
 
@@ -46926,7 +46813,7 @@
 ;       for (Bytes[] cinw = { @curbuf.@b_p_cinw }; cinw[0].at(0) != NUL; )
 ;       {
 ;           int len = copy_option_part(cinw, cinw_buf, cinw_len, u8(","));
-            (when §(STRNCMP(line, cinw_buf, len) == 0 && (!us_iswordb(line.at(len), @curbuf) || !us_iswordb(line.at(len - 1), @curbuf)))
+            (when (and §(STRNCMP(line, cinw_buf, len) == 0) (or §(!us_iswordb(line.at(len), @curbuf)) §(!us_iswordb(line.at(len - 1), @curbuf))))
 ;               retval = true;
 ;               break;
             )
@@ -47035,7 +46922,7 @@
             ;; don't add an indent.  Fixes inserting a NL before '{' in line
             ;;      "if (condition) {"
 
-            (when §(!trunc_line && do_si && saved_line.at(0) != NUL && (p_extra == null || first_char != '{'))
+            (when (and §(!trunc_line) §(do_si) §(saved_line.at(0) != NUL) (or §(p_extra == null) §(first_char != '{')))
                 (COPY_pos old_cursor, §(@curwin.w_cursor))
 
 ;               Bytes s = saved_line;
@@ -47094,7 +46981,7 @@
                     ;; Look for "if" and the like, use 'cinwords'.
                     ;; Don't do this if the previous line ended in ';' or '}'.
 
-                    §(last_char != ';' && last_char != '}' && cin_is_cinword(s))
+                    (and §(last_char != ';') §(last_char != '}') §(cin_is_cinword(s)))
                     (§
                         (reset! did_si true)
                     ))
@@ -47408,7 +47295,7 @@
         ;; This only fixes an error when the TAB wraps from one screen line to the next
         ;; (when 'columns' is not a multiple of 'ts').
 
-        (if §(s.at(0) == TAB && (@State & NORMAL) != 0)
+        (if (and §(s.at(0) == TAB) §((@State & NORMAL) != 0))
 ;           col += win_lbr_chartabsize(wp, line, s, (int)col, null) - 1;
         )
 
@@ -47485,7 +47372,7 @@
 ;       long lnum = @curwin.w_cursor.lnum;
 
         ;; Break tabs if needed.
-        (if §(virtual_active() && 0 < @curwin.w_cursor.coladd)
+        (if (and §(virtual_active()) §(0 < @curwin.w_cursor.coladd))
             (coladvance_force (getviscol)))
 
 ;       int col = @curwin.w_cursor.col;
@@ -47564,7 +47451,7 @@
         ;; If we're in Insert or Replace mode and 'showmatch' is set,
         ;; then briefly show the match for right parens and braces.
 
-        (when §(@p_sm && (@State & INSERT) != 0)
+        (when (and §(@p_sm) §((@State & INSERT) != 0))
             (showmatch (us_ptr2char buf))
         )
 
@@ -47584,7 +47471,7 @@
 ;       int newlen = STRLEN(s);
 ;       long lnum = @curwin.w_cursor.lnum;
 
-        (if §(virtual_active() && 0 < @curwin.w_cursor.coladd)
+        (if (and §(virtual_active()) §(0 < @curwin.w_cursor.coladd))
             (coladvance_force (getviscol)))
 
 ;       int col = @curwin.w_cursor.col;
@@ -47659,7 +47546,7 @@
 
         ;; If 'delcombine' is set and deleting (less than) one character,
         ;; only delete the last combining character.
-        (when §(@p_deco && use_delcombine && count <= us_ptr2len_cc(oldp.plus(col)))
+        (when (and §(@p_deco) §(use_delcombine) §(count <= us_ptr2len_cc(oldp.plus(col))))
 ;           int[] cc = new int[MAX_MCO];
 
             (us_ptr2char_cc §(oldp.plus(col)), cc)
@@ -47684,7 +47571,7 @@
             ;; fixpos is true, we don't want to end up positioned at the NUL,
             ;; unless "restart_edit" is set or 'virtualedit' contains "onemore".
 
-            (when §(0 < col && fixpos && @restart_edit == 0 && (@ve_flags & VE_ONEMORE) == 0)
+            (when (and §(0 < col) §(fixpos) §(@restart_edit == 0) §((@ve_flags & VE_ONEMORE) == 0))
 ;               --@curwin.w_cursor.col;
 ;               @curwin.w_cursor.coladd = 0;
 ;               @curwin.w_cursor.col -= us_head_off(oldp, oldp.plus(@curwin.w_cursor.col));
@@ -48204,12 +48091,12 @@
 
             ;; Incomplete termcode and not timed out yet: get more characters.
 ;           n = check_termcode(buf, buflen, len);
-            (if §(n < 0 && (!@p_ttimeout || waited * 100 < (@p_ttm < 0 ? @p_tm : @p_ttm)))
+            (if (and §(n < 0) (or §(!@p_ttimeout) §(waited * 100 < (@p_ttm < 0 ? @p_tm : @p_ttm))))
 ;               continue;
             )
 
             (when §(n == KEYLEN_REMOVED)        ;; key code removed
-                (when §(@must_redraw != 0 && !@need_wait_return && (@State & CMDLINE) == 0)
+                (when (and §(@must_redraw != 0) §(!@need_wait_return) §((@State & CMDLINE) == 0))
                     ;; Redrawing was postponed, do it now.
                     (update_screen 0)
                     (setcursor)            ;; put cursor back where it belongs
@@ -48516,7 +48403,7 @@
 ;                   csize--;
                 )
 
-                (when §(csize / width < wcol / width && ((@State & INSERT) == 0 || csize + 1 < wcol))
+                (when (and §(csize / width < wcol / width) (or §((@State & INSERT) == 0) §(csize + 1 < wcol)))
                     ;; In case of line wrapping don't move the cursor beyond the
                     ;; right screen edge.  In Insert mode allow going just beyond
                     ;; the last character (like what happens when typing and
@@ -48540,14 +48427,14 @@
             ;; a line has the correct indexing.  The one_more comparison
             ;; replaces an explicit add of one_more later on.
 
-            (when (or §(wcol < col) §(!virtual_active() && !one_more))
+            (when (or §(wcol < col) (and §(!virtual_active()) §(!one_more)))
 ;               idx -= 1;
                 ;; Don't count the chars from 'showbreak'.
 ;               csize -= head[0];
 ;               col -= csize;
             )
 
-            (when §(virtual_active() && addspaces && ((col != wcol && col != wcol + 1) || 1 < csize))
+            (when (and §(virtual_active()) §(addspaces) (or (and §(col != wcol) §(col != wcol + 1)) §(1 < csize)))
                 ;; 'virtualedit' is set: The difference between wcol and col is filled with spaces.
 
                 (cond §(line.at(idx) == NUL)
@@ -48834,7 +48721,7 @@
 
 (defn- #_void adjust_cursor_col []
     (§
-        (when §(0 < @curwin.w_cursor.col && (!@VIsual_active || @p_sel.at(0) == (byte)'o') && gchar_cursor() == NUL)
+        (when (and §(0 < @curwin.w_cursor.col) (or §(!@VIsual_active) §(@p_sel.at(0) == (byte)'o')) §(gchar_cursor() == NUL))
 ;           --@curwin.w_cursor.col;
         )
     ))
@@ -49048,7 +48935,7 @@
 ;       {
             ;; Skip backslash before a separator character and space.
 
-            (if §(p.at(0) == (byte)'\\' && vim_strchr(sep_chars, p.at(1)) != null)
+            (if (and §(p.at(0) == (byte)'\\') §(vim_strchr(sep_chars, p.at(1)) != null))
 ;               p = p.plus(1);
             )
             (if §(len < maxlen - 1)
@@ -49058,7 +48945,7 @@
 ;       }
 ;       buf.be(len, NUL);
 
-        (if §(p.at(0) != NUL && p.at(0) != (byte)',') ;; skip non-standard separator
+        (if (and §(p.at(0) != NUL) §(p.at(0) != (byte)',')) ;; skip non-standard separator
 ;           p = p.plus(1);
         )
 ;       p = skip_to_option_part(p); ;; "p" points to next file name
@@ -49116,7 +49003,7 @@
 
 (defn- #_boolean vim_isspace [#_int x]
     (§
-        §((9 <= x && x <= 13) || x == ' ')
+        (or (and §(9 <= x) §(x <= 13)) §(x == ' '))
     ))
 
 ;; Some useful tables.
@@ -49311,7 +49198,7 @@
     (§
         (when §((modifiers[0] & (MOD_MASK_SHIFT | MOD_MASK_CTRL | MOD_MASK_ALT)) != 0)
             ;; TAB is a special case.
-            (when §(key == TAB && (modifiers[0] & MOD_MASK_SHIFT) != 0)
+            (when (and §(key == TAB) §((modifiers[0] & MOD_MASK_SHIFT) != 0))
 ;               modifiers[0] &= ~MOD_MASK_SHIFT;
 ;               return K_S_TAB;
             )
@@ -49320,7 +49207,7 @@
 ;           byte key0 = KEY2TERMCAP0(key), key1 = KEY2TERMCAP1(key);
 
 ;           for (int i = 0; mkt[i] != NUL; i += MOD_KEYS_ENTRY_SIZE)
-                (when §(key0 == mkt[i + 3] && key1 == mkt[i + 4] && (modifiers[0] & char_u(mkt[i])) != 0)
+                (when (and §(key0 == mkt[i + 3]) §(key1 == mkt[i + 4]) §((modifiers[0] & char_u(mkt[i])) != 0))
 ;                   modifiers[0] &= ~char_u(mkt[i]);
 ;                   return TERMCAP2KEY(mkt[i + 1], mkt[i + 2]);
                 )
@@ -49360,7 +49247,7 @@
 (defn- #_Bytes get_special_key_name [#_int c, #_int modifiers]
     (§
         ;; Key that stands for a normal character.
-        (if §(is_special(c) && KEY2TERMCAP0(c) == KS_KEY)
+        (if (and §(is_special(c)) §(KEY2TERMCAP0(c) == KS_KEY))
 ;           c = char_u(KEY2TERMCAP1(c));
         )
 
@@ -49787,7 +49674,7 @@
 ;           uhp.uh_entry = null;
 ;           uhp.uh_getbot_entry = null;
             (COPY_pos §(uhp.uh_cursor), §(@curwin.w_cursor)) ;; save cursor pos. for undo
-            (if §(virtual_active() && 0 < @curwin.w_cursor.coladd)
+            (if (and §(virtual_active()) §(0 < @curwin.w_cursor.coladd))
 ;               uhp.uh_cursor_vcol = getviscol();
 ;               uhp.uh_cursor_vcol = -1;
             )
@@ -50498,7 +50385,7 @@
             (cond §(curhead.uh_cursor.lnum == @curwin.w_cursor.lnum)
             (§
 ;               @curwin.w_cursor.col = curhead.uh_cursor.col;
-                (if §(virtual_active() && 0 <= curhead.uh_cursor_vcol)
+                (if (and §(virtual_active()) §(0 <= curhead.uh_cursor_vcol))
                     (coladvance §((int)curhead.uh_cursor_vcol))
 ;                   @curwin.w_cursor.coladd = 0;
                 )
@@ -51475,7 +51362,7 @@
             )
 
             ;; If 'Sb' and 'AB' are not defined, reset "Co".
-            (if §(@T_CSB.at(0) == NUL && @T_CAB.at(0) == NUL)
+            (if (and §(@T_CSB.at(0) == NUL) §(@T_CAB.at(0) == NUL))
                 (reset! T_CCO EMPTY_OPTION))
         )
 
@@ -51568,7 +51455,7 @@
 
         (swap! _2_busy inc)
 
-        (cond (or §(mustset) §(!ui_get_shellsize() && height != 0))
+        (cond (or §(mustset) (and §(!ui_get_shellsize()) §(height != 0)))
         (§
             (reset! Rows height)
             (reset! Columns width)
@@ -51768,7 +51655,7 @@
     (§
 ;       out_str(_tgoto(@T_CS, wp.w_winrow + wp.w_height - 1, wp.w_winrow + off));
 
-        (if §(@T_CSV.at(0) != NUL && wp.w_width != (int)@Columns)
+        (if (and §(@T_CSV.at(0) != NUL) §(wp.w_width != (int)@Columns))
 ;           out_str(_tgoto(@T_CSV, wp.w_wincol + wp.w_width - 1, wp.w_wincol));
         )
 
@@ -51905,7 +51792,7 @@
             (if (and §(5 <= len) §(code.at(len - 3) == (byte)';'))
 ;               return 2;
             )
-            (if §((4 <= len && code.at(len - 3) == (byte)'O') || char_u(code.at(len - 3)) == 'O' + 0x80)
+            (if (or (and §(4 <= len) §(code.at(len - 3) == (byte)'O')) §(char_u(code.at(len - 3)) == 'O' + 0x80))
 ;               return 1;
             )
         )
@@ -51915,7 +51802,7 @@
 (defn- #_Bytes find_termcode [#_Bytes name]
     (§
 ;       for (int i = 0; i < @tc_len; i++)
-            (if §(@termcodes[i].name.at(0) == name.at(0) && @termcodes[i].name.at(1) == name.at(1))
+            (if (and §(@termcodes[i].name.at(0) == name.at(0)) §(@termcodes[i].name.at(1) == name.at(1)))
 ;               return @termcodes[i].code;
             )
 
@@ -51931,7 +51818,7 @@
         (reset! need_gather true)         ;; need to fill termleader[]
 
 ;       for (int i = 0; i < @tc_len; i++)
-            (when §(@termcodes[i].name.at(0) == name.at(0) && @termcodes[i].name.at(1) == name.at(1))
+            (when (and §(@termcodes[i].name.at(0) == name.at(0)) §(@termcodes[i].name.at(1) == name.at(1)))
                 (del_termcode_idx i)
 ;               return;
             )
@@ -52002,7 +51889,7 @@
 
         ;; Skip this position if "p_ek" is not set and *tp is an ESC and we are in Insert mode.
 
-        (if §(tp.at(0) == ESC && !@p_ek && (@State & INSERT) != 0)
+        (if (and §(tp.at(0) == ESC) §(!@p_ek) §((@State & INSERT) != 0))
 ;           return 0;
         )
 
@@ -52023,7 +51910,7 @@
                 ;; When found a keypad key, check if there is another key that matches and use that one.
                 ;; This makes <Home> to be found instead of <kHome> when they produce the same key code.
 
-                (when §(@termcodes[idx].name.at(0) == (byte)'K' && asc_isdigit(@termcodes[idx].name.at(1)))
+                (when (and §(@termcodes[idx].name.at(0) == (byte)'K') §(asc_isdigit(@termcodes[idx].name.at(1))))
 ;                   for (int j = idx + 1; j < @tc_len; j++)
                         (when (and §(@termcodes[j].len == slen) §(STRNCMP(@termcodes[idx].code, @termcodes[j].code, slen) == 0))
 ;                           idx = j;
@@ -52053,7 +51940,7 @@
                     (§
 ;                       slen = modslen + 1; ;; no modifiers
                     )
-                    §(tp.at(modslen) != (byte)';' && modslen == slen - 3)
+                    (and §(tp.at(modslen) != (byte)';') §(modslen == slen - 3))
                     (§
 ;                       continue;   ;; no match
                     )
@@ -52760,7 +52647,7 @@
             (check_for_delay false))
 
         ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-        (when §(@curwin.w_redr_type < NOT_VALID && @curwin.w_nrwidth != ((@curwin.w_options.@wo_nu || @curwin.w_options.@wo_rnu) ? number_width(@curwin) : 0))
+        (when (and §(@curwin.w_redr_type < NOT_VALID) §(@curwin.w_nrwidth != ((@curwin.w_options.@wo_nu || @curwin.w_options.@wo_rnu) ? number_width(@curwin) : 0)))
 ;           @curwin.w_redr_type = NOT_VALID;
         )
 
@@ -53233,7 +53120,7 @@
 
             (cond @VIsual_active
             (§
-                (cond §(@VIsual_active && (@VIsual_mode != wp.w_old_visual_mode || type == INVERTED_ALL))
+                (cond (and §(@VIsual_active) (or §(@VIsual_mode != wp.w_old_visual_mode) §(type == INVERTED_ALL)))
                 (§
                     ;; If the type of Visual selection changed, redraw the whole selection.
                     ;; Also when the ownership of the X selection is gained or lost.
@@ -53931,7 +53818,7 @@
                     ))
                 ))
                 (when (and §(@VIsual_mode != 'V') §(lnum == bot.lnum))
-                    (cond §(@p_sel.at(0) == (byte)'e' && bot.col == 0 && bot.coladd == 0)
+                    (cond (and §(@p_sel.at(0) == (byte)'e') §(bot.col == 0) §(bot.coladd == 0))
                     (§
 ;                       fromcol[0] = -10;
 ;                       tocol[0] = MAXCOL;
@@ -54029,7 +53916,7 @@
             ;; - the visual mode is active,
             ;; the end of the line may be before the start of the displayed part.
 
-            (when §(vcol < v && (wp.w_options.@wo_cuc || draw_color_col || virtual_active() || @VIsual_active))
+            (when (and §(vcol < v) (or §(wp.w_options.@wo_cuc) §(draw_color_col) §(virtual_active()) §(@VIsual_active)))
 ;               vcol = v;
             )
 
@@ -54140,7 +54027,7 @@
 
         ;; Cursor line highlighting for 'cursorline' in the current window.
         ;; Not when Visual mode is active, because it's not clear what is selected then.
-        (when §(wp.w_options.@wo_cul && lnum == wp.w_cursor.lnum && !(wp == @curwin && @VIsual_active))
+        (when (and §(wp.w_options.@wo_cul) §(lnum == wp.w_cursor.lnum) (not (and §(wp == @curwin) §(@VIsual_active))))
 ;           line_attr = hl_attr(HLF_CUL);
 ;           area_highlighting = true;
         )
@@ -54213,7 +54100,7 @@
                     )
                 )
 
-                (cond §(wp.w_p_brisbr && draw_state == WL_BRI - 1 && n_extra == 0 && @p_sbr.at(0) != NUL)
+                (cond (and §(wp.w_p_brisbr) §(draw_state == WL_BRI - 1) §(n_extra == 0) §(@p_sbr.at(0) != NUL))
                 (§
                     ;; draw indent after showbreak value
 ;                   draw_state = WL_BRI;
@@ -54242,7 +54129,7 @@
 
                 (when (and §(draw_state == WL_SBR - 1) §(n_extra == 0))
 ;                   draw_state = WL_SBR;
-                    (when §(@p_sbr.at(0) != NUL && need_showbreak)
+                    (when (and §(@p_sbr.at(0) != NUL) §(need_showbreak))
                         ;; Draw 'showbreak' at the start of each broken line.
 ;                       p_extra = @p_sbr;
 ;                       c_extra = NUL;
@@ -54307,7 +54194,7 @@
 ;                   while (mi != null || !shl_flag)
 ;                   {
 ;                       match_C shl;        ;; points to search_hl or a match
-                        (cond §(!shl_flag && ((mi != null && SEARCH_HL_PRIORITY < mi.priority) || mi == null))
+                        (cond (and §(!shl_flag) (or (and §(mi != null) §(SEARCH_HL_PRIORITY < mi.priority)) §(mi == null)))
                         (§
 ;                           shl = @search_hl;
 ;                           shl_flag = true;
@@ -54373,7 +54260,7 @@
 ;                   while (mi != null || !shl_flag)
 ;                   {
 ;                       match_C shl;        ;; points to search_hl or a match
-                        (cond §(!shl_flag && ((mi != null && SEARCH_HL_PRIORITY < mi.priority) || mi == null))
+                        (cond (and §(!shl_flag) (or (and §(mi != null) §(SEARCH_HL_PRIORITY < mi.priority)) §(mi == null)))
                         (§
 ;                           shl = @search_hl;
 ;                           shl_flag = true;
@@ -54404,7 +54291,7 @@
                 )
                 ;; Use line_attr when not in the Visual or 'incsearch' area
                 ;; (area_attr may be 0 when "noinvcur" is set).
-                §(line_attr != 0 && ((fromcol[0] == -10 && tocol[0] == MAXCOL) || vcol < fromcol[0] || vcol_prev < fromcol_prev || tocol[0] <= vcol))
+                (and §(line_attr != 0) (or (and §(fromcol[0] == -10) §(tocol[0] == MAXCOL)) §(vcol < fromcol[0]) §(vcol_prev < fromcol_prev) §(tocol[0] <= vcol)))
                 (§
 ;                   char_attr = line_attr;
                 )
@@ -54521,7 +54408,7 @@
                     )
                 )
 
-                (cond §((mb_l == 1 && 0x80 <= c) || (1 <= mb_l && mb_c == 0) || (1 < mb_l && !vim_isprintc(mb_c)))
+                (cond (or (and §(mb_l == 1) §(0x80 <= c)) (and §(1 <= mb_l) §(mb_c == 0)) (and §(1 < mb_l) §(!vim_isprintc(mb_c))))
                 (§
                     ;; Illegal UTF-8 byte: display as <xx>.
                     ;; Non-BMP character : display as ? or fullwidth ?.
@@ -54645,7 +54532,7 @@
 ;                       int vcol_adjusted = vcol; ;; removed showbreak length
                         ;; Only adjust the "tab_len" when at the first column
                         ;; after the showbreak value was drawn.
-                        (if §(@p_sbr.at(0) != NUL && vcol == vcol_sbr && wp.w_options.@wo_wrap)
+                        (if (and §(@p_sbr.at(0) != NUL) §(vcol == vcol_sbr) §(wp.w_options.@wo_wrap))
 ;                           vcol_adjusted = vcol - us_charlen(@p_sbr);
                         )
                         ;; tab amount depends on current column
@@ -54833,7 +54720,7 @@
 
             ;; In the cursor line and we may be concealing characters:
             ;; correct the cursor column when we reach its position.
-            (when §(!did_wcol && draw_state == WL_LINE && wp == @curwin && lnum == wp.w_cursor.lnum && conceal_cursor_line(wp) && wp.w_virtcol <= vcol + n_skip)
+            (when (and §(!did_wcol) §(draw_state == WL_LINE) §(wp == @curwin) §(lnum == wp.w_cursor.lnum) §(conceal_cursor_line(wp)) §(wp.w_virtcol <= vcol + n_skip))
 ;               wp.w_wcol = col - boguscols;
 ;               wp.w_wrow = row;
 ;               did_wcol = true;
@@ -54908,7 +54795,7 @@
 ;                       while (mi != null || !shl_flag)
 ;                       {
 ;                           match_C shl;        ;; points to search_hl or a match
-                            (cond §(!shl_flag && ((mi != null && SEARCH_HL_PRIORITY < mi.priority) || mi == null))
+                            (cond (and §(!shl_flag) (or (and §(mi != null) §(SEARCH_HL_PRIORITY < mi.priority)) §(mi == null)))
                             (§
 ;                               shl = @search_hl;
 ;                               shl_flag = true;
@@ -55029,7 +54916,7 @@
             )
 
             ;; line continues beyond line end
-            (when §(@lcs_ext != NUL && !wp.w_options.@wo_wrap && col == wp.w_width - 1 && (ptr.at(0) != NUL || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
+            (when (and §(@lcs_ext != NUL) §(!wp.w_options.@wo_wrap) §(col == wp.w_width - 1) (or §(ptr.at(0) != NUL) (and §(n_extra != 0) (or §(c_extra != NUL) §(p_extra.at(0) != NUL)))))
 ;               c = @lcs_ext;
 ;               char_attr = hl_attr(HLF_AT);
 ;               mb_c = c;
@@ -55578,7 +55465,7 @@
 
         ;; May need to draw the character below the vertical separator.
 
-        (when §(wp.w_vsep_width != 0 && wp.w_status_height != 0 && redrawing())
+        (when (and §(wp.w_vsep_width != 0) §(wp.w_status_height != 0) §(redrawing()))
 ;           int fillchar;
 ;           int[] attr = new int[1];
             (if (stl_connected wp)
@@ -55686,7 +55573,7 @@
 
         ;; When drawing over the right halve of a double-wide char clear out the left halve.
         ;; Only needed in a terminal.
-        (when §(0 < col && col < @screenColumns && mb_fix_col(col, row) != col)
+        (when (and §(0 < col) §(col < @screenColumns) §(mb_fix_col(col, row) != col))
 ;           @screenLines.be(off - 1, (byte)' ');
 ;           @screenAttrs[off - 1] = 0;
 ;           @screenLinesUC[off - 1] = 0;
@@ -55771,7 +55658,7 @@
 ;               @screenLines.be(off, c);
 ;               @screenAttrs[off] = attr;
 
-                (cond §(char_u(c) < 0x80 && u8cc[0] == 0)
+                (cond (and §(char_u(c) < 0x80) §(u8cc[0] == 0))
                 (§
 ;                   @screenLinesUC[off] = 0;
                 )
@@ -55874,7 +55761,7 @@
             (§
 ;               shl = mi.mi_hl;
             ))
-            (when §(shl.rmm.regprog != null && shl.lnum == 0 && re_multiline(shl.rmm.regprog))
+            (when (and §(shl.rmm.regprog != null) §(shl.lnum == 0) §(re_multiline(shl.rmm.regprog)))
                 (if §(shl.first_lnum == 0)
 ;                   shl.first_lnum = wp.w_topline;
                 )
@@ -56138,7 +56025,7 @@
                     ;; Assume that t_me restores the original colors!
 
 ;                   aep = syn_cterm_attr2entry(@screen_attr);
-                    (if §(aep != null && (aep.ae_fg_color != 0 || aep.ae_bg_color != 0))
+                    (if (and §(aep != null) (or §(aep.ae_fg_color != 0) §(aep.ae_bg_color != 0)))
 ;                       do_ME = true;
                     )
                 )
@@ -56221,7 +56108,7 @@
         ;; Outputting a character in the last cell on the screen may scroll the
         ;; screen up.  Only do it when the "xn" termcap property is set, otherwise
         ;; mark the character invalid (update it when scrolled up).
-        (when §(@T_XN.at(0) == NUL && row == @screenRows - 1 && col == @screenColumns - 1)
+        (when (and §(@T_XN.at(0) == NUL) §(row == @screenRows - 1) §(col == @screenColumns - 1))
 ;           @screenAttrs[off] = -1;
 ;           return;
         )
@@ -56386,7 +56273,7 @@
                     ;; next character should be redrawn too.  This happens for our
                     ;; own GUI and for some xterms.
                     (when @term_is_xterm
-                        (cond §(@screenLines.at(off) != (byte)' ' && (HL_ALL < @screenAttrs[off] || (@screenAttrs[off] & HL_BOLD) != 0))
+                        (cond (and §(@screenLines.at(off) != (byte)' ') (or §(HL_ALL < @screenAttrs[off]) §((@screenAttrs[off] & HL_BOLD) != 0)))
                         (§
 ;                           force_next = true;
                         )
@@ -56693,7 +56580,7 @@
 
 (defn- #_boolean can_clear [#_Bytes p]
     (§
-        §(p.at(0) != NUL && (@t_colors <= 1 || @cterm_normal_bg_color == 0 || @T_UT.at(0) != NUL))
+        (and §(p.at(0) != NUL) (or §(@t_colors <= 1) §(@cterm_normal_bg_color == 0) §(@T_UT.at(0) != NUL)))
     ))
 
 ;; Reset cursor position.  Use whenever cursor was moved because of outputting
@@ -56892,7 +56779,7 @@
                         ;; Avoids removing a line of pixels from the last bold char,
                         ;; when using the bold trick in the GUI.
 
-                        (cond §(@T_ND.at(0) != NUL && @T_ND.at(1) == NUL)
+                        (cond (and §(@T_ND.at(0) != NUL) §(@T_ND.at(1) == NUL))
                         (§
 ;                           while (0 < i--)
                                 (out_char §(@T_ND.at(0)))
@@ -57061,7 +56948,7 @@
         )
 
         ;; only a few lines left: redraw is faster
-        (when §(mayclear && @Rows - line_count < 5 && wp.w_width == (int)@Columns)
+        (when (and §(mayclear) §(@Rows - line_count < 5) §(wp.w_width == (int)@Columns))
             (screenclear)      ;; will set wp.w_lines_valid to 0
 ;           return FALSE;
         )
@@ -57187,15 +57074,15 @@
         (§
 ;           type = USE_REDRAW;
         )
-        §(can_clear(@T_CD) && result_empty)
+        (and §(can_clear(@T_CD)) §(result_empty))
         (§
 ;           type = USE_T_CD;
         )
-        §(@T_CAL.at(0) != NUL && (1 < line_count || @T_AL.at(0) == NUL))
+        (and §(@T_CAL.at(0) != NUL) (or §(1 < line_count) §(@T_AL.at(0) == NUL)))
         (§
 ;           type = USE_T_CAL;
         )
-        §(@T_CDL.at(0) != NUL && result_empty && (1 < line_count || !can_ce))
+        (and §(@T_CDL.at(0) != NUL) §(result_empty) (or §(1 < line_count) §(!can_ce)))
         (§
 ;           type = USE_T_CDL;
         )
@@ -57207,11 +57094,11 @@
         (§
 ;           type = USE_T_CE;
         )
-        §(@T_DL.at(0) != NUL && result_empty)
+        (and §(@T_DL.at(0) != NUL) §(result_empty))
         (§
 ;           type = USE_T_DL;
         )
-        §(@T_SR.at(0) != NUL && row == 0 && (@T_DA.at(0) == NUL || can_ce))
+        (and §(@T_SR.at(0) != NUL) §(row == 0) (or §(@T_DA.at(0) == NUL) §(can_ce)))
         (§
 ;           type = USE_T_SR;
         )
@@ -57363,27 +57250,27 @@
         (§
 ;           type = USE_REDRAW;
         )
-        §(can_clear(@T_CD) && result_empty)
+        (and §(can_clear(@T_CD)) §(result_empty))
         (§
 ;           type = USE_T_CD;
         )
-        §(row == 0 && (line_count == 1 || @T_CDL.at(0) == NUL))
+        (and §(row == 0) (or §(line_count == 1) §(@T_CDL.at(0) == NUL)))
         (§
 ;           type = USE_NL;
         )
-        §(@T_CDL.at(0) != NUL && 1 < line_count && can_delete)
+        (and §(@T_CDL.at(0) != NUL) §(1 < line_count) §(can_delete))
         (§
 ;           type = USE_T_CDL;
         )
-        §(can_clear(@T_CE) && result_empty && (wp == null || wp.w_width == (int)@Columns))
+        (and §(can_clear(@T_CE)) §(result_empty) (or §(wp == null) §(wp.w_width == (int)@Columns)))
         (§
 ;           type = USE_T_CE;
         )
-        §(@T_DL.at(0) != NUL && can_delete)
+        (and §(@T_DL.at(0) != NUL) §(can_delete))
         (§
 ;           type = USE_T_DL;
         )
-        §(@T_CDL.at(0) != NUL && can_delete)
+        (and §(@T_CDL.at(0) != NUL) §(can_delete))
         (§
 ;           type = USE_T_CDL;
         )
@@ -57481,7 +57368,7 @@
         ;; If the 'db' flag is set, we need to clear the lines that have been
         ;; scrolled up at the bottom of the region.
 
-        (when §(@T_DB.at(0) != NUL && (type == USE_T_DL || type == USE_T_CDL))
+        (when (and §(@T_DB.at(0) != NUL) (or §(type == USE_T_DL) §(type == USE_T_CDL)))
 ;           for (int i = line_count; 0 < i; --i)
 ;           {
                 (windgoto §(cursor_end - i), 0)
@@ -57511,7 +57398,7 @@
             ;; Call char_avail() only when we are going to show something, because
             ;; it takes a bit of time.
 
-            (when (or §(!redrawing()) §(char_avail() && !@keyTyped))
+            (when (or §(!redrawing()) (and §(char_avail()) §(!@keyTyped)))
                 (reset! redraw_cmdline true)              ;; show mode later
 ;               return 0;
             )
@@ -57605,7 +57492,7 @@
 
         ;; If the last window has no status line,
         ;; the ruler is after the mode message and must be redrawn.
-        (if §(redrawing() && @lastwin.w_status_height == 0)
+        (if (and §(redrawing()) §(@lastwin.w_status_height == 0))
             (win_redr_ruler @lastwin, true))
         (reset! redraw_cmdline false)
         (reset! clear_cmdline false)
@@ -57695,7 +57582,7 @@
 
 (defn- #_boolean redrawing []
     (§
-        §(@redrawingDisabled == 0 && !(@p_lz && char_avail() && !@keyTyped && !@do_redraw))
+        (and §(@redrawingDisabled == 0) (not (and §(@p_lz) §(char_avail()) §(!@keyTyped) §(!@do_redraw))))
     ))
 
 ;; Return true if printing messages should currently be done.
@@ -58348,11 +58235,11 @@
 
             ;; Only make all windows the same width if one of them (except oldwin)
             ;; is wider than one of the split windows.
-            (when §(!do_equal && @p_ea && size == 0 && @p_ead.at(0) != (byte)'v' && oldwin.w_frame.fr_parent != null)
+            (when (and §(!do_equal) §(@p_ea) §(size == 0) §(@p_ead.at(0) != (byte)'v') §(oldwin.w_frame.fr_parent != null))
 ;               frame_C frp = oldwin.w_frame.fr_parent.fr_child;
 ;               while (frp != null)
 ;               {
-                    (when §(frp.fr_win != oldwin && frp.fr_win != null && (new_size < frp.fr_win.w_width || oldwin.w_width - new_size - 1 < frp.fr_win.w_width))
+                    (when (and §(frp.fr_win != oldwin) §(frp.fr_win != null) (or §(new_size < frp.fr_win.w_width) §(oldwin.w_width - new_size - 1 < frp.fr_win.w_width)))
 ;                       do_equal = true;
 ;                       break;
                     )
@@ -58438,11 +58325,11 @@
 
             ;; Only make all windows the same height if one of them (except oldwin)
             ;; is higher than one of the split windows.
-            (when §(!do_equal && @p_ea && size == 0 && @p_ead.at(0) != (byte)'h' && oldwin.w_frame.fr_parent != null)
+            (when (and §(!do_equal) §(@p_ea) §(size == 0) §(@p_ead.at(0) != (byte)'h') §(oldwin.w_frame.fr_parent != null))
 ;               frame_C frp = oldwin.w_frame.fr_parent.fr_child;
 ;               while (frp != null)
 ;               {
-                    (when §(frp.fr_win != oldwin && frp.fr_win != null && (new_size < frp.fr_win.w_height || oldwin_height - new_size - STATUS_HEIGHT < frp.fr_win.w_height))
+                    (when (and §(frp.fr_win != oldwin) §(frp.fr_win != null) (or §(new_size < frp.fr_win.w_height) §(oldwin_height - new_size - STATUS_HEIGHT < frp.fr_win.w_height)))
 ;                       do_equal = true;
 ;                       break;
                     )
@@ -58486,7 +58373,7 @@
 ;       boolean before;
         (cond §((flags & (WSP_TOP | WSP_BOT)) != 0)
         (§
-            (cond §((@topframe.fr_layout == FR_COL && (flags & WSP_VERT) == 0) || (@topframe.fr_layout == FR_ROW && (flags & WSP_VERT) != 0))
+            (cond (or (and §(@topframe.fr_layout == FR_COL) §((flags & WSP_VERT) == 0)) (and §(@topframe.fr_layout == FR_ROW) §((flags & WSP_VERT) != 0)))
             (§
 ;               curfrp = @topframe.fr_child;
                 (when §((flags & WSP_BOT) != 0)
@@ -59497,7 +59384,7 @@
 
 ;       frame_C frp = win.w_frame;
 ;       boolean b = (frp.fr_parent != null && frp.fr_parent.fr_layout == FR_ROW) ? @p_spr : @p_sb;
-        (if §((!b && frp.fr_next != null) || frp.fr_prev == null)
+        (if (or (and §(!b) §(frp.fr_next != null)) §(frp.fr_prev == null))
 ;           return frp.fr_next;
         )
 
@@ -60103,7 +59990,7 @@
         (win_enter wp)
 
         ;; Conceal cursor line in previous window, unconceal in current window.
-        (if §(win_valid(owp) && 0 < owp.w_options.@wo_cole && @msg_scrolled == 0)
+        (if (and §(win_valid(owp)) §(0 < owp.w_options.@wo_cole) §(@msg_scrolled == 0))
             (update_single_line owp, §(owp.w_cursor.lnum)))
         (when (and §(0 < @curwin.w_options.@wo_cole) §(@msg_scrolled == 0))
             (reset! need_cursor_line_redraw true)
@@ -60956,7 +60843,7 @@
 
         ;; Don't change w_topline when height is zero.  Don't set w_topline
         ;; when 'scrollbind' is set and this isn't the current window.
-        (when §(0 < height && (!wp.w_options.@wo_scb || wp == @curwin))
+        (when (and §(0 < height) (or §(!wp.w_options.@wo_scb) §(wp == @curwin)))
             ;; Find a value for w_topline that shows the cursor at the same
             ;; relative position in the window as before (more or less).
 
@@ -61903,7 +61790,7 @@
 
                 ;; When cursor wraps to first char of next line in Insert mode,
                 ;; the 'showbreak' string isn't shown, backup to first column.
-                (if §(@p_sbr.at(0) != NUL && ml_get_cursor().at(0) == NUL && @curwin.w_wcol == mb_string2cells(@p_sbr, -1))
+                (if (and §(@p_sbr.at(0) != NUL) §(ml_get_cursor().at(0) == NUL) §(@curwin.w_wcol == mb_string2cells(@p_sbr, -1)))
 ;                   @curwin.w_wcol = 0;
                 )
             )
@@ -62058,7 +61945,7 @@
             (redraw_later NOT_VALID))
 
         ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
-        (if §(@curwin.w_options.@wo_cuc && (@curwin.w_valid & VALID_VIRTCOL) == 0)
+        (if (and §(@curwin.w_options.@wo_cuc) §((@curwin.w_valid & VALID_VIRTCOL) == 0))
             (redraw_later SOME_VALID))
 
 ;       @curwin.w_valid |= VALID_WCOL|VALID_WROW|VALID_VIRTCOL;
@@ -62508,11 +62395,11 @@
 ;       long botline = @curwin.w_botline - 1;
 ;       while ((above < above_wanted || below < below_wanted) && topline < botline)
 ;       {
-            (when §(below < below_wanted && (below <= above || above_wanted <= above))
+            (when (and §(below < below_wanted) (or §(below <= above) §(above_wanted <= above)))
 ;               below += plines(botline);
 ;               --botline;
             )
-            (when §(above < above_wanted && (above < below || below_wanted <= below))
+            (when (and §(above < above_wanted) (or §(above < below) §(below_wanted <= below)))
 ;               above += plines(topline);
 ;               topline++;
             )
@@ -62564,7 +62451,7 @@
             ;; the screen.  It's an error to move a page down when the last line
             ;; is on the screen and the topline is 'scrolloff' lines from the last line.
 
-            (when §(dir == FORWARD ? (@curbuf.b_ml.ml_line_count - @p_so <= @curwin.w_topline && @curbuf.b_ml.ml_line_count < @curwin.w_botline) : (@curwin.w_topline == 1))
+            (when (if §(dir == FORWARD) (and §(@curbuf.b_ml.ml_line_count - @p_so <= @curwin.w_topline) §(@curbuf.b_ml.ml_line_count < @curwin.w_botline)) §(@curwin.w_topline == 1))
                 (beep_flush)
 ;               retval = false;
 ;               break;
@@ -62648,7 +62535,7 @@
         ;; But make sure we scroll at least one line (happens with mix of long
         ;; wrapping lines and non-wrapping line).
 
-        (when §(retval && dir == FORWARD && check_top_offset())
+        (when (and §(retval) §(dir == FORWARD) §(check_top_offset()))
             (scroll_cursor_top 1, false)
             (when (and §(@curwin.w_topline <= old_topline) §(old_topline < @curbuf.b_ml.ml_line_count))
 ;               @curwin.w_topline = old_topline + 1;
@@ -63262,7 +63149,7 @@
                 (emsg (u8 "E669: Unprintable character in group name"))
 ;               return 0;
             )
-            §(!asc_isalnum(p.at(0)) && p.at(0) != (byte)'_')
+            (and §(!asc_isalnum(p.at(0))) §(p.at(0) != (byte)'_'))
             (§
                 ;; This is an error, but since there previously was no check only give a warning.
                 (msg (u8 "W18: Invalid character in group name"))
@@ -63591,7 +63478,7 @@
             (or §(@do_redraw) §(stuff_empty()))
             (§
                 ;; Trigger CursorMoved if the cursor moved.
-                (when §(!@finish_op && 0 < @curwin.w_options.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
+                (when (and §(!@finish_op) §(0 < @curwin.w_options.@wo_cole) §(!eqpos(@last_cursormoved, @curwin.w_cursor)))
 ;                   conceal_old_cursor_line = @last_cursormoved.lnum;
 ;                   conceal_new_cursor_line = @curwin.w_cursor.lnum;
 ;                   conceal_update_lines = true;
