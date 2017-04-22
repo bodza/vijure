@@ -1206,17 +1206,17 @@
     ])
 
 ;; Structure to be used for multi-line matching.
-;; Sub-match "i" starts in line "r_startpos[i].lnum" column "r_startpos[i].col" and ends in line "r_endpos[i].lnum" just before column "r_endpos[i].col".
-;; The line numbers are relative to the first line, thus "r_startpos[0].lnum" is always 0.
+;; Sub-match "i" starts in line "m_startpos[i].lnum" column "m_startpos[i].col" and ends in line "m_endpos[i].lnum" just before column "m_endpos[i].col".
+;; The line numbers are relative to the first line, thus "m_startpos[0].lnum" is always 0.
 ;; When there is no match, the line number is -1.
 
 (class! #_final matcher_C
     [
-        (field pattern_C    r_pattern)
-        (field lpos_C*      r_startpos      (ARRAY-lpos NSUBEXP))
-        (field lpos_C*      r_endpos        (ARRAY-lpos NSUBEXP))
-        (field boolean      r_icase)
-        (field int          r_maxcol)   ;; when not zero: maximum column
+        (field pattern_C    m_pattern)
+        (field lpos_C*      m_startpos      (ARRAY-lpos NSUBEXP))
+        (field lpos_C*      m_endpos        (ARRAY-lpos NSUBEXP))
+        (field boolean      m_icase)
+        (field int          m_maxcol)   ;; when not zero: maximum column
     ])
 
 ;; ----------------------------------------------------------------------- ;;
@@ -4610,7 +4610,7 @@
                         ] (some? mat) => [win eap]
 
                             ;; the 'i' or 'I' flag overrules 'ignorecase' and 'smartcase'
-                            (let [mat (condp == @sub_ic (byte \i) (assoc mat :r_icase true) (byte \I) (assoc mat :r_icase false) mat)
+                            (let [mat (condp == @sub_ic (byte \i) (assoc mat :m_icase true) (byte \I) (assoc mat :m_icase false) mat)
                                   ;; ~ in the substitute pattern is replaced with the old pattern.
                                   ;; We do it here once to avoid it to be replaced over and over again.
                                   ;; But don't do it when it starts with "\=", then it's an expression.
@@ -4688,7 +4688,7 @@
                                                                 ;; Advance "lnum" to the line where the match starts.
                                                                 ;; The match does not start in the first line when there is a line break before \zs.
                                                                 (let-when [lnum
-                                                                        (let-when [n (:lnum (... (:r_startpos mat) 0))] (pos? n) => lnum
+                                                                        (let-when [n (:lnum (... (:m_startpos mat) 0))] (pos? n) => lnum
                                                                             (swap! a'nmatch - n)
                                                                             (swap! l'sub_firstlnum + n) (reset! l'sub_firstline nil)
                                                                             (+ lnum n))
@@ -4699,7 +4699,7 @@
                                                                       a'do_again (atom (boolean false)) ;; do it again after joining lines
 
                                                                       [win lnum]
-                                                                        (if (and (== @l'matchcol @l'prev_matchcol) (zero? (:lnum (... (:r_endpos mat) 0))) (== @l'matchcol (:col (... (:r_endpos mat) 0))))
+                                                                        (if (and (== @l'matchcol @l'prev_matchcol) (zero? (:lnum (... (:m_endpos mat) 0))) (== @l'matchcol (:col (... (:m_endpos mat) 0))))
                                                                             (do ;; 1. Matching the empty string does not count, except for the first match.
                                                                                 ;; This reproduces the strange Vi behaviour; also catches endless loops.
                                                                                 (if (eos? @l'sub_firstline @l'matchcol)
@@ -4709,7 +4709,7 @@
                                                                                     (swap! l'matchcol #(+ % (us-ptr2len-cc @l'sub_firstline, %))))
                                                                                 [win lnum])
                                                                             ;; Normally we continue searching for a match just after the previous match.
-                                                                            (let-when [_ (reset! l'matchcol (:col (... (:r_endpos mat) 0)))
+                                                                            (let-when [_ (reset! l'matchcol (:col (... (:m_endpos mat) 0)))
                                                                                   _ (reset! l'prev_matchcol @l'matchcol)
                                                                                   ;; 2. If "sub_count" is set, only increase the counter.
                                                                                   ? (if @sub_count
@@ -4729,9 +4729,9 @@
                                                                                     )] ? => [win lnum]
 
                                                                                 ;; Move the cursor to the start of the match, so that we can use "\=col(".").
-                                                                                (let [win (assoc-in win [:w_cursor :col] (:col (... (:r_startpos mat) 0)))
+                                                                                (let [win (assoc-in win [:w_cursor :col] (:col (... (:m_startpos mat) 0)))
                                                                                       ;; get length of substitution part
-                                                                                      #_int sublen (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:r_startpos mat) 0))), sub, @l'sub_firstline, false, @p_magic, true)]
+                                                                                      #_int sublen (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:m_startpos mat) 0))), sub, @l'sub_firstline, false, @p_magic, true)]
                                                                                     (if @sub_count
                                                                                         [win lnum]
                                                                                         ;; 3. Substitute the string.
@@ -4751,8 +4751,8 @@
                                                                                                     (do (swap! l'nmatch_tl + (dec @a'nmatch))
                                                                                                         (ml-get (+ @l'sub_firstlnum (dec @a'nmatch)))
                                                                                                     ))
-                                                                                              #_int copy_len (- (:col (... (:r_startpos mat) 0)) @l'copycol)
-                                                                                              #_int needed_len (+ copy_len (- (STRLEN s) (:col (... (:r_endpos mat) 0))) sublen 1)
+                                                                                              #_int copy_len (- (:col (... (:m_startpos mat) 0)) @l'copycol)
+                                                                                              #_int needed_len (+ copy_len (- (STRLEN s) (:col (... (:m_endpos mat) 0))) sublen 1)
                                                                                               [s needed_len #_Bytes new_end]
                                                                                                 (if (nil? @l'new_start)
                                                                                                     (do ;; Get some space for a temporary buffer to do the substitution into
@@ -4775,7 +4775,7 @@
                                                                                               ;; copy the text up to the part that matched
                                                                                               _ (BCOPY new_end, 0, @l'sub_firstline, @l'copycol, copy_len)
                                                                                               new_end (.plus new_end copy_len)
-                                                                                              _ (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:r_startpos mat) 0))), sub, new_end, true, @p_magic, true)
+                                                                                              _ (vim-regsub mat, (- @l'sub_firstlnum (:lnum (... (:m_startpos mat) 0))), sub, new_end, true, @p_magic, true)
                                                                                               _ (swap! a'sub_nsubs inc)
                                                                                               _ (reset! a'did_sub true)
                                                                                               ;; Move the cursor to the start of the line, to avoid that
@@ -4792,7 +4792,7 @@
                                                                                                     (reset! sub_all false)
                                                                                                 ))
                                                                                             ;; Remember next character to be copied.
-                                                                                            (reset! l'copycol (:col (... (:r_endpos mat) 0)))
+                                                                                            (reset! l'copycol (:col (... (:m_endpos mat) 0)))
                                                                                             (when @l'skip_match
                                                                                                 ;; Already hit end of the buffer,
                                                                                                 ;; "sub_firstlnum" is one less than what it ought to be.
@@ -4843,7 +4843,7 @@
 
                                                                       #_boolean lastone (or @l'skip_match @got_int (< @a'line2 lnum) (not (or @sub_all @a'do_again))
                                                                                             (and (eos? @l'sub_firstline @l'matchcol) (<= @a'nmatch 1)
-                                                                                                 (not (re-multiline (:r_pattern mat)))))
+                                                                                                 (not (re-multiline (:m_pattern mat)))))
                                                                       _ (reset! a'nmatch -1)
 
                                                                       ;; Replace the line in the buffer when needed.
@@ -4860,7 +4860,7 @@
                                                                                 [win mat false]
                                                                             ))
                                                                       [win mat lnum ?]
-                                                                        (if (or ? (zero? @a'nmatch) (< 0 (:lnum (... (:r_startpos mat) 0))))
+                                                                        (if (or ? (zero? @a'nmatch) (< 0 (:lnum (... (:m_startpos mat) 0))))
                                                                             (let-when [[win lnum ?]
                                                                                     (when' (some? @l'new_start) => [win lnum nil]
                                                                                         ;; Copy the rest of the line, that didn't match.
@@ -4915,7 +4915,7 @@
                                                                                         (if (<= @a'nmatch 0)
                                                                                             ;; If the match found didn't start where we were searching,
                                                                                             ;; do the next search in the line where we found the match.
-                                                                                            [(if (== @a'nmatch -1) (- lnum (:lnum (... (:r_startpos mat) 0))) lnum) :break]
+                                                                                            [(if (== @a'nmatch -1) (- lnum (:lnum (... (:m_startpos mat) 0))) lnum) :break]
                                                                                             [lnum nil]
                                                                                         )]
                                                                                     [win mat lnum ?]
@@ -18057,14 +18057,14 @@
 
 (class! #_final regbehind_C
     [
-        (field regsave_C    save_after      (NEW_regsave_C))
-        (field regsave_C    save_behind     (NEW_regsave_C))
-        (field lpos_C*      save_start      (ARRAY-lpos NSUBEXP))
-        (field lpos_C*      save_end        (ARRAY-lpos NSUBEXP))
+        (field regsave_C    rb_after)
+        (field regsave_C    rb_behind)
+        (field lpos_C*      rb_start)
+        (field lpos_C*      rb_end)
     ])
 
 ;; Internal copy of 'ignorecase'.  It is set at each call to vim-regexec().  Normally it gets
-;; the value of "r_icase", but when the pattern contains '\c' or '\C', the value is overruled.
+;; the value of "m_icase", but when the pattern contains '\c' or '\C', the value is overruled.
 
 (atom! boolean ireg_icase)
 
@@ -18073,7 +18073,7 @@
 
 (atom! boolean ireg_icombine)
 
-;; Copy of "r_maxcol": maximum column to search for a match.
+;; Copy of "m_maxcol": maximum column to search for a match.
 ;; Zero when there is no maximum.
 
 (atom! int     ireg_maxcol)
@@ -18112,8 +18112,8 @@
         (field int          ri_state)       ;; what we are doing, one of RS_ above
         (field Bytes        ri_scan)        ;; current node in program
         (field int          ri_no)          ;; submatch nr or BEHIND/NOBEHIND
-        (field lpos_C       ri_sesave)                          ;; union room for saving reginput
-        (field regsave_C    ri_regsave      (NEW_regsave_C))    ;; union room for saving reginput
+        (field lpos_C       ri_sesave)      ;; union room for saving reginput
+        (field regsave_C    ri_regsave)     ;; union room for saving reginput
     ])
 
 ;; Used for STAR, PLUS and BRACE_SIMPLE matching.
@@ -18133,7 +18133,7 @@
 (class! #_final backpos_C
     [
         (field Bytes        bp_scan)        ;; "scan" where BACK was encountered
-        (field regsave_C    bp_regsave      (NEW_regsave_C))  ;; last input position
+        (field regsave_C    bp_regsave)     ;; last input position
     ])
 
 ;; "regstack" and "backpos" are used by bt-regmatch().
@@ -18156,10 +18156,10 @@
             (ml-get (+ @reg_lmin lnum))
     ))
 
-(atom! regsave_C    behind_pos      (NEW_regsave_C))
+(atom! regsave_C    behind_pos)
 
 ;; Match a regexp against multiple lines.
-;; "matcher.r_pattern" is a compiled regexp as returned by vim-regcomp().
+;; "matcher.m_pattern" is a compiled regexp as returned by vim-regcomp().
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
@@ -18169,12 +18169,12 @@
     (reset! reg_match matcher)
     (reset! reg_lmin lnum)
     (reset! reg_lmax (- (line-count @curbuf) lnum))
-    (reset! ireg_icase (:r_icase matcher))
+    (reset! ireg_icase (:m_icase matcher))
     (reset! ireg_icombine false)
-    (reset! ireg_maxcol (:r_maxcol matcher))
+    (reset! ireg_maxcol (:m_maxcol matcher))
 
     (let [[win #_long nof]
-            (let-when [#_bt_pattern_C pat (:r_pattern matcher) #_Bytes line (reg-getline 0)] (and (some? pat) (some? line)) => [(emsg win, e_null) 0] ;; Be paranoid...
+            (let-when [#_bt_pattern_C pat (:m_pattern matcher) #_Bytes line (reg-getline 0)] (and (some? pat) (some? line)) => [(emsg win, e_null) 0] ;; Be paranoid...
                 ;; When the start column is past the maximum column, no need to try.
                 (when' (not (<= 1 @ireg_maxcol col)) => [win 0]
                     ;; If pattern contains "\c" or "\C", overrule value of "ireg_icase".
@@ -18252,10 +18252,10 @@
     (reset! reginput (.plus @regline col))
     (swap! reg_match cleanup-subexpr)
     (when' (bt-regmatch (.plus (:program pat) 1), win) => [win 0]
-        (when (neg? (:lnum (... (:r_startpos @reg_match) 0)))
-            (swap! reg_match assoc-in [:r_startpos 0] (lpos_C. 0 col)))
-        (let-when [e (:lnum (... (:r_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e) ;; use line number of "\ze"
-            (swap! reg_match assoc-in [:r_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))))
+        (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
+            (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col)))
+        (let-when [e (:lnum (... (:m_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e) ;; use line number of "\ze"
+            (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))))
         [win (+ 1 @reglnum)]
     ))
 
@@ -18306,7 +18306,7 @@
 (atom! long     bl_minval)
 (atom! long     bl_maxval)
 
-(defn- #_boolean maxmempat? [] (<= @p_mmp (>>> (count @regstack) 10)))
+(defn- #_boolean enough-regstack? [] (< (>>> (count @regstack) 10) @p_mmp))
 
 (final int
     RA_NIL      0,      ;; didn't match
@@ -18534,38 +18534,29 @@
                         (+ MOPEN 8)
                         (+ MOPEN 9)]
                         (do
-                            (cond (maxmempat?)
-                            (do
-                                (emsg e_maxmempat)
-                                (ß BREAK) RA_FAIL
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                (let [
+                                ]
+                                    ((ß int no =) (- op MOPEN))
+                                    (swap! regstack conj (reg-item RS_MOPEN, scan, no, (... (:m_startpos @reg_match) no), nil))
+                                    (swap! reg_match assoc-in [:m_startpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
+                                    ;; We simply continue and handle the result when done.
+                                    (ß BREAK) status
+                                )
                             )
-                            :else
-                            (do
-                                ((ß int no =) (- op MOPEN))
-                                ((ß regitem_C rip =) (reg-item RS_MOPEN, scan, no))
-                                ((ß rip =) (assoc rip :ri_sesave (... (:r_startpos @reg_match) no)))
-                                (swap! regstack conj rip)
-                                (swap! reg_match assoc-in [:r_startpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
-                                ;; We simply continue and handle the result when done.
-                                (ß BREAK) status
-                            ))
                         )
 
                        [NOPEN         ;; \%(                   ;; sic!)
                         NCLOSE]       ;; \) after \%(          ;; sic!)
                         (do
-                            (cond (maxmempat?)
-                            (do
-                                (emsg e_maxmempat)
-                                (ß BREAK) RA_FAIL
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                (let [
+                                ]
+                                    (swap! regstack conj (reg-item RS_NOPEN, scan))
+                                    ;; We simply continue and handle the result when done.
+                                    (ß BREAK) status
+                                )
                             )
-                            :else
-                            (do
-                                ((ß regitem_C rip =) (reg-item RS_NOPEN, scan))
-                                (swap! regstack conj rip)
-                                ;; We simply continue and handle the result when done.
-                                (ß BREAK) status
-                            ))
                         )
 
                        [(+ MCLOSE 0)    ;; Match end: \ze
@@ -18579,21 +18570,16 @@
                         (+ MCLOSE 8)
                         (+ MCLOSE 9)]
                         (do
-                            (cond (maxmempat?)
-                            (do
-                                (emsg e_maxmempat)
-                                (ß BREAK) RA_FAIL
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                (let [
+                                ]
+                                    ((ß int no =) (- op MCLOSE))
+                                    (swap! regstack conj (reg-item RS_MCLOSE, scan, no, (... (:m_endpos @reg_match) no), nil))
+                                    (swap! reg_match assoc-in [:m_endpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
+                                    ;; We simply continue and handle the result when done.
+                                    (ß BREAK) status
+                                )
                             )
-                            :else
-                            (do
-                                ((ß int no =) (- op MCLOSE))
-                                ((ß regitem_C rip =) (reg-item RS_MCLOSE, scan, no))
-                                ((ß rip =) (assoc rip :ri_sesave (... (:r_endpos @reg_match) no)))
-                                (swap! regstack conj rip)
-                                (swap! reg_match assoc-in [:r_endpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
-                                ;; We simply continue and handle the result when done.
-                                (ß BREAK) status
-                            ))
                         )
 
                        [(+ BACKREF 1)
@@ -18609,23 +18595,23 @@
                             ((ß int[] a'len =) (atom (int)))
 
                             ((ß int no =) (- op BACKREF))
-                            (cond (or (< (:lnum (... (:r_startpos @reg_match) no)) 0) (< (:lnum (... (:r_endpos @reg_match) no)) 0))
+                            (cond (or (< (:lnum (... (:m_startpos @reg_match) no)) 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
                             (do
                                 ;; Backref was not set: Match an empty string.
                                 (reset! a'len 0)
                             )
                             :else
                             (do
-                                (cond (and (== (:lnum (... (:r_startpos @reg_match) no)) @reglnum) (== (:lnum (... (:r_endpos @reg_match) no)) @reglnum))
+                                (cond (and (== (:lnum (... (:m_startpos @reg_match) no)) @reglnum) (== (:lnum (... (:m_endpos @reg_match) no)) @reglnum))
                                 (do
                                     ;; Compare back-ref within the current line.
-                                    (reset! a'len (- (:col (... (:r_endpos @reg_match) no)) (:col (... (:r_startpos @reg_match) no))))
-                                    ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... (:r_startpos @reg_match) no))), @reginput, a'len)) RA_NIL status))
+                                    (reset! a'len (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no))))
+                                    ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... (:m_startpos @reg_match) no))), @reginput, a'len)) RA_NIL status))
                                 )
                                 :else
                                 (do
                                     ;; Messy situation: Need to compare between two lines.
-                                    ((ß int r =) (match-with-backref (:lnum (... (:r_startpos @reg_match) no)), (:col (... (:r_startpos @reg_match) no)), (:lnum (... (:r_endpos @reg_match) no)), (:col (... (:r_endpos @reg_match) no)), a'len))
+                                    ((ß int r =) (match-with-backref (:lnum (... (:m_startpos @reg_match) no)), (:col (... (:m_startpos @reg_match) no)), (:lnum (... (:m_endpos @reg_match) no)), (:col (... (:m_endpos @reg_match) no)), a'len))
 
                                     ((ß status =) (if (!= r RA_MATCH) r status))
                                 ))
@@ -18645,17 +18631,13 @@
                             )
                             :else
                             (do
-                                (cond (maxmempat?)
-                                (do
-                                    (emsg e_maxmempat)
-                                    (ß BREAK) RA_FAIL
+                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                    (let [
+                                    ]
+                                        (swap! regstack conj (reg-item RS_BRANCH, scan))
+                                        (ß BREAK) RA_BREAK      ;; rest is below
+                                    )
                                 )
-                                :else
-                                (do
-                                    ((ß regitem_C rip =) (reg-item RS_BRANCH, scan))
-                                    (swap! regstack conj rip)
-                                    (ß BREAK) RA_BREAK      ;; rest is below
-                                ))
                             ))
                         )
 
@@ -18699,39 +18681,29 @@
                             ;; If not matched enough times yet, try one more.
                             (cond (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
                             (do
-                                (cond (maxmempat?)
-                                (do
-                                    (emsg e_maxmempat)
-                                    (ß BREAK) RA_FAIL
+                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                    (let [
+                                    ]
+                                        (swap! regstack conj (reg-item RS_BRCPLX_MORE, scan, no, nil, (reg-save @backpos)))
+                                        ((ß next =) (operand scan))
+                                        ;; We continue and handle the result when done.
+                                        (ß BREAK) status
+                                    )
                                 )
-                                :else
-                                (do
-                                    ((ß regitem_C rip =) (reg-item RS_BRCPLX_MORE, scan, no))
-                                    ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                    (swap! regstack conj rip)
-                                    ((ß next =) (operand scan))
-                                    ;; We continue and handle the result when done.
-                                    (ß BREAK) status
-                                ))
                             )
                             ;; If matched enough times, may try matching some more.
                             (<= (... @brace_min no) (... @brace_max no))
                             (do
                                 ;; Range is the normal way around, use longest match.
                                 (when (<= (... @brace_count no) (... @brace_max no))
-                                    (cond (maxmempat?)
-                                    (do
-                                        (emsg e_maxmempat)
-                                        ((ß status =) RA_FAIL)
+                                    (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
+                                        (let [
+                                        ]
+                                            (swap! regstack conj (reg-item RS_BRCPLX_LONG, scan, no, nil, (reg-save @backpos)))
+                                            ((ß next =) (operand scan))
+                                            ;; We continue and handle the result when done.
+                                        )
                                     )
-                                    :else
-                                    (do
-                                        ((ß regitem_C rip =) (reg-item RS_BRCPLX_LONG, scan, no))
-                                        ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                        (swap! regstack conj rip)
-                                        ((ß next =) (operand scan))
-                                        ;; We continue and handle the result when done.
-                                    ))
                                 )
                                 (ß BREAK) status
                             )
@@ -18739,18 +18711,13 @@
                             (do
                                 ;; Range is backwards, use shortest match first.
                                 (when (<= (... @brace_count no) (... @brace_min no))
-                                    (cond (maxmempat?)
-                                    (do
-                                        (emsg e_maxmempat)
-                                        ((ß status =) RA_FAIL)
+                                    (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
+                                        (let [
+                                        ]
+                                            (swap! regstack conj (reg-item RS_BRCPLX_SHORT, scan, 0, nil, (reg-save @backpos)))
+                                            ;; We continue and handle the result when done.
+                                        )
                                     )
-                                    :else
-                                    (do
-                                        ((ß regitem_C rip =) (reg-item RS_BRCPLX_SHORT, scan))
-                                        ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                        (swap! regstack conj rip)
-                                        ;; We continue and handle the result when done.
-                                    ))
                                 )
                                 (ß BREAK) status
                             ))
@@ -18795,19 +18762,14 @@
                             (do
                                 ;; It could match.  Prepare for trying to match what follows.
                                 ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
-                                (cond (maxmempat?)
-                                (do
-                                    (emsg e_maxmempat)
-                                    (ß BREAK) RA_FAIL
+                                (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                    (let [
+                                    ]
+                                        (swap! regstack conj rst)
+                                        (swap! regstack conj (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
+                                        (ß BREAK) RA_BREAK      ;; skip the restore bits
+                                    )
                                 )
-                                :else
-                                (do
-                                    (swap! regstack conj rst)
-
-                                    ((ß regitem_C rip =) (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
-                                    (swap! regstack conj rip)
-                                    (ß BREAK) RA_BREAK      ;; skip the restore bits
-                                ))
                             )
                             :else
                             (do
@@ -18817,45 +18779,31 @@
 
                        [NOMATCH MATCH SUBPAT]
                         (do
-                            (cond (maxmempat?)
-                            (do
-                                (emsg e_maxmempat)
-                                (ß BREAK) RA_FAIL
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                (let [
+                                ]
+                                    (swap! regstack conj (reg-item RS_NOMATCH, scan, op, nil, (reg-save @backpos)))
+                                    ((ß next =) (operand scan))
+                                    ;; We continue and handle the result when done.
+                                    (ß BREAK) status
+                                )
                             )
-                            :else
-                            (do
-                                ((ß regitem_C rip =) (reg-item RS_NOMATCH, scan, op))
-                                ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                (swap! regstack conj rip)
-                                ((ß next =) (operand scan))
-                                ;; We continue and handle the result when done.
-                                (ß BREAK) status
-                            ))
                         )
 
                        [BEHIND NOBEHIND]
                         (do
-                            ;; Need a bit of room to store extra positions.
-                            (cond (maxmempat?)
-                            (do
-                                (emsg e_maxmempat)
-                                (ß BREAK) RA_FAIL
+                            (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
+                                (let [
+                                ]
+                                    ;; Need to save the subexpr to be able to restore them
+                                    ;; when there is a match but we don't use it.
+                                    (swap! regstack conj (save-subexpr (NEW_regbehind_C), @reg_match))
+                                    (swap! regstack conj (reg-item RS_BEHIND1, scan, op, nil, (reg-save @backpos)))
+                                    ;; First try if what follows matches.
+                                    ;; If it does, then we check the behind match by looping.
+                                    (ß BREAK) status
+                                )
                             )
-                            :else
-                            (do
-                                ;; Need to save the subexpr to be able to restore them
-                                ;; when there is a match but we don't use it.
-                                ((ß regbehind_C rbp =) (NEW_regbehind_C))
-                                ((ß rbp =) (save-subexpr rbp, @reg_match))
-                                (swap! regstack conj rbp)
-
-                                ((ß regitem_C rip =) (reg-item RS_BEHIND1, scan, op))
-                                ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                (swap! regstack conj rip)
-                                ;; First try if what follows matches.
-                                ;; If it does, then we check the behind match by looping.
-                                (ß BREAK) status
-                            ))
                         )
 
                         BHPOS
@@ -18922,7 +18870,7 @@
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NIL)
-                            (swap! reg_match assoc-in [:r_startpos (:ri_no rip)] (:ri_sesave rip))
+                            (swap! reg_match assoc-in [:m_startpos (:ri_no rip)] (:ri_sesave rip))
                         )
                         ((ß scan =) (pop-regitem))
                         (ß BREAK)
@@ -18932,7 +18880,7 @@
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NIL)
-                            (swap! reg_match assoc-in [:r_endpos (:ri_no rip)] (:ri_sesave rip))
+                            (swap! reg_match assoc-in [:m_endpos (:ri_no rip)] (:ri_sesave rip))
                         )
                         ((ß scan =) (pop-regitem))
                         (ß BREAK)
@@ -19046,14 +18994,14 @@
                             ;; input and checking if the match ends at the current position.
 
                             ;; save the position after the found match for next
-                            ((ß vip =) (assoc #_regbehind_C vip :save_after (reg-save @backpos)))
+                            ((ß vip =) (assoc #_regbehind_C vip :rb_after (reg-save @backpos)))
 
                             ;; Start looking for a match with operand at the current position.
                             ;; Go back one character until we find the result, hitting the start
                             ;; of the line or the previous line (for multi-line matching).
                             ;; Set "behind_pos" to where the match should end, BHPOS will match it.
                             ;; Save the current value.
-                            ((ß (:save_behind (ß (regbehind_C)vip)) =) @behind_pos)
+                            ((ß vip =) (assoc #_regbehind_C vip :rb_behind @behind_pos))
                             (reset! behind_pos (:ri_regsave rip))
 
                             ((ß rip =) (assoc rip :ri_state RS_BEHIND2))
@@ -19071,10 +19019,10 @@
                         (cond (and (== status RA_MATCH) (reg-save-equal @behind_pos))
                         (do
                             ;; found a match that ends where "next" started
-                            (reset! behind_pos (:save_behind (ß (regbehind_C)vip)))
+                            (reset! behind_pos (:rb_behind #_regbehind_C vip))
                             (cond (== (:ri_no rip) BEHIND)
                             (do
-                                (swap! backpos reg-restore (:save_after #_regbehind_C vip))
+                                (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
                             )
                             :else
                             (do
@@ -19129,10 +19077,10 @@
                             :else
                             (do
                                 ;; Can't advance.  For NOBEHIND that's a match.
-                                (reset! behind_pos (:save_behind (ß (regbehind_C)vip)))
+                                (reset! behind_pos (:rb_behind #_regbehind_C vip))
                                 (cond (== (:ri_no rip) NOBEHIND)
                                 (do
-                                    (swap! backpos reg-restore (:save_after #_regbehind_C vip))
+                                    (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
                                     ((ß status =) RA_MATCH)
                                 )
                                 :else
@@ -19269,8 +19217,8 @@
 ;; Create an item for the "regstack".
 
 (defn- #_regitem_C reg-item
-    ([state, scan]     (-> (NEW_regitem_C) (assoc :ri_state state, :ri_scan scan)))
-    ([state, scan, no] (-> (NEW_regitem_C) (assoc :ri_state state, :ri_scan scan, :ri_no no))))
+    ([state, scan]                      (regitem_C. state, scan,  0,    nil,     nil))
+    ([state, scan, no, sesave, regsave] (regitem_C. state, scan, no, sesave, regsave)))
 
 ;; Pop an item from the "regstack".
 
@@ -19413,17 +19361,17 @@
 ;; Cleanup the subexpressions.
 
 (defn- #_matcher_C cleanup-subexpr [#_matcher_C m]
-    (let [? (vec (repeat NSUBEXP LPOS-1))] (assoc m :r_startpos ? :r_endpos ?)))
+    (let [_ (vec (repeat NSUBEXP LPOS-1))] (assoc m :m_startpos _ :m_endpos _)))
 
 ;; Save the current subexpr to "rb", so that they can be restored later by restore-subexpr().
 
 (defn- #_regbehind_C save-subexpr [#_regbehind_C rb, #_matcher_C m]
-    (assoc rb :save_start (:r_startpos m) :save_end (:r_endpos m)))
+    (assoc rb :rb_start (:m_startpos m) :rb_end (:m_endpos m)))
 
 ;; Restore the subexpr from "rb".
 
 (defn- #_matcher_C restore-subexpr [#_matcher_C m, #_regbehind_C rb]
-    (assoc m :r_startpos (:save_start rb) :r_endpos (:save_end rb)))
+    (assoc m :m_startpos (:rb_start rb) :m_endpos (:rb_end rb)))
 
 ;; Advance "reginput" to the next char.
 
@@ -19951,17 +19899,17 @@
                 )
                 :else
                 (do
-                    ((ß clnum =) (:lnum (... (:r_startpos @reg_match) no)))
+                    ((ß clnum =) (:lnum (... (:m_startpos @reg_match) no)))
                     (ß Bytes s)
-                    (cond (or (< clnum 0) (< (:lnum (... (:r_endpos @reg_match) no)) 0))
+                    (cond (or (< clnum 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
                     (do
                         ((ß s =) nil)
                     )
                     :else
                     (do
-                        ((ß s =) (.plus (reg-getline clnum) (:col (... (:r_startpos @reg_match) no))))
-                        ((ß len =) (if (== (:lnum (... (:r_endpos @reg_match) no)) clnum)
-                            (- (:col (... (:r_endpos @reg_match) no)) (:col (... (:r_startpos @reg_match) no)))
+                        ((ß s =) (.plus (reg-getline clnum) (:col (... (:m_startpos @reg_match) no))))
+                        ((ß len =) (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
+                            (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no)))
                             (STRLEN s)
                         ))
                     ))
@@ -19969,7 +19917,7 @@
                         (loop []
                             (cond (zero? len)
                             (do
-                                (if (== (:lnum (... (:r_endpos @reg_match) no)) clnum)
+                                (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
                                     (ß BREAK)
                                 )
                                 (if copy
@@ -19977,8 +19925,8 @@
                                 )
                                 ((ß dst =) (.plus dst 1))
                                 ((ß s =) (reg-getline ((ß clnum =) (inc clnum))))
-                                ((ß len =) (if (== (:lnum (... (:r_endpos @reg_match) no)) clnum)
-                                    (:col (... (:r_endpos @reg_match) no))
+                                ((ß len =) (if (== (:lnum (... (:m_endpos @reg_match) no)) clnum)
+                                    (:col (... (:m_endpos @reg_match) no))
                                     (STRLEN s)
                                 ))
                             )
@@ -22948,8 +22896,8 @@
                     )]
                 ;; check that no composing char follows
                 (if (and match (not (utf-iscomposing (us-ptr2char @regline, (+ @a'col n2)))))
-                    (do (swap! reg_match assoc-in [:r_startpos 0] (lpos_C. @reglnum @a'col))
-                        (swap! reg_match assoc-in [:r_endpos 0] (lpos_C. @reglnum (+ @a'col n2)))
+                    (do (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. @reglnum @a'col))
+                        (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (+ @a'col n2)))
                         1)
                     (do ;; Try finding regstart after the current match.
                         (swap! a'col + (utf-char2len regstart)) ;; skip regstart
@@ -24086,22 +24034,22 @@
         ))
 
         (loop-when-recur [#_int i 0] (< i (:in_use subs)) [(inc i)]
-            (swap! reg_match assoc-in [:r_startpos i] (... (:rs_start subs) i))
-            (swap! reg_match assoc-in [:r_endpos i] (... (:rs_end subs) i))
+            (swap! reg_match assoc-in [:m_startpos i] (... (:rs_start subs) i))
+            (swap! reg_match assoc-in [:m_endpos i] (... (:rs_end subs) i))
         )
 
-        (when (neg? (:lnum (... (:r_startpos @reg_match) 0)))
-            (swap! reg_match assoc-in [:r_startpos 0] (lpos_C. 0 col))
+        (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
+            (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col))
         )
-        (cond (neg? (:lnum (... (:r_endpos @reg_match) 0)))
+        (cond (neg? (:lnum (... (:m_endpos @reg_match) 0)))
         (do
             ;; pattern has a \ze but it didn't match, use current end
-            (swap! reg_match assoc-in [:r_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
+            (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
         )
         :else
         (do
             ;; Use line number of "\ze".
-            (reset! reglnum (:lnum (... (:r_endpos @reg_match) 0)))
+            (reset! reglnum (:lnum (... (:m_endpos @reg_match) 0)))
         ))
 
         (+ 1 @reglnum)
@@ -24160,7 +24108,7 @@
     ))
 
 ;; Match a regexp against multiple lines.
-;; "matcher.r_pattern" is a compiled regexp as returned by vim-regcomp().
+;; "matcher.m_pattern" is a compiled regexp as returned by vim-regcomp().
 ;;
 ;; Return <= 0 if there is no match.  Return number of lines contained in the match otherwise.
 
@@ -24171,14 +24119,14 @@
     (reset! reg_match matcher)
     (reset! reg_lmin lnum)
     (reset! reg_lmax (- (line-count @curbuf) lnum))
-    (reset! ireg_icase (:r_icase matcher))
+    (reset! ireg_icase (:m_icase matcher))
     (reset! ireg_icombine false)
-    (reset! ireg_maxcol (:r_maxcol matcher))
+    (reset! ireg_maxcol (:m_maxcol matcher))
 
     (§
         ((ß int[] a'col =) (atom (int col)))
 
-        ((ß nfa_pattern_C prog =) (ß (nfa_pattern_C)(@reg_match.r_pattern)))
+        ((ß nfa_pattern_C prog =) (ß (nfa_pattern_C)(@reg_match.m_pattern)))
         ((ß Bytes line =) (reg-getline 0))              ;; relative to the cursor
 
         ;; Be paranoid...
@@ -24289,8 +24237,8 @@
     nil)
 
 ;; Match a regexp against multiple lines.
-;; "mat.r_pattern" is a compiled regexp as returned by vim-regcomp().
-;; Note: "mat.r_pattern" may be freed and changed.
+;; "mat.m_pattern" is a compiled regexp as returned by vim-regcomp().
+;; Note: "mat.m_pattern" may be freed and changed.
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
@@ -24298,16 +24246,16 @@
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
-    (let [[win mat #_long nof] ((:regexec (:r_pattern mat)) win, mat, lnum, col, nsec) #_pattern_C pat (:r_pattern mat)]
+    (let [[win mat #_long nof] ((:regexec (:m_pattern mat)) win, mat, lnum, col, nsec) #_pattern_C pat (:m_pattern mat)]
         ;; NFA engine aborted because it's very slow.
         (when' (and (== (:re_engine pat) AUTOMATIC_ENGINE) (== nof NFA_TOO_EXPENSIVE)) => [win mat (max 0, nof)]
             (let [o'p_re @p_re _ (reset! p_re BACKTRACKING_ENGINE)
-                  mat (assoc mat :r_pattern nil)
+                  mat (assoc mat :m_pattern nil)
                   #_Bytes expr (STRDUP (:rex #_nfa_pattern_C pat))
                   [win mat nof]
                     (when' (some? expr) => [win mat nof]
                         (report-re-switch expr)
-                        (let [[win pat] (vim-regcomp? win, expr, (:re_flags pat)) mat (assoc mat :r_pattern pat)]
+                        (let [[win pat] (vim-regcomp? win, expr, (:re_flags pat)) mat (assoc mat :m_pattern pat)]
                             (when' (some? pat) => [win mat nof]
                                 ((:regexec pat) win, mat, lnum, col, nsec)
                             ))
@@ -24413,8 +24361,8 @@
             (when (any == re_save RE_SEARCH RE_BOTH) (save-re-pat RE_SEARCH, expr, magic)) ;; search or global command
             (when (any == re_save RE_SUBST RE_BOTH)  (save-re-pat RE_SUBST, expr, magic))  ;; substitute or global command
         )
-        (let [[win ?] (vim-regcomp? win, expr, (if magic RE_MAGIC 0)) mat (assoc mat :r_icase (re-ignorecase? expr), :r_maxcol 0, :r_pattern ?)]
-            [win mat (some? (:r_pattern mat))]
+        (let [[win ?] (vim-regcomp? win, expr, (if magic RE_MAGIC 0)) mat (assoc mat :m_icase (re-ignorecase? expr), :m_maxcol 0, :m_pattern ?)]
+            [win mat (some? (:m_pattern mat))]
         )
     ))
 
@@ -24465,7 +24413,7 @@
 ;; This is used for highlighting all matches in a window.
 
 (defn- #_[window_C matcher_C] last-search-matcher? [#_window_C win, #_matcher_C mat]
-    (when' (some? (last-search-expr)) => [win (assoc mat :r_pattern nil)]
+    (when' (some? (last-search-expr)) => [win (assoc mat :m_pattern nil)]
         (let [_ (swap! emsg_off inc) [win mat _] (search-regcomp? win, mat, (u8 ""), 0, @last_idx, SEARCH_KEEP) _ (swap! emsg_off dec)]
             [win mat])
     ))
@@ -24548,7 +24496,7 @@
                                                             [win pos lnum]
                                                         (< 0 nof)
                                                             ;; match may actually be in another line when using \zs
-                                                            (let-when [#_lpos_C start (... (:r_startpos mat) 0) #_lpos_C end (... (:r_endpos mat) 0)
+                                                            (let-when [#_lpos_C start (... (:m_startpos mat) 0) #_lpos_C end (... (:m_endpos mat) 0)
                                                                   _ (reset! a'submatch (first-submatch mat))
                                                                   ;; "lnum" may be past end of buffer for "\n\zs"
                                                                   #_Bytes line (if (< lmax (+ lnum (:lnum start))) (u8 "") (ml-get (+ lnum (:lnum start))))
@@ -24585,7 +24533,7 @@
                                                                                     (let [[win mat nof] (vim-regexec? win, mat, (+ lnum (:lnum start)), i, nsec)]
                                                                                         (if (or (eos? line i) (zero? nof))
                                                                                             [win nil]
-                                                                                            (let [start (... (:r_startpos mat) 0) end (... (:r_endpos mat) 0)]
+                                                                                            (let [start (... (:m_startpos mat) 0) end (... (:m_endpos mat) 0)]
                                                                                                 (reset! a'submatch (first-submatch mat))
                                                                                                 ;; Need to get the line pointer again,
                                                                                                 ;; a multi-line search may have made it invalid.
@@ -24603,11 +24551,11 @@
                                                                             (loop-when [win win mat mat nof nof t' nil line line]
                                                                                        (or (non-zero? round)
                                                                                            (if (flag? options SEARCH_END)
-                                                                                               (let [end (... (:r_endpos mat) 0)]
+                                                                                               (let [end (... (:m_endpos mat) 0)]
                                                                                                    (or (< (+ lnum (:lnum end)) (:lnum o'pos))
                                                                                                        (and (== (+ lnum (:lnum end)) (:lnum o'pos))
                                                                                                             (<= (+ (dec (:col end)) extra_col) (:col o'pos)))))
-                                                                                               (let [start (... (:r_startpos mat) 0)]
+                                                                                               (let [start (... (:m_startpos mat) 0)]
                                                                                                    (or (< (+ lnum (:lnum start)) (:lnum o'pos))
                                                                                                        (and (== (+ lnum (:lnum start)) (:lnum o'pos))
                                                                                                             (<= (+ (:col start) extra_col) (:col o'pos)))))))
@@ -24615,7 +24563,7 @@
                                                                                 ;; Remember a position that is before the start position,
                                                                                 ;; we use it if it's the last match in the line.
                                                                                 ;; Always accept a position after wrapping around.
-                                                                                (let-when [[start end :as t'] [(... (:r_startpos mat) 0) (... (:r_endpos mat) 0)]
+                                                                                (let-when [[start end :as t'] [(... (:m_startpos mat) 0) (... (:m_endpos mat) 0)]
                                                                                       _ (reset! a'submatch (first-submatch mat))
                                                                                       ;; We found a valid match, now check if there is another one after it.
                                                                                       ;; If searching is vi-compatible, continue at the end of the match,
@@ -24734,7 +24682,7 @@
 ;; Return the number of the first subpat that matched.
 
 (defn- #_int first-submatch [#_matcher_C m]
-    (loop-when [i 1] (neg? (:lnum (... (:r_startpos m) i))) => i
+    (loop-when [i 1] (neg? (:lnum (... (:m_startpos m) i))) => i
         (recur-if (< i 9) [(inc i)] => 0)
     ))
 
@@ -25982,7 +25930,7 @@
                 (when' (non-zero? sm1) => [win -1]
                     (let [_ (reset! called_emsg false)
                           [win mat n] (vim-regexec? win, mat, (:lnum pos), 0, nil)
-                          startpos (... (:r_startpos mat) 0) endpos (... (:r_endpos mat) 0)
+                          startpos (... (:m_startpos mat) 0) endpos (... (:m_endpos mat) 0)
                           one? (if (not @called_emsg) (if (and (non-zero? n) (== (:lnum startpos) (:lnum endpos)) (== (:col startpos) (:col endpos))) TRUE FALSE) -1)]
                         [win (if (and (== one? FALSE) (let [[pos ?] (incp? pos)] (and (<= 0 ?) (== (:col pos) (:col endpos))))) TRUE one?)])
                 )]
@@ -34240,7 +34188,7 @@
                               (assoc win :w_redr_type type)
                         )]
                     ;; Go from top to bottom through the windows, redrawing the ones that need it.
-                    (swap! search_hl assoc-in [:matcher :r_pattern] nil)
+                    (swap! search_hl assoc-in [:matcher :m_pattern] nil)
                     (loop-when-recur [#_boolean did_one false #_window_C w @firstwin] (some? w) [did_one (:w_next w)]
                         (§ (ß [w did_one] =)
                             (let [[w did_one]
@@ -34333,7 +34281,7 @@
                             ;; When 'hlsearch' is on and using a multi-line search pattern,
                             ;; a change in one line may make the search highlighting in a previous line invalid.
                             ;; Simple solution: redraw all visible lines above the change.
-                            (let-when [prog (:r_pattern (:matcher @search_hl))] (and (some? prog) (re-multiline prog))
+                            (let-when [prog (:m_pattern (:matcher @search_hl))] (and (some? prog) (re-multiline prog))
                                 (reset! a'top_to_mod true)
                             ))
                         ;; When a change starts above "w_topline" and the end is below "w_topline", start redrawing at "w_topline".
@@ -34958,7 +34906,7 @@
                               ;; Need to get the line again, a multi-line regexp may have made it invalid.
                               _ (reset! a'line (ml-get lnum)) _ (reset! a's (.plus @a'line v))
                               shl (when' (and (non-zero? (:lnum shl)) (<= (:lnum shl) lnum)) => shl
-                                    (let [startpos' (... (:r_startpos (:matcher shl)) 0) endpos' (... (:r_endpos (:matcher shl)) 0)
+                                    (let [startpos' (... (:m_startpos (:matcher shl)) 0) endpos' (... (:m_endpos (:matcher shl)) 0)
                                           shl (assoc shl :startcol (if (== (:lnum shl) lnum) (:col startpos') 0))
                                           shl (assoc shl :endcol (if (== lnum (- (+ (:lnum shl) (:lnum endpos')) (:lnum startpos'))) (:col endpos') MAXCOL))
                                           ;; Highlight one character for an empty match.
@@ -35133,7 +35081,7 @@
                                                 (let [#_int v (BDIFF @a's, @a'line)
                                                       #_match_C shl @search_hl
                                                       [win shl]
-                                                        (loop-when [win win shl shl] (some? (:r_pattern (:matcher shl))) => [win shl]
+                                                        (loop-when [win win shl shl] (some? (:m_pattern (:matcher shl))) => [win shl]
                                                             (cond (and (!= (:startcol shl) MAXCOL) (<= (:startcol shl) v) (< v (:endcol shl)))
                                                                 (let [shl (update shl :endcol max (+ v (us-ptr2len-cc @a's)))]
                                                                     [win (assoc shl :attr_cur (:attr shl))])
@@ -35143,7 +35091,7 @@
                                                                     (reset! a'line (ml-get lnum))
                                                                     (reset! a's (.plus @a'line v))
                                                                     (when' (== (:lnum shl) lnum) => [win shl]
-                                                                        (let [startpos' (... (:r_startpos (:matcher shl)) 0) endpos' (... (:r_endpos (:matcher shl)) 0)
+                                                                        (let [startpos' (... (:m_startpos (:matcher shl)) 0) endpos' (... (:m_endpos (:matcher shl)) 0)
                                                                               shl (assoc shl :startcol (:col startpos'))
                                                                               shl (assoc shl :endcol (if (zero? (:lnum endpos')) (:col endpos') MAXCOL))
                                                                               ;; highlight empty match, try again after it
@@ -35957,7 +35905,7 @@
 ;; Clean up for 'hlsearch' highlighting.
 
 (defn- #_void end-search-hl []
-    (swap! search_hl assoc-in [:matcher :r_pattern] nil)
+    (swap! search_hl assoc-in [:matcher :m_pattern] nil)
     nil)
 
 ;; Init for calling prepare-search-hl().
@@ -35971,14 +35919,14 @@
 (defn- #_window_C prepare-search-hl [#_window_C win, #_long lnum]
     (let [#_match_C shl @search_hl
           [win shl]
-            (when' (and (some? (:r_pattern (:matcher shl))) (zero? (:lnum shl)) (re-multiline (:r_pattern (:matcher shl)))) => [win shl]
+            (when' (and (some? (:m_pattern (:matcher shl))) (zero? (:lnum shl)) (re-multiline (:m_pattern (:matcher shl)))) => [win shl]
                 ;; When using a multi-line pattern, start searching at the top of the window.
                 (let [shl (if (zero? (:first_lnum shl)) (assoc shl :first_lnum (:w_topline win)) shl)]
-                    (loop-when [win win shl shl n 0] (and (< (:first_lnum shl) lnum) (some? (:r_pattern (:matcher shl)))) => [win shl]
+                    (loop-when [win win shl shl n 0] (and (< (:first_lnum shl) lnum) (some? (:m_pattern (:matcher shl)))) => [win shl]
                         (let [[win shl] (next-search-hl? win, shl, (:first_lnum shl), n)]
                             (if (zero? (:lnum shl))
                                 (recur win (update shl :first_lnum inc) 0)
-                                (let [start (... (:r_startpos (:matcher shl)) 0) end (... (:r_endpos (:matcher shl)) 0)]
+                                (let [start (... (:m_startpos (:matcher shl)) 0) end (... (:m_endpos (:matcher shl)) 0)]
                                     (recur win (assoc shl :first_lnum (- (+ (:lnum shl) (:lnum end)) (:lnum start))) (:col end)))
                             ))
                     ))
@@ -35999,7 +35947,7 @@
                 ;; 1. If the "lnum" is below a previous match, start a new search.
                 ;; 2. If the previous match includes "mincol", use it.
                 ;; 3. Continue after the previous match.
-                (let [start (... (:r_startpos (:matcher shl)) 0) end (... (:r_endpos (:matcher shl)) 0)
+                (let [start (... (:m_startpos (:matcher shl)) 0) end (... (:m_endpos (:matcher shl)) 0)
                       l (+ (:lnum shl) (- (:lnum end) (:lnum start)))]
                     (cond
                         (< l lnum)                            [(assoc shl :lnum 0) nil]
@@ -36019,7 +35967,7 @@
             ;;    Break the loop if this is beyond the end of the line.
             ;; 3. Vi compatible searching: continue at end of previous match.
             (let-when [[matchcol ?]
-                    (let [start (... (:r_startpos (:matcher shl)) 0) end (... (:r_endpos (:matcher shl)) 0)]
+                    (let [start (... (:m_startpos (:matcher shl)) 0) end (... (:m_endpos (:matcher shl)) 0)]
                         (cond (zero? (:lnum shl))
                             [0 nil]
                         (or (nil? (vim-strbyte @p_cpo, CPO_SEARCH)) (and (zero? (:lnum end)) (<= (:col end) (:col start))))
@@ -36034,7 +35982,7 @@
 
                 (let-when [shl (assoc shl :lnum lnum)
                       [win shl nof ?]
-                        (when' (some? (:r_pattern (:matcher shl))) => [win shl 0 nil]
+                        (when' (some? (:m_pattern (:matcher shl))) => [win shl 0 nil]
                             (let [[win _ nof] (vim-regexec? win, (:matcher shl), lnum, matchcol, (:nsec shl)) shl (assoc shl :matcher _)
                                   ? (when (or @called_emsg @got_int)
                                         ;; Error while handling regexp: stop using this regexp.
@@ -36044,9 +35992,9 @@
                                         :break
                                     )]
                                 [win shl nof ?])
-                        )] (not ?) => [win (-> shl (assoc :lnum 0) (assoc-in [:matcher :r_pattern] nil))]
+                        )] (not ?) => [win (-> shl (assoc :lnum 0) (assoc-in [:matcher :m_pattern] nil))]
 
-                    (let [start (... (:r_startpos (:matcher shl)) 0) end (... (:r_endpos (:matcher shl)) 0)]
+                    (let [start (... (:m_startpos (:matcher shl)) 0) end (... (:m_endpos (:matcher shl)) 0)]
                         (cond (zero? nof)
                             [win (assoc shl :lnum 0)] ;; no match found
                         (or (< 0 (:lnum start)) (<= mincol (:col start)) (< 1 nof) (< mincol (:col end)))
@@ -37138,8 +37086,6 @@
 ;;; ============================================================================================== VimW
 
 ;; window.c ---------------------------------------------------------------------------------------
-
-(final Bytes m_onlyone (u8 "Already only one window"))
 
 ;; All CTRL-W window commands are handled here, called from normal-cmd().
 
@@ -38373,7 +38319,7 @@
 
 (defn- #_window_C close-others [#_window_C win, #_boolean message, #_boolean forceit]
     ;; forceit: always hide all other windows
-    (when' (not (one-window)) => (if message (msg win, m_onlyone) win)
+    (when' (not (one-window)) => (if message (msg win, (u8 "Already only one window")) win)
         (loop-when [#_window_C w @firstwin] (some? w)
             (let-when [#_window_C w' (:w_next w)] (!= w win) ;; don't close current window
                 ;; Check if it's allowed to abandon this window.
