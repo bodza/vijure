@@ -836,11 +836,9 @@
     OP_PENDING      0x04,             ;; normal mode, operator is pending - use get_real_state()
     CMDLINE         0x08,             ;; editing command line
     INSERT          0x10,             ;; insert mode
-    LANGMAP         0x20,             ;; language mapping, can be combined with INSERT and CMDLINE
 
     REPLACE_FLAG    0x40,             ;; replace mode flag
     REPLACE         (+ REPLACE_FLAG INSERT),
-    LREPLACE        (+ REPLACE_FLAG LANGMAP),
     VREPLACE_FLAG   0x80,             ;; virtual-replace mode flag
     VREPLACE        (+ REPLACE_FLAG VREPLACE_FLAG INSERT),
 
@@ -877,10 +875,6 @@
 ;; Values for exmode_active (0 is no exmode).
 (final int EXMODE_NORMAL      1)
 (final int EXMODE_VIM         2)
-
-(final int SST_MIN_ENTRIES 150)     ;; minimal size for state stack array
-(final int SST_MAX_ENTRIES 1000)    ;; maximal size for state stack array
-(final int SST_DIST        16)      ;; normal distance between entries
 
 (final int HL_CONTAINED    0x01)    ;; not used on toplevel
 (final int HL_TRANSP       0x02)    ;; has no highlighting
@@ -1521,7 +1515,6 @@
 (atom! boolean p_magic)     ;; 'magic'
 (atom! long    p_mat)       ;; 'matchtime'
 (atom! long    p_mco)       ;; 'maxcombine'
-(atom! long    p_mfd)       ;; 'maxfuncdepth'
 (atom! long    p_mmd)       ;; 'maxmapdepth'
 (atom! long    p_mmp)       ;; 'maxmempattern'
 (atom! Bytes   p_mouse)     ;; 'mouse'
@@ -1544,7 +1537,6 @@
 (atom! long    p_so)        ;; 'scrolloff'
 (atom! Bytes   p_sbo)       ;; 'scrollopt'
 (atom! Bytes   p_sections)  ;; 'sections'
-(atom! boolean p_secure)    ;; 'secure'
 (atom! Bytes   p_sel)       ;; 'selection'
 (atom! Bytes   p_slm)       ;; 'selectmode'
 (atom! Bytes   p_stl)       ;; 'statusline'
@@ -1559,7 +1551,6 @@
 (atom! boolean p_scs)       ;; 'smartcase'
 (atom! boolean p_sta)       ;; 'smarttab'
 (atom! boolean p_sb)        ;; 'splitbelow'
-(atom! long    p_tpm)       ;; 'tabpagemax'
 (atom! Bytes   p_tal)       ;; 'tabline'
 (atom! boolean p_spr)       ;; 'splitright'
 (atom! boolean p_sol)       ;; 'startofline'
@@ -1606,9 +1597,7 @@
 (final Bytes* p_ve_values [ (u8 "block"), (u8 "insert"), (u8 "all"), (u8 "onemore"), null ])
 
 (atom! long    p_verbose)   ;; 'verbose'
-(atom! boolean p_warn)      ;; 'warn'
 (atom! long    p_window)    ;; 'window'
-(atom! boolean p_wiv)       ;; 'weirdinvert'
 (atom! Bytes   p_ww)        ;; 'whichwrap'
 (atom! long    p_wc)        ;; 'wildchar'
 (atom! long    p_wh)        ;; 'winheight'
@@ -1616,18 +1605,13 @@
 (atom! long    p_wmw)       ;; 'winminwidth'
 (atom! long    p_wiw)       ;; 'winwidth'
 (atom! boolean p_ws)        ;; 'wrapscan'
-(atom! boolean p_write)     ;; 'write'
-(atom! boolean p_wa)        ;; 'writeany'
 (atom! long    p_wd)        ;; 'writedelay'
 
 ;; "indir" values for buffer-local opions.
 
 (final int
     BV_AI     0,
-
     BV_BIN    2,
-
-
     BV_CI     5,
     BV_CIN    6,
     BV_CINK   7,
@@ -1635,19 +1619,9 @@
     BV_CINW   9,
     BV_CM    10,
     BV_COM   11,
-
-
     BV_ET    14,
-
-
-
     BV_FLP   18,
     BV_FO    19,
-
-    BV_IMI   21,
-    BV_IMS   22,
-
-
     BV_INF   25,
     BV_ISK   26,
     BV_KP    27,
@@ -1661,13 +1635,10 @@
     BV_QE    35,
     BV_RO    36,
     BV_SI    37,
-    BV_SMC   38,
-
     BV_STS   40,
     BV_SW    41,
     BV_TS    42,
     BV_TW    43,
-
     BV_UDF   45,
     BV_UL    46,
     BV_WM    47)
@@ -2492,15 +2463,9 @@
 
 ;; buffer: structure that holds information about one file
 ;;
-;; Several windows can share a single Buffer
+;; Several windows can share a single Buffer.
 ;; A buffer is unallocated if there is no memfile for it.
 ;; A buffer is new if the associated file has never been loaded yet.
-
-(final int
-    B_IMODE_USE_INSERT -1,        ;; use "b_p_iminsert" value for search
-    B_IMODE_NONE        0,        ;; input via none
-    B_IMODE_LMAP        1,        ;; input via langmap
-    B_IMODE_LAST        1)
 
 (class! #_final buffer_C
     [
@@ -2605,10 +2570,6 @@
         (field long         b_u_line_lnum)      ;; line number of line in u_line
         (field int          b_u_line_colnr)     ;; optional column number
 
-        ;; flags for use of ":lmap" and IM control
-        (atom' long         b_p_iminsert)       ;; input mode for insert
-        (atom' long         b_p_imsearch)       ;; input mode for search
-
         ;; Options local to a buffer.
         ;; They are here because their value depends on the type of file
         ;; or contents of the file being edited.
@@ -2642,7 +2603,6 @@
         (atom' boolean      b_p_si)             ;; 'smartindent'
         (atom' long         b_p_sts)            ;; 'softtabstop'
         (field long         b_p_sts_nopaste)    ;; "b_p_sts" saved for paste mode
-        (atom' long         b_p_smc)            ;; 'synmaxcol'
         (atom' long         b_p_ts)             ;; 'tabstop'
         (atom' long         b_p_tw)             ;; 'textwidth'
         (field long         b_p_tw_nobin)       ;; "b_p_tw" saved for binary mode
@@ -3252,131 +3212,127 @@
     CMD_later 64,
     CMD_left 65,
     CMD_leftabove 66,
-    CMD_lmap 67,
-    CMD_lmapclear 68,
-    CMD_lnoremap 69,
-    CMD_lockmarks 70,
-    CMD_lunmap 71,
-    CMD_move 72,
-    CMD_mark 73,
-    CMD_map 74,
-    CMD_mapclear 75,
-    CMD_marks 76,
-    CMD_messages 77,
-    CMD_mode 78,
-    CMD_new 79,
-    CMD_nmap 80,
-    CMD_nmapclear 81,
-    CMD_nnoremap 82,
-    CMD_noremap 83,
-    CMD_nohlsearch 84,
-    CMD_noreabbrev 85,
-    CMD_normal 86,
-    CMD_number 87,
-    CMD_nunmap 88,
-    CMD_open 89,
-    CMD_omap 90,
-    CMD_omapclear 91,
-    CMD_only 92,
-    CMD_onoremap 93,
-    CMD_ounmap 94,
-    CMD_print 95,
-    CMD_put 96,
-    CMD_quit 97,
-    CMD_quitall 98,
-    CMD_qall 99,
-    CMD_redo 100,
-    CMD_redraw 101,
-    CMD_redrawstatus 102,
-    CMD_registers 103,
-    CMD_resize 104,
-    CMD_retab 105,
-    CMD_right 106,
-    CMD_rightbelow 107,
-    CMD_rundo 108,
-    CMD_substitute 109,
-    CMD_sandbox 110,
-    CMD_sbuffer 111,
-    CMD_sbNext 112,
-    CMD_sball 113,
-    CMD_sbfirst 114,
-    CMD_sblast 115,
-    CMD_sbmodified 116,
-    CMD_sbnext 117,
-    CMD_sbprevious 118,
-    CMD_sbrewind 119,
-    CMD_set 120,
-    CMD_setglobal 121,
-    CMD_setlocal 122,
-    CMD_silent 123,
-    CMD_smagic 124,
-    CMD_smap 125,
-    CMD_smapclear 126,
-    CMD_snomagic 127,
-    CMD_snoremap 128,
-    CMD_split 129,
-    CMD_stop 130,
-    CMD_startinsert 131,
-    CMD_startgreplace 132,
-    CMD_startreplace 133,
-    CMD_stopinsert 134,
-    CMD_sunhide 135,
-    CMD_sunmap 136,
-    CMD_suspend 137,
-    CMD_sview 138,
-    CMD_syncbind 139,
-    CMD_t 140,
-    CMD_tab 141,
-    CMD_tabclose 142,
-    CMD_tabedit 143,
-    CMD_tabfirst 144,
-    CMD_tabmove 145,
-    CMD_tablast 146,
-    CMD_tabnext 147,
-    CMD_tabnew 148,
-    CMD_tabonly 149,
-    CMD_tabprevious 150,
-    CMD_tabNext 151,
-    CMD_tabrewind 152,
-    CMD_tabs 153,
-    CMD_topleft 154,
-    CMD_undo 155,
-    CMD_undojoin 156,
-    CMD_undolist 157,
-    CMD_unabbreviate 158,
-    CMD_unhide 159,
-    CMD_unmap 160,
-    CMD_unsilent 161,
-    CMD_vglobal 162,
-    CMD_verbose 163,
-    CMD_vertical 164,
-    CMD_visual 165,
-    CMD_view 166,
-    CMD_vmap 167,
-    CMD_vmapclear 168,
-    CMD_vnoremap 169,
-    CMD_vnew 170,
-    CMD_vsplit 171,
-    CMD_vunmap 172,
-    CMD_wincmd 173,
-    CMD_wundo 174,
-    CMD_xmap 175,
-    CMD_xmapclear 176,
-    CMD_xnoremap 177,
-    CMD_xunmap 178,
-    CMD_yank 179,
-    CMD_z 180,
+    CMD_lockmarks 67,
+    CMD_move 68,
+    CMD_mark 69,
+    CMD_map 70,
+    CMD_mapclear 71,
+    CMD_marks 72,
+    CMD_messages 73,
+    CMD_mode 74,
+    CMD_new 75,
+    CMD_nmap 76,
+    CMD_nmapclear 77,
+    CMD_nnoremap 78,
+    CMD_noremap 79,
+    CMD_nohlsearch 80,
+    CMD_noreabbrev 81,
+    CMD_normal 82,
+    CMD_number 83,
+    CMD_nunmap 84,
+    CMD_open 85,
+    CMD_omap 86,
+    CMD_omapclear 87,
+    CMD_only 88,
+    CMD_onoremap 89,
+    CMD_ounmap 90,
+    CMD_print 91,
+    CMD_put 92,
+    CMD_quit 93,
+    CMD_quitall 94,
+    CMD_qall 95,
+    CMD_redo 96,
+    CMD_redraw 97,
+    CMD_redrawstatus 98,
+    CMD_registers 99,
+    CMD_resize 100,
+    CMD_retab 101,
+    CMD_right 102,
+    CMD_rightbelow 103,
+    CMD_rundo 104,
+    CMD_substitute 105,
+    CMD_sandbox 106,
+    CMD_sbuffer 107,
+    CMD_sbNext 108,
+    CMD_sball 109,
+    CMD_sbfirst 110,
+    CMD_sblast 111,
+    CMD_sbmodified 112,
+    CMD_sbnext 113,
+    CMD_sbprevious 114,
+    CMD_sbrewind 115,
+    CMD_set 116,
+    CMD_setglobal 117,
+    CMD_setlocal 118,
+    CMD_silent 119,
+    CMD_smagic 120,
+    CMD_smap 121,
+    CMD_smapclear 122,
+    CMD_snomagic 123,
+    CMD_snoremap 124,
+    CMD_split 125,
+    CMD_stop 126,
+    CMD_startinsert 127,
+    CMD_startgreplace 128,
+    CMD_startreplace 129,
+    CMD_stopinsert 130,
+    CMD_sunhide 131,
+    CMD_sunmap 132,
+    CMD_suspend 133,
+    CMD_sview 134,
+    CMD_syncbind 135,
+    CMD_t 136,
+    CMD_tab 137,
+    CMD_tabclose 138,
+    CMD_tabedit 139,
+    CMD_tabfirst 140,
+    CMD_tabmove 141,
+    CMD_tablast 142,
+    CMD_tabnext 143,
+    CMD_tabnew 144,
+    CMD_tabonly 145,
+    CMD_tabprevious 146,
+    CMD_tabNext 147,
+    CMD_tabrewind 148,
+    CMD_tabs 149,
+    CMD_topleft 150,
+    CMD_undo 151,
+    CMD_undojoin 152,
+    CMD_undolist 153,
+    CMD_unabbreviate 154,
+    CMD_unhide 155,
+    CMD_unmap 156,
+    CMD_unsilent 157,
+    CMD_vglobal 158,
+    CMD_verbose 159,
+    CMD_vertical 160,
+    CMD_visual 161,
+    CMD_view 162,
+    CMD_vmap 163,
+    CMD_vmapclear 164,
+    CMD_vnoremap 165,
+    CMD_vnew 166,
+    CMD_vsplit 167,
+    CMD_vunmap 168,
+    CMD_wincmd 169,
+    CMD_wundo 170,
+    CMD_xmap 171,
+    CMD_xmapclear 172,
+    CMD_xnoremap 173,
+    CMD_xunmap 174,
+    CMD_yank 175,
+    CMD_z 176,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 181,
-    CMD_and 182,
-    CMD_lshift 183,
-    CMD_equal 184,
-    CMD_rshift 185,
-    CMD_tilde 186,
+    CMD_pound 177,
+    CMD_and 178,
+    CMD_lshift 179,
+    CMD_equal 180,
+    CMD_rshift 181,
+    CMD_tilde 182,
 
-    CMD_SIZE 187)     ;; MUST be after all real commands!
+    CMD_SIZE 183)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -4663,7 +4619,7 @@
 ;                       reset_modifiable();
                         ;; FALLTHROUGH
 ;                   case 'm':                       ;; "-m" no writing of files
-;                       @p_write = false;
+;                       @p_write = false;
 ;                       break;
 
 ;                   case 'R':                       ;; "-R" readonly mode
@@ -8777,99 +8733,68 @@
     PV_BUF  0x4000,
     PV_MASK 0x0fff)
 
-(defn- #_final #_int opt_win [#_int x]
-    (§
-;       return PV_WIN + x;
-    ))
-
-(defn- #_final #_int opt_buf [#_int x]
-    (§
-;       return PV_BUF + x;
-    ))
-
-(defn- #_final #_int opt_both [#_int x]
-    (§
-;       return PV_BOTH + x;
-    ))
-
 ;; Definition of the PV_ values for buffer-local options.
 ;; The BV_ values are defined in option.h.
 
 (final int
-    PV_AI   16384,    ;; opt_buf(BV_AI),
-
-    PV_BIN  16386,    ;; opt_buf(BV_BIN),
-
-
-    PV_CI   16389,    ;; opt_buf(BV_CI),
-    PV_CIN  16390,    ;; opt_buf(BV_CIN),
-    PV_CINK 16391,    ;; opt_buf(BV_CINK),
-    PV_CINO 16392,    ;; opt_buf(BV_CINO),
-    PV_CINW 16393,    ;; opt_buf(BV_CINW),
-    PV_CM   20490,    ;; opt_both(opt_buf(BV_CM)),
-    PV_COM  16395,    ;; opt_buf(BV_COM),
-
-
-    PV_ET   16398,    ;; opt_buf(BV_ET),
-
-
-
-    PV_FLP  16402,    ;; opt_buf(BV_FLP),
-    PV_FO   16403,    ;; opt_buf(BV_FO),
-
-    PV_IMI  16405,    ;; opt_buf(BV_IMI),
-    PV_IMS  16406,    ;; opt_buf(BV_IMS),
-
-
-    PV_INF  16409,    ;; opt_buf(BV_INF),
-    PV_ISK  16410,    ;; opt_buf(BV_ISK),
-    PV_KP   20507,    ;; opt_both(opt_buf(BV_KP)),
-    PV_LISP 16412,    ;; opt_buf(BV_LISP),
-    PV_LW   20509,    ;; opt_both(opt_buf(BV_LW)),
-    PV_MA   16414,    ;; opt_buf(BV_MA),
-    PV_MOD  16415,    ;; opt_buf(BV_MOD),
-    PV_MPS  16416,    ;; opt_buf(BV_MPS),
-    PV_NF   16417,    ;; opt_buf(BV_NF),
-    PV_PI   16418,    ;; opt_buf(BV_PI),
-    PV_QE   16419,    ;; opt_buf(BV_QE),
-    PV_RO   16420,    ;; opt_buf(BV_RO),
-    PV_SI   16421,    ;; opt_buf(BV_SI),
-    PV_SMC  16422,    ;; opt_buf(BV_SMC),
-
-    PV_STS  16424,    ;; opt_buf(BV_STS),
-    PV_SW   16425,    ;; opt_buf(BV_SW),
-    PV_TS   16426,    ;; opt_buf(BV_TS),
-    PV_TW   16427,    ;; opt_buf(BV_TW),
-
-    PV_UDF  16429,    ;; opt_buf(BV_UDF),
-    PV_UL   20526,    ;; opt_both(opt_buf(BV_UL)),
-    PV_WM   16431)    ;; opt_buf(BV_WM);
+    PV_AI   (| BV_AI   PV_BUF),
+    PV_BIN  (| BV_BIN  PV_BUF),
+    PV_CI   (| BV_CI   PV_BUF),
+    PV_CIN  (| BV_CIN  PV_BUF),
+    PV_CINK (| BV_CINK PV_BUF),
+    PV_CINO (| BV_CINO PV_BUF),
+    PV_CINW (| BV_CINW PV_BUF),
+    PV_CM   (| BV_CM   PV_BUF   PV_BOTH),
+    PV_COM  (| BV_COM  PV_BUF),
+    PV_ET   (| BV_ET   PV_BUF),
+    PV_FLP  (| BV_FLP  PV_BUF),
+    PV_FO   (| BV_FO   PV_BUF),
+    PV_INF  (| BV_INF  PV_BUF),
+    PV_ISK  (| BV_ISK  PV_BUF),
+    PV_KP   (| BV_KP   PV_BUF   PV_BOTH),
+    PV_LISP (| BV_LISP PV_BUF),
+    PV_LW   (| BV_LW   PV_BUF   PV_BOTH),
+    PV_MA   (| BV_MA   PV_BUF),
+    PV_MOD  (| BV_MOD  PV_BUF),
+    PV_MPS  (| BV_MPS  PV_BUF),
+    PV_NF   (| BV_NF   PV_BUF),
+    PV_PI   (| BV_PI   PV_BUF),
+    PV_QE   (| BV_QE   PV_BUF),
+    PV_RO   (| BV_RO   PV_BUF),
+    PV_SI   (| BV_SI   PV_BUF),
+    PV_STS  (| BV_STS  PV_BUF),
+    PV_SW   (| BV_SW   PV_BUF),
+    PV_TS   (| BV_TS   PV_BUF),
+    PV_TW   (| BV_TW   PV_BUF),
+    PV_UDF  (| BV_UDF  PV_BUF),
+    PV_UL   (| BV_UL   PV_BUF   PV_BOTH),
+    PV_WM   (| BV_WM   PV_BUF))
 
 ;; Definition of the PV_ values for window-local options.
 ;; The WV_ values are defined in option.h.
 
 (final int
-    PV_LIST   8192,   ;; opt_win(WV_LIST),
-    PV_COCU   8193,   ;; opt_win(WV_COCU),
-    PV_COLE   8194,   ;; opt_win(WV_COLE),
-    PV_CRBIND 8195,   ;; opt_win(WV_CRBIND),
-    PV_BRI    8196,   ;; opt_win(WV_BRI),
-    PV_BRIOPT 8197,   ;; opt_win(WV_BRIOPT),
-    PV_LBR    8198,   ;; opt_win(WV_LBR),
-    PV_NU     8199,   ;; opt_win(WV_NU),
-    PV_RNU    8200,   ;; opt_win(WV_RNU),
-    PV_NUW    8201,   ;; opt_win(WV_NUW),
-    PV_RL     8202,   ;; opt_win(WV_RL),
-    PV_RLC    8203,   ;; opt_win(WV_RLC),
-    PV_SCBIND 8204,   ;; opt_win(WV_SCBIND),
-    PV_SCROLL 8205,   ;; opt_win(WV_SCROLL),
-    PV_CUC    8206,   ;; opt_win(WV_CUC),
-    PV_CUL    8207,   ;; opt_win(WV_CUL),
-    PV_CC     8208,   ;; opt_win(WV_CC),
-    PV_STL    12305,  ;; opt_both(opt_win(WV_STL)),
-    PV_WFH    8210,   ;; opt_win(WV_WFH),
-    PV_WFW    8211,   ;; opt_win(WV_WFW),
-    PV_WRAP   8212)   ;; opt_win(WV_WRAP);
+    PV_LIST   (| WV_LIST   PV_WIN),
+    PV_COCU   (| WV_COCU   PV_WIN),
+    PV_COLE   (| WV_COLE   PV_WIN),
+    PV_CRBIND (| WV_CRBIND PV_WIN),
+    PV_BRI    (| WV_BRI    PV_WIN),
+    PV_BRIOPT (| WV_BRIOPT PV_WIN),
+    PV_LBR    (| WV_LBR    PV_WIN),
+    PV_NU     (| WV_NU     PV_WIN),
+    PV_RNU    (| WV_RNU    PV_WIN),
+    PV_NUW    (| WV_NUW    PV_WIN),
+    PV_RL     (| WV_RL     PV_WIN),
+    PV_RLC    (| WV_RLC    PV_WIN),
+    PV_SCBIND (| WV_SCBIND PV_WIN),
+    PV_SCROLL (| WV_SCROLL PV_WIN),
+    PV_CUC    (| WV_CUC    PV_WIN),
+    PV_CUL    (| WV_CUL    PV_WIN),
+    PV_CC     (| WV_CC     PV_WIN),
+    PV_STL    (| WV_STL    PV_WIN   PV_BOTH),
+    PV_WFH    (| WV_WFH    PV_WIN),
+    PV_WFW    (| WV_WFW    PV_WIN),
+    PV_WRAP   (| WV_WRAP   PV_WIN))
 
 ;; Options local to a window have a value local to a buffer and global to all buffers.
 ;; Indicate this by setting "var" to VAR_WIN.
@@ -8890,8 +8815,6 @@
 (atom! boolean p_et)
 (atom! Bytes   p_fo)
 (atom! Bytes   p_flp)
-(atom! long    p_iminsert)
-(atom! long    p_imsearch)
 (atom! boolean p_inf)
 (atom! Bytes   p_isk)
 (atom! boolean p_lisp)
@@ -8905,7 +8828,6 @@
 (atom! boolean p_si)
 (atom! long    p_sts)
 (atom! long    p_sw)
-(atom! long    p_smc)
 (atom! long    p_ts)
 (atom! long    p_tw)
 (atom! boolean p_udf)
@@ -9011,16 +8933,16 @@
 
 (final vimoption_C* vimoptions
     [
-        (long_opt (u8 "aleph"),          (u8 "al"),        P_CURSWANT,                  p_aleph,     PV_NONE,    224#_L),
-        (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
-        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
+       (long_opt (u8 "aleph"),          (u8 "al"),        P_CURSWANT,                  p_aleph,     PV_NONE,    224#_L),
+        (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
+        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "binary"),         (u8 "bin"),       P_RSTAT,                     p_bin,       PV_BIN,     false),
-        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   PV_NONE,   (u8 " \t!@*-+;:,./?")),
-        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      VAR_WIN,     PV_BRI,     false),
-        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     VAR_WIN,     PV_BRIOPT, (u8 "")),
+        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   PV_NONE,   (u8 " \t!@*-+;:,./?")),
+        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      VAR_WIN,     PV_BRI,     false),
+        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     VAR_WIN,     PV_BRIOPT, (u8 "")),
         (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     PV_NONE,    CTRL_F_STR),
         (bool_opt (u8 "cindent"),        (u8 "cin"),       0,                           p_cin,       PV_CIN,     false),
         (utf8_opt (u8 "cinkeys"),        (u8 "cink"),   (| P_COMMA P_NODUP),            p_cink,      PV_CINK,   (u8 "0{,0},0),:,0#,!^F,o,O,e")),
@@ -9031,7 +8953,7 @@
         (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       PV_NONE,    7#_L),
         (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     VAR_WIN,     PV_CC,     (u8 "")),
         (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     PV_NONE,    80#_L),
-        (utf8_opt (u8 "comments"),       (u8 "com"),    (| P_COMMA P_NODUP P_CURSWANT), p_com,       PV_COM,     COMMENTS_INIT),
+        (utf8_opt (u8 "comments"),       (u8 "com"),    (| P_COMMA P_NODUP P_CURSWANT), p_com,       PV_COM,     COMMENTS_INIT),
         (utf8_opt (u8 "concealcursor"),  (u8 "cocu"),      P_RWIN,                      VAR_WIN,     PV_COCU,   (u8 "")),
         (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      VAR_WIN,     PV_COLE,    0#_L),
         (bool_opt (u8 "copyindent"),     (u8 "ci"),        0,                           p_ci,        PV_CI,      false),
@@ -9048,27 +8970,25 @@
         (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        PV_NONE,    true),
         (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           p_et,        PV_ET,      false),
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       PV_NONE,   (u8 "vert:|,fold:-")),
-        (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
-        (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
-        (bool_opt (u8 "fsync"),          (u8 "fs"),        P_SECURE,                    p_fs,        PV_NONE,    true),
+        (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
+        (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
+        (bool_opt (u8 "fsync"),          (u8 "fs"),        P_SECURE,                    p_fs,        PV_NONE,    true),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        PV_NONE,    false),
-        (bool_opt (u8 "hidden"),         (u8 "hid"),       0,                           p_hid,       PV_NONE,    false),
+        (bool_opt (u8 "hidden"),         (u8 "hid"),       0,                           p_hid,       PV_NONE,    false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        PV_NONE,    HIGHLIGHT_INIT),
         (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        PV_NONE,    50#_L),
         (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       PV_NONE,    false),
         (bool_opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        PV_NONE,    false),
-        (long_opt (u8 "iminsert"),       (u8 "imi"),       0,                           p_iminsert,  PV_IMI,     B_IMODE_NONE),
-        (long_opt (u8 "imsearch"),       (u8 "ims"),       0,                           p_imsearch,  PV_IMS,     B_IMODE_NONE),
         (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        PV_NONE,    false),
         (bool_opt (u8 "infercase"),      (u8 "inf"),       0,                           p_inf,       PV_INF,     false),
         (bool_opt (u8 "insertmode"),     (u8 "im"),        0,                           p_im,        PV_NONE,    false),
-        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       PV_NONE,   (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
+        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       PV_NONE,   (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
         (utf8_opt (u8 "isident"),        (u8 "isi"),    (| P_COMMA P_NODUP),            p_isi,       PV_NONE,   (u8 "@,48-57,_,192-255")),
         (utf8_opt (u8 "iskeyword"),      (u8 "isk"),    (| P_COMMA P_NODUP),            p_isk,       PV_ISK,    (u8 "@,48-57,_,192-255")),
         (utf8_opt (u8 "isprint"),        (u8 "isp"),    (| P_RALL P_COMMA P_NODUP),     p_isp,       PV_NONE,   (u8 "@,161-255")),
         (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        PV_NONE,    true),
         (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        P_SECURE,                    p_kp,        PV_KP,     (u8 ":echo")),
+        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        P_SECURE,                    p_kp,        PV_KP,     (u8 ":echo")),
         (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        PV_NONE,    1#_L),
         (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        PV_NONE,    false),
         (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      VAR_WIN,     PV_LBR,     false),
@@ -9081,20 +9001,19 @@
         (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            p_mps,       PV_MPS,    (u8 "(:),{:},[:]")),
         (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       PV_NONE,    5#_L),
         (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       PV_NONE,    2#_L),
-        (long_opt (u8 "maxfuncdepth"),   (u8 "mfd"),       0,                           p_mfd,       PV_NONE,    100#_L),
         (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       PV_NONE,    1000#_L),
         (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       PV_NONE,    1000#_L),
         (bool_opt (u8 "modifiable"),     (u8 "ma"),        P_NOGLOB,                    p_ma,        PV_MA,      true),
         (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     p_mod,       PV_MOD,     false),
         (bool_opt (u8 "more"),            null,            0,                           p_more,      PV_NONE,    true),
-        (utf8_opt (u8 "mouse"),           null,            P_FLAGLIST,                  p_mouse,     PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "mousemodel"),     (u8 "mousem"),    0,                           p_mousem,    PV_NONE,   (u8 "extend")),
+        (utf8_opt (u8 "mouse"),           null,            P_FLAGLIST,                  p_mouse,     PV_NONE,   (u8 "")),
+        (utf8_opt (u8 "mousemodel"),     (u8 "mousem"),    0,                           p_mousem,    PV_NONE,   (u8 "extend")),
         (long_opt (u8 "mousetime"),      (u8 "mouset"),    0,                           p_mouset,    PV_NONE,    500#_L),
         (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            p_nf,        PV_NF,     (u8 "octal,hex")),
         (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      VAR_WIN,     PV_NU,      false),
         (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      VAR_WIN,     PV_NUW,     4#_L),
         (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    P_SECURE,                    p_opfunc,    PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      PV_NONE,   (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
+        (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      PV_NONE,   (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
         (bool_opt (u8 "paste"),           null,            0,                           p_paste,     PV_NONE,    false),
         (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           p_pi,        PV_PI,      false),
@@ -9116,13 +9035,12 @@
         (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        PV_NONE,    1#_L),
         (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        PV_NONE,    0#_L),
         (utf8_opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       PV_NONE,   (u8 "ver,jump")),
-        (utf8_opt (u8 "sections"),       (u8 "sect"),      0,                           p_sections,  PV_NONE,   (u8 "SHNHH HUnhsh")),
-        (bool_opt (u8 "secure"),          null,            P_SECURE,                    p_secure,    PV_NONE,    false),
+        (utf8_opt (u8 "sections"),       (u8 "sect"),      0,                           p_sections,  PV_NONE,   (u8 "SHNHH HUnhsh")),
         (utf8_opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       PV_NONE,   (u8 "inclusive")),
         (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       PV_NONE,   (u8 "")),
         (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        PV_NONE,    false),
         (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           p_sw,        PV_SW,      8#_L),
-        (utf8_opt (u8 "shortmess"),      (u8 "shm"),       P_FLAGLIST,                  p_shm,       PV_NONE,   (u8 "filnxtToO")),
+        (utf8_opt (u8 "shortmess"),      (u8 "shm"),       P_FLAGLIST,                  p_shm,       PV_NONE,   (u8 "filnxtToO")),
         (utf8_opt (u8 "showbreak"),      (u8 "sbr"),       P_RALL,                      p_sbr,       PV_NONE,   (u8 "")),
         (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        PV_NONE,    false),
         (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        PV_NONE,    false),
@@ -9139,9 +9057,7 @@
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
         (utf8_opt (u8 "statusline"),     (u8 "stl"),       P_RSTAT,                     p_stl,       PV_STL,    (u8 "")),
         (utf8_opt (u8 "switchbuf"),      (u8 "swb"),    (| P_COMMA P_NODUP),            p_swb,       PV_NONE,   (u8 "")),
-        (long_opt (u8 "synmaxcol"),      (u8 "smc"),       P_RBUF,                      p_smc,       PV_SMC,     3000#_L),
         (utf8_opt (u8 "tabline"),        (u8 "tal"),       P_RALL,                      p_tal,       PV_NONE,   (u8 "")),
-        (long_opt (u8 "tabpagemax"),     (u8 "tpm"),       0,                           p_tpm,       PV_NONE,    10#_L),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
         (bool_opt (u8 "terse"),           null,            0,                           p_terse,     PV_NONE,    false),
@@ -9151,20 +9067,17 @@
         (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        PV_NONE,    1000#_L),
         (bool_opt (u8 "ttimeout"),        null,            0,                           p_ttimeout,  PV_NONE,    false),
         (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       PV_NONE,    -1#_L),
-        (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        PV_NONE,    false),
+        (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        PV_NONE,    false),
         (utf8_opt (u8 "ttymouse"),       (u8 "ttym"),      P_NODEFAULT,                 p_ttym,      PV_NONE,   (u8 "")),
         (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, PV_NONE,    999#_L),
-        (utf8_opt (u8 "ttytype"),        (u8 "tty"),    (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "undodir"),        (u8 "udir"),   (| P_COMMA P_NODUP P_SECURE),   p_udir,      PV_NONE,   (u8 ".")),
-        (bool_opt (u8 "undofile"),       (u8 "udf"),       0,                           p_udf,       PV_UDF,     false),
+        (utf8_opt (u8 "undodir"),        (u8 "udir"),   (| P_COMMA P_NODUP P_SECURE),   p_udir,      PV_NONE,   (u8 ".")),
+        (bool_opt (u8 "undofile"),       (u8 "udf"),       0,                           p_udf,       PV_UDF,     false),
         (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           p_ul,        PV_UL,      1000#_L),
-        (long_opt (u8 "undoreload"),     (u8 "ur"),        0,                           p_ur,        PV_NONE,    10000#_L),
-        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        PV_NONE,    4000#_L),
+        (long_opt (u8 "undoreload"),     (u8 "ur"),        0,                           p_ur,        PV_NONE,    10000#_L),
+        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        PV_NONE,    4000#_L),
         (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   PV_NONE,    0#_L),
         (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "visualbell"),     (u8 "vb"),        0,                           p_vb,        PV_NONE,    false),
-        (bool_opt (u8 "warn"),            null,            0,                           p_warn,      PV_NONE,    true),
-        (bool_opt (u8 "weirdinvert"),    (u8 "wiv"),       P_RCLR,                      p_wiv,       PV_NONE,    false),
         (utf8_opt (u8 "whichwrap"),      (u8 "ww"),     (| P_COMMA P_FLAGLIST),         p_ww,        PV_NONE,   (u8 "b,s")),
         (long_opt (u8 "wildchar"),       (u8 "wc"),        0,                           p_wc,        PV_NONE,   (long TAB)),
         (long_opt (u8 "window"),         (u8 "wi"),        0,                           p_window,    PV_NONE,    0#_L),
@@ -9177,9 +9090,7 @@
         (bool_opt (u8 "wrap"),            null,            P_RWIN,                      VAR_WIN,     PV_WRAP,    true),
         (long_opt (u8 "wrapmargin"),     (u8 "wm"),        0,                           p_wm,        PV_WM,      0#_L),
         (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        PV_NONE,    true),
-        (bool_opt (u8 "write"),           null,            0,                           p_write,     PV_NONE,    true),
-        (bool_opt (u8 "writeany"),       (u8 "wa"),        0,                           p_wa,        PV_NONE,    false),
-        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        PV_NONE,    0#_L),
+        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        PV_NONE,    0#_L),
 
         ;; terminal output codes
 
@@ -11348,18 +11259,6 @@
 ;               win_equal(@curwin, false, 0);
 ;       }
 
-;       else if (varp == p_wiv)
-;       {
-            ;; When 'weirdinvert' changed, set/reset 't_xs'.
-            ;; Then set 'weirdinvert' according to value of 't_xs'.
-
-;           if (@p_wiv && !old_value)
-;               @T_XS = u8("y");
-;           else if (!@p_wiv && old_value)
-;               @T_XS = EMPTY_OPTION;
-;           @p_wiv = (@T_XS.at(0) != NUL);
-;       }
-
         ;; End of handling side effects for bool options.
 
 ;       vimoptions[opt_idx].@flags |= P_WAS_SET;
@@ -11504,34 +11403,12 @@
 ;           screenclear();      ;; will re-allocate the screen
 ;       }
 
-;       else if (varp == @curbuf.b_p_iminsert)
-;       {
-;           if (@curbuf.@b_p_iminsert < 0 || B_IMODE_LAST < @curbuf.@b_p_iminsert)
-;           {
-;               errmsg = e_invarg;
-;               @curbuf.@b_p_iminsert = B_IMODE_NONE;
-;           }
-;           @p_iminsert = @curbuf.@b_p_iminsert;
-;           if (@termcap_active)     ;; don't do this in the alternate screen
-;               showmode();
-;       }
-
 ;       else if (varp == p_window)
 ;       {
 ;           if (@p_window < 1)
 ;               @p_window = 1;
 ;           else if (@Rows <= @p_window)
 ;               @p_window = @Rows - 1;
-;       }
-
-;       else if (varp == @curbuf.b_p_imsearch)
-;       {
-;           if (@curbuf.@b_p_imsearch < -1 || B_IMODE_LAST < @curbuf.@b_p_imsearch)
-;           {
-;               errmsg = e_invarg;
-;               @curbuf.@b_p_imsearch = B_IMODE_NONE;
-;           }
-;           @p_imsearch = @curbuf.@b_p_imsearch;
 ;       }
 
         ;; if "p_ch" changed value, change the command line height
@@ -12299,8 +12176,6 @@
 ;           case PV_ET:     return @curbuf.b_p_et;
 ;           case PV_FLP:    return @curbuf.b_p_flp;
 ;           case PV_FO:     return @curbuf.b_p_fo;
-;           case PV_IMI:    return @curbuf.b_p_iminsert;
-;           case PV_IMS:    return @curbuf.b_p_imsearch;
 ;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
 ;           case PV_LISP:   return @curbuf.b_p_lisp;
@@ -12312,7 +12187,6 @@
 ;           case PV_QE:     return @curbuf.b_p_qe;
 ;           case PV_RO:     return @curbuf.b_p_ro;
 ;           case PV_SI:     return @curbuf.b_p_si;
-;           case PV_SMC:    return @curbuf.b_p_smc;
 ;           case PV_STS:    return @curbuf.b_p_sts;
 ;           case PV_SW:     return @curbuf.b_p_sw;
 ;           case PV_TS:     return @curbuf.b_p_ts;
@@ -12485,11 +12359,6 @@
 ;               buf.@b_p_pi = @p_pi;
 ;               buf.@b_p_cinw = STRDUP(@p_cinw);
 ;               buf.@b_p_lisp = @p_lisp;
-;               buf.@b_p_smc = @p_smc;
-                ;; This isn't really an option, but copying the langmap and IME
-                ;; state from the current buffer is better than resetting it.
-;               buf.@b_p_iminsert = @p_iminsert;
-;               buf.@b_p_imsearch = @p_imsearch;
 
                 ;; Options that are normally global but also have a local value
                 ;; are not copied: start using the global value.
@@ -12534,20 +12403,6 @@
 ;       int opt_idx = findoption(u8("ma"));
 ;       if (0 <= opt_idx)
 ;           vimoptions[opt_idx].def_val = false;
-    ))
-
-;; Set the global value for 'iminsert' to the local value.
-
-(defn- #_void set_iminsert_global []
-    (§
-;       @p_iminsert = @curbuf.@b_p_iminsert;
-    ))
-
-;; Set the global value for 'imsearch' to the local value.
-
-(defn- #_void set_imsearch_global []
-    (§
-;       @p_imsearch = @curbuf.@b_p_imsearch;
     ))
 
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
@@ -13903,8 +13758,6 @@
 ;           lnum = 0;
 
 ;       @State = INSERT;                 ;; behave like in Insert mode
-;       if (@curbuf.@b_p_iminsert == B_IMODE_LMAP)
-;           @State |= LANGMAP;
 
 ;       for ( ; ; )
 ;       {
@@ -15392,7 +15245,6 @@
 
 ;       boolean ignore_drag_release = true;
 ;       boolean break_ctrl_c = false;
-;       long[] b_im_ptr = null;
 
         ;; Everything that may work recursively should save and restore the current command line in save_cli.
         ;; That includes update_screen(), a custom status line may invoke ":normal".
@@ -15458,12 +15310,7 @@
 ;       if (firstc == '/' || firstc == '?' || firstc == '@')
 ;       {
             ;; Use ":lmap" mappings for search pattern and input().
-;           if (@curbuf.@b_p_imsearch == B_IMODE_USE_INSERT)
-;               b_im_ptr = @curbuf.b_p_iminsert;
-;           else
-;               b_im_ptr = @curbuf.b_p_imsearch;
-;           if (b_im_ptr[0] == B_IMODE_LMAP)
-;               @State |= LANGMAP;
+            
 ;       }
 
 ;       setmouse();
@@ -15762,25 +15609,7 @@
 
 ;                       case Ctrl_HAT:
 ;                       {
-;                           if (map_to_exists_mode(u8(""), LANGMAP, false))
-;                           {
-                                ;; ":lmap" mappings exists, toggle use of mappings.
-;                               @State ^= LANGMAP;
-;                               if (b_im_ptr != null)
-;                               {
-;                                   if ((@State & LANGMAP) != 0)
-;                                       b_im_ptr[0] = B_IMODE_LMAP;
-;                                   else
-;                                       b_im_ptr[0] = B_IMODE_NONE;
-;                               }
-;                           }
-;                           if (b_im_ptr != null)
-;                           {
-;                               if (b_im_ptr == @curbuf.b_p_iminsert)
-;                                   set_iminsert_global();
-;                               else
-;                                   set_imsearch_global();
-;                           }
+                            
 ;                           ui_cursor_shape();      ;; may show different cursor shape
 ;                           break cmdline_not_changed;
 ;                       }
@@ -20326,13 +20155,13 @@
     (§
             ;; If we are sourcing .exrc or .vimrc in current directory
             ;; we print the mappings for security reasons.
-
 ;       if (@secure != 0)
 ;       {
 ;           @secure = 2;
 ;           msg_outtrans(eap.cmd);
 ;           msg_putchar('\n');
 ;       }
+
 ;       do_exmap(eap, false);
     ))
 
@@ -22959,7 +22788,6 @@
 ;           {
 ;               boolean repl = false;                   ;; get character for replace mode
 ;               boolean lit = false;                    ;; get extra character literally
-;               boolean langmap_active = false;         ;; using :lmap mappings
 
 ;               @no_mapping++;
 ;               @allow_keys++;                           ;; no mapping for nchar, but allow key codes
@@ -23002,27 +22830,9 @@
 ;                       @State = REPLACE;                ;; pretend Replace mode
 ;                       ui_cursor_shape();              ;; show different cursor shape
 ;                   }
-;                   if (lang && @curbuf.@b_p_iminsert == B_IMODE_LMAP)
-;                   {
-                        ;; Allow mappings defined with ":lmap".
-;                       --@no_mapping;
-;                       --@allow_keys;
-;                       if (repl)
-;                           @State = LREPLACE;
-;                       else
-;                           @State = LANGMAP;
-;                       langmap_active = true;
-;                   }
 
 ;                   cp[0] = plain_vgetc();
 
-;                   if (langmap_active)
-;                   {
-                        ;; Undo the decrement done above.
-;                       @no_mapping++;
-;                       @allow_keys++;
-;                       @State = NORMAL_BUSY;
-;                   }
 ;                   @State = NORMAL_BUSY;
 ;                   need_flushbuf |= add_to_showcmd(cp[0]);
 
@@ -36706,11 +36516,8 @@
 ;                           {
                                 ;; Only consider an entry if the first character
                                 ;; matches and it is for the current state.
-                                ;; Skip ":lmap" mappings if keys were mapped.
 
-;                               if (mp.m_keys.at(0) == c1
-;                                       && (mp.m_mode & local_State) != 0
-;                                       && ((mp.m_mode & LANGMAP) == 0 || @typebuf.tb_maplen == 0))
+;                               if (mp.m_keys.at(0) == c1 && (mp.m_mode & local_State) != 0)
 ;                               {
                                     ;; find the match length of this mapping
 ;                                   int mlen;
@@ -37133,7 +36940,7 @@
 ;                   int c1 = 0;
 ;                   if (0 < @typebuf.tb_len && advance && @exmode_active == 0)
 ;                   {
-;                       if (((@State & (NORMAL | INSERT)) != 0 || @State == LANGMAP) && @State != HITRETURN)
+;                       if ((@State & (NORMAL | INSERT)) != 0 && @State != HITRETURN)
 ;                       {
                             ;; this looks nice when typing a dead character map
 ;                           if ((@State & INSERT) != 0
@@ -37378,7 +37185,6 @@
 ;; for :map!  mode is INSERT + CMDLINE
 ;; for :cmap  mode is CMDLINE
 ;; for :imap  mode is INSERT
-;; for :lmap  mode is LANGMAP
 ;; for :nmap  mode is NORMAL
 ;; for :vmap  mode is VISUAL + SELECTMODE
 ;; for :xmap  mode is VISUAL
@@ -37872,8 +37678,6 @@
 
 ;       if (modec == 'i')
 ;           mode = INSERT;                                          ;; :imap
-;       else if (modec == 'l')
-;           mode = LANGMAP;                                         ;; :lmap
 ;       else if (modec == 'c')
 ;           mode = CMDLINE;                                         ;; :cmap
 ;       else if (modec == 'n' && p.at(0) != (byte)'o')                         ;; avoid :noremap
@@ -37998,8 +37802,6 @@
 ;           ba_append(mapmode, (byte)'!');                        ;; :map!
 ;       else if ((mode & INSERT) != 0)
 ;           ba_append(mapmode, (byte)'i');                        ;; :imap
-;       else if ((mode & LANGMAP) != 0)
-;           ba_append(mapmode, (byte)'l');                        ;; :lmap
 ;       else if ((mode & CMDLINE) != 0)
 ;           ba_append(mapmode, (byte)'c');                        ;; :cmap
 ;       else if ((mode & (NORMAL + VISUAL + SELECTMODE + OP_PENDING)) == NORMAL + VISUAL + SELECTMODE + OP_PENDING)
@@ -38103,8 +37905,6 @@
 ;           mode |= OP_PENDING;
 ;       if (vim_strchr(modechars, 'i') != null)
 ;           mode |= INSERT;
-;       if (vim_strchr(modechars, 'l') != null)
-;           mode |= LANGMAP;
 ;       if (vim_strchr(modechars, 'c') != null)
 ;           mode |= CMDLINE;
 
@@ -38698,14 +38498,6 @@
         ;; it might move when the cursor is on a TAB or special character.
 
 ;       curs_columns(true);
-
-        ;; Enable langmap or IME, indicated by 'iminsert'.
-        ;; Note that IME may enabled/disabled without us noticing here,
-        ;; thus the 'iminsert' value may not reflect what is actually used.
-        ;; It is updated when hitting <Esc>.
-
-;       if (@curbuf.@b_p_iminsert == B_IMODE_LMAP)
-;           @State |= LANGMAP;
 
 ;       setmouse();
 ;       clear_showcmd();
@@ -41686,21 +41478,7 @@
 
 (defn- #_void ins_ctrl_hat []
     (§
-;       if (map_to_exists_mode(u8(""), LANGMAP, false))
-;       {
-            ;; ":lmap" mappings exists, Toggle use of ":lmap" mappings.
-;           if ((@State & LANGMAP) != 0)
-;           {
-;               @curbuf.@b_p_iminsert = B_IMODE_NONE;
-;               @State &= ~LANGMAP;
-;           }
-;           else
-;           {
-;               @curbuf.@b_p_iminsert = B_IMODE_LMAP;
-;               @State |= LANGMAP;
-;           }
-;       }
-;       set_iminsert_global();
+        
 ;       showmode();
     ))
 
@@ -41877,9 +41655,9 @@
 (defn- #_void ins_insert [#_int replaceState]
     (§
 ;       if ((@State & REPLACE_FLAG) != 0)
-;           @State = INSERT | (@State & LANGMAP);
+;           @State = INSERT;
 ;       else
-;           @State = replaceState | (@State & LANGMAP);
+;           @State = replaceState;
 ;       appendCharToRedobuff(K_INS);
 ;       showmode();
 ;       ui_cursor_shape();          ;; may show different cursor shape
@@ -64150,8 +63928,6 @@
 ;               case STL_KEYMAP:
 ;               {
 ;                   fillable = false;
-;                   if (get_keymap_str(wp, tmp, TMPLEN))
-;                       str = tmp;
 ;                   break;
 ;               }
 
@@ -64647,7 +64423,7 @@
 ;           if (aborting())
 ;               break;
                 ;; When ":tab" was used open a new tab for a new window repeatedly.
-;           if (0 < had_tab && tabpage_index(null) <= @p_tpm)
+;           if (0 < had_tab && tabpage_index(null) <= 10)
 ;               @cmdmod.tab = 9999;
 ;       }
 
@@ -81322,7 +81098,6 @@
 
         ;; Set the default terminal name.
 ;       set_string_default(u8("term"), term);
-;       set_string_default(u8("ttytype"), term);
 
         ;; Avoid using "term" here, because the next mch_getenv() may overwrite it.
 
@@ -81785,9 +81560,6 @@
             ;; If 'Sb' and 'AB' are not defined, reset "Co".
 ;           if (@T_CSB.at(0) == NUL && @T_CAB.at(0) == NUL)
 ;               free_one_termoption(T_CCO);
-
-            ;; Set 'weirdinvert' according to value of 't_xs'.
-;           @p_wiv = (@T_XS.at(0) != NUL);
 ;       }
 
 ;       @need_gather = true;
@@ -88241,46 +88013,10 @@
             ;; bool: does character need redraw?
 ;           boolean redraw_this = redraw_next;
             ;; redraw_this for next character
-;           redraw_next = force || char_needs_redraw(off_from + char_cells,
-;                                                    off_to + char_cells,
-;                                                    endcol - col - char_cells);
+;           redraw_next = force || char_needs_redraw(off_from + char_cells, off_to + char_cells, endcol - col - char_cells);
 
 ;           if (redraw_this)
 ;           {
-                ;; Special handling when 'xs' termcap flag set (hpterm):
-                ;; Attributes for characters are stored at the position where the
-                ;; cursor is when writing the highlighting code.  The
-                ;; start-highlighting code must be written with the cursor on the
-                ;; first highlighted character.  The stop-highlighting code must
-                ;; be written with the cursor just after the last highlighted character.
-                ;; Overwriting a character doesn't remove it's highlighting.  Need
-                ;; to clear the rest of the line, and force redrawing it completely.
-
-;               if (@p_wiv
-;                       && !force
-;                       && @screenAttrs[off_to] != 0
-;                       && @screenAttrs[off_from] != @screenAttrs[off_to])
-;               {
-                    ;; Need to remove highlighting attributes here.
-
-;                   windgoto(row, col + coloff);
-;                   out_str(@T_CE);          ;; clear rest of this screen line
-;                   screen_start();         ;; don't know where cursor is now
-;                   force = true;           ;; force redraw of rest of the line
-;                   redraw_next = true;     ;; or else next char would miss out
-
-                    ;; If the previous character was highlighted, need to stop
-                    ;; highlighting at this character.
-
-;                   if (0 < col + coloff && @screenAttrs[off_to - 1] != 0)
-;                   {
-;                       @screen_attr = @screenAttrs[off_to - 1];
-;                       term_windgoto(row, col + coloff);
-;                       screen_stop_highlight();
-;                   }
-;                   else
-;                       @screen_attr = 0;        ;; highlighting has stopped
-;               }
                 ;; When writing a single-width character over a double-width
                 ;; character and at the end of the redrawn text, need to clear out
                 ;; the right halve of the old character.
@@ -88323,18 +88059,6 @@
 ;                   @screenAttrs[off_to + 1] = @screenAttrs[off_from];
 
 ;               screen_char(off_to, row, col + coloff);
-;           }
-;           else if (@p_wiv && 0 < col + coloff)
-;           {
-;               if (@screenAttrs[off_to] == @screenAttrs[off_to - 1])
-;               {
-                    ;; Don't output stop-highlight when moving the cursor,
-                    ;; it will stop the highlighting when it should continue.
-
-;                   @screen_attr = 0;
-;               }
-;               else if (@screen_attr != 0)
-;                   screen_stop_highlight();
 ;           }
 
 ;           off_to += char_cells;
@@ -88542,9 +88266,6 @@
 ;           screen_puts(p, row, wp.w_wincol, attr[0]);
 ;           screen_fill(row, row + 1, len + wp.w_wincol, this_ru_col + wp.w_wincol, fillchar, fillchar, attr[0]);
 
-;           if (get_keymap_str(wp, @nameBuff, MAXPATHL) && STRLEN(@nameBuff) + 1 < this_ru_col - len)
-;               screen_puts(@nameBuff, row, this_ru_col - STRLEN(@nameBuff) - 1 + wp.w_wincol, attr[0]);
-
 ;           win_redr_ruler(wp, true);
 ;       }
 
@@ -88610,36 +88331,6 @@
 ;           }
 ;       }
 ;       return false;
-    ))
-
-;; Get the value to show for the language mappings, active 'keymap'.
-
-(defn- #_boolean get_keymap_str [#_window_C wp, #_Bytes buf, #_int len]
-    ;; buf: buffer for the result
-    ;; len: length of buffer
-    (§
-;       if (wp.w_buffer.@b_p_iminsert != B_IMODE_LMAP)
-;           return false;
-
-;       buffer_C old_curbuf = @curbuf;
-;       window_C old_curwin = @curwin;
-
-;       @curbuf = wp.w_buffer;
-;       @curwin = wp;
-;       STRCPY(buf, u8("b:keymap_name"));               ;; must be writable
-;       @emsg_skip++;
-;       Bytes p = eval_to_string(buf, null, false);
-;       --@emsg_skip;
-;       @curbuf = old_curbuf;
-;       @curwin = old_curwin;
-;       if (p == null || p.at(0) == NUL)
-;           p = u8("lang");
-;       if (STRLEN(p) + 3 < len)
-;           libC.sprintf(buf, u8("<%s>"), p);
-;       else
-;           buf.be(0, NUL);
-
-;       return (buf.at(0) != NUL);
     ))
 
 (atom! boolean _3_entered)
@@ -94062,27 +93753,6 @@
 ;       return false;
     ))
 
-;; Create up to "maxcount" tabpages with empty windows.
-;; Returns the number of resulting tab pages.
-
-(defn- #_int make_tabpages [#_int maxcount]
-    (§
-;       int count = maxcount;
-
-        ;; Limit to 'tabpagemax' tabs.
-;       if (@p_tpm < count)
-;           count = (int)@p_tpm;
-
-;       int todo;
-
-;       for (todo = count - 1; 0 < todo; --todo)
-;           if (win_new_tabpage(0) == false)
-;               break;
-
-        ;; return actual number of tab pages
-;       return (count - todo);
-    ))
-
 ;; Return true when "tpc" points to a valid tab page.
 
 (defn- #_boolean valid_tabpage [#_tabpage_C tpc]
@@ -98257,11 +97927,7 @@
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "lmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "lmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "lnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "lunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 SBOXOK CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
