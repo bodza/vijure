@@ -6076,7 +6076,7 @@
             ((ß int joined_lines_count =) (int (+ (- (:line2 eap) (:line1 eap)) 1)))
             ((ß joined_lines_count =) (if (< (:line2 eap) (:ml_line_count (:b_ml @curbuf))) (inc joined_lines_count) joined_lines_count))
             (when (< 1 joined_lines_count)
-                (do-join joined_lines_count, false, true, false, true)
+                (do-join joined_lines_count, false, true, true)
                 (reset! sub_nsubs (dec joined_lines_count))
                 (reset! sub_nlines 1)
                 (do-sub-msg false)
@@ -10001,7 +10001,7 @@
                     ((ß oap.line_count =) (max 2 (:line_count oap)))
                     (if (< (:ml_line_count (:b_ml @curbuf)) (- (+ (:lnum (:w_cursor @curwin)) (:line_count oap)) 1))
                         (beep-flush)
-                        (do-join (int (:line_count oap)), (== (:op_type oap) OP_JOIN), true, true, true))
+                        (do-join (int (:line_count oap)), (== (:op_type oap) OP_JOIN), true, true))
                     (ß BREAK)
                 )
 
@@ -13198,7 +13198,7 @@
             (if (<= (dec (+ (:lnum (:w_cursor @curwin)) (:count0 cap))) (:ml_line_count (:b_ml @curbuf)))
                 (do
                     (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
-                    (do-join (:count0 cap), (== (:nchar cap) NUL), true, true, true)
+                    (do-join (:count0 cap), (== (:nchar cap) NUL), true, true)
                 )
                 (clearopbeep (:oap cap))) ;; beyond last line
             cap)
@@ -14583,7 +14583,7 @@
                         (swap! curwin assoc :w_cursor curpos)
                     ))
                     (if (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
-                        (do-join 2, false, false, false, false))
+                        (do-join 2, false, false, false))
                 ))
             ))
 
@@ -15987,137 +15987,83 @@
             )))
     nil)
 
-;; Join 'count' lines (minimal 2) at cursor position.
-;; When "save_undo" is true save lines for undo first.
-;; Set "use_formatoptions" to false when e.g. processing backspace and comment leaders should not be removed.
-;; When setmark is true, sets the '[ and '] mark, else, the caller is expected to set those marks.
+;; Join "count" lines (minimal 2) at cursor position.
+;; When "save_undo" is true, save lines for undo first.
+;; When "setmark" is true, sets the '[ and '] marks, else the caller is expected to set those marks.
 ;;
-;; return false for failure, true otherwise
+;; Return false for failure, true otherwise.
 
-(defn- #_boolean do-join [#_int count, #_boolean insert_space, #_boolean save_undo, #_boolean use_formatoptions, #_boolean setmark]
-    (§
-        ((ß boolean retval =) true)
-
-        ((ß Bytes curr =) nil)
-        ((ß Bytes curr_start =) nil)
-        ((ß int endcurr1 =) NUL)
-        ((ß int endcurr2 =) NUL)
-        ((ß int currsize =) 0)               ;; size of the current line
-        ((ß int sumsize =) 0)                ;; size of the long new line
-        ((ß int col =) 0)
-
-        (if (and save_undo (not (u-save (dec (:lnum (:w_cursor @curwin))), (+ (:lnum (:w_cursor @curwin)) count))))
-            ((ß RETURN) false)
-        )
-
+(defn- #_boolean do-join [#_int count, #_boolean insert_space, #_boolean save_undo, #_boolean setmark]
+    (let-when [lnum (:lnum (:w_cursor @curwin))] (or (not save_undo) (u-save (dec lnum), (+ lnum count))) => false
         ;; Allocate an array to store the number of spaces inserted before each line.
         ;; We will use it to pre-compute the length of the new line and the
         ;; proper placement of each original line in the new one.
-        ((ß int[] spaces =) (ß new int[count]))
+        (let-when [#_int* spaces (int-array count)
+            ;; Don't move anything, just compute the final line length and set the array of space lengths up.
+            [#_Bytes s0 #_Bytes s #_int n #_int m :as _]
+                (loop-when [s0 nil s nil n 0 m 0 #_int e1 NUL #_int e2 NUL #_int i 0] (< i count) => [s0 s n m]
+                    (let [s0 (ml-get (+ lnum i)) s s0]
+                        (when (and (zero? i) setmark) ;; Set the '[ mark.
+                            (swap! curbuf update :b_op_start assoc :lnum lnum :col (STRLEN s)))
+                        (let [s (if (and insert_space (pos? i))
+                                    (let [s (skipwhite s)]
+                                        (when (and (not-at? s (byte \))) (non-zero? n) (!= e1 TAB))
+                                            ;; don't add a space if the line is ending in a space
+                                            (let [e1 (if (== e1 (byte \space)) e2 (do (aset spaces i (inc (aget spaces i))) e1))]
+                                                ;; extra space when 'joinspaces' set and line ends in '.'
+                                                (when (and @p_js (or (== e1 (byte \.)) (and (any == e1 (byte \?) (byte \!)) (nil? (vim-strbyte @p_cpo, CPO_JOINSP)))))
+                                                    (aset spaces i (inc (aget spaces i))))
+                                            ))
+                                        s)
+                                    s)
+                              n (STRLEN s) m (+ m n (aget spaces i))
+                              [e1 e2]
+                                (if (and insert_space (pos? n))
+                                    (let [#_Bytes q (.plus s n) q (.minus q (us-ptr-back s, q))]
+                                        [(us-ptr2char q) (if (BLT s, q) (us-ptr2char (.minus q (us-ptr-back s, q))) NUL)])
+                                    [NUL NUL]
+                                )]
+                            (if (slow-breakcheck) nil (recur s0 s n m e1 e2 (inc i)))
+                        ))
+                )] (some? _) => false
 
-        ;; Don't move anything, just compute the final line length
-        ;; and setup the array of space strings lengths.
+            (let [#_int col (- m n (aget spaces (dec count))) ;; column position before last line
+                  #_Bytes line (Bytes. (inc m))
+                  ;; Move affected lines to the new long one.
+                  ;; Also move marks from each deleted line to the joined line, adjusting the column.
+                  ;; This is not Vi compatible, but since Vi deletes the marks, it should not be a problem.
+                  n (loop [s0 s0 s s n n #_Bytes q (eos! (.plus line m)) #_int i (dec count)]
+                        (let [t (aget spaces i)
+                              q (.minus q n)
+                              _ (BCOPY q, s, n)
+                              q (if (pos? t) (let [q (.minus q t)] (copy-spaces q, t) q) q)]
+                            (mark-col-adjust (+ lnum i), 0, (- i), (- (+ (BDIFF q, line) t) (BDIFF s, s0)))
+                            (if (zero? i)
+                                n
+                                (let [s0 (ml-get (+ lnum (dec i))) s (if (and insert_space (< 1 i)) (skipwhite s0) s0) n (STRLEN s)]
+                                    (recur s0 s n q (dec i)))
+                            ))
+                    )]
+                (ml-replace lnum, line)
+                (when setmark ;; Set the '] mark.
+                    (swap! curbuf update :b_op_end assoc :lnum lnum :col (STRLEN line)))
+                ;; Only report the change in the first line here, del-lines() will report the deleted lines.
+                (changed-lines lnum, n, (inc lnum), 0)
+                ;; Delete following lines.  To do this we move the cursor there briefly, and then move it back.
+                ;; After del-lines() the cursor may have moved up (last line deleted), so the current lnum is kept.
+                (swap! curwin update-in [:w_cursor :lnum] inc)
+                (del-lines (dec count), false)
+                (swap! curwin assoc-in [:w_cursor :lnum] lnum)
+                ;; Set the cursor column:
+                ;; Vi compatible: use the column of the first join
+                ;; Vim:           use the column of the last join
+                (swap! curwin assoc-in [:w_cursor :col] (if (some? (vim-strbyte @p_cpo, CPO_JOINCOL)) n col))
+                (check-cursor-col)
+                (swap! curwin assoc-in [:w_cursor :coladd] 0)
+                (swap! curwin assoc :w_set_curswant true)
 
-        (dotimes [#_int t count]
-            ((ß curr =) ((ß curr_start =) (ml-get (+ (:lnum (:w_cursor @curwin)) t))))
-            (when (and (zero? t) setmark)
-                ;; Set the '[ mark.
-                (swap! curbuf assoc-in [:b_op_start :lnum] (:lnum (:w_cursor @curwin)))
-                (swap! curbuf assoc-in [:b_op_start :col] (STRLEN curr))
-            )
-
-            (when (and insert_space (< 0 t))
-                ((ß curr =) (skipwhite curr))
-                (when (and (not-at? curr (byte \))) (non-zero? currsize) (!= endcurr1 TAB))
-                    ;; don't add a space if the line is ending in a space
-                    (if (== endcurr1 (byte \space))
-                        ((ß endcurr1 =) endcurr2)
-                        (ß ++spaces[t])
-                    )
-                    ;; extra space when 'joinspaces' set and line ends in '.'
-                    (if (and @p_js (or (== endcurr1 (byte \.)) (and (nil? (vim-strbyte @p_cpo, CPO_JOINSP)) (any == endcurr1 (byte \?) (byte \!)))))
-                        (ß ++spaces[t])
-                    )
-                )
-            )
-            ((ß currsize =) (STRLEN curr))
-            ((ß sumsize =) (+ sumsize (+ currsize (... spaces t))))
-            ((ß endcurr1 =) ((ß endcurr2 =) NUL))
-            (when (and insert_space (< 0 currsize))
-                ((ß Bytes cend =) (.plus curr currsize))
-                ((ß cend =) (.minus cend (us-ptr-back curr, cend)))
-                ((ß endcurr1 =) (us-ptr2char cend))
-                (when (BLT curr, cend)
-                    ((ß cend =) (.minus cend (us-ptr-back curr, cend)))
-                    ((ß endcurr2 =) (us-ptr2char cend))
-                )
-            )
-            (if (slow-breakcheck)
-                ((ß RETURN) false)
-            )
-        )
-
-        ;; store the column position before last line
-        ((ß col =) (- sumsize currsize (... spaces (dec count))))
-
-        ;; allocate the space for the new line
-        ((ß Bytes newp =) (Bytes. (inc sumsize)))
-        ((ß Bytes cend =) (.plus newp sumsize))
-        (eos! cend)
-
-        ;; Move affected lines to the new long one.
-        ;;
-        ;; Move marks from each deleted line to the joined line, adjusting the
-        ;; column.  This is not Vi compatible, but Vi deletes the marks, thus that
-        ;; should not really be a problem.
-
-        (loop-when-recur [#_int t (dec count)] true [(dec t)]
-            ((ß cend =) (.minus cend currsize))
-            (BCOPY cend, curr, currsize)
-            (when (< 0 (... spaces t))
-                ((ß cend =) (.minus cend (... spaces t)))
-                (copy-spaces cend, (... spaces t))
-            )
-            (mark-col-adjust (+ (:lnum (:w_cursor @curwin)) t), 0, (long (- t)), (long (- (+ (BDIFF cend, newp) (... spaces t)) (BDIFF curr, curr_start))))
-            (if (zero? t)
-                (ß BREAK)
-            )
-            ((ß curr =) ((ß curr_start =) (ml-get (- (+ (:lnum (:w_cursor @curwin)) t) 1))))
-            ((ß curr =) (if (and insert_space (< 1 t)) (skipwhite curr) curr))
-            ((ß currsize =) (STRLEN curr))
-        )
-        (ml-replace (:lnum (:w_cursor @curwin)), newp)
-
-        (when setmark
-            ;; Set the '] mark.
-            (swap! curbuf assoc-in [:b_op_end :lnum] (:lnum (:w_cursor @curwin)))
-            (swap! curbuf assoc-in [:b_op_end :col] (STRLEN newp))
-        )
-
-        ;; Only report the change in the first line here,
-        ;; del-lines() will report the deleted line.
-        (changed-lines (:lnum (:w_cursor @curwin)), currsize, (inc (:lnum (:w_cursor @curwin))), 0)
-
-        ;; Delete following lines.  To do this we move the cursor there
-        ;; briefly, and then move it back.  After del-lines() the cursor may
-        ;; have moved up (last line deleted), so the current lnum is kept in t.
-
-        ((ß long t =) (:lnum (:w_cursor @curwin)))
-        (swap! curwin update-in [:w_cursor :lnum] inc)
-        (del-lines (dec count), false)
-        (swap! curwin assoc-in [:w_cursor :lnum] t)
-
-        ;; Set the cursor column:
-        ;; Vi compatible: use the column of the first join
-        ;; vim:           use the column of the last join
-
-        (swap! curwin assoc-in [:w_cursor :col] (if (some? (vim-strbyte @p_cpo, CPO_JOINCOL)) currsize col))
-        (check-cursor-col)
-
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        (swap! curwin assoc :w_set_curswant true)
-
-        retval
+                true
+            ))
     ))
 
 ;; prepare a few things for block mode yank/delete/tilde
@@ -19663,7 +19609,7 @@
     (when (stop-arrow)
         (if (== (gchar) NUL)                        ;; delete newline
             (let [_ (:col (:w_cursor @curwin))]
-                (if (and (can-bs BS_EOL) (do-join 2, false, true, false, false))    ;; only if "eol" included
+                (if (and (can-bs BS_EOL) (do-join 2, false, true, false))    ;; only if "eol" included
                     (swap! curwin assoc-in [:w_cursor :col] _)
                     (vim-beep)
                 ))
@@ -19738,7 +19684,7 @@
                                                 (dec-cursor)
                                                 (let [#_int temp (gchar)]      ;; remember current char
                                                     (swap! curwin update-in [:w_cursor :lnum] dec)
-                                                    (do-join 2, false, false, false, false)
+                                                    (do-join 2, false, false, false)
                                                     (when (and (== temp NUL) (!= (gchar) NUL))
                                                         (inc-cursor))
                                                 ))
@@ -23091,73 +23037,36 @@
 ;; Return true if the current reginput position matches the Visual area.
 
 (defn- #_boolean reg-match-visual []
-    (§
-        (if (zero? (:lnum @VIsual))
-            ((ß RETURN) false)
-        )
+    (if (zero? (:lnum @VIsual))
+        false
+        (let-when [[#_pos_C top #_pos_C bot #_int mode]
+                (if @VIsual_active
+                    (let [v @VIsual c (:w_cursor @curwin) m @VIsual_mode]
+                        (if (ltpos v, c) [v c m] [c v m]))
+                    (let [v (:b_visual @curbuf) s (:vi_start v) e (:vi_end v) m (:vi_mode v)]
+                        (if (ltpos s, e) [s e m] [e s m])
+                    ))
+              #_long lnum (+ @reglnum @reg_firstlnum)
+        ] (<= (:lnum top) lnum (:lnum bot)) => false
 
-        ((ß pos_C top =) (NEW_pos_C))
-        ((ß pos_C bot =) (NEW_pos_C))
-        (ß int mode)
-        (cond @VIsual_active
-        (do
-            (cond (ltpos @VIsual, (:w_cursor @curwin))
-            (do
-                (COPY-pos top, @VIsual)
-                (COPY-pos bot, (:w_cursor @curwin))
-            )
-            :else
-            (do
-                (COPY-pos top, (:w_cursor @curwin))
-                (COPY-pos bot, @VIsual)
+            (condp == mode
+                (byte \v)
+                    (let [#_int col (BDIFF @reginput, @regline)]
+                        (and (or (!= lnum (:lnum top)) (<= (:col top) col))
+                             (or (!= lnum (:lnum bot)) (< col (+ (:col bot) (if (not-at? @p_sel (byte \e)) 1 0))))
+                        ))
+                Ctrl_V
+                    (let [a's1 (atom (int)) a'e1 (atom (int)) _ (getvvcol @curwin, top, a's1, nil, a'e1)
+                          a's2 (atom (int)) a'e2 (atom (int)) _ (getvvcol @curwin, bot, a's2, nil, a'e2)]
+                        (reset! a's1 (min @a's1 @a's2))
+                        (reset! a'e1 (max @a'e2 @a'e1))
+                        (when (or (== (:col top) MAXCOL) (== (:col bot) MAXCOL))
+                            (reset! a'e1 MAXCOL))
+                        (let [#_int cols (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))]
+                            (<= @a's1 cols (- @a'e1 (if (at? @p_sel (byte \e)) 1 0)))
+                        ))
+                true
             ))
-            ((ß mode =) @VIsual_mode)
-        )
-        :else
-        (do
-            (cond (ltpos (:vi_start (:b_visual @curbuf)), (:vi_end (:b_visual @curbuf)))
-            (do
-                (COPY-pos top, (:vi_start (:b_visual @curbuf)))
-                (COPY-pos bot, (:vi_end (:b_visual @curbuf)))
-            )
-            :else
-            (do
-                (COPY-pos top, (:vi_end (:b_visual @curbuf)))
-                (COPY-pos bot, (:vi_start (:b_visual @curbuf)))
-            ))
-            ((ß mode =) (:vi_mode (:b_visual @curbuf)))
-        ))
-        ((ß long lnum =) (+ @reglnum @reg_firstlnum))
-        (if (or (< lnum (:lnum top)) (< (:lnum bot) lnum))
-            ((ß RETURN) false)
-        )
-
-        (cond (== mode (byte \v))
-        (do
-            ((ß int col =) (BDIFF @reginput, @regline))
-            (if (or (and (== lnum (:lnum top)) (< col (:col top))) (and (== lnum (:lnum bot)) (>= col (+ (:col bot) (if (not-at? @p_sel (byte \e)) 1 0)))))
-                ((ß RETURN) false)
-            )
-        )
-        (== mode Ctrl_V)
-        (do
-            ((ß int[] a'start1 =) (atom (int)))
-            ((ß int[] a'end1 =) (atom (int)))
-            (getvvcol @curwin, top, a'start1, nil, a'end1)
-            ((ß int[] a'start2 =) (atom (int)))
-            ((ß int[] a'end2 =) (atom (int)))
-            (getvvcol @curwin, bot, a'start2, nil, a'end2)
-            (reset! a'start1 (min @a'start1 @a'start2))
-            (reset! a'end1 (max @a'end2 @a'end1))
-            (when (or (== (:col top) MAXCOL) (== (:col bot) MAXCOL))
-                (reset! a'end1 MAXCOL))
-            ((ß int cols =) (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline)))
-            (if (or (< cols @a'start1) (< (- @a'end1 (if (at? @p_sel (byte \e)) 1 0)) cols))
-                ((ß RETURN) false)
-            )
-        ))
-
-        true
     ))
 
 ;; The arguments from BRACE_LIMITS are stored here.  They are actually local
@@ -24947,74 +24856,55 @@
 
 ;; Check whether a backreference matches.
 ;; Returns RA_FAIL, RA_NOMATCH or RA_MATCH.
-;; If "bytelen" is not null, it is set to the byte length of the match in the last line.
+;; If "len" is not null, it is set to the byte length of the match in the last line.
 
-(defn- #_int match-with-backref [#_long start_lnum, #_int start_col, #_long end_lnum, #_int end_col, #_int' a'bytelen]
-    (§
-        ((ß long clnum =) start_lnum)
-        ((ß int ccol =) start_col)
-
-        (when (some? a'bytelen)
-            (reset! a'bytelen 0))
-
-        (loop []
-            ;; Since getting one line may invalidate the other, need to make copy.
-            ;; Slow!
-            (when (BNE @regline, @reg_tofree)
-                ((ß int len =) (STRLEN @regline))
+(defn- #_int match-with-backref [#_long start_lnum, #_int start_col, #_long end_lnum, #_int end_col, #_int' a'len]
+    (when (some? a'len)
+        (reset! a'len 0))
+    (loop [#_long lnum start_lnum #_int col start_col]
+        ;; Since getting one line may invalidate the other, need to make copy.
+        ;; Slow!
+        (when (BNE @regline, @reg_tofree)
+            (let [#_int len (STRLEN @regline)]
                 (when (or (nil? @reg_tofree) (<= @reg_tofree_len len))
-                    ((ß len =) (+ len 50))                              ;; get some extra
-                    (reset! reg_tofree (Bytes. len))
-                    (reset! reg_tofree_len len)
-                )
+                    (let [len (+ len 50)] ;; get some extra
+                        (reset! reg_tofree (Bytes. len))
+                        (reset! reg_tofree_len len)
+                    ))
                 (STRCPY @reg_tofree, @regline)
                 (reset! reginput (.plus @reg_tofree (BDIFF @reginput, @regline)))
                 (reset! regline @reg_tofree)
-            )
-
-            ;; Get the line to compare with.
-            ((ß Bytes p =) (reg-getline clnum))
-            ((ß int[] a'len =) (atom (int)))
-            (reset! a'len (if (== clnum end_lnum) (- end_col ccol) (STRLEN p, ccol)))
-
-            (if (non-zero? (cstrncmp (.plus p ccol), @reginput, a'len))
-                ((ß RETURN) RA_NOMATCH)                          ;; doesn't match
-            )
-            (when (some? a'bytelen)
-                (swap! a'bytelen + @a'len))
-            (if (== clnum end_lnum)
-                (ß BREAK)                                      ;; match and at end!
-            )
-            (if (<= @reg_maxline @reglnum)
-                ((ß RETURN) RA_NOMATCH)                          ;; text too short
-            )
-
-            ;; Advance to next line.
-            (reg-nextline)
-            (when (some? a'bytelen)
-                (reset! a'bytelen 0))
-            ((ß clnum =) (inc clnum))
-            ((ß ccol =) 0)
-            (if (fast-breakcheck)
-                ((ß RETURN) RA_FAIL)
-            )
-            (recur)
-        )
-
-        ;; Found a match!
-        ;; Note that regline may now point to a copy of the line, that should not matter.
-        RA_MATCH
+            ))
+        ;; Get the line to compare with.
+        (let-when [#_Bytes p (reg-getline lnum)
+                   a'n (atom (int (if (== lnum end_lnum) (- end_col col) (STRLEN p, col))))
+        ] (zero? (cstrncmp (.plus p col), @reginput, a'n)) => RA_NOMATCH ;; doesn't match
+            (when (some? a'len)
+                (swap! a'len + @a'n))
+            (cond (== lnum end_lnum) ;; match and at end
+                ;; Found a match!
+                ;; Note that regline may now point to a copy of the line, that should not matter.
+                RA_MATCH
+            (<= @reg_maxline @reglnum) ;; text too short
+                RA_NOMATCH
+            :else ;; Advance to next line.
+                (do (reg-nextline)
+                    (when (some? a'len)
+                        (reset! a'len 0))
+                    (if (fast-breakcheck)
+                        RA_FAIL
+                        (recur (inc lnum) 0)
+                    ))
+            ))
     ))
 
 ;; Used in a place where no * or \+ can follow.
 
 (defn- #_boolean re-mult-next [#_Bytes what]
     (if (== (re-multi-type (peekchr)) MULTI_MULT)
-        (do
-            (emsg2 (u8 "E888: (NFA regexp) cannot repeat %s"), what)
+        (do (emsg2 (u8 "E888: (NFA regexp) cannot repeat %s"), what)
             (reset! rc_did_emsg true)
-            false
-        )
+            false)
         true
     ))
 
