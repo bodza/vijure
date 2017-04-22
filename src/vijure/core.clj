@@ -1658,7 +1658,6 @@
         ;; "w_topline", "w_leftcol" and "w_skipcol" specify the offsets for displaying the buffer.
 
         (field long         w_topline)          ;; buffer line number of the line at the top of the window
-        (field boolean      w_topline_was_set)  ;; flag set to true when topline is set, e.g. by winrestview()
         (field int          w_leftcol)          ;; window column of the leftmost character in the window; used when 'wrap' is off
         (field int          w_skipcol)          ;; starting column when a single line doesn't fit in the window
 
@@ -39944,7 +39943,7 @@
                     ((ß did_one =) true)
                     (start-search-hl)
                 )
-                ((ß wp =) (win-update wp))
+                ((ß wp =) (win-update wp, false))
             )
 
             ;; redraw status line after the window to minimize cursor movement
@@ -40005,736 +40004,697 @@
 ;;
 ;; This results in three areas that may need updating:
 ;;
-;; top: from first row to top_end (when scrolled down)
-;; mid: from mid_start to mid_end (update inversion or changed text)
-;; bot: from bot_start to last row (when scrolled up)
+;; top: from first row to "top_end" (when scrolled down)
+;; mid: from "mid_start" to "mid_end" (update inversion or changed text)
+;; bot: from "bot_start" to last row (when scrolled up)
 
-(atom! boolean _2_recursive)    ;; being called recursively
+(defn- #_window_C win-update [#_window_C win, #_boolean recursive?]
+    (cond (zero? (:w_height win))
+        (assoc win :w_redr_type 0)
 
-(defn- #_window_C win-update [#_window_C win]
-    (§
-        ((ß long o'botline =) (:w_botline win))
+    (zero? (:w_width win)) ;; draw the vertical separator right of this window
+        (do (draw-vsep-win win, 0) (assoc win :w_redr_type 0))
 
-        ((ß int type =) (:w_redr_type win))
+    :else
+        (let [o'botline (:w_botline win) a'type (atom (int (:w_redr_type win)))
+              win (if (== @a'type NOT_VALID) (assoc win :w_redr_status true, :w_lines_valid 0) win)
+              _ (init-search-hl)
+              a'mod_top (atom (long 0)) a'mod_bot (atom (long 0)) a'top_to_mod (atom (boolean false)) ;; redraw above "mod_top"
+              ;; Force redraw when width of 'number' or 'relativenumber' column changes.
+              #_int nrwidth (if (or @(:wo_nu (:w_options win)) @(:wo_rnu (:w_options win))) (number-width win) 0)
+              win (cond (!= (:w_nrwidth win) nrwidth)
+                    (do (reset! a'type NOT_VALID) (assoc win :w_nrwidth nrwidth))
+                (and (:b_mod_set @curbuf) (non-zero? (:b_mod_xlines @curbuf)) (non-zero? (:w_redraw_top win)))
+                    ;; When there are both inserted/deleted lines and specific lines to be redrawn, "w_redraw_top" and "w_redraw_bot" may be invalid.
+                    ;; Just redraw everything (only happens when redrawing is off for while).
+                    (do (reset! a'type NOT_VALID) win)
+                :else
+                    ;; Set "mod_top" to the first line that needs displaying because of changes.
+                    ;; Set "mod_bot" to the first line after the changes.
+                    (let [_ (reset! a'mod_top (:w_redraw_top win))
+                          _ (reset! a'mod_bot (if (non-zero? (:w_redraw_bot win)) (inc (:w_redraw_bot win)) 0))
+                          win (assoc win :w_redraw_top 0, :w_redraw_bot 0)] ;; reset for next time
+                        (when (:b_mod_set @curbuf)
+                            (reset! a'mod_top (if (or (zero? @a'mod_top) (< (:b_mod_top @curbuf) @a'mod_top)) (:b_mod_top @curbuf) @a'mod_top))
+                            (reset! a'mod_bot (if (or (zero? @a'mod_bot) (< @a'mod_bot (:b_mod_bot @curbuf))) (:b_mod_bot @curbuf) @a'mod_bot))
+                            ;; When 'hlsearch' is on and using a multi-line search pattern,
+                            ;; a change in one line may make the search highlighting in a previous line invalid.
+                            ;; Simple solution: redraw all visible lines above the change.
+                            (let-when [prog (:regprog (:rmm @search_hl))] (and (some? prog) (re-multiline prog))
+                                (reset! a'top_to_mod true)
+                            ))
+                        ;; When a change starts above "w_topline" and the end is below "w_topline", start redrawing at "w_topline".
+                        ;; If the end of the change is above "w_topline": do like no change was made, but redraw the first line to find changes in syntax.
+                        (reset! a'mod_top (if (and (non-zero? @a'mod_top) (< @a'mod_top (:w_topline win) @a'mod_bot)) (:w_topline win) @a'mod_top))
+                        ;; When line numbers are displayed, need to redraw all lines inserted/deleted below.
+                        (reset! a'mod_bot (if (and (non-zero? @a'mod_top) (non-zero? (:b_mod_xlines @curbuf)) @(:wo_nu (:w_options win))) MAXLNUM @a'mod_bot))
+                        win
+                    ))
 
-        (when (== type NOT_VALID)
-            ((ß win =) (assoc win :w_redr_status true))
-            ((ß win =) (assoc win :w_lines_valid 0))
-        )
+              a'top_end (atom (int 0))              ;; Below last row of the top area that needs updating.  0 when no top area updating.
+              a'mid_start (atom (int 999))          ;; First row of the mid area that needs updating.     999 when no mid area updating.
+              a'mid_end (atom (int 0))              ;; Below last row of the mid area that needs updating.  0 when no mid area updating.
+              a'bot_start (atom (int 999))          ;; First row of the bot area that needs updating.     999 when no bot area updating.
 
-        ;; Window is zero-height: nothing to draw.
-        (when (zero? (:w_height win))
-            ((ß win =) (assoc win :w_redr_type 0))
-            ((ß RETURN) win)
-        )
+              ;; When only displaying the lines at the top, set "top_end".
+              ;; Used when window has scrolled down for "msg_scrolled".
+              _ (when (== @a'type REDRAW_TOP)
+                    (reset! a'top_end
+                        (loop-when [#_int i 0 #_int n 0] (< i (:w_lines_valid win)) => n
+                            (let-when [n (+ n (:wl_size (... (:w_lines win) i)))] (< n (:w_upd_rows win)) => n
+                                (recur (inc i) n))
+                        ))
+                    (reset! a'type
+                        (if (zero? @a'top_end)
+                            NOT_VALID ;; not found (cannot happen?): redraw everything
+                            VALID ;; top area defined, the rest is VALID
+                        )))
 
-        ;; Window is zero-width: Only need to draw the separator.
-        (when (zero? (:w_width win))
-            ;; draw the vertical separator right of this window
-            (draw-vsep-win win, 0)
-            ((ß win =) (assoc win :w_redr_type 0))
-            ((ß RETURN) win)
-        )
+              ;; Trick: we want to avoid clearing the screen twice.  screen-clear() will set
+              ;; "screen_cleared" to true.  The special value MAYBE (which is still non-zero
+              ;; and thus not false) will indicate that screen-clear() was not called.
+              _ (when (!= @screen_cleared FALSE)
+                    (reset! screen_cleared MAYBE))
+        ]
 
-        (init-search-hl)
+            ((ß boolean scrolled_down =) false)      ;; true when scrolled down when "w_topline" got smaller a bit
 
-        ((ß long mod_top =) 0)
-        ((ß long mod_bot =) 0)
-        ((ß boolean top_to_mod =) false)         ;; redraw above mod_top
+            ;; If there are no changes on the screen that require a complete redraw,
+            ;; handle three cases:
+            ;; 1: we are off the top of the screen by a few lines: scroll down
+            ;; 2: win.w_topline is below win.w_lines[0].wl_lnum: may scroll up
+            ;; 3: win.w_topline is win.w_lines[0].wl_lnum: find first entry in w_lines[] that needs updating.
 
-        ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-        ((ß int i =) (if (or @(:wo_nu (:w_options win)) @(:wo_rnu (:w_options win))) (number-width win) 0))
-        (cond (!= (:w_nrwidth win) i)
-        (do
-            ((ß type =) NOT_VALID)
-            ((ß win =) (assoc win :w_nrwidth i))
-        )
-        (and (:b_mod_set @curbuf) (non-zero? (:b_mod_xlines @curbuf)) (non-zero? (:w_redraw_top win)))
-        (do
-            ;; When there are both inserted/deleted lines and specific lines to be
-            ;; redrawn, "w_redraw_top" and "w_redraw_bot" may be invalid, just redraw
-            ;; everything (only happens when redrawing is off for while).
-
-            ((ß type =) NOT_VALID)
-        )
-        :else
-        (do
-            ;; Set mod_top to the first line that needs displaying because of changes.
-            ;; Set mod_bot to the first line after the changes.
-
-            ((ß mod_top =) (:w_redraw_top win))
-            ((ß mod_bot =) (if (non-zero? (:w_redraw_bot win)) (inc (:w_redraw_bot win)) 0))
-            ((ß win =) (assoc win :w_redraw_top 0))    ;; reset for next time
-            ((ß win =) (assoc win :w_redraw_bot 0))
-            (when (:b_mod_set @curbuf)
-                ((ß mod_top =) (if (or (zero? mod_top) (< (:b_mod_top @curbuf) mod_top)) (:b_mod_top @curbuf) mod_top))
-                ((ß mod_bot =) (if (or (zero? mod_bot) (< mod_bot (:b_mod_bot @curbuf))) (:b_mod_bot @curbuf) mod_bot))
-
-                ;; When 'hlsearch' is on and using a multi-line search pattern,
-                ;; a change in one line may make the Search highlighting in a previous line invalid.
-                ;; Simple solution: redraw all visible lines above the change.
-
-                (when (and (some? (:regprog (:rmm @search_hl))) (re-multiline (:regprog (:rmm @search_hl))))
-                    ((ß top_to_mod =) true)
-                )
-            )
-
-            ;; When a change starts above "w_topline" and the end is below "w_topline",
-            ;; start redrawing at "w_topline".
-            ;; If the end of the change is above "w_topline": do like no change was made,
-            ;; but redraw the first line to find changes in syntax.
-            ((ß mod_top =) (if (and (non-zero? mod_top) (< mod_top (:w_topline win) mod_bot)) (:w_topline win) mod_top))
-
-            ;; When line numbers are displayed, need to redraw all lines below
-            ;; inserted/deleted lines.
-            ((ß mod_bot =) (if (and (non-zero? mod_top) (non-zero? (:b_mod_xlines @curbuf)) @(:wo_nu (:w_options win))) MAXLNUM mod_bot))
-        ))
-
-        ((ß int top_end =) 0)                    ;; Below last row of the top area that needs updating.  0 when no top area updating.
-        ((ß int mid_start =) 999)                ;; First row of the mid area that needs updating.     999 when no mid area updating.
-        ((ß int mid_end =) 0)                    ;; Below last row of the mid area that needs updating.  0 when no mid area updating.
-        ((ß int bot_start =) 999)                ;; First row of the bot area that needs updating.     999 when no bot area updating.
-
-        ;; When only displaying the lines at the top, set top_end.
-        ;; Used when window has scrolled down for msg_scrolled.
-
-        (when (== type REDRAW_TOP)
-            ((ß top_end =) (loop-when [#_int i 0 #_int j 0] (< i (:w_lines_valid win)) => top_end
-                (let-when [j (+ j (:wl_size (... (:w_lines win) i)))] (< j (:w_upd_rows win)) => j
-                    (recur (inc i) j)
-                )
-            ))
-            ((ß type =) (if (zero? top_end)
-                NOT_VALID ;; not found (cannot happen?): redraw everything
-                VALID ;; top area defined, the rest is VALID
-            ))
-        )
-
-        ;; Trick: we want to avoid clearing the screen twice.  screen-clear() will set
-        ;; "screen_cleared" to true.  The special value MAYBE (which is still non-zero
-        ;; and thus not false) will indicate that screen-clear() was not called.
-        (when (!= @screen_cleared FALSE)
-            (reset! screen_cleared MAYBE))
-
-        ((ß boolean scrolled_down =) false)      ;; true when scrolled down when "w_topline" got smaller a bit
-
-        ;; If there are no changes on the screen that require a complete redraw,
-        ;; handle three cases:
-        ;; 1: we are off the top of the screen by a few lines: scroll down
-        ;; 2: win.w_topline is below win.w_lines[0].wl_lnum: may scroll up
-        ;; 3: win.w_topline is win.w_lines[0].wl_lnum: find first entry in w_lines[] that needs updating.
-
-        (cond (any == type VALID SOME_VALID INVERTED INVERTED_ALL)
-        (do
-            (cond (and (non-zero? mod_top) (== (:w_topline win) mod_top))
+            (cond (any == @a'type VALID SOME_VALID INVERTED INVERTED_ALL)
             (do
-                ;; "w_topline" is the first changed line, the scrolling will be done further down.
-            )
-            (and (:wl_valid (... (:w_lines win) 0)) (< (:w_topline win) (:wl_lnum (... (:w_lines win) 0))))
-            (do
-                ;; New topline is above old topline: may scroll down.
-                ((ß int j =) (int (- (:wl_lnum (... (:w_lines win) 0)) (:w_topline win))))
-
-                (cond (< j (- (:w_height win) 2))        ;; not too far off
+                (cond (and (non-zero? @a'mod_top) (== (:w_topline win) @a'mod_top))
                 (do
-                    ((ß i =) (plines-many win, (:w_topline win), (dec (:wl_lnum (... (:w_lines win) 0)))))
+                    ;; "w_topline" is the first changed line, the scrolling will be done further down.
+                )
+                (and (:wl_valid (... (:w_lines win) 0)) (< (:w_topline win) (:wl_lnum (... (:w_lines win) 0))))
+                (do
+                    ;; New topline is above old topline: may scroll down.
+                    ((ß int j =) (int (- (:wl_lnum (... (:w_lines win) 0)) (:w_topline win))))
 
-                    (cond (< i (- (:w_height win) 2))    ;; less than a screen off
+                    (cond (< j (- (:w_height win) 2))        ;; not too far off
                     (do
-                        ;; Try to insert the correct number of lines.
-                        ;; If not the last window, delete the lines at the bottom.
-                        ;; win-ins-lines() may fail when the terminal can't do it.
+                        ((ß int i =) (plines-many win, (:w_topline win), (dec (:wl_lnum (... (:w_lines win) 0)))))
 
-                        (if (< 0 i)
-                            (check-for-delay false))
-                        ((ß [win ?] =) (win-ins-lines? win, 0, i, false, (== win @firstwin)))
-                        (cond ?
+                        (cond (< i (- (:w_height win) 2))    ;; less than a screen off
                         (do
-                            (when (non-zero? (:w_lines_valid win))
-                                ;; Need to update rows that are new,
-                                ;; stop at the first one that scrolled down.
-                                ((ß top_end =) i)
-                                ((ß scrolled_down =) true)
+                            ;; Try to insert the correct number of lines.
+                            ;; If not the last window, delete the lines at the bottom.
+                            ;; win-ins-lines() may fail when the terminal can't do it.
 
-                                ;; Move the entries that were scrolled,
-                                ;; disable the entries for the lines to be redrawn.
-                                ((ß win =) (assoc win :w_lines_valid (min (+ (:w_lines_valid win) j) (:w_height win))))
-                                ((ß int idx =) (loop-when-recur [idx (:w_lines_valid win)] (<= 0 (- idx j)) [(dec idx)] => idx
-                                    (COPY-wline (... (:w_lines win) idx), (... (:w_lines win) (- idx j)))
-                                ))
-                                (loop-when-recur idx (<= 0 idx) (dec idx)
-                                    ((ß win.w_lines[idx].wl_valid =) false)
+                            (if (< 0 i)
+                                (check-for-delay false))
+                            ((ß [win ?] =) (win-ins-lines? win, 0, i, false, (== win @firstwin)))
+                            (cond ?
+                            (do
+                                (when (non-zero? (:w_lines_valid win))
+                                    ;; Need to update rows that are new,
+                                    ;; stop at the first one that scrolled down.
+                                    ((ß @a'top_end =) i)
+                                    ((ß scrolled_down =) true)
+
+                                    ;; Move the entries that were scrolled,
+                                    ;; disable the entries for the lines to be redrawn.
+                                    ((ß win =) (assoc win :w_lines_valid (min (+ (:w_lines_valid win) j) (:w_height win))))
+                                    ((ß int idx =) (loop-when-recur [idx (:w_lines_valid win)] (<= 0 (- idx j)) [(dec idx)] => idx
+                                        (COPY-wline (... (:w_lines win) idx), (... (:w_lines win) (- idx j)))
+                                    ))
+                                    (loop-when-recur idx (<= 0 idx) (dec idx)
+                                        ((ß win.w_lines[idx].wl_valid =) false)
+                                    )
                                 )
                             )
+                            :else
+                            (do
+                                ((ß @a'mid_start =) 0)          ;; redraw all lines
+                            ))
                         )
                         :else
                         (do
-                            ((ß mid_start =) 0)          ;; redraw all lines
+                            ((ß @a'mid_start =) 0)              ;; redraw all lines
                         ))
                     )
                     :else
                     (do
-                        ((ß mid_start =) 0)              ;; redraw all lines
+                        ((ß @a'mid_start =) 0)                  ;; redraw all lines
                     ))
                 )
                 :else
                 (do
-                    ((ß mid_start =) 0)                  ;; redraw all lines
+                    ;; New topline is at or below old topline: May scroll up.
+                    ;; When topline didn't change, find first entry in w_lines[] that needs updating.
+
+                    ;; try to find win.w_topline in win.w_lines[].wl_lnum
+                    ((ß int j =) -1)
+                    ((ß int row =) 0)
+                    (loop-when-recur [#_int i 0] (< i (:w_lines_valid win)) [(inc i)]
+                        (when (and (:wl_valid (... (:w_lines win) i)) (== (:wl_lnum (... (:w_lines win) i)) (:w_topline win)))
+                            ((ß j =) i)
+                            (ß BREAK)
+                        )
+                        ((ß row =) (+ row (:wl_size (... (:w_lines win) i))))
+                    )
+                    (cond (== j -1)
+                    (do
+                        ;; if win.w_topline is not in win.w_lines[].wl_lnum redraw all lines
+                        ((ß @a'mid_start =) 0)
+                    )
+                    :else
+                    (do
+                        ;; Try to delete the correct number of lines.
+                        ;; win.w_topline is at win.w_lines[i].wl_lnum.
+
+                        (when (< 0 row)
+                            (check-for-delay false)
+                            ((ß [win ?] =) (win-del-lines? win, 0, row, false, (== win @firstwin)))
+                            (if ?
+                                ((ß @a'bot_start =) (- (:w_height win) row))
+                                ((ß @a'mid_start =) 0)          ;; redraw all lines
+                            )
+                        )
+                        (when (and (or (zero? row) (< @a'bot_start 999)) (non-zero? (:w_lines_valid win)))
+                            ;; Skip the lines (below the deleted lines) that are still valid and
+                            ;; don't need redrawing.  Copy their info upwards, to compensate for the
+                            ;; deleted lines.  Set "bot_start" to the first row that needs redrawing.
+
+                            ((ß @a'bot_start =) 0)
+                            ((ß int idx =) 0)                ;; current index in w_lines[]
+                            (loop []
+                                (COPY-wline (... (:w_lines win) idx), (... (:w_lines win) j))
+                                ;; stop at line that didn't fit,
+                                ;; unless it is still valid (no lines deleted)
+                                (when (and (< 0 row) (< (:w_height win) (+ @a'bot_start row (:wl_size (... (:w_lines win) j)))))
+                                    ((ß win =) (assoc win :w_lines_valid (inc idx)))
+                                    (ß BREAK)
+                                )
+                                ((ß @a'bot_start =) (+ @a'bot_start (:wl_size (... (:w_lines win) (ß idx++)))))
+
+                                ;; stop at the last valid entry in w_lines[].wl_size
+                                (when (<= (:w_lines_valid win) ((ß j =) (inc j)))
+                                    ((ß win =) (assoc win :w_lines_valid idx))
+                                    (ß BREAK)
+                                )
+                                (recur)
+                            )
+                        )
+                    ))
                 ))
+
+                ;; When starting redraw in the first line, redraw all lines.
+                ;; When there is only one window it's probably faster to clear the screen first.
+                (when (zero? @a'mid_start)
+                    ((ß @a'mid_end =) (:w_height win))
+                    (when (== @lastwin @firstwin)
+                        ;; Clear the screen when it was not done by win-del-lines() or win-ins-lines() above,
+                        ;; "screen_cleared" is false or MAYBE then.
+                        (if (!= @screen_cleared TRUE)
+                            (screen-clear))
+                    )
+                )
+
+                ;; When win-del-lines() or win-ins-lines() caused the screen to be
+                ;; cleared (only happens for the first window) or when screen-clear()
+                ;; was called directly above, "must_redraw" will have been set to
+                ;; NOT_VALID, need to reset it here to avoid redrawing twice.
+                (if (== @screen_cleared TRUE)
+                    (reset! must_redraw 0))
             )
             :else
             (do
-                ;; New topline is at or below old topline: May scroll up.
-                ;; When topline didn't change, find first entry in w_lines[] that needs updating.
+                ;; Not VALID or INVERTED: redraw all lines.
+                ((ß @a'mid_start =) 0)
+                ((ß @a'mid_end =) (:w_height win))
+            ))
 
-                ;; try to find win.w_topline in win.w_lines[].wl_lnum
-                ((ß int j =) -1)
-                ((ß int row =) 0)
-                (loop-when-recur [#_int i 0] (< i (:w_lines_valid win)) [(inc i)]
-                    (when (and (:wl_valid (... (:w_lines win) i)) (== (:wl_lnum (... (:w_lines win) i)) (:w_topline win)))
-                        ((ß j =) i)
-                        (ß BREAK)
-                    )
-                    ((ß row =) (+ row (:wl_size (... (:w_lines win) i))))
-                )
-                (cond (== j -1)
+            (when (== @a'type SOME_VALID)
+                ;; SOME_VALID: redraw all lines.
+                ((ß @a'mid_start =) 0)
+                ((ß @a'mid_end =) (:w_height win))
+                ((ß @a'type =) NOT_VALID)
+            )
+
+            ;; check if we are updating or removing the inverted part
+            (when (or @VIsual_active (and (non-zero? (:w_old_cursor_lnum win)) (!= @a'type NOT_VALID)))
+                (ß long from)
+                (ß long to)
+
+                (cond @VIsual_active
                 (do
-                    ;; if win.w_topline is not in win.w_lines[].wl_lnum redraw all lines
-                    ((ß mid_start =) 0)
+                    (cond (and @VIsual_active (or (!= @VIsual_mode (:w_old_visual_mode win)) (== @a'type INVERTED_ALL)))
+                    (do
+                        ;; If the type of Visual selection changed, redraw the whole selection.
+                        ;; Also when the ownership of the X selection is gained or lost.
+
+                        (cond (< (:lnum (:w_cursor @curwin)) (:lnum @VIsual_cursor))
+                        (do
+                            ((ß from =) (:lnum (:w_cursor @curwin)))
+                            ((ß to =) (:lnum @VIsual_cursor))
+                        )
+                        :else
+                        (do
+                            ((ß from =) (:lnum @VIsual_cursor))
+                            ((ß to =) (:lnum (:w_cursor @curwin)))
+                        ))
+                        ;; redraw more when the cursor moved as well
+                        ((ß from =) (min from (:w_old_cursor_lnum win) (:w_old_visual_lnum win)))
+                        ((ß to =) (max (:w_old_cursor_lnum win) (:w_old_visual_lnum win) to))
+                    )
+                    :else
+                    (do
+                        ;; Find the line numbers that need to be updated: The lines
+                        ;; between the old cursor position and the current cursor
+                        ;; position.  Also check if the Visual position changed.
+
+                        (cond (< (:lnum (:w_cursor @curwin)) (:w_old_cursor_lnum win))
+                        (do
+                            ((ß from =) (:lnum (:w_cursor @curwin)))
+                            ((ß to =) (:w_old_cursor_lnum win))
+                        )
+                        :else
+                        (do
+                            ((ß from =) (:w_old_cursor_lnum win))
+                            ((ß to =) (:lnum (:w_cursor @curwin)))
+                            ((ß from =) (if (zero? from) to from))              ;; Visual mode just started
+                        ))
+
+                        (when (or (!= (:lnum @VIsual_cursor) (:w_old_visual_lnum win)) (!= (:col @VIsual_cursor) (:w_old_visual_col win)))
+                            (if (non-zero? (:w_old_visual_lnum win))
+                                ((ß from =) (min from (:w_old_visual_lnum win))))
+                            ((ß from =) (min from (:lnum @VIsual_cursor)))
+                            ((ß to =) (max (:w_old_visual_lnum win) (:lnum @VIsual_cursor) to))
+                        )
+                    ))
+
+                    ;; If in block mode and changed column or curwin.w_curswant: update all lines.
+                    ;; First compute the actual start and end column.
+
+                    (when (== @VIsual_mode Ctrl_V)
+                        ((ß int[] a'fromc =) (atom (int)))
+                        ((ß int[] a'toc =) (atom (int)))
+                        ((ß int save_ve_flags =) @ve_flags)
+
+                        (if @(:wo_lbr (:w_options @curwin))
+                            (reset! ve_flags VE_ALL))
+                        (getvcols win, @VIsual_cursor, (:w_cursor @curwin), a'fromc, a'toc)
+                        (reset! ve_flags save_ve_flags)
+                        (swap! a'toc inc)
+                        (when (== (:w_curswant @curwin) MAXCOL)
+                            (reset! a'toc MAXCOL))
+
+                        (when (or (!= @a'fromc (:w_old_cursor_fcol win)) (!= @a'toc (:w_old_cursor_lcol win)))
+                            ((ß from =) (min from (:lnum @VIsual_cursor)))
+                            ((ß to =) (max (:lnum @VIsual_cursor) to))
+                        )
+                        ((ß win =) (assoc win :w_old_cursor_fcol @a'fromc))
+                        ((ß win =) (assoc win :w_old_cursor_lcol @a'toc))
+                    )
                 )
                 :else
                 (do
-                    ;; Try to delete the correct number of lines.
-                    ;; win.w_topline is at win.w_lines[i].wl_lnum.
-
-                    (when (< 0 row)
-                        (check-for-delay false)
-                        ((ß [win ?] =) (win-del-lines? win, 0, row, false, (== win @firstwin)))
-                        (if ?
-                            ((ß bot_start =) (- (:w_height win) row))
-                            ((ß mid_start =) 0)          ;; redraw all lines
-                        )
+                    ;; Use the line numbers of the old Visual area.
+                    (cond (< (:w_old_cursor_lnum win) (:w_old_visual_lnum win))
+                    (do
+                        ((ß from =) (:w_old_cursor_lnum win))
+                        ((ß to =) (:w_old_visual_lnum win))
                     )
-                    (when (and (or (zero? row) (< bot_start 999)) (non-zero? (:w_lines_valid win)))
-                        ;; Skip the lines (below the deleted lines) that are still valid and
-                        ;; don't need redrawing.  Copy their info upwards, to compensate for the
-                        ;; deleted lines.  Set bot_start to the first row that needs redrawing.
-
-                        ((ß bot_start =) 0)
-                        ((ß int idx =) 0)                ;; current index in w_lines[]
-                        (loop []
-                            (COPY-wline (... (:w_lines win) idx), (... (:w_lines win) j))
-                            ;; stop at line that didn't fit,
-                            ;; unless it is still valid (no lines deleted)
-                            (when (and (< 0 row) (< (:w_height win) (+ bot_start row (:wl_size (... (:w_lines win) j)))))
-                                ((ß win =) (assoc win :w_lines_valid (inc idx)))
-                                (ß BREAK)
-                            )
-                            ((ß bot_start =) (+ bot_start (:wl_size (... (:w_lines win) (ß idx++)))))
-
-                            ;; stop at the last valid entry in w_lines[].wl_size
-                            (when (<= (:w_lines_valid win) ((ß j =) (inc j)))
-                                ((ß win =) (assoc win :w_lines_valid idx))
-                                (ß BREAK)
-                            )
-                            (recur)
-                        )
-                    )
+                    :else
+                    (do
+                        ((ß from =) (:w_old_visual_lnum win))
+                        ((ß to =) (:w_old_cursor_lnum win))
+                    ))
                 ))
-            ))
 
-            ;; When starting redraw in the first line, redraw all lines.
-            ;; When there is only one window it's probably faster to clear the screen first.
-            (when (zero? mid_start)
-                ((ß mid_end =) (:w_height win))
-                (when (== @lastwin @firstwin)
-                    ;; Clear the screen when it was not done by win-del-lines() or win-ins-lines() above,
-                    ;; "screen_cleared" is false or MAYBE then.
-                    (if (!= @screen_cleared TRUE)
-                        (screen-clear))
+                ;; There is no need to update lines above the top of the window.
+
+                ((ß from =) (max (:w_topline win) from))
+
+                ;; If we know the value of "w_botline",
+                ;; use it to restrict the update to the lines that are visible in the window.
+
+                (when (flag? (:w_valid win) VALID_BOTLINE)
+                    ((ß from =) (min from (dec (:w_botline win))))
+                    ((ß to =) (min to (dec (:w_botline win))))
+                )
+
+                ;; Find the minimal part to be updated.
+                ;; Watch out for scrolling that made entries in w_lines[] invalid.
+                ;; E.g., CTRL-U makes the first half of w_lines[] invalid and sets "top_end";
+                ;; need to redraw from "top_end" to the "to" line.
+                ;; A middle mouse click with a Visual selection may change the text above
+                ;; the Visual area and reset wl_valid, do count these for "mid_end" (in srow).
+
+                (when (< 0 @a'mid_start)
+                    ((ß long lnum =) (:w_topline win))       ;; current buffer lnum to display
+                    ((ß int idx =) 0)                    ;; current index in w_lines[]
+                    ((ß int srow =) 0)                   ;; starting row of the current line
+                    ((ß @a'mid_start =) (if scrolled_down @a'top_end 0))
+                    (loop-when [] (and (< lnum from) (< idx (:w_lines_valid win)))   ;; find start
+                        (cond (:wl_valid (... (:w_lines win) idx))
+                        (do
+                            ((ß @a'mid_start =) (+ @a'mid_start (:wl_size (... (:w_lines win) idx))))
+                        )
+                        (not scrolled_down)
+                        (do
+                            ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
+                        ))
+                        ((ß idx =) (inc idx))
+                        ((ß lnum =) (inc lnum))
+                        (recur)
+                    )
+                    ((ß srow =) (+ srow @a'mid_start))
+                    ((ß @a'mid_end =) (:w_height win))
+                    (loop-when-recur idx (< idx (:w_lines_valid win)) (inc idx)          ;; find end
+                        (when (and (:wl_valid (... (:w_lines win) idx)) (<= (inc to) (:wl_lnum (... (:w_lines win) idx))))
+                            ;; Only update until first row of this line.
+                            ((ß @a'mid_end =) srow)
+                            (ß BREAK)
+                        )
+                        ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
+                    )
                 )
             )
-
-            ;; When win-del-lines() or win-ins-lines() caused the screen to be
-            ;; cleared (only happens for the first window) or when screen-clear()
-            ;; was called directly above, "must_redraw" will have been set to
-            ;; NOT_VALID, need to reset it here to avoid redrawing twice.
-            (if (== @screen_cleared TRUE)
-                (reset! must_redraw 0))
-        )
-        :else
-        (do
-            ;; Not VALID or INVERTED: redraw all lines.
-            ((ß mid_start =) 0)
-            ((ß mid_end =) (:w_height win))
-        ))
-
-        (when (== type SOME_VALID)
-            ;; SOME_VALID: redraw all lines.
-            ((ß mid_start =) 0)
-            ((ß mid_end =) (:w_height win))
-            ((ß type =) NOT_VALID)
-        )
-
-        ;; check if we are updating or removing the inverted part
-        (when (or @VIsual_active (and (non-zero? (:w_old_cursor_lnum win)) (!= type NOT_VALID)))
-            (ß long from)
-            (ß long to)
 
             (cond @VIsual_active
             (do
-                (cond (and @VIsual_active (or (!= @VIsual_mode (:w_old_visual_mode win)) (== type INVERTED_ALL)))
-                (do
-                    ;; If the type of Visual selection changed, redraw the whole selection.
-                    ;; Also when the ownership of the X selection is gained or lost.
-
-                    (cond (< (:lnum (:w_cursor @curwin)) (:lnum @VIsual_cursor))
-                    (do
-                        ((ß from =) (:lnum (:w_cursor @curwin)))
-                        ((ß to =) (:lnum @VIsual_cursor))
-                    )
-                    :else
-                    (do
-                        ((ß from =) (:lnum @VIsual_cursor))
-                        ((ß to =) (:lnum (:w_cursor @curwin)))
-                    ))
-                    ;; redraw more when the cursor moved as well
-                    ((ß from =) (min from (:w_old_cursor_lnum win) (:w_old_visual_lnum win)))
-                    ((ß to =) (max (:w_old_cursor_lnum win) (:w_old_visual_lnum win) to))
-                )
-                :else
-                (do
-                    ;; Find the line numbers that need to be updated: The lines
-                    ;; between the old cursor position and the current cursor
-                    ;; position.  Also check if the Visual position changed.
-
-                    (cond (< (:lnum (:w_cursor @curwin)) (:w_old_cursor_lnum win))
-                    (do
-                        ((ß from =) (:lnum (:w_cursor @curwin)))
-                        ((ß to =) (:w_old_cursor_lnum win))
-                    )
-                    :else
-                    (do
-                        ((ß from =) (:w_old_cursor_lnum win))
-                        ((ß to =) (:lnum (:w_cursor @curwin)))
-                        ((ß from =) (if (zero? from) to from))              ;; Visual mode just started
-                    ))
-
-                    (when (or (!= (:lnum @VIsual_cursor) (:w_old_visual_lnum win)) (!= (:col @VIsual_cursor) (:w_old_visual_col win)))
-                        (if (non-zero? (:w_old_visual_lnum win))
-                            ((ß from =) (min from (:w_old_visual_lnum win))))
-                        ((ß from =) (min from (:lnum @VIsual_cursor)))
-                        ((ß to =) (max (:w_old_visual_lnum win) (:lnum @VIsual_cursor) to))
-                    )
-                ))
-
-                ;; If in block mode and changed column or curwin.w_curswant: update all lines.
-                ;; First compute the actual start and end column.
-
-                (when (== @VIsual_mode Ctrl_V)
-                    ((ß int[] a'fromc =) (atom (int)))
-                    ((ß int[] a'toc =) (atom (int)))
-                    ((ß int save_ve_flags =) @ve_flags)
-
-                    (if @(:wo_lbr (:w_options @curwin))
-                        (reset! ve_flags VE_ALL))
-                    (getvcols win, @VIsual_cursor, (:w_cursor @curwin), a'fromc, a'toc)
-                    (reset! ve_flags save_ve_flags)
-                    (swap! a'toc inc)
-                    (when (== (:w_curswant @curwin) MAXCOL)
-                        (reset! a'toc MAXCOL))
-
-                    (when (or (!= @a'fromc (:w_old_cursor_fcol win)) (!= @a'toc (:w_old_cursor_lcol win)))
-                        ((ß from =) (min from (:lnum @VIsual_cursor)))
-                        ((ß to =) (max (:lnum @VIsual_cursor) to))
-                    )
-                    ((ß win =) (assoc win :w_old_cursor_fcol @a'fromc))
-                    ((ß win =) (assoc win :w_old_cursor_lcol @a'toc))
-                )
+                ((ß win =) (assoc win :w_old_visual_mode @VIsual_mode))
+                ((ß win =) (assoc win :w_old_cursor_lnum (:lnum (:w_cursor @curwin))))
+                ((ß win =) (assoc win :w_old_visual_lnum (:lnum @VIsual_cursor)))
+                ((ß win =) (assoc win :w_old_visual_col (:col @VIsual_cursor)))
+                ((ß win =) (assoc win :w_old_curswant (:w_curswant @curwin)))
             )
             :else
             (do
-                ;; Use the line numbers of the old Visual area.
-                (cond (< (:w_old_cursor_lnum win) (:w_old_visual_lnum win))
-                (do
-                    ((ß from =) (:w_old_cursor_lnum win))
-                    ((ß to =) (:w_old_visual_lnum win))
-                )
-                :else
-                (do
-                    ((ß from =) (:w_old_visual_lnum win))
-                    ((ß to =) (:w_old_cursor_lnum win))
-                ))
+                ((ß win =) (assoc win :w_old_visual_mode 0))
+                ((ß win =) (assoc win :w_old_cursor_lnum 0))
+                ((ß win =) (assoc win :w_old_visual_lnum 0))
+                ((ß win =) (assoc win :w_old_visual_col 0))
             ))
 
-            ;; There is no need to update lines above the top of the window.
+            ;; reset got_int, otherwise regexp won't work
+            ((ß boolean o'got_int =) @got_int)
+            (reset! got_int false)
 
-            ((ß from =) (max (:w_topline win) from))
+            ((ß boolean didline =) false)            ;; if true, we finished the last line
+            ((ß boolean eof =) false)                ;; if true, we hit the end of the file
 
-            ;; If we know the value of "w_botline",
-            ;; use it to restrict the update to the lines that are visible in the window.
+            ;; Update all the window rows.
 
-            (when (flag? (:w_valid win) VALID_BOTLINE)
-                ((ß from =) (min from (dec (:w_botline win))))
-                ((ß to =) (min to (dec (:w_botline win))))
-            )
-
-            ;; Find the minimal part to be updated.
-            ;; Watch out for scrolling that made entries in w_lines[] invalid.
-            ;; E.g., CTRL-U makes the first half of w_lines[] invalid and sets top_end;
-            ;; need to redraw from top_end to the "to" line.
-            ;; A middle mouse click with a Visual selection may change the text above
-            ;; the Visual area and reset wl_valid, do count these for mid_end (in srow).
-
-            (when (< 0 mid_start)
-                ((ß long lnum =) (:w_topline win))       ;; current buffer lnum to display
-                ((ß int idx =) 0)                    ;; current index in w_lines[]
-                ((ß int srow =) 0)                   ;; starting row of the current line
-                ((ß mid_start =) (if scrolled_down top_end 0))
-                (loop-when [] (and (< lnum from) (< idx (:w_lines_valid win)))   ;; find start
-                    (cond (:wl_valid (... (:w_lines win) idx))
-                    (do
-                        ((ß mid_start =) (+ mid_start (:wl_size (... (:w_lines win) idx))))
-                    )
-                    (not scrolled_down)
-                    (do
-                        ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
-                    ))
-                    ((ß idx =) (inc idx))
-                    ((ß lnum =) (inc lnum))
-                    (recur)
+            ((ß int idx =) 0)                    ;; first entry in w_lines[].wl_size
+            ((ß int row =) 0)                    ;; current window row to display
+            ((ß int srow =) 0)                   ;; starting row of the current line
+            ((ß long lnum =) (:w_topline win))       ;; first line shown in window
+            (loop []
+                ;; stop updating when reached the end of the window
+                ;; (check for _past_ the end of the window is at the end of the loop)
+                (when (== row (:w_height win))
+                    ((ß didline =) true)
+                    (ß BREAK)
                 )
-                ((ß srow =) (+ srow mid_start))
-                ((ß mid_end =) (:w_height win))
-                (loop-when-recur idx (< idx (:w_lines_valid win)) (inc idx)          ;; find end
-                    (when (and (:wl_valid (... (:w_lines win) idx)) (<= (inc to) (:wl_lnum (... (:w_lines win) idx))))
-                        ;; Only update until first row of this line.
-                        ((ß mid_end =) srow)
-                        (ß BREAK)
-                    )
-                    ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
+
+                ;; stop updating when hit the end of the file
+                (when (< (line-count @curbuf) lnum)
+                    ((ß eof =) true)
+                    (ß BREAK)
                 )
-            )
-        )
 
-        (cond @VIsual_active
-        (do
-            ((ß win =) (assoc win :w_old_visual_mode @VIsual_mode))
-            ((ß win =) (assoc win :w_old_cursor_lnum (:lnum (:w_cursor @curwin))))
-            ((ß win =) (assoc win :w_old_visual_lnum (:lnum @VIsual_cursor)))
-            ((ß win =) (assoc win :w_old_visual_col (:col @VIsual_cursor)))
-            ((ß win =) (assoc win :w_old_curswant (:w_curswant @curwin)))
-        )
-        :else
-        (do
-            ((ß win =) (assoc win :w_old_visual_mode 0))
-            ((ß win =) (assoc win :w_old_cursor_lnum 0))
-            ((ß win =) (assoc win :w_old_visual_lnum 0))
-            ((ß win =) (assoc win :w_old_visual_col 0))
-        ))
+                ;; Remember the starting row of the line that is going to be dealt with.
+                ;; It is used further down when the line doesn't fit.
+                ((ß srow =) row)
 
-        ;; reset got_int, otherwise regexp won't work
-        ((ß boolean o'got_int =) @got_int)
-        (reset! got_int false)
+                ;; Update a line when it is in an area that needs updating,
+                ;; when it has changes or w_lines[idx] is invalid.
+                ;; "bot_start" may be halfway a wrapped line after using win-del-lines(),
+                ;; check if the current line includes it.
+                ;; When syntax folding is being used, the saved syntax states will
+                ;; already have been updated, we can't see where the syntax state is
+                ;; the same again, just update until the end of the window.
 
-        ((ß boolean didline =) false)            ;; if true, we finished the last line
-        ((ß boolean eof =) false)                ;; if true, we hit the end of the file
+                ;; match in fixed position might need redraw if lines were inserted or deleted
+                (cond (or (< row @a'top_end) (and (<= @a'mid_start row) (< row @a'mid_end)) @a'top_to_mod (<= (:w_lines_valid win) idx) (< @a'bot_start (+ row (:wl_size (... (:w_lines win) idx)))) (and (!= @a'mod_top 0) (or (== lnum @a'mod_top) (and (<= @a'mod_top lnum) (< lnum @a'mod_bot)))))
+                (do
+                    ((ß @a'top_to_mod =) (if (== lnum @a'mod_top) false @a'top_to_mod))
 
-        ;; Update all the window rows.
+                    ;; When at start of changed lines:
+                    ;; may scroll following lines up or down to minimize redrawing.
+                    ;; Don't do this when the change continues until the end.
 
-        ((ß int idx =) 0)                    ;; first entry in w_lines[].wl_size
-        ((ß int row =) 0)                    ;; current window row to display
-        ((ß int srow =) 0)                   ;; starting row of the current line
-        ((ß long lnum =) (:w_topline win))       ;; first line shown in window
-        (loop []
-            ;; stop updating when reached the end of the window
-            ;; (check for _past_ the end of the window is at the end of the loop)
-            (when (== row (:w_height win))
-                ((ß didline =) true)
-                (ß BREAK)
-            )
+                    (when (and (== lnum @a'mod_top) (!= @a'mod_bot MAXLNUM))
+                        ((ß int old_rows =) 0)
+                        ((ß int new_rows =) 0)
+                        (ß int xtra_rows)
 
-            ;; stop updating when hit the end of the file
-            (when (< (line-count @curbuf) lnum)
-                ((ß eof =) true)
-                (ß BREAK)
-            )
+                        ;; Count the old number of window rows, using w_lines[], which should
+                        ;; still contain the sizes for the lines as they are currently displayed.
 
-            ;; Remember the starting row of the line that is going to be dealt with.
-            ;; It is used further down when the line doesn't fit.
-            ((ß srow =) row)
-
-            ;; Update a line when it is in an area that needs updating,
-            ;; when it has changes or w_lines[idx] is invalid.
-            ;; bot_start may be halfway a wrapped line after using win-del-lines(),
-            ;; check if the current line includes it.
-            ;; When syntax folding is being used, the saved syntax states will
-            ;; already have been updated, we can't see where the syntax state is
-            ;; the same again, just update until the end of the window.
-
-            ;; match in fixed position might need redraw if lines were inserted or deleted
-            (cond (or (< row top_end) (and (<= mid_start row) (< row mid_end)) top_to_mod (<= (:w_lines_valid win) idx) (< bot_start (+ row (:wl_size (... (:w_lines win) idx)))) (and (!= mod_top 0) (or (== lnum mod_top) (and (<= mod_top lnum) (< lnum mod_bot)))))
-            (do
-                ((ß top_to_mod =) (if (== lnum mod_top) false top_to_mod))
-
-                ;; When at start of changed lines:
-                ;; may scroll following lines up or down to minimize redrawing.
-                ;; Don't do this when the change continues until the end.
-
-                (when (and (== lnum mod_top) (!= mod_bot MAXLNUM))
-                    ((ß int old_rows =) 0)
-                    ((ß int new_rows =) 0)
-                    (ß int xtra_rows)
-
-                    ;; Count the old number of window rows, using w_lines[], which should
-                    ;; still contain the sizes for the lines as they are currently displayed.
-
-                    ((ß i =) (loop-when-recur [i idx] (< i (:w_lines_valid win)) [(inc i)] => i
-                        ;; Only valid lines have a meaningful wl_lnum.
-                        ;; Invalid lines are part of the changed area.
-                        (if (and (:wl_valid (... (:w_lines win) i)) (== (:wl_lnum (... (:w_lines win) i)) mod_bot))
-                            (ß BREAK)
-                        )
-                        ((ß old_rows =) (+ old_rows (:wl_size (... (:w_lines win) i))))
-                    ))
-
-                    (cond (<= (:w_lines_valid win) i)
-                    (do
-                        ;; We can't find a valid line below the changed lines,
-                        ;; need to redraw until the end of the window.
-                        ;; Inserting/deleting lines has no use.
-                        ((ß bot_start =) 0)
-                    )
-                    :else
-                    (do
-                        ;; Able to count old number of rows:
-                        ;; count new window rows, and may insert/delete lines.
-                        ((ß int j =) idx)
-                        (loop-when-recur [#_long l lnum] (< l mod_bot) [(inc l)]
-                            ((ß new_rows =) (+ new_rows (plines win, l, true)))
-                            ((ß j =) (inc j))
-                            (when (< (- (:w_height win) row 2) new_rows)
-                                ;; it's getting too much, must redraw the rest
-                                ((ß new_rows =) 9999)
+                        ((ß int i =) (loop-when-recur [i idx] (< i (:w_lines_valid win)) [(inc i)] => i
+                            ;; Only valid lines have a meaningful wl_lnum.
+                            ;; Invalid lines are part of the changed area.
+                            (if (and (:wl_valid (... (:w_lines win) i)) (== (:wl_lnum (... (:w_lines win) i)) @a'mod_bot))
                                 (ß BREAK)
                             )
-                        )
-                        ((ß xtra_rows =) (- new_rows old_rows))
-                        (cond (< xtra_rows 0)
-                        (do
-                            ;; May scroll text up.
-                            ;; If there is not enough remaining text or scrolling fails,
-                            ;; must redraw the rest.
-                            ;; If scrolling works,
-                            ;; must redraw the text below the scrolled text.
-                            (cond (<= (- (:w_height win) 2) (- row xtra_rows))
-                            (do
-                                ((ß mod_bot =) MAXLNUM)
-                            )
-                            :else
-                            (do
-                                (check-for-delay false)
-                                ((ß [win ?] =) (win-del-lines? win, row, (- xtra_rows), false, false))
-                                (if (not ?)
-                                    ((ß mod_bot =) MAXLNUM)
-                                    ((ß bot_start =) (+ (:w_height win) xtra_rows))
-                                )
-                            ))
-                        )
-                        (< 0 xtra_rows)
-                        (do
-                            ;; May scroll text down.
-                            ;; If there is not enough remaining text of scrolling fails,
-                            ;; must redraw the rest.
-                            (cond (<= (- (:w_height win) 2) (+ row xtra_rows))
-                            (do
-                                ((ß mod_bot =) MAXLNUM)
-                            )
-                            :else
-                            (do
-                                (check-for-delay false)
-                                ((ß [win ?] =) (win-ins-lines? win, (+ row old_rows), xtra_rows, false, false))
-                                (cond (not ?)
-                                (do
-                                    ((ß mod_bot =) MAXLNUM)
-                                )
-                                (< (+ row old_rows) top_end)
-                                (do
-                                    ;; Scrolled the part at the top that requires updating down.
-                                    ((ß top_end =) (+ top_end xtra_rows))
-                                ))
-                            ))
+                            ((ß old_rows =) (+ old_rows (:wl_size (... (:w_lines win) i))))
                         ))
 
-                        ;; When not updating the rest, may need to move w_lines[] entries.
-                        (when (and (!= mod_bot MAXLNUM) (!= i j))
-                            (cond (< j i)
-                            (do
-                                ;; move entries in w_lines[] upwards
-                                ((ß int x =) (loop [x (+ row new_rows)]
-                                    ;; stop at last valid entry in w_lines[]
-                                    (when (<= (:w_lines_valid win) i)
-                                        ((ß win =) (assoc win :w_lines_valid j))
-                                        (ß BREAK)
-                                    )
-                                    (COPY-wline (... (:w_lines win) j), (... (:w_lines win) i))
-                                    ;; stop at a line that won't fit
-                                    (when (< (:w_height win) (+ x (:wl_size (... (:w_lines win) j))))
-                                        ((ß win =) (assoc win :w_lines_valid (inc j)))
-                                        (ß BREAK)
-                                    )
-                                    ((ß x =) (+ x (:wl_size (... (:w_lines win) j))))
-                                    ((ß j =) (inc j))
-                                    ((ß i =) (inc i))
-                                    (recur x)
-                                ))
-                                ((ß bot_start =) (min bot_start x))
-                            )
-                            :else ;; j > i
-                            (do
-                                ;; move entries in w_lines[] downwards
-                                ((ß j =) (- j i))
-                                ((ß win =) (update win :w_lines_valid + j))
-                                ((ß win =) (update win :w_lines_valid min (:w_height win)))
-                                ((ß i =) (loop-when-recur [i (:w_lines_valid win)] (<= idx (- i j)) [(dec i)] => i
-                                    (COPY-wline (... (:w_lines win) i), (... (:w_lines win) (- i j)))
-                                ))
-
-                                ;; The w_lines[] entries for inserted lines are now invalid,
-                                ;; but wl_size may be used above.
-                                ;; Reset to zero.
-                                (loop-when-recur i (<= idx i) (dec i)
-                                    ((ß win.w_lines[i].wl_size =) 0)
-                                    ((ß win.w_lines[i].wl_valid =) false)
-                                )
-                            ))
+                        (cond (<= (:w_lines_valid win) i)
+                        (do
+                            ;; We can't find a valid line below the changed lines,
+                            ;; need to redraw until the end of the window.
+                            ;; Inserting/deleting lines has no use.
+                            ((ß @a'bot_start =) 0)
                         )
-                    ))
-                )
+                        :else
+                        (do
+                            ;; Able to count old number of rows:
+                            ;; count new window rows, and may insert/delete lines.
+                            ((ß int j =) idx)
+                            (loop-when-recur [#_long l lnum] (< l @a'mod_bot) [(inc l)]
+                                ((ß new_rows =) (+ new_rows (plines win, l, true)))
+                                ((ß j =) (inc j))
+                                (when (< (- (:w_height win) row 2) new_rows)
+                                    ;; it's getting too much, must redraw the rest
+                                    ((ß new_rows =) 9999)
+                                    (ß BREAK)
+                                )
+                            )
+                            ((ß xtra_rows =) (- new_rows old_rows))
+                            (cond (< xtra_rows 0)
+                            (do
+                                ;; May scroll text up.
+                                ;; If there is not enough remaining text or scrolling fails,
+                                ;; must redraw the rest.
+                                ;; If scrolling works,
+                                ;; must redraw the text below the scrolled text.
+                                (cond (<= (- (:w_height win) 2) (- row xtra_rows))
+                                (do
+                                    ((ß @a'mod_bot =) MAXLNUM)
+                                )
+                                :else
+                                (do
+                                    (check-for-delay false)
+                                    ((ß [win ?] =) (win-del-lines? win, row, (- xtra_rows), false, false))
+                                    (if (not ?)
+                                        ((ß @a'mod_bot =) MAXLNUM)
+                                        ((ß @a'bot_start =) (+ (:w_height win) xtra_rows))
+                                    )
+                                ))
+                            )
+                            (< 0 xtra_rows)
+                            (do
+                                ;; May scroll text down.
+                                ;; If there is not enough remaining text of scrolling fails,
+                                ;; must redraw the rest.
+                                (cond (<= (- (:w_height win) 2) (+ row xtra_rows))
+                                (do
+                                    ((ß @a'mod_bot =) MAXLNUM)
+                                )
+                                :else
+                                (do
+                                    (check-for-delay false)
+                                    ((ß [win ?] =) (win-ins-lines? win, (+ row old_rows), xtra_rows, false, false))
+                                    (cond (not ?)
+                                    (do
+                                        ((ß @a'mod_bot =) MAXLNUM)
+                                    )
+                                    (< (+ row old_rows) @a'top_end)
+                                    (do
+                                        ;; Scrolled the part at the top that requires updating down.
+                                        ((ß @a'top_end =) (+ @a'top_end xtra_rows))
+                                    ))
+                                ))
+                            ))
 
-                (cond (and (< idx (:w_lines_valid win)) (:wl_valid (... (:w_lines win) idx)) (== (:wl_lnum (... (:w_lines win) idx)) lnum) (< (:w_topline win) lnum) (non-flag? @dy_flags DY_LASTLINE) (< (:w_height win) (+ srow (:wl_size (... (:w_lines win) idx)))))
-                (do
-                    ;; This line is not going to fit.
-                    ;; Don't draw anything here, will draw "@  " lines below.
-                    ((ß row =) (inc (:w_height win)))
+                            ;; When not updating the rest, may need to move w_lines[] entries.
+                            (when (and (!= @a'mod_bot MAXLNUM) (!= i j))
+                                (cond (< j i)
+                                (do
+                                    ;; move entries in w_lines[] upwards
+                                    ((ß int x =) (loop [x (+ row new_rows)]
+                                        ;; stop at last valid entry in w_lines[]
+                                        (when (<= (:w_lines_valid win) i)
+                                            ((ß win =) (assoc win :w_lines_valid j))
+                                            (ß BREAK)
+                                        )
+                                        (COPY-wline (... (:w_lines win) j), (... (:w_lines win) i))
+                                        ;; stop at a line that won't fit
+                                        (when (< (:w_height win) (+ x (:wl_size (... (:w_lines win) j))))
+                                            ((ß win =) (assoc win :w_lines_valid (inc j)))
+                                            (ß BREAK)
+                                        )
+                                        ((ß x =) (+ x (:wl_size (... (:w_lines win) j))))
+                                        ((ß j =) (inc j))
+                                        ((ß i =) (inc i))
+                                        (recur x)
+                                    ))
+                                    ((ß @a'bot_start =) (min @a'bot_start x))
+                                )
+                                :else ;; j > i
+                                (do
+                                    ;; move entries in w_lines[] downwards
+                                    ((ß j =) (- j i))
+                                    ((ß win =) (update win :w_lines_valid + j))
+                                    ((ß win =) (update win :w_lines_valid min (:w_height win)))
+                                    ((ß i =) (loop-when-recur [i (:w_lines_valid win)] (<= idx (- i j)) [(dec i)] => i
+                                        (COPY-wline (... (:w_lines win) i), (... (:w_lines win) (- i j)))
+                                    ))
+
+                                    ;; The w_lines[] entries for inserted lines are now invalid,
+                                    ;; but wl_size may be used above.
+                                    ;; Reset to zero.
+                                    (loop-when-recur i (<= idx i) (dec i)
+                                        ((ß win.w_lines[i].wl_size =) 0)
+                                        ((ß win.w_lines[i].wl_valid =) false)
+                                    )
+                                ))
+                            )
+                        ))
+                    )
+
+                    (cond (and (< idx (:w_lines_valid win)) (:wl_valid (... (:w_lines win) idx)) (== (:wl_lnum (... (:w_lines win) idx)) lnum) (< (:w_topline win) lnum) (non-flag? @dy_flags DY_LASTLINE) (< (:w_height win) (+ srow (:wl_size (... (:w_lines win) idx)))))
+                    (do
+                        ;; This line is not going to fit.
+                        ;; Don't draw anything here, will draw "@  " lines below.
+                        ((ß row =) (inc (:w_height win)))
+                    )
+                    :else
+                    (do
+                        (prepare-search-hl win, lnum)
+
+                        ;; Display one line.
+
+                        ((ß [win row] =) (win-line win, lnum, srow, (:w_height win)))
+                    ))
+
+                    ((ß win.w_lines[idx].wl_lnum =) lnum)
+                    ((ß win.w_lines[idx].wl_valid =) true)
+                    (when (< (:w_height win) row)              ;; past end of screen
+                        ;; we may need the size of that too long line later on
+                        ((ß win.w_lines[idx].wl_size =) (plines win, lnum, true))
+                        ((ß idx =) (inc idx))
+                        (ß BREAK)
+                    )
+                    ((ß win.w_lines[idx].wl_size =) (- row srow))
+                    ((ß idx =) (inc idx))
+                    ((ß lnum =) (inc lnum))
                 )
                 :else
                 (do
-                    (prepare-search-hl win, lnum)
-
-                    ;; Display one line.
-
-                    ((ß [win row] =) (win-line win, lnum, srow, (:w_height win)))
+                    ;; This line does not need updating, advance to the next one.
+                    ((ß row =) (+ row (:wl_size (... (:w_lines win) (ß idx++)))))
+                    (if (< (:w_height win) row)              ;; past end of screen
+                        (ß BREAK)
+                    )
+                    ((ß lnum =) (inc lnum))
                 ))
 
-                ((ß win.w_lines[idx].wl_lnum =) lnum)
-                ((ß win.w_lines[idx].wl_valid =) true)
-                (when (< (:w_height win) row)              ;; past end of screen
-                    ;; we may need the size of that too long line later on
-                    ((ß win.w_lines[idx].wl_size =) (plines win, lnum, true))
-                    ((ß idx =) (inc idx))
+                (when (< (line-count @curbuf) lnum)
+                    ((ß eof =) true)
                     (ß BREAK)
                 )
-                ((ß win.w_lines[idx].wl_size =) (- row srow))
-                ((ß idx =) (inc idx))
-                ((ß lnum =) (inc lnum))
+                (recur)
             )
-            :else
+
+            ;; End of loop over all window lines.
+
+            ((ß win =) (update win :w_lines_valid max idx))
+
+            ;; If we didn't hit the end of the file, and we didn't finish the last
+            ;; line we were working on, then the line didn't fit.
+
+            ((ß win =) (assoc win :w_empty_rows 0))
+            (cond (and (not eof) (not didline))
             (do
-                ;; This line does not need updating, advance to the next one.
-                ((ß row =) (+ row (:wl_size (... (:w_lines win) (ß idx++)))))
-                (if (< (:w_height win) row)              ;; past end of screen
-                    (ß BREAK)
+                (cond (== lnum (:w_topline win))
+                (do
+                    ;; Single line that does not fit!
+                    ;; Don't overwrite it, it can be edited.
+
+                    ((ß win =) (assoc win :w_botline (inc lnum)))
                 )
-                ((ß lnum =) (inc lnum))
-            ))
+                (flag? @dy_flags DY_LASTLINE)     ;; 'display' has "lastline"
+                (do
+                    ;; Last line isn't finished: Display "@@@" at the end.
 
-            (when (< (line-count @curbuf) lnum)
-                ((ß eof =) true)
-                (ß BREAK)
-            )
-            (recur)
-        )
-
-        ;; End of loop over all window lines.
-
-        ((ß win =) (update win :w_lines_valid max idx))
-
-        ;; If we didn't hit the end of the file, and we didn't finish the last
-        ;; line we were working on, then the line didn't fit.
-
-        ((ß win =) (assoc win :w_empty_rows 0))
-        (cond (and (not eof) (not didline))
-        (do
-            (cond (== lnum (:w_topline win))
-            (do
-                ;; Single line that does not fit!
-                ;; Don't overwrite it, it can be edited.
-
-                ((ß win =) (assoc win :w_botline (inc lnum)))
-            )
-            (flag? @dy_flags DY_LASTLINE)     ;; 'display' has "lastline"
-            (do
-                ;; Last line isn't finished: Display "@@@" at the end.
-
-                (screen-fill (- (+ (:w_winrow win) (:w_height win)) 1), (+ (:w_winrow win) (:w_height win)), (- (+ (:w_wincol win) (:w_width win)) 3), (+ (:w_wincol win) (:w_width win)), (byte \@), (byte \@), (hl-attr HLF_AT))
-                ((ß win =) (set-empty-rows win, srow))
-                ((ß win =) (assoc win :w_botline lnum))
+                    (screen-fill (- (+ (:w_winrow win) (:w_height win)) 1), (+ (:w_winrow win) (:w_height win)), (- (+ (:w_wincol win) (:w_width win)) 3), (+ (:w_wincol win) (:w_width win)), (byte \@), (byte \@), (hl-attr HLF_AT))
+                    ((ß win =) (set-empty-rows win, srow))
+                    ((ß win =) (assoc win :w_botline lnum))
+                )
+                :else
+                (do
+                    ((ß win =) (win-draw-end win, (byte \@), (byte \space), srow, (:w_height win), HLF_AT))
+                    ((ß win =) (assoc win :w_botline lnum))
+                ))
             )
             :else
             (do
-                ((ß win =) (win-draw-end win, (byte \@), (byte \space), srow, (:w_height win), HLF_AT))
-                ((ß win =) (assoc win :w_botline lnum))
+                (draw-vsep-win win, row)
+                (cond eof                                ;; we hit the end of the file
+                (do
+                    ((ß win =) (assoc win :w_botline (inc (line-count @curbuf))))
+                )
+                :else
+                (do
+                    ((ß win =) (assoc win :w_botline lnum))
+                ))
+
+                ;; Make sure the rest of the screen is blank,
+                ;; put '~'s on rows that aren't part of the file.
+                ((ß win =) (win-draw-end win, (byte \~), (byte \space), row, (:w_height win), HLF_AT))
             ))
-        )
-        :else
-        (do
-            (draw-vsep-win win, row)
-            (cond eof                                ;; we hit the end of the file
-            (do
-                ((ß win =) (assoc win :w_botline (inc (line-count @curbuf))))
+
+            ;; Reset the type of redrawing required, the window has been updated.
+            ((ß win =) (assoc win :w_redr_type 0))
+
+            ;; There is a trick with "w_botline".  If we invalidate it on each change that might modify it,
+            ;; this will cause a lot of expensive calls to plines() in update-topline() each time.
+            ;; Therefore the value of "w_botline" is often approximated, and this value is used to compute
+            ;; the value of "w_topline".  If the value of "w_botline" was wrong, check that the value of
+            ;; "w_topline" is correct (cursor is on the visible part of the text).  If it's not, we need to
+            ;; redraw again.  Mostly this just means scrolling up a few lines, so it doesn't look too bad.
+            ;; Only do this for the current window (where changes are relevant).
+
+            ((ß win =) (update win :w_valid | VALID_BOTLINE))
+            (when (and (== win @curwin) (!= (:w_botline win) o'botline) (not recursive?))
+                (swap! curwin update :w_valid & (bit-not VALID_TOPLINE))
+                (swap! curwin update-topline)   ;; may invalidate "w_botline" again
+                (when (non-zero? @must_redraw)
+                    ;; Don't update for changes in buffer again.
+                    ((ß boolean b =) (:b_mod_set @curbuf))
+                    (swap! curbuf assoc :b_mod_set false)
+                    (swap! curwin win-update true)
+                    (reset! must_redraw 0)
+                    (swap! curbuf assoc :b_mod_set b)
+                )
             )
-            :else
-            (do
-                ((ß win =) (assoc win :w_botline lnum))
-            ))
 
-            ;; Make sure the rest of the screen is blank,
-            ;; put '~'s on rows that aren't part of the file.
-            ((ß win =) (win-draw-end win, (byte \~), (byte \space), row, (:w_height win), HLF_AT))
-        ))
-
-        ;; Reset the type of redrawing required, the window has been updated.
-        ((ß win =) (assoc win :w_redr_type 0))
-
-        ;; There is a trick with "w_botline".  If we invalidate it on each change that might modify it,
-        ;; this will cause a lot of expensive calls to plines() in update-topline() each time.
-        ;; Therefore the value of "w_botline" is often approximated, and this value is used to compute
-        ;; the value of "w_topline".  If the value of "w_botline" was wrong, check that the value of
-        ;; "w_topline" is correct (cursor is on the visible part of the text).  If it's not, we need to
-        ;; redraw again.  Mostly this just means scrolling up a few lines, so it doesn't look too bad.
-        ;; Only do this for the current window (where changes are relevant).
-
-        ((ß win =) (update win :w_valid | VALID_BOTLINE))
-        (when (and (== win @curwin) (!= (:w_botline win) o'botline) (not @_2_recursive))
-            (reset! _2_recursive true)
-            (swap! curwin update :w_valid & (bit-not VALID_TOPLINE))
-            (swap! curwin update-topline)   ;; may invalidate "w_botline" again
-            (when (non-zero? @must_redraw)
-                ;; Don't update for changes in buffer again.
-                ((ß boolean b =) (:b_mod_set @curbuf))
-                (swap! curbuf assoc :b_mod_set false)
-                (swap! curwin win-update)
-                (reset! must_redraw 0)
-                (swap! curbuf assoc :b_mod_set b)
-            )
-            (reset! _2_recursive false)
+            ;; restore got_int, unless CTRL-C was hit while redrawing
+            (when (not @got_int)
+                (reset! got_int o'got_int))
+            win
         )
-
-        ;; restore got_int, unless CTRL-C was hit while redrawing
-        (when (not @got_int)
-            (reset! got_int o'got_int))
-        win
     ))
 
 ;; Clear the rest of the window and mark the unused lines with "c1".
@@ -40854,9 +40814,9 @@
                     (let [[#_int c #_Bytes p]
                             (loop-when [c 0 p @a's] (and (< @a'vcol v) (non-eos? @a's)) => [c p]
                                 (let [c (win-lbr-chartabsize win, @a'line, @a's, @a'vcol, nil)
-                                      _ (reset! a'vcol (+ @a'vcol c))
+                                      _ (swap! a'vcol + c)
                                       p @a's
-                                      _ (reset! a's (.plus @a's (us-ptr2len-cc @a's)))]
+                                      _ (swap! a's #(.plus % (us-ptr2len-cc %)))]
                                     (recur c p))
                             )]
                         ;; When 'cuc', or 'colorcolumn', or 'virtualedit' is set, or the visual mode is active,
@@ -40865,7 +40825,7 @@
                         ;; Handle a character that's not completely on the screen:
                         ;; put "s" at that character, but skip the first few screen characters.
                         (when (< v @a'vcol)
-                            (reset! a'vcol (- @a'vcol c))
+                            (swap! a'vcol - c)
                             (reset! a's p)
                             (reset! a'n_skip (- v @a'vcol)))
                         ;; Adjust for when the inverted text is before the screen,
@@ -41131,7 +41091,7 @@
                                 (cond (< 0 @a'n_extra)
                                     (if (!= @a'c_extra NUL)
                                         (let [c @a'c_extra]
-                                            (reset! a'n_extra (dec @a'n_extra))
+                                            (swap! a'n_extra dec)
                                             (if (< 1 (utf-char2len c))
                                                 (do (aset u8cc 0 0) [0xc0 c true])
                                                 [c c false]
@@ -41148,8 +41108,8 @@
                                             (if (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
                                                 (do (reset! a'multi_attr (hl-attr HLF_AT))
                                                     [(byte \>) (byte \>) false])
-                                                (do (reset! a'n_extra (- @a'n_extra l))
-                                                    (reset! a'p_extra (.plus @a'p_extra l))
+                                                (do (swap! a'n_extra - l)
+                                                    (swap! a'p_extra plus l)
                                                     [c mb_c mb_utf8]
                                                 ))
                                         ))
@@ -41188,14 +41148,14 @@
                                           [c mb_c mb_utf8 l]
                                             (if (and (<= (dec (:w_width win)) @a'col) (== (utf-char2cells mb_c) 2))
                                                 ;; Put pointer back so the character will be displayed at the start of the next line.
-                                                (do (reset! a's (.minus @a's 1))
+                                                (do (swap! a's minus 1)
                                                     (reset! a'multi_attr (hl-attr HLF_AT))
                                                     [(byte \>) (byte \>) false 1])
                                                 (do (when (non-eos? @a's)
-                                                        (reset! a's (.plus @a's (dec l))))
+                                                        (swap! a's plus (dec l)))
                                                     [c mb_c mb_utf8 l]
                                                 ))
-                                          _ (reset! a's (.plus @a's 1))
+                                          _ (swap! a's plus 1)
                                           ;; If a double-width char doesn't fit at the left side, display a '<' in the first column.
                                           ;; Don't do this for unprintable characters.
                                           [c mb_c mb_utf8]
@@ -41246,7 +41206,7 @@
                                                                     c
                                                                 ))
                                                             (do (reset! a'n_extra (dec (mb-byte2cells (byte c))))
-                                                                (reset! a'p_extra (.plus @a'p_extra 1))
+                                                                (swap! a'p_extra plus 1)
                                                                 (.at @a'p_extra -1))
                                                         )]
                                                     (when (not @a'attr_pri)
@@ -41268,7 +41228,7 @@
                                                                 (reset! a'c_extra NUL))
                                                         ))
                                                     (reset! a'over_eol true)
-                                                    (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                    (swap! a's minus 1) ;; put it back at the NUL
                                                     (when (not @a'attr_pri)
                                                         (reset! a'extra_attr (hl-attr HLF_AT))
                                                         (reset! a'n_attr2 1))
@@ -41276,14 +41236,14 @@
 
                                             (and @VIsual_active (any == @VIsual_mode Ctrl_V (byte \v)) (virtual-active)
                                                                 (!= @a'tocol MAXCOL) (< @a'vcol @a'tocol) (< @a'col (:w_width win)))
-                                                (do (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                (do (swap! a's minus 1) ;; put it back at the NUL
                                                     [(byte \space) mb_c mb_utf8])
 
                                             (and (non-zero? @a'line_attr) (< @a'col (:w_width win)))
                                                 ;; Highlight until the right side of the window.
-                                                (do (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                (do (swap! a's minus 1) ;; put it back at the NUL
                                                     ;; Remember we do the char for line highlighting.
-                                                    (reset! a'did_line_attr (inc @a'did_line_attr))
+                                                    (swap! a'did_line_attr inc)
                                                     ;; Don't do search HL for the rest of the line.
                                                     (reset! a'char_attr (if (and (non-zero? @a'line_attr) (== @a'char_attr @a'search_attr) (< 0 @a'col)) @a'line_attr @a'char_attr))
                                                 [(byte \space) mb_c mb_utf8])
@@ -41310,8 +41270,8 @@
                                         (let [#_int n (if (<= (:w_width win) @a'col) -1 0)]
                                             (if (non-zero? n)
                                                 (do ;; At the window boundary, highlight the last character instead (better than nothing).
-                                                    (reset! a'off (+ @a'off n))
-                                                    (reset! a'col (+ @a'col n)))
+                                                    (swap! a'off + n)
+                                                    (swap! a'col + n))
                                                 (do ;; Add a blank character to highlight.
                                                     (.be @screenLines @a'off, (byte \space))
                                                     (aset @screenLinesUC @a'off 0)
@@ -41319,9 +41279,9 @@
                                             (when (zero? @a'area_attr)
                                                 (reset! a'char_attr (:attr @search_hl)))
                                             (aset @screenAttrs @a'off @a'char_attr)
-                                            (reset! a'col (inc @a'col))
-                                            (reset! a'off (inc @a'off))
-                                            (reset! a'vcol (inc @a'vcol))
+                                            (swap! a'col inc)
+                                            (swap! a'off inc)
+                                            (swap! a'vcol inc)
                                             (reset! a'eol_hl_off 1)
                                         ))
                                 ))
@@ -41330,9 +41290,9 @@
                             (cond (== c NUL)
                                 (do (when (and (< 0 @a'eol_hl_off) (== (- @a'vcol @a'eol_hl_off) (:w_virtcol win)) (== lnum (:lnum (:w_cursor win))))
                                         ;; highlight last char after line
-                                        (reset! a'col (dec @a'col))
-                                        (reset! a'off (dec @a'off))
-                                        (reset! a'vcol (dec @a'vcol)))
+                                        (swap! a'col dec)
+                                        (swap! a'off dec)
+                                        (swap! a'vcol dec))
                                     ;; Highlight 'cursorcolumn' and 'colorcolumn' past end of the line.
                                     (let [#_int v (if wo_wrap (:w_skipcol win) (:w_leftcol win))]
                                         ;; check if line ends before left margin
@@ -41357,7 +41317,7 @@
                                                 (loop-when [] (< @a'col (:w_width win))
                                                     (.be @screenLines @a'off, (byte \space))
                                                     (aset @screenLinesUC @a'off 0)
-                                                    (reset! a'col (inc @a'col))
+                                                    (swap! a'col inc)
                                                     (reset! a'draw_color_col (and @a'draw_color_col (advance-color-col @a'vcol, color_cols, a'cci)))
                                                     (let [#_int attr
                                                             (cond
@@ -41366,15 +41326,15 @@
                                                                 :else                                                        0
                                                             )]
                                                         (aset @screenAttrs @a'off attr)
-                                                        (reset! a'off (inc @a'off))
+                                                        (swap! a'off inc)
                                                         (when (< @a'vcol rightmost_vcol)
-                                                            (reset! a'vcol (inc @a'vcol))
+                                                            (swap! a'vcol inc)
                                                             (recur))
                                                     ))
                                             ))
 
                                         (screen-line @a'screen_row, (:w_wincol win), @a'col, (:w_width win), false)
-                                        (reset! a'row (inc @a'row))
+                                        (swap! a'row inc)
 
                                         ;; Update "w_cline_height" if the cursor line was updated (saves a call to plines() later).
                                         (let [win (if (and (== win @curwin) (== lnum (:lnum (:w_cursor win))))
@@ -41398,12 +41358,12 @@
                                             (cond (and wo_cuc (== @a'vcol (:w_virtcol win)) (!= lnum (:lnum (:w_cursor win))))
                                             (do
                                                 (reset! a'vcol_save_attr @a'char_attr)
-                                                (reset! a'char_attr (hl-combine-attr @a'char_attr, (hl-attr HLF_CUC)))
+                                                (swap! a'char_attr hl-combine-attr (hl-attr HLF_CUC))
                                             )
                                             (and @a'draw_color_col (== @a'vcol (... color_cols @a'cci)))
                                             (do
                                                 (reset! a'vcol_save_attr @a'char_attr)
-                                                (reset! a'char_attr (hl-combine-attr @a'char_attr, (hl-attr HLF_MC)))
+                                                (swap! a'char_attr hl-combine-attr (hl-attr HLF_MC))
                                             ))
                                         )
                                         ;; Store character to be displayed.
@@ -41427,20 +41387,20 @@
                                                     (aset @screenAttrs @a'off @a'char_attr))
                                                 (when (< 1 (utf-char2cells mb_c))
                                                     ;; Need to fill two screen columns.
-                                                    (reset! a'off (inc @a'off))
-                                                    (reset! a'col (inc @a'col))
+                                                    (swap! a'off inc)
+                                                    (swap! a'col inc)
                                                     ;; UTF-8: Put a 0 in the second screen char.
                                                     (eos! @screenLines @a'off)
-                                                    (reset! a'vcol (inc @a'vcol))
+                                                    (swap! a'vcol inc)
                                                     ;; When "tocol" is halfway a character, set it to the end
                                                     ;; of the character, otherwise highlighting won't stop.
                                                     (when (== @a'tocol @a'vcol)
                                                         (swap! a'tocol inc)
                                                     ))
-                                                (reset! a'off (inc @a'off))
-                                                (reset! a'col (inc @a'col))
+                                                (swap! a'off inc)
+                                                (swap! a'col inc)
                                             )
-                                            (reset! a'n_skip (dec @a'n_skip))
+                                            (swap! a'n_skip dec)
                                         )
 
                                         ;; Advance "vcol" only after the 'number' or 'relativenumber' column.
@@ -41450,7 +41410,7 @@
 
                                         ;; restore attributes after last 'number' char
                                         (when (and (< 0 @a'n_attr2) (== @a'draw_state WL_LINE))
-                                            (reset! a'n_attr2 (dec @a'n_attr2))
+                                            (swap! a'n_attr2 dec)
                                             (when (zero? @a'n_attr2)
                                                 (reset! a'char_attr @a'saved_attr2)
                                             ))
@@ -41462,8 +41422,8 @@
                                             (recur win)
 
                                             (do (screen-line @a'screen_row, (:w_wincol win), @a'col, (:w_width win), false)
-                                                (reset! a'row (inc @a'row))
-                                                (reset! a'screen_row (inc @a'screen_row))
+                                                (swap! a'row inc)
+                                                (swap! a'screen_row inc)
 
                                                 ;; When not wrapping and finished diff lines, or when displayed '$' and highlighting until last column, break here.
                                                 (if (or (not wo_wrap) @a'over_eol)
@@ -41480,7 +41440,7 @@
 
                                                         ;; When line got too long for screen break here.
                                                         (if (== @a'row endrow)
-                                                            (do (reset! a'row (inc @a'row)) #_BREAK [win @a'row])
+                                                            (do (swap! a'row inc) #_BREAK [win @a'row])
 
                                                             (do (when (and (== @screen_cur_row (dec @a'screen_row)) (== (:w_width win) @Cols))
                                                                     ;; Remember that the line wraps, used for modeless copy.
@@ -45971,7 +45931,7 @@
     ;; Approximate the value of "w_botline".
     (let [win (update win :w_botline + (- lnum (:w_topline win)))]
         (-> win
-            (assoc :w_topline lnum, :w_topline_was_set true)
+            (assoc :w_topline lnum)
             (update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_TOPLINE)))
             ;; Don't set VALID_TOPLINE here, 'scrolloff' needs to be checked.
             (redraw-later VALID)
