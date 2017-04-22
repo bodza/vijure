@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(alist barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except expand file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except expand file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(aentry attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -1000,10 +1000,8 @@
 
 ;; Values for mch_call_shell() second argument.
 (final int SHELL_FILTER    1)       ;; filtering text
-(final int SHELL_EXPAND    2)       ;; expanding wildcards
 (final int SHELL_COOKED    4)       ;; set term to cooked mode
 (final int SHELL_DOOUT     8)       ;; redirecting output
-(final int SHELL_SILENT    16)      ;; don't print error returned by command
 (final int SHELL_READ      32)      ;; read lines and insert into buffer
 (final int SHELL_WRITE     64)      ;; write lines from buffer
 
@@ -1060,14 +1058,6 @@
 ;; values for reg_do_extmatch
 (final int REX_SET         1)       ;; to allow \z\(...\),
 (final int REX_USE         2)       ;; to allow \z\1 et al.
-
-;; Return values for fullpathcmp().
-;; Note: can use (fullpathcmp() & FPC_SAME) to check for equal files.
-(final int FPC_SAME        1)       ;; both exist and are the same file.
-(final int FPC_DIFF        2)       ;; both exist and are different files.
-(final int FPC_NOTX        4)       ;; both don't exist.
-(final int FPC_DIFFX       6)       ;; one of them doesn't exist.
-(final int FPC_SAMEX       7)       ;; both don't exist and file names are same.
 
 ;; flags for do_ecmd()
 (final int ECMD_HIDE       0x01)    ;; don't free the current buffer
@@ -1155,12 +1145,6 @@
 (final int WSP_BELOW       32)      ;; put new window below/right
 (final int WSP_ABOVE       64)      ;; put new window above/left
 (final int WSP_NEWLOC      128)     ;; don't copy location list
-
-;; arguments for gui_set_shellsize()
-
-(final int RESIZE_VERT     1)       ;; resize vertically
-(final int RESIZE_HOR      2)       ;; resize horizontally
-(final int RESIZE_BOTH     15)      ;; resize in both directions
 
 ;; flags for check_changed()
 
@@ -2456,25 +2440,6 @@
         (field int          ml_usedchunks)
     ])
 
-;; For each argument remember the file name as it was given, and the buffer
-;; number that contains the expanded file name (required for when ":cd" is used.
-
-(class! #_final aentry_C
-    [
-        (field Bytes        ae_fname)           ;; file name as specified
-        (field int          ae_fnum)            ;; buffer number with expanded file name
-    ])
-
-;; Argument list: Array of file names.
-;; Used for the global argument list and the argument lists local to a window.
-
-(class! #_final alist_C
-    [
-        (field aentry_C*    al_ga           0)  ;; growarray with the array of file names
-        (field int          al_refcount)        ;; number of windows using this arglist
-        (field int          id)                 ;; id of this arglist
-    ])
-
 ;; What's pending for being reactivated at the ":endtry" of this try conditional:
 
 (final byte
@@ -3163,10 +3128,6 @@
 
         (field int          w_alt_fnum)         ;; alternate file (for # and CTRL-^)
 
-        (field alist_C      w_alist)            ;; pointer to arglist for this window
-        (field int          w_arg_idx)          ;; current index in argument list (can be out of range!)
-        (field boolean      w_arg_idx_invalid)  ;; editing another file than w_arg_idx
-
         ;; Options local to a window.
         ;; They are local because they influence the layout of the window or depend on the window layout.
         ;; There are two values:
@@ -3382,7 +3343,6 @@
 (final byte
     ADDR_LINES          0,
     ADDR_WINDOWS        1,
-    ADDR_ARGUMENTS      2,
     ADDR_LOADED_BUFFERS 3,
     ADDR_BUFFERS        4,
     ADDR_TABS           5)
@@ -3393,246 +3353,218 @@
     CMD_abclear 2,
     CMD_aboveleft 3,
     CMD_all 4,
-    CMD_args 5,
-    CMD_argadd 6,
-    CMD_argdelete 7,
-    CMD_argdo 8,
-    CMD_argedit 9,
-    CMD_argglobal 10,
-    CMD_arglocal 11,
-    CMD_argument 12,
-    CMD_ascii 13,
-    CMD_buffer 14,
-    CMD_bNext 15,
-    CMD_ball 16,
-    CMD_badd 17,
-    CMD_bdelete 18,
-    CMD_belowright 19,
-    CMD_bfirst 20,
-    CMD_blast 21,
-    CMD_bmodified 22,
-    CMD_bnext 23,
-    CMD_botright 24,
-    CMD_bprevious 25,
-    CMD_brewind 26,
-    CMD_browse 27,
-    CMD_buffers 28,
-    CMD_bufdo 29,
-    CMD_bunload 30,
-    CMD_bwipeout 31,
-    CMD_change 32,
-    CMD_cabbrev 33,
-    CMD_cabclear 34,
-    CMD_center 35,
-    CMD_changes 36,
-    CMD_checktime 37,
-    CMD_close 38,
-    CMD_cmap 39,
-    CMD_cmapclear 40,
-    CMD_cnoremap 41,
-    CMD_cnoreabbrev 42,
-    CMD_copy 43,
-    CMD_confirm 44,
-    CMD_cquit 45,
-    CMD_cunmap 46,
-    CMD_cunabbrev 47,
-    CMD_delete 48,
-    CMD_delmarks 49,
-    CMD_display 50,
-    CMD_digraphs 51,
-    CMD_edit 52,
-    CMD_earlier 53,
-    CMD_enew 54,
-    CMD_ex 55,
-    CMD_exit 56,
-    CMD_files 57,
-    CMD_first 58,
-    CMD_fixdel 59,
-    CMD_global 60,
-    CMD_goto 61,
-    CMD_hide 62,
-    CMD_history 63,
-    CMD_insert 64,
-    CMD_iabbrev 65,
-    CMD_iabclear 66,
-    CMD_imap 67,
-    CMD_imapclear 68,
-    CMD_inoremap 69,
-    CMD_inoreabbrev 70,
-    CMD_iunmap 71,
-    CMD_iunabbrev 72,
-    CMD_join 73,
-    CMD_jumps 74,
-    CMD_k 75,
-    CMD_keepmarks 76,
-    CMD_keepjumps 77,
-    CMD_keeppatterns 78,
-    CMD_keepalt 79,
-    CMD_list 80,
-    CMD_last 81,
-    CMD_later 82,
-    CMD_left 83,
-    CMD_leftabove 84,
-    CMD_lmap 85,
-    CMD_lmapclear 86,
-    CMD_lnoremap 87,
-    CMD_lockmarks 88,
-    CMD_lunmap 89,
-    CMD_ls 90,
-    CMD_move 91,
-    CMD_mark 92,
-    CMD_map 93,
-    CMD_mapclear 94,
-    CMD_marks 95,
-    CMD_messages 96,
-    CMD_mode 97,
-    CMD_next 98,
-    CMD_new 99,
-    CMD_nmap 100,
-    CMD_nmapclear 101,
-    CMD_nnoremap 102,
-    CMD_noremap 103,
-    CMD_nohlsearch 104,
-    CMD_noreabbrev 105,
-    CMD_normal 106,
-    CMD_number 107,
-    CMD_nunmap 108,
-    CMD_open 109,
-    CMD_omap 110,
-    CMD_omapclear 111,
-    CMD_only 112,
-    CMD_onoremap 113,
-    CMD_ounmap 114,
-    CMD_print 115,
-    CMD_previous 116,
-    CMD_put 117,
-    CMD_quit 118,
-    CMD_quitall 119,
-    CMD_qall 120,
-    CMD_read 121,
-    CMD_redo 122,
-    CMD_redraw 123,
-    CMD_redrawstatus 124,
-    CMD_registers 125,
-    CMD_resize 126,
-    CMD_retab 127,
-    CMD_rewind 128,
-    CMD_right 129,
-    CMD_rightbelow 130,
-    CMD_rundo 131,
-    CMD_substitute 132,
-    CMD_sNext 133,
-    CMD_sargument 134,
-    CMD_sall 135,
-    CMD_sandbox 136,
-    CMD_saveas 137,
-    CMD_sbuffer 138,
-    CMD_sbNext 139,
-    CMD_sball 140,
-    CMD_sbfirst 141,
-    CMD_sblast 142,
-    CMD_sbmodified 143,
-    CMD_sbnext 144,
-    CMD_sbprevious 145,
-    CMD_sbrewind 146,
-    CMD_set 147,
-    CMD_setglobal 148,
-    CMD_setlocal 149,
-    CMD_sfirst 150,
-    CMD_silent 151,
-    CMD_sleep 152,
-    CMD_slast 153,
-    CMD_smagic 154,
-    CMD_smap 155,
-    CMD_smapclear 156,
-    CMD_snext 157,
-    CMD_snomagic 158,
-    CMD_snoremap 159,
-    CMD_sort 160,
-    CMD_split 161,
-    CMD_sprevious 162,
-    CMD_srewind 163,
-    CMD_stop 164,
-    CMD_startinsert 165,
-    CMD_startgreplace 166,
-    CMD_startreplace 167,
-    CMD_stopinsert 168,
-    CMD_sunhide 169,
-    CMD_sunmap 170,
-    CMD_suspend 171,
-    CMD_sview 172,
-    CMD_syncbind 173,
-    CMD_t 174,
-    CMD_tab 175,
-    CMD_tabclose 176,
-    CMD_tabdo 177,
-    CMD_tabedit 178,
-    CMD_tabfirst 179,
-    CMD_tabmove 180,
-    CMD_tablast 181,
-    CMD_tabnext 182,
-    CMD_tabnew 183,
-    CMD_tabonly 184,
-    CMD_tabprevious 185,
-    CMD_tabNext 186,
-    CMD_tabrewind 187,
-    CMD_tabs 188,
-    CMD_topleft 189,
-    CMD_undo 190,
-    CMD_undojoin 191,
-    CMD_undolist 192,
-    CMD_unabbreviate 193,
-    CMD_unhide 194,
-    CMD_unmap 195,
-    CMD_unsilent 196,
-    CMD_update 197,
-    CMD_vglobal 198,
-    CMD_verbose 199,
-    CMD_vertical 200,
-    CMD_visual 201,
-    CMD_view 202,
-    CMD_vmap 203,
-    CMD_vmapclear 204,
-    CMD_vnoremap 205,
-    CMD_vnew 206,
-    CMD_vsplit 207,
-    CMD_vunmap 208,
-    CMD_write 209,
-    CMD_wNext 210,
-    CMD_wall 211,
-    CMD_winsize 212,
-    CMD_wincmd 213,
-    CMD_windo 214,
-    CMD_winpos 215,
-    CMD_wnext 216,
-    CMD_wprevious 217,
-    CMD_wq 218,
-    CMD_wqall 219,
-    CMD_wundo 220,
-    CMD_xit 221,
-    CMD_xall 222,
-    CMD_xmap 223,
-    CMD_xmapclear 224,
-    CMD_xnoremap 225,
-    CMD_xunmap 226,
-    CMD_yank 227,
-    CMD_z 228,
+    CMD_ascii 5,
+    CMD_buffer 6,
+    CMD_bNext 7,
+    CMD_ball 8,
+    CMD_badd 9,
+    CMD_bdelete 10,
+    CMD_belowright 11,
+    CMD_bfirst 12,
+    CMD_blast 13,
+    CMD_bmodified 14,
+    CMD_bnext 15,
+    CMD_botright 16,
+    CMD_bprevious 17,
+    CMD_brewind 18,
+    CMD_browse 19,
+    CMD_buffers 20,
+    CMD_bunload 21,
+    CMD_bwipeout 22,
+    CMD_change 23,
+    CMD_cabbrev 24,
+    CMD_cabclear 25,
+    CMD_center 26,
+    CMD_changes 27,
+    CMD_checktime 28,
+    CMD_close 29,
+    CMD_cmap 30,
+    CMD_cmapclear 31,
+    CMD_cnoremap 32,
+    CMD_cnoreabbrev 33,
+    CMD_copy 34,
+    CMD_confirm 35,
+    CMD_cquit 36,
+    CMD_cunmap 37,
+    CMD_cunabbrev 38,
+    CMD_delete 39,
+    CMD_delmarks 40,
+    CMD_display 41,
+    CMD_digraphs 42,
+    CMD_edit 43,
+    CMD_earlier 44,
+    CMD_enew 45,
+    CMD_ex 46,
+    CMD_exit 47,
+    CMD_files 48,
+    CMD_fixdel 49,
+    CMD_global 50,
+    CMD_goto 51,
+    CMD_hide 52,
+    CMD_history 53,
+    CMD_insert 54,
+    CMD_iabbrev 55,
+    CMD_iabclear 56,
+    CMD_imap 57,
+    CMD_imapclear 58,
+    CMD_inoremap 59,
+    CMD_inoreabbrev 60,
+    CMD_iunmap 61,
+    CMD_iunabbrev 62,
+    CMD_join 63,
+    CMD_jumps 64,
+    CMD_k 65,
+    CMD_keepmarks 66,
+    CMD_keepjumps 67,
+    CMD_keeppatterns 68,
+    CMD_keepalt 69,
+    CMD_list 70,
+    CMD_later 71,
+    CMD_left 72,
+    CMD_leftabove 73,
+    CMD_lmap 74,
+    CMD_lmapclear 75,
+    CMD_lnoremap 76,
+    CMD_lockmarks 77,
+    CMD_lunmap 78,
+    CMD_ls 79,
+    CMD_move 80,
+    CMD_mark 81,
+    CMD_map 82,
+    CMD_mapclear 83,
+    CMD_marks 84,
+    CMD_messages 85,
+    CMD_mode 86,
+    CMD_new 87,
+    CMD_nmap 88,
+    CMD_nmapclear 89,
+    CMD_nnoremap 90,
+    CMD_noremap 91,
+    CMD_nohlsearch 92,
+    CMD_noreabbrev 93,
+    CMD_normal 94,
+    CMD_number 95,
+    CMD_nunmap 96,
+    CMD_open 97,
+    CMD_omap 98,
+    CMD_omapclear 99,
+    CMD_only 100,
+    CMD_onoremap 101,
+    CMD_ounmap 102,
+    CMD_print 103,
+    CMD_put 104,
+    CMD_quit 105,
+    CMD_quitall 106,
+    CMD_qall 107,
+    CMD_read 108,
+    CMD_redo 109,
+    CMD_redraw 110,
+    CMD_redrawstatus 111,
+    CMD_registers 112,
+    CMD_resize 113,
+    CMD_retab 114,
+    CMD_right 115,
+    CMD_rightbelow 116,
+    CMD_rundo 117,
+    CMD_substitute 118,
+    CMD_sall 119,
+    CMD_sandbox 120,
+    CMD_saveas 121,
+    CMD_sbuffer 122,
+    CMD_sbNext 123,
+    CMD_sball 124,
+    CMD_sbfirst 125,
+    CMD_sblast 126,
+    CMD_sbmodified 127,
+    CMD_sbnext 128,
+    CMD_sbprevious 129,
+    CMD_sbrewind 130,
+    CMD_set 131,
+    CMD_setglobal 132,
+    CMD_setlocal 133,
+    CMD_silent 134,
+    CMD_sleep 135,
+    CMD_smagic 136,
+    CMD_smap 137,
+    CMD_smapclear 138,
+    CMD_snomagic 139,
+    CMD_snoremap 140,
+    CMD_sort 141,
+    CMD_split 142,
+    CMD_stop 143,
+    CMD_startinsert 144,
+    CMD_startgreplace 145,
+    CMD_startreplace 146,
+    CMD_stopinsert 147,
+    CMD_sunhide 148,
+    CMD_sunmap 149,
+    CMD_suspend 150,
+    CMD_sview 151,
+    CMD_syncbind 152,
+    CMD_t 153,
+    CMD_tab 154,
+    CMD_tabclose 155,
+    CMD_tabedit 156,
+    CMD_tabfirst 157,
+    CMD_tabmove 158,
+    CMD_tablast 159,
+    CMD_tabnext 160,
+    CMD_tabnew 161,
+    CMD_tabonly 162,
+    CMD_tabprevious 163,
+    CMD_tabNext 164,
+    CMD_tabrewind 165,
+    CMD_tabs 166,
+    CMD_topleft 167,
+    CMD_undo 168,
+    CMD_undojoin 169,
+    CMD_undolist 170,
+    CMD_unabbreviate 171,
+    CMD_unhide 172,
+    CMD_unmap 173,
+    CMD_unsilent 174,
+    CMD_update 175,
+    CMD_vglobal 176,
+    CMD_verbose 177,
+    CMD_vertical 178,
+    CMD_visual 179,
+    CMD_view 180,
+    CMD_vmap 181,
+    CMD_vmapclear 182,
+    CMD_vnoremap 183,
+    CMD_vnew 184,
+    CMD_vsplit 185,
+    CMD_vunmap 186,
+    CMD_write 187,
+    CMD_wall 188,
+    CMD_wincmd 189,
+    CMD_winpos 190,
+    CMD_wq 191,
+    CMD_wqall 192,
+    CMD_wundo 193,
+    CMD_xit 194,
+    CMD_xall 195,
+    CMD_xmap 196,
+    CMD_xmapclear 197,
+    CMD_xnoremap 198,
+    CMD_xunmap 199,
+    CMD_yank 200,
+    CMD_z 201,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_bang 229,
-    CMD_pound 230,
-    CMD_and 231,
-    CMD_star 232,
-    CMD_lshift 233,
-    CMD_equal 234,
-    CMD_rshift 235,
-    CMD_at 236,
-    CMD_Next 237,
-    CMD_Print 238,
-    CMD_tilde 239,
+    CMD_bang 202,
+    CMD_pound 203,
+    CMD_and 204,
+    CMD_star 205,
+    CMD_lshift 206,
+    CMD_equal 207,
+    CMD_rshift 208,
+    CMD_at 209,
+    CMD_Print 210,
+    CMD_tilde 211,
 
-    CMD_SIZE 240)     ;; MUST be after all real commands!
+    CMD_SIZE 212)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3998,13 +3930,6 @@
 (atom! buffer_C firstbuf)               ;; first buffer
 (atom! buffer_C lastbuf)                ;; last buffer
 (atom! buffer_C curbuf)                 ;; currently active buffer
-
-;; List of files being edited (global argument list).
-;; curwin.w_alist points to this when the window is using the global argument list.
-
-(atom! alist_C  global_alist    (§_alist_C))    ;; global argument list
-(atom! int      max_alist_id)           ;; the previous argument list id
-(atom! boolean  arg_had_last)           ;; accessed last file in global_alist
 
 (atom! int      ru_col)                 ;; column for ruler
 (atom! int      ru_wid)                 ;; 'rulerfmt' width of ruler when non-zero
@@ -4516,13 +4441,10 @@
 ;       parse_command_name(params);
 
         ;; Process the command line arguments.
-        ;; File names are put in the global argument list "global_alist".
 
 ;       command_line_scan(params);
 
-;       Bytes fname = null;                ;; file name from command line
-;       if (0 < @global_alist.al_ga.ga_len)
-;           fname = alist_name(@global_alist.al_ga.ga_data[0]);
+;       Bytes fname = null;                ;; file name from command line
 
         ;; Don't redraw until much later.
 ;       @redrawingDisabled++;
@@ -4536,11 +4458,6 @@
         ;; Print a warning if stdout is not a terminal.
 
 ;       check_tty(params);
-
-        ;; This message comes before term inits,
-        ;; but after setting "silent_mode" when the input is not a tty.
-;       if (1 < @global_alist.al_ga.ga_len && !@silent_mode)
-;           libC.fprintf(stdout, u8("%d files to edit\n"), @global_alist.al_ga.ga_len);
 
 ;       if (!@silent_mode)
 ;       {
@@ -5119,7 +5036,7 @@
 ;               parmp.edit_type = EDIT_FILE;
 
                 ;; Add the file to the global argument list.
-;               alist_add(@global_alist, STRDUP(argv[i]), 2);    ;; add buffer number now and use curbuf
+                
 ;           }
 
             ;; If there are no more letters after the current "-", go to next argument.
@@ -5186,8 +5103,6 @@
 
 ;       if (parmp.window_count == -1)   ;; was not set
 ;           parmp.window_count = 1;
-;       if (parmp.window_count == 0)
-;           parmp.window_count = @global_alist.al_ga.ga_len;
 
 ;       if (1 < parmp.window_count)
 ;       {
@@ -5275,26 +5190,8 @@
 ;       @autocmd_no_enter++;
 ;       @autocmd_no_leave++;
 
-        ;; When w_arg_idx is -1 remove the window (see create_windows()).
-;       if (@curwin.w_arg_idx == -1)
-;       {
-;           win_close(@curwin, true);
-;           advance = false;
-;       }
-
-;       int arg_idx = 1;        ;; index in argument list
-
 ;       for (int i = 1; i < parmp.window_count; i++)
 ;       {
-            ;; When w_arg_idx is -1 remove the window (see create_windows()).
-;           if (@curwin.w_arg_idx == -1)
-;           {
-;               arg_idx++;
-;               win_close(@curwin, true);
-;               advance = false;
-;               continue;
-;           }
-
 ;           if (advance)
 ;           {
 ;               if (parmp.window_layout == WIN_TABS)
@@ -5316,15 +5213,8 @@
             ;; (that can happen when .vimrc contains ":sall").
 ;           if (@curbuf == @firstwin.w_buffer || @curbuf.b_ffname == null)
 ;           {
-;               @curwin.w_arg_idx = arg_idx;
-                ;; Edit file from arg list, if there is one.
                 ;; When "Quit" selected at the ATTENTION prompt close the window.
-;               do_ecmd(0, (arg_idx < @global_alist.al_ga.ga_len)
-;                             ? alist_name(@global_alist.al_ga.ga_data[arg_idx]) : null,
-;                             null, null, ECMD_LASTL, ECMD_HIDE, @curwin);
-;               if (arg_idx == @global_alist.al_ga.ga_len - 1)
-;                   @arg_had_last = true;
-;               arg_idx++;
+;               do_ecmd(0, null, null, null, ECMD_LASTL, ECMD_HIDE, @curwin);
 ;           }
 ;           ui_breakcheck();
 ;           if (@got_int)
@@ -15465,23 +15355,6 @@
 ;       return true;
     ))
 
-;; Handle ":wnext", ":wNext" and ":wprevious" commands.
-
-(defn- #_void ex_wnext [#_exarg_C eap]
-    (§
-;       int i;
-;       if (eap.cmd.at(1) == (byte)'n')
-;           i = @curwin.w_arg_idx + (int)eap.line2;
-;       else
-;           i = @curwin.w_arg_idx - (int)eap.line2;
-
-;       eap.line1 = 1;
-;       eap.line2 = @curbuf.b_ml.ml_line_count;
-
-;       if (do_write(eap) != false)
-;           do_argfile(eap, i);
-    ))
-
 ;; ":wall", ":wqall" and ":xall": Write all changed files (and exit).
 
 (defn- #_void ex_wqall [#_exarg_C eap]
@@ -15996,10 +15869,6 @@
 
 ;           check_cursor();
 
-            ;; Check if we are editing the w_arg_idx file in the argument list.
-
-;           check_arg_idx(@curwin);
-
 ;           if (!auto_buf)
 ;           {
                 ;; Set cursor and init window before reading the file and executing autocommands.
@@ -16021,7 +15890,6 @@
 ;                   if (should_abort(open_buffer(false, eap, readfile_flags)))
 ;                       retval[0] = false;
 ;               }
-;               check_arg_idx(@curwin);
 
                 ;; If autocommands change the cursor position or topline,
                 ;; we should keep it.  Also when it moves within a line.
@@ -21332,7 +21200,7 @@
         CMD_k,
         CMD_list,
         CMD_move,
-        CMD_next,
+        CMD_new,
         CMD_open,
         CMD_print,
         CMD_quit,
@@ -22184,12 +22052,6 @@
 ;                       ea.line2 = lnum;
 ;                       break;
 
-;                   case ADDR_ARGUMENTS:
-;                       ea.line2 = @curwin.w_arg_idx + 1;
-;                       if (ea.line2 > @curwin.w_alist.al_ga.ga_len)
-;                           ea.line2 = @curwin.w_alist.al_ga.ga_len;
-;                       break;
-
 ;                   case ADDR_LOADED_BUFFERS:
 ;                   case ADDR_BUFFERS:
 ;                       ea.line2 = @curbuf.b_fnum;
@@ -22240,16 +22102,6 @@
                                 ;; There is no Vim command which uses '%' and ADDR_WINDOWS or ADDR_TABS.
 ;                               errormsg = e_invrange;
 ;                               break doend;
-
-;                           case ADDR_ARGUMENTS:
-;                               if (@curwin.w_alist.al_ga.ga_len == 0)
-;                                   ea.line1 = ea.line2 = 0;
-;                               else
-;                               {
-;                                   ea.line1 = 1;
-;                                   ea.line2 = @curwin.w_alist.al_ga.ga_len;
-;                               }
-;                               break;
 ;                       }
 ;                       ea.addr_count++;
 ;                   }
@@ -22610,13 +22462,6 @@
 
 ;                   case ADDR_TABS:
 ;                       ea.line2 = current_tab_nr(null);
-;                       break;
-
-;                   case ADDR_ARGUMENTS:
-;                       if (@curwin.w_alist.al_ga.ga_len == 0)
-;                           ea.line1 = ea.line2 = 0;
-;                       else
-;                           ea.line2 = @curwin.w_alist.al_ga.ga_len;
 ;                       break;
 ;               }
 ;           }
@@ -23273,11 +23118,9 @@
             ;; Command modifiers: return the argument.
             ;; Also for commands with an argument that is a command.
 ;           case CMD_aboveleft:
-;           case CMD_argdo:
 ;           case CMD_belowright:
 ;           case CMD_botright:
 ;           case CMD_browse:
-;           case CMD_bufdo:
 ;           case CMD_confirm:
 ;           case CMD_hide:
 ;           case CMD_keepalt:
@@ -23290,11 +23133,9 @@
 ;           case CMD_sandbox:
 ;           case CMD_silent:
 ;           case CMD_tab:
-;           case CMD_tabdo:
 ;           case CMD_topleft:
 ;           case CMD_verbose:
 ;           case CMD_vertical:
-;           case CMD_windo:
 ;               return arg;
 
         ;; All completion for the +cmdline_compl feature goes here.
@@ -23483,10 +23324,6 @@
 ;                           lnum = current_win_nr(@curwin);
 ;                           break;
 
-;                       case ADDR_ARGUMENTS:
-;                           lnum = @curwin.w_arg_idx + 1;
-;                           break;
-
 ;                       case ADDR_LOADED_BUFFERS:
 ;                       case ADDR_BUFFERS:
 ;                           lnum = @curbuf.b_fnum;
@@ -23510,10 +23347,6 @@
 
 ;                       case ADDR_WINDOWS:
 ;                           lnum = current_win_nr(null);
-;                           break;
-
-;                       case ADDR_ARGUMENTS:
-;                           lnum = @curwin.w_alist.al_ga.ga_len;
 ;                           break;
 
 ;                       case ADDR_LOADED_BUFFERS:
@@ -23697,10 +23530,6 @@
 ;                           lnum = current_win_nr(@curwin);
 ;                           break;
 
-;                       case ADDR_ARGUMENTS:
-;                           lnum = @curwin.w_arg_idx + 1;
-;                           break;
-
 ;                       case ADDR_LOADED_BUFFERS:
 ;                       case ADDR_BUFFERS:
 ;                           lnum = @curbuf.b_fnum;
@@ -23767,12 +23596,6 @@
 ;           {
 ;               case ADDR_LINES:
 ;                   if ((eap.argt & NOTADR) == 0 && @curbuf.b_ml.ml_line_count < eap.line2)
-;                       return e_invrange;
-;                   break;
-
-;               case ADDR_ARGUMENTS:
-                    ;; add 1 if ARGCOUNT is 0
-;                   if (@curwin.w_alist.al_ga.ga_len + ((@curwin.w_alist.al_ga.ga_len == 0) ? 1 : 0) < eap.line2)
 ;                       return e_invrange;
 ;                   break;
 
@@ -24104,47 +23927,6 @@
 ;           return null;
     ))
 
-;; - if there are more files to edit
-;; - and this is the last window
-;; - and forceit not used
-;; - and not repeated twice on a row
-;;    return false and give error message if 'message' true
-;; return true otherwise
-
-(defn- #_boolean check_more [#_boolean message, #_boolean forceit]
-    ;; message: when false check only, no messages
-    (§
-;       int n = @curwin.w_alist.al_ga.ga_len - @curwin.w_arg_idx - 1;
-
-;       if (!forceit && only_one_window() && 1 < @curwin.w_alist.al_ga.ga_len && !@arg_had_last && 0 <= n && @quitmore == 0)
-;       {
-;           if (message)
-;           {
-;               if ((@p_confirm || @cmdmod.confirm) && @curbuf.b_fname != null)
-;               {
-;                   Bytes buff = new Bytes(DIALOG_MSG_SIZE);
-
-;                   if (n == 1)
-;                       vim_strncpy(buff, u8("1 more file to edit.  Quit anyway?"), DIALOG_MSG_SIZE - 1);
-;                   else
-;                       vim_snprintf(buff, DIALOG_MSG_SIZE, u8("%d more files to edit.  Quit anyway?"), n);
-
-;                   if (vim_dialog_yesno(buff, 1) == VIM_YES)
-;                       return true;
-
-;                   return false;
-;               }
-;               if (n == 1)
-;                   emsg(u8("E173: 1 more file to edit"));
-;               else
-;                   emsgn(u8("E173: %ld more files to edit"), (long)n);
-;               @quitmore = 2;           ;; next try to quit is allowed
-;           }
-;           return false;
-;       }
-;       return true;
-    ))
-
 ;; Function given to expandGeneric() to obtain the list of command names.
 
 (defn- #_Bytes get_command_name [#_expand_C _xp, #_int idx]
@@ -24220,13 +24002,12 @@
 
             ;; If there are more files or windows we won't exit.
 
-;       if (check_more(false, eap.forceit) == true && only_one_window())
+;       if (only_one_window())
 ;           @exiting = true;
 ;       if ((!P_HID(@curbuf)
 ;                   && check_changed(@curbuf, (@p_awa ? CCGD_AW : 0)
 ;                                       | (eap.forceit ? CCGD_FORCEIT : 0)
 ;                                       | CCGD_EXCMD))
-;               || check_more(true, eap.forceit) == false
 ;               || (only_one_window() && check_changed_any(eap.forceit)))
 ;       {
 ;           not_exiting();
@@ -24536,10 +24317,9 @@
 
             ;; if more files or windows we won't exit
 
-;       if (check_more(false, eap.forceit) == true && only_one_window())
+;       if (only_one_window())
 ;           @exiting = true;
 ;       if (((eap.cmdidx == CMD_wq || curbufIsChanged()) && do_write(eap) == false)
-;               || check_more(true, eap.forceit) == false
 ;               || (only_one_window() && check_changed_any(eap.forceit)))
 ;       {
 ;           not_exiting();
@@ -24582,88 +24362,6 @@
 (defn- #_void ex_goto [#_exarg_C eap]
     (§
 ;       goto_byte(eap.line2);
-    ))
-
-;; Clear an argument list: free all file names and reset it to zero entries.
-
-(defn- #_void alist_clear [#_alist_C al]
-    (§
-;       for (aentry_C[] aep = al.al_ga.ga_data; 0 < al.al_ga.ga_len; )
-;           aep[--al.al_ga.ga_len] = null;
-;       al.al_ga.ga_clear();
-    ))
-
-;; Remove a reference from an argument list.
-;; Ignored when the argument list is the global one.
-;; If the argument list is no longer used by any window, free it.
-
-(defn- #_void alist_unlink [#_alist_C al]
-    (§
-;       if (al != @global_alist && --al.al_refcount <= 0)
-;           alist_clear(al);
-    ))
-
-;; Create a new argument list and use it for the current window.
-
-(defn- #_alist_C alist_new []
-    (§
-;       alist_C al = §_alist_C();
-
-;       al.al_refcount = 1;
-;       al.id = ++@max_alist_id;
-
-;       return al;
-    ))
-
-;; Set the argument list for the current window.
-;; Takes over the allocated files[] and the allocated fnames in it.
-
-(defn- #_void alist_set [#_alist_C al, #_int count, #_Bytes* files, #_boolean use_curbuf, #_int* fnum_list, #_int fnum_len]
-    (§
-;       alist_clear(al);
-
-;       for (int i = 0; i < count; i++)
-;       {
-;           if (@got_int)
-;           {
-                ;; When adding many buffers this can take a long time.
-                ;; Allow interrupting here.
-;               while (i < count)
-;                   files[i++] = null;
-;               break;
-;           }
-
-            ;; May set buffer name of a buffer previously used for the argument list,
-            ;; so that it's re-used by alist_add().
-;           if (fnum_list != null && i < fnum_len)
-;               buf_set_name(fnum_list[i], files[i]);
-
-;           alist_add(al, files[i], use_curbuf ? 2 : 1);
-
-;           ui_breakcheck();
-;       }
-
-;       if (al == @global_alist)
-;           @arg_had_last = false;
-    ))
-
-;; Add file "fname" to argument list "al".
-;; "fname" must have been allocated and "al" must have been checked for room.
-
-(defn- #_void alist_add [#_alist_C al, #_Bytes fname, #_int set_fnum]
-    ;; set_fnum: 1: set buffer number; 2: re-use curbuf
-    (§
-;       if (fname != null)          ;; don't add null file names
-;       {
-;           aentry_C[] aep = al.al_ga.ga_grow(1);
-
-;           aep[al.al_ga.ga_len] = §_aentry_C();
-;           aep[al.al_ga.ga_len].ae_fname = fname;
-;           if (0 < set_fnum)
-;               aep[al.al_ga.ga_len].ae_fnum = buflist_add(fname, BLN_LISTED | (set_fnum == 2 ? BLN_CURBUF : 0));
-
-;           al.al_ga.ga_len++;
-;       }
     ))
 
 ;; Command modifier used in a wrong way.
@@ -25024,7 +24722,6 @@
 ;       {
 ;           if (eap.do_ecmd_cmd != null)
 ;               do_cmdline_cmd(eap.do_ecmd_cmd);
-;           check_arg_idx(@curwin);
 ;       }
 
         ;; if ":split file" worked, set alternate file name in old window to new file
@@ -25212,22 +24909,6 @@
 ;           case 2: emsg(isabbrev ? e_noabbr : e_nomap);
 ;                   break;
 ;       }
-    ))
-
-;; ":winsize" command (obsolete).
-
-(defn- #_void ex_winsize [#_exarg_C eap]
-    (§
-;       Bytes[] arg = { eap.arg };
-
-;       int w = (int)getdigits(arg);
-;       arg[0] = skipwhite(arg[0]);
-;       Bytes p = arg[0];
-;       int h = (int)getdigits(arg);
-;       if (p.at(0) != NUL && arg[0].at(0) == NUL)
-;           set_shellsize(w, h, true);
-;       else
-;           emsg(u8("E465: :winsize requires two number arguments"));
     ))
 
 (defn- #_void ex_wincmd [#_exarg_C eap]
@@ -26792,639 +26473,6 @@
 ;           msg(u8("Warning: Entered other buffer unexpectedly (check autocommands)"));
 
 ;       return retval;
-    ))
-
-;; Code to handle the argument list.
-
-(final int AL_SET  1)
-(final int AL_ADD  2)
-(final int AL_DEL  3)
-
-;; Isolate one argument, taking backticks.
-;; Changes the argument in-place, puts a NUL after it.  Backticks remain.
-;; Return a pointer to the start of the next argument.
-
-(defn- #_Bytes do_one_arg [#_Bytes str]
-    (§
-;       boolean inbacktick = false;
-
-;       Bytes p;
-;       for (p = str; str.at(0) != NUL; str = str.plus(1))
-;       {
-            ;; When the backslash is used for escaping the special meaning
-            ;; of a character, we need to keep it until wildcard expansion.
-;           if (rem_backslash(str))
-;           {
-;               (p = p.plus(1)).be(-1, (str = str.plus(1)).at(-1));
-;               (p = p.plus(1)).be(-1, str.at(0));
-;           }
-;           else
-;           {
-                ;; An item ends at a space not in backticks.
-;               if (!inbacktick && vim_isspace(str.at(0)))
-;                   break;
-;               if (str.at(0) == (byte)'`')
-;                   inbacktick ^= true;
-;               (p = p.plus(1)).be(-1, str.at(0));
-;           }
-;       }
-;       str = skipwhite(str);
-;       p.be(0, NUL);
-
-;       return str;
-    ))
-
-;; Separate the arguments in "str" and return a list of pointers in the growarray "gap".
-
-(defn- #_Bytes* get_arglist [#_Bytes str]
-    (§
-;       Growing<Bytes> gap = new Growing<Bytes>(Bytes.class, 20);
-
-;       while (str.at(0) != NUL)
-;       {
-;           gap.ga_grow(1);
-;           gap.ga_data[gap.ga_len++] = str;
-
-            ;; Isolate one argument, change it in-place, put a NUL after it.
-;           str = do_one_arg(str);
-;       }
-
-;       return gap;
-    ))
-
-;; "what" == AL_SET: Redefine the argument list to 'str'.
-;; "what" == AL_ADD: add files in 'str' to the argument list after "after".
-;; "what" == AL_DEL: remove files in 'str' from the argument list.
-;;
-;; Return false for failure, true otherwise.
-
-(defn- #_boolean do_arglist [#_Bytes str, #_int what, #_int after]
-    ;; after: 0 means before first one
-    (§
-        ;; Collect all file name arguments in "new_ga".
-
-;       Growing<Bytes> new_ga = get_arglist(str);
-
-;       if (what == AL_DEL)
-;       {
-;           regmatch_C regmatch = §_regmatch_C();
-;           regmatch.rm_ic = false;
-
-            ;; Delete the items: use each item as a regexp and find a match in the argument list.
-
-;           for (int i = 0; i < new_ga.ga_len && !@got_int; i++)
-;           {
-;               Bytes p = new_ga.ga_data[i];
-;               p = file_pat_to_reg_pat(p, null, null);
-;               if (p == null)
-;                   break;
-
-;               regmatch.regprog = vim_regcomp(p, @p_magic ? RE_MAGIC : 0);
-;               if (regmatch.regprog == null)
-;                   break;
-
-;               boolean didone = false;
-;               for (int match = 0; match < @curwin.w_alist.al_ga.ga_len; match++)
-;               {
-;                   aentry_C[] waep = @curwin.w_alist.al_ga.ga_data;
-
-;                   if (vim_regexec(regmatch, alist_name(waep[match]), 0))
-;                   {
-;                       didone = true;
-
-;                       --@curwin.w_alist.al_ga.ga_len;
-;                       for (int j = match; j < @curwin.w_alist.al_ga.ga_len; j++)
-;                           waep[j] = waep[j + 1];
-
-;                       waep[@curwin.w_alist.al_ga.ga_len] = null;
-
-;                       if (match < @curwin.w_arg_idx)
-;                           --@curwin.w_arg_idx;
-;                       --match;
-;                   }
-;               }
-
-;               if (!didone)
-;                   emsg2(e_nomatch2, new_ga.ga_data[i]);
-;           }
-
-;           new_ga.ga_clear();
-;       }
-;       else
-;       {
-;           int[] exp_count = new int[1];
-;           Bytes[][] exp_files = new Bytes[1][];
-;           boolean b = dummy_expand_wildcards(new_ga.ga_len, new_ga.ga_data,
-;                           exp_count, exp_files, EW_DIR|EW_FILE|EW_ADDSLASH|EW_NOTFOUND);
-;           new_ga.ga_clear();
-;           if (!b)
-;               return false;
-;           if (exp_count[0] == 0)
-;           {
-;               emsg(e_nomatch);
-;               return false;
-;           }
-
-;           if (what == AL_ADD)
-;               alist_add_list(exp_count[0], exp_files[0], after);
-;           else ;; what == AL_SET
-;               alist_set(@curwin.w_alist, exp_count[0], exp_files[0], false, null, 0);
-;       }
-
-;       alist_check_arg_idx();
-
-;       return true;
-    ))
-
-;; Check the validity of the arg_idx for each other window.
-
-(defn- #_void alist_check_arg_idx []
-    (§
-;       for (tabpage_C tp = @first_tabpage; tp != null; tp = tp.tp_next)
-;           for (window_C wp = (tp == @curtab) ? @firstwin : tp.tp_firstwin; wp != null; wp = wp.w_next)
-;               if (wp.w_alist == @curwin.w_alist)
-;                   check_arg_idx(wp);
-    ))
-
-;; Return true if window "win" is editing the file at the current argument index.
-
-(defn- #_boolean editing_arg_idx [#_window_C win]
-    (§
-;       return !(win.w_alist.al_ga.ga_len <= win.w_arg_idx
-;                   || (win.w_buffer.b_fnum != win.w_alist.al_ga.ga_data[win.w_arg_idx].ae_fnum
-;                       && (win.w_buffer.b_ffname == null
-;                            || (fullpathcmp(alist_name(win.w_alist.al_ga.ga_data[win.w_arg_idx]), win.w_buffer.b_ffname, true) & FPC_SAME) == 0)));
-    ))
-
-;; Check if window "win" is editing the w_arg_idx file in its argument list.
-
-(defn- #_void check_arg_idx [#_window_C win]
-    (§
-;       if (1 < win.w_alist.al_ga.ga_len && !editing_arg_idx(win))
-;       {
-            ;; We are not editing the current entry in the argument list.
-            ;; Set "arg_had_last" if we are editing the last one.
-;           win.w_arg_idx_invalid = true;
-;           if (win.w_arg_idx != win.w_alist.al_ga.ga_len - 1
-;                   && @arg_had_last == false
-;                   && win.w_alist == @global_alist
-;                   && 0 < @global_alist.al_ga.ga_len
-;                   && win.w_arg_idx < @global_alist.al_ga.ga_len
-;                   && (win.w_buffer.b_fnum == @global_alist.al_ga.ga_data[@global_alist.al_ga.ga_len - 1].ae_fnum
-;                       || (win.w_buffer.b_ffname != null
-;                           && (fullpathcmp(alist_name(@global_alist.al_ga.ga_data[@global_alist.al_ga.ga_len - 1]),
-;                                   win.w_buffer.b_ffname, true) & FPC_SAME) != 0)))
-;               @arg_had_last = true;
-;       }
-;       else
-;       {
-            ;; We are editing the current entry in the argument list.
-            ;; Set "arg_had_last" if it's also the last one.
-;           win.w_arg_idx_invalid = false;
-;           if (win.w_arg_idx == win.w_alist.al_ga.ga_len - 1 && win.w_alist == @global_alist)
-;               @arg_had_last = true;
-;       }
-    ))
-
-;; ":args", ":argslocal" and ":argsglobal".
-
-(defn- #_void ex_args [#_exarg_C eap]
-    (§
-;       if (eap.cmdidx != CMD_args)
-;       {
-;           alist_unlink(@curwin.w_alist);
-;           if (eap.cmdidx == CMD_argglobal)
-;               @curwin.w_alist = @global_alist;
-;           else ;; eap.cmdidx == CMD_arglocal
-;               @curwin.w_alist = alist_new();
-;       }
-
-;       if (!ends_excmd(eap.arg.at(0)))
-;       {
-                ;; ":args file ..": define new argument list, handle like ":next"
-                ;; Also for ":argslocal file .." and ":argsglobal file ..".
-
-;           ex_next(eap);
-;       }
-;       else if (eap.cmdidx == CMD_args)
-;       {
-                ;; ":args": list arguments.
-
-;           if (0 < @curwin.w_alist.al_ga.ga_len)
-;           {
-;               aentry_C[] waep = @curwin.w_alist.al_ga.ga_data;
-
-                    ;; Overwrite the command, for a short list
-                    ;; there is no scrolling required and no wait_return().
-;               gotocmdline(true);
-;               for (int i = 0; i < @curwin.w_alist.al_ga.ga_len; i++)
-;               {
-;                   if (i == @curwin.w_arg_idx)
-;                       msg_putchar('[');
-;                   msg_outtrans(alist_name(waep[i]));
-;                   if (i == @curwin.w_arg_idx)
-;                       msg_putchar(']');
-;                   msg_putchar(' ');
-;               }
-;           }
-;       }
-;       else if (eap.cmdidx == CMD_arglocal)
-;       {
-                ;; ":argslocal": make a local copy of the global argument list.
-
-;           Growing<aentry_C> gga = @global_alist.al_ga;
-;           aentry_C[] gae = gga.ga_data;
-
-;           Growing<aentry_C> wga = @curwin.w_alist.al_ga;
-;           aentry_C[] wae = wga.ga_grow(gga.ga_len);
-
-;           for (int i = 0; i < gga.ga_len; i++)
-;               if (gae[i].ae_fname != null)
-;               {
-;                   wae[wga.ga_len] = §_aentry_C();
-;                   wae[wga.ga_len].ae_fname = STRDUP(gae[i].ae_fname);
-;                   wae[wga.ga_len].ae_fnum = gae[i].ae_fnum;
-
-;                   wga.ga_len++;
-;               }
-;       }
-    ))
-
-;; ":previous", ":sprevious", ":Next" and ":sNext".
-
-(defn- #_void ex_previous [#_exarg_C eap]
-    (§
-            ;; If past the last one already, go to the last one.
-;       if (@curwin.w_alist.al_ga.ga_len <= @curwin.w_arg_idx - (int)eap.line2)
-;           do_argfile(eap, @curwin.w_alist.al_ga.ga_len - 1);
-;       else
-;           do_argfile(eap, @curwin.w_arg_idx - (int)eap.line2);
-    ))
-
-;; ":rewind", ":first", ":sfirst" and ":srewind".
-
-(defn- #_void ex_rewind [#_exarg_C eap]
-    (§
-;       do_argfile(eap, 0);
-    ))
-
-;; ":last" and ":slast".
-
-(defn- #_void ex_last [#_exarg_C eap]
-    (§
-;       do_argfile(eap, @curwin.w_alist.al_ga.ga_len - 1);
-    ))
-
-;; ":argument" and ":sargument".
-
-(defn- #_void ex_argument [#_exarg_C eap]
-    (§
-;       int i;
-;       if (0 < eap.addr_count)
-;           i = (int)(eap.line2 - 1);
-;       else
-;           i = @curwin.w_arg_idx;
-
-;       do_argfile(eap, i);
-    ))
-
-;; Edit file "argn" of the argument lists.
-
-(defn- #_void do_argfile [#_exarg_C eap, #_int argn]
-    (§
-;       if (argn < 0 || @curwin.w_alist.al_ga.ga_len <= argn)
-;       {
-;           if (@curwin.w_alist.al_ga.ga_len <= 1)
-;               emsg(u8("E163: There is only one file to edit"));
-;           else if (argn < 0)
-;               emsg(u8("E164: Cannot go before first file"));
-;           else
-;               emsg(u8("E165: Cannot go beyond last file"));
-;       }
-;       else
-;       {
-;           int old_arg_idx = @curwin.w_arg_idx;
-
-;           setpcmark();
-
-            ;; split window or create new tab page first
-;           if (eap.cmd.at(0) == (byte)'s' || @cmdmod.tab != 0)
-;           {
-;               if (win_split(0, 0) == false)
-;                   return;
-;               @curwin.w_onebuf_opt.@wo_scb = false;
-;               @curwin.w_onebuf_opt.@wo_crb = false;
-;           }
-;           else
-;           {
-                ;; if 'hidden' set, only check for changed file when re-editing the same buffer
-
-;               boolean other = true;
-;               if (P_HID(@curbuf))
-;               {
-;                   Bytes p = fullName_save(alist_name(@curwin.w_alist.al_ga.ga_data[argn]), true);
-;                   other = otherfile(p);
-;               }
-;               if ((!P_HID(@curbuf) || !other)
-;                     && check_changed(@curbuf, CCGD_AW
-;                                            | (other ? 0 : CCGD_MULTWIN)
-;                                            | (eap.forceit ? CCGD_FORCEIT : 0)
-;                                            | CCGD_EXCMD))
-;                   return;
-;           }
-
-;           @curwin.w_arg_idx = argn;
-;           if (argn == @curwin.w_alist.al_ga.ga_len - 1 && @curwin.w_alist == @global_alist)
-;               @arg_had_last = true;
-
-            ;; Edit the file; always use the last known line number.
-            ;; When it fails (e.g. Abort for already edited file), restore the argument index.
-;           if (do_ecmd(0, alist_name(@curwin.w_alist.al_ga.ga_data[@curwin.w_arg_idx]), null,
-;                         eap, ECMD_LAST,
-;                         (P_HID(@curwin.w_buffer) ? ECMD_HIDE : 0)
-;                            + (eap.forceit ? ECMD_FORCEIT : 0), @curwin) == false)
-;               @curwin.w_arg_idx = old_arg_idx;
-            ;; Like Vi: set the mark where the cursor is in the file.
-;           else if (eap.cmdidx != CMD_argdo)
-;               setmark('\'');
-;       }
-    ))
-
-;; ":next", and commands that behave like it.
-
-(defn- #_void ex_next [#_exarg_C eap]
-    (§
-            ;; Check for changed buffer now, if this fails the argument list is not redefined.
-
-;       if (P_HID(@curbuf)
-;               || eap.cmdidx == CMD_snext
-;               || !check_changed(@curbuf, CCGD_AW | (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
-;       {
-;           int i;
-;           if (eap.arg.at(0) != NUL)       ;; redefine file list
-;           {
-;               if (do_arglist(eap.arg, AL_SET, 0) == false)
-;                   return;
-;               i = 0;
-;           }
-;           else
-;               i = @curwin.w_arg_idx + (int)eap.line2;
-
-;           do_argfile(eap, i);
-;       }
-    ))
-
-;; ":argedit"
-
-(defn- #_void ex_argedit [#_exarg_C eap]
-    (§
-            ;; Add the argument to the buffer list and get the buffer number.
-;       int fnum = buflist_add(eap.arg, BLN_LISTED);
-
-            ;; Check if this argument is already in the argument list.
-;       int i;
-;       for (i = 0; i < @curwin.w_alist.al_ga.ga_len; i++)
-;           if (@curwin.w_alist.al_ga.ga_data[i].ae_fnum == fnum)
-;               break;
-;       if (i == @curwin.w_alist.al_ga.ga_len)
-;       {
-                ;; Can't find it, add it to the argument list.
-;           Bytes[] s = { STRDUP(eap.arg) };
-;           i = alist_add_list(1, s, (0 < eap.addr_count) ? (int)eap.line2 : @curwin.w_arg_idx + 1);
-;           @curwin.w_arg_idx = i;
-;       }
-
-;       alist_check_arg_idx();
-
-            ;; Edit the argument.
-;       do_argfile(eap, i);
-    ))
-
-;; ":argadd"
-
-(defn- #_void ex_argadd [#_exarg_C eap]
-    (§
-;       do_arglist(eap.arg, AL_ADD, (0 < eap.addr_count) ? (int)eap.line2 : @curwin.w_arg_idx + 1);
-    ))
-
-;; ":argdelete"
-
-(defn- #_void ex_argdelete [#_exarg_C eap]
-    (§
-;       if (0 < eap.addr_count)
-;       {
-                ;; ":1,4argdel": Delete all arguments in the range.
-;           if (eap.line2 > @curwin.w_alist.al_ga.ga_len)
-;               eap.line2 = @curwin.w_alist.al_ga.ga_len;
-;           int n = (int)(eap.line2 - eap.line1 + 1);
-;           if (eap.arg.at(0) != NUL || n <= 0)
-;               emsg(e_invarg);
-;           else
-;           {
-;               aentry_C[] waep = @curwin.w_alist.al_ga.ga_data;
-
-;               for (int i = (int)(eap.line1 - 1); i < eap.line2; i++)
-;                   waep[i] = null;
-;               for (int i = (int)eap.line2; i < @curwin.w_alist.al_ga.ga_len; i++)
-;                   waep[i - n] = waep[i];
-
-;               for (int i = 0; i < n; i++)
-;                   waep[--@curwin.w_alist.al_ga.ga_len] = null;
-
-;               if (eap.line2 <= @curwin.w_arg_idx)
-;                   @curwin.w_arg_idx -= n;
-;               else if (eap.line1 < @curwin.w_arg_idx)
-;                   @curwin.w_arg_idx = (int)eap.line1;
-;           }
-;       }
-;       else if (eap.arg.at(0) == NUL)
-;           emsg(e_argreq);
-;       else
-;           do_arglist(eap.arg, AL_DEL, 0);
-    ))
-
-;; ":argdo", ":windo", ":bufdo", ":tabdo"
-
-(defn- #_void ex_listdo [#_exarg_C eap]
-    (§
-;       buffer_C buf = @curbuf;
-;       int next_fnum = 0;
-
-;       start_global_changes();
-
-;       if (eap.cmdidx == CMD_windo
-;               || eap.cmdidx == CMD_tabdo
-;               || P_HID(@curbuf)
-;               || !check_changed(@curbuf, CCGD_AW | (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
-;       {
-;           int i = 0;
-                ;; start at the eap.line1 argument/window/buffer
-;           window_C wp = @firstwin;
-;           tabpage_C tp = @first_tabpage;
-;           switch (eap.cmdidx)
-;           {
-;               case CMD_windo:
-;                   for ( ; wp != null && i + 1 < eap.line1; wp = wp.w_next)
-;                       i++;
-;                   break;
-;               case CMD_tabdo:
-;                   for ( ; tp != null && i + 1 < eap.line1; tp = tp.tp_next)
-;                       i++;
-;                   break;
-;               case CMD_argdo:
-;                   i = (int)(eap.line1 - 1);
-;                   break;
-;               default:
-;                   break;
-;           }
-                ;; set pcmark now
-;           if (eap.cmdidx == CMD_bufdo)
-;           {
-                    ;; Advance to the first listed buffer after "eap.line1".
-;               for (buf = @firstbuf; buf != null && buf.b_fnum < eap.line1; buf = buf.b_next)
-;                   if (eap.line2 < buf.b_fnum)
-;                   {
-;                       buf = null;
-;                       break;
-;                   }
-;               if (buf != null)
-;                   goto_buffer(eap, DOBUF_FIRST, FORWARD, buf.b_fnum);
-;           }
-;           else
-;               setpcmark();
-;           @listcmd_busy = true;        ;; avoids setting pcmark below
-
-;           while (!@got_int && buf != null)
-;           {
-;               if (eap.cmdidx == CMD_argdo)
-;               {
-                        ;; go to argument "i"
-;                   if (i == @curwin.w_alist.al_ga.ga_len)
-;                       break;
-                        ;; Don't call do_argfile() when already there,
-                        ;; it will try reloading the file.
-;                   if (@curwin.w_arg_idx != i || !editing_arg_idx(@curwin))
-;                   {
-                            ;; Clear 'shm' to avoid that the file message
-                            ;; overwrites any output from the command.
-;                       Bytes p_shm_save = STRDUP(@p_shm);
-;                       set_option_value(u8("shm"), 0L, u8(""), 0);
-;                       do_argfile(eap, i);
-;                       set_option_value(u8("shm"), 0L, p_shm_save, 0);
-;                   }
-;                   if (@curwin.w_arg_idx != i)
-;                       break;
-;               }
-;               else if (eap.cmdidx == CMD_windo)
-;               {
-                        ;; go to window "wp"
-;                   if (!win_valid(wp))
-;                       break;
-;                   win_goto(wp);
-;                   if (@curwin != wp)
-;                       break;  ;; something must be wrong
-;                   wp = @curwin.w_next;
-;               }
-;               else if (eap.cmdidx == CMD_tabdo)
-;               {
-                        ;; go to window "tp"
-;                   if (!valid_tabpage(tp))
-;                       break;
-;                   goto_tabpage_tp(tp, true, true);
-;                   tp = tp.tp_next;
-;               }
-;               else if (eap.cmdidx == CMD_bufdo)
-;               {
-                        ;; Remember the number of the next listed buffer, in case
-                        ;; ":bwipe" is used or autocommands do something strange.
-;                   next_fnum = -1;
-;                   for (buf = @curbuf.b_next; buf != null; buf = buf.b_next)
-;                   {
-;                       next_fnum = buf.b_fnum;
-;                       break;
-;                   }
-;               }
-
-;               i++;
-
-                    ;; execute the command
-;               do_cmdline(eap.arg, eap.getline, eap.cookie, DOCMD_VERBOSE + DOCMD_NOWAIT);
-
-;               if (eap.cmdidx == CMD_bufdo)
-;               {
-                        ;; Done?
-;                   if (next_fnum < 0 || eap.line2 < next_fnum)
-;                       break;
-                        ;; Check if the buffer still exists.
-;                   for (buf = @firstbuf; buf != null; buf = buf.b_next)
-;                       if (buf.b_fnum == next_fnum)
-;                           break;
-;                   if (buf == null)
-;                       break;
-
-                        ;; Go to the next buffer.  Clear 'shm' to avoid that
-                        ;; the file message overwrites any output from the command.
-;                   Bytes p_shm_save = STRDUP(@p_shm);
-;                   set_option_value(u8("shm"), 0L, u8(""), 0);
-;                   goto_buffer(eap, DOBUF_FIRST, FORWARD, next_fnum);
-;                   set_option_value(u8("shm"), 0L, p_shm_save, 0);
-
-                        ;; If autocommands took us elsewhere, quit here.
-;                   if (@curbuf.b_fnum != next_fnum)
-;                       break;
-;               }
-
-;               if (eap.cmdidx == CMD_windo)
-;               {
-;                   validate_cursor();      ;; cursor may have moved
-                        ;; required when 'scrollbind' has been set
-;                   if (@curwin.w_onebuf_opt.@wo_scb)
-;                       do_check_scrollbind(true);
-;               }
-
-;               if (eap.cmdidx == CMD_windo || eap.cmdidx == CMD_tabdo)
-;                   if (eap.line2 < i + 1)
-;                       break;
-;               if (eap.cmdidx == CMD_argdo && eap.line2 <= i)
-;                   break;
-;           }
-;           @listcmd_busy = false;
-;       }
-
-;       end_global_changes();
-    ))
-
-;; Add files[count] to the arglist of the current window after arg "after".
-;; The file names in files[count] must have been allocated and are taken over.
-;; files[] itself is not taken over.
-;; Returns index of first added argument.
-
-(defn- #_int alist_add_list [#_int count, #_Bytes* files, #_int after]
-    ;; after: where to add: 0 = before first one
-    (§
-;       aentry_C[] waep = @curwin.w_alist.al_ga.ga_grow(count);
-;       int n = @curwin.w_alist.al_ga.ga_len;
-
-;       if (after < 0)
-;           after = 0;
-;       if (after > n)
-;           after = n;
-
-;       if (after < n)
-;           for (int i = n; after <= --i; )
-;               waep[count + i] = waep[i];
-;       for (int i = 0; i < count; i++)
-;       {
-;           waep[after + i] = §_aentry_C();
-;           waep[after + i].ae_fname = files[i];
-;           waep[after + i].ae_fnum = buflist_add(files[i], BLN_LISTED);
-;       }
-
-;       @curwin.w_alist.al_ga.ga_len += count;
-;       if (after <= @curwin.w_arg_idx)
-;           @curwin.w_arg_idx++;
-
-;       return after;
     ))
 
 ;; ":checktime [buffer]"
@@ -68495,8 +67543,6 @@
 ;       if (@curwin.w_cursor.lnum == 1 && inindent(0))
 ;           buflist_getfpos();
 
-;       check_arg_idx(@curwin);              ;; check for valid arg_idx
-
         ;; when autocmds didn't change it
 ;       if (@curwin.w_topline == 1 && !@curwin.w_topline_was_set)
 ;           scroll_cursor_halfway(false);   ;; redisplay at correct position
@@ -69330,9 +68376,6 @@
 
 (defn- #_void buf_name_changed [#_buffer_C buf]
     (§
-;       if (@curwin.w_buffer == buf)
-;           check_arg_idx(@curwin);      ;; check file name for arg list
-
 ;       status_redraw_all();            ;; status lines need to be redrawn
 ;       fmarks_check_names(buf);        ;; check named file marks
 ;       ml_timestamp(buf);              ;; reset timestamp
@@ -70317,25 +69360,7 @@
 (defn- #_boolean append_arg_number [#_window_C wp, #_Bytes buf, #_int buflen, #_boolean add_file]
     ;; add_file: Add "file" before the arg number
     (§
-;       if (@curwin.w_alist.al_ga.ga_len <= 1) ;; nothing to do
-;           return false;
-
-;       Bytes p = buf.plus(STRLEN(buf));           ;; go to the end of the buffer
-;       if (buflen <= BDIFF(p, buf) + 35)             ;; getting too long
-;           return false;
-
-;       (p = p.plus(1)).be(-1, (byte)' ');
-;       (p = p.plus(1)).be(-1, (byte)'(');
-;       if (add_file)
-;       {
-;           STRCPY(p, u8("file "));
-;           p = p.plus(5);
-;       }
-;       vim_snprintf(p, buflen - BDIFF(p, buf),
-;                   wp.w_arg_idx_invalid ? u8("(%d) of %d)") : u8("%d of %d)"),
-;                   wp.w_arg_idx + 1, @curwin.w_alist.al_ga.ga_len);
-
-;       return true;
+;       return false;
     ))
 
 ;; Make "ffname" a full file name, set "sfname" to "ffname" if not null.
@@ -70350,259 +69375,13 @@
 ;       ffname[0] = fullName_save(ffname[0], true); ;; expand to full path
     ))
 
-;; Get the file name for an argument list entry.
-
-(defn- #_Bytes alist_name [#_aentry_C aep]
-    (§
-        ;; Use the name from the associated buffer if it exists.
-;       buffer_C bp = buflist_findnr(aep.ae_fnum);
-;       if (bp == null || bp.b_fname == null)
-;           return aep.ae_fname;
-
-;       return bp.b_fname;
-    ))
-
 ;; do_arg_all(): Open up to 'count' windows, one for each argument.
 
 (defn- #_void do_arg_all [#_int count, #_boolean forceit, #_boolean keep_tabs]
     ;; forceit: hide buffers in current windows
     ;; keep_tabs: keep current tabs, for ":tab drop file"
     (§
-;       boolean use_firstwin = false;   ;; use first window for arglist
-;       boolean split_ret = true;
-;       int had_tab = @cmdmod.tab;
-;       window_C new_curwin = null;
-;       tabpage_C new_curtab = null;
-
-;       if (@curwin.w_alist.al_ga.ga_len <= 0)
-;       {
-            ;; Don't give an error message.
-            ;; We don't want it when the ":all" command is in the .vimrc.
-;           return;
-;       }
-;       setpcmark();
-
-        ;; Array of weight for which args are open:
-        ;;  0: not opened
-        ;;  1: opened in other tab
-        ;;  2: opened in curtab
-        ;;  3: opened in curtab and curwin
-
-;       int opened_len = @curwin.w_alist.al_ga.ga_len;
-;       byte[] opened = new byte[opened_len];
-
-        ;; Autocommands may do anything to the argument list.
-        ;; Make sure it's not freed while we are working here by "locking" it.
-        ;; We still have to watch out for its size to be changed.
-;       alist_C alist = @curwin.w_alist;
-;       alist.al_refcount++;
-
-;       window_C old_curwin = @curwin;
-;       tabpage_C old_curtab = @curtab;
-
-        ;; Try closing all windows that are not in the argument list.
-        ;; Also close windows that are not full width;
-        ;; When 'hidden' or "forceit" set the buffer becomes hidden.
-        ;; Windows that have a changed buffer and can't be hidden won't be closed.
-        ;; When the ":tab" modifier was used do this for all tab pages.
-
-;       if (0 < had_tab)
-;           goto_tabpage_tp(@first_tabpage, true, true);
-;       for ( ; ; )
-;       {
-;           tabpage_C tpnext = @curtab.tp_next;
-
-;           for (window_C wp = @firstwin, wpnext; wp != null; wp = wpnext)
-;           {
-;               wpnext = wp.w_next;
-;               buffer_C buf = wp.w_buffer;
-;               int i;
-;               if (buf.b_ffname == null || (!keep_tabs && 1 < buf.b_nwindows) || wp.w_width != (int)@Columns)
-;                   i = opened_len;
-;               else
-;               {
-                    ;; check if the buffer in this window is in the arglist
-;                   for (i = 0; i < opened_len; i++)
-;                   {
-;                       aentry_C[] aep = alist.al_ga.ga_data;
-;                       if (i < alist.al_ga.ga_len
-;                               && (aep[i].ae_fnum == buf.b_fnum
-;                                       || (fullpathcmp(alist_name(aep[i]), buf.b_ffname, true) & FPC_SAME) != 0))
-;                       {
-;                           byte weight = 1;
-
-;                           if (old_curtab == @curtab)
-;                           {
-;                               weight++;
-;                               if (old_curwin == wp)
-;                                   weight++;
-;                           }
-
-;                           if (opened[i] < weight)
-;                           {
-;                               opened[i] = weight;
-;                               if (i == 0)
-;                               {
-;                                   if (new_curwin != null)
-;                                       new_curwin.w_arg_idx = opened_len;
-;                                   new_curwin = wp;
-;                                   new_curtab = @curtab;
-;                               }
-;                           }
-;                           else if (keep_tabs)
-;                               i = opened_len;
-
-;                           if (wp.w_alist != alist)
-;                           {
-                                ;; Use the current argument list for all windows
-                                ;; containing a file from it.
-;                               alist_unlink(wp.w_alist);
-;                               wp.w_alist = alist;
-;                               wp.w_alist.al_refcount++;
-;                           }
-;                           break;
-;                       }
-;                   }
-;               }
-;               wp.w_arg_idx = i;
-
-;               if (i == opened_len && !keep_tabs)  ;; close this window
-;               {
-;                   if (P_HID(buf) || forceit || 1 < buf.b_nwindows || !bufIsChanged(buf))
-;                   {
-                        ;; If the buffer was changed, and we would like to hide it,
-                        ;; try autowriting.
-;                       if (!P_HID(buf) && buf.b_nwindows <= 1 && bufIsChanged(buf))
-;                       {
-;                           autowrite(buf, false);
-                            ;; check if autocommands removed the window
-;                           if (!win_valid(wp) || !buf_valid(buf))
-;                           {
-;                               wpnext = @firstwin;  ;; start all over...
-;                               continue;
-;                           }
-;                       }
-                        ;; don't close last window
-;                       if (@firstwin == @lastwin && (@first_tabpage.tp_next == null || had_tab == 0))
-;                           use_firstwin = true;
-;                       else
-;                       {
-;                           win_close(wp, !P_HID(buf) && !bufIsChanged(buf));
-                            ;; check if autocommands removed the next window
-;                           if (!win_valid(wpnext))
-;                               wpnext = @firstwin;  ;; start all over...
-;                       }
-;                   }
-;               }
-;           }
-
-            ;; Without the ":tab" modifier only do the current tab page.
-;           if (had_tab == 0 || tpnext == null)
-;               break;
-
-            ;; check if autocommands removed the next tab page
-;           if (!valid_tabpage(tpnext))
-;               tpnext = @first_tabpage;     ;; start all over...
-;           goto_tabpage_tp(tpnext, true, true);
-;       }
-
-        ;; Open a window for files in the argument list that don't have one.
-        ;; ARGCOUNT may change while doing this, because of autocommands.
-
-;       if (count > opened_len || count <= 0)
-;           count = opened_len;
-
-        ;; Don't execute Win/Buf Enter/Leave autocommands here.
-;       @autocmd_no_enter++;
-;       @autocmd_no_leave++;
-;       window_C last_curwin = @curwin;
-;       tabpage_C last_curtab = @curtab;
-;       win_enter(@lastwin, false);
-        ;; ":drop all" should re-use an empty window to avoid "--remote-tab"
-        ;; leaving an empty tab page when executed locally.
-;       if (keep_tabs && bufempty() && @curbuf.b_nwindows == 1
-;                               && @curbuf.b_ffname == null && !@curbuf.@b_changed)
-;           use_firstwin = true;
-
-;       for (int i = 0; i < count && i < opened_len && !@got_int; i++)
-;       {
-;           if (alist == @global_alist && i == @global_alist.al_ga.ga_len - 1)
-;               @arg_had_last = true;
-;           if (0 < opened[i])
-;           {
-                ;; Move the already present window to below the current window.
-;               if (@curwin.w_arg_idx != i)
-;                   for (window_C wpnext = @firstwin; wpnext != null; wpnext = wpnext.w_next)
-;                   {
-;                       if (wpnext.w_arg_idx == i)
-;                       {
-;                           if (keep_tabs)
-;                           {
-;                               new_curwin = wpnext;
-;                               new_curtab = @curtab;
-;                           }
-;                           else
-;                               win_move_after(wpnext, @curwin);
-;                           break;
-;                       }
-;                   }
-;           }
-;           else if (split_ret == true)
-;           {
-;               if (!use_firstwin)          ;; split current window
-;               {
-;                   boolean p_ea_save = @p_ea;
-;                   @p_ea = true;            ;; use space from all windows
-;                   split_ret = win_split(0, WSP_ROOM | WSP_BELOW);
-;                   @p_ea = p_ea_save;
-;                   if (split_ret == false)
-;                       continue;
-;               }
-;               else    ;; first window: do autocmd for leaving this buffer
-;                   --@autocmd_no_leave;
-
-                ;; edit file "i"
-
-;               @curwin.w_arg_idx = i;
-;               if (i == 0)
-;               {
-;                   new_curwin = @curwin;
-;                   new_curtab = @curtab;
-;               }
-;               do_ecmd(0, alist_name(alist.al_ga.ga_data[i]), null, null,
-;                         ECMD_ONE,
-;                         ((P_HID(@curwin.w_buffer)
-;                              || bufIsChanged(@curwin.w_buffer)) ? ECMD_HIDE : 0) + ECMD_OLDBUF, @curwin);
-;               if (use_firstwin)
-;                   @autocmd_no_leave++;
-;               use_firstwin = false;
-;           }
-;           ui_breakcheck();
-
-            ;; When ":tab" was used open a new tab for a new window repeatedly.
-;           if (0 < had_tab && tabpage_index(null) <= @p_tpm)
-;               @cmdmod.tab = 9999;
-;       }
-
-        ;; Remove the "lock" on the argument list.
-;       alist_unlink(alist);
-
-;       --@autocmd_no_enter;
-        ;; restore last referenced tabpage's curwin
-;       if (last_curtab != new_curtab)
-;       {
-;           if (valid_tabpage(last_curtab))
-;               goto_tabpage_tp(last_curtab, true, true);
-;           if (win_valid(last_curwin))
-;               win_enter(last_curwin, false);
-;       }
-        ;; to window with first arg
-;       if (valid_tabpage(new_curtab))
-;           goto_tabpage_tp(new_curtab, true, true);
-;       if (win_valid(new_curwin))
-;           win_enter(new_curwin, false);
-
-;       --@autocmd_no_leave;
+        
     ))
 
 ;; Open a window for a number of buffers.
@@ -78660,44 +77439,6 @@
 ;           else
 ;               out_char(BELL);
 ;       }
-    ))
-
-;; Compare two file names and return:
-;; FPC_SAME   if they both exist and are the same file.
-;; FPC_SAMEX  if they both don't exist and have the same file name.
-;; FPC_DIFF   if they both exist and are different files.
-;; FPC_NOTX   if they both don't exist.
-;; FPC_DIFFX  if one of them doesn't exist.
-;; For the first name environment variables are expanded
-
-(defn- #_int fullpathcmp [#_Bytes s1, #_Bytes s2, #_boolean checkname]
-    ;; checkname: when both don't exist, check file names
-    (§
-;       Bytes full1 = new Bytes(MAXPATHL), full2 = new Bytes(MAXPATHL);
-;       stat_C st1 = new stat_C(), st2 = new stat_C();
-
-;       int r1 = libC.stat(s1, st1);
-;       int r2 = libC.stat(s2, st2);
-;       if (r1 != 0 && r2 != 0)
-;       {
-            ;; if stat() doesn't work, may compare the names
-;           if (checkname)
-;           {
-;               if (STRCMP(s1, s2) == 0)
-;                   return FPC_SAMEX;
-;               boolean b1 = vim_fullName(s1, full1, MAXPATHL, false);
-;               boolean b2 = vim_fullName(s2, full2, MAXPATHL, false);
-;               if (b1 && b2 && STRCMP(full1, full2) == 0)
-;                   return FPC_SAMEX;
-;           }
-;           return FPC_NOTX;
-;       }
-;       if (r1 != 0 || r2 != 0)
-;           return FPC_DIFFX;
-;       if (st1.st_dev() == st2.st_dev() && st1.st_ino() == st2.st_ino())
-;           return FPC_SAME;
-
-;       return FPC_DIFF;
     ))
 
 ;; Get the tail of a path: the file name.
@@ -101796,11 +100537,6 @@
 
 (defn- #_void win_init_some [#_window_C newp, #_window_C oldp]
     (§
-        ;; Use the same argument list.
-;       newp.w_alist = oldp.w_alist;
-;       newp.w_alist.al_refcount++;
-;       newp.w_arg_idx = oldp.w_arg_idx;
-
         ;; copy options from existing window
 ;       win_copy_options(oldp, newp);
     ))
@@ -103487,7 +102223,6 @@
 
 ;           @curwin.w_buffer = @curbuf;
 ;           @curbuf.b_nwindows = 1;          ;; there is one window
-;           @curwin.w_alist = @global_alist;
 ;           curwin_init();                  ;; init current window
 ;       }
 ;       else
@@ -104188,9 +102923,6 @@
 (defn- #_void win_free [#_window_C wp, #_tabpage_C tp]
     ;; tp: tab page "win" is in, null for current
     (§
-        ;; reduce the reference count to the argument list.
-;       alist_unlink(wp.w_alist);
-
 ;       clear_winopt(wp.w_onebuf_opt);
 ;       clear_winopt(wp.w_allbuf_opt);
 
@@ -107760,14 +106492,6 @@
         (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "all"),           ex_all,           (| BANG RANGE NOTADR COUNT),                                  ADDR_LINES),
-        (->cmdname_C (u8 "args"),          ex_args,          (| BANG FILES EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "argadd"),        ex_argadd,        (| BANG NEEDARG RANGE NOTADR ZEROR FILES),                    ADDR_ARGUMENTS),
-        (->cmdname_C (u8 "argdelete"),     ex_argdelete,     (| BANG RANGE NOTADR FILES),                                  ADDR_ARGUMENTS),
-        (->cmdname_C (u8 "argdo"),         ex_listdo,        (| BANG NEEDARG EXTRA NOTRLCOM RANGE NOTADR DFLALL),          ADDR_ARGUMENTS),
-        (->cmdname_C (u8 "argedit"),       ex_argedit,       (| BANG NEEDARG RANGE NOTADR ZEROR FILE1 EDITCMD ARGOPT),     ADDR_ARGUMENTS),
-        (->cmdname_C (u8 "argglobal"),     ex_args,          (| BANG FILES EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "arglocal"),      ex_args,          (| BANG FILES EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "argument"),      ex_argument,      (| BANG RANGE NOTADR COUNT EXTRA EDITCMD ARGOPT),             ADDR_ARGUMENTS),
         (->cmdname_C (u8 "ascii"),         ex_ascii,         (| SBOXOK CMDWIN),                                            ADDR_LINES),
         (->cmdname_C (u8 "buffer"),        ex_buffer,        (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA EDITCMD),     ADDR_BUFFERS),
         (->cmdname_C (u8 "bNext"),         ex_bprevious,     (| BANG RANGE NOTADR COUNT EDITCMD),                          ADDR_LINES),
@@ -107784,7 +106508,6 @@
         (->cmdname_C (u8 "brewind"),       ex_brewind,       (| BANG RANGE NOTADR EDITCMD),                                ADDR_LINES),
         (->cmdname_C (u8 "browse"),        ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM CMDWIN),                            ADDR_LINES),
         (->cmdname_C (u8 "buffers"),       ex_buflist,       (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "bufdo"),         ex_listdo,        (| BANG NEEDARG EXTRA NOTRLCOM RANGE NOTADR DFLALL),          ADDR_BUFFERS),
         (->cmdname_C (u8 "bunload"),       ex_bunload,       (| BANG RANGE NOTADR BUFNAME COUNT EXTRA),                    ADDR_LOADED_BUFFERS),
         (->cmdname_C (u8 "bwipeout"),      ex_bunload,       (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA),             ADDR_BUFFERS),
         (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN MODIFY),                           ADDR_LINES),
@@ -107813,7 +106536,6 @@
         (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "exit"),          ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
         (->cmdname_C (u8 "files"),         ex_buflist,       (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "first"),         ex_rewind,        (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL SBOXOK CMDWIN),                    ADDR_LINES),
         (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT SBOXOK CMDWIN),                         ADDR_LINES),
@@ -107836,7 +106558,6 @@
         (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "keepalt"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "last"),          ex_last,          (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
@@ -107853,7 +106574,6 @@
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "messages"),      ex_messages,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "mode"),          ex_mode,          (| WORD1 CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "next"),          ex_next,          (| RANGE NOTADR BANG FILES EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "new"),           ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
@@ -107871,7 +106591,6 @@
         (->cmdname_C (u8 "onoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN SBOXOK),                        ADDR_LINES),
-        (->cmdname_C (u8 "previous"),      ex_previous,      (| EXTRA RANGE NOTADR COUNT BANG EDITCMD ARGOPT),             ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN MODIFY),                    ADDR_LINES),
         (->cmdname_C (u8 "quit"),          ex_quit,          (| BANG RANGE COUNT NOTADR CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "quitall"),       ex_quit_all,         BANG,                                                      ADDR_LINES),
@@ -107883,13 +106602,10 @@
         (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN MODIFY),                    ADDR_LINES),
-        (->cmdname_C (u8 "rewind"),        ex_rewind,        (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "rundo"),         ex_rundo,         (| NEEDARG FILE1),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "sNext"),         ex_previous,      (| EXTRA RANGE NOTADR COUNT BANG EDITCMD ARGOPT),             ADDR_LINES),
-        (->cmdname_C (u8 "sargument"),     ex_argument,      (| BANG RANGE NOTADR COUNT EXTRA EDITCMD ARGOPT),             ADDR_ARGUMENTS),
         (->cmdname_C (u8 "sall"),          ex_all,           (| BANG RANGE NOTADR COUNT),                                  ADDR_LINES),
         (->cmdname_C (u8 "sandbox"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "saveas"),        ex_write,         (| BANG DFLALL FILE1 ARGOPT CMDWIN),                          ADDR_LINES),
@@ -107905,20 +106621,15 @@
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
         (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
         (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
-        (->cmdname_C (u8 "sfirst"),        ex_rewind,        (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG NOTRLCOM SBOXOK CMDWIN),                ADDR_LINES),
         (->cmdname_C (u8 "sleep"),         ex_sleep,         (| RANGE NOTADR COUNT EXTRA CMDWIN),                          ADDR_LINES),
-        (->cmdname_C (u8 "slast"),         ex_last,          (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "smapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "snext"),         ex_next,          (| RANGE NOTADR BANG FILES EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "sort"),          ex_sort,          (| RANGE DFLALL BANG EXTRA NOTRLCOM MODIFY),                  ADDR_LINES),
         (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
-        (->cmdname_C (u8 "sprevious"),     ex_previous,      (| EXTRA RANGE NOTADR COUNT BANG EDITCMD ARGOPT),             ADDR_LINES),
-        (->cmdname_C (u8 "srewind"),       ex_rewind,        (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
@@ -107932,7 +106643,6 @@
         (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "tab"),           ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "tabclose"),      ex_tabclose,      (| RANGE NOTADR COUNT BANG CMDWIN),                           ADDR_TABS),
-        (->cmdname_C (u8 "tabdo"),         ex_listdo,        (| NEEDARG EXTRA NOTRLCOM RANGE NOTADR DFLALL),               ADDR_TABS),
         (->cmdname_C (u8 "tabedit"),       ex_splitview,     (| BANG FILE1 RANGE NOTADR ZEROR EDITCMD ARGOPT),             ADDR_TABS),
         (->cmdname_C (u8 "tabfirst"),      ex_tabnext,          0,                                                         ADDR_LINES),
         (->cmdname_C (u8 "tabmove"),       ex_tabmove,       (| RANGE NOTADR ZEROR EXTRA NOSPC),                           ADDR_TABS),
@@ -107965,14 +106675,9 @@
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "write"),         ex_write,         (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
-        (->cmdname_C (u8 "wNext"),         ex_wnext,         (| RANGE NOTADR BANG FILE1 ARGOPT),                           ADDR_LINES),
         (->cmdname_C (u8 "wall"),          ex_wqall,         (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "winsize"),       ex_winsize,       (| EXTRA NEEDARG),                                            ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "windo"),         ex_listdo,        (| BANG NEEDARG EXTRA NOTRLCOM RANGE NOTADR DFLALL),          ADDR_WINDOWS),
         (->cmdname_C (u8 "winpos"),        ex_winpos,        (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "wnext"),         ex_wnext,         (| RANGE NOTADR BANG FILE1 ARGOPT),                           ADDR_LINES),
-        (->cmdname_C (u8 "wprevious"),     ex_wnext,         (| RANGE NOTADR BANG FILE1 ARGOPT),                           ADDR_LINES),
         (->cmdname_C (u8 "wq"),            ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL),                           ADDR_LINES),
         (->cmdname_C (u8 "wqall"),         ex_wqall,         (| BANG FILE1 ARGOPT DFLALL),                                 ADDR_LINES),
         (->cmdname_C (u8 "wundo"),         ex_wundo,         (| BANG NEEDARG FILE1),                                       ADDR_LINES),
@@ -107995,7 +106700,6 @@
         (->cmdname_C (u8 "="),             ex_equal,         (| RANGE DFLALL EXFLAGS CMDWIN),                              ADDR_LINES),
         (->cmdname_C (u8 ">"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN MODIFY),                        ADDR_LINES),
         (->cmdname_C (u8 "@"),             ex_at,            (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "Next"),          ex_previous,      (| EXTRA RANGE NOTADR COUNT BANG EDITCMD ARGOPT),             ADDR_LINES),
         (->cmdname_C (u8 "Print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
     ])
