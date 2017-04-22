@@ -18050,7 +18050,7 @@
     [
         (field long         rs_lnum)
         (field int          rs_col)
-        (field backpos_C*   rs_backpos)
+        (field int          rs_back)
     ])
 
 ;; Used for BEHIND and NOBEHIND matching.
@@ -18453,31 +18453,25 @@
                 NOTHING
                     status
 
+                ;; When we run into BACK, we need to check if we don't keep looping without matching any input.
+                ;; From the second time, it fails if the input is still at the same position as the previous time.
+                ;; The positions are stored in "backpos" and found by comparing to the current value of "scan".
                 BACK
-                (do
-                    ;; When we run into BACK, we need to check if we don't keep looping without matching any input.
-                    ;; From the second time, it fails if the input is still at the same position as the previous time.
-                    ;; The positions are stored in "backpos" and found by comparing to the current value of "scan".
-
-                    ((ß int n =) (count @backpos))
-                    ((ß int i =) (loop-when-recur [i 0] (and (< i n) (BNE (:bp_scan (... @backpos i)), scan)) [(inc i)] => i))
-
-                    (cond (== i n)
-                    (do
-                        ;; First time at this BACK, make room to store the pos.
-                        (swap! backpos conj (-> (NEW_backpos_C) (assoc :bp_scan scan)))
-                    )
-                    (reg-save-equal (:bp_regsave (... @backpos i)))
-                    (do
-                        ;; Still at same position as last time, fail.
-                        ((ß status =) RA_NIL)
-                    ))
-
-                    (when (and (!= status RA_FAIL) (!= status RA_NIL))
-                        (swap! backpos assoc-in [i :bp_regsave] (reg-save @backpos)))
-
-                    (ß BREAK) status
-                )
+                    (let [#_int n (count @backpos)
+                          #_int i (loop-when-recur [i 0] (and (< i n) (BNE (:bp_scan (... @backpos i)), scan)) [(inc i)] => i)
+                          status
+                            (cond (== i n) ;; First time at this BACK.
+                                (do (swap! backpos conj (backpos_C. scan, nil))
+                                    status)
+                            (reg-save-equal (:bp_regsave (... @backpos i)))
+                                ;; Still at same position as last time, fail.
+                                RA_NIL
+                            :else
+                                status
+                            )]
+                        (when (and (!= status RA_FAIL) (!= status RA_NIL))
+                            (swap! backpos assoc-in [i :bp_regsave] (reg-save @backpos)))
+                        status)
 
                [(+ MOPEN 0)     ;; Match start: \zs
                 (+ MOPEN 1)     ;; \(
@@ -18489,31 +18483,21 @@
                 (+ MOPEN 7)
                 (+ MOPEN 8)
                 (+ MOPEN 9)]
-                (do
-                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                        (let [
-                        ]
-                            ((ß int no =) (- op MOPEN))
+                    (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                        (let [#_int no (- op MOPEN)]
                             (swap! regstack conj (reg-item RS_MOPEN, scan, no, (... (:m_startpos @reg_match) no), nil))
                             (swap! reg_match assoc-in [:m_startpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
                             ;; We simply continue and handle the result when done.
-                            (ß BREAK) status
-                        )
-                    )
-                )
+                            status
+                        ))
 
-               [NOPEN         ;; \%(                   ;; sic!)
-                NCLOSE]       ;; \) after \%(          ;; sic!)
-                (do
-                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                        (let [
-                        ]
-                            (swap! regstack conj (reg-item RS_NOPEN, scan))
+               [NOPEN           ;; \%(                   ;; sic!)
+                NCLOSE]         ;; \) after \%(          ;; sic!)
+                    (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                        (do (swap! regstack conj (reg-item RS_NOPEN, scan))
                             ;; We simply continue and handle the result when done.
-                            (ß BREAK) status
-                        )
-                    )
-                )
+                            status
+                        ))
 
                [(+ MCLOSE 0)    ;; Match end: \ze
                 (+ MCLOSE 1)    ;; \)
@@ -18525,18 +18509,13 @@
                 (+ MCLOSE 7)
                 (+ MCLOSE 8)
                 (+ MCLOSE 9)]
-                (do
-                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                        (let [
-                        ]
-                            ((ß int no =) (- op MCLOSE))
+                    (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                        (let [#_int no (- op MCLOSE)]
                             (swap! regstack conj (reg-item RS_MCLOSE, scan, no, (... (:m_endpos @reg_match) no), nil))
                             (swap! reg_match assoc-in [:m_endpos no] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
                             ;; We simply continue and handle the result when done.
-                            (ß BREAK) status
-                        )
-                    )
-                )
+                            status
+                        ))
 
                [(+ BACKREF 1)
                 (+ BACKREF 2)
@@ -18547,78 +18526,50 @@
                 (+ BACKREF 7)
                 (+ BACKREF 8)
                 (+ BACKREF 9)]
-                (do
-                    ((ß int[] a'len =) (atom (int)))
-
-                    ((ß int no =) (- op BACKREF))
-                    (cond (or (< (:lnum (... (:m_startpos @reg_match) no)) 0) (< (:lnum (... (:m_endpos @reg_match) no)) 0))
-                    (do
-                        ;; Backref was not set: Match an empty string.
-                        (reset! a'len 0)
-                    )
-                    :else
-                    (do
-                        (cond (and (== (:lnum (... (:m_startpos @reg_match) no)) @reglnum) (== (:lnum (... (:m_endpos @reg_match) no)) @reglnum))
-                        (do
-                            ;; Compare back-ref within the current line.
-                            (reset! a'len (- (:col (... (:m_endpos @reg_match) no)) (:col (... (:m_startpos @reg_match) no))))
-                            ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... (:m_startpos @reg_match) no))), @reginput, a'len)) RA_NIL status))
-                        )
-                        :else
-                        (do
-                            ;; Messy situation: Need to compare between two lines.
-                            ((ß int r =) (match-with-backref (:lnum (... (:m_startpos @reg_match) no)), (:col (... (:m_startpos @reg_match) no)), (:lnum (... (:m_endpos @reg_match) no)), (:col (... (:m_endpos @reg_match) no)), a'len))
-
-                            ((ß status =) (if (!= r RA_MATCH) r status))
-                        ))
-                    ))
-
-                    ;; Matched the backref, skip over it.
-                    (swap! reginput plus @a'len)
-                    (ß BREAK) status
-                )
+                    (let [a'len (atom (int)) #_int no (- op BACKREF) startpos' (... (:m_startpos @reg_match) no) endpos' (... (:m_endpos @reg_match) no)
+                          status
+                            (cond (or (neg? (:lnum startpos')) (neg? (:lnum endpos')))
+                                (do ;; Backref was not set: Match an empty string.
+                                    (reset! a'len 0)
+                                    status)
+                            (and (== (:lnum startpos') @reglnum) (== (:lnum endpos') @reglnum))
+                                (do ;; Compare back-ref within the current line.
+                                    (reset! a'len (- (:col endpos') (:col startpos')))
+                                    (if (non-zero? (cstrncmp (.plus @regline (:col startpos')), @reginput, a'len)) RA_NIL status))
+                            :else
+                                ;; Messy situation: Need to compare between two lines.
+                                (let [#_int r (match-with-backref (:lnum startpos'), (:col startpos'), (:lnum endpos'), (:col endpos'), a'len)]
+                                    (if (!= r RA_MATCH) r status))
+                            )]
+                        ;; Matched the backref, skip over it.
+                        (swap! reginput plus @a'len)
+                        status)
 
                 BRANCH
-                (do
-                    (cond (!= (re-op @a'next) BRANCH) ;; No choice.
-                    (do
-                        ((ß @a'next =) (operand scan))       ;; Avoid recursion.
-                        (ß BREAK) status
-                    )
-                    :else
-                    (do
-                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                            (let [
-                            ]
-                                (swap! regstack conj (reg-item RS_BRANCH, scan))
-                                (ß BREAK) RA_BREAK      ;; rest is below
-                            )
-                        )
-                    ))
-                )
+                    (if (!= (re-op @a'next) BRANCH) ;; No choice.
+                        (do ;; Avoid recursion.
+                            (reset! a'next (operand scan))
+                            status)
+                        (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                            (do (swap! regstack conj (reg-item RS_BRANCH, scan))
+                                RA_BREAK) ;; Rest is below.
+                        ))
 
                 BRACE_LIMITS
-                (do
                     (cond (== (re-op @a'next) BRACE_SIMPLE)
-                    (do
-                        (reset! bl_minval (operand-min scan))
-                        (reset! bl_maxval (operand-max scan))
-                        (ß BREAK) status
-                    )
-                    (and (<= BRACE_COMPLEX (re-op @a'next)) (< (re-op @a'next) (+ BRACE_COMPLEX 10)))
-                    (do
-                        ((ß int no =) (- (re-op @a'next) BRACE_COMPLEX))
-                        (swap! brace_min assoc no (operand-min scan))
-                        (swap! brace_max assoc no (operand-max scan))
-                        (swap! brace_count assoc no 0)
-                        (ß BREAK) status
-                    )
+                        (do (reset! bl_minval (operand-min scan))
+                            (reset! bl_maxval (operand-max scan))
+                            status)
+                    (<= BRACE_COMPLEX (re-op @a'next) (+ BRACE_COMPLEX 9))
+                        (let [#_int no (- (re-op @a'next) BRACE_COMPLEX)]
+                            (swap! brace_min assoc no (operand-min scan))
+                            (swap! brace_max assoc no (operand-max scan))
+                            (swap! brace_count assoc no 0)
+                            status)
                     :else
-                    (do
-                        (emsg e_internal)       ;; Shouldn't happen.
-                        (ß BREAK) RA_FAIL
-                    ))
-                )
+                        (do (swap! a'win emsg e_internal) ;; Shouldn't happen.
+                            RA_FAIL
+                        ))
 
                [(+ BRACE_COMPLEX 0)
                 (+ BRACE_COMPLEX 1)
@@ -19369,17 +19320,17 @@
 ;; Save the input line and position in a regsave_C.
 
 (defn- #_regsave_C reg-save [#_backpos_C* bp]
-    (regsave_C. @reglnum, (BDIFF @reginput, @regline), bp))
+    (regsave_C. @reglnum, (BDIFF @reginput, @regline), (count bp)))
 
 ;; Restore the input line and position from a regsave_C.
 
-(defn- #_backpos_C* reg-restore [#_backpos_C* bp, #_regsave_C rs]
+(defn- #_backpos_C* reg-restore [#_backpos_C* bp, #_regsave_C rs]
     ;; only call reg-getline() when the line number changed to save a bit of time
     (when (!= @reglnum (:rs_lnum rs))
         (reset! reglnum (:rs_lnum rs))
         (reset! regline (reg-getline @reglnum)))
     (reset! reginput (.plus @regline (:rs_col rs)))
-    (:rs_backpos rs))
+    (subvec bp 0 (:rs_back rs)))
 
 ;; Return true if current position is equal to saved position.
 
