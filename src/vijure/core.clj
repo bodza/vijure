@@ -37964,160 +37964,111 @@
                   ;; Set "w_fraction" now so that the cursor keeps the same relative vertical position.
                   w0 (if (< 0 (:w_height w0)) (set-fraction w0) w0)
                   w1 (assoc w1 :w_fraction (:w_fraction w0))
-            ]
-
-                (cond (flag? flags WSP_VERT)
-                (do
-                    ((ß w1.w_options.@wo_scr =) @(:wo_scr (:w_options win)))
-
-                    (when (non-zero? need_status)
-                        ((ß w0 =) (win-new-height w0, (dec (:w_height w0))))
-                        ((ß w0 =) (assoc w0 :w_status_height need_status))
-                    )
-                    (cond (flag? flags (| WSP_TOP WSP_BOT))
-                    (do
-                        ;; set height and row of new window to full height
-                        ((ß w1 =) (assoc w1 :w_winrow 0))
-                        ((ß w1 =) (win-new-height w1, (- (:fr_height f0) (if (< 0 @p_ls) 1 0))))
-                        ((ß w1 =) (assoc w1 :w_status_height (if (< 0 @p_ls) 1 0)))
-                    )
+                  [w1 w0 f1 f0]
+                    (cond (flag? flags WSP_VERT)
+                        (let [_ (reset! (:wo_scr (:w_options w1)) @(:wo_scr (:w_options win)))
+                              w0 (when' (non-zero? need_status) => w0
+                                    (let [w0 (win-new-height w0, (dec (:w_height w0)))]
+                                        (assoc w0 :w_status_height need_status)
+                                    ))
+                              w1 (if (flag? flags (| WSP_TOP WSP_BOT))
+                                    (-> w1 ;; set height and row of new window to full height
+                                        (assoc :w_winrow 0)
+                                        (win-new-height (- (:fr_height f0) (if (< 0 @p_ls) 1 0)))
+                                        (assoc :w_status_height (if (< 0 @p_ls) 1 0))
+                                    )
+                                    (-> w1 ;; height and row of new window is same as current window
+                                        (assoc :w_winrow (:w_winrow w0))
+                                        (win-new-height (:w_height w0))
+                                        (assoc :w_status_height (:w_status_height w0))
+                                    ))
+                              f1 (assoc f1 :fr_height (:fr_height f0))
+                              ;; "size1" of the current window goes to the new window, use one column for the vertical separator
+                              w1 (win-new-width w1, size1)
+                              [w1 w0]
+                                (if before
+                                    [(assoc w1 :w_vsep_width 1) w0]
+                                    [(assoc w1 :w_vsep_width (:w_vsep_width w0)) (assoc w0 :w_vsep_width 1)])
+                              [f0 w0]
+                                (if (flag? flags (| WSP_TOP WSP_BOT))
+                                    (do (if (flag? flags WSP_BOT)
+                                            (frame-add-vsep f0))
+                                        ;; Set width of neighbor frame.
+                                        (frame-new-width f0, (- (:fr_width f0) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
+                                        [f0 w0])
+                                    [f0 (win-new-width w0, (- (:w_width w0) (inc size1)))])
+                              [w1 w0]
+                                (if before
+                                    [(assoc w1 :w_wincol (:w_wincol w0)) (update w0 :w_wincol + (inc size1))]
+                                    [(assoc w1 :w_wincol (+ (:w_wincol w0) (:w_width w0) 1)) w0]
+                                )]
+                            [(frame-fix-width w1) (frame-fix-width w0) f1 f0])
                     :else
-                    (do
-                        ;; height and row of new window is same as current window
-                        ((ß w1 =) (assoc w1 :w_winrow (:w_winrow w0)))
-                        ((ß w1 =) (win-new-height w1, (:w_height w0)))
-                        ((ß w1 =) (assoc w1 :w_status_height (:w_status_height w0)))
-                    ))
-                    ((ß f1 =) (assoc f1 :fr_height (:fr_height f0)))
-
-                    ;; "size1" of the current window goes to the new window,
-                    ;; use one column for the vertical separator
-                    ((ß w1 =) (win-new-width w1, size1))
-                    (cond before
-                    (do
-                        ((ß w1 =) (assoc w1 :w_vsep_width 1))
-                    )
-                    :else
-                    (do
-                        ((ß w1 =) (assoc w1 :w_vsep_width (:w_vsep_width w0)))
-                        ((ß w0 =) (assoc w0 :w_vsep_width 1))
-                    ))
-                    (cond (flag? flags (| WSP_TOP WSP_BOT))
-                    (do
-                        (if (flag? flags WSP_BOT)
-                            (frame-add-vsep f0))
-                        ;; Set width of neighbor frame.
-                        (frame-new-width f0, (- (:fr_width f0) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
-                    )
-                    :else
-                    (do
-                        ((ß w0 =) (win-new-width w0, (- (:w_width w0) (inc size1))))
-                    ))
-                    (cond before     ;; new window left of current one
-                    (do
-                        ((ß w1 =) (assoc w1 :w_wincol (:w_wincol w0)))
-                        ((ß w0 =) (update w0 :w_wincol + (inc size1)))
-                    )
-                    :else            ;; new window right of current one
-                    (do
-                        ((ß w1 =) (assoc w1 :w_wincol (+ (:w_wincol w0) (:w_width w0) 1)))
-                    ))
-                    ((ß w0 =) (frame-fix-width w0))
-                    ((ß w1 =) (frame-fix-width w1))
-                )
-                :else
-                (do
-                    ;; width and column of new window is same as current window
-                    (cond (flag? flags (| WSP_TOP WSP_BOT))
-                    (do
-                        ((ß w1 =) (assoc w1 :w_wincol 0))
-                        ((ß w1 =) (win-new-width w1, @Cols))
-                        ((ß w1 =) (assoc w1 :w_vsep_width 0))
-                    )
-                    :else
-                    (do
-                        ((ß w1 =) (assoc w1 :w_wincol (:w_wincol w0)))
-                        ((ß w1 =) (win-new-width w1, (:w_width w0)))
-                        ((ß w1 =) (assoc w1 :w_vsep_width (:w_vsep_width w0)))
-                    ))
-                    ((ß f1 =) (assoc f1 :fr_width (:fr_width f0)))
-
-                    ;; "size1" of the current window goes to the new window,
-                    ;; use one row for the status line
-                    ((ß w1 =) (win-new-height w1, size1))
-                    (if (flag? flags (| WSP_TOP WSP_BOT))
-                        ((ß f0 =) (frame-new-height f0, (- (:fr_height f0) (+ size1 STATUS_HEIGHT)), (flag? flags WSP_TOP), false))
-                        ((ß w0 =) (win-new-height w0, (- h0 (+ size1 STATUS_HEIGHT)))))
-                    (cond before     ;; new window above current one
-                    (do
-                        ((ß w1 =) (assoc w1 :w_winrow (:w_winrow w0)))
-                        ((ß w1 =) (assoc w1 :w_status_height STATUS_HEIGHT))
-                        ((ß w0 =) (update w0 :w_winrow + (:w_height w1) STATUS_HEIGHT))
-                    )
-                    :else            ;; new window below current one
-                    (do
-                        ((ß w1 =) (assoc w1 :w_winrow (+ (:w_winrow w0) (:w_height w0) STATUS_HEIGHT)))
-                        ((ß w1 =) (assoc w1 :w_status_height (:w_status_height w0)))
-                        ((ß w0 =) (assoc w0 :w_status_height STATUS_HEIGHT))
-                    ))
-                    (if (flag? flags WSP_BOT)
-                        (frame-add-statusline f0))
-                    ((ß w1 =) (frame-fix-height w1))
-                    ((ß w0 =) (frame-fix-height w0))
-                ))
-
-                (when (flag? flags (| WSP_TOP WSP_BOT))
-                    (win-comp-pos))
-
-                ;; Both windows need redrawing
-
-                ((ß w1 =) (redraw-later w1, NOT_VALID))
-                ((ß w1 =) (assoc w1 :w_redr_status true))
-                ((ß w0 =) (redraw-later w0, NOT_VALID))
-                ((ß w0 =) (assoc w0 :w_redr_status true))
-
+                        (let [w1 (if (flag? flags (| WSP_TOP WSP_BOT))
+                                    (-> w1 ;; set width and column of new window to full width
+                                        (assoc :w_wincol 0)
+                                        (win-new-width @Cols)
+                                        (assoc :w_vsep_width 0)
+                                    )
+                                    (-> w1 ;; width and column of new window is same as current window
+                                        (assoc :w_wincol (:w_wincol w0))
+                                        (win-new-width (:w_width w0))
+                                        (assoc :w_vsep_width (:w_vsep_width w0))
+                                    ))
+                              f1 (assoc f1 :fr_width (:fr_width f0))
+                              ;; "size1" of the current window goes to the new window, use one row for the status line
+                              w1 (win-new-height w1, size1)
+                              [f0 w0]
+                                (if (flag? flags (| WSP_TOP WSP_BOT))
+                                    [(frame-new-height f0, (- (:fr_height f0) (+ size1 STATUS_HEIGHT)), (flag? flags WSP_TOP), false) w0]
+                                    [f0 (win-new-height w0, (- h0 (+ size1 STATUS_HEIGHT)))])
+                              [w1 w0]
+                                (if before
+                                    (let [w1 (assoc w1 :w_winrow (:w_winrow w0) :w_status_height STATUS_HEIGHT)]
+                                        [w1 (update w0 :w_winrow + (:w_height w1) STATUS_HEIGHT)])
+                                    (let [w1 (assoc w1 :w_winrow (+ (:w_winrow w0) (:w_height w0) STATUS_HEIGHT) :w_status_height (:w_status_height w0))]
+                                        [w1 (assoc w0 :w_status_height STATUS_HEIGHT)])
+                                )]
+                            (if (flag? flags WSP_BOT)
+                                (frame-add-statusline f0))
+                            [(frame-fix-height w1) (frame-fix-height w0) f1 f0]
+                        ))
+                  _ (when (flag? flags (| WSP_TOP WSP_BOT))
+                        (win-comp-pos))
+                  ;; Both windows need redrawing.
+                  w1 (-> w1 (redraw-later NOT_VALID) (assoc :w_redr_status true))
+                  w0 (-> w0 (redraw-later NOT_VALID) (assoc :w_redr_status true))]
                 (when (non-zero? need_status)
                     (reset! msg_row (dec @Rows))
                     (reset! msg_col @sc_col)
-                    (msg-clr-eos-force)    ;; old command/ruler may still be there
+                    (msg-clr-eos-force) ;; old command/ruler may still be there
                     (comp-col)
                     (reset! msg_row (dec @Rows))
-                    (reset! msg_col 0)            ;; put position back at start of line
+                    (reset! msg_col 0)  ;; put position back at start of line
                 )
-
-                ;; equalize the window sizes.
-
-                (when (or do_equal (non-zero? dir))
-                    (swap! curwin win-equal w1, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
-
-                ;; Don't change the window height/width to 'winheight' / 'winwidth' if a size was given.
-                (ß int i)
-                (cond (flag? flags WSP_VERT)
-                (do
-                    ((ß i =) (int @p_wiw))
-                    (if (non-zero? size)
-                        (reset! p_wiw size))
-                )
-                :else
-                (do
-                    ((ß i =) (int @p_wh))
-                    (if (non-zero? size)
-                        (reset! p_wh size))
-                ))
-
-                ;; Keep same changelist position in new window.
-                ((ß w1 =) (assoc w1 :w_changelistidx (:w_changelistidx w0)))
-
-                ;; make the new window the current window
-
-                (swap! curwin win-enter w1)
-                (if (flag? flags WSP_VERT)
-                    (reset! p_wiw i)
-                    (reset! p_wh i))
-
-                [win true]
-            )
-        )
+                ;; Equalize the window sizes.
+                (let [win (when' (or do_equal (non-zero? dir)) => win
+                            (win-equal win, w1, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
+                      #_int i ;; Don't change the window height/width to 'winheight'/'winwidth' if a size was given.
+                        (if (flag? flags WSP_VERT)
+                            (let [i @p_wiw]
+                                (when (non-zero? size)
+                                    (reset! p_wiw size))
+                                i)
+                            (let [i @p_wh]
+                                (when (non-zero? size)
+                                    (reset! p_wh size))
+                                i
+                            ))
+                      ;; Keep same changelist position in new window.
+                      w1 (assoc w1 :w_changelistidx (:w_changelistidx w0))
+                      ;; Make the new window the current window.
+                      win (win-enter win, w1)]
+                    (if (flag? flags WSP_VERT)
+                        (reset! p_wiw i)
+                        (reset! p_wh i))
+                    [win true])
+            ))
     ))
 
 (defn- #_window_C win-split-ins [#_window_C win, #_int size, #_int flags, #_window_C win', #_int dir]
