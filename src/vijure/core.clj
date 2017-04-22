@@ -21513,26 +21513,19 @@
 ;; Returns the new length.
 
 (defn- #_int fix-input-buffer [#_Bytes buf, #_int len]
-    (§
-        ;; Two characters are special: NUL and KB_SPECIAL.
-        ;; Replace        NUL by KB_SPECIAL KS_ZERO    KE_FILLER
-        ;; Replace KB_SPECIAL by KB_SPECIAL KS_SPECIAL KE_FILLER
-
-        ((ß Bytes p =) buf)
-        ((ß FOR) (ß ((ß int i =) len) (<= 0 ((ß i =) (dec i))) ((ß p =) (.plus p 1)))
-            ;; timeout may generate K_CURSORHOLD
-            (when (or (eos? p) (and (== (.at p 0) KB_SPECIAL) (or (< i 2) (!= (.at p 1) KS_EXTRA) (!= (.at p 2) KE_CURSORHOLD))))
+    ;; Two characters are special: NUL and KB_SPECIAL.
+    ;; Replace        NUL by KB_SPECIAL KS_ZERO    KE_FILLER
+    ;; Replace KB_SPECIAL by KB_SPECIAL KS_SPECIAL KE_FILLER
+    (loop [#_Bytes p buf #_int n len #_int i (dec n)] (if (<= 0 i)
+        ;; timeout may generate K_CURSORHOLD
+        (if (or (eos? p) (and (at? p KB_SPECIAL) (or (< i 2) (not-at? p 1 KS_EXTRA) (not-at? p 2 KE_CURSORHOLD))))
+            (do
                 (BCOPY p, 3, p, 1, i)
-                (.be p 2, (KB-THIRD (char_u (.at p 0))))
-                (.be p 1, (KB-SECOND (char_u (.at p 0))))
-                (.be p 0, KB_SPECIAL)
-                ((ß p =) (.plus p 2))
-                ((ß len =) (+ len 2))
+                (let [c (char_u (.at p 0))] (-> p (.be 2, (KB-THIRD c)) (.be 1, (KB-SECOND c)) (.be 0, KB_SPECIAL)))
+                (recur (.plus p 3) (+ n 2) (dec i))
             )
-        )
-        (eos! p)           ;; add trailing NUL
-
-        len
+            (recur (.plus p 1) n (dec i)))
+        (do (eos! p) n))
     ))
 
 ;; Return true when bytes are in the input buffer or in the typeahead buffer.
@@ -21543,36 +21536,25 @@
 ;; Escape KB_SPECIAL so that the result can be put in the typeahead buffer.
 
 (defn- #_Bytes vim-strsave-escape-special [#_Bytes p]
-    (§
-        ;; Need a buffer to hold up to three times as much.
-        ((ß Bytes res =) (Bytes. (+ (* (STRLEN p) 3) 1)))
-
-        ((ß Bytes d =) res)
-        ((ß Bytes s =) p)
-        (while (non-eos? s)
-            (cond (and (== (.at s 0) KB_SPECIAL) (non-eos? s 1) (non-eos? s 2))
+    ;; Need a buffer to hold up to three times as much.
+    (let [#_Bytes res (Bytes. (inc (* (STRLEN p) 3)))]
+        (loop [#_Bytes d res #_Bytes s p] (if (non-eos? s)
+            (if (and (at? s KB_SPECIAL) (non-eos? s 1) (non-eos? s 2))
             (do
                 ;; Copy special key unmodified.
-                (.be ((ß d =) (.plus d 1)) -1, (.at ((ß s =) (.plus s 1)) -1))
-                (.be ((ß d =) (.plus d 1)) -1, (.at ((ß s =) (.plus s 1)) -1))
-                (.be ((ß d =) (.plus d 1)) -1, (.at ((ß s =) (.plus s 1)) -1))
+                (.be d 0, (.at s 0)) (.be d 1, (.at s 1)) (.be d 2, (.at s 2))
+                (recur (.plus d 3) (.plus s 3))
             )
-            :else
-            (do
+            (let [#_int end (us-ptr2len-cc s)
                 ;; Add character, possibly multi-byte to destination, escaping KB_SPECIAL.
-                ((ß int c =) (us-ptr2char s))
-                ((ß d =) (add-char2buf c, d))
-                ((ß int end =) (us-ptr2len-cc s))
-                (robin [#_int len (utf-char2len c)] (< len end) [(+ len (utf-char2len c))]
+                  d (loop [#_int c (us-ptr2char s) d (add-char2buf c, d) #_int n (utf-char2len c)] (if (< n end)
                     ;; Add following combining char.
-                    ((ß c =) (us-ptr2char (.plus s len)))
-                    ((ß d =) (add-char2buf c, d))
-                )
-                ((ß s =) (.plus s (us-ptr2len-cc s)))
+                    (recur (us-ptr2char (.plus s n)) (add-char2buf c, d) (+ n (utf-char2len c)))
+                    d))]
+                (recur d (.plus s end))
             ))
-        )
-        (eos! d)
-
+            (eos! d)
+        ))
         res
     ))
 
@@ -21581,35 +21563,26 @@
 ;; Works in-place.
 
 (defn- #_void vim-unescape-special [#_Bytes p]
-    (§
-        ((ß Bytes d =) p)
-        ((ß FOR) (ß ((ß Bytes s =) p) (non-eos? s) nil)
-            (cond (and (== (.at s 0) KB_SPECIAL) (== (.at s 1) KS_SPECIAL) (== (.at s 2) KE_FILLER))
-            (do
-                (.be ((ß d =) (.plus d 1)) -1, KB_SPECIAL)
-                ((ß s =) (.plus s 3))
-            )
-            :else
-            (do
-                (.be ((ß d =) (.plus d 1)) -1, (.at ((ß s =) (.plus s 1)) -1))
-            ))
-        )
+    (loop [#_Bytes d p #_Bytes s p] (if (non-eos? s)
+        (let [n (if (and (at? s KB_SPECIAL) (at? s 1 KS_SPECIAL) (at? s 2 KE_FILLER)) 3 1)]
+            (recur (.plus (.be d 0, (.at s 0)) 1) (.plus s n)))
         (eos! d)
-        nil
     ))
+    nil)
 
 ;;; ============================================================================================== VimM
 
 ;; edit.c: functions for Insert mode --------------------------------------------------------------
 
-(final int BACKSPACE_CHAR              1)
-(final int BACKSPACE_WORD              2)
-(final int BACKSPACE_WORD_NOT_SPACE    3)
-(final int BACKSPACE_LINE              4)
+(final int
+    BACKSPACE_CHAR           1,
+    BACKSPACE_WORD           2,
+    BACKSPACE_WORD_NOT_SPACE 3,
+    BACKSPACE_LINE           4)
 
 (atom! int      insStart_textlen)               ;; length of line when insert started
 (atom! int      insStart_blank_vcol)            ;; vcol for first inserted blank
-(atom! boolean  update_insStart_orig true)    ;; set insStart_orig to insStart
+(atom! boolean  update_insStart_orig    true)   ;; set insStart_orig to insStart
 
 (atom! Bytes    last_insert)                    ;; the text of the previous insert, KB_SPECIAL is escaped
 (atom! int      last_insert_skip)               ;; nr of chars in front of previous insert
@@ -21620,9 +21593,7 @@
 
 (atom! int      old_indent)                     ;; for ^^D command in insert mode
 
-(atom! boolean  ins_need_undo)                  ;; call u-save() before inserting a char;
-                                                            ;; set when edit() is called;
-                                                            ;; after that arrow_used is used
+(atom! boolean  ins_need_undo)                  ;; call u-save() before inserting a char; set when edit() is called; after that arrow_used is used
 
 (atom! long     o_lnum)
 
@@ -38584,23 +38555,23 @@
 
         ;; NFA engine aborted because it's very slow.
         (when (and (== (:re_engine (:regprog rmp)) AUTOMATIC_ENGINE) (== result NFA_TOO_EXPENSIVE))
-            ((ß long save_p_re =) @p_re)
-            ((ß int re_flags =) (:re_flags (:regprog rmp)))
-            ((ß Bytes pat =) (STRDUP (:pattern (ß (nfa_regprog_C)(rmp.regprog)))))
+            (let [#_long save_p_re @p_re]
+                ((ß int re_flags =) (:re_flags (:regprog rmp)))
+                ((ß Bytes pat =) (STRDUP (:pattern (ß (nfa_regprog_C)(rmp.regprog)))))
 
-            (reset! p_re BACKTRACKING_ENGINE)
-            ((ß rmp.regprog =) nil)
-            (when (non-nil? pat)
-                (report-re-switch pat)
-                ((ß rmp.regprog =) (vim-regcomp pat, re_flags))
-                (if (non-nil? (:regprog rmp))
-                    ((ß result =) (.regexec_multi (:engine (:regprog rmp)) rmp, win, buf, lnum, col, nsec))
+                (reset! p_re BACKTRACKING_ENGINE)
+                ((ß rmp.regprog =) nil)
+                (when (non-nil? pat)
+                    (report-re-switch pat)
+                    ((ß rmp.regprog =) (vim-regcomp pat, re_flags))
+                    (if (non-nil? (:regprog rmp))
+                        ((ß result =) (.regexec_multi (:engine (:regprog rmp)) rmp, win, buf, lnum, col, nsec))
+                    )
                 )
-            )
-            (reset! p_re save_p_re)
-        )
+                (reset! p_re save_p_re)
+            ))
 
-        (Math/max 0, result)
+        (max 0, result)
     ))
 
 ;;; ============================================================================================== VimP
@@ -47075,35 +47046,25 @@
     ))
 
 (defn- #_int plines-m-win [#_window_C wp, #_long first, #_long last]
-    (§
-        ((ß int count =) 0)
-
-        (while (<= first last)
-            ((ß count =) (+ count (plines-win wp, first, true)))
-            ((ß first =) (inc first))
-        )
-
-        count
-    ))
+    (loop [#_int n 0 #_long i first] (if (<= i last)
+        (recur (+ n (plines-win wp, i, true)) (inc i))
+    n)))
 
 ;; Insert string "p" at the cursor position.  Stops at a NUL byte.
 ;; Handles Replace mode and multi-byte characters.
 
 (defn- #_void ins-bytes [#_Bytes p]
-    (ins-bytes-len p, (STRLEN p))
-    nil)
+    (ins-bytes-len p, (STRLEN p)))
 
 ;; Insert string "p" with length "len" at the cursor position.
 ;; Handles Replace mode and multi-byte characters.
 
 (defn- #_void ins-bytes-len [#_Bytes p, #_int len]
-    (§
-        ((ß FOR) (ß ((ß int i =) (ß 0, n)) (< i len) ((ß i =) (+ i n)))
-            ;; avoid reading past p[len]
-            ((ß n =) (us-ptr2len-cc-len (.plus p i), (- len i)))
+    (loop [#_int i 0] (when (< i len)
+        (let [#_int n (us-ptr2len-cc-len (.plus p i), (- len i))]
             (ins-char-bytes (.plus p i), n)
-        )
-        nil
+            (recur (+ i n))
+        ))
     ))
 
 ;; Insert or replace a single character at the cursor position.
@@ -47113,18 +47074,12 @@
 ;; the caller must convert bytes to a character.
 
 (defn- #_void ins-char [#_int c]
-    (§
-        ((ß Bytes buf =) (Bytes. (inc MB_MAXBYTES)))
-        ((ß int n =) (utf-char2bytes c, buf))
-
+    (let [#_Bytes buf (Bytes. (inc MB_MAXBYTES)) #_int n (utf-char2bytes c, buf)]
         ;; When "c" is 0x100, 0x200, etc. we don't want to insert a NUL byte.
         ;; Happens for CTRL-Vu9900.
         (if (zero? (.at buf 0))
-            (.be buf 0, (byte \newline))
-        )
-
+            (.be buf 0, (byte \newline)))
         (ins-char-bytes buf, n)
-        nil
     ))
 
 (defn- #_void ins-char-bytes [#_Bytes buf, #_int charlen]
