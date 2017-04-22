@@ -1255,15 +1255,15 @@
 
 (class! #_final u_header_C
     [
-        (field long         uh_seq)                                 ;; sequence number, higher == newer undo
-        (field u_entry_C    uh_entry)                               ;; pointer to first entry
-        (field u_entry_C    uh_getbot_entry)                        ;; pointer to where "ue_bot" must be set
-        (field pos_C        uh_cursor       (NEW_pos_C))            ;; cursor position before saving
+        (field long         uh_seq)             ;; sequence number, higher == newer undo
+        (field u_entry_C    uh_entry)           ;; pointer to first entry
+        (field u_entry_C    uh_getbot_entry)    ;; pointer to where "ue_bot" must be set
+        (field pos_C        uh_cursor)          ;; cursor position before saving
         (field long         uh_cursor_vcol)
-        (field int          uh_flags)                               ;; see below
-        (field pos_C*       uh_namedm       (ARRAY-pos NMARKS))     ;; marks before undo/after redo
-        (field visualinfo_C uh_visual       (NEW_visualinfo_C))     ;; Visual areas before undo/after redo
-        (field long         uh_time)                                ;; timestamp when the change was made
+        (field int          uh_flags)           ;; see below
+        (field pos_C*       uh_namedm)          ;; marks before undo/after redo
+        (field visualinfo_C uh_visual)          ;; Visual areas before undo/after redo
+        (field long         uh_time)            ;; timestamp when the change was made
     ])
 
 ;; values for "uh_flags"
@@ -29951,107 +29951,94 @@
     (let-when [[win ?] (undo-allowed? win)] ? => [win false]
         ;; This happens when the FileChangedRO autocommand changes the file in a way it becomes shorter.
         (let-when [lmax (line-count @curbuf)] (<= bot (inc lmax)) => [(emsg win, (u8 "E881: Line count changed unexpectedly")) false]
-            (let [#_long size (- bot top 1)
-                  ;; If "b_u_synced" is true, make a new header.
-            ]
+            (let-when [#_long size (- bot top 1)
+                  [win _] ;; If "b_u_synced" is true, make a new header.
+            ] (nil? _) => [win _]
 
-%%                  (cond (:b_u_synced @curbuf)
-                    (do
-                        ;; Need to create new entry in "b_changelist".
-                        (swap! curbuf assoc :b_new_change true)
-
-                        ;; If we undid more than we redid, move the entry lists before and including "b_u_curhead" to an alternate branch.
-
-                        (let-when [#_int i (:b_u_current @curbuf)] (< i (count (:b_u_headers @curbuf)))
-                            (swap! curbuf update :b_u_headers subvec 0 i))
-
-                        ;; Free headers to keep the size right.
-
-                        (let-when [#_int m (get-undolevels) #_int n (count (:b_u_headers @curbuf))] (< 0 m n)
-                            (swap! curbuf update :b_u_headers subvec (- n m) n)
-                            (swap! curbuf update :b_u_current - (- n m)))
-
-                        (when (< (get-undolevels) 0)                ;; no undo at all
-                            (swap! curbuf assoc :b_u_synced false)
-                            ((ß RETURN) [win true])
-                        )
-
-                        ((ß u_header_C uhp =) (NEW_u_header_C))
-
-                        (swap! curbuf update :b_u_seq_last inc)
-                        ((ß uhp =) (assoc uhp :uh_seq (:b_u_seq_last @curbuf)))
-                        ((ß uhp =) (assoc uhp :uh_time (._time libC)))
-
-                        ((ß uhp =) (assoc uhp :uh_entry nil, :uh_getbot_entry nil))
-                        ((ß uhp =) (assoc uhp :uh_cursor (:w_cursor win)))
-                        ((ß uhp =) (assoc uhp :uh_cursor_vcol (if (and (virtual-active) (< 0 (:coladd (:w_cursor win)))) (getviscol win) -1)))
-
-                        ;; Save changed and buffer empty flag for undo.
-                        ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))))
-
-                        ;; Save named marks and Visual marks for undo.
-                        ((ß uhp =) (assoc uhp :uh_namedm (:b_namedm @curbuf)))
-                        ((ß uhp =) (assoc uhp :uh_visual (:b_visual @curbuf)))
-
-                        (swap! curbuf update :b_u_headers conj uhp)
-                        (swap! curbuf update :b_u_current inc)
-                    )
+                    (cond (:b_u_synced @curbuf)
+                        (do ;; Need to create new entry in "b_changelist".
+                            (swap! curbuf assoc :b_new_change true)
+                            ;; If we undid more than we redid, move the entry lists before and including "b_u_curhead" to an alternate branch.
+                            (let-when [#_int i (:b_u_current @curbuf)] (< i (count (:b_u_headers @curbuf)))
+                                (swap! curbuf update :b_u_headers subvec 0 i))
+                            ;; Free headers to keep the size right.
+                            (let-when [#_int m (get-undolevels) #_int n (count (:b_u_headers @curbuf))] (< 0 m n)
+                                (swap! curbuf update :b_u_headers subvec (- n m) n)
+                                (swap! curbuf update :b_u_current - (- n m)))
+                            (if (< (get-undolevels) 0) ;; no undo at all
+                                (do (swap! curbuf assoc :b_u_synced false)
+                                    [win true])
+                                (do (swap! curbuf update :b_u_seq_last inc)
+                                    (swap! curbuf update :b_u_headers conj
+                                        (u_header_C.
+                                            #_:uh_seq          (:b_u_seq_last @curbuf)
+                                            #_:uh_entry        nil
+                                            #_:uh_getbot_entry nil
+                                            #_:uh_cursor       (:w_cursor win)
+                                            #_:uh_cursor_vcol  (if (and (virtual-active) (< 0 (:coladd (:w_cursor win)))) (getviscol win) -1)
+                                            #_:uh_flags        (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))
+                                            #_:uh_namedm       (:b_namedm @curbuf)
+                                            #_:uh_visual       (:b_visual @curbuf)
+                                            #_:uh_time         (ß ._time libC)
+                                        ))
+                                    (swap! curbuf update :b_u_current inc)
+                                    [win nil])
+                            ))
+                    (< (get-undolevels) 0) ;; no undo at all
+                        [win true]
                     :else
-                    (do
-                        (if (< (get-undolevels) 0)        ;; no undo at all
-                            ((ß RETURN) [win true])
-                        )
+                        (let-when [[win _]
+                                ;; When saving a single line, and it has been saved just before, it doesn't make sense saving it again.
+                                ;; Saves a lot of memory when making lots of changes inside the same line.
+                                ;; This is only possible if the previous change didn't increase or decrease the number of lines.
+                                ;; Check the ten last changes.  More doesn't make sense and takes too long.
+                        ] (nil? _) => [win _]
 
-                        ;; When saving a single line, and it has been saved just before, it doesn't make sense saving it again.
-                        ;; Saves a lot of memory when making lots of changes inside the same line.
-                        ;; This is only possible if the previous change didn't increase or decrease the number of lines.
-                        ;; Check the ten last changes.  More doesn't make sense and takes too long.
-
-                        (when (== size 1)
-                            ((ß [win u_entry_C uep] =) (u-get-headentry? win))
-                            (loop-when [#_u_entry_C prev_uep nil uep uep #_int i 0] (and (some? uep) (< i 10))
-                                ;; If lines have been inserted/deleted, we give up.
-                                ;; Also when the line was included in a multi-line save.
-                                (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc lmax) (:ue_bot uep))) (!= (:ue_lcount uep) lmax)) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
-                                    (ß BREAK)
-                                )
-
-                                ;; If it's the same line, we can skip saving it again.
-                                (when (and (== (:ue_size uep) 1) (== (:ue_top uep) top))
-                                    (when (< 0 i)
-                                        ;; It's not the last entry: get "ue_bot" for the last entry now.
-                                        ;; Following deleted/inserted lines go to the re-used entry.
-                                        ((ß win =) (u-getbot win))
-                                        (swap! curbuf assoc :b_u_synced false)
-
-                                        ;; Move the found entry to become the last entry.
-                                        ;; The order of undo/redo doesn't matter for the entries we move it over,
-                                        ;; since they don't change the line count and don't include this line.
-                                        ;; It does matter for the found entry if the line count is changed by the executed command.
-                                        ((ß prev_uep =) (assoc prev_uep :ue_next (:ue_next uep)))
-                                        ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
-                                        (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
+                                (when' (== size 1) => [win nil]
+                                    (let [[win #_u_entry_C uep] (u-get-headentry? win) #_u_entry_C getbot' (:uh_getbot_entry (peek (:b_u_headers @curbuf)))]
+                                        (loop-when [uep uep #_int n 0] (and (some? uep) (< n 10)) => [win nil]
+                                            ;; If lines have been inserted/deleted, we give up.
+                                            ;; Also when the line was included in a multi-line save.
+                                            (let-when [top' (:ue_top uep) bot' (:ue_bot uep) size' (:ue_size uep)]
+                                                      (and (if (== getbot' uep) (== (:ue_lcount uep) lmax) (== (+ top' size' 1) (if (zero? bot') (inc lmax) bot')))
+                                                           (not (and (< 1 size') (<= top' top) (<= (+ top 2) (+ top' size' 1)))))
+                                                   => [win nil]
+                                                ;; If it's the same line, we can skip saving it again.
+                                                (when' (and (== size' 1) (== top' top)) => (recur (:ue_next uep) (inc n))
+%%                                                  (when (< 0 n)
+                                                        ;; It's not the last entry: get "ue_bot" for the last entry now.
+                                                        ;; Following deleted/inserted lines go to the re-used entry.
+                                                        ((ß win =) (u-getbot win))
+                                                        (swap! curbuf assoc :b_u_synced false)
+                                                        ;; Move the found entry to become the last entry.
+                                                        ;; The order of undo/redo doesn't matter for the entries we move it over,
+                                                        ;; since they don't change the line count and don't include this line.
+                                                        ;; It does matter for the found entry if the line count is changed by the executed command.
+                                                        ((ß prev_uep =) (assoc prev_uep :ue_next (:ue_next uep)))
+                                                        ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
+                                                        (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
+                                                    )
+                                                    ;; The executed command may change the line count.
+                                                    (cond (non-zero? newbot)
+                                                        ((ß uep =) (assoc uep :ue_bot newbot))
+                                                    (< lmax bot)
+                                                        ((ß uep =) (assoc uep :ue_bot 0))
+                                                    :else
+                                                    (do
+                                                        ((ß uep =) (assoc uep :ue_lcount lmax))
+                                                        (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
+                                                    ))
+                                                    [win true]
+                                                )
+                                            )
+                                        )
                                     )
-
-                                    ;; The executed command may change the line count.
-                                    (cond (non-zero? newbot)
-                                        ((ß uep =) (assoc uep :ue_bot newbot))
-                                    (< lmax bot)
-                                        ((ß uep =) (assoc uep :ue_bot 0))
-                                    :else
-                                    (do
-                                        ((ß uep =) (assoc uep :ue_lcount lmax))
-                                        (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
-                                    ))
-                                    ((ß RETURN) [win true])
                                 )
-                                (recur uep (:ue_next uep) (inc i))
-                            )
-                        )
 
-                        ;; find line number for "ue_bot" for previous u-save()
-                        ((ß win =) (u-getbot win))
-                    ))
+                            ;; Find line number for "ue_bot" for previous u-save().
+                            [(u-getbot win) nil]
+                        )
+                    )
 
                 ;; add lines in front of entry list
 
