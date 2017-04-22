@@ -40186,176 +40186,101 @@
                     (do ;; Not VALID or INVERTED: redraw all lines.
                         (reset! a'mid_start 0)
                         (reset! a'mid_end (:w_height win))
+                        win
+                    ))
+              _ (when (== @a'type SOME_VALID)
+                    ;; SOME_VALID: redraw all lines.
+                    (reset! a'mid_start 0)
+                    (reset! a'mid_end (:w_height win))
+                    (reset! a'type NOT_VALID))
+              ;; Check if we are updating or removing the inverted part.
+              win (if (or @VIsual_active (and (non-zero? (:w_old_cursor_lnum win)) (!= @a'type NOT_VALID)))
+                    (let [ocl (:w_old_cursor_lnum win) ovl (:w_old_visual_lnum win)
+                          [win #_long from #_long to]
+                            (cond @VIsual_active
+                                (let [cln (:lnum (:w_cursor win)) vln (:lnum @VIsual_cursor)
+                                      [from to]
+                                        (if (and @VIsual_active (or (!= @VIsual_mode (:w_old_visual_mode win)) (== @a'type INVERTED_ALL)))
+                                            ;; If the type of Visual selection changed, redraw the whole selection.
+                                            (let [[from to] (if (< cln vln) [cln vln] [vln cln])]
+                                                ;; redraw more when the cursor moved as well
+                                                [(min from ocl ovl) (max ocl ovl to)])
+                                            ;; Find the line numbers that need to be updated:
+                                            ;; the lines between the old cursor position and the current cursor position.
+                                            ;; Also check if the Visual position changed.
+                                            (let [[from to] (if (< cln ocl) [cln ocl] [(if (zero? ocl) cln ocl) cln])] ;; Visual mode just started
+                                                (if (or (!= vln ovl) (!= (:col @VIsual_cursor) (:w_old_visual_col win)))
+                                                    (let [from (if (non-zero? ovl) (min from ovl) from)]
+                                                        [(min from vln) (max ovl vln to)])
+                                                    [from to]
+                                                ))
+                                        )]
+                                    ;; If in block mode and changed column or "w_curswant": update all lines.
+                                    ;; First compute the actual start and end column.
+                                    (if (== @VIsual_mode Ctrl_V)
+                                        (let [a'fromc (atom (int)) a'toc (atom (int)) o've_flags @ve_flags]
+                                            (when @(:wo_lbr (:w_options win))
+                                                (reset! ve_flags VE_ALL))
+                                            (getvcols win, @VIsual_cursor, (:w_cursor win), a'fromc, a'toc)
+                                            (reset! ve_flags o've_flags)
+                                            (swap! a'toc inc)
+                                            (when (== (:w_curswant win) MAXCOL)
+                                                (reset! a'toc MAXCOL))
+                                            (let [[from to]
+                                                    (if (or (!= @a'fromc (:w_old_cursor_fcol win)) (!= @a'toc (:w_old_cursor_lcol win)))
+                                                        [(min from vln) (max vln to)]
+                                                        [from to]
+                                                    )]
+                                                [(-> win (assoc :w_old_cursor_fcol @a'fromc) (assoc :w_old_cursor_lcol @a'toc)) from to]
+                                            ))
+                                        [win from to]
+                                    ))
+                            :else
+                                ;; Use the line numbers of the old Visual area.
+                                (let [[from to] (if (< ocl ovl) [ocl ovl] [ovl ocl])]
+                                    [win from to]
+                                ))
+                          ;; There is no need to update lines above the top of the window.
+                          from (max (:w_topline win) from)
+                          ;; If we know the value of "w_botline", use it to restrict the update to the lines that are visible in the window.
+                          [from to] (if (flag? (:w_valid win) VALID_BOTLINE) [(min from (dec (:w_botline win))) (min to (dec (:w_botline win)))] [from to])]
+                        ;; Find the minimal part to be updated.
+                        ;; Watch out for scrolling that made entries in w_lines[] invalid.
+                        ;; E.g., CTRL-U makes the first half of w_lines[] invalid and sets "top_end": need to redraw from "top_end" to the "to" line.
+                        (when (< 0 @a'mid_start)
+                            (reset! a'mid_start (if @a'scrolled_down @a'top_end 0))
+                            (let [[#_int srow #_int i]
+                                    (loop-when [srow 0 #_long lnum (:w_topline win) i 0] (and (< lnum from) (< i (:w_lines_valid win))) => [srow i] ;; find start
+                                        (let [wli (... (:w_lines win) i)
+                                              srow (cond (:wl_valid wli) (do (swap! a'mid_start + (:wl_size wli)) srow) (not @a'scrolled_down) (+ srow (:wl_size wli)) :else srow)]
+                                            (recur srow (inc lnum) (inc i))
+                                        ))
+                                  srow (+ srow @a'mid_start)]
+                                (reset! a'mid_end (:w_height win))
+                                (loop-when [srow srow i i] (< i (:w_lines_valid win)) ;; find end
+                                    (let [wli (... (:w_lines win) i)]
+                                        (if (and (:wl_valid wli) (<= (inc to) (:wl_lnum wli)))
+                                            (reset! a'mid_end srow) ;; only update until first row of this line
+                                            (recur (+ srow (:wl_size wli)) (inc i))
+                                        ))
+                                )))
                         win)
-                )]
+                    win)
+              win (if @VIsual_active
+                    (assoc win :w_old_visual_mode   @VIsual_mode
+                               :w_old_cursor_lnum   (:lnum (:w_cursor win))
+                               :w_old_visual_lnum   (:lnum @VIsual_cursor)
+                               :w_old_visual_col    (:col @VIsual_cursor)
+                               :w_old_curswant      (:w_curswant win))
+                    (assoc win :w_old_visual_mode   0
+                               :w_old_cursor_lnum   0
+                               :w_old_visual_lnum   0
+                               :w_old_visual_col    0))
+            ;; reset "got_int", otherwise regexp won't work
+            o'got_int @got_int _ (reset! got_int false)
 
-            (when (== @a'type SOME_VALID)
-                ;; SOME_VALID: redraw all lines.
-                ((ß @a'mid_start =) 0)
-                ((ß @a'mid_end =) (:w_height win))
-                ((ß @a'type =) NOT_VALID)
-            )
-
-            ;; check if we are updating or removing the inverted part
-            (when (or @VIsual_active (and (non-zero? (:w_old_cursor_lnum win)) (!= @a'type NOT_VALID)))
-                (ß long from)
-                (ß long to)
-
-                (cond @VIsual_active
-                (do
-                    (cond (and @VIsual_active (or (!= @VIsual_mode (:w_old_visual_mode win)) (== @a'type INVERTED_ALL)))
-                    (do
-                        ;; If the type of Visual selection changed, redraw the whole selection.
-                        ;; Also when the ownership of the X selection is gained or lost.
-
-                        (cond (< (:lnum (:w_cursor @curwin)) (:lnum @VIsual_cursor))
-                        (do
-                            ((ß from =) (:lnum (:w_cursor @curwin)))
-                            ((ß to =) (:lnum @VIsual_cursor))
-                        )
-                        :else
-                        (do
-                            ((ß from =) (:lnum @VIsual_cursor))
-                            ((ß to =) (:lnum (:w_cursor @curwin)))
-                        ))
-                        ;; redraw more when the cursor moved as well
-                        ((ß from =) (min from (:w_old_cursor_lnum win) (:w_old_visual_lnum win)))
-                        ((ß to =) (max (:w_old_cursor_lnum win) (:w_old_visual_lnum win) to))
-                    )
-                    :else
-                    (do
-                        ;; Find the line numbers that need to be updated: The lines
-                        ;; between the old cursor position and the current cursor
-                        ;; position.  Also check if the Visual position changed.
-
-                        (cond (< (:lnum (:w_cursor @curwin)) (:w_old_cursor_lnum win))
-                        (do
-                            ((ß from =) (:lnum (:w_cursor @curwin)))
-                            ((ß to =) (:w_old_cursor_lnum win))
-                        )
-                        :else
-                        (do
-                            ((ß from =) (:w_old_cursor_lnum win))
-                            ((ß to =) (:lnum (:w_cursor @curwin)))
-                            ((ß from =) (if (zero? from) to from))              ;; Visual mode just started
-                        ))
-
-                        (when (or (!= (:lnum @VIsual_cursor) (:w_old_visual_lnum win)) (!= (:col @VIsual_cursor) (:w_old_visual_col win)))
-                            (if (non-zero? (:w_old_visual_lnum win))
-                                ((ß from =) (min from (:w_old_visual_lnum win))))
-                            ((ß from =) (min from (:lnum @VIsual_cursor)))
-                            ((ß to =) (max (:w_old_visual_lnum win) (:lnum @VIsual_cursor) to))
-                        )
-                    ))
-
-                    ;; If in block mode and changed column or curwin.w_curswant: update all lines.
-                    ;; First compute the actual start and end column.
-
-                    (when (== @VIsual_mode Ctrl_V)
-                        ((ß int[] a'fromc =) (atom (int)))
-                        ((ß int[] a'toc =) (atom (int)))
-                        ((ß int save_ve_flags =) @ve_flags)
-
-                        (if @(:wo_lbr (:w_options @curwin))
-                            (reset! ve_flags VE_ALL))
-                        (getvcols win, @VIsual_cursor, (:w_cursor @curwin), a'fromc, a'toc)
-                        (reset! ve_flags save_ve_flags)
-                        (swap! a'toc inc)
-                        (when (== (:w_curswant @curwin) MAXCOL)
-                            (reset! a'toc MAXCOL))
-
-                        (when (or (!= @a'fromc (:w_old_cursor_fcol win)) (!= @a'toc (:w_old_cursor_lcol win)))
-                            ((ß from =) (min from (:lnum @VIsual_cursor)))
-                            ((ß to =) (max (:lnum @VIsual_cursor) to))
-                        )
-                        ((ß win =) (assoc win :w_old_cursor_fcol @a'fromc))
-                        ((ß win =) (assoc win :w_old_cursor_lcol @a'toc))
-                    )
-                )
-                :else
-                (do
-                    ;; Use the line numbers of the old Visual area.
-                    (cond (< (:w_old_cursor_lnum win) (:w_old_visual_lnum win))
-                    (do
-                        ((ß from =) (:w_old_cursor_lnum win))
-                        ((ß to =) (:w_old_visual_lnum win))
-                    )
-                    :else
-                    (do
-                        ((ß from =) (:w_old_visual_lnum win))
-                        ((ß to =) (:w_old_cursor_lnum win))
-                    ))
-                ))
-
-                ;; There is no need to update lines above the top of the window.
-
-                ((ß from =) (max (:w_topline win) from))
-
-                ;; If we know the value of "w_botline",
-                ;; use it to restrict the update to the lines that are visible in the window.
-
-                (when (flag? (:w_valid win) VALID_BOTLINE)
-                    ((ß from =) (min from (dec (:w_botline win))))
-                    ((ß to =) (min to (dec (:w_botline win))))
-                )
-
-                ;; Find the minimal part to be updated.
-                ;; Watch out for scrolling that made entries in w_lines[] invalid.
-                ;; E.g., CTRL-U makes the first half of w_lines[] invalid and sets "top_end";
-                ;; need to redraw from "top_end" to the "to" line.
-                ;; A middle mouse click with a Visual selection may change the text above
-                ;; the Visual area and reset wl_valid, do count these for "mid_end" (in srow).
-
-                (when (< 0 @a'mid_start)
-                    ((ß long lnum =) (:w_topline win))       ;; current buffer lnum to display
-                    ((ß int idx =) 0)                    ;; current index in w_lines[]
-                    ((ß int srow =) 0)                   ;; starting row of the current line
-                    ((ß @a'mid_start =) (if @a'scrolled_down @a'top_end 0))
-                    (loop-when [] (and (< lnum from) (< idx (:w_lines_valid win)))   ;; find start
-                        (cond (:wl_valid (... (:w_lines win) idx))
-                        (do
-                            ((ß @a'mid_start =) (+ @a'mid_start (:wl_size (... (:w_lines win) idx))))
-                        )
-                        (not @a'scrolled_down)
-                        (do
-                            ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
-                        ))
-                        ((ß idx =) (inc idx))
-                        ((ß lnum =) (inc lnum))
-                        (recur)
-                    )
-                    ((ß srow =) (+ srow @a'mid_start))
-                    ((ß @a'mid_end =) (:w_height win))
-                    (loop-when-recur idx (< idx (:w_lines_valid win)) (inc idx)          ;; find end
-                        (when (and (:wl_valid (... (:w_lines win) idx)) (<= (inc to) (:wl_lnum (... (:w_lines win) idx))))
-                            ;; Only update until first row of this line.
-                            ((ß @a'mid_end =) srow)
-                            (ß BREAK)
-                        )
-                        ((ß srow =) (+ srow (:wl_size (... (:w_lines win) idx))))
-                    )
-                )
-            )
-
-            (cond @VIsual_active
-            (do
-                ((ß win =) (assoc win :w_old_visual_mode @VIsual_mode))
-                ((ß win =) (assoc win :w_old_cursor_lnum (:lnum (:w_cursor @curwin))))
-                ((ß win =) (assoc win :w_old_visual_lnum (:lnum @VIsual_cursor)))
-                ((ß win =) (assoc win :w_old_visual_col (:col @VIsual_cursor)))
-                ((ß win =) (assoc win :w_old_curswant (:w_curswant @curwin)))
-            )
-            :else
-            (do
-                ((ß win =) (assoc win :w_old_visual_mode 0))
-                ((ß win =) (assoc win :w_old_cursor_lnum 0))
-                ((ß win =) (assoc win :w_old_visual_lnum 0))
-                ((ß win =) (assoc win :w_old_visual_col 0))
-            ))
-
-            ;; reset got_int, otherwise regexp won't work
-            ((ß boolean o'got_int =) @got_int)
-            (reset! got_int false)
+            lmax (line-count @curbuf)
+        ]
 
             ((ß boolean didline =) false)            ;; if true, we finished the last line
             ((ß boolean eof =) false)                ;; if true, we hit the end of the file
@@ -40375,7 +40300,7 @@
                 )
 
                 ;; stop updating when hit the end of the file
-                (when (< (line-count @curbuf) lnum)
+                (when (< lmax lnum)
                     ((ß eof =) true)
                     (ß BREAK)
                 )
@@ -40569,7 +40494,7 @@
                     ((ß lnum =) (inc lnum))
                 ))
 
-                (when (< (line-count @curbuf) lnum)
+                (when (< lmax lnum)
                     ((ß eof =) true)
                     (ß BREAK)
                 )
@@ -40612,7 +40537,7 @@
                 (draw-vsep-win win, row)
                 (cond eof                                ;; we hit the end of the file
                 (do
-                    ((ß win =) (assoc win :w_botline (inc (line-count @curbuf))))
+                    ((ß win =) (assoc win :w_botline (inc lmax)))
                 )
                 :else
                 (do
@@ -40636,14 +40561,14 @@
             ;; Only do this for the current window (where changes are relevant).
 
             ((ß win =) (update win :w_valid | VALID_BOTLINE))
-            (when (and (== win @curwin) (!= (:w_botline win) o'botline) (not recursive?))
-                (swap! curwin update :w_valid & (bit-not VALID_TOPLINE))
-                (swap! curwin update-topline)   ;; may invalidate "w_botline" again
+            (when (and (== win @curwin) (!= (:w_botline win) o'botline) (not recursive?))
+                ((ß win =) (update win :w_valid & (bit-not VALID_TOPLINE)))
+                ((ß win =) (update-topline win))   ;; may invalidate "w_botline" again
                 (when (non-zero? @must_redraw)
                     ;; Don't update for changes in buffer again.
                     ((ß boolean b =) (:b_mod_set @curbuf))
                     (swap! curbuf assoc :b_mod_set false)
-                    (swap! curwin win-update true)
+                    ((ß win =) (win-update win, true))
                     (reset! must_redraw 0)
                     (swap! curbuf assoc :b_mod_set b)
                 )
