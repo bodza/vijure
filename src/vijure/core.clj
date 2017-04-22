@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -2832,9 +2832,9 @@
                         (reset! cmdline_row @msg_row)
                         (reset! skip_redraw true)                   ;; skip redraw once
                         (reset! do_redraw false))
-                    ;; If the window size changed set-shellsize() will redraw the screen.
+                    ;; If the window size changed, set-shellsize() will redraw the screen.
                     ;; Otherwise the screen is only redrawn if 'redraw' is set and no ':' typed.
-                    (let [state' @State _ (reset! State o'State)]   ;; restore State before set-shellsize
+                    (let [state' @State _ (reset! State o'State)]   ;; restore State before set-shellsize()
                         (msg-check)
                         ;; When switching screens, we need to output an extra newline on exit.
                         (when (and (swapping-screen) (not @termcap_active))
@@ -4009,40 +4009,37 @@
                         (do (when (< @p_ut 0)       (reset! p_ut 2000)    (reset! a'errmsg e_positive))
                             win)
 
-                    win
-                )]
+                    win)
 
-            (when @full_screen
-                (let-when [m (min-rows)] (< @Rows m)
-                    (reset! Rows m)
-                    (let [#_Bytes errbuf (Bytes. 80)]
-                        (ß vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), m)
-                        (reset! a'errmsg errbuf)
-                    ))
-                (let-when [m MIN_COLS] (< @Cols m)
-                    (reset! Cols m)
-                    (let [#_Bytes errbuf (Bytes. 80)]
-                        (ß vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), m)
-                        (reset! a'errmsg errbuf)
-                    ))
-            )
-
-            (limit-screen-size)
-
-            ;; If the screen (shell) height has been changed, assume it is the physical screenheight.
-            (when (or (!= o'Rows @Rows) (!= o'Cols @Cols))
-                ;; Changing the screen size is not allowed while updating the screen.
-                (cond @updating_screen
-                    (reset! varp o'value)
-                @full_screen
-                    (set-shellsize @Cols, @Rows, true)
-                :else
-                    (do ;; Postpone the resizing; check the size and cmdline position for messages.
-                        (check-shellsize)
-                        (when (and (< (- @Rows @p_ch) @cmdline_row) (< @p_ch @Rows))
-                            (reset! cmdline_row (- @Rows @p_ch))
+              _ (when @full_screen
+                    (let-when [m (min-rows)] (< @Rows m)
+                        (reset! Rows m)
+                        (let [#_Bytes errbuf (Bytes. 80)]
+                            (ß vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), m)
+                            (reset! a'errmsg errbuf)
                         ))
-                ))
+                    (let-when [m MIN_COLS] (< @Cols m)
+                        (reset! Cols m)
+                        (let [#_Bytes errbuf (Bytes. 80)]
+                            (ß vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), m)
+                            (reset! a'errmsg errbuf)
+                        )))
+              _ (limit-screen-size)
+              ;; If the screen (shell) height has been changed, assume it is the physical screen height.
+              win (when' (or (!= o'Rows @Rows) (!= o'Cols @Cols)) => win
+                    ;; Changing the screen size is not allowed while updating the screen.
+                    (cond @updating_screen
+                        (do (reset! varp o'value) win)
+                    @full_screen
+                        (set-shellsize win, @Cols, @Rows, true)
+                    :else
+                        (do ;; Postpone the resizing; check the size and cmdline position for messages.
+                            (check-shellsize)
+                            (when (and (< (- @Rows @p_ch) @cmdline_row) (< @p_ch @Rows))
+                                (reset! cmdline_row (- @Rows @p_ch)))
+                            win
+                        ))
+                )]
 
             (when @full_screen
                 (let-when [a'scr (:wo_scr (:w_options win))] (or (< @a'scr 1) (< 0 (:w_height win) @a'scr))
@@ -4063,7 +4060,7 @@
                         (do (reset! p_sj 1) (reset! a'errmsg e_scroll))
                     ))
 
-                (when (< @p_so 0)   (reset! p_so 0)   (reset! a'errmsg e_scroll)) ;; 'scrolloff'
+                (when (< @p_so 0)   (reset! p_so 0)   (reset! a'errmsg e_scroll))   ;; 'scrolloff'
                 (when (< @p_siso 0) (reset! p_siso 0) (reset! a'errmsg e_positive)) ;; 'sidescrolloff'
             )
 
@@ -4867,23 +4864,22 @@
                                                                                                     (do (BCOPY s, 0, s, 1, (inc (STRLEN s, 1)))
                                                                                                         (recur win lnum (.plus s 1)))
                                                                                                 (at? s CAR)
-                                                                                                    (if (u-inssub lnum) ;; prepare for undo
-                                                                                                        (do (eos! s) ;; truncate up to the CR
-                                                                                                            (ml-append (dec lnum), @l'new_start)
-                                                                                                            (mark-adjust (inc lnum), MAXLNUM, 1, 0)
-                                                                                                            (reset! a'first_line (if (zero? @a'first_line) lnum @a'first_line))
-                                                                                                            (reset! a'last_line (inc lnum))
-                                                                                                            ;; All line numbers increase.
-                                                                                                            (swap! l'sub_firstlnum inc)
-                                                                                                            (let [lnum (inc lnum)
-                                                                                                                  _ (swap! a'line2 inc)
-                                                                                                                  ;; move the cursor to the new line, like Vi
-                                                                                                                  win (update-in win [:w_cursor :lnum] inc)]
-                                                                                                                ;; copy the rest
-                                                                                                                (BCOPY @l'new_start, 0, s, 1, (inc (STRLEN s, 1)))
-                                                                                                                (recur win lnum @l'new_start)
-                                                                                                            ))
-                                                                                                        (recur win lnum (.plus s 1)))
+                                                                                                    (when' (u-inssub lnum) => (recur win lnum (.plus s 1))
+                                                                                                        (let [_ (eos! s) ;; truncate up to the CR
+                                                                                                              _ (ml-append (dec lnum), @l'new_start)
+                                                                                                              win (mark-adjust win, (inc lnum), MAXLNUM, 1, 0)
+                                                                                                              _ (reset! a'first_line (if (zero? @a'first_line) lnum @a'first_line))
+                                                                                                              _ (reset! a'last_line (inc lnum))
+                                                                                                              ;; All line numbers increase.
+                                                                                                              _ (swap! l'sub_firstlnum inc)
+                                                                                                              lnum (inc lnum)
+                                                                                                              _ (swap! a'line2 inc)
+                                                                                                              ;; move the cursor to the new line, like Vi
+                                                                                                              win (update-in win [:w_cursor :lnum] inc)
+                                                                                                              ;; copy the rest
+                                                                                                              _ (BCOPY @l'new_start, 0, s, 1, (inc (STRLEN s, 1)))]
+                                                                                                            (recur win lnum @l'new_start)
+                                                                                                        ))
                                                                                                 :else
                                                                                                     (recur win lnum (.plus s (us-ptr2len-cc s))))
                                                                                             ))
@@ -4910,50 +4906,47 @@
                                                                       ;; When the match starts below where we start searching
                                                                       ;; also need to replace the line first (using \zs after \n).
 
-                                                                      [lnum ?]
+                                                                      [win lnum ?]
                                                                         (if (or lastone (< 0 @l'nmatch_tl) (zero? (reset! a'nmatch (vim-regexec matcher, @l'sub_firstlnum, @l'matchcol, nil))) (< 0 (:lnum (... (:r_startpos matcher) 0))))
-                                                                            (let-when [[lnum ? :as _]
-                                                                                    (if (some? @l'new_start)
-                                                                                        (do ;; Copy the rest of the line, that didn't match.
-                                                                                            ;; "matchcol" has to be adjusted, we use the end of the line as reference,
-                                                                                            ;; because the substitute may have changed the number of characters.
-                                                                                            ;; Same for "prev_matchcol".
-                                                                                            (STRCAT @l'new_start, (.plus @l'sub_firstline @l'copycol))
-                                                                                            (let [n (STRLEN @l'sub_firstline)]
-                                                                                                (reset! l'matchcol (- n @l'matchcol))
-                                                                                                (reset! l'prev_matchcol (- n @l'prev_matchcol)))
-                                                                                            (if (not (u-savesub lnum))
-                                                                                                [lnum :break]
-                                                                                                (let-when [_ (ml-replace lnum, @l'new_start)
-                                                                                                      [lnum ? :as _]
-                                                                                                        (if (< 0 @l'nmatch_tl)
-                                                                                                            ;; Matched lines have now been substituted and are useless,
-                                                                                                            ;; delete them.
-                                                                                                            ;; The part after the match has been appended to "new_start",
-                                                                                                            ;; we don't need it in the buffer.
-                                                                                                            (let-when [lnum (inc lnum)] (u-savedel lnum, @l'nmatch_tl) => [lnum :break]
-                                                                                                                (dotimes [_ @l'nmatch_tl] (ml-delete lnum, false))
-                                                                                                                (mark-adjust lnum, (dec (+ lnum @l'nmatch_tl)), MAXLNUM, (- @l'nmatch_tl))
-                                                                                                                (let [lnum (dec lnum)]
-                                                                                                                    (swap! a'line2 - @l'nmatch_tl)
-                                                                                                                    (reset! l'nmatch_tl 0)
-                                                                                                                    [lnum nil]
-                                                                                                                ))
-                                                                                                            [lnum nil]
-                                                                                                        )] (not ?) => _
+                                                                            (let-when [[win lnum ? :as _]
+                                                                                    (when' (some? @l'new_start) => [win lnum nil]
+                                                                                        ;; Copy the rest of the line, that didn't match.
+                                                                                        ;; "matchcol" has to be adjusted, we use the end of the line as reference,
+                                                                                        ;; because the substitute may have changed the number of characters.
+                                                                                        ;; Same for "prev_matchcol".
+                                                                                        (STRCAT @l'new_start, (.plus @l'sub_firstline @l'copycol))
+                                                                                        (let [n (STRLEN @l'sub_firstline)]
+                                                                                            (reset! l'matchcol (- n @l'matchcol))
+                                                                                            (reset! l'prev_matchcol (- n @l'prev_matchcol)))
+                                                                                        (when' (u-savesub lnum) => [win lnum :break]
+                                                                                            (let-when [_ (ml-replace lnum, @l'new_start)
+                                                                                                  [win lnum ? :as _]
+                                                                                                    (when' (< 0 @l'nmatch_tl) => [win lnum nil]
+                                                                                                        ;; Matched lines have now been substituted and are useless,
+                                                                                                        ;; delete them.
+                                                                                                        ;; The part after the match has been appended to "new_start",
+                                                                                                        ;; we don't need it in the buffer.
+                                                                                                        (let-when [lnum (inc lnum)] (u-savedel lnum, @l'nmatch_tl) => [win lnum :break]
+                                                                                                            (dotimes [_ @l'nmatch_tl] (ml-delete lnum, false))
+                                                                                                            (let [win (mark-adjust win, lnum, (dec (+ lnum @l'nmatch_tl)), MAXLNUM, (- @l'nmatch_tl))
+                                                                                                                  lnum (dec lnum)]
+                                                                                                                (swap! a'line2 - @l'nmatch_tl)
+                                                                                                                (reset! l'nmatch_tl 0)
+                                                                                                                [win lnum nil]
+                                                                                                            ))
+                                                                                                    )] (not ?) => _
 
-                                                                                                    (reset! a'first_line (if (zero? @a'first_line) lnum @a'first_line))
-                                                                                                    (reset! a'last_line (inc lnum))
-                                                                                                    (reset! l'sub_firstlnum lnum)
-                                                                                                    (reset! l'sub_firstline @l'new_start)
-                                                                                                    (reset! l'new_start nil)
-                                                                                                    (let [n (STRLEN @l'sub_firstline)]
-                                                                                                        (reset! l'matchcol (- n @l'matchcol))
-                                                                                                        (reset! l'prev_matchcol (- n @l'prev_matchcol)))
-                                                                                                    (reset! l'copycol 0)
-                                                                                                    [lnum nil])
+                                                                                                (reset! a'first_line (if (zero? @a'first_line) lnum @a'first_line))
+                                                                                                (reset! a'last_line (inc lnum))
+                                                                                                (reset! l'sub_firstlnum lnum)
+                                                                                                (reset! l'sub_firstline @l'new_start)
+                                                                                                (reset! l'new_start nil)
+                                                                                                (let [n (STRLEN @l'sub_firstline)]
+                                                                                                    (reset! l'matchcol (- n @l'matchcol))
+                                                                                                    (reset! l'prev_matchcol (- n @l'prev_matchcol)))
+                                                                                                (reset! l'copycol 0)
+                                                                                                [win lnum nil]
                                                                                             ))
-                                                                                        [lnum nil]
                                                                                     )] (not ?) => _
 
                                                                                 (reset! a'nmatch (if (and (== @a'nmatch -1) (not lastone)) (vim-regexec matcher, @l'sub_firstlnum, @l'matchcol, nil) @a'nmatch))
@@ -4963,10 +4956,10 @@
                                                                                 (if (<= @a'nmatch 0)
                                                                                     ;; If the match found didn't start where we were searching,
                                                                                     ;; do the next search in the line where we found the match.
-                                                                                    [(if (== @a'nmatch -1) (- lnum (:lnum (... (:r_startpos matcher) 0))) lnum) :break]
-                                                                                    [lnum nil]
+                                                                                    [win (if (== @a'nmatch -1) (- lnum (:lnum (... (:r_startpos matcher) 0))) lnum) :break]
+                                                                                    [win lnum nil]
                                                                                 ))
-                                                                            [lnum nil])
+                                                                            [win lnum nil])
 
                                                                 ] (not ?) => [win lnum]
 
@@ -7115,12 +7108,15 @@
                             (non-flag? (:retval ca) CA_COMMAND_BUSY)
                             (stuff-empty)
                             (zero? (:regname (:oap ca)))) => win
-                    (when (== @restart_VIsual_select 1)
-                        (reset! VIsual_select true)
-                        (showmode)
-                        (reset! restart_VIsual_select 0))
-                    (when' (and (non-zero? @restart_edit) (not @VIsual_active)) => win
-                        (let [[win _] (edit? win, @restart_edit, false, 1)] win))
+                    (let [win (when' (== @restart_VIsual_select 1) => win
+                                (let [_ (reset! VIsual_select true)
+                                      win (showmode win)]
+                                    (reset! restart_VIsual_select 0)
+                                    win)
+                            )]
+                        (when' (and (non-zero? @restart_edit) (not @VIsual_active)) => win
+                            (let [[win _] (edit? win, @restart_edit, false, 1)] win)
+                        ))
                 )]
             (when (== @restart_VIsual_select 2)
                 (reset! restart_VIsual_select 1))
@@ -8192,7 +8188,7 @@
 
 (defn- #_[window_C cmdarg_C] nv-ctrlg [#_window_C win, #_cmdarg_C cap]
     (cond @VIsual_active ;; toggle Selection/Visual mode
-        (do (swap! VIsual_select not) (showmode) [win cap])
+        (do (swap! VIsual_select not) [(showmode win) cap])
     :else
         (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
             [(fileinfo win, (:count0 cap)) cap] ;; print full name if count given
@@ -8219,8 +8215,8 @@
 
 (defn- #_[window_C cmdarg_C] nv-ctrlo [#_window_C win, #_cmdarg_C cap]
     (if (and @VIsual_active @VIsual_select)
-        (do (reset! VIsual_select false)
-            (showmode)
+        (let [_ (reset! VIsual_select false)
+              win (showmode win)]
             (reset! restart_VIsual_select 2) ;; restart Select mode later
             [win cap])
         (nv-pcmark win, (update cap :count1 -))
@@ -9062,7 +9058,7 @@
                 (cond @VIsual_active                                        ;; change Visual mode
                     (let [win (if (== @VIsual_mode (:cmdchar cap))          ;; stop visual mode
                                 (end-visual-mode win)
-                                (do (reset! VIsual_mode (:cmdchar cap)) (showmode) win)
+                                (do (reset! VIsual_mode (:cmdchar cap)) (showmode win))
                             )]
                         (redraw-curbuf-later INVERTED)                      ;; update the inversion
                         [win cap])
@@ -9232,8 +9228,7 @@
                                     (reset! VIsual_select true)
                                     (may-start-select (byte \c)))
                                 (redraw-curbuf-later INVERTED)
-                                (showmode)
-                                [win cap]
+                                [(showmode win) cap]
                             ))
                     )))
 
@@ -10609,7 +10604,7 @@
     (do ;; registers 0-9, a-z and " are allowed
         (and (or (asc-isalnum c) (== c (byte \"))) ;; """
             (do (reset! Recording true)
-                (showmode)
+                (swap! curwin showmode)
                 (reset! rec__regname c)
                 true)
         ))
@@ -11943,15 +11938,15 @@
                                                                                         )]
                                                                                     (recur win lnum delta (inc i)))
                                                                             )]
-                                                                        (recur win lnum delta (inc n)))
-                                                                )]
-                                                            ;; Adjust marks.
-                                                            (when (== (:y_type reg) MLINE)
-                                                                (swap! curbuf assoc-in [:b_op_start :col] 0)
-                                                                (when (== dir FORWARD)
-                                                                    (swap! curbuf update-in [:b_op_start :lnum] inc)
-                                                                ))
-                                                            (mark-adjust (+ (:lnum (:b_op_start @curbuf)) (if (== (:y_type reg) MCHAR) 1 0)), MAXLNUM, @a'nr_lines, 0)
+                                                                        (recur win lnum delta (inc n))
+                                                                    ))
+                                                              ;; Adjust marks.
+                                                              _ (when (== (:y_type reg) MLINE)
+                                                                    (swap! curbuf assoc-in [:b_op_start :col] 0)
+                                                                    (when (== dir FORWARD)
+                                                                        (swap! curbuf update-in [:b_op_start :lnum] inc)
+                                                                    ))
+                                                              win (mark-adjust win, (+ (:lnum (:b_op_start @curbuf)) (if (== (:y_type reg) MCHAR) 1 0)), MAXLNUM, @a'nr_lines, 0)]
                                                             ;; note changed text for displaying
                                                             (if (== (:y_type reg) MCHAR)
                                                                 (swap! curbuf changed-lines (:lnum (:w_cursor win)), @a'col, (inc (:lnum (:w_cursor win))), @a'nr_lines)
@@ -12046,16 +12041,17 @@
                   ;; Move affected lines to the new long one.
                   ;; Also move marks from each deleted line to the joined line, adjusting the column.
                   ;; This is not Vi compatible, but since Vi deletes the marks, it should not be a problem.
-                  n (loop [s0 s0 s s n n #_Bytes q (eos! (.plus line m)) #_int i (dec count)]
+                  [win n]
+                    (loop [win win s0 s0 s s n n #_Bytes q (eos! (.plus line m)) #_int i (dec count)]
                         (let [t (aget spaces i)
                               q (.minus q n)
                               _ (BCOPY q, s, n)
-                              q (if (pos? t) (let [q (.minus q t)] (BFILL q, 0, (byte \space), t) q) q)]
-                            (mark-col-adjust (+ lnum i), 0, (- i), (- (+ (BDIFF q, line) t) (BDIFF s, s0)))
+                              q (if (pos? t) (let [q (.minus q t)] (BFILL q, 0, (byte \space), t) q) q)
+                              win (mark-col-adjust win, (+ lnum i), 0, (- i), (- (+ (BDIFF q, line) t) (BDIFF s, s0)))]
                             (if (zero? i)
-                                n
+                                [win n]
                                 (let [s0 (ml-get (+ lnum (dec i))) s (if (and insert_space (< 1 i)) (skipwhite s0) s0) n (STRLEN s)]
-                                    (recur s0 s n q (dec i)))
+                                    (recur win s0 s n q (dec i)))
                             ))
                     )]
                 (ml-replace lnum, line)
@@ -12633,8 +12629,8 @@
 ;; Example: Insert two lines below 55: mark-adjust(56, MAXLNUM, 2, 0);
 ;;                                 or: mark-adjust(56, 55, MAXLNUM, 2);
 
-(defn- #_void mark-adjust [#_long line1, #_long line2, #_long amount, #_long amount_after]
-    (when-not (and (< line2 line1) (zero? amount_after))
+(defn- #_window_C mark-adjust [#_window_C win, #_long line1, #_long line2, #_long amount, #_long amount_after]
+    (when' (not (and (< line2 line1) (zero? amount_after))) => win
         ;; named marks, lower case and upper case
         (dotimes [#_int i NMARKS]
             (swap! curbuf update-in [:b_namedm i :lnum] one-adjust line1, line2, amount, amount_after)
@@ -12658,44 +12654,47 @@
         (swap! curbuf update-in [:b_visual :vi_start :lnum] one-adjust-nodel line1, line2, amount, amount_after)
         (swap! curbuf update-in [:b_visual :vi_end :lnum] one-adjust-nodel line1, line2, amount, amount_after)
 
-        (swap! curwin update-in [:w_pcmark :lnum] one-adjust line1, line2, amount, amount_after)        ;; previous context mark
-        (swap! curwin update-in [:w_prev_pcmark :lnum] one-adjust line1, line2, amount, amount_after)   ;; previous pcmark
+        (let [win (-> win
+                    (update-in [:w_pcmark :lnum] one-adjust line1, line2, amount, amount_after)         ;; previous context mark
+                    (update-in [:w_prev_pcmark :lnum] one-adjust line1, line2, amount, amount_after)    ;; previous pcmark
+                )]
 
-        ;; Adjust items in all windows related to the current buffer.
+            ;; Adjust items in all windows related to the current buffer.
 
-        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-            ;; Marks in the jumplist.
-            ;; When deleting lines, this may create duplicate marks in the jumplist, they will be removed later.
-            (dotimes [#_int i (:w_jumplistlen win)]
-                ((ß win =) (update-in win [:w_jumplist i :lnum] one-adjust-nodel line1, line2, amount, amount_after)))
+            (loop-when-recur [#_window_C w @firstwin] (some? w) [(:w_next w)]
+                ;; Marks in the jumplist.
+                ;; When deleting lines, this may create duplicate marks in the jumplist, they will be removed later.
+                (dotimes [#_int i (:w_jumplistlen w)]
+                    ((ß w =) (update-in w [:w_jumplist i :lnum] one-adjust-nodel line1, line2, amount, amount_after)))
 
-            ;; the displayed Visual area
-            (when (non-zero? (:w_old_cursor_lnum win))
-                ((ß win =) (update win :w_old_cursor_lnum one-adjust-nodel line1, line2, amount, amount_after))
-                ((ß win =) (update win :w_old_visual_lnum one-adjust-nodel line1, line2, amount, amount_after)))
+                ;; the displayed Visual area
+                (when (non-zero? (:w_old_cursor_lnum w))
+                    ((ß w =) (update w :w_old_cursor_lnum one-adjust-nodel line1, line2, amount, amount_after))
+                    ((ß w =) (update w :w_old_visual_lnum one-adjust-nodel line1, line2, amount, amount_after)))
 
-            ;; topline and cursor position for windows with the same buffer, other than the current window
-            (when (!= win @curwin)
-                ((ß win =) (cond (<= line1 (:w_topline win) line2) ;; topline is deleted ;; keep topline on the same line
-                    (assoc win :w_topline (if (== amount MAXLNUM) (max 1 (dec line1)) (+ (:w_topline win) amount)))
-                (and (non-zero? amount_after) (< line2 (:w_topline win)))
-                    (update win :w_topline + amount_after)
-                :else
-                    win
+                ;; topline and cursor position for windows with the same buffer, other than the current window
+                (when (!= w win)
+                    ((ß w =) (cond (<= line1 (:w_topline w) line2) ;; topline is deleted ;; keep topline on the same line
+                        (assoc w :w_topline (if (== amount MAXLNUM) (max 1 (dec line1)) (+ (:w_topline w) amount)))
+                    (and (non-zero? amount_after) (< line2 (:w_topline w)))
+                        (update w :w_topline + amount_after)
+                    :else
+                        w
+                    ))
+
+                    ((ß w =) (cond (<= line1 (:lnum (:w_cursor w)) line2)
+                        (if (== amount MAXLNUM)
+                            (update w :w_cursor assoc :lnum (max 1 (dec line1)) :col 0)     ;; line with cursor is deleted
+                            (update-in w [:w_cursor :lnum] + amount))                       ;; keep cursor on the same line
+                    (and (non-zero? amount_after) (< line2 (:lnum (:w_cursor w))))
+                        (update-in w [:w_cursor :lnum] + amount_after)
+                    :else
+                        w
+                    ))
                 ))
 
-                ((ß win =) (cond (<= line1 (:lnum (:w_cursor win)) line2)
-                    (if (== amount MAXLNUM)
-                        (update win :w_cursor assoc :lnum (max 1 (dec line1)) :col 0)   ;; line with cursor is deleted
-                        (update-in win [:w_cursor :lnum] + amount))                     ;; keep cursor on the same line
-                (and (non-zero? amount_after) (< line2 (:lnum (:w_cursor win))))
-                    (update-in win [:w_cursor :lnum] + amount_after)
-                :else
-                    win
-                ))
-            )
-        ))
-    nil)
+            win)
+    ))
 
 ;; This code is used often, needs to be fast.
 (defn- #_pos_C col-adjust [#_pos_C pos, #_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
@@ -12705,11 +12704,11 @@
         pos
     ))
 
-;; Adjust marks in line "lnum" at column "mincol" and further: add
-;; "lnum_amount" to the line number and add "col_amount" to the column position.
+;; Adjust marks in line "lnum" at column "mincol" and further:
+;; add "lnum_amount" to the line number and add "col_amount" to the column position.
 
-(defn- #_void mark-col-adjust [#_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
-    (when-not (and (zero? col_amount) (zero? lnum_amount))
+(defn- #_window_C mark-col-adjust [#_window_C win, #_long lnum, #_int mincol, #_long lnum_amount, #_long col_amount]
+    (when' (not (and (zero? col_amount) (zero? lnum_amount))) => win
         ;; named marks, lower case and upper case
         (dotimes [#_int i NMARKS]
             (swap! curbuf update-in [:b_namedm i] col-adjust lnum, mincol, lnum_amount, col_amount)
@@ -12729,21 +12728,25 @@
         (swap! curbuf update-in [:b_visual :vi_start] col-adjust lnum, mincol, lnum_amount, col_amount)
         (swap! curbuf update-in [:b_visual :vi_end] col-adjust lnum, mincol, lnum_amount, col_amount)
 
-        (swap! curwin update :w_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)        ;; previous context mark
-        (swap! curwin update :w_prev_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)   ;; previous pcmark
+        (let [win (-> win
+                    (update :w_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)         ;; previous context mark
+                    (update :w_prev_pcmark col-adjust lnum, mincol, lnum_amount, col_amount)    ;; previous pcmark
+                )]
 
-        ;; Adjust items in all windows related to the current buffer.
+            ;; Adjust items in all windows related to the current buffer.
 
-        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-            ;; marks in the jumplist
-            (dotimes [#_int i (:w_jumplistlen win)]
-                ((ß win =) (update-in win [:w_jumplist i] col-adjust lnum, mincol, lnum_amount, col_amount)))
+            (loop-when-recur [#_window_C w @firstwin] (some? w) [(:w_next w)]
+                ;; marks in the jumplist
+                (dotimes [#_int i (:w_jumplistlen w)]
+                    ((ß w =) (update-in w [:w_jumplist i] col-adjust lnum, mincol, lnum_amount, col_amount)))
 
-            ;; cursor position for other windows with the same buffer
-            (when (!= win @curwin)
-                ((ß win =) (update win :w_cursor col-adjust lnum, mincol, lnum_amount, col_amount)))
-        ))
-    nil)
+                ;; cursor position for other windows with the same buffer
+                (when (!= w win)
+                    ((ß w =) (update w :w_cursor col-adjust lnum, mincol, lnum_amount, col_amount))
+                ))
+
+            win)
+    ))
 
 ;; Deleting lines may create duplicate marks in the jumplist.
 
@@ -13731,7 +13734,7 @@
                     (and (!= c ESC) @a'mode_deleted)
                         (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
                             (reset! redraw_cmdline true)          ;; show mode later
-                            (showmode))
+                            (swap! curwin showmode))
                     ))
                 (swap! vgetc_busy dec)
             c))
@@ -13956,19 +13959,18 @@
                                 win
                             ))
                         (do (reset! arrow_used false)
-                            win)
-                    )]
-                ;; We are in insert mode now, don't need to start it anymore.
-                (reset! need_start_insertmode false)
-                ;; Need to save the line for undo before inserting the first char.
-                (reset! ins_need_undo true)
-                (swap! where_paste_started assoc :lnum 0)
-                (reset! can_cindent true)
-                ;; If 'showmode' is set, show the current (insert/replace/...) mode.
-                ;; A warning message for changing a readonly file is given here, before actually changing anything.
-                ;; It's put after the mode, if any.
-                (when @p_smd
-                    (showmode))
+                            win
+                        ))
+                  ;; We are in Insert mode now, don't need to start it anymore.
+                  _ (reset! need_start_insertmode false)
+                  ;; Need to save the line for undo before inserting the first char.
+                  _ (reset! ins_need_undo true)
+                  _ (swap! where_paste_started assoc :lnum 0)
+                  _ (reset! can_cindent true)
+                  ;; If 'showmode' is set, show the current (insert/replace/...) mode.
+                  ;; A warning message for changing a readonly file is given here, before actually changing anything.
+                  ;; It's put after the mode, if any.
+                  win (if @p_smd (showmode win) win)]
                 (ui-cursor-shape)           ;; may show different cursor shape
                 (do-digraph -1)             ;; clear digraphs
                 ;; Get the current length of the redo buffer,
@@ -14093,7 +14095,7 @@
                                                                         [win c (do (ctrl-o win) :quit)]
 
                                                                    [K_INS K_KINS]                                           ;; toggle insert/replace mode
-                                                                        [win c (do (ins-insert replaceState) :done)]
+                                                                        [(ins-insert win, replaceState) c :done]
 
                                                                     K_SELECT
                                                                         [win c :done]
@@ -14324,15 +14326,15 @@
     ;; _ready: not busy with something
     (if (char-avail)
         win
-        (do (cond
-                (non-zero? @must_redraw) (update-screen 0)
-                (or @clear_cmdline @redraw_cmdline) (showmode) ;; clear cmdline and show mode
-            )
-            (let [win (showruler win, false)
-                  win (setcursor win)]
-                (reset! emsg_on_display false) ;; may remove error message now
-                win
-            ))
+        (let [win (cond
+                    (non-zero? @must_redraw) (do (update-screen 0) win)
+                    (or @clear_cmdline @redraw_cmdline) (showmode win) ;; clear cmdline and show mode
+                    :else win)
+                win (showruler win, false)
+                win (setcursor win)]
+            (reset! emsg_on_display false) ;; may remove error message now
+            win
+        )
     ))
 
 ;; Handle a CTRL-V or CTRL-Q typed in Insert mode.
@@ -15272,11 +15274,11 @@
                             ))
                         win)
                   _ (reset! State NORMAL)
-                  win (changed-cline-bef-curs win)] ;; need to position the cursor again (e.g. when on a TAB)
-                (ui-cursor-shape)
-                ;; When recording or for CTRL-O, need to display the new mode.
-                ;; Otherwise remove the mode message.
-                (cond (or @Recording (!= @restart_edit NUL)) (showmode) @p_smd (msg (u8 "")))
+                  win (changed-cline-bef-curs win) ;; need to position the cursor again (e.g. when on a TAB)
+                  _ (ui-cursor-shape)
+                  ;; When recording or for CTRL-O, need to display the new mode.
+                  ;; Otherwise remove the mode message.
+                  win (cond (or @Recording (!= @restart_edit NUL)) (showmode win) @p_smd (do (msg (u8 "")) win) :else win)]
                 ;; exit Insert mode
                 [win true]
             ))
@@ -15307,20 +15309,19 @@
 
 ;; <Insert> key in Insert mode: toggle insert/replace mode.
 
-(defn- #_void ins-insert [#_int replaceState]
+(defn- #_window_C ins-insert [#_window_C win, #_int replaceState]
     (swap! State #(if (flag? % REPLACE_FLAG) INSERT replaceState))
     (append-redo-char K_INS)
-    (showmode)
-    (ui-cursor-shape)          ;; may show different cursor shape
-    nil)
+    (let [win (showmode win)]
+        (ui-cursor-shape) ;; may show different cursor shape
+        win
+    ))
 
 ;; Pressed CTRL-O in Insert mode.
 
 (defn- #_void ins-ctrl-o [#_window_C win]
     (reset! restart_edit (cond (flag? @State VREPLACE_FLAG) (byte \V) (flag? @State REPLACE_FLAG) (byte \R) :else (byte \I)))
-    (reset! ins_at_eol (if (virtual-active)
-        false     ;; cursor always keeps its column
-        (== (gchar-cursor win) NUL)))
+    (reset! ins_at_eol (if (virtual-active) false (== (gchar-cursor win) NUL))) ;; cursor always keeps its column
     nil)
 
 ;; If the cursor is on an indent, ^T/^D insert/delete one 'shiftwidth'.
@@ -26148,8 +26149,7 @@
                     (reset! VIsual_cursor start_pos)
                     (reset! VIsual_mode (byte \v))
                     (redraw-curbuf-later INVERTED) ;; update the inversion
-                    (showmode)
-                    [win cap true])
+                    [(showmode win) cap true])
                 (let [cap (update cap :oap assoc :op_start start_pos :motion_type MCHAR :inclusive false)]
                     (cond @a'sol
                         [(inc-cursor win, true) cap true]
@@ -26403,8 +26403,7 @@
                     )]
                 (may-start-select (byte \c))
                 (redraw-curbuf-later INVERTED)
-                (showmode)
-                [win true]
+                [(showmode win) true]
             ))
     ))
 
@@ -30731,9 +30730,8 @@
                                     (changed-bytes (:lnum (:w_cursor win)), 0)
                                     [(update-in win [:w_cursor :lnum] dec) false])
                             (ml-append (:lnum (:w_cursor win)), p_extra)
-                                (do ;; Postpone calling changed-lines(), because it would mess up folding with markers.
-                                    (mark-adjust (inc (:lnum (:w_cursor win))), MAXLNUM, 1, 0)
-                                    [win true])
+                                ;; Postpone calling changed-lines(), because it would mess up folding with markers.
+                                [(mark-adjust win, (inc (:lnum (:w_cursor win))), MAXLNUM, 1, 0) true]
                             :else
                                 [win nil]
                             )] (some? did_append) => [win false]
@@ -31120,7 +31118,7 @@
 ;; Like appended-lines(), but adjust marks first.
 
 (defn- #_void appended-lines-mark [#_long lnum, #_long count]
-    (mark-adjust (inc lnum), MAXLNUM, count, 0)
+    (swap! curwin mark-adjust (inc lnum), MAXLNUM, count, 0)
     (swap! curbuf changed-lines (inc lnum), 0, (inc lnum), count)
     nil)
 
@@ -31137,7 +31135,7 @@
 ;; a GUI callback may be triggered to display the cursor.
 
 (defn- #_void deleted-lines-mark [#_long lnum, #_long count]
-    (mark-adjust lnum, (dec (+ lnum count)), MAXLNUM, (- count))
+    (swap! curwin mark-adjust lnum, (dec (+ lnum count)), MAXLNUM, (- count))
     (swap! curbuf changed-lines lnum, 0, (+ lnum count), (- count))
     nil)
 
@@ -31149,7 +31147,7 @@
 ;; "lnum" is the first line that needs displaying,
 ;; "lnume" the first line below the changed lines (BEFORE the change).
 ;; When only inserting lines, "lnum" and "lnume" are equal.
-;; Takes care of calling changed() and updating b_mod_*.
+;; Takes care of calling changed() and updating "b_mod_*".
 
 (defn- #_buffer_C changed-lines [#_buffer_C buf, #_long lnum, #_int col, #_long lnume, #_long xtra]
     ;; lnum: first line with change
@@ -33047,7 +33045,7 @@
 
             ;; adjust marks
             (when (!= oldsize newsize)
-                (mark-adjust (inc top), (+ top oldsize), MAXLNUM, (- newsize oldsize))
+                (swap! curwin mark-adjust (inc top), (+ top oldsize), MAXLNUM, (- newsize oldsize))
                 (when (> (:lnum (:b_op_start @curbuf)) (+ top oldsize))
                     (swap! curbuf update-in [:b_op_start :lnum] + (- newsize oldsize)))
                 (when (> (:lnum (:b_op_end @curbuf)) (+ top oldsize))
@@ -33524,7 +33522,7 @@
     (when (!= @starting NO_SCREEN)
         (start-termcap))                 ;; may change terminal mode
 
-    (set-shellsize 80, 24, false)       ;; may change Rows
+    (swap! curwin set-shellsize 80, 24, false)       ;; may change Rows
 
     (when (!= @starting NO_SCREEN)
         (when @scroll_region
@@ -33856,71 +33854,51 @@
 ;; Will obtain the current size and redraw (also when size didn't change).
 
 (defn- #_void shell-resized []
-    (set-shellsize 0, 0, false)
+    (swap! curwin set-shellsize 0, 0, false)
     nil)
 
 (atom! int _2_busy)
 
 ;; Set size of the Vim shell.
-;; If 'mustset' is true, we must set Rows and Cols,
-;; do not get the real window size (this is used for the :win command).
-;; If 'mustset' is false, we may try to get the real window size
-;; and if it fails, use 'width' and 'height'.
+;; If 'mustset' is true, we must set Rows and Cols, do not get the real window size (this is used for the :win command).
+;; If 'mustset' is false, we may try to get the real window size and if it fails, use 'width' and 'height'.
 
-(defn- #_void set-shellsize [#_int width, #_int height, #_boolean mustset]
+(defn- #_window_C set-shellsize [#_window_C win, #_int width, #_int height, #_boolean mustset]
     ;; Avoid recursiveness, can happen when setting the window size causes another window-changed signal.
-    (when-not (or (non-zero? @_2_busy) (neg? width) (neg? height))
+    (when' (not (or (pos? @_2_busy) (neg? width) (neg? height))) => win
         (if (any == @State HITRETURN SETWSIZE)
-            (reset! State SETWSIZE) ;; postpone the resizing
-            (do
-                (swap! _2_busy inc)
-
+            (do (reset! State SETWSIZE) ;; postpone the resizing
+                win)
+            (do (swap! _2_busy inc)
                 (if (or mustset (and (not (ui-get-shellsize)) (non-zero? height)))
-                    (do
-                        (reset! Rows height)
+                    (do (reset! Rows height)
                         (reset! Cols width)
                         (check-shellsize)
-                        (ui-set-shellsize mustset)
-                    )
+                        (ui-set-shellsize mustset))
                     (check-shellsize))
-
-                ;; The window layout used to be adjusted here, but it now happens in
-                ;; screen-alloc() (also invoked from screen-clear()).  That is because
-                ;; the "_2_busy" check above may skip this, but not screen-alloc().
-
+                ;; The window layout used to be adjusted here, but it now happens in screen-alloc()
+                ;; (also invoked from screen-clear()).
+                ;; That is because the "_2_busy" check above may skip this, but not screen-alloc().
                 (screen-clear)
-
-                (when (!= @starting NO_SCREEN)
-                    (swap! curwin changed-line-abv-curs)
-                    (swap! curwin invalidate-botline)
-
-                    ;; We only redraw when it's needed:
-                    ;; - While editing the command line, only redraw that.
-                    ;; - Otherwise, redraw right now, and position the cursor.
-                    ;; Always need to call update-screen() or screen-alloc(), to make sure Rows/Cols and the size of screenLines[] is correct!
-
-                    (cond (flag? @State CMDLINE)
-                    (do
-                        (update-screen NOT_VALID)
-                        (redrawcmdline)
-                    )
-                    :else
-                    (do
-                        (swap! curwin update-topline)
-                        (update-screen NOT_VALID)
-                        (when (redrawing)
-                            (swap! curwin setcursor))
-                    ))
-
-                    (cursor-on)        ;; redrawing may have switched it off
-                )
-
-                (out-flush)
-
-                (swap! _2_busy dec)
-            )
-        ))
-    nil)
+                (let [win (when' (!= @starting NO_SCREEN) => win
+                            (let [win (-> win (changed-line-abv-curs) (invalidate-botline))
+                                  ;; We only redraw when it's needed:
+                                  ;; - While editing the command line, only redraw that.
+                                  ;; - Otherwise, redraw right now, and position the cursor.
+                                  ;; Always need to call update-screen() or screen-alloc()
+                                  ;; to make sure Rows/Cols and the size of screenLines[] is correct!
+                                  win (if (flag? @State CMDLINE)
+                                        (do                             (update-screen NOT_VALID) (redrawcmdline))
+                                        (let [win (update-topline win)] (update-screen NOT_VALID) (if (redrawing) (setcursor win) win))
+                                    )]
+                                (cursor-on) ;; redrawing may have switched it off
+                                win)
+                        )]
+                    (out-flush)
+                    (swap! _2_busy dec)
+                    win)
+            ))
+    ))
 
 ;; Set the terminal to TMODE_RAW (for Normal mode)
 ;; or TMODE_COOK (for external commands and Ex mode).
@@ -34773,7 +34751,7 @@
                     ;; Clear or redraw the command line.
                     ;; Done last, because scrolling may mess up the command line.
                     (when (or @clear_cmdline @redraw_cmdline)
-                        (showmode)
+                        (swap! curwin showmode)
                     ))
             )))
     nil)
@@ -37430,7 +37408,7 @@
 ;;
 ;; Return the length of the message (0 if no message).
 
-(defn- #_int showmode []
+(defn- #_[window_C int] showmode? [#_window_C win]
     (let-when [#_boolean do_mode (and @p_smd (or (flag? @State INSERT) (!= @restart_edit 0) @VIsual_active))
           #_int length
             (cond (and (not do_mode) (not @Recording))
@@ -37489,17 +37467,23 @@
                         (reset! need_wait_return nwr_save)    ;; never ask for hit-return for this
                         length
                     ))
-            )] (some? length) => 0
+            )] (some? length) => [win 0]
+
         ;; In Visual mode the size of the selected area must be redrawn.
-        (when @VIsual_active
-            (swap! curwin clear-showcmd))
-        ;; If the last window has no status line,
-        ;; the ruler is after the mode message and must be redrawn.
-        (when (and (redrawing) (zero? (:w_status_height @lastwin)))
-            (swap! lastwin win-redr-ruler true))
-        (reset! redraw_cmdline false)
-        (reset! clear_cmdline false)
-        length
+        (let [win (if @VIsual_active (clear-showcmd win) win)]
+            ;; If the last window has no status line,
+            ;; the ruler is after the mode message and must be redrawn.
+            (when (and (redrawing) (zero? (:w_status_height @lastwin)))
+                (swap! lastwin win-redr-ruler true))
+            (reset! redraw_cmdline false)
+            (reset! clear_cmdline false)
+            [win length]
+        )
+    ))
+
+(defn- #_window_C showmode [#_window_C win]
+    (let [[win _] (showmode? win)]
+        win
     ))
 
 ;; Position for a mode message.
@@ -38096,14 +38080,6 @@
         win
     ))
 
-;; Check if "win" is a pointer to an existing window.
-
-(defn- #_boolean win-valid [#_window_C win]
-    (and (some? win)
-        (loop-when [#_window_C w @firstwin] (some? w) => false
-            (recur-if (!= w win) [(:w_next w)] => true))
-    ))
-
 ;; Exchange current and next window.
 
 (defn- #_window_C win-exchange [#_window_C win, #_long Prenum]
@@ -38446,7 +38422,7 @@
         (recur-if (not seen_one) [true (:w_next win)] => false)
     ))
 
-;; Close window "win".  Only works for the current tab page.
+;; Close window "win".
 ;; If "_unload" is true related buffer may be unloaded.
 ;;
 ;; Returns false when the window was not closed.
@@ -38461,9 +38437,9 @@
             (close-buffer win)
             ;; Free the memory used for the window and get the window that received the screen space.
             (let [a'dir (atom (int)) #_window_C wp (win-free-mem win, a'dir) #_boolean close_curwin (== win @curwin)]
-                ;; Make sure curwin isn't invalid.
+                ;; Make sure "curwin" isn't invalid.
                 ;; It can cause severe trouble when printing an error message.
-                ;; For win-equal() curbuf needs to be valid too.
+                ;; For win-equal() "curbuf" needs to be valid too.
                 (when close_curwin
                     (reset! curwin wp))
 
@@ -38899,14 +38875,14 @@
     (if (one-window)
         (when message (msg m_onlyone))
         (do
-            (loop-when [#_window_C win @firstwin] (win-valid win)
-                (let [#_window_C nextw (:w_next win)]
+            (loop-when [#_window_C win @firstwin] (some? win)
+                (let [#_window_C win' (:w_next win)]
                     (when (!= win @curwin)               ;; don't close current window
                         ;; Check if it's allowed to abandon this window.
                         (let-when [changed @(:b_changed @curbuf)] (or (not changed) (< 1 (:b_nwindows @curbuf)) forceit)
                             (win-close win, (not changed))
                         ))
-                    (recur nextw)
+                    (recur win')
                 ))
             (when (and message (!= @lastwin @firstwin))
                 (emsg (u8 "E445: Other window contains changes")))
@@ -40584,11 +40560,13 @@
                             win)
                     (or @do_redraw (stuff-empty))
                         ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
-                        (let [win (-> win (update-topline) (validate-cursor))]
-                            (cond
-                                @VIsual_active (update-curbuf INVERTED) ;; update inverted part
-                                (non-zero? @must_redraw) (update-screen 0)
-                                (or @redraw_cmdline @clear_cmdline) (showmode))
+                        (let [win (-> win (update-topline) (validate-cursor))
+                              win (cond
+                                    @VIsual_active (do (update-curbuf INVERTED) win) ;; update inverted part
+                                    (non-zero? @must_redraw) (do (update-screen 0) win)
+                                    (or @redraw_cmdline @clear_cmdline) (showmode win)
+                                    :else win
+                                )]
                             (redraw-statuslines)
                             ;; display message after redraw
                             (when (some? @keep_msg)
