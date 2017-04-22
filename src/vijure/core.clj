@@ -26051,316 +26051,222 @@
 ;; "initc" is the character to find a match for.
 ;; NUL means to find the character at or after the cursor.
 ;;
-;; flags: FM_BACKWARD   search backwards (when initc is '/', '*' or '#')
-;;        FM_FORWARD    search forwards  (when initc is '/', '*' or '#')
-;;        FM_BLOCKSTOP  stop at start/end of block ({ or } in column 0)
-;;
-;; "oap" is only used to set oap.motion_type for a linewise motion, it be null
+;; flags: FM_BLOCKSTOP  stop at start/end of block ({ or } in column 0)
 
 (defn- #_pos_C findmatchlimit [#_window_C win, #_int _initc, #_int flags, #_int maxtravel]
-    (let [#_boolean cpo_match (some? (vim-strbyte @p_cpo, CPO_MATCH))   ;; vi compatible matching
-          #_boolean cpo_bsl (some? (vim-strbyte @p_cpo, CPO_MATCHBSL))  ;; don't recognize backslashes
-          a'pos (atom (#_pos_C object (assoc (:w_cursor win) :coladd 0)))
+    (let-when [#_boolean cpo_match (some? (vim-strbyte @p_cpo, CPO_MATCH))  ;; vi compatible matching
+          #_boolean cpo_bsl (some? (vim-strbyte @p_cpo, CPO_MATCHBSL))      ;; don't recognize backslashes
           a'initc (atom (int _initc))
-          a'findc (atom (int 0))                                        ;; matching brace
+          a'findc (atom (int NUL))                                          ;; matching brace
           a'backwards (atom (boolean false))
-          a'count (atom (int 0))                                        ;; cumulative number of braces
-          a'match_escaped (atom (int 0))                                ;; search for escaped match
-          a's (atom (#_Bytes object (ml-get (:lnum @a'pos))))           ;; pointer to current line
-    ]
-        ;; If "initc" given, look in the table for the matching character.
-        (cond (!= @a'initc NUL)
-        (do
-            (find-mps-values a'initc, a'findc, a'backwards, true)
-            (if (== @a'findc NUL)
-                ((ß RETURN) nil)
-            )
-        )
-        :else ;; If no "initc" was given, we need to look under the cursor.
-        (do
-            ;; Find the brace under or after the cursor.
-            ;; If beyond the end of the line, use the last character in the line.
-
-            (when (and (at? @a's (:col @a'pos) NUL) (non-zero? (:col @a'pos)))
-                (swap! a'pos update :col dec))
-            (loop []
-                (reset! a'initc (us-ptr2char @a's, (:col @a'pos)))
-                (if (== @a'initc NUL)
-                    (ß BREAK)
-                )
-
-                (find-mps-values a'initc, a'findc, a'backwards, false)
-                (if (!= @a'findc NUL)
-                    (ß BREAK)
-                )
-                (swap! a'pos update :col + (us-ptr2len-cc @a's, (:col @a'pos)))
-                (recur)
-            )
-            (cond (== @a'findc NUL)
-            (do
-                ((ß RETURN) nil)
-            )
-            (not cpo_bsl)
-            (do
-                ;; Set "match_escaped" if there are an odd number of backslashes.
-                ((ß int[] a'col =) (atom (int (:col @a'pos))))
-                ((ß int bslcnt =) (loop-when-recur [bslcnt 0] (check-prevcol @a's, @a'col, (byte \\), a'col) [(inc bslcnt)] => bslcnt))
-                ((ß @a'match_escaped =) (& bslcnt 1))
-            ))
-        ))
-
-        ((ß int do_quotes =) -1)                 ;; check for quotes in current line
-        ((ß maybean start_in_quotes =) MAYBE)    ;; start position is in quotes
-        ((ß pos_C match_pos =) (NEW_pos_C))      ;; where last slash-star was found
-
-        ((ß int comment_col =) MAXCOL)
-        ((ß int traveled =) 0)                       ;; how far we've searched so far
-        ((ß boolean inquote =) false)                ;; true when inside quotes
-
-        (loop-when [] (not @got_int)
-            ;; Go to the next position, forward or backward.
-            ;; We could use incp() and decp() here, but that is much slower.
-
-            (cond @a'backwards
-            (do
-                (cond (zero? (:col @a'pos))                    ;; at start of line, go to prev. one
-                (do
-                    (if (== (:lnum @a'pos) 1)               ;; start of file
-                        (ß BREAK)
-                    )
-                    (swap! a'pos update :lnum dec)
-
-                    (if (and (< 0 maxtravel) (< maxtravel ((ß traveled =) (inc traveled))))
-                        (ß BREAK)
-                    )
-
-                    ((ß @a's =) (ml-get (:lnum @a'pos)))
-                    (swap! a'pos assoc :col (STRLEN @a's))    ;; a'pos.col on trailing NUL
-                    ((ß do_quotes =) -1)
-                    (slow-breakcheck)
-                )
-                :else
-                (do
-                    (swap! a'pos update :col dec)
-                    (swap! a'pos update :col - (us-head-off @a's, (.plus @a's (:col @a'pos))))
-                ))
-            )
-            :else                            ;; forward search
-            (do
-                (cond (at? @a's (:col @a'pos) NUL)
-                (do
-                    (if (== (:lnum @a'pos) (line-count @curbuf))    ;; end of file
-                        (ß BREAK)
-                    )
-                    (swap! a'pos update :lnum inc)
-
-                    (if (and (non-zero? maxtravel) (< maxtravel (ß traveled++)))
-                        (ß BREAK)
-                    )
-
-                    ((ß @a's =) (ml-get (:lnum @a'pos)))
-                    (swap! a'pos assoc :col 0)
-                    ((ß do_quotes =) -1)
-                    (slow-breakcheck)
-                )
-                :else
-                (do
-                    (swap! a'pos update :col + (us-ptr2len-cc @a's, (:col @a'pos)))
-                ))
-            ))
-
-            ;; If FM_BLOCKSTOP given, stop at a '{' or '}' in column 0.
-
-            (when (and (zero? (:col @a'pos)) (flag? flags FM_BLOCKSTOP) (or (at? @a's (byte \{)) (at? @a's (byte \}))))
-                (if (and (at? @a's @a'findc) (zero? @a'count))        ;; match!
-                    ((ß RETURN) @a'pos)
-                )
-                (ß BREAK)                                      ;; out of scope
-            )
-
-            ;; If smart matching ('cpoptions' does not contain '%'), braces inside
-            ;; of quotes are ignored, but only if there is an even number of
-            ;; quotes in the line.
-
-            (cond cpo_match
-            (do
-                ((ß do_quotes =) 0)
-            )
-            (== do_quotes -1)
-            (do
-                ;; Count the number of quotes in the line, skipping \" and '"'.
-                ;; Watch out for "\\".
-
-                ((ß int @at_start =) do_quotes)       ;; do_quotes value at start position
-                ((ß Bytes p =) (loop-when [p @a's] (non-eos? p) => p
-                    (when (BEQ p, (.plus @a's (+ (:col @a'pos) (if @a'backwards 1 0))))
-                        (reset! at_start (& do_quotes 1)))
-                    ((ß do_quotes =) (if (and (at? p (byte \")) (or (BEQ p, @a's) (not-at? p -1 (byte \')) (not-at? p 1 (byte \')))) (inc do_quotes) do_quotes))   ;; """
-                    (recur (.plus p (if (and (at? p (byte \\)) (non-eos? p 1)) 2 1)))
-                ))
-                ((ß do_quotes =) (& do_quotes 1))                 ;; result is 1 with even number of quotes
-
-                ;; If we find an uneven count, check current line and previous one for a '\' at the end.
-
-                (when (zero? do_quotes)
-                    ((ß inquote =) false)
-                    (when (at? p -1 (byte \\))
-                        ((ß do_quotes =) 1)
-                        (cond (== start_in_quotes MAYBE)
-                        (do
-                            ;; Do we need to use at_start here?
-                            ((ß inquote =) true)
-                            ((ß start_in_quotes =) TRUE)
-                        )
-                        @a'backwards
-                        (do
-                            ((ß inquote =) true)
-                        ))
-                    )
-                    (when (< 1 (:lnum @a'pos))
-                        ((ß p =) (ml-get (dec (:lnum @a'pos))))
-                        (when (and (non-eos? p) (at? p (dec (STRLEN p)) (byte \\)))
-                            ((ß do_quotes =) 1)
-                            (cond (== start_in_quotes MAYBE)
-                            (do
-                                ((ß inquote =) (!= @at_start 0))
-                                ((ß start_in_quotes =) (if inquote TRUE start_in_quotes))
-                            )
-                            (not @a'backwards)
-                            (do
-                                ((ß inquote =) true)
-                            ))
-                        )
-
-                        ;; ml-get() only keeps one line, need to get it again
-                        ((ß @a's =) (ml-get (:lnum @a'pos)))
-                    )
-                )
-            ))
-            ((ß start_in_quotes =) (if (== start_in_quotes MAYBE) FALSE start_in_quotes))
-
-            ;; If 'smartmatch' is set:
-            ;;   Things inside quotes are ignored by setting 'inquote'.
-            ;;   If we find a quote without a preceding '\' invert 'inquote'.
-            ;;   At the end of a line not ending in '\' we reset 'inquote'.
-            ;;
-            ;;   In lines with an uneven number of quotes (without preceding '\')
-            ;;   we do not know which part to ignore.  Therefore we only set
-            ;;   inquote if the number of quotes in a line is even, unless this
-            ;;   line or the previous one ends in a '\'.  Complicated, isn't it?
-
-            ((ß int c =) (us-ptr2char @a's, (:col @a'pos)))
-            (condp == c
-                NUL
-                (do
-                    ;; at end of line without trailing backslash, reset inquote
-                    (when (or (zero? (:col @a'pos)) (not-at? @a's (dec (:col @a'pos)) (byte \\)))
-                        ((ß inquote =) false)
-                        ((ß start_in_quotes =) FALSE)
-                    )
-                    (ß BREAK)
-                )
-
-                (byte \")  ;; """
-                (do
-                    ;; a quote that is preceded with an odd number of backslashes is ignored
-                    (when (non-zero? do_quotes)
-                        ((ß int col =) (loop-when-recur [col (dec (:col @a'pos))] (and (<= 0 col) (at? @a's col (byte \\))) [(dec col)] => col))
-                        (when (zero? (& (- (:col @a'pos) 1 col) 1))
-                            ((ß inquote =) (not inquote))
-                            ((ß start_in_quotes =) FALSE)
-                        )
-                    )
-                    (ß BREAK)
-                )
-
-                ;; If smart matching ('cpoptions' does not contain '%'):
-                ;; - Skip things in single quotes: 'x' or '\x'.
-                ;; - Be careful for single single quotes, e.g. jon's.
-                ;; - Things like '\233' or '\x3f' are not skipped, there is never a brace in them.
-                ;; - Ignore this when finding matches for `'.
-
-                (byte \')
-                (do
-                    (when (and (not cpo_match) (!= @a'initc (byte \')) (!= @a'findc (byte \')))
-                        (cond @a'backwards
-                        (do
-                            (when (< 1 (:col @a'pos))
-                                (cond (at? @a's (- (:col @a'pos) 2) (byte \'))
-                                (do
-                                    (swap! a'pos update :col - 2)
-                                    (ß BREAK)
-                                )
-                                (and (at? @a's (- (:col @a'pos) 2) (byte \\)) (< 2 (:col @a'pos)) (at? @a's (- (:col @a'pos) 3) (byte \')))
-                                (do
-                                    (swap! a'pos update :col - 3)
-                                    (ß BREAK)
+          a'match_escaped (atom (int 0))                                    ;; search for escaped match
+          #_pos_C pos (assoc (:w_cursor win) :coladd 0)
+          #_Bytes line (ml-get (:lnum pos))                                 ;; pointer to current line
+          pos (if (!= @a'initc NUL)
+                ;; If "initc" given, look in the table for the matching character.
+                (let [_ (find-mps-values a'initc, a'findc, a'backwards, true)]
+                    (when (!= @a'findc NUL) pos))
+                ;; If no "initc" was given, find the brace under or after the cursor.
+                ;; If beyond the end of the line, use the last character in the line.
+                (let [pos (if (and (at? line (:col pos) NUL) (non-zero? (:col pos))) (update pos :col dec) pos)
+                      pos (loop [pos pos]
+                            (let-when [_ (reset! a'initc (us-ptr2char line, (:col pos)))] (!= @a'initc NUL) => pos
+                                (let-when [_ (find-mps-values a'initc, a'findc, a'backwards, false)] (== @a'findc NUL) => pos
+                                    (recur (update pos :col #(+ % (us-ptr2len-cc line, %))))
                                 ))
-                            )
-                        )
-                        (non-eos? @a's (inc (:col @a'pos))) ;; forward search
-                        (do
-                            (cond (and (at? @a's (+ (:col @a'pos) 1) (byte \\)) (non-eos? @a's (+ (:col @a'pos) 2)) (at? @a's (+ (:col @a'pos) 3) (byte \')))
-                            (do
-                                (swap! a'pos update :col + 3)
-                                (ß BREAK)
-                            )
-                            (at? @a's (+ (:col @a'pos) 2) (byte \'))
-                            (do
-                                (swap! a'pos update :col + 2)
-                                (ß BREAK)
+                        )]
+                    (when (!= @a'findc NUL)
+                        (when (not cpo_bsl) ;; Set "match_escaped" if there are an odd number of backslashes.
+                            (let [a'col (atom (int (:col pos))) #_int n (loop-when-recur [n 0] (check-prevcol line, @a'col, (byte \\), a'col) [(inc n)] => n)]
+                                (reset! a'match_escaped (& n 1))
                             ))
-                        ))
-                    )
-                    (ß FALLTHROUGH)
-                )
+                        pos)
+                ))
+    ] (some? pos) => pos
 
-                (ß DEFAULT)
-                (do
-                    ;; Check for match outside of quotes, and inside of
-                    ;; quotes when the start is also inside of quotes.
-
-                    (when (and (or (not inquote) (== start_in_quotes TRUE)) (any == c @a'initc @a'findc))
-                        ((ß int bslcnt =) 0)
-
-                        (when (not cpo_bsl)
-                            ((ß int[] a'col =) (atom (int (:col @a'pos))))
-                            ((ß bslcnt =) (loop-when-recur bslcnt (check-prevcol @a's, @a'col, (byte \\), a'col) (inc bslcnt) => bslcnt))
-                        )
-                        ;; Only accept a match when 'M' is in 'cpo'
-                        ;; or when escaping is what we expect.
-                        (when (or cpo_bsl (== (& bslcnt 1) @a'match_escaped))
-                            (cond (== c @a'initc)
-                            (do
-                                ((ß @a'count =) (inc @a'count))
-                            )
-                            :else
-                            (do
-                                (if (zero? @a'count)
-                                    ((ß RETURN) @a'pos)
-                                )
-                                ((ß @a'count =) (dec @a'count))
+        (let [lmax (line-count @curbuf)
+              a'count (atom (int 0))                                    ;; cumulative number of braces
+              a'do_quotes (atom (int -1))                               ;; check for quotes in current line
+              a'start_in_quotes (atom (maybean MAYBE))                  ;; start position is in quotes
+              a'inquote (atom (boolean false))                          ;; true when inside quotes
+              a'traveled (atom (int 0))]                                ;; how far we've searched so far
+            (loop-when [pos pos line line] (not @got_int) => nil
+                ;; Go to the next position, forward or backward.
+                ;; We could use incp() and decp() here, but that is much slower.
+                (let-when [[pos line]
+                        (cond @a'backwards
+                            (if (zero? (:col pos))
+                                (when (< 1 (:lnum pos))
+                                    (let [pos (update pos :lnum dec) _ (swap! a'traveled inc)]
+                                        (when-not (< 0 maxtravel @a'traveled)
+                                            (let [line (ml-get (:lnum pos)) pos (assoc pos :col (STRLEN line))]
+                                                (reset! a'do_quotes -1)
+                                                (slow-breakcheck)
+                                                [pos line]
+                                            ))
+                                    ))
+                                (let [pos (update pos :col dec)]
+                                    [(update pos :col #(- % (us-head-off line, (.plus line %)))) line]
+                                ))
+                        :else
+                            (if (at? line (:col pos) NUL)
+                                (when (< (:lnum pos) lmax)
+                                    (let [pos (update pos :lnum inc)]
+                                        (when-not (< 0 maxtravel @a'traveled)
+                                            (let [_ (swap! a'traveled inc) line (ml-get (:lnum pos)) pos (assoc pos :col 0)]
+                                                (reset! a'do_quotes -1)
+                                                (slow-breakcheck)
+                                                [pos line]
+                                            ))
+                                    ))
+                                [(update pos :col #(+ % (us-ptr2len-cc line, %))) line]
                             ))
-                        )
-                    )
-                    (ß BREAK)
-                )
-            )
-            (recur)
-        )
+                ] (some? pos) => pos
 
-        nil    ;; never found it
+                    ;; If FM_BLOCKSTOP given, stop at a '{' or '}' in column 0.
+                    (if (and (zero? (:col pos)) (flag? flags FM_BLOCKSTOP) (any == (.at line 0) (byte \{) (byte \})))
+                        (when (and (at? line @a'findc) (zero? @a'count))
+                            pos) ;; match!  ;; out of scope
+
+                        ;; If smart matching ('cpoptions' does not contain '%'), braces inside of quotes are ignored,
+                        (let [line ;; but only if there is an even number of quotes in the line.
+                                (cond cpo_match
+                                    (do (reset! a'do_quotes 0)
+                                        line)
+                                (== @a'do_quotes -1)
+                                    ;; Count the number of quotes in the line, skipping \" and '"', watching out for "\\".
+                                    (let [a'at_start (atom (int @a'do_quotes)) ;; "do_quotes" value at start position
+                                          #_Bytes s
+                                            (loop-when [s line] (non-eos? s) => s
+                                                (when (BEQ s, (.plus line (+ (:col pos) (if @a'backwards 1 0))))
+                                                    (reset! a'at_start (& @a'do_quotes 1)))
+                                                (when (and (at? s (byte \")) (or (BEQ s, line) (not-at? s -1 (byte \')) (not-at? s 1 (byte \')))) ;; """
+                                                    (swap! a'do_quotes inc))
+                                                (recur (.plus s (if (and (at? s (byte \\)) (non-eos? s 1)) 2 1)))
+                                            )]
+                                        (swap! a'do_quotes & 1) ;; result is 1 with even number of quotes
+                                        ;; If we find an uneven count, check current line, then prior one for a '\' at the end.
+                                        (if (zero? @a'do_quotes)
+                                            (do (reset! a'inquote false)
+                                                (when (at? s -1 (byte \\))
+                                                    (reset! a'do_quotes 1)
+                                                    (cond (== @a'start_in_quotes MAYBE)
+                                                        (do ;; Do we need to use "at_start" here?
+                                                            (reset! a'inquote true)
+                                                            (reset! a'start_in_quotes TRUE))
+                                                    @a'backwards
+                                                        (reset! a'inquote true)
+                                                    ))
+                                                (if (< 1 (:lnum pos))
+                                                    (let [s (ml-get (dec (:lnum pos)))]
+                                                        (when (and (non-eos? s) (at? s (dec (STRLEN s)) (byte \\)))
+                                                            (reset! a'do_quotes 1)
+                                                            (cond (== @a'start_in_quotes MAYBE)
+                                                                (do (reset! a'inquote (non-zero? @a'at_start))
+                                                                    (when @a'inquote
+                                                                        (reset! a'start_in_quotes TRUE)
+                                                                    ))
+                                                            (not @a'backwards)
+                                                                (reset! a'inquote true)
+                                                            ))
+                                                        ;; ml-get() only keeps one line, need to get it again
+                                                        (ml-get (:lnum pos)))
+                                                    line
+                                                ))
+                                            line
+                                        ))
+                                :else
+                                    line
+                                )]
+                            (when (== @a'start_in_quotes MAYBE)
+                                (reset! a'start_in_quotes FALSE))
+                            ;; If 'smartmatch' is set:
+                            ;;
+                            ;; Things inside quotes are ignored by setting "inquote".
+                            ;; If we find a quote without a preceding '\', invert "inquote".
+                            ;; At the end of a line not ending in '\' we reset "inquote".
+                            ;;
+                            ;; In lines with an uneven number of quotes (without preceding '\')
+                            ;; we do not know which part to ignore.  Therefore we only set
+                            ;; "inquote" if the number of quotes in a line is even, unless this
+                            ;; line or the prior one ends in a '\'.
+                            ;;
+                            ;; Complicated, isn't it?
+                            (let-when [#_int c (us-ptr2char line, (:col pos))
+                                  [pos ?]
+                                    (condp == c
+                                        NUL (do ;; at end of line without trailing backslash, reset "inquote"
+                                                (when (or (zero? (:col pos)) (not-at? line (dec (:col pos)) (byte \\)))
+                                                    (reset! a'inquote false)
+                                                    (reset! a'start_in_quotes FALSE))
+                                                [pos nil])
+
+                                        (byte \") ;; """
+                                            (do ;; a quote that is preceded with an odd number of backslashes is ignored
+                                                (when (non-zero? @a'do_quotes)
+                                                    (let [#_int col (loop-when-recur [col (dec (:col pos))] (and (<= 0 col) (at? line col (byte \\))) [(dec col)] => col)]
+                                                        (when (zero? (& (- (dec (:col pos)) col) 1))
+                                                            (swap! a'inquote not)
+                                                            (reset! a'start_in_quotes FALSE))
+                                                    ))
+                                                [pos nil])
+
+                                        ;; If smart matching ('cpoptions' does not contain '%'):
+                                        ;; - Skip things in single quotes: 'x' or '\x'.
+                                        ;; - Be careful for single single quotes, e.g. jon's.
+                                        ;; - Things like '\233' or '\x3f' are not skipped, there is never a brace in them.
+                                        ;; - Ignore this when finding matches for `'.
+                                        (let-when [
+                                              ? (let-when [i (:col pos)] (and (== c (byte \')) (not cpo_match) (!= @a'initc (byte \')) (!= @a'findc (byte \')))
+                                                    (cond @a'backwards
+                                                        (when (< 1 i)
+                                                            (cond
+                                                                (at? line (- i 2) (byte \'))                                            -2
+                                                                (and (at? line (- i 2) (byte \\)) (< 2 i) (at? line (- i 3) (byte \'))) -3
+                                                            ))
+                                                    (non-eos? line (inc i))
+                                                        (cond
+                                                            (and (at? line (inc i) (byte \\)) (non-eos? line (+ i 2)) (at? line (+ i 3) (byte \'))) +3
+                                                            (at? line (+ i 2) (byte \'))                                                            +2
+                                                        ))
+                                                )] (not ?) => [(update pos :col + ?) nil]
+
+                                            ;; Check for match outside of quotes, and inside of quotes when the start is also inside of quotes.
+                                            (let [? (when (and (or (not @a'inquote) (== @a'start_in_quotes TRUE)) (any == c @a'initc @a'findc))
+                                                        (let [#_int n
+                                                                (if (not cpo_bsl)
+                                                                    (let [a'col (atom (int (:col pos)))]
+                                                                        (loop-when-recur [n 0] (check-prevcol line, @a'col, (byte \\), a'col) (inc n) => n))
+                                                                    0
+                                                                )]
+                                                            ;; Only accept a match when 'M' is in 'cpo' or when escaping is what we expect.
+                                                            (when (or cpo_bsl (== (& n 1) @a'match_escaped))
+                                                                (cond
+                                                                    (== c @a'initc)      (do (swap! a'count inc) nil)
+                                                                    (non-zero? @a'count) (do (swap! a'count dec) nil)
+                                                                    :else :found
+                                                                ))
+                                                        ))]
+                                                [pos ?]
+                                            ))
+                                    )] (not ?) => pos
+
+                                (recur pos line)
+                            ))
+                    ))
+            ))
     ))
 
-;; Return true if the character before "s[col]" equals "ch".
-;; Return false if "col" is zero.
+;; Return true if the character before "s[i]" equals "c".
+;; Return false if "i" is zero.
 ;; Update "*prior" to the column of the previous character, unless "prior" is null.
 ;; Handles multi-byte string correctly.
 
-(defn- #_boolean check-prevcol [#_Bytes s, #_int col, #_int ch, #_int' a'prior]
-    (let [col (dec col) col (if (< 0 col) (- col (us-head-off s, (.plus s col))) col)]
-        (when (some? a'prior) (reset! a'prior col))
-        (and (<= 0 col) (at? s col ch))
+(defn- #_boolean check-prevcol [#_Bytes s, #_int i, #_int c, #_int' a'prior]
+    (let [i (dec i) i (if (< 0 i) (- i (us-head-off s, (.plus s i))) i)]
+        (when (some? a'prior)
+            (reset! a'prior i))
+        (and (<= 0 i) (at? s i c))
     ))
 
 ;; Move cursor briefly to character matching the one under the cursor.
