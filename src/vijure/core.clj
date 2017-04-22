@@ -13440,9 +13440,7 @@
                             (let [#_int y (get-yank-register regname, false)]
                                 (... @y_regs y)
                             ))
-                      win
-                ]
-                        (let-when [a'nr_lines (atom (long 0))
+                      win (let-when [a'nr_lines (atom (long 0))
                               [win dir abort]
                                 (if (== (:y_type reg) MLINE)
                                     (let-when [[dir abort]
@@ -13503,9 +13501,7 @@
                                                 )
                                                 win)
                                           #_long lnum (:lnum (:w_cursor win)) a'col (atom (int (:col (:w_cursor win))))
-                                          win
-                                    ]
-                                            (cond (== (:y_type reg) MBLOCK) ;; Block mode
+                                          win (cond (== (:y_type reg) MBLOCK) ;; Block mode
                                                 (let [#_int c (gchar-cursor win) a'endcol2 (atom (int 0))
                                                       win (if (and (== dir FORWARD) (!= c NUL))
                                                             (do (if (== @ve_flags VE_ALL)
@@ -13664,145 +13660,94 @@
                                                             (changed-bytes lnum, @a'col)
                                                             win
                                                         )
-                                                    :else
-                                                        (do
-                                                      #_pos_C new_cursor (:w_cursor win)
-                                                            ;; Insert at least one line.  When "y_type" is MCHAR, break the first line in two.
-
-                                                            ((ß int indent_diff =) 0)
-                                                            ((ß boolean first_indent =) true)
-                                                            ((ß int lendiff =) 0)
-
-                                        ;                   error:
-                                                            (loop-when-recur [#_long cnt 1] (<= cnt count) [(inc cnt)]
-                                                                ((ß int i =) 0)
-                                                                (when (== (:y_type reg) MCHAR)
-                                                                    ;; Split the current line in two at the insert position.
-                                                                    ;; First insert y_array[size - 1] in front of second line.
-                                                                    ;; Then append y_array[0] to first line.
-
-                                                                    ((ß lnum =) (:lnum new_cursor))
-                                                                    ((ß Bytes p =) (.plus (ml-get lnum) @a'col))
-                                                                    ((ß int totlen =) (STRLEN (... (:y_array reg) (dec (:y_size reg)))))
-                                                                    ((ß Bytes newp =) (Bytes. (+ (STRLEN p) totlen 1)))
-                                                                    (STRCPY newp, (... (:y_array reg) (dec (:y_size reg))))
-                                                                    (STRCAT newp, p)
-                                                                    ;; insert second line
-                                                                    (ml-append lnum, newp)
-
-                                                                    ((ß Bytes oldp =) (ml-get lnum))
-                                                                    ((ß newp =) (Bytes. (+ @a'col yanklen 1)))
-                                                                    ;; copy first part of line
-                                                                    (BCOPY newp, oldp, @a'col)
-                                                                    ;; append to first line
-                                                                    (BCOPY newp, @a'col, (... (:y_array reg) 0), 0, (inc yanklen))
-                                                                    (ml-replace lnum, newp)
-
-                                                                    (swap! curwin assoc-in [:w_cursor :lnum] lnum)
-                                                                    ((ß i =) 1)
-                                                                )
-
-                                                                (loop-when-recur i (< i (:y_size reg)) (inc i)
-                                                                    (if (and (or (!= (:y_type reg) MCHAR) (< i (dec (:y_size reg)))) (not (ml-append lnum, (... (:y_array reg) i))))
-                                                                        (ß BREAK error)
-                                                                    )
-                                                                    ((ß lnum =) (inc lnum))
-                                                                    ((ß @a'nr_lines =) (inc @a'nr_lines))
-                                                                    (when (flag? flags PUT_FIXINDENT)
-                                                                        ((ß pos_C old_pos =) (:w_cursor win))
-                                                                        (swap! curwin assoc-in [:w_cursor :lnum] lnum)
-                                                                        ((ß Bytes p =) (ml-get lnum))
-                                                                        ((ß lendiff =) (if (and (== cnt count) (== i (dec (:y_size reg)))) (STRLEN p) lendiff))
-                                                                        (ß int indent)
-                                                                        (cond (eos? p)
-                                                                        (do
-                                                                            ((ß indent =) 0)     ;; ignore empty lines
-                                                                        )
-                                                                        first_indent
-                                                                        (do
-                                                                            ((ß indent_diff =) (- o'indent (get-indent win)))
-                                                                            ((ß indent =) o'indent)
-                                                                            ((ß first_indent =) false)
-                                                                        )
-                                                                        (< ((ß indent =) (+ (get-indent win) indent_diff)) 0)
-                                                                        (do
-                                                                            ((ß indent =) 0)
-                                                                        ))
-                                                                        (swap! curwin set-indent indent, 0)
-                                                                        (swap! curwin assoc :w_cursor old_pos)
-                                                                        ;; remember how many chars were removed
-                                                                        ((ß lendiff =) (if (and (== cnt count) (== i (dec (:y_size reg)))) (- lendiff (STRLEN (ml-get lnum))) lendiff))
-                                                                    )
-                                                                )
-                                                            )
-
+                                                    :else ;; Insert at least one line.  When "y_type" is MCHAR, break the first line in two.
+                                                        (let [o'cursor (:w_cursor win) a'first_indent (atom (boolean true)) a'indent_diff (atom (int 0))
+                                                              [win lnum #_int delta]
+                                                                (loop-when [win win lnum lnum delta 0 #_long n 1] (<= n count) => [win lnum delta]
+                                                                    (let [[win lnum #_int i]
+                                                                            (if (== (:y_type reg) MCHAR)
+                                                                                ;; Split the current line in two at the insert position.
+                                                                                ;; First insert y_array[size - 1] in front of second line, then append y_array[0] to first line.
+                                                                                (let [lnum (:lnum o'cursor) #_Bytes s (.plus (ml-get lnum) @a'col)
+                                                                                      #_Bytes z (... (:y_array reg) (dec (:y_size reg)))
+                                                                                      #_Bytes s' (Bytes. (+ (STRLEN s) (STRLEN z) 1))
+                                                                                      _ (STRCPY s', z) _ (STRCAT s', s)]
+                                                                                    (ml-append lnum, s')
+                                                                                    (let [s (ml-get lnum) s' (Bytes. (+ @a'col yanklen 1))
+                                                                                          _ (BCOPY s', s, @a'col)
+                                                                                          _ (BCOPY s', @a'col, (... (:y_array reg) 0), 0, (inc yanklen))]
+                                                                                        (ml-replace lnum, s')
+                                                                                        [(assoc-in win [:w_cursor :lnum] lnum) lnum 1]
+                                                                                    ))
+                                                                                [win lnum 0])
+                                                                          [win lnum delta]
+                                                                            (loop-when [win win lnum lnum delta delta i i] (< i (:y_size reg)) => [win lnum delta]
+                                                                                (when (or (!= (:y_type reg) MCHAR) (< i (dec (:y_size reg))))
+                                                                                    (ml-append lnum, (... (:y_array reg) i)))
+                                                                                (let [lnum (inc lnum) _ (swap! a'nr_lines inc)
+                                                                                      [win delta]
+                                                                                        (if (flag? flags PUT_FIXINDENT)
+                                                                                            (let [o'pos (:w_cursor win) win (assoc-in win [:w_cursor :lnum] lnum)
+                                                                                                  #_Bytes s (ml-get lnum)
+                                                                                                  delta (if (and (== n count) (== i (dec (:y_size reg)))) (STRLEN s) delta)
+                                                                                                  #_int indent
+                                                                                                    (cond (eos? s)
+                                                                                                        0 ;; ignore empty lines
+                                                                                                    @a'first_indent
+                                                                                                        (do (reset! a'first_indent false)
+                                                                                                            (reset! a'indent_diff (- o'indent (get-indent win)))
+                                                                                                            o'indent)
+                                                                                                    :else
+                                                                                                        (max 0 (+ (get-indent win) @a'indent_diff)))
+                                                                                                  win (set-indent win, indent, 0)
+                                                                                                  ;; remember how many chars were removed
+                                                                                                  delta (if (and (== n count) (== i (dec (:y_size reg)))) (- delta (STRLEN (ml-get lnum))) delta)]
+                                                                                                [(assoc win :w_cursor o'pos) delta])
+                                                                                            [win delta]
+                                                                                        )]
+                                                                                    (recur win lnum delta (inc i)))
+                                                                            )]
+                                                                        (recur win lnum delta (inc n)))
+                                                                )]
                                                             ;; Adjust marks.
                                                             (when (== (:y_type reg) MLINE)
                                                                 (swap! curbuf assoc-in [:b_op_start :col] 0)
                                                                 (when (== dir FORWARD)
-                                                                    (swap! curbuf update-in [:b_op_start :lnum] inc))
-                                                            )
+                                                                    (swap! curbuf update-in [:b_op_start :lnum] inc)
+                                                                ))
                                                             (mark-adjust (+ (:lnum (:b_op_start @curbuf)) (if (== (:y_type reg) MCHAR) 1 0)), MAXLNUM, @a'nr_lines, 0)
-
-                                                            ;; note changed text for displaying and folding
+                                                            ;; note changed text for displaying
                                                             (if (== (:y_type reg) MCHAR)
                                                                 (changed-lines (:lnum (:w_cursor win)), @a'col, (inc (:lnum (:w_cursor win))), @a'nr_lines)
                                                                 (changed-lines (:lnum (:b_op_start @curbuf)), 0, (:lnum (:b_op_start @curbuf)), @a'nr_lines))
-
                                                             ;; put '] mark at last inserted character
                                                             (swap! curbuf assoc-in [:b_op_end :lnum] lnum)
                                                             ;; correct length for change in indent
-                                                            (reset! a'col (- (STRLEN (... (:y_array reg) (dec (:y_size reg)))) lendiff))
-                                                            (swap! curbuf assoc-in [:b_op_end :col] (if (< 1 @a'col) (dec @a'col) 0))
-
-                                                            (cond (flag? flags PUT_CURSLINE)
-                                                            (do
-                                                                ;; ":put": put cursor on last inserted line
-                                                                (swap! curwin assoc-in [:w_cursor :lnum] lnum)
-                                                                (swap! curwin beginline (| BL_WHITE BL_FIX))
-                                                            )
-                                                            (flag? flags PUT_CURSEND)
-                                                            (do
-                                                                ;; put cursor after inserted text
+                                                            (reset! a'col (- (STRLEN (... (:y_array reg) (dec (:y_size reg)))) delta))
+                                                            (swap! curbuf assoc-in [:b_op_end :col] (max 0 (dec @a'col)))
+                                                            (cond (flag? flags PUT_CURSLINE) ;; put cursor on last inserted line
+                                                                (-> win (assoc-in [:w_cursor :lnum] lnum) (beginline (| BL_WHITE BL_FIX)))
+                                                            (flag? flags PUT_CURSEND) ;; put cursor after inserted text
                                                                 (if (== (:y_type reg) MLINE)
-                                                                    (swap! curwin update :w_cursor assoc :lnum (min (inc lnum) (line-count @curbuf)) :col 0)
-                                                                    (swap! curwin update :w_cursor assoc :lnum lnum :col @a'col)
-                                                                )
-                                                            )
-                                                            (== (:y_type reg) MLINE)
-                                                            (do
-                                                                ;; put cursor on first non-blank in first inserted line
-                                                                (swap! curwin assoc-in [:w_cursor :col] 0)
-                                                                (when (== dir FORWARD)
-                                                                    (swap! curwin update-in [:w_cursor :lnum] inc))
-                                                                (swap! curwin beginline (| BL_WHITE BL_FIX))
-                                                            )
-                                                            :else        ;; put cursor on first inserted character
-                                                            (do
-                                                                (swap! curwin assoc :w_cursor new_cursor)
+                                                                    (update win :w_cursor assoc :lnum (min (inc lnum) (line-count @curbuf)) :col 0)
+                                                                    (update win :w_cursor assoc :lnum lnum :col @a'col))
+                                                            (== (:y_type reg) MLINE) ;; put cursor on first non-blank in first inserted line
+                                                                (let [win (if (== dir FORWARD) (update-in win [:w_cursor :lnum] inc) win)
+                                                                      win (assoc-in win [:w_cursor :col] 0)]
+                                                                    (beginline win, (| BL_WHITE BL_FIX)))
+                                                            :else ;; put cursor on first inserted character
+                                                                (assoc win :w_cursor o'cursor)
                                                             ))
-                                                            win
-                                                        )
-                                                    )
-                                                )
-                                            )
-
+                                                    ))
+                                            )]
                                         (msgmore @a'nr_lines)
-                                        (swap! curwin assoc :w_set_curswant true)
-                                        win
-                                    )
-                                )
-                            )
-                        )
-
+                                        (assoc win :w_set_curswant true))
+                                ))
+                        )]
                     (reset! VIsual_active false)
-
-                    ;; If the cursor is past the end of the line put it at the end.
-                    (swap! curwin adjust-cursor-eol)
-                    win
-                )
-            )
-        )
+                    ;; If the cursor is past the end of the line, put it at the end.
+                    (adjust-cursor-eol win))
+            ))
     ))
 
 ;; When the cursor is on the NUL past the end of the line and it should not be there, move it left.
