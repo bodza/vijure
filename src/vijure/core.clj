@@ -26647,144 +26647,98 @@
 
 ;; Find block under the cursor, cursor at end.
 ;; "what" and "other" are two matching parens/braces/etc.
+;;
+;; include: true == include white space
+;; what: '(', '{', etc.
+;; other: ')', '}', etc.
 
 (defn- #_[window_C cmdarg_C boolean] current-block? [#_window_C win, #_cmdarg_C cap, #_long count, #_boolean include, #_int what, #_int other]
-    ;; include: true == include white space
-    ;; what: '(', '{', etc.
-    ;; other: ')', '}', etc.
-    (§
-        ((ß pos_C pos =) nil)
-        ((ß pos_C start_pos =) (NEW_pos_C))
-        (ß pos_C end_pos)
-        ((ß boolean sol =) false)                    ;; '{' at start of line
-
-        ((ß pos_C old_pos =) (:w_cursor win))
-        ((ß pos_C old_end =) (:w_cursor win)) ;; remember where we started
-        ((ß pos_C old_start =) old_end)
-
-        ;; If we start on '(', '{', ')', '}', etc., use the whole block inclusive.
-
-        (cond (or (not @VIsual_active) (eqpos @VIsual_cursor, (:w_cursor win)))
-        (do
-            (swap! curwin setpcmark)
-            (when (== what (byte \{))                    ;; ignore indent
-                (while (and (inindent win, 1) (zero? (let [[_ ?] (inc-cursor? win, false)] (reset! curwin _) ?)))
-                    ;
-                )
-            )
-            (when (== (gchar-cursor win) what)
-                ;; cursor on '(' or '{', move cursor just after it
-                (swap! curwin update-in [:w_cursor :col] inc)
-            )
-        )
-        (ltpos @VIsual_cursor, (:w_cursor win))
-        (do
-            ((ß old_start =) @VIsual_cursor)
-            (swap! curwin assoc :w_cursor @VIsual_cursor) ;; cursor at low end of Visual
-        )
-        :else
-        (do
-            ((ß old_end =) @VIsual_cursor)
-        ))
-
-        ;; Search backwards for unclosed '(', '{', etc..
-        ;; Put this position in "start_pos".
-        ;; Ignore quotes here.  Keep the "M" flag in 'cpo', as that is what the user wants.
-
-        ((ß Bytes save_cpo =) @p_cpo)
-        (reset! p_cpo (if (some? (vim-strbyte @p_cpo, CPO_MATCHBSL)) (u8 "%M") (u8 "%")))
-        (loop-when [] (<= 0 ((ß count =) (dec count)))
-            (if (nil? ((ß pos =) (findmatch win, what)))
-                (ß BREAK)
-            )
-            (swap! curwin assoc :w_cursor pos)
-            ((ß start_pos =) pos) ;; the findmatch() for "end_pos" will overwrite *pos
-            (recur)
-        )
-        (reset! p_cpo save_cpo)
-
-        ;; Search for matching ')', '}', etc.
-        ;; Put this position in "w_cursor".
-
-        (when (or (nil? pos) (nil? ((ß end_pos =) (findmatch win, other))))
-            (swap! curwin assoc :w_cursor old_pos)
-            ((ß RETURN) [win cap false])
-        )
-        (swap! curwin assoc :w_cursor end_pos)
-
-        ;; Try to exclude the '(', '{', ')', '}', etc. when "include" is false.
-        ;; If the ending '}', ')' or ']' is only preceded by indent, skip that indent.
-        ;; But only if the resulting area is not smaller than what we started with.
-
-        (loop-when [] (not include)
-            ((ß start_pos =) (let [[_ ?] (incl start_pos)] _))
-            ((ß sol =) (== (:col (:w_cursor win)) 0))
-            (swap! curwin dec-cursor true)
-            (loop-when [] (inindent win, 1)
-                ((ß sol =) true)
-                (if (!= (let [[_ ?] (dec-cursor? win, true)] (reset! curwin _) ?) 0)
-                    (ß BREAK)
-                )
-                (recur)
-            )
-
-            ;; In Visual mode, when the resulting area is not bigger than what we
-            ;; started with, extend it to the next block, and then exclude again.
-
-            (cond (and (not (ltpos start_pos, old_start)) (not (ltpos old_end, (:w_cursor win))) @VIsual_active)
-            (do
-                (swap! curwin assoc :w_cursor old_start)
-                (swap! curwin dec-cursor true)
-                (when (nil? ((ß pos =) (findmatch win, what)))
-                    (swap! curwin assoc :w_cursor old_pos)
-                    ((ß RETURN) [win cap false])
-                )
-                ((ß start_pos =) pos)
-                (swap! curwin assoc :w_cursor pos)
-                (when (nil? ((ß end_pos =) (findmatch win, other)))
-                    (swap! curwin assoc :w_cursor old_pos)
-                    ((ß RETURN) [win cap false])
-                )
-                (swap! curwin assoc :w_cursor end_pos)
-            )
+    (let-when [o'cursor (:w_cursor win)
+          ;; If we start on '(', '{', ')', '}', etc., use the whole block inclusive.
+          [win o'start o'end]
+            (cond (or (not @VIsual_active) (eqpos @VIsual_cursor, (:w_cursor win)))
+                (let [win (setpcmark win)
+                      win (if (== what (byte \{)) ;; ignore indent
+                            (loop-when win (inindent win, 1) => win
+                                (let [[win ?] (inc-cursor? win, false)]
+                                    (recur-if (zero? ?) win => win)
+                                ))
+                            win)
+                      ;; cursor on '(' or '{', move cursor just after it
+                      win (if (== (gchar-cursor win) what) (update-in win [:w_cursor :col] inc) win)]
+                    [win o'cursor o'cursor])
+            (ltpos @VIsual_cursor, (:w_cursor win))
+                ;; cursor at low end of Visual
+                [(assoc win :w_cursor @VIsual_cursor) @VIsual_cursor o'cursor]
             :else
-            (do
-                (ß BREAK)
-            ))
-            (recur)
-        )
+                [win o'cursor @VIsual_cursor])
+          ;; Search backwards for unclosed '(', '{', etc.
+          ;; Put this position in "start_pos".
+          ;; Ignore quotes here.
+          ;; Keep the "M" flag in 'cpo', as that is what the user wants.
+          o'cpo @p_cpo _ (reset! p_cpo (if (some? (vim-strbyte @p_cpo, CPO_MATCHBSL)) (u8 "%M") (u8 "%")))
+          [win #_pos_C start_pos]
+            (loop-when [win win pos nil count count] (< 0 count) => [win pos]
+                (let [pos (findmatch win, what)]
+                    (recur-if (some? pos) [(assoc win :w_cursor pos) pos (dec count)] => [win pos])
+                ))
+          _ (reset! p_cpo o'cpo)
+          ;; Search for matching ')', '}', etc.
+          ;; Put this position in "w_cursor".
+          #_pos_C end_pos (when (some? start_pos) (findmatch win, other))
+    ] (some? end_pos) => [(assoc win :w_cursor o'cursor) cap false]
 
-        (cond @VIsual_active
-        (do
-            (when (at? @p_sel (byte \e))
-                (swap! curwin update-in [:w_cursor :col] inc))
-            (when (and sol (!= (gchar-cursor win) NUL))
-                (swap! curwin inc-cursor false))               ;; include the line break
-            (reset! VIsual_cursor start_pos)
-            (reset! VIsual_mode (byte \v))
-            (redraw-curbuf-later INVERTED)          ;; update the inversion
-            (showmode)
-        )
-        :else
-        (do
-            ((ß cap =) (update cap :oap assoc :op_start start_pos :motion_type MCHAR :inclusive false))
-            (cond sol
-            (do
-                (swap! curwin inc-cursor true)
-            )
-            (ltoreq start_pos, (:w_cursor win))
-            (do
-                ;; Include the character under the cursor.
-                ((ß cap =) (update cap :oap assoc :inclusive true))
-            )
-            :else
-            (do
-                ;; End is before the start (no text in between <>, [], etc.): don't operate on any text.
-                (swap! curwin assoc :w_cursor start_pos)
-            ))
-        ))
+        (let-when [win (assoc win :w_cursor end_pos)
+              a'sol (atom (boolean false)) ;; '{' at start of line
+              ;; Try to exclude the '(', '{', ')', '}', etc. when "include" is false.
+              ;; If the ending '}', ')' or ']' is only preceded by indent, skip that indent,
+              ;; but only if the resulting area is not smaller than what we started with.
+              [win start_pos]
+                (loop-when [win win start_pos start_pos] (not include) => [win start_pos]
+                    (let [[start_pos _] (incl start_pos)
+                          _ (reset! a'sol (== (:col (:w_cursor win)) 0))
+                          win (dec-cursor win, true)
+                          win (loop-when win (inindent win, 1) => win
+                                (let [_ (reset! a'sol true)
+                                      [win ?] (dec-cursor? win, true)]
+                                    (recur-if (== ? 0) win => win))
+                            )]
+                        ;; In Visual mode, when the resulting area is not bigger than what we
+                        ;; started with, extend it to the next block, and then exclude again.
+                        (if (and (not (ltpos start_pos, o'start)) (not (ltpos o'end, (:w_cursor win))) @VIsual_active)
+                            (let-when [win (assoc win :w_cursor o'start) win (dec-cursor win, true)
+                                  start_pos (findmatch win, what)
+                            ] (some? start_pos) => [win nil]
 
-        [win cap true]
+                                (let-when [win (assoc win :w_cursor start_pos)
+                                      end_pos (findmatch win, other)
+                                ] (some? end_pos) => [win nil]
+
+                                    (recur (assoc win :w_cursor end_pos) start_pos)
+                                ))
+                            [win start_pos]
+                        )))
+        ] (some? start_pos) => [(assoc win :w_cursor o'cursor) cap false]
+
+            (if @VIsual_active
+                (let [win (if (at? @p_sel (byte \e)) (update-in win [:w_cursor :col] inc) win)
+                      win (if (and @a'sol (!= (gchar-cursor win) NUL)) (inc-cursor win, false) win)] ;; include the line break
+                    (reset! VIsual_cursor start_pos)
+                    (reset! VIsual_mode (byte \v))
+                    (redraw-curbuf-later INVERTED) ;; update the inversion
+                    (showmode)
+                    [win cap true])
+                (let [cap (update cap :oap assoc :op_start start_pos :motion_type MCHAR :inclusive false)]
+                    (cond @a'sol
+                        [(inc-cursor win, true) cap true]
+                    (ltoreq start_pos, (:w_cursor win))
+                        ;; Include the character under the cursor.
+                        [win (update cap :oap assoc :inclusive true) true]
+                    :else
+                        ;; End is before the start (no text in between <>, [], etc.): don't operate on any text.
+                        [(assoc win :w_cursor start_pos) cap true]
+                    ))
+            ))
     ))
 
 ;; Search quote char from string line[col].
