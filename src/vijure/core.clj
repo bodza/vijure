@@ -10202,10 +10202,9 @@
                     (== end lmax) (stuff-char (byte \$))
                     (== start cursor) (do (stuff-string (u8 ".+")) (stuff-num (dec (:line_count oap))))
                     :else (stuff-num end)
-                )
-            )
+                ))
         ))
-    (if (!= (:op_type oap) OP_COLON)
+    (when (!= (:op_type oap) OP_COLON)
         (stuff-string (u8 "!")))
     ;; do-cmdline() does the rest
     nil)
@@ -10213,46 +10212,20 @@
 ;; Handle the "g@" operator: call 'operatorfunc'.
 
 (defn- #_void op-function [#_oparg_C oap]
-    (§
-        ((ß Bytes[] a'argv =) (atom (#_Bytes object)))
-        ((ß maybean save_virtual_op =) @virtual_op)
-
-        (cond (eos? @p_opfunc)
-        (do
-            (emsg (u8 "E774: 'operatorfunc' is empty"))
-        )
-        :else
-        (do
+    (if (eos? @p_opfunc)
+        (emsg (u8 "E774: 'operatorfunc' is empty"))
+        (let [#_maybean _ @virtual_op a'argv (atom (#_Bytes object))]
             ;; Set '[ and '] marks to text to be operated on.
-            (swap! curbuf assoc :b_op_start (:op_start oap))
-            (swap! curbuf assoc :b_op_end (:op_end oap))
+            (swap! curbuf assoc :b_op_start (:op_start oap) :b_op_end (:op_end oap))
             (when (and (!= (:motion_type oap) MLINE) (not (:inclusive oap)))
-                ;; Exclude the end position.
-                (decl (:b_op_end @curbuf))
-            )
-
-            (cond (:block_mode oap)
-            (do
-                (reset! a'argv (u8 "block"))
-            )
-            (== (:motion_type oap) MLINE)
-            (do
-                (reset! a'argv (u8 "line"))
-            )
-            :else
-            (do
-                (reset! a'argv (u8 "char"))
-            ))
-
+                (decl (:b_op_end @curbuf))) ;; Exclude the end position.
+            (reset! a'argv (cond (:block_mode oap) (u8 "block") (== (:motion_type oap) MLINE) (u8 "line") :else (u8 "char")))
             ;; Reset virtual_op so that 'virtualedit' can be changed in the function.
             (reset! virtual_op MAYBE)
-
 ;           call_func_retnr(@p_opfunc, 1, a'argv, false);
-
-            (reset! virtual_op save_virtual_op)
+            (reset! virtual_op _)
         ))
-        nil
-    ))
+    nil)
 
 (atom! boolean did_check_visual_highlight)
 
@@ -10260,10 +10233,9 @@
 
 (defn- #_void check-visual-highlight []
     (when @full_screen
-        (if (and (not @did_check_visual_highlight) (zero? (hl-attr HLF_V)))
+        (when (and (not @did_check_visual_highlight) (zero? (hl-attr HLF_V)))
             (msg (u8 "Warning: terminal cannot highlight")))
-        (reset! did_check_visual_highlight true)
-    )
+        (reset! did_check_visual_highlight true))
     nil)
 
 ;; End Visual mode.
@@ -11605,135 +11577,104 @@
 
 ;; Handle the "r" command.
 
-(defn- #_cmdarg_C nv-replace [#_cmdarg_C cap]
-    (§
-        (if (checkclearop (:oap cap))
-            ((ß RETURN) nil)
-        )
+(defn- #_cmdarg_C nv-replace [#_cmdarg_C cap]
+    (if (checkclearop (:oap cap))
+        cap
+        (let [[cap #_int had_ctrl_v]
+                (if (== (:nchar cap) Ctrl_V) ;; get another character
+                    (let [cap (assoc cap :nchar (get-literal))]
+                        ;; Don't redo a multibyte character with CTRL-V.
+                        [cap (if (< DEL (:nchar cap)) NUL Ctrl_V)])
+                    [cap NUL]
+                )]
+            (cond (is-special (:nchar cap))
+                ;; Abort if the character is a special key.
+                (do (clearopbeep (:oap cap)) cap)
+            @VIsual_active
+                ;; Visual mode "r".
+                (let [_ (when @got_int (reset-VIsual))
+                      cap (if (!= had_ctrl_v NUL) (update cap :nchar #(condp == % (byte \return) -1 (byte \newline) -2 %)) cap)]
+                    (nv-operator cap))
+            :else
+                ;; Break tabs, etc.
+                (let-when [_
+                    (when (virtual-active)
+                        (if (not (u-save-cursor))
+                            :_
+                            (condp == (gchar)
+                                NUL (do ;; Add extra space and put the cursor on the first one.
+                                        (coladvance-force (+ (getviscol) (:count1 cap)))
+                                        (swap! curwin update-in [:w_cursor :col] - (:count1 cap))
+                                        nil)
+                                TAB (do (coladvance-force (getviscol))
+                                        nil)
+                                nil)
+                        ))
+                ] (nil? _) => cap
 
-        ;; get another character
-        (ß int had_ctrl_v)
-        (cond (== (:nchar cap) Ctrl_V)
-        (do
-            ((ß cap.nchar =) (get-literal))
-            ;; Don't redo a multibyte character with CTRL-V.
-            ((ß had_ctrl_v =) (if (< DEL (:nchar cap)) NUL Ctrl_V))
-        )
-        :else
-        (do
-            ((ß had_ctrl_v =) NUL)
-        ))
+                    (let [#_Bytes s (ml-get-cursor)]
+                        (cond (< (min (us-charlen s) (STRLEN s)) (:count1 cap))
+                            ;; Abort if not enough characters to replace.
+                            (do (clearopbeep (:oap cap)) cap)
 
-        ;; Abort if the character is a special key.
-        (when (is-special (:nchar cap))
-            (clearopbeep (:oap cap))
-            ((ß RETURN) nil)
-        )
+                        (and (!= had_ctrl_v Ctrl_V) (== (:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
+                            ;; Replacing with a TAB is done by edit() when it is complicated because
+                            ;; 'expandtab' or 'smarttab' is set.  CTRL-V TAB inserts a literal TAB.
+                            ;; Other characters are done below to avoid problems with things like
+                            ;; CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
+                            (do (stuff-num (:count1 cap))
+                                (stuff-char (byte \R))
+                                (stuff-char TAB)
+                                (stuff-char ESC)
+                                cap)
 
-        ;; Visual mode "r".
-        (when @VIsual_active
-            (if @got_int
-                (reset-VIsual))
-            (when (!= had_ctrl_v NUL)
-                ((ß cap.nchar =) (cond (== (:nchar cap) (byte \return)) -1 (== (:nchar cap) (byte \newline)) -2 :else (:nchar cap)))
-            )
-            ((ß cap =) (nv-operator cap))
-            ((ß RETURN) nil)
-        )
+                        ;; save line for undo
+                        (not (u-save-cursor))
+                            cap
 
-        ;; Break tabs, etc.
-        (when (virtual-active)
-            (if (not (u-save-cursor))
-                ((ß RETURN) nil)
-            )
-            (cond (== (gchar) NUL)
-            (do
-                ;; Add extra space and put the cursor on the first one.
-                (coladvance-force (+ (getviscol) (:count1 cap)))
-                (swap! curwin update-in [:w_cursor :col] - (:count1 cap))
-            )
-            (== (gchar) TAB)
-            (do
-                (coladvance-force (getviscol))
+                        (and (!= had_ctrl_v Ctrl_V) (any == (:nchar cap) (byte \return) (byte \newline)))
+                            ;; Replace character(s) by a single newline.
+                            ;; Strange vi behaviour:  Only one newline is inserted.
+                            ;; Delete the characters here.
+                            ;; Insert the newline with an insert command, takes care of autoindent.
+                            ;; The insert command depends on being on the last character of a line or not.
+                            (do (del-chars (:count1 cap), false)
+                                (stuff-char (byte \return))
+                                (stuff-char ESC)
+                                ;; Give 'r' to edit(), to get the redo command right.
+                                (invoke-edit cap, true, (byte \r), false))
+
+                        :else
+                            (do (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, (:nchar cap))
+                                (swap! curbuf assoc :b_op_start (:w_cursor @curwin))
+                                (let [state' @State]
+                                    (when (non-zero? (:ncharC1 cap)) (append-redo-char (:ncharC1 cap)))
+                                    (when (non-zero? (:ncharC2 cap)) (append-redo-char (:ncharC2 cap)))
+                                    ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
+                                    ;; Also handles adding composing characters for utf-8.
+                                    (loop-when-recur [n (:count1 cap)] (pos? n) [(dec n)]
+                                        (reset! State REPLACE)
+                                        (if (any == (:nchar cap) Ctrl_E Ctrl_Y)
+                                            (let [#_int c (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1)))]
+                                                (if (!= c NUL)
+                                                    (ins-char c)
+                                                    (swap! curwin update-in [:w_cursor :col] inc)   ;; will be decremented further down
+                                                ))
+                                            (ins-char (:nchar cap)))
+                                        (reset! State state')
+                                        (when (non-zero? (:ncharC1 cap)) (ins-char (:ncharC1 cap)))
+                                        (when (non-zero? (:ncharC2 cap)) (ins-char (:ncharC2 cap)))
+                                    ))
+                                (swap! curwin update-in [:w_cursor :col] dec)                       ;; cursor on the last replaced char
+                                ;; If the character on the left of the current cursor
+                                ;; is a multi-byte character, move two characters left.
+                                (swap! curwin update :w_cursor mb-adjust-pos)
+                                (swap! curbuf assoc :b_op_end (:w_cursor @curwin))
+                                (swap! curwin assoc :w_set_curswant true)
+                                (set-last-insert (:nchar cap))
+                                cap)
+                        )))
             ))
-        )
-
-        ;; Abort if not enough characters to replace.
-        (let-when [#_Bytes s (ml-get-cursor)] (or (< (STRLEN s) (:count1 cap)) (< (us-charlen s) (:count1 cap)))
-            (clearopbeep (:oap cap))
-            ((ß RETURN) nil)
-        )
-
-        ;; Replacing with a TAB is done by edit() when it is complicated because
-        ;; 'expandtab' or 'smarttab' is set.  CTRL-V TAB inserts a literal TAB.
-        ;; Other characters are done below to avoid problems with things like
-        ;; CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
-
-        (when (and (!= had_ctrl_v Ctrl_V) (== (:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
-            (stuff-num (:count1 cap))
-            (stuff-char (byte \R))
-            (stuff-char TAB)
-            (stuff-char ESC)
-            ((ß RETURN) nil)
-        )
-
-        ;; save line for undo
-        (if (not (u-save-cursor))
-            ((ß RETURN) nil)
-        )
-
-        (cond (and (!= had_ctrl_v Ctrl_V) (any == (:nchar cap) (byte \return) (byte \newline)))
-        (do
-            ;; Replace character(s) by a single newline.
-            ;; Strange vi behaviour: Only one newline is inserted.
-            ;; Delete the characters here.
-            ;; Insert the newline with an insert command, takes care of
-            ;; autoindent.  The insert command depends on being on the last
-            ;; character of a line or not.
-
-            (del-chars (int (:count1 cap)), false)      ;; delete the characters
-            (stuff-char (byte \return))
-            (stuff-char ESC)
-
-            ;; Give 'r' to edit(), to get the redo command right.
-            ((ß cap =) (invoke-edit cap, true, (byte \r), false))
-        )
-        :else
-        (do
-            (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, (:nchar cap))
-
-            (swap! curbuf assoc :b_op_start (:w_cursor @curwin))
-
-            (let [_ @State]
-                (when (non-zero? (:ncharC1 cap)) (append-redo-char (:ncharC1 cap)))
-                (when (non-zero? (:ncharC2 cap)) (append-redo-char (:ncharC2 cap)))
-                ;; This is slow, but it handles replacing a single-byte with a multi-byte and the other way around.
-                ;; Also handles adding composing characters for utf-8.
-                (loop-when-recur [n (:count1 cap)] (< 0 n) [(dec n)]
-                    (reset! State REPLACE)
-                    (if (any == (:nchar cap) Ctrl_E Ctrl_Y)
-                        (let [#_int c (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1)))]
-                            (if (!= c NUL)
-                                (ins-char c)
-                                (swap! curwin update-in [:w_cursor :col] inc) ;; will be decremented further down
-                            ))
-                        (ins-char (:nchar cap))
-                    )
-                    (reset! State _)
-                    (when (non-zero? (:ncharC1 cap)) (ins-char (:ncharC1 cap)))
-                    (when (non-zero? (:ncharC2 cap)) (ins-char (:ncharC2 cap)))
-                ))
-
-            (swap! curwin update-in [:w_cursor :col] dec)      ;; cursor on the last replaced char
-
-            ;; If the character on the left of the current cursor
-            ;; is a multi-byte character, move two characters left.
-            (swap! curwin update :w_cursor mb-adjust-pos)
-            (swap! curbuf assoc :b_op_end (:w_cursor @curwin))
-            (swap! curwin assoc :w_set_curswant true)
-            (set-last-insert (:nchar cap))
-        ))
-        nil
     ))
 
 ;; 'o': Exchange start and end of Visual area.
