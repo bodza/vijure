@@ -25548,8 +25548,8 @@
                                     (do (reset! a'at_first_line false)
                                         (dec (:lnum pos)))
                                     (:lnum pos))
-                              [pos lnum] ;; loop twice if 'wrapscan' set
-                                (loop-when [pos pos lnum lnum #_int round 0] (< round 2) => [pos lnum]
+                              [pos lnum]
+                                (loop-when [pos pos lnum lnum #_int round 0] (< round 2) => [pos lnum] ;; loop twice if 'wrapscan' set
                                     (let [[pos lnum]
                                             (loop-when [pos pos lnum lnum] (<= 1 lnum lmax) => [pos lnum]
                                                 ;; Stop after checking "stop_lnum", if it's set.
@@ -25576,108 +25576,91 @@
                                                                         ;; When the match starts in a next line, it's certainly past the start position.
                                                                         ;; When match lands on a NUL, the cursor will be put one back afterwards,
                                                                         ;; compare with that position, otherwise "/$" will get stuck at EOL.
-                                                                        (let [t* (loop-when t* (and (zero? (:lnum start))
-                                                                                                   (if (and (flag? options SEARCH_END) @a'first_match)
-                                                                                                       (and (== nof 1) (< (dec (:col end)) (+ (:col o'pos) extra_col)))
-                                                                                                       (< (- (:col start) (if (eos? line (:col start)) 1 0))
-                                                                                                          (+ (:col o'pos) extra_col))))
-                                                                                           => t*
-                                                                                    ;; If searching is vi-compatible, continue at the end
-                                                                                    ;; of the match, else continue one position forward.
-                                                                                    (let-when [#_int i
-                                                                                            (if (some? (vim-strbyte @p_cpo, CPO_SEARCH))
-                                                                                                (if (< 1 nof)
-                                                                                                    nil ;; end is in next line, thus no match in this line
-                                                                                                    (let [i (:col end)]
-                                                                                                        ;; for empty match: advance one char
-                                                                                                        (if (and (== i (:col start)) (non-eos? line i))
-                                                                                                            (+ i (us-ptr2len-cc line, i))
-                                                                                                            i)
-                                                                                                    ))
-                                                                                                (let [i (:col start)]
-                                                                                                    (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i)
-                                                                                                ))
-                                                                                    ] (some? i) => nil
-
-                                                                                        (if (and (zero? i) (flag? options SEARCH_START))
-                                                                                            t*
-                                                                                            (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec)]
-                                                                                                (if (or (eos? line i) (zero? nof))
-                                                                                                    nil
-                                                                                                    (let [start (... (:r_startpos matcher) 0) end (... (:r_endpos matcher) 0)]
-                                                                                                        (reset! a'submatch (first-submatch matcher))
-                                                                                                        ;; Need to get the line pointer again,
-                                                                                                        ;; a multi-line search may have made it invalid.
-                                                                                                        (recur [nof start end (ml-get (+ lnum (:lnum start)))]))
-                                                                                                ))
+                                                                        (loop-when [[nof start end line :as t*] t*]
+                                                                                   (and (zero? (:lnum start))
+                                                                                        (if (and (flag? options SEARCH_END) @a'first_match)
+                                                                                            (and (== nof 1) (< (dec (:col end)) (+ (:col o'pos) extra_col)))
+                                                                                            (< (- (:col start) (if (eos? line (:col start)) 1 0)) (+ (:col o'pos) extra_col))))
+                                                                                => t*
+                                                                            ;; If searching is vi-compatible, continue at the end
+                                                                            ;; of the match, else continue one position forward.
+                                                                            (let-when [#_int i
+                                                                                    (if (some? (vim-strbyte @p_cpo, CPO_SEARCH))
+                                                                                        (if (< 1 nof)
+                                                                                            nil ;; end is in next line, thus no match in this line
+                                                                                            (let [i (:col end)]
+                                                                                                ;; for empty match: advance one char
+                                                                                                (if (and (== i (:col start)) (non-eos? line i)) (+ i (us-ptr2len-cc line, i)) i)
+                                                                                            ))
+                                                                                        (let [i (:col start)]
+                                                                                            (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i)
                                                                                         ))
-                                                                                )]
-                                                                            (when (nil? t*)
-                                                                                (reset! a'at_first_line false))
-                                                                            t*
-                                                                        ))
-                                                            ] (some? t*) => (recur pos lnum)
+                                                                            ] (some? i) => nil
 
-                                                                (let-when [[nof start end line :as t*]
-                                                                        (let-when [[nof _ _ line] t*] (== dir BACKWARD) => t*
+                                                                                (if (and (zero? i) (flag? options SEARCH_START))
+                                                                                    t*
+                                                                                    (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec)]
+                                                                                        (if (or (eos? line i) (zero? nof))
+                                                                                            nil
+                                                                                            (let [start (... (:r_startpos matcher) 0) end (... (:r_endpos matcher) 0)]
+                                                                                                (reset! a'submatch (first-submatch matcher))
+                                                                                                ;; Need to get the line pointer again,
+                                                                                                ;; a multi-line search may have made it invalid.
+                                                                                                (recur [nof start end (ml-get (+ lnum (:lnum start)))]))
+                                                                                        ))
+                                                                                ))
+                                                                        ))
+                                                            ] (some? t*) => (do (reset! a'at_first_line false) (recur pos lnum))
+
+                                                                (let-when [[start end :as t']
+                                                                        (let-when [[nof start end line] t*] (== dir BACKWARD) => [start end]
                                                                             ;; Now, if there are multiple matches on this line, we have to get the last one.
                                                                             ;; Or the last one before the cursor, if we're on that line.
                                                                             ;; When putting the new cursor at the end, compare relative to the end of the match.
-                                                                            (let [t* (loop-when [nof nof line line t* nil]
-                                                                                                (or (non-zero? round)
-                                                                                                    (if (flag? options SEARCH_END)
-                                                                                                        (let [end (... (:r_endpos matcher) 0)]
-                                                                                                            (or (< (+ lnum (:lnum end)) (:lnum o'pos))
-                                                                                                                (and (== (+ lnum (:lnum end)) (:lnum o'pos))
-                                                                                                                     (<= (+ (dec (:col end)) extra_col) (:col o'pos)))))
-                                                                                                        (let [start (... (:r_startpos matcher) 0)]
-                                                                                                            (or (< (+ lnum (:lnum start)) (:lnum o'pos))
-                                                                                                                (and (== (+ lnum (:lnum start)) (:lnum o'pos))
-                                                                                                                     (<= (+ (:col start) extra_col) (:col o'pos)))))))
-                                                                                             => t*
-                                                                                        ;; Remember a position that is before the start position,
-                                                                                        ;; we use it if it's the last match in the line.
-                                                                                        ;; Always accept a position after wrapping around.
-                                                                                        (let-when [start (... (:r_startpos matcher) 0) end (... (:r_endpos matcher) 0)
-                                                                                              _ (reset! a'submatch (first-submatch matcher))
-                                                                                              ;; We found a valid match, now check if there is another one after it.
-                                                                                              ;; If searching is vi-compatible, continue at the end of the match,
-                                                                                              ;; else continue one position forward.
-                                                                                              #_int i
-                                                                                                (if (some? (vim-strbyte @p_cpo, CPO_SEARCH))
-                                                                                                    (if (< 1 nof)
-                                                                                                        nil
-                                                                                                        (let [i (:col end)]
-                                                                                                            ;; for empty match: advance one char
-                                                                                                            (if (and (== i (:col start)) (non-eos? line i))
-                                                                                                                (+ i (us-ptr2len-cc line, i))
-                                                                                                                i)
-                                                                                                        ))
-                                                                                                    ;; Stop when the match is in a next line.
-                                                                                                    (if (< 0 (:lnum start))
-                                                                                                        nil
-                                                                                                        (let [i (:col start)]
-                                                                                                            (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i)
-                                                                                                        )
-                                                                                                    ))
-                                                                                        ] (some? i) => [nof start end line]
-
-                                                                                            (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec)]
-                                                                                                (if (or (eos? line i) (zero? nof))
-                                                                                                    [nof start end line]
-                                                                                                    ;; Need to get the line pointer again,
-                                                                                                    ;; a multi-line search may have made it invalid.
-                                                                                                    (let [line (ml-get (+ lnum (:lnum start)))]
-                                                                                                        (recur nof line [nof start end line])
-                                                                                                    ))
+                                                                            (loop-when [nof nof t' nil line line]
+                                                                                       (or (non-zero? round)
+                                                                                           (if (flag? options SEARCH_END)
+                                                                                               (let [end (... (:r_endpos matcher) 0)]
+                                                                                                   (or (< (+ lnum (:lnum end)) (:lnum o'pos))
+                                                                                                       (and (== (+ lnum (:lnum end)) (:lnum o'pos))
+                                                                                                            (<= (+ (dec (:col end)) extra_col) (:col o'pos)))))
+                                                                                               (let [start (... (:r_startpos matcher) 0)]
+                                                                                                   (or (< (+ lnum (:lnum start)) (:lnum o'pos))
+                                                                                                       (and (== (+ lnum (:lnum start)) (:lnum o'pos))
+                                                                                                            (<= (+ (:col start) extra_col) (:col o'pos)))))))
+                                                                                    => t'
+                                                                                ;; Remember a position that is before the start position,
+                                                                                ;; we use it if it's the last match in the line.
+                                                                                ;; Always accept a position after wrapping around.
+                                                                                (let-when [[start end :as t'] [(... (:r_startpos matcher) 0) (... (:r_endpos matcher) 0)]
+                                                                                      _ (reset! a'submatch (first-submatch matcher))
+                                                                                      ;; We found a valid match, now check if there is another one after it.
+                                                                                      ;; If searching is vi-compatible, continue at the end of the match,
+                                                                                      ;; else continue one position forward.
+                                                                                      #_int i
+                                                                                        (if (some? (vim-strbyte @p_cpo, CPO_SEARCH))
+                                                                                            (if (< 1 nof)
+                                                                                                nil
+                                                                                                (let [i (:col end)]
+                                                                                                    ;; for empty match: advance one char
+                                                                                                    (if (and (== i (:col start)) (non-eos? line i)) (+ i (us-ptr2len-cc line, i)) i)
+                                                                                                ))
+                                                                                            ;; Stop when the match is in a next line.
+                                                                                            (if (< 0 (:lnum start))
+                                                                                                nil
+                                                                                                (let [i (:col start)] (if (non-eos? line i) (+ i (us-ptr2len-cc line, i)) i))
                                                                                             ))
-                                                                                    )]
-                                                                                ;; If there is only a match after the cursor, skip this match.
-                                                                                (when (nil? t*)
-                                                                                    (reset! a'at_first_line false))
-                                                                                t*
-                                                                            ))
-                                                                ] (some? t*) => (recur pos lnum)
+                                                                                ] (some? i) => t'
+
+                                                                                    (let [nof (vim-regexec matcher, (+ lnum (:lnum start)), i, nsec)]
+                                                                                        (if (or (eos? line i) (zero? nof))
+                                                                                            t'
+                                                                                            ;; Need to get the line pointer again,
+                                                                                            ;; a multi-line search may have made it invalid.
+                                                                                            (recur nof t' (ml-get (+ lnum (:lnum start)))))
+                                                                                    ))
+                                                                            )) ;; If there is only a match after the cursor, skip this match.
+                                                                ] (some? t') => (do (reset! a'at_first_line false) (recur pos lnum))
 
                                                                     ;; With the SEARCH_END option, move to the last character of the match.
                                                                     ;; Don't do it for an empty match, end should be same as start then.
