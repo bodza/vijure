@@ -3970,14 +3970,14 @@
             :else
             (do
                 ((ß mp.sb_prev =) @last_msgchunk)
-                ((ß @last_msgchunk.sb_next =) mp)
+                (swap! last_msgchunk assoc :sb_next mp)
                 (reset! last_msgchunk mp)
             ))
             ((ß mp.sb_next =) nil)
         )
         (and finish (non-nil? @last_msgchunk))
         (do
-            ((ß @last_msgchunk.sb_eol =) true)
+            (swap! last_msgchunk assoc :sb_eol true)
         ))
 
         ((ß sb_str[0] =) s)
@@ -5418,7 +5418,7 @@
         )
 
         (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         (check-redraw (:flags v))
 
@@ -5537,7 +5537,7 @@
         (do
             (when @(:wo_scb (:w_options @curwin))
                 (do-check-scrollbind false)
-                ((ß @curwin.w_scbind_pos =) (:w_topline @curwin))
+                (swap! curwin assoc :w_scbind_pos (:w_topline @curwin))
             )
         )
 
@@ -5545,7 +5545,7 @@
         (== varp (:wo_wrap (:w_options @curwin)))
         (do
             (if @(:wo_wrap (:w_options @curwin))
-                ((ß @curwin.w_leftcol =) 0)
+                (swap! curwin assoc :w_leftcol 0)
             )
         )
 
@@ -5559,7 +5559,7 @@
 
         (comp-col)                     ;; in case 'ruler' or 'showcmd' changed
         (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         (check-redraw (:flags v))
 
@@ -5723,7 +5723,7 @@
                 ((ß errmsg =) e_invarg)
                 ((ß @curwin.w_options.@wo_nuw =) 10)
             )
-            ((ß @curwin.w_nrwidth_line_count =) 0)    ;; trigger a redraw
+            (swap! curwin assoc :w_nrwidth_line_count 0)    ;; trigger a redraw
         ))
 
         ;; Check the bounds for numeric options here.
@@ -5848,7 +5848,7 @@
 
         (comp-col)                     ;; in case 'columns' or 'ls' changed
         (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         (check-redraw (:flags v))
 
@@ -7328,7 +7328,7 @@
             ((ß break_ctrl_c =) true)
         )
 
-        ((ß @ccline.overstrike =) false)                  ;; always start in insert mode
+        (swap! ccline assoc :overstrike false)                  ;; always start in insert mode
         ((ß pos_C old_cursor =) (NEW_pos_C))
         (COPY-pos old_cursor, (:w_cursor @curwin))      ;; needs to be restored later
         ((ß int old_curswant =) (:w_curswant @curwin))
@@ -7338,21 +7338,21 @@
 
         ;; set some variables for redrawcmd()
 
-        ((ß @ccline.cmdfirstc =) (if (== firstc (byte \@)) 0 firstc))
-        ((ß @ccline.cmdindent =) 0)
+        (swap! ccline assoc :cmdfirstc (if (== firstc (byte \@)) 0 firstc))
+        (swap! ccline assoc :cmdindent 0)
 
         ;; alloc initial ccline.cmdbuff
         (alloc-cmdbuff 1)
-        ((ß @ccline.cmdlen =) (ß @ccline.cmdpos =) 0)
+        (swap! ccline assoc :cmdlen (ß @ccline.cmdpos =) 0)
         (eos! (:cmdbuff @ccline))
 
         ;; autoindent for :insert and :append
         (when (<= firstc 0)
 ;           copy-spaces(@ccline.cmdbuff, 0);
             (eos! (:cmdbuff @ccline))
-            ((ß @ccline.cmdpos =) 0)
-            ((ß @ccline.cmdspos =) 0)
-            ((ß @ccline.cmdlen =) 0)
+            (swap! ccline assoc :cmdpos 0)
+            (swap! ccline assoc :cmdspos 0)
+            (swap! ccline assoc :cmdlen 0)
         )
 
 ;       {
@@ -7470,11 +7470,11 @@
                                     ((ß int len =) (STRLEN p))
                                     (realloc-cmdbuff (inc len))
 
-                                    ((ß @ccline.cmdlen =) len)
+                                    (swap! ccline assoc :cmdlen len)
                                     (STRCPY (:cmdbuff @ccline), p)
 
                                     ;; Restore the cursor or use the position set with set_cmdline_pos().
-                                    ((ß @ccline.cmdpos =) (min @new_cmdpos (:cmdlen @ccline)))
+                                    (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
 
                                     (reset! keyTyped false)   ;; Don't do 'wildchar' completion.
                                     (redrawcmd)
@@ -7544,10 +7544,10 @@
                             ;; character, except at end of line
 
                             (if (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
-                                ((ß @ccline.cmdpos =) (inc (:cmdpos @ccline)))
+                                (swap! ccline update :cmdpos inc)
                             )
                             (if (== c K_DEL)
-                                ((ß @ccline.cmdpos =) (+ (:cmdpos @ccline) (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline)))))
+                                (swap! ccline update :cmdpos + (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
                             )
                             (cond (< 0 (:cmdpos @ccline))
                             (do
@@ -7567,8 +7567,8 @@
                                     )
                                 )
 
-                                ((ß @ccline.cmdpos =) (BDIFF p, (:cmdbuff @ccline)))
-                                ((ß @ccline.cmdlen =) (- (:cmdlen @ccline) (- j (:cmdpos @ccline))))
+                                (swap! ccline assoc :cmdpos (BDIFF p, (:cmdbuff @ccline)))
+                                (swap! ccline update :cmdlen - (- j (:cmdpos @ccline)))
                                 ((ß int i =) (:cmdpos @ccline))
                                 (while (< i (:cmdlen @ccline))
                                     (.be (:cmdbuff @ccline) (ß i++), (.at (:cmdbuff @ccline) (ß j++)))
@@ -7580,7 +7580,7 @@
                             )
                             (and (zero? (:cmdlen @ccline)) (!= c Ctrl_W) (nil? (:cmdprompt @ccline)))
                             (do
-                                ((ß @ccline.cmdbuff =) nil)     ;; no commandline to return
+                                (swap! ccline assoc :cmdbuff nil)     ;; no commandline to return
 
                                 (reset! msg_col 0)
                                 (msg-putchar (byte \space))           ;; delete ':'
@@ -7594,7 +7594,7 @@
                         ((ß CASE) K_INS)
                         ((ß CASE) K_KINS)
                         (do
-                            ((ß @ccline.overstrike =) (not (:overstrike @ccline)))
+                            (swap! ccline update :overstrike not)
                             (ui-cursor-shape)              ;; may show different cursor shape
                             (ß BREAK cmdline_not_changed)
                         )
@@ -7608,7 +7608,7 @@
                         (do
                             ;; delete all characters left of the cursor
                             ((ß int j =) (:cmdpos @ccline))
-                            ((ß @ccline.cmdlen =) (- (:cmdlen @ccline) j))
+                            (swap! ccline update :cmdlen - j)
                             ((ß int i =) (ß @ccline.cmdpos =) 0)
                             (while (< i (:cmdlen @ccline))
                                 (.be (:cmdbuff @ccline) (ß i++), (.at (:cmdbuff @ccline) (ß j++)))
@@ -7667,7 +7667,7 @@
                                 (reset! keyTyped false)       ;; Don't do 'wildchar' completion.
                                 (when (<= 0 @new_cmdpos)
                                     ;; set_cmdline_pos() was used
-                                    ((ß @ccline.cmdpos =) (min @new_cmdpos (:cmdlen @ccline)))
+                                    (swap! ccline assoc :cmdpos (min @new_cmdpos (:cmdlen @ccline)))
                                 )
                             )
                             (redrawcmd)
@@ -7687,8 +7687,8 @@
                                 (if (and @keyTyped (<= (* (int @Cols) (int @Rows)) (+ (:cmdspos @ccline) i)))
                                     (ß BREAK)
                                 )
-                                ((ß @ccline.cmdspos =) (+ (:cmdspos @ccline) i))
-                                ((ß @ccline.cmdpos =) (+ (:cmdpos @ccline) (us-ptr2len-cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline)))))
+                                (swap! ccline update :cmdspos + i)
+                                (swap! ccline update :cmdpos + (us-ptr2len-cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
 ;                           }
                             (while (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space)))
 ;                               ;
@@ -7706,10 +7706,10 @@
                             )
 ;                           do
 ;                           {
-                                ((ß @ccline.cmdpos =) (dec (:cmdpos @ccline)))
+                                (swap! ccline update :cmdpos dec)
                                 ;; move to first byte of char
-                                ((ß @ccline.cmdpos =) (- (:cmdpos @ccline) (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline)))))
-                                ((ß @ccline.cmdspos =) (- (:cmdspos @ccline) (cmdline-charsize (:cmdpos @ccline))))
+                                (swap! ccline update :cmdpos - (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
+                                (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
 ;                           }
                             (while (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (- (:cmdpos @ccline) 1) (byte \space)))
 ;                               ;
@@ -7741,7 +7741,7 @@
                         ((ß CASE) K_S_HOME)
                         ((ß CASE) K_C_HOME)
                         (do
-                            ((ß @ccline.cmdpos =) 0)
+                            (swap! ccline assoc :cmdpos 0)
                             (set-cmdspos)
                             (ß BREAK cmdline_not_changed)
                         )
@@ -7752,7 +7752,7 @@
                         ((ß CASE) K_S_END)
                         ((ß CASE) K_C_END)
                         (do
-                            ((ß @ccline.cmdpos =) (:cmdlen @ccline))
+                            (swap! ccline assoc :cmdpos (:cmdlen @ccline))
                             (set-cmdspos-cursor)
                             (ß BREAK cmdline_not_changed)
                         )
@@ -7859,7 +7859,7 @@
                             )
 
                             (when (!= hiscnt i)        ;; jumped to other entry
-                                ((ß @ccline.cmdbuff =) nil)
+                                (swap! ccline assoc :cmdbuff nil)
 
                                 ((ß Bytes p =) (if (== hiscnt @hislen)
                                     lookfor    ;; back to the old one
@@ -7911,7 +7911,7 @@
                                     (STRCPY (:cmdbuff @ccline), p)
                                 ))
 
-                                ((ß @ccline.cmdpos =) (ß @ccline.cmdlen =) (STRLEN (:cmdbuff @ccline)))
+                                (swap! ccline assoc :cmdpos (ß @ccline.cmdlen =) (STRLEN (:cmdbuff @ccline)))
                                 (redrawcmd)
                                 (ß BREAK cmdline_changed)
                             )
@@ -8040,9 +8040,9 @@
 
                 ;; First restore the old curwin values, so the screen is
                 ;; positioned in the same way as the actual search command.
-                ((ß @curwin.w_leftcol =) old_leftcol)
-                ((ß @curwin.w_topline =) old_topline)
-                ((ß @curwin.w_botline =) old_botline)
+                (swap! curwin assoc :w_leftcol old_leftcol)
+                (swap! curwin assoc :w_topline old_topline)
+                (swap! curwin assoc :w_botline old_botline)
                 (changed-cline-bef-curs)
                 (update-topline)
 
@@ -8073,7 +8073,7 @@
                 (validate-cursor)
                 ;; May redraw the status line to show the cursor position.
                 (if (and @p_ru (< 0 (:w_status_height @curwin)))
-                    ((ß @curwin.w_redr_status =) true)
+                    (swap! curwin assoc :w_redr_status true)
                 )
 
                 (save-cmdline save_cli)
@@ -8092,10 +8092,10 @@
 
         (when did_incsearch
             (COPY-pos (:w_cursor @curwin), old_cursor)
-            ((ß @curwin.w_curswant =) old_curswant)
-            ((ß @curwin.w_leftcol =) old_leftcol)
-            ((ß @curwin.w_topline =) old_topline)
-            ((ß @curwin.w_botline =) old_botline)
+            (swap! curwin assoc :w_curswant old_curswant)
+            (swap! curwin assoc :w_leftcol old_leftcol)
+            (swap! curwin assoc :w_topline old_topline)
+            (swap! curwin assoc :w_botline old_botline)
             (reset! highlight_match false)
             (validate-cursor)      ;; needed for TAB
             (redraw-later SOME_VALID)
@@ -8111,7 +8111,7 @@
             )
 
             (when gotesc         ;; abandon command line
-                ((ß @ccline.cmdbuff =) nil)
+                (swap! ccline assoc :cmdbuff nil)
                 (if (zero? @msg_scrolled)
                     (compute-cmdrow))
                 (msg (u8 ""))
@@ -8135,7 +8135,7 @@
 
         ((ß Bytes p =) (:cmdbuff @ccline))
         ;; Make ccline empty, getcmdline() may try to use it.
-        ((ß @ccline.cmdbuff =) nil)
+        (swap! ccline assoc :cmdbuff nil)
         p
     ))
 
@@ -8159,7 +8159,7 @@
 
 (defn- #_void set-cmdspos []
     (§
-        ((ß @ccline.cmdspos =) (+ (if (!= (:cmdfirstc @ccline) NUL) 1 0) (:cmdindent @ccline)))
+        (swap! ccline assoc :cmdspos (+ (if (!= (:cmdfirstc @ccline) NUL) 1 0) (:cmdindent @ccline)))
         nil
     ))
 
@@ -8187,7 +8187,7 @@
             ;; If the cmdline doesn't fit, show cursor on last visible char.
             ;; Don't move the cursor itself, so we can still append.
             (when (<= m ((ß @ccline.cmdspos =) (+ (:cmdspos @ccline) c)))
-                ((ß @ccline.cmdspos =) (- (:cmdspos @ccline) c))
+                (swap! ccline update :cmdspos - c)
                 (ß BREAK)
             )
             ((ß i =) (+ i (- (us-ptr2len-cc (.plus (:cmdbuff @ccline) i)) 1)))
@@ -8201,7 +8201,7 @@
 (defn- #_void correct-cmdspos [#_int idx, #_int cells]
     (§
         (when (and (< 1 (us-ptr2len-cc (.plus (:cmdbuff @ccline) idx))) (< 1 (us-ptr2cells (.plus (:cmdbuff @ccline) idx))) (< (int @Cols) (+ (% (:cmdspos @ccline) (int @Cols)) cells)))
-            ((ß @ccline.cmdspos =) (inc (:cmdspos @ccline)))
+            (swap! ccline update :cmdspos inc)
         )
         nil
     ))
@@ -8224,8 +8224,8 @@
 
         ((ß len =) (if (< len 80) 100 (+ len 20)))
 
-        ((ß @ccline.cmdbuff =) (Bytes. len))
-        ((ß @ccline.cmdbufflen =) len)
+        (swap! ccline assoc :cmdbuff (Bytes. len))
+        (swap! ccline assoc :cmdbufflen len)
         nil
     ))
 
@@ -8288,7 +8288,7 @@
         (if (<= (:cmdbufflen @ccline) (+ (:cmdlen @ccline) len 1))
             (realloc-cmdbuff (+ (:cmdlen @ccline) len 1)))
 
-        ((ß @ccline.cmdlen =) (if (not (:overstrike @ccline))
+        (swap! ccline assoc :cmdlen (if (not (:overstrike @ccline))
             (do
                 (BCOPY (:cmdbuff @ccline), (+ (:cmdpos @ccline) len), (:cmdbuff @ccline), (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
                 (+ (:cmdlen @ccline) len)
@@ -8314,14 +8314,14 @@
         ((ß int c =) (us-ptr2char (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
         (while (and (< 0 (:cmdpos @ccline)) (utf-iscomposing c))
             ((ß i =) (inc (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (dec (:cmdpos @ccline))))))
-            ((ß @ccline.cmdpos =) (- (:cmdpos @ccline) i))
+            (swap! ccline update :cmdpos - i)
             ((ß len =) (+ len i))
             ((ß c =) (us-ptr2char (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
         )
         (when (non-zero? i)
             ;; Also backup the cursor position.
             ((ß i =) (mb-ptr2cells (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
-            ((ß @ccline.cmdspos =) (- (:cmdspos @ccline) i))
+            (swap! ccline update :cmdspos - i)
             (swap! msg_col - i)
             (when (< @msg_col 0)
                 (swap! msg_col + (int @Cols))
@@ -8360,14 +8360,14 @@
             ;; Stop cursor at the end of the screen, but do increment the insert position,
             ;; so that entering a very long command works, even though you can't see it.
             (if (< (+ (:cmdspos @ccline) c) m)
-                ((ß @ccline.cmdspos =) (+ (:cmdspos @ccline) c))
+                (swap! ccline update :cmdspos + c)
             )
 
             ((ß c =) (min (dec (us-ptr2len-cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline)))) (- len i 1)))
-            ((ß @ccline.cmdpos =) (+ (:cmdpos @ccline) c))
+            (swap! ccline update :cmdpos + c)
             ((ß i =) (+ i c))
 
-            ((ß @ccline.cmdpos =) (inc (:cmdpos @ccline)))
+            (swap! ccline update :cmdpos inc)
         )
 
         (when redraw
@@ -8389,8 +8389,8 @@
         (COPY-cmdline-info cli, @prev_ccline)
         (COPY-cmdline-info @prev_ccline, @ccline)
 
-        ((ß @ccline.cmdbuff =) nil)
-        ((ß @ccline.cmdprompt =) nil)
+        (swap! ccline assoc :cmdbuff nil)
+        (swap! ccline assoc :cmdprompt nil)
         nil
     ))
 
@@ -8532,10 +8532,10 @@
         (cond (non-nil? (:cmdprompt @ccline))
         (do
             (msg-puts-attr (:cmdprompt @ccline), (:cmdattr @ccline))
-            ((ß @ccline.cmdindent =) (+ @msg_col (* (- @msg_row @cmdline_row) (int @Cols))))
+            (swap! ccline assoc :cmdindent (+ @msg_col (* (- @msg_row @cmdline_row) (int @Cols))))
             ;; do the reverse of set-cmdspos()
             (if (!= (:cmdfirstc @ccline) NUL)
-                ((ß @ccline.cmdindent =) (dec (:cmdindent @ccline)))
+                (swap! ccline update :cmdindent dec)
             )
         )
         :else
@@ -9952,10 +9952,10 @@
                 (if (< 0 y)
                     (scrollup y)
                     (scrolldown (- y)))
-                ((ß @curwin.w_scbind_pos =) topline)
+                (swap! curwin assoc :w_scbind_pos topline)
                 (redraw-later VALID)
                 (cursor-correct)
-                ((ß @curwin.w_redr_status =) true)
+                (swap! curwin assoc :w_redr_status true)
             )
         )
         (reset! curwin save_curwin)
@@ -10660,16 +10660,16 @@
                         (cond (<= @redo_VIsual_line_count 1)
                         (do
                             (validate-virtcol)
-                            ((ß @curwin.w_curswant =) (- (+ (:w_virtcol @curwin) @redo_VIsual_vcol) 1))
+                            (swap! curwin assoc :w_curswant (- (+ (:w_virtcol @curwin) @redo_VIsual_vcol) 1))
                         )
                         :else
                         (do
-                            ((ß @curwin.w_curswant =) @redo_VIsual_vcol)
+                            (swap! curwin assoc :w_curswant @redo_VIsual_vcol)
                         ))
                     )
                     :else
                     (do
-                        ((ß @curwin.w_curswant =) MAXCOL)
+                        (swap! curwin assoc :w_curswant MAXCOL)
                     ))
                     (coladvance (:w_curswant @curwin))
                 )
@@ -10688,7 +10688,7 @@
                         (reset! VIsual_mode_orig NUL)
                     )
                     ((ß @curbuf.b_visual.vi_curswant =) (:w_curswant @curwin))
-                    ((ß @curbuf.b_visual_mode_eval =) @VIsual_mode)
+                    (swap! curbuf assoc :b_visual_mode_eval @VIsual_mode)
                 )
 
                 ;; In Select mode,
@@ -10697,13 +10697,13 @@
                 (do
                     (cond (ltpos @VIsual, (:w_cursor @curwin))
                     (do
-                        ((ß @VIsual.col =) 0)
+                        (swap! VIsual assoc :col 0)
                         ((ß @curwin.w_cursor.col =) (STRLEN (ml-get (:lnum (:w_cursor @curwin)))))
                     )
                     :else
                     (do
                         ((ß @curwin.w_cursor.col =) 0)
-                        ((ß @VIsual.col =) (STRLEN (ml-get (:lnum @VIsual))))
+                        (swap! VIsual assoc :col (STRLEN (ml-get (:lnum @VIsual))))
                     ))
                     (reset! VIsual_mode (byte \v))
                 )
@@ -10729,7 +10729,7 @@
 
                 ;; w_virtcol may have been updated; if the cursor goes back to its previous
                 ;; position, w_virtcol becomes invalid and isn't updated automatically.
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_VIRTCOL)))
+                (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
             )
             :else
             (do
@@ -10907,7 +10907,7 @@
                     ((ß oap.op_end.col =) (+ (:col (:op_end oap)) (dec l)))
                 )
             )
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
 
             ;; oap.empty is set when start and end are the same.
             ;; The inclusive flag affects this too, unless yanking and the end is on a NUL.
@@ -11261,7 +11261,7 @@
         (COPY-pos (:vi_start (:b_visual @curbuf)), @VIsual)
         (COPY-pos (:vi_end (:b_visual @curbuf)), (:w_cursor @curwin))
         ((ß @curbuf.b_visual.vi_curswant =) (:w_curswant @curwin))
-        ((ß @curbuf.b_visual_mode_eval =) @VIsual_mode)
+        (swap! curbuf assoc :b_visual_mode_eval @VIsual_mode)
         (if (not (virtual-active))
             ((ß @curwin.w_cursor.coladd =) 0)
         )
@@ -11695,7 +11695,7 @@
 
                 (check-scrollbind (- (:w_topline @curwin) (:w_scbind_pos @curwin)), 0)
             ))
-            ((ß @curwin.w_scbind_pos =) (:w_topline @curwin))
+            (swap! curwin assoc :w_scbind_pos (:w_topline @curwin))
         )
 
         (reset! scr_old_curwin @curwin)
@@ -11728,7 +11728,7 @@
                 ;; do the vertical scroll
 
                 (when want_ver
-                    ((ß @curwin.w_scbind_pos =) (+ (:w_scbind_pos @curwin) topline_diff))
+                    (swap! curwin update :w_scbind_pos + topline_diff)
                     ((ß long topline =) (max 1 (min (:w_scbind_pos @curwin) (:ml_line_count (:b_ml @curbuf)))))
 
                     ((ß long y =) (- topline (:w_topline @curwin)))
@@ -11738,13 +11738,13 @@
 
                     (redraw-later VALID)
                     (cursor-correct)
-                    ((ß @curwin.w_redr_status =) true)
+                    (swap! curwin assoc :w_redr_status true)
                 )
 
                 ;; do the horizontal scroll
 
                 (when (and want_hor (!= (:w_leftcol @curwin) tgt_leftcol))
-                    ((ß @curwin.w_leftcol =) tgt_leftcol)
+                    (swap! curwin assoc :w_leftcol tgt_leftcol)
                     (leftcol-changed)
                 )
             )
@@ -11843,13 +11843,13 @@
                 (validate-virtcol)
                 (cond (<= width1 0)
                 (do
-                    ((ß @curwin.w_curswant =) 0)
+                    (swap! curwin assoc :w_curswant 0)
                 )
                 :else
                 (do
-                    ((ß @curwin.w_curswant =) (dec width1))
+                    (swap! curwin assoc :w_curswant (dec width1))
                     (if (< (:w_curswant @curwin) (:w_virtcol @curwin))
-                        ((ß @curwin.w_curswant =) (+ (:w_curswant @curwin) (* (inc (/ (- (:w_virtcol @curwin) (:w_curswant @curwin) 1) width2)) width2)))
+                        (swap! curwin update :w_curswant + (* (inc (/ (- (:w_virtcol @curwin) (:w_curswant @curwin) 1) width2)) width2))
                     )
                 ))
             )
@@ -11857,7 +11857,7 @@
             (do
                 ((ß int n =) (if (< width1 linelen) (+ (* (inc (/ (- linelen width1 1) width2)) width2) width1) width1))
                 (if (< (inc n) (:w_curswant @curwin))
-                    ((ß @curwin.w_curswant =) (- (:w_curswant @curwin) (* (inc (/ (- (:w_curswant @curwin) n) width2)) width2)))
+                    (swap! curwin update :w_curswant - (* (inc (/ (- (:w_curswant @curwin) n) width2)) width2))
                 )
             ))
 
@@ -11867,7 +11867,7 @@
                     (cond (<= width2 (long (:w_curswant @curwin)))
                     (do
                         ;; move back within line
-                        ((ß @curwin.w_curswant =) (- (:w_curswant @curwin) width2))
+                        (swap! curwin update :w_curswant - width2)
                     )
                     :else
                     (do
@@ -11879,7 +11879,7 @@
                         ((ß @curwin.w_cursor.lnum =) (dec (:lnum (:w_cursor @curwin))))
                         ((ß linelen =) (linetabsize (ml-get-curline)))
                         (if (< width1 linelen)
-                            ((ß @curwin.w_curswant =) (+ (:w_curswant @curwin) (* (inc (/ (- linelen width1 1) width2)) width2)))
+                            (swap! curwin update :w_curswant + (* (inc (/ (- linelen width1 1) width2)) width2))
                         )
                     ))
                 )
@@ -11889,7 +11889,7 @@
                     (cond (< (+ (:w_curswant @curwin) width2) n)
                     (do
                         ;; move forward within line
-                        ((ß @curwin.w_curswant =) (+ (:w_curswant @curwin) width2))
+                        (swap! curwin update :w_curswant + width2)
                     )
                     :else
                     (do
@@ -11899,7 +11899,7 @@
                             (ß BREAK)
                         )
                         ((ß @curwin.w_cursor.lnum =) (inc (:lnum (:w_cursor @curwin))))
-                        ((ß @curwin.w_curswant =) (% (:w_curswant @curwin) width2))
+                        (swap! curwin update :w_curswant % width2)
                         ((ß linelen =) (linetabsize (ml-get-curline)))
                     ))
                 ))
@@ -11929,7 +11929,7 @@
         )
 
         (if atend
-            ((ß @curwin.w_curswant =) MAXCOL)     ;; stick in the last column
+            (swap! curwin assoc :w_curswant MAXCOL)     ;; stick in the last column
         )
 
         retval
@@ -11959,7 +11959,7 @@
             ;; otherwise the screen jumps back at the end of the file.
             (cursor-correct)
             (check-cursor-moved @curwin)
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+            (swap! curwin update :w_valid | VALID_TOPLINE)
 
             ;; If moved back to where we were, at least move the cursor, otherwise
             ;; we get stuck at one position.  Don't move the cursor up if the
@@ -11979,7 +11979,7 @@
                 ))
                 ;; Mark w_topline as valid, otherwise the screen jumps back at the end of the file.
                 (check-cursor-moved @curwin)
-                ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+                (swap! curwin update :w_valid | VALID_TOPLINE)
             )
         )
         (if (!= (:lnum (:w_cursor @curwin)) prev_lnum)
@@ -12136,7 +12136,7 @@
             ((ß CASE) K_LEFT)
             (do
                 (when (not @(:wo_wrap (:w_options @curwin)))
-                    ((ß @curwin.w_leftcol =) (if (< (:w_leftcol @curwin) (int (:count1 cap))) 0 (- (:w_leftcol @curwin) (int (:count1 cap)))))
+                    (swap! curwin assoc :w_leftcol (if (< (:w_leftcol @curwin) (int (:count1 cap))) 0 (- (:w_leftcol @curwin) (int (:count1 cap)))))
                     (leftcol-changed)
                 )
                 (ß BREAK)
@@ -12153,7 +12153,7 @@
             (do
                 (when (not @(:wo_wrap (:w_options @curwin)))
                     ;; scroll the window left
-                    ((ß @curwin.w_leftcol =) (+ (:w_leftcol @curwin) (int (:count1 cap))))
+                    (swap! curwin update :w_leftcol + (int (:count1 cap)))
                     (leftcol-changed)
                 )
                 (ß BREAK)
@@ -12166,7 +12166,7 @@
                     (getvcol @curwin, (:w_cursor @curwin), col, nil, nil)
                     ((ß col[0] =) (if (< @p_siso (long (... col 0))) (- (... col 0) @p_siso) 0))
                     (when (!= (:w_leftcol @curwin) (... col 0))
-                        ((ß @curwin.w_leftcol =) (... col 0))
+                        (swap! curwin assoc :w_leftcol (... col 0))
                         (redraw-later NOT_VALID)
                     )
                 )
@@ -12181,7 +12181,7 @@
                     ((ß long n =) (- (:w_width @curwin) (curwin-col-off)))
                     ((ß col[0] =) (if (< (+ (long (... col 0)) @p_siso) n) 0 (+ (... col 0) (+ (- @p_siso n) 1))))
                     (when (!= (:w_leftcol @curwin) (... col 0))
-                        ((ß @curwin.w_leftcol =) (... col 0))
+                        (swap! curwin assoc :w_leftcol (... col 0))
                         (redraw-later NOT_VALID)
                     )
                 )
@@ -12683,7 +12683,7 @@
                         ((ß @curwin.w_cursor.lnum =) (inc (:lnum (:w_cursor @curwin))))
                         ((ß @curwin.w_cursor.col =) 0)
                         ((ß @curwin.w_cursor.coladd =) 0)
-                        ((ß @curwin.w_set_curswant =) true)
+                        (swap! curwin assoc :w_set_curswant true)
                         ((ß cap.oap.inclusive =) false)
                     ))
                     (ß CONTINUE)
@@ -12704,7 +12704,7 @@
             )
             past_line
             (do
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 (if (virtual-active)
                     (oneright)
                     ((ß @curwin.w_cursor.col =) (+ (:col (:w_cursor @curwin)) (us-ptr2len-cc (ml-get-cursor))))
@@ -12742,7 +12742,7 @@
                 (do
                     ((ß @curwin.w_cursor.lnum =) (dec (:lnum (:w_cursor @curwin))))
                     (coladvance MAXCOL)
-                    ((ß @curwin.w_set_curswant =) true)
+                    (swap! curwin assoc :w_set_curswant true)
 
                     ;; When the NL before the first char has to be deleted we
                     ;; put the cursor on the NUL after the previous line.
@@ -12854,7 +12854,7 @@
         ;; Otherwise, send it to the end of the line.
 
         (if (or (not (virtual-active)) (!= (gchar) NUL) (== (:op_type (:oap cap)) OP_NOP))
-            ((ß @curwin.w_curswant =) MAXCOL)     ;; so we stay at the end
+            (swap! curwin assoc :w_curswant MAXCOL)     ;; so we stay at the end
         )
         (when (not (cursor-down (- (:count1 cap) 1), (== (:op_type (:oap cap)) OP_NOP)))
             (clearopbeep (:oap cap))
@@ -12918,7 +12918,7 @@
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
         ((ß cap.oap.use_reg_one =) true)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
 
         ((ß int i =) (do-search (:oap cap), dirc, pat, (:count1 cap), (| opt SEARCH_OPT SEARCH_ECHO SEARCH_MSG), nil))
         (cond (zero? i)
@@ -12953,7 +12953,7 @@
         )
         :else
         (do
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             ;; Include a Tab for "tx" and for "dfx".
             (cond (and (== (gchar) TAB) (virtual-active) (== (:arg cap) FORWARD) (or t_cmd (!= (:op_type (:oap cap)) OP_NOP)))
             (do
@@ -13103,7 +13103,7 @@
             (when (non-nil? pos)
                 (setpcmark)
                 (COPY-pos (:w_cursor @curwin), pos)
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
             )
         )
 
@@ -13113,7 +13113,7 @@
         (do
             ((ß int flag =) (if (== @(:nchar cap) (:cmdchar cap)) (byte \{) (byte \})))   ;; "]]" or "[[" ;; "][" or "[]"
 
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
 
             ;; Imitate strange Vi behaviour: When using "]]" with an operator we also stop at '}'.
 
@@ -13158,7 +13158,7 @@
                     (COPY-pos (:w_cursor @curwin), end)
                     (when (== dir BACKWARD)
                         ;; adjust lines
-                        ((ß @VIsual.lnum =) (+ (:lnum @VIsual) (- (:ml_line_count (:b_ml @curbuf)) line_count)))
+                        (swap! VIsual update :lnum + (- (:ml_line_count (:b_ml @curbuf)) line_count))
                         ((ß @curwin.w_cursor.lnum =) (+ (:lnum (:w_cursor @curwin)) (- (:ml_line_count (:b_ml @curbuf)) line_count)))
                     )
 
@@ -13244,7 +13244,7 @@
             (do
                 (setpcmark)
                 (COPY-pos (:w_cursor @curwin), pos)
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 ((ß @curwin.w_cursor.coladd =) 0)
                 (adjust-for-sel cap)
             ))
@@ -13261,7 +13261,7 @@
         ((ß cap.oap.use_reg_one =) true)
         ;; The motion used to be inclusive for "(", but that is not what Vi does.
         ((ß cap.oap.inclusive =) false)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
 
         (cond (not (findsent (:arg cap), (:count1 cap)))
         (do
@@ -13293,7 +13293,7 @@
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
         ((ß cap.oap.use_reg_one =) true)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         (ß boolean b)
 ;       { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, NUL, false); cap.oap.inclusive = __[0]; }
         (if (not b)
@@ -13327,7 +13327,7 @@
     (§
         (when (not (checkclearopq (:oap cap)))
             (u-undo (int (:count1 cap)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         nil
     ))
@@ -13488,7 +13488,7 @@
             ;; is a multi-byte character, move two characters left.
             (mb-adjust-pos @curbuf, (:w_cursor @curwin))
             (COPY-pos (:b_op_end @curbuf), (:w_cursor @curwin))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             (set-last-insert @(:nchar cap))
         ))
         nil
@@ -13511,10 +13511,10 @@
             (COPY-pos @VIsual, (:w_cursor @curwin))
 
             ((ß @curwin.w_cursor.lnum =) (:lnum old_cursor))
-            ((ß @curwin.w_curswant =) (... right 0))
+            (swap! curwin assoc :w_curswant (... right 0))
             ;; 'selection "exclusive" and cursor at right-bottom corner: move it right one column
             (if (and (<= (:lnum @VIsual) (:lnum old_cursor)) (at? @p_sel (byte \e)))
-                ((ß @curwin.w_curswant =) (inc (:w_curswant @curwin)))
+                (swap! curwin update :w_curswant inc)
             )
             (coladvance (:w_curswant @curwin))
             (when (and (== (:col (:w_cursor @curwin)) (:col old_cursor)) (or (not (virtual-active)) (== (:coladd (:w_cursor @curwin)) (:coladd old_cursor))))
@@ -13527,7 +13527,7 @@
 
                 ((ß @curwin.w_cursor.lnum =) (:lnum old_cursor))
                 (coladvance (... left 0))
-                ((ß @curwin.w_curswant =) (... left 0))
+                (swap! curwin assoc :w_curswant (... left 0))
             )
         )
         :else
@@ -13536,7 +13536,7 @@
             (COPY-pos old_cursor, (:w_cursor @curwin))
             (COPY-pos (:w_cursor @curwin), @VIsual)
             (COPY-pos @VIsual, old_cursor)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         ))
         nil
     ))
@@ -13633,7 +13633,7 @@
         )
 
         (check-cursor)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
 
         (when did_change
             (changed-lines (:lnum startpos), (:col startpos), (+ (:lnum (:w_cursor @curwin)) 1), 0)
@@ -13668,7 +13668,7 @@
             ((ß cap.oap.use_reg_one =) true)
         )
         ((ß cap.oap.inclusive =) false)              ;; ignored if not MCHAR
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         nil
     ))
 
@@ -13688,7 +13688,7 @@
             )
             (or (== (:cmdchar cap) (byte \C)) (== (:cmdchar cap) (byte \D)))
             (do
-                ((ß @curwin.w_curswant =) MAXCOL)
+                (swap! curwin assoc :w_curswant MAXCOL)
             ))
         )
         ((ß cap.cmdchar =) (.at (vim-strchr visop_trans, (:cmdchar cap)) 1))
@@ -13813,7 +13813,7 @@
             ))
             (cond (== pos NOPOS)           ;; jump to other file
             (do
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 (check-cursor)
             )
             (non-nil? pos)               ;; can jump
@@ -13924,28 +13924,28 @@
                     (cond (<= @resel_VIsual_line_count 1)
                     (do
                         (validate-virtcol)
-                        ((ß @curwin.w_curswant =) (- (+ (:w_virtcol @curwin) (* @resel_VIsual_vcol (int (:count0 cap)))) 1))
+                        (swap! curwin assoc :w_curswant (- (+ (:w_virtcol @curwin) (* @resel_VIsual_vcol (int (:count0 cap)))) 1))
                     )
                     :else
                     (do
-                        ((ß @curwin.w_curswant =) @resel_VIsual_vcol)
+                        (swap! curwin assoc :w_curswant @resel_VIsual_vcol)
                     ))
                     (coladvance (:w_curswant @curwin))
                 )
                 (cond (== @resel_VIsual_vcol MAXCOL)
                 (do
-                    ((ß @curwin.w_curswant =) MAXCOL)
+                    (swap! curwin assoc :w_curswant MAXCOL)
                     (coladvance MAXCOL)
                 )
                 (== @VIsual_mode Ctrl_V)
                 (do
                     (validate-virtcol)
-                    ((ß @curwin.w_curswant =) (- (+ (:w_virtcol @curwin) (* @resel_VIsual_vcol (int (:count0 cap)))) 1))
+                    (swap! curwin assoc :w_curswant (- (+ (:w_virtcol @curwin) (* @resel_VIsual_vcol (int (:count0 cap)))) 1))
                     (coladvance (:w_curswant @curwin))
                 )
                 :else
                 (do
-                    ((ß @curwin.w_set_curswant =) true)
+                    (swap! curwin assoc :w_set_curswant true)
                 ))
                 (redraw-curbuf-later INVERTED)      ;; show the inversion
             )
@@ -14018,8 +14018,8 @@
         ;; Only need to redraw this line, unless still need to redraw
         ;; an old Visual area (when 'lazyredraw' is set).
         (when (< (:w_redr_type @curwin) INVERTED)
-            ((ß @curwin.w_old_cursor_lnum =) (:lnum (:w_cursor @curwin)))
-            ((ß @curwin.w_old_visual_lnum =) (:lnum (:w_cursor @curwin)))
+            (swap! curwin assoc :w_old_cursor_lnum (:lnum (:w_cursor @curwin)))
+            (swap! curwin assoc :w_old_visual_lnum (:lnum (:w_cursor @curwin)))
         )
         nil
     ))
@@ -14092,9 +14092,9 @@
                         ((ß int i =) @VIsual_mode)
                         (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
                         ((ß @curbuf.b_visual.vi_mode =) i)
-                        ((ß @curbuf.b_visual_mode_eval =) i)
+                        (swap! curbuf assoc :b_visual_mode_eval i)
                         ((ß i =) (:w_curswant @curwin))
-                        ((ß @curwin.w_curswant =) (:vi_curswant (:b_visual @curbuf)))
+                        (swap! curwin assoc :w_curswant (:vi_curswant (:b_visual @curbuf)))
                         ((ß @curbuf.b_visual.vi_curswant =) i)
 
                         (COPY-pos tpos, (:vi_end (:b_visual @curbuf)))
@@ -14105,7 +14105,7 @@
                     :else
                     (do
                         (reset! VIsual_mode (:vi_mode (:b_visual @curbuf)))
-                        ((ß @curwin.w_curswant =) (:vi_curswant (:b_visual @curbuf)))
+                        (swap! curwin assoc :w_curswant (:vi_curswant (:b_visual @curbuf)))
                         (COPY-pos tpos, (:vi_end (:b_visual @curbuf)))
                         (COPY-pos (:w_cursor @curwin), (:vi_start (:b_visual @curbuf)))
                     ))
@@ -14272,7 +14272,7 @@
                         ((ß i =) (gchar))
 ;                   } while (vim-iswhite(i) && oneright());
                 )
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 (ß BREAK)
             )
 
@@ -14281,7 +14281,7 @@
                 ;; "g_": to the last non-blank character in the line or <count> lines downward.
                 ((ß cap.oap.motion_type =) MCHAR)
                 ((ß cap.oap.inclusive =) true)
-                ((ß @curwin.w_curswant =) MAXCOL)
+                (swap! curwin assoc :w_curswant MAXCOL)
                 (cond (not (cursor-down (- (:count1 cap) 1), (== (:op_type (:oap cap)) OP_NOP)))
                 (do
                     (clearopbeep (:oap cap))
@@ -14299,7 +14299,7 @@
                     (while (and (< 0 (:col (:w_cursor @curwin))) (vim-iswhite (.at ptr (:col (:w_cursor @curwin)))))
                         ((ß @curwin.w_cursor.col =) (dec (:col (:w_cursor @curwin))))
                     )
-                    ((ß @curwin.w_set_curswant =) true)
+                    (swap! curwin assoc :w_set_curswant true)
                     (adjust-for-sel cap)
                 ))
                 (ß BREAK)
@@ -14315,7 +14315,7 @@
                 ((ß oap.inclusive =) true)
                 (cond (and @(:wo_wrap (:w_options @curwin)) (non-zero? (:w_width @curwin)))
                 (do
-                    ((ß @curwin.w_curswant =) MAXCOL) ;; so we stay at the end
+                    (swap! curwin assoc :w_curswant MAXCOL) ;; so we stay at the end
                     (cond (== (:count1 cap) 1)
                     (do
                         ((ß int width1 =) (- (:w_width @curwin) col_off))
@@ -14330,8 +14330,8 @@
 
                         ;; Make sure we stick in this column.
                         (validate-virtcol)
-                        ((ß @curwin.w_curswant =) (:w_virtcol @curwin))
-                        ((ß @curwin.w_set_curswant =) false)
+                        (swap! curwin assoc :w_curswant (:w_virtcol @curwin))
+                        (swap! curwin assoc :w_set_curswant false)
                         (when (and (< 0 (:col (:w_cursor @curwin))) @(:wo_wrap (:w_options @curwin)))
                             ;; Check for landing on a character that got split at the end of the line.
                             ;; We do not want to advance to the next screen line.
@@ -14353,8 +14353,8 @@
 
                     ;; Make sure we stick in this column.
                     (validate-virtcol)
-                    ((ß @curwin.w_curswant =) (:w_virtcol @curwin))
-                    ((ß @curwin.w_set_curswant =) false)
+                    (swap! curwin assoc :w_curswant (:w_virtcol @curwin))
+                    (swap! curwin assoc :w_set_curswant false)
                 ))
                 (ß BREAK)
             )
@@ -14377,7 +14377,7 @@
             ((ß CASE) (byte \E))
             (do
                 ((ß oap.motion_type =) MCHAR)
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 ((ß oap.inclusive =) true)
                 (if (not (bckend-word (:count1 cap), (== @(:nchar cap) (byte \E)), false))
                     (clearopbeep oap))
@@ -14625,7 +14625,7 @@
     (§
         (when (not (checkclearopq (:oap cap)))
             (u-redo (int (:count1 cap)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         nil
     ))
@@ -14645,7 +14645,7 @@
         (not (checkclearopq (:oap cap)))
         (do
             (u-undoline)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         ))
         nil
     ))
@@ -14733,15 +14733,15 @@
         (cond (< 0 (:count0 cap))
         (do
             (coladvance (int (- (:count0 cap) 1)))
-            ((ß @curwin.w_curswant =) (int (- (:count0 cap) 1)))
+            (swap! curwin assoc :w_curswant (int (- (:count0 cap) 1)))
         )
         :else
         (do
-            ((ß @curwin.w_curswant =) 0)
+            (swap! curwin assoc :w_curswant 0)
         ))
         ;; Keep curswant at the column where we wanted to go,
         ;; not where we ended; differs if line is too short.
-        ((ß @curwin.w_set_curswant =) false)
+        (swap! curwin assoc :w_set_curswant false)
         nil
     ))
 
@@ -14752,7 +14752,7 @@
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         (when (not (bck-word (:count1 cap), (non-zero? (:arg cap)), false))
             (clearopbeep (:oap cap))
         )
@@ -14810,7 +14810,7 @@
         )
 
         ((ß cap.oap.motion_type =) MCHAR)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         ((ß boolean n =) (if word_end
             (end-word (:count1 cap), (!= (:arg cap) 0), flag, false)
             (fwd-word (:count1 cap), (!= (:arg cap) 0), (!= (:op_type (:oap cap)) OP_NOP))
@@ -14994,7 +14994,7 @@
         (do
             (end-visual-mode)              ;; stop Visual
             (check-cursor-col)             ;; make sure cursor is not beyond EOL
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             (redraw-curbuf-later INVERTED)
         )
         no_reason
@@ -15035,7 +15035,7 @@
             ((ß SWITCH) (:cmdchar cap)
                 ((ß CASE) (byte \A))   ;; "A"ppend after the line
                 (do
-                    ((ß @curwin.w_set_curswant =) true)
+                    (swap! curwin assoc :w_set_curswant true)
                     (cond (== @ve_flags VE_ALL)
                     (do
                         ((ß int save_State =) @State)
@@ -15192,7 +15192,7 @@
         (if (not flag)
             (clearopbeep (:oap cap)))
         (adjust-cursor-col)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         nil
     ))
 
@@ -16284,7 +16284,7 @@
         )
         :else
         (do
-            ((ß @y_current.y_array =) nil)
+            (swap! y_current assoc :y_array nil)
         ))
 
         reg
@@ -16295,7 +16295,7 @@
 (defn- #_void put-register [#_int name, #_yankreg_C reg]
     (§
         (get-yank-register name, false)
-        ((ß @y_current.y_array =) nil)
+        (swap! y_current assoc :y_array nil)
         (COPY-yankreg @y_current, reg)
         nil
     ))
@@ -16388,10 +16388,10 @@
         )
         :else
         (do
-            ((ß @y_current.y_array =) (ß new Bytes[1]))
+            (swap! y_current assoc :y_array (ß new Bytes[1]))
             ((ß @y_current.y_array[0] =) p)
-            ((ß @y_current.y_size =) 1)
-            ((ß @y_current.y_type =) MCHAR)   ;; used to be MLINE, why?
+            (swap! y_current assoc :y_size 1)
+            (swap! y_current assoc :y_type MCHAR)   ;; used to be MLINE, why?
         ))
 
         true
@@ -16825,7 +16825,7 @@
 
                 (when (or (non-zero? orig_regname) (== (:motion_type oap) MLINE) (< 1 (:line_count oap)) (:use_reg_one oap))
                     (reset! y_current (... y_regs 9))
-                    ((ß @y_current.y_array =) nil)               ;; free register nine
+                    (swap! y_current assoc :y_array nil)               ;; free register nine
                     (robin [#_int n 9] (< 1 n) [(dec n)]
                         (COPY-yankreg (... y_regs n), (... y_regs (dec n)))
                     )
@@ -17515,7 +17515,7 @@
             (cond (and (:block_mode oap) (zero? (:coladd (:w_cursor @curwin))))
             (do
                 ;; Move the cursor to the character right of the block.
-                ((ß @curwin.w_set_curswant =) true)
+                (swap! curwin assoc :w_set_curswant true)
                 (while (and (non-eos? (ml-get-cursor)) (< (:col (:w_cursor @curwin)) (+ (:textcol bd) (:textlen bd))))
                     ((ß @curwin.w_cursor.col =) (inc (:col (:w_cursor @curwin))))
                 )
@@ -17776,7 +17776,7 @@
         ((ß yankreg_C newreg =) (NEW_yankreg_C))             ;; new yank register when appending
         (if (and @y_append (non-nil? (:y_array @y_current)))      ;; append to existing contents
             (reset! y_current newreg)
-            ((ß @y_current.y_array =) nil)                   ;; free previously yanked lines
+            (swap! y_current assoc :y_array nil)                   ;; free previously yanked lines
         )
 
         ;; If the cursor was in column 1 before and after the movement,
@@ -17788,21 +17788,21 @@
             ((ß yanklines =) (dec yanklines))
         )
 
-        ((ß @y_current.y_size =) yanklines)
-        ((ß @y_current.y_type =) yanktype)                    ;; set the yank register type
-        ((ß @y_current.y_width =) 0)
-        ((ß @y_current.y_array =) (ß new Bytes[yanklines]))
+        (swap! y_current assoc :y_size yanklines)
+        (swap! y_current assoc :y_type yanktype)                    ;; set the yank register type
+        (swap! y_current assoc :y_width 0)
+        (swap! y_current assoc :y_array (ß new Bytes[yanklines]))
 
         ((ß int y_idx =) 0)                                 ;; index in y_array[]
         ((ß long lnum =) (:lnum (:op_start oap)))                  ;; current line number
 
         (when (:block_mode oap)
             ;; Visual block mode.
-            ((ß @y_current.y_type =) MBLOCK)                  ;; set the yank register type
-            ((ß @y_current.y_width =) (- (:end_vcol oap) (:start_vcol oap)))
+            (swap! y_current assoc :y_type MBLOCK)                  ;; set the yank register type
+            (swap! y_current assoc :y_width (- (:end_vcol oap) (:start_vcol oap)))
 
             (if (and (== (:w_curswant @curwin) MAXCOL) (< 0 (:y_width @y_current)))
-                ((ß @y_current.y_width =) (dec (:y_width @y_current)))
+                (swap! y_current update :y_width dec)
             )
         )
 
@@ -17912,7 +17912,7 @@
                 ((ß curr.y_array[j++] =) (... (:y_array @y_current) (ß y_idx++)))
             )
             ((ß curr.y_size =) j)
-            ((ß @y_current.y_array =) nil)
+            (swap! y_current assoc :y_array nil)
             (reset! y_current curr)
         )
 
@@ -18521,7 +18521,7 @@
             ))
 
             (msgmore nr_lines)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
 ;       }
 
         (reset! VIsual_active false)
@@ -18685,7 +18685,7 @@
         (check-cursor-col)
 
         ((ß @curwin.w_cursor.coladd =) 0)
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
 
         retval
     ))
@@ -19050,7 +19050,7 @@
         ))
 
         ((ß @curwin.w_cursor.col =) (dec (:col (:w_cursor @curwin))))
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         ((ß ptr =) (ml-get-buf @curbuf, (:lnum (:w_cursor @curwin))))
 
         true
@@ -19386,12 +19386,12 @@
 
         ;; If jumplist is full: remove oldest entry.
         (when (> (ß ++@curwin.w_jumplistlen) JUMPLISTSIZE)
-            ((ß @curwin.w_jumplistlen =) JUMPLISTSIZE)
+            (swap! curwin assoc :w_jumplistlen JUMPLISTSIZE)
             (robin [#_int i 1] (< i JUMPLISTSIZE) [(inc i)]
                 (COPY-fmark (... (:w_jumplist @curwin) (dec i)), (... (:w_jumplist @curwin) i))
             )
         )
-        ((ß @curwin.w_jumplistidx =) (:w_jumplistlen @curwin))
+        (swap! curwin assoc :w_jumplistidx (:w_jumplistlen @curwin))
         ((ß fmark_C fm =) (... (:w_jumplist @curwin) (- (:w_jumplistlen @curwin) 1)))
 
         (COPY-pos (:mark fm), (:w_pcmark @curwin))
@@ -19433,13 +19433,13 @@
 
             (when (== (:w_jumplistidx @curwin) (:w_jumplistlen @curwin))
                 (setpcmark)
-                ((ß @curwin.w_jumplistidx =) (dec (:w_jumplistidx @curwin)))         ;; skip the new entry
+                (swap! curwin update :w_jumplistidx dec)         ;; skip the new entry
                 (if (< (+ (:w_jumplistidx @curwin) count) 0)
                     ((ß RETURN) nil)
                 )
             )
 
-            ((ß @curwin.w_jumplistidx =) (+ (:w_jumplistidx @curwin) count))
+            (swap! curwin update :w_jumplistidx + count)
 
             ((ß RETURN) (:mark (... (:w_jumplist @curwin) (:w_jumplistidx @curwin))))
         )
@@ -19472,7 +19472,7 @@
         (do
             ((ß n =) (+ n count))
         ))
-        ((ß @curwin.w_changelistidx =) n)
+        (swap! curwin assoc :w_changelistidx n)
         (... (:b_changelist @curbuf) n)
     ))
 
@@ -19549,8 +19549,8 @@
             (when (== (:vi_mode (:b_visual buf)) (byte \V))
                 (COPY-pos @_1_pos_copy, posp)
                 ((ß posp =) @_1_pos_copy)
-                ((ß @_1_pos_copy.col =) (if (== c (byte \<)) 0 MAXCOL))
-                ((ß @_1_pos_copy.coladd =) 0)
+                (swap! _1_pos_copy assoc :col (if (== c (byte \<)) 0 MAXCOL))
+                (swap! _1_pos_copy assoc :coladd 0)
             )
         )
         (asc-islower c)                    ;; normal named mark
@@ -19723,7 +19723,7 @@
 
         ;; saved cursor for formatting
         (if (non-zero? (:lnum @saved_cursor))
-            ((ß @saved_cursor.lnum =) (one-adjust-nodel (:lnum @saved_cursor), line1, line2, amount, amount_after))
+            (swap! saved_cursor assoc :lnum (one-adjust-nodel (:lnum @saved_cursor), line1, line2, amount, amount_after))
         )
 
         ;; Adjust items in all windows related to the current buffer.
@@ -19857,7 +19857,7 @@
 
         (dotimes [#_int from (:w_jumplistlen @curwin)]
             (if (== (:w_jumplistidx @curwin) from)
-                ((ß @curwin.w_jumplistidx =) to)
+                (swap! curwin assoc :w_jumplistidx to)
             )
             (ß int i)
             ((ß FOR) (ß ((ß i =) (inc from)) (< i (:w_jumplistlen @curwin)) ((ß i =) (inc i)))
@@ -19870,9 +19870,9 @@
         )
 
         (if (== (:w_jumplistidx @curwin) (:w_jumplistlen @curwin))
-            ((ß @curwin.w_jumplistidx =) to)
+            (swap! curwin assoc :w_jumplistidx to)
         )
-        ((ß @curwin.w_jumplistlen =) to)
+        (swap! curwin assoc :w_jumplistlen to)
         nil
     ))
 
@@ -20143,12 +20143,12 @@
 (defn- #_void start-stuff []
     (§
         (when (non-nil? (:bb_next (:bh_first @readbuf1)))
-            ((ß @readbuf1.bh_curr =) (:bh_first @readbuf1))
-            ((ß @readbuf1.bh_space =) 0)
+            (swap! readbuf1 assoc :bh_curr (:bh_first @readbuf1))
+            (swap! readbuf1 assoc :bh_space 0)
         )
         (when (non-nil? (:bb_next (:bh_first @readbuf2)))
-            ((ß @readbuf2.bh_curr =) (:bh_first @readbuf2))
-            ((ß @readbuf2.bh_space =) 0)
+            (swap! readbuf2 assoc :bh_curr (:bh_first @readbuf2))
+            (swap! readbuf2 assoc :bh_space 0)
         )
         nil
     ))
@@ -20185,8 +20185,8 @@
             (while (!= (inchar (:tb_buf @typebuf), (- (:tb_buflen @typebuf) 1), 10, (:tb_change_cnt @typebuf)) 0)
                 ;
             )
-            ((ß @typebuf.tb_off =) MAXMAPLEN)
-            ((ß @typebuf.tb_len =) 0)
+            (swap! typebuf assoc :tb_off MAXMAPLEN)
+            (swap! typebuf assoc :tb_len 0)
         )
         nil
     ))
@@ -20475,11 +20475,11 @@
 (defn- #_void init-typebuf []
     (§
         (when (nil? (:tb_buf @typebuf))
-            ((ß @typebuf.tb_buf =) (Bytes. TYPELEN_INIT))
-            ((ß @typebuf.tb_buflen =) TYPELEN_INIT)
-            ((ß @typebuf.tb_len =) 0)
-            ((ß @typebuf.tb_off =) 0)
-            ((ß @typebuf.tb_change_cnt =) 1)
+            (swap! typebuf assoc :tb_buf (Bytes. TYPELEN_INIT))
+            (swap! typebuf assoc :tb_buflen TYPELEN_INIT)
+            (swap! typebuf assoc :tb_len 0)
+            (swap! typebuf assoc :tb_off 0)
+            (swap! typebuf assoc :tb_change_cnt 1)
         )
         nil
     ))
@@ -20490,7 +20490,7 @@
     (§
         (init-typebuf)
         (if (zero? (ß ++@typebuf.tb_change_cnt))
-            ((ß @typebuf.tb_change_cnt =) 1)
+            (swap! typebuf assoc :tb_change_cnt 1)
         )
 
         ((ß int addlen =) (STRLEN str))
@@ -20499,7 +20499,7 @@
 
         (cond (<= addlen (:tb_off @typebuf))
         (do
-            ((ß @typebuf.tb_off =) (- (:tb_off @typebuf) addlen))
+            (swap! typebuf update :tb_off - addlen)
             (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), str, 0, addlen)
         )
         :else
@@ -20512,18 +20512,18 @@
             ((ß int newlen =) (+ (:tb_len @typebuf) addlen newoff (* 4 (+ MAXMAPLEN 4))))
 
             ((ß Bytes newbuf =) (Bytes. newlen))
-            ((ß @typebuf.tb_buflen =) newlen)
+            (swap! typebuf assoc :tb_buflen newlen)
 
             ;; copy the new chars
             (BCOPY newbuf, newoff, str, 0, addlen)
             ;; copy the old chars, after the insertion point, including the NUL at the end
             (BCOPY newbuf, (+ newoff addlen), (:tb_buf @typebuf), (:tb_off @typebuf), (+ (:tb_len @typebuf) 1))
 
-            ((ß @typebuf.tb_buf =) newbuf)
-            ((ß @typebuf.tb_off =) newoff)
+            (swap! typebuf assoc :tb_buf newbuf)
+            (swap! typebuf assoc :tb_off newoff)
         ))
 
-        ((ß @typebuf.tb_len =) (+ (:tb_len @typebuf) addlen))
+        (swap! typebuf update :tb_len + addlen)
         nil
     ))
 
@@ -20556,23 +20556,23 @@
 (defn- #_void del-typebuf [#_int len]
     (§
         (if (non-zero? len)
-            ((ß @typebuf.tb_len =) (- (:tb_len @typebuf) len))
+            (swap! typebuf update :tb_len - len)
 
             (cond (<= (+ (* 3 MAXMAPLEN) 3) (- (:tb_buflen @typebuf) (+ (:tb_off @typebuf) len)))
             (do
-                ((ß @typebuf.tb_off =) (+ (:tb_off @typebuf) len))
+                (swap! typebuf update :tb_off + len)
             )
             :else
             (let [#_int i (:tb_off @typebuf)]
                 ;; leave some extra room at the end to avoid reallocation
-                ((ß @typebuf.tb_off =) (min (:tb_off @typebuf) MAXMAPLEN))
+                (swap! typebuf update :tb_off min MAXMAPLEN)
 
                 ;; adjust typebuf.tb_buf (include the NUL at the end)
                 (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), (:tb_buf @typebuf), (+ i len), (+ (:tb_len @typebuf) 1))
             ))
 
             (when (zero? (ß ++@typebuf.tb_change_cnt))
-                ((ß @typebuf.tb_change_cnt =) 1)
+                (swap! typebuf assoc :tb_change_cnt 1)
             )
         )
         nil
@@ -21098,26 +21098,26 @@
                                     ((ß Bytes ptr =) (ml-get-curline))
                                     ((ß FOR) (ß ((ß int vcol =) col) (< col (:col (:w_cursor @curwin))) nil)
                                         (if (not (vim-iswhite (.at ptr col)))
-                                            ((ß @curwin.w_wcol =) vcol)
+                                            (swap! curwin assoc :w_wcol vcol)
                                         )
                                         ((ß vcol =) (+ vcol (lbr-chartabsize ptr, (.plus ptr col), vcol)))
                                         ((ß col =) (+ col (us-ptr2len-cc (.plus ptr col))))
                                     )
-                                    ((ß @curwin.w_wrow =) (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
-                                    ((ß @curwin.w_wcol =) (% (:w_wcol @curwin) (:w_width @curwin)))
-                                    ((ß @curwin.w_wcol =) (+ (:w_wcol @curwin) (curwin-col-off)))
+                                    (swap! curwin assoc :w_wrow (+ (:w_cline_row @curwin) (/ (:w_wcol @curwin) (:w_width @curwin))))
+                                    (swap! curwin update :w_wcol % (:w_width @curwin))
+                                    (swap! curwin update :w_wcol + (curwin-col-off))
                                     ((ß col =) 0)        ;; no correction needed
                                 )
                                 :else
                                 (do
-                                    ((ß @curwin.w_wcol =) (dec (:w_wcol @curwin)))
+                                    (swap! curwin update :w_wcol dec)
                                     ((ß col =) (- (:col (:w_cursor @curwin)) 1))
                                 ))
                             )
                             (and @(:wo_wrap (:w_options @curwin)) (< 0 (:w_wrow @curwin)))
                             (do
-                                ((ß @curwin.w_wrow =) (dec (:w_wrow @curwin)))
-                                ((ß @curwin.w_wcol =) (- (:w_width @curwin) 1))
+                                (swap! curwin update :w_wrow dec)
+                                (swap! curwin assoc :w_wcol (dec (:w_width @curwin)))
                                 ((ß col =) (- (:col (:w_cursor @curwin)) 1))
                             ))
 
@@ -21126,7 +21126,7 @@
                                 ((ß Bytes p =) (ml-get-curline))
                                 ((ß col =) (- col (us-head-off p, (.plus p col))))
                                 (if (< 1 (us-ptr2cells (.plus p col)))
-                                    ((ß @curwin.w_wcol =) (dec (:w_wcol @curwin)))
+                                    (swap! curwin update :w_wcol dec)
                                 )
                             )
                         )
@@ -21134,14 +21134,14 @@
                         (out-flush)
                         ((ß new_wcol =) (:w_wcol @curwin))
                         ((ß new_wrow =) (:w_wrow @curwin))
-                        ((ß @curwin.w_wcol =) old_wcol)
-                        ((ß @curwin.w_wrow =) old_wrow)
+                        (swap! curwin assoc :w_wcol old_wcol)
+                        (swap! curwin assoc :w_wrow old_wrow)
                     )
                     (if (< len 0)
                         (ß CONTINUE)   ;; end of input script reached
                     )
 
-                    ((ß @typebuf.tb_len =) (+ (:tb_len @typebuf) len))
+                    (swap! typebuf update :tb_len + len)
 
                     ;; buffer full, don't map
                     (when (<= MAXMAPLEN (:tb_len @typebuf))
@@ -21178,8 +21178,8 @@
                             ;; need to use the col and row from above here
                             ((ß int old_wcol =) (:w_wcol @curwin))
                             ((ß int old_wrow =) (:w_wrow @curwin))
-                            ((ß @curwin.w_wcol =) new_wcol)
-                            ((ß @curwin.w_wrow =) new_wrow)
+                            (swap! curwin assoc :w_wcol new_wcol)
+                            (swap! curwin assoc :w_wrow new_wrow)
                             (push-showcmd)
                             (if (< SHOWCMD_COLS (:tb_len @typebuf))
                                 ((ß i =) (- (:tb_len @typebuf) SHOWCMD_COLS))
@@ -21187,8 +21187,8 @@
                             ((ß FOR) (ß nil (< i (:tb_len @typebuf)) ((ß i =) (inc i)))
                                 (add-to-showcmd (.at (:tb_buf @typebuf) (+ (:tb_off @typebuf) i)))
                             )
-                            ((ß @curwin.w_wcol =) old_wcol)
-                            ((ß @curwin.w_wrow =) old_wrow)
+                            (swap! curwin assoc :w_wcol old_wcol)
+                            (swap! curwin assoc :w_wrow old_wrow)
                         )
 
                         ;; this looks nice when typing a dead character map
@@ -21230,7 +21230,7 @@
                     :else
                     (do
                         (while (non-eos? (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf)))
-                            ((ß @typebuf.tb_len =) (inc (:tb_len @typebuf)))
+                            (swap! typebuf update :tb_len inc)
                         )
                     ))
                 )
@@ -21476,7 +21476,7 @@
         (do
             (COPY-pos @insStart, (:w_cursor @curwin))
             (if startln
-                ((ß @insStart.col =) 0)
+                (swap! insStart assoc :col 0)
             )
         ))
         (reset! insStart_textlen (linetabsize (ml-get-curline)))
@@ -21582,7 +21582,7 @@
         ;; Need to save the line for undo before inserting the first char.
         (reset! ins_need_undo true)
 
-        ((ß @where_paste_started.lnum =) 0)
+        (swap! where_paste_started assoc :lnum 0)
         (reset! can_cindent true)
 
         ;; If 'showmode' is set, show the current (insert/replace/..) mode.
@@ -21627,7 +21627,7 @@
 
                 ;; set curwin.w_curswant for next K_DOWN or K_UP
                 (if (not @arrow_used)
-                    ((ß @curwin.w_set_curswant =) true)
+                    (swap! curwin assoc :w_set_curswant true)
                 )
 
                 ;; When emsg() was called msg_scroll will have been set.
@@ -22175,7 +22175,7 @@
             (if (!= conceal_old_cursor_line conceal_new_cursor_line)
                 (update-single-line @curwin, conceal_old_cursor_line))
             (update-single-line @curwin, (if (zero? conceal_new_cursor_line) (:lnum (:w_cursor @curwin)) conceal_new_cursor_line))
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_CROW)))
+            (swap! curwin update :w_valid & (bit-not VALID_CROW))
         )
         (showruler false)
         (setcursor)
@@ -22254,7 +22254,7 @@
     (§
         (when (and (!= @pc_status PC_STATUS_UNSET) (<= @msg_scrolled @pc_row))
             (if (== @pc_status PC_STATUS_RIGHT)
-                ((ß @curwin.w_wcol =) (inc (:w_wcol @curwin)))
+                (swap! curwin update :w_wcol inc)
             )
             (if (or (== @pc_status PC_STATUS_RIGHT) (== @pc_status PC_STATUS_LEFT))
                 (redrawWinline (:lnum (:w_cursor @curwin)))
@@ -22354,7 +22354,7 @@
             ;; Compute the screen column where the cursor should be.
 
             ((ß vcol =) (- (get-indent) vcol))
-            ((ß @curwin.w_virtcol =) (max 0 vcol))
+            (swap! curwin assoc :w_virtcol (max 0 vcol))
 
             ;; Advance the cursor until we reach the right screen column.
 
@@ -22390,14 +22390,14 @@
         ))
 
         ((ß @curwin.w_cursor.col =) (max 0 new_cursor_col))
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         (changed-cline-bef-curs)
 
         ;; May have to adjust the start of the insert.
 
         (when (flag? @State INSERT)
             (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (non-zero? (:col @insStart)))
-                ((ß @insStart.col =) (if (<= (:col @insStart) insstart_less) 0 (- (:col @insStart) insstart_less)))
+                (swap! insStart assoc :col (if (<= (:col @insStart) insstart_less) 0 (- (:col @insStart) insstart_less)))
             )
             (swap! ai_col #(if (<= % insstart_less) 0 (- % insstart_less)))
         )
@@ -22887,8 +22887,8 @@
                     ((ß int len =) (STRLEN (ml-get-curline)))
 
                     (when (< len (:col @VIsual))
-                        ((ß @VIsual.col =) len)
-                        ((ß @VIsual.coladd =) 0)
+                        (swap! VIsual assoc :col len)
+                        (swap! VIsual assoc :coladd 0)
                     )
                 )
             )
@@ -22975,7 +22975,7 @@
                     ((ß @curwin.w_cursor.col =) (inc (:col (:w_cursor @curwin))))
                 )
             )
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         ))
         nil
     ))
@@ -22995,7 +22995,7 @@
             ;; Adjust for multi-wide char (excluding TAB).
             ((ß Bytes ptr =) (ml-get-cursor))
             (coladvance (+ (getviscol) (if (and (not-at? ptr TAB) (vim-isprintc (us-ptr2char ptr))) (mb-ptr2cells ptr) 1)))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             ;; Return true if the cursor moved, false otherwise (at window edge).
             ((ß RETURN) (or (!= (:col prevpos) (:col (:w_cursor @curwin))) (!= (:coladd prevpos) (:coladd (:w_cursor @curwin)))))
         )
@@ -23013,7 +23013,7 @@
         )
         ((ß @curwin.w_cursor.col =) (+ (:col (:w_cursor @curwin)) l))
 
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         true
     ))
 
@@ -23041,7 +23041,7 @@
                 )
             )
 
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             ((ß RETURN) true)
         )
 
@@ -23049,7 +23049,7 @@
             ((ß RETURN) false)
         )
 
-        ((ß @curwin.w_set_curswant =) true)
+        (swap! curwin assoc :w_set_curswant true)
         ((ß @curwin.w_cursor.col =) (dec (:col (:w_cursor @curwin))))
 
         ;; If the character on the left of the current cursor is a multi-byte character,
@@ -23592,7 +23592,7 @@
 
         ;; When an autoindent was removed, curswant stays after the indent.
         (if (and (== @restart_edit NUL) (== temp (:col (:w_cursor @curwin))))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
 
         ;; Remember the last Insert position in the '^ mark.
@@ -23843,8 +23843,8 @@
                 (if (not (u-save (- (:lnum (:w_cursor @curwin)) 2), (+ (:lnum (:w_cursor @curwin)) 1)))
                     ((ß RETURN) false)
                 )
-                ((ß @insStart.lnum =) (dec (:lnum @insStart)))
-                ((ß @insStart.col =) MAXCOL)
+                (swap! insStart update :lnum dec)
+                (swap! insStart assoc :col MAXCOL)
             )
 
             ;; In replace mode:
@@ -23947,7 +23947,7 @@
                 (while (< (... vcol 0) (... want_vcol 0))
                     ;; Remember the first char we inserted.
                     (if (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (< (:col (:w_cursor @curwin)) (:col @insStart_orig)))
-                        ((ß @insStart_orig.col =) (:col (:w_cursor @curwin)))
+                        (swap! insStart_orig assoc :col (:col (:w_cursor @curwin)))
                     )
 
                     (cond (flag? @State VREPLACE_FLAG)
@@ -24035,7 +24035,7 @@
 
         ;; If deleted before the insertion point, adjust it.
         (if (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (< (:col (:w_cursor @curwin)) (:col @insStart_orig)))
-            ((ß @insStart_orig.col =) (:col (:w_cursor @curwin)))
+            (swap! insStart_orig assoc :col (:col (:w_cursor @curwin)))
         )
 
         did_backspace
@@ -24056,7 +24056,7 @@
             (start-arrow tpos)
             ((ß @curwin.w_cursor.lnum =) (dec (:lnum (:w_cursor @curwin))))
             (coladvance MAXCOL)
-            ((ß @curwin.w_set_curswant =) true)   ;; so we stay at the end
+            (swap! curwin assoc :w_set_curswant true)   ;; so we stay at the end
         )
         :else
         (do
@@ -24075,7 +24075,7 @@
         )
         ((ß @curwin.w_cursor.col =) 0)
         ((ß @curwin.w_cursor.coladd =) 0)
-        ((ß @curwin.w_curswant =) 0)
+        (swap! curwin assoc :w_curswant 0)
 
         (start-arrow tpos)
         nil
@@ -24090,7 +24090,7 @@
             ((ß @curwin.w_cursor.lnum =) (:ml_line_count (:b_ml @curbuf)))
         )
         (coladvance MAXCOL)
-        ((ß @curwin.w_curswant =) MAXCOL)
+        (swap! curwin assoc :w_curswant MAXCOL)
 
         (start-arrow tpos)
         nil
@@ -24102,7 +24102,7 @@
         (do
             (start-arrow (:w_cursor @curwin))
             (bck-word 1, false, false)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         :else
         (do
@@ -24116,7 +24116,7 @@
         (cond (or (!= (gchar) NUL) (virtual-active))
         (do
             (start-arrow (:w_cursor @curwin))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             (if (virtual-active)
                 (oneright)
                 ((ß @curwin.w_cursor.col =) (+ (:col (:w_cursor @curwin)) (us-ptr2len-cc (ml-get-cursor))))
@@ -24126,7 +24126,7 @@
         (and (non-nil? (vim-strchr @p_ww, (byte \]))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
         (do
             (start-arrow (:w_cursor @curwin))
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
             ((ß @curwin.w_cursor.lnum =) (inc (:lnum (:w_cursor @curwin))))
             ((ß @curwin.w_cursor.col =) 0)
         )
@@ -24143,7 +24143,7 @@
         (do
             (start-arrow (:w_cursor @curwin))
             (fwd-word 1, false, false)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         :else
         (do
@@ -24361,7 +24361,7 @@
                         ((ß change_col =) (:col fpos)) ;; column of first change
                         ;; May have to adjust insStart.
                         (if (and (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
-                            ((ß @insStart.col =) (:col fpos))
+                            (swap! insStart assoc :col (:col fpos))
                         )
                     )
                 )
@@ -28212,7 +28212,7 @@
         ;; Use Object item, since we push different things onto the regstack.
         (reset! regstack (ß new Growing<Object>(Object.class, REGSTACK_INITIAL)))
         (.ga_grow @regstack REGSTACK_INITIAL)
-        ((ß @regstack.ga_growsize =) (* REGSTACK_INITIAL 8))
+        (swap! regstack assoc :ga_growsize (* REGSTACK_INITIAL 8))
         nil
     ))
 
@@ -28220,7 +28220,7 @@
     (§
         (reset! backpos (ß new Growing<backpos_C>(backpos_C.class, BACKPOS_INITIAL)))
         (.ga_grow @backpos BACKPOS_INITIAL)
-        ((ß @backpos.ga_growsize =) (* BACKPOS_INITIAL 8))
+        (swap! backpos assoc :ga_growsize (* BACKPOS_INITIAL 8))
         nil
     ))
 
@@ -28667,8 +28667,8 @@
 
         ;; Make "regstack" and "backpos" empty.
         ;; They are allocated and freed in bt-regexec-both() to reduce calloc()/free() calls.
-        ((ß @regstack.ga_len =) 0)
-        ((ß @backpos.ga_len =) 0)
+        (swap! regstack assoc :ga_len 0)
+        (swap! backpos assoc :ga_len 0)
 
         ;; Repeat until "regstack" is empty.
 
@@ -29200,7 +29200,7 @@
                                 ((ß bpp =) (.ga_grow @backpos 1))
                                 ((ß bpp[i] =) (NEW_backpos_C))
                                 ((ß bpp[i].bp_scan =) scan)
-                                ((ß @backpos.ga_len =) (inc (:ga_len @backpos)))
+                                (swap! backpos update :ga_len inc)
                             )
                             (reg-save-equal (:bp_pos (... bpp i)))
                             (do
@@ -39252,7 +39252,7 @@
             (if (flag? options SEARCH_MARK)
                 (setpcmark))
             (COPY-pos (:w_cursor @curwin), pos)
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
 ;       }
 
         (if (flag? options SEARCH_KEEP)
@@ -39430,7 +39430,7 @@
         ((ß int comment_col =) MAXCOL)               ;; start of / / comment
 
         (COPY-pos @_2_pos, (:w_cursor @curwin))
-        ((ß @_2_pos.coladd =) 0)
+        (swap! _2_pos assoc :coladd 0)
         ((ß Bytes linep =) (ml-get (:lnum @_2_pos))) ;; pointer to current line
 
         ((ß boolean cpo_match =) (non-nil? (vim-strbyte @p_cpo, CPO_MATCH)))    ;; vi compatible matching
@@ -39500,13 +39500,13 @@
                         (do
                             ((ß comment_dir =) FORWARD)
                             ((ß backwards[0] =) false)
-                            ((ß @_2_pos.col =) (inc (:col @_2_pos)))
+                            (swap! _2_pos update :col inc)
                         )
                         (and (< 0 (:col @_2_pos)) (at? linep (dec (:col @_2_pos)) (byte \*)))
                         (do
                             ((ß comment_dir =) BACKWARD)
                             ((ß backwards[0] =) true)
-                            ((ß @_2_pos.col =) (dec (:col @_2_pos)))
+                            (swap! _2_pos update :col dec)
                         ))
                     )
                     (at? linep (:col @_2_pos) (byte \*))
@@ -39532,7 +39532,7 @@
                     ;; If beyond the end of the line, use the last character in the line.
 
                     (if (and (at? linep (:col @_2_pos) NUL) (non-zero? (:col @_2_pos)))
-                        ((ß @_2_pos.col =) (dec (:col @_2_pos)))
+                        (swap! _2_pos update :col dec)
                     )
                     (while true
                         ((ß initc[0] =) (us-ptr2char (.plus linep (:col @_2_pos))))
@@ -39544,7 +39544,7 @@
                         (if (!= (... findc 0) NUL)
                             (ß BREAK)
                         )
-                        ((ß @_2_pos.col =) (+ (:col @_2_pos) (us-ptr2len-cc (.plus linep (:col @_2_pos)))))
+                        (swap! _2_pos update :col + (us-ptr2len-cc (.plus linep (:col @_2_pos))))
                     )
                     (cond (== (... findc 0) NUL)
                     (do
@@ -39588,7 +39588,7 @@
                         ((ß RETURN) nil)
                     ))
                 )
-                ((ß @_2_pos.col =) 0)
+                (swap! _2_pos assoc :col 0)
                 (while (not @got_int)
                     (cond (< 0 hash_dir)
                     (do
@@ -39600,14 +39600,14 @@
                     (do
                         (ß BREAK)
                     ))
-                    ((ß @_2_pos.lnum =) (+ (:lnum @_2_pos) hash_dir))
+                    (swap! _2_pos update :lnum + hash_dir)
                     ((ß linep =) (ml-get (:lnum @_2_pos)))
                     (line-breakcheck)          ;; check for CTRL-C typed
                     ((ß Bytes p =) (skipwhite linep))
                     (if (not-at? p (byte \#))
                         (ß CONTINUE)
                     )
-                    ((ß @_2_pos.col =) (BDIFF p, linep))
+                    (swap! _2_pos assoc :col (BDIFF p, linep))
                     ((ß p =) (skipwhite (.plus p 1)))
                     (cond (< 0 hash_dir)
                     (do
@@ -39674,14 +39674,14 @@
                     (if (== (:lnum @_2_pos) 1)               ;; start of file
                         (ß BREAK)
                     )
-                    ((ß @_2_pos.lnum =) (dec (:lnum @_2_pos)))
+                    (swap! _2_pos update :lnum dec)
 
                     (if (and (< 0 maxtravel) (< maxtravel ((ß traveled =) (inc traveled))))
                         (ß BREAK)
                     )
 
                     ((ß linep =) (ml-get (:lnum @_2_pos)))
-                    ((ß @_2_pos.col =) (STRLEN linep))    ;; _2_pos.col on trailing NUL
+                    (swap! _2_pos assoc :col (STRLEN linep))    ;; _2_pos.col on trailing NUL
                     ((ß do_quotes =) -1)
                     (line-breakcheck)
 
@@ -39692,8 +39692,8 @@
                 )
                 :else
                 (do
-                    ((ß @_2_pos.col =) (dec (:col @_2_pos)))
-                    ((ß @_2_pos.col =) (- (:col @_2_pos) (us-head-off linep, (.plus linep (:col @_2_pos)))))
+                    (swap! _2_pos update :col dec)
+                    (swap! _2_pos update :col - (us-head-off linep, (.plus linep (:col @_2_pos))))
                 ))
             )
             :else                            ;; forward search
@@ -39703,20 +39703,20 @@
                     (if (== (:lnum @_2_pos) (:ml_line_count (:b_ml @curbuf)))    ;; end of file
                         (ß BREAK)
                     )
-                    ((ß @_2_pos.lnum =) (inc (:lnum @_2_pos)))
+                    (swap! _2_pos update :lnum inc)
 
                     (if (and (non-zero? maxtravel) (< maxtravel (ß traveled++)))
                         (ß BREAK)
                     )
 
                     ((ß linep =) (ml-get (:lnum @_2_pos)))
-                    ((ß @_2_pos.col =) 0)
+                    (swap! _2_pos assoc :col 0)
                     ((ß do_quotes =) -1)
                     (line-breakcheck)
                 )
                 :else
                 (do
-                    ((ß @_2_pos.col =) (+ (:col @_2_pos) (us-ptr2len-cc (.plus linep (:col @_2_pos)))))
+                    (swap! _2_pos update :col + (us-ptr2len-cc (.plus linep (:col @_2_pos))))
                 ))
             ))
 
@@ -39735,7 +39735,7 @@
                 (cond (== comment_dir FORWARD)
                 (do
                     (when (and (at? linep (:col @_2_pos) (byte \*)) (at? linep (inc (:col @_2_pos)) (byte \/)))
-                        ((ß @_2_pos.col =) (inc (:col @_2_pos)))
+                        (swap! _2_pos update :col inc)
                         ((ß RETURN) @_2_pos)
                     )
                 )
@@ -39762,7 +39762,7 @@
                         )
                         (and (< 1 (:col @_2_pos)) (at? linep (- (:col @_2_pos) 2) (byte \/)) (<= (:col @_2_pos) comment_col))
                         (do
-                            ((ß @_2_pos.col =) (- (:col @_2_pos) 2))
+                            (swap! _2_pos update :col - 2)
                         )
                         ignore_cend
                         (do
@@ -39904,12 +39904,12 @@
                             (when (< 1 (:col @_2_pos))
                                 (cond (at? linep (- (:col @_2_pos) 2) (byte \'))
                                 (do
-                                    ((ß @_2_pos.col =) (- (:col @_2_pos) 2))
+                                    (swap! _2_pos update :col - 2)
                                     (ß BREAK)
                                 )
                                 (and (at? linep (- (:col @_2_pos) 2) (byte \\)) (< 2 (:col @_2_pos)) (at? linep (- (:col @_2_pos) 3) (byte \')))
                                 (do
-                                    ((ß @_2_pos.col =) (- (:col @_2_pos) 3))
+                                    (swap! _2_pos update :col - 3)
                                     (ß BREAK)
                                 ))
                             )
@@ -39918,12 +39918,12 @@
                         (do
                             (cond (and (at? linep (+ (:col @_2_pos) 1) (byte \\)) (non-eos? linep (+ (:col @_2_pos) 2)) (at? linep (+ (:col @_2_pos) 3) (byte \')))
                             (do
-                                ((ß @_2_pos.col =) (+ (:col @_2_pos) 3))
+                                (swap! _2_pos update :col + 3)
                                 (ß BREAK)
                             )
                             (at? linep (+ (:col @_2_pos) 2) (byte \'))
                             (do
-                                ((ß @_2_pos.col =) (+ (:col @_2_pos) 2))
+                                (swap! _2_pos update :col + 2)
                                 (ß BREAK)
                             ))
                         ))
@@ -40037,7 +40037,7 @@
                 (COPY-pos save_cursor, (:w_cursor @curwin))
                 ((ß long save_so =) @p_so)
                 ((ß long save_siso =) @p_siso)
-                ((ß @curwin.w_virtcol =) (inc (:w_virtcol @curwin)))                 ;; do display ')' just before "$"
+                (swap! curwin update :w_virtcol inc)                 ;; do display ')' just before "$"
                 (update-screen VALID)               ;; show the new char first
 
                 ((ß int save_state =) @State)
@@ -41286,7 +41286,7 @@
 
         ((ß buf.b_ml =) (ml-open))
 
-        ((ß @curwin.w_nrwidth_line_count =) 0)
+        (swap! curwin assoc :w_nrwidth_line_count 0)
 
         ((ß buf.b_chartab =) (ß new int[8]))
         (buf-init-chartab buf, false)
@@ -46130,13 +46130,13 @@
                 (cond (<= (BDIFF p, oldline) (:col @saved_cursor))
                 (do
                     ;; cursor was after the indent, adjust for the number of bytes added/removed
-                    ((ß @saved_cursor.col =) (+ (:col @saved_cursor) (- ind_len (BDIFF p, oldline))))
+                    (swap! saved_cursor update :col + (- ind_len (BDIFF p, oldline)))
                 )
                 (<= (BDIFF s, newline) (:col @saved_cursor))
                 (do
                     ;; cursor was in the indent and is now after it; put it back
                     ;; at the start of the indent (replacing spaces with TAB)
-                    ((ß @saved_cursor.col =) (BDIFF s, newline))
+                    (swap! saved_cursor assoc :col (BDIFF s, newline))
                 ))
             )
             ((ß retval =) true)
@@ -47146,7 +47146,7 @@
             ((ß @curbuf.@b_changed =) true)
             (check-status @curbuf)
         )
-        ((ß @curbuf.b_changedtick =) (inc (:b_changedtick @curbuf)))
+        (swap! curbuf update :b_changedtick inc)
         nil
     ))
 
@@ -47305,11 +47305,11 @@
                     ;; This is the first of a new sequence of undo-able changes
                     ;; and it's at some distance of the last change.  Use a new
                     ;; position in the changelist.
-                    ((ß @curbuf.b_new_change =) false)
+                    (swap! curbuf assoc :b_new_change false)
 
                     (when (== (:b_changelistlen @curbuf) JUMPLISTSIZE)
                         ;; changelist is full: remove oldest entry
-                        ((ß @curbuf.b_changelistlen =) (dec JUMPLISTSIZE))
+                        (swap! curbuf assoc :b_changelistlen (dec JUMPLISTSIZE))
                         (dotimes [#_int i (dec JUMPLISTSIZE)]
                             (COPY-pos (... (:b_changelist @curbuf) i), (... (:b_changelist @curbuf) (inc i)))
                         )
@@ -47329,12 +47329,12 @@
                         )
                     )
 
-                    ((ß @curbuf.b_changelistlen =) (inc (:b_changelistlen @curbuf)))
+                    (swap! curbuf update :b_changelistlen inc)
                 )
             )
             (COPY-pos (... (:b_changelist @curbuf) (- (:b_changelistlen @curbuf) 1)), (:b_last_change @curbuf))
             ;; The current window is always after the last change, so that "g," takes you back to it.
-            ((ß @curwin.w_changelistidx =) (:b_changelistlen @curbuf))
+            (swap! curwin assoc :w_changelistidx (:b_changelistlen @curbuf))
 ;       }
 
         (robin [#_window_C wp @firstwin] (non-nil? wp) [(:w_next wp)]
@@ -47387,7 +47387,7 @@
 
         ;; When the cursor line is changed, always trigger CursorMoved.
         (when (and (<= lnum (:lnum (:w_cursor @curwin))) (< (:lnum (:w_cursor @curwin)) (+ lnume (if (< xtra 0) (- xtra) xtra))))
-            ((ß @last_cursormoved.lnum =) 0)
+            (swap! last_cursormoved assoc :lnum 0)
         )
         nil
     ))
@@ -47724,13 +47724,13 @@
 
         (cond (== wcol MAXCOL)
         (do
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_VIRTCOL)))
+            (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
         )
         :else
         (do
             ;; Virtcol is valid.
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_VIRTCOL))
-            ((ß @curwin.w_virtcol =) wcol)
+            (swap! curwin update :w_valid | VALID_VIRTCOL)
+            (swap! curwin assoc :w_virtcol wcol)
         ))
         rc
     ))
@@ -47749,13 +47749,13 @@
 
         (cond (or (== wcol MAXCOL) (not rc))
         (do
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_VIRTCOL)))
+            (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
         )
         (not-at? (ml-get-cursor) TAB)
         (do
             ;; Virtcol is valid when not on a TAB.
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_VIRTCOL))
-            ((ß @curwin.w_virtcol =) wcol)
+            (swap! curwin update :w_valid | VALID_VIRTCOL)
+            (swap! curwin assoc :w_virtcol wcol)
         ))
         rc
     ))
@@ -47786,9 +47786,9 @@
             ((ß col =) wcol)
 
             (when (and (or addspaces finetune) (not @VIsual_active))
-                ((ß @curwin.w_curswant =) (+ (linetabsize line) (if one_more 1 0)))
+                (swap! curwin assoc :w_curswant (+ (linetabsize line) (if one_more 1 0)))
                 (if (< 0 (:w_curswant @curwin))
-                    ((ß @curwin.w_curswant =) (dec (:w_curswant @curwin)))
+                    (swap! curwin update :w_curswant dec)
                 )
             )
         )
@@ -48135,13 +48135,13 @@
         (do
             ((ß retval =) true)
             (when (not (coladvance (+ (... e 0) 1)))     ;; there isn't another character
-                ((ß @curwin.w_leftcol =) (... s 0))           ;; adjust w_leftcol instead
+                (swap! curwin assoc :w_leftcol (... s 0))           ;; adjust w_leftcol instead
                 (changed-cline-bef-curs)
             )
         ))
 
         (if retval
-            ((ß @curwin.w_set_curswant =) true)
+            (swap! curwin assoc :w_set_curswant true)
         )
         (redraw-later NOT_VALID)
         retval
@@ -48979,7 +48979,7 @@
         (cond (:b_u_synced @curbuf)
         (do
             ;; Need to create new entry in b_changelist.
-            ((ß @curbuf.b_new_change =) true)
+            (swap! curbuf assoc :b_new_change true)
 
             ((ß u_header_C uhp =) (if (<= 0 (get-undolevel)) (NEW_u_header_C) nil))
 
@@ -48988,8 +48988,8 @@
 
 ; %%        ((ß u_header_C[] old_curhead =) (ß { (@curbuf.b_u_curhead) }))
             (when (non-nil? (... old_curhead 0))
-                ((ß @curbuf.b_u_newhead =) (:ptr (:uh_next (... old_curhead 0))))
-                ((ß @curbuf.b_u_curhead =) nil)
+                (swap! curbuf assoc :b_u_newhead (:ptr (:uh_next (... old_curhead 0))))
+                (swap! curbuf assoc :b_u_curhead nil)
             )
 
             ;; free headers to keep the size right
@@ -49020,7 +49020,7 @@
             (when (nil? uhp)                ;; no undo at all
                 (if (non-nil? (... old_curhead 0))
                     (u-freebranch @curbuf, (... old_curhead 0), nil))
-                ((ß @curbuf.b_u_synced =) false)
+                (swap! curbuf assoc :b_u_synced false)
                 ((ß RETURN) true)
             )
 
@@ -49035,7 +49035,7 @@
                 )
                 ((ß old_curhead[0].uh_alt_prev.ptr =) uhp)
                 (if (== (:b_u_oldhead @curbuf) (... old_curhead 0))
-                    ((ß @curbuf.b_u_oldhead =) uhp)
+                    (swap! curbuf assoc :b_u_oldhead uhp)
                 )
             )
             :else
@@ -49047,9 +49047,9 @@
             )
 
             ((ß uhp.uh_seq =) (ß ++@curbuf.b_u_seq_last))
-            ((ß @curbuf.b_u_seq_cur =) (:uh_seq uhp))
+            (swap! curbuf assoc :b_u_seq_cur (:uh_seq uhp))
             ((ß uhp.uh_time =) (._time libC))
-            ((ß @curbuf.b_u_time_cur =) (+ (:uh_time uhp) 1))
+            (swap! curbuf assoc :b_u_time_cur (+ (:uh_time uhp) 1))
 
             ((ß uhp.uh_walk =) 0)
             ((ß uhp.uh_entry =) nil)
@@ -49066,11 +49066,11 @@
             )
             (COPY-visualinfo (:uh_visual uhp), (:b_visual @curbuf))
 
-            ((ß @curbuf.b_u_newhead =) uhp)
+            (swap! curbuf assoc :b_u_newhead uhp)
             (if (nil? (:b_u_oldhead @curbuf))
-                ((ß @curbuf.b_u_oldhead =) uhp)
+                (swap! curbuf assoc :b_u_oldhead uhp)
             )
-            ((ß @curbuf.b_u_numhead =) (inc (:b_u_numhead @curbuf)))
+            (swap! curbuf update :b_u_numhead inc)
         )
         :else
         (do
@@ -49105,7 +49105,7 @@
                             ;; It's not the last entry: get ue_bot for the last entry now.
                             ;; Following deleted/inserted lines go to the re-used entry.
                             (u-getbot)
-                            ((ß @curbuf.b_u_synced =) false)
+                            (swap! curbuf assoc :b_u_synced false)
 
                             ;; Move the found entry to become the last entry.
                             ;; The order of undo/redo doesn't matter for the entries we move it over,
@@ -49184,7 +49184,7 @@
         ))
         ((ß uep.ue_next =) (:uh_entry (:b_u_newhead @curbuf)))
         ((ß @curbuf.b_u_newhead.uh_entry =) uep)
-        ((ß @curbuf.b_u_synced =) false)
+        (swap! curbuf assoc :b_u_synced false)
         (reset! undo_undoes false)
 
         true
@@ -49238,17 +49238,17 @@
             (do
                 (cond (nil? (:b_u_curhead @curbuf))             ;; first undo
                 (do
-                    ((ß @curbuf.b_u_curhead =) (:b_u_newhead @curbuf))
+                    (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf))
                 )
                 (< 0 (get-undolevel))               ;; multi level undo
                 (do
                     ;; get next undo
-                    ((ß @curbuf.b_u_curhead =) (:ptr (:uh_next (:b_u_curhead @curbuf))))
+                    (swap! curbuf assoc :b_u_curhead (:ptr (:uh_next (:b_u_curhead @curbuf))))
                 ))
                 ;; nothing to undo
                 (when (or (zero? (:b_u_numhead @curbuf)) (nil? (:b_u_curhead @curbuf)))
                     ;; stick curbuf.b_u_curhead at end
-                    ((ß @curbuf.b_u_curhead =) (:b_u_oldhead @curbuf))
+                    (swap! curbuf assoc :b_u_curhead (:b_u_oldhead @curbuf))
                     (beep-flush)
                     (when (== count startcount)
                         (msg (u8 "Already at oldest change"))
@@ -49275,9 +49275,9 @@
                 ;; Advance for next redo.
                 ;; Set "newhead" when at the end of the redoable changes.
                 (if (nil? (:ptr (:uh_prev (:b_u_curhead @curbuf))))
-                    ((ß @curbuf.b_u_newhead =) (:b_u_curhead @curbuf))
+                    (swap! curbuf assoc :b_u_newhead (:b_u_curhead @curbuf))
                 )
-                ((ß @curbuf.b_u_curhead =) (:ptr (:uh_prev (:b_u_curhead @curbuf))))
+                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev (:b_u_curhead @curbuf))))
             ))
         )
 
@@ -49440,7 +49440,7 @@
                 (if (or (nil? uhp) (!= (:uh_walk uhp) mark) (and (== (:uh_seq uhp) target) (not above)))
                     (ß BREAK)
                 )
-                ((ß @curbuf.b_u_curhead =) uhp)
+                (swap! curbuf assoc :b_u_curhead uhp)
                 (u-undoredo true)
                 ((ß uhp.uh_walk =) nomark)   ;; don't go back down here
             )
@@ -49478,14 +49478,14 @@
                     ((ß uhp.uh_alt_prev.ptr =) last)
 
                     (if (== (:b_u_oldhead @curbuf) uhp)
-                        ((ß @curbuf.b_u_oldhead =) last)
+                        (swap! curbuf assoc :b_u_oldhead last)
                     )
                     ((ß uhp =) last)
                     (if (non-nil? (:ptr (:uh_next uhp)))
                         ((ß uhp.uh_next.ptr.uh_prev.ptr =) uhp)
                     )
                 )
-                ((ß @curbuf.b_u_curhead =) uhp)
+                (swap! curbuf assoc :b_u_curhead uhp)
 
                 (if (!= (:uh_walk uhp) mark)
                     (ß BREAK)      ;; must have reached the target
@@ -49494,7 +49494,7 @@
                 ;; Stop when going backwards in time and didn't find
                 ;; the exact header we were looking for.
                 (when (and (== (:uh_seq uhp) target) above)
-                    ((ß @curbuf.b_u_seq_cur =) (dec target))
+                    (swap! curbuf assoc :b_u_seq_cur (dec target))
                     (ß BREAK)
                 )
 
@@ -49503,9 +49503,9 @@
                 ;; Advance "curhead" to below the header we last used.
                 ;; If it becomes null, then we need to set "newhead" to this leaf.
                 (if (nil? (:ptr (:uh_prev uhp)))
-                    ((ß @curbuf.b_u_newhead =) uhp)
+                    (swap! curbuf assoc :b_u_newhead uhp)
                 )
-                ((ß @curbuf.b_u_curhead =) (:ptr (:uh_prev uhp)))
+                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev uhp)))
                 ((ß did_undo =) false)
 
                 (if (== (:uh_seq uhp) target)   ;; found it!
@@ -49738,16 +49738,16 @@
         (check-cursor)
 
         ;; Remember where we are for "g-" and ":earlier 10s".
-        ((ß @curbuf.b_u_seq_cur =) (:uh_seq curhead))
+        (swap! curbuf assoc :b_u_seq_cur (:uh_seq curhead))
         (when undo
             ;; We are below the previous undo.  However, to make ":earlier 1s"
             ;; work we compute this as being just above the just undone change.
-            ((ß @curbuf.b_u_seq_cur =) (dec (:b_u_seq_cur @curbuf)))
+            (swap! curbuf update :b_u_seq_cur dec)
         )
 
         ;; The timestamp can be the same for multiple changes,
         ;; just use the one of the undone/redone change.
-        ((ß @curbuf.b_u_time_cur =) (:uh_time curhead))
+        (swap! curbuf assoc :b_u_time_cur (:uh_time curhead))
         nil
     ))
 
@@ -49841,12 +49841,12 @@
 
         (cond (< (get-undolevel) 0)
         (do
-            ((ß @curbuf.b_u_synced =) true)   ;; no entries, nothing to do
+            (swap! curbuf assoc :b_u_synced true)   ;; no entries, nothing to do
         )
         :else
         (do
             (u-getbot)                 ;; compute ue_bot of previous u-save()
-            ((ß @curbuf.b_u_curhead =) nil)
+            (swap! curbuf assoc :b_u_curhead nil)
         ))
         nil
     ))
@@ -49906,7 +49906,7 @@
                         )
                         ((ß @curbuf.b_u_newhead.uh_getbot_entry =) nil)
                     ))
-                ((ß @curbuf.b_u_synced =) true)
+                (swap! curbuf assoc :b_u_synced true)
             ))
         nil
     ))
@@ -50007,9 +50007,9 @@
 
         (u-clearline)
 
-        ((ß @curbuf.b_u_line_lnum =) lnum)
-        ((ß @curbuf.b_u_line_colnr =) (if (== (:lnum (:w_cursor @curwin)) lnum) (:col (:w_cursor @curwin)) 0))
-        ((ß @curbuf.b_u_line_ptr =) (STRDUP (ml-get lnum)))
+        (swap! curbuf assoc :b_u_line_lnum lnum)
+        (swap! curbuf assoc :b_u_line_colnr (if (== (:lnum (:w_cursor @curwin)) lnum) (:col (:w_cursor @curwin)) 0))
+        (swap! curbuf assoc :b_u_line_ptr (STRDUP (ml-get lnum)))
         nil
     ))
 
@@ -50019,8 +50019,8 @@
 (defn- #_void u-clearline []
     (§
         (when (non-nil? (:b_u_line_ptr @curbuf))
-            ((ß @curbuf.b_u_line_ptr =) nil)
-            ((ß @curbuf.b_u_line_lnum =) 0)
+            (swap! curbuf assoc :b_u_line_ptr nil)
+            (swap! curbuf assoc :b_u_line_lnum 0)
         )
         nil
     ))
@@ -50045,11 +50045,11 @@
 
         (ml-replace (:b_u_line_lnum @curbuf), (:b_u_line_ptr @curbuf))
         (changed-bytes (:b_u_line_lnum @curbuf), 0)
-        ((ß @curbuf.b_u_line_ptr =) oldp)
+        (swap! curbuf assoc :b_u_line_ptr oldp)
 
         ((ß int t =) (:b_u_line_colnr @curbuf))
         (if (== (:lnum (:w_cursor @curwin)) (:b_u_line_lnum @curbuf))
-            ((ß @curbuf.b_u_line_colnr =) (:col (:w_cursor @curwin)))
+            (swap! curbuf assoc :b_u_line_colnr (:col (:w_cursor @curwin)))
         )
         ((ß @curwin.w_cursor.col =) t)
         ((ß @curwin.w_cursor.lnum =) (:b_u_line_lnum @curbuf))
@@ -51781,10 +51781,10 @@
 (defn- #_void redrawWinline [#_long lnum]
     (§
         (if (or (zero? (:w_redraw_top @curwin)) (> (:w_redraw_top @curwin) lnum))
-            ((ß @curwin.w_redraw_top =) lnum)
+            (swap! curwin assoc :w_redraw_top lnum)
         )
         (if (or (zero? (:w_redraw_bot @curwin)) (< (:w_redraw_bot @curwin) lnum))
-            ((ß @curwin.w_redraw_bot =) lnum)
+            (swap! curwin assoc :w_redraw_bot lnum)
         )
 
         (redraw-later VALID)
@@ -51830,7 +51830,7 @@
             (redraw-later type)                 ;; remember type for next time
             (reset! must_redraw type)
             (if (< INVERTED_ALL type)
-                ((ß @curwin.w_lines_valid =) 0)       ;; don't use w_lines[].wl_size now
+                (swap! curwin assoc :w_lines_valid 0)       ;; don't use w_lines[].wl_size now
             )
             ((ß RETURN) nil)
         )
@@ -51890,7 +51890,7 @@
 
         ;; Force redraw when width of 'number' or 'relativenumber' column changes.
         (when (and (< (:w_redr_type @curwin) NOT_VALID) (!= (:w_nrwidth @curwin) (if (or @(:wo_nu (:w_options @curwin)) @(:wo_rnu (:w_options @curwin))) (number-width @curwin) 0)))
-            ((ß @curwin.w_redr_type =) NOT_VALID)
+            (swap! curwin assoc :w_redr_type NOT_VALID)
         )
 
         ;; Only start redrawing if there is really something to do.
@@ -51898,7 +51898,7 @@
         (if (== type INVERTED)
             (update-curswant))
         (if (and (< (:w_redr_type @curwin) type) (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0)))) (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin))) (== (:w_old_visual_mode @curwin) @VIsual_mode) (flag? (:w_valid @curwin) VALID_VIRTCOL) (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
-            ((ß @curwin.w_redr_type =) type)
+            (swap! curwin assoc :w_redr_type type)
         )
 
         ;; Go from top to bottom through the windows, redrawing the ones that need it.
@@ -51927,7 +51927,7 @@
         ;; Reset b_mod_set flags.  Going through all windows is probably faster
         ;; than going through all buffers (there could be many buffers).
         (robin [#_window_C wp @firstwin] (non-nil? wp) [(:w_next wp)]
-            ((ß @curbuf.b_mod_set =) false)
+            (swap! curbuf assoc :b_mod_set false)
         )
 
         (reset! updating_screen false)
@@ -52788,15 +52788,15 @@
         ((ß wp.w_valid =) (| (:w_valid wp) VALID_BOTLINE))
         (when (and (== wp @curwin) (!= (:w_botline wp) old_botline) (not @_2_recursive))
             (reset! _2_recursive true)
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_TOPLINE)))
+            (swap! curwin update :w_valid & (bit-not VALID_TOPLINE))
             (update-topline)   ;; may invalidate w_botline again
             (when (non-zero? @must_redraw)
                 ;; Don't update for changes in buffer again.
                 ((ß boolean b =) (:b_mod_set @curbuf))
-                ((ß @curbuf.b_mod_set =) false)
+                (swap! curbuf assoc :b_mod_set false)
                 (win-update @curwin)
                 (reset! must_redraw 0)
-                ((ß @curbuf.b_mod_set =) b)
+                (swap! curbuf assoc :b_mod_set b)
             )
             (reset! _2_recursive false)
         )
@@ -54018,9 +54018,9 @@
                 ;; updated (saves a call to plines() later).
 
                 (when (and (== wp @curwin) (== lnum (:lnum (:w_cursor @curwin))))
-                    ((ß @curwin.w_cline_row =) startrow)
-                    ((ß @curwin.w_cline_height =) (- row startrow))
-                    ((ß @curwin.w_valid =) (| (:w_valid @curwin) (| VALID_CHEIGHT VALID_CROW)))
+                    (swap! curwin assoc :w_cline_row startrow)
+                    (swap! curwin assoc :w_cline_height (- row startrow))
+                    (swap! curwin update :w_valid | VALID_CHEIGHT VALID_CROW)
                 )
 
                 (ß BREAK)
@@ -54772,9 +54772,9 @@
     (§
         (when (and @p_hls (not @no_hlsearch))
             (last-pat-prog (:rmm @search_hl))
-            ((ß @search_hl.attr =) (hl-attr HLF_L))
+            (swap! search_hl assoc :attr (hl-attr HLF_L))
             ;; Set the time limit to 'redrawtime'.
-            ((ß @search_hl.nsec =) (profile-setlimit @p_rdt))
+            (swap! search_hl assoc :nsec (profile-setlimit @p_rdt))
         )
         nil
     ))
@@ -54803,9 +54803,9 @@
             ;; Set the time limit to 'redrawtime'.
             ((ß mi.mi_hl.nsec =) (profile-setlimit @p_rdt))
         )
-        ((ß @search_hl.buf =) @curbuf)
-        ((ß @search_hl.lnum =) 0)
-        ((ß @search_hl.first_lnum =) 0)
+        (swap! search_hl assoc :buf @curbuf)
+        (swap! search_hl assoc :lnum 0)
+        (swap! search_hl assoc :first_lnum 0)
         ;; time limit is set at the toplevel, for all windows
         nil
     ))
@@ -57646,7 +57646,7 @@
 
 (defn- #_void win-init [#_window_C newp, #_window_C oldp]
     (§
-        ((ß @curbuf.b_nwindows =) (inc (:b_nwindows @curbuf)))
+        (swap! curbuf update :b_nwindows inc)
 
         (COPY-pos (:w_cursor newp), (:w_cursor oldp))
         ((ß newp.w_valid =) 0)
@@ -57746,10 +57746,10 @@
         )
 
         ((ß int temp =) (:w_status_height @curwin))
-        ((ß @curwin.w_status_height =) (:w_status_height wp))
+        (swap! curwin assoc :w_status_height (:w_status_height wp))
         ((ß wp.w_status_height =) temp)
         ((ß temp =) (:w_vsep_width @curwin))
-        ((ß @curwin.w_vsep_width =) (:w_vsep_width wp))
+        (swap! curwin assoc :w_vsep_width (:w_vsep_width wp))
         ((ß wp.w_vsep_width =) temp)
 
         ;; If the windows are not in the same frame, exchange the sizes to avoid
@@ -57757,10 +57757,10 @@
         (cond (!= (:fr_parent (:w_frame @curwin)) (:fr_parent (:w_frame wp)))
         (do
             ((ß temp =) (:w_height @curwin))
-            ((ß @curwin.w_height =) (:w_height wp))
+            (swap! curwin assoc :w_height (:w_height wp))
             ((ß wp.w_height =) temp)
             ((ß temp =) (:w_width @curwin))
-            ((ß @curwin.w_width =) (:w_width wp))
+            (swap! curwin assoc :w_width (:w_width wp))
             ((ß wp.w_width =) temp)
         )
         :else
@@ -58953,22 +58953,22 @@
 
         (reset! curbuf (newBuffer))
 
-        ((ß @curbuf.b_nwindows =) 1)          ;; there is one window
+        (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
 
         ;; mark cursor position as being invalid
-        ((ß @curwin.w_valid =) 0)
+        (swap! curwin assoc :w_valid 0)
 
         ;; need to set w_topline
-        ((ß @curwin.w_topline =) 1)
+        (swap! curwin assoc :w_topline 1)
 
         (win-init-empty @curwin)
 
-        ((ß @curwin.w_frame =) (newFrame @curwin))
+        (swap! curwin assoc :w_frame (newFrame @curwin))
 
         (reset! topframe (:w_frame @curwin))
-        ((ß @topframe.fr_width =) (int @Cols))
-        ((ß @topframe.fr_height =) (int (- @Rows @p_ch)))
-        ((ß @topframe.fr_win =) @curwin)
+        (swap! topframe assoc :fr_width (int @Cols))
+        (swap! topframe assoc :fr_height (int (- @Rows @p_ch)))
+        (swap! topframe assoc :fr_win @curwin)
 
         (reset! ch_used @p_ch)
         nil
@@ -58992,10 +58992,10 @@
     (§
         ((ß long rows_avail =) (- @Rows @p_ch))
 
-        ((ß @firstwin.w_height =) (int rows_avail))
-        ((ß @topframe.fr_height =) (int rows_avail))
-        ((ß @firstwin.w_width =) (int @Cols))
-        ((ß @topframe.fr_width =) (int @Cols))
+        (swap! firstwin assoc :w_height (int rows_avail))
+        (swap! topframe assoc :fr_height (int rows_avail))
+        (swap! firstwin assoc :w_width (int @Cols))
+        (swap! topframe assoc :fr_width (int @Cols))
         nil
     ))
 
@@ -59154,7 +59154,7 @@
 
         (when (not curwin_invalid)
             (reset! prevwin @curwin)       ;; remember for CTRL-W p
-            ((ß @curwin.w_redr_status =) true)
+            (swap! curwin assoc :w_redr_status true)
         )
         (reset! curwin wp)
         (check-cursor)
@@ -59163,7 +59163,7 @@
         )
         (changed-line-abv-curs)    ;; assume cursor position needs updating
 
-        ((ß @curwin.w_redr_status =) true)
+        (swap! curwin assoc :w_redr_status true)
         (if (non-zero? @restart_edit)
             (redraw-later VALID))    ;; causes status line redraw
 
@@ -59540,7 +59540,7 @@
                 ;; use lines from cmdline first
                 ((ß room_cmdline =) (min room_cmdline take))
                 ((ß take =) (- take room_cmdline))
-                ((ß @topframe.fr_height =) (+ (:fr_height @topframe) room_cmdline))
+                (swap! topframe update :fr_height + room_cmdline)
             )
 
             ;; set the current frame to the new height
@@ -60220,10 +60220,10 @@
 
         ;; If the window height is zero just use the cursor line.
         (when (zero? (:w_height @curwin))
-            ((ß @curwin.w_topline =) (:lnum (:w_cursor @curwin)))
-            ((ß @curwin.w_botline =) (:w_topline @curwin))
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) (| VALID_BOTLINE VALID_BOTLINE_AP)))
-            ((ß @curwin.w_scbind_pos =) 1)
+            (swap! curwin assoc :w_topline (:lnum (:w_cursor @curwin)))
+            (swap! curwin assoc :w_botline (:w_topline @curwin))
+            (swap! curwin update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
+            (swap! curwin assoc :w_scbind_pos 1)
             ((ß RETURN) nil)
         )
 
@@ -60240,10 +60240,10 @@
         (do
             (if (!= (:w_topline @curwin) 1)
                 (redraw-later NOT_VALID))
-            ((ß @curwin.w_topline =) 1)
-            ((ß @curwin.w_botline =) 2)
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) (| VALID_BOTLINE VALID_BOTLINE_AP)))
-            ((ß @curwin.w_scbind_pos =) 1)
+            (swap! curwin assoc :w_topline 1)
+            (swap! curwin assoc :w_botline 2)
+            (swap! curwin update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
+            (swap! curwin assoc :w_scbind_pos 1)
         )
 
         ;; If the cursor is above or near the top of the window, scroll the window
@@ -60338,14 +60338,14 @@
                 )
             )
         )
-        ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+        (swap! curwin update :w_valid | VALID_TOPLINE)
 
         ;; Need to redraw when topline changed.
 
         (when (!= (:w_topline @curwin) old_topline)
             (cond (non-zero? (:w_skipcol @curwin))
             (do
-                ((ß @curwin.w_skipcol =) 0)
+                (swap! curwin assoc :w_skipcol 0)
                 (redraw-later NOT_VALID)
             )
             :else
@@ -60398,8 +60398,8 @@
     (§
         (when (:w_set_curswant @curwin)
             (validate-virtcol)
-            ((ß @curwin.w_curswant =) (:w_virtcol @curwin))
-            ((ß @curwin.w_set_curswant =) false)
+            (swap! curwin assoc :w_curswant (:w_virtcol @curwin))
+            (swap! curwin assoc :w_set_curswant false)
         )
         nil
     ))
@@ -60461,7 +60461,7 @@
 
 (defn- #_void changed-cline-bef-curs []
     (§
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CHEIGHT VALID_TOPLINE))))
+        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CHEIGHT VALID_TOPLINE)))
         nil
     ))
 
@@ -60477,7 +60477,7 @@
 
 (defn- #_void changed-line-abv-curs []
     (§
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CROW VALID_CHEIGHT VALID_TOPLINE))))
+        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_VIRTCOL VALID_CROW VALID_CHEIGHT VALID_TOPLINE)))
         nil
     ))
 
@@ -60499,7 +60499,7 @@
 
 (defn- #_void invalidate-botline []
     (§
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_BOTLINE VALID_BOTLINE_AP))))
+        (swap! curwin update :w_valid & (bit-not (| VALID_BOTLINE VALID_BOTLINE_AP)))
         nil
     ))
 
@@ -60616,8 +60616,8 @@
     (§
         (check-cursor-moved @curwin)
         (when (non-flag? (:w_valid @curwin) VALID_CHEIGHT)
-            ((ß @curwin.w_cline_height =) (plines (:lnum (:w_cursor @curwin))))
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_CHEIGHT))
+            (swap! curwin assoc :w_cline_height (plines (:lnum (:w_cursor @curwin))))
+            (swap! curwin update :w_valid | VALID_CHEIGHT)
         )
         nil
     ))
@@ -60638,9 +60638,9 @@
                 ;; use same formula as what is used in curs-columns()
                 ((ß col =) (- col (* (inc (/ (- col (:w_width @curwin)) width)) width)))
             )
-            ((ß @curwin.w_wcol =) (max 0 (- col (:w_leftcol @curwin))))
+            (swap! curwin assoc :w_wcol (max 0 (- col (:w_leftcol @curwin))))
 
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_WCOL))
+            (swap! curwin update :w_valid | VALID_WCOL)
         )
         nil
     ))
@@ -60689,16 +60689,16 @@
 ; %%    ((ß int[] vcol =) (ß { (@curwin.w_virtcol) }))
         ((ß int[] endcol =) (ß new int[1]))
         (getvvcol @curwin, (:w_cursor @curwin), startcol, vcol, endcol)
-        ((ß @curwin.w_virtcol =) (... vcol 0))
+        (swap! curwin assoc :w_virtcol (... vcol 0))
 
         ;; offset for first screen line
         ((ß int extra =) (curwin-col-off))
-        ((ß @curwin.w_wcol =) (+ (:w_virtcol @curwin) extra))
+        (swap! curwin assoc :w_wcol (+ (:w_virtcol @curwin) extra))
         ((ß endcol[0] =) (+ (... endcol 0) extra))
 
         ;; Now compute w_wrow, counting screen lines from w_cline_row.
 
-        ((ß @curwin.w_wrow =) (:w_cline_row @curwin))
+        (swap! curwin assoc :w_wrow (:w_cline_row @curwin))
 
         ((ß int width =) 0)
 
@@ -60706,8 +60706,8 @@
         (cond (<= textwidth 0)
         (do
             ;; No room for text, put cursor in last char of window.
-            ((ß @curwin.w_wcol =) (- (:w_width @curwin) 1))
-            ((ß @curwin.w_wrow =) (- (:w_height @curwin) 1))
+            (swap! curwin assoc :w_wcol (- (:w_width @curwin) 1))
+            (swap! curwin assoc :w_wrow (- (:w_height @curwin) 1))
         )
         (and @(:wo_wrap (:w_options @curwin)) (non-zero? (:w_width @curwin)))
         (do
@@ -60717,13 +60717,13 @@
             (when (<= (:w_width @curwin) (:w_wcol @curwin))
                 ;; this same formula is used in validate-cursor-col()
                 ((ß int n =) (+ (/ (- (:w_wcol @curwin) (:w_width @curwin)) width) 1))
-                ((ß @curwin.w_wcol =) (- (:w_wcol @curwin) (* n width)))
-                ((ß @curwin.w_wrow =) (+ (:w_wrow @curwin) n))
+                (swap! curwin update :w_wcol - (* n width))
+                (swap! curwin update :w_wrow + n)
 
                 ;; When cursor wraps to first char of next line in Insert mode,
                 ;; the 'showbreak' string isn't shown, backup to first column.
                 (if (and (non-eos? @p_sbr) (eos? (ml-get-cursor)) (== (:w_wcol @curwin) (mb-string2cells @p_sbr, -1)))
-                    ((ß @curwin.w_wcol =) 0)
+                    (swap! curwin assoc :w_wcol 0)
                 )
             )
         )
@@ -60753,20 +60753,20 @@
                 ))
                 ((ß new_leftcol =) (max 0 new_leftcol))
                 (when (!= new_leftcol (:w_leftcol @curwin))
-                    ((ß @curwin.w_leftcol =) new_leftcol)
+                    (swap! curwin assoc :w_leftcol new_leftcol)
                     ;; screen has to be redrawn with new curwin.w_leftcol
                     (redraw-later NOT_VALID)
                 )
             )
-            ((ß @curwin.w_wcol =) (- (:w_wcol @curwin) (:w_leftcol @curwin)))
+            (swap! curwin update :w_wcol - (:w_leftcol @curwin))
         )
         (< (:w_leftcol @curwin) (:w_wcol @curwin))
         (do
-            ((ß @curwin.w_wcol =) (- (:w_wcol @curwin) (:w_leftcol @curwin)))
+            (swap! curwin update :w_wcol - (:w_leftcol @curwin))
         )
         :else
         (do
-            ((ß @curwin.w_wcol =) 0)
+            (swap! curwin assoc :w_wcol 0)
         ))
 
         ((ß int prev_skipcol =) (:w_skipcol @curwin))
@@ -60798,7 +60798,7 @@
                 ((ß n =) (if (< (/ (:w_height @curwin) 2) n) (- n (/ (:w_height @curwin) 2)) 0))
                 ;; don't skip more than necessary
                 ((ß n =) (min n (inc (- p_lines (:w_height @curwin)))))
-                ((ß @curwin.w_skipcol =) (* n width))
+                (swap! curwin assoc :w_skipcol (* n width))
             )
             (== extra 1)
             (do
@@ -60806,7 +60806,7 @@
                 ((ß extra =) (/ (dec (+ (- (+ (:w_skipcol @curwin) (* (int @p_so) width)) (:w_virtcol @curwin)) width)) width))
                 (when (< 0 extra)
                     ((ß extra =) (min extra (/ (:w_skipcol @curwin) width)))
-                    ((ß @curwin.w_skipcol =) (- (:w_skipcol @curwin) (* extra width)))
+                    (swap! curwin update :w_skipcol - (* extra width))
                 )
             )
             (== extra 2)
@@ -60816,15 +60816,15 @@
                 (while (< (:w_virtcol @curwin) (... endcol 0))
                     ((ß endcol[0] =) (- (... endcol 0) width))
                 )
-                ((ß @curwin.w_skipcol =) (max (... endcol 0) (:w_skipcol @curwin)))
+                (swap! curwin assoc :w_skipcol (max (... endcol 0) (:w_skipcol @curwin)))
             ))
 
-            ((ß @curwin.w_wrow =) (- (:w_wrow @curwin) (/ (:w_skipcol @curwin) width)))
+            (swap! curwin update :w_wrow - (/ (:w_skipcol @curwin) width))
             (when (<= (:w_height @curwin) (:w_wrow @curwin))
                 ;; small window, make sure cursor is in it
                 ((ß extra =) (+ (- (:w_wrow @curwin) (:w_height @curwin)) 1))
-                ((ß @curwin.w_skipcol =) (+ (:w_skipcol @curwin) (* extra width)))
-                ((ß @curwin.w_wrow =) (- (:w_wrow @curwin) extra))
+                (swap! curwin update :w_skipcol + (* extra width))
+                (swap! curwin update :w_wrow - extra)
             )
 
             ((ß extra =) (/ (- prev_skipcol (:w_skipcol @curwin)) width))
@@ -60835,7 +60835,7 @@
         )
         :else
         (do
-            ((ß @curwin.w_skipcol =) 0)
+            (swap! curwin assoc :w_skipcol 0)
         ))
         (if (!= prev_skipcol (:w_skipcol @curwin))
             (redraw-later NOT_VALID))
@@ -60844,7 +60844,7 @@
         (if (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
             (redraw-later SOME_VALID))
 
-        ((ß @curwin.w_valid =) (| (:w_valid @curwin) (| VALID_WCOL VALID_WROW VALID_VIRTCOL)))
+        (swap! curwin update :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL)
         nil
     ))
 
@@ -60860,14 +60860,14 @@
             (if (== (:w_topline @curwin) 1)
                 (ß BREAK)
             )
-            ((ß @curwin.w_topline =) (dec (:w_topline @curwin)))
+            (swap! curwin update :w_topline dec)
             ((ß done =) (+ done (plines (:w_topline @curwin))))
 
-            ((ß @curwin.w_botline =) (dec (:w_botline @curwin)))         ;; approximate w_botline
+            (swap! curwin update :w_botline dec)         ;; approximate w_botline
             (invalidate-botline)
         )
-        ((ß @curwin.w_wrow =) (+ (:w_wrow @curwin) done))          ;; keep w_wrow updated
-        ((ß @curwin.w_cline_row =) (+ (:w_cline_row @curwin) done))     ;; keep w_cline_row updated
+        (swap! curwin update :w_wrow + done)          ;; keep w_wrow updated
+        (swap! curwin update :w_cline_row + done)     ;; keep w_cline_row updated
 
         ;; Compute the row number of the last row of the cursor line
         ;; and move the cursor onto the displayed part of the window.
@@ -60880,7 +60880,7 @@
         )
         (while (and (<= (:w_height @curwin) wrow) (< 1 (:lnum (:w_cursor @curwin))))
             ((ß wrow =) (- wrow (plines (ß @curwin.w_cursor.lnum--))))
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL))))
+            (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL)))
             ((ß moved =) true)
         )
         (when moved
@@ -60893,13 +60893,13 @@
 
 (defn- #_void scrollup [#_long line_count]
     (§
-        ((ß @curwin.w_topline =) (min (+ (:w_topline @curwin) line_count) (:ml_line_count (:b_ml @curbuf))))
-        ((ß @curwin.w_botline =) (min (+ (:w_botline @curwin) line_count) (inc (:ml_line_count (:b_ml @curbuf)))))     ;; approximate w_botline
+        (swap! curwin assoc :w_topline (min (+ (:w_topline @curwin) line_count) (:ml_line_count (:b_ml @curbuf))))
+        (swap! curwin assoc :w_botline (min (+ (:w_botline @curwin) line_count) (inc (:ml_line_count (:b_ml @curbuf)))))     ;; approximate w_botline
 
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE))))
+        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
         (when (< (:lnum (:w_cursor @curwin)) (:w_topline @curwin))
             ((ß @curwin.w_cursor.lnum =) (:w_topline @curwin))
-            ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL))))
+            (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL)))
             (coladvance (:w_curswant @curwin))
         )
         nil
@@ -61005,13 +61005,13 @@
             ;; value may happen with wrapping lines
 
             (if (or (< new_topline (:w_topline @curwin)) always)
-                ((ß @curwin.w_topline =) new_topline)
+                (swap! curwin assoc :w_topline new_topline)
             )
-            ((ß @curwin.w_topline =) (min (:w_topline @curwin) (:lnum (:w_cursor @curwin))))
+            (swap! curwin update :w_topline min (:lnum (:w_cursor @curwin)))
             (if (!= (:w_topline @curwin) old_topline)
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
             )
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+            (swap! curwin update :w_valid | VALID_TOPLINE)
         ))
         nil
     ))
@@ -61049,7 +61049,7 @@
         (cond set_topbot
         (do
             ((ß int used =) 0)
-            ((ß @curwin.w_botline =) (inc cln))
+            (swap! curwin assoc :w_botline (inc cln))
             ((ß FOR) (ß ((ß @curwin.w_topline =) (:w_botline @curwin)) (< 1 (:w_topline @curwin)) ((ß @curwin.w_topline =) (:lnum loff)))
                 ((ß loff.lnum =) (:w_topline @curwin))
                 (topline-back loff)
@@ -61059,9 +61059,9 @@
                 ((ß used =) (+ used (:height loff)))
             )
             (set-empty-rows @curwin, used)
-            ((ß @curwin.w_valid =) (| (:w_valid @curwin) (| VALID_BOTLINE VALID_BOTLINE_AP)))
+            (swap! curwin update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
             (if (!= (:w_topline @curwin) old_topline)
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW)))
             )
         )
         :else
@@ -61170,11 +61170,11 @@
         ;; If topline did change, update-screen() will set botline.
 
         (when (and (== (:w_topline @curwin) old_topline) set_topbot)
-            ((ß @curwin.w_botline =) old_botline)
-            ((ß @curwin.w_empty_rows =) old_empty_rows)
-            ((ß @curwin.w_valid =) old_valid)
+            (swap! curwin assoc :w_botline old_botline)
+            (swap! curwin assoc :w_empty_rows old_empty_rows)
+            (swap! curwin assoc :w_valid old_valid)
         )
-        ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+        (swap! curwin update :w_valid | VALID_TOPLINE)
         nil
     ))
 
@@ -61221,9 +61221,9 @@
             )
         )
 
-        ((ß @curwin.w_topline =) topline)
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP))))
-        ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+        (swap! curwin assoc :w_topline topline)
+        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
+        (swap! curwin update :w_valid | VALID_TOPLINE)
         nil
     ))
 
@@ -61288,14 +61288,14 @@
         (do
             (when (and (< cln topline) (< 1 (:w_topline @curwin)))
                 ((ß @curwin.w_cursor.lnum =) topline)
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW)))
             )
             (when (and (< botline cln) (<= (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf))))
                 ((ß @curwin.w_cursor.lnum =) botline)
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW)))
             )
         ))
-        ((ß @curwin.w_valid =) (| (:w_valid @curwin) VALID_TOPLINE))
+        (swap! curwin update :w_valid | VALID_TOPLINE)
         nil
     ))
 
@@ -61334,17 +61334,17 @@
                 (cond (< (:ml_line_count (:b_ml @curbuf)) (:w_botline @curwin))
                 (do
                     ;; at end of file
-                    ((ß @curwin.w_topline =) (:ml_line_count (:b_ml @curbuf)))
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW))))
+                    (swap! curwin assoc :w_topline (:ml_line_count (:b_ml @curbuf)))
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW)))
                 )
                 :else
                 (do
                     ;; For the overlap, start with the line just below the window and go upwards.
                     ((ß loff.lnum =) (:w_botline @curwin))
                     (get-scroll-overlap loff, -1)
-                    ((ß @curwin.w_topline =) (:lnum loff))
+                    (swap! curwin assoc :w_topline (:lnum loff))
                     ((ß @curwin.w_cursor.lnum =) (:w_topline @curwin))
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP))))
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
                 ))
             )
             :else    ;; dir == BACKWARDS
@@ -61365,8 +61365,8 @@
                 )
                 (cond (< (:lnum loff) 1)      ;; at begin of file
                 (do
-                    ((ß @curwin.w_topline =) 1)
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE))))
+                    (swap! curwin assoc :w_topline 1)
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
                 )
                 :else
                 (do
@@ -61377,16 +61377,16 @@
                     ;; Always scroll at least one line.  Avoid getting stuck on very long lines.
                     (cond (<= (:w_topline @curwin) (:lnum loff))
                     (do
-                        ((ß @curwin.w_topline =) (dec (:w_topline @curwin)))
+                        (swap! curwin update :w_topline dec)
 
                         (comp-botline @curwin)
                         ((ß @curwin.w_cursor.lnum =) (- (:w_botline @curwin) 1))
-                        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW))))
+                        (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_CHEIGHT VALID_WROW VALID_CROW)))
                     )
                     :else
                     (do
-                        ((ß @curwin.w_topline =) (:lnum loff))
-                        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE))))
+                        (swap! curwin assoc :w_topline (:lnum loff))
+                        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))
                     ))
                 ))
             ))
@@ -61395,7 +61395,7 @@
         (cursor-correct)
         (if retval
             (beginline (| BL_SOL BL_FIX)))
-        ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_WCOL VALID_WROW VALID_VIRTCOL))))
+        (swap! curwin update :w_valid & (bit-not (| VALID_WCOL VALID_WROW VALID_VIRTCOL)))
 
         ;; Avoid the screen jumping up and down when 'scrolloff' is non-zero.
         ;; But make sure we scroll at least one line (happens with mix of long
@@ -61404,7 +61404,7 @@
         (when (and retval (== dir FORWARD) (check-top-offset))
             (scroll-cursor-top 1, false)
             (when (and (<= (:w_topline @curwin) old_topline) (< old_topline (:ml_line_count (:b_ml @curbuf))))
-                ((ß @curwin.w_topline =) (inc old_topline))
+                (swap! curwin assoc :w_topline (inc old_topline))
             )
         )
 
@@ -61490,14 +61490,14 @@
                 (if (and (< n 0) (< 0 scrolled))
                     (ß BREAK)
                 )
-                ((ß @curwin.w_topline =) (inc (:w_topline @curwin)))
+                (swap! curwin update :w_topline inc)
 
                 (when (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
                     ((ß @curwin.w_cursor.lnum =) (inc (:lnum (:w_cursor @curwin))))
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_VIRTCOL VALID_CHEIGHT VALID_WCOL))))
+                    (swap! curwin update :w_valid & (bit-not (| VALID_VIRTCOL VALID_CHEIGHT VALID_WCOL)))
                 )
 
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_CROW VALID_WROW))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_CROW VALID_WROW)))
                 ((ß scrolled =) (+ scrolled i))
 
                 ;; Correct w_botline for changed w_topline.
@@ -61510,7 +61510,7 @@
                     (if (< room i)
                         (ß BREAK)
                     )
-                    ((ß @curwin.w_botline =) (inc (:w_botline @curwin)))
+                    (swap! curwin update :w_botline inc)
                     ((ß room =) (- room i))
 ;               } while (@curwin.w_botline <= @curbuf.b_ml.ml_line_count);
             )
@@ -61532,13 +61532,13 @@
                 (if (and (< n 0) (< 0 scrolled))
                     (ß BREAK)
                 )
-                ((ß @curwin.w_topline =) (dec (:w_topline @curwin)))
+                (swap! curwin update :w_topline dec)
 
-                ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_CROW VALID_WROW VALID_BOTLINE VALID_BOTLINE_AP))))
+                (swap! curwin update :w_valid & (bit-not (| VALID_CROW VALID_WROW VALID_BOTLINE VALID_BOTLINE_AP)))
                 ((ß scrolled =) (+ scrolled i))
                 (when (< 1 (:lnum (:w_cursor @curwin)))
                     ((ß @curwin.w_cursor.lnum =) (dec (:lnum (:w_cursor @curwin))))
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not (| VALID_VIRTCOL VALID_CHEIGHT VALID_WCOL))))
+                    (swap! curwin update :w_valid & (bit-not (| VALID_VIRTCOL VALID_CHEIGHT VALID_WCOL)))
                 )
             )
 
@@ -61575,8 +61575,8 @@
                 ((ß @curwin.w_cursor.lnum =) line)
                 ((ß @curwin.w_cursor.col =) col)
                 ((ß @curwin.w_cursor.coladd =) coladd)
-                ((ß @curwin.w_curswant =) curswant)
-                ((ß @curwin.w_set_curswant =) set_curswant)
+                (swap! curwin assoc :w_curswant curswant)
+                (swap! curwin assoc :w_set_curswant set_curswant)
 
                 ;; Make sure the cursor is in a valid position.  Temporarily set
                 ;; "restart_edit" to allow the cursor to be beyond the EOL.
@@ -61591,7 +61591,7 @@
                 ;; Only scroll when 'scrollbind' hasn't done this.
                 (if (not @(:wo_scb (:w_options @curwin)))
                     (update-topline))
-                ((ß @curwin.w_redr_status =) true)
+                (swap! curwin assoc :w_redr_status true)
             )
         )
 
@@ -61974,7 +61974,7 @@
         ((ß hlt[@highlight_ga.ga_len].sg_name =) name)
         ((ß hlt[@highlight_ga.ga_len].sg_name_u =) (vim-strsave-up name))
 
-        ((ß @highlight_ga.ga_len =) (inc (:ga_len @highlight_ga)))
+        (swap! highlight_ga update :ga_len inc)
 
         (:ga_len @highlight_ga) ;; ID is index plus one
     ))
@@ -62179,12 +62179,12 @@
                     ((ß hlt[n + i].sg_cterm_bg =) (:sg_cterm_bg (... hlt (dec id))))
                 )
 
-                ((ß @highlight_ga.ga_len =) (+ n i 1))
+                (swap! highlight_ga assoc :ga_len (+ n i 1))
                 (set-hl-attr (+ n i))         ;; at long last we can apply
             )
         )
 
-        ((ß @highlight_ga.ga_len =) n)
+        (swap! highlight_ga assoc :ga_len n)
         (dotimes [#_int i 10]
             ((ß hlt[n + i] =) nil)
         )
@@ -62316,7 +62316,7 @@
                     (if (and (!= conceal_old_cursor_line conceal_new_cursor_line) (<= conceal_old_cursor_line (:ml_line_count (:b_ml @curbuf))))
                         (update-single-line @curwin, conceal_old_cursor_line))
                     (update-single-line @curwin, conceal_new_cursor_line)
-                    ((ß @curwin.w_valid =) (& (:w_valid @curwin) (bit-not VALID_CROW)))
+                    (swap! curwin update :w_valid & (bit-not VALID_CROW))
                 )
                 (setcursor)
                 (cursor-on)
