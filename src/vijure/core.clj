@@ -17129,185 +17129,88 @@
 ;; the *_count_cursor variables store running totals for the selection.)
 
 (defn- #_void cursor-pos-info []
-    (§
-        ;; Compute the length of the file in characters.
-
-        (when (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
-            (msg no_lines_msg)
-            ((ß RETURN) nil)
-        )
-
-        ((ß Bytes buf1 =) (Bytes. 50))
-        ((ß Bytes buf2 =) (Bytes. 40))
-        ((ß int byte_count =) 0)
-        ((ß int byte_count_cursor =) 0)
-        ((ß int[] a'char_count =) (atom (int 0)))
-        ((ß int[] a'char_count_cursor =) (atom (int 0)))
-        ((ß int[] a'word_count =) (atom (int 0)))
-        ((ß int[] a'word_count_cursor =) (atom (int 0)))
-        ((ß int last_check =) 100000)
-        ((ß long line_count_selected =) 0)
-
-        ((ß pos_C min_pos =) (NEW_pos_C))
-        ((ß pos_C max_pos =) (NEW_pos_C))
-        ((ß oparg_C oparg =) (NEW_oparg_C))
-
-        ((ß int eol_size =) 1)
-
-        (when @VIsual_active
-            (cond (ltpos @VIsual, (:w_cursor @curwin))
-            (do
-                (COPY-pos min_pos, @VIsual)
-                (COPY-pos max_pos, (:w_cursor @curwin))
-            )
+    (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+        (msg no_lines_msg)
+        (let-when [[#_pos_C min_pos #_pos_C max_pos #_oparg_C oparg #_long selected_lines]
+                (if @VIsual_active
+                    (let [[min_pos max_pos] (if (ltpos @VIsual, (:w_cursor @curwin)) [@VIsual (:w_cursor @curwin)] [(:w_cursor @curwin) @VIsual])
+                          max_pos (update max_pos :col #(if (and (at? @p_sel (byte \e)) (< 0 %)) (dec %) %))
+                          oparg (when (== @VIsual_mode Ctrl_V)
+                                    (let [oparg (assoc (NEW_oparg_C) :is_VIsual true :block_mode true :op_type OP_NOP)
+                                          #_Bytes saved_sbr @p_sbr
+                                          ;; Make 'sbr' empty for a moment to get the correct size.
+                                          _ (reset! p_sbr EMPTY_OPTION)
+                                          a'scol (atom (int (:start_vcol oparg))) a'ecol (atom (int (:end_vcol oparg)))
+                                          _ (getvcols @curwin, min_pos, max_pos, a'scol, a'ecol)
+                                          oparg (assoc oparg :start_vcol @a'scol :end_vcol @a'ecol)
+                                          _ (reset! p_sbr saved_sbr)
+                                          oparg (if (== (:w_curswant @curwin) MAXCOL) (assoc oparg :end_vcol MAXCOL) oparg)]
+                                        ;; Swap the start, end vcol if needed.
+                                        (if (< (:end_vcol oparg) (:start_vcol oparg))
+                                            (assoc oparg :start_vcol (:end_vcol oparg) :end_vcol (:start_vcol oparg))
+                                            oparg)
+                                    ))]
+                        [min_pos max_pos oparg (inc (- (:lnum max_pos) (:lnum min_pos)))])
+                    [nil nil nil 0])
+              lmin 1 lmax (:ml_line_count (:b_ml @curbuf))
+              a'bytes (atom (int 0)) a'cursor_bytes (atom (int 0))
+              a'chars (atom (int 0)) a'cursor_chars (atom (int 0))
+              a'words (atom (int 0)) a'cursor_words (atom (int 0))
+              _ (loop-when [#_int miles (+ @a'bytes 100000) #_long lnum lmin] (<= lnum lmax) => :_
+                    ;; Check for a CTRL-C every 100000 characters.
+                    (let-when [miles (if (< miles @a'bytes) (do (ui-breakcheck) (if @got_int nil (+ @a'bytes 100000))) miles)] (some? miles) => nil
+                        ;; Do extra processing for VIsual mode.
+                        (cond (and @VIsual_active (<= (:lnum min_pos) lnum (:lnum max_pos)))
+                            (let [[#_Bytes s #_int n]
+                                    (condp == @VIsual_mode
+                                        Ctrl_V
+                                            (let [#_block_def_C bd (NEW_block_def_C)]
+                                                (reset! virtual_op (if (virtual-active) TRUE FALSE))
+                                                (block-prep oparg, bd, lnum, false)
+                                                (reset! virtual_op MAYBE)
+                                                [(:textstart bd) (:textlen bd)])
+                                        (byte \V)
+                                            [(ml-get lnum) MAXCOL]
+                                        (byte \v)
+                                            (let [#_int start_col (if (== lnum (:lnum min_pos)) (:col min_pos) 0)
+                                                  #_int end_col (if (== lnum (:lnum max_pos)) (inc (- (:col max_pos) start_col)) MAXCOL)]
+                                                [(.plus (ml-get lnum) start_col) end_col])
+                                        [nil 0]
+                                    )]
+                                (swap! a'cursor_bytes #(if (some? s) (+ % (line-count-info s, a'cursor_words, a'cursor_chars, n, 1)) %)))
+                        :else
+                            ;; In non-visual mode, check for the line the cursor is on.
+                            (when (== lnum (:lnum (:w_cursor @curwin)))
+                                (swap! a'cursor_words + @a'words)
+                                (swap! a'cursor_chars + @a'chars)
+                                (reset! a'cursor_bytes (+ @a'bytes (line-count-info (ml-get lnum), a'cursor_words, a'cursor_chars, (inc (:col (:w_cursor @curwin))), 1)))
+                            ))
+                        ;; Add to the running totals.
+                        (swap! a'bytes + (line-count-info (ml-get lnum), a'words, a'chars, MAXCOL, 1))
+                        (recur miles (inc lnum)))
+                )] (some? _)
+            (§ cond @VIsual_active
+                (let [#_Bytes buf (Bytes. 50)]
+                    (if (and (== @VIsual_mode Ctrl_V) (< (:w_curswant @curwin) MAXCOL))
+;%%                     (vim_snprintf buf, (.size buf), (u8 "%ld Cols; "), (inc (- (:end_vcol oparg) (:start_vcol oparg))))
+                        (eos! buf))
+                    (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
+;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                    ))
             :else
-            (do
-                (COPY-pos min_pos, (:w_cursor @curwin))
-                (COPY-pos max_pos, @VIsual)
-            ))
-            (if (and (at? @p_sel (byte \e)) (< 0 (:col max_pos)))
-                ((ß max_pos.col =) (dec (:col max_pos)))
+                (let [#_Bytes s (ml-get-curline) #_Bytes buf1 (Bytes. 50) #_Bytes buf2 (Bytes. 40)]
+                    (validate-virtcol)
+                    (col-print buf1, (.size buf1), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin)))
+                    (col-print buf2, (.size buf2), (STRLEN s), (linetabsize s))
+                    (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
+;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                    ))
             )
-
-            (when (== @VIsual_mode Ctrl_V)
-                ((ß Bytes saved_sbr =) @p_sbr)
-
-                ;; Make 'sbr' empty for a moment to get the correct size.
-                (reset! p_sbr EMPTY_OPTION)
-                ((ß oparg.is_VIsual =) true)
-                ((ß oparg.block_mode =) true)
-                ((ß oparg.op_type =) OP_NOP)
-;               {
-                    ((ß int[] a'scol =) (atom (int (:start_vcol oparg))))
-                    ((ß int[] a'ecol =) (atom (int (:end_vcol oparg))))
-                    (getvcols @curwin, min_pos, max_pos, a'scol, a'ecol)
-                    ((ß oparg.start_vcol =) @a'scol)
-                    ((ß oparg.end_vcol =) @a'ecol)
-;               }
-                (reset! p_sbr saved_sbr)
-                (if (== (:w_curswant @curwin) MAXCOL)
-                    ((ß oparg.end_vcol =) MAXCOL)
-                )
-                ;; Swap the start, end vcol if needed.
-                (when (< (:end_vcol oparg) (:start_vcol oparg))
-                    ((ß oparg.end_vcol =) (+ (:end_vcol oparg) (:start_vcol oparg)))
-                    ((ß oparg.start_vcol =) (- (:end_vcol oparg) (:start_vcol oparg)))
-                    ((ß oparg.end_vcol =) (- (:end_vcol oparg) (:start_vcol oparg)))
-                )
-            )
-
-            ((ß line_count_selected =) (+ (- (:lnum max_pos) (:lnum min_pos)) 1))
-        )
-
-        (loop-when-recur [#_long lnum 1] (<= lnum (:ml_line_count (:b_ml @curbuf))) [(inc lnum)]
-            ;; Check for a CTRL-C every 100000 characters.
-            (when (< last_check byte_count)
-                (ui-breakcheck)
-                (if @got_int
-                    ((ß RETURN) nil)
-                )
-                ((ß last_check =) (+ byte_count 100000))
-            )
-
-            ;; Do extra processing for VIsual mode.
-            (cond (and @VIsual_active (<= (:lnum min_pos) lnum) (<= lnum (:lnum max_pos)))
-            (do
-                ((ß Bytes s =) nil)
-                ((ß int len =) 0)
-
-                ((ß SWITCH) @VIsual_mode
-                    ((ß CASE) Ctrl_V)
-                    (do
-                        (reset! virtual_op (if (virtual-active) TRUE FALSE))
-                        ((ß block_def_C bd =) (NEW_block_def_C))
-                        (block-prep oparg, bd, lnum, false)
-                        (reset! virtual_op MAYBE)
-                        ((ß s =) (:textstart bd))
-                        ((ß len =) (:textlen bd))
-                        (ß BREAK)
-                    )
-
-                    ((ß CASE) (byte \V))
-                    (do
-                        ((ß s =) (ml-get lnum))
-                        ((ß len =) MAXCOL)
-                        (ß BREAK)
-                    )
-
-                    ((ß CASE) (byte \v))
-                    (do
-                        ((ß int start_col =) (if (== lnum (:lnum min_pos)) (:col min_pos) 0))
-                        ((ß int end_col =) (if (== lnum (:lnum max_pos)) (+ (- (:col max_pos) start_col) 1) MAXCOL))
-
-                        ((ß s =) (.plus (ml-get lnum) start_col))
-                        ((ß len =) end_col)
-                        (ß BREAK)
-                    )
-                )
-
-                ((ß byte_count_cursor =) (if (some? s) (+ byte_count_cursor (line-count-info s, a'word_count_cursor, a'char_count_cursor, len, eol_size)) byte_count_cursor))
-            )
-            :else
-            (do
-                ;; In non-visual mode, check for the line the cursor is on.
-                (when (== lnum (:lnum (:w_cursor @curwin)))
-                    (swap! a'word_count_cursor + @a'word_count)
-                    (swap! a'char_count_cursor + @a'char_count)
-                    ((ß byte_count_cursor =) (+ byte_count (line-count-info (ml-get lnum), a'word_count_cursor, a'char_count_cursor, (+ (:col (:w_cursor @curwin)) 1), eol_size)))
-                )
-            ))
-
-            ;; Add to the running totals.
-            ((ß byte_count =) (+ byte_count (line-count-info (ml-get lnum), a'word_count, a'char_count, MAXCOL, eol_size)))
-        )
-
-        (cond @VIsual_active
-        (do
-            (cond (and (== @VIsual_mode Ctrl_V) (< (:w_curswant @curwin) MAXCOL))
-            (do
-;               {
-                    ((ß int[] a'_1 =) (atom (int (:col min_pos))))
-                    ((ß int[] a'_2 =) (atom (int (:col max_pos))))
-                    (getvcols @curwin, min_pos, max_pos, a'_1, a'_2)
-                    ((ß min_pos.col =) @a'_1)
-                    ((ß max_pos.col =) @a'_2)
-;               }
-;%%             (vim_snprintf buf1, (.size buf1), (u8 "%ld Cols; "), (+ (- (:end_vcol oparg) (:start_vcol oparg)) 1))
-            )
-            :else
-            (do
-                (eos! buf1)
-            ))
-
-            (cond (and (== @a'char_count_cursor byte_count_cursor) (== @a'char_count byte_count))
-            (do
-;%%             (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf1, line_count_selected, (:ml_line_count (:b_ml @curbuf)), (... word_count_cursor 0), (... word_count 0), byte_count_cursor, byte_count)
-            )
-            :else
-            (do
-;%%             (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf1, line_count_selected, (:ml_line_count (:b_ml @curbuf)), (... word_count_cursor 0), (... word_count 0), (... char_count_cursor 0), (... char_count 0), byte_count_cursor, byte_count)
-            ))
-        )
-        :else
-        (do
-            ((ß Bytes p =) (ml-get-curline))
-            (validate-virtcol)
-            (col-print buf1, (.size buf1), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin)))
-            (col-print buf2, (.size buf2), (STRLEN p), (linetabsize p))
-
-            (cond (and (== @a'char_count_cursor byte_count_cursor) (== @a'char_count byte_count))
-            (do
-;%%             (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), (:ml_line_count (:b_ml @curbuf)), (... word_count_cursor 0), (... word_count 0), byte_count_cursor, byte_count)
-            )
-            :else
-            (do
-;%%             (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), (:ml_line_count (:b_ml @curbuf)), (... word_count_cursor 0), (... word_count 0), (... char_count_cursor 0), (... char_count 0), byte_count_cursor, byte_count)
-            ))
+            (msg @ioBuff)
         ))
-
-        (msg @ioBuff)
-        nil
-    ))
+    nil)
 
 ;; mark.c: functions for setting marks and jumping to them ----------------------------------------
 
@@ -17327,67 +17230,52 @@
 ;; Returns true on success, false if bad name given.
 
 (defn- #_boolean setmark-pos [#_int c, #_pos_C pos]
-    (§
+    (cond
         ;; Check for a special key (may cause islower() to crash).
-        (if (< c 0)
-            ((ß RETURN) false)
-        )
+        (< c 0)
+            false
 
-        (when (any == c (byte \') (byte \`))
-            (cond (== pos (:w_cursor @curwin))
-            (do
-                (setpcmark)
-                ;; keep it even when the cursor doesn't move
-                (swap! curwin assoc :w_prev_pcmark (:w_pcmark @curwin))
-            )
-            :else
-            (do
-                (swap! curwin assoc :w_pcmark pos)
-            ))
-            ((ß RETURN) true)
-        )
+        (any == c (byte \') (byte \`))
+            (do (if (== pos (:w_cursor @curwin))
+                    (do (setpcmark) (swap! curwin assoc :w_prev_pcmark (:w_pcmark @curwin))) ;; keep it even when the cursor doesn't move
+                    (swap! curwin assoc :w_pcmark pos))
+                true)
 
-        (when (== c (byte \"))  ;; """
-            (swap! curbuf assoc :b_last_cursor pos)
-            ((ß RETURN) true)
-        )
+        (== c (byte \"))  ;; """
+            (do (swap! curbuf assoc :b_last_cursor pos)
+                true)
 
         ;; Allow setting '[ and '] for an autocommand that simulates reading a file.
-        (when (== c (byte \[))
-            (swap! curbuf assoc :b_op_start pos)
-            ((ß RETURN) true)
-        )
-        (when (== c (byte \]))
-            (swap! curbuf assoc :b_op_end pos)
-            ((ß RETURN) true)
-        )
+        (== c (byte \[))
+            (do (swap! curbuf assoc :b_op_start pos)
+                true)
 
-        (when (any == c (byte \<) (byte \>))
-            (if (== c (byte \<))
-                (swap! curbuf assoc-in [:b_visual :vi_start] pos)
-                (swap! curbuf assoc-in [:b_visual :vi_end] pos))
-            (when (== (:vi_mode (:b_visual @curbuf)) NUL)
+        (== c (byte \]))
+            (do (swap! curbuf assoc :b_op_end pos)
+                true)
+
+        (any == c (byte \<) (byte \>))
+            (do (swap! curbuf update :b_visual assoc (if (== c (byte \<)) :vi_start :vi_end) pos)
                 ;; Visual_mode has not yet been set, use a sane default.
-                (swap! curbuf assoc-in [:b_visual :vi_mode] (byte \v))
-            )
-            ((ß RETURN) true)
-        )
+                (when (== (:vi_mode (:b_visual @curbuf)) NUL)
+                    (swap! curbuf assoc-in [:b_visual :vi_mode] (byte \v)))
+                true)
 
-        (if (< (byte \z) c)        ;; some islower() and isupper() cannot handle characters above 127
-            ((ß RETURN) false)
-        )
-        (when (asc-islower c)
-            ((ß int i =) (- c (byte \a)))
-            (COPY-pos (... (:b_namedm @curbuf) i), pos)
-            ((ß RETURN) true)
-        )
-        (when (asc-isupper c)
-            ((ß int i =) (- c (byte \A)))
-            (COPY-pos (:mark (... namedfm i)), pos)
-            ((ß RETURN) true)
-        )
+        (< (byte \z) c)        ;; some islower() and isupper() cannot handle characters above 127
+            false
 
-        false
+        (asc-islower c)
+            (let [#_int i (- c (byte \a))]
+;%%             (COPY-pos (... (:b_namedm @curbuf) i), pos)
+                true)
+
+        (asc-isupper c)
+            (let [#_int i (- c (byte \A))]
+;%%             (COPY-pos (:mark (... namedfm i)), pos)
+                true)
+
+        :else
+            false
     ))
 
 ;; Set the previous context mark to the current position and add it to the jump list.
@@ -17486,22 +17374,15 @@
 (defn- #_pos_C getnextmark [#_pos_C startpos, #_int dir, #_boolean begin_line] ;; startpos: where to start ;; dir: direction for search
     ;; When searching backward/forward and leaving the cursor on the first non-blank, position must be in a previous/next line.
     (let [#_pos_C pos (cond (and (== dir BACKWARD) begin_line) (assoc startpos :col 0) (and (== dir FORWARD) begin_line) (assoc startpos :col MAXCOL) :else startpos)]
-
-    (§
-        ((ß pos_C mark =) nil)
-        (dotimes [#_int i NMARKS]
-            (let [mi (... (:b_namedm @curbuf) i)]
-                (when (< 0 (:lnum mi))
-                    ((ß mark =) (if (== dir FORWARD)
-                        (if (and (or (nil? mark) (ltpos mi, mark)) (ltpos pos, mi)) mi mark)
-                        (if (and (or (nil? mark) (ltpos mark, mi)) (ltpos mi, pos)) mi mark)
-                    ))
-                )
-            )
-        )
-        mark
-    )
-
+        (loop-when [#_pos_C mark nil #_int i 0] (< i NMARKS) => mark
+            (let [mi (... (:b_namedm @curbuf) i)
+                  mark (if (< 0 (:lnum mi))
+                            (if (== dir FORWARD)
+                                (if (and (or (nil? mark) (ltpos mi, mark)) (ltpos pos, mi)) mi mark)
+                                (if (and (or (nil? mark) (ltpos mark, mi)) (ltpos mi, pos)) mi mark))
+                            mark)]
+                (recur mark (inc i))
+            ))
     ))
 
 ;; Check a if a position from a mark is valid.
