@@ -42371,47 +42371,32 @@
 ;; The rest of the routines in this file perform screen manipulations.
 ;; The given operation is performed physically on the screen.
 ;; The corresponding change is also made to the internal screen image.
-;; In this way, the editor anticipates the effect of editing changes
-;; on the appearance of the screen.
-;; That way, when we call screenupdate a complete redraw isn't usually necessary.
-;; Another advantage is that we can keep adding code to anticipate screen changes,
-;; and in the meantime, everything still works.
+;; In this way, the editor anticipates the effect of editing changes on the appearance of the screen.
+;; That way, when we call update-screen(), a complete redraw isn't usually necessary.
 
 ;; types for inserting or deleting lines
+(final int
+    USE_T_CAL   1,
+    USE_T_CDL   2,
+    USE_T_AL    3,
+    USE_T_CE    4,
+    USE_T_DL    5,
+    USE_T_SR    6,
+    USE_NL      7,
+    USE_T_CD    8,
+    USE_REDRAW  9)
 
-(final int USE_T_CAL   1)
-(final int USE_T_CDL   2)
-(final int USE_T_AL    3)
-(final int USE_T_CE    4)
-(final int USE_T_DL    5)
-(final int USE_T_SR    6)
-(final int USE_NL      7)
-(final int USE_T_CD    8)
-(final int USE_REDRAW  9)
-
-;; insert lines on the screen and update screenLines[]
-;; 'end' is the line after the scrolled part.  Normally it is Rows.
-;; When scrolling region used 'off' is the offset from the top for the region.
-;; 'row' and 'end' are relative to the start of the region.
+;; Insert lines on the screen and update screenLines[].
+;; "end" is the line after the scrolled part.  Normally it is Rows.
+;; When scrolling region used, "off" is the offset from the top for the region.
+;; "row" and "end" are relative to the start of the region.
 ;;
-;; return false for failure, true for success.
+;; Return true for success, false for failure.
 
 (defn- #_boolean screen-ins-lines [#_int off, #_int row, #_int line_count, #_int end, #_window_C win]
     ;; win: null or window to use width from
-    (§
-        ((ß boolean can_ce =) (can-clear @T_CE))
-
-        ;; FAIL if
-        ;; - there is no valid screen
-        ;; - the screen has to be redrawn completely
-        ;; - the line count is less than one
-        ;; - the line count is more than 'ttyscroll'
-
-        (when (or (not (screen-valid true)) (<= line_count 0) (< @p_ttyscroll line_count))
-            ((ß RETURN) false)
-        )
-
-        ;; There are seven ways to insert lines:
+    (and (screen-valid true) (<= 1 line_count @p_ttyscroll)
+        ;; There are several ways to insert lines:
         ;;
         ;; 0. When in a vertically split window and t_CV isn't set, redraw the characters from screenLines[].
         ;; 1. Use T_CD (clear to end of display) if it exists and the result of the insert is just empty lines.
@@ -42425,320 +42410,184 @@
         ;; 7. Use T_SR (scroll reverse) if it exists and inserting at row 0
         ;;    and the 'da' flag is not set or we have clear line capability.
         ;; 8. Redraw the characters from screenLines[].
-        ;;
-        ;; Careful: In a hpterm scroll reverse doesn't work as expected, it moves
-        ;; the scrollbar for the window.  It does have insert line, use that if it exists.
-
-        ((ß boolean result_empty =) (<= end (+ row line_count)))
-
-        (ß int type)
-        (cond (and (some? win) (!= (:w_width win) @Cols) (eos? @T_CSV))
-        (do
-            ((ß type =) USE_REDRAW)
-        )
-        (and (can-clear @T_CD) result_empty)
-        (do
-            ((ß type =) USE_T_CD)
-        )
-        (and (non-eos? @T_CAL) (or (< 1 line_count) (eos? @T_AL)))
-        (do
-            ((ß type =) USE_T_CAL)
-        )
-        (and (non-eos? @T_CDL) result_empty (or (< 1 line_count) (not can_ce)))
-        (do
-            ((ß type =) USE_T_CDL)
-        )
-        (non-eos? @T_AL)
-        (do
-            ((ß type =) USE_T_AL)
-        )
-        (and can_ce result_empty)
-        (do
-            ((ß type =) USE_T_CE)
-        )
-        (and (non-eos? @T_DL) result_empty)
-        (do
-            ((ß type =) USE_T_DL)
-        )
-        (and (non-eos? @T_SR) (zero? row) (or (eos? @T_DA) can_ce))
-        (do
-            ((ß type =) USE_T_SR)
-        )
-        :else
-        (do
-            ((ß RETURN) false)
-        ))
-
-        ;; For clearing the lines screen-del-lines() is used.  This will also take
-        ;; care of t_db if necessary.
-
-        (if (any == type USE_T_CD USE_T_CDL USE_T_CE USE_T_DL)
-            ((ß RETURN) (screen-del-lines off, row, line_count, end, false, win))
-        )
-
-        ;; If text is retained below the screen, first clear or delete as many
-        ;; lines at the bottom of the window as are about to be inserted so that
-        ;; the deleted lines won't later surface during a screen-del-lines.
-
-        (when (non-eos? @T_DB)
-            (screen-del-lines off, (- end line_count), line_count, end, false, win))
-
-        ((ß int cursor_row =) (+ row off))
-
-        ;; Shift lineOffset* "line_count" down to reflect the inserted lines.
-        ;; Clear the inserted lines in screenLines[].
-
-        ((ß row =) (+ row off))
-        ((ß end =) (+ end off))
-        (dotimes [#_int i line_count]
-            (cond (and (some? win) (!= (:w_width win) @Cols))
-            (do
-                ;; need to copy part of a line
-                ((ß int j =) (- end 1 i))
-                (loop-when [] (<= row ((ß j =) (- j line_count)))
-                    (linecopy (+ j line_count), j, win)
-                    (recur)
+        (let-when [#_boolean can_ce (can-clear @T_CE) #_boolean result_empty (<= end (+ row line_count))
+              #_int type
+                (cond
+                    (and (some? win) (!= (:w_width win) @Cols) (eos? @T_CSV))               USE_REDRAW
+                    (and (can-clear @T_CD) result_empty)                                    USE_T_CD
+                    (and (non-eos? @T_CAL) (or (< 1 line_count) (eos? @T_AL)))              USE_T_CAL
+                    (and (non-eos? @T_CDL) result_empty (or (< 1 line_count) (not can_ce))) USE_T_CDL
+                    (non-eos? @T_AL)                                                        USE_T_AL
+                    (and can_ce result_empty)                                               USE_T_CE
+                    (and (non-eos? @T_DL) result_empty)                                     USE_T_DL
+                    (and (non-eos? @T_SR) (zero? row) (or (eos? @T_DA) can_ce))             USE_T_SR
                 )
-                ((ß j =) (+ j line_count))
-                (if (can-clear (u8 " "))
-                    (lineclear (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win))
-                    (lineinvalid (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win)))
-                (aset @lineWraps j false)
-            )
-            :else
-            (do
-                ((ß int j =) (- end 1 i))
-                ((ß int temp =) (aget @lineOffset j))
-                (loop-when [] (<= row ((ß j =) (- j line_count)))
-                    (aset @lineOffset (+ j line_count) (aget @lineOffset j))
-                    (aset @lineWraps (+ j line_count) (aget @lineWraps j))
-                    (recur)
+        ] (some? type) => false
+
+            ;; Use screen-del-lines() for clearing the lines, it also takes care of T_DB if necessary.
+            (if (any == type USE_T_CD USE_T_CDL USE_T_CE USE_T_DL)
+                (screen-del-lines off, row, line_count, end, false, win)
+                ;; If text is retained below the screen, first clear or delete as many
+                ;; lines at the bottom of the window as are about to be inserted so that
+                ;; the deleted lines won't later surface during a screen-del-lines().
+                (let [_ (when (non-eos? @T_DB)
+                            (screen-del-lines off, (- end line_count), line_count, end, false, win))
+                      #_int cursor_row (+ row off)
+                      ;; Shift lineOffset* "line_count" down to reflect the inserted lines.
+                      row (+ row off) end (+ end off)]
+                    (dotimes [#_int i line_count]
+                        (if (and (some? win) (!= (:w_width win) @Cols))
+                            ;; need to copy part of a line
+                            (let [#_int j (- end 1 i)
+                                  j (loop-when [j (- j line_count)] (<= row j) => (+ j line_count)
+                                        (linecopy (+ j line_count), j, win)
+                                        (recur (- j line_count))
+                                    )]
+                                (if (can-clear (u8 " "))
+                                    (lineclear (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win))
+                                    (lineinvalid (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win)))
+                                (aset @lineWraps j false))
+                            ;; whole width, moving the line pointers is faster
+                            (let [#_int j (- end 1 i) #_int k (aget @lineOffset j)
+                                  j (loop-when [j (- j line_count)] (<= row j) => (+ j line_count)
+                                        (aset @lineOffset (+ j line_count) (aget @lineOffset j))
+                                        (aset @lineWraps (+ j line_count) (aget @lineWraps j))
+                                        (recur (- j line_count))
+                                    )]
+                                (aset @lineOffset j k)
+                                (aset @lineWraps j false)
+                                (if (can-clear (u8 " "))
+                                    (lineclear k, @Cols)
+                                    (lineinvalid k, @Cols)
+                                ))
+                        ))
+                    (screen-stop-highlight)
+                    (windgoto cursor_row, 0)
+                    (condp == type
+                        USE_REDRAW  (redraw-block row, end, win) ;; redraw the characters
+                        USE_T_CAL   (do (term-append-lines line_count)
+                                        (screen-start)) ;; don't know where cursor is now
+                        USE_T_AL    (dotimes [i line_count]
+                                        (when (and (non-zero? i) (non-zero? cursor_row))
+                                            (windgoto cursor_row, 0))
+                                        (out-str @T_AL)
+                                        (screen-start)) ;; don't know where cursor is now
+                        USE_T_SR    (dotimes [_ line_count]
+                                        (out-str @T_SR)
+                                        (screen-start)) ;; don't know where cursor is now
+                    )
+                    ;; With scroll-reverse and T_DA, we need to clear the lines
+                    ;; that have been scrolled down into the region.
+                    (when (and (== type USE_T_SR) (non-eos? @T_DA))
+                        (dotimes [i line_count]
+                            (windgoto (+ off i), 0)
+                            (out-str @T_CE)
+                            (screen-start) ;; don't know where cursor is now
+                        ))
+                    true
                 )
-                (aset @lineOffset (+ j line_count) temp)
-                (aset @lineWraps (+ j line_count) false)
-                (if (can-clear (u8 " "))
-                    (lineclear temp, @Cols)
-                    (lineinvalid temp, @Cols))
             ))
-        )
-
-        (screen-stop-highlight)
-        (windgoto cursor_row, 0)
-
-        ;; redraw the characters
-        (cond (== type USE_REDRAW)
-        (do
-            (redraw-block row, end, win)
-        )
-        (== type USE_T_CAL)
-        (do
-            (term-append-lines line_count)
-            (screen-start)         ;; don't know where cursor is now
-        )
-        :else
-        (do
-            (dotimes [#_int i line_count]
-                (cond (== type USE_T_AL)
-                (do
-                    (if (and (non-zero? i) (non-zero? cursor_row))
-                        (windgoto cursor_row, 0))
-                    (out-str @T_AL)
-                )
-                :else ;; type == USE_T_SR
-                (do
-                    (out-str @T_SR)
-                ))
-                (screen-start)         ;; don't know where cursor is now
-            )
-        ))
-
-        ;; With scroll-reverse and 'da' flag set we need to clear the lines that
-        ;; have been scrolled down into the region.
-
-        (when (and (== type USE_T_SR) (non-eos? @T_DA))
-            (dotimes [#_int i line_count]
-                (windgoto (+ off i), 0)
-                (out-str @T_CE)
-                (screen-start)         ;; don't know where cursor is now
-            )
-        )
-
-        true
     ))
 
-;; delete lines on the screen and update screenLines[]
-;; 'end' is the line after the scrolled part.  Normally it is Rows.
-;; When scrolling region used 'off' is the offset from the top for the region.
-;; 'row' and 'end' are relative to the start of the region.
+;; Delete lines on the screen and update screenLines[].
+;; "end" is the line after the scrolled part.  Normally it is Rows.
+;; When scrolling region used, "off" is the offset from the top for the region.
+;; "row" and "end" are relative to the start of the region.
 ;;
 ;; Return true for success, false if the lines are not deleted.
 
 (defn- #_boolean screen-del-lines [#_int off, #_int row, #_int line_count, #_int end, #_boolean force, #_window_C win]
-    ;; force: even when line_count > p_ttyscroll
+    ;; force: even when line_count > 'ttyscroll'
     ;; win: null or window to use width from
-    (§
-        ;; FAIL if
-        ;; - there is no valid screen
-        ;; - the screen has to be redrawn completely
-        ;; - the line count is less than one
-        ;; - the line count is more than 'ttyscroll'
-
-        (if (or (not (screen-valid true)) (<= line_count 0) (and (not force) (< @p_ttyscroll line_count)))
-            ((ß RETURN) false)
-        )
-
+    (and (screen-valid true) (<= 1 line_count) (or force (<= line_count @p_ttyscroll))
         ;; Check if the rest of the current region will become empty.
-
-        ((ß boolean result_empty =) (<= end (+ row line_count)))
-
-        ;; We can delete lines only when 'db' flag not set or when 'ce' option available.
-
-        ((ß boolean can_delete =) (or (eos? @T_DB) (can-clear @T_CE)))
-
-        (ß int type)
-
-        ;; There are six ways to delete lines:
-        ;;
-        ;; 0. When in a vertically split window and t_CV isn't set, redraw the characters from screenLines[].
-        ;; 1. Use T_CD if it exists and the result is empty.
-        ;; 2. Use newlines if row == 0 and count == 1 or T_CDL does not exist.
-        ;; 3. Use T_CDL (delete multiple lines) if it exists and line_count > 1 or none of the other ways work.
-        ;; 4. Use T_CE (erase line) if the result is empty.
-        ;; 5. Use T_DL (delete line) if it exists.
-        ;; 6. Redraw the characters from screenLines[].
-
-        (cond (and (some? win) (!= (:w_width win) @Cols) (eos? @T_CSV))
-        (do
-            ((ß type =) USE_REDRAW)
-        )
-        (and (can-clear @T_CD) result_empty)
-        (do
-            ((ß type =) USE_T_CD)
-        )
-        (and (zero? row) (or (== line_count 1) (eos? @T_CDL)))
-        (do
-            ((ß type =) USE_NL)
-        )
-        (and (non-eos? @T_CDL) (< 1 line_count) can_delete)
-        (do
-            ((ß type =) USE_T_CDL)
-        )
-        (and (can-clear @T_CE) result_empty (or (nil? win) (== (:w_width win) @Cols)))
-        (do
-            ((ß type =) USE_T_CE)
-        )
-        (and (non-eos? @T_DL) can_delete)
-        (do
-            ((ß type =) USE_T_DL)
-        )
-        (and (non-eos? @T_CDL) can_delete)
-        (do
-            ((ß type =) USE_T_CDL)
-        )
-        :else
-        (do
-            ((ß RETURN) false)
-        ))
-
-        ((ß int cursor_row =) (+ row off))
-        ((ß int cursor_end =) (+ end off))
-
-        ;; Now shift lineOffset* "line_count" up to reflect the deleted lines.
-        ;; Clear the inserted lines in screenLines[].
-
-        ((ß row =) (+ row off))
-        ((ß end =) (+ end off))
-        (dotimes [#_int i line_count]
-            (cond (and (some? win) (!= (:w_width win) @Cols))
-            (do
-                ;; need to copy part of a line
-                ((ß int j =) (+ row i))
-                (loop-when [] (<= ((ß j =) (+ j line_count)) (dec end))
-                    (linecopy (- j line_count), j, win)
-                    (recur)
+        (let-when [#_boolean result_empty (<= end (+ row line_count))
+              ;; We can delete lines only when 'db' flag not set or when 'ce' option available.
+              #_boolean can_delete (or (eos? @T_DB) (can-clear @T_CE))
+              ;; There are several ways to delete lines:
+              ;;
+              ;; 0. When in a vertically split window and t_CV isn't set, redraw the characters from screenLines[].
+              ;; 1. Use T_CD if it exists and the result is empty.
+              ;; 2. Use newlines if row == 0 and count == 1 or T_CDL does not exist.
+              ;; 3. Use T_CDL (delete multiple lines) if it exists and line_count > 1 or none of the other ways work.
+              ;; 4. Use T_CE (erase line) if the result is empty.
+              ;; 5. Use T_DL (delete line) if it exists.
+              ;; 6. Redraw the characters from screenLines[].
+              #_int type
+                (cond
+                    (and (some? win) (!= (:w_width win) @Cols) (eos? @T_CSV))                      USE_REDRAW
+                    (and (can-clear @T_CD) result_empty)                                           USE_T_CD
+                    (and (zero? row) (or (== line_count 1) (eos? @T_CDL)))                         USE_NL
+                    (and (non-eos? @T_CDL) (< 1 line_count) can_delete)                            USE_T_CDL
+                    (and (can-clear @T_CE) result_empty (or (nil? win) (== (:w_width win) @Cols))) USE_T_CE
+                    (and (non-eos? @T_DL) can_delete)                                              USE_T_DL
+                    (and (non-eos? @T_CDL) can_delete)                                             USE_T_CDL
                 )
-                ((ß j =) (- j line_count))
-                (if (can-clear (u8 " "))
-                    (lineclear (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win))
-                    (lineinvalid (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win)))
-                (aset @lineWraps j false)
-            )
-            :else
-            (do
-                ;; whole width, moving the line pointers is faster
-                ((ß int j =) (+ row i))
-                ((ß int temp =) (aget @lineOffset j))
-                (loop-when [] (<= ((ß j =) (+ j line_count)) (dec end))
-                    (aset @lineOffset (- j line_count) (aget @lineOffset j))
-                    (aset @lineWraps (- j line_count) (aget @lineWraps j))
-                    (recur)
+        ] (some? type) => false
+
+            (let [#_int cursor_row (+ row off) #_int cursor_end (+ end off)
+                  ;; Shift lineOffset* "line_count" up to reflect the deleted lines.
+                  row (+ row off) end (+ end off)]
+                (dotimes [#_int i line_count]
+                    (if (and (some? win) (!= (:w_width win) @Cols))
+                        ;; need to copy part of a line
+                        (let [#_int j (+ row i)
+                              j (loop-when [j (+ j line_count)] (< j end) => (- j line_count)
+                                    (linecopy (- j line_count), j, win)
+                                    (recur (+ j line_count))
+                                )]
+                            (if (can-clear (u8 " "))
+                                (lineclear (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win))
+                                (lineinvalid (+ (aget @lineOffset j) (:w_wincol win)), (:w_width win)))
+                            (aset @lineWraps j false))
+                        ;; whole width, moving the line pointers is faster
+                        (let [#_int j (+ row i) #_int k (aget @lineOffset j)
+                              j (loop-when [j (+ j line_count)] (< j end) => (- j line_count)
+                                    (aset @lineOffset (- j line_count) (aget @lineOffset j))
+                                    (aset @lineWraps (- j line_count) (aget @lineWraps j))
+                                    (recur (+ j line_count))
+                                )]
+                            (aset @lineOffset j k)
+                            (aset @lineWraps j false)
+                            (if (can-clear (u8 " "))
+                                (lineclear k, @Cols)
+                                (lineinvalid k, @Cols)
+                            ))
+                    ))
+                (screen-stop-highlight)
+                (condp == type
+                    USE_REDRAW  (redraw-block row, end, win)        ;; redraw the characters
+                    USE_T_CD    (do (windgoto cursor_row, 0)        ;; delete the lines
+                                    (out-str @T_CD)
+                                    (screen-start))                 ;; don't know where cursor is now
+                    USE_T_CDL   (do (windgoto cursor_row, 0)
+                                    (term-delete-lines line_count)
+                                    (screen-start))                 ;; don't know where cursor is now
+                    ;; Deleting lines at top of the screen or scroll region:
+                    ;; just scroll the whole screen (scroll region) up by outputting newlines on the last line.
+                    USE_NL      (do (windgoto (dec cursor_end), 0)
+                                    (dotimes [_ line_count]
+                                        (out-char (byte \newline))  ;; cursor will remain on same line
+                                    ))
+                    USE_T_DL    (dotimes [_ line_count]
+                                    (windgoto cursor_row, 0)
+                                    (out-str @T_DL)                 ;; delete a line
+                                    (screen-start))                 ;; don't know where cursor is now
+                    USE_T_CE    (loop-when-recur [i (dec line_count)] (<= 0 i) [(dec i)]
+                                    (windgoto (+ cursor_row i), 0)
+                                    (out-str @T_CE)                 ;; erase a line
+                                    (screen-start))                 ;; don't know where cursor is now
                 )
-                (aset @lineOffset (- j line_count) temp)
-                (aset @lineWraps (- j line_count) false)
-                (if (can-clear (u8 " "))
-                    (lineclear temp, @Cols)
-                    (lineinvalid temp, @Cols))
+                ;; If the 'db' flag is set, we need to clear the lines
+                ;; that have been scrolled up at the bottom of the region.
+                (when (and (non-eos? @T_DB) (any == type USE_T_DL USE_T_CDL))
+                    (loop-when-recur [i line_count] (< 0 i) [(dec i)]
+                        (windgoto (- cursor_end i), 0)
+                        (out-str @T_CE)                             ;; erase a line
+                        (screen-start)                              ;; don't know where cursor is now
+                    ))
+                true
             ))
-        )
-
-        (screen-stop-highlight)
-
-        (cond (== type USE_REDRAW)                 ;; redraw the characters
-        (do
-            (redraw-block row, end, win)
-        )
-        (== type USE_T_CD)              ;; delete the lines
-        (do
-            (windgoto cursor_row, 0)
-            (out-str @T_CD)
-            (screen-start)                      ;; don't know where cursor is now
-        )
-        (== type USE_T_CDL)
-        (do
-            (windgoto cursor_row, 0)
-            (term-delete-lines line_count)
-            (screen-start)                      ;; don't know where cursor is now
-        )
-
-        ;; Deleting lines at top of the screen or scroll region: Just scroll
-        ;; the whole screen (scroll region) up by outputting newlines on the last line.
-
-        (== type USE_NL)
-        (do
-            (windgoto (dec cursor_end), 0)
-            (loop-when-recur [#_int i (dec line_count)] (<= 0 i) [(dec i)]
-                (out-char (byte \newline))           ;; cursor will remain on same line
-            )
-        )
-        :else
-        (do
-            (loop-when-recur [#_int i (dec line_count)] (<= 0 i) [(dec i)]
-                (cond (== type USE_T_DL)
-                (do
-                    (windgoto cursor_row, 0)
-                    (out-str @T_DL)             ;; delete a line
-                )
-                :else ;; type == USE_T_CE
-                (do
-                    (windgoto (+ cursor_row i), 0)
-                    (out-str @T_CE)             ;; erase a line
-                ))
-                (screen-start)                  ;; don't know where cursor is now
-            )
-        ))
-
-        ;; If the 'db' flag is set, we need to clear the lines that have been
-        ;; scrolled up at the bottom of the region.
-
-        (when (and (non-eos? @T_DB) (any == type USE_T_DL USE_T_CDL))
-            (loop-when-recur [#_int i line_count] (< 0 i) [(dec i)]
-                (windgoto (- cursor_end i), 0)
-                (out-str @T_CE)                 ;; erase a line
-                (screen-start)                  ;; don't know where cursor is now
-            )
-        )
-
-        true
     ))
 
 ;; Show the current mode and ruler.
