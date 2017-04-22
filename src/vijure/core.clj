@@ -1317,7 +1317,7 @@
 
 ;       public abstract regprog_C regcomp(Bytes expr, int re_flags);
 ;       public abstract long regexec_nl(regmatch_C rmp, Bytes line, int col, boolean line_lbr);
-;       public abstract long regexec_multi(regmmatch_C rmp, window_C win, long lnum, int col, long nsec);
+;       public abstract long regexec_multi(regmmatch_C rmp, long lnum, int col, long nsec);
     ))
 
 ;; ----------------------------------------------------------------------- ;;
@@ -1679,7 +1679,6 @@
 (class! #_final match_C
     [
         (field regmmatch_C  rmm     (NEW_regmmatch_C))    ;; points to the regexp program; contains last found match (may continue in next line)
-        (field buffer_C     buf)                        ;; the buffer to search for a match
         (field long         lnum)                       ;; the line to search for a match
         (field int          attr)                       ;; attributes to be used for a match
         (field int          attr_cur)                   ;; attributes currently active in win-line()
@@ -1913,10 +1912,10 @@
         (field oparg_C      oap)                ;; operator arguments
         (field int          prechar)            ;; prefix character (optional, always 'g')
         (field int          cmdchar)            ;; command character
-        (atom' int          nchar)              ;; next command character (optional)
+        (field int          nchar)              ;; next command character (optional)
         (field int          ncharC1)            ;; first composing character (optional)
         (field int          ncharC2)            ;; second composing character (optional)
-        (atom' int          extra_char)         ;; yet another character (optional)
+        (field int          extra_char)         ;; yet another character (optional)
         (field long         opcount)            ;; count before an operator
         (field long         count0)             ;; count before command, default 0
         (field long         count1)             ;; count before command, default 1
@@ -6780,7 +6779,7 @@
 
         ((ß long line2 =) (:line2 eap))
         (robin [#_long lnum (:line1 eap)] (and (<= lnum line2) (not (or got_quit @got_int))) [(inc lnum)]
-            ((ß long nmatch =) (vim-regexec-multi regmatch, @curwin, lnum, 0, nil))
+            ((ß long nmatch =) (vim-regexec-multi regmatch, lnum, 0, nil))
             (when (non-zero? nmatch)                        ;; number of lines in match
                 ;; The new text is build up step by step, to avoid too much copying.
                 ;; There are these pieces:
@@ -7067,7 +7066,7 @@
                     ;; When the match starts below where we start searching
                     ;; also need to replace the line first (using \zs after \n).
 
-                    (when (or lastone (< 0 nmatch_tl) (zero? ((ß nmatch =) (vim-regexec-multi regmatch, @curwin, sub_firstlnum, matchcol, nil))) (< 0 (:lnum (... (:startpos regmatch) 0))))
+                    (when (or lastone (< 0 nmatch_tl) (zero? ((ß nmatch =) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil))) (< 0 (:lnum (... (:startpos regmatch) 0))))
                         (when (non-nil? new_start)
                             ;; Copy the rest of the line, that didn't match.
                             ;; "matchcol" has to be adjusted, we use the end of the line as reference,
@@ -7114,7 +7113,7 @@
                             ((ß copycol =) 0)
                         )
                         (if (and (== nmatch -1) (not lastone))
-                            ((ß nmatch =) (vim-regexec-multi regmatch, @curwin, sub_firstlnum, matchcol, nil))
+                            ((ß nmatch =) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil))
                         )
 
                         ;; 5. break if there isn't another match in this line
@@ -9741,7 +9740,7 @@
 
                         ((ß pos.col =) (if (not-at? cmd (byte \?)) MAXCOL 0))
 
-                        (cond (!= (searchit @curwin, pos, (if (at? cmd (byte \?)) BACKWARD FORWARD), (u8 ""), 1, SEARCH_MSG, i, 0, nil) 0)
+                        (cond (!= (searchit pos, (if (at? cmd (byte \?)) BACKWARD FORWARD), (u8 ""), 1, SEARCH_MSG, i, 0, nil) 0)
                         (do
                             ((ß lnum =) (:lnum pos))
                         )
@@ -10218,7 +10217,7 @@
 
         (cond ctrl_w
         (do
-            ((ß ca.@nchar =) c)
+            ((ß ca.nchar =) c)
             ((ß ca.cmdchar =) Ctrl_W)
         )
         :else
@@ -10281,24 +10280,24 @@
                 ;; Don't generate a CursorHold event here,
                 ;; most commands can't handle it, e.g. nv-replace(), nv-csearch().
                 (reset! did_cursorhold true)
-                (ß int[] cp)
+                (ß keyword k'char)
                 (cond (== (:cmdchar ca) (byte \g))
                 (do
                     ;; For 'g' get the next character now, so that we can check for "gr", "g'" and "g`".
 
-                    ((ß ca.@nchar =) (plain-vgetc))
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd @(:nchar ca))))
-                    (cond (or (== @(:nchar ca) (byte \r)) (== @(:nchar ca) (byte \')) (== @(:nchar ca) (byte \`)) (== @(:nchar ca) Ctrl_BSL))
+                    ((ß ca.nchar =) (plain-vgetc))
+                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (:nchar ca))))
+                    (cond (or (== (:nchar ca) (byte \r)) (== (:nchar ca) (byte \')) (== (:nchar ca) (byte \`)) (== (:nchar ca) Ctrl_BSL))
                     (do
-                        ((ß cp =) (:extra_char ca))            ;; need to get a third character
-                        (if (!= @(:nchar ca) (byte \r))
+                        ((ß k'char =) :extra_char)            ;; need to get a third character
+                        (if (!= (:nchar ca) (byte \r))
                             ((ß lit =) true)                 ;; get it literally
                             ((ß repl =) true)                ;; get it in replace mode
                         )
                     )
                     :else
                     (do
-                        ((ß cp =) nil)                      ;; no third character needed
+                        ((ß k'char =) nil)                      ;; no third character needed
                     ))
                 )
                 :else
@@ -10306,33 +10305,33 @@
                     (if (== (:cmdchar ca) (byte \r))              ;; get it in replace mode
                         ((ß repl =) true)
                     )
-                    ((ß cp =) (:nchar ca))
+                    ((ß k'char =) :nchar)
                 ))
 
                 ((ß boolean lang =) (or repl (!= (& (:cmd_flags (... nv_cmds idx)) NV_LANG) 0)))
 
                 ;; Get a second or third character.
 
-                (when (non-nil? cp)
+                (when (non-nil? k'char)
                     (when repl
                         (reset! State REPLACE)                ;; pretend Replace mode
                         (ui-cursor-shape)              ;; show different cursor shape
                     )
 
-                    ((ß cp[0] =) (plain-vgetc))
+                    ((ß ca.k'char =) (plain-vgetc))
 
                     (reset! State NORMAL_BUSY)
-                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (... cp 0))))
+                    ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (k'char ca))))
 
                     (when (not lit)
                         ;; Typing CTRL-K gets a digraph.
-                        (when (and (== (... cp 0) Ctrl_K) (or (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_LANG)) (== cp (:extra_char ca))) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
+                        (when (and (== (k'char ca) Ctrl_K) (or (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_LANG)) (== k'char :extra_char)) (nil? (vim-strbyte @p_cpo, CPO_DIGRAPH)))
                             ((ß c =) (get-digraph false))
                             (when (< 0 c)
-                                ((ß cp[0] =) c)
+                                ((ß ca.k'char =) c)
                                 ;; Guessing how to update showcmd here...
                                 (del-from-showcmd 3)
-                                ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (... cp 0))))
+                                ((ß need_flushbuf =) (| need_flushbuf (add-to-showcmd (k'char ca))))
                             )
                         )
                     )
@@ -10340,17 +10339,17 @@
                     ;; When the next character is CTRL-\ a following CTRL-N means
                     ;; the command is aborted and we go to Normal mode.
 
-                    (cond (and (== cp (:extra_char ca)) (== @(:nchar ca) Ctrl_BSL) (or (== @(:extra_char ca) Ctrl_N) (== @(:extra_char ca) Ctrl_G)))
+                    (cond (and (== k'char :extra_char) (== (:nchar ca) Ctrl_BSL) (or (== (:extra_char ca) Ctrl_N) (== (:extra_char ca) Ctrl_G)))
                     (do
                         ((ß ca.cmdchar =) Ctrl_BSL)
-                        ((ß ca.@nchar =) @(:extra_char ca))
+                        ((ß ca.nchar =) (:extra_char ca))
                         ((ß idx =) (find--command (:cmdchar ca)))
                     )
-                    (and (or (== @(:nchar ca) (byte \n)) (== @(:nchar ca) (byte \N))) (== (:cmdchar ca) (byte \g)))
+                    (and (or (== (:nchar ca) (byte \n)) (== (:nchar ca) (byte \N))) (== (:cmdchar ca) (byte \g)))
                     (do
-                        ((ß ca.oap.op_type =) (get-op-type (... cp 0), NUL))
+                        ((ß ca.oap.op_type =) (get-op-type (k'char ca), NUL))
                     )
-                    (== (... cp 0) Ctrl_BSL)
+                    (== (k'char ca) Ctrl_BSL)
                     (do
                         ((ß long towait =) (if (<= 0 @p_ttm) @p_ttm @p_tm))
 
@@ -10369,7 +10368,7 @@
                             :else
                             (do
                                 ((ß ca.cmdchar =) Ctrl_BSL)
-                                ((ß ca.@nchar =) c)
+                                ((ß ca.nchar =) c)
                                 ((ß idx =) (find--command (:cmdchar ca)))
                             ))
                         )
@@ -10413,7 +10412,7 @@
 
             (reset! State NORMAL)
 
-            (when (== @(:nchar ca) ESC)
+            (when (== (:nchar ca) ESC)
                 (clearop oap)
                 (if (and (zero? @restart_edit) (goto-im))
                     (reset! restart_edit (byte \a)))
@@ -10607,7 +10606,7 @@
             ;; Only redo yank when 'y' flag is in 'cpoptions'.
             ;; Also redo Operator-pending Visual mode mappings.
             (when (and (or (non-nil? (vim-strbyte @p_cpo, CPO_YANK)) (!= (:op_type oap) OP_YANK)) (or (not @VIsual_active) (!= (:motion_force oap) 0) (and @VIsual_active (== (:cmdchar cap) (byte \:)) (!= (:op_type oap) OP_COLON))) (!= (:cmdchar cap) (byte \D)))
-                (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), @(:nchar cap))
+                (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
                 (cond (or (== (:cmdchar cap) (byte \/)) (== (:cmdchar cap) (byte \?))) ;; was a search
                 (do
                     ;; If 'cpoptions' does not contain 'r',
@@ -10813,13 +10812,13 @@
                     ;; Prepare for redoing.  Only use the nchar field for "r",
                     ;; otherwise it might be the second char of the operator.
 
-                    (cond (and (== (:cmdchar cap) (byte \g)) (or (== @(:nchar cap) (byte \n)) (== @(:nchar cap) (byte \N))))
+                    (cond (and (== (:cmdchar cap) (byte \g)) (or (== (:nchar cap) (byte \n)) (== (:nchar cap) (byte \N))))
                     (do
-                        (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), @(:nchar cap))
+                        (prep-redo (:regname oap), (:count0 cap), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (:motion_force oap), (:cmdchar cap), (:nchar cap))
                     )
                     (!= (:cmdchar cap) (byte \:))
                     (do
-                        (prep-redo (:regname oap), 0, NUL, (byte \v), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (if (== (:op_type oap) OP_REPLACE) @(:nchar cap) NUL))
+                        (prep-redo (:regname oap), 0, NUL, (byte \v), (get-op-char (:op_type oap)), (get-extra-op-char (:op_type oap)), (if (== (:op_type oap) OP_REPLACE) (:nchar cap) NUL))
                     ))
                     (when (not @redo_VIsual_busy)
                         (reset! redo_VIsual_mode @resel_VIsual_mode)
@@ -11116,7 +11115,7 @@
                     (do
                         ;; Restore linebreak, so that when the user edits it looks as before.
                         ((ß @curwin.w_options.@wo_lbr =) lbr_saved)
-                        (op-replace oap, @(:nchar cap))
+                        (op-replace oap, (:nchar cap))
                     ))
                     (ß BREAK)
                 )
@@ -11377,7 +11376,7 @@
 ;; Prepare for redo of a normal command.
 
 (defn- #_void prep-redo-cmd [#_cmdarg_C cap]
-    (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, @(:nchar cap))
+    (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
     nil)
 
 ;; Prepare for redo of any command.
@@ -11975,7 +11974,7 @@
 
 (defn- #_void nv-zet [#_cmdarg_C cap]
     (§
-        ((ß int nchar =) @(:nchar cap))
+        ((ß int nchar =) (:nchar cap))
 
 ;       dozet:
         (when (asc-isdigit nchar)
@@ -12318,7 +12317,7 @@
 (defn- #_void nv-Zet [#_cmdarg_C cap]
     (§
         (when (not (checkclearopq (:oap cap)))
-            ((ß SWITCH) @(:nchar cap)
+            ((ß SWITCH) (:nchar cap)
                 ;; "ZZ": equivalent to ":x".
                 ((ß CASE) (byte \Z))
                 (do
@@ -12352,7 +12351,7 @@
 
         ((ß ca.oap =) oa)
         ((ß ca.cmdchar =) c1)
-        ((ß ca.@nchar =) c2)
+        ((ß ca.nchar =) c2)
         (nv-ident ca)
         nil
     ))
@@ -12370,7 +12369,7 @@
 
         ((ß boolean g_cmd =) (== cmdchar (byte \g)))
         (if g_cmd                          ;; "g*", "g#", "g]" and "gCTRL-]"
-            ((ß cmdchar =) @(:nchar cap))
+            ((ß cmdchar =) (:nchar cap))
         )
 
         (if (== cmdchar (char_u POUND))       ;; the pound sign, '#' for English keyboards
@@ -12850,7 +12849,7 @@
         (when (and (== (:cmdchar cap) (byte \?)) (== (:op_type (:oap cap)) OP_ROT13))
             ;; Translate "g??" to "g?g?".
             ((ß cap.cmdchar =) (byte \g))
-            ((ß cap.@nchar =) (byte \?))
+            ((ß cap.nchar =) (byte \?))
             (nv-operator cap)
             ((ß RETURN) nil)
         )
@@ -12925,7 +12924,7 @@
         ((ß boolean t_cmd =) (or (== (:cmdchar cap) (byte \t)) (== (:cmdchar cap) (byte \T))))
 
         ((ß cap.oap.motion_type =) MCHAR)
-        (cond (or (is-special @(:nchar cap)) (not (searchc cap, t_cmd)))
+        (cond (or (is-special (:nchar cap)) (not (searchc cap, t_cmd)))
         (do
             (clearopbeep (:oap cap))
         )
@@ -12969,22 +12968,22 @@
         ;; "[m" or "]m" search for prev/next start of (Java) method.
         ;; "[M" or "]M" search for prev/next end of (Java) method.
 
-        (cond (or (and (== (:cmdchar cap) (byte \[)) (non-nil? (vim-strchr (u8 "{(*/#mM"), @(:nchar cap)))) (and (== (:cmdchar cap) (byte \])) (non-nil? (vim-strchr (u8 "})*/#mM"), @(:nchar cap)))))
+        (cond (or (and (== (:cmdchar cap) (byte \[)) (non-nil? (vim-strchr (u8 "{(*/#mM"), (:nchar cap)))) (and (== (:cmdchar cap) (byte \])) (non-nil? (vim-strchr (u8 "})*/#mM"), (:nchar cap)))))
         (do
-            (if (== @(:nchar cap) (byte \*))
-                ((ß cap.@nchar =) (byte \/))
+            (if (== (:nchar cap) (byte \*))
+                ((ß cap.nchar =) (byte \/))
             )
 
             (ß int findc)
             (ß long n)
-            (cond (or (== @(:nchar cap) (byte \m)) (== @(:nchar cap) (byte \M)))
+            (cond (or (== (:nchar cap) (byte \m)) (== (:nchar cap) (byte \M)))
             (do
                 ((ß findc =) (if (== (:cmdchar cap) (byte \[)) (byte \{) (byte \})))
                 ((ß n =) 9999)
             )
             :else
             (do
-                ((ß findc =) @(:nchar cap))
+                ((ß findc =) (:nchar cap))
                 ((ß n =) (:count1 cap))
             ))
 
@@ -12997,7 +12996,7 @@
                 (when (nil? pos)
                     (cond (zero? (:lnum new_pos)) ;; nothing found
                     (do
-                        (if (and (!= @(:nchar cap) (byte \m)) (!= @(:nchar cap) (byte \M)))
+                        (if (and (!= (:nchar cap) (byte \m)) (!= (:nchar cap) (byte \M)))
                             (clearopbeep (:oap cap)))
                     )
                     :else
@@ -13017,9 +13016,9 @@
             ;; Try finding the '{' or '}' we want to be at.
             ;; Also repeat for the given count.
 
-            (when (or (== @(:nchar cap) (byte \m)) (== @(:nchar cap) (byte \M)))
+            (when (or (== (:nchar cap) (byte \m)) (== (:nchar cap) (byte \M)))
                 ;; norm is true for "]M" and "[m"
-                ((ß boolean norm =) (== (== findc (byte \{)) (== @(:nchar cap) (byte \m))))
+                ((ß boolean norm =) (== (== findc (byte \{)) (== (:nchar cap) (byte \m))))
 
                 ((ß n =) (:count1 cap))
                 ;; found a match: we were inside a method
@@ -13087,9 +13086,9 @@
 
         ;; "[[", "[]", "]]" and "][": move to start or end of function
 
-        (or (== @(:nchar cap) (byte \[)) (== @(:nchar cap) (byte \])))
+        (or (== (:nchar cap) (byte \[)) (== (:nchar cap) (byte \])))
         (do
-            ((ß int flag =) (if (== @(:nchar cap) (:cmdchar cap)) (byte \{) (byte \})))   ;; "]]" or "[[" ;; "][" or "[]"
+            ((ß int flag =) (if (== (:nchar cap) (:cmdchar cap)) (byte \{) (byte \})))   ;; "]]" or "[[" ;; "][" or "[]"
 
             (swap! curwin assoc :w_set_curswant true)
 
@@ -13112,10 +13111,10 @@
 
         ;; "[p", "[P", "]P" and "]p": put with indent adjustment
 
-        (or (== @(:nchar cap) (byte \p)) (== @(:nchar cap) (byte \P)))
+        (or (== (:nchar cap) (byte \p)) (== (:nchar cap) (byte \P)))
         (do
             (when (not (checkclearop (:oap cap)))
-                ((ß int dir =) (if (and (== (:cmdchar cap) (byte \])) (== @(:nchar cap) (byte \p))) FORWARD BACKWARD))
+                ((ß int dir =) (if (and (== (:cmdchar cap) (byte \])) (== (:nchar cap) (byte \p))) FORWARD BACKWARD))
                 ((ß int regname =) (:regname (:oap cap)))
                 ((ß boolean was_visual =) @VIsual_active)
                 ((ß long line_count =) (:ml_line_count (:b_ml @curbuf)))
@@ -13146,7 +13145,7 @@
                     (when (== @VIsual_mode (byte \V))
                         ;; delete visually selected lines
                         ((ß cap.cmdchar =) (byte \d))
-                        ((ß cap.@nchar =) NUL)
+                        ((ß cap.nchar =) NUL)
                         ((ß cap.oap.regname =) regname)
                         (nv-operator cap)
                         (do-pending-operator cap, 0, false)
@@ -13161,12 +13160,12 @@
 
         ;; "['", "[`", "]'" and "]`": jump to next mark
 
-        (or (== @(:nchar cap) (byte \')) (== @(:nchar cap) (byte \`)))
+        (or (== (:nchar cap) (byte \')) (== (:nchar cap) (byte \`)))
         (do
             ((ß pos_C pos =) (:w_cursor @curwin))
             (robin [#_long n (:count1 cap)] (< 0 n) [(dec n)]
                 (COPY-pos prev_pos, pos)
-                ((ß pos =) (getnextmark pos, (if (== (:cmdchar cap) (byte \[)) BACKWARD FORWARD), (== @(:nchar cap) (byte \'))))
+                ((ß pos =) (getnextmark pos, (if (== (:cmdchar cap) (byte \[)) BACKWARD FORWARD), (== (:nchar cap) (byte \'))))
                 (if (nil? pos)
                     (ß BREAK)
                 )
@@ -13174,7 +13173,7 @@
             (if (nil? pos)
                 ((ß pos =) prev_pos)
             )
-            (nv-cursormark cap, (== @(:nchar cap) (byte \')), pos)
+            (nv-cursormark cap, (== (:nchar cap) (byte \')), pos)
         )
 
         ;; Not a valid cap.nchar.
@@ -13260,7 +13259,7 @@
 
 (defn- #_void nv-mark [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
-        (if (not (setmark @(:nchar cap)))
+        (if (not (setmark (:nchar cap)))
             (clearopbeep (:oap cap)))
     )
     nil)
@@ -13293,7 +13292,7 @@
         (do
             ;; translate "<Visual>u" to "<Visual>gu" and "guu" to "gugu"
             ((ß cap.cmdchar =) (byte \g))
-            ((ß cap.@nchar =) (byte \u))
+            ((ß cap.nchar =) (byte \u))
             (nv-operator cap)
         )
         :else
@@ -13322,12 +13321,12 @@
 
         ;; get another character
         (ß int had_ctrl_v)
-        (cond (== @(:nchar cap) Ctrl_V)
+        (cond (== (:nchar cap) Ctrl_V)
         (do
             ((ß had_ctrl_v =) Ctrl_V)
-            ((ß cap.@nchar =) (get-literal))
+            ((ß cap.nchar =) (get-literal))
             ;; Don't redo a multibyte character with CTRL-V.
-            (if (< DEL @(:nchar cap))
+            (if (< DEL (:nchar cap))
                 ((ß had_ctrl_v =) NUL)
             )
         )
@@ -13337,7 +13336,7 @@
         ))
 
         ;; Abort if the character is a special key.
-        (when (is-special @(:nchar cap))
+        (when (is-special (:nchar cap))
             (clearopbeep (:oap cap))
             ((ß RETURN) nil)
         )
@@ -13347,13 +13346,13 @@
             (if @got_int
                 (reset-VIsual))
             (when (!= had_ctrl_v NUL)
-                (cond (== @(:nchar cap) (byte \return))
+                (cond (== (:nchar cap) (byte \return))
                 (do
-                    ((ß cap.@nchar =) -1)
+                    ((ß cap.nchar =) -1)
                 )
-                (== @(:nchar cap) (byte \newline))
+                (== (:nchar cap) (byte \newline))
                 (do
-                    ((ß cap.@nchar =) -2)
+                    ((ß cap.nchar =) -2)
                 ))
             )
             (nv-operator cap)
@@ -13389,7 +13388,7 @@
         ;; Other characters are done below to avoid problems with things like
         ;; CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
 
-        (when (and (!= had_ctrl_v Ctrl_V) (== @(:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
+        (when (and (!= had_ctrl_v Ctrl_V) (== (:nchar cap) TAB) (or @(:b_p_et @curbuf) @p_sta))
             (stuff-num (:count1 cap))
             (stuff-char (byte \R))
             (stuff-char TAB)
@@ -13402,7 +13401,7 @@
             ((ß RETURN) nil)
         )
 
-        (cond (and (!= had_ctrl_v Ctrl_V) (or (== @(:nchar cap) (byte \return)) (== @(:nchar cap) (byte \newline))))
+        (cond (and (!= had_ctrl_v Ctrl_V) (or (== (:nchar cap) (byte \return)) (== (:nchar cap) (byte \newline))))
         (do
             ;; Replace character(s) by a single newline.
             ;; Strange vi behaviour: Only one newline is inserted.
@@ -13420,7 +13419,7 @@
         )
         :else
         (do
-            (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, @(:nchar cap))
+            (prep-redo (:regname (:oap cap)), (:count1 cap), NUL, (byte \r), NUL, had_ctrl_v, (:nchar cap))
 
             (COPY-pos (:b_op_start @curbuf), (:w_cursor @curwin))
 
@@ -13437,9 +13436,9 @@
                 ;; composing characters for utf-8.
                 (robin [#_long n (:count1 cap)] (< 0 n) [(dec n)]
                     (reset! State REPLACE)
-                    (cond (or (== @(:nchar cap) Ctrl_E) (== @(:nchar cap) Ctrl_Y))
+                    (cond (or (== (:nchar cap) Ctrl_E) (== (:nchar cap) Ctrl_Y))
                     (do
-                        ((ß int c =) (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== @(:nchar cap) Ctrl_Y) -1 1))))
+                        ((ß int c =) (ins-copychar (+ (:lnum (:w_cursor @curwin)) (if (== (:nchar cap) Ctrl_Y) -1 1))))
                         (cond (!= c NUL)
                         (do
                             (ins-char c)
@@ -13452,7 +13451,7 @@
                     )
                     :else
                     (do
-                        (ins-char @(:nchar cap))
+                        (ins-char (:nchar cap))
                     ))
                     (reset! State old_State)
                     (if (non-zero? (:ncharC1 cap))
@@ -13469,7 +13468,7 @@
             (mb-adjust-pos (:w_cursor @curwin))
             (COPY-pos (:b_op_end @curbuf), (:w_cursor @curwin))
             (swap! curwin assoc :w_set_curswant true)
-            (set-last-insert @(:nchar cap))
+            (set-last-insert (:nchar cap))
         ))
         nil
     ))
@@ -13528,7 +13527,7 @@
         (cond @VIsual_active          ;; "R" is replace lines
         (do
             ((ß cap.cmdchar =) (byte \c))
-            ((ß cap.@nchar =) NUL)
+            ((ß cap.nchar =) NUL)
             (reset! VIsual_mode_orig @VIsual_mode) ;; remember original area for gv
             (reset! VIsual_mode (byte \V))
             (nv-operator cap)
@@ -13549,15 +13548,15 @@
         (cond @VIsual_active
         (do
             ((ß cap.cmdchar =) (byte \r))
-            ((ß cap.@nchar =) @(:extra_char cap))
+            ((ß cap.nchar =) (:extra_char cap))
             (nv-replace cap)        ;; do same as "r" in Visual mode for now
         )
         (not (checkclearopq (:oap cap)))
         (do
-            (if (== @(:extra_char cap) Ctrl_V)       ;; get another character
-                ((ß cap.@extra_char =) (get-literal))
+            (if (== (:extra_char cap) Ctrl_V)       ;; get another character
+                ((ß cap.extra_char =) (get-literal))
             )
-            (stuff-char @(:extra_char cap))
+            (stuff-char (:extra_char cap))
             (stuff-char ESC)
             (if (virtual-active)
                 (coladvance (getviscol)))
@@ -13753,7 +13752,7 @@
 
 (defn- #_void nv-gomark [#_cmdarg_C cap]
     (§
-        ((ß int c =) (if (== (:cmdchar cap) (byte \g)) @(:extra_char cap) @(:nchar cap)))
+        ((ß int c =) (if (== (:cmdchar cap) (byte \g)) (:extra_char cap) (:nchar cap)))
 
         ((ß pos_C pos =) (getmark c, (== (:op_type (:oap cap)) OP_NOP)))
         (cond (== pos NOPOS)   ;; jumped to other file
@@ -13830,12 +13829,12 @@
         (if (checkclearop (:oap cap))
             ((ß RETURN) nil)
         )
-        (if (== @(:nchar cap) (byte \=))
-            ((ß cap.@nchar =) (get-expr-register))
+        (if (== (:nchar cap) (byte \=))
+            ((ß cap.nchar =) (get-expr-register))
         )
-        (cond (and (!= @(:nchar cap) NUL) (valid-yank-reg @(:nchar cap), false))
+        (cond (and (!= (:nchar cap) NUL) (valid-yank-reg (:nchar cap), false))
         (do
-            ((ß cap.oap.regname =) @(:nchar cap))
+            ((ß cap.oap.regname =) (:nchar cap))
             ((ß cap.opcount =) (:count0 cap))       ;; remember count before '"'
         )
         :else
@@ -14006,7 +14005,7 @@
 
 (defn- #_void nv-window [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
-        (do-window @(:nchar cap), (:count0 cap), NUL)
+        (do-window (:nchar cap), (:count0 cap), NUL)
     )
     nil)
 
@@ -14026,7 +14025,7 @@
         ((ß oparg_C oap =) (:oap cap))
         ((ß boolean flag =) false)
 
-        ((ß SWITCH) @(:nchar cap)
+        ((ß SWITCH) (:nchar cap)
             ;; "gR": Enter virtual replace mode.
 
             ((ß CASE) (byte \R))
@@ -14126,7 +14125,7 @@
 
             ((ß CASE) K_BS)
             (do
-                ((ß cap.@nchar =) Ctrl_H)
+                ((ß cap.nchar =) Ctrl_H)
                 (ß FALLTHROUGH)
             )
 
@@ -14134,7 +14133,7 @@
             ((ß CASE) (byte \H))
             ((ß CASE) Ctrl_H)
             (do
-                ((ß cap.cmdchar =) (+ @(:nchar cap) (- (byte \v) (byte \h))))
+                ((ß cap.cmdchar =) (+ (:nchar cap) (- (byte \v) (byte \h))))
                 ((ß cap.arg =) TRUE)
                 (nv-visual cap)
                 (ß BREAK)
@@ -14147,7 +14146,7 @@
             ((ß CASE) (byte \N))
             ((ß CASE) (byte \n))
             (do
-                (if (not (current-search (:count1 cap), (== @(:nchar cap) (byte \n))))
+                (if (not (current-search (:count1 cap), (== (:nchar cap) (byte \n))))
                     (clearopbeep oap))
                 (ß BREAK)
             )
@@ -14240,7 +14239,7 @@
                 ))
                 ;; Go to the middle of the screen line.  When 'number' or 'relativenumber' is on
                 ;; and lines are wrapping the middle can be more to the left.
-                (when (== @(:nchar cap) (byte \m))
+                (when (== (:nchar cap) (byte \m))
                     ((ß i =) (+ i (/ (+ (- (:w_width @curwin) (curwin-col-off)) (if (and @(:wo_wrap (:w_options @curwin)) (< 0 i)) (curwin-col-off2) 0)) 2)))
                 )
                 (coladvance i)
@@ -14357,7 +14356,7 @@
                 ((ß oap.motion_type =) MCHAR)
                 (swap! curwin assoc :w_set_curswant true)
                 ((ß oap.inclusive =) true)
-                (if (not (bckend-word (:count1 cap), (== @(:nchar cap) (byte \E)), false))
+                (if (not (bckend-word (:count1 cap), (== (:nchar cap) (byte \E)), false))
                     (clearopbeep oap))
                 (ß BREAK)
             )
@@ -14492,7 +14491,7 @@
             ((ß CASE) (byte \d))
             ((ß CASE) (byte \D))
             (do
-                (nv-gd oap, @(:nchar cap), (== (:count0 cap) 1))
+                (nv-gd oap, (:nchar cap), (== (:count0 cap) 1))
                 (ß BREAK)
             )
 
@@ -14551,7 +14550,7 @@
             ((ß CASE) (byte \-))
             (do
                 (if (not (checkclearopq oap))
-                    (undo-time (if (== @(:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false))
+                    (undo-time (if (== (:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false))
                 (ß BREAK)
             )
 
@@ -14615,7 +14614,7 @@
         (do
             ;; translate "gUU" to "gUgU"
             ((ß cap.cmdchar =) (byte \g))
-            ((ß cap.@nchar =) (byte \U))
+            ((ß cap.nchar =) (byte \U))
             (nv-operator cap)
         )
         (not (checkclearopq (:oap cap)))
@@ -14639,7 +14638,7 @@
 
 (defn- #_void nv-operator [#_cmdarg_C cap]
     (§
-        ((ß int op_type =) (get-op-type (:cmdchar cap), @(:nchar cap)))
+        ((ß int op_type =) (get-op-type (:cmdchar cap), (:nchar cap)))
 
         (cond (== op_type (:op_type (:oap cap)))     ;; double operator works on lines
         (do
@@ -14883,7 +14882,7 @@
         )
         @VIsual_reselect
         (do
-            ((ß cap.@nchar =) (byte \v))        ;; fake "gv" command
+            ((ß cap.nchar =) (byte \v))        ;; fake "gv" command
             ((ß cap.arg =) TRUE)
             (nv-g-cmd cap)
         ))
@@ -14920,7 +14919,7 @@
 ;; CTRL-\ in Normal mode.
 
 (defn- #_void nv-normal [#_cmdarg_C cap]
-    (let [key @(:nchar cap)]
+    (let [key (:nchar cap)]
         (cond (or (== key Ctrl_N) (== key Ctrl_G))
         (do
             (clearop (:oap cap))
@@ -15103,7 +15102,7 @@
         ((ß @curbuf.@b_p_mps =) (u8 "(:),{:},[:],<:>"))
 
         (ß boolean flag)
-        ((ß SWITCH) @(:nchar cap)
+        ((ß SWITCH) (:nchar cap)
             ((ß CASE) (byte \w)) ;; "aw" = a word
             (do
                 ((ß flag =) (current-word (:oap cap), (:count1 cap), include, false))
@@ -15154,7 +15153,7 @@
             ((ß CASE) (byte \')) ;; "a'" = a single quoted string
             ((ß CASE) (byte \`)) ;; "a`" = a backtick quoted string
             (do
-                ((ß flag =) (current-quote (:oap cap), (:count1 cap), include, @(:nchar cap)))
+                ((ß flag =) (current-quote (:oap cap), (:count1 cap), include, (:nchar cap)))
                 (ß BREAK)
             )
             (ß DEFAULT)
@@ -15181,20 +15180,20 @@
         (do
             ;; "gqq" is the same as "gqgq": format line
             ((ß cap.cmdchar =) (byte \g))
-            ((ß cap.@nchar =) (byte \q))
+            ((ß cap.nchar =) (byte \q))
             (nv-operator cap)
         )
         (not (checkclearop (:oap cap)))
         (do
-            (cond (or (== @(:nchar cap) (byte \:)) (== @(:nchar cap) (byte \/)) (== @(:nchar cap) (byte \?)))
+            (cond (or (== (:nchar cap) (byte \:)) (== (:nchar cap) (byte \/)) (== (:nchar cap) (byte \?)))
             (do
-                (stuff-char @(:nchar cap))
+                (stuff-char (:nchar cap))
                 (stuff-char K_CMDWIN)
             )
             :else
             (do
                 ;; (stop) recording into a named register, unless executing a register
-                (if (and (not @execReg) (not (do-record @(:nchar cap))))
+                (if (and (not @execReg) (not (do-record (:nchar cap))))
                     (clearopbeep (:oap cap)))
             ))
         ))
@@ -15208,13 +15207,13 @@
         (if (checkclearop (:oap cap))
             ((ß RETURN) nil)
         )
-        (when (== @(:nchar cap) (byte \=))
+        (when (== (:nchar cap) (byte \=))
             (if (== (get-expr-register) NUL)
                 ((ß RETURN) nil)
             )
         )
         (while (and (< 0 (ß cap.count1--)) (not @got_int))
-            (when (not (do-execreg @(:nchar cap)))
+            (when (not (do-execreg (:nchar cap)))
                 (clearopbeep (:oap cap))
                 (ß BREAK)
             )
@@ -15253,8 +15252,8 @@
             )
             :else
             (do
-                (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, @(:nchar cap))
-                (do-join (int (:count0 cap)), (== @(:nchar cap) NUL), true, true, true)
+                (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
+                (do-join (int (:count0 cap)), (== (:nchar cap) NUL), true, true, true)
             ))
         ))
         nil
@@ -15275,7 +15274,7 @@
         )
         :else
         (do
-            ((ß int dir =) (if (or (== (:cmdchar cap) (byte \P)) (and (== (:cmdchar cap) (byte \g)) (== @(:nchar cap) (byte \P)))) BACKWARD FORWARD))
+            ((ß int dir =) (if (or (== (:cmdchar cap) (byte \P)) (and (== (:cmdchar cap) (byte \g)) (== (:nchar cap) (byte \P)))) BACKWARD FORWARD))
             (prep-redo-cmd cap)
             (if (== (:cmdchar cap) (byte \g))
                 ((ß flags =) (| flags PUT_CURSEND))
@@ -15299,7 +15298,7 @@
 
                 ;; Now delete the selected text.
                 ((ß cap.cmdchar =) (byte \d))
-                ((ß cap.@nchar =) NUL)
+                ((ß cap.nchar =) NUL)
                 ((ß cap.oap.regname =) NUL)
                 (nv-operator cap)
                 (do-pending-operator cap, 0, false)
@@ -25069,9 +25068,9 @@
 ; %%        ((ß RETURN) (bt-regexec-nl rmp, line, col, line_lbr))
 ;       }
 
-;       public long regexec_multi(regmmatch_C rmp, window_C win, long lnum, int col, long nsec)
+;       public long regexec_multi(regmmatch_C rmp, long lnum, int col, long nsec)
 ;       {
-; %%        ((ß RETURN) (bt-regexec-multi rmp, win, lnum, col, nsec))
+; %%        ((ß RETURN) (bt-regexec-multi rmp, lnum, col, nsec))
 ;       }
 ;   };
 
@@ -25087,9 +25086,9 @@
 ; %%        ((ß RETURN) (nfa-regexec-nl rmp, line, col, line_lbr))
 ;       }
 
-;       public long regexec_multi(regmmatch_C rmp, window_C win, long lnum, int col, long nsec)
+;       public long regexec_multi(regmmatch_C rmp, long lnum, int col, long nsec)
 ;       {
-; %%        ((ß RETURN) (nfa-regexec-multi rmp, win, lnum, col, nsec))
+; %%        ((ß RETURN) (nfa-regexec-multi rmp, lnum, col, nsec))
 ;       }
 ;   };
 
@@ -27973,7 +27972,6 @@
 ;; reg_endp             reg_match.endp          <invalid>
 ;; reg_startpos         <invalid>               reg_mmatch.startpos
 ;; reg_endpos           <invalid>               reg_mmatch.endpos
-;; reg_win              null                    window in which to search
 ;; reg_firstlnum        <invalid>               first line in which to search
 ;; reg_maxline          0                       last line nr
 ;; reg_line_lbr         false or true           false
@@ -27984,7 +27982,6 @@
 (atom! Bytes*       reg_endp)
 (atom! lpos_C*      reg_startpos)
 (atom! lpos_C*      reg_endpos)
-(atom! window_C     reg_win)
 (atom! long         reg_firstlnum)
 (atom! long         reg_maxline)
 (atom! boolean      reg_line_lbr)       ;; "\n" in string is line break
@@ -28111,7 +28108,6 @@
     (reset! reg_mmatch nil)
     (reset! reg_maxline 0)
     (reset! reg_line_lbr line_lbr)
-    (reset! reg_win nil)
     (reset! ireg_ic (:rm_ic rmp))
     (reset! ireg_icombine false)
     (reset! ireg_maxcol 0)
@@ -28123,14 +28119,12 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long bt-regexec-multi [#_regmmatch_C rmp, #_window_C win, #_long lnum, #_int col, #_long nsec]
-    ;; win: window in which to search or null
+(defn- #_long bt-regexec-multi [#_regmmatch_C rmp, #_long lnum, #_int col, #_long nsec]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
     (reset! reg_match nil)
     (reset! reg_mmatch rmp)
-    (reset! reg_win win)
     (reset! reg_firstlnum lnum)
     (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
     (reset! reg_line_lbr false)
@@ -28412,9 +28406,6 @@
 
 (defn- #_boolean reg-match-visual []
     (§
-        ((ß window_C wp =) (if (nil? @reg_win) @curwin @reg_win))
-
-        ;; Check if the buffer is the current buffer.
         (if (zero? (:lnum @VIsual))
             ((ß RETURN) false)
         )
@@ -28424,14 +28415,14 @@
         (ß int mode)
         (cond @VIsual_active
         (do
-            (cond (ltpos @VIsual, (:w_cursor wp))
+            (cond (ltpos @VIsual, (:w_cursor @curwin))
             (do
                 (COPY-pos top, @VIsual)
-                (COPY-pos bot, (:w_cursor wp))
+                (COPY-pos bot, (:w_cursor @curwin))
             )
             :else
             (do
-                (COPY-pos top, (:w_cursor wp))
+                (COPY-pos top, (:w_cursor @curwin))
                 (COPY-pos bot, @VIsual)
             ))
             ((ß mode =) @VIsual_mode)
@@ -28466,16 +28457,16 @@
         (do
             ((ß int[] a'start1 =) (atom (int)))
             ((ß int[] a'end1 =) (atom (int)))
-            (getvvcol wp, top, a'start1, nil, a'end1)
+            (getvvcol @curwin, top, a'start1, nil, a'end1)
             ((ß int[] a'start2 =) (atom (int)))
             ((ß int[] a'end2 =) (atom (int)))
-            (getvvcol wp, bot, a'start2, nil, a'end2)
+            (getvvcol @curwin, bot, a'start2, nil, a'end2)
             (reset! a'start1 (min @a'start1 @a'start2))
             (reset! a'end1 (max @a'end2 @a'end1))
             (if (or (== (:col top) MAXCOL) (== (:col bot) MAXCOL))
                 (reset! a'end1 MAXCOL)
             )
-            ((ß int cols =) (win-linetabsize wp, @regline, (BDIFF @reginput, @regline)))
+            ((ß int cols =) (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline)))
             (if (or (< cols @a'start1) (< (- @a'end1 (if (at? @p_sel (byte \e)) 1 0)) cols))
                 ((ß RETURN) false)
             )
@@ -28596,9 +28587,8 @@
 
                         ((ß CASE) CURSOR)
                         (do
-                            ;; Check if the buffer is in a window and compare the
-                            ;; reg_win.w_cursor position to the match position.
-                            (when (or (nil? @reg_win) (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @reg_win))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @reg_win))))
+                            ;; Compare the cursor position to the match position.
+                            (when (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin))))
                                 ((ß status =) RA_NOMATCH)
                             )
                             (ß BREAK)
@@ -28643,7 +28633,7 @@
 
                         ((ß CASE) RE_VCOL)
                         (do
-                            (if (not (re-num-cmp (+ (long (win-linetabsize (if (nil? @reg_win) @curwin @reg_win), @regline, (BDIFF @reginput, @regline))) 1), scan))
+                            (if (not (re-num-cmp (+ (long (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))) 1), scan))
                                 ((ß status =) RA_NOMATCH)
                             )
                             (ß BREAK)
@@ -31085,7 +31075,6 @@
                 (reset! submatch_maxline @reg_maxline)
                 (reset! submatch_line_lbr @reg_line_lbr)
 
-                ((ß window_C save_reg_win =) @reg_win)
                 ((ß boolean save_ireg_ic =) @ireg_ic)
                 (reset! can_f_submatch true)
 
@@ -31129,7 +31118,6 @@
                 (reset! reg_firstlnum @submatch_firstlnum)
                 (reset! reg_maxline @submatch_maxline)
                 (reset! reg_line_lbr @submatch_line_lbr)
-                (reset! reg_win save_reg_win)
                 (reset! ireg_ic save_ireg_ic)
                 (reset! can_f_submatch false)
             ))
@@ -37377,7 +37365,6 @@
                         (do
                             ((ß int op =) (- (:c (:state thread)) NFA_VCOL))
                             ((ß int col =) (BDIFF @reginput, @regline))
-                            ((ß window_C wp =) (if (nil? @reg_win) @curwin @reg_win))
 
                             ;; Bail out quickly when there can't be a match,
                             ;; avoid the overhead of win-linetabsize() on long lines.
@@ -37393,7 +37380,7 @@
                                 ((ß result =) (< (* (:val (:state thread)) ts) col))
                             )
                             (if (not result)
-                                ((ß result =) (nfa-re-num-cmp (:val (:state thread)), op, (+ (long (win-linetabsize wp, @regline, col)) 1)))
+                                ((ß result =) (nfa-re-num-cmp (:val (:state thread)), op, (+ (long (win-linetabsize @curwin, @regline, col)) 1)))
                             )
                             (when result
                                 ((ß add_here =) true)
@@ -37419,7 +37406,7 @@
 
                         ((ß CASE) NFA_CURSOR)
                         (do
-                            ((ß boolean result =) (and (non-nil? @reg_win) (== (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @reg_win))) (== (BDIFF @reginput, @regline) (:col (:w_cursor @reg_win)))))
+                            ((ß boolean result =) (and (== (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (== (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))))
                             (when result
                                 ((ß add_here =) true)
                                 ((ß add_state =) (.. thread state (out0)))
@@ -37947,7 +37934,6 @@
     (reset! reg_mmatch nil)
     (reset! reg_maxline 0)
     (reset! reg_line_lbr line_lbr)
-    (reset! reg_win nil)
     (reset! ireg_ic (:rm_ic rmp))
     (reset! ireg_icombine false)
     (reset! ireg_maxcol 0)
@@ -37977,14 +37963,12 @@
 ;;
 ;; FIXME if this behavior is not compatible.
 
-(defn- #_long nfa-regexec-multi [#_regmmatch_C rmp, #_window_C win, #_long lnum, #_int col, #_long nsec]
-    ;; win: window in which to search or null
+(defn- #_long nfa-regexec-multi [#_regmmatch_C rmp, #_long lnum, #_int col, #_long nsec]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
     (reset! reg_match nil)
     (reset! reg_mmatch rmp)
-    (reset! reg_win win)
     (reset! reg_firstlnum lnum)
     (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
     (reset! reg_line_lbr false)
@@ -38136,13 +38120,12 @@
 ;;
 ;; Return zero if there is no match.  Return number of lines contained in the match otherwise.
 
-(defn- #_long vim-regexec-multi [#_regmmatch_C rmp, #_window_C win, #_long lnum, #_int col, #_long nsec]
-    ;; win: window in which to search or null
+(defn- #_long vim-regexec-multi [#_regmmatch_C rmp, #_long lnum, #_int col, #_long nsec]
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
     (§
-        ((ß long result =) (.regexec_multi (:engine (:regprog rmp)) rmp, win, lnum, col, nsec))
+        ((ß long result =) (.regexec_multi (:engine (:regprog rmp)) rmp, lnum, col, nsec))
 
         ;; NFA engine aborted because it's very slow.
         (when (and (== (:re_engine (:regprog rmp)) AUTOMATIC_ENGINE) (== result NFA_TOO_EXPENSIVE))
@@ -38156,7 +38139,7 @@
                     (report-re-switch pat)
                     ((ß rmp.regprog =) (vim-regcomp pat, re_flags))
                     (if (non-nil? (:regprog rmp))
-                        ((ß result =) (.regexec_multi (:engine (:regprog rmp)) rmp, win, lnum, col, nsec))
+                        ((ß result =) (.regexec_multi (:engine (:regprog rmp)) rmp, lnum, col, nsec))
                     )
                 )
                 (reset! p_re save_p_re)
@@ -38419,8 +38402,7 @@
 ;; When FEAT_EVAL is defined, returns the index of the first matching
 ;; subpattern plus one; one if there was none.
 
-(defn- #_int searchit [#_window_C win, #_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_long nsec]
-    ;; win: window to search in; can be null for a buffer without a window!
+(defn- #_int searchit [#_pos_C pos, #_int dir, #_Bytes pat, #_long count, #_int options, #_int pat_use, #_long stop_lnum, #_long nsec]
     ;; pat_use: which pattern to use when "pat" is empty
     ;; stop_lnum: stop after this line number when != 0
     ;; nsec: timeout limit or 0
@@ -38505,7 +38487,7 @@
 
                     ;; Look for a match somewhere in line "lnum".
 
-                    ((ß long nmatched =) (vim-regexec-multi regmatch, win, lnum, 0, nsec))
+                    ((ß long nmatched =) (vim-regexec-multi regmatch, lnum, 0, nsec))
                     ;; Abort searching on an error (e.g., out of stack).
                     (if @called_emsg
                         (ß BREAK)
@@ -38559,7 +38541,7 @@
                                 (if (and (zero? matchcol) (flag? options SEARCH_START))
                                     (ß BREAK)
                                 )
-                                (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim-regexec-multi regmatch, win, (+ lnum (:lnum matchpos)), matchcol, nsec))))
+                                (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim-regexec-multi regmatch, (+ lnum (:lnum matchpos)), matchcol, nsec))))
                                     ((ß match_ok =) false)
                                     (ß BREAK)
                                 )
@@ -38627,7 +38609,7 @@
                                         ((ß matchcol =) (+ matchcol (us-ptr2len-cc (.plus ptr matchcol))))
                                     )
                                 ))
-                                (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim-regexec-multi regmatch, win, (+ lnum (:lnum matchpos)), matchcol, nsec))))
+                                (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim-regexec-multi regmatch, (+ lnum (:lnum matchpos)), matchcol, nsec))))
                                     (ß BREAK)
                                 )
 
@@ -39010,7 +38992,7 @@
                     ))
                 )
 
-                ((ß int i =) (searchit @curwin, pos, (if (== dirc (byte \/)) FORWARD BACKWARD), searchstr, count, (+ (if (:end (:sp_off (... @spats 0))) SEARCH_REV 0) (& options (+ SEARCH_KEEP SEARCH_PEEK SEARCH_HIS SEARCH_MSG SEARCH_START (if (and (non-nil? pat) (at? pat (byte \;))) 0 SEARCH_NOOF)))), RE_LAST, 0, nsec))
+                ((ß int i =) (searchit pos, (if (== dirc (byte \/)) FORWARD BACKWARD), searchstr, count, (+ (if (:end (:sp_off (... @spats 0))) SEARCH_REV 0) (& options (+ SEARCH_KEEP SEARCH_PEEK SEARCH_HIS SEARCH_MSG SEARCH_START (if (and (non-nil? pat) (at? pat (byte \;))) 0 SEARCH_NOOF)))), RE_LAST, 0, nsec))
 
                 (if (non-nil? dircp)
                     (.be dircp 0, dirc)          ;; restore second '/' or '?' for normal-cmd()
@@ -39117,7 +39099,7 @@
 
 (defn- #_boolean searchc [#_cmdarg_C cap, #_boolean t_cmd]
     (§
-        ((ß int c =) @(:nchar cap))                      ;; char to search for
+        ((ß int c =) (:nchar cap))                      ;; char to search for
         ((ß int dir =) (:arg cap))                      ;; true for searching forward
         ((ß long count =) (:count1 cap))                ;; repeat count
 
@@ -40390,10 +40372,8 @@
         (do
             (setpcmark)
             (when (== what (byte \{))                    ;; ignore indent
-                (while (inindent 1)
-                    (if (non-zero? (inc-cursor))
-                        (ß BREAK)
-                    )
+                (while (and (inindent 1) (zero? (inc-cursor)))
+                    ;
                 )
             )
             (when (== (gchar) what)
@@ -40834,7 +40814,7 @@
                 ((ß flags =) SEARCH_END)
             )
 
-            ((ß int result =) (searchit @curwin, pos, (if dir FORWARD BACKWARD), (:pat (... @spats @last_idx)), (if (non-zero? round) count 1), (| flags SEARCH_KEEP), RE_SEARCH, 0, nil))
+            ((ß int result =) (searchit pos, (if dir FORWARD BACKWARD), (:pat (... @spats @last_idx)), (if (non-zero? round) count 1), (| flags SEARCH_KEEP), RE_SEARCH, 0, nil))
 
             ;; First search may fail, but then start searching from the beginning of
             ;; the file (cursor might be on the search match) except when Visual mode
@@ -40872,7 +40852,7 @@
         ;; Move to match, except for zero-width matches,
         ;; in which case, we are already on the next match.
         (if (zero? one_char)
-            (searchit @curwin, pos, (if forward FORWARD BACKWARD), (:pat (... @spats @last_idx)), 0, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
+            (searchit pos, (if forward FORWARD BACKWARD), (:pat (... @spats @last_idx)), 0, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil)
         )
 
         (if (not @VIsual_active)
@@ -40911,8 +40891,6 @@
 
 (defn- #_int is-one-char [#_Bytes pattern, #_boolean move]
     (§
-        ((ß int result =) -1)
-
         ((ß boolean save_called_emsg =) @called_emsg)
 
         ((ß regmmatch_C regmatch =) (NEW_regmmatch_C))
@@ -40922,18 +40900,18 @@
 
         ((ß pos_C pos =) (NEW_pos_C))
         ((ß int flags =) 0)
-        ;; move to match
         (when (not move)
             (COPY-pos pos, (:w_cursor @curwin))
             ;; accept a match at the cursor position
             ((ß flags =) SEARCH_START)
         )
 
-        (when (non-zero? (searchit @curwin, pos, FORWARD, (:pat (... @spats @last_idx)), 1, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil))
-            ;; Zero-width pattern should match somewhere,
-            ;; then we can check if start and end are in the same position.
+        ((ß int result =) -1)
+
+        (when (non-zero? (searchit pos, FORWARD, (:pat (... @spats @last_idx)), 1, (| flags SEARCH_KEEP), RE_SEARCH, 0, nil))
+            ;; Zero-width pattern should match somewhere, then we can check if start and end are in the same position.
             (reset! called_emsg false)
-            ((ß long nmatched =) (vim-regexec-multi regmatch, @curwin, (:lnum pos), 0, nil))
+            ((ß long nmatched =) (vim-regexec-multi regmatch, (:lnum pos), 0, nil))
 
             (when (not @called_emsg)
                 ((ß result =) (if (and (!= nmatched 0) (== (:lnum (... (:startpos regmatch) 0)) (:lnum (... (:endpos regmatch) 0))) (== (:col (... (:startpos regmatch) 0)) (:col (... (:endpos regmatch) 0)))) TRUE FALSE))
@@ -40974,21 +40952,18 @@
 
 ;; Return a pointer to a (read-only copy of a) line.
 ;;
-;; On failure an error message is given and ioBuff is returned
+;; On failure an error message is given and "???" is returned
 ;; (to avoid having to check for error everywhere).
 
 (defn- #_Bytes ml-get [#_long lnum]
-    (§
-        (when (< (:ml_line_count (:b_ml @curbuf)) lnum)  ;; invalid line number
+    (if (< (:ml_line_count (:b_ml @curbuf)) lnum)  ;; invalid line number
+        (do
             (emsgn (u8 "E315: ml-get: invalid lnum: %ld"), lnum)
-
-            (STRCPY @ioBuff, (u8 "???"))
-            ((ß RETURN) @ioBuff)
+            (u8 "???")
         )
-
-        ((ß lnum =) (max 1 lnum))           ;; pretend line 0 is line 1
-
-;       %% return @(lnum - 1)
+        (let [lnum (max 1 lnum)]           ;; pretend line 0 is line 1
+;           %% return @(lnum - 1)
+        )
     ))
 
 ;; Return pointer to position "pos".
@@ -41021,15 +40996,14 @@
     ;; line: text of the new line
     (§
         (if (< (:ml_line_count (:b_ml @curbuf)) lnum) ;; lnum out of range
-            ((ß RETURN) false)
+            false
+            (do
+;               %% insert @lnum STRDUP(line)
+                ((ß @curbuf.b_ml.ml_line_count =) (inc (:ml_line_count (:b_ml @curbuf))))
+                ((ß @curbuf.b_ml.ml_flags =) (& (:ml_flags (:b_ml @curbuf)) (bit-not ML_EMPTY)))
+                true
+            )
         )
-
-;       %% insert @lnum STRDUP(line)
-
-        ((ß @curbuf.b_ml.ml_line_count =) (inc (:ml_line_count (:b_ml @curbuf))))
-        ((ß @curbuf.b_ml.ml_flags =) (& (:ml_flags (:b_ml @curbuf)) (bit-not ML_EMPTY)))
-
-        true
     ))
 
 ;; Replace line lnum in current buffer.
@@ -41042,14 +41016,13 @@
 (defn- #_boolean ml-replace [#_long lnum, #_Bytes line]
     (§
         (if (or (zero? lnum) (nil? line))           ;; just checking...
-            ((ß RETURN) false)
+            false
+            (do
+;               %% replace @(lnum - 1) STRDUP(line)
+                ((ß @curbuf.b_ml.ml_flags =) (& (:ml_flags (:b_ml @curbuf)) (bit-not ML_EMPTY)))
+                true
+            )
         )
-
-;       %% replace @(lnum - 1) STRDUP(line)
-
-        ((ß @curbuf.b_ml.ml_flags =) (& (:ml_flags (:b_ml @curbuf)) (bit-not ML_EMPTY)))
-
-        true
     ))
 
 ;; Delete line 'lnum' in the current buffer.
@@ -41061,28 +41034,23 @@
 
 (defn- #_boolean ml-delete [#_long lnum, #_boolean message]
     (§
-        (if (or (< lnum 1) (< (:ml_line_count (:b_ml @curbuf)) lnum))
-            ((ß RETURN) false)
+        (cond (not (<= 1 lnum (:ml_line_count (:b_ml @curbuf))))
+            false
+        (== (:ml_line_count (:b_ml @curbuf)) 1) ;; if the file becomes empty the last line is replaced by an empty line
+            (do
+                (if message
+                    (set-keep-msg no_lines_msg, 0))
+;               %% replace @0 (u8 "")
+                ((ß @curbuf.b_ml.ml_flags =) (| (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
+                true
+            )
+        :else
+            (do
+;               %% delete @(lnum - 1)
+                ((ß @curbuf.b_ml.ml_line_count =) (dec (:ml_line_count (:b_ml @curbuf))))
+                true
+            )
         )
-
-        ;; If the file becomes empty the last line is replaced by an empty line.
-
-        (when (== (:ml_line_count (:b_ml @curbuf)) 1)    ;; file becomes empty
-            (if message
-                (set-keep-msg no_lines_msg, 0))
-
-;           %% replace @0 (u8 "")
-
-            ((ß @curbuf.b_ml.ml_flags =) (| (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
-
-            ((ß RETURN) true)
-        )
-
-;       %% delete @(lnum - 1)
-
-        ((ß @curbuf.b_ml.ml_line_count =) (dec (:ml_line_count (:b_ml @curbuf))))
-
-        true
     ))
 
 ;; buffer.c: functions for dealing with the buffer structure --------------------------------------
@@ -47875,15 +47843,7 @@
         )
         (== @ve_flags VE_ALL)
         (do
-            (cond (< (:col (:w_cursor win)) oldcoladd)
-            (do
-                ((ß win.w_cursor.coladd =) (- oldcoladd (:col (:w_cursor win))))
-            )
-            :else
-            (do
-                ;; avoid weird number when there is a miscalculation or overflow
-                ((ß win.w_cursor.coladd =) 0)
-            ))
+            ((ß win.w_cursor.coladd =) (max 0 (- oldcoladd (:col (:w_cursor win)))))
         ))
         nil
     ))
@@ -48029,14 +47989,12 @@
 ;; ASCII lower-to-upper case translation, language independent.
 
 (defn- #_void vim-strup [#_Bytes p]
-    (§
-        (when (non-nil? p)
-            ((ß FOR) (ß (ß int c) (!= ((ß c =) (.at p 0)) NUL) nil)
-                (.be ((ß p =) (.plus p 1)) -1, (if (or (< c (byte \a)) (< (byte \z) c)) c (- c 0x20)))
-            )
-        )
-        nil
-    ))
+    (when (non-nil? p)
+        (robin [p p] (non-eos? p) [(.plus p 1)]
+            (let (#_int c (.at p 0))
+                (.be p 0, (if (or (< c (byte \a)) (< (byte \z) c)) c (- c 0x20))))
+        ))
+    nil)
 
 ;; Like STRDUP(), but make all characters uppercase.
 ;; This uses ASCII lower-to-upper case translation, language independent.
@@ -48385,74 +48343,24 @@
 ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
 
 (defn- #_int handle-x-keys [#_int key]
-    (§
-        ((ß SWITCH) key
-            ((ß CASE) K_XUP)
-            (do
-                ((ß RETURN) K_UP)
-            )
-            ((ß CASE) K_XDOWN)
-            (do
-                ((ß RETURN) K_DOWN)
-            )
-            ((ß CASE) K_XLEFT)
-            (do
-                ((ß RETURN) K_LEFT)
-            )
-            ((ß CASE) K_XRIGHT)
-            (do
-                ((ß RETURN) K_RIGHT)
-            )
-            ((ß CASE) K_XHOME)
-            (do
-                ((ß RETURN) K_HOME)
-            )
-            ((ß CASE) K_ZHOME)
-            (do
-                ((ß RETURN) K_HOME)
-            )
-            ((ß CASE) K_XEND)
-            (do
-                ((ß RETURN) K_END)
-            )
-            ((ß CASE) K_ZEND)
-            (do
-                ((ß RETURN) K_END)
-            )
-            ((ß CASE) K_XF1)
-            (do
-                ((ß RETURN) K_F1)
-            )
-            ((ß CASE) K_XF2)
-            (do
-                ((ß RETURN) K_F2)
-            )
-            ((ß CASE) K_XF3)
-            (do
-                ((ß RETURN) K_F3)
-            )
-            ((ß CASE) K_XF4)
-            (do
-                ((ß RETURN) K_F4)
-            )
-            ((ß CASE) K_S_XF1)
-            (do
-                ((ß RETURN) K_S_F1)
-            )
-            ((ß CASE) K_S_XF2)
-            (do
-                ((ß RETURN) K_S_F2)
-            )
-            ((ß CASE) K_S_XF3)
-            (do
-                ((ß RETURN) K_S_F3)
-            )
-            ((ß CASE) K_S_XF4)
-            (do
-                ((ß RETURN) K_S_F4)
-            )
-        )
-        key
+    (condp == key
+        K_XUP    K_UP
+        K_XDOWN  K_DOWN
+        K_XLEFT  K_LEFT
+        K_XRIGHT K_RIGHT
+        K_XHOME  K_HOME
+        K_ZHOME  K_HOME
+        K_XEND   K_END
+        K_ZEND   K_END
+        K_XF1    K_F1
+        K_XF2    K_F2
+        K_XF3    K_F3
+        K_XF4    K_F4
+        K_S_XF1  K_S_F1
+        K_S_XF2  K_S_F2
+        K_S_XF3  K_S_F3
+        K_S_XF4  K_S_F4
+        :else    key
     ))
 
 ;; Return a string which contains the name of the given key when the given modifiers are down.
@@ -52940,7 +52848,7 @@
             (if (non-nil? mi)
                 ((ß mi.mi_pos.cur =) 0)
             )
-            (next-search-hl wp, shl, lnum, v, mi)
+            (next-search-hl shl, lnum, v, mi)
 
             ;; Need to get the line again, a multi-line regexp may have made it invalid.
             ((ß line =) (ml-get lnum))
@@ -53155,7 +53063,7 @@
                             (== v (:endcol shl))
                             (do
                                 ((ß shl.attr_cur =) 0)
-                                (next-search-hl wp, shl, lnum, v, mi)
+                                (next-search-hl shl, lnum, v, mi)
                                 ((ß pos_inprogress =) (and (non-nil? mi) (!= (:cur (:mi_pos mi)) 0)))
 
                                 ;; Need to get the line again, a multi-line regexp may have made it invalid.
@@ -54585,7 +54493,6 @@
         (robin [#_matchitem_C mi (:w_match_head wp)] (non-nil? mi) [(:next mi)]
             (COPY-regmmatch (:rmm (:mi_hl mi)), (:mi_match mi))
             ((ß mi.mi_hl.attr =) (if (non-zero? (:hlg_id mi)) (syn-id2attr (:hlg_id mi)) 0))
-            ((ß mi.mi_hl.buf =) @curbuf)
             ((ß mi.mi_hl.lnum =) 0)
             ((ß mi.mi_hl.first_lnum =) 0)
             ;; Set the time limit to 'redrawtime'.
@@ -54629,7 +54536,7 @@
                 ((ß boolean pos_inprogress =) true)  ;; marks that position match search is in progress
                 ((ß int n =) 0)
                 (while (and (< (:first_lnum shl) lnum) (or (non-nil? (:regprog (:rmm shl))) (and (non-nil? mi) pos_inprogress)))
-                    (next-search-hl wp, shl, (:first_lnum shl), n, mi)
+                    (next-search-hl shl, (:first_lnum shl), n, mi)
                     ((ß pos_inprogress =) (and (non-nil? mi) (!= (:cur (:mi_pos mi)) 0)))
                     (cond (non-zero? (:lnum shl))
                     (do
@@ -54651,12 +54558,11 @@
     ))
 
 ;; Search for a next 'hlsearch' or match.
-;; Uses shl.buf.
 ;; Sets shl.lnum and shl.rmm contents.
 ;; Note: Assumes a previous match is always before "lnum", unless shl.lnum is zero.
 ;; Careful: Any pointers for buffer lines will become invalid.
 
-(defn- #_void next-search-hl [#_window_C win, #_match_C shl, #_long lnum, #_int mincol, #_matchitem_C mi]
+(defn- #_void next-search-hl [#_match_C shl, #_long lnum, #_int mincol, #_matchitem_C mi]
     ;; shl: points to search_hl or a match
     ;; mincol: minimal column for a match
     ;; mi: to retrieve match positions if any
@@ -54723,7 +54629,7 @@
                 ;; Remember whether shl.rmm is using a copy of the regprog in mi.mi_match.
                 ((ß boolean regprog_is_copy =) (and (!= shl @search_hl) (non-nil? mi) (== shl (:mi_hl mi)) (== (:regprog (:mi_match mi)) (:regprog (:rmm (:mi_hl mi))))))
 
-                ((ß nmatched =) (vim-regexec-multi (:rmm shl), win, lnum, matchcol, (:nsec shl)))
+                ((ß nmatched =) (vim-regexec-multi (:rmm shl), lnum, matchcol, (:nsec shl)))
                 ;; Copy the regprog, in case it got freed and recompiled.
                 (if regprog_is_copy
                     ((ß mi.mi_match.regprog =) (:regprog (:rmm (:mi_hl mi))))
