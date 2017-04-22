@@ -37958,9 +37958,9 @@
                   #_frame_C f1 (:w_frame (if (some? win') win' w1))
                   f1 (assoc f1 :fr_parent (:fr_parent f0))
                   ;; Insert the new frame at the right place in the frame list.
-                  _ (if before
-                        (frame-insert f0, f1)
-                        (frame-append f0, f1))
+                  f1 (if before
+                        (frame-insert f1, f0)
+                        (frame-append f1, f0))
                   ;; Set "w_fraction" now so that the cursor keeps the same relative vertical position.
                   w0 (if (< 0 (:w_height w0)) (set-fraction w0) w0)
                   w1 (assoc w1 :w_fraction (:w_fraction w0))
@@ -37991,11 +37991,9 @@
                                     [(assoc w1 :w_vsep_width (:w_vsep_width w0)) (assoc w0 :w_vsep_width 1)])
                               [f0 w0]
                                 (if (flag? flags (| WSP_TOP WSP_BOT))
-                                    (do (if (flag? flags WSP_BOT)
-                                            (frame-add-vsep f0))
+                                    (let [f0 (if (flag? flags WSP_BOT) (frame-add-vsep f0) f0)]
                                         ;; Set width of neighbor frame.
-                                        (frame-new-width f0, (- (:fr_width f0) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
-                                        [f0 w0])
+                                        [(frame-new-width f0, (- (:fr_width f0) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false) w0])
                                     [f0 (win-new-width w0, (- (:w_width w0) (inc size1)))])
                               [w1 w0]
                                 (if before
@@ -38027,10 +38025,9 @@
                                     (let [w1 (assoc w1 :w_winrow (:w_winrow w0) :w_status_height STATUS_HEIGHT)]
                                         [w1 (update w0 :w_winrow + (:w_height w1) STATUS_HEIGHT)])
                                     (let [w1 (assoc w1 :w_winrow (+ (:w_winrow w0) (:w_height w0) STATUS_HEIGHT) :w_status_height (:w_status_height w0))]
-                                        [w1 (assoc w0 :w_status_height STATUS_HEIGHT)])
-                                )]
-                            (if (flag? flags WSP_BOT)
-                                (frame-add-statusline f0))
+                                        [w1 (assoc w0 :w_status_height STATUS_HEIGHT)]
+                                    ))
+                              f0 (if (flag? flags WSP_BOT) (frame-add-statusline f0) f0)]
                             [(frame-fix-height w1) (frame-fix-height w0) f1 f0]
                         ))
                   _ (when (flag? flags (| WSP_TOP WSP_BOT))
@@ -38133,18 +38130,20 @@
             (let [#_window_C w1 (:fr_win f1) #_window_C w2 (:w_prev win) #_frame_C f2 (:fr_prev (:w_frame win))
                   win (when' (!= (:w_prev w1) win) => win
                         (let [win (win-remove win)
-                              _ (frame-remove (:w_frame win))
+                              _ ((ß (:w_frame win) =) (frame-remove (:w_frame win)))
                               win (win-append win, (:w_prev w1))]
-                            (frame-insert f1, (:w_frame win))
+                            ((ß (:w_frame win) =) (frame-insert (:w_frame win), f1))
                             win
                         ))
                   w1 (when' (!= w1 w2) => w1
                         (let [w1 (win-remove w1)
-                              _ (frame-remove (:w_frame w1))
+                              _ ((ß (:w_frame w1) =) (frame-remove (:w_frame w1)))
                               w1 (win-append w1, w2)]
-                            (if (some? f2)
-                                (frame-append f2, (:w_frame w1))
-                                (frame-insert (:fr_child (:fr_parent (:w_frame w1))), (:w_frame w1)))
+                            ((ß (:w_frame w1) =)
+                                (if (some? f2)
+                                    (frame-append (:w_frame w1), f2)
+                                    (frame-insert (:w_frame w1), (:fr_child (:fr_parent (:w_frame w1))))
+                                ))
                             w1
                         ))
                   swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
@@ -38181,21 +38180,21 @@
                             (let [#_frame_C fr (:fr_child (:fr_parent (:w_frame win)))
                                   w1 (:fr_win fr)
                                   w1 (win-remove w1)
-                                  _ (frame-remove fr)
+                                  fr (frame-remove fr)
                                   ;; find last frame and append removed window/frame after it
                                   fr (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr)
                                   w1 (win-append w1, (:fr_win fr))]
-                                (frame-append fr, (:w_frame w1))
+                                ((ß (:w_frame w1) =) (frame-append (:w_frame w1), fr))
                                 [w1 (:fr_win fr)] ;; previously last window
                             )
                             ;; last window becomes first window ;; find last window/frame in the list and remove it
                             (let [#_frame_C fr (loop-when-recur [fr (:w_frame win)] (some? (:fr_next fr)) [(:fr_next fr)] => fr)
                                   w1 (:fr_win fr) w2 (:w_prev w1) ;; will become last window
                                   w1 (win-remove w1)
-                                  _ (frame-remove fr)
+                                  fr (frame-remove fr)
                                   ;; append the removed window/frame before the first in the list
                                   w1 (win-append w1, (:w_prev (:fr_win (:fr_child (:fr_parent fr)))))]
-                                (frame-insert (:fr_child (:fr_parent fr)), fr)
+                                ((ß fr =) (frame-insert fr, (:fr_child (:fr_parent fr))))
                                 [w1 w2]
                             ))
                       swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
@@ -38270,7 +38269,7 @@
                 ((ß topfr =) (assoc-in topfr [:fr_win :w_winrow] row))
                 ((ß topfr =) (frame-new-height topfr, height, false, false))
                 ((ß topfr =) (assoc-in topfr [:fr_win :w_wincol] col))
-                (frame-new-width topfr, width, false, false)
+                ((ß topfr =) (frame-new-width topfr, width, false, false))
                 (redraw-all-later CLEAR)
             )
         )
@@ -38587,7 +38586,7 @@
         ((ß window_C wp =) (frame2win fr2))
 
         ;; Remove this frame from the list of frames.
-        (frame-remove frp_close)
+        ((ß frp_close =) (frame-remove frp_close))
 
         (cond (== (:fr_layout (:fr_parent frp_close)) FR_COL)
         (do
@@ -38646,7 +38645,7 @@
                     (recur)
                 )
             )
-            (frame-new-width fr2, (+ (:fr_width fr2) (:fr_width frp_close)), (== fr2 (:fr_next frp_close)), false)
+            ((ß fr2 =) (frame-new-width fr2, (+ (:fr_width fr2) (:fr_width frp_close)), (== fr2 (:fr_next frp_close)), false))
             (reset! a'dir (byte \h))
         ))
 
@@ -38656,7 +38655,7 @@
             ((ß int[] a'row =) (atom (int (:w_winrow win))))
             ((ß int[] a'col =) (atom (int (:w_wincol win))))
 
-            (frame-comp-pos fr2, a'row, a'col)
+            ((ß fr2 =) (frame-comp-pos fr2, a'row, a'col))
         )
 
         (when (and (nil? (:fr_next fr2)) (nil? (:fr_prev fr2)))
@@ -38836,180 +38835,135 @@
             (recur-if (frame-fixed-width fr) [(:fr_next fr)] => false))
     ))
 
-;; Add a status line to windows at the bottom of "fr".
+;; Add a status line to windows at the bottom of "frame".
 ;; Note: Does not check if there is room!
 
-(defn- #_void frame-add-statusline [#_frame_C fr]
-    (§
-        (cond (== (:fr_layout fr) FR_LEAF)
-        (do
-            ((ß window_C win =) (:fr_win fr))
-            (when (zero? (:w_status_height win))
-                (if (< 0 (:w_height win))    ;; don't make it negative
-                    ((ß win =) (update win :w_height dec))
-                )
-                ((ß win =) (assoc win :w_status_height STATUS_HEIGHT))
-            )
-        )
-        (== (:fr_layout fr) FR_ROW)
-        (do
-            ;; Handle all the frames in the row.
-            (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
-                (frame-add-statusline fr)
-            )
-        )
-        :else ;; fr.fr_layout == FR_COL
-        (do
+(defn- #_frame_C frame-add-statusline [#_frame_C frame]
+    (condp == (:fr_layout frame)
+        FR_LEAF
+            (let [#_window_C win (:fr_win frame)
+                  win (when' (zero? (:w_status_height win)) => win
+                        (let [win (if (< 0 (:w_height win)) (update win :w_height dec) win)] ;; don't make it negative
+                            (assoc win :w_status_height STATUS_HEIGHT))
+                    )]
+                frame)
+        FR_ROW
+            (do ;; Handle all the frames in the row.
+                (loop-when [#_frame_C f (:fr_child frame)] (some? f)
+                    (let [f (frame-add-statusline f)]
+                        (recur (:fr_next f))
+                    ))
+                frame)
+        FR_COL
             ;; Only need to handle the last frame in the column.
-            ((ß fr =) (loop-when-recur [fr (:fr_child fr)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
-            (frame-add-statusline fr)
-        ))
-        nil
+            (let [#_frame_C f (loop-when-recur [f (:fr_child frame)] (some? (:fr_next f)) [(:fr_next f)] => f)
+                  f (frame-add-statusline f)]
+                frame)
     ))
 
 ;; Set width of a frame.  Handles recursively going through contained frames.
 ;; May remove separator line for windows at the right side (for win-close()).
 
-(defn- #_void frame-new-width [#_frame_C topfr, #_int width, #_boolean leftfirst, #_boolean wfw]
+(defn- #_frame_C frame-new-width [#_frame_C frame, #_int width, #_boolean leftfirst, #_boolean wfw]
     ;; leftfirst: resize leftmost contained frame first
     ;; wfw: obey 'winfixwidth' when there is a choice; may cause the width not to be set
-    (§
-        (cond (== (:fr_layout topfr) FR_LEAF)
-        (do
-            ;; Simple case: just one window.
-            ((ß window_C win =) (:fr_win topfr))
-            ;; Find out if there are any windows right of this one.
-            ((ß frame_C fr =) (loop-when-recur [fr topfr] (some? (:fr_parent fr)) [(:fr_parent fr)] => fr
-                (if (and (== (:fr_layout (:fr_parent fr)) FR_ROW) (some? (:fr_next fr)))
-                    (ß BREAK)
-                )
-            ))
-            (if (nil? (:fr_parent fr))
-                ((ß win =) (assoc win :w_vsep_width 0))
-            )
-            ((ß win =) (win-new-width win, (- width (:w_vsep_width win))))
-        )
-        (== (:fr_layout topfr) FR_COL)
-        (do
-            (ß frame_C fr)
-            (loop []
-                ;; All frames in this column get the same new width.
-                ((ß fr =) (loop-when-recur [fr (:fr_child topfr)] (some? fr) [(:fr_next fr)] => fr
-                    (frame-new-width fr, width, leftfirst, wfw)
-                    (when (< width (:fr_width fr))
-                        ;; Could not fit the windows, make whole column wider.
-                        ((ß width =) (:fr_width fr))
-                        (ß BREAK)
-                    )
-                ))
-                (recur-if (some? fr) [])
-            )
-        )
-        :else    ;; fr_layout == FR_ROW
-        (do
-            ;; Complicated case: resize a row of frames.
-            ;; Resize the rightmost frame first, frames left of it when needed.
+    (let-when [[frame width ?]
+            (cond (== (:fr_layout frame) FR_LEAF) ;; Simple case: just one window.
+                (let [#_frame_C f ;; Find out if there are any windows right of this one.
+                        (loop-when [f frame] (some? (:fr_parent f)) => f
+                            (if (and (== (:fr_layout (:fr_parent f)) FR_ROW) (some? (:fr_next f))) f (recur (:fr_parent f))))
+                      #_window_C win (:fr_win frame)
+                      win (if (nil? (:fr_parent f)) (assoc win :w_vsep_width 0) win)]
+                    ((ß win =) (win-new-width win, (- width (:w_vsep_width win))))
+                    [frame width nil])
 
-            ((ß frame_C fr =) (:fr_child topfr))
-            (when wfw
-                ;; Advance past frames with one window with 'wfw' set.
-                (loop-when [] (frame-fixed-width fr)
-                    ((ß fr =) (:fr_next fr))
-                    (if (nil? fr)
-                        ((ß RETURN) nil)         ;; no frame without 'wfw', give up
-                    )
-                    (recur)
-                )
-            )
-            (when (not leftfirst)
-                ;; Find the rightmost frame of this row.
-                (loop-when [] (some? (:fr_next fr))
-                    ((ß fr =) (:fr_next fr))
-                    (recur)
-                )
-                (when wfw
-                    ;; Advance back for frames with one window with 'wfw' set.
-                    (loop-when [] (frame-fixed-width fr)
-                        ((ß fr =) (:fr_prev fr))
-                        (recur)
-                    )
-                )
-            )
+            (== (:fr_layout frame) FR_COL)
+                (let [width ;; All frames in this column get the same new width.
+                        (loop [width width]
+                            (let [[#_frame_C f width]
+                                    (loop-when [f (:fr_child frame)] (some? f) => [f width]
+                                        (let [f (frame-new-width f, width, leftfirst, wfw)]
+                                            ;; If could not fit the windows, make the whole column wider.
+                                            (recur-if (<= (:fr_width f) width) [(:fr_next f)] => [f (:fr_width f)]))
+                                    )]
+                                (recur-if (some? f) [width] => width))
+                        )]
+                    [frame width nil])
 
-            ((ß int extra_cols =) (- width (:fr_width topfr)))
-            (cond (< extra_cols 0)
-            (do
-                ;; reduce frame width, rightmost frame first
-                (loop-when [] (some? fr)
-                    ((ß int w =) (frame-minwidth fr, nil))
-                    (cond (< (+ (:fr_width fr) extra_cols) w)
-                    (do
-                        ((ß extra_cols =) (+ extra_cols (- (:fr_width fr) w)))
-                        (frame-new-width fr, w, leftfirst, wfw)
-                    )
-                    :else
-                    (do
-                        (frame-new-width fr, (+ (:fr_width fr) extra_cols), leftfirst, wfw)
-                        (ß BREAK)
+            :else ;; (== (:fr_layout frame) FR_ROW)
+                ;; Complicated case: resize a row of frames.
+                ;; Resize the rightmost frame first, then the frames left of it, when needed.
+                (let-when [#_frame_C f (:fr_child frame)
+                      f (when' wfw => f
+                            ;; Advance past frames with one window with 'wfw' set.
+                            (loop-when f (frame-fixed-width f) => f
+                                (recur-if (some? (:fr_next f)) (:fr_next f) => nil) ;; no frame without 'wfw', give up
+                            ))
+                ] (some? f) => [frame width :abort]
+
+                    (let [f (when' (not leftfirst) => f
+                                ;; Find the rightmost frame of this row.
+                                (let [f (loop-when-recur f (some? (:fr_next f)) (:fr_next f) => f)]
+                                    (when' wfw => f
+                                        ;; Advance back for frames with one window with 'wfw' set.
+                                        (loop-when-recur f (frame-fixed-width f) (:fr_prev f) => f))
+                                ))
+                          #_int delta (- width (:fr_width frame))]
+                        (cond (< delta 0)
+                            (let [[f width] ;; Reduce frame width, rightmost frame first.
+                                    (loop-when [f f delta delta width width] (some? f) => [f width]
+                                        (let-when [#_int w' (frame-minwidth f, nil)
+                                              [delta f]
+                                                (if (< (+ (:fr_width f) delta) w')
+                                                    [(+ delta (- (:fr_width f) w')) (frame-new-width f, w', leftfirst, wfw)]
+                                                    [nil (frame-new-width f, (+ (:fr_width f) delta), leftfirst, wfw)])
+                                        ] (some? delta) => [f width]
+
+                                            (let [f (if leftfirst
+                                                        (loop-when-recur [f (:fr_next f)] (and wfw (some? f) (frame-fixed-width f)) [(:fr_next f)] => f)
+                                                        (loop-when-recur [f (:fr_prev f)] (and wfw (some? f) (frame-fixed-width f)) [(:fr_prev f)] => f)
+                                                    )]
+                                                ;; Increase "width" if we could not reduce enough frames.
+                                                (recur f delta (if (nil? f) (- width delta) width))
+                                            ))
+                                    )]
+                                [frame width nil])
+                        (< 0 delta)
+                            ;; Increase width of rightmost frame.
+                            (let [f (frame-new-width f, (+ (:fr_width f) delta), leftfirst, wfw)]
+                                [frame width nil])
+                        :else
+                            [frame width nil])
                     ))
-                    (cond leftfirst
-                    (do
-                        (loop []
-                            ((ß fr =) (:fr_next fr))
-                            (recur-if (and wfw (some? fr) (frame-fixed-width fr)) [])
-                        )
-                    )
-                    :else
-                    (do
-                        (loop []
-                            ((ß fr =) (:fr_prev fr))
-                            (recur-if (and wfw (some? fr) (frame-fixed-width fr)) [])
-                        )
-                    ))
-                    ;; Increase "width" if we could not reduce enough frames.
-                    ((ß width =) (if (nil? fr) (- width extra_cols) width))
-                    (recur)
-                )
-            )
-            (< 0 extra_cols)
-            (do
-                ;; increase width of rightmost frame
-                (frame-new-width fr, (+ (:fr_width fr) extra_cols), leftfirst, wfw)
-            ))
-        ))
-        ((ß topfr =) (assoc topfr :fr_width width))
-        nil
+            )] (not ?) => frame
+
+        (assoc frame :fr_width width)
     ))
 
-;; Add the vertical separator to windows at the right side of "fr".
+;; Add the vertical separator to windows at the right side of "frame".
 ;; Note: Does not check if there is room!
 
-(defn- #_void frame-add-vsep [#_frame_C fr]
-    (§
-        (cond (== (:fr_layout fr) FR_LEAF)
-        (do
-            ((ß window_C win =) (:fr_win fr))
-            (when (zero? (:w_vsep_width win))
-                (if (< 0 (:w_width win))     ;; don't make it negative
-                    ((ß win =) (update win :w_width dec))
-                )
-                ((ß win =) (assoc win :w_vsep_width 1))
-            )
-        )
-        (== (:fr_layout fr) FR_COL)
-        (do
-            ;; Handle all the frames in the column.
-            (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
-                (frame-add-vsep fr)
-            )
-        )
-        :else ;; fr.fr_layout == FR_ROW
-        (do
+(defn- #_frame_C frame-add-vsep [#_frame_C frame]
+    (condp == (:fr_layout frame)
+        FR_LEAF
+            (let [#_window_C win (:fr_win frame)
+                  win (when' (zero? (:w_vsep_width win)) => win
+                        (let [win (if (< 0 (:w_width win)) (update win :w_width dec) win)] ;; don't make it negative
+                            (assoc win :w_vsep_width 1))
+                    )]
+                frame)
+        FR_COL
+            (do ;; Handle all the frames in the column.
+                (loop-when [#_frame_C f (:fr_child frame)] (some? f)
+                    (let [f (frame-add-vsep f)]
+                        (recur (:fr_next f))
+                    ))
+                frame)
+        FR_ROW
             ;; Only need to handle the last frame in the row.
-            ((ß fr =) (loop-when-recur [fr (:fr_child fr)] (some? (:fr_next fr)) [(:fr_next fr)] => fr))
-            (frame-add-vsep fr)
-        ))
-        nil
+            (let [#_frame_C f (loop-when-recur [f (:fr_child frame)] (some? (:fr_next f)) [(:fr_next f)] => f)
+                  f (frame-add-vsep f)]
+                frame)
     ))
 
 ;; Set frame width from the window it contains.
@@ -39258,45 +39212,29 @@
         win
     ))
 
-;; Append frame "fr" in a frame list after frame "after".
+;; Append frame "f" in a frame list after frame "after".
 
-(defn- #_void frame-append [#_frame_C after, #_frame_C fr]
-    (§
-        ((ß fr =) (assoc fr :fr_next (:fr_next after)))
-        ((ß after =) (assoc after :fr_next fr))
-        (if (some? (:fr_next fr))
-            ((ß fr =) (assoc-in fr [:fr_next :fr_prev] fr))
-        )
-        ((ß fr =) (assoc fr :fr_prev after))
-        nil
+(defn- #_frame_C frame-append [#_frame_C f, #_frame_C after]
+    (let [f (assoc f :fr_next (:fr_next after))
+          after (assoc after :fr_next f)
+          f (if (some? (:fr_next f)) (assoc-in f [:fr_next :fr_prev] f) f)]
+        (assoc f :fr_prev after)
     ))
 
-;; Insert frame "fr" in a frame list before frame "before".
+;; Insert frame "f" in a frame list before frame "before".
 
-(defn- #_void frame-insert [#_frame_C before, #_frame_C fr]
-    (§
-        ((ß fr =) (assoc fr :fr_next before))
-        ((ß fr =) (assoc fr :fr_prev (:fr_prev before)))
-        ((ß before =) (assoc before :fr_prev fr))
-        (if (some? (:fr_prev fr))
-            ((ß fr =) (assoc-in fr [:fr_prev :fr_next] fr))
-            ((ß fr =) (assoc-in fr [:fr_parent :fr_child] fr))
-        )
-        nil
+(defn- #_frame_C frame-insert [#_frame_C f, #_frame_C before]
+    (let [f (assoc f :fr_next before)
+          f (assoc f :fr_prev (:fr_prev before))
+          before (assoc before :fr_prev f)]
+        (assoc-in f (if (some? (:fr_prev f)) [:fr_prev :fr_next] [:fr_parent :fr_child]) f)
     ))
 
 ;; Remove a frame from a frame list.
 
-(defn- #_void frame-remove [#_frame_C fr]
-    (§
-        (if (some? (:fr_prev fr))
-            ((ß fr =) (assoc-in fr [:fr_prev :fr_next] (:fr_next fr)))
-            ((ß fr =) (assoc-in fr [:fr_parent :fr_child] (:fr_next fr)))
-        )
-        (when (some? (:fr_next fr))
-            ((ß fr =) (assoc-in fr [:fr_next :fr_prev] (:fr_prev fr)))
-        )
-        nil
+(defn- #_frame_C frame-remove [#_frame_C f]
+    (let [f (assoc-in f (if (some? (:fr_prev f)) [:fr_prev :fr_next] [:fr_parent :fr_child]) (:fr_next f))]
+        (if (some? (:fr_next f)) (assoc-in f [:fr_next :fr_prev] (:fr_prev f)) f)
     ))
 
 ;; Allocate w_lines[] for window "win".
@@ -39333,11 +39271,10 @@
         (let [cols @Cols]
             ;; First try setting the widths of windows with 'winfixwidth'.
             ;; If that doesn't result in the right width, forget about that option.
-            (frame-new-width @topframe, cols, false, true)
+            (swap! topframe frame-new-width cols, false, true)
             (when (not (frame-check-width @topframe, cols))
-                (frame-new-width @topframe, cols, false, false))
-
-            (win-comp-pos)                  ;; recompute "w_winrow" and "w_wincol"
+                (swap! topframe frame-new-width cols, false, false))
+            (win-comp-pos) ;; recompute "w_winrow" and "w_wincol"
         ))
     nil)
 
@@ -39346,43 +39283,36 @@
 
 (defn- #_int win-comp-pos []
     (let [a'row (atom (int 0)) a'col (atom (int 0))]
-        (frame-comp-pos @topframe, a'row, a'col)
+        (swap! topframe frame-comp-pos a'row, a'col)
         @a'row
     ))
 
-;; Update the position of the windows in frame "topfr",
-;; using the width and height of the frames.
-;; "*row" and "*col" are the top-left position of the frame.
-;; They are updated to the bottom-right position plus one.
+;; Update the position of the windows in frame "frame" using the width and height of child frames.
+;; [@a'row @a'col] is the top-left position of the frame, then updated to the bottom-right plus one.
 
-(defn- #_void frame-comp-pos [#_frame_C topfr, #_int' a'row, #_int' a'col]
-    (§
-        ((ß window_C win =) (:fr_win topfr))
-        (cond (some? win)
-        (do
-            (when (or (!= (:w_winrow win) @a'row) (!= (:w_wincol win) @a'col))
-                ;; position changed, redraw
-                ((ß win =) (assoc win :w_winrow @a'row))
-                ((ß win =) (assoc win :w_wincol @a'col))
-                ((ß win =) (redraw-later win, NOT_VALID))
-                ((ß win =) (assoc win :w_redr_status true))
-            )
-            (swap! a'row + (:w_height win) (:w_status_height win))
-            (swap! a'col + (:w_width win) (:w_vsep_width win))
-        )
-        :else
-        (do
-            ((ß int startrow =) @a'row)
-            ((ß int startcol =) @a'col)
-            (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
-                (if (== (:fr_layout topfr) FR_ROW)
-                    (reset! a'row startrow)        ;; all frames are at the same row
-                    (reset! a'col startcol)        ;; all frames are at the same col
-                )
-                (frame-comp-pos fr, a'row, a'col)
-            )
-        ))
-        nil
+(defn- #_frame_C frame-comp-pos [#_frame_C frame, #_int' a'row, #_int' a'col]
+    (let [#_window_C win (:fr_win frame)]
+        (if (some? win)
+            (let [win (when' (or (!= (:w_winrow win) @a'row) (!= (:w_wincol win) @a'col)) => win
+                        ;; position changed, redraw
+                        (-> win
+                            (assoc :w_winrow @a'row :w_wincol @a'col)
+                            (redraw-later NOT_VALID)
+                            (assoc :w_redr_status true))
+                    )]
+                (swap! a'row + (:w_height win) (:w_status_height win))
+                (swap! a'col + (:w_width win) (:w_vsep_width win))
+                frame)
+            (let [#_int startrow @a'row #_int startcol @a'col]
+                (loop-when [#_frame_C f (:fr_child frame)] (some? f)
+                    (if (== (:fr_layout frame) FR_ROW)
+                        (reset! a'row startrow)     ;; all frames are at the same row
+                        (reset! a'col startcol))    ;; all frames are at the same col
+                    (let [f (frame-comp-pos f, a'row, a'col)]
+                        (recur (:fr_next f))
+                    ))
+                frame
+            ))
     ))
 
 ;; Set the window height of window "win" and take care of repositioning other windows to fit around it.
@@ -39550,9 +39480,9 @@
                   rest (min rest (- room width))
                   ;; If there is only a 'winfixwidth' window and making the window smaller, need to make the other window narrower.
                   rest (if (and (< take 0) (< (- room (:fr_width cufr)) rest)) 0 rest)
-                  a'm (atom {:take take :rest rest})]
-                ;; Set the current frame to the new width.
-                (frame-new-width cufr, width, false, false)
+                  a'm (atom {:take take :rest rest})
+                  ;; Set the current frame to the new width.
+                  cufr (frame-new-width cufr, width, false, false)]
                 ;; First take lines from the frames right of the current frame.
                 ;; If that is not enough, takes lines from frames left of the current frame.
                 (doseq [step- [:fr_next :fr_prev]]
@@ -39568,7 +39498,7 @@
                                 (do
                                     (swap! a'm update :rest max (- w (:take @a'm)))
                                     (swap! a'm update :take - (- w (:rest @a'm)))
-                                    (frame-new-width fr, (:rest @a'm), false, false)
+                                    ((ß fr =) (frame-new-width fr, (:rest @a'm), false, false))
                                     (swap! a'm assoc :rest 0)
                                 ))
                             )
@@ -39577,11 +39507,11 @@
                                 (cond (< (- w (:take @a'm)) w0)
                                 (do
                                     (swap! a'm update :take - (- w w0))
-                                    (frame-new-width fr, w0, false, false)
+                                    ((ß fr =) (frame-new-width fr, w0, false, false))
                                 )
                                 :else
                                 (do
-                                    (frame-new-width fr, (- w (:take @a'm)), false, false)
+                                    ((ß fr =) (frame-new-width fr, (- w (:take @a'm)), false, false))
                                     (swap! a'm assoc :take 0)
                                 ))
                             ))
@@ -39775,64 +39705,56 @@
 
 (defn- #_void last-status [#_boolean morewin]
     ;; morewin: pretend there are two or more windows
-    (last-status-rec @topframe, (or (== @p_ls 2) (and (== @p_ls 1) (or morewin (!= @lastwin @firstwin)))))
+    (swap! topframe last-status-rec (or (== @p_ls 2) (and (== @p_ls 1) (or morewin (!= @lastwin @firstwin)))))
     nil)
 
-(defn- #_void last-status-rec [#_frame_C fr, #_boolean statusline]
-    (§
-        (cond (== (:fr_layout fr) FR_LEAF)
-        (do
-            ((ß window_C win =) (:fr_win fr))
-            (cond (and (non-zero? (:w_status_height win)) (not statusline))
-            (do
-                ;; remove status line
-                ((ß win =) (win-new-height win, (inc (:w_height win))))
-                ((ß win =) (assoc win :w_status_height 0))
-                (comp-col)
-            )
-            (and (zero? (:w_status_height win)) statusline)
-            (do
-                ;; Find a frame to take a line from.
-                ((ß frame_C fp =) fr)
-                (loop-when [] (<= (:fr_height fp) (frame-minheight fp, nil))
-                    (when (== fp @topframe)
-                        (emsg e_noroom)
-                        ((ß RETURN) nil)
-                    )
-                    ;; In a column of frames: go to frame above.
-                    ;; If already at the top or in a row of frames: go to parent.
-                    ((ß fp =) (if (and (== (:fr_layout (:fr_parent fp)) FR_COL) (some? (:fr_prev fp))) (:fr_prev fp) (:fr_parent fp)))
-                    (recur)
-                )
-                ((ß win =) (assoc win :w_status_height 1))
-                (cond (!= fp fr)
-                (do
-                    ((ß fp =) (frame-new-height fp, (dec (:fr_height fp)), false, false))
-                    ((ß win =) (frame-fix-height win))
-                    (win-comp-pos)
-                )
+(defn- #_frame_C last-status-rec [#_frame_C frame, #_boolean statusline]
+    (condp == (:fr_layout frame)
+        FR_LEAF
+            (let [#_window_C win (:fr_win frame)]
+                (cond (and (non-zero? (:w_status_height win)) (not statusline))
+                    ;; Remove the status line.
+                    (let [win (win-new-height win, (inc (:w_height win)))
+                          win (assoc win :w_status_height 0)]
+                        (comp-col)
+                        frame)
+                (and (zero? (:w_status_height win)) statusline)
+                    (let-when [#_frame_C f ;; Find a frame to take a line from.
+                            (loop-when [f frame] (<= (:fr_height f) (frame-minheight f, nil)) => f
+                                ;; In a column of frames: go to frame above.
+                                (recur-if (!= f @topframe) ;; If already at the top or in a row of frames: go to parent.
+                                          [(if (and (== (:fr_layout (:fr_parent f)) FR_COL) (some? (:fr_prev f))) (:fr_prev f) (:fr_parent f))]
+                                       => (do (emsg e_noroom) nil))
+                            )] (some? f) => frame
+
+                        (let [win (assoc win :w_status_height 1)
+                              [f win]
+                                (if (!= f frame)
+                                    (let [f (frame-new-height f, (dec (:fr_height f)), false, false)
+                                          win (frame-fix-height win)]
+                                        (win-comp-pos)
+                                        [f win])
+                                    [f (win-new-height win, (dec (:w_height win)))]
+                                )]
+                            (comp-col)
+                            (redraw-all-later SOME_VALID)
+                            frame
+                        ))
                 :else
-                (do
-                    ((ß win =) (win-new-height win, (dec (:w_height win))))
+                    frame
                 ))
-                (comp-col)
-                (redraw-all-later SOME_VALID)
-            ))
-        )
-        (== (:fr_layout fr) FR_ROW)
-        (do
-            ;; vertically split windows, set status line for each one
-            (loop-when-recur [#_frame_C fp (:fr_child fr)] (some? fp) [(:fr_next fp)]
-                (last-status-rec fp, statusline)
-            )
-        )
-        :else
-        (do
+        FR_ROW
+            (do ;; vertically split windows, set status line for each one
+                (loop-when [#_frame_C f (:fr_child frame)] (some? f)
+                    (let [f (last-status-rec f, statusline)]
+                        (recur (:fr_next f))
+                    ))
+                frame)
+        FR_COL
             ;; horizontally split window, set status line for last one
-            ((ß frame_C fp =) (loop-when-recur [fp (:fr_child fr)] (some? (:fr_next fp)) [(:fr_next fp)] => fp))
-            (last-status-rec fp, statusline)
-        ))
-        nil
+            (let [#_frame_C f (loop-when-recur [f (:fr_child frame)] (some? (:fr_next f)) [(:fr_next f)] => f)
+                  f (last-status-rec f, statusline)]
+                frame)
     ))
 
 ;; Return the minimal number of rows that is needed on the screen to display the current number of windows.
