@@ -954,9 +954,6 @@
 (final int READ_NEW        0x01)    ;; read a file into a new buffer
 (final int READ_FILTER     0x02)    ;; read filter output
 (final int READ_STDIN      0x04)    ;; read from stdin
-(final int READ_BUFFER     0x08)    ;; read from curbuf (converting stdin)
-(final int READ_DUMMY      0x10)    ;; reading into a dummy buffer
-(final int READ_KEEP_UNDO  0x20)    ;; keep undo info
 
 ;; Values for change_indent().
 (final int INDENT_SET      1)       ;; set indent
@@ -1467,7 +1464,6 @@
 
 ;; The following are actual variables for the options:
 
-(atom! long    p_aleph)     ;; 'aleph'
 (atom! Bytes   p_ambw)      ;; 'ambiwidth'
 (atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_bg)        ;; 'background'
@@ -1494,7 +1490,6 @@
 (atom! boolean p_fs)        ;; 'fsync'
 (atom! boolean p_gd)        ;; 'gdefault'
 (atom! boolean p_prompt)    ;; 'prompt'
-(atom! boolean p_hid)       ;; 'hidden'
 (atom! Bytes   p_hl)        ;; 'highlight'
 (atom! boolean p_hls)       ;; 'hlsearch'
 (atom! long    p_hi)        ;; 'history'
@@ -1580,9 +1575,7 @@
 (atom! int    ttym_flags)
 (final Bytes* p_ttym_values [ (u8 "xterm"), (u8 "xterm2"), null ])
 
-(atom! Bytes   p_udir)      ;; 'undodir'
 (atom! long    p_ul)        ;; 'undolevels'
-(atom! long    p_ur)        ;; 'undoreload'
 (atom! long    p_ut)        ;; 'updatetime'
 (atom! Bytes   p_fcs)       ;; 'fillchar'
 (atom! boolean p_vb)        ;; 'visualbell'
@@ -1639,7 +1632,6 @@
     BV_SW    41,
     BV_TS    42,
     BV_TW    43,
-    BV_UDF   45,
     BV_UL    46,
     BV_WM    47)
 
@@ -2613,7 +2605,6 @@
 
         ;; local values for options which are normally global
         (atom' long         b_p_ul)             ;; 'undolevels' local value
-        (atom' boolean      b_p_udf)            ;; 'undofile'
         (atom' Bytes        b_p_lw)             ;; 'lispwords' local value
 
         ;; end of buffer options
@@ -3249,90 +3240,88 @@
     CMD_retab 101,
     CMD_right 102,
     CMD_rightbelow 103,
-    CMD_rundo 104,
-    CMD_substitute 105,
-    CMD_sandbox 106,
-    CMD_sbuffer 107,
-    CMD_sbNext 108,
-    CMD_sball 109,
-    CMD_sbfirst 110,
-    CMD_sblast 111,
-    CMD_sbmodified 112,
-    CMD_sbnext 113,
-    CMD_sbprevious 114,
-    CMD_sbrewind 115,
-    CMD_set 116,
-    CMD_setglobal 117,
-    CMD_setlocal 118,
-    CMD_silent 119,
-    CMD_smagic 120,
-    CMD_smap 121,
-    CMD_smapclear 122,
-    CMD_snomagic 123,
-    CMD_snoremap 124,
-    CMD_split 125,
-    CMD_stop 126,
-    CMD_startinsert 127,
-    CMD_startgreplace 128,
-    CMD_startreplace 129,
-    CMD_stopinsert 130,
-    CMD_sunhide 131,
-    CMD_sunmap 132,
-    CMD_suspend 133,
-    CMD_sview 134,
-    CMD_syncbind 135,
-    CMD_t 136,
-    CMD_tab 137,
-    CMD_tabclose 138,
-    CMD_tabedit 139,
-    CMD_tabfirst 140,
-    CMD_tabmove 141,
-    CMD_tablast 142,
-    CMD_tabnext 143,
-    CMD_tabnew 144,
-    CMD_tabonly 145,
-    CMD_tabprevious 146,
-    CMD_tabNext 147,
-    CMD_tabrewind 148,
-    CMD_tabs 149,
-    CMD_topleft 150,
-    CMD_undo 151,
-    CMD_undojoin 152,
-    CMD_undolist 153,
-    CMD_unabbreviate 154,
-    CMD_unhide 155,
-    CMD_unmap 156,
-    CMD_unsilent 157,
-    CMD_vglobal 158,
-    CMD_verbose 159,
-    CMD_vertical 160,
-    CMD_visual 161,
-    CMD_view 162,
-    CMD_vmap 163,
-    CMD_vmapclear 164,
-    CMD_vnoremap 165,
-    CMD_vnew 166,
-    CMD_vsplit 167,
-    CMD_vunmap 168,
-    CMD_wincmd 169,
-    CMD_wundo 170,
-    CMD_xmap 171,
-    CMD_xmapclear 172,
-    CMD_xnoremap 173,
-    CMD_xunmap 174,
-    CMD_yank 175,
-    CMD_z 176,
+    CMD_substitute 104,
+    CMD_sandbox 105,
+    CMD_sbuffer 106,
+    CMD_sbNext 107,
+    CMD_sball 108,
+    CMD_sbfirst 109,
+    CMD_sblast 110,
+    CMD_sbmodified 111,
+    CMD_sbnext 112,
+    CMD_sbprevious 113,
+    CMD_sbrewind 114,
+    CMD_set 115,
+    CMD_setglobal 116,
+    CMD_setlocal 117,
+    CMD_silent 118,
+    CMD_smagic 119,
+    CMD_smap 120,
+    CMD_smapclear 121,
+    CMD_snomagic 122,
+    CMD_snoremap 123,
+    CMD_split 124,
+    CMD_stop 125,
+    CMD_startinsert 126,
+    CMD_startgreplace 127,
+    CMD_startreplace 128,
+    CMD_stopinsert 129,
+    CMD_sunhide 130,
+    CMD_sunmap 131,
+    CMD_suspend 132,
+    CMD_sview 133,
+    CMD_syncbind 134,
+    CMD_t 135,
+    CMD_tab 136,
+    CMD_tabclose 137,
+    CMD_tabedit 138,
+    CMD_tabfirst 139,
+    CMD_tabmove 140,
+    CMD_tablast 141,
+    CMD_tabnext 142,
+    CMD_tabnew 143,
+    CMD_tabonly 144,
+    CMD_tabprevious 145,
+    CMD_tabNext 146,
+    CMD_tabrewind 147,
+    CMD_tabs 148,
+    CMD_topleft 149,
+    CMD_undo 150,
+    CMD_undojoin 151,
+    CMD_undolist 152,
+    CMD_unabbreviate 153,
+    CMD_unhide 154,
+    CMD_unmap 155,
+    CMD_unsilent 156,
+    CMD_vglobal 157,
+    CMD_verbose 158,
+    CMD_vertical 159,
+    CMD_visual 160,
+    CMD_view 161,
+    CMD_vmap 162,
+    CMD_vmapclear 163,
+    CMD_vnoremap 164,
+    CMD_vnew 165,
+    CMD_vsplit 166,
+    CMD_vunmap 167,
+    CMD_wincmd 168,
+    CMD_xmap 169,
+    CMD_xmapclear 170,
+    CMD_xnoremap 171,
+    CMD_xunmap 172,
+    CMD_yank 173,
+    CMD_z 174,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 177,
-    CMD_and 178,
-    CMD_lshift 179,
-    CMD_equal 180,
-    CMD_rshift 181,
-    CMD_tilde 182,
+    CMD_pound 175,
+    CMD_and 176,
+    CMD_lshift 177,
+    CMD_equal 178,
+    CMD_rshift 179,
+    CMD_tilde 180,
 
-    CMD_SIZE 183)     ;; MUST be after all real commands!
+    CMD_SIZE 181)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -8766,7 +8755,6 @@
     PV_SW   (| BV_SW   PV_BUF),
     PV_TS   (| BV_TS   PV_BUF),
     PV_TW   (| BV_TW   PV_BUF),
-    PV_UDF  (| BV_UDF  PV_BUF),
     PV_UL   (| BV_UL   PV_BUF   PV_BOTH),
     PV_WM   (| BV_WM   PV_BUF))
 
@@ -8830,7 +8818,6 @@
 (atom! long    p_sw)
 (atom! long    p_ts)
 (atom! long    p_tw)
-(atom! boolean p_udf)
 (atom! long    p_wm)
 
 ;; Saved values for when 'bin' is set.
@@ -8933,7 +8920,6 @@
 
 (final vimoption_C* vimoptions
     [
-       (long_opt (u8 "aleph"),          (u8 "al"),        P_CURSWANT,                  p_aleph,     PV_NONE,    224#_L),
         (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
         (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
@@ -8974,7 +8960,6 @@
         (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
         (bool_opt (u8 "fsync"),          (u8 "fs"),        P_SECURE,                    p_fs,        PV_NONE,    true),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        PV_NONE,    false),
-        (bool_opt (u8 "hidden"),         (u8 "hid"),       0,                           p_hid,       PV_NONE,    false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        PV_NONE,    HIGHLIGHT_INIT),
         (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        PV_NONE,    50#_L),
         (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       PV_NONE,    false),
@@ -9070,10 +9055,7 @@
         (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        PV_NONE,    false),
         (utf8_opt (u8 "ttymouse"),       (u8 "ttym"),      P_NODEFAULT,                 p_ttym,      PV_NONE,   (u8 "")),
         (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, PV_NONE,    999#_L),
-        (utf8_opt (u8 "undodir"),        (u8 "udir"),   (| P_COMMA P_NODUP P_SECURE),   p_udir,      PV_NONE,   (u8 ".")),
-        (bool_opt (u8 "undofile"),       (u8 "udf"),       0,                           p_udf,       PV_UDF,     false),
         (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           p_ul,        PV_UL,      1000#_L),
-        (long_opt (u8 "undoreload"),     (u8 "ur"),        0,                           p_ur,        PV_NONE,    10000#_L),
         (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        PV_NONE,    4000#_L),
         (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   PV_NONE,    0#_L),
         (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        PV_NONE,   (u8 "")),
@@ -11114,34 +11096,7 @@
 
         ;; Handle side effects of changing a bool option.
 
-        ;; 'undofile'
-;       if (varp == @curbuf.b_p_udf || varp == p_udf)
-;       {
-            ;; Only take action when the option was set.  When reset we do not
-            ;; delete the undo file, the option may be set again without making
-            ;; any changes in between.
-;           if (@curbuf.@b_p_udf || @p_udf)
-;           {
-;               Bytes hash = new Bytes(UNDO_HASH_SIZE);
-;               buffer_C save_curbuf = @curbuf;
-
-;               for (@curbuf = @firstbuf; @curbuf != null; @curbuf = @curbuf.b_next)
-;               {
-                    ;; When 'undofile' is set globally: for every buffer, otherwise
-                    ;; only for the current buffer: Try to read in the undofile,
-                    ;; if one exists, the buffer wasn't changed and the buffer was loaded
-;                   if ((@curbuf == save_curbuf || (opt_flags & OPT_GLOBAL) != 0 || opt_flags == 0)
-;                           && !curbufIsChanged() && @curbuf.b_ml.ml_mfp != null)
-;                   {
-;                       u_compute_hash(hash);
-;                       u_read_undo(null, hash, @curbuf.b_fname);
-;                   }
-;               }
-;               @curbuf = save_curbuf;
-;           }
-;       }
-
-;       else if (varp == @curbuf.b_p_ro)
+;       if (varp == @curbuf.b_p_ro)
 ;       {
             ;; when 'readonly' is reset globally, also reset readonlymode
 ;           if (!@curbuf.@b_p_ro && (opt_flags & OPT_LOCAL) == 0)
@@ -12191,7 +12146,6 @@
 ;           case PV_SW:     return @curbuf.b_p_sw;
 ;           case PV_TS:     return @curbuf.b_p_ts;
 ;           case PV_TW:     return @curbuf.b_p_tw;
-;           case PV_UDF:    return @curbuf.b_p_udf;
 ;           case PV_WM:     return @curbuf.b_p_wm;
 
 ;           default:
@@ -12365,7 +12319,6 @@
 ;               buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;               buf.@b_p_kp = EMPTY_OPTION;
 ;               buf.@b_p_qe = STRDUP(@p_qe);
-;               buf.@b_p_udf = @p_udf;
 ;               buf.@b_p_lw = EMPTY_OPTION;
 
                 ;; Don't copy the options set by ex_help(), use the saved values,
@@ -13280,12 +13233,6 @@
 ;       @info_message = false;
     ))
 
-;; Use P_HID to check if a buffer is to be hidden when it is no longer visible in a window.
-(defn- #_boolean P_HID [#_buffer_C _dummy]
-    (§
-;       return (@p_hid || @cmdmod.hide);
-    ))
-
 ;; start editing a new file
 ;;
 ;;     fnum: file number; if zero use ffname/sfname
@@ -13564,22 +13511,7 @@
 ;               if (buf.b_fname != null)
 ;                   new_name = STRDUP(buf.b_fname);
 
-;               if (@p_ur < 0 || @curbuf.b_ml.ml_line_count <= @p_ur)
-;               {
-                    ;; Save all the text, so that the reload can be undone.
-                    ;; Sync first so that this is a separate undo-able action.
-;                   u_sync(false);
-;                   if (u_savecommon(0, @curbuf.b_ml.ml_line_count + 1, 0, true) == false)
-;                       break theend;
-
-;                   u_unchanged(@curbuf);
-;                   buf_freeall(@curbuf, BFA_KEEP_UNDO);
-
-                    ;; tell readfile() not to clear or reload undo info
-;                   readfile_flags = READ_KEEP_UNDO;
-;               }
-;               else
-;                   buf_freeall(@curbuf, 0);     ;; free all things for buffer
+;               buf_freeall(@curbuf, 0);     ;; free all things for buffer
 
                 ;; If autocommands deleted the buffer we were going to re-edit,
                 ;; give up and jump to the end.
@@ -20336,7 +20268,7 @@
 
 ;       if (only_one_window())
 ;           @exiting = true;
-;       if ((!P_HID(@curbuf) && check_changed(@curbuf, (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
+;       if ((!@cmdmod.hide && check_changed(@curbuf, (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
 ;               || (only_one_window() && check_changed_any(eap.forceit)))
 ;       {
 ;           not_exiting();
@@ -20346,7 +20278,7 @@
 ;           if (only_one_window())      ;; quit last window
 ;               getout(0);
                 ;; close window; may free buffer
-;           win_close(wp, !P_HID(wp.w_buffer) || eap.forceit);
+;           win_close(wp, !@cmdmod.hide || eap.forceit);
 ;       }
     ))
 
@@ -20413,7 +20345,7 @@
 ;       buffer_C buf = win.w_buffer;
 
 ;       boolean need_hide = (bufIsChanged(buf) && buf.b_nwindows <= 1);
-;       if (need_hide && !P_HID(buf) && !forceit)
+;       if (need_hide && !@cmdmod.hide && !forceit)
 ;       {
 ;           emsg(e_nowrtmsg);
 ;           return;
@@ -20421,9 +20353,9 @@
 
         ;; free buffer when not hiding it or when it's a scratch buffer
 ;       if (tp == null)
-;           win_close(win, !need_hide && !P_HID(buf));
+;           win_close(win, !need_hide && !@cmdmod.hide);
 ;       else
-;           win_close_othertab(win, !need_hide && !P_HID(buf), tp);
+;           win_close_othertab(win, !need_hide && !@cmdmod.hide, tp);
     ))
 
 ;; ":tabclose": close current tab page, unless it is the last one.
@@ -20942,7 +20874,7 @@
                         ;; ":edit" goes to first line if Vi compatible
 ;                       (eap.arg.at(0) == NUL && eap.do_ecmd_lnum == 0
 ;                               && vim_strbyte(@p_cpo, CPO_GOTO1) != null) ? ECMD_ONE : eap.do_ecmd_lnum,
-;                       (P_HID(@curbuf) ? ECMD_HIDE : 0)
+;                       (@cmdmod.hide ? ECMD_HIDE : 0)
 ;                           + (eap.forceit ? ECMD_FORCEIT : 0)
                             ;; after a split we can use an existing buffer
 ;                           + (old_curwin != null ? ECMD_OLDBUF : 0)
@@ -20953,14 +20885,14 @@
 ;               if (old_curwin != null)
 ;               {
 ;                   boolean need_hide = (curbufIsChanged() && @curbuf.b_nwindows <= 1);
-;                   if (!need_hide || P_HID(@curbuf))
+;                   if (!need_hide || @cmdmod.hide)
 ;                   {
 ;                       cleanup_C cs = §_cleanup_C();
 
                         ;; Reset the error/interrupt/exception state here so that
                         ;; aborting() returns false when closing a window.
 ;                       enter_cleanup(cs);
-;                       win_close(@curwin, !need_hide && !P_HID(@curbuf));
+;                       win_close(@curwin, !need_hide && !@cmdmod.hide);
 
                         ;; Restore the error/interrupt/exception state if not discarded
                         ;; by a new aborting error, interrupt, or uncaught exception.
@@ -21277,22 +21209,6 @@
 ;           undo_time(eap.line2, false, false, true);
 ;       else
 ;           u_undo(1);
-    ))
-
-(defn- #_void ex_wundo [#_exarg_C eap]
-    (§
-;       Bytes hash = new Bytes(UNDO_HASH_SIZE);
-
-;       u_compute_hash(hash);
-;       u_write_undo(eap.arg, eap.forceit, @curbuf, hash);
-    ))
-
-(defn- #_void ex_rundo [#_exarg_C eap]
-    (§
-;       Bytes hash = new Bytes(UNDO_HASH_SIZE);
-
-;       u_compute_hash(hash);
-;       u_read_undo(eap.arg, hash, null);
     ))
 
 ;; ":redo".
@@ -22252,7 +22168,7 @@
 
 (defn- #_boolean can_abandon [#_buffer_C buf, #_boolean forceit]
     (§
-;       return (P_HID(buf)
+;       return (@cmdmod.hide
 ;                   || !bufIsChanged(buf)
 ;                   || 1 < buf.b_nwindows
 ;                   || false == true
@@ -62643,7 +62559,7 @@
 ;                   u_sync(false);
 ;               close_buffer(prevbuf == @curwin.w_buffer ? @curwin : null, prevbuf,
 ;                       unload ? action : (action == DOBUF_GOTO
-;                           && !P_HID(prevbuf)
+;                           && !@cmdmod.hide
 ;                           && !bufIsChanged(prevbuf)) ? DOBUF_UNLOAD : 0, false);
 ;               if (@curwin != previouswin && win_valid(previouswin))
                     ;; autocommands changed curwin, Grr!
@@ -64433,7 +64349,7 @@
 
 ;       for (window_C wp = @lastwin; count < open_wins; )
 ;       {
-;           boolean r = (P_HID(wp.w_buffer) || !bufIsChanged(wp.w_buffer) || false == true);
+;           boolean r = (@cmdmod.hide || !bufIsChanged(wp.w_buffer) || false == true);
 ;           if (!win_valid(wp))
 ;           {
                     ;; BufWrite Autocommands made the window invalid, start over.
@@ -64441,7 +64357,7 @@
 ;           }
 ;           else if (r)
 ;           {
-;               win_close(wp, !P_HID(wp.w_buffer));
+;               win_close(wp, !@cmdmod.hide);
 ;               --open_wins;
 ;               wp = @lastwin;
 ;           }
@@ -78119,13 +78035,6 @@
 ;;
 ;; All data is allocated and will all be freed when the buffer is unloaded.
 
-;; Structure passed around between functions.
-(class! #_final bufinfo_C
-    [
-        (field buffer_C     bi_buf)
-        (field file_C       bi_fp)
-    ])
-
 ;; used in undo_end() to report number of added and deleted lines
 (atom! long     u_newcount)
 (atom! long     u_oldcount)
@@ -78491,869 +78400,6 @@
 ;       @undo_undoes = false;
 
 ;       return true;
-    ))
-
-(final Bytes UF_START_MAGIC     (u8 "Vim\237UnDo\345"))    ;; magic at start of undofile
-(final int UF_START_MAGIC_LEN     9)
-(final int UF_HEADER_MAGIC        0x5fd0)           ;; magic at start of header
-(final int UF_HEADER_END_MAGIC    0xe7aa)           ;; magic after last header
-(final int UF_ENTRY_MAGIC         0xf518)           ;; magic at start of entry
-(final int UF_ENTRY_END_MAGIC     0x3581)           ;; magic after last entry
-(final int UF_VERSION             2)                ;; 2-byte undofile version number
-(final int UF_VERSION_CRYPT       0x8002)           ;; idem, encrypted
-
-;; extra fields for header
-(final int UF_LAST_SAVE_NR        1)
-
-;; extra fields for uhp
-(final int UHP_SAVE_NR            1)
-
-(final Bytes e_not_open (u8 "E828: Cannot open undo file for writing: %s"))
-
-;; Compute the hash for the current buffer text into hash[UNDO_HASH_SIZE].
-
-(defn- #_void u_compute_hash [#_Bytes hash]
-    (§
-;       context_sha256_C ctx = new context_sha256_C();
-
-;       sha256_start(ctx);
-;       for (long lnum = 1; lnum <= @curbuf.b_ml.ml_line_count; lnum++)
-;       {
-;           Bytes p = ml_get(lnum);
-;           sha256_update(ctx, p, STRLEN(p) + 1);
-;       }
-;       sha256_finish(ctx, hash);
-    ))
-
-;; Return an allocated string of the full path of the target undofile.
-;; When "reading" is true find the file to read, go over all directories in 'undodir'.
-;; When "reading" is false use the first name where the directory exists.
-;; Returns null when there is no place to write or no file to read.
-
-(defn- #_Bytes u_get_undo_file_name [#_Bytes buf_ffname, #_boolean reading]
-    (§
-;       Bytes dir_name = new Bytes(IOSIZE + 1);
-;       Bytes munged_name = null;
-;       Bytes undo_file_name = null;
-;       Bytes ffname = buf_ffname;
-;       Bytes fname_buf = new Bytes(MAXPATHL);
-
-;       if (ffname == null)
-;           return null;
-
-        ;; Expand symlink in the file name, so that we put the undo file
-        ;; with the actual file instead of with the symlink.
-;       if (resolve_symlink(ffname, fname_buf) == true)
-;           ffname = fname_buf;
-
-        ;; Loop over 'undodir'.  When reading find the first file that exists.
-        ;; When not reading use the first directory that exists or ".".
-;       Bytes[] dirp = { @p_udir };
-;       while (dirp[0].at(0) != NUL)
-;       {
-;           int dir_len = copy_option_part(dirp, dir_name, IOSIZE, u8(","));
-;           if (dir_len == 1 && dir_name.at(0) == (byte)'.')
-;           {
-                ;; Use same directory as ffname: "dir/name" -> "dir/.name.un~".
-;               undo_file_name = STRNDUP(ffname, STRLEN(ffname) + 5);
-
-;               Bytes p = gettail(undo_file_name);
-;               BCOPY(p, 1, p, 0, STRLEN(p) + 1);
-;               p.be(0, (byte)'.');
-;               STRCAT(p, u8(".un~"));
-;           }
-;           else
-;           {
-;               dir_name.be(dir_len, NUL);
-;               if (mch_isdir(dir_name))
-;               {
-;                   if (munged_name == null)
-;                   {
-;                       munged_name = STRDUP(ffname);
-
-;                       for (Bytes p = munged_name; p.at(0) != NUL; p = p.plus(us_ptr2len_cc(p)))
-;                           if (vim_ispathsep(p.at(0)))
-;                               p.be(0, (byte)'%');
-;                   }
-;                   undo_file_name = concat_fnames(dir_name, munged_name, true);
-;               }
-;           }
-
-            ;; When reading check if the file exists.
-;           stat_C st = new stat_C();
-;           if (undo_file_name != null && (!reading || 0 <= libC.stat(undo_file_name, st)))
-;               break;
-;           undo_file_name = null;
-;       }
-
-;       return undo_file_name;
-    ))
-
-(defn- #_void corruption_error [#_Bytes mesg, #_Bytes file_name]
-    (§
-;       emsg3(u8("E825: Corrupted undo file (%s): %s"), mesg, file_name);
-    ))
-
-;; Write a sequence of bytes to the undo file.
-;; Buffers and encrypts as needed.
-;; Returns true or false.
-
-(defn- #_boolean undo_write [#_bufinfo_C bi, #_Bytes ptr, #_int len]
-    (§
-;       return (libC.fwrite(ptr, len, 1, bi.bi_fp) == 1);
-    ))
-
-;; Write "ptr[len]" and crypt the bytes when needed.
-;; Returns true or false.
-
-(defn- #_boolean fwrite_crypt [#_bufinfo_C bi, #_Bytes ptr, #_int len]
-    (§
-;       return undo_write(bi, ptr, len);
-    ))
-
-;; Write a number, MSB first, in "len" bytes.
-;; Must match with undo_read_?c() functions.
-;; Returns true or false.
-
-(defn- #_boolean undo_write_bytes [#_bufinfo_C bi, #_long nr, #_int len]
-    (§
-;       Bytes buf = new Bytes(8);
-
-;       for (int i = len - 1, j = 0; 0 <= i; --i)
-;           buf.be(j++, (byte)((nr >>> (i << 3)) & 0xff));
-
-;       return undo_write(bi, buf, len);
-    ))
-
-;; Write the pointer to an undo header.
-;; Instead of writing the pointer itself we use the sequence number of the header.
-;; This is converted back to pointers when reading.
-
-(defn- #_boolean put_header_ptr [#_bufinfo_C bi, #_u_header_C uhp]
-    (§
-;       return undo_write_bytes(bi, (uhp != null) ? uhp.uh_seq : 0, 4);
-    ))
-
-(defn- #_int undo_read_4c [#_bufinfo_C bi]
-    (§
-;       return get4c(bi.bi_fp);
-    ))
-
-(defn- #_int undo_read_2c [#_bufinfo_C bi]
-    (§
-;       return get2c(bi.bi_fp);
-    ))
-
-(defn- #_int undo_read_byte [#_bufinfo_C bi]
-    (§
-;       return libc.getc(bi.bi_fp);
-    ))
-
-(defn- #_long undo_read_time [#_bufinfo_C bi]
-    (§
-;       return get8c(bi.bi_fp);
-    ))
-
-;; Read "buffer[size]" from the undo file.
-;; Return true or false.
-
-(defn- #_boolean undo_read [#_bufinfo_C bi, #_Bytes buffer, #_int size]
-    (§
-;       if (libC.fread(buffer, size, 1, bi.bi_fp) != 1)
-;           return false;
-
-;       return true;
-    ))
-
-;; Read a string of length "len" from "bi.bi_fd".
-;; "len" can be zero to allocate an empty line.
-;; Decrypt the bytes if needed.
-;; Append a NUL.
-;; Returns a pointer to allocated memory or null for failure.
-
-(defn- #_Bytes read_string_decrypt [#_bufinfo_C bi, #_int len]
-    (§
-;       Bytes ptr = new Bytes(len + 1);
-
-;       if (0 < len && undo_read(bi, ptr, len) == false)
-;           return null;
-
-;       ptr.be(len, NUL);
-
-;       return ptr;
-    ))
-
-;; Writes the (not encrypted) header and initializes encryption if needed.
-
-(defn- #_boolean serialize_header [#_bufinfo_C bi, #_Bytes hash]
-    (§
-;       buffer_C buf = bi.bi_buf;
-;       file_C fp = bi.bi_fp;
-
-        ;; Start writing, first the magic marker and undo info version.
-;       if (libC.fwrite(UF_START_MAGIC, UF_START_MAGIC_LEN, 1, fp) != 1)
-;           return false;
-
-        ;; If the buffer is encrypted then all text bytes following will be
-        ;; encrypted.  Numbers and other info is not crypted.
-;       undo_write_bytes(bi, UF_VERSION, 2);
-
-        ;; Write a hash of the buffer text, so that we can verify if it is
-        ;; still the same when reading the buffer text.
-;       if (undo_write(bi, hash, UNDO_HASH_SIZE) == false)
-;           return false;
-
-        ;; buffer-specific data
-;       undo_write_bytes(bi, buf.b_ml.ml_line_count, 4);
-;       int len = (buf.b_u_line_ptr != null) ? STRLEN(buf.b_u_line_ptr) : 0;
-;       undo_write_bytes(bi, len, 4);
-;       if (0 < len && fwrite_crypt(bi, buf.b_u_line_ptr, len) == false)
-;           return false;
-;       undo_write_bytes(bi, buf.b_u_line_lnum, 4);
-;       undo_write_bytes(bi, buf.b_u_line_colnr, 4);
-
-        ;; Undo structures header data.
-;       put_header_ptr(bi, buf.b_u_oldhead);
-;       put_header_ptr(bi, buf.b_u_newhead);
-;       put_header_ptr(bi, buf.b_u_curhead);
-
-;       undo_write_bytes(bi, buf.b_u_numhead, 4);
-;       undo_write_bytes(bi, buf.b_u_seq_last, 4);
-;       undo_write_bytes(bi, buf.b_u_seq_cur, 4);
-;       undo_write_bytes(bi, buf.b_u_time_cur, 8);
-
-        ;; Optional fields.
-;       undo_write_bytes(bi, 4, 1);
-;       undo_write_bytes(bi, UF_LAST_SAVE_NR, 1);
-;       undo_write_bytes(bi, buf.b_u_save_nr_last, 4);
-
-;       undo_write_bytes(bi, 0, 1);     ;; end marker
-
-;       return true;
-    ))
-
-(defn- #_boolean serialize_uhp [#_bufinfo_C bi, #_u_header_C uhp]
-    (§
-;       if (undo_write_bytes(bi, UF_HEADER_MAGIC, 2) == false)
-;           return false;
-
-;       put_header_ptr(bi, uhp.uh_next.ptr);
-;       put_header_ptr(bi, uhp.uh_prev.ptr);
-;       put_header_ptr(bi, uhp.uh_alt_next.ptr);
-;       put_header_ptr(bi, uhp.uh_alt_prev.ptr);
-;       undo_write_bytes(bi, uhp.uh_seq, 4);
-;       serialize_pos(bi, uhp.uh_cursor);
-;       undo_write_bytes(bi, uhp.uh_cursor_vcol, 4);
-;       undo_write_bytes(bi, uhp.uh_flags, 2);
-        ;; Assume NMARKS will stay the same.
-;       for (int i = 0; i < NMARKS; i++)
-;           serialize_pos(bi, uhp.uh_namedm[i]);
-;       serialize_visualinfo(bi, uhp.uh_visual);
-;       undo_write_bytes(bi, uhp.uh_time, 8);
-
-        ;; Optional fields.
-;       undo_write_bytes(bi, 4, 1);
-;       undo_write_bytes(bi, UHP_SAVE_NR, 1);
-;       undo_write_bytes(bi, uhp.uh_save_nr, 4);
-
-;       undo_write_bytes(bi, 0, 1);     ;; end marker
-
-        ;; Write all the entries.
-;       for (u_entry_C uep = uhp.uh_entry; uep != null; uep = uep.ue_next)
-;       {
-;           undo_write_bytes(bi, UF_ENTRY_MAGIC, 2);
-;           if (serialize_uep(bi, uep) == false)
-;               return false;
-;       }
-;       undo_write_bytes(bi, UF_ENTRY_END_MAGIC, 2);
-;       return true;
-    ))
-
-(defn- #_u_header_C unserialize_uhp [#_bufinfo_C bi, #_Bytes file_name]
-    (§
-;       u_header_C uhp = §_u_header_C();
-
-;       uhp.uh_next.seq = undo_read_4c(bi);
-;       uhp.uh_prev.seq = undo_read_4c(bi);
-;       uhp.uh_alt_next.seq = undo_read_4c(bi);
-;       uhp.uh_alt_prev.seq = undo_read_4c(bi);
-;       uhp.uh_seq = undo_read_4c(bi);
-;       if (uhp.uh_seq <= 0)
-;       {
-;           corruption_error(u8("uh_seq"), file_name);
-;           return null;
-;       }
-
-;       unserialize_pos(bi, uhp.uh_cursor);
-;       uhp.uh_cursor_vcol = undo_read_4c(bi);
-;       uhp.uh_flags = undo_read_2c(bi);
-;       for (int i = 0; i < NMARKS; i++)
-;           unserialize_pos(bi, uhp.uh_namedm[i]);
-;       unserialize_visualinfo(bi, uhp.uh_visual);
-;       uhp.uh_time = undo_read_time(bi);
-
-        ;; Optional fields.
-;       for ( ; ; )
-;       {
-;           int len = undo_read_byte(bi);
-;           if (len == 0)
-;               break;
-
-;           int what = undo_read_byte(bi);
-;           switch (what)
-;           {
-;               case UHP_SAVE_NR:
-;                   uhp.uh_save_nr = undo_read_4c(bi);
-;                   break;
-
-;               default:
-                    ;; field not supported, skip
-;                   while (0 <= --len)
-;                       undo_read_byte(bi);
-;                   break;
-;           }
-;       }
-
-        ;; Unserialize the uep list.
-;       int c;
-;       for (u_entry_C last_uep = null; (c = undo_read_2c(bi)) == UF_ENTRY_MAGIC; )
-;       {
-;           boolean[] error = { false };
-;           u_entry_C uep = unserialize_uep(bi, error, file_name);
-;           if (last_uep == null)
-;               uhp.uh_entry = uep;
-;           else
-;               last_uep.ue_next = uep;
-;           last_uep = uep;
-;           if (uep == null || error[0])
-;               return null;
-;       }
-;       if (c != UF_ENTRY_END_MAGIC)
-;       {
-;           corruption_error(u8("entry end"), file_name);
-;           return null;
-;       }
-
-;       return uhp;
-    ))
-
-;; Serialize "uep".
-
-(defn- #_boolean serialize_uep [#_bufinfo_C bi, #_u_entry_C uep]
-    (§
-;       undo_write_bytes(bi, uep.ue_top, 4);
-;       undo_write_bytes(bi, uep.ue_bot, 4);
-;       undo_write_bytes(bi, uep.ue_lcount, 4);
-;       undo_write_bytes(bi, uep.ue_size, 4);
-;       for (int i = 0; i < uep.ue_size; i++)
-;       {
-;           int len = STRLEN(uep.ue_array[i]);
-
-;           if (undo_write_bytes(bi, len, 4) == false)
-;               return false;
-;           if (0 < len && fwrite_crypt(bi, uep.ue_array[i], len) == false)
-;               return false;
-;       }
-;       return true;
-    ))
-
-(defn- #_u_entry_C unserialize_uep [#_bufinfo_C bi, #_boolean* error, #_Bytes file_name]
-    (§
-;       u_entry_C uep = §_u_entry_C();
-
-;       uep.ue_top = undo_read_4c(bi);
-;       uep.ue_bot = undo_read_4c(bi);
-;       uep.ue_lcount = undo_read_4c(bi);
-;       uep.ue_size = undo_read_4c(bi);
-;       Bytes[] array;
-;       if (0 < uep.ue_size)
-;           array = new Bytes[(int)uep.ue_size];
-;       else
-;           array = null;
-;       uep.ue_array = array;
-
-;       for (int i = 0; i < uep.ue_size; i++)
-;       {
-;           Bytes line;
-;           int line_len = undo_read_4c(bi);
-;           if (0 <= line_len)
-;               line = read_string_decrypt(bi, line_len);
-;           else
-;           {
-;               line = null;
-;               corruption_error(u8("line length"), file_name);
-;           }
-;           if (line == null)
-;           {
-;               error[0] = true;
-;               return uep;
-;           }
-;           array[i] = line;
-;       }
-
-;       return uep;
-    ))
-
-;; Serialize "pos".
-
-(defn- #_void serialize_pos [#_bufinfo_C bi, #_pos_C pos]
-    (§
-;       undo_write_bytes(bi, pos.lnum, 4);
-;       undo_write_bytes(bi, pos.col, 4);
-;       undo_write_bytes(bi, pos.coladd, 4);
-    ))
-
-;; Unserialize the pos_C at the current position.
-
-(defn- #_void unserialize_pos [#_bufinfo_C bi, #_pos_C pos]
-    (§
-;       pos.lnum = undo_read_4c(bi);
-;       if (pos.lnum < 0)
-;           pos.lnum = 0;
-;       pos.col = undo_read_4c(bi);
-;       if (pos.col < 0)
-;           pos.col = 0;
-;       pos.coladd = undo_read_4c(bi);
-;       if (pos.coladd < 0)
-;           pos.coladd = 0;
-    ))
-
-;; Serialize "info".
-
-(defn- #_void serialize_visualinfo [#_bufinfo_C bi, #_visualinfo_C vi]
-    (§
-;       serialize_pos(bi, vi.vi_start);
-;       serialize_pos(bi, vi.vi_end);
-;       undo_write_bytes(bi, vi.vi_mode, 4);
-;       undo_write_bytes(bi, vi.vi_curswant, 4);
-    ))
-
-;; Unserialize the visualinfo_C at the current position.
-
-(defn- #_void unserialize_visualinfo [#_bufinfo_C bi, #_visualinfo_C vi]
-    (§
-;       unserialize_pos(bi, vi.vi_start);
-;       unserialize_pos(bi, vi.vi_end);
-;       vi.vi_mode = undo_read_4c(bi);
-;       vi.vi_curswant = undo_read_4c(bi);
-    ))
-
-;; Write the undo tree in an undo file.
-;; When "name" is not null, use it as the name of the undo file.
-;; Otherwise use buf.b_ffname to generate the undo file name.
-;; "buf" must never be null, buf.b_ffname is used to obtain the original file permissions.
-;; "forceit" is true for ":wundo!", false otherwise.
-;; "hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
-
-(defn- #_void u_write_undo [#_Bytes name, #_boolean forceit, #_buffer_C buf, #_Bytes hash]
-    (§
-;       boolean write_ok = false;
-
-;       Bytes file_name;
-;       if (name == null)
-;       {
-;           file_name = u_get_undo_file_name(buf.b_ffname, false);
-;           if (file_name == null)
-;           {
-;               if (0 < @p_verbose)
-;               {
-;                   smsg(u8("Cannot write undo file in any directory in 'undodir'"));
-;               }
-;               return;
-;           }
-;       }
-;       else
-;           file_name = name;
-
-;       bufinfo_C bi = §_bufinfo_C();
-
-;       boolean st_old_valid = false;
-;       stat_C st_old = new stat_C();
-
-        ;; Decide about the permission to use for the undo file.
-        ;; If the buffer has a name use the permission of the original file.
-        ;; Otherwise only allow the user to access the undo file.
-
-;       int perm = 0600;
-;       if (buf.b_ffname != null)
-;       {
-;           if (0 <= libC.stat(buf.b_ffname, st_old))
-;           {
-;               perm = st_old.st_mode();
-;               st_old_valid = true;
-;           }
-;       }
-
-        ;; strip any s-bit
-;       perm = (perm & 0777);
-
-        ;; If the undo file already exists,
-        ;; verify that it actually is an undo file,
-        ;; and delete it.
-;       if (0 <= mch_getperm(file_name))
-;       {
-;           if (name == null || !forceit)
-;           {
-                ;; Check we can read it and it's an undo file.
-;               int fd = libC.open(file_name, O_RDONLY, 0);
-;               if (fd < 0)
-;               {
-;                   if (name != null || 0 < @p_verbose)
-;                   {
-;                       smsg(u8("Will not overwrite with undo file, cannot read: %s"), file_name);
-;                   }
-;                   return;
-;               }
-;               else
-;               {
-;                   Bytes mbuf = new Bytes(UF_START_MAGIC_LEN);
-;                   int len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
-;                   libc.close(fd);
-;                   if (len < UF_START_MAGIC_LEN || MEMCMP(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0)
-;                   {
-;                       if (name != null || 0 < @p_verbose)
-;                       {
-;                           smsg(u8("Will not overwrite, this is not an undo file: %s"), file_name);
-;                       }
-;                       return;
-;                   }
-;               }
-;           }
-;           libC.unlink(file_name);
-;       }
-
-        ;; If there is no undo information at all, quit here after deleting any existing undo file.
-;       if (buf.b_u_numhead == 0 && buf.b_u_line_ptr == null)
-;       {
-;           if (0 < @p_verbose)
-;               msg(u8("Skipping undo file write, nothing to undo"));
-;           return;
-;       }
-
-;       int fd = libC.open(file_name, O_CREAT|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
-;       if (fd < 0)
-;       {
-;           emsg2(e_not_open, file_name);
-;           return;
-;       }
-;       mch_setperm(file_name, perm);
-;       if (0 < @p_verbose)
-;       {
-;           smsg(u8("Writing undo file: %s"), file_name);
-;       }
-
-        ;; Try to set the group of the undo file same as the original file.
-        ;; If this fails, set the protection bits for the group same as the
-        ;; protection bits for others.
-
-;       stat_C st_new = new stat_C();
-;       if (st_old_valid
-;               && 0 <= libC.stat(file_name, st_new)
-;               && st_new.st_gid() != st_old.st_gid()
-;               && libc.fchown(fd, -1, st_old.st_gid()) != 0)
-;           mch_setperm(file_name, (perm & 0707) | ((perm & 07) << 3));
-
-;       file_C fp = libC.fdopen(fd, u8("w"));
-;       if (fp == null)
-;       {
-;           emsg2(e_not_open, file_name);
-;           libc.close(fd);
-;           libC.unlink(file_name);
-;           return;
-;       }
-
-        ;; Undo must be synced.
-;       u_sync(true);
-
-;       write_error:
-;       {
-            ;; Write the header.  Initializes encryption, if enabled.
-
-;           bi.bi_buf = buf;
-;           bi.bi_fp = fp;
-;           if (serialize_header(bi, hash) == false)
-;               break write_error;
-
-            ;; Iteratively serialize UHPs and their UEPs from the top down.
-
-;           int mark = ++@lastmark;
-;           u_header_C uhp = buf.b_u_oldhead;
-;           while (uhp != null)
-;           {
-                ;; Serialize current UHP if we haven't seen it.
-;               if (uhp.uh_walk != mark)
-;               {
-;                   uhp.uh_walk = mark;
-;                   if (serialize_uhp(bi, uhp) == false)
-;                       break write_error;
-;               }
-
-                ;; Now walk through the tree - algorithm from undo_time().
-;               if (uhp.uh_prev.ptr != null && uhp.uh_prev.ptr.uh_walk != mark)
-;                   uhp = uhp.uh_prev.ptr;
-;               else if (uhp.uh_alt_next.ptr != null && uhp.uh_alt_next.ptr.uh_walk != mark)
-;                   uhp = uhp.uh_alt_next.ptr;
-;               else if (uhp.uh_next.ptr != null && uhp.uh_alt_prev.ptr == null && uhp.uh_next.ptr.uh_walk != mark)
-;                   uhp = uhp.uh_next.ptr;
-;               else if (uhp.uh_alt_prev.ptr != null)
-;                   uhp = uhp.uh_alt_prev.ptr;
-;               else
-;                   uhp = uhp.uh_next.ptr;
-;           }
-
-;           if (undo_write_bytes(bi, UF_HEADER_END_MAGIC, 2) == true)
-;               write_ok = true;
-;       }
-
-;       libc.fclose(fp);
-;       if (!write_ok)
-;           emsg2(u8("E829: write error in undo file: %s"), file_name);
-    ))
-
-;; Load the undo tree from an undo file.
-;; If "name" is not null use it as the undo file name.
-;; This also means being a bit more verbose.
-;; Otherwise use curbuf.b_ffname to generate the undo file name.
-;; "hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
-
-(defn- #_void u_read_undo [#_Bytes name, #_Bytes hash, #_Bytes orig_name]
-    (§
-;       Bytes line_ptr = null;
-;       u_header_C[] uhp_table = null;
-;       int num_read_uhps = 0;
-
-;       Bytes file_name;
-;       if (name == null)
-;       {
-;           file_name = u_get_undo_file_name(@curbuf.b_ffname, true);
-;           if (file_name == null)
-;               return;
-
-            ;; For safety we only read an undo file if the owner is equal
-            ;; to the owner of the text file or equal to the current user.
-;           stat_C st_orig = new stat_C(), st_undo = new stat_C();
-;           if (0 <= libC.stat(orig_name, st_orig) && 0 <= libC.stat(file_name, st_undo)
-;                  && st_orig.st_uid() != st_undo.st_uid() && st_undo.st_uid() != libc.getuid())
-;           {
-;               if (0 < @p_verbose)
-;               {
-;                   smsg(u8("Not reading undo file, owner differs: %s"), file_name);
-;               }
-;               return;
-;           }
-;       }
-;       else
-;           file_name = name;
-
-;       if (0 < @p_verbose)
-;       {
-;           smsg(u8("Reading undo file: %s"), file_name);
-;       }
-
-;       bufinfo_C bi = §_bufinfo_C();
-
-;       file_C fp = libC.fopen(file_name, u8("r"));
-;       if (fp == null)
-;       {
-;           if (name != null || 0 < @p_verbose)
-;               emsg2(u8("E822: Cannot open undo file for reading: %s"), file_name);
-;           return;
-;       }
-;       bi.bi_buf = @curbuf;
-;       bi.bi_fp = fp;
-
-;       theend:
-;       {
-            ;; Read the undo file header.
-
-;           Bytes magic_buf = new Bytes(UF_START_MAGIC_LEN);
-;           if (libC.fread(magic_buf, UF_START_MAGIC_LEN, 1, fp) != 1
-;                       || MEMCMP(magic_buf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0)
-;           {
-;               emsg2(u8("E823: Not an undo file: %s"), file_name);
-;               break theend;
-;           }
-;           long version = get2c(fp);
-;           if (version == UF_VERSION_CRYPT)
-;           {
-;               emsg2(u8("E827: Undo file is encrypted: %s"), file_name);
-;               break theend;
-;           }
-;           else if (version != UF_VERSION)
-;           {
-;               emsg2(u8("E824: Incompatible undo file: %s"), file_name);
-;               break theend;
-;           }
-
-;           Bytes read_hash = new Bytes(UNDO_HASH_SIZE);
-;           if (undo_read(bi, read_hash, UNDO_HASH_SIZE) == false)
-;           {
-;               corruption_error(u8("hash"), file_name);
-;               break theend;
-;           }
-
-;           long line_count = undo_read_4c(bi);
-;           if (MEMCMP(hash, read_hash, UNDO_HASH_SIZE) != 0 || line_count != @curbuf.b_ml.ml_line_count)
-;           {
-;               if (0 < @p_verbose || name != null)
-;               {
-;                   give_warning(u8("File contents changed, cannot use undo info"), true);
-;               }
-;               break theend;
-;           }
-
-            ;; Read undo data for "U" command.
-;           int str_len = undo_read_4c(bi);
-;           if (str_len < 0)
-;               break theend;
-;           if (0 < str_len)
-;               line_ptr = read_string_decrypt(bi, str_len);
-
-;           long line_lnum = undo_read_4c(bi);
-;           int line_colnr = undo_read_4c(bi);
-;           if (line_lnum < 0 || line_colnr < 0)
-;           {
-;               corruption_error(u8("line lnum/col"), file_name);
-;               break theend;
-;           }
-
-            ;; Begin general undo data.
-;           long old_header_seq = undo_read_4c(bi);
-;           long new_header_seq = undo_read_4c(bi);
-;           long cur_header_seq = undo_read_4c(bi);
-;           int num_head = undo_read_4c(bi);
-;           long seq_last = undo_read_4c(bi);
-;           long seq_cur = undo_read_4c(bi);
-;           long seq_time = undo_read_time(bi);
-
-;           long last_save_nr = 0;
-            ;; Optional header fields.
-;           for ( ; ; )
-;           {
-;               int len = undo_read_byte(bi);
-;               if (len == 0 || len == EOF)
-;                   break;
-
-;               int what = undo_read_byte(bi);
-;               switch (what)
-;               {
-;                   case UF_LAST_SAVE_NR:
-;                       last_save_nr = undo_read_4c(bi);
-;                       break;
-
-;                   default:
-                        ;; field not supported, skip
-;                       while (0 <= --len)
-;                           undo_read_byte(bi);
-;                       break;
-;               }
-;           }
-
-            ;; uhp_table will store the freshly created undo headers we allocate
-            ;; until we insert them into curbuf.  The table remains sorted by the
-            ;; sequence numbers of the headers.
-            ;; When there are no headers uhp_table is null.
-;           if (0 < num_head)
-;               uhp_table = new u_header_C[num_head];
-
-;           int c;
-;           while ((c = undo_read_2c(bi)) == UF_HEADER_MAGIC)
-;           {
-;               if (num_head <= num_read_uhps)
-;               {
-;                   corruption_error(u8("num_head too small"), file_name);
-;                   break theend;
-;               }
-
-;               u_header_C uhp = unserialize_uhp(bi, file_name);
-;               if (uhp == null)
-;                   break theend;
-;               uhp_table[num_read_uhps++] = uhp;
-;           }
-
-;           if (num_read_uhps != num_head)
-;           {
-;               corruption_error(u8("num_head"), file_name);
-;               break theend;
-;           }
-;           if (c != UF_HEADER_END_MAGIC)
-;           {
-;               corruption_error(u8("end marker"), file_name);
-;               break theend;
-;           }
-
-;           int old_idx = -1, new_idx = -1, cur_idx = -1;
-
-            ;; We have put all of the headers into a table.  Now we iterate through the
-            ;; table and swizzle each sequence number we have stored in uh_*_seq into
-            ;; a pointer corresponding to the header with that sequence number.
-;           for (int i = 0; i < num_head; i++)
-;           {
-;               u_header_C uhp = uhp_table[i];
-;               if (uhp == null)
-;                   continue;
-;               for (int j = 0; j < num_head; j++)
-;                   if (uhp_table[j] != null && i != j && uhp_table[i].uh_seq == uhp_table[j].uh_seq)
-;                   {
-;                       corruption_error(u8("duplicate uh_seq"), file_name);
-;                       break theend;
-;                   }
-;               for (int j = 0; j < num_head; j++)
-;                   if (uhp_table[j] != null && uhp_table[j].uh_seq == uhp.uh_next.seq)
-;                   {
-;                       uhp.uh_next.ptr = uhp_table[j];
-;                       break;
-;                   }
-;               for (int j = 0; j < num_head; j++)
-;                   if (uhp_table[j] != null && uhp_table[j].uh_seq == uhp.uh_prev.seq)
-;                   {
-;                       uhp.uh_prev.ptr = uhp_table[j];
-;                       break;
-;                   }
-;               for (int j = 0; j < num_head; j++)
-;                   if (uhp_table[j] != null && uhp_table[j].uh_seq == uhp.uh_alt_next.seq)
-;                   {
-;                       uhp.uh_alt_next.ptr = uhp_table[j];
-;                       break;
-;                   }
-;               for (int j = 0; j < num_head; j++)
-;                   if (uhp_table[j] != null && uhp_table[j].uh_seq == uhp.uh_alt_prev.seq)
-;                   {
-;                       uhp.uh_alt_prev.ptr = uhp_table[j];
-;                       break;
-;                   }
-;               if (0 < old_header_seq && old_idx < 0 && uhp.uh_seq == old_header_seq)
-;                   old_idx = i;
-;               if (0 < new_header_seq && new_idx < 0 && uhp.uh_seq == new_header_seq)
-;                   new_idx = i;
-;               if (0 < cur_header_seq && cur_idx < 0 && uhp.uh_seq == cur_header_seq)
-;                   cur_idx = i;
-;           }
-
-            ;; Now that we have read the undo info successfully,
-            ;; free the current undo info and use the info from the file.
-;           u_blockfree(@curbuf);
-;           @curbuf.b_u_oldhead = (old_idx < 0) ? null : uhp_table[old_idx];
-;           @curbuf.b_u_newhead = (new_idx < 0) ? null : uhp_table[new_idx];
-;           @curbuf.b_u_curhead = (cur_idx < 0) ? null : uhp_table[cur_idx];
-;           @curbuf.b_u_line_ptr = line_ptr;
-;           @curbuf.b_u_line_lnum = line_lnum;
-;           @curbuf.b_u_line_colnr = line_colnr;
-;           @curbuf.b_u_numhead = num_head;
-;           @curbuf.b_u_seq_last = seq_last;
-;           @curbuf.b_u_seq_cur = seq_cur;
-;           @curbuf.b_u_time_cur = seq_time;
-;           @curbuf.b_u_save_nr_last = last_save_nr;
-;           @curbuf.b_u_save_nr_cur = last_save_nr;
-
-;           @curbuf.b_u_synced = true;
-
-;           if (name != null)
-;               smsg(u8("Finished reading undo file %s"), file_name);
-;       }
-
-;       if (fp != null)
-;           libc.fclose(fp);
     ))
 
 ;; If 'cpoptions' contains 'u': Undo the previous undo or redo (vi compatible).
@@ -80240,52 +79286,6 @@
     (§
 ;       u_unch_branch(buf.b_u_oldhead);
 ;       buf.b_did_warn = false;
-    ))
-
-;; After reloading a buffer which was saved for 'undoreload':
-;; find the first line that was changed and set the cursor there.
-
-(defn- #_void u_find_first_changed []
-    (§
-;       u_header_C uhp = @curbuf.b_u_newhead;
-
-;       if (@curbuf.b_u_curhead != null || uhp == null)
-;           return;                         ;; undid something in an autocmd?
-
-        ;; Check that the last undo block was for the whole file.
-;       u_entry_C uep = uhp.uh_entry;
-;       if (uep.ue_top != 0 || uep.ue_bot != 0)
-;           return;
-
-;       long lnum;
-;       for (lnum = 1; lnum < @curbuf.b_ml.ml_line_count && lnum <= uep.ue_size; lnum++)
-;           if (STRCMP(ml_get_buf(@curbuf, lnum, false), uep.ue_array[(int)lnum - 1]) != 0)
-;           {
-;               clearpos(uhp.uh_cursor);
-;               uhp.uh_cursor.lnum = lnum;
-;               return;
-;           }
-;       if (@curbuf.b_ml.ml_line_count != uep.ue_size)
-;       {
-            ;; lines added or deleted at the end, put the cursor there
-;           clearpos(uhp.uh_cursor);
-;           uhp.uh_cursor.lnum = lnum;
-;       }
-    ))
-
-;; Increase the write count, store it in the last undo header, what would be used for "u".
-
-(defn- #_void u_update_save_nr [#_buffer_C buf]
-    (§
-;       buf.b_u_save_nr_last++;
-;       buf.b_u_save_nr_cur = buf.b_u_save_nr_last;
-;       u_header_C uhp = buf.b_u_curhead;
-;       if (uhp != null)
-;           uhp = uhp.uh_next.ptr;
-;       else
-;           uhp = buf.b_u_newhead;
-;       if (uhp != null)
-;           uhp.uh_save_nr = buf.b_u_save_nr_last;
     ))
 
 (defn- #_void u_unch_branch [#_u_header_C uhp]
@@ -93550,7 +92550,7 @@
 ;                   if (bufIsChanged(wp.w_buffer))
 ;                       continue;
 ;               }
-;               win_close(wp, !P_HID(wp.w_buffer) && !bufIsChanged(wp.w_buffer));
+;               win_close(wp, !@cmdmod.hide && !bufIsChanged(wp.w_buffer));
 ;           }
 ;       }
 
@@ -97964,7 +96964,6 @@
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN MODIFY),                    ADDR_LINES),
         (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "rundo"),         ex_rundo,         (| NEEDARG FILE1),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "sandbox"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "sbuffer"),       ex_buffer,        (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA EDITCMD),     ADDR_BUFFERS),
@@ -98030,7 +97029,6 @@
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
         (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "wundo"),         ex_wundo,         (| BANG NEEDARG FILE1),                                       ADDR_LINES),
         (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "xmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "xnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
