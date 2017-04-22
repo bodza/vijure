@@ -942,18 +942,11 @@
 (final int FM_BLOCKSTOP    0x04)    ;; stop at start/end of block
 (final int FM_SKIPCOMM     0x08)    ;; skip comments
 
-;; Values for action argument for do_buffer().
+;; Values for action argument for do_buffer().
 (final int DOBUF_GOTO      0)       ;; go to specified buffer
-(final int DOBUF_SPLIT     1)       ;; split window and go to specified buffer
 (final int DOBUF_UNLOAD    2)       ;; unload specified buffer(s)
 (final int DOBUF_DEL       3)       ;; delete specified buffer(s) from buflist
 (final int DOBUF_WIPE      4)       ;; delete specified buffer(s) really
-
-;; Values for start argument for do_buffer().
-(final int DOBUF_CURRENT   0)       ;; "count" buffer from current buffer
-(final int DOBUF_FIRST     1)       ;; "count" buffer from first buffer
-(final int DOBUF_LAST      2)       ;; "count" buffer from last buffer
-(final int DOBUF_MOD       3)       ;; "count" mod. buffer from current buffer
 
 ;; Values for sub_cmd and which_pat argument for search_regcomp().
 ;; Also used for which_pat argument for searchit().
@@ -1497,8 +1490,6 @@
 (atom! boolean p_remap)     ;; 'remap'
 (atom! long    p_re)        ;; 'regexpengine'
 (atom! long    p_report)    ;; 'report'
-(atom! boolean p_ari)       ;; 'allowrevins'
-(atom! boolean p_ri)        ;; 'revins'
 (atom! boolean p_ru)        ;; 'ruler'
 (atom! long    p_sj)        ;; 'scrolljump'
 (atom! long    p_so)        ;; 'scrolloff'
@@ -1609,8 +1600,6 @@
     WV_NU      7,
     WV_RNU     8,
     WV_NUW     9,
-    WV_RL     10,
-    WV_RLC    11,
     WV_SCBIND 12,
     WV_SCROLL 13,
     WV_CUC    14,
@@ -1909,8 +1898,6 @@
         (atom' long    wo_nuw)      ;; 'numberwidth'
         (atom' boolean wo_wfh)      ;; 'winfixheight'
         (atom' boolean wo_wfw)      ;; 'winfixwidth'
-        (atom' boolean wo_rl)       ;; 'rightleft'
-        (atom' Bytes   wo_rlc)      ;; 'rightleftcmd'
         (atom' long    wo_scr)      ;; 'scroll'
         (atom' boolean wo_cuc)      ;; 'cursorcolumn'
         (atom' boolean wo_cul)      ;; 'cursorline'
@@ -3054,9 +3041,7 @@
 ;; values for cmd_addr_type
 (final byte
     ADDR_LINES          0,
-    ADDR_WINDOWS        1,
-    ADDR_LOADED_BUFFERS 3,
-    ADDR_BUFFERS        4)
+    ADDR_WINDOWS        1)
 
 (final int
     CMD_append 0,
@@ -3064,171 +3049,147 @@
     CMD_abclear 2,
     CMD_aboveleft 3,
     CMD_ascii 4,
-    CMD_buffer 5,
-    CMD_bNext 6,
-    CMD_ball 7,
-    CMD_bdelete 8,
-    CMD_belowright 9,
-    CMD_bfirst 10,
-    CMD_blast 11,
-    CMD_bmodified 12,
-    CMD_bnext 13,
-    CMD_botright 14,
-    CMD_bprevious 15,
-    CMD_brewind 16,
-    CMD_buffers 17,
-    CMD_bunload 18,
-    CMD_bwipeout 19,
-    CMD_change 20,
-    CMD_cabbrev 21,
-    CMD_cabclear 22,
-    CMD_center 23,
-    CMD_changes 24,
-    CMD_close 25,
-    CMD_cmap 26,
-    CMD_cmapclear 27,
-    CMD_cnoremap 28,
-    CMD_cnoreabbrev 29,
-    CMD_copy 30,
-    CMD_cunmap 31,
-    CMD_cunabbrev 32,
-    CMD_delete 33,
-    CMD_delmarks 34,
-    CMD_display 35,
-    CMD_digraphs 36,
-    CMD_edit 37,
-    CMD_earlier 38,
-    CMD_enew 39,
-    CMD_ex 40,
-    CMD_fixdel 41,
-    CMD_global 42,
-    CMD_goto 43,
-    CMD_hide 44,
-    CMD_history 45,
-    CMD_insert 46,
-    CMD_iabbrev 47,
-    CMD_iabclear 48,
-    CMD_imap 49,
-    CMD_imapclear 50,
-    CMD_inoremap 51,
-    CMD_inoreabbrev 52,
-    CMD_iunmap 53,
-    CMD_iunabbrev 54,
-    CMD_join 55,
-    CMD_jumps 56,
-    CMD_k 57,
-    CMD_keepmarks 58,
-    CMD_keepjumps 59,
-    CMD_keeppatterns 60,
-    CMD_keepalt 61,
-    CMD_list 62,
-    CMD_later 63,
-    CMD_left 64,
-    CMD_leftabove 65,
-    CMD_lockmarks 66,
-    CMD_move 67,
-    CMD_mark 68,
-    CMD_map 69,
-    CMD_mapclear 70,
-    CMD_marks 71,
-    CMD_messages 72,
-    CMD_new 73,
-    CMD_nmap 74,
-    CMD_nmapclear 75,
-    CMD_nnoremap 76,
-    CMD_noremap 77,
-    CMD_nohlsearch 78,
-    CMD_noreabbrev 79,
-    CMD_normal 80,
-    CMD_number 81,
-    CMD_nunmap 82,
-    CMD_omap 83,
-    CMD_omapclear 84,
-    CMD_only 85,
-    CMD_onoremap 86,
-    CMD_ounmap 87,
-    CMD_print 88,
-    CMD_put 89,
-    CMD_quit 90,
-    CMD_quitall 91,
-    CMD_qall 92,
-    CMD_redo 93,
-    CMD_redraw 94,
-    CMD_redrawstatus 95,
-    CMD_registers 96,
-    CMD_resize 97,
-    CMD_retab 98,
-    CMD_right 99,
-    CMD_rightbelow 100,
-    CMD_substitute 101,
-    CMD_sandbox 102,
-    CMD_sbuffer 103,
-    CMD_sbNext 104,
-    CMD_sball 105,
-    CMD_sbfirst 106,
-    CMD_sblast 107,
-    CMD_sbmodified 108,
-    CMD_sbnext 109,
-    CMD_sbprevious 110,
-    CMD_sbrewind 111,
-    CMD_set 112,
-    CMD_setglobal 113,
-    CMD_setlocal 114,
-    CMD_silent 115,
-    CMD_smagic 116,
-    CMD_smap 117,
-    CMD_smapclear 118,
-    CMD_snomagic 119,
-    CMD_snoremap 120,
-    CMD_split 121,
-    CMD_stop 122,
-    CMD_startinsert 123,
-    CMD_startgreplace 124,
-    CMD_startreplace 125,
-    CMD_stopinsert 126,
-    CMD_sunhide 127,
-    CMD_sunmap 128,
-    CMD_suspend 129,
-    CMD_sview 130,
-    CMD_syncbind 131,
-    CMD_t 132,
-    CMD_topleft 133,
-    CMD_undo 134,
-    CMD_undojoin 135,
-    CMD_undolist 136,
-    CMD_unabbreviate 137,
-    CMD_unhide 138,
-    CMD_unmap 139,
-    CMD_unsilent 140,
-    CMD_vglobal 141,
-    CMD_verbose 142,
-    CMD_vertical 143,
-    CMD_visual 144,
-    CMD_view 145,
-    CMD_vmap 146,
-    CMD_vmapclear 147,
-    CMD_vnoremap 148,
-    CMD_vnew 149,
-    CMD_vsplit 150,
-    CMD_vunmap 151,
-    CMD_wincmd 152,
-    CMD_xmap 153,
-    CMD_xmapclear 154,
-    CMD_xnoremap 155,
-    CMD_xunmap 156,
-    CMD_yank 157,
-    CMD_z 158,
+    CMD_belowright 5,
+    CMD_botright 6,
+    CMD_change 7,
+    CMD_cabbrev 8,
+    CMD_cabclear 9,
+    CMD_center 10,
+    CMD_changes 11,
+    CMD_close 12,
+    CMD_cmap 13,
+    CMD_cmapclear 14,
+    CMD_cnoremap 15,
+    CMD_cnoreabbrev 16,
+    CMD_copy 17,
+    CMD_cunmap 18,
+    CMD_cunabbrev 19,
+    CMD_delete 20,
+    CMD_delmarks 21,
+    CMD_display 22,
+    CMD_digraphs 23,
+    CMD_edit 24,
+    CMD_earlier 25,
+    CMD_enew 26,
+    CMD_ex 27,
+    CMD_fixdel 28,
+    CMD_global 29,
+    CMD_goto 30,
+    CMD_hide 31,
+    CMD_history 32,
+    CMD_insert 33,
+    CMD_iabbrev 34,
+    CMD_iabclear 35,
+    CMD_imap 36,
+    CMD_imapclear 37,
+    CMD_inoremap 38,
+    CMD_inoreabbrev 39,
+    CMD_iunmap 40,
+    CMD_iunabbrev 41,
+    CMD_join 42,
+    CMD_jumps 43,
+    CMD_k 44,
+    CMD_keepmarks 45,
+    CMD_keepjumps 46,
+    CMD_keeppatterns 47,
+    CMD_keepalt 48,
+    CMD_list 49,
+    CMD_later 50,
+    CMD_left 51,
+    CMD_leftabove 52,
+    CMD_lockmarks 53,
+    CMD_move 54,
+    CMD_mark 55,
+    CMD_map 56,
+    CMD_mapclear 57,
+    CMD_marks 58,
+    CMD_messages 59,
+    CMD_new 60,
+    CMD_nmap 61,
+    CMD_nmapclear 62,
+    CMD_nnoremap 63,
+    CMD_noremap 64,
+    CMD_nohlsearch 65,
+    CMD_noreabbrev 66,
+    CMD_normal 67,
+    CMD_number 68,
+    CMD_nunmap 69,
+    CMD_omap 70,
+    CMD_omapclear 71,
+    CMD_only 72,
+    CMD_onoremap 73,
+    CMD_ounmap 74,
+    CMD_print 75,
+    CMD_put 76,
+    CMD_quit 77,
+    CMD_quitall 78,
+    CMD_qall 79,
+    CMD_redo 80,
+    CMD_redraw 81,
+    CMD_redrawstatus 82,
+    CMD_registers 83,
+    CMD_resize 84,
+    CMD_retab 85,
+    CMD_right 86,
+    CMD_rightbelow 87,
+    CMD_substitute 88,
+    CMD_sandbox 89,
+    CMD_set 90,
+    CMD_setglobal 91,
+    CMD_setlocal 92,
+    CMD_silent 93,
+    CMD_smagic 94,
+    CMD_smap 95,
+    CMD_smapclear 96,
+    CMD_snomagic 97,
+    CMD_snoremap 98,
+    CMD_split 99,
+    CMD_stop 100,
+    CMD_startinsert 101,
+    CMD_startgreplace 102,
+    CMD_startreplace 103,
+    CMD_stopinsert 104,
+    CMD_sunmap 105,
+    CMD_suspend 106,
+    CMD_sview 107,
+    CMD_syncbind 108,
+    CMD_t 109,
+    CMD_topleft 110,
+    CMD_undo 111,
+    CMD_undojoin 112,
+    CMD_undolist 113,
+    CMD_unabbreviate 114,
+    CMD_unmap 115,
+    CMD_unsilent 116,
+    CMD_vglobal 117,
+    CMD_verbose 118,
+    CMD_vertical 119,
+    CMD_visual 120,
+    CMD_view 121,
+    CMD_vmap 122,
+    CMD_vmapclear 123,
+    CMD_vnoremap 124,
+    CMD_vnew 125,
+    CMD_vsplit 126,
+    CMD_vunmap 127,
+    CMD_wincmd 128,
+    CMD_xmap 129,
+    CMD_xmapclear 130,
+    CMD_xnoremap 131,
+    CMD_xunmap 132,
+    CMD_yank 133,
+    CMD_z 134,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 159,
-    CMD_and 160,
-    CMD_lshift 161,
-    CMD_equal 162,
-    CMD_rshift 163,
-    CMD_tilde 164,
+    CMD_pound 135,
+    CMD_and 136,
+    CMD_lshift 137,
+    CMD_equal 138,
+    CMD_rshift 139,
+    CMD_tilde 140,
 
-    CMD_SIZE 165)     ;; MUST be after all real commands!
+    CMD_SIZE 141)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3394,7 +3355,6 @@
 ;; Functions for putting characters in the command line,
 ;; while keeping screenLines[] updated.
 
-(atom! boolean  cmdmsg_rl)          ;; cmdline is drawn right to left
 (atom! int      msg_col)
 (atom! int      msg_row)
 (atom! int      msg_scrolled)       ;; number of screen lines that windows have scrolled because of printing messages
@@ -4613,7 +4573,7 @@
 ;           if (@curbuf.b_ml.ml_mfp == null)
 ;           {
                 ;; create memfile, read file
-;               open_buffer(false, null, 0);
+;               open_buffer(null);
 
 ;               dorewind = true;                ;; start again
 ;           }
@@ -6025,7 +5985,7 @@
 ;                       {
 ;                           @msg_didout = false;
 ;                           c = K_IGNORE;
-;                           @msg_col = @cmdmsg_rl ? (int)@Columns - 1 : 0;
+;                           @msg_col = 0;
 ;                       }
 ;                       if (@quit_more)
 ;                       {
@@ -6039,8 +5999,7 @@
 ;                           hit_return_msg();
 ;                       }
 ;                   }
-;                   else if (@Rows - 2 < @msg_scrolled
-;                            && (c == 'j' || c == 'd' || c == 'f' || c == K_DOWN || c == K_PAGEDOWN))
+;                   else if (@Rows - 2 < @msg_scrolled && (c == 'j' || c == 'd' || c == 'f' || c == K_DOWN || c == K_PAGEDOWN))
 ;                       c = K_IGNORE;
 ;               }
 ;           } while ((had_got_int && c == Ctrl_C)
@@ -6178,7 +6137,7 @@
 ;       if (!@msg_scroll && @full_screen)         ;; overwrite last message
 ;       {
 ;           @msg_row = @cmdline_row;
-;           @msg_col = @cmdmsg_rl ? (int)@Columns - 1 : 0;
+;           @msg_col = 0;
 ;       }
 ;       else if (@msg_didout)                    ;; start message on next line
 ;       {
@@ -6589,7 +6548,7 @@
 ;       @msg_didout = true;          ;; remember that line is not empty
 
 ;       int cells = us_ptr2cells(s);
-;       if (1 < cells && (@cmdmsg_rl ? @msg_col <= 1 : @msg_col == (int)@Columns - 1))
+;       if (1 < cells && @msg_col == (int)@Columns - 1)
 ;       {
             ;; Doesn't fit, print a highlighted '>' to fill it up.
 ;           msg_screen_putchar('>', hl_attr(HLF_AT));
@@ -6597,24 +6556,14 @@
 ;       }
 
 ;       screen_puts_len(s, len, @msg_row, @msg_col, attr);
-;       if (@cmdmsg_rl)
+
+;       @msg_col += cells;
+;       if ((int)@Columns <= @msg_col)
 ;       {
-;           @msg_col -= cells;
-;           if (@msg_col == 0)
-;           {
-;               @msg_col = (int)@Columns;
-;               @msg_row++;
-;           }
+;           @msg_col = 0;
+;           @msg_row++;
 ;       }
-;       else
-;       {
-;           @msg_col += cells;
-;           if ((int)@Columns <= @msg_col)
-;           {
-;               @msg_col = 0;
-;               @msg_row++;
-;           }
-;       }
+
 ;       return s.plus(len);
     ))
 
@@ -6693,14 +6642,11 @@
             ;; - When outputting a newline.
             ;; - When outputting a character in the last column.
 
-;           if (!recurse && @Rows - 1 <= @msg_row && (s.at(0) == (byte)'\n' || (
-;                       @cmdmsg_rl
-;                       ? (@msg_col <= 1
-;                           || (s.at(0) == TAB && @msg_col <= 7)
-;                           || (1 < us_ptr2cells(s) && @msg_col <= 2))
-;                       : ((int)@Columns - 1 <= @msg_col + t_col
+;           if (!recurse && @Rows - 1 <= @msg_row
+;                        && (s.at(0) == (byte)'\n'
+;                           || (int)@Columns - 1 <= @msg_col + t_col
 ;                           || (s.at(0) == TAB && (((int)@Columns - 1) & ~7) <= @msg_col + t_col)
-;                           || (1 < us_ptr2cells(s) && (int)@Columns - 2 <= @msg_col + t_col)))))
+;                           || (1 < us_ptr2cells(s) && (int)@Columns - 2 <= @msg_col + t_col)))
 ;           {
                 ;; The screen is scrolled up when at the last row (some terminals scroll
                 ;; automatically, some don't.  To avoid problems we scroll ourselves).
@@ -6723,7 +6669,7 @@
 ;               boolean did_last_char;
 
                 ;; Display char in last column before showing more-prompt.
-;               if (' ' <= s.at(0) && !@cmdmsg_rl)
+;               if (' ' <= s.at(0))
 ;               {
 ;                   int len;
 ;                   if (0 <= maxlen)
@@ -6770,6 +6716,7 @@
 ;           boolean wrap = (s.at(0) == (byte)'\n')
 ;                       || (int)@Columns <= @msg_col + t_col
 ;                       || (1 < us_ptr2cells(s) && (int)@Columns - 1 <= @msg_col + t_col);
+
 ;           if (0 < t_col && (wrap || s.at(0) == (byte)'\r' || s.at(0) == (byte)'\b' || s.at(0) == (byte)'\t' || s.at(0) == BELL))
                 ;; output any postponed text
 ;               t_col = t_puts(t_col, t_s, s, attr);
@@ -6781,10 +6728,7 @@
 ;           if (s.at(0) == (byte)'\n')                 ;; go to next line
 ;           {
 ;               @msg_didout = false;         ;; remember that line is empty
-;               if (@cmdmsg_rl)
-;                   @msg_col = (int)@Columns - 1;
-;               else
-;                   @msg_col = 0;
+;               @msg_col = 0;
 ;               if (@Rows <= ++@msg_row)      ;; safety check
 ;                   @msg_row = (int)@Rows - 1;
 ;           }
@@ -6817,10 +6761,9 @@
 ;               else
 ;                   len = us_ptr2len_cc(s);
 
-                ;; When drawing from right to left or when a double-wide character
-                ;; doesn't fit, draw a single character here.  Otherwise collect
-                ;; characters and draw them all at once later.
-;               if (@cmdmsg_rl || (1 < cells && (int)@Columns - 1 <= @msg_col + t_col))
+                ;; When a double-wide character doesn't fit, draw a single character here.
+                ;; Otherwise collect characters and draw them all at once later.
+;               if (1 < cells && (int)@Columns - 1 <= @msg_col + t_col)
 ;               {
 ;                   if (1 < len)
 ;                       s = screen_puts_mbyte(s, len, attr).minus(1);
@@ -7064,20 +7007,10 @@
 ;           }
 
             ;; primitive way to compute the current column
-;           if (@cmdmsg_rl)
-;           {
-;               if (s.at(0) == (byte)'\r' || s.at(0) == (byte)'\n')
-;                   @msg_col = (int)@Columns - 1;
-;               else
-;                   --@msg_col;
-;           }
+;           if (s.at(0) == (byte)'\r' || s.at(0) == (byte)'\n')
+;               @msg_col = 0;
 ;           else
-;           {
-;               if (s.at(0) == (byte)'\r' || s.at(0) == (byte)'\n')
-;                   @msg_col = 0;
-;               else
-;                   @msg_col++;
-;           }
+;               @msg_col++;
 ;       }
 
 ;       @msg_didout = true;      ;; assume that line is not empty
@@ -7301,8 +7234,6 @@
 ;           @msg_row = (int)@Rows - 1;
 ;           @msg_col = 0;
 ;       }
-;       else if (@cmdmsg_rl)
-;           @msg_col = (int)@Columns - 1;
 
 ;       return retval;
     ))
@@ -7313,22 +7244,13 @@
 (defn- #_void msg_screen_putchar [#_int c, #_int attr]
     (§
 ;       @msg_didout = true;          ;; remember that line is not empty
+
 ;       screen_putchar(c, @msg_row, @msg_col, attr);
-;       if (@cmdmsg_rl)
+
+;       if ((int)@Columns <= ++@msg_col)
 ;       {
-;           if (--@msg_col == 0)
-;           {
-;               @msg_col = (int)@Columns;
-;               @msg_row++;
-;           }
-;       }
-;       else
-;       {
-;           if ((int)@Columns <= ++@msg_col)
-;           {
-;               @msg_col = 0;
-;               @msg_row++;
-;           }
+;           @msg_col = 0;
+;           @msg_row++;
 ;       }
     ))
 
@@ -7416,16 +7338,8 @@
 ;       }
 ;       else
 ;       {
-;           if (@cmdmsg_rl)
-;           {
-;               screen_fill(@msg_row, @msg_row + 1, 0, @msg_col + 1, ' ', ' ', 0);
-;               screen_fill(@msg_row + 1, (int)@Rows, 0, (int)@Columns, ' ', ' ', 0);
-;           }
-;           else
-;           {
-;               screen_fill(@msg_row, @msg_row + 1, @msg_col, (int)@Columns, ' ', ' ', 0);
-;               screen_fill(@msg_row + 1, (int)@Rows, 0, (int)@Columns, ' ', ' ', 0);
-;           }
+;           screen_fill(@msg_row, @msg_row + 1, @msg_col, (int)@Columns, ' ', ' ', 0);
+;           screen_fill(@msg_row + 1, (int)@Rows, 0, (int)@Columns, ' ', ' ', 0);
 ;       }
     ))
 
@@ -7505,18 +7419,12 @@
 ;           @msg_col = col;          ;; for redirection, may fill it up later
 ;           return;
 ;       }
+
 ;       if ((int)@Columns <= col)         ;; not enough room
 ;           col = (int)@Columns - 1;
-;       if (@cmdmsg_rl)
-;       {
-;           while ((int)@Columns - col < @msg_col)
-;               msg_putchar(' ');
-;       }
-;       else
-;       {
-;           while (@msg_col < col)
-;               msg_putchar(' ');
-;       }
+
+;       while (@msg_col < col)
+;           msg_putchar(' ');
     ))
 
 ;; Used for "confirm()" function, and the :confirm command prefix.
@@ -8455,8 +8363,6 @@
     PV_NU     (| WV_NU     PV_WIN),
     PV_RNU    (| WV_RNU    PV_WIN),
     PV_NUW    (| WV_NUW    PV_WIN),
-    PV_RL     (| WV_RL     PV_WIN),
-    PV_RLC    (| WV_RLC    PV_WIN),
     PV_SCBIND (| WV_SCBIND PV_WIN),
     PV_SCROLL (| WV_SCROLL PV_WIN),
     PV_CUC    (| WV_CUC    PV_WIN),
@@ -8602,7 +8508,6 @@
 
 (final vimoption_C* vimoptions
     [
-        (bool_opt (u8 "allowrevins"),    (u8 "ari"),       0,                           p_ari,       PV_NONE,    false),
         (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
@@ -8692,9 +8597,6 @@
         (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      VAR_WIN,     PV_RNU,     false),
         (bool_opt (u8 "remap"),           null,            0,                           p_remap,     PV_NONE,    true),
         (long_opt (u8 "report"),          null,            0,                           p_report,    PV_NONE,    2#_L),
-        (bool_opt (u8 "revins"),         (u8 "ri"),        0,                           p_ri,        PV_NONE,    false),
-        (bool_opt (u8 "rightleft"),      (u8 "rl"),        P_RWIN,                      VAR_WIN,     PV_RL,      false),
-        (utf8_opt (u8 "rightleftcmd"),   (u8 "rlc"),       P_RWIN,                      VAR_WIN,     PV_RLC,    (u8 "search")),
         (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        PV_NONE,    false),
         (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           VAR_WIN,     PV_SCROLL,  12#_L),
         (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           VAR_WIN,     PV_SCBIND,  false),
@@ -11668,8 +11570,6 @@
 ;           case PV_LIST:   return wop.wo_list;
 ;           case PV_NU:     return wop.wo_nu;
 ;           case PV_NUW:    return wop.wo_nuw;
-;           case PV_RL:     return wop.wo_rl;
-;           case PV_RLC:    return wop.wo_rlc;
 ;           case PV_RNU:    return wop.wo_rnu;
 ;           case PV_SCBIND: return wop.wo_scb;
 ;           case PV_SCROLL: return wop.wo_scr;
@@ -11734,8 +11634,6 @@
 ;       to.@wo_nu = from.@wo_nu;
 ;       to.@wo_rnu = from.@wo_rnu;
 ;       to.@wo_nuw = from.@wo_nuw;
-;       to.@wo_rl  = from.@wo_rl;
-;       to.@wo_rlc = STRDUP(from.@wo_rlc);
 ;       to.@wo_wrap = from.@wo_wrap;
 ;       to.@wo_lbr = from.@wo_lbr;
 ;       to.@wo_bri = from.@wo_bri;
@@ -11762,10 +11660,9 @@
 
 (defn- #_void check_winopt [#_winopt_C wop]
     (§
-;       check_string_option(wop.wo_rlc);
+;       check_string_option(wop.wo_briopt);
 ;       check_string_option(wop.wo_cc);
 ;       check_string_option(wop.wo_cocu);
-;       check_string_option(wop.wo_briopt);
     ))
 
 ;; Free the allocated memory inside a winopt_C.
@@ -11773,7 +11670,6 @@
 (defn- #_void clear_winopt [#_winopt_C wop]
     (§
 ;       clear_string_option(wop.wo_briopt);
-;       clear_string_option(wop.wo_rlc);
 ;       clear_string_option(wop.wo_cc);
 ;       clear_string_option(wop.wo_cocu);
     ))
@@ -11982,7 +11878,6 @@
 (atom! boolean old_p_paste)
 (atom! boolean save_sm)
 (atom! boolean save_ru)
-(atom! boolean save_ri)
 
 ;; paste_option_changed() - Called after "p_paste" was set or reset.
 
@@ -12007,7 +11902,6 @@
                 ;; save global options
 ;               @save_sm = @p_sm;
 ;               @save_ru = @p_ru;
-;               @save_ri = @p_ri;
                 ;; save global values for local buffer options
 ;               @p_tw_nopaste = @p_tw;
 ;               @p_wm_nopaste = @p_wm;
@@ -12031,7 +11925,6 @@
 ;           if (@p_ru)
 ;               status_redraw_all();    ;; redraw to remove the ruler
 ;           @p_ru = false;                   ;; no ruler
-;           @p_ri = false;                   ;; no reverse insert
             ;; set global values for local buffer options
 ;           @p_tw = 0;
 ;           @p_wm = 0;
@@ -12057,7 +11950,6 @@
 ;           if (@p_ru != @save_ru)
 ;               status_redraw_all();    ;; redraw to draw the ruler
 ;           @p_ru = @save_ru;
-;           @p_ri = @save_ri;
             ;; set global values for local buffer options
 ;           @p_tw = @p_tw_nopaste;
 ;           @p_wm = @p_wm_nopaste;
@@ -12359,15 +12251,6 @@
 (defn- #_void ex_align [#_exarg_C eap]
     (§
 ;       int indent = 0;
-
-;       if (@curwin.w_onebuf_opt.@wo_rl)
-;       {
-                ;; switch left and right aligning
-;           if (eap.cmdidx == CMD_right)
-;               eap.cmdidx = CMD_left;
-;           else if (eap.cmdidx == CMD_left)
-;               eap.cmdidx = CMD_right;
-;       }
 
 ;       int width = libC.atoi(eap.arg);
 ;       pos_C save_curpos = §_pos_C();
@@ -12963,7 +12846,7 @@
 
                 ;; Open the buffer and read the file.
 
-;               if (should_abort(open_buffer(false, eap, 0)))
+;               if (should_abort(open_buffer(eap)))
 ;                   retval = false;
 ;           }
 
@@ -14616,11 +14499,6 @@
 ;           @ccline.cmdlen = indent;
 ;       }
 
-;       if (@curwin.w_onebuf_opt.@wo_rl && @curwin.w_onebuf_opt.@wo_rlc.at(0) == (byte)'s' && (firstc == '/' || firstc == '?'))
-;           @cmdmsg_rl = true;
-;       else
-;           @cmdmsg_rl = false;
-
 ;       if (!@cmd_silent)
 ;       {
 ;           int i = @msg_scrolled;
@@ -14684,21 +14562,6 @@
 ;           if (@keyTyped)
 ;           {
 ;               some_key_typed = true;
-
-;               if (@cmdmsg_rl && !@keyStuffed)
-;               {
-                    ;; Invert horizontal movements and operations.
-                    ;; Only when typed by the user directly, not when the result of a mapping.
-;                   switch (c)
-;                   {
-;                       case K_RIGHT:   c = K_LEFT; break;
-;                       case K_S_RIGHT: c = K_S_LEFT; break;
-;                       case K_C_RIGHT: c = K_C_LEFT; break;
-;                       case K_LEFT:    c = K_RIGHT; break;
-;                       case K_S_LEFT:  c = K_S_RIGHT; break;
-;                       case K_C_LEFT:  c = K_C_RIGHT; break;
-;                   }
-;               }
 ;           }
 
             ;; Ignore got_int when CTRL-C was typed here.
@@ -14918,10 +14781,7 @@
 ;                               @ccline.cmdbuff = null;      ;; no commandline to return
 ;                               if (!@cmd_silent)
 ;                               {
-;                                   if (@cmdmsg_rl)
-;                                       @msg_col = (int)@Columns;
-;                                   else
-;                                       @msg_col = 0;
+;                                   @msg_col = 0;
 ;                                   msg_putchar(' ');       ;; delete ':'
 ;                               }
 ;                               @redraw_cmdline = true;
@@ -15400,10 +15260,7 @@
 
 ;                       case Ctrl__:        ;; CTRL-_: switch language mode
 ;                       {
-;                           if (!@p_ari)
-;                               break;
-
-;                           break cmdline_not_changed;
+;                           break;
 ;                       }
 
 ;                       default:
@@ -15547,16 +15404,7 @@
 ;               redrawcmdline();
 ;               did_incsearch = true;
 ;           }
-
-;           if (@cmdmsg_rl)
-                ;; Always redraw the whole command line to fix shaping and right-left typing.
-                ;; Not efficient, but it works.  Do it only when there are no characters left
-                ;; to read to avoid useless intermediate redraws.
-;               if (vpeekc() == NUL)
-;                   redrawcmd();
 ;       }
-
-;       @cmdmsg_rl = false;
 
 ;       if (did_incsearch)
 ;       {
@@ -16402,36 +16250,24 @@
 
 (defn- #_void cursorcmd []
     (§
-;       if (@cmd_silent)
-;           return;
-
-;       if (@cmdmsg_rl)
-;       {
-;           @msg_row = @cmdline_row  + (@ccline.cmdspos / ((int)@Columns - 1));
-;           @msg_col = (int)@Columns - (@ccline.cmdspos % ((int)@Columns - 1)) - 1;
-;           if (@msg_row <= 0)
-;               @msg_row = (int)@Rows - 1;
-;       }
-;       else
+;       if (!@cmd_silent)
 ;       {
 ;           @msg_row = @cmdline_row + (@ccline.cmdspos / (int)@Columns);
 ;           @msg_col = @ccline.cmdspos % (int)@Columns;
 ;           if (@Rows <= @msg_row)
 ;               @msg_row = (int)@Rows - 1;
-;       }
 
-;       windgoto(@msg_row, @msg_col);
+;           windgoto(@msg_row, @msg_col);
+;       }
     ))
 
 (defn- #_void gotocmdline [#_boolean clr]
     (§
 ;       msg_start();
-;       if (@cmdmsg_rl)
-;           @msg_col = (int)@Columns - 1;
-;       else
-;           @msg_col = 0;        ;; always start in column 0
+;       @msg_col = 0;           ;; always start in column 0
 ;       if (clr)                ;; clear the bottom line(s)
 ;           msg_clr_eos();      ;; will reset clear_cmdline
+
 ;       windgoto(@cmdline_row, 0);
     ))
 
@@ -17047,7 +16883,6 @@
 ;       int save_restart_edit = @restart_edit;
 ;       int save_State = @State;
 ;       int save_exmode = @exmode_active;
-;       boolean save_cmdmsg_rl = @cmdmsg_rl;
 
         ;; Can't do this recursively.  Can't do it when typing a password.
 ;       if (@cmdwin_type != 0 || 0 < @cmdline_star)
@@ -17071,10 +16906,7 @@
         ;; Create the command-line buffer empty.
 ;       do_ecmd(null, null, ECMD_ONE, ECMD_HIDE, null);
 ;       setfname(@curbuf, u8("[Command Line]"), true);
-;       set_option_value(u8("bt"), 0L, u8("nofile"), OPT_LOCAL);
 ;       @curbuf.@b_p_ma = true;
-;       @curwin.w_onebuf_opt.@wo_rl = @cmdmsg_rl;
-;       @cmdmsg_rl = false;
 ;       @curwin.w_onebuf_opt.@wo_scb = false;
 ;       @curwin.w_onebuf_opt.@wo_crb = false;
 
@@ -17227,7 +17059,6 @@
 ;       }
 
 ;       @restart_edit = save_restart_edit;
-;       @cmdmsg_rl = save_cmdmsg_rl;
 
 ;       @State = save_State;
 ;       setmouse();
@@ -17307,7 +17138,7 @@
 (final int* cmdidxs
     [
         CMD_append,
-        CMD_buffer,
+        CMD_buffer,
         CMD_change,
         CMD_delete,
         CMD_edit,
@@ -17740,45 +17571,6 @@
 ;       return retval;
     ))
 
-;; Helper function to apply an offset for buffer commands, i.e. ":bdelete", ":bwipeout", etc.
-;; Returns the buffer number.
-
-(defn- #_int compute_buffer_local_count [#_int addr_type, #_int fnum, #_int offset]
-    (§
-;       int count = offset;
-
-;       buffer_C buf = @firstbuf;
-;       while (buf.b_next != null && buf.b_fnum < fnum)
-;           buf = buf.b_next;
-;       while (count != 0)
-;       {
-;           count += (offset < 0) ? 1 : -1;
-;           buffer_C nextbuf = (offset < 0) ? buf.b_prev : buf.b_next;
-;           if (nextbuf == null)
-;               break;
-;           buf = nextbuf;
-;           if (addr_type == ADDR_LOADED_BUFFERS)
-                ;; skip over unloaded buffers
-;               while (buf.b_ml.ml_mfp == null)
-;               {
-;                   nextbuf = (offset < 0) ? buf.b_prev : buf.b_next;
-;                   if (nextbuf == null)
-;                       break;
-;                   buf = nextbuf;
-;               }
-;       }
-        ;; we might have gone too far, last buffer is not loadedd
-;       if (addr_type == ADDR_LOADED_BUFFERS)
-;           while (buf.b_ml.ml_mfp == null)
-;           {
-;               buffer_C nextbuf = (0 <= offset) ? buf.b_prev : buf.b_next;
-;               if (nextbuf == null)
-;                   break;
-;               buf = nextbuf;
-;           }
-;       return buf.b_fnum;
-    ))
-
 (defn- #_int current_win_nr [#_window_C win]
     (§
 ;       int nr = 0;
@@ -18131,11 +17923,6 @@
 ;                       lnum = current_win_nr(@curwin);
 ;                       ea.line2 = lnum;
 ;                       break;
-
-;                   case ADDR_LOADED_BUFFERS:
-;                   case ADDR_BUFFERS:
-;                       ea.line2 = @curbuf.b_fnum;
-;                       break;
 ;               }
 ;               ea.cmd = skipwhite(ea.cmd);
 ;               { Bytes[] __ = { ea.cmd }; lnum = get_address(__, ea.addr_type, ea.skip, ea.addr_count == 0); ea.cmd = __[0]; }
@@ -18151,25 +17938,6 @@
 ;                           case ADDR_LINES:
 ;                               ea.line1 = 1;
 ;                               ea.line2 = @curbuf.b_ml.ml_line_count;
-;                               break;
-
-;                           case ADDR_LOADED_BUFFERS:
-;                           {
-;                               buffer_C buf = @firstbuf;
-
-;                               while (buf.b_next != null && buf.b_ml.ml_mfp == null)
-;                                   buf = buf.b_next;
-;                               ea.line1 = buf.b_fnum;
-;                               buf = @lastbuf;
-;                               while (buf.b_prev != null && buf.b_ml.ml_mfp == null)
-;                                   buf = buf.b_prev;
-;                               ea.line2 = buf.b_fnum;
-;                               break;
-;                           }
-
-;                           case ADDR_BUFFERS:
-;                               ea.line1 = @firstbuf.b_fnum;
-;                               ea.line2 = @lastbuf.b_fnum;
 ;                               break;
 
 ;                           case ADDR_WINDOWS:
@@ -18470,24 +18238,6 @@
 ;                       ea.line2 = @curbuf.b_ml.ml_line_count;
 ;                       break;
 
-;                   case ADDR_LOADED_BUFFERS:
-;                   {
-;                       buffer_C buf = @firstbuf;
-;                       while (buf.b_next != null && buf.b_ml.ml_mfp == null)
-;                           buf = buf.b_next;
-;                       ea.line1 = buf.b_fnum;
-;                       buf = @lastbuf;
-;                       while (buf.b_prev != null && buf.b_ml.ml_mfp == null)
-;                           buf = buf.b_prev;
-;                       ea.line2 = buf.b_fnum;
-;                       break;
-;                   }
-
-;                   case ADDR_BUFFERS:
-;                       ea.line1 = @firstbuf.b_fnum;
-;                       ea.line2 = @lastbuf.b_fnum;
-;                       break;
-
 ;                   case ADDR_WINDOWS:
 ;                       ea.line2 = current_win_nr(null);
 ;                       break;
@@ -18606,18 +18356,12 @@
 
 ;           if ((ea.argt & BUFNAME) != 0 && ea.arg.at(0) != NUL && ea.addr_count == 0)
 ;           {
-                ;; :bdelete, :bwipeout and :bunload take several arguments, separated
-                ;; by spaces: find next space (skipping over escaped characters).
-                ;; The others take one argument: ignore trailing spaces.
+                ;; Ignore trailing spaces.
 
-;               if (ea.cmdidx == CMD_bdelete || ea.cmdidx == CMD_bwipeout || ea.cmdidx == CMD_bunload)
-;                   p = skiptowhite_esc(ea.arg);
-;               else
-;               {
-;                   p = ea.arg.plus(STRLEN(ea.arg));
-;                   while (BLT(ea.arg, p) && vim_iswhite(p.at(-1)))
-;                       p = p.minus(1);
-;               }
+;               p = ea.arg.plus(STRLEN(ea.arg));
+;               while (BLT(ea.arg, p) && vim_iswhite(p.at(-1)))
+;                   p = p.minus(1);
+
 ;               ea.line2 = buflist_findpat(ea.arg, p);
 ;               if (ea.line2 < 0)       ;; failed
 ;                   break doend;
@@ -18991,11 +18735,6 @@
 ;                       case ADDR_WINDOWS:
 ;                           lnum = current_win_nr(@curwin);
 ;                           break;
-
-;                       case ADDR_LOADED_BUFFERS:
-;                       case ADDR_BUFFERS:
-;                           lnum = @curbuf.b_fnum;
-;                           break;
 ;                   }
 ;                   break;
 ;               }
@@ -19011,23 +18750,6 @@
 
 ;                       case ADDR_WINDOWS:
 ;                           lnum = current_win_nr(null);
-;                           break;
-
-;                       case ADDR_LOADED_BUFFERS:
-;                       {
-;                           buffer_C buf = @lastbuf;
-;                           while (buf.b_ml.ml_mfp == null)
-;                           {
-;                               if (buf.b_prev == null)
-;                                   break;
-;                               buf = buf.b_prev;
-;                           }
-;                           lnum = buf.b_fnum;
-;                           break;
-;                       }
-
-;                       case ADDR_BUFFERS:
-;                           lnum = @lastbuf.b_fnum;
 ;                           break;
 ;                   }
 ;                   break;
@@ -19189,11 +18911,6 @@
 ;                       case ADDR_WINDOWS:
 ;                           lnum = current_win_nr(@curwin);
 ;                           break;
-
-;                       case ADDR_LOADED_BUFFERS:
-;                       case ADDR_BUFFERS:
-;                           lnum = @curbuf.b_fnum;
-;                           break;
 ;                   }
 ;               }
 
@@ -19209,9 +18926,7 @@
 ;               {
 ;                   Bytes[] __ = { cmd }; n = (int)getdigits(__); cmd = __[0];
 ;               }
-;               if (addr_type == ADDR_LOADED_BUFFERS || addr_type == ADDR_BUFFERS)
-;                   lnum = compute_buffer_local_count(addr_type, (int)lnum, (m == '-') ? -n : n);
-;               else if (m == '-')
+;               if (m == '-')
 ;                   lnum -= n;
 ;               else
 ;                   lnum += n;
@@ -19254,34 +18969,6 @@
 ;                   if ((eap.argt & NOTADR) == 0 && @curbuf.b_ml.ml_line_count < eap.line2)
 ;                       return e_invrange;
 ;                   break;
-
-;               case ADDR_BUFFERS:
-;                   if (eap.line1 < @firstbuf.b_fnum || @lastbuf.b_fnum < eap.line2)
-;                       return e_invrange;
-;                   break;
-
-;               case ADDR_LOADED_BUFFERS:
-;               {
-;                   buffer_C buf = @firstbuf;
-;                   while (buf.b_ml.ml_mfp == null)
-;                   {
-;                       if (buf.b_next == null)
-;                           return e_invrange;
-;                       buf = buf.b_next;
-;                   }
-;                   if (eap.line1 < buf.b_fnum)
-;                       return e_invrange;
-;                   buf = @lastbuf;
-;                   while (buf.b_ml.ml_mfp == null)
-;                   {
-;                       if (buf.b_prev == null)
-;                           return e_invrange;
-;                       buf = buf.b_prev;
-;                   }
-;                   if (buf.b_fnum < eap.line2)
-;                       return e_invrange;
-;                   break;
-;               }
 
 ;               case ADDR_WINDOWS:
 ;                   if (current_win_nr(null) < eap.line2)
@@ -19460,91 +19147,6 @@
 (defn- #_void ex_abclear [#_exarg_C eap]
     (§
 ;       map_clear(eap.cmd, eap.arg, true, true);
-    ))
-
-;; :[N]bunload[!] [N] [bufname] unload buffer
-;; :[N]bdelete[!] [N] [bufname] delete buffer from buffer list
-;; :[N]bwipeout[!] [N] [bufname] delete buffer really
-
-(defn- #_void ex_bunload [#_exarg_C eap]
-    (§
-;       eap.errmsg = do_bufdel(
-;               (eap.cmdidx == CMD_bdelete) ? DOBUF_DEL
-;                   : (eap.cmdidx == CMD_bwipeout) ? DOBUF_WIPE
-;                   : DOBUF_UNLOAD, eap.arg,
-;               eap.addr_count, (int)eap.line1, (int)eap.line2, eap.forceit);
-    ))
-
-;; :[N]buffer [N]       to buffer N
-;; :[N]sbuffer [N]      to buffer N
-
-(defn- #_void ex_buffer [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) != NUL)
-;           eap.errmsg = e_trailing;
-;       else
-;       {
-;           if (eap.addr_count == 0)    ;; default is current buffer
-;               goto_buffer(eap, DOBUF_CURRENT, FORWARD, 0);
-;           else
-;               goto_buffer(eap, DOBUF_FIRST, FORWARD, (int)eap.line2);
-;           if (eap.do_ecmd_cmd != null)
-;               do_cmdline_cmd(eap.do_ecmd_cmd);
-;       }
-    ))
-
-;; :[N]bmodified [N]    to next mod. buffer
-;; :[N]sbmodified [N]   to next mod. buffer
-
-(defn- #_void ex_bmodified [#_exarg_C eap]
-    (§
-;       goto_buffer(eap, DOBUF_MOD, FORWARD, (int)eap.line2);
-;       if (eap.do_ecmd_cmd != null)
-;           do_cmdline_cmd(eap.do_ecmd_cmd);
-    ))
-
-;; :[N]bnext [N]        to next buffer
-;; :[N]sbnext [N]       split and to next buffer
-
-(defn- #_void ex_bnext [#_exarg_C eap]
-    (§
-;       goto_buffer(eap, DOBUF_CURRENT, FORWARD, (int)eap.line2);
-;       if (eap.do_ecmd_cmd != null)
-;           do_cmdline_cmd(eap.do_ecmd_cmd);
-    ))
-
-;; :[N]bNext [N]        to previous buffer
-;; :[N]bprevious [N]    to previous buffer
-;; :[N]sbNext [N]       split and to previous buffer
-;; :[N]sbprevious [N]   split and to previous buffer
-
-(defn- #_void ex_bprevious [#_exarg_C eap]
-    (§
-;       goto_buffer(eap, DOBUF_CURRENT, BACKWARD, (int)eap.line2);
-;       if (eap.do_ecmd_cmd != null)
-;           do_cmdline_cmd(eap.do_ecmd_cmd);
-    ))
-
-;; :brewind             to first buffer
-;; :bfirst              to first buffer
-;; :sbrewind            split and to first buffer
-;; :sbfirst             split and to first buffer
-
-(defn- #_void ex_brewind [#_exarg_C eap]
-    (§
-;       goto_buffer(eap, DOBUF_FIRST, FORWARD, 0);
-;       if (eap.do_ecmd_cmd != null)
-;           do_cmdline_cmd(eap.do_ecmd_cmd);
-    ))
-
-;; :blast               to last buffer
-;; :sblast              split and to last buffer
-
-(defn- #_void ex_blast [#_exarg_C eap]
-    (§
-;       goto_buffer(eap, DOBUF_LAST, BACKWARD, 0);
-;       if (eap.do_ecmd_cmd != null)
-;           do_cmdline_cmd(eap.do_ecmd_cmd);
     ))
 
 (defn- #_boolean ends_excmd [#_int c]
@@ -20161,7 +19763,7 @@
 ;               break;
 
 ;           default:    ;; CMD_rshift or CMD_lshift
-;               if ((eap.cmdidx == CMD_rshift) ^ @curwin.w_onebuf_opt.@wo_rl)
+;               if (eap.cmdidx == CMD_rshift)
 ;                   oa.op_type = OP_RSHIFT;
 ;               else
 ;                   oa.op_type = OP_LSHIFT;
@@ -21299,7 +20901,7 @@
 ;       retval = true;
 ;       @exiting = false;
 
-        ;; There must be a wait_return for this message, do_buffer() may cause a redraw.
+        ;; There must be a wait_return for this message, do_buffer() may cause a redraw.
         ;; But wait_return() is a no-op when vgetc() is busy (Quit used from window menu),
         ;; then make sure we don't cause a scroll up.
 ;       if (0 < @vgetc_busy)
@@ -21709,28 +21311,6 @@
 ;                       @mod_mask &= ~MOD_MASK_SHIFT;
 ;                   }
 ;               }
-;           }
-
-;           if (@curwin.w_onebuf_opt.@wo_rl && @keyTyped && !@keyStuffed && (nv_cmds[idx].cmd_flags & NV_RL) != 0)
-;           {
-                ;; Invert horizontal movements and operations.
-                ;; Only when typed by the user directly,
-                ;; not when the result of a mapping or "x" translated to "dl".
-
-;               switch (ca.cmdchar)
-;               {
-;                   case 'l':       ca.cmdchar = 'h'; break;
-;                   case K_RIGHT:   ca.cmdchar = K_LEFT; break;
-;                   case K_S_RIGHT: ca.cmdchar = K_S_LEFT; break;
-;                   case K_C_RIGHT: ca.cmdchar = K_C_LEFT; break;
-;                   case 'h':       ca.cmdchar = 'l'; break;
-;                   case K_LEFT:    ca.cmdchar = K_RIGHT; break;
-;                   case K_S_LEFT:  ca.cmdchar = K_S_RIGHT; break;
-;                   case K_C_LEFT:  ca.cmdchar = K_C_RIGHT; break;
-;                   case '>':       ca.cmdchar = '<'; break;
-;                   case '<':       ca.cmdchar = '>'; break;
-;               }
-;               idx = find__command(ca.cmdchar);
 ;           }
 
             ;; Get an additional character if we need one.
@@ -28011,9 +27591,6 @@
 ;       int q_sw = (int)get_sw_value(@curbuf);
 ;       int q_ts = (int)@curbuf.@b_p_ts;
 
-;       boolean old_p_ri = @p_ri;
-;       @p_ri = false;                   ;; don't want revins in indent
-
 ;       int oldstate = @State;
 ;       @State = INSERT;             ;; don't want REPLACE for State
 
@@ -28144,7 +27721,6 @@
 ;       changed_bytes(@curwin.w_cursor.lnum, bd.textcol);
 ;       @State = oldstate;
 ;       @curwin.w_cursor.col = oldcol;
-;       @p_ri = old_p_ri;
     ))
 
 ;; Insert string "s" (b_insert ? before : after) block.
@@ -31815,21 +31391,6 @@
 ;       bdp.textstart = pstart;
     ))
 
-(defn- #_void reverse_line [#_Bytes s]
-    (§
-;       int i = STRLEN(s) - 1;
-;       if (i <= 0)
-;           return;
-
-;       @curwin.w_cursor.col = i - @curwin.w_cursor.col;
-;       for (int j = 0; j < i; j++, i--)
-;       {
-;           byte c = s.at(i);
-;           s.be(i, s.at(j));
-;           s.be(j, c);
-;       }
-    ))
-
 (atom! boolean hexupper)                                ;; 0xABC
 
 ;; add or subtract 'Prenum1' from a number in a line
@@ -31844,8 +31405,6 @@
 ;       boolean doalp = (vim_strchr(@curbuf.@b_p_nf, 'p') != null);   ;; "alPha"
 
 ;       Bytes ptr = ml_get_curline();
-;       if (@curwin.w_onebuf_opt.@wo_rl)
-;           reverse_line(ptr);
 
         ;; First check if we are on a hexadecimal number, after the "0x".
 
@@ -31883,8 +31442,7 @@
         ;; If a number was found, and saving for undo works, replace the number.
 
 ;       int firstdigit = ptr.at(col);
-;       if (@curwin.w_onebuf_opt.@wo_rl)
-;           reverse_line(ptr);
+
 ;       if ((!asc_isdigit(firstdigit) && !(doalp && asc_isalpha(firstdigit))) || !u_save_cursor())
 ;       {
 ;           beep_flush();
@@ -31893,8 +31451,6 @@
 
         ;; get 'ptr' again, because u_save() may have changed it
 ;       ptr = ml_get_curline();
-;       if (@curwin.w_onebuf_opt.@wo_rl)
-;           reverse_line(ptr);
 
 ;       if (doalp && asc_isalpha(firstdigit))
 ;       {
@@ -32066,8 +31622,7 @@
 ;       --@curwin.w_cursor.col;
 ;       @curwin.w_set_curswant = true;
 ;       ptr = ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true);
-;       if (@curwin.w_onebuf_opt.@wo_rl)
-;           reverse_line(ptr);
+
 ;       return true;
     ))
 
@@ -37067,11 +36622,6 @@
 
 (atom! int      old_indent)                     ;; for ^^D command in insert mode
 
-(atom! boolean  revins_on)                      ;; reverse insert mode on
-(atom! int      revins_chars)                   ;; how much to skip after edit
-(atom! int      revins_legal)                   ;; was the last char 'legal'
-(atom! int      revins_scol)                    ;; start column of revins session
-
 (atom! boolean  ins_need_undo)                  ;; call u_save() before inserting a char;
                                                             ;; set when edit() is called;
                                                             ;; after that arrow_used is used
@@ -37195,13 +36745,6 @@
 
 ;       setmouse();
 ;       clear_showcmd();
-        ;; there is no reverse replace mode
-;       @revins_on = (@State == INSERT && @p_ri);
-;       if (@revins_on)
-;           undisplay_dollar();
-;       @revins_chars = 0;
-;       @revins_legal = 0;
-;       @revins_scol = -1;
 
         ;; Handle restarting Insert mode.
         ;; Don't do this for "CTRL-O ." (repeat an insert): we get here with
@@ -37281,10 +36824,6 @@
 
 ;       for (int lastc = 0, c = 0; ; )
 ;       {
-;           if (@revins_legal == 0)
-;               @revins_scol = -1;       ;; reset on illegal motions
-;           else
-;               @revins_legal = 0;
 ;           if (@arrow_used)     ;; don't repeat insert when arrow key used
 ;               count[0] = 0;
 
@@ -37430,17 +36969,6 @@
 ;                       do_c_expr_indent();
 ;               }
 
-;               if (@curwin.w_onebuf_opt.@wo_rl)
-;                   switch (c)
-;                   {
-;                       case K_LEFT:    c = K_RIGHT;   break;
-;                       case K_S_LEFT:  c = K_S_RIGHT; break;
-;                       case K_C_LEFT:  c = K_C_RIGHT; break;
-;                       case K_RIGHT:   c = K_LEFT;    break;
-;                       case K_S_RIGHT: c = K_S_LEFT;  break;
-;                       case K_C_RIGHT: c = K_C_LEFT;  break;
-;                   }
-
                 ;; If 'keymodel' contains "startsel", may start selection.
                 ;; If it does, a CTRL-O and c will be stuffed, we need to get these characters.
 
@@ -37543,10 +37071,7 @@
 ;                           break normalchar;
 
 ;                       case Ctrl__:                        ;; switch between languages
-;                           if (!@p_ari)
-;                               break;
-;                           ins_ctrl_();
-;                           break normalchar;
+;                           break;
 
 ;                       case Ctrl_D:                        ;; make indent one shiftwidth smaller
                             ;; FALLTHROUGH
@@ -37808,8 +37333,6 @@
 ;                   if (vim_iswordc(c, @curbuf) || (!echeck_abbr((0x100 <= c) ? (c + ABBR_OFF) : c) && c != Ctrl_RSB))
 ;                   {
 ;                       insert_special(c, false, false);
-;                       @revins_legal++;
-;                       @revins_chars++;
 ;                   }
 
 ;                   auto_format(false, true);
@@ -37919,8 +37442,6 @@
 ;           edit_unputchar();
 ;       clear_showcmd();
 ;       insert_special(c, false, true);
-;       @revins_chars++;
-;       @revins_legal++;
     ))
 
 ;; Put a character directly onto the screen.  It's not stored in a buffer.
@@ -37949,24 +37470,10 @@
 ;           @pc_row = @curwin.w_winrow + @curwin.w_wrow;
 ;           @pc_col = @curwin.w_wincol;
 ;           @pc_status = PC_STATUS_UNSET;
-;           if (@curwin.w_onebuf_opt.@wo_rl)
-;           {
-;               @pc_col += @curwin.w_width - 1 - @curwin.w_wcol;
 
-;               int fix_col = mb_fix_col(@pc_col, @pc_row);
-;               if (fix_col != @pc_col)
-;               {
-;                   screen_putchar(' ', @pc_row, fix_col, attr);
-;                   --@curwin.w_wcol;
-;                   @pc_status = PC_STATUS_RIGHT;
-;               }
-;           }
-;           else
-;           {
-;               @pc_col += @curwin.w_wcol;
-;               if (mb_lefthalve(@pc_row, @pc_col))
-;                   @pc_status = PC_STATUS_LEFT;
-;           }
+;           @pc_col += @curwin.w_wcol;
+;           if (mb_lefthalve(@pc_row, @pc_col))
+;               @pc_status = PC_STATUS_LEFT;
 
             ;; save the character to be able to put it back
 ;           if (@pc_status == PC_STATUS_UNSET)
@@ -38482,8 +37989,6 @@
 ;                           || ((!has_format_option(FO_INS_LONG) || @insStart_textlen <= textwidth)
 ;                               && (!fo_ins_blank || @insStart_blank_vcol <= textwidth))))))
 ;       {
-;           int virtcol = get_nolist_virtcol() + mb_char2cells(c != NUL ? c : gchar_cursor());
-
 ;           internal_format(textwidth, second_indent, flags, c == NUL, c);
 ;       }
 
@@ -38557,8 +38062,7 @@
 ;               && utf_char2len(c) == 1
 ;               && vpeekc() != NUL
 ;               && (@State & REPLACE_FLAG) == 0
-;               && !cindent_on()
-;               && !@p_ri)
+;               && !cindent_on())
 ;       {
 ;           final int INPUT_BUFLEN = 100;
 ;           Bytes buf = new Bytes(INPUT_BUFLEN + 1);
@@ -40239,8 +39743,7 @@
 
 ;       if (!nomove
 ;               && (@curwin.w_cursor.col != 0 || 0 < @curwin.w_cursor.coladd)
-;               && (@restart_edit == NUL || (gchar_cursor() == NUL && !@VIsual_active))
-;               && !@revins_on)
+;               && (@restart_edit == NUL || (gchar_cursor() == NUL && !@VIsual_active)))
 ;       {
 ;           if (0 < @curwin.w_cursor.coladd || @ve_flags == VE_ALL)
 ;           {
@@ -40272,30 +39775,6 @@
 ;           msg(u8(""));
 
 ;       return true;            ;; exit Insert mode
-    ))
-
-;; Toggle language: revins_on.
-;; Move to end of reverse inserted text.
-
-(defn- #_void ins_ctrl_ []
-    (§
-;       if (@revins_on && @revins_chars != 0 && 0 <= @revins_scol)
-;       {
-;           while (gchar_cursor() != NUL && 0 < @revins_chars--)
-;               @curwin.w_cursor.col++;
-;       }
-;       @p_ri = !@p_ri;
-;       @revins_on = (@State == INSERT && @p_ri);
-;       if (@revins_on)
-;       {
-;           @revins_scol = @curwin.w_cursor.col;
-;           @revins_legal++;
-;           @revins_chars = 0;
-;           undisplay_dollar();
-;       }
-;       else
-;           @revins_scol = -1;
-;       showmode();
     ))
 
 ;; If 'keymodel' contains "startsel", may start selection.
@@ -40464,14 +39943,13 @@
         ;; can backup to a previous line if 'backspace' == 0
 
 ;       if (bufempty()
-;           || (!@revins_on
-;               && ((@curwin.w_cursor.lnum == 1 && @curwin.w_cursor.col == 0)
+;           || ((@curwin.w_cursor.lnum == 1 && @curwin.w_cursor.col == 0)
 ;                   || (!can_bs(BS_START)
 ;                       && (@arrow_used
 ;                           || (@curwin.w_cursor.lnum == @insStart_orig.lnum
 ;                               && @curwin.w_cursor.col <= @insStart_orig.col)))
 ;                   || (!can_bs(BS_INDENT) && !@arrow_used && 0 < @ai_col && @curwin.w_cursor.col <= @ai_col)
-;                   || (!can_bs(BS_EOL) && @curwin.w_cursor.col == 0))))
+;                   || (!can_bs(BS_EOL) && @curwin.w_cursor.col == 0)))
 ;       {
 ;           vim_beep();
 ;           return false;
@@ -40483,9 +39961,7 @@
 ;       boolean in_indent = inindent(0);
 ;       if (in_indent)
 ;           @can_cindent = false;
-;       @end_comment_pending = NUL;  ;; After BS, don't auto-end comment
-;       if (@revins_on)              ;; put cursor after last inserted char
-;           inc_cursor();
+;       @end_comment_pending = NUL;  ;; after BS, don't auto-end comment
 
         ;; Virtualedit:
         ;;  BACKSPACE_CHAR eats a virtual space
@@ -40512,7 +39988,7 @@
 ;       if (@curwin.w_cursor.col == 0)
 ;       {
 ;           long lnum = @insStart.lnum;
-;           if (@curwin.w_cursor.lnum == lnum || @revins_on)
+;           if (@curwin.w_cursor.lnum == lnum)
 ;           {
 ;               if (!u_save(@curwin.w_cursor.lnum - 2, @curwin.w_cursor.lnum + 1))
 ;                   return false;
@@ -40592,11 +40068,9 @@
 ;       {
             ;; Delete character(s) before the cursor.
 
-;           if (@revins_on)          ;; put cursor on last inserted char
-;               dec_cursor();
 ;           int mincol = 0;
                                                     ;; keep indent
-;           if (mode == BACKSPACE_LINE && (@curbuf.@b_p_ai || cindent_on()) && !@revins_on)
+;           if (mode == BACKSPACE_LINE && (@curbuf.@b_p_ai || cindent_on()))
 ;           {
 ;               int save_col = @curwin.w_cursor.col;
 ;               beginline(BL_WHITE);
@@ -40673,8 +40147,7 @@
 ;               boolean temp = false;
 ;               do
 ;               {
-;                   if (!@revins_on) ;; put cursor on char to be deleted
-;                       dec_cursor();
+;                   dec_cursor();           ;; put cursor on char to be deleted
 
 ;                   int cc = gchar_cursor();
                     ;; look multi-byte character class
@@ -40688,15 +40161,12 @@
 ;                       temp = vim_iswordc(cc, @curbuf);
 ;                   }
                     ;; end of word?
-;                   else if (mode == BACKSPACE_WORD_NOT_SPACE
-;                           && ((vim_isspace(cc) || vim_iswordc(cc, @curbuf) != temp) || prev_cclass != cclass))
+;                   else if (mode == BACKSPACE_WORD_NOT_SPACE && (vim_isspace(cc) || vim_iswordc(cc, @curbuf) != temp || prev_cclass != cclass))
 ;                   {
-;                       if (!@revins_on)
-;                           inc_cursor();
-;                       else if ((@State & REPLACE_FLAG) != 0)
-;                           dec_cursor();
+;                       inc_cursor();
 ;                       break;
 ;                   }
+
 ;                   if ((@State & REPLACE_FLAG) != 0)
 ;                       replace_do_bs(-1);
 ;                   else
@@ -40711,21 +40181,11 @@
 
 ;                       if (@p_deco && cpc[0] != NUL)
 ;                           inc_cursor();
-;                       if (0 < @revins_chars)
-;                       {
-;                           @revins_chars--;
-;                           @revins_legal++;
-;                       }
-;                       if (@revins_on && gchar_cursor() == NUL)
-;                           break;
 ;                   }
                     ;; Just a single backspace?:
 ;                   if (mode == BACKSPACE_CHAR)
 ;                       break;
-;               } while (@revins_on ||
-;                       (mincol < @curwin.w_cursor.col
-;                       && (@curwin.w_cursor.lnum != @insStart_orig.lnum
-;                           || @curwin.w_cursor.col != @insStart_orig.col)));
+;               } while (mincol < @curwin.w_cursor.col && (@curwin.w_cursor.lnum != @insStart_orig.lnum || @curwin.w_cursor.col != @insStart_orig.col));
 ;           }
 ;           did_backspace = true;
 ;       }
@@ -40841,14 +40301,8 @@
 ;       if (oneleft() == true)
 ;       {
 ;           start_arrow(tpos);
-            ;; If exit reversed string, position is fixed.
-;           if (@revins_scol != -1 && @revins_scol <= @curwin.w_cursor.col)
-;               @revins_legal++;
-;           @revins_chars++;
 ;       }
-
         ;; if 'whichwrap' set for cursor in insert mode may go to previous line
-
 ;       else if (vim_strchr(@p_ww, '[') != null && 1 < @curwin.w_cursor.lnum)
 ;       {
 ;           start_arrow(tpos);
@@ -40917,10 +40371,6 @@
 ;               oneright();
 ;           else
 ;               @curwin.w_cursor.col += us_ptr2len_cc(ml_get_cursor());
-
-;           @revins_legal++;
-;           if (0 < @revins_chars)
-;               @revins_chars--;
 ;       }
         ;; if 'whichwrap' set for cursor in insert mode, may move the cursor to the next line
 ;       else if (vim_strchr(@p_ww, ']') != null && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
@@ -41248,10 +40698,6 @@
 ;       if (virtual_active() && 0 < @curwin.w_cursor.coladd)
 ;           coladvance(getviscol());
 
-        ;; NL in reverse insert will always start in the end of current line.
-;       if (@revins_on)
-;           @curwin.w_cursor.col += STRLEN(ml_get_cursor());
-
 ;       appendToRedobuff(NL_STR);
 ;       boolean b = open_line(FORWARD, has_format_option(FO_RET_COMS) ? OPENLINE_DO_COM : 0, @old_indent);
 ;       @old_indent = 0;
@@ -41384,8 +40830,6 @@
 ;           insert_special(c, true, false);
 ;           @curbuf.@b_p_tw = tw_save;
 
-;           @revins_chars++;
-;           @revins_legal++;
 ;           c = Ctrl_V;                     ;; pretend CTRL-V is last character
 ;           auto_format(false, true);
 ;       }
@@ -41481,6 +40925,7 @@
     (§
 ;       if (@curwin.w_onebuf_opt.@wo_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
 ;           return getvcol_nolist(@curwin.w_cursor);
+
 ;       validate_virtcol();
 ;       return @curwin.w_virtcol;
     ))
@@ -54852,10 +54297,7 @@
 ;       else if ((options & SEARCH_HIS) != 0)   ;; put new pattern in history
 ;           add_to_history(HIST_SEARCH, pat, true, NUL);
 
-;       if (@curwin.w_onebuf_opt.@wo_rl && @curwin.w_onebuf_opt.@wo_rlc.at(0) == (byte)'s')
-;           @mr_pattern = reverse_text(pat);
-;       else
-;           @mr_pattern = pat;
+;       @mr_pattern = pat;
 
         ;; Save the currently used pattern in the appropriate place,
         ;; unless the pattern should not be remembered.
@@ -54882,28 +54324,6 @@
 (defn- #_Bytes get_search_pat []
     (§
 ;       return @mr_pattern;
-    ))
-
-;; Reverse text into allocated memory.
-
-(defn- #_Bytes reverse_text [#_Bytes s]
-    (§
-        ;; Reverse the pattern.
-
-;       int len = STRLEN(s);
-;       Bytes rev = new Bytes(len + 1);
-
-;       int j = len;
-;       for (int i = 0; i < len; i++)
-;       {
-;           int mb_len = us_ptr2len_cc(s.plus(i));
-;           j -= mb_len;
-;           BCOPY(rev, j, s, i, mb_len);
-;           i += mb_len - 1;
-;       }
-;       rev.be(len, NUL);
-
-;       return rev;
     ))
 
 (defn- #_void save_re_pat [#_int idx, #_Bytes pat, #_boolean magic]
@@ -55604,11 +55024,6 @@
 ;                   msg_start();
 ;                   Bytes trunc = msg_strtrunc(msgbuf, false);
 
-                    ;; The search pattern could be shown on the right in rightleft mode, but
-                    ;; the 'ruler' and 'showcmd' area use it too, thus it would be blanked out
-                    ;; again very soon.  Show it on the left, but do reverse the text.
-;                   if (@curwin.w_onebuf_opt.@wo_rl && @curwin.w_onebuf_opt.@wo_rlc.at(0) == (byte)'s')
-;                       trunc = reverse_text(trunc != null ? trunc : msgbuf);
 ;                   if (trunc != null)
 ;                       msg_outtrans(trunc);
 ;                   else
@@ -56113,11 +55528,6 @@
 ;           }
 ;       }
 
-        ;; This is just guessing: when 'rightleft' is set,
-        ;; search for a matching paren/brace in the other direction.
-;       if (@curwin.w_onebuf_opt.@wo_rl && vim_strchr(u8("()[]{}<>"), initc[0]) != null)
-;           backwards[0] = !backwards[0];
-
 ;       int do_quotes = -1;                 ;; check for quotes in current line
 ;       maybean start_in_quotes = MAYBE;    ;; start position is in quotes
 ;       pos_C match_pos = §_pos_C();      ;; where last slash-star was found
@@ -56503,10 +55913,8 @@
         ;; 'matchpairs' is "x:y,x:y"
 ;       for (Bytes p = @curbuf.@b_p_mps; p.at(0) != NUL; p = p.plus(1))
 ;       {
-;           if (us_ptr2char(p) == c && (@curwin.w_onebuf_opt.@wo_rl ^ @p_ri))
-;               break;
 ;           p = p.plus(us_ptr2len_cc(p) + 1);
-;           if (us_ptr2char(p) == c && !(@curwin.w_onebuf_opt.@wo_rl ^ @p_ri))
+;           if (us_ptr2char(p) == c)
 ;               break;
 ;           p = p.plus(us_ptr2len_cc(p));
 ;           if (p.at(0) == NUL)
@@ -56521,8 +55929,7 @@
 ;           int[] vcol = new int[1];
 ;           if (!@curwin.w_onebuf_opt.@wo_wrap)
 ;               getvcol(@curwin, lpos, null, vcol, null);
-;           if (@curwin.w_onebuf_opt.@wo_wrap
-;               || (@curwin.w_leftcol <= vcol[0] && vcol[0] < @curwin.w_leftcol + @curwin.w_width))
+;           if (@curwin.w_onebuf_opt.@wo_wrap || (@curwin.w_leftcol <= vcol[0] && vcol[0] < @curwin.w_leftcol + @curwin.w_width))
 ;           {
 ;               pos_C save_cursor = §_pos_C();
 ;               pos_C mpos = §_pos_C();
@@ -58996,7 +58403,7 @@
     ;; newfile: flag, see above
     (§
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(null) == false)
 ;           return false;
 
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
@@ -59427,7 +58834,7 @@
 ;           return false;
 
         ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(false, null, 0) == false)
+;       if (@curbuf.b_ml.ml_mfp == null && open_buffer(null) == false)
 ;           return false;
 
 ;       if (copy)
@@ -60412,12 +59819,10 @@
 ;; Open current buffer, that is: open the memfile and read the file into memory.
 ;; Return false for failure, true otherwise.
 
-(defn- #_boolean open_buffer [#_boolean read_stdin, #_exarg_C eap, #_int flags]
-    ;; read_stdin: read file from stdin
+(defn- #_boolean open_buffer [#_exarg_C eap]
     ;; eap: for forced 'ff' and 'fenc' or null
-    ;; flags: extra flags for readfile()
     (§
-;       boolean[] retval = { true };
+;       boolean retval = true;
 ;       long old_tw = @curbuf.@b_p_tw;
 
 ;       if (ml_open(@curbuf) == false)
@@ -60470,7 +59875,7 @@
 ;                   || @modified_was_set     ;; ":set modified" used in autocmd
 ;                   || (aborting() && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
 ;           changed();
-;       else if (retval[0] != false && !read_stdin)
+;       else if (retval != false)
 ;           unchanged(@curbuf, false);
 
         ;; require "!" to overwrite the file, because it wasn't read completely
@@ -60483,7 +59888,7 @@
 ;           @curwin.w_topline = 1;
 ;       }
 
-;       if (retval[0] != false)
+;       if (retval != false)
 ;       {
             ;; The autocommands may have changed the current buffer.  Apply the
             ;; modelines to the correct buffer, if it still exists and is loaded.
@@ -60494,7 +59899,7 @@
 ;           }
 ;       }
 
-;       return retval[0];
+;       return retval;
     ))
 
 ;; Return true if "buf" points to a valid buffer (in the buffer list).
@@ -60745,128 +60150,6 @@
 ;       }
     ))
 
-;; Go to another buffer.  Handles the result of the ATTENTION dialog.
-
-(defn- #_void goto_buffer [#_exarg_C eap, #_int start, #_int dir, #_int count]
-    (§
-;       do_buffer(eap.cmd.at(0) == (byte)'s' ? DOBUF_SPLIT : DOBUF_GOTO, start, dir, count, eap.forceit);
-    ))
-
-;; do_bufdel() - delete or unload buffer(s)
-;;
-;; addr_count == 0: ":bdel" - delete current buffer
-;; addr_count == 1: ":N bdel" or ":bdel N [N ..]" - first delete buffer "end_bnr", then any other arguments.
-;; addr_count == 2: ":N,N bdel" - delete buffers in range
-;;
-;; command can be DOBUF_UNLOAD (":bunload"), DOBUF_WIPE (":bwipeout") or DOBUF_DEL (":bdel")
-;;
-;; Returns error message or null
-
-(defn- #_Bytes do_bufdel [#_int command, #_Bytes arg, #_int addr_count, #_int start_bnr, #_int end_bnr, #_boolean forceit]
-    ;; arg: pointer to extra arguments
-    ;; start_bnr: first buffer number in a range
-    ;; end_bnr: buffer nr or last buffer nr in a range
-    (§
-;       int do_current = 0;         ;; delete current buffer?
-;       int deleted = 0;            ;; number of buffers deleted
-;       Bytes errormsg = null;     ;; return value
-
-;       if (addr_count == 0)
-;       {
-;           do_buffer(command, DOBUF_CURRENT, FORWARD, 0, forceit);
-;       }
-;       else
-;       {
-;           int bnr;                    ;; buffer number
-;           if (addr_count == 2)
-;           {
-;               if (arg.at(0) != NUL)           ;; both range and argument is not allowed
-;                   return e_trailing;
-;               bnr = start_bnr;
-;           }
-;           else    ;; addr_count == 1
-;               bnr = end_bnr;
-
-;           for ( ; !@got_int; ui_breakcheck())
-;           {
-                ;; delete the current buffer last, otherwise when the
-                ;; current buffer is deleted, the next buffer becomes
-                ;; the current one and will be loaded, which may then
-                ;; also be deleted, etc.
-
-;               if (bnr == @curbuf.b_fnum)
-;                   do_current = bnr;
-;               else if (do_buffer(command, DOBUF_FIRST, FORWARD, bnr, forceit) == true)
-;                   deleted++;
-
-                ;; find next buffer number to delete/unload
-
-;               if (addr_count == 2)
-;               {
-;                   if (end_bnr < ++bnr)
-;                       break;
-;               }
-;               else    ;; addr_count == 1
-;               {
-;                   arg = skipwhite(arg);
-;                   if (arg.at(0) == NUL)
-;                       break;
-;                   if (!asc_isdigit(arg.at(0)))
-;                   {
-;                       Bytes p = skiptowhite_esc(arg);
-;                       bnr = buflist_findpat(arg, p);
-;                       if (bnr < 0)            ;; failed
-;                           break;
-;                       arg = p;
-;                   }
-;                   else
-;                   {
-;                       Bytes[] __ = { arg }; bnr = (int)getdigits(__); arg = __[0];
-;                   }
-;               }
-;           }
-;           if (!@got_int && do_current != 0 && do_buffer(command, DOBUF_FIRST, FORWARD, do_current, forceit) == true)
-;               deleted++;
-
-;           if (deleted == 0)
-;           {
-;               if (command == DOBUF_UNLOAD)
-;                   STRCPY(@ioBuff, u8("E515: No buffers were unloaded"));
-;               else if (command == DOBUF_DEL)
-;                   STRCPY(@ioBuff, u8("E516: No buffers were deleted"));
-;               else
-;                   STRCPY(@ioBuff, u8("E517: No buffers were wiped out"));
-;               errormsg = @ioBuff;
-;           }
-;           else if (@p_report <= deleted)
-;           {
-;               if (command == DOBUF_UNLOAD)
-;               {
-;                   if (deleted == 1)
-;                       msg(u8("1 buffer unloaded"));
-;                   else
-;                       smsg(u8("%d buffers unloaded"), deleted);
-;               }
-;               else if (command == DOBUF_DEL)
-;               {
-;                   if (deleted == 1)
-;                       msg(u8("1 buffer deleted"));
-;                   else
-;                       smsg(u8("%d buffers deleted"), deleted);
-;               }
-;               else
-;               {
-;                   if (deleted == 1)
-;                       msg(u8("1 buffer wiped out"));
-;                   else
-;                       smsg(u8("%d buffers wiped out"), deleted);
-;               }
-;           }
-;       }
-
-;       return errormsg;
-    ))
-
 ;; Make the current buffer empty.
 ;; Used when it is wiped out and it's the last buffer.
 
@@ -60900,282 +60183,9 @@
 ;       return retval;
     ))
 
-;; Implementation of the commands for the buffer list.
-;;
-;; action == DOBUF_GOTO     go to specified buffer
-;; action == DOBUF_SPLIT    split window and go to specified buffer
-;; action == DOBUF_UNLOAD   unload specified buffer(s)
-;; action == DOBUF_DEL      delete specified buffer(s) from buffer list
-;; action == DOBUF_WIPE     delete specified buffer(s) really
-;;
-;; start == DOBUF_CURRENT   go to "count" buffer from current buffer
-;; start == DOBUF_FIRST     go to "count" buffer from first buffer
-;; start == DOBUF_LAST      go to "count" buffer from last buffer
-;; start == DOBUF_MOD       go to "count" modified buffer from current buffer
-;;
-;; Return false or true.
-
-(defn- #_boolean do_buffer [#_int action, #_int start, #_int dir, #_int count, #_boolean forceit]
-    ;; dir: FORWARD or BACKWARD
-    ;; count: buffer number or number of buffers
-    ;; forceit: true for :...!
-    (§
-;       boolean unload = (action == DOBUF_UNLOAD || action == DOBUF_DEL || action == DOBUF_WIPE);
-
-;       buffer_C buf;
-;       switch (start)
-;       {
-;           case DOBUF_FIRST:   buf = @firstbuf; break;
-;           case DOBUF_LAST:    buf = @lastbuf;  break;
-;           default:            buf = @curbuf;   break;
-;       }
-;       if (start == DOBUF_MOD)         ;; find next modified buffer
-;       {
-;           while (0 < count--)
-;           {
-;               do
-;               {
-;                   buf = buf.b_next;
-;                   if (buf == null)
-;                       buf = @firstbuf;
-;               } while (buf != @curbuf && !bufIsChanged(buf));
-;           }
-;           if (!bufIsChanged(buf))
-;           {
-;               emsg(u8("E84: No modified buffer found"));
-;               return false;
-;           }
-;       }
-;       else if (start == DOBUF_FIRST && count != 0)    ;; find specified buffer number
-;       {
-;           while (buf != null && buf.b_fnum != count)
-;               buf = buf.b_next;
-;       }
-;       else
-;       {
-;           for (buffer_C bp = null; 0 < count; )
-;           {
-                ;; Remember the buffer where we start,
-                ;; we come back there when all buffers are unlisted.
-;               if (bp == null)
-;                   bp = buf;
-;               if (dir == FORWARD)
-;               {
-;                   buf = buf.b_next;
-;                   if (buf == null)
-;                       buf = @firstbuf;
-;               }
-;               else
-;               {
-;                   buf = buf.b_prev;
-;                   if (buf == null)
-;                       buf = @lastbuf;
-;               }
-
-;               --count;
-;               bp = null;      ;; use this buffer as new starting point
-
-;               if (bp == buf)
-;               {
-                    ;; back where we started, didn't find anything.
-;                   emsg(u8("E85: There is no listed buffer"));
-;                   return false;
-;               }
-;           }
-;       }
-
-;       if (buf == null)        ;; could not find it
-;       {
-;           if (start == DOBUF_FIRST)
-;           {
-                ;; don't warn when deleting
-;               if (!unload)
-;                   emsgn(e_nobufnr, (long)count);
-;           }
-;           else if (dir == FORWARD)
-;               emsg(u8("E87: Cannot go beyond last buffer"));
-;           else
-;               emsg(u8("E88: Cannot go before first buffer"));
-;           return false;
-;       }
-
-        ;; delete buffer buf from memory and/or the list
-
-;       if (unload)
-;       {
-;           if (!forceit && bufIsChanged(buf))
-;           {
-;               emsgn(u8("E89: No write since last change for buffer %ld (add ! to override)"), (long)buf.b_fnum);
-;               return false;
-;           }
-
-            ;; If deleting the last (listed) buffer, make it empty.
-            ;; The last (listed) buffer cannot be unloaded.
-
-;           buffer_C bp;
-;           for (bp = @firstbuf; bp != null; bp = bp.b_next)
-;               if (bp != buf)
-;                   break;
-;           if (bp == null && buf == @curbuf)
-;               return empty_curbuf(true, forceit, action);
-
-            ;; If the deleted buffer is the current one, close the current window
-            ;; (unless it's the only window).  Repeat this so long as we end up in
-            ;; a window with this buffer.
-
-;           while (buf == @curbuf && !(@curwin.w_closing || @curwin.w_buffer.b_closing) && @firstwin != @lastwin)
-;           {
-;               if (win_close(@curwin, false) == false)
-;                   break;
-;           }
-
-            ;; If the buffer to be deleted is not the current one, delete it here.
-
-;           if (buf != @curbuf)
-;           {
-;               close_windows(buf, false);
-;               if (buf != @curbuf && buf_valid(buf) && buf.b_nwindows <= 0)
-;                   close_buffer(null, buf, action, false);
-;               return true;
-;           }
-
-            ;; Deleting the current buffer: Need to find another buffer to go to.
-            ;; There should be another, otherwise it would have been handled
-            ;; above.  However, autocommands may have deleted all buffers.
-            ;; First use au_new_curbuf, if it is valid.
-            ;; Then prefer the buffer we most recently visited.
-            ;; Else try to find one that is loaded, after the current buffer,
-            ;; then before the current buffer.
-            ;; Finally use any buffer.
-
-;           buf = null;     ;; selected buffer
-;           bp = null;      ;; used when no loaded buffer found
-;           if (0 < @curwin.w_jumplistlen)
-;           {
-;               int jumpidx = @curwin.w_jumplistidx - 1;
-;               if (jumpidx < 0)
-;                   jumpidx = @curwin.w_jumplistlen - 1;
-
-;               for (int stop = jumpidx; jumpidx != @curwin.w_jumplistidx; )
-;               {
-;                   buf = buflist_findnr(@curwin.w_jumplist[jumpidx].fmark.fnum);
-;                   if (buf != null)
-;                   {
-;                       if (buf == @curbuf)
-;                           buf = null;     ;; skip current buffer
-;                       else if (buf.b_ml.ml_mfp == null)
-;                       {
-                            ;; skip unloaded buf, but may keep it for later
-;                           if (bp == null)
-;                               bp = buf;
-;                           buf = null;
-;                       }
-;                   }
-;                   if (buf != null)    ;; found a valid buffer: stop searching
-;                       break;
-                    ;; advance to older entry in jump list
-;                   if (jumpidx == 0 && @curwin.w_jumplistidx == @curwin.w_jumplistlen)
-;                       break;
-;                   if (--jumpidx < 0)
-;                       jumpidx = @curwin.w_jumplistlen - 1;
-;                   if (jumpidx == stop)        ;; list exhausted for sure
-;                       break;
-;               }
-;           }
-
-;           if (buf == null)            ;; No previous buffer, Try 2'nd approach
-;           {
-;               boolean forward = true;
-;               buf = @curbuf.b_next;
-;               for ( ; ; )
-;               {
-;                   if (buf == null)
-;                   {
-;                       if (!forward)       ;; tried both directions
-;                           break;
-;                       buf = @curbuf.b_prev;
-;                       forward = false;
-;                       continue;
-;                   }
-                    ;; in non-help buffer, try to skip help buffers, and vv
-;                   {
-;                       if (buf.b_ml.ml_mfp != null)    ;; found loaded buffer
-;                           break;
-;                       if (bp == null)     ;; remember unloaded buf for later
-;                           bp = buf;
-;                   }
-;                   if (forward)
-;                       buf = buf.b_next;
-;                   else
-;                       buf = buf.b_prev;
-;               }
-;           }
-;           if (buf == null)        ;; no loaded buffer, use unloaded one
-;               buf = bp;
-;           if (buf == null)        ;; no loaded buffer, find listed one
-;           {
-;               for (buf = @firstbuf; buf != null; buf = buf.b_next)
-;                   if (buf != @curbuf)
-;                       break;
-;           }
-;           if (buf == null)        ;; Still no buffer, just take one
-;           {
-;               if (@curbuf.b_next != null)
-;                   buf = @curbuf.b_next;
-;               else
-;                   buf = @curbuf.b_prev;
-;           }
-;       }
-
-;       if (buf == null)
-;       {
-            ;; Autocommands must have wiped out all other buffers.
-            ;; Only option now is to make the current buffer empty.
-;           return empty_curbuf(false, forceit, action);
-;       }
-
-        ;; make buf current buffer
-
-;       if (action == DOBUF_SPLIT)      ;; split window first
-;       {
-;           if (win_split(0, 0) == false)
-;               return false;
-;       }
-
-        ;; go to current buffer - nothing to do
-;       if (buf == @curbuf)
-;           return true;
-
-        ;; Check if the current buffer may be abandoned.
-
-;       if (action == DOBUF_GOTO && !can_abandon(@curbuf, forceit))
-;       {
-;           if (bufIsChanged(@curbuf))
-;           {
-;               emsg(e_nowrtmsg);
-;               return false;
-;           }
-;       }
-
-        ;; Go to the other buffer.
-;       set_curbuf(buf, action);
-
-;       if (action == DOBUF_SPLIT)
-;       {
-;           @curwin.w_onebuf_opt.@wo_scb = false;    ;; reset 'scrollbind' and 'cursorbind'
-;           @curwin.w_onebuf_opt.@wo_crb = false;
-;       }
-
-;       if (aborting())         ;; autocmds may abort script processing
-;           return false;
-
-;       return true;
-    ))
-
 ;; Set current buffer to "buf".  Executes autocommands and closes current
 ;; buffer.  "action" tells how to close the current buffer:
 ;; DOBUF_GOTO       free or hide it
-;; DOBUF_SPLIT      nothing
 ;; DOBUF_UNLOAD     unload it
 ;; DOBUF_DEL        delete it
 ;; DOBUF_WIPE       wipe it out
@@ -61254,7 +60264,7 @@
         ;; Make sure the buffer is loaded.
 ;       if (@curbuf.b_ml.ml_mfp == null)     ;; need to load the file
 ;       {
-;           open_buffer(false, null, 0);
+;           open_buffer(null);
 ;       }
 ;       else
 ;       {
@@ -61532,38 +60542,6 @@
 (defn- #_long buflist_findlnum [#_buffer_C buf]
     (§
 ;       return buflist_findfpos(buf).lnum;
-    ))
-
-;; List all know file names (for :files and :buffers command).
-
-(defn- #_void ex_buflist [#_exarg_C eap]
-    (§
-;       for (buffer_C buf = @firstbuf; buf != null && !@got_int; buf = buf.b_next)
-;       {
-;           msg_putchar('\n');
-
-;           int len = vim_snprintf(@ioBuff, IOSIZE - 20, u8("%3d%c%c%c%c%c \"%s\""),
-;                   buf.b_fnum,
-;                   ' ',
-;                   (buf == @curbuf) ? '%' : (@curwin.w_alt_fnum == buf.b_fnum ? '#' : ' '),
-;                   (buf.b_ml.ml_mfp == null) ? ' ' : (buf.b_nwindows == 0 ? 'h' : 'a'),
-;                   !buf.@b_p_ma ? '-' : (buf.@b_p_ro ? '=' : ' '),
-;                   (buf.b_flags & BF_READERR) != 0 ? 'x' : (bufIsChanged(buf) ? '+' : ' '),
-;                   buf_spname(buf, false));
-
-                ;; put "line 999" in column 40 or after the file name
-;           int i = 40 - mb_string2cells(@ioBuff, -1);
-;           do
-;           {
-;               @ioBuff.be(len++, (byte)' ');
-;           } while (0 < --i && len < IOSIZE - 18);
-;           vim_snprintf(@ioBuff.plus(len), IOSIZE - len, u8("line %ld"),
-;               (buf == @curbuf) ? @curwin.w_cursor.lnum : buflist_findlnum(buf));
-
-;           msg_outtrans(@ioBuff);
-;           out_flush();        ;; output one line at a time
-;           ui_breakcheck();
-;       }
     ))
 
 ;; Take care of what needs to be done when the name of buffer "buf" has changed.
@@ -62438,128 +61416,6 @@
     ;; add_file: Add "file" before the arg number
     (§
 ;       return false;
-    ))
-
-;; Open a window for a number of buffers.
-
-(defn- #_void ex_buffer_all [#_exarg_C eap]
-    (§
-;       boolean split_ret = true;
-;       int open_wins = 0;
-
-            ;; Maximum number of windows to open.
-;       int count;
-;       if (eap.addr_count == 0)        ;; make as many windows as possible
-;           count = 9999;
-;       else
-;           count = (int)eap.line2;     ;; make as many windows as specified
-
-            ;; When true also load inactive buffers.
-;       boolean all;
-;       if (eap.cmdidx == CMD_unhide || eap.cmdidx == CMD_sunhide)
-;           all = false;
-;       else
-;           all = true;
-
-;       setpcmark();
-
-            ;; Close superfluous windows (two windows for the same buffer).
-            ;; Also close windows that are not full-width.
-
-;       for (window_C wp = @firstwin, wpnext; wp != null; wp = wpnext)
-;       {
-;           wpnext = wp.w_next;
-;           if ((1 < wp.w_buffer.b_nwindows
-;                   || ((@cmdmod.split & WSP_VERT) != 0
-;                       ? wp.w_height + wp.w_status_height < @Rows - @p_ch
-;                       : wp.w_width != (int)@Columns))
-;               && @firstwin != @lastwin
-;               && !(wp.w_closing || wp.w_buffer.b_closing))
-;           {
-;               win_close(wp, false);
-;               wpnext = @firstwin;          ;; just in case an autocommand does something strange with windows
-;               open_wins = 0;
-;           }
-;           else
-;               open_wins++;
-;       }
-
-            ;; Go through the buffer list.  When a buffer doesn't have a window yet,
-            ;; open one.  Otherwise move the window to the right position.
-            ;; Watch out for autocommands that delete buffers or windows!
-
-            ;; Don't execute Win/Buf Enter/Leave autocommands here.
-;       win_enter(@lastwin, false);
-
-;       for (buffer_C buf = @firstbuf; buf != null && open_wins < count; buf = buf.b_next)
-;       {
-                ;; Check if this buffer needs a window.
-;           if (!all && buf.b_ml.ml_mfp == null)
-;               continue;
-
-;           window_C wp;
-
-                ;; Check if this buffer already has a window.
-;           for (wp = @firstwin; wp != null; wp = wp.w_next)
-;               if (wp.w_buffer == buf)
-;                   break;
-                ;; If the buffer already has a window, move it.
-;           if (wp != null)
-;               win_move_after(wp, @curwin);
-
-;           if (wp == null && split_ret == true)
-;           {
-                    ;; Split the window and put the buffer in it.
-;               boolean p_ea_save = @p_ea;
-;               @p_ea = true;                        ;; use space from all windows
-;               split_ret = win_split(0, WSP_ROOM | WSP_BELOW);
-;               open_wins++;
-;               @p_ea = p_ea_save;
-;               if (split_ret == false)
-;                   continue;
-
-                    ;; Open the buffer in this window.
-;               set_curbuf(buf, DOBUF_GOTO);
-;               if (!buf_valid(buf))                ;; autocommands deleted the buffer!!!
-;                   break;
-;           }
-
-;           ui_breakcheck();
-;           if (@got_int)
-;           {
-;               vgetc();        ;; only break the file loading, not the rest
-;               break;
-;           }
-                ;; Autocommands deleted the buffer or aborted script processing!!!
-;           if (aborting())
-;               break;
-;       }
-
-;       win_enter(@firstwin, false);         ;; back to first window
-
-            ;; Close superfluous windows.
-
-;       for (window_C wp = @lastwin; count < open_wins; )
-;       {
-;           boolean r = (@cmdmod.hide || !bufIsChanged(wp.w_buffer));
-;           if (!win_valid(wp))
-;           {
-                    ;; BufWrite Autocommands made the window invalid, start over.
-;               wp = @lastwin;
-;           }
-;           else if (r)
-;           {
-;               win_close(wp, !@cmdmod.hide);
-;               --open_wins;
-;               wp = @lastwin;
-;           }
-;           else
-;           {
-;               wp = wp.w_prev;
-;               if (wp == null)
-;                   break;
-;           }
-;       }
     ))
 
 ;; Return special buffer name.
@@ -69429,11 +68285,8 @@
 ;           showmatch(us_ptr2char(buf));
 ;       }
 
-;       if (!@p_ri || (@State & REPLACE_FLAG) != 0)
-;       {
-            ;; Normal insert: move cursor right.
-;           @curwin.w_cursor.col += charlen;
-;       }
+        ;; Normal insert: move cursor right.
+;       @curwin.w_cursor.col += charlen;
 
         ;; TODO: should try to update w_row here, to avoid recomputing it later.
 
@@ -81569,9 +80422,6 @@
 ;       int col = colp[0];
 ;       int row = rowp[0];
 
-;       if (win.w_onebuf_opt.@wo_rl)
-;           col = win.w_width - 1 - col;
-
 ;       long lnum = win.w_topline;
 
 ;       while (0 < row)
@@ -82968,32 +81818,15 @@
     (§
 ;       int n = 0;
 
-;       if (wp.w_onebuf_opt.@wo_rl)
+;       if (@cmdwin_type != 0 && wp == @curwin)
 ;       {
-            ;; No check for cmdline window: should never be right-left.
-;           screen_fill(wp.w_winrow + row, wp.w_winrow + endrow,
-;                       wp.w_wincol, wp.w_wincol + wp.w_width - 1 - n,
-;                       c2, c2, hl_attr(hl));
-;           screen_fill(wp.w_winrow + row, wp.w_winrow + endrow,
-;                       wp.w_wincol + wp.w_width - 1 - n, wp.w_wincol + wp.w_width - n,
-;                       c1, c2, hl_attr(hl));
+            ;; draw the cmdline character in the leftmost column
+;           n = 1;
+;           if (n > wp.w_width)
+;               n = wp.w_width;
+;           screen_fill(wp.w_winrow + row, wp.w_winrow + endrow, wp.w_wincol, wp.w_wincol + n, @cmdwin_type, ' ', hl_attr(HLF_AT));
 ;       }
-;       else
-;       {
-;           if (@cmdwin_type != 0 && wp == @curwin)
-;           {
-                ;; draw the cmdline character in the leftmost column
-;               n = 1;
-;               if (n > wp.w_width)
-;                   n = wp.w_width;
-;               screen_fill(wp.w_winrow + row, wp.w_winrow + endrow,
-;                           wp.w_wincol, wp.w_wincol + n,
-;                           @cmdwin_type, ' ', hl_attr(HLF_AT));
-;           }
-;           screen_fill(wp.w_winrow + row, wp.w_winrow + endrow,
-;                       wp.w_wincol + n, wp.w_wincol + wp.w_width,
-;                       c1, c2, hl_attr(hl));
-;       }
+;       screen_fill(wp.w_winrow + row, wp.w_winrow + endrow, wp.w_wincol + n, wp.w_wincol + wp.w_width, c1, c2, hl_attr(hl));
 
 ;       set_empty_rows(wp, row);
     ))
@@ -83372,14 +82205,6 @@
 
 ;       int col = 0;                                        ;; visual column on screen
 ;       int off = BDIFF(@current_ScreenLine, @screenLines);  ;; offset in screenLines/screenAttrs
-;       if (wp.w_onebuf_opt.@wo_rl)
-;       {
-            ;; Rightleft window: process the text in the normal direction,
-            ;; but put it in current_ScreenLine[] from right to left.
-            ;; Start at the rightmost column of the window.
-;           col = wp.w_width - 1;
-;           off += col;
-;       }
 
         ;; Repeat for the whole displayed line.
 
@@ -83433,8 +82258,6 @@
 ;                           if (0 < wp.w_skipcol)
 ;                               for (p_extra = extra; p_extra.at(0) == (byte)' '; p_extra = p_extra.plus(1))
 ;                                   p_extra.be(0, (byte)'-');
-;                           if (wp.w_onebuf_opt.@wo_rl)             ;; reverse line numbers
-;                               rl_mirror(extra);
 ;                           p_extra = extra;
 ;                           c_extra = NUL;
 ;                       }
@@ -83514,7 +82337,7 @@
             ;; When still displaying '$' of change command, stop at cursor.
 ;           if (0 <= @dollar_vcol && wp == @curwin && lnum == wp.w_cursor.lnum && wp.w_virtcol <= vcol)
 ;           {
-;               screen_line(screen_row, wp.w_wincol, col, -wp.w_width, wp.w_onebuf_opt.@wo_rl);
+;               screen_line(screen_row, wp.w_wincol, col, -wp.w_width, false);
                 ;; Pretend we have finished updating the window,
                 ;; except when 'cursorcolumn' is set.
 ;               if (wp.w_onebuf_opt.@wo_cuc)
@@ -83693,7 +82516,7 @@
 ;                       mb_l = 1;
 
                     ;; If a double-width char doesn't fit display a '>' in the last column.
-;                   if ((wp.w_onebuf_opt.@wo_rl ? (col <= 0) : (wp.w_width - 1 <= col)) && utf_char2cells(mb_c) == 2)
+;                   if (wp.w_width - 1 <= col && utf_char2cells(mb_c) == 2)
 ;                   {
 ;                       c = '>';
 ;                       mb_c = c;
@@ -83749,18 +82572,12 @@
 ;                   }
 ;               }
 
-;               if ((mb_l == 1 && 0x80 <= c)
-;                       || (1 <= mb_l && mb_c == 0)
-;                       || (1 < mb_l && !vim_isprintc(mb_c)))
+;               if ((mb_l == 1 && 0x80 <= c) || (1 <= mb_l && mb_c == 0) || (1 < mb_l && !vim_isprintc(mb_c)))
 ;               {
                     ;; Illegal UTF-8 byte: display as <xx>.
                     ;; Non-BMP character : display as ? or fullwidth ?.
 
-;                   {
-;                       transchar_hex(extra, mb_c);
-;                       if (wp.w_onebuf_opt.@wo_rl)             ;; reverse
-;                           rl_mirror(extra);
-;                   }
+;                   transchar_hex(extra, mb_c);
 
 ;                   p_extra = extra;
 ;                   c = p_extra.at(0);
@@ -83780,7 +82597,7 @@
 
                 ;; If a double-width char doesn't fit, display a '>' in the last column;
                 ;; the character is displayed at the start of the next line.
-;               if ((wp.w_onebuf_opt.@wo_rl ? (col <= 0) : (wp.w_width - 1 <= col)) && utf_char2cells(mb_c) == 2)
+;               if (wp.w_width - 1 <= col && utf_char2cells(mb_c) == 2)
 ;               {
 ;                   c = '>';
 ;                   mb_c = c;
@@ -84003,14 +82820,11 @@
 ;                               || ((0 <= fromcol[0] || 0 <= fromcol_prev)
 ;                                   && vcol < tocol[0]
 ;                                   && @VIsual_mode != Ctrl_V
-;                                   && (wp.w_onebuf_opt.@wo_rl ? (0 <= col) : (col < wp.w_width))
-;                                   && !(noinvcur
-;                                       && lnum == wp.w_cursor.lnum
-;                                       && vcol == wp.w_virtcol)))
+;                                   && col < wp.w_width
+;                                   && !(noinvcur && lnum == wp.w_cursor.lnum && vcol == wp.w_virtcol)))
 ;                           && 0 <= lcs_eol_one)
 ;                   {
-                        ;; Display a '$' after the line or highlight an extra character
-                        ;; if the line break is included.
+                        ;; Display a '$' after the line or highlight an extra character if the line break is included.
 
                         ;; For a diff line the highlighting continues after the "$".
 ;                       if (line_attr == 0)
@@ -84051,8 +82865,6 @@
 ;                       p_extra = transchar(c);
 ;                       if (n_extra == 0)
 ;                           n_extra = mb_byte2cells((byte)c) - 1;
-;                       if ((@dy_flags & DY_UHEX) != 0 && wp.w_onebuf_opt.@wo_rl)
-;                           rl_mirror(p_extra);             ;; reverse "<12>"
 ;                       c_extra = NUL;
 ;                       if (wp.w_onebuf_opt.@wo_lbr)
 ;                       {
@@ -84083,13 +82895,12 @@
 ;                            && virtual_active()
 ;                            && tocol[0] != MAXCOL
 ;                            && vcol < tocol[0]
-;                            && (wp.w_onebuf_opt.@wo_rl ? (0 <= col) : (col < wp.w_width)))
+;                            && col < wp.w_width)
 ;                   {
 ;                       c = ' ';
 ;                       ptr = ptr.minus(1);                             ;; put it back at the NUL
 ;                   }
-;                   else if ((line_attr != 0)
-;                       && (wp.w_onebuf_opt.@wo_rl ? (0 <= col) : (col - boguscols < wp.w_width)))
+;                   else if (line_attr != 0 && col - boguscols < wp.w_width)
 ;                   {
                         ;; Highlight until the right side of the window.
 ;                       c = ' ';
@@ -84129,16 +82940,8 @@
 ;                       vcol += n_extra;
 ;                       if (wp.w_onebuf_opt.@wo_wrap && 0 < n_extra)
 ;                       {
-;                           if (wp.w_onebuf_opt.@wo_rl)
-;                           {
-;                               col -= n_extra;
-;                               boguscols -= n_extra;
-;                           }
-;                           else
-;                           {
-;                               boguscols += n_extra;
-;                               col += n_extra;
-;                           }
+;                           boguscols += n_extra;
+;                           col += n_extra;
 ;                       }
 ;                       n_extra = 0;
 ;                       n_attr = 0;
@@ -84258,16 +83061,9 @@
 ;               {
 ;                   int n = 0;
 
-;                   if (wp.w_onebuf_opt.@wo_rl)
-;                   {
-;                       if (col < 0)
-;                           n = 1;
-;                   }
-;                   else
-;                   {
-;                       if (wp.w_width <= col)
-;                           n = -1;
-;                   }
+;                   if (wp.w_width <= col)
+;                       n = -1;
+
 ;                   if (n != 0)
 ;                   {
                         ;; At the window boundary, highlight the last character
@@ -84305,16 +83101,8 @@
 ;                       }
 ;                   }
 ;                   @screenAttrs[off] = char_attr;
-;                   if (wp.w_onebuf_opt.@wo_rl)
-;                   {
-;                       --col;
-;                       --off;
-;                   }
-;                   else
-;                   {
-;                       col++;
-;                       off++;
-;                   }
+;                   col++;
+;                   off++;
 ;                   vcol++;
 ;                   eol_hl_off = 1;
 ;               }
@@ -84351,12 +83139,11 @@
 ;               if (draw_color_col)
 ;                   draw_color_col = advance_color_col(vcol - vcol_off, color_cols, cci);
 
-;               if (((wp.w_onebuf_opt.@wo_cuc
+;               if ((wp.w_onebuf_opt.@wo_cuc
 ;                         && vcol - vcol_off - eol_hl_off <= wp.w_virtcol
 ;                         && wp.w_virtcol < wp.w_width * (row - startrow + 1) + v
 ;                         && lnum != wp.w_cursor.lnum)
 ;                       || draw_color_col)
-;                       && !wp.w_onebuf_opt.@wo_rl)
 ;               {
 ;                   int rightmost_vcol = 0;
 
@@ -84390,7 +83177,7 @@
 ;                   }
 ;               }
 
-;               screen_line(screen_row, wp.w_wincol, col, wp.w_width, wp.w_onebuf_opt.@wo_rl);
+;               screen_line(screen_row, wp.w_wincol, col, wp.w_width, false);
 ;               row++;
 
                 ;; Update w_cline_height and w_cline_folded if the cursor line was
@@ -84409,7 +83196,7 @@
             ;; line continues beyond line end
 ;           if (@lcs_ext != NUL
 ;                   && !wp.w_onebuf_opt.@wo_wrap
-;                   && (wp.w_onebuf_opt.@wo_rl ? col == 0 : col == wp.w_width - 1)
+;                   && col == wp.w_width - 1
 ;                   && (ptr.at(0) != NUL
 ;                       || (wp.w_onebuf_opt.@wo_list && 0 < lcs_eol_one)
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
@@ -84457,12 +83244,6 @@
 ;           {
                 ;; Store the character.
 
-;               if (wp.w_onebuf_opt.@wo_rl && 1 < utf_char2cells(mb_c))
-;               {
-                    ;; A double-wide character is: put first halve in left cell.
-;                   --off;
-;                   --col;
-;               }
 ;               @screenLines.be(off, c);
 ;               if (mb_utf8)
 ;               {
@@ -84498,23 +83279,9 @@
                     ;; of the character, otherwise highlighting won't stop.
 ;                   if (tocol[0] == vcol)
 ;                       tocol[0]++;
-;                   if (wp.w_onebuf_opt.@wo_rl)
-;                   {
-                        ;; now it's time to backup one cell
-;                       --off;
-;                       --col;
-;                   }
 ;               }
-;               if (wp.w_onebuf_opt.@wo_rl)
-;               {
-;                   --off;
-;                   --col;
-;               }
-;               else
-;               {
-;                   off++;
-;                   col++;
-;               }
+;               off++;
+;               col++;
 ;           }
 ;           else if (0 < wp.w_onebuf_opt.@wo_cole && is_concealing)
 ;           {
@@ -84537,16 +83304,8 @@
 ;                   if (0 < n_extra)
 ;                   {
 ;                       vcol += n_extra;
-;                       if (wp.w_onebuf_opt.@wo_rl)
-;                       {
-;                           col -= n_extra;
-;                           boguscols -= n_extra;
-;                       }
-;                       else
-;                       {
-;                           col += n_extra;
-;                           boguscols += n_extra;
-;                       }
+;                       col += n_extra;
+;                       boguscols += n_extra;
 ;                       n_extra = 0;
 ;                       n_attr = 0;
 ;                   }
@@ -84554,28 +83313,12 @@
 ;                   if (1 < utf_char2cells(mb_c))
 ;                   {
                         ;; Need to fill two screen columns.
-;                       if (wp.w_onebuf_opt.@wo_rl)
-;                       {
-;                           --boguscols;
-;                           --col;
-;                       }
-;                       else
-;                       {
-;                           boguscols++;
-;                           col++;
-;                       }
-;                   }
-
-;                   if (wp.w_onebuf_opt.@wo_rl)
-;                   {
-;                       --boguscols;
-;                       --col;
-;                   }
-;                   else
-;                   {
 ;                       boguscols++;
 ;                       col++;
 ;                   }
+
+;                   boguscols++;
+;                   col++;
 ;               }
 ;               else
 ;               {
@@ -84609,12 +83352,12 @@
             ;; display the line so far.
             ;; If there is no more to display it is caught above.
 
-;           if ((wp.w_onebuf_opt.@wo_rl ? (col < 0) : (wp.w_width <= col))
+;           if (wp.w_width <= col
 ;                   && (ptr.at(0) != NUL
 ;                       || (wp.w_onebuf_opt.@wo_list && @lcs_eol != NUL && BNE(p_extra, at_end_str))
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
 ;           {
-;               screen_line(screen_row, wp.w_wincol, col - boguscols, wp.w_width, wp.w_onebuf_opt.@wo_rl);
+;               screen_line(screen_row, wp.w_wincol, col - boguscols, wp.w_width, false);
 ;               boguscols = 0;
 ;               row++;
 ;               screen_row++;
@@ -84682,11 +83425,6 @@
 
 ;               col = 0;
 ;               off = BDIFF(@current_ScreenLine, @screenLines);
-;               if (wp.w_onebuf_opt.@wo_rl)
-;               {
-;                   col = wp.w_width - 1;   ;; col is not used if breaking!
-;                   off += col;
-;               }
 
                 ;; reset the drawing state for the start of a wrapped line
 ;               draw_state = WL_START;
@@ -84902,19 +83640,6 @@
 ;           }
 ;           else
 ;               @lineWraps[row] = false;
-;       }
-    ))
-
-;; Mirror text "str" for right-left displaying.
-;; Only works for single-byte characters (e.g., numbers).
-
-(defn- #_void rl_mirror [#_Bytes str]
-    (§
-;       for (Bytes p1 = str, p2 = str.plus(STRLEN(str) - 1); BLT(p1, p2); p1 = p1.plus(1), p2 = p2.minus(1))
-;       {
-;           byte b = p1.at(0);
-;           p1.be(0, p2.at(0));
-;           p2.be(0, b);
 ;       }
     ))
 
@@ -85691,10 +84416,7 @@
         ;; Outputting a character in the last cell on the screen may scroll the
         ;; screen up.  Only do it when the "xn" termcap property is set, otherwise
         ;; mark the character invalid (update it when scrolled up).
-;       if (@T_XN.at(0) == NUL
-;               && row == @screenRows - 1 && col == @screenColumns - 1
-                ;; account for first command-line character in rightleft mode
-;               && !@cmdmsg_rl)
+;       if (@T_XN.at(0) == NUL && row == @screenRows - 1 && col == @screenColumns - 1)
 ;       {
 ;           @screenAttrs[off] = -1;
 ;           return;
@@ -86428,14 +85150,7 @@
 ;       {
 ;           validate_cursor();
 
-            ;; With 'rightleft' set and the cursor on a double-wide character,
-            ;; position it on the leftmost column.
-;           int wcol = @curwin.w_onebuf_opt.@wo_rl
-;               ? (@curwin.w_width - @curwin.w_wcol
-;                   - ((us_ptr2cells(ml_get_cursor()) == 2 && vim_isprintc(gchar_cursor())) ? 2 : 1))
-;               : @curwin.w_wcol;
-
-;           windgoto(@curwin.w_winrow + @curwin.w_wrow, @curwin.w_wincol + wcol);
+;           windgoto(@curwin.w_winrow + @curwin.w_wrow, @curwin.w_wincol + @curwin.w_wcol);
 ;       }
     ))
 
@@ -87029,11 +85744,7 @@
 ;               else if ((@State & REPLACE_FLAG) != 0)
 ;                   msg_puts_attr(u8(" REPLACE"), attr);
 ;               else if ((@State & INSERT) != 0)
-;               {
-;                   if (@p_ri)
-;                       msg_puts_attr(u8(" REVERSE"), attr);
 ;                   msg_puts_attr(u8(" INSERT"), attr);
-;               }
 ;               else if (@restart_edit == 'I')
 ;                   msg_puts_attr(u8(" (insert)"), attr);
 ;               else if (@restart_edit == 'R')
@@ -87786,7 +86497,7 @@
 ;           case Ctrl_HAT:
 ;           case '^':
                 ;; buffer number
-;               eap.addr_type = ADDR_BUFFERS;
+;               eap.addr_type = ADDR_BUFFERS;
 ;               break;
 
 ;           case Ctrl_Q:
@@ -93620,21 +92331,8 @@
         (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "ascii"),         ex_ascii,         (| SBOXOK CMDWIN),                                            ADDR_LINES),
-        (->cmdname_C (u8 "buffer"),        ex_buffer,        (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA EDITCMD),     ADDR_BUFFERS),
-        (->cmdname_C (u8 "bNext"),         ex_bprevious,     (| BANG RANGE NOTADR COUNT EDITCMD),                          ADDR_LINES),
-        (->cmdname_C (u8 "ball"),          ex_buffer_all,    (| RANGE NOTADR COUNT),                                       ADDR_LINES),
-        (->cmdname_C (u8 "bdelete"),       ex_bunload,       (| BANG RANGE NOTADR BUFNAME COUNT EXTRA),                    ADDR_BUFFERS),
         (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "bfirst"),        ex_brewind,       (| BANG RANGE NOTADR EDITCMD),                                ADDR_LINES),
-        (->cmdname_C (u8 "blast"),         ex_blast,         (| BANG RANGE NOTADR EDITCMD),                                ADDR_LINES),
-        (->cmdname_C (u8 "bmodified"),     ex_bmodified,     (| BANG RANGE NOTADR COUNT EDITCMD),                          ADDR_LINES),
-        (->cmdname_C (u8 "bnext"),         ex_bnext,         (| BANG RANGE NOTADR COUNT EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "bprevious"),     ex_bprevious,     (| BANG RANGE NOTADR COUNT EDITCMD),                          ADDR_LINES),
-        (->cmdname_C (u8 "brewind"),       ex_brewind,       (| BANG RANGE NOTADR EDITCMD),                                ADDR_LINES),
-        (->cmdname_C (u8 "buffers"),       ex_buflist,       (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "bunload"),       ex_bunload,       (| BANG RANGE NOTADR BUFNAME COUNT EXTRA),                    ADDR_LOADED_BUFFERS),
-        (->cmdname_C (u8 "bwipeout"),      ex_bunload,       (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA),             ADDR_BUFFERS),
         (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN MODIFY),                           ADDR_LINES),
         (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
@@ -93718,15 +92416,6 @@
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "sandbox"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "sbuffer"),       ex_buffer,        (| BANG RANGE NOTADR BUFNAME BUFUNL COUNT EXTRA EDITCMD),     ADDR_BUFFERS),
-        (->cmdname_C (u8 "sbNext"),        ex_bprevious,     (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
-        (->cmdname_C (u8 "sball"),         ex_buffer_all,    (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
-        (->cmdname_C (u8 "sbfirst"),       ex_brewind,          EDITCMD,                                                   ADDR_LINES),
-        (->cmdname_C (u8 "sblast"),        ex_blast,            EDITCMD,                                                   ADDR_LINES),
-        (->cmdname_C (u8 "sbmodified"),    ex_bmodified,     (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
-        (->cmdname_C (u8 "sbnext"),        ex_bnext,         (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
-        (->cmdname_C (u8 "sbprevious"),    ex_bprevious,     (| RANGE NOTADR COUNT EDITCMD),                               ADDR_LINES),
-        (->cmdname_C (u8 "sbrewind"),      ex_brewind,          EDITCMD,                                                   ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
         (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
         (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
@@ -93742,7 +92431,6 @@
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startreplace"),  ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "sunhide"),       ex_buffer_all,    (| RANGE NOTADR COUNT),                                       ADDR_LINES),
         (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "sview"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
@@ -93753,7 +92441,6 @@
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "unabbreviate"),  ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "unhide"),        ex_buffer_all,    (| RANGE NOTADR COUNT),                                       ADDR_LINES),
         (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
         (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM SBOXOK CMDWIN),                     ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
