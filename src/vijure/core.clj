@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -1653,29 +1653,8 @@
 
 ;; things used in memline.c
 
-(class! #_final chunksize_C
-    [
-        (field int      mlcs_numlines)
-        (field long     mlcs_totalsize)
-    ])
-
-(defn- #_void COPY_chunksize [#_chunksize_C cs1, #_chunksize_C cs0]
-    (§
-;       cs1.mlcs_numlines = cs0.mlcs_numlines;
-;       cs1.mlcs_totalsize = cs0.mlcs_totalsize;
-    ))
-
-(defn- #_chunksize_C* ARRAY_chunksize [#_int n]
-    (vec (repeatedly n §_chunksize_C)))
-
-;; Flags when calling ml_updatechunk().
-(final int ML_CHNK_ADDLINE 1)
-(final int ML_CHNK_DELLINE 2)
-(final int ML_CHNK_UPDLINE 3)
-
 ;; 'ml_flags':
 (final int ML_EMPTY        1)   ;; empty buffer
-(final int ML_LINE_DIRTY   2)   ;; cached line was changed and allocated
 
 ;; The memline structure holds all the information about a memline.
 
@@ -1686,13 +1665,6 @@
         (field data_block_C ml_data)
 
         (field int          ml_flags)
-
-        (field long         ml_line_lnum)       ;; line number of cached line, 0 if not valid
-        (field Bytes        ml_line_ptr)        ;; pointer to cached line
-
-        (field chunksize_C* ml_chunksize)
-        (field int          ml_numchunks)
-        (field int          ml_usedchunks)
     ])
 
 ;; Structure shared between syntax.c and screen.c.
@@ -8727,7 +8699,7 @@
 
 ;       Object varp = get_varp(v);
 
-;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !bufIsChanged(@curbuf) : !((boolean[])varp)[0]))
+;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !@curbuf.@b_changed : !((boolean[])varp)[0]))
 ;           msg_puts(u8("no"));
 ;       else
 ;           msg_puts(u8("  "));
@@ -9402,7 +9374,7 @@
 ;                           ptr = new_line.plus(start_col);
 ;                           for (col = 0; col < len; col++)
 ;                               ptr.be(col, (col < num_tabs) ? (byte)'\t' : (byte)' ');
-;                           ml_replace(lnum, new_line, false);
+;                           ml_replace(lnum, new_line);
 ;                           if (first_line == 0)
 ;                               first_line = lnum;
 ;                           last_line = lnum;
@@ -10353,7 +10325,7 @@
                                             ;; characters before the cursor.
 ;                                       len_change = STRLEN(new_line) - STRLEN(orig_line);
 ;                                       @curwin.w_cursor.col += len_change;
-;                                       ml_replace(lnum, new_line, false);
+;                                       ml_replace(lnum, new_line);
 ;                                   }
 
 ;                                   @search_match_lines = regmatch.endpos[0].lnum - regmatch.startpos[0].lnum;
@@ -10393,7 +10365,7 @@
 
                                         ;; restore the line
 ;                                   if (orig_line != null)
-;                                       ml_replace(lnum, orig_line, false);
+;                                       ml_replace(lnum, orig_line);
 ;                               }
 
 ;                               @need_wait_return = false;           ;; no hit-return prompt
@@ -10627,7 +10599,7 @@
 
 ;                           if (u_savesub(lnum) != true)
 ;                               break;
-;                           ml_replace(lnum, new_start, true);
+;                           ml_replace(lnum, new_start);
 
 ;                           if (0 < nmatch_tl)
 ;                           {
@@ -10864,7 +10836,7 @@
 ;           long match = vim_regexec_multi(regmatch, @curwin, @curbuf, lnum, 0, null);
 ;           if ((type == 'g' && match != 0) || (type == 'v' && match == 0))
 ;           {
-;               ml_setmarked(lnum);
+;               ml_setmarked(lnum);
 ;               ndone++;
 ;           }
 ;           line_breakcheck();
@@ -10888,10 +10860,10 @@
 ;           end_global_changes();
 ;       }
 
-;       ml_clearmarked();                   ;; clear rest of the marks
+;       ml_clearmarked();                   ;; clear rest of the marks
     ))
 
-;; Execute "cmd" on lines marked with ml_setmarked().
+;; Execute "cmd" on lines marked with ml_setmarked().
 
 (defn- #_void global_exe [#_Bytes cmd]
     (§
@@ -10914,7 +10886,7 @@
 ;       long old_lcount = @curbuf.b_ml.ml_line_count;
 
 ;       long lnum;                  ;; line number according to old situation
-;       while (!@got_int && (lnum = ml_firstmarked()) != 0 && @global_busy == 1)
+;       while (!@got_int && (lnum = ml_firstmarked()) != 0 && @global_busy == 1)
 ;       {
 ;           @curwin.w_cursor.lnum = lnum;
 ;           @curwin.w_cursor.col = 0;
@@ -14653,7 +14625,7 @@
     (§
 ;       buffer_C buf = @curbuf;
 
-;       boolean need_hide = (bufIsChanged(buf) && buf.b_nwindows <= 1);
+;       boolean need_hide = (buf.@b_changed && buf.b_nwindows <= 1);
 ;       if (need_hide && !forceit)
 ;       {
 ;           emsg(e_nowrtmsg);
@@ -15408,7 +15380,7 @@
 
 (defn- #_boolean can_abandon [#_buffer_C buf, #_boolean forceit]
     (§
-;       return (!bufIsChanged(buf) || 1 < buf.b_nwindows || forceit);
+;       return (!buf.@b_changed || 1 < buf.b_nwindows || forceit);
     ))
 
 ;;; ============================================================================================== VimK
@@ -19973,7 +19945,7 @@
 
                 ;; "go": goto byte count from start of buffer
 ;           case 'o':
-;               goto_byte(cap.count0);
+;               goto_byte(cap.count0);
 ;               break;
 
                 ;; "gQ": improved Ex mode
@@ -21369,7 +21341,7 @@
 ;       }
 
         ;; replace the line
-;       ml_replace(@curwin.w_cursor.lnum, newp, false);
+;       ml_replace(@curwin.w_cursor.lnum, newp);
 ;       changed_bytes(@curwin.w_cursor.lnum, bd.textcol);
 ;       @State = oldstate;
 ;       @curwin.w_cursor.col = oldcol;
@@ -21471,7 +21443,7 @@
 ;               offset += count;
 ;           BCOPY(newp, offset, oldp, 0, STRLEN(oldp) + 1);
 
-;           ml_replace(lnum, newp, false);
+;           ml_replace(lnum, newp);
 
 ;           if (lnum == oap.op_end.lnum)
 ;           {
@@ -22372,7 +22344,7 @@
 ;                   oldp = oldp.plus(bd.textcol + bd.textlen);
 ;                   BCOPY(newp, bd.textcol + bd.startspaces + bd.endspaces, oldp, 0, STRLEN(oldp) + 1);
                     ;; replace the line
-;                   ml_replace(lnum, newp, false);
+;                   ml_replace(lnum, newp);
 ;               }
 
 ;               check_cursor_col();
@@ -22675,7 +22647,7 @@
 ;                   BCOPY(after_p, oldp, STRLEN(oldp) + 1);
 ;               }
                 ;; replace the line
-;               ml_replace(@curwin.w_cursor.lnum, newp, false);
+;               ml_replace(@curwin.w_cursor.lnum, newp);
 ;               if (after_p != null)
 ;               {
 ;                   ml_append(@curwin.w_cursor.lnum++, after_p, 0);
@@ -23181,7 +23153,7 @@
 ;                       offset += ins_len;
 ;                       oldp = oldp.plus(bd.textcol);
 ;                       BCOPY(newp, offset, oldp, 0, STRLEN(oldp) + 1);
-;                       ml_replace(linenr, newp, false);
+;                       ml_replace(linenr, newp);
 ;                   }
 ;               }
 ;               check_cursor();
@@ -23617,7 +23589,7 @@
 ;                   Bytes p = STRDUP(ml_get_cursor());
 ;                   ml_append(@curwin.w_cursor.lnum, p, 0);
 ;                   p = STRNDUP(ml_get_curline(), @curwin.w_cursor.col);
-;                   ml_replace(@curwin.w_cursor.lnum, p, false);
+;                   ml_replace(@curwin.w_cursor.lnum, p);
 ;                   nr_lines++;
 ;                   dir = FORWARD;
 ;               }
@@ -23808,7 +23780,7 @@
 ;                   p = p.plus(bd.endspaces);
                     ;; move the text after the cursor to the end of the line.
 ;                   BCOPY(p, 0, oldp, bd.textcol + delcount, oldlen - bd.textcol - delcount + 1);
-;                   ml_replace(@curwin.w_cursor.lnum, newp, false);
+;                   ml_replace(@curwin.w_cursor.lnum, newp);
 
 ;                   @curwin.w_cursor.lnum++;
 ;                   if (i == 0)
@@ -23888,7 +23860,7 @@
 ;                               p = p.plus(yanklen);
 ;                           }
 ;                           BCOPY(p, 0, oldp, col[0], STRLEN(oldp, col[0]) + 1);
-;                           ml_replace(lnum, newp, false);
+;                           ml_replace(lnum, newp);
                             ;; Place cursor on last putted char.
 ;                           if (lnum == @curwin.w_cursor.lnum)
 ;                           {
@@ -23939,7 +23911,7 @@
 ;                           BCOPY(newp, oldp, col[0]);
                             ;; append to first line
 ;                           BCOPY(newp, col[0], y_array[0], 0, yanklen + 1);
-;                           ml_replace(lnum, newp, false);
+;                           ml_replace(lnum, newp);
 
 ;                           @curwin.w_cursor.lnum = lnum;
 ;                           i = 1;
@@ -24330,7 +24302,7 @@
 ;               curr = skipwhite(curr);
 ;           currsize = STRLEN(curr);
 ;       }
-;       ml_replace(@curwin.w_cursor.lnum, newp, false);
+;       ml_replace(@curwin.w_cursor.lnum, newp);
 
 ;       if (setmark)
 ;       {
@@ -30283,7 +30255,7 @@
 ;           new_line.be(@curwin.w_cursor.col, NUL);
 
             ;; Put back original line.
-;           ml_replace(@curwin.w_cursor.lnum, orig_line, false);
+;           ml_replace(@curwin.w_cursor.lnum, orig_line);
 ;           @curwin.w_cursor.col = orig_col;
 
             ;; Backspace from cursor to start of line.
@@ -48524,7 +48496,6 @@
     [
         (field int      db_txt_start)   ;; byte where text starts
         (field int      db_txt_end)     ;; byte just after data block
-        (field int      db_line_count)  ;; number of lines in this block
         (field int*     db_index)       ;; index for start of line (*union* db_text)
                                         ;; followed by empty space upto db_txt_start
         (field Bytes    db_text)        ;; followed by the text in the lines until end of page
@@ -48538,19 +48509,6 @@
 
 (final int INDEX_SIZE      4)     ;; size of one db_index entry
 
-(final int! DB_MARKED       (<< 1 (dec (* INDEX_SIZE 8))))
-(final int! DB_INDEX_MASK   (bit-not DB_MARKED))
-
-(defn- #_data_block_C new_data_block []
-    (let [bs MEMFILE_PAGE_SIZE is (/ bs INDEX_SIZE)]
-        (->data_block_C bs bs 0 #_"sic!" (int* is) #_"sic!" (Bytes. bs))))
-
-;; The line number where the first mark may be is remembered.
-;; If it is 0 there are no marks at all.
-;; (always used for the current buffer only, no buffer change possible while executing a global command).
-
-(atom! long lowest_marked)
-
 ;; Open a new memline.
 
 (defn- #_memline_C ml_open []
@@ -48560,17 +48518,19 @@
 ;       ml.ml_flags = ML_EMPTY;
 ;       ml.ml_line_count = 1;
 
-;       @curwin.w_nrwidth_line_count = 0;
-
         ;; Allocate first data block and create an empty line 1.
 
-;       data_block_C dp = new_data_block();
+;       data_block_C dp = §_data_block_C();
 
-;       ml.ml_data = dp;
+;       dp.db_txt_start = MEMFILE_PAGE_SIZE;
+;       dp.db_txt_end = MEMFILE_PAGE_SIZE;
+;       dp.db_index = new int[MEMFILE_PAGE_SIZE / INDEX_SIZE];
+;       dp.db_text = new Bytes(MEMFILE_PAGE_SIZE);
 
 ;       dp.db_index[0] = --dp.db_txt_start;     ;; at end of block
-;       dp.db_line_count = 1;
 ;       dp.db_text.be(dp.db_txt_start, NUL);      ;; empty line
+
+;       ml.ml_data = dp;
 
 ;       return ml;
     ))
@@ -48611,22 +48571,13 @@
 ;       return ml_get_buf(@curbuf, @curwin.w_cursor.lnum).plus(@curwin.w_cursor.col);
     ))
 
-(atom! int _4_recurse)
-
 ;; Return a pointer to a line in a specific buffer
 
 (defn- #_Bytes ml_get_buf [#_buffer_C buf, #_long lnum]
     (§
 ;       if (buf.b_ml.ml_line_count < lnum)  ;; invalid line number
 ;       {
-;           if (@_4_recurse == 0)
-;           {
-                ;; Avoid giving this message for a recursive call,
-                ;; may happen when the GUI redraws part of the text.
-;               @_4_recurse++;
-;               emsgn(u8("E315: ml_get: invalid lnum: %ld"), lnum);
-;               --@_4_recurse;
-;           }
+;           emsgn(u8("E315: ml_get: invalid lnum: %ld"), lnum);
 
 ;           STRCPY(@ioBuff, u8("???"));
 ;           return @ioBuff;
@@ -48635,28 +48586,9 @@
 ;       if (lnum <= 0)                      ;; pretend line 0 is line 1
 ;           lnum = 1;
 
-        ;; See if it is the same line as requested last time.
-        ;; Otherwise may need to flush last used line.
+;       data_block_C dp = buf.b_ml.ml_data;
 
-;       if (buf.b_ml.ml_line_lnum != lnum)
-;       {
-;           ml_flush_line(buf);
-
-;           data_block_C dp = buf.b_ml.ml_data;
-
-;           buf.b_ml.ml_line_ptr = dp.db_text.plus(dp.db_index[(int)(lnum - 1)] & DB_INDEX_MASK);
-;           buf.b_ml.ml_line_lnum = lnum;
-;           buf.b_ml.ml_flags &= ~ML_LINE_DIRTY;
-;       }
-
-;       return buf.b_ml.ml_line_ptr;
-    ))
-
-;; Check if a line that was just obtained by a call to ml_get() is in allocated memory.
-
-(defn- #_boolean ml_line_alloced []
-    (§
-;       return ((@curbuf.b_ml.ml_flags & ML_LINE_DIRTY) != 0);
+;       return dp.db_text.plus(dp.db_index[(int)(lnum - 1)]);
     ))
 
 ;; Append a line after lnum (may be 0 to insert a line in front of the file).
@@ -48672,30 +48604,11 @@
     ;; line: text of the new line
     ;; len: length of new line, including NUL, or 0
     (§
-;       if (@curbuf.b_ml.ml_line_lnum != 0)
-;           ml_flush_line(@curbuf);
-
-;       return ml_append_int(@curbuf, lnum, line, len);
-    ))
-
-(defn- #_boolean ml_append_int [#_buffer_C buf, #_long lnum, #_Bytes line, #_int len]
-    ;; lnum: append after this line (can be 0)
-    ;; line: text of the new line
-    ;; len: length of line, including NUL, or 0
-    (§
-;       if (buf.b_ml.ml_line_count < lnum) ;; lnum out of range
+;       if (@curbuf.b_ml.ml_line_count < lnum) ;; lnum out of range
 ;           return false;
-
-;       if (@lowest_marked != 0 && lnum < @lowest_marked)
-;           @lowest_marked = lnum + 1;
 
 ;       if (len == 0)
 ;           len = STRLEN(line) + 1;                ;; space needed for the text
-;       int space_needed = len + INDEX_SIZE;            ;; space needed for new line (text + index)
-
-;       data_block_C dp = buf.b_ml.ml_data;
-
-;       buf.b_ml.ml_flags &= ~ML_EMPTY;
 
 ;       int db_idx;                                         ;; index for lnum in data block
 ;       if (lnum == 0)                                      ;; got line one instead, correct db_idx
@@ -48703,16 +48616,17 @@
 ;       else
 ;           db_idx = (int)(lnum - 1);
 
-;       int line_count;                                     ;; number of indexes in current block
         ;; get line count before the insertion
-;       line_count = (int)buf.b_ml.ml_line_count;
+;       int line_count = (int)@curbuf.b_ml.ml_line_count;               ;; number of indexes in current block
 
-;       buf.b_ml.ml_line_count++;
+;       @curbuf.b_ml.ml_line_count++;
+;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
+
+;       data_block_C dp = @curbuf.b_ml.ml_data;
 
         ;; Insert new line in existing data block, or in data block allocated above.
 
 ;       dp.db_txt_start -= len;
-;       dp.db_line_count++;
 
         ;; move the text of the lines that follow to the front
         ;; adjust the indexes of the lines that follow
@@ -48723,7 +48637,7 @@
             ;; This will become the character just after the new line.
 
 ;           int from = dp.db_txt_start + len;
-;           int over = (db_idx < 0) ? dp.db_txt_end : (dp.db_index[db_idx] & DB_INDEX_MASK);
+;           int over = (db_idx < 0) ? dp.db_txt_end : dp.db_index[db_idx];
 ;           BCOPY(dp.db_text, dp.db_txt_start, dp.db_text, from, over - from);
 ;           for (int i = line_count; db_idx < --i; )
 ;               dp.db_index[i + 1] = dp.db_index[i] - len;
@@ -48736,35 +48650,55 @@
 
 ;       BCOPY(dp.db_text, dp.db_index[db_idx + 1], line, 0, len);
 
-        ;; The line was inserted below 'lnum'.
-;       ml_updatechunk(buf, lnum + 1, (long)len, ML_CHNK_ADDLINE);
 ;       return true;
     ))
 
-;; Replace line lnum, with buffering, in current buffer.
-;;
-;; If "copy" is true, make a copy of the line,
-;; otherwise the line has been copied to allocated memory already.
+;; Replace line lnum in current buffer.
 ;;
 ;; Check: The caller of this function should probably also call
 ;; changed_lines(), unless update_screen(NOT_VALID) is used.
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean ml_replace [#_long lnum, #_Bytes line, #_boolean copy]
+(defn- #_boolean ml_replace [#_long lnum, #_Bytes line]
     (§
-;       if (line == null)           ;; just checking...
+;       if (lnum == 0 || line == null)           ;; just checking...
 ;           return false;
 
-;       if (copy)
-;           line = STRDUP(line);
+;       @curbuf.b_ml.ml_flags &= ~ML_EMPTY;
 
-;       if (@curbuf.b_ml.ml_line_lnum != lnum)       ;; other line buffered
-;           ml_flush_line(@curbuf);                  ;; flush it
+;       data_block_C dp = @curbuf.b_ml.ml_data;
 
-;       @curbuf.b_ml.ml_line_ptr = line;
-;       @curbuf.b_ml.ml_line_lnum = lnum;
-;       @curbuf.b_ml.ml_flags = (@curbuf.b_ml.ml_flags | ML_LINE_DIRTY) & ~ML_EMPTY;
+;       int idx = (int)(lnum - 1);
+;       int start = dp.db_index[idx];
+;       int old_len;
+;       if (idx == 0)                               ;; line is last in block
+;           old_len = dp.db_txt_end - start;
+;       else                                        ;; text of previous line follows
+;           old_len = dp.db_index[idx - 1] - start;
+;       int new_len = STRLEN(line) + 1;
+;       int extra = new_len - old_len;              ;; negative if lines gets smaller
+
+        ;; if new line fits in data block, replace directly
+
+        ;; if the length changes and there are following lines
+;       int count = (int)@curbuf.b_ml.ml_line_count;
+;       if (extra != 0 && idx < count - 1)
+;       {
+            ;; move text of following lines
+;           BCOPY(dp.db_text, dp.db_txt_start - extra, dp.db_text, dp.db_txt_start, start - dp.db_txt_start);
+
+            ;; adjust pointers of this and following lines
+;           for (int i = idx + 1; i < count; i++)
+;               dp.db_index[i] -= extra;
+;       }
+;       dp.db_index[idx] -= extra;
+
+        ;; adjust free space
+;       dp.db_txt_start -= extra;
+
+        ;; copy new line into the data block
+;       BCOPY(dp.db_text, start - extra, line, 0, new_len);
 
 ;       return true;
     ))
@@ -48778,512 +48712,52 @@
 
 (defn- #_boolean ml_delete [#_long lnum, #_boolean message]
     (§
-;       ml_flush_line(@curbuf);
-;       return ml_delete_int(@curbuf, lnum, message);
-    ))
-
-(defn- #_boolean ml_delete_int [#_buffer_C buf, #_long lnum, #_boolean message]
-    (§
-;       if (lnum < 1 || buf.b_ml.ml_line_count < lnum)
+;       if (lnum < 1 || @curbuf.b_ml.ml_line_count < lnum)
 ;           return false;
-
-;       if (@lowest_marked != 0 && lnum < @lowest_marked)
-;           @lowest_marked--;
 
         ;; If the file becomes empty the last line is replaced by an empty line.
 
-;       if (buf.b_ml.ml_line_count == 1)    ;; file becomes empty
+;       if (@curbuf.b_ml.ml_line_count == 1)    ;; file becomes empty
 ;       {
 ;           if (message)
 ;               set_keep_msg(no_lines_msg, 0);
 
             ;; FEAT_BYTEOFF already handled in there, don't worry 'bout it below.
-;           boolean b = ml_replace(1, u8(""), true);
-;           buf.b_ml.ml_flags |= ML_EMPTY;
+;           boolean b = ml_replace(1, u8(""));
+;           @curbuf.b_ml.ml_flags |= ML_EMPTY;
 
 ;           return b;
 ;       }
 
-;       data_block_C dp = buf.b_ml.ml_data;
+;       data_block_C dp = @curbuf.b_ml.ml_data;
 
         ;; compute line count before the delete; number of entries in block
-;       int count = (int)buf.b_ml.ml_line_count;
+;       int count = (int)@curbuf.b_ml.ml_line_count;
 ;       int idx = (int)(lnum - 1);
 
-;       --buf.b_ml.ml_line_count;
+;       --@curbuf.b_ml.ml_line_count;
 
-;       int line_start = (dp.db_index[idx] & DB_INDEX_MASK);
+;       int line_start = dp.db_index[idx];
 ;       int line_size;
 ;       if (idx == 0)                           ;; first line in block, text at the end
 ;           line_size = dp.db_txt_end - line_start;
 ;       else
-;           line_size = (dp.db_index[idx - 1] & DB_INDEX_MASK) - line_start;
+;           line_size = dp.db_index[idx - 1] - line_start;
 
-        ;; special case: If there is only one line in the data block it becomes empty.
-        ;; Then we have to remove the entry, pointing to this data block, from the pointer block.
-        ;; If this pointer block also becomes empty, we go up another block, and so on,
-        ;; up to the root if necessary.
+        ;; delete the text by moving the next lines forwards
 
-;       if (count != 1)
-;       {
-            ;; delete the text by moving the next lines forwards
+;       int text_start = dp.db_txt_start;
+;       BCOPY(dp.db_text, text_start + line_size, dp.db_text, text_start, line_start - text_start);
 
-;           int text_start = dp.db_txt_start;
-;           BCOPY(dp.db_text, text_start + line_size, dp.db_text, text_start, line_start - text_start);
+        ;; delete the index by moving the next indexes backwards
+        ;; Adjust the indexes for the text movement.
 
-            ;; delete the index by moving the next indexes backwards
-            ;; Adjust the indexes for the text movement.
+;       for (int i = idx; i < count - 1; i++)
+;           dp.db_index[i] = dp.db_index[i + 1] + line_size;
 
-;           for (int i = idx; i < count - 1; i++)
-;               dp.db_index[i] = dp.db_index[i + 1] + line_size;
+;       dp.db_txt_start += line_size;
 
-;           dp.db_txt_start += line_size;
-;           --dp.db_line_count;
-;       }
-
-;       ml_updatechunk(buf, lnum, line_size, ML_CHNK_DELLINE);
 ;       return true;
-    ))
-
-;; set the B_MARKED flag for line 'lnum'
-
-(defn- #_void ml_setmarked [#_long lnum]
-    (§
-        ;; invalid line number
-;       if (lnum < 1 || @curbuf.b_ml.ml_line_count < lnum)
-;           return;                     ;; give error message?
-
-;       if (@lowest_marked == 0 || lnum < @lowest_marked)
-;           @lowest_marked = lnum;
-
-;       data_block_C dp = @curbuf.b_ml.ml_data;
-
-;       dp.db_index[(int)(lnum - 1)] |= DB_MARKED;
-    ))
-
-;; find the first line with its B_MARKED flag set
-
-(defn- #_long ml_firstmarked []
-    (§
-        ;; The search starts with lowest_marked line.
-        ;; This is the last line where a mark was found, adjusted by inserting/deleting lines.
-
-;       for (long lnum = @lowest_marked; lnum <= @curbuf.b_ml.ml_line_count; )
-;       {
-;           data_block_C dp = @curbuf.b_ml.ml_data;
-
-;           for (int i = (int)(lnum - 1); lnum <= @curbuf.b_ml.ml_line_count; i++, lnum++)
-;               if ((dp.db_index[i] & DB_MARKED) != 0)
-;               {
-;                   dp.db_index[i] &= DB_INDEX_MASK;
-;                   @lowest_marked = lnum + 1;
-;                   return lnum;
-;               }
-;       }
-
-;       return 0;
-    ))
-
-;; clear all DB_MARKED flags
-
-(defn- #_void ml_clearmarked []
-    (§
-        ;; The search starts with line lowest_marked.
-
-;       for (long lnum = @lowest_marked; lnum <= @curbuf.b_ml.ml_line_count; )
-;       {
-;           data_block_C dp = @curbuf.b_ml.ml_data;
-
-;           for (int i = (int)(lnum - 1); lnum <= @curbuf.b_ml.ml_line_count; i++, lnum++)
-;               if ((dp.db_index[i] & DB_MARKED) != 0)
-;               {
-;                   dp.db_index[i] &= DB_INDEX_MASK;
-;               }
-;       }
-
-;       @lowest_marked = 0;
-    ))
-
-(atom! boolean _1_entered)
-
-;; flush ml_line if necessary
-
-(defn- #_void ml_flush_line [#_buffer_C buf]
-    (§
-;       if (buf.b_ml.ml_line_lnum == 0)
-;           return;                                         ;; nothing to do
-
-;       if ((buf.b_ml.ml_flags & ML_LINE_DIRTY) != 0)
-;       {
-            ;; This code doesn't work recursively,
-            ;; but Netbeans may call back here when obtaining the cursor position.
-;           if (@_1_entered)
-;               return;
-;           @_1_entered = true;
-
-;           long lnum = buf.b_ml.ml_line_lnum;
-;           Bytes new_line = buf.b_ml.ml_line_ptr;
-
-;           data_block_C dp = buf.b_ml.ml_data;
-
-;           int idx = (int)(lnum - 1);
-;           int start = (dp.db_index[idx] & DB_INDEX_MASK);
-;           int old_len;
-;           if (idx == 0)                               ;; line is last in block
-;               old_len = dp.db_txt_end - start;
-;           else                                        ;; text of previous line follows
-;               old_len = (dp.db_index[idx - 1] & DB_INDEX_MASK) - start;
-;           int new_len = STRLEN(new_line) + 1;
-;           int extra = new_len - old_len;              ;; negative if lines gets smaller
-
-            ;; if new line fits in data block, replace directly
-
-            ;; if the length changes and there are following lines
-;           int count = (int)buf.b_ml.ml_line_count;
-;           if (extra != 0 && idx < count - 1)
-;           {
-                ;; move text of following lines
-;               BCOPY(dp.db_text, dp.db_txt_start - extra, dp.db_text, dp.db_txt_start, start - dp.db_txt_start);
-
-                ;; adjust pointers of this and following lines
-;               for (int i = idx + 1; i < count; i++)
-;                   dp.db_index[i] -= extra;
-;           }
-;           dp.db_index[idx] -= extra;
-
-            ;; adjust free space
-;           dp.db_txt_start -= extra;
-
-            ;; copy new line into the data block
-;           BCOPY(dp.db_text, start - extra, new_line, 0, new_len);
-            ;; The else case is already covered by the insert and delete.
-;           ml_updatechunk(buf, lnum, (long)extra, ML_CHNK_UPDLINE);
-
-;           @_1_entered = false;
-;       }
-
-;       buf.b_ml.ml_line_lnum = 0;
-    ))
-
-(final int MLCS_MAXL 800)   ;; max no of lines in chunk
-(final int MLCS_MINL 400)   ;; should be half of MLCS_MAXL
-
-(atom! buffer_C     ml_upd_lastbuf)
-(atom! long         ml_upd_lastline)
-(atom! long         ml_upd_lastcurline)
-(atom! int          ml_upd_lastcurix)
-
-;; Keep information for finding byte offset of a line, updtype may be one of:
-;; ML_CHNK_ADDLINE: Add len to parent chunk, possibly splitting it.
-;; ML_CHNK_DELLINE: Subtract len from parent chunk, possibly deleting it.
-;; ML_CHNK_UPDLINE: Add len to parent chunk, as a signed entity.
-
-(defn- #_void ml_updatechunk [#_buffer_C buf, #_long line, #_long len, #_int updtype]
-    (§
-;       long curline = @ml_upd_lastcurline;
-;       int curix = @ml_upd_lastcurix;
-
-;       if (buf.b_ml.ml_usedchunks == -1 || len == 0)
-;           return;
-
-;       if (buf.b_ml.ml_chunksize == null)
-;       {
-;           buf.b_ml.ml_chunksize = ARRAY_chunksize(100);
-;           buf.b_ml.ml_numchunks = 100;
-;           buf.b_ml.ml_usedchunks = 1;
-;           buf.b_ml.ml_chunksize[0].mlcs_numlines = 1;
-;           buf.b_ml.ml_chunksize[0].mlcs_totalsize = 1;
-;       }
-
-;       if (updtype == ML_CHNK_UPDLINE && buf.b_ml.ml_line_count == 1)
-;       {
-            ;; First line in empty buffer from ml_flush_line() -- reset.
-
-;           buf.b_ml.ml_usedchunks = 1;
-;           buf.b_ml.ml_chunksize[0].mlcs_numlines = 1;
-;           buf.b_ml.ml_chunksize[0].mlcs_totalsize = STRLEN(buf.b_ml.ml_line_ptr) + 1;
-;           return;
-;       }
-
-        ;; Find chunk that our line belongs to, curline will be at start of the chunk.
-
-;       if (buf != @ml_upd_lastbuf || line != @ml_upd_lastline + 1 || updtype != ML_CHNK_ADDLINE)
-;       {
-;           for (curline = 1, curix = 0;
-;                curix < buf.b_ml.ml_usedchunks - 1
-;                   && curline + buf.b_ml.ml_chunksize[curix].mlcs_numlines <= line;
-;                curix++)
-;           {
-;               curline += buf.b_ml.ml_chunksize[curix].mlcs_numlines;
-;           }
-;       }
-;       else if (curline + buf.b_ml.ml_chunksize[curix].mlcs_numlines <= line
-;                   && curix < buf.b_ml.ml_usedchunks - 1)
-;       {
-            ;; Adjust cached curix & curline.
-;           curline += buf.b_ml.ml_chunksize[curix].mlcs_numlines;
-;           curix++;
-;       }
-
-;       if (updtype == ML_CHNK_DELLINE)
-;           len = -len;
-;       buf.b_ml.ml_chunksize[curix].mlcs_totalsize += len;
-
-;       if (updtype == ML_CHNK_ADDLINE)
-;       {
-;           chunksize_C[] chunks = buf.b_ml.ml_chunksize;
-
-;           chunks[curix].mlcs_numlines++;
-
-            ;; May resize here so we don't have to do it in both cases below.
-;           if (buf.b_ml.ml_numchunks <= buf.b_ml.ml_usedchunks + 1)
-;           {
-;               int n = buf.b_ml.ml_numchunks;
-;               buf.b_ml.ml_numchunks = n * 3 / 2;
-;               chunks = ARRAY_chunksize(buf.b_ml.ml_numchunks);
-;               for (int i = 0; i < buf.b_ml.ml_usedchunks; i++)
-;                   COPY_chunksize(chunks[i], buf.b_ml.ml_chunksize[i]);
-;               buf.b_ml.ml_chunksize = chunks;
-;           }
-
-;           if (MLCS_MAXL <= chunks[curix].mlcs_numlines)
-;           {
-;               for (int i = buf.b_ml.ml_usedchunks; curix <= --i; )
-;                   COPY_chunksize(chunks[i + 1], chunks[i]);
-
-                ;; Compute length of first half of lines in the split chunk.
-;               long size = 0;
-;               int linecnt = 0;
-;               while (curline < buf.b_ml.ml_line_count && linecnt < MLCS_MINL)
-;               {
-;                   data_block_C dp = buf.b_ml.ml_data;
-
-                    ;; number of entries in block
-;                   int count = (int)buf.b_ml.ml_line_count;
-;                   int idx = (int)(curline - 1);
-;                   curline = buf.b_ml.ml_line_count + 1;
-;                   int text_end;
-;                   if (idx == 0)       ;; first line in block, text at the end
-;                       text_end = dp.db_txt_end;
-;                   else
-;                       text_end = (dp.db_index[idx - 1] & DB_INDEX_MASK);
-                    ;; Compute index of last line to use in this MEMLINE.
-;                   int rest = count - idx;
-;                   if (MLCS_MINL < linecnt + rest)
-;                   {
-;                       idx += MLCS_MINL - linecnt - 1;
-;                       linecnt = MLCS_MINL;
-;                   }
-;                   else
-;                   {
-;                       idx = count - 1;
-;                       linecnt += rest;
-;                   }
-;                   size += text_end - (dp.db_index[idx] & DB_INDEX_MASK);
-;               }
-
-;               chunks[curix].mlcs_numlines = linecnt;
-;               chunks[curix + 1].mlcs_numlines -= linecnt;
-;               chunks[curix].mlcs_totalsize = size;
-;               chunks[curix + 1].mlcs_totalsize -= size;
-;               buf.b_ml.ml_usedchunks++;
-
-;               @ml_upd_lastbuf = null;      ;; Force recalc of curix & curline.
-;               return;
-;           }
-
-;           if (MLCS_MINL <= chunks[curix].mlcs_numlines && curix == buf.b_ml.ml_usedchunks - 1 && buf.b_ml.ml_line_count - line <= 1)
-;           {
-                ;; We are in the last chunk and it is cheap to crate a new one after this.
-                ;; Do it now to avoid the loop above later on.
-
-;               buf.b_ml.ml_usedchunks++;
-
-;               if (line == buf.b_ml.ml_line_count)
-;               {
-;                   chunks[curix + 1].mlcs_numlines = 0;
-;                   chunks[curix + 1].mlcs_totalsize = 0;
-;               }
-;               else
-;               {
-                    ;; Line is just prior to last, move count for last.
-                    ;; This is the common case when loading a new file.
-
-;                   data_block_C dp = buf.b_ml.ml_data;
-
-;                   int rest;
-;                   if (dp.db_line_count == 1)
-;                       rest = dp.db_txt_end - dp.db_txt_start;
-;                   else
-;                       rest = (dp.db_index[dp.db_line_count - 2] & DB_INDEX_MASK) - dp.db_txt_start;
-
-;                   chunks[curix].mlcs_numlines -= 1;
-;                   chunks[curix + 1].mlcs_numlines = 1;
-;                   chunks[curix].mlcs_totalsize -= rest;
-;                   chunks[curix + 1].mlcs_totalsize = rest;
-;               }
-;           }
-;       }
-;       else if (updtype == ML_CHNK_DELLINE)
-;       {
-;           chunksize_C[] chunks = buf.b_ml.ml_chunksize;
-
-;           chunks[curix].mlcs_numlines--;
-;           @ml_upd_lastbuf = null;          ;; Force recalc of curix & curline.
-
-;           if (curix < buf.b_ml.ml_usedchunks - 1 && chunks[curix].mlcs_numlines + chunks[curix + 1].mlcs_numlines <= MLCS_MINL)
-;           {
-;               curix++;
-;           }
-;           else if (curix == 0 && chunks[curix].mlcs_numlines <= 0)
-;           {
-;               buf.b_ml.ml_usedchunks--;
-;               for (int i = 0; i < buf.b_ml.ml_usedchunks; i++)
-;                   COPY_chunksize(chunks[i], chunks[i + 1]);
-;               return;
-;           }
-;           else if (curix == 0 || (10 < chunks[curix].mlcs_numlines && MLCS_MINL < chunks[curix].mlcs_numlines + chunks[curix - 1].mlcs_numlines))
-;           {
-;               return;
-;           }
-
-            ;; Collapse chunks.
-;           chunks[curix - 1].mlcs_numlines += chunks[curix].mlcs_numlines;
-;           chunks[curix - 1].mlcs_totalsize += chunks[curix].mlcs_totalsize;
-;           buf.b_ml.ml_usedchunks--;
-;           for (int i = curix; i < buf.b_ml.ml_usedchunks; i++)
-;               COPY_chunksize(chunks[i], chunks[i + 1]);
-;           return;
-;       }
-
-;       @ml_upd_lastbuf = buf;
-;       @ml_upd_lastline = line;
-;       @ml_upd_lastcurline = curline;
-;       @ml_upd_lastcurix = curix;
-    ))
-
-;; Find offset for line or line with offset.
-;; Find line with offset if "lnum" is 0; return remaining offset in offp.
-;; Find offset of line if "lnum" > 0.
-;; return -1 if information is not available
-
-(defn- #_long ml_find_line_or_offset [#_buffer_C buf, #_long lnum, #_long* offp]
-    (§
-;       int extra = 0;
-
-        ;; take care of cached line first
-;       ml_flush_line(@curbuf);
-
-;       if (buf.b_ml.ml_usedchunks == -1 || buf.b_ml.ml_chunksize == null || lnum < 0)
-;           return -1;
-
-;       long offset = (offp != null) ? offp[0] : 0;
-;       if (lnum == 0 && offset <= 0)
-;           return 1;   ;; Not a "find offset" and offset 0 _must_ be in line 1.
-
-        ;; Find the last chunk before the one containing our line.
-        ;; Last chunk is special because it will never qualify.
-
-;       long curline = 1;
-;       int curix = 0;
-;       long size = curix;
-;       while (curix < buf.b_ml.ml_usedchunks - 1
-;           && ((lnum != 0 && curline + buf.b_ml.ml_chunksize[curix].mlcs_numlines <= lnum)
-;               || (offset != 0 && size + buf.b_ml.ml_chunksize[curix].mlcs_totalsize < offset)))
-;       {
-;           curline += buf.b_ml.ml_chunksize[curix].mlcs_numlines;
-;           size += buf.b_ml.ml_chunksize[curix].mlcs_totalsize;
-;           curix++;
-;       }
-
-;       while ((lnum != 0 && curline < lnum) || (offset != 0 && size < offset))
-;       {
-;           if (buf.b_ml.ml_line_count < curline)
-;               return -1;
-
-;           data_block_C dp = buf.b_ml.ml_data;
-
-            ;; number of entries in block
-;           int count = (int)buf.b_ml.ml_line_count;
-;           int idx = (int)(curline - 1);
-;           int start_idx = idx;
-;           int text_end;
-;           if (idx == 0)                           ;; first line in block, text at the end
-;               text_end = dp.db_txt_end;
-;           else
-;               text_end = (dp.db_index[idx - 1] & DB_INDEX_MASK);
-            ;; Compute index of last line to use in this MEMLINE.
-;           if (lnum != 0)
-;           {
-;               if (lnum <= curline + (count - idx))
-;                   idx += lnum - curline - 1;
-;               else
-;                   idx = count - 1;
-;           }
-;           else
-;           {
-;               extra = 0;
-;               while (size + text_end - (dp.db_index[idx] & DB_INDEX_MASK) <= offset)
-;               {
-;                   if (idx == count - 1)
-;                   {
-;                       extra = 1;
-;                       break;
-;                   }
-;                   idx++;
-;               }
-;           }
-;           int len = text_end - (dp.db_index[idx] & DB_INDEX_MASK);
-;           size += len;
-;           if (offset != 0 && offset <= size)
-;           {
-;               if (size == offset)
-;                   offp[0] = 0;
-;               else if (idx == start_idx)
-;                   offp[0] = offset - size + len;
-;               else
-;                   offp[0] = offset - size + len - (text_end - (dp.db_index[idx - 1] & DB_INDEX_MASK));
-;               curline += idx - start_idx + extra;
-;               if (buf.b_ml.ml_line_count < curline)
-;                   return -1;      ;; exactly one byte beyond the end
-
-;               return curline;
-;           }
-;           curline = buf.b_ml.ml_line_count + 1;
-;       }
-
-;       return size;
-    ))
-
-;; Goto byte in buffer with offset 'cnt'.
-
-(defn- #_void goto_byte [#_long cnt]
-    (§
-;       long[] boff = { cnt };
-
-;       ml_flush_line(@curbuf);      ;; cached line may be dirty
-;       setpcmark();
-;       if (boff[0] != 0)
-;           --boff[0];
-
-;       long lnum = ml_find_line_or_offset(@curbuf, 0, boff);
-;       if (lnum < 1)       ;; past the end
-;       {
-;           @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;           @curwin.w_curswant = MAXCOL;
-;           coladvance(MAXCOL);
-;       }
-;       else
-;       {
-;           @curwin.w_cursor.lnum = lnum;
-;           @curwin.w_cursor.col = (int)boff[0];
-;           @curwin.w_cursor.coladd = 0;
-;           @curwin.w_set_curswant = true;
-;       }
-;       check_cursor();
-
-        ;; Make sure the cursor is on the first byte of a multi-byte char.
-;       mb_adjust_pos(@curbuf, @curwin.w_cursor);
     ))
 
 ;; buffer.c: functions for dealing with the buffer structure --------------------------------------
@@ -49320,6 +48794,8 @@
 
 ;       buf.b_ml = ml_open();
 
+;       @curwin.w_nrwidth_line_count = 0;
+
 ;       buf.b_namedm = ARRAY_pos(NMARKS);
 ;       buf.b_visual = §_visualinfo_C();
 ;       buf.b_last_cursor = §_pos_C();
@@ -49353,7 +48829,7 @@
 ;       (p = p.plus(1)).be(-1, (byte)'"');
 ;       vim_strncpy(p, buf_spname(@curbuf), IOSIZE - BDIFF(p, buffer) - 1);
 
-;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s"), bufIsChanged(@curbuf) ? u8(" [Modified] ") : u8(" "));
+;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s"), @curbuf.@b_changed ? u8(" [Modified] ") : u8(" "));
 
 ;       int n = (int)((@curwin.w_cursor.lnum * 100L) / @curbuf.b_ml.ml_line_count);
 
@@ -54474,7 +53950,7 @@
         ;; Replace the line (unless undo fails).
 ;       if ((flags & SIN_UNDO) == 0 || u_savesub(@curwin.w_cursor.lnum) == true)
 ;       {
-;           ml_replace(@curwin.w_cursor.lnum, newline, false);
+;           ml_replace(@curwin.w_cursor.lnum, newline);
 ;           if ((flags & SIN_CHANGED) != 0)
 ;               changed_bytes(@curwin.w_cursor.lnum, 0);
             ;; Correct saved cursor position if it is in this line.
@@ -54580,7 +54056,7 @@
 ;       BCOPY(p, ml_get_curline(), line_len);
 
         ;; Replace the line.
-;       ml_replace(@curwin.w_cursor.lnum, line, false);
+;       ml_replace(@curwin.w_cursor.lnum, line);
 
         ;; Put the cursor after the indent.
 ;       @curwin.w_cursor.col = ind_len;
@@ -54926,7 +54402,7 @@
 ;                   u_save_cursor();            ;; errors are ignored!
 ;                   @vr_lines_changed++;
 ;               }
-;               ml_replace(@curwin.w_cursor.lnum, p_extra, true);
+;               ml_replace(@curwin.w_cursor.lnum, p_extra);
 ;               changed_bytes(@curwin.w_cursor.lnum, 0);
 ;               --@curwin.w_cursor.lnum;
 ;               did_append = false;
@@ -54982,7 +54458,7 @@
                     ;; Remove trailing white space.
 ;                   if (trunc_line)
 ;                       truncate_spaces(saved_line);
-;                   ml_replace(@curwin.w_cursor.lnum, saved_line, false);
+;                   ml_replace(@curwin.w_cursor.lnum, saved_line);
 ;                   saved_line = null;
 ;                   if (did_append)
 ;                   {
@@ -55030,7 +54506,7 @@
 ;               p_extra = STRDUP(ml_get_curline());
 
                 ;; Put back original line.
-;               ml_replace(@curwin.w_cursor.lnum, next_line, false);
+;               ml_replace(@curwin.w_cursor.lnum, next_line);
 
                 ;; Insert new stuff into line again.
 ;               @curwin.w_cursor.col = 0;
@@ -55280,7 +54756,7 @@
 ;           p.be(i++, (byte)' ');
 
         ;; Replace the line in the buffer.
-;       ml_replace(lnum, newp, false);
+;       ml_replace(lnum, newp);
 
         ;; mark the buffer as changed and prepare for displaying
 ;       changed_bytes(lnum, col);
@@ -55322,7 +54798,7 @@
 ;           BCOPY(newp, oldp, col);
 ;       BCOPY(newp, col, s, 0, newlen);
 ;       BCOPY(newp, col + newlen, oldp, col, oldlen - col + 1);
-;       ml_replace(lnum, newp, false);
+;       ml_replace(lnum, newp);
 ;       changed_bytes(lnum, col);
 ;       @curwin.w_cursor.col += newlen;
     ))
@@ -55420,21 +54896,10 @@
 ;           movelen = 1;
 ;       }
 
-        ;; If the old line has been allocated the deletion can be done in the existing line.
-        ;; Otherwise a new line has to be allocated.
-
-;       boolean was_alloced = ml_line_alloced();    ;; check if "oldp" was allocated
-;       Bytes newp;
-;       if (was_alloced)
-;           newp = oldp;                            ;; use same allocated memory
-;       else
-;       {                                           ;; need to allocate a new line
-;           newp = new Bytes(oldlen + 1 - count);
-;           BCOPY(newp, oldp, col);
-;       }
+;       Bytes newp = new Bytes(oldlen + 1 - count);
+;       BCOPY(newp, oldp, col);
 ;       BCOPY(newp, col, oldp, col + count, movelen);
-;       if (!was_alloced)
-;           ml_replace(lnum, newp, false);
+;       ml_replace(lnum, newp);
 
         ;; mark the buffer as changed and prepare for displaying
 ;       changed_bytes(lnum, @curwin.w_cursor.col);
@@ -55457,7 +54922,7 @@
 ;       else
 ;           newp = STRNDUP(ml_get(lnum), col);
 
-;       ml_replace(lnum, newp, false);
+;       ml_replace(lnum, newp);
 
         ;; mark the buffer as changed and prepare for displaying
 ;       changed_bytes(lnum, @curwin.w_cursor.col);
@@ -56316,7 +55781,7 @@
 
 ;                   newline.be(idx + correct, NUL);
 
-;                   ml_replace(pos.lnum, newline, false);
+;                   ml_replace(pos.lnum, newline);
 ;                   changed_bytes(pos.lnum, idx);
 ;                   idx += correct;
 ;                   col = wcol;
@@ -56344,7 +55809,7 @@
 
 ;                   newline.be(linelen + csize - 1, NUL);
 
-;                   ml_replace(pos.lnum, newline, false);
+;                   ml_replace(pos.lnum, newline);
 ;                   changed_bytes(pos.lnum, idx);
 ;                   idx += (csize - 1 + correct);
 ;                   col += correct;
@@ -58495,7 +57960,7 @@
                 ;; should get rid of, by replacing it with the new line.
 
 ;               if (empty_buffer && lnum == 0)
-;                   ml_replace(1, uep.ue_array[i], true);
+;                   ml_replace(1, uep.ue_array[i]);
 ;               else
 ;                   ml_append(lnum, uep.ue_array[i], 0);
 ;           }
@@ -59003,7 +58468,7 @@
 
 ;       Bytes oldp = STRDUP(ml_get(@curbuf.b_u_line_lnum));
 
-;       ml_replace(@curbuf.b_u_line_lnum, @curbuf.b_u_line_ptr, true);
+;       ml_replace(@curbuf.b_u_line_lnum, @curbuf.b_u_line_ptr);
 ;       changed_bytes(@curbuf.b_u_line_lnum, 0);
 ;       @curbuf.b_u_line_ptr = oldp;
 
@@ -59013,13 +58478,6 @@
 ;       @curwin.w_cursor.col = t;
 ;       @curwin.w_cursor.lnum = @curbuf.b_u_line_lnum;
 ;       check_cursor_col();
-    ))
-
-;; Check if the 'modified' flag is set.
-
-(defn- #_boolean bufIsChanged [#_buffer_C buf]
-    (§
-;       return buf.@b_changed;
     ))
 
 ;;; ============================================================================================== VimV
@@ -65572,7 +65030,7 @@
 ;           Bytes p = @nameBuff;
 ;           int len = STRLEN(p);
 
-;           if (bufIsChanged(@curbuf))
+;           if (@curbuf.@b_changed)
 ;           {
 ;               p.be(len++, (byte)' ');
 ;               STRCPY(p.plus(len), u8("[+]"));
@@ -70127,10 +69585,10 @@
 ;               }
 ;               if (!r)
 ;               {
-;                   if (bufIsChanged(@curbuf))
+;                   if (@curbuf.@b_changed)
 ;                       continue;
 ;               }
-;               win_close(wp, !bufIsChanged(@curbuf));
+;               win_close(wp, !@curbuf.@b_changed);
 ;           }
 ;       }
 
