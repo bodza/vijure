@@ -1527,14 +1527,12 @@
 (atom! boolean p_ari)       ;; 'allowrevins'
 (atom! boolean p_ri)        ;; 'revins'
 (atom! boolean p_ru)        ;; 'ruler'
-(atom! Bytes   p_ruf)       ;; 'rulerformat'
 (atom! long    p_sj)        ;; 'scrolljump'
 (atom! long    p_so)        ;; 'scrolloff'
 (atom! Bytes   p_sbo)       ;; 'scrollopt'
 (atom! Bytes   p_sections)  ;; 'sections'
 (atom! Bytes   p_sel)       ;; 'selection'
 (atom! Bytes   p_slm)       ;; 'selectmode'
-(atom! Bytes   p_stl)       ;; 'statusline'
 (atom! boolean p_sr)        ;; 'shiftround'
 (atom! Bytes   p_shm)       ;; 'shortmess'
 (atom! Bytes   p_sbr)       ;; 'showbreak'
@@ -1655,7 +1653,6 @@
     WV_CUC    14,
     WV_CUL    15,
     WV_CC     16,
-    WV_STL    17,
     WV_WFH    18,
     WV_WFW    19,
     WV_WRAP   20)
@@ -1955,7 +1952,6 @@
         (atom' boolean wo_cuc)      ;; 'cursorcolumn'
         (atom' boolean wo_cul)      ;; 'cursorline'
         (atom' Bytes   wo_cc)       ;; 'colorcolumn'
-        (atom' Bytes   wo_stl)      ;; 'statusline'
         (atom' boolean wo_scb)      ;; 'scrollbind'
         (atom' boolean wo_wrap)     ;; 'wrap'
         (atom' Bytes   wo_cocu)     ;; 'concealcursor'
@@ -2473,8 +2469,7 @@
 
         ;; b_ffname has the full path of the file (null for no name).
         ;; b_sfname is the name as the user typed it (or null).
-        ;; b_fname is the same as b_sfname, unless ":cd" has been done,
-        ;;      then it is the same as b_ffname (null for no name).
+        ;; b_fname is the same as b_sfname.
 
         (field Bytes        b_ffname)           ;; full path file name
         (field Bytes        b_sfname)           ;; short file name
@@ -2651,8 +2646,6 @@
 ; %%    (field int          b_bad_char)         ;; "++bad=" argument when edit started or 0
 
 ; %%    (field boolean      b_did_warn)         ;; set to true if user has been warned on first change of a read-only file
-
-; %%    (field boolean      b_shortname)        ;; this file has an 8.3 file name
 
 ; %%    (field int          b_mapped_ctrl_c)    ;; modes where CTRL-C is mapped
     ])
@@ -2926,7 +2919,6 @@
         (field winopt_C     w_allbuf_opt    (§_winopt_C))
 
         ;; A few options have local flags for P_INSECURE.
-        (atom' long         w_p_stl_flags)      ;; flags for 'statusline'
         (field int*         w_p_cc_cols)        ;; array of columns to highlight or null
         (field int          w_p_brimin)         ;; minimum width for breakindent
         (field int          w_p_brishift)       ;; additional shift for breakindent
@@ -8779,7 +8771,6 @@
     PV_CUC    (| WV_CUC    PV_WIN),
     PV_CUL    (| WV_CUL    PV_WIN),
     PV_CC     (| WV_CC     PV_WIN),
-    PV_STL    (| WV_STL    PV_WIN   PV_BOTH),
     PV_WFH    (| WV_WFH    PV_WIN),
     PV_WFW    (| WV_WFW    PV_WIN),
     PV_WRAP   (| WV_WRAP   PV_WIN))
@@ -9014,7 +9005,6 @@
         (bool_opt (u8 "rightleft"),      (u8 "rl"),        P_RWIN,                      VAR_WIN,     PV_RL,      false),
         (utf8_opt (u8 "rightleftcmd"),   (u8 "rlc"),       P_RWIN,                      VAR_WIN,     PV_RLC,    (u8 "search")),
         (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        PV_NONE,    false),
-        (utf8_opt (u8 "rulerformat"),    (u8 "ruf"),       P_RSTAT,                     p_ruf,       PV_NONE,   (u8 "")),
         (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           VAR_WIN,     PV_SCROLL,  12#_L),
         (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           VAR_WIN,     PV_SCBIND,  false),
         (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        PV_NONE,    1#_L),
@@ -9040,7 +9030,6 @@
         (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        PV_NONE,    false),
         (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       PV_NONE,    false),
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
-        (utf8_opt (u8 "statusline"),     (u8 "stl"),       P_RSTAT,                     p_stl,       PV_STL,    (u8 "")),
         (utf8_opt (u8 "switchbuf"),      (u8 "swb"),    (| P_COMMA P_NODUP),            p_swb,       PV_NONE,   (u8 "")),
         (utf8_opt (u8 "tabline"),        (u8 "tal"),       P_RALL,                      p_tal,       PV_NONE,   (u8 "")),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
@@ -10215,12 +10204,6 @@
 
 (defn- #_long* insecure_flag [#_int opt_idx, #_int opt_flags]
     (§
-;       if ((opt_flags & OPT_LOCAL) != 0)
-;           switch (vimoptions[opt_idx].indir)
-;           {
-;               case PV_STL:        return @curwin.w_p_stl_flags;
-;           }
-
         ;; Nothing special, return global flags field.
 ;       return vimoptions[opt_idx].flags;
     ))
@@ -10618,31 +10601,6 @@
 ;       else if (varp == p_cb)
 ;           errmsg = check_clipboard_option();
 
-        ;; 'statusline' or 'rulerformat'
-;       else if (gvarp == p_stl || varp == p_ruf)
-;       {
-;           if (varp == p_ruf)     ;; reset ru_wid first
-;               @ru_wid = 0;
-;           Bytes s = varp[0];
-;           if (varp == p_ruf && s.at(0) == (byte)'%')
-;           {
-                ;; set ru_wid if 'ruf' starts with "%99("
-;               if ((s = s.plus(1)).at(0) == (byte)'-')    ;; ignore a '-'
-;                   s = s.plus(1);
-;               int wid;
-;               { Bytes[] __ = { s }; wid = (int)getdigits(__); s = __[0]; }
-;               if (wid != 0 && s.at(0) == (byte)'(' && (errmsg = check_stl_option(@p_ruf)) == null)
-;                   @ru_wid = wid;
-;               else
-;                   errmsg = check_stl_option(@p_ruf);
-;           }
-            ;; check 'statusline' only if it doesn't start with "%!"
-;           else if (varp == p_ruf || s.at(0) != (byte)'%' || s.at(1) != (byte)'!')
-;               errmsg = check_stl_option(s);
-;           if (varp == p_ruf && errmsg == null)
-;               comp_col();
-;       }
-
         ;; 'pastetoggle': translate key codes like in a mapping
 ;       else if (varp == p_pt)
 ;       {
@@ -10930,74 +10888,6 @@
 ;       }
 
 ;       return null;        ;; no error
-    ))
-
-(final Bytes stl__errbuf    (Bytes. 80))
-
-;; Check validity of options with the 'statusline' format.
-;; Return error message or null.
-
-(defn- #_Bytes check_stl_option [#_Bytes s]
-    (§
-;       int itemcnt = 0;
-;       int groupdepth = 0;
-
-;       while (s.at(0) != NUL && itemcnt < STL_MAX_ITEM)
-;       {
-            ;; Check for valid keys after % sequences.
-;           while (s.at(0) != NUL && s.at(0) != (byte)'%')
-;               s = s.plus(1);
-;           if (s.at(0) == NUL)
-;               break;
-;           s = s.plus(1);
-;           if (s.at(0) != (byte)'%' && s.at(0) != (byte)')')
-;               itemcnt++;
-;           if (s.at(0) == (byte)'%' || s.at(0) == STL_TRUNCMARK || s.at(0) == STL_MIDDLEMARK)
-;           {
-;               s = s.plus(1);
-;               continue;
-;           }
-;           if (s.at(0) == (byte)')')
-;           {
-;               s = s.plus(1);
-;               if (--groupdepth < 0)
-;                   break;
-;               continue;
-;           }
-;           if (s.at(0) == (byte)'-')
-;               s = s.plus(1);
-;           while (asc_isdigit(s.at(0)))
-;               s = s.plus(1);
-;           if (s.at(0) == STL_USER_HL)
-;               continue;
-;           if (s.at(0) == (byte)'.')
-;           {
-;               s = s.plus(1);
-;               while (s.at(0) != NUL && asc_isdigit(s.at(0)))
-;                   s = s.plus(1);
-;           }
-;           if (s.at(0) == (byte)'(')
-;           {
-;               groupdepth++;
-;               continue;
-;           }
-;           if (vim_strchr(STL_ALL, s.at(0)) == null)
-;               return illegal_char(stl__errbuf, s.at(0));
-;           if (s.at(0) == (byte)'{')
-;           {
-;               s = s.plus(1);
-;               while (s.at(0) != (byte)'}' && s.at(0) != NUL)
-;                   s = s.plus(1);
-;               if (s.at(0) != (byte)'}')
-;                   return u8("E540: Unclosed expression sequence");
-;           }
-;       }
-;       if (STL_MAX_ITEM <= itemcnt)
-;           return u8("E541: too many items");
-;       if (groupdepth != 0)
-;           return u8("E542: unbalanced groups");
-
-;       return null;
     ))
 
 ;; Extract the items in the 'clipboard' option and set global values.
@@ -12070,7 +11960,6 @@
 ;           {
 ;               case PV_KP:   return @curbuf.b_p_kp;
 ;               case PV_LW:   return @curbuf.b_p_lw;
-;               case PV_STL:  return @curwin.w_onebuf_opt.wo_stl;
 ;               case PV_UL:   return @curbuf.b_p_ul;
 ;           }
 ;           return null;        ;; "cannot happen"
@@ -12096,7 +11985,6 @@
             ;; global option with local value: use local value if it's been set
 ;           case PV_KP:     return (@curbuf.@b_p_kp.at(0) != NUL)          ? @curbuf.b_p_kp : v.var;
 ;           case PV_LW:     return (@curbuf.@b_p_lw.at(0) != NUL)          ? @curbuf.b_p_lw : v.var;
-;           case PV_STL:    return (wop.@wo_stl.at(0) != NUL)             ? wop.wo_stl    : v.var;
 ;           case PV_UL:     return (@curbuf.@b_p_ul != NO_LOCAL_UNDOLEVEL) ? @curbuf.b_p_ul : v.var;
 
 ;           case PV_BRI:    return wop.wo_bri;
@@ -12179,7 +12067,6 @@
 ;       to.@wo_nuw = from.@wo_nuw;
 ;       to.@wo_rl  = from.@wo_rl;
 ;       to.@wo_rlc = STRDUP(from.@wo_rlc);
-;       to.@wo_stl = STRDUP(from.@wo_stl);
 ;       to.@wo_wrap = from.@wo_wrap;
 ;       to.@wo_lbr = from.@wo_lbr;
 ;       to.@wo_bri = from.@wo_bri;
@@ -12207,7 +12094,6 @@
 (defn- #_void check_winopt [#_winopt_C wop]
     (§
 ;       check_string_option(wop.wo_rlc);
-;       check_string_option(wop.wo_stl);
 ;       check_string_option(wop.wo_cc);
 ;       check_string_option(wop.wo_cocu);
 ;       check_string_option(wop.wo_briopt);
@@ -12219,7 +12105,6 @@
     (§
 ;       clear_string_option(wop.wo_briopt);
 ;       clear_string_option(wop.wo_rlc);
-;       clear_string_option(wop.wo_stl);
 ;       clear_string_option(wop.wo_cc);
 ;       clear_string_option(wop.wo_cocu);
     ))
@@ -13235,16 +13120,11 @@
 
 ;; start editing a new file
 ;;
-;;     fnum: file number; if zero use ffname/sfname
 ;;   ffname: the file name
-;;              - full path if sfname used,
-;;              - any file name if sfname is null
-;;              - empty string to re-edit with the same file name (but may be
-;;                  in a different directory)
+;;              - any file name
+;;              - empty string to re-edit with the same file name (but may be in a different directory)
 ;;              - null to start an empty buffer
-;;   sfname: the short file name (or null)
-;;      eap: contains the command to be executed after loading the file and
-;;           forced 'ff' and 'fenc'
+;;      eap: contains the command to be executed after loading the file and forced 'ff' and 'fenc'
 ;;  newlnum: if > 0: put cursor on this line number (if possible)
 ;;           if ECMD_LASTL: use last position in loaded file
 ;;           if ECMD_LAST: use last position in all files
@@ -13260,7 +13140,7 @@
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean do_ecmd [#_int fnum, #_Bytes ffname, #_Bytes sfname, #_exarg_C eap, #_long newlnum, #_int flags, #_window_C oldwin]
+(defn- #_boolean do_ecmd [#_Bytes ffname, #_exarg_C eap, #_long newlnum, #_int flags, #_window_C oldwin]
     ;; eap: can be null!
     (§
 ;       boolean[] retval = { false };
@@ -13282,38 +13162,22 @@
 
 ;       theend:
 ;       {
-;           if (fnum != 0)
-;           {
-;               if (fnum == @curbuf.b_fnum)              ;; file is already being edited
-;                   return true;                        ;; nothing to do
+;           if ((flags & ECMD_ADDBUF) != 0 && (ffname == null || ffname.at(0) == NUL))
+;               break theend;
+
+;           if (ffname == null)
 ;               other_file = true;
-;           }
+                                                            ;; there is no file name
+;           else if (ffname.at(0) == NUL && @curbuf.b_ffname == null)
+;               other_file = false;
 ;           else
 ;           {
-                ;; if no short name given, use "ffname" for short name
-;               if (sfname == null)
-;                   sfname = ffname;
-
-;               if ((flags & ECMD_ADDBUF) != 0 && (ffname == null || ffname.at(0) == NUL))
-;                   break theend;
-
-;               if (ffname == null)
-;                   other_file = true;
-                                                                ;; there is no file name
-;               else if (ffname.at(0) == NUL && @curbuf.b_ffname == null)
-;                   other_file = false;
-;               else
-;               {
-;                   if (ffname.at(0) == NUL)                    ;; re-edit with same file name
-;                   {
-;                       ffname = @curbuf.b_ffname;
-;                       sfname = @curbuf.b_fname;
-;                   }
-;                   free_fname = fullName_save(ffname, true);   ;; may expand to full path name
-;                   if (free_fname != null)
-;                       ffname = free_fname;
-;                   other_file = otherfile(ffname);
-;               }
+;               if (ffname.at(0) == NUL)                    ;; re-edit with same file name
+;                   ffname = @curbuf.b_ffname;
+;               free_fname = fullName_save(ffname, true);   ;; may expand to full path name
+;               if (free_fname != null)
+;                   ffname = free_fname;
+;               other_file = otherfile(ffname);
 ;           }
 
             ;; if the file was changed we may not be allowed to abandon it
@@ -13327,8 +13191,8 @@
 ;                                       | ((flags & ECMD_FORCEIT) != 0 ? CCGD_FORCEIT : 0)
 ;                                       | (eap == null ? 0 : CCGD_EXCMD)))
 ;           {
-;               if (fnum == 0 && other_file && ffname != null)
-;                   setaltfname(ffname, sfname, (newlnum < 0) ? 0 : newlnum);
+;               if (other_file && ffname != null)
+;                   setaltfname(ffname, (newlnum < 0) ? 0 : newlnum);
 ;               break theend;
 ;           }
 
@@ -13350,30 +13214,27 @@
 ;                       buflist_altfpos(oldwin);
 ;               }
 
-;               buffer_C buf;
-;               if (fnum != 0)
-;                   buf = buflist_findnr(fnum);
-;               else
+;               if ((flags & ECMD_ADDBUF) != 0)
 ;               {
-;                   if ((flags & ECMD_ADDBUF) != 0)
-;                   {
-;                       long tlnum = 1L;
+;                   long tlnum = 1L;
 
-;                       if (command != null)
-;                       {
-;                           tlnum = libC.atol(command);
-;                           if (tlnum <= 0)
-;                               tlnum = 1L;
-;                       }
-;                       buflist_new(ffname, sfname, tlnum, BLN_LISTED);
-;                       break theend;
+;                   if (command != null)
+;                   {
+;                       tlnum = libC.atol(command);
+;                       if (tlnum <= 0)
+;                           tlnum = 1L;
 ;                   }
-;                   buf = buflist_new(ffname, sfname, 0L, BLN_CURBUF | BLN_LISTED);
-                    ;; autocommands may change curwin and curbuf
-;                   if (oldwin != null)
-;                       oldwin = @curwin;
-;                   old_curbuf = @curbuf;
+;                   buflist_new(ffname, tlnum, BLN_LISTED);
+;                   break theend;
 ;               }
+
+;               buffer_C buf = buflist_new(ffname, 0L, BLN_CURBUF | BLN_LISTED);
+
+                ;; autocommands may change curwin and curbuf
+;               if (oldwin != null)
+;                   oldwin = @curwin;
+;               old_curbuf = @curbuf;
+
 ;               if (buf == null)
 ;                   break theend;
 ;               if (buf.b_ml.ml_mfp == null)            ;; no memfile yet
@@ -13439,8 +13300,7 @@
 
                         ;; Autocommands may open a new window and leave oldwin open
                         ;; which leads to crashes since the above call sets oldwin.w_buffer to null.
-;                       if (@curwin != oldwin && oldwin != @aucmd_win
-;                                   && win_valid(oldwin) && oldwin.w_buffer == null)
+;                       if (@curwin != oldwin && oldwin != @aucmd_win && win_valid(oldwin) && oldwin.w_buffer == null)
 ;                           win_close(oldwin, false);
 
 ;                       if (aborting())                 ;; autocmds may abort script processing
@@ -17673,8 +17533,8 @@
 ;       @cmdwin_type = get_cmdline_type();
 
         ;; Create the command-line buffer empty.
-;       do_ecmd(0, null, null, null, ECMD_ONE, ECMD_HIDE, null);
-;       setfname(@curbuf, u8("[Command Line]"), null, true);
+;       do_ecmd(null, null, ECMD_ONE, ECMD_HIDE, null);
+;       setfname(@curbuf, u8("[Command Line]"), true);
 ;       set_option_value(u8("bt"), 0L, u8("nofile"), OPT_LOCAL);
 ;       @curbuf.@b_p_ma = true;
 ;       @curwin.w_onebuf_opt.@wo_rl = @cmdmsg_rl;
@@ -20853,7 +20713,7 @@
 ;       {
             ;; ":new" or ":tabnew" without argument: edit an new empty buffer
 ;           setpcmark();
-;           do_ecmd(0, null, null, eap, ECMD_ONE,
+;           do_ecmd(null, eap, ECMD_ONE,
 ;                         ECMD_HIDE + (eap.forceit ? ECMD_FORCEIT : 0),
 ;                         old_curwin == null ? @curwin : null);
 ;       }
@@ -20869,8 +20729,8 @@
 ;           else if (eap.cmdidx == CMD_enew)
 ;               @readonlymode = false;   ;; 'readonly' doesn't make sense in an empty buffer
 ;           setpcmark();
-;           if (do_ecmd(0, (eap.cmdidx == CMD_enew) ? null : eap.arg,
-;                       null, eap,
+;           if (do_ecmd((eap.cmdidx == CMD_enew) ? null : eap.arg,
+;                       eap,
                         ;; ":edit" goes to first line if Vi compatible
 ;                       (eap.arg.at(0) == NUL && eap.do_ecmd_lnum == 0
 ;                               && vim_strbyte(@p_cpo, CPO_GOTO1) != null) ? ECMD_ONE : eap.do_ecmd_lnum,
@@ -25723,7 +25583,7 @@
 ;           showmode();
 ;       }
 ;       else if (!checkclearop(cap.oap))
-                ;; print full name if count given or :cd used
+                ;; print full name if count given
 ;           fileinfo((int)cap.count0, true);
     ))
 
@@ -34294,12 +34154,8 @@
 ;       {
 ;           vim_strncpy(@nameBuff, fm.fname, MAXPATHL - 1);
 
-            ;; Try to shorten the file name.
-;           mch_dirname(@ioBuff, IOSIZE);
-;           Bytes p = shorten_fname(@nameBuff, @ioBuff);
-
             ;; buflist_new() will call fmarks_check_names()
-;           buflist_new(@nameBuff, p, 1, 0);
+;           buflist_new(@nameBuff, 1, 0);
 ;       }
     ))
 
@@ -61285,71 +61141,6 @@
 ;       }
     ))
 
-;; Resolve a symlink in the last component of a file name.
-;; If it worked returns true and the resolved link in "buf[MAXPATHL]".
-;; Otherwise returns false.
-
-(defn- #_boolean resolve_symlink [#_Bytes fname, #_Bytes buf]
-    (§
-;       Bytes tmp = new Bytes(MAXPATHL);
-
-;       if (fname == null)
-;           return false;
-
-        ;; Put the result so far in tmp[], starting with the original name.
-;       vim_strncpy(tmp, fname, MAXPATHL - 1);
-
-;       for (int depth = 0; ; )
-;       {
-            ;; Limit symlink depth to 100, catch recursive loops.
-;           if (++depth == 100)
-;           {
-;               emsg2(u8("E773: Symlink loop for \"%s\""), fname);
-;               return false;
-;           }
-
-;           int ret = (int)libC.readlink(tmp, buf, MAXPATHL - 1);
-;           if (ret <= 0)
-;           {
-;               if (libC.errno() == EINVAL || libC.errno() == ENOENT)
-;               {
-                    ;; Found non-symlink or not existing file, stop here.
-                    ;; When at the first level use the unmodified name,
-                    ;; skip the call to vim_fullName().
-;                   if (depth == 1)
-;                       return false;
-
-                    ;; Use the resolved name in tmp[].
-;                   break;
-;               }
-
-                ;; There must be some error reading links, use original name.
-;               return false;
-;           }
-;           buf.be(ret, NUL);
-
-            ;; Check whether the symlink is relative or absolute.
-            ;; If it's relative, build a new path based on the directory
-            ;; portion of the filename (if any) and the path the symlink points to.
-
-;           if (mch_isFullName(buf))
-;               STRCPY(tmp, buf);
-;           else
-;           {
-;               Bytes tail = gettail(tmp);
-;               if (MAXPATHL <= STRLEN(tail) + STRLEN(buf))
-;                   return false;
-;               STRCPY(tail, buf);
-;           }
-;       }
-
-        ;; Try to resolve the full name of the file so that the swapfile name will
-        ;; be consistent even when opening a relative symlink from different
-        ;; working directories.
-
-;       return vim_fullName(tmp, buf, MAXPATHL, true);
-    ))
-
 ;; Set the flags in the first block of the swap file:
 ;; - file is modified or not: buf.b_changed
 
@@ -61999,7 +61790,6 @@
     (§
 ;       buf.b_ml.ml_line_count = 1;
 ;       unchanged(buf, true);
-;       buf.b_shortname = false;
 ;       buf.b_ml.ml_mfp = null;
 ;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
     ))
@@ -62228,7 +62018,7 @@
 ;       }
 
 ;       setpcmark();
-;       boolean retval = do_ecmd(0, null, null, null, ECMD_ONE, forceit ? ECMD_FORCEIT : 0, @curwin);
+;       boolean retval = do_ecmd(null, null, ECMD_ONE, forceit ? ECMD_FORCEIT : 0, @curwin);
 
         ;; do_ecmd() may create a new buffer, then we have to delete the old one.
         ;; But do_ecmd() may have done that already, check if the buffer still exists.
@@ -62639,25 +62429,22 @@
 
 (atom! int  top_file_num 1)       ;; highest file number
 
-(defn- #_buffer_C buflist_new [#_Bytes _ffname, #_Bytes _sfname, #_long lnum, #_int flags]
+(defn- #_buffer_C buflist_new [#_Bytes ffname, #_long lnum, #_int flags]
     ;; ffname: full path of fname or relative
-    ;; sfname: short fname or null
     ;; lnum: preferred cursor line
     ;; flags: BLN_ defines
     (§
-;       Bytes[] ffname = { _ffname };
-;       Bytes[] sfname = { _sfname };
-;       fname_expand(ffname, sfname);         ;; will allocate "ffname"
+;       ffname = fullName_save(ffname, true);
 
         ;; If file name already exists in the list, update the entry.
 
         ;; On Unix we can use inode numbers when the file exists.  Works better for hard links.
 ;       stat_C st = new stat_C();
-;       if (sfname[0] == null || libC.stat(sfname[0], st) < 0)
+;       if (sfname[0] == null || libC.stat(sfname[0], st) < 0)
 ;           st.st_dev(-1);
 
 ;       buffer_C buf;
-;       if (ffname[0] != null && (flags & BLN_DUMMY) == 0 && (buf = buflist_findname_stat(ffname[0], st)) != null)
+;       if (ffname != null && (flags & BLN_DUMMY) == 0 && (buf = buflist_findname_stat(ffname, st)) != null)
 ;       {
 ;           if (lnum != 0)
 ;               buflist_setfpos(buf, @curwin, lnum, 0, false);
@@ -62702,16 +62489,16 @@
 ;           buf.b_op_end = §_pos_C();
 ;       }
 
-;       if (ffname[0] != null)
+;       if (ffname != null)
 ;       {
-;           buf.b_ffname = ffname[0];
-;           buf.b_sfname = STRDUP(sfname[0]);
+;           buf.b_ffname = ffname;
+;           buf.b_sfname = STRDUP(sfname[0]);
 ;       }
 
 ;       clear_wininfo(buf);
 ;       buf.b_wininfo = §_wininfo_C();
 
-;       if (ffname[0] != null && (buf.b_ffname == null || buf.b_sfname == null))
+;       if (ffname != null && (buf.b_ffname == null || buf.b_sfname == null))
 ;       {
 ;           buf.b_ffname = null;
 ;           buf.b_sfname = null;
@@ -63166,19 +62953,16 @@
 ;       return true;
     ))
 
-;; Set the file name for "buf"' to 'ffname', short file name to 'sfname'.
-;; The file name with the full path is also remembered, for when :cd is used.
+;; Set the file name for "buf"' to 'ffname'.
 ;; Returns false for failure (file name already in use by other buffer)
 ;;      true otherwise.
 
-(defn- #_boolean setfname [#_buffer_C buf, #_Bytes _ffname, #_Bytes _sfname, #_boolean message]
+(defn- #_boolean setfname [#_buffer_C buf, #_Bytes ffname, #_boolean message]
     ;; message: give message when buffer already exists
     (§
-;       Bytes[] ffname = { _ffname };
-;       Bytes[] sfname = { _sfname };
 ;       stat_C st = new stat_C();
 
-;       if (ffname[0] == null || ffname[0].at(0) == NUL)
+;       if (ffname == null || ffname.at(0) == NUL)
 ;       {
             ;; Removing the name.
 ;           buf.b_ffname = null;
@@ -63189,18 +62973,18 @@
 ;       {
 ;           buffer_C obuf = null;
 
-;           fname_expand(ffname, sfname); ;; will allocate "ffname"
-;           if (ffname[0] == null)                 ;; out of memory
+;           ffname = fullName_save(ffname, true);
+;           if (ffname == null)                 ;; out of memory
 ;               return false;
 
             ;; if the file name is already used in another buffer:
             ;; - if the buffer is loaded, fail
             ;; - if the buffer is not loaded, delete it from the list
 
-;           if (libC.stat(ffname[0], st) < 0)
+;           if (libC.stat(ffname, st) < 0)
 ;               st.st_dev(-1);
 ;           if ((buf.b_flags & BF_DUMMY) == 0)
-;               obuf = buflist_findname_stat(ffname[0], st);
+;               obuf = buflist_findname_stat(ffname, st);
 ;           if (obuf != null && obuf != buf)
 ;           {
 ;               if (obuf.b_ml.ml_mfp != null)   ;; it's loaded, fail
@@ -63212,11 +62996,10 @@
                 ;; delete from the list
 ;               close_buffer(null, obuf, DOBUF_WIPE, false);
 ;           }
-;           sfname[0] = STRDUP(sfname[0]);
-;           if (ffname[0] == null || sfname[0] == null)
+;           if (ffname == null || sfname[0] == null)
 ;               return false;
-;           buf.b_ffname = ffname[0];
-;           buf.b_sfname = sfname[0];
+;           buf.b_ffname = ffname;
+;           buf.b_sfname = sfname[0];
 ;       }
 ;       buf.b_fname = buf.b_sfname;
 ;       if (st.st_dev() == -1)
@@ -63227,8 +63010,6 @@
 ;           buf.b_dev = st.st_dev();
 ;           buf.b_ino = st.st_ino();
 ;       }
-
-;       buf.b_shortname = false;
 
 ;       buf_name_changed(buf);
 ;       return true;
@@ -63248,10 +63029,10 @@
 ;; Used by do_one_cmd() and do_ecmd().
 ;; Return the buffer.
 
-(defn- #_buffer_C setaltfname [#_Bytes ffname, #_Bytes sfname, #_long lnum]
+(defn- #_buffer_C setaltfname [#_Bytes ffname, #_long lnum]
     (§
         ;; Create a buffer.  'buflisted' is not set if it's a new buffer.
-;       buffer_C buf = buflist_new(ffname, sfname, lnum, 0);
+;       buffer_C buf = buflist_new(ffname, lnum, 0);
 ;       if (buf != null && !@cmdmod.keepalt)
 ;           @curwin.w_alt_fnum = buf.b_fnum;
 ;       return buf;
@@ -64205,18 +63986,6 @@
     ;; add_file: Add "file" before the arg number
     (§
 ;       return false;
-    ))
-
-;; Make "ffname" a full file name, set "sfname" to "ffname" if not null.
-;; "ffname" becomes a pointer to allocated memory (or null).
-
-(defn- #_void fname_expand [#_Bytes* ffname, #_Bytes* sfname]
-    (§
-;       if (ffname[0] == null)        ;; if no file name given, nothing to do
-;           return;
-;       if (sfname[0] == null)        ;; if no short file name given, use "ffname"
-;           sfname[0] = ffname[0];
-;       ffname[0] = fullName_save(ffname[0], true); ;; expand to full path
     ))
 
 ;; Open a window for a number of buffers.
@@ -77721,25 +77490,6 @@
 ;       }
     ))
 
-;; Try to find a shortname by comparing the fullname with the current directory.
-;; Returns null if not shorter name possible, pointer into "full_path" otherwise.
-
-(defn- #_Bytes shorten_fname [#_Bytes full_path, #_Bytes dir_name]
-    (§
-;       if (full_path == null)
-;           return null;
-
-;       int len = STRLEN(dir_name);
-;       if (STRNCMP(dir_name, full_path, len) != 0)
-;           return null;
-
-;       Bytes p = full_path.plus(len);
-;       if (!vim_ispathsep(p.at(0)))
-;           return null;
-
-;       return p.plus(1);
-    ))
-
 (defn- #_void buf_store_time [#_buffer_C buf, #_stat_C st]
     (§
 ;       buf.b_mtime = st.st_mtime();
@@ -87134,7 +86884,7 @@
 ;       }
     ))
 
-;; mark all status lines for redraw; used after first :cd
+;; mark all status lines for redraw
 
 (defn- #_void status_redraw_all []
     (§
@@ -87209,11 +86959,6 @@
             ;; Don't redraw right now, do it later.
 ;           wp.w_redr_status = true;
 ;       }
-;       else if (@p_stl.at(0) != NUL || wp.w_onebuf_opt.@wo_stl.at(0) != NUL)
-;       {
-            ;; redraw custom status line
-;           redraw_custom_statusline(wp);
-;       }
 ;       else
 ;       {
 ;           int[] attr = new int[1];
@@ -87284,33 +87029,6 @@
 ;       @_3_busy = false;
     ))
 
-(atom! boolean _2_entered)
-
-;; Redraw the status line according to 'statusline' and take care of any errors encountered.
-
-(defn- #_void redraw_custom_statusline [#_window_C wp]
-    (§
-;       boolean save_called_emsg = @called_emsg;
-
-        ;; When called recursively return.
-        ;; This can happen when the statusline contains an expression that triggers a redraw.
-;       if (@_2_entered)
-;           return;
-;       @_2_entered = true;
-
-;       @called_emsg = false;
-;       win_redr_custom(wp, false);
-;       if (@called_emsg)
-;       {
-            ;; When there is an error disable the statusline, otherwise the display is messed up
-            ;; with errors and a redraw triggers the problem again and again.
-;           set_string_option_direct(u8("statusline"), -1, u8(""),
-;               OPT_FREE | (wp.w_onebuf_opt.@wo_stl.at(0) != NUL ? OPT_LOCAL : OPT_GLOBAL));
-;       }
-;       @called_emsg |= save_called_emsg;
-;       @_2_entered = false;
-    ))
-
 ;; Return true if the status line of window "wp" is connected to the status
 ;; line of the window right of it.  If not, then it's a vertical separator.
 ;; Only call if (wp.w_vsep_width != 0).
@@ -87335,11 +87053,9 @@
 
 (atom! boolean _3_entered)
 
-;; Redraw the status line or ruler of window "wp".
-;; When "wp" is null redraw the tab pages line from 'tabline'.
+;; Redraw the tab pages line from 'tabline'.
 
-(defn- #_void win_redr_custom [#_window_C wp, #_boolean draw_ruler]
-    ;; draw_ruler: true or false
+(defn- #_void win_redr_custom []
     (§
         ;; There is a tiny chance that this gets called recursively:
         ;; when redrawing a status line triggers redrawing the ruler or tabline.
@@ -87353,74 +87069,20 @@
 
 ;       int col = 0;
 
-        ;; setup environment for the task at hand
-;       Bytes stl;
-;       int row;
-;       int fillchar;
+        ;; Use 'tabline'.  Always at the first line of the screen.
+;       Bytes stl = @p_tal;
+;       int row = 0;
+;       int fillchar = ' ';
 ;       int[] attr = new int[1];
-;       int maxwidth;
-;       boolean use_sandbox = false;
-;       if (wp == null)
-;       {
-            ;; Use 'tabline'.  Always at the first line of the screen.
-;           stl = @p_tal;
-;           row = 0;
-;           fillchar = ' ';
 ;           attr[0] = hl_attr(HLF_TPF);
-;           maxwidth = (int)@Columns;
-;           use_sandbox = was_set_insecurely(u8("tabline"), 0);
-;       }
-;       else
-;       {
-;           row = wp.w_winrow + wp.w_height;
-;           fillchar = fillchar_status(attr, wp == @curwin);
-;           maxwidth = wp.w_width;
-
-;           if (draw_ruler)
-;           {
-;               stl = @p_ruf;
-                ;; advance past any leading group spec - implicit in ru_col
-;               if (stl.at(0) == (byte)'%')
-;               {
-;                   if ((stl = stl.plus(1)).at(0) == (byte)'-')
-;                       stl = stl.plus(1);
-;                   if (libC.atoi(stl) != 0)
-;                       while (asc_isdigit(stl.at(0)))
-;                           stl = stl.plus(1);
-;                   if ((stl = stl.plus(1)).at(-1) != (byte)'(')
-;                       stl = @p_ruf;
-;               }
-;               col = @ru_col - ((int)@Columns - wp.w_width);
-;               if (col < (wp.w_width + 1) / 2)
-;                   col = (wp.w_width + 1) / 2;
-;               maxwidth = wp.w_width - col;
-;               if (wp.w_status_height == 0)
-;               {
-;                   row = (int)@Rows - 1;
-;                   --maxwidth;     ;; writing in last column may cause scrolling
-;                   fillchar = ' ';
-;                   attr[0] = 0;
-;               }
-
-;               use_sandbox = was_set_insecurely(u8("rulerformat"), 0);
-;           }
-;           else
-;           {
-;               if (wp.w_onebuf_opt.@wo_stl.at(0) != NUL)
-;                   stl = wp.w_onebuf_opt.@wo_stl;
-;               else
-;                   stl = @p_stl;
-;               use_sandbox = was_set_insecurely(u8("statusline"), (wp.w_onebuf_opt.@wo_stl.at(0) == NUL) ? 0 : OPT_LOCAL);
-;           }
-
-;           col += wp.w_wincol;
-;       }
+;       int maxwidth = (int)@Columns;
+;       boolean use_sandbox = was_set_insecurely(u8("tabline"), 0);
 
 ;       if (0 < maxwidth)
 ;       {
             ;; Temporarily reset 'cursorbind',
             ;; we don't want a side effect from moving the cursor away and back.
-;           window_C ewp = (wp == null) ? @curwin : wp;
+;           window_C ewp = @curwin;
 ;           boolean p_crb_save = ewp.w_onebuf_opt.@wo_crb;
 ;           ewp.w_onebuf_opt.@wo_crb = false;
 
@@ -87458,31 +87120,26 @@
 ;                   curattr = attr[0];
 ;               else if (hltab[n].userhl < 0)
 ;                   curattr = syn_id2attr(-hltab[n].userhl);
-;               else if (wp != null && wp != @curwin && wp.w_status_height != 0)
-;                   curattr = @highlight_stlnc[hltab[n].userhl - 1];
 ;               else
 ;                   curattr = @highlight_user[hltab[n].userhl - 1];
 ;           }
 ;           screen_puts(p, row, col, curattr);
 
-;           if (wp == null)
+            ;; Fill the tabPageIdxs[] array for clicking in the tab pagesline.
+;           col = 0;
+;           len = 0;
+;           p = buf;
+;           fillchar = 0;
+;           for (int n = 0; tabtab[n].start != null; n++)
 ;           {
-                ;; Fill the tabPageIdxs[] array for clicking in the tab pagesline.
-;               col = 0;
-;               len = 0;
-;               p = buf;
-;               fillchar = 0;
-;               for (int n = 0; tabtab[n].start != null; n++)
-;               {
-;                   len += mb_string2cells(p, BDIFF(tabtab[n].start, p));
-;                   while (col < len)
-;                       @tabPageIdxs[col++] = (short)fillchar;
-;                   p = tabtab[n].start;
-;                   fillchar = tabtab[n].userhl;
-;               }
-;               while (col < (int)@Columns)
+;               len += mb_string2cells(p, BDIFF(tabtab[n].start, p));
+;               while (col < len)
 ;                   @tabPageIdxs[col++] = (short)fillchar;
+;               p = tabtab[n].start;
+;               fillchar = tabtab[n].userhl;
 ;           }
+;           while (col < (int)@Columns)
+;               @tabPageIdxs[col++] = (short)fillchar;
 ;       }
 
 ;       @_3_entered = false;
@@ -89564,7 +89221,7 @@
             ;; If there is one we would loop in redrawing the screen.
             ;; Avoid that by making 'tabline' empty.
 ;           @called_emsg = false;
-;           win_redr_custom(null, false);
+;           win_redr_custom();
 ;           if (@called_emsg)
 ;               set_string_option_direct(u8("tabline"), -1, u8(""), OPT_FREE);
 ;           @called_emsg |= save_called_emsg;
@@ -89746,10 +89403,7 @@
 ;       if (!always && !redrawing())
 ;           return;
 
-;       if ((@p_stl.at(0) != NUL || @curwin.w_onebuf_opt.@wo_stl.at(0) != NUL) && @curwin.w_status_height != 0)
-;           redraw_custom_statusline(@curwin);
-;       else
-;           win_redr_ruler(@curwin, always);
+;       win_redr_ruler(@curwin, always);
 
         ;; Redraw the tab pages line if needed.
 ;       if (@redraw_tabline)
@@ -89767,18 +89421,6 @@
 
 ;       if (wp.w_buffer.b_ml.ml_line_count < wp.w_cursor.lnum)
 ;           return;
-
-;       if (@p_ruf.at(0) != NUL)
-;       {
-;           boolean save_called_emsg = @called_emsg;
-
-;           @called_emsg = false;
-;           win_redr_custom(wp, true);
-;           if (@called_emsg)
-;               set_string_option_direct(u8("rulerformat"), -1, u8(""), OPT_FREE);
-;           @called_emsg |= save_called_emsg;
-;           return;
-;       }
 
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
 
@@ -92611,7 +92253,7 @@
 ;       {
             ;; Very first window,
             ;; need to create an empty buffer for it and initialize from scratch.
-;           @curbuf = buflist_new(null, null, 1L, BLN_LISTED);
+;           @curbuf = buflist_new(null, 1L, BLN_LISTED);
 ;           if (@curbuf == null)
 ;               return false;
 
