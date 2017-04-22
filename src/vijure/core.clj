@@ -9966,7 +9966,7 @@
         (checkpcmark)                      ;; check if we moved since setting pcmark
         ((ß ca.searchbuf =) nil)
 
-        (mb-adjust-pos (:w_cursor @curwin))
+        (swap! curwin update :w_cursor mb-adjust-pos)
 
         (when (and @(:wo_scb (:w_options @curwin)) toplevel)
             (validate-cursor)              ;; may need to update w_leftcol
@@ -12241,7 +12241,7 @@
 
             ;; If the character on the left of the current cursor
             ;; is a multi-byte character, move two characters left.
-            (mb-adjust-pos (:w_cursor @curwin))
+            (swap! curwin update :w_cursor mb-adjust-pos)
             (swap! curbuf assoc :b_op_end (:w_cursor @curwin))
             (swap! curwin assoc :w_set_curswant true)
             (set-last-insert (:nchar cap))
@@ -13377,7 +13377,7 @@
         (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar) NUL) (or (not @VIsual_active) (at? @p_sel (byte \o))) (not (virtual-active)) (non-flag? @ve_flags VE_ONEMORE))
             (swap! curwin update-in [:w_cursor :col] dec)
             ;; prevent cursor from moving on the trail byte
-            (mb-adjust-pos (:w_cursor @curwin))
+            (swap! curwin update :w_cursor mb-adjust-pos)
             ((ß oap.inclusive =) true)
         )
         nil
@@ -13419,7 +13419,7 @@
             (< 0 (:col pp))
             (do
                 ((ß pp.col =) (dec (:col pp)))
-                (mb-adjust-pos pp)
+                ((ß pp =) (mb-adjust-pos pp))
             )
             (< 1 (:lnum pp))
             (do
@@ -19912,7 +19912,7 @@
         (let [#_int ecol (inc (:col (:w_cursor @curwin)))]
             ;; Make sure the cursor is at the start of a character, but skip forward again
             ;; when going too far back because of a composing character.
-            (mb-adjust-pos (:w_cursor @curwin))
+            (swap! curwin update :w_cursor mb-adjust-pos)
             (loop-when [] (< (:col (:w_cursor @curwin)) limit_col)
                 (let-when [#_int n (us-ptr2len (ml-get-cursor))] (pos? n)
                     (swap! curwin update-in [:w_cursor :col] + n)
@@ -20298,7 +20298,7 @@
             (swap! curwin update-in [:w_cursor :col] dec)
             (swap! curwin assoc :w_set_curswant true)
             ;; If the char on the left of the cursor is multi-byte, move to its first byte.
-            (mb-adjust-pos (:w_cursor @curwin))
+            (swap! curwin update :w_cursor mb-adjust-pos)
             true
         )
     ))
@@ -20805,7 +20805,7 @@
             (do
                 (swap! curwin update-in [:w_cursor :col] dec)
                 ;; Correct cursor for multi-byte character.
-                (mb-adjust-pos (:w_cursor @curwin))
+                (swap! curwin update :w_cursor mb-adjust-pos)
             ))
         )
 
@@ -22891,12 +22891,12 @@
 ;; is a trifle forced, but the need to tie the tails of the branches to what
 ;; follows makes it hard to avoid.
 
-(defn- #_Bytes reg [#_int paren, #_int' a'flagp]
+(defn- #_Bytes reg [#_int paren, #_int' a'fl]
     ;; paren: REG_NOPAREN, REG_PAREN, REG_NPAREN or REG_ZPAREN
     (§
         (ß Bytes ret)
 
-        (reset! a'flagp HASWIDTH)          ;; Tentatively.
+        (reset! a'fl HASWIDTH)          ;; Tentatively.
 
         ((ß int parno =) 0)
         (cond (== paren REG_ZPAREN)
@@ -22946,8 +22946,8 @@
         ;; If one of the branches can be zero-width, the whole thing can.
         ;; If one of the branches has * at start or matches a line-break, the whole thing can.
         (when (non-flag? @a'flags HASWIDTH)
-            (reset! a'flagp (& @a'flagp (bit-not HASWIDTH))))
-        (reset! a'flagp (| @a'flagp (& @a'flags (| SPSTART HASNL HASLOOKBH))))
+            (swap! a'fl & (bit-not HASWIDTH)))
+        (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
         (loop-when [] (== (peekchr) (Magic (byte \|)))
             (skipchr)
             ((ß br =) (regbranch a'flags))
@@ -22956,8 +22956,8 @@
             )
             (regtail ret, br)       ;; BRANCH -> BRANCH.
             (when (non-flag? @a'flags HASWIDTH)
-                (reset! a'flagp (& @a'flagp (bit-not HASWIDTH))))
-            (reset! a'flagp (| @a'flagp (& @a'flags (| SPSTART HASNL HASLOOKBH))))
+                (swap! a'fl & (bit-not HASWIDTH)))
+            (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
             (recur)
         )
 
@@ -23009,9 +23009,9 @@
 ;; Parse one alternative of an | operator.
 ;; Implements the & operator.
 
-(defn- #_Bytes regbranch [#_int' a'flagp]
+(defn- #_Bytes regbranch [#_int' a'fl]
     (§
-        (reset! a'flagp (| WORST HASNL))           ;; Tentatively.
+        (reset! a'fl (| WORST HASNL))           ;; Tentatively.
 
         ((ß Bytes ret =) (regnode BRANCH))
 
@@ -23025,9 +23025,9 @@
             ;; If one of the branches has width, the whole thing has.
             ;; If one of the branches anchors at start-of-line, the whole thing does.
             ;; If one of the branches uses look-behind, the whole thing does.
-            (reset! a'flagp (| @a'flagp (& @a'flags (| HASWIDTH SPSTART HASLOOKBH))))
+            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASLOOKBH)))
             ;; If one of the branches doesn't match a line-break, the whole thing doesn't.
-            (reset! a'flagp (& @a'flagp (| (bit-not HASNL) (& @a'flags HASNL))))
+            (swap! a'fl & (| (bit-not HASNL) (& @a'flags HASNL)))
             (when (some? chain)
                 (regtail chain, latest))
             (if (!= (peekchr) (Magic (byte \&)))
@@ -23050,12 +23050,12 @@
 ;; Parse one alternative of an | or & operator.
 ;; Implements the concatenation operator.
 
-(defn- #_Bytes regconcat [#_int' a'flagp]
+(defn- #_Bytes regconcat [#_int' a'fl]
     (§
         ((ß Bytes first =) nil)
         ((ß Bytes chain =) nil)
 
-        (reset! a'flagp WORST)             ;; Tentatively.
+        (reset! a'fl WORST)             ;; Tentatively.
 
         (loop-when [#_boolean cont true] cont
             ((ß SWITCH) (peekchr)
@@ -23129,9 +23129,9 @@
                         ((ß RETURN) nil)
                     )
 
-                    (reset! a'flagp (| @a'flagp (& @a'flags (| HASWIDTH HASNL HASLOOKBH))))
+                    (swap! a'fl | (& @a'flags (| HASWIDTH HASNL HASLOOKBH)))
                     (if (nil? chain)  ;; First piece.
-                        (reset! a'flagp (| @a'flagp (& @a'flags SPSTART)))
+                        (swap! a'fl | (& @a'flags SPSTART))
                         (regtail chain, latest))
                     ((ß chain =) latest)
                     ((ß first =) (if (nil? first) latest first))
@@ -23152,7 +23152,7 @@
 ;; It might seem that this node could be dispensed with entirely, but the
 ;; endmarker role is not redundant.
 
-(defn- #_Bytes regpiece [#_int' a'flagp]
+(defn- #_Bytes regpiece [#_int' a'fl]
     (§
         ((ß int[] a'flags =) (atom (int)))
         ((ß Bytes ret =) (regatom a'flags))
@@ -23162,12 +23162,12 @@
 
         ((ß int op =) (peekchr))
         (when (== (re-multi-type op) NOT_MULTI)
-            (reset! a'flagp @a'flags)
+            (reset! a'fl @a'flags)
             ((ß RETURN) ret)
         )
 
         ;; default flags
-        (reset! a'flagp (| WORST SPSTART (& @a'flags (| HASNL HASLOOKBH))))
+        (reset! a'fl (| WORST SPSTART (& @a'flags (| HASNL HASLOOKBH))))
 
         (skipchr)
         ((ß SWITCH) op
@@ -23204,7 +23204,7 @@
                     (regtail next, (regnode BRANCH))     ;; or
                     (regtail ret, (regnode NOTHING))     ;; null.
                 ))
-                (reset! a'flagp (| WORST HASWIDTH (& @a'flags (| HASNL HASLOOKBH))))
+                (reset! a'fl (| WORST HASWIDTH (& @a'flags (| HASNL HASLOOKBH))))
                 (ß BREAK)
             )
 
@@ -23255,7 +23255,7 @@
                 ;; Look behind must match with behind_pos.
                 (when (any == lop BEHIND NOBEHIND)
                     (regtail ret, (regnode BHPOS))
-                    (reset! a'flagp (| @a'flagp HASLOOKBH))
+                    (swap! a'fl | HASLOOKBH)
                 )
                 (regtail ret, (regnode END))                 ;; operand ends
                 (cond (any == lop BEHIND NOBEHIND)
@@ -23309,7 +23309,7 @@
                     (swap! num_complex_braces inc)
                 ))
                 (when (and (< 0 @a'minval) (< 0 @a'maxval))
-                    (reset! a'flagp (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
+                    (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
                 (ß BREAK)
             )
         )
@@ -23355,13 +23355,13 @@
 ;; it can turn them into a single node, which is smaller to store and
 ;; faster to run.  Don't do this when one_exactly is set.
 
-(defn- #_Bytes regatom [#_int' a'flagp]
+(defn- #_Bytes regatom [#_int' a'fl]
     (§
         (ß Bytes ret)
 
         ((ß int extra =) 0)
 
-        (reset! a'flagp WORST)             ;; Tentatively.
+        (reset! a'fl WORST)             ;; Tentatively.
 
         ((ß int c =) (getchr))
 
@@ -23405,7 +23405,7 @@
                     )
 
                     ((ß extra =) ADD_NL)
-                    (reset! a'flagp (| @a'flagp HASNL))
+                    (swap! a'fl | HASNL)
 
                     ;; "\_[" is character range plus newline
                     (if (== c (byte \[))
@@ -23458,11 +23458,11 @@
                         ((ß c =) (getchr))
                         ((ß ret =) (regnode MULTIBYTECODE))
                         (regmbc c)
-                        (reset! a'flagp (| @a'flagp (| HASWIDTH SIMPLE)))
+                        (swap! a'fl | HASWIDTH SIMPLE)
                         (ß BREAK)
                     )
                     ((ß ret =) (regnode (+ (... classcodes (BDIFF p, classchars)) extra)))
-                    (reset! a'flagp (| @a'flagp (| HASWIDTH SIMPLE)))
+                    (swap! a'fl | HASWIDTH SIMPLE)
                     (ß BREAK)
                 )
 
@@ -23474,13 +23474,13 @@
                         ((ß ret =) (regnode EXACTLY))
                         (regc NL)
                         (regc NUL)
-                        (reset! a'flagp (| @a'flagp (| HASWIDTH SIMPLE)))
+                        (swap! a'fl | HASWIDTH SIMPLE)
                     )
                     :else
                     (do
                         ;; In buffer text "\n" matches the end of a line.
                         ((ß ret =) (regnode NEWL))
-                        (reset! a'flagp (| @a'flagp (| HASWIDTH HASNL)))
+                        (swap! a'fl | HASWIDTH HASNL)
                     ))
                     (ß BREAK)
                 )
@@ -23497,7 +23497,7 @@
                     (if (nil? ret)
                         ((ß RETURN) nil)
                     )
-                    (reset! a'flagp (| @a'flagp (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))))
+                    (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
                     (ß BREAK)
                 )
 
@@ -23540,9 +23540,9 @@
                         )
                         (regc NUL)
                         (when (non-eos? @reg_prev_sub)
-                            (reset! a'flagp (| @a'flagp HASWIDTH))
+                            (swap! a'fl | HASWIDTH)
                             (when (== (BDIFF lp, @reg_prev_sub) 1)
-                                (reset! a'flagp (| @a'flagp SIMPLE)))
+                                (swap! a'fl | SIMPLE))
                         )
                     )
                     :else
@@ -23609,7 +23609,7 @@
                             (if (nil? ret)
                                 ((ß RETURN) nil)
                             )
-                            (reset! a'flagp (| @a'flagp (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))))
+                            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
                             (reset! re_has_z REX_SET)
                             (ß BREAK)
                         )
@@ -23675,7 +23675,7 @@
                             (if (nil? ret)
                                 ((ß RETURN) nil)
                             )
-                            (reset! a'flagp (| @a'flagp (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))))
+                            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH)))
                             (ß BREAK)
                         )
                         ;; Catch \%^ and \%$ regardless of where they appear in the
@@ -23738,7 +23738,7 @@
 
                                 (ungetchr)
                                 (reset! one_exactly true)
-                                ((ß lastnode =) (regatom a'flagp))
+                                ((ß lastnode =) (regatom a'fl))
                                 (reset! one_exactly false)
                                 (if (nil? lastnode)
                                     ((ß RETURN) nil)
@@ -23769,7 +23769,7 @@
                                     (recur br)
                                 ))
                             )
-                            (reset! a'flagp (& @a'flagp (bit-not (| HASWIDTH SIMPLE))))
+                            (swap! a'fl & (bit-not (| HASWIDTH SIMPLE)))
                             (ß BREAK)
                         )
                         ((ß CASE) (byte \d))   ;; %d123 decimal
@@ -23797,7 +23797,7 @@
                                 (regc 0x0a)
                                 (regmbc i))
                             (regc NUL)
-                            (reset! a'flagp (| @a'flagp HASWIDTH))
+                            (swap! a'fl | HASWIDTH)
                             (ß BREAK)
                         )
                         (ß DEFAULT)
@@ -23873,7 +23873,7 @@
 
                 (ß DEFAULT)
                 (do
-                    ((ß RETURN) (do-multibyte c, a'flagp))
+                    ((ß RETURN) (do-multibyte c, a'fl))
                 )
             )
 
@@ -23981,7 +23981,7 @@
                             ;; matches.  "[^\n]" is the same as ".".
                             (when (at? ret ANYOF)
                                 (.be ret 0, (+ ANYOF ADD_NL))
-                                (reset! a'flagp (| @a'flagp HASNL))
+                                (swap! a'fl | HASNL)
                             )
                             ;; else: must have had a \n already
                         )
@@ -24176,7 +24176,7 @@
                 ((ß RETURN) nil)                ;; Cannot happen?
             )
             (skipchr)                      ;; let's be friends with the lexer again
-            (reset! a'flagp (| @a'flagp (| HASWIDTH SIMPLE)))
+            (swap! a'fl | HASWIDTH SIMPLE)
             ((ß RETURN) ret)
         )
 
@@ -24186,59 +24186,38 @@
             ((ß RETURN) nil)
         )
 
-        (do-multibyte c, a'flagp)
+        (do-multibyte c, a'fl)
     ))
 
-(defn- #_final #_Bytes do-multibyte [#_int c, #_int' a'flagp]
-    (§
-        (ß Bytes ret)
-
-        ;; A multi-byte character is handled as a separate atom
-        ;; if it's before a multi and when it's a composing char.
-        (when (use-multibytecode c)
-            ((ß ret =) (regnode MULTIBYTECODE))
+(defn- #_final #_Bytes do-multibyte [#_int c, #_int' a'fl]
+    ;; A multi-byte character is handled as a separate atom if it's before a multi and when it's a composing char.
+    (if (use-multibytecode c)
+        (let [#_Bytes s (regnode MULTIBYTECODE)]
             (regmbc c)
-            (reset! a'flagp (| @a'flagp (| HASWIDTH SIMPLE)))
-            ((ß RETURN) ret)
-        )
-
-        ((ß ret =) (regnode EXACTLY))
-
-        ;; Append characters as long as:
-        ;; - there is no following multi, we then need the character in
-        ;;   front of it as a single character operand
-        ;; - not running into a Magic character
-        ;; - "one_exactly" is not set
-        ;; But always emit at least one character.  Might be a Multi,
-        ;; e.g., a "[" without matching "]".
-
-        ((ß int len =) (loop-when-recur [len 0] (and (!= c NUL) (or (== len 0) (and (== (re-multi-type (peekchr)) NOT_MULTI) (not @one_exactly) (not (is-Magic c))))) [(inc len)] => len
-            ((ß c =) (no-Magic c))
-
-            (regmbc c)
-
-            ;; Need to get composing character too.
-            (loop []
-                ((ß int l =) (us-ptr2len @regparse))
-                (if (not (utf-iscomposing (us-ptr2char @regparse, l)))
-                    (ß BREAK)
-                )
-                (regmbc (us-ptr2char @regparse))
-                (skipchr)
-                (recur)
-            )
-
-            ((ß c =) (getchr))
-        ))
-        (ungetchr)
-
-        (regc NUL)
-
-        (reset! a'flagp (| @a'flagp HASWIDTH))
-        (when (== len 1)
-            (reset! a'flagp (| @a'flagp SIMPLE)))
-
-        ret
+            (swap! a'fl | HASWIDTH SIMPLE)
+        s)
+        (let [#_Bytes s (regnode EXACTLY)
+              ;; Append characters as long as:
+              ;; - there is no following multi, we then need the character in front of it as a single character operand;
+              ;; - not running into a Magic character;
+              ;; - "one_exactly" is not set.
+              ;; But always emit at least one character.  Might be a Multi, e.g. a "[" without matching "]".
+              #_int n
+                (loop-when-recur [c c n 0]
+                                 (and (!= c NUL) (or (== n 0) (and (== (re-multi-type (peekchr)) NOT_MULTI) (not @one_exactly) (not (is-Magic c)))))
+                                 [(getchr) (inc n)]
+                              => n
+                    (regmbc (no-Magic c))
+                    ;; Need to get composing character too.
+                    (while (utf-iscomposing (us-ptr2char @regparse, (us-ptr2len @regparse)))
+                        (regmbc (us-ptr2char @regparse))
+                        (skipchr))
+                )]
+            (ungetchr)
+            (regc NUL)
+            (swap! a'fl | HASWIDTH)
+            (when (== n 1) (swap! a'fl | SIMPLE))
+        s)
     ))
 
 ;; Return true if MULTIBYTECODE should be used instead of EXACTLY for character "c".
@@ -27629,57 +27608,39 @@
 ;; Short explanation of the tilde: It stands for the previous replacement pattern.
 ;; If that previous pattern also contains a ~ we should go back a step further...
 ;; But we insert the previous pattern into the current one and remember that.
-;; This still does not handle the case where "magic" changes.  So require the
-;; user to keep his hands off of "magic".
+;; This still does not handle the case where "magic" changes.
+;; So require the user to keep his hands off of "magic".
 ;;
 ;; The tildes are parsed once before the first call to vim-regsub().
 
 (defn- #_Bytes regtilde [#_Bytes source, #_boolean magic]
-    (§
-        ((ß Bytes newsub =) source)
-
-        (loop-when-recur [#_Bytes p newsub] (non-eos? p) [(.plus p 1)]
-            (cond (or (and (at? p (byte \~)) magic) (and (at? p (byte \\)) (at? p 1 (byte \~)) (not magic)))
-            (do
-                (cond (some? @reg_prev_sub)
-                (do
-                    ;; length = len(newsub) - 1 + len(prev_sub) + 1
-                    ((ß int prevlen =) (STRLEN @reg_prev_sub))
-                    ((ß Bytes tmpsub =) (Bytes. (+ (STRLEN newsub) prevlen)))
-
-                    ;; copy prefix
-                    ((ß int len =) (BDIFF p, newsub))            ;; not including ~
-                    (BCOPY tmpsub, newsub, len)
-                    ;; interpret tilde
-                    (BCOPY tmpsub, len, @reg_prev_sub, 0, prevlen)
-                    ;; copy postfix
-                    ((ß p =) (if (not magic) (.plus p 1) p))                                ;; back off \
-                    (STRCPY (.plus tmpsub (+ len prevlen)), (.plus p 1))
-
-                    ((ß newsub =) tmpsub)
-                    ((ß p =) (.plus newsub (+ len prevlen)))
-                )
-                magic
-                (do
-                    (BCOPY p, 0, p, 1, (inc (STRLEN p, 1)))   ;; remove '~'
-                )
-                :else
-                (do
-                    (BCOPY p, 0, p, 2, (inc (STRLEN p, 2)))   ;; remove '\~'
-                ))
-                ((ß p =) (.minus p 1))
-            )
-            :else
-            (do
-                ((ß p =) (if (and (at? p (byte \\)) (non-eos? p 1)) (.plus p 1) p))        ;; skip escaped characters
-                ((ß p =) (.plus p (dec (us-ptr2len-cc p))))
-            ))
-        )
-
-        (if (BNE newsub, source)
-            (reset! reg_prev_sub newsub)                    ;; "newsub" was allocated, just keep it
-            (reset! reg_prev_sub (STRDUP newsub)))           ;; no ~ found, need to save "newsub"
-
+    (let [#_Bytes newsub
+            (loop-when [newsub source #_Bytes s source] (non-eos? s) => newsub
+                (if (or (and (at? s (byte \~)) magic) (and (at? s (byte \\)) (at? s 1 (byte \~)) (not magic)))
+                    (cond (some? @reg_prev_sub)
+                    (let [#_int m (STRLEN @reg_prev_sub)
+                          #_Bytes t (Bytes. (+ (STRLEN newsub) m))
+                          #_int n (BDIFF s, newsub)                     ;; not including ~
+                          _ (BCOPY t, newsub, n)                        ;; copy prefix
+                          _ (BCOPY t, n, @reg_prev_sub, 0, m)           ;; interpret tilde
+                          s (if (not magic) (.plus s 1) s)              ;; back off \
+                          _ (STRCPY (.plus t (+ n m)), (.plus s 1))]    ;; copy postfix
+                        (recur t (.plus t (+ n m)))
+                    )
+                    magic
+                    (let [_ (BCOPY s, 0, s, 1, (inc (STRLEN s, 1)))]    ;; remove '~'
+                        (recur newsub s)
+                    )
+                    :else
+                    (let [_ (BCOPY s, 0, s, 2, (inc (STRLEN s, 2)))]    ;; remove '\~'
+                        (recur newsub s)
+                    ))
+                    (let [s (if (and (at? s (byte \\)) (non-eos? s 1)) (.plus s 1) s)]        ;; skip escaped characters
+                        (recur newsub (.plus s (us-ptr2len-cc s)))
+                    ))
+            )]
+        ;; if: "newsub" was allocated, just keep it ;; else: no ~ found, need to save "newsub"
+        (reset! reg_prev_sub (if (BNE newsub, source) newsub (STRDUP newsub)))
         newsub
     ))
 
@@ -40581,47 +40542,41 @@
 ;; Find the next illegal byte sequence.
 
 (defn- #_void utf-find-illegal []
-    (§
-        ((ß pos_C cursor =) (:w_cursor @curwin))
-        ((ß pos_C save_pos =) (NEW_pos_C))
-        (COPY-pos save_pos, cursor)
+    (let [#_pos_C old_cursor (:w_cursor @curwin) lmax (:ml_line_count (:b_ml @curbuf))]
+        (swap! curwin assoc-in [:w_cursor :coladd] 0)
+        (let-when [_ (loop [line (ml-get-cursor)]
+                    (let-when [_ (loop-when [#_Bytes s line] (non-eos? s)
+                                ;; Illegal means that there are not enough trail bytes or too many of them (overlong sequence).
+                                (let [#_int n (us-ptr2len s)]
+                                    (if (and (<= 0x80 (char_u (.at s 0))) (or (== n 1) (!= (utf-char2len (us-ptr2char s)) n)))
+                                        (:w_cursor (swap! curwin update-in [:w_cursor :col] + (BDIFF s, line)))
+                                        (recur (.plus s n))
+                                    ))
+                            )] (nil? _) => _
+                        (when (< (:lnum (:w_cursor @curwin)) lmax)
+                            (swap! curwin update-in [:w_cursor :lnum] inc)
+                            (swap! curwin assoc-in [:w_cursor :col] 0)
+                            (recur (ml-get-cursor))
+                        ))
+                )] (nil? _) ;; => _
+            ;; didn't find it: don't move and beep
+            (swap! curwin assoc :w_cursor old_cursor)
+            (beep-flush)
+        ))
+    nil)
 
-        ((ß FOR) (ß ((ß cursor.coladd =) 0) true (ß cursor.lnum++, (cursor.col) = 0))
-            (loop-when-recur [#_Bytes p (ml-get-cursor)] (non-eos? p) [(.plus p len)]
-                ;; Illegal means that there are not enough trail bytes (checked
-                ;; by us-ptr2len()) or too many of them (overlong sequence).
-                ((ß int len =) (us-ptr2len p))
-                (when (and (<= 0x80 (char_u (.at p 0))) (or (== len 1) (!= (utf-char2len (us-ptr2char p)) len)))
-                    ((ß cursor.col =) (+ (:col cursor) (BDIFF p, (ml-get-cursor))))
-                    ((ß RETURN) nil)
-                )
-            )
+;; Adjust position to point to the first byte of a multi-byte character.
+;; If it points to the tail byte, it's moved backwards to the head byte.
 
-            (if (== (:lnum cursor) (:ml_line_count (:b_ml @curbuf)))
-                (ß BREAK)
-            )
-        )
-
-        ;; didn't find it: don't move and beep
-        (COPY-pos cursor, save_pos)
-        (beep-flush)
-        nil
-    ))
-
-;; Adjust position "*posp" to point to the first byte of a multi-byte character.
-;; If it points to a tail byte it's moved backwards to the head byte.
-
-(defn- #_void mb-adjust-pos [#_pos_C posp]
-    (§
-        (when (or (< 0 (:col posp)) (< 1 (:coladd posp)))
-            ((ß Bytes p =) (ml-get (:lnum posp)))
-            ((ß posp.col =) (- (:col posp) (us-head-off p, (.plus p (:col posp)))))
+(defn- #_pos_C mb-adjust-pos [#_pos_C pos]
+    (if (or (< 0 (:col pos)) (< 1 (:coladd pos)))
+        (let [#_Bytes s (ml-get (:lnum pos)) pos (update pos :col #(- % (us-head-off s, (.plus s %))))]
             ;; Reset "coladd" when the cursor would be on the right half of a double-wide character.
-            (when (and (== (:coladd posp) 1) (not-at? p (:col posp) TAB) (vim-isprintc (us-ptr2char p, (:col posp))) (< 1 (mb-ptr2cells p, (:col posp))))
-                ((ß posp.coladd =) 0)
-            )
-        )
-        nil
+            (if (and (== (:coladd pos) 1) (not-at? s (:col pos) TAB) (vim-isprintc (us-ptr2char s, (:col pos))) (< 1 (mb-ptr2cells s, (:col pos))))
+                (assoc pos :coladd 0)
+                pos
+            ))
+        pos
     ))
 
 ;; Backup multi-byte pointer.  Only use with "base" < "p" !
@@ -41416,7 +41371,7 @@
 
 (defn- #_boolean del-char [#_boolean fixpos]
     ;; Make sure the cursor is at the start of a character.
-    (mb-adjust-pos (:w_cursor @curwin))
+    (swap! curwin update :w_cursor mb-adjust-pos)
     (if (eos? (ml-get-cursor))
         false
         (del-chars 1, fixpos)
@@ -42252,7 +42207,7 @@
         )
 
         ;; prevent from moving onto a trail byte
-        (mb-adjust-pos pos)
+        ((ß pos =) (mb-adjust-pos pos))
 
         (not (< col wcol))
     ))
@@ -42379,7 +42334,7 @@
             (do
                 ((ß win.w_cursor.col =) (dec len))
                 ;; Move the cursor to the head byte.
-                (mb-adjust-pos (:w_cursor win))
+                ((ß win.w_cursor =) (mb-adjust-pos (:w_cursor win)))
             ))
         )
         (< (:col (:w_cursor win)) 0)
@@ -54056,7 +54011,7 @@
                 ;; Temporarily set "restart_edit" to allow the cursor to be beyond the EOL.
                 (let [_ @restart_edit] (reset! restart_edit TRUE) (check-cursor) (reset! restart_edit _))
                 ;; Correct cursor for multi-byte character.
-                (mb-adjust-pos (:w_cursor @curwin))
+                (swap! curwin update :w_cursor mb-adjust-pos)
                 (redraw-win-later @curwin, VALID)
                 ;; Only scroll when 'scrollbind' hasn't done this.
                 (when (not @(:wo_scb (:w_options @curwin)))
