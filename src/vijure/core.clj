@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry)))
 
@@ -1999,7 +1999,6 @@
     USECTRLV       0x2000,   ;; do not remove CTRL-V from argument
     NOTADR         0x4000,   ;; number before command is not an address
     CMDWIN       0x100000,   ;; allowed in cmdline window
-    EXFLAGS      0x400000,   ;; allow flags after count in argument
 
     WORD1 (| EXTRA NOSPC))   ;; one extra word allowed
 
@@ -2015,30 +2014,30 @@
     CMD_botright 3,
     CMD_changes 4,
     CMD_close 5,
-    CMD_copy 6,
+
     CMD_delmarks 7,
     CMD_digraphs 8,
     CMD_earlier 9,
     CMD_fixdel 10,
-    CMD_global 11,
+
     CMD_history 12,
-    CMD_join 13,
+
     CMD_jumps 14,
     CMD_k 15,
     CMD_keepmarks 16,
     CMD_keepjumps 17,
     CMD_keeppatterns 18,
-    CMD_list 19,
+
     CMD_later 20,
     CMD_leftabove 21,
     CMD_lockmarks 22,
-    CMD_move 23,
+
     CMD_mark 24,
     CMD_marks 25,
     CMD_nohlsearch 26,
-    CMD_number 27,
+
     CMD_only 28,
-    CMD_print 29,
+
     CMD_put 30,
     CMD_redo 31,
     CMD_redraw 32,
@@ -2049,9 +2048,9 @@
     CMD_rightbelow 37,
     CMD_substitute 38,
     CMD_set 39,
-    CMD_silent 40,
-    CMD_smagic 41,
-    CMD_snomagic 42,
+
+
+
     CMD_split 43,
     CMD_stop 44,
     CMD_startinsert 45,
@@ -2060,24 +2059,24 @@
     CMD_stopinsert 48,
     CMD_suspend 49,
     CMD_syncbind 50,
-    CMD_t 51,
+
     CMD_topleft 52,
     CMD_undo 53,
     CMD_undojoin 54,
     CMD_undolist 55,
-    CMD_unsilent 56,
-    CMD_vglobal 57,
-    CMD_verbose 58,
+
+
+
     CMD_vertical 59,
     CMD_vsplit 60,
-    CMD_z 61,
+
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 62,
-    CMD_and 63,
-    CMD_equal 64,
-    CMD_tilde 65,
+
+
+
+
 
     CMD_SIZE 66)     ;; MUST be after all real commands!
 
@@ -2097,15 +2096,9 @@
         (field long         line1)          ;; the first line number
         (field long         line2)          ;; the second line number or count
         (field int          addr_type)      ;; type of the count/range
-        (field int          flags)          ;; extra flags after count: EXFLAG_
         (field int          regname)        ;; register name (NUL if none)
         (field Bytes        errmsg)         ;; returned error message
     ])
-
-;; Values for "flags".
-(final int EXFLAG_LIST  0x01)   ;; 'l': list
-(final int EXFLAG_NR    0x02)   ;; '#': number
-(final int EXFLAG_PRINT 0x04)   ;; 'p': print
 
 ;; ----------------------------------------------------------------------- ;;
 
@@ -4245,125 +4238,6 @@
 ;           msg_puts_attr_len(q, BDIFF(p, q), attr);
 
 ;       return cells;
-    ))
-
-;; print line for :print or :list command
-
-(defn- #_void msg_prt_line [#_Bytes s, #_boolean list]
-    (§
-;       if (@curwin.w_options.@wo_list)
-;           list = true;
-
-        ;; find start of trailing whitespace
-;       Bytes trail = null;
-;       if (list && @lcs_trail != NUL)
-;       {
-;           trail = s.plus(STRLEN(s));
-;           while (BLT(s, trail) && vim_iswhite(trail.at(-1)))
-;               trail = trail.minus(1);
-;       }
-
-        ;; output a space for an empty line, otherwise the line will be overwritten
-;       if (s.at(0) == NUL && !(list && @lcs_eol != NUL))
-;           msg_putchar(' ');
-
-;       int col = 0;
-;       int n_extra = 0;
-;       int c_extra = 0;
-;       Bytes p_extra = null;
-;       int attr = 0;
-
-;       for (int c; !@got_int; )
-;       {
-;           int len;
-
-;           if (0 < n_extra)
-;           {
-;               --n_extra;
-;               if (c_extra != 0)
-;                   c = c_extra;
-;               else
-;                   c = char_u((p_extra = p_extra.plus(1)).at(-1));
-;           }
-;           else if (1 < (len = us_ptr2len_cc(s)))
-;           {
-;               Bytes buf = new Bytes(MB_MAXBYTES + 1);
-
-;               col += us_ptr2cells(s);
-;               if (@lcs_nbsp != NUL && list && us_ptr2char(s) == 0xa0)
-;               {
-;                   utf_char2bytes(@lcs_nbsp, buf);
-;                   buf.be(us_ptr2len_cc(buf), NUL);
-;               }
-;               else
-;               {
-;                   BCOPY(buf, s, len);
-;                   buf.be(len, NUL);
-;               }
-;               msg_puts(buf);
-;               s = s.plus(len);
-;               continue;
-;           }
-;           else
-;           {
-;               int n;
-
-;               attr = 0;
-;               c = char_u((s = s.plus(1)).at(-1));
-;               if (c == TAB && (!list || lcs_tab1[0] != NUL))
-;               {
-                    ;; tab amount depends on current column
-;                   n_extra = (int)@curbuf.@b_p_ts - col % (int)@curbuf.@b_p_ts - 1;
-;                   if (!list)
-;                   {
-;                       c = ' ';
-;                       c_extra = ' ';
-;                   }
-;                   else
-;                   {
-;                       c = lcs_tab1[0];
-;                       c_extra = lcs_tab2[0];
-;                       attr = hl_attr(HLF_8);
-;                   }
-;               }
-;               else if (c == 0xa0 && list && @lcs_nbsp != NUL)
-;               {
-;                   c = @lcs_nbsp;
-;                   attr = hl_attr(HLF_8);
-;               }
-;               else if (c == NUL && list && @lcs_eol != NUL)
-;               {
-;                   p_extra = u8("");
-;                   c_extra = NUL;
-;                   n_extra = 1;
-;                   c = @lcs_eol;
-;                   attr = hl_attr(HLF_AT);
-;                   s = s.minus(1);
-;               }
-;               else if (c != NUL && 1 < (n = mb_byte2cells((byte)c)))
-;               {
-;                   n_extra = n - 1;
-;                   p_extra = transchar_byte((byte)c);
-;                   c_extra = NUL;
-;                   c = char_u((p_extra = p_extra.plus(1)).at(-1));
-                    ;; Use special coloring to be able to distinguish <hex> from the same in plain text.
-;                   attr = hl_attr(HLF_8);
-;               }
-;               else if (c == ' ' && trail != null && BLT(trail, s))
-;               {
-;                   c = @lcs_trail;
-;                   attr = hl_attr(HLF_8);
-;               }
-;           }
-
-;           if (c == NUL)
-;               break;
-
-;           msg_putchar_attr(c, attr);
-;           col++;
-;       }
-
-;       msg_clr_eos();
     ))
 
 ;; Use screen_puts() to output one multi-byte character.
@@ -8026,150 +7900,6 @@
 ;       u_clearline();
     ))
 
-;; :move command - move lines line1-line2 to line dest
-;;
-;; return false for failure, true otherwise
-
-(defn- #_boolean do_move [#_long line1, #_long line2, #_long dest]
-    (§
-;       if (line1 <= dest && dest < line2)
-;       {
-;           emsg(u8("E134: Move lines into themselves"));
-;           return false;
-;       }
-
-;       long num_lines = line2 - line1 + 1;
-
-        ;; First we copy the old text to its new location.
-        ;; Also copy the flag that ":global" command uses.
-
-;       if (!u_save(dest, dest + 1))
-;           return false;
-
-;       long l;
-
-;       long extra; ;; num lines added before line1
-;       for (extra = 0, l = line1; l <= line2; l++)
-;       {
-;           Bytes str = STRDUP(ml_get(l + extra));
-;           ml_append(dest + l - line1, str);
-;           if (dest < line1)
-;               extra++;
-;       }
-
-        ;; Now we must be careful adjusting our marks so that we don't overlap our
-        ;; mark_adjust() calls.
-        ;;
-        ;; We adjust the marks within the old text so that they refer to the last lines
-        ;; of the file (temporarily), because we know no other marks will be set there
-        ;; since these line numbers did not exist until we added our new lines.
-        ;;
-        ;; Then we adjust the marks on lines between the old and new text positions
-        ;; (either forwards or backwards).
-        ;;
-        ;; And finally we adjust the marks we put at the end of the file back to
-        ;; their final destination at the new text position.
-
-;       long last_line = @curbuf.b_ml.ml_line_count; ;; last line in file after adding new text
-;       mark_adjust(line1, line2, last_line - line2, 0);
-;       changed_lines(last_line - num_lines + 1, 0, last_line + 1, num_lines);
-;       if (line2 <= dest)
-;       {
-;           mark_adjust(line2 + 1, dest, -num_lines, 0);
-;           @curbuf.b_op_start.lnum = dest - num_lines + 1;
-;           @curbuf.b_op_end.lnum = dest;
-;       }
-;       else
-;       {
-;           mark_adjust(dest + 1, line1 - 1, num_lines, 0);
-;           @curbuf.b_op_start.lnum = dest + 1;
-;           @curbuf.b_op_end.lnum = dest + num_lines;
-;       }
-;       @curbuf.b_op_start.col = @curbuf.b_op_end.col = 0;
-;       mark_adjust(last_line - num_lines + 1, last_line, -(last_line - dest - extra), 0);
-;       changed_lines(last_line - num_lines + 1, 0, last_line + 1, -extra);
-
-        ;; Now we delete the original text.
-
-;       if (!u_save(line1 + extra - 1, line2 + extra + 1))
-;           return false;
-
-;       for (l = line1; l <= line2; l++)
-;           ml_delete(line1 + extra, true);
-
-;       if (@global_busy == 0 && @p_report < num_lines)
-;       {
-;           if (num_lines == 1)
-;               msg(u8("1 line moved"));
-;           else
-;               smsg(u8("%ld lines moved"), num_lines);
-;       }
-
-        ;; Leave the cursor on the last of the moved lines.
-
-;       if (line1 <= dest)
-;           @curwin.w_cursor.lnum = dest;
-;       else
-;           @curwin.w_cursor.lnum = dest + (line2 - line1) + 1;
-
-;       if (line1 < dest)
-;       {
-;           dest += num_lines + 1;
-;           last_line = @curbuf.b_ml.ml_line_count;
-;           if (dest > last_line + 1)
-;               dest = last_line + 1;
-;           changed_lines(line1, 0, dest, 0);
-;       }
-;       else
-;           changed_lines(dest + 1, 0, line1 + num_lines, 0);
-
-;       return true;
-    ))
-
-;; ":copy"
-
-(defn- #_void ex_copy [#_long line1, #_long line2, #_long n]
-    (§
-;       long count = line2 - line1 + 1;
-
-;       @curbuf.b_op_start.lnum = n + 1;
-;       @curbuf.b_op_end.lnum = n + count;
-;       @curbuf.b_op_start.col = @curbuf.b_op_end.col = 0;
-
-        ;; there are three situations:
-        ;; 1. destination is above line1
-        ;; 2. destination is between line1 and line2
-        ;; 3. destination is below line2
-        ;;
-        ;; n = destination (when starting)
-        ;; curwin.w_cursor.lnum = destination (while copying)
-        ;; line1 = start of source (while copying)
-        ;; line2 = end of source (while copying)
-
-;       if (!u_save(n, n + 1))
-;           return;
-
-;       @curwin.w_cursor.lnum = n;
-;       while (line1 <= line2)
-;       {
-;           Bytes p = STRDUP(ml_get(line1));
-;           ml_append(@curwin.w_cursor.lnum, p);
-            ;; situation 2: skip already copied lines
-;           if (line1 == n)
-;               line1 = @curwin.w_cursor.lnum;
-;           line1++;
-;           if (@curwin.w_cursor.lnum < line1)
-;               line1++;
-;           if (@curwin.w_cursor.lnum < line2)
-;               line2++;
-;           @curwin.w_cursor.lnum++;
-;       }
-
-;       appended_lines_mark(n, count);
-
-;       msgmore(count);
-    ))
-
 ;; Implementation of ":fixdel", also used by get_stty().
 ;;  <BS>    resulting <Del>
 ;;   ^?         ^H
@@ -8181,154 +7911,11 @@
 ;       add_termcode(u8("kD"), (p != null && p.at(0) == DEL) ? CTRL_H_STR : DEL_STR);
     ))
 
-(defn- #_void print_line_no_prefix [#_long lnum, #_boolean use_number, #_boolean list]
-    (§
-;       if (@curwin.w_options.@wo_nu || use_number)
-;       {
-;           Bytes numbuf = new Bytes(30);
-
-;           vim_snprintf(numbuf, numbuf.size(), u8("%*ld "), number_width(@curwin), lnum);
-;           msg_puts_attr(numbuf, hl_attr(HLF_N));      ;; Highlight line nrs
-;       }
-;       msg_prt_line(ml_get(lnum), list);
-    ))
-
-;; Print a text line.
-
-(defn- #_void print_line [#_long lnum, #_boolean use_number, #_boolean list]
-    (§
-;       msg_start();
-;       @info_message = true;
-;       print_line_no_prefix(lnum, use_number, list);
-;       @info_message = false;
-    ))
-
-(defn- #_void ex_z [#_exarg_C eap]
-    (§
-;       long lnum = eap.line2;
-
-            ;; Vi compatible: ":z!" uses display height, without a count uses 'scroll'.
-;       int bigness;
-;       if (eap.forceit)
-;           bigness = @curwin.w_height;
-;       else if (@firstwin != @lastwin)
-;           bigness = @curwin.w_height - 3;
-;       else
-;           bigness = (int)@curwin.w_options.@wo_scr * 2;
-;       if (bigness < 1)
-;           bigness = 1;
-
-;       Bytes x = eap.arg;
-;       Bytes kind = x;
-;       if (kind.at(0) == (byte)'-' || kind.at(0) == (byte)'+' || kind.at(0) == (byte)'=' || kind.at(0) == (byte)'^' || kind.at(0) == (byte)'.')
-;           x = x.plus(1);
-;       while (x.at(0) == (byte)'-' || x.at(0) == (byte)'+')
-;           x = x.plus(1);
-
-;       if (x.at(0) != 0)
-;       {
-;           if (!asc_isdigit(x.at(0)))
-;           {
-;               emsg(u8("E144: non-numeric argument to :z"));
-;               return;
-;           }
-;           else
-;           {
-;               bigness = libC.atoi(x);
-;               if (kind.at(0) == (byte)'=')
-;                   bigness += 2;
-;           }
-;       }
-
-            ;; the number of '-' and '+' multiplies the distance
-;       if (kind.at(0) == (byte)'-' || kind.at(0) == (byte)'+')
-;           for (x = kind.plus(1); x.at(0) == kind.at(0); x = x.plus(1))
-                ;
-
-;       long start, end, curs;
-;       boolean minus = false;
-
-;       switch (kind.at(0))
-;       {
-;           case '-':
-;               start = lnum - bigness * BDIFF(x, kind) + 1;
-;               end = start + bigness - 1;
-;               curs = end;
-;               break;
-
-;           case '=':
-;               start = lnum - (bigness + 1) / 2 + 1;
-;               end = lnum + (bigness + 1) / 2 - 1;
-;               curs = lnum;
-;               minus = true;
-;               break;
-
-;           case '^':
-;               start = lnum - bigness * 2;
-;               end = lnum - bigness;
-;               curs = lnum - bigness;
-;               break;
-
-;           case '.':
-;               start = lnum - (bigness + 1) / 2 + 1;
-;               end = lnum + (bigness + 1) / 2 - 1;
-;               curs = end;
-;               break;
-
-;           default: ;; '+'
-;               start = lnum;
-;               if (kind.at(0) == (byte)'+')
-;                   start += bigness * (BDIFF(x, kind) - 1) + 1;
-;               else if (eap.addr_count == 0)
-;                   start++;
-;               end = start + bigness - 1;
-;               curs = end;
-;               break;
-;       }
-
-;       if (start < 1)
-;           start = 1;
-
-;       if (end > @curbuf.b_ml.ml_line_count)
-;           end = @curbuf.b_ml.ml_line_count;
-
-;       if (curs > @curbuf.b_ml.ml_line_count)
-;           curs = @curbuf.b_ml.ml_line_count;
-
-;       for (long i = start; i <= end; i++)
-;       {
-;           if (minus && i == lnum)
-;           {
-;               msg_putchar('\n');
-
-;               for (int j = 1; j < (int)@Columns; j++)
-;                   msg_putchar('-');
-;           }
-
-;           print_line(i, (eap.flags & EXFLAG_NR) != 0, (eap.flags & EXFLAG_LIST) != 0);
-
-;           if (minus && i == lnum)
-;           {
-;               msg_putchar('\n');
-
-;               for (int j = 1; j < (int)@Columns; j++)
-;                   msg_putchar('-');
-;           }
-;       }
-
-;       @curwin.w_cursor.lnum = curs;
-    ))
-
 (atom! Bytes old_sub)              ;; previous substitute pattern
-(atom! boolean global_need_beginline)   ;; call beginline() after ":g"
 
 (atom! boolean do__all)                 ;; do multiple substitutions per line
-(atom! boolean do__ask)                 ;; ask for confirmation
 (atom! boolean do__count)               ;; count only
 (atom! boolean do__error true)        ;; if false, ignore errors
-(atom! boolean do__print)               ;; print last line with subs.
-(atom! boolean do__list)                ;; list last line with subs.
-(atom! boolean do__number)              ;; list last line with line nr
 (atom! int do__ic)                      ;; ignore case flag
 
 ;; Perform a substitution from line eap.line1 to line eap.line2 using
@@ -8361,7 +7948,7 @@
 ;       long start_nsubs = @sub_nsubs;
 
 ;       int which_pat;
-;       if (eap.cmdidx == CMD_tilde)
+;       if (eap.cmdidx == CMD_tilde)
 ;           which_pat = RE_LAST;            ;; use last used regexp
 ;       else
 ;           which_pat = RE_SUBST;           ;; use last substitute regexp
@@ -8458,17 +8045,9 @@
             ;; TODO: find a generic solution to make line-joining operations more
             ;; efficient, avoid allocating a string that grows in size.
 
-;       if (pat != null && STRCMP(pat, u8("\\n")) == 0 && sub.at(0) == NUL && (cmd.at(0) == NUL
-;               || (cmd.at(1) == NUL
-;                       && (cmd.at(0) == (byte)'g' || cmd.at(0) == (byte)'l' || cmd.at(0) == (byte)'p' || cmd.at(0) == (byte)'#'))))
+;       if (pat != null && STRCMP(pat, u8("\\n")) == 0 && sub.at(0) == NUL && (cmd.at(0) == NUL || (cmd.at(1) == NUL && cmd.at(0) == (byte)'g')))
 ;       {
 ;           @curwin.w_cursor.lnum = eap.line1;
-;           if (cmd.at(0) == (byte)'l')
-;               eap.flags = EXFLAG_LIST;
-;           else if (cmd.at(0) == (byte)'#')
-;               eap.flags = EXFLAG_NR;
-;           else if (cmd.at(0) == (byte)'p')
-;               eap.flags = EXFLAG_PRINT;
 
                 ;; The number of lines joined is the number of lines in the range plus one.
                 ;; One less when the last line is included.
@@ -8481,7 +8060,6 @@
 ;               @sub_nsubs = joined_lines_count - 1;
 ;               @sub_nlines = 1;
 ;               do_sub_msg(false);
-;               ex_may_print(eap);
 ;           }
 
 ;           if (!@cmdmod.keeppatterns)
@@ -8499,11 +8077,8 @@
 ;       else
 ;       {
 ;           @do__all = @p_gd;         ;; default is global on
-;           @do__ask = false;
 ;           @do__error = true;
-;           @do__print = false;
 ;           @do__count = false;
-;           @do__number = false;
 ;           @do__ic = 0;
 ;       }
 ;       while (cmd.at(0) != NUL)
@@ -8513,26 +8088,12 @@
 
 ;           if (cmd.at(0) == (byte)'g')
 ;               @do__all = !@do__all;
-;           else if (cmd.at(0) == (byte)'c')
-;               @do__ask = !@do__ask;
 ;           else if (cmd.at(0) == (byte)'n')
 ;               @do__count = true;
 ;           else if (cmd.at(0) == (byte)'e')
 ;               @do__error = !@do__error;
 ;           else if (cmd.at(0) == (byte)'r')       ;; use last used regexp
 ;               which_pat = RE_LAST;
-;           else if (cmd.at(0) == (byte)'p')
-;               @do__print = true;
-;           else if (cmd.at(0) == (byte)'#')
-;           {
-;               @do__print = true;
-;               @do__number = true;
-;           }
-;           else if (cmd.at(0) == (byte)'l')
-;           {
-;               @do__print = true;
-;               @do__list = true;
-;           }
 ;           else if (cmd.at(0) == (byte)'i')       ;; ignore case
 ;               @do__ic = 'i';
 ;           else if (cmd.at(0) == (byte)'I')       ;; don't ignore case
@@ -8541,8 +8102,6 @@
 ;               break;
 ;           cmd = cmd.plus(1);
 ;       }
-;       if (@do__count)
-;           @do__ask = false;
 
             ;; check for a trailing count
 
@@ -8665,7 +8224,6 @@
 
                     ;; Loop until nothing more to replace in this line.
                     ;; 1. Handle match with empty string.
-                    ;; 2. If do__ask is set, ask for confirmation.
                     ;; 3. Substitute the string.
                     ;; 4. If do__all is set, find next match.
                     ;; 5. Break if there isn't another match in this line.
@@ -8714,7 +8272,6 @@
 ;                       prev_matchcol = matchcol;
 
                             ;; 2. If do__count is set only increase the counter.
-                            ;;    If do__ask is set, ask for confirmation.
 
 ;                       if (@do__count)
 ;                       {
@@ -8733,133 +8290,6 @@
                                 ;; Skip the substitution, unless an expression is used,
                                 ;; then it is evaluated in the sandbox.
 ;                           if (!(sub.at(0) == (byte)'\\' && sub.at(1) == (byte)'='))
-;                               break skip;
-;                       }
-
-;                       if (@do__ask)
-;                       {
-;                           int typed = 0;
-
-                                ;; change State to CONFIRM, so that the mouse works properly
-;                           int save_State = @State;
-;                           @State = CONFIRM;
-;                           @curwin.w_cursor.col = regmatch.startpos[0].col;
-
-                                ;; When 'cpoptions' contains "u" don't sync undo when asking for confirmation.
-;                           if (vim_strbyte(@p_cpo, CPO_UNDO) != null)
-;                               @no_u_sync++;
-
-                                ;; Loop until 'y', 'n', 'q', CTRL-E or CTRL-Y typed.
-
-;                           while (@do__ask)
-;                           {
-;                               {
-;                                   Bytes orig_line = null;
-;                                   int len_change = 0;
-
-                                        ;; Invert the matched string.  Remove the inversion afterwards.
-;                                   int temp = @redrawingDisabled;
-;                                   @redrawingDisabled = 0;
-
-;                                   if (new_start != null)
-;                                   {
-                                            ;; There already was a substitution, we would like to show this
-                                            ;; to the user.
-                                            ;; We cannot really update the line, it would change what matches.
-                                            ;; Temporarily replace the line and change it back afterwards.
-;                                       orig_line = STRDUP(ml_get(lnum));
-
-;                                       Bytes new_line = concat_str(new_start, sub_firstline.plus(copycol));
-
-                                            ;; Position the cursor relative to the end of the line,
-                                            ;; the previous substitute may have inserted or deleted
-                                            ;; characters before the cursor.
-;                                       len_change = STRLEN(new_line) - STRLEN(orig_line);
-;                                       @curwin.w_cursor.col += len_change;
-;                                       ml_replace(lnum, new_line);
-;                                   }
-
-;                                   @search_match_lines = regmatch.endpos[0].lnum - regmatch.startpos[0].lnum;
-;                                   @search_match_endcol = regmatch.endpos[0].col + len_change;
-;                                   @highlight_match = true;
-
-;                                   update_topline();
-;                                   validate_cursor();
-;                                   update_screen(SOME_VALID);
-;                                   @highlight_match = false;
-;                                   redraw_later(SOME_VALID);
-
-;                                   if (@msg_row == (int)@Rows - 1)
-;                                       @msg_didout = false;         ;; avoid a scroll-up
-;                                   msg_starthere();
-;                                   boolean b = @msg_scroll;
-;                                   @msg_scroll = false;             ;; truncate msg when needed
-;                                   @msg_no_more = true;
-                                        ;; write message same highlighting as for wait_return
-;                                   smsg_attr(hl_attr(HLF_R), u8("replace with %s (y/n/a/q/l/^E/^Y)?"), sub);
-;                                   @msg_no_more = false;
-;                                   @msg_scroll = b;
-;                                   showruler(true);
-;                                   windgoto(@msg_row, @msg_col);
-;                                   @redrawingDisabled = temp;
-
-;                                   @no_mapping++;                   ;; don't map this key
-;                                   @allow_keys++;                   ;; allow special keys
-;                                   typed = plain_vgetc();
-;                                   --@allow_keys;
-;                                   --@no_mapping;
-
-                                        ;; clear the question
-;                                   @msg_didout = false;             ;; don't scroll up
-;                                   @msg_col = 0;
-;                                   gotocmdline(true);
-
-                                        ;; restore the line
-;                                   if (orig_line != null)
-;                                       ml_replace(lnum, orig_line);
-;                               }
-
-;                               @need_wait_return = false;           ;; no hit-return prompt
-;                               if (typed == 'q' || typed == ESC || typed == Ctrl_C || typed == @intr_char)
-;                               {
-;                                   got_quit = true;
-;                                   break;
-;                               }
-;                               if (typed == 'n')
-;                                   break;
-;                               if (typed == 'y')
-;                                   break;
-;                               if (typed == 'l')
-;                               {
-                                        ;; last: replace and then stop
-;                                   @do__all = false;
-;                                   line2 = lnum;
-;                                   break;
-;                               }
-;                               if (typed == 'a')
-;                               {
-;                                   @do__ask = false;
-;                                   break;
-;                               }
-;                           }
-;                           @State = save_State;
-;                           if (vim_strbyte(@p_cpo, CPO_UNDO) != null)
-;                               --@no_u_sync;
-
-;                           if (typed == 'n')
-;                           {
-                                    ;; For a multi-line match, put matchcol at the NUL at the end of the line and
-                                    ;; set nmatch to one, so that we continue looking for a match on the next line.
-                                    ;; Avoids that ":%s/\nB\@=//gc" and ":%s/\n/,\r/gc" get stuck when pressing 'n'.
-
-;                               if (1 < nmatch)
-;                               {
-;                                   matchcol = STRLEN(sub_firstline);
-;                                   skip_match = true;
-;                               }
-;                               break skip;
-;                           }
-;                           if (got_quit)
 ;                               break skip;
 ;                       }
 
@@ -8932,8 +8362,8 @@
 ;                       BCOPY(new_end, 0, sub_firstline, copycol, copy_len);
 ;                       new_end = new_end.plus(copy_len);
 
-;                       vim_regsub_multi(regmatch, sub_firstlnum - regmatch.startpos[0].lnum,
-;                                               sub, new_end, true, @p_magic, true);
+;                       vim_regsub_multi(regmatch, sub_firstlnum - regmatch.startpos[0].lnum, sub, new_end, true, @p_magic, true);
+
 ;                       @sub_nsubs++;
 ;                       did_sub = true;
 
@@ -8983,14 +8413,11 @@
 ;                                   p1.be(0, NUL);                  ;; truncate up to the CR
 ;                                   ml_append(lnum - 1, new_start);
 ;                                   mark_adjust(lnum + 1, MAXLNUM, 1, 0);
-;                                   if (@do__ask)
-;                                       appended_lines(lnum - 1, 1);
-;                                   else
-;                                   {
-;                                       if (first_line == 0)
-;                                           first_line = lnum;
-;                                       last_line = lnum + 1;
-;                                   }
+
+;                                   if (first_line == 0)
+;                                       first_line = lnum;
+;                                   last_line = lnum + 1;
+
                                         ;; All line numbers increase.
 ;                                   sub_firstlnum++;
 ;                                   lnum++;
@@ -9021,8 +8448,7 @@
 ;                                   || got_quit
 ;                                   || line2 < lnum
 ;                                   || !(@do__all || do_again)
-;                                   || (sub_firstline.at(matchcol) == NUL && nmatch <= 1
-;                                           && !re_multiline(regmatch.regprog)));
+;                                   || (sub_firstline.at(matchcol) == NUL && nmatch <= 1 && !re_multiline(regmatch.regprog)));
 ;                   nmatch = -1;
 
                         ;; Replace the line in the buffer when needed.
@@ -9064,22 +8490,14 @@
 ;                               for (i = 0; i < nmatch_tl; i++)
 ;                                   ml_delete(lnum, false);
 ;                               mark_adjust(lnum, lnum + nmatch_tl - 1, MAXLNUM, -nmatch_tl);
-;                               if (@do__ask)
-;                                   deleted_lines(lnum, nmatch_tl);
 ;                               --lnum;
 ;                               line2 -= nmatch_tl; ;; nr of lines decreases
 ;                               nmatch_tl = 0;
 ;                           }
 
-                                ;; When asking, undo is saved each time, must also set changed flag each time.
-;                           if (@do__ask)
-;                               changed_bytes(lnum, 0);
-;                           else
-;                           {
-;                               if (first_line == 0)
-;                                   first_line = lnum;
-;                               last_line = lnum + 1;
-;                           }
+;                           if (first_line == 0)
+;                               first_line = lnum;
+;                           last_line = lnum + 1;
 
 ;                           sub_firstlnum = lnum;
 ;                           sub_firstline = new_start;
@@ -9137,20 +8555,13 @@
 
 ;           if (@global_busy == 0)
 ;           {
-;               if (!@do__ask)       ;; when interactive leave cursor on the match
-;               {
-;                   if (endcolumn)
-;                       coladvance(MAXCOL);
-;                   else
-;                       beginline(BL_WHITE | BL_FIX);
-;               }
-;               if (!do_sub_msg(@do__count) && @do__ask)
-;                   msg(u8(""));
+;               if (endcolumn)
+;                   coladvance(MAXCOL);
+;               else
+;                   beginline(BL_WHITE | BL_FIX);
+
+;               do_sub_msg(@do__count);
 ;           }
-;           else
-;               @global_need_beginline = true;
-;           if (@do__print)
-;               print_line(@curwin.w_cursor.lnum, @do__number, @do__list);
 ;       }
 ;       else if (@global_busy == 0)
 ;       {
@@ -9201,174 +8612,6 @@
 ;           return true;
 ;       }
 ;       return false;
-    ))
-
-;; Execute a global command of the form:
-;;
-;; g/pattern/X : execute X on all lines where pattern matches
-;; v/pattern/X : execute X on all lines where pattern does not match
-;;
-;; where 'X' is an EX command
-;;
-;; The command character (as well as the trailing slash) is optional, and
-;; is assumed to be 'p' if missing.
-;;
-;; This is implemented in two passes: first we scan the file for the pattern and
-;; set a mark for each line that (not) matches.  Secondly we execute the command
-;; for each line that has a mark.  This is required because after deleting
-;; lines we do not know where to search for the next match.
-
-(defn- #_void ex_global [#_exarg_C eap]
-    (§
-;       if (@global_busy != 0)
-;       {
-;           emsg(u8("E147: Cannot do :global recursive")); ;; will increment global_busy
-;           return;
-;       }
-
-;       int type;                               ;; first char of cmd: 'v' or 'g'
-;       if (eap.forceit)                        ;; ":global!" is like ":vglobal"
-;           type = 'v';
-;       else
-;           type = eap.cmd.at(0);
-;       Bytes cmd = eap.arg;
-;       int which_pat = RE_LAST;                ;; default: use last used regexp
-
-            ;; undocumented vi feature:
-            ;;  "\/" and "\?": use previous search pattern.
-            ;;           "\&": use previous substitute pattern.
-
-;       Bytes pat;
-;       if (cmd.at(0) == (byte)'\\')
-;       {
-;           cmd = cmd.plus(1);
-;           if (vim_strbyte(u8("/?&"), cmd.at(0)) == null)
-;           {
-;               emsg(e_backslash);
-;               return;
-;           }
-;           if (cmd.at(0) == (byte)'&')
-;               which_pat = RE_SUBST;           ;; use previous substitute pattern
-;           else
-;               which_pat = RE_SEARCH;          ;; use previous search pattern
-;           cmd = cmd.plus(1);
-;           pat = u8("");
-;       }
-;       else if (cmd.at(0) == NUL)
-;       {
-;           emsg(u8("E148: Regular expression missing from global"));
-;           return;
-;       }
-;       else
-;       {
-;           byte delim = cmd.at(0);                 ;; delimiter, normally '/'
-;           if (delim != NUL)
-;               cmd = cmd.plus(1);                  ;; skip delimiter if there is one
-;           pat = cmd;                              ;; remember start of pattern
-;           { Bytes[] __ = { eap.arg }; cmd = skip_regexp(cmd, delim, @p_magic, __); eap.arg = __[0]; }
-;           if (cmd.at(0) == delim)                 ;; end delimiter found
-;               (cmd = cmd.plus(1)).be(-1, NUL);    ;; replace it with a NUL
-;       }
-
-;       regmmatch_C regmatch = §_regmmatch_C();
-;       if (search_regcomp(pat, RE_BOTH, which_pat, SEARCH_HIS, regmatch) == false)
-;       {
-;           emsg(e_invcmd);
-;           return;
-;       }
-
-;       int ndone = 0;
-
-            ;; pass 1: set marks for each (not) matching line
-
-;       for (long lnum = eap.line1; lnum <= eap.line2 && !@got_int; lnum++)
-;       {
-                ;; a match on this line?
-;           long match = vim_regexec_multi(regmatch, @curwin, @curbuf, lnum, 0, null);
-;           if ((type == 'g' && match != 0) || (type == 'v' && match == 0))
-;           {
-;               ml_setmarked(lnum);
-;               ndone++;
-;           }
-;           line_breakcheck();
-;       }
-
-            ;; pass 2: execute the command for each line that has been marked
-
-;       if (@got_int)
-;           msg(e_interr);
-;       else if (ndone == 0)
-;       {
-;           if (type == 'v')
-;               smsg(u8("Pattern found in every line: %s"), pat);
-;           else
-;               smsg(u8("Pattern not found: %s"), pat);
-;       }
-;       else
-;       {
-;           start_global_changes();
-;           global_exe(cmd);
-;           end_global_changes();
-;       }
-
-;       ml_clearmarked();                   ;; clear rest of the marks
-    ))
-
-;; Execute "cmd" on lines marked with ml_setmarked().
-
-(defn- #_void global_exe [#_Bytes cmd]
-    (§
-;       buffer_C old_buf = @curbuf;  ;; remember what buffer we started in
-
-        ;; Set current position only once for a global command.
-        ;; If global_busy is set, setpcmark() will not do anything.
-        ;; If there is an error, global_busy will be incremented.
-
-;       setpcmark();
-
-        ;; When the command writes a message, don't overwrite the command.
-;       @msg_didout = true;
-
-;       @sub_nsubs = 0;
-;       @sub_nlines = 0;
-;       @global_need_beginline = false;
-;       @global_busy = 1;
-
-;       long old_lcount = @curbuf.b_ml.ml_line_count;
-
-;       long lnum;                  ;; line number according to old situation
-;       while (!@got_int && (lnum = ml_firstmarked()) != 0 && @global_busy == 1)
-;       {
-;           @curwin.w_cursor.lnum = lnum;
-;           @curwin.w_cursor.col = 0;
-;           if (cmd.at(0) == NUL || cmd.at(0) == (byte)'\n')
-;               do_cmdline(u8("p"), false, DOCMD_NOWAIT);
-;           else
-;               do_cmdline(cmd, false, DOCMD_NOWAIT);
-;           ui_breakcheck();
-;       }
-
-;       @global_busy = 0;
-;       if (@global_need_beginline)
-;           beginline(BL_WHITE | BL_FIX);
-;       else
-;           check_cursor(); ;; cursor may be beyond the end of the line
-
-        ;; The cursor may have not moved in the text but a change
-        ;; in a previous line may have moved it on the screen.
-;       changed_line_abv_curs();
-
-        ;; If it looks like no message was written,
-        ;; allow overwriting the command with the report for number of changes.
-;       if (@msg_col == 0 && @msg_scrolled == 0)
-;           @msg_didout = false;
-
-        ;; If substitutes done, report number of substitutes,
-        ;; otherwise report number of extra or deleted lines.
-        ;; Don't report extra or deleted lines in the edge case where the buffer
-        ;; we are in after execution is different from the buffer we started in.
-;       if (!do_sub_msg(false) && @curbuf == old_buf)
-;           msgmore(@curbuf.b_ml.ml_line_count - old_lcount);
     ))
 
 ;; ex_getln.c: Functions for entering and editing an Ex command line ------------------------------
@@ -9761,7 +9004,7 @@
 
 ;                       case Ctrl_HAT:
 ;                       {
-                            
+;                           
 ;                           ui_cursor_shape();      ;; may show different cursor shape
 ;                           break cmdline_not_changed;
 ;                       }
@@ -11422,7 +10665,6 @@
 (defn- #_Bytes do_one_cmd [#_Bytes* cmdlinep, #_boolean sourcing]
     (§
 ;       Bytes errormsg = null;         ;; error message
-;       long verbose_save = -1;
 ;       boolean save_msg_scroll = @msg_scroll;
 ;       int save_msg_silent = -1;
 ;       int did_esilent = 0;
@@ -11553,26 +10795,6 @@
 ;                       break;
 ;                   }
 
-;                   case 's':
-;                   {
-;                       if (checkforcmd(p, u8("silent"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           if (save_msg_silent == -1)
-;                               save_msg_silent = @msg_silent;
-;                           @msg_silent++;
-;                           if (ea.cmd.at(0) == (byte)'!' && !vim_iswhite(ea.cmd.at(-1)))
-;                           {
-                                ;; ":silent!", but not "silent !cmd"
-;                               ea.cmd = skipwhite(ea.cmd.plus(1));
-;                               @emsg_silent++;
-;                               did_esilent++;
-;                           }
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
 ;                   case 't':
 ;                   {
 ;                       if (checkforcmd(p, u8("topleft"), 2))
@@ -11584,36 +10806,12 @@
 ;                       break;
 ;                   }
 
-;                   case 'u':
-;                   {
-;                       if (checkforcmd(p, u8("unsilent"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           if (save_msg_silent == -1)
-;                               save_msg_silent = @msg_silent;
-;                           @msg_silent = 0;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
 ;                   case 'v':
 ;                   {
 ;                       if (checkforcmd(p, u8("vertical"), 4))
 ;                       {
 ;                           ea.cmd = p[0];
 ;                           @cmdmod.split |= WSP_VERT;
-;                           continue;
-;                       }
-;                       if (checkforcmd(p, u8("verbose"), 4))
-;                       {
-;                           if (verbose_save < 0)
-;                               verbose_save = @p_verbose;
-;                           if (asc_isdigit(ea.cmd.at(0)))
-;                               @p_verbose = libC.atoi(ea.cmd);
-;                           else
-;                               @p_verbose = 1;
-;                           ea.cmd = p[0];
 ;                           continue;
 ;                       }
 ;                       break;
@@ -11633,7 +10831,7 @@
 ;           if (ea.cmd.at(0) == (byte)'*' && vim_strbyte(@p_cpo, CPO_STAR) == null)
 ;               ea.cmd = skipwhite(ea.cmd.plus(1));
 
-;           Bytes p = find_command(ea, null);
+;           Bytes p = find_command(ea);
 
             ;; 4. parse a range specifier of the form: addr [,addr] [;addr] ..
             ;;
@@ -11770,12 +10968,12 @@
 ;                   break doend;
 ;               if (ea.cmd.at(0) == (byte)'|')
 ;               {
-;                   ea.cmdidx = CMD_print;
+;                   ea.cmdidx = CMD_print;
 ;                   ea.argt = RANGE + COUNT;
 ;                   if ((errormsg = invalid_range(ea)) == null)
 ;                   {
 ;                       correct_range(ea);
-;                       ex_print(ea);
+;                       ex_print(ea);
 ;                   }
 ;               }
 ;               else if (ea.addr_count != 0)
@@ -11825,7 +11023,7 @@
 ;           }
 
             ;; forced commands
-;           if (p.at(0) == (byte)'!' && ea.cmdidx != CMD_substitute && ea.cmdidx != CMD_smagic && ea.cmdidx != CMD_snomagic)
+;           if (p.at(0) == (byte)'!' && ea.cmdidx != CMD_substitute)
 ;           {
 ;               p = p.plus(1);
 ;               ea.forceit = true;
@@ -11901,31 +11099,6 @@
 
 ;           ea.arg = skipwhite(p);
 
-            ;; Check for <newline> to end a shell command.
-            ;; Also do this for ":global".
-            ;; Any others?
-
-;           if (ea.cmdidx == CMD_global || ea.cmdidx == CMD_vglobal)
-;           {
-;               for (p = ea.arg; p.at(0) != NUL; p = p.plus(1))
-;               {
-                    ;; Remove one backslash before a newline, so that it's possible to
-                    ;; pass a newline to the shell and also a newline that is preceded
-                    ;; with a backslash.  This makes it impossible to end a shell
-                    ;; command in a backslash, but that doesn't appear useful.
-                    ;; Halving the number of backslashes is incompatible with previous
-                    ;; versions.
-;                   if (p.at(0) == (byte)'\\' && p.at(1) == (byte)'\n')
-;                       BCOPY(p, 0, p, 1, STRLEN(p, 1) + 1);
-;                   else if (p.at(0) == (byte)'\n')
-;                   {
-;                       ea.nextcmd = p.plus(1);
-;                       p.be(0, NUL);
-;                       break;
-;                   }
-;               }
-;           }
-
 ;           if ((ea.argt & DFLALL) != 0 && ea.addr_count == 0)
 ;           {
 ;               ea.line1 = 1;
@@ -11990,11 +11163,6 @@
 ;               }
 ;           }
 
-            ;; Check for flags: 'l', 'p' and '#'.
-
-;           if ((ea.argt & EXFLAGS) != 0)
-;               get_flags(ea);
-                                                        ;; no arguments allowed
 ;           if ((ea.argt & EXTRA) == 0 && ea.arg.at(0) != NUL && ea.arg.at(0) != (byte)'"')
 ;           {
 ;               errormsg = e_trailing;
@@ -12019,7 +11187,6 @@
                     ;; either have the TRLBAR flag, appear in this list or appear in
                     ;; the list at ":help :bar".
 ;                   case CMD_aboveleft:
-;                   case CMD_and:
 ;                   case CMD_belowright:
 ;                   case CMD_botright:
 ;                   case CMD_keepjumps:
@@ -12028,13 +11195,8 @@
 ;                   case CMD_leftabove:
 ;                   case CMD_lockmarks:
 ;                   case CMD_rightbelow:
-;                   case CMD_silent:
-;                   case CMD_smagic:
-;                   case CMD_snomagic:
 ;                   case CMD_substitute:
-;                   case CMD_tilde:
 ;                   case CMD_topleft:
-;                   case CMD_verbose:
 ;                   case CMD_vertical:
 ;                       break;
 
@@ -12073,9 +11235,6 @@
 ;           }
 ;           emsg(errormsg);
 ;       }
-
-;       if (0 <= verbose_save)
-;           @p_verbose = verbose_save;
 
 ;       COPY_cmdmod(@cmdmod, save_cmdmod);
 
@@ -12152,18 +11311,15 @@
 ;; Find an Ex command by its name, either built-in or user.
 ;; Start of the name can be found at eap.cmd.
 ;; Returns pointer to char after the command name.
-;; "full" is set to true if the whole command name matched.
 ;; Returns null for an ambiguous user command.
 
-(defn- #_Bytes find_command [#_exarg_C eap, #_boolean* full]
+(defn- #_Bytes find_command [#_exarg_C eap]
     (§
         ;; Isolate the command and search for it in the command table.
         ;; Exceptions:
         ;; - the 'k' command can directly be followed by any character.
-        ;; - the 's' command can be followed directly by 'c', 'g', 'i', 'I' or 'r'
-        ;;      but :sre[wind] is another command, as are :scr[iptnames],
-        ;;      :scs[cope], :sim[alt], :sig[ns] and :sil[ent].
-        ;; - the "d" command can directly be followed by 'l' or 'p' flag.
+        ;; - the 's' command can be followed directly by 'c', 'g', 'i', 'I' or 'r',
+        ;;      but :sre[wind] is another command, as are :scr[iptnames], :scs[cope], :sim[alt], :sig[ns] and :sil[ent].
 
 ;       Bytes p = eap.cmd;
 ;       if (p.at(0) == (byte)'k')
@@ -12185,10 +11341,6 @@
 ;       {
 ;           while (asc_isalpha(p.at(0)))
 ;               p = p.plus(1);
-            ;; for python 3.x support ":py3", ":python3", ":py3file", etc.
-;           if (eap.cmd.at(0) == (byte)'p' && eap.cmd.at(1) == (byte)'y')
-;               while (asc_isalnum(p.at(0)))
-;                   p = p.plus(1);
 
             ;; check for non-alpha command
 ;           if (BEQ(p, eap.cmd) && vim_strbyte(u8("@*!=><&~#"), p.at(0)) != null)
@@ -12196,31 +11348,9 @@
 
 ;           int len = BDIFF(p, eap.cmd);
 
-;           if (eap.cmd.at(0) == (byte)'d' && (p.at(-1) == (byte)'l' || p.at(-1) == (byte)'p'))
-;           {
-                ;; Check for ":dl", ":dell", etc. to ":deletel": that's
-                ;; :delete with the 'l' flag.  Same for 'p'.
-;               int i;
-;               for (i = 0; i < len; i++)
-;                   if (eap.cmd.at(i) != u8("delete").at(i))
-;                       break;
-;               if (i == len - 1)
-;               {
-;                   --len;
-;                   if (p.at(-1) == (byte)'l')
-;                       eap.flags |= EXFLAG_LIST;
-;                   else
-;                       eap.flags |= EXFLAG_PRINT;
-;               }
-;           }
-
 ;           for (eap.cmdidx = 0; eap.cmdidx < CMD_SIZE; eap.cmdidx++)
 ;               if (STRNCMP(cmdnames[eap.cmdidx].cmd_name, eap.cmd, len) == 0)
-;               {
-;                   if (full != null && cmdnames[eap.cmdidx].cmd_name.at(len) == NUL)
-;                       full[0] = true;
 ;                   break;
-;               }
 
             ;; Look for a user defined command as a last resort.
 ;           if (eap.cmdidx == CMD_SIZE && 'A' <= eap.cmd.at(0) && eap.cmd.at(0) <= 'Z')
@@ -12236,31 +11366,6 @@
 
 ;       return p;
     ))
-
-(class! #_final cmdmods_C
-    [
-        (field Bytes    name)
-        (field int      minlen)
-        (field boolean  has_count)  ;; :123verbose
-    ])
-
-(final cmdmods_C* cmdmods
-    [
-        (->cmdmods_C (u8 "aboveleft"),    3, false),
-        (->cmdmods_C (u8 "belowright"),   3, false),
-        (->cmdmods_C (u8 "botright"),     2, false),
-        (->cmdmods_C (u8 "keepjumps"),    5, false),
-        (->cmdmods_C (u8 "keepmarks"),    3, false),
-        (->cmdmods_C (u8 "keeppatterns"), 5, false),
-        (->cmdmods_C (u8 "leftabove"),    5, false),
-        (->cmdmods_C (u8 "lockmarks"),    3, false),
-        (->cmdmods_C (u8 "rightbelow"),   6, false),
-        (->cmdmods_C (u8 "silent"),       3, false),
-        (->cmdmods_C (u8 "topleft"),      2, false),
-        (->cmdmods_C (u8 "unsilent"),     3, false),
-        (->cmdmods_C (u8 "verbose"),      4, true ),
-        (->cmdmods_C (u8 "vertical"),     4, false),
-    ])
 
 ;; skip a range specifier of the form: addr [,addr] [;addr] ..
 ;;
@@ -12530,22 +11635,6 @@
 ;       return lnum;
     ))
 
-;; Get flags from an Ex command argument.
-
-(defn- #_void get_flags [#_exarg_C eap]
-    (§
-;       while (vim_strbyte(u8("lp#"), eap.arg.at(0)) != null)
-;       {
-;           if (eap.arg.at(0) == (byte)'l')
-;               eap.flags |= EXFLAG_LIST;
-;           else if (eap.arg.at(0) == (byte)'p')
-;               eap.flags |= EXFLAG_PRINT;
-;           else
-;               eap.flags |= EXFLAG_NR;
-;           eap.arg = skipwhite(eap.arg.plus(1));
-;       }
-    ))
-
 ;; Check range in Ex command for validity.
 ;; Return null when valid, error message when invalid.
 
@@ -12675,30 +11764,6 @@
 ;       shell_resized();        ;; may have resized window
     ))
 
-;; ":print", ":list", ":number".
-
-(defn- #_void ex_print [#_exarg_C eap]
-    (§
-;       if ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0)
-;           emsg(e_emptybuf);
-;       else
-;       {
-;           for ( ; !@got_int; ui_breakcheck())
-;           {
-;               print_line(eap.line1,
-;                       eap.cmdidx == CMD_number || eap.cmdidx == CMD_pound || (eap.flags & EXFLAG_NR) != 0,
-;                       eap.cmdidx == CMD_list || (eap.flags & EXFLAG_LIST) != 0);
-;               if (eap.line2 < ++eap.line1)
-;                   break;
-;               out_flush();            ;; show one line at a time
-;           }
-;           setpcmark();
-                ;; put cursor at last line
-;           @curwin.w_cursor.lnum = eap.line2;
-;           beginline(BL_SOL | BL_FIX);
-;       }
-    ))
-
 ;; Command modifier used in a wrong way.
 
 (defn- #_void ex_wrongmodifier [#_exarg_C eap]
@@ -12823,14 +11888,6 @@
 ;       }
     ))
 
-;; ":=".
-
-(defn- #_void ex_equal [#_exarg_C eap]
-    (§
-;       smsg(u8("%ld"), eap.line2);
-;       ex_may_print(eap);
-    ))
-
 ;; Sleep for "msec" milliseconds, but keep checking for a CTRL-C every second.
 
 (defn- #_void do_sleep [#_long msec]
@@ -12856,80 +11913,6 @@
 ;       }
 ;       @curwin.w_cursor.lnum = eap.line2;
 ;       do_put(eap.regname, eap.forceit ? BACKWARD : FORWARD, 1, PUT_LINE|PUT_CURSLINE);
-    ))
-
-;; Handle ":copy" and ":move".
-
-(defn- #_void ex_copymove [#_exarg_C eap]
-    (§
-;       long n;
-;       { Bytes[] __ = { eap.arg }; n = get_address(__, eap.addr_type, false, false); eap.arg = __[0]; }
-;       if (eap.arg == null)        ;; error detected
-;       {
-;           eap.nextcmd = null;
-;           return;
-;       }
-;       get_flags(eap);
-
-            ;; move or copy lines from 'eap.line1'-'eap.line2' to below line 'n'
-;       if (n == MAXLNUM || n < 0 || @curbuf.b_ml.ml_line_count < n)
-;       {
-;           emsg(e_invaddr);
-;           return;
-;       }
-
-;       if (eap.cmdidx == CMD_move)
-;       {
-;           if (do_move(eap.line1, eap.line2, n) == false)
-;               return;
-;       }
-;       else
-;           ex_copy(eap.line1, eap.line2, n);
-;       u_clearline();
-;       beginline(BL_SOL | BL_FIX);
-;       ex_may_print(eap);
-    ))
-
-;; Print the current line if flags were given to the Ex command.
-
-(defn- #_void ex_may_print [#_exarg_C eap]
-    (§
-;       if (eap.flags != 0)
-;       {
-;           print_line(@curwin.w_cursor.lnum, (eap.flags & EXFLAG_NR) != 0, (eap.flags & EXFLAG_LIST) != 0);
-;       }
-    ))
-
-;; ":smagic" and ":snomagic".
-
-(defn- #_void ex_submagic [#_exarg_C eap]
-    (§
-;       boolean magic_save = @p_magic;
-
-;       @p_magic = (eap.cmdidx == CMD_smagic);
-;       ex_sub(eap);
-;       @p_magic = magic_save;
-    ))
-
-;; ":join".
-
-(defn- #_void ex_join [#_exarg_C eap]
-    (§
-;       @curwin.w_cursor.lnum = eap.line1;
-;       if (eap.line1 == eap.line2)
-;       {
-;           if (2 <= eap.addr_count)    ;; :2,2join does nothing
-;               return;
-;           if (eap.line2 == @curbuf.b_ml.ml_line_count)
-;           {
-;               beep_flush();
-;               return;
-;           }
-;           eap.line2++;
-;       }
-;       do_join((int)(eap.line2 - eap.line1 + 1), !eap.forceit, true, true, true);
-;       beginline(BL_WHITE | BL_FIX);
-;       ex_may_print(eap);
     ))
 
 ;; ":undo".
@@ -20799,8 +19782,7 @@
 ;               {
 ;                   case MBLOCK:
 ;                       block_prep(oap, bd, lnum, false);
-;                       if (yank_copy_line(bd, y_idx) == false)
-;                           break fail;
+;                       yank_copy_line(bd, y_idx);
 ;                       break;
 
 ;                   case MLINE:
@@ -20868,8 +19850,7 @@
 ;                       else
 ;                           bd.textlen = endcol - startcol + (oap.inclusive ? 1 : 0);
 ;                       bd.textstart = p.plus(startcol);
-;                       if (yank_copy_line(bd, y_idx) == false)
-;                           break fail;
+;                       yank_copy_line(bd, y_idx);
 ;                       break;
 ;                   }
 ;               }
@@ -20953,7 +19934,7 @@
 ;       return false;
     ))
 
-(defn- #_boolean yank_copy_line [#_block_def_C bd, #_int y_idx]
+(defn- #_void yank_copy_line [#_block_def_C bd, #_int y_idx]
     (§
 ;       Bytes pnew = new Bytes(bd.startspaces + bd.endspaces + bd.textlen + 1);
 
@@ -20965,8 +19946,6 @@
 ;       copy_spaces(pnew, bd.endspaces);
 ;       pnew = pnew.plus(bd.endspaces);
 ;       pnew.be(0, NUL);
-
-;       return true;
     ))
 
 ;; Make a copy of the y_current register to register "reg".
@@ -24155,7 +23134,7 @@
 
 (defn- #_void updatescript [#_byte c]
     (§
-        
+;       
     ))
 
 ;; Get the next input character.
@@ -27033,7 +26012,7 @@
 
 (defn- #_void ins_ctrl_hat []
     (§
-        
+;       
 ;       showmode();
     ))
 
@@ -34552,6 +33531,7 @@
 ;       @reg_maxline = 0;
 ;       @reg_buf = @curbuf;
 ;       @reg_line_lbr = true;
+
 ;       return vim_regsub_both(source, dest, copy, magic, backslash);
     ))
 
@@ -34563,6 +33543,7 @@
 ;       @reg_firstlnum = lnum;
 ;       @reg_maxline = @curbuf.b_ml.ml_line_count - lnum;
 ;       @reg_line_lbr = false;
+
 ;       return vim_regsub_both(source, dest, copy, magic, backslash);
     ))
 
@@ -66815,30 +65796,30 @@
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
+
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN),                          ADDR_LINES),
+
         (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
+
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
+
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-        (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
+
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
@@ -66849,9 +65830,9 @@
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
+
+
         (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
@@ -66860,24 +65841,24 @@
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
-        (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
         (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA CMDWIN),                                     ADDR_LINES),
-        (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA CMDWIN),                        ADDR_LINES),
+
+
+
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
-        (->cmdname_C (u8 "z"),             ex_z,             (| RANGE EXTRA EXFLAGS CMDWIN),                               ADDR_LINES),
+
 
         ;; commands that don't start with a lowercase letter
 
-        (->cmdname_C (u8 "#"),             ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "&"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "="),             ex_equal,         (| RANGE DFLALL EXFLAGS CMDWIN),                              ADDR_LINES),
-        (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+
+
+
+
     ])
 
 ;;; ============================================================================================== VimZ
