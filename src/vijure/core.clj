@@ -2265,7 +2265,6 @@
 (atom! boolean  ins_at_eol)         ;; put cursor after eol when restarting edit after CTRL-O
 
 (atom! Bytes    ioBuff      (Bytes. IOSIZE))        ;; sprintf's are done in this buffer, size is IOSIZE
-(atom! Bytes    nameBuff    (Bytes. MAXPATHL))      ;; file names are expanded in this buffer, size is MAXPATHL
 
 (atom! int      no_redraw)          ;; When non-zero, postpone redrawing.
 
@@ -5002,13 +5001,15 @@
         (msg-puts (:fullname v))
         (when (non-flag? (:flags v) P_BOOL)
             (msg-putchar (byte \=))
-;%%         (cond (flag? (:flags v) P_NUM)
-;%%             (.sprintf libC @nameBuff, (u8 "%ld"), (long @varp))
-;%%         (flag? (:flags v) P_STRING)
-;%%             (if (nil? @varp)              ;; just in case
-;%%                 (eos! @nameBuff)
-;%%                 (vim-strncpy @nameBuff, #_Bytes @varp, (dec MAXPATHL))))
-            (msg-outtrans @nameBuff))
+            (let [#_Bytes s (Bytes. MAXPATHL)]
+;%%             (cond (flag? (:flags v) P_NUM)
+;%%                 (.sprintf libC s, (u8 "%ld"), (long @varp))
+;%%             (flag? (:flags v) P_STRING)
+;%%                 (if (nil? @varp)              ;; just in case
+;%%                     (eos! s)
+;%%                     (vim-strncpy s, #_Bytes @varp, (dec MAXPATHL))))
+                (msg-outtrans s)
+            ))
         (reset! info_message false))
     nil)
 
@@ -5086,31 +5087,31 @@
 ;; Copy options from one window to another.
 ;; Used when splitting a window.
 
-(defn- #_void win-copy-options [#_window_C from, #_window_C to]
-    (copy-winopt (:w_options from), (:w_options to))
-    (briopt-check to)
-    nil)
+(defn- #_window_C win-copy-options [#_window_C win, #_window_C won]
+    (copy-winopt (:w_options win), (:w_options won))
+    (briopt-check win)
+    win)
 
 ;; Copy the options from one winopt_C to another.
 
-(defn- #_void copy-winopt [#_winopt_C from, #_winopt_C to]
-    (reset! (:wo_bri to)            @(:wo_bri from))
-    (reset! (:wo_briopt to) (STRDUP @(:wo_briopt from)))
-    (reset! (:wo_cc to)     (STRDUP @(:wo_cc from)))
-    (reset! (:wo_cocu to)   (STRDUP @(:wo_cocu from)))
-    (reset! (:wo_cole to)           @(:wo_cole from))
-    (reset! (:wo_crb to)            @(:wo_crb from))
-    (reset! (:wo_cuc to)            @(:wo_cuc from))
-    (reset! (:wo_cul to)            @(:wo_cul from))
-    (reset! (:wo_lbr to)            @(:wo_lbr from))
-    (reset! (:wo_nu to)             @(:wo_nu from))
-    (reset! (:wo_nuw to)            @(:wo_nuw from))
-    (reset! (:wo_rnu to)            @(:wo_rnu from))
-    (reset! (:wo_scb to)            @(:wo_scb from))
+(defn- #_void copy-winopt [#_winopt_C win, #_winopt_C won]
+    (reset! (:wo_bri win)            @(:wo_bri won))
+    (reset! (:wo_briopt win) (STRDUP @(:wo_briopt won)))
+    (reset! (:wo_cc win)     (STRDUP @(:wo_cc won)))
+    (reset! (:wo_cocu win)   (STRDUP @(:wo_cocu won)))
+    (reset! (:wo_cole win)           @(:wo_cole won))
+    (reset! (:wo_crb win)            @(:wo_crb won))
+    (reset! (:wo_cuc win)            @(:wo_cuc won))
+    (reset! (:wo_cul win)            @(:wo_cul won))
+    (reset! (:wo_lbr win)            @(:wo_lbr won))
+    (reset! (:wo_nu win)             @(:wo_nu won))
+    (reset! (:wo_nuw win)            @(:wo_nuw won))
+    (reset! (:wo_rnu win)            @(:wo_rnu won))
+    (reset! (:wo_scb win)            @(:wo_scb won))
     ;; 'scroll' is omitted as it depends on window height
     ;; 'winfixheight' ... ?
     ;; 'winfixwidth' ... ?
-    (reset! (:wo_wrap to)           @(:wo_wrap from))
+    (reset! (:wo_wrap win)           @(:wo_wrap won))
     nil)
 
 (atom! boolean old_p_paste)
@@ -8393,7 +8394,7 @@
 ;; ":only".
 
 (defn- #_exarg_C ex-only [#_exarg_C eap]
-    (if (< 0 (:addr_count eap))
+    (when (< 0 (:addr_count eap))
         (win-goto (loop-when-recur [win @firstwin n (:line2 eap)] (and (< 1 n) (some? (:w_next win))) [(:w_next win) (dec n)] => win)))
     (close-others true, (:forceit eap))
     eap)
@@ -12531,7 +12532,7 @@
                             [cap dir flags regname reg2]
                         )
                         [cap dir flags 0 nil])
-                  empty? (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0)]
+                  empty? (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)]
 
                 (do-put (:regname (:oap cap)), dir, (:count1 cap), flags)
 
@@ -16025,16 +16026,16 @@
         (swap! curwin assoc :w_jumplistlen e))
     nil)
 
-;; Copy the jumplist from window "from" to window "to".
+;; Copy the jumplist from window "won" to window "win".
 
-(defn- #_void copy-jumplist [#_window_C from, #_window_C to]
+(defn- #_window_C copy-jumplist [#_window_C win, #_window_C won]
     (§
-        (dotimes [#_int i (:w_jumplistlen from)]
-            (COPY-fmark (... (:w_jumplist to) i), (... (:w_jumplist from) i))
+        (dotimes [#_int i (:w_jumplistlen won)]
+            (COPY-fmark (... (:w_jumplist win) i), (... (:w_jumplist won) i))
         )
-        ((ß to.w_jumplistlen =) (:w_jumplistlen from))
-        ((ß to.w_jumplistidx =) (:w_jumplistidx from))
-        nil
+        ((ß win.w_jumplistlen =) (:w_jumplistlen won))
+        ((ß win.w_jumplistidx =) (:w_jumplistidx won))
+        win
     ))
 
 ;;; ============================================================================================== VimL
@@ -32524,7 +32525,7 @@
 (defn- #_void close-buffer [#_window_C win]
     ;; decrease the link count from windows (unless not in any window)
     (let-when [n (:b_nwindows @curbuf)] (pos? n)
-        ;; Set b_last_cursor when closing the last window for the buffer.
+        ;; Set "b_last_cursor" when closing the last window for the buffer.
         ;; Remember the last cursor position and window options of the buffer.
         (when (== n 1)
             (swap! curbuf assoc :b_last_cursor (:w_cursor win)))
@@ -32572,19 +32573,18 @@
 ;%% )
     nil)
 
-;; Get relative cursor position in window into "buf[buflen]", in the form 99%,
-;; using "Top", "Bot" or "All" when appropriate.
+;; Get relative cursor position in window into "buf[buflen]", in the form 99%, using "Top", "Bot" or "All" when appropriate.
 
 (defn- #_void get-rel-pos [#_window_C win, #_Bytes buf, #_int buflen]
     (if (<= 3 buflen) ;; need at least 3 chars for writing
         ;; number of lines above/below window
-        (let [#_long above (dec (:w_topline win)) #_long below (inc (- (:ml_line_count (:b_ml @curbuf)) (:w_botline win)))]
+        (let [above (dec (:w_topline win)) below (inc (- (:ml_line_count (:b_ml @curbuf)) (:w_botline win)))]
             (cond (<= below 0)
                 (vim-strncpy buf, (if (zero? above) (u8 "All") (u8 "Bot")), (dec buflen))
             (<= above 0)
                 (vim-strncpy buf, (u8 "Top"), (dec buflen))
             :else
-            (let [#_int cent (if (< 1000000 above) (int (/ above (/ (+ above below) 100))) (int (/ (* above 100) (+ above below))))]
+            (let [cent (if (< 1000000 above) (/ above (/ (+ above below) 100)) (/ (* above 100) (+ above below)))]
 ;%%             (vim_snprintf buf, buflen, (u8 "%2d%%"), cent)
             ))
         ))
@@ -38647,7 +38647,7 @@
             ((ß uhp.uh_cursor_vcol =) (if (and (virtual-active) (< 0 (:coladd (:w_cursor @curwin)))) (getviscol) -1))
 
             ;; save changed and buffer empty flag for undo
-            ((ß uhp.uh_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0) UH_EMPTYBUF 0)))
+            ((ß uhp.uh_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) UH_EMPTYBUF 0)))
 
             ;; save named marks and Visual marks for undo
             (dotimes [#_int i NMARKS]
@@ -39100,7 +39100,7 @@
         ((ß u_header_C curhead =) (:b_u_curhead @curbuf))
 
         ((ß int old_flags =) (:uh_flags curhead))
-        ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0) UH_EMPTYBUF 0)))
+        ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) UH_EMPTYBUF 0)))
         (setpcmark)
 
         ;; save marks before undo/redo
@@ -41067,7 +41067,7 @@
             ;; redraw status line after the window to minimize cursor movement
             (when (:w_redr_status wp)
                 (cursor-off)
-                (win-redr-status wp)
+                ((ß wp =) (win-redr-status wp))
             )
         )
         (end-search-hl)
@@ -43484,9 +43484,9 @@
 ;; Redraw all status lines that need to be redrawn.
 
 (defn- #_void redraw-statuslines []
-    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+    (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
         (when (:w_redr_status win)
-            (win-redr-status win)
+            ((ß win =) (win-redr-status win))
         ))
     nil)
 
@@ -43505,85 +43505,49 @@
 
 ;; Redraw the status line of window "win".
 ;;
-;; If inversion is possible we use it.  Else '=' characters are used.
+;; If inversion is possible, we use it; else '=' characters are used.
 
-(defn- #_void win-redr-status [#_window_C win]
-    (§
-        ;; It's possible to get here recursively when 'statusline' (indirectly)
-        ;; invokes ":redrawstatus".  Simply ignore the call then.
-        (if @_3_busy
-            ((ß RETURN) nil)
-        )
-        (reset! _3_busy true)
-
-        ((ß win.w_redr_status =) false)
-        (cond (zero? (:w_status_height win))
-        (do
-            ;; no status line, can only be last window
-            (reset! redraw_cmdline true)
-        )
-        (not (redrawing))
-        (do
-            ;; Don't redraw right now, do it later.
-            ((ß win.w_redr_status =) true)
-        )
-        :else
-        (do
-            ((ß int[] a'attr =) (atom (int)))
-            ((ß int fillchar =) (fillchar-status a'attr, (== win @curwin)))
-
-            (vim-strncpy @nameBuff, (u8 "[No Name]"), (dec MAXPATHL))
-            (trans-characters @nameBuff, MAXPATHL)
-
-            ((ß Bytes p =) @nameBuff)
-            ((ß int len =) (STRLEN p))
-
-            (when @(:b_changed @curbuf)
-                (.be p (ß len++), (byte \space))
-                (STRCPY (.plus p len), (u8 "[+]"))
-                ((ß len =) (+ len 3))
-            )
-
-            ((ß int this_ru_col =) (- @ru_col (- @Cols (:w_width win))))
-            ((ß this_ru_col =) (max (/ (inc (:w_width win)) 2) this_ru_col))
-            (cond (<= this_ru_col 1)
-            (do
-                ((ß p =) (u8 "<"))                    ;; No room for file name!
-                ((ß len =) 1)
-            )
-            :else
-            (do
-                ;; Count total number of display cells.
-                ((ß len =) (us-string2cells p, -1))
-
-                ;; Find first character that will fit.
-                ;; Going from start to end is much faster for DBCS.
-                ((ß int i =) (loop-when-recur [i 0] (and (non-eos? p i) (<= (dec this_ru_col) len)) [(+ i (us-ptr2len-cc p, i))] => i
-                    ((ß len =) (- len (us-ptr2cells p, i)))
+(defn- #_window_C win-redr-status [#_window_C win]
+    ;; It's possible to get here recursively when 'statusline' (indirectly) invokes ":redrawstatus".  Simply ignore the call then.
+    (if @_3_busy
+        win
+        (let [_ (reset! _3_busy true)
+              win (assoc win :w_redr_status false)
+              win (cond (zero? (:w_status_height win))      ;; no status line, must be the last window
+                    (do (reset! redraw_cmdline true) win)
+                (not (redrawing))                           ;; don't redraw right now, do it later
+                    (assoc win :w_redr_status true)
+                :else
+                    (let [#_Bytes s (Bytes. MAXPATHL)]
+                        (vim-strncpy s, (u8 "[No Name]"), (dec MAXPATHL))
+                        (trans-characters s, MAXPATHL)
+                        (when @(:b_changed @curbuf)
+                            (let [n (STRLEN s)] (-> s (.be n, (byte \space)) (.plus (inc n)) (STRCPY (u8 "[+]")))))
+                        (let [m (max (/ (inc (:w_width win)) 2) (- @ru_col (- @Cols (:w_width win))))
+                              [s n]
+                                (if (< 1 m)                 ;; find first character that will fit
+                                    (let [[n i] (loop-when-recur [n (us-string2cells s, -1) i 0]
+                                                                 (and (<= (dec m) n) (non-eos? s i))
+                                                                 [(- n (us-ptr2cells s, i)) (+ i (us-ptr2len-cc s, i))]
+                                                              => [n i]
+                                                )]
+                                        (if (< 0 i) [(-> s (.plus (dec i)) (.be 0, (byte \<))) (inc n)] [s n]))
+                                    [(u8 "<") 1]            ;; no room for file name!
+                                )]
+                            (let [row (+ (:w_winrow win) (:w_height win)) col (:w_wincol win)
+                                  a'attr (atom (int)) #_int fillchar (fillchar-status a'attr, (== win @curwin))]
+                                (screen-puts s, row, col, @a'attr)
+                                (screen-fill row, (inc row), (+ col n), (+ col m), fillchar, fillchar, @a'attr))
+                            (win-redr-ruler win, true)
+                        ))
+                )]
+            ;; May need to draw the character below the vertical separator.
+            (when (and (non-zero? (:w_vsep_width win)) (non-zero? (:w_status_height win)) (redrawing))
+                (let [a'attr (atom (int)) #_int fillchar (if (stl-connected win) (fillchar-status a'attr, (== win @curwin)) (fillchar-vsep a'attr))]
+                    (screen-putchar fillchar, (+ (:w_winrow win) (:w_height win)), (+ (:w_wincol win) (:w_width win)), @a'attr)
                 ))
-                (when (< 0 i)
-                    ((ß p =) (.plus p (dec i)))
-                    (.be p 0, (byte \<))
-                    ((ß len =) (inc len))
-                )
-            ))
-
-            (let [#_int row (+ (:w_winrow win) (:w_height win))]
-                (screen-puts p, row, (:w_wincol win), @a'attr)
-                (screen-fill row, (inc row), (+ len (:w_wincol win)), (+ this_ru_col (:w_wincol win)), fillchar, fillchar, @a'attr))
-
-            (win-redr-ruler win, true)
-        ))
-
-        ;; May need to draw the character below the vertical separator.
-
-        (when (and (non-zero? (:w_vsep_width win)) (non-zero? (:w_status_height win)) (redrawing))
-            ((ß int[] a'attr =) (atom (int)))
-            ((ß int fillchar =) (if (stl-connected win) (fillchar-status a'attr, (== win @curwin)) (fillchar-vsep a'attr)))
-            (screen-putchar fillchar, (+ (:w_winrow win) (:w_height win)), (+ (:w_wincol win) (:w_width win)), @a'attr)
-        )
-        (reset! _3_busy false)
-        nil
+            (reset! _3_busy false)
+            win)
     ))
 
 ;; Return true if the status line of window "win" is connected to the status
@@ -45270,7 +45234,7 @@
         ;; If the last window has no status line,
         ;; the ruler is after the mode message and must be redrawn.
         (when (and (redrawing) (zero? (:w_status_height @lastwin)))
-            (win-redr-ruler @lastwin, true))
+            (swap! lastwin win-redr-ruler true))
         (reset! redraw_cmdline false)
         (reset! clear_cmdline false)
         length
@@ -45328,111 +45292,64 @@
     (not (and @p_lz (char-avail) (not @keyTyped))))
 
 ;; Show current status info in ruler and various other places.
-;; If always is false, only show ruler if position has changed.
+;; If "always" is false, only show ruler if position has changed.
 
 (defn- #_void showruler [#_boolean always]
     (when (or always (redrawing))
-        (win-redr-ruler @curwin, always))
+        (swap! curwin win-redr-ruler always))
     nil)
 
-(defn- #_void win-redr-ruler [#_window_C win, #_boolean always]
-    (§
-        ;; If 'ruler' off or redrawing disabled, don't do anything.
-        (if (not @p_ru)
-            ((ß RETURN) nil)
-        )
-
-        ;; Check if cursor.lnum is valid, since win-redr-ruler() may be called
-        ;; after deleting lines, before cursor.lnum is corrected.
-
-        (if (< (:ml_line_count (:b_ml @curbuf)) (:lnum (:w_cursor win)))
-            ((ß RETURN) nil)
-        )
-
+(defn- #_window_C win-redr-ruler [#_window_C win, #_boolean always]
+    ;; If 'ruler' is off or redrawing is disabled, don't do anything.
+    ;; Also check if cursor.lnum is valid, since win-redr-ruler() may be
+    ;; called after deleting lines, before cursor.lnum is corrected.
+    (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (and @p_ru (<= (:lnum (:w_cursor win)) lmax)) => win
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
+        (let-when [#_boolean empty (and (non-flag? @State INSERT) (eos? (ml-get (:lnum (:w_cursor win)))))
+              win (validate-virtcol win)
+              ;; Only draw the ruler when something changed.
+              ? (or @redraw_cmdline always (!= (:w_ru_cursor win) (:w_cursor win))
+                                           (!= (:w_ru_virtcol win) (:w_virtcol win))
+                                           (!= (:w_ru_topline win) (:w_topline win))
+                                           (!= (:w_ru_line_count win) lmax)
+                                           (!= (:w_ru_empty win) empty)
+                )] ? => win
 
-        ((ß boolean empty_line =) false)
-        ((ß empty_line =) (or (and (non-flag? @State INSERT) (eos? (ml-get (:lnum (:w_cursor win))))) empty_line))
-
-        ;; Only draw the ruler when something changed.
-
-        ((ß win =) (validate-virtcol win))
-        (when (or @redraw_cmdline always (!= (:lnum (:w_cursor win)) (:lnum (:w_ru_cursor win))) (!= (:col (:w_cursor win)) (:col (:w_ru_cursor win))) (!= (:w_virtcol win) (:w_ru_virtcol win)) (!= (:coladd (:w_cursor win)) (:coladd (:w_ru_cursor win))) (!= (:w_topline win) (:w_ru_topline win)) (!= (:ml_line_count (:b_ml @curbuf)) (:w_ru_line_count win)) (!= empty_line (:w_ru_empty win)))
             (cursor-off)
-
-            (ß int row, fillchar, off, width)
-            ((ß int[] a'attr =) (atom (int)))
-            (cond (non-zero? (:w_status_height win))
-            (do
-                ((ß row =) (+ (:w_winrow win) (:w_height win)))
-                ((ß fillchar =) (fillchar-status a'attr, (== win @curwin)))
-                ((ß off =) (:w_wincol win))
-                ((ß width =) (:w_width win))
-            )
-            :else
-            (do
-                ((ß row =) (dec @Rows))
-                ((ß fillchar =) (byte \space))
-                (reset! a'attr 0)
-                ((ß off =) 0)
-                ((ß width =) @Cols)
+            (let [a'attr (atom (int)) [row fillchar off width]
+                    (if (non-zero? (:w_status_height win))
+                        [(+ (:w_winrow win) (:w_height win)) (fillchar-status a'attr, (== win @curwin)) (:w_wincol win) (:w_width win)]
+                        [(dec @Rows) (do (reset! a'attr 0) (byte \space)) 0 @Cols])
+                  #_final #_int RULER_BUF_LEN 70 #_Bytes s (Bytes. RULER_BUF_LEN)
+;%%               _ (vim_snprintf s, RULER_BUF_LEN, (u8 "%ld,"), (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0 (:lnum (:w_cursor win))))
+                  #_int n (STRLEN s)
+                  _ (col-print (.plus s n), (- RULER_BUF_LEN n), (if empty 0 (inc (:col (:w_cursor win)))), (inc (:w_virtcol win)))
+                  ;; Add a "50%" if there is room for it.
+                  #_int n (STRLEN s)
+                  _ (get-rel-pos win, (.plus s (inc n)), (- RULER_BUF_LEN (inc n)))
+                  ;; Don't print at the last column of the last line (scrolls the screen up on some terminals).
+                  #_int e (+ n (mb-string2cells (.plus s (inc n))) (if (zero? (:w_status_height win)) 1 0))
+                  ;; Never use more than half the window/screen width, leave the other half for the filename.
+                  #_int m (max 0 (- @ru_col (- @Cols width))) m (max (/ (inc width) 2) m)]
+                (when (< (+ m e) width) ;; need at least 3 chars left for get-rel-pos() + NUL
+                    (let [n (loop-when-recur [n n e e] (and (< (+ m e) width) (< (+ n 3 1) RULER_BUF_LEN)) [(+ n (utf-char2bytes fillchar, (.plus s n))) (inc e)] => n)]
+                        (get-rel-pos win, (.plus s n), (- RULER_BUF_LEN n))
+                    ))
+                ;; Truncate at window boundary.
+                (loop-when [#_int n 0 #_int i 0] (non-eos? s i) => s
+                    (let [n (+ n (us-ptr2cells s, i))]
+                        (recur-if (<= (+ m n) width) [n (+ i (us-ptr2len-cc s, i))] => (eos! s i))
+                    ))
+                (screen-puts s, row, (+ m off), @a'attr)
+                (let [_ @redraw_cmdline] ;; don't redraw the cmdline because of showing the ruler
+                    (screen-fill row, (inc row), (+ m off (STRLEN s)), (+ off width), fillchar, fillchar, @a'attr)
+                    (reset! redraw_cmdline _))
+                (assoc win :w_ru_cursor (:w_cursor win)
+                           :w_ru_virtcol (:w_virtcol win)
+                           :w_ru_topline (:w_topline win)
+                           :w_ru_line_count lmax)
+                           :w_ru_empty empty
             ))
-
-            ((ß final int RULER_BUF_LEN =) 70)
-            ((ß Bytes buffer =) (Bytes. RULER_BUF_LEN))
-
-            ;; Some sprintfs return the length, some return a pointer.
-            ;; To avoid portability problems we use STRLEN() here.
-
-;%%         (vim_snprintf buffer, RULER_BUF_LEN, (u8 "%ld,"), (if (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0) 0 (:lnum (:w_cursor win))))
-            ((ß int len =) (STRLEN buffer))
-            (col-print (.plus buffer len), (- RULER_BUF_LEN len), (if empty_line 0 (inc (:col (:w_cursor win)))), (inc (:w_virtcol win)))
-
-            ;; Add a "50%" if there is room for it.
-            ;; On the last line, don't print in the last column
-            ;; (scrolls the screen up on some terminals).
-
-            ((ß int ii =) (STRLEN buffer))
-            (get-rel-pos win, (.plus buffer (inc ii)), (- RULER_BUF_LEN ii 1))
-            ((ß int oo =) (+ ii (mb-string2cells (.plus buffer (inc ii)))))
-            ((ß oo =) (if (zero? (:w_status_height win)) (inc oo) oo))    ;; can't use last char of screen
-            ((ß int this_ru_col =) (- @ru_col (- @Cols width)))
-            ((ß this_ru_col =) (max 0 this_ru_col))
-            ;; Never use more than half the window/screen width,
-            ;; leave the other half for the filename.
-            ((ß this_ru_col =) (max (/ (inc width) 2) this_ru_col))
-            (when (< (+ this_ru_col oo) width)
-                ;; need at least 3 chars left for get-rel-pos() + NUL
-                (loop-when [] (and (< (+ this_ru_col oo) width) (< (+ ii 4) RULER_BUF_LEN))
-                    ((ß ii =) (+ ii (utf-char2bytes fillchar, (.plus buffer ii))))
-                    ((ß oo =) (inc oo))
-                    (recur)
-                )
-                (get-rel-pos win, (.plus buffer ii), (- RULER_BUF_LEN ii))
-            )
-
-            ;; Truncate at window boundary.
-            ((ß int ooo =) 0)
-            (loop-when-recur [#_int i 0] (non-eos? buffer i) [(+ i (us-ptr2len-cc buffer, i))]
-                ((ß ooo =) (+ ooo (us-ptr2cells buffer, i)))
-                (when (< width (+ this_ru_col ooo))
-                    (eos! buffer i)
-                    (ß BREAK)
-                )
-            )
-
-            (screen-puts buffer, row, (+ this_ru_col off), @a'attr)
-            ((ß boolean iii =) @redraw_cmdline)
-            (screen-fill row, (inc row), (+ this_ru_col off (STRLEN buffer)), (+ off width), fillchar, fillchar, @a'attr)
-            ;; don't redraw the cmdline because of showing the ruler
-            (reset! redraw_cmdline iii)
-            (COPY-pos (:w_ru_cursor win), (:w_cursor win))
-            ((ß win.w_ru_virtcol =) (:w_virtcol win))
-            ((ß win.w_ru_empty =) empty_line)
-            ((ß win.w_ru_topline =) (:w_topline win))
-            ((ß win.w_ru_line_count =) (:ml_line_count (:b_ml @curbuf)))
-        )
-        nil
     ))
 
 ;; Return the width of the 'number' and 'relativenumber' column.
@@ -45840,7 +45757,7 @@
             ((ß wp.w_frame =) (newFrame wp))
 
             ;; make the contents of the new window the same as the current one
-            (win-init wp, @curwin)
+            ((ß wp =) (win-init wp, @curwin))
         )
 
         ;; Reorganise the tree of frames to insert the new window.
@@ -46059,32 +45976,27 @@
         true
     ))
 
-;; Initialize window "newp" from window "oldp".
+;; Initialize window "win" from window "won".
 ;; Used when splitting a window and when creating a new tab page.
 ;; The windows will both edit the same buffer.
 
-(defn- #_void win-init [#_window_C newp, #_window_C oldp]
-    (§
-        (swap! curbuf update :b_nwindows inc)
-
-        (COPY-pos (:w_cursor newp), (:w_cursor oldp))
-        ((ß newp.w_valid =) 0)
-        ((ß newp.w_curswant =) (:w_curswant oldp))
-        ((ß newp.w_set_curswant =) (:w_set_curswant oldp))
-        ((ß newp.w_topline =) (:w_topline oldp))
-        ((ß newp.w_leftcol =) (:w_leftcol oldp))
-        (COPY-pos (:w_pcmark newp), (:w_pcmark oldp))
-        (COPY-pos (:w_prev_pcmark newp), (:w_prev_pcmark oldp))
-        ((ß newp.w_wrow =) (:w_wrow oldp))
-        ((ß newp.w_fraction =) (:w_fraction oldp))
-        ((ß newp.w_prev_fraction_row =) (:w_prev_fraction_row oldp))
-        (copy-jumplist oldp, newp)
-
-        ;; copy options from existing window
-        (win-copy-options oldp, newp)
-
-        (check-colorcolumn newp)
-        nil
+(defn- #_window_C win-init [#_window_C win, #_window_C won]
+    (swap! curbuf update :b_nwindows inc)
+    (let [win (assoc win :w_cursor (:w_cursor won)
+                         :w_valid 0
+                         :w_curswant (:w_curswant won)
+                         :w_set_curswant (:w_set_curswant won)
+                         :w_topline (:w_topline won)
+                         :w_leftcol (:w_leftcol won)
+                         :w_pcmark (:w_pcmark won)
+                         :w_prev_pcmark (:w_prev_pcmark won)
+                         :w_wrow (:w_wrow won)
+                         :w_fraction (:w_fraction won)
+                         :w_prev_fraction_row (:w_prev_fraction_row won))
+          win (copy-jumplist win, won)
+          win (win-copy-options win, won)
+          _ (check-colorcolumn win)]
+        win
     ))
 
 ;; Check if "win" is a pointer to an existing window.
@@ -47330,15 +47242,14 @@
     nil)
 
 ;; Make window "win" the current window.
-;; Can be called with "curwin_invalid" true, which means that curwin has just
-;; been closed and isn't valid.
+;; Can be called with "curwin_invalid" true, which means that curwin has just been closed and isn't valid.
 
 (defn- #_void win-enter-ext [#_window_C win, #_boolean curwin_invalid]
     (when (or (!= @curwin win) curwin_invalid)
-        ;; Might need to scroll the old window before switching, e.g., when the cursor was moved.
+        ;; Might need to scroll the old window before switching, e.g. when the cursor was moved.
         (swap! curwin update-topline)
         (when (not curwin_invalid)
-            (reset! prevwin @curwin)       ;; remember for CTRL-W p
+            (reset! prevwin @curwin)                        ;; remember for CTRL-W p
             (swap! curwin assoc :w_redr_status true))
 
         (reset! curwin win)
@@ -47346,10 +47257,10 @@
         (swap! curwin check-cursor)
         (when (not (virtual-active))
             (swap! curwin assoc-in [:w_cursor :coladd] 0))
-        (swap! curwin changed-line-abv-curs)    ;; assume cursor position needs updating
+        (swap! curwin changed-line-abv-curs)                ;; assume cursor position needs updating
         (swap! curwin assoc :w_redr_status true)
         (when (non-zero? @restart_edit)
-            (swap! curwin redraw-win-later VALID))    ;; causes status line redraw
+            (swap! curwin redraw-win-later VALID))          ;; causes status line redraw
         ;; set window height to desired minimal value
         (cond (and (< (:w_height @curwin) @p_wh) (not @(:wo_wfh (:w_options @curwin))))
             (win-setheight @curwin, @p_wh)
