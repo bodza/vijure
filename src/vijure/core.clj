@@ -11189,7 +11189,7 @@
                                           (if (< 1 %) (if (u-savesub (:lnum (:w_cursor @curwin))) (do (u-clearline) true) false) true))))
                       startpos (:w_cursor @curwin)
                       changed (loop-when [changed false n (:count1 cap)] (< 0 n) => changed
-                                    (let [changed (or (swapchar (:op_type (:oap cap)), (:w_cursor @curwin)) changed)]
+                                    (let [[_ ?] (swapchar (:op_type (:oap cap)), (:w_cursor @curwin)) _ (swap! curwin assoc :w_cursor _) changed (or ? changed)]
                                         (inc-cursor false)
                                         (recur-if (more- n) [changed (dec n)] => changed)
                                     ))]
@@ -11198,7 +11198,7 @@
                     (when changed
                         (changed-lines (:lnum startpos), (:col startpos), (inc (:lnum (:w_cursor @curwin))), 0)
                         (let [endpos (update (:w_cursor @curwin) :col #(max 0 (dec %)))]
-                            (swap! curbuf assoc :b_op_start startpos :b_op_end endpos)
+                            (swap! curbuf assoc :b_op_start startpos, :b_op_end endpos)
                         ))
                     cap)
             ))
@@ -14093,27 +14093,27 @@
 
 (defn- #_void op-tilde [#_oparg_C oap]
     (§
-        ((ß boolean did_change =) false)
-
         (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
             ((ß RETURN) nil)
         )
 
         ((ß pos_C pos =) (:op_start oap))
+        ((ß boolean changed =) false)
 
-        (cond (:block_mode oap)                     ;; Visual block mode
+        (cond (:block_mode oap)                 ;; Visual block mode
         (do
             (loop-when [] (<= (:lnum pos) (:lnum (:op_end oap)))
                 ((ß block_def_C bd =) (block-prep oap, false, (:lnum pos), false))
                 ((ß pos =) (assoc pos :col (:textcol bd)))
-                ((ß did_change =) (or (swapchars (:op_type oap), pos, (:textlen bd)) did_change))
+                ((ß [pos ?] =) (swapchars (:op_type oap), pos, (:textlen bd)))
+                ((ß changed =) (or ? changed))
                 ((ß pos =) (update pos :lnum inc))
                 (recur)
             )
-            (when did_change
+            (when changed
                 (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
         )
-        :else                                    ;; not block mode
+        :else                                   ;; not block mode
         (do
             (cond (== (:motion_type oap) MLINE)
             (do
@@ -14131,12 +14131,14 @@
 
             (cond (== (:lnum pos) (:lnum (:op_end oap)))
             (do
-                ((ß did_change =) (swapchars (:op_type oap), pos, (+ (- (:col (:op_end oap)) (:col pos)) 1)))
+                ((ß [pos ?] =) (swapchars (:op_type oap), pos, (inc (- (:col (:op_end oap)) (:col pos)))))
+                ((ß changed =) (or ? changed))
             )
             :else
             (do
                 (loop []
-                    ((ß did_change =) (| did_change (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (inc (:col (:op_end oap))) (STRLEN (ml-get-pos pos))))))
+                    ((ß [pos ?] =) (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (inc (:col (:op_end oap))) (STRLEN (ml-get-pos pos)))))
+                    ((ß changed =) (or ? changed))
                     (if (ltoreq (:op_end oap), pos)
                         (ß BREAK)
                     )
@@ -14148,12 +14150,12 @@
                 )
             ))
 
-            (when did_change
+            (when changed
                 (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
             )
         ))
 
-        (when (and (not did_change) (:is_VIsual oap))
+        (when (and (not changed) (:is_VIsual oap))
             ;; No change: need to remove the Visual selection.
             (redraw-curbuf-later INVERTED)
         )
@@ -14174,52 +14176,50 @@
 ;; "pos" is advanced to just after the changed characters.
 ;; "len" is rounded up to include the whole last multi-byte character.
 ;; Also works correctly when the number of bytes changes.
-;; Returns true if some character was changed.
+;; Returns true if any character has been changed.
 
-(defn- #_boolean swapchars [#_int op_type, #_pos_C pos, #_int len]
-    (loop-when [did_change false len len] (< 0 len) => did_change
-        (let [n (us-ptr2len-cc (ml-get-pos pos))
-              len (- len (if (< 0 n) (dec n) 0)) ;; we're counting bytes, not characters
-              did_change (| did_change (swapchar op_type, pos))]
-            (if (== (let [[_ ?] (incp pos)] ((ß pos =) _) ?) -1)     ;; at end of file
-                did_change
-                (recur did_change (dec len))
-            ))
+(defn- #_[pos_C boolean] swapchars [#_int op_type, #_pos_C pos, #_int len]
+    (loop-when [pos pos changed false len len] (< 0 len) => [pos changed]
+        (let [n (us-ptr2len-cc (ml-get-pos pos)) len (- len (if (< 0 n) (dec n) 0)) ;; we're counting bytes, not characters
+              [pos ?] (swapchar op_type, pos) changed (or ? changed)
+              [pos ?] (incp pos)]
+            (recur-if (!= ? -1) [pos changed (dec len)] => [pos changed])) ;; at end of file
     ))
 
 ;; If op_type == OP_UPPER: make uppercase,
 ;; if op_type == OP_LOWER: make lowercase,
 ;; if op_type == OP_ROT13: do rot13 encoding,
-;; else swap case of character at 'pos'
-;; returns true when something actually changed.
+;; else swap case of character at "pos".
+;; Returns true when something actually changed.
 
-(defn- #_boolean swapchar [#_int op_type, #_pos_C pos]
+(defn- #_[pos_C boolean] swapchar [#_int op_type, #_pos_C pos]
     ;; Only do rot13 encoding for ASCII characters.
-    (let-when [#_int c (gchar pos)] (or (< c 0x80) (!= op_type OP_ROT13)) => false
-        (when (and (== op_type OP_UPPER) (== c 0xdf))
-            (let [_ (:w_cursor @curwin)]
-                ;; Special handling of German sharp s: change to "SS".
-                (swap! curwin assoc :w_cursor pos)
-                (del-char false)
-                (ins-char (byte \S))
-                (ins-char (byte \S))
-                (swap! curwin assoc :w_cursor _)
-                (let [[_ ?] (incp pos)] ((ß pos =) _) ?)
+    (let-when [#_int c (gchar pos)] (or (< c 0x80) (!= op_type OP_ROT13)) => [pos false]
+        (let [pos (if (and (== op_type OP_UPPER) (== c 0xdf))
+                    (let [o'cursor (:w_cursor @curwin)]
+                        ;; Special handling of German sharp s: change to "SS".
+                        (swap! curwin assoc :w_cursor pos)
+                        (del-char false)
+                        (ins-char (byte \S))
+                        (ins-char (byte \S))
+                        (swap! curwin assoc :w_cursor o'cursor)
+                        (let [[_ ?] (incp pos)] _))
+                    pos
+                )]
+            (let-when [#_int nc (cond
+                        (utf-islower c) (cond (== op_type OP_ROT13) (rot13 c, (byte \a)) (!= op_type OP_LOWER) (utf-toupper c) :else c)
+                        (utf-isupper c) (cond (== op_type OP_ROT13) (rot13 c, (byte \A)) (!= op_type OP_UPPER) (utf-tolower c) :else c)
+                        :else c)] (!= nc c) => [pos false]
+                (if (or (<= 0x80 c) (<= 0x80 nc))
+                    (let [o'cursor (:w_cursor @curwin)]
+                        (swap! curwin assoc :w_cursor pos)
+                        ;; don't use del-char(), it also removes composing chars
+                        (del-bytes (us-ptr2len (ml-get-cursor @curwin)), false, false)
+                        (ins-char nc)
+                        (swap! curwin assoc :w_cursor o'cursor))
+                    (.be (ml-get (:lnum pos)) (:col pos), nc))
+                [pos true]
             ))
-        (let-when [#_int nc (cond
-                    (utf-islower c) (cond (== op_type OP_ROT13) (rot13 c, (byte \a)) (!= op_type OP_LOWER) (utf-toupper c) :else c)
-                    (utf-isupper c) (cond (== op_type OP_ROT13) (rot13 c, (byte \A)) (!= op_type OP_UPPER) (utf-tolower c) :else c)
-                    :else c)] (!= nc c) => false
-            (if (or (<= 0x80 c) (<= 0x80 nc))
-                (let [_ (:w_cursor @curwin)]
-                    (swap! curwin assoc :w_cursor pos)
-                    ;; don't use del-char(), it also removes composing chars
-                    (del-bytes (us-ptr2len (ml-get-cursor @curwin)), false, false)
-                    (ins-char nc)
-                    (swap! curwin assoc :w_cursor _)
-                )
-                (.be (ml-get (:lnum pos)) (:col pos), nc))
-            true)
     ))
 
 ;; op-insert - Insert and append operators for Visual mode.
@@ -30691,22 +30691,24 @@
                 ;; This is not done for a line offset, because then we would not be vi compatible.
 
                 (when (and (not (:line (:sp_off (... @spats 0)))) (non-zero? (:off (:sp_off (... @spats 0)))) (< (:col pos) (- MAXCOL 2)))
-                    (cond (< 0 (:off (:sp_off (... @spats 0))))
-                    (do
-                        ((ß long c =) (loop-when-recur [c (:off (:sp_off (... @spats 0)))] (and (non-zero? c) (!= (let [[_ ?] (decl pos)] ((ß pos =) _) ?) -1)) [(dec c)] => c))
-                        (when (non-zero? c)                 ;; at start of buffer
-                            ((ß pos =) (assoc pos :lnum 0))           ;; allow lnum == 0 here
-                            ((ß pos =) (assoc pos :col MAXCOL))
+                    (let [(ß long c =) (:off (:sp_off (... @spats 0)))]
+                        (if (< 0 c)
+                            (do
+                                ((ß [pos c] =) (loop-when [pos pos c c] (non-zero? c) => [pos c]
+                                    (let [[pos ?] (decl pos)] (recur-if (!= ? -1) [pos (dec c)] => [pos c]))))
+                                (when (non-zero? c)                 ;; at start of buffer
+                                    ((ß pos =) (assoc pos :lnum 0 :col MAXCOL)) ;; allow lnum == 0 here
+                                )
+                            )
+                            (do
+                                ((ß [pos c] =) (loop-when [pos pos c c] (non-zero? c) => [pos c]
+                                    (let [[pos ?] (incl pos)] (recur-if (!= ? -1) [pos (inc c)] => [pos c]))))
+                                (when (non-zero? c)                 ;; at end of buffer
+                                    ((ß pos =) (assoc pos :lnum (inc (:ml_line_count (:b_ml @curbuf)) :col 0)))
+                                )
+                            )
                         )
                     )
-                    :else
-                    (do
-                        ((ß long c =) (loop-when-recur [c (:off (:sp_off (... @spats 0)))] (and (non-zero? c) (!= (let [[_ ?] (incl pos)] ((ß pos =) _) ?) -1)) [(inc c)] => c))
-                        (when (non-zero? c)                 ;; at end of buffer
-                            ((ß pos =) (assoc pos :lnum (inc (:ml_line_count (:b_ml @curbuf)))))
-                            ((ß pos =) (assoc pos :col 0))
-                        )
-                    ))
                 )
 
                 ((ß int i =) (searchit pos, (if (== dirc (byte \/)) FORWARD BACKWARD), searchstr, count, (+ (if (:end (:sp_off (... @spats 0))) SEARCH_REV 0) (& options (+ SEARCH_KEEP SEARCH_PEEK SEARCH_HIS SEARCH_MSG SEARCH_START (if (and (some? pat) (at? pat (byte \;))) 0 SEARCH_NOOF)))), RE_LAST, 0, nsec))
@@ -30729,19 +30731,20 @@
                 (when (or (non-flag? options SEARCH_NOOF) (and (some? pat) (at? pat (byte \;))))
                     (cond (:line (:sp_off (... @spats 0)))       ;; add the offset to the line number
                         (let [#_long l (+ (:lnum pos) (:off (:sp_off (... @spats 0)))) lmax (:ml_line_count (:b_ml @curbuf))]
-                            ((ß pos =) (assoc pos :lnum (cond (< l 1) 1 (< lmax l) lmax :else l)))
-                            ((ß pos =) (assoc pos :col 0))
+                            ((ß pos =) (assoc pos :lnum (cond (< l 1) 1 (< lmax l) lmax :else l) :col 0))
 
                             ((ß retval =) 2)                 ;; pattern found, line offset added
                         )
                     (< (:col pos) (- MAXCOL 2)) ;; just in case
                         (let [#_long c (:off (:sp_off (... @spats 0)))]
-                            (if (< 0 c)
+                            ((ß pos =) (if (< 0 c)
                                 ;; to the right, check for end of file
-                                (loop-when-recur c (and (< 0 c) (!= (let [[_ ?] (incl pos)] ((ß pos =) _) ?) -1)) (dec c))
+                                (loop-when [pos pos c c] (< 0 c) => pos
+                                    (let [[pos ?] (incl pos)] (recur-if (!= ? -1) [pos (dec c)] => pos)))
                                 ;; to the left, check for start of file
-                                (loop-when-recur c (and (< c 0) (!= (let [[_ ?] (decl pos)] ((ß pos =) _) ?) -1)) (inc c))
-                            )
+                                (loop-when [pos pos c c] (< c 0) => pos
+                                    (let [[pos ?] (decl pos)] (recur-if (!= ? -1) [pos (inc c)] => pos)))
+                            ))
                         )
                     )
                 )
@@ -32351,7 +32354,7 @@
 ;; Returns TRUE, FALSE or -1 for failure.
 
 (defn- #_int is-one-char [#_Bytes pattern, #_boolean move]
-    (let-when [#_boolean save_called_emsg @called_emsg
+    (let-when [o'called_emsg @called_emsg
                #_regmmatch_C regmatch (NEW_regmmatch_C)] (search-regcomp pattern, RE_SEARCH, RE_SEARCH, SEARCH_KEEP, regmatch) => -1
         (let [[#_pos_C pos #_int flags] (if move [(NEW_pos_C) 0] [(:w_cursor @curwin) SEARCH_START]) ;; accept a match at the cursor position
               #_int result
@@ -32361,9 +32364,9 @@
                           #_long n (vim-regexec-multi regmatch, (:lnum pos), 0, nil)
                           startpos (... (:startpos regmatch) 0) endpos (... (:endpos regmatch) 0)
                           result (if (not @called_emsg) (if (and (!= n 0) (== (:lnum startpos) (:lnum endpos)) (== (:col startpos) (:col endpos))) TRUE FALSE) -1)]
-                        (if (and (== result FALSE) (<= 0 (let [[_ ?] (incp pos)] ((ß pos =) _) ?)) (== (:col pos) (:col endpos))) TRUE result))
+                        (if (and (== result FALSE) (let [[pos ?] (incp pos)] (and (<= 0 ?) (== (:col pos) (:col endpos))))) TRUE result))
                     -1)]
-            (swap! called_emsg | save_called_emsg)
+            (swap! called_emsg | o'called_emsg)
             result)
     ))
 
