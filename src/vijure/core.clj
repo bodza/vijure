@@ -1534,7 +1534,7 @@
 
         (field frame_C      w_frame)            ;; frame containing this window
 
-        (field pos_C        w_cursor            (NEW_pos_C))  ;; cursor position in buffer
+        (field pos_C        w_cursor            (->pos_C 1 0 0)) ;; cursor position in buffer
         (field int          w_curswant)         ;; column we'd like to be at: used to try to stay in the same column for up/down cursor motions
         (field boolean      w_set_curswant)     ;; if set, update "w_curswant" the next time through cursupdate() to the current virtual column
 
@@ -1550,7 +1550,7 @@
 
         ;; "w_topline", "w_leftcol" and "w_skipcol" specify the offsets for displaying the buffer.
 
-        (field long         w_topline)          ;; buffer line number of the line at the top of the window
+        (field long         w_topline       1)  ;; buffer line number of the line at the top of the window
         (field int          w_leftcol)          ;; window column of the leftmost character in the window; used when 'wrap' is off
         (field int          w_skipcol)          ;; starting column when a single line doesn't fit in the window
 
@@ -1593,7 +1593,7 @@
         (field int          w_wrow)
         (field int          w_wcol)
 
-        (field long         w_botline)          ;; number of the line below the bottom of the screen
+        (field long         w_botline       2)  ;; number of the line below the bottom of the screen
         (field int          w_empty_rows)       ;; number of ~ rows in window
 
         ;; Info about the lines currently in the window is remembered to avoid
@@ -1640,7 +1640,7 @@
         ;; "w_prev_pcmark" is used to check whether we really did jump to a new line after setting "w_pcmark".
         ;; If not, we revert to using the previous "w_pcmark".
 
-        (field pos_C        w_pcmark            (NEW_pos_C))  ;; previous context mark
+        (field pos_C        w_pcmark            (->pos_C 1 0 0)) ;; previous context mark
         (field pos_C        w_prev_pcmark       (NEW_pos_C))  ;; previous "w_pcmark"
 
         ;; the jumplist contains old cursor positions
@@ -39550,25 +39550,9 @@
 (defn- #_void win-alloc-first []
     (reset! curwin (newWindow nil))
 
-    (reset! curbuf (newBuffer))
-
-    (init-chartab false)
-
-    (swap! curbuf unchanged)
-
     (swap! curbuf assoc :b_nwindows 1)          ;; there is one window
 
-    (swap! curwin assoc :w_valid 0)             ;; mark cursor position as being invalid
-    (swap! curwin assoc :w_topline 1)           ;; need to set "w_topline"
-    (swap! curwin assoc :w_nrwidth_line_count 0)
-
     (swap! curwin redraw-later NOT_VALID)
-
-    (swap! curwin update :w_cursor assoc :lnum 1 :col 0 :coladd 0)
-    (swap! curwin assoc :w_curswant 0)
-    (swap! curwin update :w_pcmark assoc :lnum 1 :col 0)       ;; pcmark not cleared but set to line 1
-    (swap! curwin update :w_prev_pcmark assoc :lnum 0 :col 0)
-    (swap! curwin assoc :w_topline 1 :w_botline 2 :w_lines_valid 0)
 
     (let [fr (-> (newFrame @curwin) (assoc :fr_height (- @Rows @p_ch) :fr_width @Cols))]
         (swap! curwin assoc :w_frame fr)
@@ -39751,13 +39735,10 @@
         ;; link the window in the window list
         (win-append after, win)
         (-> win
-            (assoc :w_wincol 0, :w_width @Cols)
-            ;; position the display and the cursor at the top of the file
-            (assoc :w_topline 1, :w_botline 2)
-            (assoc-in [:w_cursor :lnum] 1)
+            (assoc :w_width @Cols)
             (assoc :w_scbind_pos 1)
             ;; We won't calculate "w_fraction" until resizing the window.
-            (assoc :w_fraction 0, :w_prev_fraction_row -1)
+            (assoc :w_prev_fraction_row -1)
         )
     ))
 
@@ -39853,7 +39834,7 @@
 ;; Allocate w_lines[] for window "win".
 
 (defn- #_window_C win-alloc-lines [#_window_C win]
-    (assoc win :w_lines_valid 0, :w_lines (ARRAY-wline @Rows)))
+    (assoc win :w_lines_valid 0 :w_lines (ARRAY-wline @Rows)))
 
 ;; Free w_lines[] for window "win".
 
@@ -40462,7 +40443,7 @@
         (redraw-later win, SOME_VALID)
     ))
 
-;; Update curwin.w_topline and redraw if necessary.
+;; Update "w_topline" and redraw if necessary.
 ;; Used to update the screen before printing a message.
 
 (defn- #_window_C update-topline-redraw [#_window_C win]
@@ -41410,8 +41391,11 @@
 (defn #_void -main [& #_String* args]
     (reset! starttime (ß ._time libC))
 
-    ;; Allocate the first window and buffer.
-    ;; Can't do anything without it, exit when it fails.
+    (reset! curbuf (newBuffer))
+
+    (init-chartab false)
+
+    (swap! curbuf unchanged)
 
     (win-alloc-first)
 
