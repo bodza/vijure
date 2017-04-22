@@ -22207,7 +22207,7 @@
                     ;; Already calling nfa-regmatch() recursively.
                     ;; Save the lastlist[1] values and clear them.
                     (let [o'listids (int-array (:nstate pat))]
-                        ;; any value of nfa_listid will do
+                        ;; any value of "nfa_listid" will do
                         [(nfa-save-listids pat, o'listids) o'listids])
                     ;; First recursive nfa-regmatch() call, switch to the second lastlist entry.
                     ;; Make sure "nfa_listid" is different from a previous recursive call, because some states may still have this ID.
@@ -22381,6 +22381,12 @@
             ))
     ))
 
+(defn- #_boolean pim-first? [#_int c]
+    (any == c NFA_START_INVISIBLE_FIRST, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_FIRST, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+
+(defn- #_boolean pim-neg? [#_int c]
+    (any == c NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+
 ;; Main matching routine.
 ;;
 ;; Run NFA to determine whether it matches "reginput".
@@ -22389,7 +22395,7 @@
 ;; Return true if there is a match, false otherwise.
 ;; When there is a match, "submatch" contains the positions.
 ;;
-;; Note: Caller must ensure that: start != null.
+;; Note: caller must ensure that: start != null.
 
 (defn- #_[window_C int] nfa-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C start, #_regsubs_C submatch, #_regsubs_C subs]
     ;; Some patterns may take a long time to match, especially when using recursive-regmatch().
@@ -22417,7 +22423,7 @@
                             [win @nfa_match]
 
                             (let-when [#_int curc (us-ptr2char @reginput)
-                                  #_int clen (if (== curc NUL) (do (reset! a'go_to_nextline false) 0) (us-ptr2len-cc @reginput))
+                                  a'clen (atom (int (if (== curc NUL) (do (reset! a'go_to_nextline false) 0) (us-ptr2len-cc @reginput))))
                                   [win ?]
                                     (let-when [[win ?] ;; compute "ls1"
                                             (loop-when [#_int i 0] (< i (count (:nl_threads ls0))) => [win nil]
@@ -22425,8 +22431,8 @@
                                                       ;; Handle the possible codes of the current state.  The most important is NFA_MATCH.
                                                       m { #_nfa_state_C :add_state nil #_boolean :add_here false #_int :add_off 0 #_int :add_count 0 }
                                                       [win m ?]
-%%
                                                         (condp ==? (:c (:th_state t))
+
                                                             NFA_MATCH
                                                                 ;; If the match ends before a composing character and
                                                                 ;; "ireg_icombine" is not set, that is not really a match.
@@ -22436,7 +22442,8 @@
                                                                         ((ß submatch =) (:th_subs t))
                                                                         ;; Found the left-most longest match, do not look at any other states at this position.
                                                                         ;; When the list of states is going to be empty, quit without advancing, so that "reginput" is correct.
-                                                                        ((ß clen =) (if (zero? (count (:nl_threads ls1))) 0 clen))
+                                                                        (when (zero? (count (:nl_threads ls1)))
+                                                                            (reset! a'clen 0))
                                                                         [win m :nextchar]
                                                                     ))
 
@@ -22457,7 +22464,8 @@
                                                                         (when (!= (:c (:th_state t)) NFA_END_INVISIBLE_NEG)
                                                                             ((ß subs =) (:th_subs t)))
                                                                         ;; See comment above at "goto nextchar".
-                                                                        ((ß clen =) (if (zero? (count (:nl_threads ls1))) 0 clen))
+                                                                        (when (zero? (count (:nl_threads ls1)))
+                                                                            (reset! a'clen 0))
                                                                         [win m :nextchar]
                                                                     ))
 
@@ -22469,7 +22477,7 @@
                                                             NFA_START_INVISIBLE_BEFORE_FIRST
                                                             NFA_START_INVISIBLE_BEFORE_NEG
                                                             NFA_START_INVISIBLE_BEFORE_NEG_FIRST]
-                                                                (cond (or (!= (:np_result (:th_pim t)) NFA_PIM_UNUSED) (any == (:c (:th_state t)) NFA_START_INVISIBLE_FIRST, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_FIRST, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+                                                                (cond (or (!= (:np_result (:th_pim t)) NFA_PIM_UNUSED) (pim-first? (:c (:th_state t))))
                                                                     ;; Do it directly if there already is a PIM or when nfa-postprocess() detected it will work better.
                                                                     (let [o'in_use (:in_use subs)]
                                                                         ;; Copy submatch info for the recursive call, opposite of what happens on success below.
@@ -22478,7 +22486,7 @@
                                                                         ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, submatch, subs))
                                                                         (when' (!= ? NFA_TOO_EXPENSIVE) => (do (reset! nfa_match ?) [win m :return])
                                                                             ;; For \@! and \@<! it is a match when the result is false.
-                                                                            (let [m (when' (!= (!= ? FALSE) (any == (:c (:th_state t)) NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST)) => m
+                                                                            (let [m (when' (!= (!= ? FALSE) (pim-neg? (:c (:th_state t)))) => m
                                                                                         ;; Copy submatch info from the recursive call.
                                                                                         ((ß t =) (update t :th_subs copy-sub-off subs))
                                                                                         ;; If the pattern has \ze and it matched in the sub pattern, use it.
@@ -22521,9 +22529,9 @@
                                                                         ;; Empty match: output of corresponding NFA_END_PATTERN/NFA_SKIP to be used at current position.
                                                                         (zero? blen)   (assoc m :add_here true :add_state (.. t state (out1) (out0) (out0)))
                                                                         ;; Match current character, output of corresponding NFA_END_PATTERN to be used at next position.
-                                                                        (<= blen clen) (assoc m :add_state (.. t state (out1) (out0) (out0)) :add_off clen)
+                                                                        (<= blen @a'clen) (assoc m :add_state (.. t state (out1) (out0) (out0)) :add_off @a'clen)
                                                                         ;; Skip over the matched characters, set character count in NFA_SKIP.
-                                                                        :else          (assoc m :add_state (.. t state (out1) (out0)) :add_off blen :add_count (- blen clen))
+                                                                        :else          (assoc m :add_state (.. t state (out1) (out0)) :add_off blen :add_count (- blen @a'clen))
                                                                                     )]
                                                                                 [win m nil]
                                                                             ))
@@ -22568,7 +22576,7 @@
                                                                                   ;; We don't care about the order of composing characters.
                                                                                   #_int* cc (int-array MAX_MCO) ;; Get them into cc[] first.
                                                                                   #_int k
-                                                                                    (loop-when [n n k 0] (< n clen) => k
+                                                                                    (loop-when [n n k 0] (< n @a'clen) => k
                                                                                         (let [#_int c (us-ptr2char @reginput, n) _ (aset cc k c) k (inc k) n (+ n (utf-char2len c))]
                                                                                             (recur-if (< k MAX_MCO) [n k] => k))
                                                                                     )]
@@ -22581,7 +22589,7 @@
                                                                         :else
                                                                             false
                                                                         )]
-                                                                    [win (if ? (assoc m :add_state (.out0 e) :add_off clen) m) nil])
+                                                                    [win (if ? (assoc m :add_state (.out0 e) :add_off @a'clen) m) nil])
 
                                                             NFA_NEWL
                                                                 (let [m (when' (and (== curc NUL) (<= @reglnum @reg_lmax)) => m
@@ -22624,292 +22632,142 @@
                                                                                     ))
                                                                             )]
                                                                         ;; Next state is in out0 of the NFA_END_COLL, out1 of START points to the END state.
-                                                                        [win (if ? (assoc m :add_state (.. t state (out1) (out0)) :add_off clen) m) nil]
+                                                                        [win (if ? (assoc m :add_state (.. t state (out1) (out0)) :add_off @a'clen) m) nil]
                                                                     ))
 
                                                             NFA_ANY
                                                                 ;; Any char except NUL, (end of input) does not match.
                                                                 (let [? (< 0 curc)]
-                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off clen) m) nil])
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_ANY_COMPOSING
                                                                 ;; On a composing character, skip over it.
                                                                 ;; Otherwise do nothing.
                                                                 ;; Always matches.
-                                                                (let [m (if (utf-iscomposing curc) (assoc m :add_off clen) (assoc m :add_here true :add_off 0))]
+                                                                (let [m (if (utf-iscomposing curc) (assoc m :add_off @a'clen) (assoc m :add_here true :add_off 0))]
                                                                     [win (assoc m :add_state (.. t state (out0))) nil])
 
                                                             ;; Character classes like \a for alpha, \d for digit, etc.
 
                                                             NFA_IDENT     ;;  \i
-                                                                (do
-                                                                    ((ß boolean ? =) (vim-isidentc curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (vim-isidentc curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_SIDENT    ;;  \I
-                                                                (do
-                                                                    ((ß boolean ? =) (and (not (asc-isdigit curc)) (vim-isidentc curc)))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (not (asc-isdigit curc)) (vim-isidentc curc))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_KWORD     ;;  \k
-                                                                (do
-                                                                    ((ß boolean ? =) (us-iswordp @reginput))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (us-iswordp @reginput)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_SKWORD    ;;  \K
-                                                                (do
-                                                                    ((ß boolean ? =) (and (not (asc-isdigit curc)) (us-iswordp @reginput)))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (not (asc-isdigit curc)) (us-iswordp @reginput))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_FNAME     ;;  \f
-                                                                (do
-                                                                    ((ß boolean ? =) (vim-isfnamec curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (vim-isfnamec curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_SFNAME    ;;  \F
-                                                                (do
-                                                                    ((ß boolean ? =) (and (not (asc-isdigit curc)) (vim-isfnamec curc)))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (not (asc-isdigit curc)) (vim-isfnamec curc))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_PRINT     ;;  \p
-                                                                (do
-                                                                    ((ß boolean ? =) (vim-isprintc (us-ptr2char @reginput)))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (vim-isprintc (us-ptr2char @reginput))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_SPRINT    ;;  \P
-                                                                (do
-                                                                    ((ß boolean ? =) (and (not (asc-isdigit curc)) (vim-isprintc (us-ptr2char @reginput))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (not (asc-isdigit curc)) (vim-isprintc (us-ptr2char @reginput)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_WHITE     ;;  \s
-                                                                (do
-                                                                    ((ß boolean ? =) (vim-iswhite curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (vim-iswhite curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NWHITE    ;;  \S
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (vim-iswhite curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (vim-iswhite curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_DIGIT     ;;  \d
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-digit curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-digit curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NDIGIT    ;;  \D
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-digit curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-digit curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_HEX       ;;  \x
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-hex curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-hex curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NHEX      ;;  \X
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-hex curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-hex curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_OCTAL     ;;  \o
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-octal curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-octal curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NOCTAL    ;;  \O
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-octal curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-octal curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_WORD      ;;  \w
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-word curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-word curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NWORD     ;;  \W
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-word curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-word curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_HEAD      ;;  \h
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-head curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-head curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NHEAD     ;;  \H
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-head curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-head curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_ALPHA     ;;  \a
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-alpha curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-alpha curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NALPHA    ;;  \A
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-alpha curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-alpha curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_LOWER     ;;  \l
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-lower curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-lower curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NLOWER    ;;  \L
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-lower curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-lower curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_UPPER     ;;  \\u (sic!)
-                                                                (do
-                                                                    ((ß boolean ? =) (ri-upper curc))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (ri-upper curc)]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NUPPER    ;;  \U
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (ri-upper curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (ri-upper curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_LOWER_IC  ;; [a-z]
-                                                                (do
-                                                                    ((ß boolean ? =) (or (ri-lower curc) (and @ireg_icase (ri-upper curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (or (ri-lower curc) (and @ireg_icase (ri-upper curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NLOWER_IC ;; [^a-z]
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (or (ri-lower curc) (and @ireg_icase (ri-upper curc))))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (or (ri-lower curc) (and @ireg_icase (ri-upper curc)))))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_UPPER_IC  ;; [A-Z]
-                                                                (do
-                                                                    ((ß boolean ? =) (or (ri-upper curc) (and @ireg_icase (ri-lower curc))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (or (ri-upper curc) (and @ireg_icase (ri-lower curc)))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                             NFA_NUPPER_IC ;; [^A-Z]
-                                                                (do
-                                                                    ((ß boolean ? =) (and (!= curc NUL) (not (or (ri-upper curc) (and @ireg_icase (ri-lower curc))))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (and (!= curc NUL) (not (or (ri-upper curc) (and @ireg_icase (ri-lower curc)))))]
+                                                                    [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
                                                            [NFA_BACKREF1
                                                             NFA_BACKREF2
@@ -22920,87 +22778,47 @@
                                                             NFA_BACKREF7
                                                             NFA_BACKREF8
                                                             NFA_BACKREF9] ;; \1 .. \9
-                                                                (let [a'blen (atom (int)) #_int subidx (inc (- (:c (:th_state t)) NFA_BACKREF1))
-                                                                ]
-                                                                    ((ß boolean ? =) (match-backref (:th_subs t), subidx, a'blen))
-
-                                                                    (when ?
-                                                                        (cond (zero? @a'blen)
-                                                                        (do
-                                                                            ;; Empty match always works, output of NFA_SKIP to be used next.
-                                                                            ((ß m =) (assoc m :add_here true :add_state (.. t state (out0) (out0))))
-                                                                        )
-                                                                        (<= @a'blen clen)
-                                                                        (do
-                                                                            ;; Match current character, jump ahead to out of NFA_SKIP.
-                                                                            ((ß m =) (assoc m :add_state (.. t state (out0) (out0)) :add_off clen))
-                                                                        )
-                                                                        :else
-                                                                        (do
-                                                                            ;; Skip over the matched characters, set character count in NFA_SKIP.
-                                                                            ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off @a'blen :add_count (- @a'blen clen)))
-                                                                        ))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [a'blen (atom (int)) ? (match-backref (:th_subs t), (inc (- (:c (:th_state t)) NFA_BACKREF1)), a'blen)
+                                                                      m (when' ? => m
+                                                                            (cond
+                                                                                (zero? @a'blen)     ;; Empty match always works, output of NFA_SKIP to be used next.
+                                                                                    (assoc m :add_here true :add_state (.. t state (out0) (out0)))
+                                                                                (<= @a'blen @a'clen) ;; Match current character, jump ahead to out0 of NFA_SKIP.
+                                                                                    (assoc m :add_state (.. t state (out0) (out0)) :add_off @a'clen)
+                                                                                :else               ;; Skip over the matched characters, set character count in NFA_SKIP.
+                                                                                    (assoc m :add_state (.. t state (out0)) :add_off @a'blen :add_count (- @a'blen @a'clen))
+                                                                            )
+                                                                        )]
+                                                                    [win m nil])
 
                                                             NFA_SKIP
-                                                                (do
-                                                                    ;; character of previous matching \1 .. \9  or \@>
-                                                                    (cond (<= (- (:th_count t) clen) 0)
-                                                                    (do
-                                                                        ;; end of match, go to what follows
-                                                                        ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                    )
-                                                                    :else
-                                                                    (do
-                                                                        ;; add state again with decremented count
-                                                                        ((ß m =) (assoc m :add_state (:th_state t) :add_off 0 :add_count (- (:th_count t) clen)))
-                                                                    ))
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                ;; character of previous matching \1 .. \9  or \@>
+                                                                (let [m (if (<= (- (:th_count t) @a'clen) 0)
+                                                                            ;; end of match, go to what follows
+                                                                            (assoc m :add_state (.. t state (out0)) :add_off @a'clen)
+                                                                            ;; add state again with decremented count
+                                                                            (assoc m :add_state (:th_state t) :add_off 0 :add_count (- (:th_count t) @a'clen))
+                                                                        )]
+                                                                    [win m nil])
 
                                                            [NFA_LNUM NFA_LNUM_GT NFA_LNUM_LT]
                                                                 (let [? (nfa-re-num-cmp (:val (:th_state t)), (- (:c (:th_state t)) NFA_LNUM), (+ @reglnum @reg_lmin))]
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                    [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                            [NFA_COL NFA_COL_GT NFA_COL_LT]
                                                                 (let [? (nfa-re-num-cmp (:val (:th_state t)), (- (:c (:th_state t)) NFA_COL), (inc (BDIFF @reginput, @regline)))]
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                    [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                            [NFA_VCOL NFA_VCOL_GT NFA_VCOL_LT]
-                                                                (do
-                                                                    ((ß int op =) (- (:c (:th_state t)) NFA_VCOL))
-                                                                    ((ß int col =) (BDIFF @reginput, @regline))
-
-                                                                    ;; Bail out quickly when there can't be a match,
-                                                                    ;; avoid the overhead of win-linetabsize() on long lines.
-                                                                    (if (and (!= op 1) (< (* (:val (:th_state t)) MB_MAXBYTES) col))
-                                                                        (ß BREAK) [win m nil]
-                                                                        (do
-                                                                            ((ß boolean result =) false)
-                                                                            (when (and (== op 1) (< (:val (:th_state t)) (dec col)) (< 100 col))
-                                                                                ;; Guess that a character won't use more columns than 'tabstop',
-                                                                                ;; with a minimum of 4.
-                                                                                ((ß int ts =) (max 4 (int @(:b_p_ts @curbuf))))
-                                                                                ((ß result =) (< (* (:val (:th_state t)) ts) col))
-                                                                            )
-                                                                            ((ß result =) (if (not result) (nfa-re-num-cmp (:val (:th_state t)), op, (inc (long (win-linetabsize win, @regline, col)))) result))
-                                                                            (when result
-                                                                                ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                            )
-                                                                            (ß BREAK) [win m nil]
-                                                                        )
-                                                                    )
-                                                                )
+                                                                (let [#_int op (- (:c (:th_state t)) NFA_VCOL) #_int col (BDIFF @reginput, @regline)]
+                                                                    ;; Bail out quickly when there can't be a match, avoid the overhead of win-linetabsize() on long lines.
+                                                                    (let-when [vcol (:val (:th_state t))] (or (== op 1) (<= col (* vcol MB_MAXBYTES))) => [win m nil]
+                                                                        ;; Guess that a character won't use more columns than 'tabstop', with a minimum of 4.
+                                                                        (let [ts (max 4 @(:b_p_ts @curbuf))
+                                                                              ? (and (== op 1) (< vcol (dec col)) (< 100 col) (< (* vcol ts) col))
+                                                                              ? (or ? (nfa-re-num-cmp vcol, op, (inc (win-linetabsize win, @regline, col))))]
+                                                                            [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
+                                                                    ))
 
                                                            [NFA_MARK NFA_MARK_GT NFA_MARK_LT]
                                                                 (let [#_pos_C pos (getmark win, (:val (:th_state t))) #_int c (:c (:th_state t))
@@ -23016,76 +22834,52 @@
                                                                                      (== c NFA_MARK_GT)
                                                                                      (== c NFA_MARK_LT)))
                                                                         )]
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                    [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                             NFA_CURSOR
-                                                                (let [cursor (:w_cursor win)]
-                                                                    ((ß boolean ? =) (and (== (+ @reglnum @reg_lmin) (:lnum cursor)) (== (BDIFF @reginput, @regline) (:col cursor))))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [cursor (:w_cursor win)
+                                                                      ? (and (== (+ @reglnum @reg_lmin) (:lnum cursor)) (== (BDIFF @reginput, @regline) (:col cursor)))]
+                                                                    [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                             NFA_VISUAL
-                                                                (do
-                                                                    ((ß boolean ? =) (reg-match-visual win))
-                                                                    (when ?
-                                                                        ((ß m =) (assoc m :add_here true :add_state (.. t state (out0))))
-                                                                    )
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                (let [? (reg-match-visual win)]
+                                                                    [win (if ? (assoc m :add_here true :add_state (.. t state (out0))) m) nil])
 
                                                            [NFA_MOPEN1 NFA_MOPEN2 NFA_MOPEN3 NFA_MOPEN4 NFA_MOPEN5 NFA_MOPEN6 NFA_MOPEN7 NFA_MOPEN8 NFA_MOPEN9
                                                             NFA_NOPEN
                                                             NFA_ZSTART]
-                                                                (do
-                                                                    ;; These states are only added to be able to bail out when
-                                                                    ;; they are added again, nothing is to be done.
-                                                                    (ß BREAK) [win m nil]
-                                                                )
+                                                                ;; These states are only added to be able to bail out when they are added again, nothing is to be done.
+                                                                [win m nil]
 
                                                             ;; regular character
-                                                            (let [#_int c (:c (:th_state t))]
+                                                            (let [#_int c (:c (:th_state t))
+                                                                  ? (== c curc) ? (if (and (not ?) @ireg_icase) (== (utf-tolower c) (utf-tolower curc)) ?)]
+                                                                ;; If "ireg_icombine" is not set, only skip over the character itself.
+                                                                ;; When it is set, skip over composing characters.
+                                                                (when (and ? (not @ireg_icombine))
+                                                                    (reset! a'clen (utf-char2len curc)))
+                                                                [win (if ? (assoc m :add_state (.. t state (out0)) :add_off @a'clen) m) nil])
 
-                                                                ((ß boolean ? =) (== c curc))
-                                                                ((ß ? =) (if (and (not ?) @ireg_icase) (== (utf-tolower c) (utf-tolower curc)) ?))
-
-                                                                ;; If "ireg_icombine" is not set only skip over the character itself.
-                                                                ;; When it is set skip over composing characters.
-                                                                ((ß clen =) (if (and ? (not @ireg_icombine)) (utf-char2len curc) clen))
-
-                                                                (when ?
-                                                                    ((ß m =) (assoc m :add_state (.. t state (out0)) :add_off clen))
-                                                                )
-                                                                (ß BREAK) [win m nil]
-                                                            )
-                                                        )
-%%
-                                                ] (not ?) => [win ?]
+                                                        )] (not ?) => [win ?]
 
                                                     (let [win
                                                             (when' (some? (:add_state m)) => win
                                                                 (let-when [#_nfa_pim_C pim (when (!= (:np_result (:th_pim t)) NFA_PIM_UNUSED) (:th_pim t))
                                                                       ;; Handle the PIM if the match might end without advancing and before the end of the line.
                                                                       [win pim ?]
-                                                                        (when' (and (some? pim) (or (zero? clen) (match-follows (:add_state m), 0))) => [win pim nil]
-                                                                            (let [[win pim #_int result]
-                                                                                    (if (== (:np_result pim) NFA_PIM_TODO)
-                                                                                        (let [_ ((ß [win pat result] =) (recursive-regmatch? win, pat, (:np_state pim), pim, submatch, subs))
-                                                                                              pim (assoc pim :np_result (if (!= result FALSE) NFA_PIM_MATCH NFA_PIM_NOMATCH))]
-                                                                                            ;; For \@! and \@<! it is a match when the result is false.
-                                                                                            (when (!= (!= result FALSE) (any == (:c (:np_state pim)) NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
-                                                                                                ((ß (:np_subs pim) =) (copy-sub-off (:np_subs pim), subs)))
-                                                                                            [win pim result])
-                                                                                        [win pim (if (== (:np_result pim) NFA_PIM_MATCH) TRUE FALSE)]
+                                                                        (when' (and (some? pim) (or (zero? @a'clen) (match-follows (:add_state m), 0))) => [win pim nil]
+                                                                            (let [[win pim #_int ?]
+                                                                                    (when' (== (:np_result pim) NFA_PIM_TODO) => [win pim (if (== (:np_result pim) NFA_PIM_MATCH) TRUE FALSE)]
+                                                                                        (let [_ ((ß [win pat ?] =) (recursive-regmatch? win, pat, (:np_state pim), pim, submatch, subs))
+                                                                                              pim (assoc pim :np_result (if (!= ? FALSE) NFA_PIM_MATCH NFA_PIM_NOMATCH))
+                                                                                              ;; For \@! and \@<! it is a match when the result is false.
+                                                                                              pim (when' (!= (!= ? FALSE) (pim-neg? (:c (:np_state pim)))) => pim
+                                                                                                    (update pim :np_subs copy-sub-off subs)
+                                                                                                )]
+                                                                                            [win pim ?])
                                                                                     )]
                                                                                 ;; For \@! and \@<! it is a match when the result is false.
-                                                                                (if (!= (!= result FALSE) (any == (:c (:np_state pim)) NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_NEG_FIRST, NFA_START_INVISIBLE_BEFORE_NEG, NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+                                                                                (if (!= (!= ? FALSE) (pim-neg? (:c (:np_state pim))))
                                                                                     (do ((ß (:th_subs t) =) (copy-sub-off (:th_subs t), (:np_subs pim)))
                                                                                         ;; PIM was handled, don't add it to the following states.
                                                                                         [win nil nil])
@@ -23112,43 +22906,43 @@
                                         ;; in recursive calls of nfa-regmatch(), because recursive calls should only start in the first position.
                                         ;; Unless "nfa_endp" is not null, we match the end position.  Also don't start a match past the first line.
                                         (when' (and (== @nfa_match FALSE)
-                                                    (or (and toplevel (== @reglnum 0) (non-zero? clen) (or (== @ireg_maxcol 0) (< (BDIFF @reginput, @regline) @ireg_maxcol)))
+                                                    (or (and toplevel (== @reglnum 0) (non-zero? @a'clen) (or (== @ireg_maxcol 0) (< (BDIFF @reginput, @regline) @ireg_maxcol)))
                                                         (and (some? @nfa_endp)
                                                              (or (< @reglnum (:lnum @nfa_endp))
                                                                  (and (== @reglnum (:lnum @nfa_endp)) (< (BDIFF @reginput, @regline) (:col @nfa_endp))))))) => [win nil]
                                             ;; Inline optimized code for addstate() if we know the state is the first MOPEN.
                                             (cond toplevel
                                                 (let-when [#_boolean add?
-                                                        (when' (and (!= (:regstart pat) NUL) (non-zero? clen)) => true
+                                                        (when' (and (!= (:regstart pat) NUL) (non-zero? @a'clen)) => true
                                                             (if (zero? (count (:nl_threads ls1)))
-                                                                (let [a'col (atom (int (+ (BDIFF @reginput, @regline) clen)))]
+                                                                (let [a'col (atom (int (+ (BDIFF @reginput, @regline) @a'clen)))]
                                                                     ;; "ls1" is empty, we can skip ahead to the
                                                                     ;; character that must appear at the start.
                                                                     (when' (skip-to-start (:regstart pat), a'col) => nil
-                                                                        (reset! reginput (.plus @regline (- @a'col clen)))
+                                                                        (reset! reginput (.plus @regline (- @a'col @a'clen)))
                                                                         true
                                                                     ))
                                                                 ;; Checking if the required start character match
                                                                 ;; is cheaper than adding a state that won't match.
-                                                                (let [#_int c (us-ptr2char @reginput, clen)]
+                                                                (let [#_int c (us-ptr2char @reginput, @a'clen)]
                                                                     (or (== c (:regstart pat)) (and @ireg_icase (== (utf-tolower c) (utf-tolower (:regstart pat)))))
                                                                 ))
                                                         )] (some? add?) => [win :return]
 
                                                     (when' add? => [win nil]
-                                                        (let [subs (assoc-in subs [:rs_start 0 :col] (+ (BDIFF @reginput, @regline) clen))]
-                                                            ((ß [ls1 subs] =) (addstate ls1, (.out0 start), subs, nil, clen))
+                                                        (let [subs (assoc-in subs [:rs_start 0 :col] (+ (BDIFF @reginput, @regline) @a'clen))]
+                                                            ((ß [ls1 subs] =) (addstate ls1, (.out0 start), subs, nil, @a'clen))
                                                             [win nil])
                                                     ))
                                             :else
-                                                (do ((ß [ls1 subs] =) (addstate ls1, start, subs, nil, clen))
+                                                (do ((ß [ls1 subs] =) (addstate ls1, start, subs, nil, @a'clen))
                                                     [win nil])
                                             ))
                                     )] (not ?) => [win @nfa_match]
 
                                 ;; Advance to the next character, or advance to the next line, or finish.
-                                (let [? (cond (non-zero? clen)
-                                            (do (swap! reginput plus clen) nil)
+                                (let [? (cond (non-zero? @a'clen)
+                                            (do (swap! reginput plus @a'clen) nil)
                                         (or @a'go_to_nextline (and (some? @nfa_endp) (< @reglnum (:lnum @nfa_endp))))
                                             (do (reg-nextline) nil)
                                         :else
