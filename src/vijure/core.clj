@@ -1951,7 +1951,7 @@
 ;; screenLinesC[0][off] is only to be used when screenLinesUC[off] != 0.
 
 (atom! int*     screenLinesUC)      ;; decoded UTF-8 characters
-(atom! int**    screenLinesC    MAX_MCO)    ;; composing characters
+(atom! int**    screenLinesC    MAX_MCO)    ;; composing characters
 (atom! int      screen_mco)         ;; value of "p_mco" used when allocating screenLinesC**
 
 (atom! int      screenRows)         ;; actual size of screenLines*
@@ -34189,8 +34189,8 @@
 
 (defn- #_int utfc-char2bytes [#_int off, #_Bytes buf]
     (loop-when-recur [#_int len (utf-char2bytes (aget @screenLinesUC off), buf) #_int i 0]
-                     (and (< i @screen_mco) (non-zero? (... (... @screenLinesC i) off)))
-                     [(+ len (utf-char2bytes (... (... @screenLinesC i) off), (.plus buf len))) (inc i)]
+                     (and (< i @screen_mco) (non-zero? (aget (... @screenLinesC i) off)))
+                     [(+ len (utf-char2bytes (aget (... @screenLinesC i) off), (.plus buf len))) (inc i)]
                   => len)
 )
 
@@ -41972,7 +41972,7 @@
                         (.be @screenLines off, 0x80)    ;; avoid storing zero
                     )
                     (dotimes [#_int i @screen_mco]
-                        ((ß @screenLinesC[i][off] =) (... u8cc i))
+                        (aset (... @screenLinesC i) off (... u8cc i))
                         (if (zero? (... u8cc i))
                             (ß BREAK)
                         )
@@ -42154,7 +42154,7 @@
 
 (defn- #_boolean comp-char-differs [#_int off_from, #_int off_to]
     (loop-when [#_int i 0] (< i @screen_mco) => false
-        (cond (!= (... (... @screenLinesC i) off_from) (... (... @screenLinesC i) off_to)) true (zero? (... (... @screenLinesC i) off_from)) false :else (recur (inc i)))
+        (cond (!= (aget (... @screenLinesC i) off_from) (aget (... @screenLinesC i) off_to)) true (zero? (aget (... @screenLinesC i) off_from)) false :else (recur (inc i)))
     ))
 
 ;; Check whether the given character needs redrawing:
@@ -42237,7 +42237,7 @@
                 (aset @screenLinesUC off_to (aget @screenLinesUC off_from))
                 (when (non-zero? (aget @screenLinesUC off_from))
                     (dotimes [#_int i @screen_mco]
-                        ((ß @screenLinesC[i][off_to] =) (... (... @screenLinesC i) off_from))
+                        (aset (... @screenLinesC i) off_to (aget (... @screenLinesC i) off_from))
                     )
                 )
                 (if (== char_cells 2)
@@ -42301,7 +42301,7 @@
                     (cond (<= 0x80 c)
                     (do
                         (aset @screenLinesUC off_to c)
-                        ((ß @screenLinesC[0][off_to] =) 0)
+                        (aset (... @screenLinesC 0) off_to 0)
                     )
                     :else
                     (do
@@ -42435,7 +42435,7 @@
 
 (defn- #_boolean screen-comp-differs [#_int off, #_int* u8cc]
     (loop-when [#_int i 0] (< i @screen_mco) => false
-        (cond (!= (... (... @screenLinesC i) off) (... u8cc i)) true (zero? (... u8cc i)) false :else (recur (inc i)))
+        (cond (!= (aget (... @screenLinesC i) off) (... u8cc i)) true (zero? (... u8cc i)) false :else (recur (inc i)))
     ))
 
 ;; Put string "text" on the screen at position "row" and "col", with
@@ -42466,7 +42466,7 @@
             (.be @screenLines (dec off), (byte \space))
             (aset @screenAttrs (dec off) 0)
             (aset @screenLinesUC (dec off) 0)
-            ((ß @screenLinesC[0][off - 1] =) 0)
+            (aset (... @screenLinesC 0) (dec off) 0)
             ;; redraw the previous cell, make it empty
             (screen-char (dec off), row, (dec col))
             ;; force the cell at "col" to be redrawn
@@ -42534,7 +42534,7 @@
                 (do
                     (aset @screenLinesUC off u8c)
                     (dotimes [#_int i @screen_mco]
-                        ((ß @screenLinesC[i][off] =) (... u8cc i))
+                        (aset (... @screenLinesC i) off (... u8cc i))
                         (if (zero? (... u8cc i))
                             (ß BREAK)
                         )
@@ -42889,7 +42889,7 @@
                     (cond (<= 0x80 c)
                     (do
                         (aset @screenLinesUC off c)
-                        ((ß @screenLinesC[0][off] =) 0)
+                        (aset (... @screenLinesC 0) off 0)
                     )
                     :else
                     (do
@@ -42929,220 +42929,140 @@
         (out-flush)
         (ui-delay 1000, true)
         (reset! emsg_on_display false)
-        (if check_msg_scroll
-            (reset! msg_scroll false))
-    )
+        (when check_msg_scroll
+            (reset! msg_scroll false)
+        ))
     nil)
 
-;; screen-valid -  allocate screen buffers if size changed
-;;   If "doclear" is true: clear screen if it has been resized.
-;;      Returns true if there is a valid screen to write to.
-;;      Returns false when starting up and screen not initialized yet.
+;; Allocate screen buffers if size changed.
+;; When "doclear" is true, clear screen if it has been resized.
+;; Returns true if there is a valid screen to write to.
+;; Returns false when starting up and screen not initialized yet.
 
 (defn- #_boolean screen-valid [#_boolean doclear]
-    (screen-alloc doclear)           ;; allocate screen buffers if size changed
+    (screen-alloc doclear)
     (some? @screenLines))
 
-(atom! boolean _4_entered)  ;; avoid recursiveness
-
 ;; Resize the shell to Rows and Cols.
-;; Allocate screenLines[] and associated items.
+;; Allocate screenLines* and associated items.
 ;;
-;; There may be some time between setting Rows and Cols and (re)allocating
-;; screenLines[].  This happens when starting up and when (manually) changing
-;; the shell size.  Always use screenRows and screenCols to access items
-;; in screenLines[].  Use Rows and Cols for positioning text etc. where the
-;; final size of the shell is needed.
+;; There may be some time between setting Rows and Cols and (re)allocating screenLines*.
+;; This happens when starting up and when (manually) changing the shell size.
+;; Always use screenRows and screenCols to access items in screenLines*.
+;; Use Rows and Cols for positioning text, where the final size of the shell is needed.
 
 (defn- #_void screen-alloc [#_boolean doclear]
-    (§
-        ((ß int[][] smco =) (ß new int[MAX_MCO][]))
+    ;; Allocation of the screen buffers is done only when the size changes and
+    ;; when Rows and Cols have been set and we have started doing full screen stuff.
+    (when-not (or (and (some? @screenLines) (== @Rows @screenRows) (== @Cols @screenCols) (some? @screenLinesUC) (== @p_mco @screen_mco))
+                  (== @Rows 0) (== @Cols 0) (not (or @full_screen (some? @screenLines))))
+        ;; Note that the window sizes are updated before reallocating the arrays,
+        ;; thus we must not redraw here!
+        (swap! no_redraw inc)
 
-        ((ß int retry_count =) 0)
+        (win-new-shellsize)     ;; fit the windows in the new sized shell
+        (comp-col)              ;; recompute columns for shown command and ruler
 
-;       retry:
-        (loop []
-            ;; Allocation of the screen buffers is done only when the size changes and
-            ;; when Rows and Cols have been set and we have started doing full screen stuff.
+        (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+            ((ß win =) (win-free-lines win)))
 
-            (if (or (and (some? @screenLines) (== @Rows @screenRows) (== @Cols @screenCols) (some? @screenLinesUC) (== @p_mco @screen_mco)) (== @Rows 0) (== @Cols 0) (and (not @full_screen) (nil? @screenLines)))
-                ((ß RETURN) nil)
-            )
+        (let [n (* (inc @Rows) @Cols)
+              #_Bytes slis (Bytes. n)
+              #_int* sluc (int-array n)
+              #_int** smco (loop-when-recur [smco (vec (repeat MAX_MCO nil)) #_int i 0] (< i @p_mco) [(assoc smco i (int-array n)) (inc i)] => smco)
+              #_int* sats (int-array n)
+              #_int* lofs (int-array @Rows)
+              #_boolean* lwrs (boolean-array @Rows)]
 
-            ;; It's possible that we produce an out-of-memory message below, which
-            ;; will cause this function to be called again.  To break the loop, just return here.
-
-            (if @_4_entered
-                ((ß RETURN) nil)
-            )
-            (reset! _4_entered true)
-
-            ;; Note that the window sizes are updated before reallocating the arrays,
-            ;; thus we must not redraw here!
-
-            (swap! no_redraw inc)
-
-            (win-new-shellsize)    ;; fit the windows in the new sized shell
-
-            (comp-col)             ;; recompute columns for shown command and ruler
-
-            ;; We're changing the size of the screen.
-            ;; - Allocate new arrays for "screenLines" and "screenAttrs".
-            ;; - Move lines from the old arrays into the new arrays, clear extra lines (unless the screen is going to be cleared).
-            ;; - Free the old arrays.
-            ;;
-            ;; If anything fails, make "screenLines" null, so we don't do anything!
-            ;; Continuing with the old "screenLines" may result in a crash, because the size is wrong.
-
-            (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-                ((ß wp =) (win-free-lines wp))
-            )
-
-            ((ß Bytes slis =) (Bytes. (* (inc @Rows) @Cols)))
-            (dotimes [#_int i MAX_MCO]
-                ((ß smco[i] =) nil)
-            )
-            ((ß int* sluc =) (int-array (* (inc @Rows) @Cols)))
-            (dotimes [#_int i @p_mco]
-                ((ß smco[i] =) (ß new int[((int)(@Rows + 1)) * ((int)@Cols)]))
-            )
-
-            ((ß int* sats =) (int-array (* (inc @Rows) @Cols)))
-            ((ß int* lofs =) (int-array @Rows))
-            ((ß boolean* lwrs =) (boolean-array @Rows))
-
-            (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-                ((ß wp =) (win-alloc-lines wp))
-            )
+            (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+                ((ß win =) (win-alloc-lines win)))
 
             (dotimes [#_int r @Rows]
                 (aset lofs r (* r @Cols))
                 (aset lwrs r false)
 
-                ;; If the screen is not going to be cleared, copy as much as
-                ;; possible from the old screen to the new one and clear the rest
-                ;; (used when resizing the window at the "--more--" prompt or
-                ;; when executing an external command, for the GUI).
+                ;; If the screen is not to be cleared, copy as much as possible from the old one and clear the rest
+                ;; (used when resizing the window at the "--more--" prompt or when executing an external command).
 
                 (when (not doclear)
                     (BFILL slis, (aget lofs r), (byte \space), @Cols)
                     (AFILL sluc, (aget lofs r), 0, @Cols)
-                    (dotimes [#_int i @p_mco]
-                        (AFILL (... smco i), (aget lofs r), 0, @Cols)
-                    )
+                    (dotimes [#_int i @p_mco] (AFILL (... smco i), (aget lofs r), 0, @Cols))
                     (AFILL sats, (aget lofs r), 0, @Cols)
-
-                    ((ß int r0 =) (+ r (- @screenRows @Rows)))
-                    (when (and (<= 0 r0) (some? @screenLines))
-                        ((ß int off =) (aget @lineOffset r0))
-                        ((ß int len =) (min @screenCols @Cols))
-
-                        ;; When switching to utf-8 don't copy characters, they
-                        ;; may be invalid now.  Also when "p_mco" changes.
-                        (when (and (some? @screenLinesUC) (== @p_mco @screen_mco))
-                            (BCOPY slis, (aget lofs r), @screenLines, off, len)
-                            (ACOPY sluc, (aget lofs r), @screenLinesUC, off, len)
-                            (dotimes [#_int i @p_mco]
-                                (ACOPY (... smco i), (aget lofs r), (... @screenLinesC i), off, len)
-                            )
-                        )
-                        (ACOPY sats, (aget lofs r), @screenAttrs, off, len)
-                    )
-                )
-            )
+                    (let [#_int r0 (+ r (- @screenRows @Rows))]
+                        (when (and (<= 0 r0) (some? @screenLines))
+                            (let [#_int off (aget @lineOffset r0) #_int len (min @screenCols @Cols)]
+                                ;; When switching to UTF-8, don't copy characters, they may be invalid now.
+                                ;; Also when "p_mco" changes.
+                                (when (and (some? @screenLinesUC) (== @p_mco @screen_mco))
+                                    (BCOPY slis, (aget lofs r), @screenLines, off, len)
+                                    (ACOPY sluc, (aget lofs r), @screenLinesUC, off, len)
+                                    (dotimes [#_int i @p_mco]
+                                        (ACOPY (... smco i), (aget lofs r), (... @screenLinesC i), off, len)
+                                    ))
+                                (ACOPY sats, (aget lofs r), @screenAttrs, off, len))
+                        ))
+                ))
 
             ;; Use the last line of the screen for the current line.
             (reset! current_ScreenLine (.plus slis (* @Rows @Cols)))
 
             (reset! screenLines slis)
             (reset! screenLinesUC sluc)
-            (dotimes [#_int i @p_mco]
-                ((ß @screenLinesC[i] =) (... smco i))
-            )
+            (reset! screenLinesC smco)
             (reset! screen_mco @p_mco)
             (reset! screenAttrs sats)
             (reset! lineOffset lofs)
             (reset! lineWraps lwrs)
 
-            ;; It's important that screenRows and screenCols reflect the actual
-            ;; size of screenLines[].  Set them before calling anything.
+            ;; It's important that screenRows and screenCols reflect the actual size of screenLines*.
             (reset! screenRows @Rows)
             (reset! screenCols @Cols)
 
-            (reset! must_redraw CLEAR)        ;; need to clear the screen later
-            (if doclear
-                (screenclear2)
-            )
+            (reset! must_redraw CLEAR) ;; need to clear the screen later
+            (when doclear
+                (screenclear2))
 
-            (reset! _4_entered false)
             (swap! no_redraw dec)
-
-            ;; Do not apply autocommands more than 3 times to avoid an endless loop
-            ;; in case applying autocommands always changes Rows or Cols.
-
-            (when (and (zero? @starting) (<= ((ß retry_count =) (inc retry_count)) 3))
-                ;; In rare cases, autocommands may have altered Rows or Cols,
-                ;; jump back to check if we need to allocate the screen again.
-                (ß CONTINUE retry)
-            )
-
-            (ß BREAK)
-            (recur)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 (defn- #_void screen-clear []
     (check-for-delay false)
-    (screen-alloc false)             ;; allocate screen buffers if size changed
-    (screenclear2)                 ;; clear the screen
+    (screen-alloc false)            ;; allocate screen buffers if size changed
+    (screenclear2)                  ;; clear the screen
     nil)
 
 (defn- #_void screenclear2 []
-    (§
-        (if (or (== @starting NO_SCREEN) (nil? @screenLines))
-            ((ß RETURN) nil)
-        )
-
-        (reset! screen_attr -1)               ;; force setting the Normal colors
-        (screen-stop-highlight)        ;; don't want highlighting here
-
-        ;; blank out "screenLines"
-        (dotimes [#_int i @Rows]
+    (when (and (!= @starting NO_SCREEN) (some? @screenLines))
+        (reset! screen_attr -1)                 ;; force setting the Normal colors
+        (screen-stop-highlight)                 ;; don't want highlighting here
+        (dotimes [#_int i @Rows]                ;; blank out "screenLines"
             (lineclear (aget @lineOffset i), @Cols)
-            (aset @lineWraps i false)
-        )
-
-        (cond (can-clear @T_CL)
-        (do
-            (out-str @T_CL)              ;; clear the display
-            (reset! clear_cmdline false)
-            (reset! mode_displayed false)
-        )
-        :else
-        (do
-            ;; can't clear the screen, mark all chars with invalid attributes
-            (dotimes [#_int i @Rows]
-                (lineinvalid (aget @lineOffset i), @Cols)
-            )
-            (reset! clear_cmdline true)
-        ))
-
-        (reset! screen_cleared TRUE)          ;; can use contents of "screenLines" now
+            (aset @lineWraps i false))
+        (if (can-clear @T_CL)
+            (do (out-str @T_CL)                 ;; clear the display
+                (reset! clear_cmdline false)
+                (reset! mode_displayed false))
+            (do (dotimes [#_int i @Rows]        ;; can't clear the screen, mark all chars with invalid attributes
+                    (lineinvalid (aget @lineOffset i), @Cols))
+                (reset! clear_cmdline true)
+            ))
+        (reset! screen_cleared TRUE)            ;; can use contents of "screenLines" now
 
         (win-rest-invalid @firstwin)
+
         (reset! redraw_cmdline true)
-        (if (== @must_redraw CLEAR)       ;; no need to clear again
+        (when (== @must_redraw CLEAR)           ;; no need to clear again
             (reset! must_redraw NOT_VALID))
         (compute-cmdrow)
-        (reset! msg_row @cmdline_row)          ;; put cursor on last line for messages
+        (reset! msg_row @cmdline_row)           ;; put cursor on last line for messages
         (reset! msg_col 0)
-        (screen-start)                 ;; don't know where cursor is now
-        (reset! msg_scrolled 0)               ;; can't scroll back
+        (screen-start)                          ;; don't know where cursor is now
+        (reset! msg_scrolled 0)                 ;; can't scroll back
         (reset! msg_didany false)
-        (reset! msg_didout false)
-        nil
-    ))
+        (reset! msg_didout false))
+    nil)
 
 ;; Clear one line in "screenLines".
 
@@ -43165,7 +43085,7 @@
         (BCOPY @screenLines, off_to, @screenLines, off_from, width)
         (ACOPY @screenLinesUC, off_to, @screenLinesUC, off_from, width)
         (dotimes [#_int i @p_mco]
-            (ACOPY (... @screenLinesC i), off_to, (... @screenLinesC i), off_from, width))
+            (ACOPY (... @screenLinesC i), off_to, (... @screenLinesC i), off_from, width))
         (ACOPY @screenAttrs, off_to, @screenAttrs, off_from, width))
     nil)
 
