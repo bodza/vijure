@@ -72,13 +72,9 @@
 
 (final maybean FALSE 0, TRUE 1, MAYBE 2)
 
-(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
+#_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
 ;;; ============================================================================================== VimC
-
-(final int MAXNAMLEN 255)	;; %% VimB/MAXNAMLEN
-
-(final int BASENAMELEN (- MAXNAMLEN 5))
 
 (final int MAXPATHL 4096)
 
@@ -1453,7 +1449,6 @@
 (atom! boolean p_ea)        ;; 'equalalways'
 (atom! boolean p_eb)        ;; 'errorbells'
 (atom! boolean p_ek)        ;; 'esckeys'
-(atom! boolean p_fs)        ;; 'fsync'
 (atom! boolean p_gd)        ;; 'gdefault'
 (atom! boolean p_prompt)    ;; 'prompt'
 (atom! Bytes   p_hl)        ;; 'highlight'
@@ -1575,7 +1570,6 @@
     BV_NF    33,
     BV_PI    34,
     BV_QE    35,
-    BV_RO    36,
     BV_SI    37,
     BV_STS   40,
     BV_SW    41,
@@ -2515,7 +2509,6 @@
         (atom' Bytes        b_p_nf)             ;; 'nrformats'
         (atom' boolean      b_p_pi)             ;; 'preserveindent'
         (atom' Bytes        b_p_qe)             ;; 'quoteescape'
-        (atom' boolean      b_p_ro)             ;; 'readonly'
         (atom' long         b_p_sw)             ;; 'shiftwidth'
         (atom' boolean      b_p_si)             ;; 'smartindent'
         (atom' long         b_p_sts)            ;; 'softtabstop'
@@ -2832,7 +2825,7 @@
         (field winopt_C     w_onebuf_opt    (§_winopt_C))
         (field winopt_C     w_allbuf_opt    (§_winopt_C))
 
-        ;; A few options have local flags for P_INSECURE.
+        ;; A few options have local flags for P_INSECURE.
         (field int*         w_p_cc_cols)        ;; array of columns to highlight or null
         (field int          w_p_brimin)         ;; minimum width for breakindent
         (field int          w_p_brishift)       ;; additional shift for breakindent
@@ -2848,7 +2841,7 @@
 
         ;; the jumplist contains old cursor positions
 
-        (field xfmark_C*    w_jumplist  (ARRAY_xfmark JUMPLISTSIZE))
+        (field xfmark_C*    w_jumplist      (ARRAY_xfmark JUMPLISTSIZE))
         (field int          w_jumplistlen)      ;; number of active entries
         (field int          w_jumplistidx)      ;; current position
 
@@ -3142,45 +3135,43 @@
     CMD_stopinsert 103,
     CMD_sunmap 104,
     CMD_suspend 105,
-    CMD_sview 106,
-    CMD_syncbind 107,
-    CMD_t 108,
-    CMD_topleft 109,
-    CMD_undo 110,
-    CMD_undojoin 111,
-    CMD_undolist 112,
-    CMD_unabbreviate 113,
-    CMD_unmap 114,
-    CMD_unsilent 115,
-    CMD_vglobal 116,
-    CMD_verbose 117,
-    CMD_vertical 118,
-    CMD_visual 119,
-    CMD_view 120,
-    CMD_vmap 121,
-    CMD_vmapclear 122,
-    CMD_vnoremap 123,
-    CMD_vnew 124,
-    CMD_vsplit 125,
-    CMD_vunmap 126,
-    CMD_wincmd 127,
-    CMD_xmap 128,
-    CMD_xmapclear 129,
-    CMD_xnoremap 130,
-    CMD_xunmap 131,
-    CMD_yank 132,
-    CMD_z 133,
+    CMD_syncbind 106,
+    CMD_t 107,
+    CMD_topleft 108,
+    CMD_undo 109,
+    CMD_undojoin 110,
+    CMD_undolist 111,
+    CMD_unabbreviate 112,
+    CMD_unmap 113,
+    CMD_unsilent 114,
+    CMD_vglobal 115,
+    CMD_verbose 116,
+    CMD_vertical 117,
+    CMD_visual 118,
+    CMD_vmap 119,
+    CMD_vmapclear 120,
+    CMD_vnoremap 121,
+    CMD_vnew 122,
+    CMD_vsplit 123,
+    CMD_vunmap 124,
+    CMD_wincmd 125,
+    CMD_xmap 126,
+    CMD_xmapclear 127,
+    CMD_xnoremap 128,
+    CMD_xunmap 129,
+    CMD_yank 130,
+    CMD_z 131,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 134,
-    CMD_and 135,
-    CMD_lshift 136,
-    CMD_equal 137,
-    CMD_rshift 138,
-    CMD_tilde 139,
+    CMD_pound 132,
+    CMD_and 133,
+    CMD_lshift 134,
+    CMD_equal 135,
+    CMD_rshift 136,
+    CMD_tilde 137,
 
-    CMD_SIZE 140)     ;; MUST be after all real commands!
+    CMD_SIZE 138)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3525,16 +3516,7 @@
 (atom! #_"/*volatile*/transient" boolean full_screen)   ;; true when doing full-screen output
                                                         ;; otherwise only writing some messages
 
-(atom! boolean  restricted)             ;; true when started as "rvim"
-(atom! int      secure)                 ;; non-zero when only "safe" commands are allowed,
-                                        ;; e.g. when sourcing .exrc or .vimrc in current directory
-
 (atom! int      textlock)               ;; non-zero when changing text and jumping to another window or buffer is not allowed
-
-(atom! int      curbuf_lock)            ;; non-zero when the current buffer can't be changed.
-                                        ;; Used for FileChangedRO.
-(atom! int      allbuf_lock)            ;; non-zero when no buffer name can be changed,
-                                        ;; no buffer can be deleted and current directory can't be changed.
 
 (atom! boolean  silent_mode)            ;; set to true when "-s" commandline argument used for ex
 
@@ -3657,8 +3639,6 @@
 
 (atom! int      redrawingDisabled)          ;; When non-zero, postpone redrawing.
 
-(atom! boolean  readonlymode)               ;; set to true for "view"
-
 (atom! typebuf_C typebuf    (§_typebuf_C))  ;; typeahead buffer
 (atom! int      ex_normal_busy)             ;; recursiveness of ex_normal()
 (atom! int      ex_normal_lock)             ;; forbid use of ex_normal()
@@ -3780,7 +3760,6 @@
     e_argreq          (u8 "E471: Argument required"),
     e_backslash       (u8 "E10: \\ should be followed by /, ? or &"),
     e_cmdwin          (u8 "E11: Invalid in command-line window; <CR> executes, CTRL-C quits"),
-    e_curdir          (u8 "E12: Command not allowed from exrc/vimrc in current dir"),
     e_internal        (u8 "E473: Internal error"),
     e_interr          (u8 "Interrupted"),
     e_invaddr         (u8 "E14: Invalid address"),
@@ -3818,8 +3797,7 @@
     e_zerocount       (u8 "Zero count"),
     e_intern2         (u8 "E685: Internal error: %s"),
     e_maxmempat       (u8 "E363: pattern uses more memory than 'maxmempattern'"),
-    e_emptybuf        (u8 "E749: empty buffer"),
-    e_nobufnr         (u8 "E86: Buffer %ld does not exist"))
+    e_emptybuf        (u8 "E749: empty buffer"))
 
 ;; For undo we need to know the lowest time possible.
 (atom! long starttime)
@@ -4609,7 +4587,7 @@
         ;; We want the STOP signal to work, to make mch_suspend() work.
         ;; For "rvim" the STOP signal is ignored.
 
-;       libC.sigset(SIGTSTP, /*@restricted ? SIG_IGN : SIG_DFL*/null);
+;       libC.sigset(SIGTSTP, /*SIG_DFL*/null);
 
         ;; We want to ignore breaking of PIPEs.
 
@@ -7982,7 +7960,6 @@
     PV_NF   (| BV_NF   PV_BUF),
     PV_PI   (| BV_PI   PV_BUF),
     PV_QE   (| BV_QE   PV_BUF),
-    PV_RO   (| BV_RO   PV_BUF),
     PV_SI   (| BV_SI   PV_BUF),
     PV_STS  (| BV_STS  PV_BUF),
     PV_SW   (| BV_SW   PV_BUF),
@@ -8040,7 +8017,6 @@
 (atom! Bytes   p_nf)
 (atom! boolean p_pi)
 (atom! Bytes   p_qe)
-(atom! boolean p_ro)
 (atom! boolean p_si)
 (atom! long    p_sts)
 (atom! long    p_sw)
@@ -8106,12 +8082,7 @@
 (final int P_NODUP           0x10000)   ;; don't allow duplicate strings
 (final int P_FLAGLIST        0x20000)   ;; list of single-char flags
 
-(final int P_SECURE          0x40000)   ;; cannot change in modeline or secure mode
-(final int P_GETTEXT         0x80000)   ;; expand default value with _()
 (final int P_NOGLOB         0x100000)   ;; do not use local value for global vimrc
-(final int P_NFNAME         0x200000)   ;; only normal file name chars allowed
-(final int P_INSECURE       0x400000)   ;; option was set from a modeline
-(final int P_NO_ML         0x1000000)   ;; not allowed in modeline
 (final int P_CURSWANT      0x2000000)   ;; update curswant required; not needed when there is a redraw flag
 
 (final Bytes COMMENTS_INIT (u8 "s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-"))
@@ -8135,7 +8106,7 @@
 
 (defn- #_vimoption_C term_opt [#_Bytes fname, #_Bytes* var]
     (§
-;       return utf8_opt(fname, null, P_RALL|P_SECURE, var, PV_NONE, u8(""));
+;       return utf8_opt(fname, null, P_RALL, var, PV_NONE, u8(""));
     ))
 
 ;; vimoptions[] are initialized here.
@@ -8184,7 +8155,6 @@
         (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       PV_NONE,   (u8 "vert:|,fold:-")),
         (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
         (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
-        (bool_opt (u8 "fsync"),          (u8 "fs"),        P_SECURE,                    p_fs,        PV_NONE,    true),
         (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        PV_NONE,    false),
         (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        PV_NONE,    HIGHLIGHT_INIT),
         (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        PV_NONE,    50#_L),
@@ -8199,7 +8169,7 @@
         (utf8_opt (u8 "isprint"),        (u8 "isp"),    (| P_RALL P_COMMA P_NODUP),     p_isp,       PV_NONE,   (u8 "@,161-255")),
         (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        PV_NONE,    true),
         (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        P_SECURE,                    p_kp,        PV_KP,     (u8 ":echo")),
+        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           p_kp,        PV_KP,     (u8 ":echo")),
         (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        PV_NONE,    1#_L),
         (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        PV_NONE,    false),
         (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      VAR_WIN,     PV_LBR,     false),
@@ -8222,14 +8192,13 @@
         (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            p_nf,        PV_NF,     (u8 "octal,hex")),
         (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      VAR_WIN,     PV_NU,      false),
         (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      VAR_WIN,     PV_NUW,     4#_L),
-        (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    P_SECURE,                    p_opfunc,    PV_NONE,   (u8 "")),
+        (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    PV_NONE,   (u8 "")),
         (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      PV_NONE,   (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
         (bool_opt (u8 "paste"),           null,            0,                           p_paste,     PV_NONE,    false),
         (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        PV_NONE,   (u8 "")),
         (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           p_pi,        PV_PI,      false),
         (bool_opt (u8 "prompt"),          null,            0,                           p_prompt,    PV_NONE,    true),
         (utf8_opt (u8 "quoteescape"),    (u8 "qe"),        0,                           p_qe,        PV_QE,     (u8 "\\")),
-        (bool_opt (u8 "readonly"),       (u8 "ro"),     (| P_RSTAT P_NOGLOB),           p_ro,        PV_RO,      false),
         (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       PV_NONE,    2000#_L),
         (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        PV_NONE,    0#_L),
         (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      VAR_WIN,     PV_RNU,     false),
@@ -8448,10 +8417,6 @@
 ;               if (both)
 ;                   ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
 ;           }
-
-            ;; The default value is not insecure.
-;           long[] flagsp = insecure_flag(opt_idx, opt_flags);
-;           flagsp[0] &= ~P_INSECURE;
 ;       }
     ))
 
@@ -9222,20 +9187,12 @@
     ))
 
 ;; Call this when an option has been given a new value through a user command.
-;; Sets the P_WAS_SET flag and takes care of the P_INSECURE flag.
+;; Sets the P_WAS_SET flag.
 
 (defn- #_void did_set_option [#_int opt_idx, #_int opt_flags, #_boolean new_value]
     ;; new_value: value was replaced completely
     (§
 ;       vimoptions[opt_idx].@flags |= P_WAS_SET;
-
-        ;; When an option is set in secure mode, set the P_INSECURE flag.
-        ;; Otherwise, if a new value is stored reset the flag.
-;       long[] p = insecure_flag(opt_idx, opt_flags);
-;       if (@secure != 0)
-;           p[0] |= P_INSECURE;
-;       else if (new_value)
-;           p[0] &= ~P_INSECURE;
     ))
 
 (defn- #_Bytes illegal_char [#_Bytes errbuf, #_int c]
@@ -9388,32 +9345,6 @@
 ;           pp[0] = EMPTY_OPTION;
     ))
 
-;; Return true when option "opt" was set from a modeline or in secure mode.
-;; Return false when it wasn't.
-;; Return -1 for an unknown option.
-
-(defn- #_boolean was_set_insecurely [#_Bytes opt, #_int opt_flags]
-    (§
-;       int idx = findoption(opt);
-;       if (0 <= idx)
-;       {
-;           long[] flagp = insecure_flag(idx, opt_flags);
-;           return ((flagp[0] & P_INSECURE) != 0);
-;       }
-
-;       emsg2(e_intern2, u8("was_set_insecurely()"));
-;       return /*-1*/true;
-    ))
-
-;; Get a pointer to the flags used for the P_INSECURE flag of option
-;; "opt_idx".  For some local options a local flags field is used.
-
-(defn- #_long* insecure_flag [#_int opt_idx, #_int opt_flags]
-    (§
-        ;; Nothing special, return global flags field.
-;       return vimoptions[opt_idx].flags;
-    ))
-
 ;; Redraw the tab page text later.
 
 (defn- #_void redraw_titles []
@@ -9521,22 +9452,8 @@
         ;; otherwise we would have to check two values for all local options.
 ;       Object gvarp = get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL);
 
-        ;; Disallow changing some options from secure mode.
-;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
-;       {
-;           errmsg = e_secure;
-;       }
-
-        ;; Check for a "normal" file name in some options.
-        ;; Disallow a path separator (slash and/or backslash),
-        ;; wildcards and characters that are often illegal in a file name.
-;       else if ((vimoptions[opt_idx].@flags & P_NFNAME) != 0 && STRPBRK(varp[0], u8("/\\*?[|<>")) != null)
-;       {
-;           errmsg = e_invarg;
-;       }
-
         ;; 'term'
-;       else if (varp == T_NAME)
+;       if (varp == T_NAME)
 ;       {
 ;           if (@T_NAME.at(0) == NUL)
 ;               errmsg = u8("E529: Cannot set 'term' to empty string");
@@ -10171,10 +10088,6 @@
     ;; value: new value
     ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
     (§
-        ;; Disallow changing some options from secure mode.
-;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
-;           return e_secure;
-
 ;       boolean old_value = varp[0];
 ;       varp[0] = value;                    ;; set the new value
 
@@ -10184,21 +10097,8 @@
 
         ;; Handle side effects of changing a bool option.
 
-;       if (varp == @curbuf.b_p_ro)
-;       {
-            ;; when 'readonly' is reset globally, also reset readonlymode
-;           if (!@curbuf.@b_p_ro && (opt_flags & OPT_LOCAL) == 0)
-;               @readonlymode = false;
-
-            ;; when 'readonly' is set may give W10 again
-;           if (@curbuf.@b_p_ro)
-;               @curbuf.b_did_warn = false;
-
-;           redraw_titles();
-;       }
-
         ;; when 'terse' is set change 'shortmess'
-;       else if (varp == p_terse)
+;       if (varp == p_terse)
 ;       {
 ;           Bytes p = vim_strchr(@p_shm, SHM_SEARCH);
 
@@ -10314,10 +10214,6 @@
 ;       long old_value = varp[0];
 ;       long old_Rows = @Rows;               ;; remember old Rows
 ;       long old_Columns = @Columns;         ;; remember old Columns
-
-        ;; Disallow changing some options from secure mode.
-;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
-;           return e_secure;
 
 ;       varp[0] = value;
 
@@ -11193,7 +11089,6 @@
 ;           case PV_NF:     return @curbuf.b_p_nf;
 ;           case PV_PI:     return @curbuf.b_p_pi;
 ;           case PV_QE:     return @curbuf.b_p_qe;
-;           case PV_RO:     return @curbuf.b_p_ro;
 ;           case PV_SI:     return @curbuf.b_p_si;
 ;           case PV_STS:    return @curbuf.b_p_sts;
 ;           case PV_SW:     return @curbuf.b_p_sw;
@@ -11321,13 +11216,9 @@
 ;               }
 
                 ;; Always free the allocated strings.
-                ;; If not already initialized, set 'readonly' and copy 'fileformat'.
 
 ;               if (!buf.b_p_initialized)
-;               {
 ;                   free_buf_options(buf, true);
-;                   buf.@b_p_ro = false;             ;; don't copy readonly
-;               }
 ;               else
 ;                   free_buf_options(buf, false);
 
@@ -12796,35 +12687,6 @@
 
 ;       @curwin.w_cursor.lnum = curs;
 ;       @ex_no_reprint = true;
-    ))
-
-;; Check if the restricted flag is set.
-;; If so, give an error message and return true.
-;; Otherwise, return false.
-
-(defn- #_boolean check_restricted []
-    (§
-;       if (@restricted)
-;       {
-;           emsg(u8("E145: Shell commands not allowed in rvim"));
-;           return true;
-;       }
-;       return false;
-    ))
-
-;; Check if the secure flag is set (.exrc or .vimrc in current directory).
-;; If so, give an error message and return true.
-;; Otherwise, return false.
-
-(defn- #_boolean check_secure []
-    (§
-;       if (@secure != 0)
-;       {
-;           @secure = 2;
-;           emsg(e_curdir);
-;           return true;
-;       }
-;       return false;
     ))
 
 (atom! Bytes old_sub)              ;; previous substitute pattern
@@ -15010,15 +14872,14 @@
     ))
 
 ;; Return true when the text must not be changed and we can't switch to
-;; another window or buffer.  Used when editing the command line, evaluating
-;; 'balloonexpr', etc.
+;; another window or buffer.  Used when editing the command line, etc.
 
 (defn- #_boolean text_locked []
     (§
 ;       if (@cmdwin_type != 0)
 ;           return true;
 
-;       return @textlock != 0;
+;       return (@textlock != 0);
     ))
 
 ;; Give an error message for a command that isn't allowed while the cmdline
@@ -15030,31 +14891,6 @@
 ;           emsg(e_cmdwin);
 ;       else
 ;           emsg(e_secure);
-    ))
-
-;; Check if "curbuf_lock" or "allbuf_lock" is set and return true when it is
-;; and give an error message.
-
-(defn- #_boolean curbuf_locked []
-    (§
-;       if (0 < @curbuf_lock)
-;       {
-;           emsg(u8("E788: Not allowed to edit another buffer now"));
-;           return true;
-;       }
-;       return allbuf_locked();
-    ))
-
-;; Check if "allbuf_lock" is set and return true when it is and give an error message.
-
-(defn- #_boolean allbuf_locked []
-    (§
-;       if (0 < @allbuf_lock)
-;       {
-;           emsg(u8("E811: Not allowed to change buffer information now"));
-;           return true;
-;       }
-;       return false;
     ))
 
 (defn- #_int cmdline_charsize [#_int idx]
@@ -17640,14 +17476,6 @@
 ;                   break doend;
 ;               }
 
-                ;; Disallow editing another buffer when "curbuf_lock" is set.
-                ;; Do allow ":edit" (check for argument later).
-                ;; Do allow ":checktime" (it's postponed).
-;               if ((ea.argt & CMDWIN) == 0
-;                       && ea.cmdidx != CMD_edit
-;                       && curbuf_locked())
-;                   break doend;
-
 ;               if (!ni && (ea.argt & RANGE) == 0 && 0 < ea.addr_count)
 ;               {
                     ;; no range allowed
@@ -18564,15 +18392,6 @@
 
 (defn- #_void ex_map [#_exarg_C eap]
     (§
-            ;; If we are sourcing .exrc or .vimrc in current directory
-            ;; we print the mappings for security reasons.
-;       if (@secure != 0)
-;       {
-;           @secure = 2;
-;           msg_outtrans(eap.cmd);
-;           msg_putchar('\n');
-;       }
-
 ;       do_exmap(eap, false);
     ))
 
@@ -18655,7 +18474,7 @@
 
             ;; Refuse to quit when locked or when the buffer in the last window
             ;; is being closed (can only happen in autocommands).
-;       if (curbuf_locked() || (wp.w_buffer.b_nwindows == 1 && wp.w_buffer.b_closing))
+;       if (wp.w_buffer.b_nwindows == 1 && wp.w_buffer.b_closing)
 ;           return;
 
             ;; If there are more files or windows we won't exit.
@@ -18698,7 +18517,7 @@
 
             ;; Refuse to quit when locked or when the buffer in the last window
             ;; is being closed (can only happen in autocommands).
-;       if (curbuf_locked() || (@curbuf.b_nwindows == 1 && @curbuf.b_closing))
+;       if (@curbuf.b_nwindows == 1 && @curbuf.b_closing)
 ;           return;
 
 ;       @exiting = true;
@@ -18713,7 +18532,7 @@
     (§
 ;       if (@cmdwin_type != 0)
 ;           @cmdwin_result = Ctrl_C;
-;       else if (!text_locked() && !curbuf_locked())
+;       else if (!text_locked())
 ;       {
 ;           if (eap.addr_count == 0)
 ;               ex_win_close(eap.forceit, @curwin);
@@ -18799,21 +18618,16 @@
 
 (defn- #_void ex_stop [#_exarg_C eap]
     (§
-            ;; Disallow suspending for "rvim".
-
-;       if (!check_restricted())
-;       {
-;           windgoto((int)@Rows - 1, 0);
-;           out_char((byte)'\n');
-;           out_flush();
-;           stoptermcap();
-;           out_flush();            ;; needed for SUN to restore xterm buffer
-;           ui_suspend();           ;; call machine specific function
-;           starttermcap();
-;           scroll_start();         ;; scroll screen before redrawing
-;           redraw_later_clear();
-;           shell_resized();        ;; may have resized window
-;       }
+;       windgoto((int)@Rows - 1, 0);
+;       out_char((byte)'\n');
+;       out_flush();
+;       stoptermcap();
+;       out_flush();            ;; needed for SUN to restore xterm buffer
+;       ui_suspend();           ;; call machine specific function
+;       starttermcap();
+;       scroll_start();         ;; scroll screen before redrawing
+;       redraw_later_clear();
+;       shell_resized();        ;; may have resized window
     ))
 
 ;; ":print", ":list", ":number".
@@ -18929,7 +18743,7 @@
 
         ;; ":vi" command ends Ex mode.
 
-;       if (@exmode_active != 0 && (eap.cmdidx == CMD_visual || eap.cmdidx == CMD_view))
+;       if (@exmode_active != 0 && eap.cmdidx == CMD_visual)
 ;       {
 ;           @exmode_active = 0;
 ;           if (eap.arg.at(0) == NUL)
@@ -18975,16 +18789,6 @@
 ;       }
 ;       else if ((eap.cmdidx != CMD_split && eap.cmdidx != CMD_vsplit) || eap.arg.at(0) != NUL)
 ;       {
-            ;; Can't edit another file when "curbuf_lock" is set.
-            ;; Only ":edit" can bring us here, others are stopped earlier.
-;           if (eap.arg.at(0) != NUL && curbuf_locked())
-;               return;
-
-;           boolean rom = @readonlymode;
-;           if (eap.cmdidx == CMD_view || eap.cmdidx == CMD_sview)
-;               @readonlymode = true;
-;           else if (eap.cmdidx == CMD_enew)
-;               @readonlymode = false;   ;; 'readonly' doesn't make sense in an empty buffer
 ;           setpcmark();
 ;           if (do_ecmd((eap.cmdidx == CMD_enew) ? null : eap.arg,
 ;                       eap,
@@ -19012,15 +18816,6 @@
 ;                   }
 ;               }
 ;           }
-;           else if (@readonlymode && @curbuf.b_nwindows == 1)
-;           {
-                ;; When editing an already visited buffer, 'readonly' won't be set
-                ;; but the previous value is kept.  With ":view" and ":sview" we
-                ;; want the  file to be readonly, except when another window is
-                ;; editing the same buffer.
-;               @curbuf.@b_p_ro = true;
-;           }
-;           @readonlymode = rom;
 ;       }
 ;       else
 ;       {
@@ -20704,8 +20499,6 @@
 ;               text_locked_msg();
 ;               break normal_end;
 ;           }
-;           if ((nv_cmds[idx].cmd_flags & NV_NCW) != 0 && curbuf_locked())
-;               break normal_end;
 
             ;; In Visual/Select mode, a few keys are handled in a special way.
 
@@ -36195,9 +35988,6 @@
 ;       int i = 0;
 ;       if (@p_smd && @msg_silent == 0)
 ;           i = showmode();
-
-;       if (!@p_im && @did_restart_edit == 0)
-;           change_warning(i == 0 ? 0 : i + 1);
 
 ;       ui_cursor_shape();          ;; may show different cursor shape
 ;       do_digraph(-1);             ;; clear digraphs
@@ -59970,13 +59760,12 @@
 ;       (p = p.plus(1)).be(-1, (byte)'"');
 ;       vim_strncpy(p, buf_spname(@curbuf, fullname != 0), IOSIZE - BDIFF(p, buffer) - 1);
 
-;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s%s%s"),
+;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s%s"),
 ;               curbufIsChanged() ? (shortmess(SHM_MOD) ? u8(" [+]") : u8(" [Modified]")) : u8(" "),
 ;               (@curbuf.b_flags & BF_NOTEDITED) != 0 ? u8("[Not edited]") : u8(""),
 ;               (@curbuf.b_flags & BF_NEW) != 0 ? u8("[New file]") : u8(""),
 ;               (@curbuf.b_flags & BF_READERR) != 0 ? u8("[Read errors]") : u8(""),
-;               @curbuf.@b_p_ro ? (shortmess(SHM_RO) ? u8("[RO]") : u8("[readonly]")) : u8(""),
-;               (curbufIsChanged() || (@curbuf.b_flags & BF_WRITE_MASK) != 0 || @curbuf.@b_p_ro) ? u8(" ") : u8(""));
+;               (curbufIsChanged() || (@curbuf.b_flags & BF_WRITE_MASK) != 0) ? u8(" ") : u8(""));
         ;; With 32 bit longs and more than 21,474,836 lines multiplying by 100
         ;; causes an overflow, thus for large numbers divide instead.
 ;       int n;
@@ -67206,10 +66995,6 @@
     (§
 ;       if (!@curbuf.@b_changed)
 ;       {
-            ;; Give a warning about changing a read-only file.
-            ;; This may also check-out the file, thus change "curbuf"!
-;           change_warning(0);
-
 ;           changed_int();
 ;       }
 ;       @curbuf.b_changedtick++;
@@ -67504,41 +67289,6 @@
 ;               if (@must_redraw < VALID)
 ;                   @must_redraw = VALID;
 ;           }
-    ))
-
-(final Bytes w_readonly (u8 "W10: Warning: Changing a readonly file"))
-
-;; If the file is readonly, give a warning message with the first change.
-;; Don't do this for autocommands.
-;; Don't use emsg(), because it flushes the macro buffer.
-;; If we have undone all changes "b_changed" will be false, but "b_did_warn" will be true.
-;; Careful: may trigger autocommands that reload the buffer.
-
-(defn- #_void change_warning [#_int col]
-    ;; col: column for message; non-zero when in insert mode and 'showmode' is on
-    (§
-;       if (!@curbuf.b_did_warn && !curbufIsChanged() && @curbuf.@b_p_ro)
-;       {
-            ;; Do what msg() does, but with a column offset
-            ;; if the warning should be after the mode message.
-
-;           msg_start();
-;           if (@msg_row == (int)@Rows - 1)
-;               @msg_col = col;
-;           msg_puts_attr(w_readonly, hl_attr(HLF_W) | MSG_HIST);
-;           msg_clr_eos();
-;           msg_end();
-
-;           if (@msg_silent == 0 && !@silent_mode)
-;           {
-;               out_flush();
-;               ui_delay(1000L, true);  ;; give the user time to think about it
-;           }
-;           @curbuf.b_did_warn = true;
-;           @redraw_cmdline = false;     ;; don't redraw and erase the message
-;           if (@msg_row < @Rows - 1)
-;               showmode();
-;       }
     ))
 
 ;; Ask for a reply from the user, a 'y' or a 'n'.
@@ -73443,12 +73193,6 @@
 ;           if (!undo_allowed())
 ;               return false;
 
-            ;; Saving text for undo means we are going to make a change.
-            ;; Give a warning for a read-only file before making the change,
-            ;; so that the FileChangedRO event can replace the buffer with
-            ;; a read-write version (e.g., obtained from a source control system).
-
-;           change_warning(0);
 ;           if (@curbuf.b_ml.ml_line_count + 1 < bot)
 ;           {
                 ;; This happens when the FileChangedRO autocommand changes
@@ -73722,12 +73466,6 @@
 
 ;       for (int count = startcount; 0 < count--; )
 ;       {
-            ;; Do the change warning now, so that it triggers FileChangedRO when
-            ;; needed.  This may cause the file to be reloaded, that must happen
-            ;; before we do anything, because it may change curbuf.b_u_curhead
-            ;; and more.
-;           change_warning(0);
-
 ;           if (@undo_undoes)
 ;           {
 ;               if (@curbuf.b_u_curhead == null)             ;; first undo
@@ -74010,9 +73748,6 @@
 
 ;           while (!@got_int)
 ;           {
-                ;; Do the change warning now, for the same reason as above.
-;               change_warning(0);
-
 ;               uhp = @curbuf.b_u_curhead;
 ;               if (uhp == null)
 ;                   uhp = @curbuf.b_u_newhead;
@@ -74029,9 +73764,6 @@
 
 ;           while (!@got_int)
 ;           {
-                ;; Do the change warning now, for the same reason as above.
-;               change_warning(0);
-
 ;               uhp = @curbuf.b_u_curhead;
 ;               if (uhp == null)
 ;                   break;
@@ -82347,17 +82079,11 @@
 ;           Bytes p = @nameBuff;
 ;           int len = STRLEN(p);
 
-;           if (bufIsChanged(wp.w_buffer) || wp.w_buffer.@b_p_ro)
-;               p.be(len++, (byte)' ');
 ;           if (bufIsChanged(wp.w_buffer))
 ;           {
+;               p.be(len++, (byte)' ');
 ;               STRCPY(p.plus(len), u8("[+]"));
 ;               len += 3;
-;           }
-;           if (wp.w_buffer.@b_p_ro)
-;           {
-;               STRCPY(p.plus(len), u8("[RO]"));
-;               len += 4;
 ;           }
 
 ;           int this_ru_col = @ru_col - ((int)@Columns - wp.w_width);
@@ -87234,8 +86960,6 @@
 ;           text_locked_msg();
 ;           return;
 ;       }
-;       if (curbuf_locked())
-;           return;
 
 ;       if (wp.w_buffer != @curbuf)
 ;           reset_VIsual_and_resel();
@@ -91054,7 +90778,6 @@
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "sview"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
         (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
@@ -91068,7 +90791,6 @@
         (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM CMDWIN),               ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
-        (->cmdname_C (u8 "view"),          ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
         (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "vmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
