@@ -7473,7 +7473,7 @@
 
 (defn- #_Bytes getexline []
     ;; When executing a register, remove ':' that's in front of each line.
-    (if (and @exec_from_reg (== (vpeekc) (byte \:)))
+    (when (and @exec_from_reg (== (vpeekc) (byte \:)))
         (vgetc))
     (getcmdline (byte \:), 1))
 
@@ -8003,154 +8003,109 @@
 ;; return false if cmdline could not be executed, true otherwise
 
 (defn- #_boolean do-cmdline [#_Bytes cmdline, #_boolean use_getline, #_int flags]
-    (§
-        ((ß boolean retval =) true)
+    ;; "did_emsg" will be set to true when emsg() is used,
+    ;; in which case we cancel the whole command line.
+    (reset! did_emsg false)
+    ;; "keyTyped" is only set when calling vgetc().
+    ;; Reset it here when not calling vgetc() (sourced command lines).
+    (when (and (non-flag? flags DOCMD_KEYTYPED) (not use_getline))
+        (reset! keyTyped false))
 
-        ((ß boolean used_getline =) false)               ;; used getexline() to obtain command
+    (let [a'cmdline (atom (#_Bytes object nil)) a'did_out (atom (boolean false)) a'did_inc (atom (boolean false)) ;; incremented no_redraw
+          #_boolean retval
+            (loop [cmdline cmdline #_boolean used_getline false #_int count 0]
+                (let-when [[cmdline used_getline :as _]
+                    ;; If no line given, get an allocated line with getexline().
+                    (cond (nil? cmdline)
+                        ;; stop skipping cmds for an error msg after all endif/while/for
+                        (do (reset! did_emsg false)
+                            ;; Need to set msg_didout for the first line after an ":if",
+                            ;; otherwise the ":if" will be overwritten.
+                            (when (and (== count 1) use_getline)
+                                (reset! msg_didout true))
+                            (let [cmdline (when use_getline (getexline))]
+                                (if (nil? cmdline)
+                                    (do ;; Don't call wait-return for aborted command line.  The null
+                                        ;; returned for the end of a sourced file or executed function
+                                        ;; doesn't do this.
+                                        (when @keyTyped
+                                            (reset! need_wait_return false))
+                                        nil)
+                                    (do ;; Keep the first typed line.  Clear it when more lines are typed.
+                                        (when (flag? flags DOCMD_KEEPLINE)
+                                            (reset! repeat_cmdline (if (zero? count) (STRDUP cmdline) nil)))
+                                        [cmdline true]
+                                    ))
+                            ))
+                    ;; Make a copy of the command so we can mess with it.
+                    (nil? @a'cmdline)
+                        [(STRDUP cmdline) used_getline]
+                    :else
+                        [cmdline used_getline])
+                ] (some? _) => false
 
-        ((ß boolean msg_didout_before_start =) false)
-        ((ß int count =) 0)                              ;; line number count
-        ((ß boolean did_inc =) false)                    ;; incremented no_redraw
-
-        ;; "did_emsg" will be set to true when emsg() is used,
-        ;; in which case we cancel the whole command line, and any if/endif or loop.
-
-        (reset! did_emsg false)
-
-        ;; keyTyped is only set when calling vgetc().
-        ;; Reset it here when not calling vgetc() (sourced command lines).
-
-        (when (and (non-flag? flags DOCMD_KEYTYPED) (not use_getline))
-            (reset! keyTyped false))
-
-        ((ß Bytes[] a'cmdline_copy =) (atom (#_Bytes object nil)))                ;; copy of cmd line
-
-        ;; Continue executing command lines:
-        ;; - when inside an ":if", ":while" or ":for"
-        ;; - for multiple commands on one line, separated with '|'
-        ;; - when repeating until there are no more lines (for ":source")
-
-        ((ß Bytes next_cmdline =) cmdline)
-        (loop []
-            ;; stop skipping cmds for an error msg after all endif/while/for
-            (when (nil? next_cmdline)
-                (reset! did_emsg false))
-
-            ;; 2. If no line given, get an allocated line with getexline().
-            (cond (nil? next_cmdline)
-            (do
-                ;; Need to set msg_didout for the first line after an ":if",
-                ;; otherwise the ":if" will be overwritten.
-
-                (if (and (== count 1) use_getline)
-                    (reset! msg_didout true))
-                (when (or (not use_getline) (nil? ((ß next_cmdline =) (getexline))))
-                    ;; Don't call wait-return for aborted command line.  The null
-                    ;; returned for the end of a sourced file or executed function
-                    ;; doesn't do this.
-                    (if @keyTyped
-                        (reset! need_wait_return false))
-                    ((ß retval =) false)
-                    (ß BREAK)
-                )
-                ((ß used_getline =) true)
-
-                ;; Keep the first typed line.  Clear it when more lines are typed.
-
-                (when (flag? flags DOCMD_KEEPLINE)
-                    (reset! repeat_cmdline (if (zero? count) (STRDUP next_cmdline) nil)))
-            )
-
-            ;; 3. Make a copy of the command so we can mess with it.
-            (nil? @a'cmdline_copy)
-            (do
-                ((ß next_cmdline =) (STRDUP next_cmdline))
-            ))
-            (reset! a'cmdline_copy next_cmdline)
-
-            (when (== ((ß count =) (inc count)) 1)
-                ;; All output from the commands is put below each other, without waiting for a return.
-                ;; Don't do this when executing commands from a script or when being called recursive
-                ;; (e.g. for ":e +command file").
-
-                (when (and (non-flag? flags DOCMD_NOWAIT) (zero? @_0_recurse))
-                    ((ß msg_didout_before_start =) @msg_didout)
-                    (reset! msg_didany false) ;; no output yet
-                    (msg-start)
-                    (reset! msg_scroll true)  ;; put messages below each other
-                    (swap! no_wait_return inc)   ;; don't wait for return until finished
-                    (swap! no_redraw inc)
-                    ((ß did_inc =) true)
-                )
-            )
-
-            ;; 2. Execute one '|' separated command.
-            ;;    do-one-cmd() will return null if there is no trailing '|'.
-            ;;    "cmdline_copy" can change, e.g. for '%' and '#' expansion.
-
-            (swap! _0_recurse inc)
-            ((ß next_cmdline =) (do-one-cmd a'cmdline_copy, (flag? flags DOCMD_VERBOSE)))
-            (swap! _0_recurse dec)
-
-            (cond (nil? next_cmdline)
-            (do
-                (reset! a'cmdline_copy nil)
-
-                ;; If the command was typed, remember it for the ':' register.
-                ;; Do this AFTER executing the command to make :@: work.
-
-                (when (and use_getline (some? @new_last_cmdline))
-                    (reset! last_cmdline @new_last_cmdline)
-                    (reset! new_last_cmdline nil)
-                )
-            )
-            :else
-            (do
-                ;; Need to copy the command after the '|' to 'cmdline_copy',
-                ;; for the next do-one-cmd().
-                (BCOPY @a'cmdline_copy, next_cmdline, (inc (STRLEN next_cmdline)))
-                ((ß next_cmdline =) @a'cmdline_copy)
-            ))
-
-            ;; Continue executing command lines when:
-            ;; - no CTRL-C typed, no aborting error, no exception thrown or try conditionals need
-            ;;   to be checked for executing finally clauses or catching an interrupt exception
-            ;; - didn't get an error message or lines are not typed
-            ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
-            ;;   for ":source" command or function call.
-
-            (recur-if (and (not @got_int) (not (and @did_emsg used_getline use_getline)) (some? next_cmdline)) [])
-        )
-
+                    (reset! a'cmdline cmdline)
+                    (let [count (inc count)]
+                        (when (== count 1)
+                            ;; All output from the commands is put below each other, without waiting for a return.
+                            ;; Don't do this when executing commands from a script or when being called recursive.
+                            (when (and (non-flag? flags DOCMD_NOWAIT) (zero? @_0_recurse))
+                                (reset! a'did_out @msg_didout)
+                                (reset! msg_didany false)   ;; no output yet
+                                (msg-start)
+                                (reset! msg_scroll true)    ;; put messages below each other
+                                (swap! no_wait_return inc)  ;; don't wait for return until finished
+                                (swap! no_redraw inc)
+                                (reset! a'did_inc true)
+                            ))
+                        ;; Execute one '|' separated command.
+                        ;; do-one-cmd() will return null if there is no trailing '|'.
+                        ;; "a'cmdline" can change, e.g. for '%' and '#' expansion.
+                        (let [_ (swap! _0_recurse inc)
+                              cmdline (do-one-cmd a'cmdline, (flag? flags DOCMD_VERBOSE))
+                              _ (swap! _0_recurse dec)
+                              cmdline
+                                (if (nil? cmdline)
+                                    (do (reset! a'cmdline nil)
+                                        ;; If the command was typed, remember it for the ':' register.
+                                        ;; Do this AFTER executing the command to make :@: work.
+                                        (when (and use_getline (some? @new_last_cmdline))
+                                            (reset! last_cmdline @new_last_cmdline)
+                                            (reset! new_last_cmdline nil))
+                                        nil)
+                                    (do ;; Need to copy the command after the '|' to "a'cmdline"
+                                        ;; for the next do-one-cmd().
+                                        (BCOPY @a'cmdline, cmdline, (inc (STRLEN cmdline)))
+                                        @a'cmdline)
+                                )]
+                            ;; Continue executing command lines when:
+                            ;; - no CTRL-C typed, no aborting error, no exception thrown or try conditionals need
+                            ;;   to be checked for executing finally clauses or catching an interrupt exception
+                            ;; - didn't get an error message or lines are not typed
+                            ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
+                            ;;   for ":source" command or function call.
+                            (recur-if (and (not @got_int) (not (and @did_emsg used_getline use_getline)) (some? cmdline)) [cmdline used_getline count] => true)
+                        ))
+                ))]
         (reset! did_emsg_syntax false)
-
         ;; If there was too much output to fit on the command line, ask the user to
         ;; hit return before redrawing the screen.  With the ":global" command we do
         ;; this only once after the command is finished.
-
-        (when did_inc
+        (when @a'did_inc
             (swap! no_redraw dec)
             (swap! no_wait_return dec)
             (reset! msg_scroll false)
-
             ;; When just finished an ":if"-":else" which was typed, no need to
             ;; wait for hit-return.  Also for an error situation.
-
             (cond (not retval)
-            (do
-                (reset! need_wait_return false)
-                (reset! msg_didany false)         ;; don't wait when restarting edit
-            )
+                (do (reset! need_wait_return false)
+                    (reset! msg_didany false)) ;; don't wait when restarting edit
             @need_wait_return
-            (do
-                ;; The msg-start() above clears msg_didout.  The wait-return we do here
-                ;; should not overwrite the command that may be shown before doing that.
-
-                (swap! msg_didout | msg_didout_before_start)
-                (wait-return FALSE)
+                (do ;; The msg-start() above clears msg_didout.  The wait-return we do here
+                    ;; should not overwrite the command that may be shown before doing that.
+                    (swap! msg_didout | @a'did_out)
+                    (wait-return FALSE))
             ))
-        )
-
         retval
     ))
 
@@ -13743,14 +13698,10 @@
 ;; Returns '=' when OK, NUL otherwise.
 
 (defn- #_int get-expr-register []
-    (let [#_Bytes s (getcmdline (byte \=), 0)]
-        (if (some? s)
-            (do
-                (when (non-eos? s) (reset! expr_line s)) ;; else use previous line
-                (byte \=)
-            )
-            NUL
-        )
+    (let-when [#_Bytes s (getcmdline (byte \=), 0)] (some? s) => NUL
+        (when (non-eos? s)
+            (reset! expr_line s)) ;; else use previous line
+        (byte \=)
     ))
 
 (atom! int __nested)
