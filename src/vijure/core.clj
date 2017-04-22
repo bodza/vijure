@@ -33039,55 +33039,42 @@
 ;;
 ;; Return false if 'isident', 'isprint', 'isfname' or 'iskeyword' option has an error, true otherwise.
 
-(defn- #_boolean init-chartab [#_boolean global]
-    ;; global: false: only set @curbuf.b_chartab[]
-    (when global
-        ;; Set the default size for printable characters:
-        ;; From <Space> to '~' is 1 (printable), others are 2 (not printable).
-        ;; This also inits all 'isident' and 'isfname' flags to false.
-        (let [wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))
-              ;; Assume that every multi-byte char is a filename character.
-              cls- #(condp < % (byte \space) wide DEL (inc CT_PRINT_CHAR) 0xa0 wide 256 (inc (+ CT_PRINT_CHAR CT_FNAME_CHAR)))]
-            (swap! chartab #(into (empty %) (map cls- %)))
-        ))
-    ;; Init word char flags all to false.
-    (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
-    ;; Walk through the 'isident', 'isprint', 'isfname' and 'iskeyword' options:
-    ;; characters, numbers or ranges separated by commas, e.g.: "48-57,x,#-37,-"
-    (and
-        (loop-when-recur [#_int round (if global 0 3)] (<= round 3) [(inc round)] => true
-            (loop-when [#_Bytes p (condp == round 0 @p_isi 1 @p_isp 2 @p_isf 3 @(:b_p_isk @curbuf))] (non-eos? p) => true
-                (let-when [gec- #(let [__ (atom (#_Bytes object %))] (if (asc-isdigit (.at % 0)) [(getdigits __) @__] [(us-ptr2char-adv __, true) @__]))
-                    [#_boolean ! p] (if (and (at? p (byte \^)) (non-eos? p 1)) [true (.plus p 1)] [false p])
-                    [#_int c p] (gec- p)
-                    [#_int e p] (if (and (at? p (byte \-)) (non-eos? p 1)) (gec- (.plus p 1)) [-1 p])
-                ] (and (< 0 c) (< c 256) (or (<= c e) (== e -1)) (< e 256) (or (eos? p) (at? p (byte \,)))) => false
-                    ;; A single '@' (not "@-@"):
-                    ;; Decide on letters being ID/printable/keyword chars with standard function isalpha().
-                    ;; This takes care of locale for single-byte characters.
-                    (let [[#_boolean alpha c e] (cond (!= e -1) [false c e] (== c (byte \@)) [true 1 255] :else [false c c])
-                          wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))
-                          set- (fn [x y] (if ! (& x (bit-not y)) (| x y)))]
-                        (loop-when-recur c (<= c e) (inc c)
-                            (when (or (not alpha) (utf-islower c) (utf-isupper c))
-                                (condp == round
-                                    0 ;; (re)set ID flag
-                                        (swap! chartab update c set- CT_IDENT_CHAR)
-                                    1 ;; (re)set printable
-                                        (when (or (< c (byte \space)) (< (byte \~) c))
-                                            (swap! chartab update c #(-> % (& (bit-not CT_CELL_MASK)) (+ (if ! wide 1)) (set- CT_PRINT_CHAR))))
-                                    2 ;; (re)set fname flag
-                                        (swap! chartab update c set- CT_FNAME_CHAR)
-                                    3 ;; (re)set keyword flag
-                                        (if ! (reset-chartab c) (set-chartab c))
-                                )))
-                        (let [#_int c (.at p 0) p (skip-to-option-part p)]
-                            ;; Trailing comma is not allowed.
-                            (if (and (== c (byte \,)) (eos? p)) false (recur p))
+(defn- #_boolean init-chartab [#_boolean global] ;; global: false: only set @curbuf.b_chartab[]
+    (let [wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))]
+        (when global
+            (let [cls- #(condp < % (byte \space) wide DEL (inc CT_PRINT_CHAR) 0xa0 wide 256 (inc (+ CT_PRINT_CHAR CT_FNAME_CHAR)))]
+                (swap! chartab #(into (empty %) (map cls- %)))
+            ))
+        (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
+        ;; Walk through the 'isident', 'isprint', 'isfname' and 'iskeyword' options:
+        ;; characters, numbers or ranges separated by commas, e.g.: "48-57,x,#-37,-"
+        (and
+            (loop-when-recur [#_int round (if global 0 3)] (<= round 3) [(inc round)] => true
+                (loop-when [#_Bytes p (condp == round 0 @p_isi 1 @p_isp 2 @p_isf 3 @(:b_p_isk @curbuf))] (non-eos? p) => true
+                    (let-when [gec- #(let [__ (atom (#_Bytes object %))] (if (asc-isdigit (.at % 0)) [(getdigits __) @__] [(us-ptr2char-adv __, true) @__]))
+                        [#_boolean ! p] (if (and (at? p (byte \^)) (non-eos? p 1)) [true (.plus p 1)] [false p])
+                        [#_int c p] (gec- p)
+                        [#_int e p] (if (and (at? p (byte \-)) (non-eos? p 1)) (gec- (.plus p 1)) [-1 p])
+                    ] (and (< 0 c) (< c 256) (or (<= c e) (== e -1)) (< e 256) (or (eos? p) (at? p (byte \,)))) => false
+                        ;; A single '@' (not "@-@") = any isalpha (islower|isupper).
+                        (let [[#_boolean alpha c e] (cond (!= e -1) [false c e] (== c (byte \@)) [true 1 255] :else [false c c])
+                            cel- #(-> % (& (bit-not CT_CELL_MASK)) (+ (if ! wide 1)))
+                            bit- (fn [x y] (if ! (& x (bit-not y)) (| x y)))]
+                            (loop-when-recur c (<= c e) (inc c)
+                                (when (or (not alpha) (utf-islower c) (utf-isupper c))
+                                    (condp == round
+                                        0       (swap! chartab update c              bit- CT_IDENT_CHAR)
+                                        1 (when (or (< c (byte \space)) (< (byte \~) c))
+                                                (swap! chartab update c #(-> % cel- (bit- CT_PRINT_CHAR))))
+                                        2       (swap! chartab update c              bit- CT_FNAME_CHAR)
+                                        3 (if ! (reset-chartab c) (set-chartab c))
+                                    )))
+                            (let [#_int c (.at p 0) p (skip-to-option-part p)]
+                                ;; Trailing comma is not allowed.
+                                (if (and (== c (byte \,)) (eos? p)) false (recur p)))
                         ))
-                )))
-        (reset! chartab_initialized true)
-        true
+                ))
+            (reset! chartab_initialized true))
     ))
 
 ;; Translate any special characters in buf[bufsize] in-place.
