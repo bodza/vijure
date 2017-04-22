@@ -8867,21 +8867,22 @@
                                         [win cap oap])
 
                                [OP_INSERT OP_APPEND]
-                                    (do (reset! VIsual_reselect false) ;; don't reselect now
-                                        (if empty_region?
-                                            (do (beep) (cancel-redo))
-                                            ;; This is a new edit command, not a restart.
-                                            ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
-                                            ;; But do this only once.
-                                            (let [o'restart_edit @restart_edit _ (reset! restart_edit 0)]
-                                                ;; Restore linebreak, so that when the user edits, it looks as before.
-                                                (reset! (:wo_lbr (:w_options win)) o'lbr)
-                                                (op-insert oap, (:count1 cap))
-                                                ;; Reset linebreak, so that formatting works correctly.
-                                                (reset! (:wo_lbr (:w_options win)) false)
-                                                (when (zero? @restart_edit)
-                                                    (reset! restart_edit o'restart_edit))
-                                            ))
+                                    (let [_ (reset! VIsual_reselect false) ;; don't reselect now
+                                          oap (if empty_region?
+                                                (do (beep) (cancel-redo) oap)
+                                                ;; This is a new edit command, not a restart.
+                                                ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
+                                                ;; But do this only once.
+                                                (let [o'restart_edit @restart_edit _ (reset! restart_edit 0)
+                                                      ;; Restore linebreak, so that when the user edits, it looks as before.
+                                                      _ (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                      oap (op-insert oap, (:count1 cap))
+                                                      ;; Reset linebreak, so that formatting works correctly.
+                                                      _ (reset! (:wo_lbr (:w_options win)) false)]
+                                                    (when (zero? @restart_edit)
+                                                        (reset! restart_edit o'restart_edit))
+                                                    oap)
+                                            )]
                                         [win cap oap])
 
                                 OP_REPLACE
@@ -12954,148 +12955,135 @@
             ))
     ))
 
-;; op-insert - Insert and append operators for Visual mode.
+;; Insert and append operators for Visual mode.
 
-(defn- #_void op-insert [#_oparg_C oap, #_long count1]
-    (§
-        ((ß int pre_textlen =) 0)
-
-        ;; edit() changes this - record it for OP_APPEND
-        ((ß block_def_C bd =) (NEW_block_def_C))
-        ((ß bd.is_MAX =) (== (:w_curswant @curwin) MAXCOL))
-
-        ;; vis block is still marked.  Get rid of it now.
+(defn- #_oparg_C op-insert [#_oparg_C oap, #_long count1]
+    ;; edit() changes this - record it for OP_APPEND
+    (let [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX (== (:w_curswant @curwin) MAXCOL))]
+        ;; vis block is still marked, get rid of it now
         (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
         (update-screen INVERTED)
+        (let-when [[bd #_int pre_textlen :as _]
+                (if (:block_mode oap)
+                    ;; When 'virtualedit' is used, need to insert the extra spaces before doing block-prep().
+                    ;; When only "block" is used, virtual edit is already disabled,
+                    ;; but still need it when calling coladvance-force().
+                    (let-when [_
+                            (if (< 0 (:coladd (:w_cursor @curwin)))
+                                (let [o've_flags @ve_flags _ (reset! ve_flags VE_ALL)]
+                                    (if (not (u-save-cursor))
+                                        (do (reset! ve_flags o've_flags) nil)
+                                        (do (swap! curwin coladvance-force (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol @curwin)))
+                                            (when (== (:op_type oap) OP_APPEND)
+                                                (swap! curwin update-in [:w_cursor :col] dec))
+                                            (reset! ve_flags o've_flags)
+                                            :_)
+                                    ))
+                                :_
+                            )] (some? _) => nil
+                        ;; Get the info about the block before entering the text.
+                        (let [bd (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true)
+                              #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
+                              s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
+                            [bd (STRLEN s)]
+                        ))
+                    [bd 0]
+                )] (some? _) => oap
 
-        (when (:block_mode oap)
-            ;; When 'virtualedit' is used, need to insert the extra spaces before doing block-prep().
-            ;; When only "block" is used, virtual edit is already disabled,
-            ;; but still need it when calling coladvance-force().
-            (when (< 0 (:coladd (:w_cursor @curwin)))
-                ((ß int old_ve_flags =) @ve_flags)
+            (let-when [[bd :as _]
+                    (if (== (:op_type oap) OP_APPEND)
+                        (if (and (:block_mode oap) (zero? (:coladd (:w_cursor @curwin))))
+                            (do ;; Move the cursor to the character right of the block.
+                                (swap! curwin assoc :w_set_curswant true)
+                                (while (and (non-eos? (ml-get-cursor @curwin)) (< (:col (:w_cursor @curwin)) (+ (:textcol bd) (:textlen bd))))
+                                    (swap! curwin update-in [:w_cursor :col] inc))
+                                (if (and (:is_short bd) (not (:is_MAX bd)))
+                                    ;; First line was too short, make it longer and adjust the values in "bd".
+                                    (if (not (u-save-cursor))
+                                        nil
+                                        (do (dotimes [_ (:endspaces bd)]
+                                                (swap! curwin ins-char (byte \space)))
+                                            [(update bd :textlen + (:endspaces bd))]
+                                        ))
+                                    [bd]
+                                ))
+                            (do (swap! curwin assoc :w_cursor (:op_end oap))
+                                (swap! curwin check-cursor-col)
+                                ;; Works just like an 'i'nsert on the next character.
+                                (when (and (not (lineempty (:lnum (:w_cursor @curwin)))) (!= (:start_vcol oap) (:end_vcol oap)))
+                                    (swap! curwin inc-cursor false))
+                                [bd]
+                            ))
+                        [bd]
+                    )] (some? _) => oap
 
-                (reset! ve_flags VE_ALL)
-                (if (not (u-save-cursor))
-                    ((ß RETURN) nil)
-                )
-
-                (swap! curwin coladvance-force (if (== (:op_type oap) OP_APPEND) (inc (:end_vcol oap)) (getviscol @curwin)))
-                (when (== (:op_type oap) OP_APPEND)
-                    (swap! curwin update-in [:w_cursor :col] dec))
-                (reset! ve_flags old_ve_flags)
-            )
-            ;; Get the info about the block before entering the text.
-            ((ß bd =) (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true))
-            ((ß Bytes firstline =) (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd)))
-            ((ß firstline =) (if (== (:op_type oap) OP_APPEND) (.plus firstline (:textlen bd)) firstline))
-            ((ß pre_textlen =) (STRLEN firstline))
-        )
-
-        (when (== (:op_type oap) OP_APPEND)
-            (cond (and (:block_mode oap) (zero? (:coladd (:w_cursor @curwin))))
-            (do
-                ;; Move the cursor to the character right of the block.
-                (swap! curwin assoc :w_set_curswant true)
-                (while (and (non-eos? (ml-get-cursor @curwin)) (< (:col (:w_cursor @curwin)) (+ (:textcol bd) (:textlen bd))))
-                    (swap! curwin update-in [:w_cursor :col] inc))
-                (when (and (:is_short bd) (not (:is_MAX bd)))
-                    ;; First line was too short, make it longer and adjust the values in "bd".
-                    (if (not (u-save-cursor))
-                        ((ß RETURN) nil)
-                    )
-
-                    (dotimes [_ (:endspaces bd)]
-                        (swap! curwin ins-char (byte \space)))
-                    ((ß bd =) (update bd :textlen + (:endspaces bd)))
-                )
-            )
-            :else
-            (do
-                (swap! curwin assoc :w_cursor (:op_end oap))
-                (swap! curwin check-cursor-col)
-
-                ;; Works just like an 'i'nsert on the next character.
-                (when (and (not (lineempty (:lnum (:w_cursor @curwin)))) (!= (:start_vcol oap) (:end_vcol oap)))
-                    (swap! curwin inc-cursor false))
+                (let [#_pos_C t1 (:op_start oap)
+                      _ (edit NUL, false, count1)
+                      ;; When a tab was inserted, and the characters in front of the tab have been converted to a tab
+                      ;; as well, the column of the cursor might have actually been reduced, so need to adjust here.
+                      oap (if (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1))
+                            (assoc oap :op_start (:b_op_start_orig @curbuf))
+                            oap
+                        )]
+                    ;; If user has moved off this line, we don't know what to do, so do nothing.
+                    ;; Also don't repeat the insert when Insert mode ended with CTRL-C.
+                    (cond (or (!= (:lnum (:w_cursor @curwin)) (:lnum (:op_start oap))) @got_int)
+                        oap
+                    (:block_mode oap)
+                        ;; The user may have moved the cursor before inserting something, try to adjust the block for that.
+                        (let [[oap pre_textlen]
+                                (cond (or (!= (:lnum (:op_start oap)) (:lnum (:b_op_start_orig @curbuf))) (:is_MAX bd))
+                                    [oap pre_textlen]
+                                (and (== (:op_type oap) OP_INSERT)
+                                           (!= (+ (:col (:op_start oap)) (:coladd (:op_start oap))) (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf)))))
+                                    (let [#_int t (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                          oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
+                                          pre_textlen (- pre_textlen (- t (:start_vcol oap)))]
+                                        [(assoc oap :start_vcol t) pre_textlen])
+                                (and (== (:op_type oap) OP_APPEND)
+                                     (<= (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf))) (+ (:col (:op_end oap)) (:coladd (:op_end oap)))))
+                                    (let [#_int t (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf)))
+                                          oap (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf)))
+                                          ;; reset "pre_textlen" to the value of OP_INSERT
+                                          pre_textlen (- (+ pre_textlen (:textlen bd)) (- t (:start_vcol oap)))]
+                                        [(assoc oap :start_vcol t :op_type OP_INSERT) pre_textlen])
+                                :else
+                                    [oap pre_textlen])
+                              ;; Spaces and tabs in the indent may have changed to other spaces and tabs.
+                              ;; Get the starting column again and correct the length.
+                              ;; Don't do this when "$" used, end-of-line will have changed.
+                              #_block_def_C bd2 (block-prep oap, false, (:lnum (:op_start oap)), true)
+                              [bd bd2 pre_textlen]
+                                (if (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
+                                    (let [[bd2 pre_textlen]
+                                            (if (== (:op_type oap) OP_APPEND)
+                                                (let [pre_textlen (+ pre_textlen (- (:textlen bd2) (:textlen bd)))]
+                                                    [(if (non-zero? (:endspaces bd2)) (update bd2 :textlen dec) bd2) pre_textlen])
+                                                [bd2 pre_textlen]
+                                            )]
+                                        [(assoc bd :textcol (:textcol bd2) :textlen (:textlen bd2)) bd2 pre_textlen])
+                                    [bd bd2 pre_textlen])
+                              ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the required string.
+                              #_Bytes s (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd))
+                              s (if (== (:op_type oap) OP_APPEND) (.plus s (:textlen bd)) s)]
+                            (if (<= 0 pre_textlen)
+                                (let [#_int ins_len (- (STRLEN s) pre_textlen)]
+                                    (if (< 0 ins_len)
+                                        (let [#_Bytes ins_text (STRNDUP s, ins_len)]
+                                            ;; block handled here
+                                            (when (u-save (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
+                                                (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
+                                            (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
+                                            (swap! curwin check-cursor)
+                                            oap)
+                                        oap
+                                    ))
+                                oap
+                            ))
+                    :else
+                        oap
+                    ))
             ))
-        )
-
-        ((ß pos_C t1 =) (:op_start oap))
-
-        (edit NUL, false, count1)
-
-        ;; When a tab was inserted, and the characters in front of the tab
-        ;; have been converted to a tab as well, the column of the cursor
-        ;; might have actually been reduced, so need to adjust here.
-        (when (and (== (:lnum t1) (:lnum (:b_op_start_orig @curbuf))) (ltpos (:b_op_start_orig @curbuf), t1))
-            ((ß oap =) (assoc oap :op_start (:b_op_start_orig @curbuf))))
-
-        ;; If user has moved off this line, we don't know what to do, so do nothing.
-        ;; Also don't repeat the insert when Insert mode ended with CTRL-C.
-        (if (or (!= (:lnum (:w_cursor @curwin)) (:lnum (:op_start oap))) @got_int)
-            ((ß RETURN) nil)
-        )
-
-        (when (:block_mode oap)
-
-            ;; The user may have moved the cursor before inserting something,
-            ;; try to adjust the block for that.
-            (when (and (== (:lnum (:op_start oap)) (:lnum (:b_op_start_orig @curbuf))) (not (:is_MAX bd)))
-                (cond (and (== (:op_type oap) OP_INSERT) (!= (+ (:col (:op_start oap)) (:coladd (:op_start oap))) (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf)))))
-                (do
-                    ((ß int t =) (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf))))
-                    ((ß oap =) (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf))))
-                    ((ß pre_textlen =) (- pre_textlen (- t (:start_vcol oap))))
-                    ((ß oap =) (assoc oap :start_vcol t))
-                )
-                (and (== (:op_type oap) OP_APPEND) (<= (+ (:col (:b_op_start_orig @curbuf)) (:coladd (:b_op_start_orig @curbuf))) (+ (:col (:op_end oap)) (:coladd (:op_end oap)))))
-                (do
-                    ((ß int t =) (getviscol2 @curwin, (:col (:b_op_start_orig @curbuf)), (:coladd (:b_op_start_orig @curbuf))))
-                    ((ß oap =) (assoc-in oap [:op_start :col] (:col (:b_op_start_orig @curbuf))))
-                    ;; reset pre_textlen to the value of OP_INSERT
-                    ((ß pre_textlen =) (+ pre_textlen (:textlen bd)))
-                    ((ß pre_textlen =) (- pre_textlen (- t (:start_vcol oap))))
-                    ((ß oap =) (assoc oap :start_vcol t))
-                    ((ß oap =) (assoc oap :op_type OP_INSERT))
-                ))
-            )
-
-            ;; Spaces and tabs in the indent may have changed to other spaces and tabs.
-            ;; Get the starting column again and correct the length.
-            ;; Don't do this when "$" used, end-of-line will have changed.
-
-            ((ß block_def_C bd2 =) (block-prep oap, false, (:lnum (:op_start oap)), true))
-            (when (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
-                (when (== (:op_type oap) OP_APPEND)
-                    ((ß pre_textlen =) (+ pre_textlen (- (:textlen bd2) (:textlen bd))))
-                    (if (non-zero? (:endspaces bd2))
-                        ((ß bd2.textlen =) (dec (:textlen bd2)))
-                    )
-                )
-                ((ß bd =) (assoc bd :textcol (:textcol bd2)))
-                ((ß bd =) (assoc bd :textlen (:textlen bd2)))
-            )
-
-            ;; Subsequent calls to ml-get() flush the firstline data
-            ;; - take a copy of the required string.
-
-            ((ß Bytes firstline =) (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd)))
-            ((ß firstline =) (if (== (:op_type oap) OP_APPEND) (.plus firstline (:textlen bd)) firstline))
-
-            (ß int ins_len)
-            (when (and (<= 0 pre_textlen) (< 0 ((ß ins_len =) (- (STRLEN firstline) pre_textlen))))
-                ((ß Bytes ins_text =) (STRNDUP firstline, ins_len))
-
-                ;; block handled here
-                (when (u-save (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
-                    (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
-
-                (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
-                (swap! curwin check-cursor)
-            )
-        )
-        nil
     ))
 
 ;; op-change - handle a change operation
