@@ -26784,209 +26784,122 @@
 ;;      or  atom  multi
 
 (defn- #_boolean nfa-regpiece []
-    (§
-        ;; Save the current parse state, so that we can use it if <atom>{m,n} is next.
-        ((ß parse_state_C old_state =) (save-parse-state))
+    ;; Save the current parse state, so that we can use it if <atom>{m,n} is next.
+    (let-when [#_parse_state_C old_state (save-parse-state)
+          ;; store current pos in the postfix form for \{m,n} involving 0s
+          #_int my_post_start @post_index
+    ] (nfa-regatom) => false           ;; cascaded error
 
-        ;; store current pos in the postfix form, for \{m,n} involving 0s
-        ((ß int my_post_start =) @post_index)
+        (let-when [#_int op (peekchr)] (!= (re-multi-type op) NOT_MULTI) => true
+            (skipchr)
 
-        ((ß boolean ret =) (nfa-regatom))
-        (if (not ret)
-            ((ß RETURN) false)           ;; cascaded error
-        )
-
-        ((ß int op =) (peekchr))
-        (if (== (re-multi-type op) NOT_MULTI)
-            ((ß RETURN) true)
-        )
-
-        (skipchr)
-        (condp ==? op
-            (Magic (byte \*))
-            (do
-                (emc1 NFA_STAR)
-                (ß BREAK)
-            )
-
-            (Magic (byte \+))
-            (do
-                ;; Trick: Normally, (a*)\+ would match the whole input "aaa".  The first and
-                ;; only submatch would be "aaa".  But the backtracking engine interprets the
-                ;; plus as "try matching one more time", and a* matches a second time at the
-                ;; end of the input, the empty string.  The submatch will be the empty string.
-                ;;
-                ;; In order to be consistent with the old engine,
-                ;; we replace <atom>+ with <atom><atom>*
-
-                (restore-parse-state old_state)
-                (reset! curchr -1)
-                (if (not (nfa-regatom))
-                    ((ß RETURN) false)
-                )
-                (emc1 NFA_STAR)
-                (emc1 NFA_CONCAT)
-                (skipchr)          ;; skip the \+
-                (ß BREAK)
-            )
-
-            (Magic (byte \@))
-            (do
-                ((ß int c2 =) (getdecchrs))
-                ((ß op =) (no-Magic (getchr)))
-                ((ß int i =) 0)
-                (condp == op
-                    (byte \=)
-                    (do
-                        ;; \@=
-                        ((ß i =) NFA_PREV_ATOM_NO_WIDTH)
-                        (ß BREAK)
-                    )
-                    (byte \!)
-                    (do
-                        ;; \@!
-                        ((ß i =) NFA_PREV_ATOM_NO_WIDTH_NEG)
-                        (ß BREAK)
-                    )
-                    (byte \<)
-                    (do
-                        ((ß op =) (no-Magic (getchr)))
-                        (cond (== op (byte \=))
-                        (do
-                            ;; \@<=
-                            ((ß i =) NFA_PREV_ATOM_JUST_BEFORE)
-                        )
-                        (== op (byte \!))
-                        (do
-                            ;; \@<!
-                            ((ß i =) NFA_PREV_ATOM_JUST_BEFORE_NEG)
+            (let-when [_ (condp ==? op
+                (Magic (byte \*)) (do (emc1 NFA_STAR) nil)
+                (Magic (byte \+))
+                    (do ;; Trick:  Normally, (a*)\+ would match the whole input "aaa".  The first and
+                        ;; only submatch would be "aaa".  But the backtracking engine interprets the
+                        ;; plus as "try matching one more time", and a* matches a second time at the
+                        ;; end of the input, the empty string.  The submatch will be the empty string.
+                        ;;
+                        ;; In order to be consistent with the old engine,
+                        ;; we replace <atom>+ with <atom><atom>*
+                        (restore-parse-state old_state)
+                        (reset! curchr -1)
+                        (if (nfa-regatom)
+                            (do (emc1 NFA_STAR) (emc1 NFA_CONCAT) (skipchr) nil) ;; skip the \+
+                            false
                         ))
-                        (ß BREAK)
-                    )
-                    (byte \>)
-                    (do
-                        ;; \@>
-                        ((ß i =) NFA_PREV_ATOM_LIKE_PATTERN)
-                        (ß BREAK)
-                    )
-                )
-                (when (zero? i)
-                    (emsgn (u8 "E869: (NFA) Unknown operator '\\@%c'"), (long op))
-                    ((ß RETURN) false)
-                )
-                (emc1 i)
-                (if (any == i NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
-                    (emc1 c2))
-                (ß BREAK)
-            )
-
-           [(Magic (byte \?)) (Magic (byte \=))]
-            (do
-                (emc1 NFA_QUEST)
-                (ß BREAK)
-            )
-
-            (Magic (byte \{))
-            (do
-                ;; a{2,5} will expand to 'aaa?a?a?'
-                ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
-                ;; \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parenthesis have the same id
-
-                ((ß boolean greedy =) true)      ;; Braces are prefixed with '-' ?
-                ((ß int c2 =) (peekchr))
-                (when (or (== c2 (byte \-)) (== c2 (Magic (byte \-))))
-                    (skipchr)
-                    ((ß greedy =) false)
-                )
-                ((ß long[] a'minval =) (atom (long)))
-                ((ß long[] a'maxval =) (atom (long)))
-                (when (not (read-limits a'minval, a'maxval))
-                    (emsg (u8 "E870: (NFA regexp) Error reading repetition limits"))
-                    (reset! rc_did_emsg true)
-                    ((ß RETURN) false)
-                )
-
-                ;;  <atom>{0,inf}, <atom>{0,} and <atom>{}  are equivalent to <atom>*
-                (when (and (zero? @a'minval) (== @a'maxval MAX_LIMIT))
-                    (cond greedy            ;; { { (match the braces)
-                    (do
-                        ;; \{}, \{0,}
-                        (emc1 NFA_STAR)
-                    )
-                    :else                   ;; { { (match the braces)
-                    (do
-                        ;; \{-}, \{-0,}
-                        (emc1 NFA_STAR_NONGREEDY)
-                    ))
-                    (ß BREAK)
-                )
-
-                ;; Special case: x{0} or x{-0}.
-                (when (zero? @a'maxval)
-                    ;; Ignore result of previous call to nfa-regatom().
-                    (reset! post_index my_post_start)
-                    ;; NFA_EMPTY is 0-length and works everywhere.
-                    (emc1 NFA_EMPTY)
-                    ((ß RETURN) true)
-                )
-
-                ;; The engine is very inefficient (uses too many states) when the
-                ;; maximum is much larger than the minimum and when the maximum is
-                ;; large.  Bail out if we can use the other engine.
-                (if (and (flag? @nfa_re_flags RE_AUTO) (or (< (+ @a'minval 200) @a'maxval) (< 500 @a'maxval)))
-                    ((ß RETURN) false)
-                )
-
-                ;; Ignore previous call to nfa-regatom().
-                (reset! post_index my_post_start)
-                ;; Save parse state after the repeated atom and the \{}.
-                ((ß parse_state_C new_state =) (save-parse-state))
-
-                ((ß int quest =) (if greedy NFA_QUEST NFA_QUEST_NONGREEDY))
-                (dotimes [#_int i @a'maxval]
-                    ;; Goto beginning of the repeated atom.
-                    (restore-parse-state old_state)
-                    ((ß int old_post_pos =) @post_index)
-                    (if (not (nfa-regatom))
-                        ((ß RETURN) false)
-                    )
-
-                    ;; after "minval" times, atoms are optional
-                    (when (< @a'minval (inc i))
-                        (cond (== @a'maxval MAX_LIMIT)
-                        (do
-                            (emc1 (if greedy NFA_STAR NFA_STAR_NONGREEDY))
-                        )
-                        :else
-                        (do
-                            (emc1 quest)
+                (Magic (byte \@))
+                    (let [#_int c2 (getdecchrs) op (no-Magic (getchr))
+                          [op #_int i]
+                            (condp == op
+                                (byte \=) [op NFA_PREV_ATOM_NO_WIDTH]                       ;; \@=
+                                (byte \!) [op NFA_PREV_ATOM_NO_WIDTH_NEG]                   ;; \@!
+                                (byte \<)
+                                    (let [op (no-Magic (getchr))]
+                                        (condp == op
+                                            (byte \=) [op NFA_PREV_ATOM_JUST_BEFORE]        ;; \@<=
+                                            (byte \!) [op NFA_PREV_ATOM_JUST_BEFORE_NEG]    ;; \@<!
+                                                      [op 0]))
+                                (byte \>) [op NFA_PREV_ATOM_LIKE_PATTERN]                   ;; \@>
+                                          [op 0]
+                            )]
+                        (if (zero? i)
+                            (do (emsgn (u8 "E869: (NFA) Unknown operator '\\@%c'"), (long op)) false)
+                            (do (emc1 i)
+                                (when (any == i NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
+                                    (emc1 c2))
+                                nil)
                         ))
-                    )
-                    (if (!= old_post_pos my_post_start)
-                        (emc1 NFA_CONCAT))
-                    (if (and (< @a'minval (inc i)) (== @a'maxval MAX_LIMIT))
-                        (ß BREAK)
-                    )
-                )
+               [(Magic (byte \?)) (Magic (byte \=))] (do (emc1 NFA_QUEST) nil)
+                (Magic (byte \{))
+                    ;; a{2,5} will expand to 'aaa?a?a?'
+                    ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
+                    ;; \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parenthesis have the same id
+                    (let [#_int c2 (peekchr)
+                          #_boolean greedy (if (any == c2 (byte \-) (Magic (byte \-))) (do (skipchr) false) true)
+                          a'minval (atom (long)) a'maxval (atom (long))]
 
-                ;; Go to just after the repeated atom and the \{}.
-                (restore-parse-state new_state)
-                (reset! curchr -1)
-                (ß BREAK)
-            )
+                        (cond (not (read-limits a'minval, a'maxval))
+                            (do (emsg (u8 "E870: (NFA regexp) Error reading repetition limits"))
+                                (reset! rc_did_emsg true)
+                                false)
+                        ;; <atom>{0,inf}, <atom>{0,} and <atom>{} are equivalent to <atom>*
+                        (and (zero? @a'minval) (== @a'maxval MAX_LIMIT))
+                            (do (if greedy
+                                    (emc1 NFA_STAR)             ;; {{   ;; \{}, \{0,}
+                                    (emc1 NFA_STAR_NONGREEDY))  ;; {{   ;; \{-}, \{-0,}
+                                nil)
+                        ;; Special case: x{0} or x{-0}.
+                        (zero? @a'maxval)
+                            (do ;; Ignore result of previous call to nfa-regatom().
+                                (reset! post_index my_post_start)
+                                ;; NFA_EMPTY is 0-length and works everywhere.
+                                (emc1 NFA_EMPTY)
+                                true)
+                        ;; The engine is very inefficient (uses too many states) when the maximum
+                        ;; is much larger than the minimum and when the maximum is large.
+                        ;; Bail out if we can use the other engine.
+                        (and (flag? @nfa_re_flags RE_AUTO) (< (min (+ @a'minval 200) 500) @a'maxval))
+                            false
+                        :else     ;; Ignore previous call to nfa-regatom().
+                            (let-when [_ (reset! post_index my_post_start)
+                                  ;; Save parse state after the repeated atom and the \{}.
+                                  #_parse_state_C new_state (save-parse-state)
+                                  #_int quest (if greedy NFA_QUEST NFA_QUEST_NONGREEDY)
+                                  _ (loop-when [#_int i 0] (< i @a'maxval) => nil
+                                        ;; Goto beginning of the repeated atom.
+                                        (restore-parse-state old_state)
+                                        (let [#_int old_post_pos @post_index]
+                                            (if (nfa-regatom)
+                                                (do ;; after "minval" times, atoms are optional
+                                                    (when (< @a'minval (inc i))
+                                                        (if (== @a'maxval MAX_LIMIT)
+                                                            (emc1 (if greedy NFA_STAR NFA_STAR_NONGREEDY))
+                                                            (emc1 quest)
+                                                        ))
+                                                    (when (!= old_post_pos my_post_start)
+                                                        (emc1 NFA_CONCAT))
+                                                    (if (and (< @a'minval (inc i)) (== @a'maxval MAX_LIMIT))
+                                                        nil
+                                                        (recur (inc i))
+                                                    ))
+                                                false
+                                            ))
+                                    )] (nil? _) => _
+                                ;; Go to just after the repeated atom and the \{}.
+                                (restore-parse-state new_state)
+                                (reset! curchr -1)
+                                nil)
+                        ))
+                nil)] (nil? _) => _
 
-            (do
-                (ß BREAK)
-            )
-        )
-
-        (when (!= (re-multi-type (peekchr)) NOT_MULTI)
-            (emsg (u8 "E871: (NFA regexp) Can't have a multi follow a multi !"))
-            (reset! rc_did_emsg true)
-            ((ß RETURN) false)
-        )
-
-        true
+                (if (!= (re-multi-type (peekchr)) NOT_MULTI)
+                    (do (emsg (u8 "E871: (NFA regexp) Can't have a multi follow a multi !"))
+                        (reset! rc_did_emsg true)
+                        false)
+                    true)
+            ))
     ))
 
 ;; Parse one or more pieces, concatenated.  It matches a match for the
