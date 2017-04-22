@@ -2590,34 +2590,30 @@
         nil
     ))
 
-;; try to get the code for "t_kb" from the stty setting
+;; Try to get the code for "t_kb" from the stty setting.
 ;;
-;; Even if termcap claims a backspace key, the user's setting *should*
-;; prevail.  stty knows more about reality than termcap does, and if
-;; somebody's usual erase key is DEL (which, for most BSD users, it will
-;; be), they're going to get really annoyed if their erase key starts
-;; doing forward deletes for no reason.
+;; Even if termcap claims a backspace key, the user's setting *should* prevail.
+;; stty knows more about reality than termcap does, and if somebody's usual erase
+;; key is DEL (which, for most BSD users, it will be), they're going to get really
+;; annoyed if their erase key starts doing forward deletes for no reason.
 
 (defn- #_void get-stty []
-    (§ let [#_termios_C keys (new termios_C)]
-        (when (!= (.tcgetattr libc @read_cmd_fd, keys) -1)
-        (let [#_Bytes buf (Bytes. 2)]
-            (.be buf 0, (.c_verase keys))
-            (reset! intr_char (.c_vintr keys))
-            (eos! buf 1)
-            (add-termcode (u8 "kb"), buf)
+    (let-when [#_termios_C keys (ß new termios_C)] (!= (ß .tcgetattr libc @read_cmd_fd, keys) -1)
+        (let [#_Bytes t (-> (Bytes. 2) (.be 0, (ß .c_verase keys)) (eos! 1))]
+            (reset! intr_char (ß .c_vintr keys))
+            (add-termcode (u8 "kb"), t)
             ;; If <BS> and <DEL> are now the same, redefine <DEL>.
-            (let [#_Bytes p (find-termcode (u8 "kD"))]
-                (when (and (some? p) (at? p 0 (.at buf 0)) (at? p 1 (.at buf 1)))
-                    (ex-fixdel nil))
-            ))
-        ))
+            (let-when [#_Bytes s (find-termcode (u8 "kD"))] (and (some? s) (at? s 0 (.at t 0)) (at? s 1 (.at t 1)))
+                (ex-fixdel nil)
+            )))
     nil)
 
-;; Try to get the current window size:
+;; Try to get the current window size.
+;;
 ;; 1. with an ioctl(), most accurate method
 ;; 2. from the environment variables LINES and COLUMNS
-;; 4. keep using the old values
+;; x. keep using the old values
+;;
 ;; Return true when size could be determined, false otherwise.
 
 (defn- #_boolean mch-get-shellsize []
@@ -2850,7 +2846,7 @@
     (smsg-attr 0, s, args))
 
 (defn- #_boolean smsg-attr [#_int attr, #_Bytes s, #_Object... args]
-;%% (vim_snprintf @ioBuff, IOSIZE, s, args)
+    (ß vim_snprintf @ioBuff, IOSIZE, s, args)
     (msg-attr @ioBuff, attr))
 
 ;; Return true if not giving error messages right now:
@@ -4582,13 +4578,13 @@
             (let-when [m (min-rows)] (< @Rows m)
                 (reset! Rows m)
                 (let [#_Bytes errbuf (Bytes. 80)]
-;%%                 (vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), m)
+                    (ß vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), m)
                     (reset! a'errmsg errbuf)
                 ))
             (let-when [m MIN_COLS] (< @Cols m)
                 (reset! Cols m)
                 (let [#_Bytes errbuf (Bytes. 80)]
-;%%                 (vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), m)
+                    (ß vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), m)
                     (reset! a'errmsg errbuf)
                 ))
         )
@@ -4962,15 +4958,15 @@
                         (if (and (vim-isprintc c) (or (< c (byte \space)) (< (byte \~) c)))
                             (let [#_Bytes buf3 (Bytes. 7)]
                                 (transchar-nonprint buf3, c)
-;%%                             (vim_snprintf buf1, (.size buf1), (u8 "  <%s>"), buf3)
+                                (ß vim_snprintf buf1, (.size buf1), (u8 "  <%s>"), buf3)
                             )
                             (eos! buf1)
                         )
                         (if (<= 0x80 c)
-;%%                         (vim_snprintf buf2, (.size buf2), (u8 "  <M-%s>"), (transchar (& c 0x7f)))
+                            (ß vim_snprintf buf2, (.size buf2), (u8 "  <M-%s>"), (transchar (& c 0x7f)))
                             (eos! buf2)
                         )
-;%%                     (vim_snprintf buf, IOSIZE, (u8 "<%s>%s%s  %d,  Hex %02x,  Octal %03o"), (transchar c), buf1, buf2, c, c, c)
+                        (ß vim_snprintf buf, IOSIZE, (u8 "<%s>%s%s  %d,  Hex %02x,  Octal %03o"), (transchar c), buf1, buf2, c, c, c)
                         [(aget cc 0) 1]
                     )
                     [c 0]
@@ -4983,7 +4979,7 @@
                       n                         (do (.be buf n, (byte \<))     (inc n))
                       n (if (utf-iscomposing c) (do (.be buf n, (byte \space)) (inc n)) n) ;; draw composing char on top of a space
                       n (+ n (utf-char2bytes c, (.plus buf n)))]
-;%%                 (vim_snprintf (.plus buf n), (- IOSIZE n), (if (< c 0x10000) (u8 "> %d, Hex %04x, Octal %o") (u8 "> %d, Hex %08x, Octal %o")), c, c, c)
+                    (ß vim_snprintf (.plus buf n), (- IOSIZE n), (if (< c 0x10000) (u8 "> %d, Hex %04x, Octal %o") (u8 "> %d, Hex %08x, Octal %o")), c, c, c)
                     (recur-if (< ci MAX_MCO) [(aget cc ci) (inc ci)])
                 ))
             (msg buf)
@@ -5603,13 +5599,13 @@
                 (STRCPY buf, (u8 "(Interrupted) "))
                 (eos! buf)
             )
-            (§ if (== nsubs 1)
-                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (if count_only (u8 "1 match") (u8 "1 substitution")))
-                (vim_snprintf_add buf, MSG_BUF_LEN, (if count_only (u8 "%ld matches") (u8 "%ld substitutions")), nsubs)
+            (if (== nsubs 1)
+                (ß vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (if count_only (u8 "1 match") (u8 "1 substitution")))
+                (ß vim_snprintf_add buf, MSG_BUF_LEN, (if count_only (u8 "%ld matches") (u8 "%ld substitutions")), nsubs)
             )
-            (§ if (== nlines 1)
-                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (u8 " on 1 line"))
-                (vim_snprintf_add buf, MSG_BUF_LEN, (u8 " on %ld lines"), nlines)
+            (if (== nlines 1)
+                (ß vim_snprintf_add buf, MSG_BUF_LEN, (u8 "%s"), (u8 " on 1 line"))
+                (ß vim_snprintf_add buf, MSG_BUF_LEN, (u8 " on %ld lines"), nlines)
             )
             (when (msg buf) (set-keep-msg buf, 0)) ;; save message to display it after redraw
             true)
@@ -8647,17 +8643,15 @@
             (let [#_boolean cursor_bot (ltpos @VIsual_cursor, (:w_cursor win))
                   [#_long top #_long bot] (if cursor_bot [(:lnum @VIsual_cursor) (:lnum (:w_cursor win))] [(:lnum (:w_cursor win)) (:lnum @VIsual_cursor)])
                   #_long lines (inc (- bot top))]
-
-                (§ cond (== @VIsual_mode Ctrl_V)
+                (cond (== @VIsual_mode Ctrl_V)
                     (let [o'sbr @p_sbr a'leftcol (atom (int)) a'rightcol (atom (int))]
                         ;; Make 'sbr' empty for a moment to get the correct size.
                         (reset! p_sbr EMPTY_OPTION)
                         (getvcols win, (:w_cursor win), @VIsual_cursor, a'leftcol, a'rightcol)
                         (reset! p_sbr o'sbr)
-                        (.sprintf libC showcmd_buf, (u8 "%ldx%ld"), lines, (long (inc (- @a'rightcol @a'leftcol))))
-                    )
+                        (ß .sprintf libC showcmd_buf, (u8 "%ldx%ld"), lines, (inc (- @a'rightcol @a'leftcol))))
                 (or (== @VIsual_mode (byte \V)) (!= (:lnum @VIsual_cursor) (:lnum (:w_cursor win))))
-                    (.sprintf libC showcmd_buf, (u8 "%ld"), lines)
+                    (ß .sprintf libC showcmd_buf, (u8 "%ld"), lines)
                 :else
                     (let [[#_Bytes s #_Bytes e] (if cursor_bot [(ml-get-pos @VIsual_cursor) (ml-get-cursor win)] [(ml-get-cursor win) (ml-get-pos @VIsual_cursor)])
                           [#_int bytes #_int chars]
@@ -8666,21 +8660,19 @@
                                     (recur (+ bytes n) (inc chars) (.plus s n))
                                 ))]
                         (if (== bytes chars)
-                            (.sprintf libC showcmd_buf, (u8 "%d"), chars)
-                            (.sprintf libC showcmd_buf, (u8 "%d-%d"), chars, bytes)
-                        ))
-                )
-
+                            (ß .sprintf libC showcmd_buf, (u8 "%d"), chars)
+                            (ß .sprintf libC showcmd_buf, (u8 "%d-%d"), chars, bytes))
+                    ))
                 (eos! showcmd_buf SHOWCMD_COLS)      ;; truncate
                 (reset! showcmd_visual true)
-                (display-showcmd)
-            )
+                (display-showcmd))
             (do
                 (eos! showcmd_buf)
                 (reset! showcmd_visual false)
                 ;; Don't actually display something if there is nothing to clear.
-                (when-not @showcmd_is_clear (display-showcmd))
-            )
+                (when-not @showcmd_is_clear
+                    (display-showcmd)
+                ))
         ))
     nil)
 
@@ -8835,37 +8827,42 @@
 ;; Command character that's ignored.
 ;; Used for CTRL-Q and CTRL-S to avoid problems with terminals that use xon/xoff.
 
-(defn- #_[window_C cmdarg_C] nv-ignore [#_window_C win, #_cmdarg_C cap]
-    (update cap :retval | CA_COMMAND_BUSY)      ;; don't call edit() now
+(defn- #_[window_C cmdarg_C] nv-ignore [#_window_C win, #_cmdarg_C cap]
+    [win (update cap :retval | CA_COMMAND_BUSY)] ;; don't call edit() now
 )
 
 ;; Command character that doesn't do anything, but unlike nv-ignore()
 ;; does start edit().  Used for "startinsert" executed while starting up.
 
-(defn- #_[window_C cmdarg_C] nv-nop [#_window_C win, #_cmdarg_C cap]
-    cap)
+(defn- #_[window_C cmdarg_C] nv-nop [#_window_C win, #_cmdarg_C cap]
+    [win cap])
 
 ;; Command character doesn't exist.
 
-(defn- #_[window_C cmdarg_C] nv-error [#_window_C win, #_cmdarg_C cap]
-    (clearopbeep cap))
+(defn- #_[window_C cmdarg_C] nv-error [#_window_C win, #_cmdarg_C cap]
+    [win (clearopbeep cap)])
 
 ;; CTRL-A and CTRL-X: Add or subtract from letter or number under cursor.
 
-(defn- #_[window_C cmdarg_C] nv-addsub [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
-        (when (do-addsub (:cmdchar cap), (:count1 cap))
-            (prep-redo-cmd cap))
-        cap
+(defn- #_[window_C cmdarg_C] nv-addsub [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
+        (let [[win ?] (do-addsub win, (:cmdchar cap), (:count1 cap))]
+            (when ?
+                (prep-redo-cmd cap))
+            [win cap]
+        )
     ))
 
 ;; CTRL-F, CTRL-B, etc: Scroll page up or down.
 
-(defn- #_[window_C cmdarg_C] nv-page [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-        (when (non-flag? @mod_mask MOD_MASK_CTRL)
-            (swap! curwin onepage (:arg cap), (:count1 cap)))
-        cap
+(defn- #_[window_C cmdarg_C] nv-page [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+        (let [win (if (non-flag? @mod_mask MOD_MASK_CTRL)
+                    (onepage win, (:arg cap), (:count1 cap))
+                    win
+                )]
+            [win cap]
+        )
     ))
 
 ;; Move "dist" screen rows in direction "dir".
@@ -8955,10 +8952,9 @@
 ;; Handle CTRL-E and CTRL-Y commands: scroll a line up or down.
 ;; cap.arg must be TRUE for CTRL-E.
 
-(defn- #_[window_C cmdarg_C] nv-scroll-line [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-        (swap! curwin scroll-redraw (non-zero? (:arg cap)), (:count1 cap))
-        cap
+(defn- #_[window_C cmdarg_C] nv-scroll-line [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+        [(scroll-redraw win, (non-zero? (:arg cap)), (:count1 cap)) cap]
     ))
 
 ;; Scroll "count" lines up or down, and redraw.
@@ -8987,8 +8983,8 @@
 
 ;; Commands that start with "z".
 
-(defn- #_[window_C cmdarg_C] nv-zet [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-zet [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
         (let-when [nchar (:nchar cap)
               [cap nchar]
                 (if (asc-isdigit nchar) ;; "z123{nchar}": edit the count before obtaining {nchar}
@@ -9004,19 +9000,12 @@
                                 :else                                             [(clearopbeep cap) nil])
                         ))
                     [cap nchar]
-                )] (some? nchar) => cap
+                )] (some? nchar) => [win cap]
 
-            (let [win @curwin
-                  ;; For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":  If line number given, set cursor.
-                  win (if (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor win))))
-                        (-> win
-                            (setpcmark)
-                            (assoc-in [:w_cursor :lnum] (min (:count0 cap) (line-count @curbuf)))
-                            (check-cursor-col))
-                        win)
+            (let [wrap @(:wo_wrap (:w_options win)) lmax (line-count @curbuf)
                   -t- (fn [win cap y? x?]
                         (let [win (if (and y? (zero? (:count0 cap))) ;; No count given: put cursor at the line below screen.
-                                    (let [win (validate-botline win)] (assoc-in win [:w_cursor :lnum] (min (:w_botline win) (line-count @curbuf))))
+                                    (let [win (validate-botline win)] (assoc-in win [:w_cursor :lnum] (min (:w_botline win) lmax)))
                                     win)
                               win (if (or y? x?) (beginline win, (| BL_WHITE BL_FIX)) win)]
                             [(-> win (scroll-cursor-top 0, true) (redraw-later VALID)) cap]
@@ -9042,7 +9031,7 @@
                         ))
                   -h- (fn [win cap z?]
                         (let [cap (if z? (update cap :count1 * (/ (:w_width win) 2)) cap)
-                              win (if (not @(:wo_wrap (:w_options win)))
+                              win (if (not wrap)
                                     (let [win (assoc win :w_leftcol (max 0 (- (:w_leftcol win) (:count1 cap))))]
                                         (leftcol-changed win))
                                     win
@@ -9051,69 +9040,75 @@
                         ))
                   -l- (fn [win cap z?]
                         (let [cap (if z? (update cap :count1 * (/ (:w_width win) 2)) cap)
-                              win (if (not @(:wo_wrap (:w_options win)))
+                              win (if (not wrap)
                                     (let [win (update win :w_leftcol + (:count1 cap))]
                                         (leftcol-changed win))
                                     win
                                 )]
                             [win cap]
                         ))
-                  [win cap]
-                    (condp ==? nchar
-
-                        (byte \+)           (-t- win, cap, :y?, :x?)            ;; put cursor at top of screen
-                       [NL CAR K_KENTER]    (-t- win, cap, nil, :x?)
-                        (byte \t)           (-t- win, cap, nil, nil)
-
-                        (byte \.)           (-z- win, cap, :z?)                 ;; put cursor in middle of screen
-                        (byte \z)           (-z- win, cap, nil)
-
-                        (byte \^)           (-b- win, cap, :y?, :x?)            ;; put cursor at bottom of screen
-                        (byte \-)           (-b- win, cap, nil, :x?)
-                        (byte \b)           (-b- win, cap, nil, nil)
-
-                        (byte \H)           (-h- win, cap, :z?)                 ;; scroll screen right half-page
-                       [(byte \h) K_LEFT]   (-h- win, cap, nil)                 ;; scroll screen to the right
-
-                        (byte \L)           (-l- win, cap, :z?)                 ;; scroll screen left half-page
-                       [(byte \l) K_RIGHT]  (-l- win, cap, nil)                 ;; scroll screen to the left
-
-                        (byte \s)                                               ;; scroll screen, cursor at the start
-                            (let [win (if (not @(:wo_wrap (:w_options win)))
-                                        (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), a'col, nil, nil)
-                                              _ (reset! a'col (max 0 (- @a'col @p_siso)))]
-                                            (if (!= (:w_leftcol win) @a'col)
-                                                (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
-                                                win
-                                            ))
-                                        win
-                                    )]
-                                [win cap])
-
-                        (byte \e)                                               ;; scroll screen, cursor at the end
-                            (let [win (if (not @(:wo_wrap (:w_options win)))
-                                        (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), nil, nil, a'col)
-                                            n (- (:w_width win) (win-col-off win))
-                                            _ (reset! a'col (max 0 (inc (+ @a'col (- @p_siso n)))))]
-                                            (if (!= (:w_leftcol win) @a'col)
-                                                (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
-                                                win
-                                            ))
-                                        win
-                                    )]
-                                [win cap])
-
-                        [win (clearopbeep cap)]
+                  ;; For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":  If line number given, set cursor.
+                  win (if (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor win))))
+                        (-> win
+                            (setpcmark)
+                            (assoc-in [:w_cursor :lnum] (min (:count0 cap) lmax))
+                            (check-cursor-col))
+                        win
                     )]
-                (do (reset! curwin win) cap)
+
+                (condp ==? nchar
+
+                    (byte \+)           (-t- win, cap, :y?, :x?)            ;; put cursor at top of screen
+                   [NL CAR K_KENTER]    (-t- win, cap, nil, :x?)
+                    (byte \t)           (-t- win, cap, nil, nil)
+
+                    (byte \.)           (-z- win, cap, :z?)                 ;; put cursor in middle of screen
+                    (byte \z)           (-z- win, cap, nil)
+
+                    (byte \^)           (-b- win, cap, :y?, :x?)            ;; put cursor at bottom of screen
+                    (byte \-)           (-b- win, cap, nil, :x?)
+                    (byte \b)           (-b- win, cap, nil, nil)
+
+                    (byte \H)           (-h- win, cap, :z?)                 ;; scroll screen right half-page
+                   [(byte \h) K_LEFT]   (-h- win, cap, nil)                 ;; scroll screen to the right
+
+                    (byte \L)           (-l- win, cap, :z?)                 ;; scroll screen left half-page
+                   [(byte \l) K_RIGHT]  (-l- win, cap, nil)                 ;; scroll screen to the left
+
+                    (byte \s)                                               ;; scroll screen, cursor at the start
+                        (let [win (if (not wrap)
+                                    (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), a'col, nil, nil)
+                                          _ (reset! a'col (max 0 (- @a'col @p_siso)))]
+                                        (if (!= (:w_leftcol win) @a'col)
+                                            (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
+                                            win
+                                        ))
+                                    win
+                                )]
+                            [win cap])
+
+                    (byte \e)                                               ;; scroll screen, cursor at the end
+                        (let [win (if (not wrap)
+                                    (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), nil, nil, a'col)
+                                        n (- (:w_width win) (win-col-off win))
+                                        _ (reset! a'col (max 0 (inc (+ @a'col (- @p_siso n)))))]
+                                        (if (!= (:w_leftcol win) @a'col)
+                                            (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
+                                            win
+                                        ))
+                                    win
+                                )]
+                            [win cap])
+
+                    [win (clearopbeep cap)])
             ))
     ))
 
 ;; Handle a ":" command.
 
-(defn- #_[window_C cmdarg_C] nv-colon [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-colon [#_window_C win, #_cmdarg_C cap]
     (if @VIsual_active
-        (nv-operator cap)
+        (nv-operator win, cap)
         (let [cap (if (!= (:op_type (:oap cap)) OP_NOP)
                     ;; using ":" as a movement is characterwise exclusive
                     (update cap :oap assoc :motion_type MCHAR :inclusive false)
@@ -9135,61 +9130,60 @@
                     (reset! restart_edit (if @p_im (byte \i) 0)))
                 (let [start (:op_start (:oap cap)) lmax (line-count @curbuf)]
                     (cond (not ?)
-                        (clearop cap) ;; the Ex command failed, do not execute the operator
+                        [win (clearop cap)] ;; the Ex command failed, do not execute the operator
                     (and (!= (:op_type (:oap cap)) OP_NOP) (or (< lmax (:lnum start)) (< (STRLEN (ml-get (:lnum start))) (:col start)) @did_emsg))
-                        (clearopbeep cap) ;; the start of the operator has become invalid by the Ex command
+                        [win (clearopbeep cap)] ;; the start of the operator has become invalid by the Ex command
                     :else
-                        cap
+                        [win cap]
                     ))
             ))
     ))
 
 ;; Handle CTRL-G command.
 
-(defn- #_[window_C cmdarg_C] nv-ctrlg [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-ctrlg [#_window_C win, #_cmdarg_C cap]
     (cond @VIsual_active ;; toggle Selection/Visual mode
-        (do (swap! VIsual_select not) (showmode) cap)
+        (do (swap! VIsual_select not) (showmode) [win cap])
     :else
-        (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-            (do (fileinfo (:count0 cap)) cap) ;; print full name if count given
+        (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+            [(fileinfo win, (:count0 cap)) cap] ;; print full name if count given
         )
     ))
 
 ;; Handle CTRL-H <Backspace> command.
 
-(defn- #_[window_C cmdarg_C] nv-ctrlh [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-ctrlh [#_window_C win, #_cmdarg_C cap]
     (if (and @VIsual_active @VIsual_select)
-        (v-visop (assoc cap :cmdchar (byte \x))) ;; BS key behaves like 'x' in Select mode
-        (nv-left cap)
+        (v-visop win, (assoc cap :cmdchar (byte \x))) ;; BS key behaves like 'x' in Select mode
+        (nv-left win, cap)
     ))
 
 ;; CTRL-L: clear screen and redraw.
 
-(defn- #_[window_C cmdarg_C] nv-clear [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearop? cap)] (not ?) => cap
-        (swap! curwin redraw-later CLEAR)
-        cap
+(defn- #_[window_C cmdarg_C] nv-clear [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearop? cap)] (not ?) => [win cap]
+        [(redraw-later win, CLEAR) cap]
     ))
 
 ;; CTRL-O: In Select mode: switch to Visual mode for one command.
 ;; Otherwise: Go to older pcmark.
 
-(defn- #_[window_C cmdarg_C] nv-ctrlo [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-ctrlo [#_window_C win, #_cmdarg_C cap]
     (if (and @VIsual_active @VIsual_select)
         (do (reset! VIsual_select false)
             (showmode)
             (reset! restart_VIsual_select 2) ;; restart Select mode later
-            cap)
-        (nv-pcmark (update cap :count1 -))
+            [win cap])
+        (nv-pcmark win, (update cap :count1 -))
     ))
 
 ;; "Z" commands.
 
-(defn- #_[window_C cmdarg_C] nv-Zet [#_window_C win, #_cmdarg_C cap]
-    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => cap
+(defn- #_[window_C cmdarg_C] nv-Zet [#_window_C win, #_cmdarg_C cap]
+    (let-when [[cap ?] (checkclearopq? cap)] (not ?) => [win cap]
         (condp == (:nchar cap)
-            (byte \Z) (do (do-cmdline-cmd (u8 "x")) cap) ;; "ZZ": equivalent to ":x".
-            (clearopbeep cap)
+            (byte \Z) (do (do-cmdline-cmd (u8 "x")) [win cap]) ;; "ZZ": equivalent to ":x".
+            [win (clearopbeep cap)]
         )
     ))
 
@@ -9453,36 +9447,36 @@
 ;; Cursor up commands.
 ;; cap.arg is TRUE for "-": Move cursor to first non-blank.
 
-(defn- #_[window_C cmdarg_C] nv-up [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-up [#_window_C win, #_cmdarg_C cap]
     (cond (flag? @mod_mask MOD_MASK_SHIFT) ;; <S-Up> is page up
-        (nv-page (assoc cap :arg BACKWARD))
+        (nv-page win, (assoc cap :arg BACKWARD))
     :else
-        (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
-            (cond (not (let [[_ ?] (cursor-up? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))] (reset! curwin _) ?))
-                (clearopbeep cap)
+        (let [cap (assoc-in cap [:oap :motion_type] MLINE) [win ?] (cursor-up? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
+            (cond (not ?)
+                [win (clearopbeep cap)]
             (non-zero? (:arg cap))
-                (do (swap! curwin beginline (| BL_WHITE BL_FIX)) cap)
+                [(beginline win, (| BL_WHITE BL_FIX)) cap]
             :else
-                cap
+                [win cap]
             ))
     ))
 
 ;; Cursor down commands.
 ;; cap.arg is TRUE for CR and "+": Move cursor to first non-blank.
 
-(defn- #_[window_C cmdarg_C] nv-down [#_window_C win, #_cmdarg_C cap]
+(defn- #_[window_C cmdarg_C] nv-down [#_window_C win, #_cmdarg_C cap]
     (cond (flag? @mod_mask MOD_MASK_SHIFT) ;; <S-Down> is page down
-        (nv-page (assoc cap :arg FORWARD))
+        (nv-page win, (assoc cap :arg FORWARD))
     (and (non-zero? @cmdwin_type) (== (:cmdchar cap) CAR)) ;; in the cmdline window a <CR> executes the command
-        (do (reset! cmdwin_result CAR) cap)
+        (do (reset! cmdwin_result CAR) [win cap])
     :else
-        (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
-            (cond (not (let [[_ ?] (cursor-down? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))] (reset! curwin _) ?))
-                (clearopbeep cap)
+        (let [cap (assoc-in cap [:oap :motion_type] MLINE) [win ?] (cursor-down? win, (:count1 cap), (== (:op_type (:oap cap)) OP_NOP))]
+            (cond (not ?)
+                [win (clearopbeep cap)]
             (non-zero? (:arg cap))
-                (do (swap! curwin beginline (| BL_WHITE BL_FIX)) cap)
+                [(beginline win, (| BL_WHITE BL_FIX)) cap]
             :else
-                cap
+                [win cap]
             ))
     ))
 
@@ -9496,12 +9490,12 @@
 ;; Handle the "$" command.
 
 (defn- #_[window_C cmdarg_C] nv-dollar [#_window_C win, #_cmdarg_C cap]
-    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true) nop (== (:op_type (:oap cap)) OP_NOP)]
+    (let [cap (update cap :oap assoc :motion_type MCHAR :inclusive true) nop? (== (:op_type (:oap cap)) OP_NOP)]
         ;; In virtual mode when off the edge of a line and an operator is pending (whew!) keep the cursor where it is.
         ;; Otherwise, send it to the end of the line.
-        (when (or (not (virtual-active)) (!= (gchar-cursor win) NUL) nop)
+        (when (or (not (virtual-active)) (!= (gchar-cursor win) NUL) nop?)
             (swap! curwin assoc :w_curswant MAXCOL))     ;; so we stay at the end
-        (let [[_ ?] (cursor-down? win, (dec (:count1 cap)), nop) _ (reset! curwin _)]
+        (let [[_ ?] (cursor-down? win, (dec (:count1 cap)), nop?) _ (reset! curwin _)]
             (if (not ?)
                 (clearopbeep cap)
                 cap
@@ -13253,110 +13247,110 @@
 
 (final int NUMBUFLEN 30)        ;; length of a buffer to store a number in ASCII
 
-(atom! boolean hexupper)                                ;; 0xABC
+(atom! boolean hexupper)        ;; 0xABC
 
-;; add/subtract 'Prenum1' to/from a number in a line
-;; 'command' is CTRL-A for add, CTRL-X for subtract
+;; Add/subtract "Prenum1" to/from a number at cursor.
+;; "command" is CTRL-A for add, CTRL-X for subtract.
 ;;
-;; return false for failure, true otherwise
+;; Return false for failure, true otherwise.
 
-(defn- #_boolean do-addsub [#_int command, #_long Prenum1]
+(defn- #_[window_C boolean] do-addsub [#_window_C win, #_int command, #_long Prenum1]
     (let-when [nf @(:b_p_nf @curbuf)
           #_boolean dohex (some? (vim-strchr nf, (byte \x)))   ;; "heXadecimal"
           #_boolean dooct (some? (vim-strchr nf, (byte \o)))   ;; "Octal"
           #_boolean doalp (some? (vim-strchr nf, (byte \p)))   ;; "alPha"
-          #_Bytes s (ml-get (:lnum (:w_cursor @curwin)))
+          #_Bytes s (ml-get (:lnum (:w_cursor win)))
           ;; First check if we are on a hexadecimal number, after the "0x".
-          #_int col (:col (:w_cursor @curwin))
+          #_int col (:col (:w_cursor win))
           col (if dohex (loop-when-recur col (and (< 0 col) (asc-isxdigit (.at s col))) (dec col) => col) col)
           col (if (and dohex (< 0 col) (or (at? s col (byte \X)) (at? s col (byte \x))) (at? s (dec col) (byte \0)) (asc-isxdigit (.at s (inc col))))
                 ;; Found hexadecimal number, move to its start.
                 (dec col)
                 ;; Search forward and then backward to find the start of number.
-                (let [col (:col (:w_cursor @curwin))
+                (let [col (:col (:w_cursor win))
                       col (loop-when-recur col (and (non-eos? s col) (not (asc-isdigit (.at s col))) (not (and doalp (asc-isalpha (.at s col))))) (inc col) => col)
                       col (loop-when-recur col (and (< 0 col) (asc-isdigit (.at s (dec col))) (not (and doalp (asc-isalpha (.at s col))))) (dec col) => col)]
                     col))
           ;; If a number was found, and saving for undo works, replace the number.
           #_int d (.at s col)
-    ] (and (or (asc-isdigit d) (and doalp (asc-isalpha d))) (u-save-cursor)) => (do (beep-flush) false)
+    ] (and (or (asc-isdigit d) (and doalp (asc-isalpha d))) (u-save-cursor)) => (do (beep-flush) [win false])
+
         ;; get 's' again, because u-save() may have changed it
-        (let [s (ml-get (:lnum (:w_cursor @curwin)))]
-            (cond (and doalp (asc-isalpha d))
-                ;; decrement or increment alphabetic character
-                (let [d (if (== command Ctrl_X)
-                            (if (<       (alphaOrd d)    Prenum1) (if (asc-isupper d) (byte \A) (byte \a)) (- d Prenum1))
-                            (if (< (- 26 (alphaOrd d) 1) Prenum1) (if (asc-isupper d) (byte \Z) (byte \z)) (+ d Prenum1))
-                        )]
-                    (swap! curwin assoc-in [:w_cursor :col] col)
-                    (swap! curwin del-char false)
-                    (swap! curwin ins-char d))
-            :else
-                (let [[col #_boolean negative] (if (and (< 0 col) (at? s (dec col) (byte \-))) [(dec col) true] [col false])
-                      a'hex (atom (int))            ;; 'X' or 'x': hex; '0': octal
-                      a'len (atom (int 0))          ;; character length of the number
-                      a'n (atom (long))]
-                    ;; get the number value (unsigned)
-                    (vim-str2nr (.plus s col), a'hex, a'len, dooct, dohex, a'n)
-                    (when (neg? @a'n) (swap! a'n -))
-                    ;; ignore leading '-' for hex and octal numbers
-                    (let [[col negative] (if (and (non-zero? @a'hex) negative) (do (swap! a'len dec) [(inc col) false]) [col negative])
-                          #_boolean subtract (== command Ctrl_X) subtract (if negative (not subtract) subtract)
-                          #_long oldn @a'n
-                          _ (swap! a'n (if subtract - +) Prenum1)
-                          #_final #_long roof 0x7fffffffffffffff
-                          _ (swap! a'n & roof)
-                          ;; handle wraparound for decimal numbers
-                          negative
-                            (if (zero? @a'hex)
-                                (let [negative (if subtract
-                                            (if (< oldn @a'n) (do (swap! a'n #(inc (bit-xor % roof))) (not negative)) negative)
-                                            (if (< @a'n oldn) (do (swap! a'n        bit-xor   roof)   (not negative)) negative)
-                                        )]
-                                    (if (zero? @a'n) false negative))
-                                negative
+        (let [s (ml-get (:lnum (:w_cursor win)))
+              win (cond (and doalp (asc-isalpha d))
+                    ;; decrement or increment alphabetic character
+                    (let [d (if (== command Ctrl_X)
+                                (if (<       (alphaOrd d)    Prenum1) (if (asc-isupper d) (byte \A) (byte \a)) (- d Prenum1))
+                                (if (< (- 26 (alphaOrd d) 1) Prenum1) (if (asc-isupper d) (byte \Z) (byte \z)) (+ d Prenum1))
                             )]
-                        ;; Delete the old number.
-                        (swap! curwin assoc-in [:w_cursor :col] col)
-                        (let [#_int n @a'len #_int c (gchar-cursor @curwin)]
-                            ;; Don't include the '-' in the length.
-                            (when (== c (byte \-)) (swap! a'len dec))
-                            (loop-when-recur [n n c c] (< 0 n) [(dec n) (gchar-cursor @curwin)]
-                                (when (and (< c 0x100) (asc-isalpha c))
-                                    (reset! hexupper (asc-isupper c)))
-                                ;; del-char() will mark line needing displaying
-                                (swap! curwin del-char false)
-                            ))
-                        ;; Prepare the leading characters in buf1[].
-                        ;; When there are many leading zeros it could be very long.
-                        ;; Allocate a bit too much.
-                        (let [#_Bytes buf1 (Bytes. (+ @a'len NUMBUFLEN)) s buf1
-                              s (if negative (-> s (.be 0, (byte \-)) (.plus 1)) s)
-                              s (if (non-zero? @a'hex) (do (swap! a'len dec) (-> s (.be 0, (byte \0)) (.plus 1))) s)
-                              s (if (or (== @a'hex (byte \x)) (== @a'hex (byte \X))) (do (swap! a'len dec) (-> s (.be 0, @a'hex) (.plus 1))) s)
-                              ;; Put the number characters in buf2[].
-                              #_Bytes buf2 (Bytes. NUMBUFLEN)]
-                            (§ cond
-                                (zero? @a'hex)                     (.sprintf libC buf2, (u8 "%ld"), @a'n)
-                                (== @a'hex (byte \0))              (.sprintf libC buf2, (u8 "%lo"), @a'n)
-                                (and (non-zero? @a'hex) @hexupper) (.sprintf libC buf2, (u8 "%lX"), @a'n)
-                                :else                              (.sprintf libC buf2, (u8 "%lx"), @a'n)
-                            )
-                            (swap! a'len - (STRLEN buf2))
-                            ;; Adjust number of zeros to the new number of digits,
-                            ;; so the total length of the number remains the same.
-                            ;; Don't do this when the result may look like an octal number.
-                            (let [s (if (and (== d (byte \0)) (not (and dooct (zero? @a'hex))))
-                                        (loop-when-recur s (<= 0 (swap! a'len dec)) (-> s (.be 0, (byte \0)) (.plus 1)) => s)
-                                        s)]
-                                (eos! s)
-                                (STRCAT buf1, buf2)
-                                (swap! curwin ins-str buf1))          ;; insert the new number
+                        (-> win (assoc-in [:w_cursor :col] col) (del-char false) (ins-char d)))
+                :else
+                    (let [[col #_boolean negative] (if (and (< 0 col) (at? s (dec col) (byte \-))) [(dec col) true] [col false])
+                          a'hex (atom (int))            ;; 'X' or 'x': hex; '0': octal
+                          a'len (atom (int 0))          ;; character length of the number
+                          a'n (atom (long))]
+                        ;; get the number value (unsigned)
+                        (vim-str2nr (.plus s col), a'hex, a'len, dooct, dohex, a'n)
+                        (when (neg? @a'n) (swap! a'n -))
+                        ;; ignore leading '-' for hex and octal numbers
+                        (let [[col negative] (if (and (non-zero? @a'hex) negative) (do (swap! a'len dec) [(inc col) false]) [col negative])
+                              #_boolean subtract (== command Ctrl_X) subtract (if negative (not subtract) subtract)
+                              #_long oldn @a'n
+                              _ (swap! a'n (if subtract - +) Prenum1)
+                              #_final #_long roof 0x7fffffffffffffff
+                              _ (swap! a'n & roof)
+                              ;; handle wraparound for decimal numbers
+                              negative
+                                (if (zero? @a'hex)
+                                    (let [negative (if subtract
+                                                (if (< oldn @a'n) (do (swap! a'n #(inc (bit-xor % roof))) (not negative)) negative)
+                                                (if (< @a'n oldn) (do (swap! a'n        bit-xor   roof)   (not negative)) negative)
+                                            )]
+                                        (if (zero? @a'n) false negative))
+                                    negative)
+                              ;; Delete the old number.
+                              win (assoc-in win [:w_cursor :col] col)
+                              win (let [#_int n @a'len #_int c (gchar-cursor win)]
+                                    ;; Don't include the '-' in the length.
+                                    (when (== c (byte \-)) (swap! a'len dec))
+                                    (loop-when [win win n n c c] (< 0 n) => win
+                                        (when (and (< c 0x100) (asc-isalpha c))
+                                            (reset! hexupper (asc-isupper c)))
+                                        ;; del-char() will mark line needing displaying
+                                        (let [win (del-char win, false)]
+                                            (recur win (dec n) (gchar-cursor win))
+                                        ))
+                                )]
+                            ;; Prepare the leading characters in buf1[].
+                            ;; When there are many leading zeros it could be very long.
+                            ;; Allocate a bit too much.
+                            (let [#_Bytes buf1 (Bytes. (+ @a'len NUMBUFLEN)) s buf1
+                                  s (if negative (-> s (.be 0, (byte \-)) (.plus 1)) s)
+                                  s (if (non-zero? @a'hex) (do (swap! a'len dec) (-> s (.be 0, (byte \0)) (.plus 1))) s)
+                                  s (if (or (== @a'hex (byte \x)) (== @a'hex (byte \X))) (do (swap! a'len dec) (-> s (.be 0, @a'hex) (.plus 1))) s)
+                                  ;; Put the number characters in buf2[].
+                                  #_Bytes buf2 (Bytes. NUMBUFLEN)]
+                                (cond
+                                    (zero? @a'hex)                     (ß .sprintf libC buf2, (u8 "%ld"), @a'n)
+                                    (== @a'hex (byte \0))              (ß .sprintf libC buf2, (u8 "%lo"), @a'n)
+                                    (and (non-zero? @a'hex) @hexupper) (ß .sprintf libC buf2, (u8 "%lX"), @a'n)
+                                    :else                              (ß .sprintf libC buf2, (u8 "%lx"), @a'n)
+                                )
+                                (swap! a'len - (STRLEN buf2))
+                                ;; Adjust number of zeros to the new number of digits,
+                                ;; so the total length of the number remains the same.
+                                ;; Don't do this when the result may look like an octal number.
+                                (let [s (if (and (== d (byte \0)) (not (and dooct (zero? @a'hex))))
+                                            (loop-when-recur s (<= 0 (swap! a'len dec)) (-> s (.be 0, (byte \0)) (.plus 1)) => s)
+                                            s)]
+                                    (eos! s)
+                                    (STRCAT buf1, buf2)
+                                    (ins-str win, buf1) ;; insert the new number
+                                ))
                         ))
-                ))
-            (swap! curwin update-in [:w_cursor :col] dec)
-            (swap! curwin assoc :w_set_curswant true)
-        true)
+                )]
+            [(-> win (update-in [:w_cursor :col] dec) (assoc :w_set_curswant true)) true]
+        )
     ))
 
 ;; Count the number of bytes, characters and "words" in a line.
@@ -13451,14 +13445,14 @@
                         (recur miles (inc lnum)))
                 )] (some? _) => win
 
-            (§ let [#_Bytes buf (Bytes. IOSIZE) win (if @VIsual_active
+            (let [#_Bytes buf (Bytes. IOSIZE) win (if @VIsual_active
                         (let [#_Bytes buf1 (Bytes. 50)]
                             (if (and (== @VIsual_mode Ctrl_V) (< (:w_curswant win) MAXCOL))
-;%%                             (vim_snprintf buf1, (.size buf1), (u8 "%ld Cols; "), (inc (- (:end_vcol oparg) (:start_vcol oparg))))
+                                (ß vim_snprintf buf1, (.size buf1), (u8 "%ld Cols; "), (inc (- (:end_vcol oparg) (:start_vcol oparg))))
                                 (eos! buf1))
                             (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
-;%%                             (vim_snprintf buf, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf1, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
-;%%                             (vim_snprintf buf, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf1, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                                (ß vim_snprintf buf, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf1, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+                                (ß vim_snprintf buf, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf1, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
                             )
                             win)
                         (let [#_Bytes s (ml-get (:lnum (:w_cursor win))) #_Bytes buf1 (Bytes. 50) #_Bytes buf2 (Bytes. 40)
@@ -13466,8 +13460,8 @@
                             (col-print buf1, (.size buf1), (inc (:col (:w_cursor win))), (inc (:w_virtcol win)))
                             (col-print buf2, (.size buf2), (STRLEN s), (linetabsize s))
                             (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
-;%%                             (vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
-;%%                             (vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                                (ß vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+                                (ß vim_snprintf buf, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
                             )
                             win)
                     )]
@@ -15971,7 +15965,7 @@
     ;; Only digits need special treatment.  Translate them into a string of three digits.
     (if (asc-isdigit c)
         (let [#_Bytes buf (Bytes. 10)]
-;%%         (vim_snprintf buf, (.size buf), (u8 "%03d"), c)
+            (ß vim_snprintf buf, (.size buf), (u8 "%03d"), c)
             (append-redo buf))
         (append-redo-char c))
     nil)
@@ -28578,44 +28572,45 @@
 
 ;; Print info about the current buffer.
 
-(defn- #_void fileinfo [#_int _fullname]
-    (let [lnum (:lnum (:w_cursor @curwin)) lmax (line-count @curbuf)
+(defn- #_window_C fileinfo [#_window_C win, #_int _fullname]
+    (let [lnum (:lnum (:w_cursor win)) lmax (line-count @curbuf)
           #_Bytes buf (Bytes. IOSIZE)]
-        (let [#_Bytes p (-> buf (.be 0, (byte \")) (.plus 1))] ;; """
-            (vim-strncpy p, (u8 "[No Name]"), (- IOSIZE (BDIFF p, buf) 1)))
-;%%     (vim_snprintf_add buf, IOSIZE, (u8 "\"%s"), (if @(:b_changed @curbuf) (u8 " [Modified] ") (u8 " ")))
-        (let [#_int n (int (/ (* lnum 100) lmax))]
-;%%         (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
-;%%             (vim_snprintf_add buf, IOSIZE, (u8 "%s"), no_lines_msg)
-;%%         @p_ru ;; Current line and column are already on the screen.
-;%%             (if (== lmax 1)
-;%%                 (vim_snprintf_add buf, IOSIZE, (u8 "1 line --%d%%--"), n)
-;%%                 (vim_snprintf_add buf, IOSIZE, (u8 "%ld lines --%d%%--"), lmax, n))
-;%%         :else
-;%%         (do
-;%%             (vim_snprintf_add buf, IOSIZE, (u8 "line %ld of %ld --%d%%-- col "), lnum, lmax, n)
-;%%             (swap! curwin validate-virtcol)
-;%%             (let [#_int len (STRLEN buf)]
-;%%                 (col-print (.plus buf len), (- IOSIZE len), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin))))
-;%%         ))
-            ;; Temporarily set msg_scroll to avoid the message being truncated.
+        (let [#_Bytes s (-> buf (.be 0, (byte \")) (.plus 1))] ;; """
+            (vim-strncpy s, (u8 "[No Name]"), (- IOSIZE (BDIFF s, buf) 1)))
+        (ß vim_snprintf_add buf, IOSIZE, (u8 "\"%s"), (if @(:b_changed @curbuf) (u8 " [Modified] ") (u8 " ")))
+        (let [#_int n (int (/ (* lnum 100) lmax))
+              win (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
+                    (do (ß vim_snprintf_add buf, IOSIZE, (u8 "%s"), no_lines_msg)
+                        win)
+                @p_ru ;; Current line and column are already on the screen.
+                    (do (if (== lmax 1)
+                            (ß vim_snprintf_add buf, IOSIZE, (u8 "1 line --%d%%--"), n)
+                            (ß vim_snprintf_add buf, IOSIZE, (u8 "%ld lines --%d%%--"), lmax, n))
+                        win)
+                :else
+                    (let [_ (ß vim_snprintf_add buf, IOSIZE, (u8 "line %ld of %ld --%d%%-- col "), lnum, lmax, n)
+                          #_int len (STRLEN buf) win (validate-virtcol win)]
+                        (col-print (.plus buf len), (- IOSIZE len), (inc (:col (:w_cursor win))), (inc (:w_virtcol win)))
+                        win)
+                )]
+            ;; Temporarily set "msg_scroll" to avoid the message being truncated.
             ;; First call msg-start() to get the message in the right place.
             (msg-start)
             (let [_ @msg_scroll] (reset! msg_scroll true) (msg buf) (reset! msg_scroll _))
-        ))
-    nil)
+            win
+        )
+    ))
 
 (defn- #_void col-print [#_Bytes buf, #_int buflen, #_int col, #_int vcol]
-;%% (if (== col vcol)
-;%%     (vim_snprintf buf, buflen, (u8 "%d"), col)
-;%%     (vim_snprintf buf, buflen, (u8 "%d-%d"), col, vcol)
-;%% )
+    (if (== col vcol)
+        (ß vim_snprintf buf, buflen, (u8 "%d"), col)
+        (ß vim_snprintf buf, buflen, (u8 "%d-%d"), col, vcol))
     nil)
 
 ;; Get relative cursor position in window into "buf[buflen]", in the form 99%, using "Top", "Bot" or "All" when appropriate.
 
 (defn- #_void get-rel-pos [#_window_C win, #_Bytes buf, #_int buflen]
-    (if (<= 3 buflen) ;; need at least 3 chars for writing
+    (when (<= 3 buflen) ;; need at least 3 chars for writing
         ;; number of lines above/below window
         (let [above (dec (:w_topline win)) below (inc (- (line-count @curbuf) (:w_botline win)))]
             (cond (<= below 0)
@@ -28624,7 +28619,7 @@
                 (vim-strncpy buf, (u8 "Top"), (dec buflen))
             :else
             (let [cent (if (< 1000000 above) (/ above (/ (+ above below) 100)) (/ (* above 100) (+ above below)))]
-;%%             (vim_snprintf buf, buflen, (u8 "%2d%%"), cent)
+                (ß vim_snprintf buf, buflen, (u8 "%2d%%"), cent)
             ))
         ))
     nil)
@@ -29130,7 +29125,7 @@
 ;; Get a number from a string and skip over it.
 
 (defn- #_long getdigits [#_Bytes' a's]
-    (§ let [n (.atol libC @a's)]
+    (let [n (ß .atol libC @a's)]
         (when (at? @a's (byte \-))                  ;; skip negative sign
             (swap! a's plus 1))
         (swap! a's skipdigits)              ;; skip to next non-digit
@@ -33446,8 +33441,7 @@
             (let [#_Bytes buf (Bytes. MSG_BUF_LEN)]
                 (if (== pn 1)
                     (vim-strncpy buf, (if (< 0 n) (u8 "1 more line") (u8 "1 line less")), (dec MSG_BUF_LEN))
-;%%                 (vim_snprintf buf, MSG_BUF_LEN, (if (< 0 n) (u8 "%ld more lines") (u8 "%ld fewer lines")), pn)
-                )
+                    (ß vim_snprintf buf, MSG_BUF_LEN, (if (< 0 n) (u8 "%ld more lines") (u8 "%ld fewer lines")), pn))
                 (when @got_int
                     (vim-strcat buf, (u8 " (Interrupted)"), MSG_BUF_LEN))
                 (when (msg buf)
@@ -34283,7 +34277,7 @@
 (defn- #_boolean emsg3 [#_Bytes s, #_Bytes a1, #_Bytes a2]
     (or (emsg-not-now) ;; no error messages at the moment
         (do
-;%%         (vim_snprintf @ioBuff, IOSIZE, s, a1, a2)
+            (ß vim_snprintf @ioBuff, IOSIZE, s, a1, a2)
             (emsg @ioBuff)
         )
     ))
@@ -34294,7 +34288,7 @@
 (defn- #_boolean emsgn [#_Bytes s, #_long n]
     (or (emsg-not-now) ;; no error messages at the moment
         (do
-;%%         (vim_snprintf @ioBuff, IOSIZE, s, n)
+            (ß vim_snprintf @ioBuff, IOSIZE, s, n)
             (emsg @ioBuff)
         )
     ))
@@ -35258,16 +35252,15 @@
 ;; Put the timestamp of an undo header in "buf[buflen]" in a nice format.
 
 (defn- #_void u-add-time [#_Bytes buf, #_int buflen, #_long seconds]
-    (§ if (<= 100 (- (._time libC) seconds))
-        (let [#_tm_C curtime (._localtime libC seconds)]
-            (if (< (- (._time libC) seconds) (* 60 60 12))
+    (if (<= 100 (- (ß ._time libC) seconds))
+        (let [#_tm_C curtime (ß ._localtime libC seconds)]
+            (if (< (- (ß ._time libC) seconds) (* 60 60 12))
                 ;; within 12 hours
-                (.strftime libC buf, buflen, (u8 "%H:%M:%S"), curtime)
+                (ß .strftime libC buf, buflen, (u8 "%H:%M:%S"), curtime)
                 ;; longer ago
-                (.strftime libC buf, buflen, (u8 "%Y/%m/%d %H:%M:%S"), curtime)
+                (ß .strftime libC buf, buflen, (u8 "%Y/%m/%d %H:%M:%S"), curtime)
             ))
-;%%     (vim_snprintf buf, buflen, (u8 "%ld seconds ago"), (- (._time libC) seconds))
-    )
+        (ß vim_snprintf buf, buflen, (u8 "%ld seconds ago"), (- (ß ._time libC) seconds)))
     nil)
 
 ;; Get pointer to last added entry.
@@ -37725,7 +37718,7 @@
                                                                 [n fmt]
                                                             ))
                                                     )]
-                                                (§ .sprintf libC s_extra, fmt, wid, n)
+                                                (ß .sprintf libC s_extra, fmt, wid, n)
                                                 (when (< 0 (:w_skipcol win))
                                                     (loop-when-recur [s s_extra] (at? s (byte \space)) [(.plus s 1)]
                                                         (.be s 0, (byte \-))
@@ -39752,7 +39745,7 @@
                         [(+ (:w_winrow win) (:w_height win)) (fillchar-status a'attr, (== win @curwin)) (:w_wincol win) (:w_width win)]
                         [(dec @Rows) (do (reset! a'attr 0) (byte \space)) 0 @Cols])
                   #_final #_int RULER_BUF_LEN 70 #_Bytes s (Bytes. RULER_BUF_LEN)
-;%%               _ (vim_snprintf s, RULER_BUF_LEN, (u8 "%ld,"), (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0 (:lnum (:w_cursor win))))
+                  _ (ß vim_snprintf s, RULER_BUF_LEN, (u8 "%ld,"), (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0 (:lnum (:w_cursor win))))
                   #_int n (STRLEN s)
                   _ (col-print (.plus s n), (- RULER_BUF_LEN n), (if empty 0 (inc (:col (:w_cursor win)))), (inc (:w_virtcol win)))
                   ;; Add a "50%" if there is room for it.
@@ -39971,7 +39964,7 @@
     (let [#_int len (STRLEN cmd)]
         (STRCPY bufp, cmd)
         (when (pos? Prenum)
-;%%         (vim_snprintf (.plus bufp len), (- bufsize len), (u8 "%ld"), Prenum)
+            (ß vim_snprintf (.plus bufp len), (- bufsize len), (u8 "%ld"), Prenum)
         ))
     nil)
 
