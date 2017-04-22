@@ -50189,79 +50189,64 @@
                             0)
                     )]
 
-                ((ß int prev_skipcol =) (:w_skipcol @curwin))
-
-                ((ß int p_lines =) 0)
-                (cond (and (or (<= (:w_height @curwin) (:w_wrow @curwin)) (and (or (< 0 prev_skipcol) (<= (:w_height @curwin) (+ (:w_wrow @curwin) @p_so))) (<= (:w_height @curwin) (- ((ß p_lines =) (plines-win @curwin, (:lnum (:w_cursor @curwin)), false)) 1)))) (!= (:w_height @curwin) 0) (== (:lnum (:w_cursor @curwin)) (:w_topline @curwin)) (< 0 width) (!= (:w_width @curwin) 0))
-                (do
-                    ;; Cursor past end of screen.  Happens with a single line that does
-                    ;; not fit on screen.  Find a skipcol to show the text around the
-                    ;; cursor.  Avoid scrolling all the time. compute value of "extra":
-                    ;; 1: less than "p_so" lines above
-                    ;; 2: less than "p_so" lines below
-                    ;; 3: both of them
-                    ((ß extra =) (if (< (:w_virtcol @curwin) (+ (:w_skipcol @curwin) (* @p_so width))) 1 0))
-                    ;; Compute last display line of the buffer line that we want at the bottom of the window.
-                    ((ß p_lines =) (dec (if (zero? p_lines) (plines-win @curwin, (:lnum (:w_cursor @curwin)), false) p_lines)))
-                    ((ß int n =) (if (< (+ (:w_wrow @curwin) @p_so) p_lines) (+ (:w_wrow @curwin) (int @p_so)) p_lines))
-                    ((ß extra =) (if (<= (+ (:w_height @curwin) (/ (:w_skipcol @curwin) width)) n) (+ extra 2) extra))
-
-                    (cond (or (== extra 3) (< p_lines (* @p_so 2)))
-                    (do
-                        ;; not enough room for 'scrolloff', put cursor in the middle
-                        ((ß n =) (/ (:w_virtcol @curwin) width))
-                        ((ß n =) (if (< (/ (:w_height @curwin) 2) n) (- n (/ (:w_height @curwin) 2)) 0))
-                        ;; don't skip more than necessary
-                        ((ß n =) (min n (inc (- p_lines (:w_height @curwin)))))
-                        (swap! curwin assoc :w_skipcol (* n width))
-                    )
-                    (== extra 1)
-                    (do
-                        ;; less then 'scrolloff' lines above, decrease skipcol
-                        ((ß extra =) (/ (dec (+ (- (+ (:w_skipcol @curwin) (* (int @p_so) width)) (:w_virtcol @curwin)) width)) width))
-                        (when (< 0 extra)
-                            ((ß extra =) (min extra (/ (:w_skipcol @curwin) width)))
-                            (swap! curwin update :w_skipcol - (* extra width))
+                (let [#_int prev_skipcol (:w_skipcol @curwin) a'p_lines (atom (int 0))]
+                    (if (and (or (<= (:w_height @curwin) (:w_wrow @curwin))
+                                 (and (or (< 0 prev_skipcol) (<= (:w_height @curwin) (+ (:w_wrow @curwin) @p_so)))
+                                      (<= (:w_height @curwin) (dec (reset! a'p_lines (plines-win @curwin, (:lnum (:w_cursor @curwin)), false))))))
+                             (!= (:w_height @curwin) 0) (== (:lnum (:w_cursor @curwin)) (:w_topline @curwin)) (< 0 width) (!= (:w_width @curwin) 0))
+                        ;; Cursor past end of screen.  Happens with a single line that does
+                        ;; not fit on screen.  Find a skipcol to show the text around the
+                        ;; cursor.  Avoid scrolling all the time.  Compute value of "extra":
+                        ;; 1: less than "p_so" lines above
+                        ;; 2: less than "p_so" lines below
+                        ;; 3: both of them
+                        (let [extra (if (< (:w_virtcol @curwin) (+ (:w_skipcol @curwin) (* @p_so width))) 1 0)
+                              ;; Compute last display line of the buffer line that we want at the bottom of the window.
+                              _ (swap! a'p_lines #(dec (if (zero? %) (plines-win @curwin, (:lnum (:w_cursor @curwin)), false) %)))
+                              #_int n (min (+ (:w_wrow @curwin) @p_so) @a'p_lines)
+                              extra (if (<= (+ (:w_height @curwin) (/ (:w_skipcol @curwin) width)) n) (+ extra 2) extra)]
+                            (cond (or (== extra 3) (< @a'p_lines (* @p_so 2)))
+                                ;; not enough room for 'scrolloff', put cursor in the middle
+                                (let [n (max 0 (- (/ (:w_virtcol @curwin) width) (/ (:w_height @curwin) 2)))
+                                      ;; don't skip more than necessary
+                                      n (min n (inc (- @a'p_lines (:w_height @curwin))))]
+                                    (swap! curwin assoc :w_skipcol (* n width)))
+                            (== extra 1)
+                                ;; less then 'scrolloff' lines above, decrease skipcol
+                                (let [n (/ (dec (+ (- (+ (:w_skipcol @curwin) (* @p_so width)) (:w_virtcol @curwin)) width)) width)]
+                                    (when (< 0 n)
+                                        (let [n (min n (/ (:w_skipcol @curwin) width))]
+                                            (swap! curwin update :w_skipcol - (* n width)))
+                                    ))
+                            (== extra 2)
+                                (do ;; less then 'scrolloff' lines below, increase skipcol
+                                    (reset! a'endcol (* (inc (- n (:w_height @curwin))) width))
+                                    (while (< (:w_virtcol @curwin) @a'endcol)
+                                        (swap! a'endcol - width))
+                                    (swap! curwin update :w_skipcol max @a'endcol)
+                                ))
+                            (swap! curwin update :w_wrow - (/ (:w_skipcol @curwin) width))
+                            (when (<= (:w_height @curwin) (:w_wrow @curwin))
+                                ;; small window, make sure cursor is in it
+                                (let [n (inc (- (:w_wrow @curwin) (:w_height @curwin)))]
+                                    (swap! curwin update :w_skipcol + (* n width))
+                                    (swap! curwin update :w_wrow - n)
+                                ))
+                            (let [extra (/ (- prev_skipcol (:w_skipcol @curwin)) width)]
+                                (cond
+                                    (< 0 extra) (win-ins-lines @curwin, 0, extra, false, false)
+                                    (< extra 0) (win-del-lines @curwin, 0, (- extra), false, false)
+                                )
+                            )
                         )
-                    )
-                    (== extra 2)
-                    (do
-                        ;; less then 'scrolloff' lines below, increase skipcol
-                        (reset! a'endcol (* (inc (- n (:w_height @curwin))) width))
-                        (while (< (:w_virtcol @curwin) @a'endcol)
-                            (swap! a'endcol - width))
-                        (swap! curwin assoc :w_skipcol (max @a'endcol (:w_skipcol @curwin)))
-                    ))
-
-                    (swap! curwin update :w_wrow - (/ (:w_skipcol @curwin) width))
-                    (when (<= (:w_height @curwin) (:w_wrow @curwin))
-                        ;; small window, make sure cursor is in it
-                        ((ß extra =) (+ (- (:w_wrow @curwin) (:w_height @curwin)) 1))
-                        (swap! curwin update :w_skipcol + (* extra width))
-                        (swap! curwin update :w_wrow - extra)
-                    )
-
-                    ((ß extra =) (/ (- prev_skipcol (:w_skipcol @curwin)) width))
-                    (cond
-                        (< 0 extra) (win-ins-lines @curwin, 0, extra, false, false)
-                        (< extra 0) (win-del-lines @curwin, 0, (- extra), false, false)
-                    )
-                )
-                :else
-                (do
-                    (swap! curwin assoc :w_skipcol 0)
-                ))
-                (when (!= prev_skipcol (:w_skipcol @curwin))
-                    (redraw-win-later @curwin, NOT_VALID))
-
-                ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
-                (when (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
-                    (redraw-win-later @curwin, SOME_VALID))
-
-                (swap! curwin update :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL)
-            )
-        )
-    )
+                        (swap! curwin assoc :w_skipcol 0))
+                    (when (!= prev_skipcol (:w_skipcol @curwin))
+                        (redraw-win-later @curwin, NOT_VALID))
+                    ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
+                    (when (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
+                        (redraw-win-later @curwin, SOME_VALID))
+                    (swap! curwin update :w_valid | VALID_WCOL VALID_WROW VALID_VIRTCOL))
+            )))
     nil)
 
 ;; Scroll the current window down by "n" logical lines.  "CTRL-Y"
