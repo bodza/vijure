@@ -43,7 +43,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(alist barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod dict dictitem except expand file fmark fragnode frame hashtab list listitem lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf typval u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(aentry attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos listitem llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption vimvar wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(aentry attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos listitem llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -1745,8 +1745,8 @@
 
     BV_IMI   21,
     BV_IMS   22,
-    BV_INDE  23,
-    BV_INDK  24,
+
+
     BV_INF   25,
     BV_ISK   26,
     BV_KP    27,
@@ -2686,17 +2686,7 @@
 
         (field long         tv_number)      ;; number value
         (field Bytes        tv_string)      ;; string value (can be null!)
-        (field dict_C       tv_dict)        ;; dict value (can be null!)
     ])
-
-(defn- #_void ZER0_typval [#_typval_C tv]
-    (§
-;       tv.tv_type = 0;
-;       tv.tv_lock = 0;
-;       tv.tv_number = 0;
-;       tv.tv_string = null;
-;       tv.tv_dict = null;
-    ))
 
 (defn- #_void COPY_typval [#_typval_C tv1, #_typval_C tv0]
     (§
@@ -2704,7 +2694,6 @@
 ;       tv1.tv_lock = tv0.tv_lock;
 ;       tv1.tv_number = tv0.tv_number;
 ;       tv1.tv_string = tv0.tv_string;
-;       tv1.tv_dict = tv0.tv_dict;
     ))
 
 (defn- #_typval_C* ARRAY_typval [#_int n]
@@ -2714,8 +2703,7 @@
 (final byte
     VAR_UNKNOWN 0,
     VAR_NUMBER  1,        ;; "tv_number" is used
-    VAR_STRING  2,        ;; "tv_string" is used
-    VAR_DICT    5)        ;; "tv_dict" is used
+    VAR_STRING  2)        ;; "tv_string" is used
 
 ;; Values for "dv_scope".
 (final byte
@@ -2914,9 +2902,6 @@
         (atom' Bytes        b_p_flp)            ;; 'formatlistpat'
         (atom' boolean      b_p_inf)            ;; 'infercase'
         (atom' Bytes        b_p_isk)            ;; 'iskeyword'
-        (atom' Bytes        b_p_inde)           ;; 'indentexpr'
-        (atom' long         b_p_inde_flags)     ;; flags for 'indentexpr'
-        (atom' Bytes        b_p_indk)           ;; 'indentkeys'
         (atom' Bytes        b_p_kp)             ;; 'keywordprg'
         (atom' boolean      b_p_lisp)           ;; 'lisp'
         (atom' Bytes        b_p_mps)            ;; 'matchpairs'
@@ -3000,9 +2985,6 @@
 ; %%    (field int          b_mapped_ctrl_c)    ;; modes where CTRL-C is mapped
     ])
 
-(final int SNAP_AUCMD_IDX 0)
-(final int SNAP_COUNT     1)
-
 ;; Tab pages point to the top frame of each tab page.
 ;; Note: Most values are NOT valid for the current tab page!  Use "curwin",
 ;; "firstwin", etc. for that.  "tp_topframe" is always valid and can be
@@ -3019,7 +3001,6 @@
         (field long         tp_old_Rows)        ;; Rows when Tab page was left
         (field long         tp_old_Columns)     ;; Columns when Tab page was left
         (field long         tp_ch_used)         ;; value of 'cmdheight' when frame size was set
-        (field frame_C*     tp_snapshot     SNAP_COUNT)         ;; window layout snapshots
     ])
 
 ;; Structure to cache info for displayed lines in w_lines[].
@@ -3416,26 +3397,6 @@
 (final int MOUSE_SETPOS       0x08)     ;; only set current mouse position
 (final int MOUSE_MAY_STOP_VIS 0x10)     ;; may stop Visual mode
 (final int MOUSE_RELEASED     0x20)     ;; button was released
-
-;; Defines for Vim variables.  These must match vimvars[] in eval.c!
-(final int
-    VV_COUNT          0,
-    VV_COUNT1         1,
-    VV_ERRMSG         2,
-    VV_WARNINGMSG     3,
-    VV_STATUSMSG      4,
-    VV_LNUM           5,
-    VV_CMDARG         6,
-    VV_DYING          7,
-    VV_REG            8,
-    VV_CMDBANG        9,
-    VV_MOUSE_WIN     10,
-    VV_MOUSE_LNUM    11,
-    VV_MOUSE_COL     12,
-    VV_OP            13,
-    VV_SEARCHFORWARD 14,
-    VV_HLSEARCH      15,
-    VV_LEN           16)      ;; number of v: vars
 
 ;; Selection states for modeless selection.
 (final int SELECT_CLEARED     0)
@@ -3945,7 +3906,6 @@
 (atom! boolean  need_clr_eos)       ;; need to clear text before displaying a message
 (atom! int      emsg_skip)          ;; don't display errors for expression that is skipped
 (atom! boolean  emsg_severe)        ;; use message of next of several emsg() calls for throw
-(atom! dict_C   vimvardict)         ;; dictionary with v: variables
 (atom! boolean  did_emsg)           ;; set by emsg() when the message is displayed or thrown
 (atom! boolean  did_emsg_syntax)    ;; did_emsg set because of a syntax error
 (atom! boolean  called_emsg)        ;; always set by emsg()
@@ -4610,8 +4570,6 @@
 ;       params.argv = argv;
 ;       params.window_count = -1;
 
-;       eval_init();                            ;; init global variables
-
         ;; Init the table of Normal mode commands.
 ;       init_normal_cmds();
 
@@ -4775,15 +4733,6 @@
         ;; start in insert mode
 ;       if (@p_im)
 ;           @need_start_insertmode = true;
-
-        ;; Adjust default register name for "unnamed" in 'clipboard'.  Can only be done
-        ;; after the clipboard is available and all initial commands that may modify
-        ;; the 'clipboard' setting have run; i.e. just before entering the main loop.
-;       {
-;           int default_regname = 0;
-;           default_regname = adjust_clip_reg(default_regname);
-;           set_reg_var(default_regname);
-;       }
 
         ;; If ":startinsert" command used, stuff a dummy command to be
         ;; able to call normal_cmd(), which will then start Insert mode.
@@ -5791,9 +5740,6 @@
         ;; Remember how often we have been called.
 ;       @trap__entered++;
 
-        ;; Set the v:dying variable.
-;       set_vim_var_nr(VV_DYING, @trap__entered);
-
 ;       int i;
 
         ;; try to find the name of this signal
@@ -6587,9 +6533,6 @@
 (defn- #_boolean msg_attr_keep [#_Bytes s, #_int attr, #_boolean keep]
     ;; keep: true: set "keep_msg" if it doesn't scroll
     (§
-;       if (attr == 0)
-;           set_vim_var_string(VV_STATUSMSG, s, -1);
-
         ;; It is possible that displaying a messages causes a problem
         ;; (e.g. when redrawing the window), which causes another message, etc.
         ;; To break this loop, limit the recursiveness to 3 levels.
@@ -6789,9 +6732,6 @@
 ;                   @did_emsg = true;
 ;               return true;
 ;           }
-
-            ;; set "v:errmsg", also when using ":silent! cmd"
-;           set_vim_var_string(VV_ERRMSG, s, -1);
 
             ;; When using ":silent! cmd" ignore error messages.
             ;; But do write it to the redirection file.
@@ -8540,7 +8480,6 @@
         ;; Don't want a hit-enter prompt here.
 ;       @no_wait_return++;
 
-;       set_vim_var_string(VV_WARNINGMSG, message, -1);
 ;       @keep_msg = null;
 ;       if (hl)
 ;           @keep_msg_attr = hl_attr(HLF_W);
@@ -9536,8 +9475,8 @@
 
     PV_IMI  16405,    ;; opt_buf(BV_IMI),
     PV_IMS  16406,    ;; opt_buf(BV_IMS),
-    PV_INDE 16407,    ;; opt_buf(BV_INDE),
-    PV_INDK 16408,    ;; opt_buf(BV_INDK),
+
+
     PV_INF  16409,    ;; opt_buf(BV_INF),
     PV_ISK  16410,    ;; opt_buf(BV_ISK),
     PV_KP   20507,    ;; opt_both(opt_buf(BV_KP)),
@@ -9613,8 +9552,6 @@
 (atom! Bytes   p_flp)
 (atom! long    p_iminsert)
 (atom! long    p_imsearch)
-(atom! Bytes   p_inde)
-(atom! Bytes   p_indk)
 (atom! boolean p_inf)
 (atom! Bytes   p_isk)
 (atom! boolean p_lisp)
@@ -9796,8 +9733,6 @@
         (long_opt (u8 "iminsert"),       (u8 "imi"),       0,                           p_iminsert,  PV_IMI,     B_IMODE_NONE),
         (long_opt (u8 "imsearch"),       (u8 "ims"),       0,                           p_imsearch,  PV_IMS,     B_IMODE_NONE),
         (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        PV_NONE,    false),
-        (utf8_opt (u8 "indentexpr"),     (u8 "inde"),      0,                           p_inde,      PV_INDE,   (u8 "")),
-        (utf8_opt (u8 "indentkeys"),     (u8 "indk"),   (| P_COMMA P_NODUP),            p_indk,      PV_INDK,   (u8 "0{,0},:,0#,!^F,o,O,e")),
         (bool_opt (u8 "infercase"),      (u8 "inf"),       0,                           p_inf,       PV_INF,     false),
         (bool_opt (u8 "insertmode"),     (u8 "im"),        0,                           p_im,        PV_NONE,    false),
         (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       PV_NONE,   (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
@@ -11044,8 +10979,6 @@
     (§
 ;       check_string_option(buf.b_p_fenc);
 ;       check_string_option(buf.b_p_ff);
-;       check_string_option(buf.b_p_inde);
-;       check_string_option(buf.b_p_indk);
 ;       check_string_option(buf.b_p_kp);
 ;       check_string_option(buf.b_p_mps);
 ;       check_string_option(buf.b_p_fo);
@@ -11099,7 +11032,6 @@
 ;           switch (vimoptions[opt_idx].indir)
 ;           {
 ;               case PV_STL:        return @curwin.w_p_stl_flags;
-;               case PV_INDE:       return @curbuf.b_p_inde_flags;
 ;           }
 
         ;; Nothing special, return global flags field.
@@ -12153,7 +12085,6 @@
 ;       else if (varp == p_hls)
 ;       {
 ;           @no_hlsearch = false;
-;           set_vim_var_nr(VV_HLSEARCH, (!@no_hlsearch && @p_hls) ? 1 : 0);
 ;       }
 
         ;; when 'scrollbind' is set:
@@ -13163,8 +13094,6 @@
 ;           case PV_FO:     return @curbuf.b_p_fo;
 ;           case PV_IMI:    return @curbuf.b_p_iminsert;
 ;           case PV_IMS:    return @curbuf.b_p_imsearch;
-;           case PV_INDE:   return @curbuf.b_p_inde;
-;           case PV_INDK:   return @curbuf.b_p_indk;
 ;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
 ;           case PV_LISP:   return @curbuf.b_p_lisp;
@@ -13365,8 +13294,6 @@
 ;               buf.@b_p_cinw = STRDUP(@p_cinw);
 ;               buf.@b_p_lisp = @p_lisp;
 ;               buf.@b_p_smc = @p_smc;
-;               buf.@b_p_inde = STRDUP(@p_inde);
-;               buf.@b_p_indk = STRDUP(@p_indk);
                 ;; This isn't really an option, but copying the langmap and IME
                 ;; state from the current buffer is better than resetting it.
 ;               buf.@b_p_iminsert = @p_iminsert;
@@ -25974,7 +25901,6 @@
 (defn- #_void ex_nohlsearch [#_exarg_C _eap]
     (§
 ;       @no_hlsearch = true;
-;       set_vim_var_nr(VV_HLSEARCH, (!@no_hlsearch && @p_hls) ? 1 : 0);
 ;       redraw_all_later(SOME_VALID);
     ))
 
@@ -26535,18 +26461,8 @@
 
 (final int DICT_MAXNEST 100)        ;; maximum nesting of lists and dicts
 
-(final int DO_NOT_FREE_CNT 99999)   ;; refcount for dict or list that should not be freed.
-
 (final Bytes e_undefvar          (u8 "E121: Undefined variable: %s"))
 (final Bytes e_missbrac          (u8 "E111: Missing ']'"))
-(final Bytes e_listdictarg       (u8 "E712: Argument of %s must be a List or Dictionary"))
-(final Bytes e_emptykey          (u8 "E713: Cannot use empty key for Dictionary"))
-(final Bytes e_dictreq           (u8 "E715: Dictionary required"))
-(final Bytes e_toomanyarg        (u8 "E118: Too many arguments for function: %s"))
-(final Bytes e_dictkey           (u8 "E716: Key not present in Dictionary: %s"))
-(final Bytes e_dictrange         (u8 "E719: Cannot use [:] with a Dictionary"))
-(final Bytes e_letwrong          (u8 "E734: Wrong variable type for %s="))
-(final Bytes e_illvar            (u8 "E461: Illegal variable name: %s"))
 
 ;; When recursively copying lists and dicts we need to remember which ones we
 ;; have done to avoid endless recursiveness.  This unique ID is used for that.
@@ -26560,101 +26476,8 @@
 
 (atom! int echo_attr)   ;; attributes used for ":echo"
 
-;; Array to hold the value of v: variables.
-;; The value is in a dictitem, so that it can also be used in the v: scope.
-;; The reason to use this table anyway is for very quick access to the
-;; variables with the VV_ defines.
-
-;; values for vv_flags:
-(final byte VV_RO           2)      ;; read-only
-(final byte VV_RO_SBX       4)      ;; read-only in the sandbox
-
-(class! #_final vimvar_C
-    [
-        (field Bytes        vv_name)            ;; name of variable, without v:
-        (field dictitem_C   vv_di)              ;; value and name for key
-        (field byte         vv_flags)           ;; VV_RO | VV_RO_SBX
-    ])
-
-(defn- #_vimvar_C new_vimvar [#_Bytes name, #_byte type, #_byte flags]
-    (§
-;       dictitem_C di = dictitem_alloc(name);
-
-;       if ((flags & VV_RO) != 0)
-;           di.di_flags = DI_FLAGS_RO | DI_FLAGS_FIX;
-;       else if ((flags & VV_RO_SBX) != 0)
-;           di.di_flags = DI_FLAGS_RO_SBX | DI_FLAGS_FIX;
-;       else
-;           di.di_flags = DI_FLAGS_FIX;
-;       di.di_tv.tv_type = type;
-
-;       return new vimvar_C(name, di, flags);
-    ))
-
-(final vimvar_C* vimvars
-    [
-        ;; The order here must match the VV_ defines in vim.h!
-
-        (new_vimvar (u8 "count"),         VAR_NUMBER,  VV_RO    ),
-        (new_vimvar (u8 "count1"),        VAR_NUMBER,  VV_RO    ),
-        (new_vimvar (u8 "errmsg"),        VAR_STRING,  (byte 0) ),
-        (new_vimvar (u8 "warningmsg"),    VAR_STRING,  (byte 0) ),
-        (new_vimvar (u8 "statusmsg"),     VAR_STRING,  (byte 0) ),
-        (new_vimvar (u8 "lnum"),          VAR_NUMBER,  VV_RO_SBX),
-        (new_vimvar (u8 "cmdarg"),        VAR_STRING,  VV_RO    ),
-        (new_vimvar (u8 "dying"),         VAR_NUMBER,  VV_RO    ),
-        (new_vimvar (u8 "register"),      VAR_STRING,  VV_RO    ),
-        (new_vimvar (u8 "cmdbang"),       VAR_NUMBER,  VV_RO    ),
-        (new_vimvar (u8 "mouse_win"),     VAR_NUMBER,  (byte 0) ),
-        (new_vimvar (u8 "mouse_lnum"),    VAR_NUMBER,  (byte 0) ),
-        (new_vimvar (u8 "mouse_col"),     VAR_NUMBER,  (byte 0) ),
-        (new_vimvar (u8 "operator"),      VAR_STRING,  VV_RO    ),
-        (new_vimvar (u8 "searchforward"), VAR_NUMBER,  (byte 0) ),
-        (new_vimvar (u8 "hlsearch"),      VAR_NUMBER,  (byte 0) ),
-    ])
-
-(atom! dictitem_C vimvars_var)      ;; variable used for v:
-
 (final int FNE_INCL_BR     1)       ;; find_name_end(): include [] in name
 (final int FNE_CHECK_START 2)       ;; find_name_end(): check name starts with valid character
-
-;; Initialize the global and v: variables.
-
-(defn- #_void eval_init []
-    (§
-;       @vimvardict = §_dict_C();
-;       @vimvars_var = §_dictitem_C();
-;       init_var_dict(@vimvardict, @vimvars_var, VAR_SCOPE);
-;       @vimvardict.dv_lock = VAR_FIXED;
-
-;       for (int i = 0; i < VV_LEN; i++)
-;       {
-;           dictitem_C di = vimvars[i].vv_di;
-
-            ;; add to v: scope dict, unless the value is not always available
-;           if (di.di_tv.tv_type != VAR_UNKNOWN)
-;               hash_add(@vimvardict.dv_hashtab, di, di.di_key);
-;       }
-
-;       set_vim_var_nr(VV_SEARCHFORWARD, 1L);
-;       set_vim_var_nr(VV_HLSEARCH, 1L);
-
-;       set_reg_var(0);                     ;; default for v:register is not 0 but '"'
-    ))
-
-;; Set an internal variable to a string value.  Creates the variable if it does not already exist.
-
-(defn- #_void set_internal_string_var [#_Bytes name, #_Bytes value]
-    (§
-;       Bytes val = STRDUP(value);
-
-;       typval_C tvp = alloc_string_tv(val);
-;       if (tvp != null)
-;       {
-;           set_var(name, tvp, false);
-;           free_tv(tvp);
-;       }
-    ))
 
 ;; Top level evaluation function, returning a boolean.
 ;; Sets "error" to true if there was an error.
@@ -26725,32 +26548,6 @@
 ;       return retval;
     ))
 
-;; Top level evaluation function, returning a number.
-;; Evaluates "expr" silently.
-;; Returns -1 for an error.
-
-(defn- #_int eval_to_number [#_Bytes expr]
-    (§
-;       int retval;
-
-;       Bytes[] p = { skipwhite(expr) };
-
-;       @emsg_off++;
-
-;       typval_C rtv = §_typval_C();
-;       if (eval1(p, rtv, true) == false)
-;           retval = -1;
-;       else
-;       {
-;           retval = (int)get_tv_number_chk(rtv, null);
-;           clear_tv(rtv);
-;       }
-
-;       --@emsg_off;
-
-;       return retval;
-    ))
-
 (defn- #_void set_context_for_expression [#_expand_C xp, #_Bytes arg, #_int cmdidx]
     (§
 ;       boolean got_eq = false;
@@ -26817,33 +26614,6 @@
 ;       }
 
 ;       xp.xp_pattern = arg;
-    ))
-
-;; "unlet" a variable.  Return true if it existed, false if not.
-;; When "forceit" is true don't complain if the variable doesn't exist.
-
-(defn- #_boolean do_unlet [#_Bytes name, #_boolean forceit]
-    (§
-;       Bytes[] varname = new Bytes[1];
-
-;       hashtab_C ht = find_var_ht(name, varname);
-;       if (ht != null && varname[0].at(0) != NUL)
-;       {
-;           hashitem_C hi = hash_find(ht, varname[0]);
-;           if (!hashitem_empty(hi))
-;           {
-;               dictitem_C di = (dictitem_C)hi.hi_data;
-;               if (var_check_fixed(di.di_flags, name) || var_check_ro(di.di_flags, name))
-;                   return false;
-;               delete_var(ht, hi);
-;               return true;
-;           }
-;       }
-;       if (forceit)
-;           return true;
-
-;       emsg2(u8("E108: No such variable: \"%s\""), name);
-;       return false;
     ))
 
 ;; types for expressions
@@ -27201,33 +26971,6 @@
 ;               {
                     ;; For "is" a different type always means false, for "notis" it means true.
 ;                   result = (type == TYPE_NEQUAL);
-;               }
-
-;               else if (rtv.tv_type == VAR_DICT || var2.tv_type == VAR_DICT)
-;               {
-;                   if (type_is)
-;                   {
-;                       result = (rtv.tv_type == var2.tv_type && rtv.tv_dict == var2.tv_dict);
-;                       if (type == TYPE_NEQUAL)
-;                           result = !result;
-;                   }
-;                   else if (rtv.tv_type != var2.tv_type || (type != TYPE_EQUAL && type != TYPE_NEQUAL))
-;                   {
-;                       if (rtv.tv_type != var2.tv_type)
-;                           emsg(u8("E735: Can only compare Dictionary with Dictionary"));
-;                       else
-;                           emsg(u8("E736: Invalid operation for Dictionary"));
-;                       clear_tv(rtv);
-;                       clear_tv(var2);
-;                       return false;
-;                   }
-;                   else
-;                   {
-                        ;; Compare two Dictionaries for being equal or unequal.
-;                       result = dict_equal(rtv.tv_dict, var2.tv_dict, ic, false);
-;                       if (type == TYPE_NEQUAL)
-;                           result = !result;
-;                   }
 ;               }
 
                 ;; If one of the two variables is a number, compare as a number.
@@ -27768,7 +27511,7 @@
 ;       if (evaluate)
 ;       {
 ;           n1 = 0;
-;           if (!empty1 && rtv.tv_type != VAR_DICT)
+;           if (!empty1)
 ;           {
 ;               n1 = (int)get_tv_number(var1);
 ;               clear_tv(var1);
@@ -27824,350 +27567,10 @@
 ;                   rtv.tv_string = s;
 ;                   break;
 ;               }
-
-;               case VAR_DICT:
-;               {
-;                   if (range)
-;                   {
-;                       if (verbose)
-;                           emsg(e_dictrange);
-;                       if (len == -1)
-;                           clear_tv(var1);
-;                       return false;
-;                   }
-
-;                   if (len == -1)
-;                   {
-;                       key = get_tv_string(var1);
-;                       if (key.at(0) == NUL)
-;                       {
-;                           if (verbose)
-;                               emsg(e_emptykey);
-;                           clear_tv(var1);
-;                           return false;
-;                       }
-;                   }
-
-;                   dictitem_C item = dict_find(rtv.tv_dict, key, len);
-
-;                   if (item == null && verbose)
-;                       emsg2(e_dictkey, key);
-;                   if (len == -1)
-;                       clear_tv(var1);
-;                   if (item == null)
-;                       return false;
-
-;                   copy_tv(item.di_tv, var1);
-;                   clear_tv(rtv);
-;                   COPY_typval(rtv, var1);
-;                   break;
-;               }
 ;           }
 ;       }
 
 ;       return true;
-    ))
-
-;; Return true when two dictionaries have exactly the same key/values.
-
-(defn- #_boolean dict_equal [#_dict_C d1, #_dict_C d2, #_boolean ic, #_boolean recursive]
-    ;; ic: ignore case for strings
-    ;; recursive: true when used recursively
-    (§
-;       if (d1 == null || d2 == null)
-;           return false;
-;       if (d1 == d2)
-;           return true;
-;       if (dict_len(d1) != dict_len(d2))
-;           return false;
-
-;       for (int i = 0, todo = (int)d1.dv_hashtab.ht_used; 0 < todo; i++)
-;       {
-;           hashitem_C hi = d1.dv_hashtab.ht_buckets[i];
-;           if (!hashitem_empty(hi))
-;           {
-;               dictitem_C item2 = dict_find(d2, hi.hi_key, -1);
-;               if (item2 == null)
-;                   return false;
-;               if (!tv_equal(((dictitem_C)hi.hi_data).di_tv, item2.di_tv, ic, recursive))
-;                   return false;
-;               --todo;
-;           }
-;       }
-;       return true;
-    ))
-
-(atom! int tv_equal_recurse_limit)
-
-(atom! int recursive_cnt)           ;; catch recursive loops
-
-;; Return true if "tv1" and "tv2" have the same value.
-;; Compares the items just like "==" would compare them, but strings and
-;; numbers are different.  Floats and numbers are also different.
-
-(defn- #_boolean tv_equal [#_typval_C tv1, #_typval_C tv2, #_boolean ic, #_boolean recursive]
-    ;; ic: ignore case
-    ;; recursive: true when used recursively
-    (§
-;       if (tv1.tv_type != tv2.tv_type)
-;           return false;
-
-        ;; Catch lists and dicts that have an endless loop by limiting
-        ;; recursiveness to a limit.  We guess they are equal then.
-        ;; A fixed limit has the problem of still taking an awful long time.
-        ;; Reduce the limit every time running into it.  That should work fine for
-        ;; deeply linked structures that are not recursively linked and catch
-        ;; recursiveness quickly.
-;       if (!recursive)
-;           @tv_equal_recurse_limit = 1000;
-;       if (@tv_equal_recurse_limit <= @recursive_cnt)
-;       {
-;           --@tv_equal_recurse_limit;
-;           return true;
-;       }
-
-;       switch (tv1.tv_type)
-;       {
-;           case VAR_DICT:
-;           {
-;               @recursive_cnt++;
-;               boolean r = dict_equal(tv1.tv_dict, tv2.tv_dict, ic, true);
-;               --@recursive_cnt;
-;               return r;
-;           }
-
-;           case VAR_NUMBER:
-;               return (tv1.tv_number == tv2.tv_number);
-
-;           case VAR_STRING:
-;           {
-;               Bytes s1 = get_tv_string(tv1);
-;               Bytes s2 = get_tv_string(tv2);
-;               return ((ic ? us_strnicmp(s1, s2, MAXCOL) : STRCMP(s1, s2)) == 0);
-;           }
-;       }
-
-;       emsg2(e_intern2, u8("tv_equal()"));
-;       return true;
-    ))
-
-;; Allocate an empty header for a dictionary.
-
-(defn- #_dict_C newDict []
-    (§
-;       dict_C dict = §_dict_C();
-
-;       hash_init(dict.dv_hashtab);
-;       dict.dv_lock = 0;
-;       dict.dv_scope = 0;
-;       dict.dv_refcount = 0;
-;       dict.dv_copyID = 0;
-
-;       return dict;
-    ))
-
-;; Unreference a Dictionary: decrement the reference count and free it when it becomes zero.
-
-(defn- #_void dict_unref [#_dict_C dict]
-    (§
-;       if (dict != null && --dict.dv_refcount <= 0)
-;           dict_free(dict, true);
-    ))
-
-;; Free a Dictionary, including all non-container items it contains.
-;; Ignores the reference count.
-
-(defn- #_void dict_free [#_dict_C dict, #_boolean recurse]
-    ;; recurse: Free Lists and Dictionaries recursively.
-    (§
-        ;; Lock the hashtab, we don't want it to resize while freeing items.
-;       hash_lock(dict.dv_hashtab);
-;       for (int i = 0, todo = (int)dict.dv_hashtab.ht_used; 0 < todo; i++)
-;       {
-;           hashitem_C hi = dict.dv_hashtab.ht_buckets[i];
-;           if (!hashitem_empty(hi))
-;           {
-;               --todo;
-                ;; Remove the item before deleting it,
-                ;; just in case there is something recursive causing trouble.
-;               dictitem_C di = (dictitem_C)hi.hi_data;
-;               hash_remove(dict.dv_hashtab, hi);
-;               if (recurse || di.di_tv.tv_type != VAR_DICT)
-;                   clear_tv(di.di_tv);
-;           }
-;       }
-;       hash_clear(dict.dv_hashtab);
-    ))
-
-;; Allocate a Dictionary item.
-;; The "key" is copied to the new item.
-;; Note that the value of the item "di_tv" still needs to be initialized!
-
-(defn- #_dictitem_C dictitem_alloc [#_Bytes key]
-    (§
-;       dictitem_C di = §_dictitem_C();
-
-;       di.di_key = STRDUP(key);
-
-;       return di;
-    ))
-
-;; Free a dict item.  Also clears the value.
-
-(defn- #_void dictitem_free [#_dictitem_C item]
-    (§
-;       clear_tv(item.di_tv);
-    ))
-
-;; Make a copy of dict "d".  Shallow if "deep" is false.
-;; The refcount of the new dict is set to 1.
-;; See item_copy() for "copyID".
-;; Returns null when out of memory.
-
-(defn- #_dict_C dict_copy [#_dict_C orig, #_boolean deep, #_int copyID]
-    (§
-;       if (orig == null)
-;           return null;
-
-;       dict_C copy = newDict();
-
-;       if (copyID != 0)
-;       {
-;           orig.dv_copyID = copyID;
-;           orig.dv_copydict = copy;
-;       }
-
-;       int todo = (int)orig.dv_hashtab.ht_used;
-;       for (int i = 0; 0 < todo && !@got_int; i++)
-;       {
-;           hashitem_C hi = orig.dv_hashtab.ht_buckets[i];
-;           if (!hashitem_empty(hi))
-;           {
-;               --todo;
-
-;               dictitem_C di = dictitem_alloc(hi.hi_key);
-;               if (deep)
-;               {
-;                   if (item_copy(((dictitem_C)hi.hi_data).di_tv, di.di_tv, deep, copyID) == false)
-;                       break;
-;               }
-;               else
-;                   copy_tv(((dictitem_C)hi.hi_data).di_tv, di.di_tv);
-;               if (!dict_add(copy, di))
-;               {
-;                   dictitem_free(di);
-;                   break;
-;               }
-;           }
-;       }
-
-;       copy.dv_refcount++;
-;       if (0 < todo)
-;       {
-;           dict_unref(copy);
-;           copy = null;
-;       }
-
-;       return copy;
-    ))
-
-;; Add item "item" to Dictionary "d".
-;; Returns false when out of memory and when key already exists.
-
-(defn- #_boolean dict_add [#_dict_C d, #_dictitem_C item]
-    (§
-;       return hash_add(d.dv_hashtab, item, item.di_key);
-    ))
-
-;; Get the number of items in a Dictionary.
-
-(defn- #_long dict_len [#_dict_C dict]
-    (§
-;       if (dict == null)
-;           return 0L;
-
-;       return dict.dv_hashtab.ht_used;
-    ))
-
-;; Find item "key[len]" in Dictionary "d".
-;; If "len" is negative use STRLEN(key).
-;; Returns null when not found.
-
-(defn- #_dictitem_C dict_find [#_dict_C d, #_Bytes key, #_int len]
-    (§
-;       final int AKEYLEN = 200;
-;       Bytes buf = new Bytes(AKEYLEN);
-
-;       Bytes akey;
-;       Bytes tofree = null;
-
-;       if (len < 0)
-;           akey = key;
-;       else if (AKEYLEN <= len)
-;           tofree = akey = STRNDUP(key, len);
-;       else
-;       {
-            ;; Avoid a calloc/free by using buf[].
-;           vim_strncpy(buf, key, len);
-;           akey = buf;
-;       }
-
-;       hashitem_C hi = hash_find(d.dv_hashtab, akey);
-;       if (hashitem_empty(hi))
-;           return null;
-
-;       return (dictitem_C)hi.hi_data;
-    ))
-
-;; Return an allocated string with the string representation of a Dictionary.
-;; May return null.
-
-(defn- #_Bytes dict2string [#_typval_C tv, #_int copyID]
-    (§
-;       dict_C d = tv.tv_dict;
-;       if (d == null)
-;           return null;
-
-;       barray_C ba = new barray_C(80);
-;       ba_append(ba, (byte)'{');
-
-;       boolean first = true;
-
-;       int todo = (int)d.dv_hashtab.ht_used;
-;       for (int i = 0; 0 < todo && !@got_int; i++)
-;       {
-;           hashitem_C hi = d.dv_hashtab.ht_buckets[i];
-;           if (!hashitem_empty(hi))
-;           {
-;               --todo;
-
-;               if (first)
-;                   first = false;
-;               else
-;                   ba_concat(ba, u8(", "));
-
-;               Bytes s = string_quote(hi.hi_key, false);
-;               if (s != null)
-;                   ba_concat(ba, s);
-;               ba_concat(ba, u8(": "));
-
-;               s = tv2string(((dictitem_C)hi.hi_data).di_tv, copyID);
-;               if (s != null)
-;                   ba_concat(ba, s);
-;               if (s == null || @did_echo_string_emsg)
-;                   break;
-
-;               line_breakcheck();
-;           }
-;       }
-
-;       if (0 < todo)
-;           return null;
-
-;       ba_append(ba, (byte)'}');
-;       ba_append(ba, NUL);
-
-;       return new Bytes(ba.ba_data);
     ))
 
 (atom! int _2_recurse)
@@ -28196,18 +27599,6 @@
 
 ;       switch (tv.tv_type)
 ;       {
-;           case VAR_DICT:
-;               if (tv.tv_dict == null)
-;                   r = null;
-;               else if (copyID != 0 && tv.tv_dict.dv_copyID == copyID)
-;                   r = u8("{...}");
-;               else
-;               {
-;                   tv.tv_dict.dv_copyID = copyID;
-;                   r = dict2string(tv, copyID);
-;               }
-;               break;
-
 ;           case VAR_STRING:
 ;           case VAR_NUMBER:
 ;               r = get_tv_string(tv);
@@ -28221,72 +27612,6 @@
 ;       if (--@_2_recurse == 0)
 ;           @did_echo_string_emsg = false;
 ;       return r;
-    ))
-
-;; Return a string with the string representation of a variable.
-;; Puts quotes around strings, so that they can be parsed back by eval().
-;; May return null.
-
-(defn- #_Bytes tv2string [#_typval_C tv, #_int copyID]
-    (§
-;       switch (tv.tv_type)
-;       {
-;           case VAR_STRING:
-;               return string_quote(tv.tv_string, false);
-
-;           case VAR_NUMBER:
-;           case VAR_DICT:
-;               break;
-
-;           default:
-;               emsg2(e_intern2, u8("tv2string()"));
-;       }
-
-;       return echo_string(tv, copyID);
-    ))
-
-;; Return string "str" in ' quotes, doubling ' characters.
-;; If "str" is null an empty string is assumed.
-;; If "function" is true make it function('string').
-
-(defn- #_Bytes string_quote [#_Bytes str, #_boolean function]
-    (§
-;       int len = function ? 13 : 3;
-;       if (str != null)
-;       {
-;           len += STRLEN(str);
-;           for (Bytes p = str; p.at(0) != NUL; p = p.plus(us_ptr2len_cc(p)))
-;               if (p.at(0) == (byte)'\'')
-;                   len++;
-;       }
-
-;       Bytes s = new Bytes(len);
-;       Bytes r = s;
-;       if (r != null)
-;       {
-;           if (function)
-;           {
-;               STRCPY(r, u8("function('"));
-;               r = r.plus(10);
-;           }
-;           else
-;               (r = r.plus(1)).be(-1, (byte)'\'');
-;           if (str != null)
-;               for (Bytes p = str; p.at(0) != NUL; )
-;               {
-;                   if (p.at(0) == (byte)'\'')
-;                       (r = r.plus(1)).be(-1, (byte)'\'');
-;                   int l = us_ptr2len_cc(p);
-;                   BCOPY(r, p, l);
-;                   r = r.plus(l);
-;                   p = p.plus(l);
-;               }
-;           (r = r.plus(1)).be(-1, (byte)'\'');
-;           if (function)
-;               (r = r.plus(1)).be(-1, (byte)')');
-;           (r = r.plus(1)).be(-1, NUL);
-;       }
-;       return s;
     ))
 
 ;; Function given to expandGeneric() to obtain the list of internal
@@ -28447,72 +27772,6 @@
         ; ;; Darn, evaluating {skip} expression changed the value.
 
 ;       return retval;
-    ))
-
-(atom! pos_C _1_pos (§_pos_C))
-
-;; Translate a String variable into a position.
-;; Returns null when there is an error.
-
-(defn- #_pos_C var2fpos [#_typval_C varp, #_boolean dollar_lnum, #_int* fnum]
-    ;; dollar_lnum: true when $ is last line
-    ;; fnum: set to fnum for '0, 'A, etc.
-    (§
-;       Bytes name = get_tv_string_chk(varp);
-;       if (name == null)
-;           return null;
-;       if (name.at(0) == (byte)'.')                        ;; cursor
-;           return @curwin.w_cursor;
-;       if (name.at(0) == (byte)'v' && name.at(1) == NUL)   ;; Visual start
-;       {
-;           if (@VIsual_active)
-;               return @VIsual;
-
-;           return @curwin.w_cursor;
-;       }
-;       if (name.at(0) == (byte)'\'')                       ;; mark
-;       {
-;           pos_C pp = getmark_buf_fnum(@curbuf, name.at(1), false, fnum);
-;           if (pp == null || pp == NOPOS || pp.lnum <= 0)
-;               return null;
-
-;           return pp;
-;       }
-
-;       @_1_pos.coladd = 0;
-
-;       if (name.at(0) == (byte)'w' && dollar_lnum)
-;       {
-;           @_1_pos.col = 0;
-;           if (name.at(1) == (byte)'0')                ;; "w0": first visible line
-;           {
-;               update_topline();
-;               @_1_pos.lnum = @curwin.w_topline;
-;               return @_1_pos;
-;           }
-;           else if (name.at(1) == (byte)'$')           ;; "w$": last visible line
-;           {
-;               validate_botline();
-;               @_1_pos.lnum = @curwin.w_botline - 1;
-;               return @_1_pos;
-;           }
-;       }
-;       else if (name.at(0) == (byte)'$')               ;; last column or line
-;       {
-;           if (dollar_lnum)
-;           {
-;               @_1_pos.lnum = @curbuf.b_ml.ml_line_count;
-;               @_1_pos.col = 0;
-;           }
-;           else
-;           {
-;               @_1_pos.lnum = @curwin.w_cursor.lnum;
-;               @_1_pos.col = STRLEN(ml_get_curline());
-;           }
-;           return @_1_pos;
-;       }
-
-;       return null;
     ))
 
 ;; Get the length of the name of a function or internal variable.
@@ -28730,98 +27989,6 @@
 ;       return (asc_isalpha(c) || c == '_');
     ))
 
-;; Set number v: variable to "val".
-
-(defn- #_void set_vim_var_nr [#_int idx, #_long val]
-    (§
-;       vimvars[idx].vv_di.di_tv.tv_number = val;
-    ))
-
-;; Set v:count to "count" and v:count1 to "count1".
-
-(defn- #_void set_vcount [#_long count, #_long count1]
-    (§
-;       set_vim_var_nr(VV_COUNT, count);
-;       set_vim_var_nr(VV_COUNT1, count1);
-    ))
-
-;; Set string v: variable to a copy of "val".
-
-(defn- #_void set_vim_var_string [#_int idx, #_Bytes val, #_int len]
-    ;; len: length of "val" to use or -1 (whole string)
-    (§
-;       dictitem_C di = vimvars[idx].vv_di;
-
-;       if (val == null)
-;           di.di_tv.tv_string = null;
-;       else if (len == -1)
-;           di.di_tv.tv_string = STRDUP(val);
-;       else
-;           di.di_tv.tv_string = STRNDUP(val, len);
-    ))
-
-;; Set v:register if needed.
-
-(defn- #_void set_reg_var [#_int c]
-    (§
-;       Bytes regname = new Bytes(1).be(0, (c != 0 && c != ' ') ? (byte)c : (byte)'"');
-
-        ;; Avoid free/alloc when the value is already right.
-;       if (vimvars[VV_REG].vv_di.di_tv.tv_string == null || vimvars[VV_REG].vv_di.di_tv.tv_string.at(0) != c)
-;           set_vim_var_string(VV_REG, regname, 1);
-    ))
-
-;; Set v:cmdarg.
-;; If "eap" != null, use "eap" to generate the value and return the old value.
-;; If "oldarg" != null, restore the value to "oldarg" and return null.
-;; Must always be called in pairs!
-
-(defn- #_Bytes set_cmdarg [#_exarg_C eap, #_Bytes oldarg]
-    (§
-;       Bytes oldval = vimvars[VV_CMDARG].vv_di.di_tv.tv_string;
-;       if (eap == null)
-;       {
-;           vimvars[VV_CMDARG].vv_di.di_tv.tv_string = oldarg;
-;           return null;
-;       }
-
-;       int len;
-;       if (eap.force_bin == FORCE_BIN)
-;           len = 6;
-;       else if (eap.force_bin == FORCE_NOBIN)
-;           len = 8;
-;       else
-;           len = 0;
-
-;       if (eap.read_edit)
-;           len += 7;
-
-;       if (eap.bad_char != 0)
-;           len += 7 + 4;       ;; " ++bad=" + "keep" or "drop"
-
-;       Bytes newval = new Bytes(len + 1);
-
-;       if (eap.force_bin == FORCE_BIN)
-;           libC.sprintf(newval, u8(" ++bin"));
-;       else if (eap.force_bin == FORCE_NOBIN)
-;           libC.sprintf(newval, u8(" ++nobin"));
-;       else
-;           newval.be(0, NUL);
-
-;       if (eap.read_edit)
-;           STRCAT(newval, u8(" ++edit"));
-
-;       if (eap.bad_char == BAD_KEEP)
-;           STRCPY(newval.plus(STRLEN(newval)), u8(" ++bad=keep"));
-;       else if (eap.bad_char == BAD_DROP)
-;           STRCPY(newval.plus(STRLEN(newval)), u8(" ++bad=drop"));
-;       else if (eap.bad_char != 0)
-;           libC.sprintf(newval.plus(STRLEN(newval)), u8(" ++bad=%c"), eap.bad_char);
-
-;       vimvars[VV_CMDARG].vv_di.di_tv.tv_string = newval;
-;       return oldval;
-    ))
-
 ;; Get the value of internal variable "name".
 ;; Return true or false.
 
@@ -28845,15 +28012,6 @@
 ;           atv.tv_type = VAR_NUMBER;
 ;           atv.tv_number = @curbuf.b_changedtick;
 ;           tv = atv;
-;       }
-
-        ;; Check for user-defined variables.
-
-;       else
-;       {
-;           dictitem_C v = find_var(name, null, no_autoload);
-;           if (v != null)
-;               tv = v.di_tv;
 ;       }
 
 ;       boolean ret = true;
@@ -28882,11 +28040,8 @@
     (§
 ;       boolean ret = true;
 
-;       dict_C selfdict = null;
-
 ;       while (ret
 ;               && (arg[0].at(0) == (byte)'['
-;                   || (arg[0].at(0) == (byte)'.' && rtv.tv_type == VAR_DICT)
 ;                   || (arg[0].at(0) == (byte)'(' && !evaluate))
 ;               && !vim_iswhite(arg[0].at(-1)))
 ;       {
@@ -28897,15 +28052,6 @@
 ;           }
 ;           else ;; arg[0][0] == '[' || arg[0][0] == '.'
 ;           {
-;               dict_unref(selfdict);
-;               if (rtv.tv_type == VAR_DICT)
-;               {
-;                   selfdict = rtv.tv_dict;
-;                   if (selfdict != null)
-;                       selfdict.dv_refcount++;
-;               }
-;               else
-;                   selfdict = null;
 ;               if (eval_index(arg, rtv, evaluate, verbose) == false)
 ;               {
 ;                   clear_tv(rtv);
@@ -28914,47 +28060,7 @@
 ;           }
 ;       }
 
-;       dict_unref(selfdict);
-
 ;       return ret;
-    ))
-
-;; Allocate memory for a variable type-value, and assign a string to it.
-;; The string "s" must have been allocated, it is consumed.
-;; Return null for out of memory, the variable otherwise.
-
-(defn- #_typval_C alloc_string_tv [#_Bytes s]
-    (§
-;       typval_C tv = §_typval_C();
-
-;       tv.tv_type = VAR_STRING;
-;       tv.tv_string = s;
-
-;       return tv;
-    ))
-
-;; Free the memory for a variable type-value.
-
-(defn- #_void free_tv [#_typval_C varp]
-    (§
-;       if (varp != null)
-;       {
-;           switch (varp.tv_type)
-;           {
-;               case VAR_STRING:
-;                   varp.tv_string = null;
-;                   break;
-;               case VAR_DICT:
-;                   dict_unref(varp.tv_dict);
-;                   break;
-;               case VAR_NUMBER:
-;               case VAR_UNKNOWN:
-;                   break;
-;               default:
-;                   emsg2(e_intern2, u8("free_tv()"));
-;                   break;
-;           }
-;       }
     ))
 
 ;; Free the memory for a variable value and set the value to null or 0.
@@ -28967,10 +28073,6 @@
 ;           {
 ;               case VAR_STRING:
 ;                   varp.tv_string = null;
-;                   break;
-;               case VAR_DICT:
-;                   dict_unref(varp.tv_dict);
-;                   varp.tv_dict = null;
 ;                   break;
 ;               case VAR_NUMBER:
 ;                   varp.tv_number = 0;
@@ -29010,9 +28112,6 @@
 ;               if (varp.tv_string != null)
 ;                   vim_str2nr(varp.tv_string, null, null, TRUE, TRUE, n);
 ;               return n[0];
-;           case VAR_DICT:
-;               emsg(u8("E728: Using a Dictionary as a Number"));
-;               break;
 ;           default:
 ;               emsg2(e_intern2, u8("get_tv_number()"));
 ;               break;
@@ -29045,9 +28144,6 @@
 ;               Bytes buf = new Bytes(NUMBUFLEN);
 ;               libC.sprintf(buf, u8("%ld"), varp.tv_number);
 ;               return buf;
-;           case VAR_DICT:
-;               emsg(u8("E731: using Dictionary as a String"));
-;               break;
 ;           case VAR_STRING:
 ;               if (varp.tv_string != null)
 ;                   return varp.tv_string;
@@ -29057,312 +28153,6 @@
 ;               break;
 ;       }
 ;       return null;
-    ))
-
-;; Find variable "name" in the list of variables.
-;; Return a pointer to it if found, null if not found.
-;; Careful: "a:0" variables don't have a name.
-;; When "htp" is not null we are writing to the variable, set "htp" to the hashtab_C used.
-
-(defn- #_dictitem_C find_var [#_Bytes name, #_hashtab_C* htp, #_boolean no_autoload]
-    (§
-;       Bytes[] varname = new Bytes[1];
-
-;       hashtab_C ht = find_var_ht(name, varname);
-;       if (htp != null)
-;           htp[0] = ht;
-;       if (ht == null)
-;           return null;
-
-;       return find_var_in_ht(ht, name.at(0), varname[0], no_autoload || htp != null);
-    ))
-
-;; Find variable "varname" in hashtab "ht" with name "htname".
-;; Returns null if not found.
-
-(defn- #_dictitem_C find_var_in_ht [#_hashtab_C ht, #_int htname, #_Bytes varname, #_boolean no_autoload]
-    (§
-;       if (varname.at(0) == NUL)
-;       {
-            ;; Must be something like "s:", otherwise "ht" would be null.
-;           switch (htname)
-;           {
-;               case 'v': return @vimvars_var;
-;           }
-;           return null;
-;       }
-
-;       hashitem_C hi = hash_find(ht, varname);
-;       if (hashitem_empty(hi))
-;           return null;
-
-;       return (dictitem_C)hi.hi_data;
-    ))
-
-;; Find the hashtab used for a variable name.
-;; Set "varname" to the start of name without ':'.
-
-(defn- #_hashtab_C find_var_ht [#_Bytes name, #_Bytes* varname]
-    (§
-;       if (name.at(1) != (byte)':')
-;       {
-            ;; The name must not start with a colon or #.
-;           if (name.at(0) == (byte)':' || name.at(0) == AUTOLOAD_CHAR)
-;               return null;
-;           varname[0] = name;
-
-;           return null;              ;; global variable
-;       }
-;       varname[0] = name.plus(2);
-;       if (name.at(0) == (byte)'g')                                   ;; global variable
-;           return null;
-
-        ;; There must be no ':' or '#' in the rest of the name, unless g: is used.
-
-;       if (vim_strchr(name.plus(2), ':') != null || vim_strchr(name.plus(2), AUTOLOAD_CHAR) != null)
-;           return null;
-;       if (name.at(0) == (byte)'v')                                   ;; v: variable
-;           return @vimvardict.dv_hashtab;
-
-;       return null;
-    ))
-
-;; Get the string value of a (global/local) variable.
-;; Note: see get_tv_string() for how long the pointer remains valid.
-;; Returns null when it doesn't exist.
-
-(defn- #_Bytes get_var_value [#_Bytes name]
-    (§
-;       dictitem_C v = find_var(name, null, false);
-;       if (v == null)
-;           return null;
-
-;       return get_tv_string(v.di_tv);
-    ))
-
-;; Initialize dictionary "dict" as a scope and set variable "dict_var" to point to it.
-
-(defn- #_void init_var_dict [#_dict_C dict, #_dictitem_C dict_var, #_byte scope]
-    (§
-;       hash_init(dict.dv_hashtab);
-;       dict.dv_lock = 0;
-;       dict.dv_scope = scope;
-;       dict.dv_refcount = DO_NOT_FREE_CNT;
-;       dict.dv_copyID = 0;
-
-;       dict_var.di_tv.tv_dict = dict;
-;       dict_var.di_tv.tv_type = VAR_DICT;
-;       dict_var.di_tv.tv_lock = VAR_FIXED;
-;       dict_var.di_flags = DI_FLAGS_RO | DI_FLAGS_FIX;
-;       dict_var.di_key = STRDUP(u8(""));
-    ))
-
-;; Unreference a dictionary initialized by init_var_dict().
-
-(defn- #_void unref_var_dict [#_dict_C dict]
-    (§
-        ;; Now the dict needs to be freed if no one else is using it,
-        ;; go back to normal reference counting.
-;       dict.dv_refcount -= DO_NOT_FREE_CNT - 1;
-;       dict_unref(dict);
-    ))
-
-;; Clean up a list of internal variables.
-;; Frees all allocated variables and the value they contain.
-;; Clears hashtab "ht", does not free it.
-
-(defn- #_void vars_clear [#_hashtab_C ht]
-    (§
-;       vars_clear_ext(ht, true);
-    ))
-
-;; Like vars_clear(), but only free the value if "free_val" is true.
-
-(defn- #_void vars_clear_ext [#_hashtab_C ht, #_boolean free_val]
-    (§
-;       hash_lock(ht);
-;       for (int i = 0, todo = (int)ht.ht_used; 0 < todo; i++)
-;       {
-;           hashitem_C hi = ht.ht_buckets[i];
-;           if (!hashitem_empty(hi))
-;           {
-;               --todo;
-                ;; Free the variable.  Don't remove it from the hashtab,
-                ;; ht_buckets might change then.  hash_clear() takes care of it later.
-;               dictitem_C di = (dictitem_C)hi.hi_data;
-;               if (free_val)
-;                   clear_tv(di.di_tv);
-;           }
-;       }
-;       hash_clear(ht);
-;       ht.ht_used = 0;
-    ))
-
-;; Delete a variable from hashtab "ht" at item "hi".
-;; Clear the variable value and free the dictitem.
-
-(defn- #_void delete_var [#_hashtab_C ht, #_hashitem_C hi]
-    (§
-;       dictitem_C di = (dictitem_C)hi.hi_data;
-
-;       hash_remove(ht, hi);
-;       clear_tv(di.di_tv);
-    ))
-
-;; Set variable "name" to value in "tv".
-;; If the variable already exists, the value is updated.
-;; Otherwise the variable is created.
-
-(defn- #_void set_var [#_Bytes name, #_typval_C tv, #_boolean copy]
-    ;; copy: make copy of value in "tv"
-    (§
-;       Bytes[] varname = new Bytes[1];
-;       hashtab_C ht = find_var_ht(name, varname);
-;       if (ht == null || varname[0].at(0) == NUL)
-;       {
-;           emsg2(e_illvar, name);
-;           return;
-;       }
-
-;       dictitem_C di = find_var_in_ht(ht, 0, varname[0], true);
-;       if (di != null)
-;       {
-            ;; existing variable, need to clear the value
-;           if (var_check_ro(di.di_flags, name) || tv_check_lock(di.di_tv.tv_lock, name))
-;               return;
-
-;           byte t1 = di.di_tv.tv_type, t2 = tv.tv_type;
-;           if (t1 != t2
-;                   && !((t1 == VAR_STRING || t1 == VAR_NUMBER) && (t2 == VAR_STRING || t2 == VAR_NUMBER))
-;                   && !(t1 == VAR_NUMBER && t2 == VAR_NUMBER))
-;           {
-;               emsg2(u8("E706: Variable type mismatch for: %s"), name);
-;               return;
-;           }
-
-            ;; Handle setting internal v: variables separately: we don't change the type.
-
-;           if (ht == @vimvardict.dv_hashtab)
-;           {
-;               if (t1 == VAR_STRING)
-;               {
-;                   if (copy || t2 != VAR_STRING)
-;                       di.di_tv.tv_string = STRDUP(get_tv_string(tv));
-;                   else
-;                   {
-                        ;; Take over the string to avoid an extra alloc/free.
-;                       di.di_tv.tv_string = tv.tv_string;
-;                       tv.tv_string = null;
-;                   }
-;               }
-;               else if (t1 != VAR_NUMBER)
-;                   emsg2(e_intern2, u8("set_var()"));
-;               else
-;               {
-;                   di.di_tv.tv_number = get_tv_number(tv);
-;                   if (STRCMP(varname[0], u8("searchforward")) == 0)
-;                       set_search_direction((di.di_tv.tv_number != 0) ? (byte)'/' : (byte)'?');
-;                   else if (STRCMP(varname[0], u8("hlsearch")) == 0)
-;                   {
-;                       @no_hlsearch = (di.di_tv.tv_number == 0);
-;                       redraw_all_later(SOME_VALID);
-;                   }
-;               }
-;               return;
-;           }
-
-;           clear_tv(di.di_tv);
-;       }
-;       else                    ;; add a new variable
-;       {
-            ;; Can't add "v:" variable.
-;           if (ht == @vimvardict.dv_hashtab)
-;           {
-;               emsg2(e_illvar, name);
-;               return;
-;           }
-
-            ;; Make sure the variable name is valid.
-;           if (!valid_varname(varname[0]))
-;               return;
-
-;           di = dictitem_alloc(varname[0]);
-
-;           if (!hash_add(ht, di, di.di_key))
-;               return;
-;       }
-
-;       if (copy || tv.tv_type == VAR_NUMBER)
-;           copy_tv(tv, di.di_tv);
-;       else
-;       {
-;           COPY_typval(di.di_tv, tv);
-;           di.di_tv.tv_lock = 0;
-;           ZER0_typval(tv);
-;       }
-    ))
-
-;; Return true if di_flags "flags" indicates variable "name" is read-only.
-;; Also give an error message.
-
-(defn- #_boolean var_check_ro [#_int flags, #_Bytes name]
-    (§
-;       if ((flags & DI_FLAGS_RO) != 0)
-;       {
-;           emsg2(e_readonlyvar, name);
-;           return true;
-;       }
-;       if ((flags & DI_FLAGS_RO_SBX) != 0 && @sandbox != 0)
-;       {
-;           emsg2(e_readonlysbx, name);
-;           return true;
-;       }
-;       return false;
-    ))
-
-;; Return true if di_flags "flags" indicates variable "name" is fixed.
-;; Also give an error message.
-
-(defn- #_boolean var_check_fixed [#_int flags, #_Bytes name]
-    (§
-;       if ((flags & DI_FLAGS_FIX) != 0)
-;       {
-;           emsg2(u8("E795: Cannot delete variable %s"), name);
-;           return true;
-;       }
-;       return false;
-    ))
-
-;; Check if a variable name is valid.
-;; Return false and give an error if not.
-
-(defn- #_boolean valid_varname [#_Bytes varname]
-    (§
-;       for (Bytes p = varname; p.at(0) != NUL; p = p.plus(1))
-;           if (!eval_isnamec1(p.at(0)) && (BEQ(p, varname) || !asc_isdigit(p.at(0))) && p.at(0) != AUTOLOAD_CHAR)
-;           {
-;               emsg2(e_illvar, varname);
-;               return false;
-;           }
-;       return true;
-    ))
-
-;; Return true if typeval "tv" is set to be locked (immutable).
-;; Also give an error message, using "name".
-
-(defn- #_boolean tv_check_lock [#_int lock, #_Bytes name]
-    (§
-;       if ((lock & VAR_LOCKED) != 0)
-;       {
-;           emsg2(u8("E741: Value is locked: %s"), (name == null) ? u8("Unknown") : name);
-;           return true;
-;       }
-;       if ((lock & VAR_FIXED) != 0)
-;       {
-;           emsg2(u8("E742: Cannot change value of %s"), (name == null) ? u8("Unknown") : name);
-;           return true;
-;       }
-;       return false;
     ))
 
 ;; Copy the values from typval_C "from" to typval_C "to".
@@ -29388,79 +28178,10 @@
 ;                   to.tv_string = STRDUP(from.tv_string);
 ;               break;
 
-;           case VAR_DICT:
-;               if (from.tv_dict == null)
-;                   to.tv_dict = null;
-;               else
-;               {
-;                   to.tv_dict = from.tv_dict;
-;                   to.tv_dict.dv_refcount++;
-;               }
-;               break;
-
 ;           default:
 ;               emsg2(e_intern2, u8("copy_tv()"));
 ;               break;
 ;       }
-    ))
-
-(atom! int _3_recurse)
-
-;; Make a copy of an item.
-;; Lists and Dictionaries are also copied.  A deep copy if "deep" is set.
-;; For deepcopy() "copyID" is zero for a full copy or the ID for when a
-;; reference to an already copied list/dict can be used.
-;; Returns false or true.
-
-(defn- #_boolean item_copy [#_typval_C from, #_typval_C to, #_boolean deep, #_int copyID]
-    (§
-;       if (DICT_MAXNEST <= @_3_recurse)
-;       {
-;           emsg(u8("E698: variable nested too deep for making a copy"));
-;           return false;
-;       }
-;       @_3_recurse++;
-
-;       boolean ret = true;
-
-;       switch (from.tv_type)
-;       {
-;           case VAR_NUMBER:
-;           case VAR_STRING:
-;           {
-;               copy_tv(from, to);
-;               break;
-;           }
-
-;           case VAR_DICT:
-;           {
-;               to.tv_type = VAR_DICT;
-;               to.tv_lock = 0;
-;               if (from.tv_dict == null)
-;                   to.tv_dict = null;
-;               else if (copyID != 0 && from.tv_dict.dv_copyID == copyID)
-;               {
-                    ;; use the copy made earlier
-;                   to.tv_dict = from.tv_dict.dv_copydict;
-;                   to.tv_dict.dv_refcount++;
-;               }
-;               else
-;                   to.tv_dict = dict_copy(from.tv_dict, deep, copyID);
-;               if (to.tv_dict == null)
-;                   ret = false;
-;               break;
-;           }
-
-;           default:
-;           {
-;               emsg2(e_intern2, u8("item_copy()"));
-;               ret = false;
-;               break;
-;           }
-;       }
-
-;       --@_3_recurse;
-;       return ret;
     ))
 
 ;; ":echo expr1 ..."    print each argument separated with a space, add a newline at the end.
@@ -29662,19 +28383,6 @@
 ;           while (asc_isalpha(p.at(0)))
 ;               p = p.plus(1);
 ;       return p;
-    ))
-
-;; Return true if "name" looks like a builtin function name:
-;; starts with a lower case letter and doesn't contain AUTOLOAD_CHAR.
-;; "len" is the length of "name", or -1 for NUL terminated.
-
-(defn- #_boolean builtin_function [#_Bytes name, #_int len]
-    (§
-;       if (!asc_islower(name.at(0)))
-;           return false;
-
-;       Bytes p = vim_strchr(name, AUTOLOAD_CHAR);
-;       return (p == null) || (0 < len && BLT(name.plus(len), p));
     ))
 
 ;; Perform a substitution on "str" with pattern "pat" and substitute "sub".
@@ -31219,12 +29927,6 @@
 
 ;       @State = NORMAL_BUSY;
 
-        ;; Set v:count here, when called from main() and not a stuffed
-        ;; command, so that v:count can be used in an expression mapping
-        ;; when there is no count.  Do set it for redo.
-;       if (toplevel && readbuf1_empty())
-;           set_vcount_ca(ca);
-
         ;; Get the command character from the user.
 
 ;       int c = safe_vgetc();
@@ -31282,11 +29984,7 @@
 ;                       ca.count0 = ca.count0 * 10 + (c - '0');
 ;                   if (ca.count0 < 0)          ;; got too large!
 ;                       ca.count0 = 999999999L;
-                    ;; Set v:count here, when called from main() and not a stuffed
-                    ;; command, so that v:count can be used in an expression mapping
-                    ;; right after the count.  Do set it for redo.
-;                   if (toplevel && readbuf1_empty())
-;                       set_vcount_ca(ca);
+
 ;                   if (ctrl_w)
 ;                   {
 ;                       @no_mapping++;
@@ -31351,12 +30049,6 @@
 
 ;       ca.opcount = ca.count0;
 ;       ca.count1 = (ca.count0 == 0) ? 1 : ca.count0;
-
-        ;; Only set v:count when called from main() and not a stuffed command.
-        ;; Do set it for redo.
-
-;       if (toplevel && readbuf1_empty())
-;           set_vcount(ca.count0, ca.count1);
 
         ;; Find the command character in the table of commands.
         ;; For CTRL-W we already got nchar when looking for a count.
@@ -31662,13 +30354,6 @@
 ;           if (!@finish_op && oap.op_type == OP_NOP && (idx < 0 || (nv_cmds[idx].cmd_flags & NV_KEEPREG) == 0))
 ;           {
 ;               clearop(oap);
-
-;               int regname = 0;
-
-                ;; Adjust the register according to 'clipboard', so that when
-                ;; "unnamed" is present, it becomes '*' or '+' instead of '"'.
-;               regname = adjust_clip_reg(regname);
-;               set_reg_var(regname);
 ;           }
 
             ;; Get the length of mapped chars again after typing a count,
@@ -31801,18 +30486,6 @@
 
         ;; Save count before an operator for next time.
 ;       @opcount = ca.opcount;
-    ))
-
-;; Set v:count and v:count1 according to "cap".
-
-(defn- #_void set_vcount_ca [#_cmdarg_C cap]
-    (§
-;       long count = cap.count0;
-
-        ;; multiply with cap.opcount the same way as above
-;       if (cap.opcount != 0)
-;           count = cap.opcount * (count == 0 ? 1 : count);
-;       set_vcount(count, (count == 0) ? 1 : count);
     ))
 
 ;; The visual area is remembered for redo.
@@ -32358,7 +31031,7 @@
 ;                           op_reindent(oap, get_lisp_indent);
 ;                           break;
 ;                       }
-;                       op_reindent(oap, (@curbuf.@b_p_inde.at(0) != NUL) ? get_expr_indent : get_c_indent);
+;                       op_reindent(oap, get_c_indent);
 ;                       break;
 ;                   }
 
@@ -35950,7 +34623,6 @@
 ;           {
 ;               COPY_pos(cap.oap.op_start, @curwin.w_cursor);
 ;               cap.oap.op_type = OP_DELETE;
-;               set_op_var(OP_DELETE);
 ;               cap.count1 = 1;
 ;               nv_dollar(cap);
 ;               @finish_op = true;
@@ -36042,7 +34714,6 @@
 ;       {
 ;           cap.oap.regname = cap.@nchar;
 ;           cap.opcount = cap.count0;       ;; remember count before '"'
-;           set_reg_var(cap.oap.regname);
 ;       }
 ;       else
 ;           clearopbeep(cap.oap);
@@ -36814,24 +35485,6 @@
 ;       {
 ;           COPY_pos(cap.oap.op_start, @curwin.w_cursor);
 ;           cap.oap.op_type = op_type;
-;           set_op_var(op_type);
-;       }
-    ))
-
-;; Set v:operator to the characters for "optype".
-
-(defn- #_void set_op_var [#_int optype]
-    (§
-;       Bytes opchars = new Bytes(3);
-
-;       if (optype == OP_NOP)
-;           set_vim_var_string(VV_OP, null, 0);
-;       else
-;       {
-;           opchars.be(0, get_op_char(optype));
-;           opchars.be(1, get_extra_op_char(optype));
-;           opchars.be(2, NUL);
-;           set_vim_var_string(VV_OP, opchars, -1);
 ;       }
     ))
 
@@ -42883,7 +41536,7 @@
 ;       }
     ))
 
-;; move "count" positions in the jump list (count may be negative)
+;; Move "count" positions in the jump list (count may be negative).
 
 (defn- #_pos_C movemark [#_int count]
     (§
@@ -50223,13 +48876,13 @@
 
 (defn- #_boolean cindent_on []
     (§
-;       return (!@p_paste && (@curbuf.@b_p_cin || @curbuf.@b_p_inde.at(0) != NUL));
+;       return (!@p_paste && @curbuf.@b_p_cin);
     ))
 
 ;; Re-indent the current line, based on the current contents of it and the
 ;; surrounding lines.  Fixing the cursor position seems really easy -- I'm very
 ;; confused what all the part that handles Control-T is doing that I'm not.
-;; "getindent" should be "get_c_indent", "get_expr_indent" or "get_lisp_indent".
+;; "getindent" should be "get_c_indent" or "get_lisp_indent".
 
 (defn- #_void fixthisline [#_getindent_F getindent]
     (§
@@ -50267,11 +48920,8 @@
             ;; Can happen with CTRL-Y and CTRL-E on a short line.
 ;           return false;
 
-;       Bytes look;
-;       if (@curbuf.@b_p_inde.at(0) != NUL)
-;           look = @curbuf.@b_p_indk;     ;; 'indentexpr' set: use 'indentkeys'
-;       else
-;           look = @curbuf.@b_p_cink;     ;; 'indentexpr' empty: use 'cinkeys'
+;       Bytes look = @curbuf.@b_p_cink;     ;; 'indentexpr' empty: use 'cinkeys'
+
 ;       while (look.at(0) != NUL)
 ;       {
 ;           boolean try_match;
@@ -65354,7 +64004,6 @@
 ;           if (@p_hls)
 ;               redraw_all_later(SOME_VALID);
 ;           @no_hlsearch = false;
-;           set_vim_var_nr(VV_HLSEARCH, (!@no_hlsearch && @p_hls) ? 1 : 0);
 ;       }
     ))
 
@@ -65416,7 +64065,6 @@
 (defn- #_void reset_search_dir []
     (§
 ;       @spats[0].sp_off.dir = '/';
-;       set_vv_searchforward();
     ))
 
 ;; Set the last search pattern.  For ":let @/ =" and viminfo.
@@ -65429,7 +64077,6 @@
 ;       @spats[idx].magic = magic;
 ;       @spats[idx].no_scs = false;
 ;       @spats[idx].sp_off.dir = '/';
-;       set_vv_searchforward();
 ;       @spats[idx].sp_off.line = false;
 ;       @spats[idx].sp_off.end = false;
 ;       @spats[idx].sp_off.off = 0;
@@ -65831,11 +64478,6 @@
 ;       @spats[0].sp_off.dir = dirc;
     ))
 
-(defn- #_void set_vv_searchforward []
-    (§
-;       set_vim_var_nr(VV_SEARCHFORWARD, (@spats[0].sp_off.dir == '/') ? 1 : 0);
-    ))
-
 ;; Return the number of the first subpat that matched.
 
 (defn- #_int first_submatch [#_regmmatch_C rp]
@@ -65906,10 +64548,8 @@
 ;       if (dirc == 0)
 ;           dirc = @spats[0].sp_off.dir;
 ;       else
-;       {
 ;           @spats[0].sp_off.dir = dirc;
-;           set_vv_searchforward();
-;       }
+
 ;       if ((options & SEARCH_REV) != 0)
 ;       {
 ;           if (dirc == '/')
@@ -65924,7 +64564,6 @@
 ;       {
 ;           redraw_all_later(SOME_VALID);
 ;           @no_hlsearch = false;
-;           set_vim_var_nr(VV_HLSEARCH, (!@no_hlsearch && @p_hls) ? 1 : 0);
 ;       }
 
 ;       end_do_search:
@@ -72306,8 +70945,6 @@
 ;           clear_string_option(buf.b_p_fenc);
 ;           clear_string_option(buf.b_p_ff);
 ;       }
-;       clear_string_option(buf.b_p_inde);
-;       clear_string_option(buf.b_p_indk);
 ;       clear_string_option(buf.b_p_kp);
 ;       clear_string_option(buf.b_p_mps);
 ;       clear_string_option(buf.b_p_fo);
@@ -73199,7 +71836,6 @@
 ;       stl_item_C[] item = ARRAY_stl_item(STL_MAX_ITEM);
 
 ;       final int TMPLEN = 70;
-;       Bytes tmp = new Bytes(TMPLEN);
 
         ;; When the format starts with "%!" then evaluate it as an expression and
         ;; use the result as the actual format string.
@@ -73484,9 +72120,6 @@
 ;                   p.be(0, NUL);
 ;                   p = t[0];
 
-;                   vim_snprintf(tmp, tmp.size(), u8("%d"), @curbuf.b_fnum);
-;                   set_internal_string_var(u8("actual_curbuf"), tmp);
-
 ;                   buffer_C o_curbuf = @curbuf;
 ;                   window_C o_curwin = @curwin;
 ;                   @curwin = wp;
@@ -73496,7 +72129,6 @@
 
 ;                   @curwin = o_curwin;
 ;                   @curbuf = o_curbuf;
-;                   do_unlet(u8("g:actual_curbuf"), true);
 
 ;                   if (str != null && str.at(0) != 0)
 ;                   {
@@ -73541,8 +72173,7 @@
 ;                   }
 ;                   virtcol[0]++;
                     ;; Don't display %V if it's the same as %c.
-;                   if (opt == STL_VIRTCOL_ALT
-;                           && (virtcol[0] == (((@State & INSERT) == 0 && empty_line) ? 0 : wp.w_cursor.col + 1)))
+;                   if (opt == STL_VIRTCOL_ALT && (virtcol[0] == (((@State & INSERT) == 0 && empty_line) ? 0 : wp.w_cursor.col + 1)))
 ;                       break;
 ;                   num = (long)virtcol[0];
 ;                   break;
@@ -73764,9 +72395,6 @@
 ;           }
 ;           else
 ;               item[curitem].type = Empty;
-
-;        /* if (opt == STL_VIM_EXPR)
-            ; */ ;; str FREAK'd anno
 
 ;           if (0 <= num || (!itemisflag && str != null && str.at(0) != NUL))
 ;               prevchar_isflag = false;        ;; Item not null, but not a flag.
@@ -80792,7 +79420,7 @@
             ;; May do indenting after opening a new line.
 
 ;           if (!@p_paste
-;                   && (@curbuf.@b_p_cin || @curbuf.@b_p_inde.at(0) != NUL)
+;                   && @curbuf.@b_p_cin
 ;                   && in_cinkeys(dir == FORWARD
 ;                       ? KEY_OPEN_FORW
 ;                       : KEY_OPEN_BACK, ' ', linewhite(@curwin.w_cursor.lnum)))
@@ -81927,7 +80555,6 @@
 ;           if (@msg_row == (int)@Rows - 1)
 ;               @msg_col = col;
 ;           msg_puts_attr(w_readonly, hl_attr(HLF_W) | MSG_HIST);
-;           set_vim_var_string(VV_WARNINGMSG, w_readonly, -1);
 ;           msg_clr_eos();
 ;           msg_end();
 
@@ -82593,10 +81220,7 @@
 
 (defn- #_void do_c_expr_indent []
     (§
-;       if (@curbuf.@b_p_inde.at(0) != NUL)
-;           fixthisline(get_expr_indent);
-;       else
-;           fixthisline(get_c_indent);
+;       fixthisline(get_c_indent);
     ))
 
 ;; Functions for C-indenting.
@@ -85961,51 +84585,6 @@
 ;           }
 ;       }
 ;       return false;
-    ))
-
-;; Get indent level from 'indentexpr'.
-
-(defn- #_int get_expr_indent []
-    (§
-;       boolean use_sandbox = was_set_insecurely(u8("indentexpr"), OPT_LOCAL);
-
-            ;; Save and restore cursor position and curswant,
-            ;; in case it was changed via :normal commands.
-;       pos_C save_pos = §_pos_C();
-;       COPY_pos(save_pos, @curwin.w_cursor);
-;       int save_curswant = @curwin.w_curswant;
-;       boolean save_set_curswant = @curwin.w_set_curswant;
-
-;       set_vim_var_nr(VV_LNUM, @curwin.w_cursor.lnum);
-
-;       if (use_sandbox)
-;           @sandbox++;
-;       @textlock++;
-
-;       int indent = eval_to_number(@curbuf.@b_p_inde);
-
-;       if (use_sandbox)
-;           --@sandbox;
-;       --@textlock;
-
-            ;; Restore the cursor position so that 'indentexpr' doesn't need to.
-            ;; Pretend to be in Insert mode, allow cursor past end of line for "o" command.
-;       int save_State = @State;
-;       @State = INSERT;
-
-;       COPY_pos(@curwin.w_cursor, save_pos);
-;       @curwin.w_curswant = save_curswant;
-;       @curwin.w_set_curswant = save_set_curswant;
-
-;       check_cursor();
-
-;       @State = save_State;
-
-            ;; If there is an error, just keep the current indent.
-;       if (indent < 0)
-;           indent = get_indent();
-
-;       return indent;
     ))
 
 (defn- #_boolean lisp_match [#_Bytes p]
@@ -91092,8 +89671,6 @@
 ;                   mesg2 = u8("");
 ;               Bytes tbuf = new Bytes(STRLEN(path) + STRLEN(mesg) + STRLEN(mesg2) + 2);
 ;               libC.sprintf(tbuf, mesg, path);
-                ;; Set "warningmsg" before the unimportant and output-specific "mesg2" has been appended.
-;               set_vim_var_string(VV_WARNINGMSG, tbuf, -1);
 ;               if (can_reload)
 ;               {
 ;                   if (mesg2.at(0) != NUL)
@@ -96384,12 +94961,12 @@
 
 ;               if (STRNCASECMP(src[0], u8("<Leader>"), 8) == 0)
 ;               {
-;                   p = get_var_value(u8("g:mapleader"));
+;                   p = null;
 ;                   n = 8;
 ;               }
 ;               else if (STRNCASECMP(src[0], u8("<LocalLeader>"), 13) == 0)
 ;               {
-;                   p = get_var_value(u8("g:maplocalleader"));
+;                   p = null;
 ;                   n = 13;
 ;               }
 
@@ -102382,7 +100959,6 @@
 ;                   if (shl == @search_hl)
 ;                   {
 ;                       @no_hlsearch = true;
-;                       set_vim_var_nr(VV_HLSEARCH, (!@no_hlsearch && @p_hls) ? 1 : 0);
 ;                   }
 ;                   shl.rmm.regprog = null;
 ;                   shl.lnum = 0;
@@ -107222,8 +105798,7 @@
 
 (defn- #_void free_tabpage [#_tabpage_C tp]
     (§
-;       for (int i = 0; i < SNAP_COUNT; i++)
-;           clear_snapshot(tp, i);
+        
     ))
 
 ;; Create a new Tab page with one window.
@@ -109144,377 +107719,6 @@
 ;               }
     ))
 
-;; A snapshot of the window sizes, to restore them after closing the help window.
-;; Only these fields are used:
-;; fr_layout
-;; fr_width
-;; fr_height
-;; fr_next
-;; fr_child
-;; fr_win (only valid for the old curwin, null otherwise)
-
-;; Create a snapshot of the current frame sizes.
-
-(defn- #_void make_snapshot [#_int idx]
-    (§
-;       clear_snapshot(@curtab, idx);
-;       @curtab.tp_snapshot[idx] = make_snapshot_rec(@topframe);
-    ))
-
-(defn- #_frame_C make_snapshot_rec [#_frame_C fr]
-    (§
-;       frame_C snap = §_frame_C();
-
-;       snap.fr_layout = fr.fr_layout;
-;       snap.fr_width = fr.fr_width;
-;       snap.fr_height = fr.fr_height;
-;       if (fr.fr_next != null)
-;           snap.fr_next = make_snapshot_rec(fr.fr_next);
-;       if (fr.fr_child != null)
-;           snap.fr_child = make_snapshot_rec(fr.fr_child);
-;       if (fr.fr_layout == FR_LEAF && fr.fr_win == @curwin)
-;           snap.fr_win = @curwin;
-
-;       return snap;
-    ))
-
-;; Remove any existing snapshot.
-
-(defn- #_void clear_snapshot [#_tabpage_C tp, #_int idx]
-    (§
-;       clear_snapshot_rec(tp.tp_snapshot[idx]);
-;       tp.tp_snapshot[idx] = null;
-    ))
-
-(defn- #_void clear_snapshot_rec [#_frame_C fr]
-    (§
-;       if (fr != null)
-;       {
-;           clear_snapshot_rec(fr.fr_next);
-;           clear_snapshot_rec(fr.fr_child);
-;       }
-    ))
-
-;; Restore a previously created snapshot, if there is any.
-;; This is only done if the screen size didn't change and the window layout is still the same.
-
-(defn- #_void restore_snapshot [#_int idx, #_boolean close_curwin]
-    ;; close_curwin: closing current window
-    (§
-;       if (@curtab.tp_snapshot[idx] != null
-;               && @curtab.tp_snapshot[idx].fr_width == @topframe.fr_width
-;               && @curtab.tp_snapshot[idx].fr_height == @topframe.fr_height
-;               && check_snapshot_rec(@curtab.tp_snapshot[idx], @topframe) == true)
-;       {
-;           window_C wp = restore_snapshot_rec(@curtab.tp_snapshot[idx], @topframe);
-;           win_comp_pos();
-;           if (wp != null && close_curwin)
-;               win_goto(wp);
-;           redraw_all_later(CLEAR);
-;       }
-;       clear_snapshot(@curtab, idx);
-    ))
-
-;; Check if frames "sn" and "fr" have the same layout, same following frames and same children.
-
-(defn- #_boolean check_snapshot_rec [#_frame_C sn, #_frame_C fr]
-    (§
-;       if (sn.fr_layout != fr.fr_layout
-;               || (sn.fr_next == null) != (fr.fr_next == null)
-;               || (sn.fr_child == null) != (fr.fr_child == null)
-;               || (sn.fr_next != null && check_snapshot_rec(sn.fr_next, fr.fr_next) == false)
-;               || (sn.fr_child != null && check_snapshot_rec(sn.fr_child, fr.fr_child) == false))
-;           return false;
-
-;       return true;
-    ))
-
-;; Copy the size of snapshot frame "sn" to frame "fr".  Do the same for all
-;; following frames and children.
-;; Returns a pointer to the old current window, or null.
-
-(defn- #_window_C restore_snapshot_rec [#_frame_C sn, #_frame_C fr]
-    (§
-;       window_C wp = null;
-
-;       fr.fr_height = sn.fr_height;
-;       fr.fr_width = sn.fr_width;
-;       if (fr.fr_layout == FR_LEAF)
-;       {
-;           frame_new_height(fr, fr.fr_height, false, false);
-;           frame_new_width(fr, fr.fr_width, false, false);
-;           wp = sn.fr_win;
-;       }
-;       if (sn.fr_next != null)
-;       {
-;           window_C wp2 = restore_snapshot_rec(sn.fr_next, fr.fr_next);
-;           if (wp2 != null)
-;               wp = wp2;
-;       }
-;       if (sn.fr_child != null)
-;       {
-;           window_C wp2 = restore_snapshot_rec(sn.fr_child, fr.fr_child);
-;           if (wp2 != null)
-;               wp = wp2;
-;       }
-
-;       return wp;
-    ))
-
-;; Set "win" to be the curwin and "tp" to be the current tab page.
-;; restore_win() MUST be called to undo, also when false is returned.
-;; No autocommands will be executed until restore_win() is called.
-;; When "no_display" is true the display won't be affected,
-;; no redraw is triggered, another tabpage access is limited.
-;; Returns false if switching to "win" failed.
-
-(defn- #_boolean switch_win [#_window_C* save_curwin, #_tabpage_C* save_curtab, #_window_C win, #_tabpage_C tp, #_boolean no_display]
-    (§
-;       save_curwin[0] = @curwin;
-;       if (tp != null)
-;       {
-;           save_curtab[0] = @curtab;
-;           if (no_display)
-;           {
-;               @curtab.tp_firstwin = @firstwin;
-;               @curtab.tp_lastwin = @lastwin;
-;               @curtab = tp;
-;               @firstwin = @curtab.tp_firstwin;
-;               @lastwin = @curtab.tp_lastwin;
-;           }
-;           else
-;               goto_tabpage_tp(tp, false, false);
-;       }
-;       if (!win_valid(win))
-;           return false;
-;       @curwin = win;
-;       @curbuf = @curwin.w_buffer;
-;       return true;
-    ))
-
-;; Restore current tabpage and window saved by switch_win(), if still valid.
-;; When "no_display" is true the display won't be affected, no redraw is triggered.
-
-(defn- #_void restore_win [#_window_C save_curwin, #_tabpage_C save_curtab, #_boolean no_display]
-    (§
-;       if (save_curtab != null && valid_tabpage(save_curtab))
-;       {
-;           if (no_display)
-;           {
-;               @curtab.tp_firstwin = @firstwin;
-;               @curtab.tp_lastwin = @lastwin;
-;               @curtab = save_curtab;
-;               @firstwin = @curtab.tp_firstwin;
-;               @lastwin = @curtab.tp_lastwin;
-;           }
-;           else
-;               goto_tabpage_tp(save_curtab, false, false);
-;       }
-;       if (win_valid(save_curwin))
-;       {
-;           @curwin = save_curwin;
-;           @curbuf = @curwin.w_buffer;
-;       }
-    ))
-
-;; Add match to the match list of window 'wp'.
-;; The pattern 'pat' will be highlighted with the group 'grp' with priority 'prio'.
-;; Optionally, a desired ID 'id' can be specified (greater than or equal to 1).
-;; If no particular ID is desired, -1 must be specified for 'id'.
-;; Return ID of added match, -1 on failure.
-
-(defn- #_int match_add [#_window_C wp, #_Bytes grp, #_Bytes pat, #_int prio, #_int id, #_list_C pos_list]
-    (§
-;       regprog_C regprog = null;
-;       int rtype = SOME_VALID;
-
-;       if (grp.at(0) == NUL || (pat != null && pat.at(0) == NUL))
-;           return -1;
-;       if (id < -1 || id == 0)
-;       {
-;           emsgn(u8("E799: Invalid ID: %ld (must be greater than or equal to 1)"), (long)id);
-;           return -1;
-;       }
-;       if (id != -1)
-;       {
-;           for (matchitem_C mi = wp.w_match_head; mi != null; mi = mi.next)
-;               if (mi.id == id)
-;               {
-;                   emsgn(u8("E801: ID already taken: %ld"), (long)id);
-;                   return -1;
-;               }
-;       }
-;       int hlg_id = syn_namen2id(grp, STRLEN(grp));
-;       if (hlg_id == 0)
-;       {
-;           emsg2(e_nogroup, grp);
-;           return -1;
-;       }
-;       if (pat != null && (regprog = vim_regcomp(pat, RE_MAGIC)) == null)
-;       {
-;           emsg2(e_invarg2, pat);
-;           return -1;
-;       }
-
-        ;; Find available match ID.
-;       while (id == -1)
-;       {
-;           matchitem_C mi = wp.w_match_head;
-;           while (mi != null && mi.id != wp.w_next_match_id)
-;               mi = mi.next;
-;           if (mi == null)
-;               id = wp.w_next_match_id;
-;           wp.w_next_match_id++;
-;       }
-
-        ;; Build new match.
-;       matchitem_C m = §_matchitem_C();
-;       m.id = id;
-;       m.priority = prio;
-;       m.pattern = (pat == null) ? null : STRDUP(pat);
-;       m.hlg_id = hlg_id;
-;       m.mi_match.regprog = regprog;
-;       m.mi_match.rmm_ic = false;
-;       m.mi_match.rmm_maxcol = 0;
-
-        ;; Set up position matches.
-;       if (pos_list != null)
-;       {
-;           long toplnum = 0;
-;           long botlnum = 0;
-
-;           int i;
-;           listitem_C li;
-;           for (i = 0, li = pos_list.lv_first; li != null && i < MAXPOSMATCH; i++, li = li.li_next)
-;           {
-;               long lnum = 0;
-;               int col = 0;
-;               int len = 1;
-
-;               if (li.li_tv.tv_type == VAR_NUMBER)
-;               {
-;                   if (li.li_tv.tv_number == 0)
-;                   {
-;                       --i;
-;                       continue;
-;                   }
-;                   m.mi_pos.pm_pos[i].lnum = li.li_tv.tv_number;
-;                   m.mi_pos.pm_pos[i].col = 0;
-;                   m.mi_pos.pm_pos[i].len = 0;
-;               }
-;               else
-;               {
-;                   emsg(u8("List or number required"));
-;                   return -1;
-;               }
-
-;               if (toplnum == 0 || lnum < toplnum)
-;                   toplnum = lnum;
-;               if (botlnum == 0 || lnum >= botlnum)
-;                   botlnum = lnum + 1;
-;           }
-
-            ;; Calculate top and bottom lines for redrawing area.
-;           if (toplnum != 0)
-;           {
-;               if (wp.w_buffer.b_mod_set)
-;               {
-;                   if (wp.w_buffer.b_mod_top > toplnum)
-;                       wp.w_buffer.b_mod_top = toplnum;
-;                   if (wp.w_buffer.b_mod_bot < botlnum)
-;                       wp.w_buffer.b_mod_bot = botlnum;
-;               }
-;               else
-;               {
-;                   wp.w_buffer.b_mod_set = true;
-;                   wp.w_buffer.b_mod_top = toplnum;
-;                   wp.w_buffer.b_mod_bot = botlnum;
-;                   wp.w_buffer.b_mod_xlines = 0;
-;               }
-;               m.mi_pos.toplnum = toplnum;
-;               m.mi_pos.botlnum = botlnum;
-;               rtype = VALID;
-;           }
-;       }
-
-        ;; Insert new match.
-        ;; The match list is in ascending order with regard to the match priorities.
-;       matchitem_C mi = wp.w_match_head;
-;       matchitem_C prev = mi;
-;       while (mi != null && mi.priority <= prio)
-;       {
-;           prev = mi;
-;           mi = mi.next;
-;       }
-;       if (mi == prev)
-;           wp.w_match_head = m;
-;       else
-;           prev.next = m;
-;       m.next = mi;
-
-;       redraw_later(rtype);
-;       return id;
-    ))
-
-;; Delete match with ID 'id' in the match list of window 'wp'.
-;; Print error messages if 'perr' is true.
-
-(defn- #_int match_delete [#_window_C wp, #_int id, #_boolean perr]
-    (§
-;       if (id < 1)
-;       {
-;           if (perr == true)
-;               emsgn(u8("E802: Invalid ID: %ld (must be greater than or equal to 1)"), (long)id);
-;           return -1;
-;       }
-
-;       matchitem_C mi = wp.w_match_head;
-;       matchitem_C prev = mi;
-
-;       while (mi != null && mi.id != id)
-;       {
-;           prev = mi;
-;           mi = mi.next;
-;       }
-;       if (mi == null)
-;       {
-;           if (perr == true)
-;               emsgn(u8("E803: ID not found: %ld"), (long)id);
-;           return -1;
-;       }
-;       if (mi == prev)
-;           wp.w_match_head = mi.next;
-;       else
-;           prev.next = mi.next;
-
-;       mi.mi_match.regprog = null;
-;       mi.pattern = null;
-
-;       int rtype = SOME_VALID;
-;       if (mi.mi_pos.toplnum != 0)
-;       {
-;           buffer_C buf = wp.w_buffer;
-;           if (wp.w_buffer.b_mod_set)
-;           {
-;               if (buf.b_mod_top > mi.mi_pos.toplnum)
-;                   buf.b_mod_top = mi.mi_pos.toplnum;
-;               if (buf.b_mod_bot < mi.mi_pos.botlnum)
-;                   buf.b_mod_bot = mi.mi_pos.botlnum;
-;           }
-;           else
-;           {
-;               buf.b_mod_set = true;
-;               buf.b_mod_top = mi.mi_pos.toplnum;
-;               buf.b_mod_bot = mi.mi_pos.botlnum;
-;               buf.b_mod_xlines = 0;
-;           }
-;           rtype = VALID;
-;       }
-
-;       redraw_later(rtype);
-;       return 0;
-    ))
-
 ;; Delete all matches in the match list of window 'wp'.
 
 (defn- #_void clear_matches [#_window_C wp]
@@ -109527,19 +107731,6 @@
 ;       }
 
 ;       redraw_later(SOME_VALID);
-    ))
-
-;; Get match from ID 'id' in window 'wp'.
-;; Return null if match not found.
-
-(defn- #_matchitem_C get_match [#_window_C wp, #_int id]
-    (§
-;       matchitem_C mi = wp.w_match_head;
-
-;       while (mi != null && mi.id != id)
-;           mi = mi.next;
-
-;       return mi;
     ))
 
 ;; Return true if "topfrp" and its children are at the right height.
