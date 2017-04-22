@@ -3093,40 +3093,29 @@
 
 (atom! int msg__entered)
 
-(defn- #_boolean msg-attr-keep [#_Bytes s, #_int attr, #_boolean keep]
-    ;; keep: true: set "keep_msg" if it doesn't scroll
-    (§
-        ;; It is possible that displaying a messages causes a problem
-        ;; (e.g. when redrawing the window), which causes another message, etc.
-        ;; To break this loop, limit the recursiveness to 3 levels.
-
-        (if (<= 3 @msg__entered)
-            ((ß RETURN) true)
+(defn- #_boolean msg-attr-keep [#_Bytes s, #_int attr, #_boolean keep] ;; keep: true: set "keep_msg" if it doesn't scroll
+    ;; It is possible that displaying a messages causes a problem
+    ;; (e.g. when redrawing the window), which causes another message, etc.
+    ;; To break this loop, limit the recursiveness to 3 levels.
+    (or (<= 3 @msg__entered)
+        (do
+            (swap! msg__entered inc)
+            ;; When displaying "keep_msg", don't let msg-start() free it, caller must do that.
+            (when (BEQ s, @keep_msg)
+                (reset! keep_msg nil))
+            ;; Truncate the message if needed.
+            (msg-start)
+            (let [#_Bytes buf (msg-strtrunc s) s (if (some? buf) buf s)]
+                (msg-outtrans-attr s, attr)
+                (msg-clr-eos)
+                (let [#_boolean retval (msg-end)]
+                    (when (and keep retval (< (mb-string2cells s) (+ (* (- @Rows @cmdline_row 1) @Cols) @sc_col)))
+                        (set-keep-msg s, 0))
+                    (swap! msg__entered dec)
+                    retval
+                )
+            )
         )
-        (swap! msg__entered inc)
-
-        ;; When displaying "keep_msg", don't let msg-start() free it, caller must do that.
-        (if (BEQ s, @keep_msg)
-            (reset! keep_msg nil))
-
-        ;; Truncate the message if needed.
-        (msg-start)
-
-        ((ß Bytes buf =) (msg-strtrunc s))
-        (if (some? buf)
-            ((ß s =) buf)
-        )
-
-        (msg-outtrans-attr s, attr)
-        (msg-clr-eos)
-
-        ((ß boolean retval =) (msg-end))
-
-        (if (and keep retval (< (mb-string2cells s) (+ (* (- @Rows @cmdline_row 1) @Cols) @sc_col)))
-            (set-keep-msg s, 0))
-
-        (swap! msg__entered dec)
-        retval
     ))
 
 ;; Truncate a string such that it can be printed without causing a scroll.
@@ -3680,9 +3669,7 @@
                 (if (< 0 @lines_left)
                     (swap! lines_left dec))
                 (when (and @p_more (zero? @lines_left) (!= @State HITRETURN) (not @msg_no_more))
-                    (if (do-more-prompt NUL)
-                        ((ß s =) @confirm_msg_tail)
-                    )
+                    ((ß s =) (if (do-more-prompt NUL) @confirm_msg_tail s))
                     (if @quit_more
                         ((ß RETURN) nil)
                     )
@@ -3759,9 +3746,7 @@
                 :else
                 (do
                     ;; postpone this character until later
-                    (if (zero? t_col)
-                        ((ß t_s =) s)
-                    )
+                    ((ß t_s =) (if (zero? t_col) s t_s))
                     ((ß t_col =) (+ t_col cells))
                     ((ß s =) (.plus s (dec len)))
                 ))
@@ -3770,9 +3755,7 @@
         )
 
         ;; output any postponed text
-        (if (< 0 t_col)
-            ((ß t_col =) (t-puts t_col, t_s, s, attr))
-        )
+        ((ß t_col =) (if (< 0 t_col) (t-puts t_col, t_s, s, attr) t_col))
         (if (and @p_more (not recurse))
             (store-sb-text a'sb_str, s, attr, a'sb_col, false))
 
@@ -4768,9 +4751,7 @@
 
                     (showoneopt v)
 
-                    (if (and (!= nextchar (byte \?)) (!= nextchar NUL) (not (vim-iswhite afterchar)))
-                        ((ß errmsg =) e_trailing)
-                    )
+                    ((ß errmsg =) (if (and (!= nextchar (byte \?)) (!= nextchar NUL) (not (vim-iswhite afterchar))) e_trailing errmsg))
                 )
                 :else
                 (do
@@ -5045,9 +5026,7 @@
         ;; 'breakindentopt'
         (cond (== varp (:wo_briopt (:w_options @curwin)))
         (do
-            (if (not (briopt-check @curwin))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (briopt-check @curwin)) e_invarg errmsg))
         )
 
         ;; 'isident', 'iskeyword', 'isprint' or 'isfname' option: refill chartab[]
@@ -5078,17 +5057,13 @@
         ;; 'nrformats'
         (== varp (:b_p_nf @curbuf))
         (do
-            (if (not (check-opt-strings (... varp 0), p_nf_values, true))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (check-opt-strings (... varp 0), p_nf_values, true)) e_invarg errmsg))
         )
 
         ;; 'scrollopt'
         (== varp p_sbo)
         (do
-            (if (not (check-opt-strings @p_sbo, p_scbopt_values, true))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (check-opt-strings @p_sbo, p_scbopt_values, true)) e_invarg errmsg))
         )
 
         ;; 'matchpairs'
@@ -5098,9 +5073,7 @@
                 ((ß int x2 =) -1)
                 ((ß int x3 =) -1)
 
-                (if (non-eos? p)
-                    ((ß p =) (.plus p (us-ptr2len-cc p)))
-                )
+                ((ß p =) (if (non-eos? p) (.plus p (us-ptr2len-cc p)) p))
                 (if (non-eos? p)
                     ((ß x2 =) (.at ((ß p =) (.plus p 1)) -1))
                 )
@@ -5122,8 +5095,9 @@
         (== varp p_sbr)
         (do
             (loop-when-recur [#_Bytes s @p_sbr] (non-eos? s) [(.plus s (us-ptr2len-cc s))]
-                (if (!= (mb-ptr2cells s) 1)
+                (when (!= (mb-ptr2cells s) 1)
                     ((ß errmsg =) (u8 "E595: contains unprintable or wide character"))
+                    (ß BREAK)
                 )
             )
         )
@@ -5137,17 +5111,13 @@
         ;; 'selection'
         (== varp p_sel)
         (do
-            (if (or (eos? @p_sel) (not (check-opt-strings @p_sel, p_sel_values, false)))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (or (eos? @p_sel) (not (check-opt-strings @p_sel, p_sel_values, false))) e_invarg errmsg))
         )
 
         ;; 'selectmode'
         (== varp p_slm)
         (do
-            (if (not (check-opt-strings @p_slm, p_slm_values, true))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (check-opt-strings @p_slm, p_slm_values, true)) e_invarg errmsg))
         )
 
         ;; 'keymodel'
@@ -5175,17 +5145,13 @@
         ;; 'eadirection'
         (== varp p_ead)
         (do
-            (if (not (check-opt-strings @p_ead, p_ead_values, false))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (check-opt-strings @p_ead, p_ead_values, false)) e_invarg errmsg))
         )
 
         ;; 'backspace'
         (== varp p_bs)
         (do
-            (if (not (check-opt-strings @p_bs, p_bs_values, true))
-                ((ß errmsg =) e_invarg)
-            )
+            ((ß errmsg =) (if (not (check-opt-strings @p_bs, p_bs_values, true)) e_invarg errmsg))
         )
 
         ;; 'virtualedit'
@@ -5607,9 +5573,7 @@
         (when (and (or (<= @(:wo_scr (:w_options @curwin)) 0) (and (< (:w_height @curwin) @(:wo_scr (:w_options @curwin))) (< 0 (:w_height @curwin)))) @full_screen)
             (cond (== varp (:wo_scr (:w_options @curwin)))
             (do
-                (if (!= @(:wo_scr (:w_options @curwin)) 0)
-                    ((ß errmsg =) e_scroll)
-                )
+                ((ß errmsg =) (if (!= @(:wo_scr (:w_options @curwin)) 0) e_scroll errmsg))
                 (win-comp-scroll @curwin)
             )
             ;; If 'scroll' became invalid because of a side effect silently adjust it.
@@ -6081,9 +6045,7 @@
             (if (and (not-at? p (byte \,)) (non-eos? p))
                 ((ß RETURN) false)
             )
-            (if (at? p (byte \,))
-                ((ß p =) (.plus p 1))
-            )
+            ((ß p =) (if (at? p (byte \,)) (.plus p 1) p))
         )
 
         ((ß wp.w_p_brishift =) bri_shift)
@@ -6181,9 +6143,7 @@
             (emsg e_positive)
             ((ß RETURN) nil)
         )
-        (if (zero? new_ts)
-            ((ß new_ts =) (int @(:b_p_ts @curbuf)))
-        )
+        ((ß new_ts =) (if (zero? new_ts) (int @(:b_p_ts @curbuf)) new_ts))
 
 ;       loop:
         (loop-when-recur [#_long lnum (:line1 eap)] (and (not @got_int) (<= lnum (:line2 eap))) [(inc lnum)]
@@ -6242,9 +6202,7 @@
                                 (.be ptr col, (if (< col num_tabs) TAB (byte \space)))
                             )
                             (ml-replace lnum, new_line)
-                            (if (zero? first_line)
-                                ((ß first_line =) lnum)
-                            )
+                            ((ß first_line =) (if (zero? first_line) lnum first_line))
                             ((ß last_line =) lnum)
                             ((ß ptr =) new_line)
                             ((ß col =) (+ start_col len))
@@ -6423,9 +6381,7 @@
             ;; The number of lines joined is the number of lines in the range plus one.
             ;; One less when the last line is included.
             ((ß int joined_lines_count =) (int (+ (- (:line2 eap) (:line1 eap)) 1)))
-            (if (< (:line2 eap) (:ml_line_count (:b_ml @curbuf)))
-                ((ß joined_lines_count =) (inc joined_lines_count))
-            )
+            ((ß joined_lines_count =) (if (< (:line2 eap) (:ml_line_count (:b_ml @curbuf))) (inc joined_lines_count) joined_lines_count))
             (when (< 1 joined_lines_count)
                 (do-join joined_lines_count, false, true, false, true)
                 (reset! sub_nsubs (dec joined_lines_count))
@@ -6541,9 +6497,7 @@
         ;; We do it here once to avoid it to be replaced over and over again.
         ;; But don't do it when it starts with "\=", then it's an expression.
 
-        (if (not (and (at? sub (byte \\)) (at? sub 1 (byte \=))))
-            ((ß sub =) (regtilde sub, @p_magic))
-        )
+        ((ß sub =) (if (not (and (at? sub (byte \\)) (at? sub 1 (byte \=)))) (regtilde sub, @p_magic) sub))
 
         ;; Check for a match on each line.
 
@@ -6621,9 +6575,7 @@
                         ((ß sub_firstline =) nil)
                     )
 
-                    (if (nil? sub_firstline)
-                        ((ß sub_firstline =) (STRDUP (ml-get sub_firstlnum)))
-                    )
+                    ((ß sub_firstline =) (if (nil? sub_firstline) (STRDUP (ml-get sub_firstlnum)) sub_firstline))
 
                     ;; Save the line number of the last change for the final cursor position (just like Vi).
                     (swap! curwin assoc-in [:w_cursor :lnum] lnum)
@@ -6868,9 +6820,7 @@
                                 ((ß nmatch_tl =) 0)
                             )
 
-                            (if (zero? first_line)
-                                ((ß first_line =) lnum)
-                            )
+                            ((ß first_line =) (if (zero? first_line) lnum first_line))
                             ((ß last_line =) (inc lnum))
 
                             ((ß sub_firstlnum =) lnum)
@@ -6880,9 +6830,7 @@
                             ((ß prev_matchcol =) (- (STRLEN sub_firstline) prev_matchcol))
                             ((ß copycol =) 0)
                         )
-                        (if (and (== nmatch -1) (not lastone))
-                            ((ß nmatch =) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil))
-                        )
+                        ((ß nmatch =) (if (and (== nmatch -1) (not lastone)) (vim-regexec-multi regmatch, sub_firstlnum, matchcol, nil) nmatch))
 
                         ;; 5. break if there isn't another match in this line
 
@@ -6890,9 +6838,7 @@
                             ;; If the match found didn't start where we were
                             ;; searching, do the next search in the line where we
                             ;; found the match.
-                            (if (== nmatch -1)
-                                ((ß lnum =) (- lnum (:lnum (... (:startpos regmatch) 0))))
-                            )
+                            ((ß lnum =) (if (== nmatch -1) (- lnum (:lnum (... (:startpos regmatch) 0))) lnum))
                             (ß BREAK)
                         )
                     )
@@ -7295,9 +7241,7 @@
                         ((ß CASE) K_KDEL)
                         ((ß CASE) Ctrl_W)
                         (do
-                            (if (== c K_KDEL)
-                                ((ß c =) K_DEL)
-                            )
+                            ((ß c =) (if (== c K_KDEL) K_DEL c))
 
                             ;; Delete current character is the same as backspace on next character, except at end of line.
 
@@ -7320,9 +7264,7 @@
                                     (while (and (BLT (:cmdbuff @ccline), p) (== (us-get-class p) i))
                                         ((ß p =) (us-prevptr (:cmdbuff @ccline), p))
                                     )
-                                    (if (!= (us-get-class p) i)
-                                        ((ß p =) (.plus p (us-ptr2len-cc p)))
-                                    )
+                                    ((ß p =) (if (!= (us-get-class p) i) (.plus p (us-ptr2len-cc p)) p))
                                 )
 
                                 (swap! ccline assoc :cmdpos (BDIFF p, (:cmdbuff @ccline)))
@@ -7517,9 +7459,7 @@
                                     ((ß c =) (gchar))
                                     ;; If 'ignorecase' and 'smartcase' are set and the command line
                                     ;; has no uppercase characters, convert the character to lowercase.
-                                    (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline))))
-                                        ((ß c =) (utf-tolower c))
-                                    )
+                                    ((ß c =) (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline)))) (utf-tolower c) c))
                                     (when (!= c NUL)
                                         (when (or (== c firstc) (!= (vim-strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c) nil))
                                             ;; put a backslash before special characters
@@ -8164,9 +8104,7 @@
                     ((ß w =) (.minus w len))
                 )
                 ((ß int len =) (BDIFF (.plus (:cmdbuff @ccline) (:cmdpos @ccline)), w))
-                (if (if @p_ic (zero? (STRNCASECMP w, @a'arg, len)) (zero? (STRNCMP w, @a'arg, len)))
-                    ((ß p =) (.plus p len))
-                )
+                ((ß p =) (if (if @p_ic (zero? (STRNCASECMP w, @a'arg, len)) (zero? (STRNCMP w, @a'arg, len))) (.plus p len) p))
             )
 
             (cmdline-paste-str p, literally)
@@ -8296,9 +8234,7 @@
             (dotimes [#_int type HIST_COUNT]       ;; adjust the tables
                 ((ß histentry_C[] temp =) nil)
 
-                (if (non-zero? newlen)
-                    ((ß temp =) (ARRAY-histentry newlen))
-                )
+                ((ß temp =) (if (non-zero? newlen) (ARRAY-histentry newlen) temp))
 
                 (when (or (zero? newlen) (some? temp))
                     (cond (< (... @hisidx type) 0)                       ;; there are no entries yet
@@ -8381,9 +8317,7 @@
                 (ß BREAK)
             )
             ((ß i =) (dec i))
-            (if (< i 0)
-                ((ß i =) (dec @hislen))
-            )
+            ((ß i =) (if (< i 0) (dec @hislen) i))
             (recur-if (!= i (... @hisidx type)) [])
         )
 
@@ -8391,9 +8325,7 @@
             ((ß str =) (:hisstr (... (... @history type) i)))
             (while (!= i (... @hisidx type))
                 ((ß i =) (inc i))
-                (if (<= @hislen i)
-                    ((ß i =) 0)
-                )
+                ((ß i =) (if (<= @hislen i) 0 i))
                 (COPY-histentry (... (... @history type) last_i), (... (... @history type) i))
                 ((ß last_i =) i)
             )
@@ -8929,9 +8861,7 @@
             )
 
             (when (nil? p)
-                (if (not (:skip ea))
-                    ((ß errormsg =) (u8 "E464: Ambiguous use of user-defined command"))
-                )
+                ((ß errormsg =) (if (not (:skip ea)) (u8 "E464: Ambiguous use of user-defined command") errormsg))
                 (ß BREAK doend)
             )
 
@@ -9104,9 +9034,7 @@
 
             ((ß ea.errmsg =) nil)
 ;           ea = cmdnames[ea.cmdidx].cmd_func(ea);
-            (if (some? (:errmsg ea))
-                ((ß errormsg =) (:errmsg ea))
-            )
+            ((ß errormsg =) (if (some? (:errmsg ea)) (:errmsg ea) errormsg))
 ;       }
 
         (if (zero? (:lnum (:w_cursor @curwin)))  ;; can happen with zero line number
@@ -9175,9 +9103,7 @@
             )
 
             ;; check for non-alpha command
-            (if (and (BEQ p, (:cmd eap)) (some? (vim-strbyte (u8 "@*!=><&~#"), (.at p 0))))
-                ((ß p =) (.plus p 1))
-            )
+            ((ß p =) (if (and (BEQ p, (:cmd eap)) (some? (vim-strbyte (u8 "@*!=><&~#"), (.at p 0)))) (.plus p 1) p))
 
             ((ß int len =) (BDIFF p, (:cmd eap)))
 
@@ -9298,9 +9224,7 @@
                     (cond skip       ;; skip "/pat/"
                     (do
                         ((ß cmd =) (skip-regexp cmd, c, @p_magic, nil))
-                        (if (at? cmd c)
-                            ((ß cmd =) (.plus cmd 1))
-                        )
+                        ((ß cmd =) (if (at? cmd c) (.plus cmd 1) cmd))
                     )
                     :else
                     (do
@@ -9691,9 +9615,7 @@
 
         ((ß int c =) (safe-vgetc))
 
-        (if (== c NUL)
-            ((ß c =) K_ZERO)
-        )
+        ((ß c =) (if (== c NUL) K_ZERO c))
 
         ;; In Select mode, typed text replaces the selection.
 
@@ -11427,11 +11349,9 @@
             (validate-virtcol)
 
             ((ß int virtcol =) (:w_virtcol @curwin))
-            (if (and (< width1 virtcol) (non-eos? @p_sbr))
-                ((ß virtcol =) (- virtcol (mb-string2cells @p_sbr)))
-            )
+            ((ß virtcol =) (- virtcol (if (and (< width1 virtcol) (non-eos? @p_sbr)) (mb-string2cells @p_sbr) 0)))
 
-            (let-when [curswant (:w_curswant @curwin)] (and (< curswant virtcol) (if (< curswant width1) (> curswant (/ width1 2)) (> (% (- curswant width1) width2) (/ width2 2))))
+            (let-when [cw (:w_curswant @curwin)] (and (< cw virtcol) (if (< cw width1) (< (/ width1 2) cw) (< (/ width2 2) (% (- cw width1) width2))))
                 (swap! curwin update-in [:w_cursor :col] dec)
             )
         )
@@ -13098,10 +13018,7 @@
                     ((ß int width2 =) (+ width1 (win-col-off2 @curwin)))
 
                     (validate-virtcol)
-                    ((ß i =) 0)
-                    (if (and (<= width1 (:w_virtcol @curwin)) (< 0 width2))
-                        ((ß i =) (+ (* (/ (- (:w_virtcol @curwin) width1) width2) width2) width1))
-                    )
+                    ((ß i =) (if (and (<= width1 (:w_virtcol @curwin)) (< 0 width2)) (+ (* (/ (- (:w_virtcol @curwin) width1) width2) width2) width1) 0))
                 )
                 :else
                 (do
@@ -13168,10 +13085,7 @@
                         ((ß int width2 =) (+ width1 (win-col-off2 @curwin)))
 
                         (validate-virtcol)
-                        ((ß int i =) (dec width1))
-                        (if (<= width1 (:w_virtcol @curwin))
-                            ((ß i =) (+ i (* (inc (/ (- (:w_virtcol @curwin) width1) width2)) width2)))
-                        )
+                        ((ß int i =) (+ (dec width1) (if (<= width1 (:w_virtcol @curwin)) (* (inc (/ (- (:w_virtcol @curwin) width1) width2)) width2) 0)))
                         (coladvance i)
 
                         ;; Make sure we stick in this column.
@@ -13182,9 +13096,8 @@
                             ;; Check for landing on a character that got split at the end of the line.
                             ;; We do not want to advance to the next screen line.
 
-                            (if (< i (:w_virtcol @curwin))
-                                (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))
-                            )
+                            (when (< i (:w_virtcol @curwin))
+                                (swap! curwin update-in [:w_cursor :col] dec))
                         )
                     )
                     (not (nv-screengo oap, FORWARD, (dec (:count1 cap))))
@@ -13194,7 +13107,7 @@
                 )
                 :else
                 (do
-                    ((ß int i =) (- (- (+ (:w_leftcol @curwin) (:w_width @curwin)) col_off) 1))
+                    ((ß int i =) (dec (- (+ (:w_leftcol @curwin) (:w_width @curwin)) col_off)))
                     (coladvance i)
 
                     ;; Make sure we stick in this column.
@@ -14300,80 +14213,50 @@
 ;; op-shift - handle a shift operation
 
 (defn- #_void op-shift [#_oparg_C oap, #_boolean curs_top, #_int amount]
-    (§
-        ((ß int block_col =) 0)
+    (when (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap))))
+        (let [#_int block_col (if (:block_mode oap) (:col (:w_cursor @curwin)) 0)]
 
-        (if (not (u-save (- (:lnum (:op_start oap)) 1), (+ (:lnum (:op_end oap)) 1)))
-            ((ß RETURN) nil)
-        )
+            (loop-when-recur [#_long n (:line_count oap)] (< 0 n) [(dec n)]
+                (cond
+                    (eos? (ml-get-curline)) (swap! curwin assoc-in [:w_cursor :col] 0)
+                    (:block_mode oap)       (shift-block oap, amount)
+                    :else                   (shift-line (== (:op_type oap) OP_LSHIFT), @p_sr, amount, false)
+                )
+                (swap! curwin update-in [:w_cursor :lnum] inc))
 
-        (if (:block_mode oap)
-            ((ß block_col =) (:col (:w_cursor @curwin)))
-        )
+            (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0)
 
-        (loop-when-recur [#_long n (:line_count oap)] (< 0 n) [(dec n)]
-            ((ß byte c0 =) (.at (ml-get-curline) 0))
-            (cond (== c0 NUL)                      ;; empty line
+            (cond (:block_mode oap)
+                (swap! curwin update :w_cursor assoc :lnum (:lnum (:op_start oap)) :col block_col)
+            curs_top      ;; put cursor on first line, for ">>"
             (do
-                (swap! curwin assoc-in [:w_cursor :col] 0)
-            )
-            (:block_mode oap)
-            (do
-                (shift-block oap, amount)
+                (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
+                (beginline (| BL_SOL BL_FIX))     ;; shift-line() may have set cursor.col
             )
             :else
-            (do
-                (shift-line (== (:op_type oap) OP_LSHIFT), @p_sr, amount, false)
-            ))
-            (swap! curwin assoc-in [:w_cursor :lnum] (inc (:lnum (:w_cursor @curwin))))
-        )
+                (swap! curwin update-in [:w_cursor :lnum] dec))         ;; put cursor on last line, for ":>"
 
-        (changed-lines (:lnum (:op_start oap)), 0, (+ (:lnum (:op_end oap)) 1), 0)
+            (when (< @p_report (:line_count oap))
+                (let [#_Bytes s (if (== (:op_type oap) OP_RSHIFT) (u8 ">") (u8 "<"))]
+                    (cond (== (:line_count oap) 1)
+;%%                     (if (== amount 1)
+;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed 1 time"), s)
+;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed %d times"), s, amount))
+                    :else
+;%%                     (if (== amount 1)
+;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), (:line_count oap), s)
+;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), (:line_count oap), s, amount))
+                    )
+                    (msg @ioBuff)
+                ))
 
-        (cond (:block_mode oap)
-        (do
-            (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
-            (swap! curwin assoc-in [:w_cursor :col] block_col)
-        )
-        curs_top      ;; put cursor on first line, for ">>"
-        (do
-            (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
-            (beginline (| BL_SOL BL_FIX))     ;; shift-line() may have set cursor.col
-        )
-        :else
-        (do
-            (swap! curwin assoc-in [:w_cursor :lnum] (dec (:lnum (:w_cursor @curwin))))         ;; put cursor on last line, for ":>"
+            ;; Set "'[" and "']" marks.
+            (let [enum (:lnum (:op_end oap)) ecol (STRLEN (ml-get enum)) ecol (if (< 0 ecol) (dec ecol) ecol)]
+                (swap! curbuf assoc :b_op_start (:op_start oap))
+                (swap! curbuf update :b_op_end assoc :lnum enum :col ecol)
+            )
         ))
-
-        (when (< @p_report (:line_count oap))
-            ((ß Bytes s =) (if (== (:op_type oap) OP_RSHIFT) (u8 ">") (u8 "<")))
-            (cond (== (:line_count oap) 1)
-            (do
-                (if (== amount 1)
-                    (.sprintf libC @ioBuff, (u8 "1 line %sed 1 time"), s)
-                    (.sprintf libC @ioBuff, (u8 "1 line %sed %d times"), s, amount)
-                )
-            )
-            :else
-            (do
-                (if (== amount 1)
-                    (.sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), (:line_count oap), s)
-                    (.sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), (:line_count oap), s, amount)
-                )
-            ))
-            (msg @ioBuff)
-        )
-
-        ;; Set "'[" and "']" marks.
-
-        (swap! curbuf assoc :b_op_start (:op_start oap))
-        (swap! curbuf assoc-in [:b_op_end :lnum] (:lnum (:op_end oap)))
-        (swap! curbuf assoc-in [:b_op_end :col] (STRLEN (ml-get (:lnum (:op_end oap)))))
-        (when (< 0 (:col (:b_op_end @curbuf)))
-            (swap! curbuf assoc-in [:b_op_end :col] (dec (:col (:b_op_end @curbuf))))
-        )
-        nil
-    ))
+    nil)
 
 ;; Shift the current line one shiftwidth left (if left != 0) or right.
 ;; Leaves cursor on first blank in the line.
@@ -14388,9 +14271,9 @@
             ))]
         (if (flag? @State VREPLACE_FLAG)
             (change-indent INDENT_SET, n, false, NUL, call_changed_bytes)
-            (set-indent n, (if call_changed_bytes SIN_CHANGED 0)))
-        nil
-    ))
+            (set-indent n, (if call_changed_bytes SIN_CHANGED 0))
+        ))
+    nil)
 
 ;; Shift one line of the current block one shiftwidth right or left.
 ;; Leaves cursor on first character in block.
