@@ -41,7 +41,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
@@ -1130,7 +1130,6 @@
 (final int MAXCOL 0x7fffffff)           ;; maximum column number, 31 bits
 
 (final int SHOWCMD_COLS 10)             ;; columns needed by shown command
-(final int STL_MAX_ITEM 80)             ;; max nr of %<flag> in statusline
 
 ;; vim_iswhite() is used for "^" and the like.  It differs from isspace()
 ;; because it doesn't include <CR> and <LF> and the like.
@@ -1318,46 +1317,6 @@
 (final byte COM_NOBACK    \O)              ;; don't use for "O" command
 (final Bytes COM_ALL      (u8 "nbsmexflrO")) ;; all flags for 'comments' option
 (final int COM_MAX_LEN    50)              ;; maximum length of a part
-
-;; flags for 'statusline' option
-(final byte
-    STL_FILEPATH        \f,      ;; path of file in buffer
-    STL_FULLPATH        \F,      ;; full path of file in buffer
-    STL_FILENAME        \t,      ;; last part (tail) of file path
-    STL_COLUMN          \c,      ;; column og cursor
-    STL_VIRTCOL         \v,      ;; virtual column
-    STL_VIRTCOL_ALT     \V,      ;; - with 'if different' display
-    STL_LINE            \l,      ;; line number of cursor
-    STL_NUMLINES        \L,      ;; number of lines in buffer
-    STL_BUFNO           \n,      ;; current buffer number
-    STL_KEYMAP          \k,      ;; 'keymap' when active
-    STL_OFFSET          \o,      ;; offset of character under cursor
-    STL_OFFSET_X        \O,      ;; - in hexadecimal
-    STL_BYTEVAL         \b,      ;; byte value of character
-    STL_BYTEVAL_X       \B,      ;; - in hexadecimal
-    STL_ROFLAG          \r,      ;; readonly flag
-    STL_ROFLAG_ALT      \R,      ;; - other display
-    STL_HELPFLAG        \h,      ;; window is showing a help file
-    STL_HELPFLAG_ALT    \H,      ;; - other display
-    STL_FILETYPE        \y,      ;; 'filetype'
-    STL_FILETYPE_ALT    \Y,      ;; - other display
-    STL_PREVIEWFLAG     \w,      ;; window is showing the preview buf
-    STL_PREVIEWFLAG_ALT \W,      ;; - other display
-    STL_MODIFIED        \m,      ;; modified flag
-    STL_MODIFIED_ALT    \M,      ;; - other display
-    STL_QUICKFIX        \q,      ;; quickfix window description
-    STL_PERCENTAGE      \p,      ;; percentage through file
-    STL_ALTPERCENT      \P,      ;; percentage as TOP BOT ALL or NN%
-    STL_ARGLISTSTAT     \a,      ;; argument list status as (x of y)
-    STL_PAGENUM         \N,      ;; page number (when printing)
-    STL_VIM_EXPR        \{,      ;; start of expression to substitute
-    STL_MIDDLEMARK      \=,      ;; separation between left and right
-    STL_TRUNCMARK       \<,      ;; truncation mark if line is too long
-    STL_USER_HL         \*,      ;; highlight from (User)1..9 or 0
-    STL_HIGHLIGHT       \#,      ;; highlight name
-    STL_TABPAGENR       \T,      ;; tab page label nr
-    STL_TABCLOSENR      \X)      ;; tab page close nr
-(final Bytes STL_ALL (u8 "fFtcvVlLknoObBrRhHmYyWwMqpPaN{#"))
 
 ;; arguments for can_bs()
 (final byte BS_INDENT     \i)      ;; "Indent"
@@ -1798,7 +1757,6 @@
 
 ;; Structure that contains all options that are local to a window.
 ;; Used twice in a window: for the current buffer and for all buffers.
-;; Also used in wininfo_C.
 
 (class! #_final winopt_C
     [
@@ -1820,23 +1778,6 @@
         (atom' Bytes   wo_cocu)     ;; 'concealcursor'
         (atom' long    wo_cole)     ;; 'conceallevel'
         (atom' boolean wo_crb)      ;; 'cursorbind'
-    ])
-
-;; Window info stored with a buffer.
-;;
-;; Two types of info are kept for a buffer which are associated with a specific window:
-;; 1. Each window can have a different line number associated with a buffer.
-;; 2. The window-local options for a buffer work in a similar way.
-;; The window-info is kept in a list at b_wininfo.  It is kept in most-recently-used order.
-
-(class! #_final wininfo_C
-    [
-        (field wininfo_C    wi_next)                    ;; next entry or null for last entry
-        (field wininfo_C    wi_prev)                    ;; previous entry or null for first entry
-        (field window_C     wi_win)                     ;; pointer to window that did set wi_fpos
-        (field pos_C        wi_fpos     (§_pos_C))      ;; last cursor position in the file
-        (field boolean      wi_optset)                  ;; true when wi_opt has useful values
-        (field winopt_C     wi_opt      (§_winopt_C))   ;; local window options
     ])
 
 ;; Structure to store info about the Visual area.
@@ -2283,8 +2224,6 @@
         (field long         b_mod_bot)          ;; lnum below last changed line, AFTER the change
         (field long         b_mod_xlines)       ;; number of extra buffer lines inserted;
                                                 ;; negative when lines were deleted
-
-        (field wininfo_C    b_wininfo)          ;; list of last used info for each window
 
         (field long         b_mtime)            ;; last change time of original file
         (field long         b_mtime_read)       ;; last change time when reading
@@ -10511,6 +10450,7 @@
 ;       to.@wo_cc = STRDUP(from.@wo_cc);
 ;       to.@wo_cocu = STRDUP(from.@wo_cocu);
 ;       to.@wo_cole = from.@wo_cole;
+
 ;       check_winopt(to);           ;; don't want null pointers
     ))
 
@@ -10547,10 +10487,6 @@
     (§
         ;; Skip this when the option defaults have not been set yet.
         ;; Happens when main() allocates the first buffer.
-
-        ;; Always free the allocated strings.
-
-;       free_buf_options(buf);
 
 ;       buf.@b_p_ai = @p_ai;
 ;       buf.b_p_ai_nopaste = @p_ai_nopaste;
@@ -56349,8 +56285,6 @@
 ;       if (buf.b_nwindows == 1)
 ;           set_last_cursor(win);
 
-;       buflist_setfpos(buf, win, (win.w_cursor.lnum == 1) ? 0 : win.w_cursor.lnum, win.w_cursor.col, true);
-
         ;; decrease the link count from windows (unless not in any window)
 ;       if (0 < buf.b_nwindows)
 ;           --buf.b_nwindows;
@@ -56365,21 +56299,6 @@
 ;       buf.b_ml.ml_mfp = null;
 ;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
     ))
-
-;; Free the b_wininfo list for buffer "buf".
-
-(defn- #_void clear_wininfo [#_buffer_C buf]
-    (§
-;       while (buf.b_wininfo != null)
-;       {
-;           wininfo_C wip = buf.b_wininfo;
-;           buf.b_wininfo = wip.wi_next;
-;           if (wip.wi_optset)
-;               clear_winopt(wip.wi_opt);
-;       }
-    ))
-
-;; functions for dealing with the buffer list
 
 ;; This is the ONLY way to create a new buffer.
 
@@ -56401,13 +56320,7 @@
 ;       buf.b_op_start_orig = §_pos_C();
 ;       buf.b_op_end = §_pos_C();
 
-;       clear_wininfo(buf);
-;       buf.b_wininfo = §_wininfo_C();
-
 ;       buf_copy_options(buf);
-
-;       buf.b_wininfo.wi_fpos.lnum = lnum;
-;       buf.b_wininfo.wi_win = @curwin;
 
 ;       buf.b_u_synced = true;
 ;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
@@ -56415,147 +56328,6 @@
 ;       clrallmarks(buf);                           ;; clear marks
 
 ;       return buf;
-    ))
-
-;; Free the memory for the options of a buffer.
-
-(defn- #_void free_buf_options [#_buffer_C buf]
-    (§
-;       clear_string_option(buf.b_p_kp);
-;       clear_string_option(buf.b_p_mps);
-;       clear_string_option(buf.b_p_fo);
-;       clear_string_option(buf.b_p_flp);
-;       clear_string_option(buf.b_p_isk);
-;       clear_string_option(buf.b_p_com);
-;       clear_string_option(buf.b_p_nf);
-;       clear_string_option(buf.b_p_cink);
-;       clear_string_option(buf.b_p_cino);
-;       clear_string_option(buf.b_p_cinw);
-;       clear_string_option(buf.b_p_qe);
-;       clear_string_option(buf.b_p_lw);
-    ))
-
-;; go to the last know line number for the current buffer
-
-(defn- #_void buflist_getfpos []
-    (§
-;       pos_C fpos = buflist_findfpos(@curbuf);
-
-;       @curwin.w_cursor.lnum = fpos.lnum;
-;       check_cursor_lnum();
-
-;       if (@p_sol)
-;           @curwin.w_cursor.col = 0;
-;       else
-;       {
-;           @curwin.w_cursor.col = fpos.col;
-;           check_cursor_col();
-;           @curwin.w_cursor.coladd = 0;
-;           @curwin.w_set_curswant = true;
-;       }
-    ))
-
-;; Set the "lnum" and "col" for the buffer "buf" and the current window.
-;; When "copy_options" is true save the local window option values.
-;; When "lnum" is 0 only do the options.
-
-(defn- #_void buflist_setfpos [#_buffer_C buf, #_window_C win, #_long lnum, #_int col, #_boolean copy_options]
-    (§
-;       wininfo_C wip;
-
-;       for (wip = buf.b_wininfo; wip != null; wip = wip.wi_next)
-;           if (wip.wi_win == win)
-;               break;
-;       if (wip == null)
-;       {
-            ;; allocate a new entry
-;           wip = §_wininfo_C();
-;           wip.wi_win = win;
-;           if (lnum == 0)          ;; set lnum even when it's 0
-;               lnum = 1;
-;       }
-;       else
-;       {
-            ;; remove the entry from the list
-;           if (wip.wi_prev != null)
-;               wip.wi_prev.wi_next = wip.wi_next;
-;           else
-;               buf.b_wininfo = wip.wi_next;
-;           if (wip.wi_next != null)
-;               wip.wi_next.wi_prev = wip.wi_prev;
-;           if (copy_options && wip.wi_optset)
-;               clear_winopt(wip.wi_opt);
-;       }
-;       if (lnum != 0)
-;       {
-;           wip.wi_fpos.lnum = lnum;
-;           wip.wi_fpos.col = col;
-;       }
-;       if (copy_options)
-;       {
-            ;; Save the window-specific option values.
-;           copy_winopt(win.w_onebuf_opt, wip.wi_opt);
-;           wip.wi_optset = true;
-;       }
-
-        ;; insert the entry in front of the list
-;       wip.wi_next = buf.b_wininfo;
-;       buf.b_wininfo = wip;
-;       wip.wi_prev = null;
-;       if (wip.wi_next != null)
-;           wip.wi_next.wi_prev = wip;
-    ))
-
-;; Find info for the current window in buffer "buf".
-;; If not found, return the info for the most recently used window.
-;; Returns null when there isn't any info.
-
-(defn- #_wininfo_C find_wininfo [#_buffer_C buf]
-    (§
-;       wininfo_C wip;
-
-;       for (wip = buf.b_wininfo; wip != null; wip = wip.wi_next)
-;           if (wip.wi_win == @curwin)
-;               break;
-
-        ;; If no wininfo for curwin, use the first in the list
-        ;; (that doesn't have 'diff' set and is in another tab page).
-;       if (wip == null)
-;           wip = buf.b_wininfo;
-
-;       return wip;
-    ))
-
-;; Reset the local window options to the values last used in this window.
-;; If the buffer wasn't used in this window before, use the values from
-;; the most recently used window.  If the values were never set, use the
-;; global values for the window.
-
-(defn- #_void get_winopts [#_buffer_C buf]
-    (§
-;       clear_winopt(@curwin.w_onebuf_opt);
-
-;       wininfo_C wip = find_wininfo(buf);
-;       if (wip != null && wip.wi_optset)
-;           copy_winopt(wip.wi_opt, @curwin.w_onebuf_opt);
-;       else
-;           copy_winopt(@curwin.w_allbuf_opt, @curwin.w_onebuf_opt);
-
-;       check_colorcolumn(@curwin);
-    ))
-
-(atom! pos_C no_position (new_pos 1, 0, 0))
-
-;; Find the position (lnum and col) for the buffer 'buf' for the current window.
-;; Returns a pointer to no_position if no position is found.
-
-(defn- #_pos_C buflist_findfpos [#_buffer_C buf]
-    (§
-;       wininfo_C wip = find_wininfo(buf);
-;       if (wip != null)
-;           return wip.wi_fpos;
-;       else
-;           return @no_position;
     ))
 
 ;; Print info about the current buffer.
@@ -81846,7 +81618,7 @@
 ;           wp.w_frame = newFrame(wp);
 
             ;; make the contents of the new window the same as the current one
-;           win_init(wp, @curwin, flags);
+;           win_init(wp, @curwin);
 ;       }
 
         ;; Reorganise the tree of frames to insert the new window.
@@ -81879,6 +81651,7 @@
 ;           else
 ;               before = !@p_sb;
 ;       }
+
 ;       if (curfrp.fr_parent == null || curfrp.fr_parent.fr_layout != layout)
 ;       {
             ;; Need to create a new frame in the tree to make a branch.
@@ -82070,7 +81843,7 @@
 ;; Used when splitting a window and when creating a new tab page.
 ;; The windows will both edit the same buffer.
 
-(defn- #_void win_init [#_window_C newp, #_window_C oldp, #_int _flags]
+(defn- #_void win_init [#_window_C newp, #_window_C oldp]
     (§
 ;       @curbuf.b_nwindows++;
 
@@ -83694,13 +83467,6 @@
 ;           @prevwin = null;
 
 ;       win_free_lines(wp);
-
-        ;; Remove the window from the b_wininfo lists,
-        ;; it may happen that the freed memory is re-used for another window.
-
-;       for (wininfo_C wip = @curbuf.b_wininfo; wip != null; wip = wip.wi_next)
-;           if (wip.wi_win == wp)
-;               wip.wi_win = null;
 
 ;       clear_matches(wp);
 
