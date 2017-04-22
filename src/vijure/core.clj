@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state nfa-max-width alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -16867,13 +16867,13 @@
         ;; First pass: determine size, legality.
         (regcomp-start expr, re_flags)
         (reset! regcode JUST_CALC_SIZE)
-        (let-when [a'flags (atom (int)) ? (bt-reg REG_NOPAREN, a'flags)] (some? ?) => [win nil]
+        (let-when [a'flags (atom (int)) [win ?] (bt-reg? win, REG_NOPAREN, a'flags)] (some? ?) => [win nil]
 
             (let-when [#_bt_pattern_C pat (-> (NEW_bt_pattern_C) (assoc :program (Bytes. (inc @regsize))))
                   ;; Second pass: emit code.
                   _ (regcomp-start expr, re_flags)
                   _ (reset! regcode (:program pat))
-                  ? (bt-reg REG_NOPAREN, a'flags)
+                  [win ?] (bt-reg? win, REG_NOPAREN, a'flags)
             ] (and (some? ?) (not @reg_toolong)) => [(if @reg_toolong (do (reset! rc_did_emsg true) (emsg win, (u8 "E339: Pattern too long"))) win) nil]
 
                 ;; Dig out information for optimizations.  ;; Worst-case defaults.
@@ -16941,25 +16941,27 @@
 ;;
 ;; paren: REG_NOPAREN, REG_PAREN or REG_NPAREN
 
-(defn- #_Bytes bt-reg [#_int paren, #_int' a'fl]
+(defn- #_[window_C Bytes] bt-reg? [#_window_C win, #_int paren, #_int' a'fl]
     (reset! a'fl HASWIDTH)                      ;; Tentatively.
-    (let-when [[#_int parno #_Bytes ret :as _]
+    (let-when [[win [#_int parno #_Bytes ret :as _]]
             (condp == paren
                 REG_PAREN                       ;; Make a MOPEN node.
                     (if (<= NSUBEXP @regnpar)
-                        (do (emsg* (u8 "E51: Too many %s("), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                        (let [win (emsg* win, (u8 "E51: Too many %s("), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                             (reset! rc_did_emsg true)
-                            nil)
+                            [win nil])
                         (let [parno @regnpar]
                             (swap! regnpar inc)
-                            [parno (regnode (+ MOPEN parno))]
+                            [win [parno (regnode (+ MOPEN parno))]]
                         ))
                 REG_NPAREN                      ;; Make a NOPEN node.
-                    [0 (regnode NOPEN)]
-                [0 nil]
-            )] (some? _) => nil
+                    [win [0 (regnode NOPEN)]]
+                REG_NOPAREN
+                    [win [0 nil]]
+            )] (some? _) => [win nil]
+
         ;; Pick up the branches, linking them together.
-        (let-when [a'flags (atom (int)) #_Bytes br (bt-regbranch a'flags)] (some? br) => nil
+        (let-when [a'flags (atom (int)) [win #_Bytes br] (bt-regbranch? win, a'flags)] (some? br) => [win nil]
             ;; [MZ]OPEN -> first.
             (let [ret (if (some? ret) (do (regtail ret, br) ret) br)]
                 ;; If one of the branches can be zero-width, the whole thing can.
@@ -16967,16 +16969,17 @@
                 (when (non-flag? @a'flags HASWIDTH)
                     (swap! a'fl & (bit-not HASWIDTH)))
                 (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
-                (let-when [_
-                        (loop-when [] (== (peekchr) (Magic (byte \|))) => :_
+                (let-when [[win _]
+                        (loop-when win (== (peekchr) (Magic (byte \|))) => [win :_]
                             (skipchr)
-                            (let-when [#_Bytes br (bt-regbranch a'flags)] (and (some? br) (not @reg_toolong)) => nil
-                                (regtail ret, br)       ;; BRANCH -> BRANCH.
+                            (let-when [[win #_Bytes br] (bt-regbranch? win, a'flags)] (and (some? br) (not @reg_toolong)) => [win nil]
+                                (regtail ret, br)                           ;; BRANCH -> BRANCH.
                                 (when (non-flag? @a'flags HASWIDTH)
                                     (swap! a'fl & (bit-not HASWIDTH)))
                                 (swap! a'fl | (& @a'flags (| SPSTART HASNL HASLOOKBH)))
-                                (recur))
-                        )] (some? _) => nil
+                                (recur win))
+                        )] (some? _) => [win nil]
+
                     ;; Make a closing node, and hook it on the end.
                     (let [#_Bytes ender (regnode (condp == paren REG_PAREN (+ MCLOSE parno) REG_NPAREN NCLOSE BT_END))]
                         (regtail ret, ender)
@@ -16985,21 +16988,23 @@
                             (regoptail br, ender))
                         ;; Check for proper termination.
                         (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
-                            (do (condp == paren
-                                    REG_NPAREN (emsg* e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                               (emsg* e_unmatchedp,  (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\"))))
+                            (let [win (condp == paren
+                                        REG_NPAREN (emsg* win, e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        REG_PAREN  (emsg* win, e_unmatchedp,  (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    )]
                                 (reset! rc_did_emsg true)
-                                nil)
+                                [win nil])
                         (and (== paren REG_NOPAREN) (!= (peekchr) NUL))     ;; "Can't happen".
-                            (do (if (== @curchr (Magic (byte \))))
-                                    (emsg* e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                    (emsg e_trailing))
+                            (let [win (if (== @curchr (Magic (byte \))))
+                                        (emsg* win, e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        (emsg win, e_trailing)
+                                    )]
                                 (reset! rc_did_emsg true)
-                                nil)
+                                [win nil])
                         :else ;; Here we set the flag allowing back references to this set of parentheses.
                             (do (when (== paren REG_PAREN)
-                                    (swap! had_endbrace assoc parno true))     ;; have seen the close paren
-                                ret
+                                    (swap! had_endbrace assoc parno true))  ;; have seen the close paren
+                                [win ret]
                             ))
                     ))
             ))
@@ -17008,11 +17013,11 @@
 ;; Parse one alternative of an | operator.
 ;; Implements the & operator.
 
-(defn- #_Bytes bt-regbranch [#_int' a'fl]
-    (reset! a'fl (| WORST HASNL))               ;; Tentatively.
+(defn- #_[window_C Bytes] bt-regbranch? [#_window_C win, #_int' a'fl]
+    (reset! a'fl (| WORST HASNL)) ;; Tentatively.
     (let [#_Bytes ret (regnode BRANCH)]
-        (loop [#_Bytes chain nil]
-            (let-when [a'flags (atom (int)) #_Bytes latest (bt-regconcat a'flags)] (some? latest) => nil
+        (loop [win win #_Bytes chain nil]
+            (let-when [a'flags (atom (int)) [win #_Bytes latest] (bt-regconcat? win, a'flags)] (some? latest) => [win nil]
                 ;; If one of the branches has width, the whole thing has.
                 ;; If one of the branches anchors at start-of-line, the whole thing does.
                 ;; If one of the branches uses look-behind, the whole thing does.
@@ -17021,16 +17026,12 @@
                 (swap! a'fl & (| (bit-not HASNL) (& @a'flags HASNL)))
                 (when (some? chain)
                     (regtail chain, latest))
-                (if (!= (peekchr) (Magic (byte \&)))
-                    ret
-                    (do (skipchr)
-                        (regtail latest, (regnode BT_END)) ;; operand ends
-                        (if @reg_toolong
-                            ret
-                            (do
-                                (reginsert MATCH, latest)
-                                (recur latest)
-                            ))
+                (when' (== (peekchr) (Magic (byte \&))) => [win ret]
+                    (skipchr)
+                    (regtail latest, (regnode BT_END)) ;; operand ends
+                    (when' (not @reg_toolong) => [win ret]
+                        (reginsert MATCH, latest)
+                        (recur win latest)
                     ))
             ))
     ))
@@ -17038,31 +17039,33 @@
 ;; Parse one alternative of an | or & operator.
 ;; Implements the concatenation operator.
 
-(defn- #_Bytes bt-regconcat [#_int' a'fl]
-    (reset! a'fl WORST)                         ;; Tentatively.
-    (let-when [[#_Bytes first :as _]
-            (loop [first nil #_Bytes chain nil]
+(defn- #_[window_C Bytes] bt-regconcat? [#_window_C win, #_int' a'fl]
+    (reset! a'fl WORST) ;; Tentatively.
+    (let-when [[win [#_Bytes first :as _]]
+            (loop [win win first nil #_Bytes chain nil]
                 (condp ==? (peekchr)
-                   [NUL (Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]                                  [first]
+                   [NUL (Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]                                  [win [first]]
 
-                    (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur first chain))
-                    (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur first chain))
-                    (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur first chain))
+                    (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur win first chain))
+                    (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur win first chain))
+                    (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur win first chain))
 
-                    (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur first chain))
-                    (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur first chain))
-                    (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur first chain))
-                    (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur first chain))
+                    (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur win first chain))
+                    (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur win first chain))
+                    (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur win first chain))
+                    (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur win first chain))
 
-                    (let-when [a'flags (atom (int)) #_Bytes latest (bt-regpiece a'flags)] (and (some? latest) (not @reg_toolong)) => nil
+                    (let-when [a'flags (atom (int)) [win #_Bytes latest] (bt-regpiece? win, a'flags)] (and (some? latest) (not @reg_toolong)) => [win nil]
                         (swap! a'fl | (& @a'flags (| HASWIDTH HASNL HASLOOKBH)))
-                        (if (nil? chain)  ;; First piece.
+                        (if (nil? chain) ;; First piece.
                             (swap! a'fl | (& @a'flags SPSTART))
                             (regtail chain, latest))
-                        (recur (if (some? first) first latest) latest)
+                        (recur win (if (some? first) first latest) latest)
                     ))
-            )] (some? _) => nil
-        (if (some? first) first (regnode NOTHING))          ;; Loop ran zero times.
+            )] (some? _) => [win nil]
+
+        ;; Loop ran zero times.
+        [win (if (some? first) first (regnode NOTHING))]
     ))
 
 ;; Parse something followed by possible [*+=].
@@ -17073,15 +17076,15 @@
 ;; It might seem that this node could be dispensed with entirely, but the
 ;; endmarker role is not redundant.
 
-(defn- #_Bytes bt-regpiece [#_int' a'fl]
-    (let-when [a'flags (atom (int)) #_Bytes ret (bt-regatom a'flags)] (some? ret) => nil
+(defn- #_[window_C Bytes] bt-regpiece? [#_window_C win, #_int' a'fl]
+    (let-when [a'flags (atom (int)) [win #_Bytes ret] (bt-regatom? win, a'flags)] (some? ret) => [win nil]
         (let [#_int op (peekchr)]
             (cond (== (re-multi-type op) NOT_MULTI)
-                (do (reset! a'fl @a'flags) ret)
+                (do (reset! a'fl @a'flags) [win ret])
             :else
                 (do (reset! a'fl (| WORST SPSTART (& @a'flags (| HASNL HASLOOKBH)))) ;; default flags
                     (skipchr)
-                    (let-when [_
+                    (let-when [[win _]
                             (condp ==? op
                                 (Magic (byte \*))
                                     (do (if (flag? @a'flags SIMPLE)
@@ -17093,7 +17096,7 @@
                                                 (regtail ret, (regnode BRANCH))     ;; or
                                                 (regtail ret, (regnode NOTHING))    ;; null.
                                             ))
-                                        :_)
+                                        [win :_])
 
                                 (Magic (byte \+))
                                     (do (if (flag? @a'flags SIMPLE)
@@ -17106,7 +17109,7 @@
                                                 (regtail ret, (regnode NOTHING))    ;; null.
                                             ))
                                         (reset! a'fl (| WORST HASWIDTH (& @a'flags (| HASNL HASLOOKBH))))
-                                        :_)
+                                        [win :_])
 
                                 (Magic (byte \@))
                                     (let [#_int nr (getdecchrs)
@@ -17121,9 +17124,9 @@
                                                         BT_END)
                                                 BT_END)]
                                         (if (== lop BT_END)
-                                            (do (emsg* (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                            (let [win (emsg* win, (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                                 (reset! rc_did_emsg true)
-                                                nil)
+                                                [win nil])
                                             (do ;; Look behind must match with "behind_pos".
                                                 (when (any == lop BEHIND NOBEHIND)
                                                     (regtail ret, (regnode BHPOS))
@@ -17132,7 +17135,7 @@
                                                 (if (any == lop BEHIND NOBEHIND)
                                                     (reginsert-nr lop, (max 0 nr), ret)     ;; no limit is same as zero limit
                                                     (reginsert lop, ret))
-                                                :_)
+                                                [win :_])
                                         ))
 
                                [(Magic (byte \?)) (Magic (byte \=))]
@@ -17142,17 +17145,17 @@
                                         (let [#_Bytes next (regnode NOTHING)]       ;; null.
                                             (regtail ret, next)
                                             (regoptail ret, next))
-                                        :_)
+                                        [win :_])
 
                                 (Magic (byte \{))
-                                    (let-when [a'minval (atom (long)) a'maxval (atom (long))] (read-limits a'minval, a'maxval) => nil
+                                    (let-when [a'minval (atom (long)) a'maxval (atom (long)) [win ?] (read-limits? win, a'minval, a'maxval)] ? => [win nil]
                                         (cond (flag? @a'flags SIMPLE)
                                             (do
                                                 (reginsert BRACE_SIMPLE, ret)
                                                 (reginsert-limits BRACE_LIMITS, @a'minval, @a'maxval, ret)
                                                 (when (and (< 0 @a'minval) (< 0 @a'maxval))
                                                     (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
-                                                :_)
+                                                [win :_])
                                         (< @num_complex_braces 10)
                                             (do
                                                 (reginsert (+ BRACE_COMPLEX @num_complex_braces), ret)
@@ -17162,21 +17165,23 @@
                                                 (swap! num_complex_braces inc)
                                                 (when (and (< 0 @a'minval) (< 0 @a'maxval))
                                                     (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
-                                                :_)
+                                                [win :_])
                                         :else
-                                            (do (emsg* (u8 "E60: Too many complex %s{...}s"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                            (let [win (emsg* win, (u8 "E60: Too many complex %s{...}s"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                                 (reset! rc_did_emsg true)
-                                                nil)
+                                                [win nil])
                                         ))
-                            )] (some? _) => nil
-                        (if (!= (re-multi-type (peekchr)) NOT_MULTI)
-                            (do ;; Can't have a multi follow a multi.
-                                (if (== (peekchr) (Magic (byte \*)))
-                                    (emsg* (u8 "E61: Nested %s*"), (if (<= MAGIC_ON @reg_magic) (u8 "") (u8 "\\")))
-                                    (emsg* (u8 "E62: Nested %s%c"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")), (no-Magic (peekchr))))
+                            )] (some? _) => [win nil]
+
+                        (when' (!= (re-multi-type (peekchr)) NOT_MULTI) => [win ret]
+                            ;; Can't have a multi follow a multi.
+                            (let [win (if (== (peekchr) (Magic (byte \*)))
+                                        (emsg* win, (u8 "E61: Nested %s*"), (if (<= MAGIC_ON @reg_magic) (u8 "") (u8 "\\")))
+                                        (emsg* win, (u8 "E62: Nested %s%c"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")), (no-Magic (peekchr)))
+                                    )]
                                 (reset! rc_did_emsg true)
-                                nil)
-                            ret)
+                                [win nil]
+                            ))
                     ))
             ))
     ))
@@ -17201,11 +17206,11 @@
         UPPER, NUPPER
     ])
 
-(defn- #_Bytes regcoll- [#_int c, #_int extra, #_int' a'fl]
+(defn- #_[window_C Bytes] regcoll- [#_window_C win, #_int c, #_int extra, #_int' a'fl]
     ;; If there is no matching ']', we assume the '[' is a normal character.
     ;; This makes 'incsearch' and ":help [" work.
     (let [#_Bytes lp (skip-anyof @regparse)]
-        (cond (at? lp (byte \]))     ;; there is a matching ']'
+        (cond (at? lp (byte \])) ;; there is a matching ']'
             ;; In a character class, different parsing rules apply.
             ;; Not even \ is special anymore, nothing is.
             (let-when [#_Bytes ret ;; Complement of range.
@@ -17213,138 +17218,135 @@
                   ;; At the start ']' and '-' mean the literal character.
                   #_int startc ;; > 0 when next '-' is a range
                     (let [startc (.at @regparse 0)] (if (any == startc (byte \]) (byte \-)) (do (regc startc) (swap! regparse plus 1) startc) -1))
-                  _ (loop-when startc (and (non-eos? @regparse) (not-at? @regparse (byte \]))) => :_
+                  [win _]
+                    (loop-when startc (and (non-eos? @regparse) (not-at? @regparse (byte \]))) => [win :_]
                         (cond (at? @regparse (byte \-))
-                        (do (swap! regparse plus 1)
-                            ;; The '-' is not used for a range at the end and after or before a '\n'.
-                            (if (or (at? @regparse (byte \])) (eos? @regparse) (== startc -1) (and (at? @regparse (byte \\)) (at? @regparse 1 (byte \n))))
-                                ;; [--x] is a range
-                                (let [startc (byte \-)] (regc startc) (recur startc))
-                                ;; also accept "a-[.z.]"
-                                (let [#_int endc (if (at? @regparse (byte \[)) (get-coll-element regparse) 0)
-                                      endc (if (zero? endc) (us-ptr2char-adv regparse, true) endc)
-                                      ;; Handle \o40, \x20 and \u20AC style sequences.
-                                      endc (if (and (== endc (byte \\)) (not @reg_cpo_lit) (not @reg_cpo_bsl)) (coll-get-char) endc)]
-                                    (cond (< endc startc)
-                                        (do (emsg e_invrange)
-                                            (reset! rc_did_emsg true)
-                                            nil)
-                                    (or (< 1 (utf-char2len startc)) (< 1 (utf-char2len endc)))
-                                        ;; Limit to a range of 256 chars.
-                                        (if (< (+ startc 256) endc)
-                                            (do (emsg e_invrange)
+                            (do (swap! regparse plus 1)
+                                ;; The '-' is not used for a range at the end and after or before a '\n'.
+                                (if (or (at? @regparse (byte \])) (eos? @regparse) (== startc -1) (and (at? @regparse (byte \\)) (at? @regparse 1 (byte \n))))
+                                    ;; [--x] is a range
+                                    (let [startc (byte \-)] (regc startc) (recur startc))
+                                    ;; also accept "a-[.z.]"
+                                    (let [#_int endc (if (at? @regparse (byte \[)) (get-coll-element regparse) 0)
+                                          endc (if (zero? endc) (us-ptr2char-adv regparse, true) endc)
+                                          ;; Handle \o40, \x20 and \u20AC style sequences.
+                                          endc (if (and (== endc (byte \\)) (not @reg_cpo_lit) (not @reg_cpo_bsl)) (coll-get-char) endc)]
+                                        (cond (< endc startc)
+                                            (let [win (emsg win, e_invrange)]
                                                 (reset! rc_did_emsg true)
-                                                nil)
-                                            (do (loop-when [startc (inc startc)] (<= startc endc) (regmbc startc) (recur (inc startc)))
-                                                (recur -1)
-                                            ))
-                                    :else
-                                        (do (loop-when [startc (inc startc)] (<= startc endc) (regc startc) (recur (inc startc)))
-                                            (recur -1))
-                                    ))
-                            ))
+                                                [win nil])
+                                        (or (< 1 (utf-char2len startc)) (< 1 (utf-char2len endc)))
+                                            ;; Limit to a range of 256 chars.
+                                            (if (< (+ startc 256) endc)
+                                                (let [win (emsg win, e_invrange)]
+                                                    (reset! rc_did_emsg true)
+                                                    [win nil])
+                                                (do (loop-when [startc (inc startc)] (<= startc endc) (regmbc startc) (recur (inc startc)))
+                                                    (recur -1)
+                                                ))
+                                        :else
+                                            (do (loop-when [startc (inc startc)] (<= startc endc) (regc startc) (recur (inc startc)))
+                                                (recur -1))
+                                        ))
+                                ))
                         ;; Only "\]", "\^", "\]" and "\\" are special in Vi.
                         ;; Vim accepts "\t", "\e", etc., but only when the 'l' flag in 'cpoptions' is not included.
                         ;; Posix doesn't recognize backslash at all.
                         (and (at? @regparse (byte \\))
                              (not @reg_cpo_bsl)
                              (or (some? (vim-strchr REGEXP_INRANGE, (.at @regparse 1))) (and (not @reg_cpo_lit) (some? (vim-strchr REGEXP_ABBR, (.at @regparse 1))))))
-                        (do (swap! regparse plus 1)
-                            (cond (at? @regparse (byte \n))
-                                (do ;; '\n' in range: also match NL
-                                    (when (!= ret JUST_CALC_SIZE)
-                                        ;; Using \n inside [^] does not change what matches.  "[^\n]" is the same as ".".
-                                        (when (at? ret ANYOF)
-                                            (.be ret 0, (+ ANYOF ADD_NL))
-                                            (swap! a'fl | HASNL)
-                                        )) ;; else: must have had a \n already
-                                    (swap! regparse plus 1)
-                                    (recur -1))
-                            (or (at? @regparse (byte \d)) (at? @regparse (byte \o)) (at? @regparse (byte \x)) (at? @regparse (byte \u)) (at? @regparse (byte \U)))
-                                (let [startc (coll-get-char)]
-                                    (if (zero? startc) (regc 0x0a) (regmbc startc))
-                                    (recur startc))
-                            :else
-                                (let [startc (backslash-trans (.at (swap! regparse plus 1) -1))]
-                                    (regc startc)
-                                    (recur startc))
-                            ))
+                            (do (swap! regparse plus 1)
+                                (cond (at? @regparse (byte \n))
+                                    (do ;; '\n' in range: also match NL
+                                        (when (!= ret JUST_CALC_SIZE)
+                                            ;; Using \n inside [^] does not change what matches.  "[^\n]" is the same as ".".
+                                            (when (at? ret ANYOF)
+                                                (.be ret 0, (+ ANYOF ADD_NL))
+                                                (swap! a'fl | HASNL)
+                                            )) ;; else: must have had a \n already
+                                        (swap! regparse plus 1)
+                                        (recur -1))
+                                (or (at? @regparse (byte \d)) (at? @regparse (byte \o)) (at? @regparse (byte \x)) (at? @regparse (byte \u)) (at? @regparse (byte \U)))
+                                    (let [startc (coll-get-char)]
+                                        (if (zero? startc) (regc 0x0a) (regmbc startc))
+                                        (recur startc))
+                                :else
+                                    (let [startc (backslash-trans (.at (swap! regparse plus 1) -1))]
+                                        (regc startc)
+                                        (recur startc))
+                                ))
                         (at? @regparse (byte \[))
-                        (let [#_int c_class (get-char-class regparse) a'startc (atom -1)]
-                            ;; Characters assumed to be 8 bits!
-                            (condp == c_class
-                                CLASS_NONE
-                                    (let [c_class (get-equi-class regparse)]
-                                        (if (non-zero? c_class)
-                                            (reg-equi-class c_class) ;; produce equivalence class
-                                            (let [c_class (get-coll-element regparse)]
-                                                (if (non-zero? c_class)
-                                                    (regmbc c_class) ;; produce a collating element
-                                                    (regc (reset! a'startc (.at (swap! regparse plus 1) -1))) ;; literal '[', allow [[-x] as a range
-                                                ))
-                                        ))
-                                CLASS_ALNUM     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalnum cu)  (regc cu)))
-                                CLASS_ALPHA     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalpha cu)  (regc cu)))
-                                CLASS_BLANK (do (regc (byte \space)) (regc TAB))
-                                CLASS_CNTRL     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-iscntrl cu)  (regc cu)))
-                                CLASS_DIGIT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isdigit cu)  (regc cu)))
-                                CLASS_GRAPH     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isgraph cu)  (regc cu)))
-                                CLASS_LOWER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-islower cu)  (regc cu)))
-                                CLASS_PRINT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (vim-isprintc cu) (regc cu)))
-                                CLASS_PUNCT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-ispunct cu)  (regc cu)))
-                                CLASS_SPACE (do (loop-when-recur [#_int cu 9] (<= cu  13) [(inc cu)]                         (regc cu)) (regc (byte \space)))
-                                CLASS_UPPER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-isupper cu)  (regc cu)))
-                                CLASS_XDIGIT    (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isxdigit cu) (regc cu)))
-                                CLASS_TAB       (regc TAB)
-                                CLASS_RETURN    (regc (byte \return))
-                                CLASS_BACKSPACE (regc (byte \backspace))
-                                CLASS_ESCAPE    (regc ESC)
+                            (let [#_int c_class (get-char-class regparse) a'startc (atom -1)]
+                                ;; Characters assumed to be 8 bits!
+                                (condp == c_class
+                                    CLASS_NONE
+                                        (let-when [c_class (get-equi-class regparse)] (zero? c_class) => (reg-equi-class c_class) ;; produce equivalence class
+                                            (let-when [c_class (get-coll-element regparse)] (zero? c_class) => (regmbc c_class)   ;; produce a collating element
+                                                (regc (reset! a'startc (.at (swap! regparse plus 1) -1)))                         ;; literal '[', allow [[-x] as a range
+                                            ))
+                                    CLASS_ALNUM     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalnum cu)  (regc cu)))
+                                    CLASS_ALPHA     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isalpha cu)  (regc cu)))
+                                    CLASS_BLANK (do (regc (byte \space)) (regc TAB))
+                                    CLASS_CNTRL     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-iscntrl cu)  (regc cu)))
+                                    CLASS_DIGIT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isdigit cu)  (regc cu)))
+                                    CLASS_GRAPH     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isgraph cu)  (regc cu)))
+                                    CLASS_LOWER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-islower cu)  (regc cu)))
+                                    CLASS_PRINT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (vim-isprintc cu) (regc cu)))
+                                    CLASS_PUNCT     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-ispunct cu)  (regc cu)))
+                                    CLASS_SPACE (do (loop-when-recur [#_int cu 9] (<= cu  13) [(inc cu)]                         (regc cu)) (regc (byte \space)))
+                                    CLASS_UPPER     (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (utf-isupper cu)  (regc cu)))
+                                    CLASS_XDIGIT    (loop-when-recur [#_int cu 1] (<= cu 255) [(inc cu)] (when (asc-isxdigit cu) (regc cu)))
+                                    CLASS_TAB       (regc TAB)
+                                    CLASS_RETURN    (regc (byte \return))
+                                    CLASS_BACKSPACE (regc (byte \backspace))
+                                    CLASS_ESCAPE    (regc ESC)
+                                )
+                                (recur @a'startc)
                             )
-                            (recur @a'startc)
-                        )
                         :else
-                        ;; produce a multibyte character including any following composing characters
-                        (let [startc (us-ptr2char @regparse) #_int n (us-ptr2len-cc @regparse)
-                              startc (if (!= (utf-char2len startc) n) -1 startc)] ;; composing chars
-                            (loop-when-recur n (< 0 n) (dec n) (regc (.at (swap! regparse plus 1) -1)))
-                            (recur startc)
-                        ))
-                    )] (some? _) => nil
+                            ;; produce a multibyte character including any following composing characters
+                            (let [startc (us-ptr2char @regparse) #_int n (us-ptr2len-cc @regparse)
+                                  startc (if (!= (utf-char2len startc) n) -1 startc)] ;; composing chars
+                                (loop-when-recur n (< 0 n) (dec n) (regc (.at (swap! regparse plus 1) -1)))
+                                (recur startc)
+                            ))
+                    )] (some? _) => [win nil]
+
                 (regc NUL)
                 (reset! prevchr_len 1)                  ;; last char was the ']'
                 (if (not-at? @regparse (byte \]))
-                    (do (emsg e_toomsbra)
+                    (let [win (emsg win, e_toomsbra)]
                         (reset! rc_did_emsg true)
-                        nil)                            ;; Cannot happen?
+                        [win nil])                      ;; Cannot happen?
                     (do (skipchr)                       ;; let's be friends with the lexer again
                         (swap! a'fl | HASWIDTH SIMPLE)
-                        ret)
+                        [win ret])
                 ))
         @reg_strict
-            (do (emsg* e_missingbracket, (if (< MAGIC_OFF @reg_magic) (u8 "") (u8 "\\")))
+            (let [win (emsg* win, e_missingbracket, (if (< MAGIC_OFF @reg_magic) (u8 "") (u8 "\\")))]
                 (reset! rc_did_emsg true)
-                nil)
+                [win nil])
         :else
-            (do-multibyte c, a'fl))
+            [win (do-multibyte c, a'fl)])
     ))
 
-(defn- #_Bytes regclass- [#_int c, #_int extra, #_int' a'fl]
-    (let [#_Bytes p (vim-strchr classchars, (no-Magic c))]
-        (cond (nil? p)
-            (do (emsg (u8 "E63: invalid use of \\_"))
+(defn- #_[window_C Bytes] regclass- [#_window_C win, #_int c, #_int extra, #_int' a'fl]
+    (let [#_Bytes s (vim-strchr classchars, (no-Magic c))]
+        (cond (nil? s)
+            (let [win (emsg win, (u8 "E63: invalid use of \\_"))]
                 (reset! rc_did_emsg true)
-                nil)
+                [win nil])
         ;; When '.' is followed by a composing char ignore the dot,
         ;; so that the composing char is matched here.
         (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
             (let [c (getchr) #_Bytes ret (regnode MULTIBYTECODE)]
                 (regmbc c)
                 (swap! a'fl | HASWIDTH SIMPLE)
-                ret)
+                [win ret])
         :else
-            (let [#_Bytes ret (regnode (+ (... classcodes (BDIFF p, classchars)) extra))]
+            (let [#_Bytes ret (regnode (+ (... classcodes (BDIFF s, classchars)) extra))]
                 (swap! a'fl | HASWIDTH SIMPLE)
-                ret
+                [win ret]
             ))
     ))
 
@@ -17352,27 +17354,27 @@
 ;;
 ;; Optimization: gobbles an entire sequence of ordinary characters so
 ;; it can turn them into a single node, which is smaller to store and
-;; faster to run.  Don't do this when one_exactly is set.
+;; faster to run.  Don't do this when "one_exactly" is set.
 
-(defn- #_Bytes bt-regatom [#_int' a'fl]
-    (reset! a'fl WORST)                         ;; Tentatively.
+(defn- #_[window_C Bytes] bt-regatom? [#_window_C win, #_int' a'fl]
+    (reset! a'fl WORST) ;; Tentatively.
     (let [#_int c (getchr)]
         (condp ==? c
-            (Magic (byte \^)) (regnode BT_BOL)
-            (Magic (byte \$)) (regnode BT_EOL)
-            (Magic (byte \<)) (regnode BT_BOW)
-            (Magic (byte \>)) (regnode BT_EOW)
+            (Magic (byte \^)) [win (regnode BT_BOL)]
+            (Magic (byte \$)) [win (regnode BT_EOL)]
+            (Magic (byte \<)) [win (regnode BT_BOW)]
+            (Magic (byte \>)) [win (regnode BT_EOW)]
 
             (Magic (byte \_))
                 (let [c (no-Magic (getchr))]
                     (condp == c
-                        (byte \^) (regnode BT_BOL)          ;; "\_^" is start-of-line
-                        (byte \$) (regnode BT_EOL)          ;; "\_$" is end-of-line
+                        (byte \^) [win (regnode BT_BOL)]        ;; "\_^" is start-of-line
+                        (byte \$) [win (regnode BT_EOL)]        ;; "\_$" is end-of-line
                         (let [#_int extra ADD_NL]
                             (swap! a'fl | HASNL)
                             (if (== c (byte \[))
-                                (regcoll- c, extra, a'fl)   ;; "\_[" is character range plus newline
-                                (regclass- c, extra, a'fl)  ;; "\_x" is character class plus newline
+                                (regcoll- win, c, extra, a'fl)  ;; "\_[" is character range plus newline
+                                (regclass- win, c, extra, a'fl) ;; "\_x" is character class plus newline
                             ))
                     ))
 
@@ -17389,38 +17391,39 @@
             (Magic (byte \h)) (Magic (byte \H))
             (Magic (byte \a)) (Magic (byte \A))
             (Magic (byte \l)) (Magic (byte \L))
-            (Magic (byte \u)) (Magic (byte \U))] (regclass- c, 0, a'fl)
+            (Magic (byte \u)) (Magic (byte \U))] (regclass- win, c, 0, a'fl)
 
             (Magic (byte \n))
                 (if @reg_string
-                    ;; In a string "\n" matches a newline character.
-                    (let [#_Bytes ret (regnode EXACTLY)] (regc NL) (regc NUL) (swap! a'fl | HASWIDTH SIMPLE) ret)
-                    ;; In buffer text "\n" matches the end of a line.
-                    (let [#_Bytes ret (regnode BT_NEWL)] (swap! a'fl | HASWIDTH HASNL) ret))
+                    ;; In a string, "\n" matches a newline character.
+                    (let [#_Bytes ret (regnode EXACTLY)] (regc NL) (regc NUL) (swap! a'fl | HASWIDTH SIMPLE) [win ret])
+                    ;; In buffer text, "\n" matches the end of a line.
+                    (let [#_Bytes ret (regnode BT_NEWL)] (swap! a'fl | HASWIDTH HASNL) [win ret]))
 
             (Magic (byte \())
                 (if @one_exactly
-                    (do (emsg* (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                    (let [win (emsg* win, (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                         (reset! rc_did_emsg true)
-                        nil)
-                    (let [a'flags (atom (int)) #_Bytes ret (bt-reg REG_PAREN, a'flags)]
-                        (if (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret) nil)
+                        [win nil])
+                    (let [a'flags (atom (int)) [win #_Bytes ret] (bt-reg? win, REG_PAREN, a'flags)]
+                        [win (when (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret))]
                     ))
 
            [NUL (Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]
-                (do (if @one_exactly
-                        (emsg* (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                        (emsg e_internal))       ;; supposed to be caught earlier
+                (let [win (if @one_exactly
+                            (emsg* win, (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                            (emsg win, e_internal) ;; supposed to be caught earlier
+                        )]
                     (reset! rc_did_emsg true)
-                    nil)
+                    [win nil])
 
            [(Magic (byte \=)) (Magic (byte \?)) (Magic (byte \+)) (Magic (byte \@)) (Magic (byte \{)) (Magic (byte \*))]
-                (let [c (no-Magic c)]
-                    (emsg* (u8 "E64: %s%c follows nothing"), (if (if (== c (byte \*)) (<= MAGIC_ON @reg_magic) (== @reg_magic MAGIC_ALL)) (u8 "") (u8 "\\")), c)
+                (let [c (no-Magic c)
+                      win (emsg* win, (u8 "E64: %s%c follows nothing"), (if (if (== c (byte \*)) (<= MAGIC_ON @reg_magic) (== @reg_magic MAGIC_ALL)) (u8 "") (u8 "\\")), c)]
                     (reset! rc_did_emsg true)
-                    nil)
+                    [win nil])
 
-            (Magic (byte \~))                    ;; previous substitute pattern
+            (Magic (byte \~)) ;; previous substitute pattern
                 (if (some? @reg_prev_sub)
                     (let [#_Bytes ret (regnode EXACTLY)
                           #_Bytes s (loop-when-recur [s @reg_prev_sub] (non-eos? s) [(.plus s 1)] => s
@@ -17431,10 +17434,10 @@
                             (swap! a'fl | HASWIDTH)
                             (when (== (BDIFF s, @reg_prev_sub) 1)
                                 (swap! a'fl | SIMPLE)))
-                        ret)
-                    (do (emsg e_nopresub)
+                        [win ret])
+                    (let [win (emsg win, e_nopresub)]
                         (reset! rc_did_emsg true)
-                        nil))
+                        [win nil]))
 
            [(Magic (byte \1)) (Magic (byte \2)) (Magic (byte \3)) (Magic (byte \4)) (Magic (byte \5)) (Magic (byte \6)) (Magic (byte \7)) (Magic (byte \8)) (Magic (byte \9))]
                 (let [#_int refnum (- c (Magic (byte \0)))]
@@ -17442,16 +17445,16 @@
                     ;; TODO:  Should also check that we don't refer to something that is repeated (+*=):
                     ;; what instance of the repetition should we match?
                     (if (... @had_endbrace refnum)
-                        (regnode (+ BACKREF refnum))
+                        [win (regnode (+ BACKREF refnum))]
                         ;; Trick: check if "@<=" or "@<!" follows, in which case the \1 can appear before the referenced match.
                         (let [#_Bytes p (loop-when [p @regparse] (non-eos? p) => p
                                     (recur-if (not (and (at? p (byte \@)) (at? p 1 (byte \<)) (or (at? p 2 (byte \!)) (at? p 2 (byte \=))))) [(.plus p 1)] => p)
                                 )]
                             (if (eos? p)
-                                (do (emsg (u8 "E65: Illegal back reference"))
+                                (let [win (emsg win, (u8 "E65: Illegal back reference"))]
                                     (reset! rc_did_emsg true)
-                                    nil)
-                                (regnode (+ BACKREF refnum))
+                                    [win nil])
+                                [win (regnode (+ BACKREF refnum))]
                             ))
                     ))
 
@@ -17459,21 +17462,21 @@
                 (let [c (no-Magic (getchr))]
                     (condp ==? c
                         (byte \()
-                            (do (emsg e_z_not_allowed)
+                            (let [win (emsg win, e_z_not_allowed)]
                                 (reset! rc_did_emsg true)
-                                nil)
+                                [win nil])
 
                        [(byte \1) (byte \2) (byte \3) (byte \4) (byte \5) (byte \6) (byte \7) (byte \8) (byte \9)]
-                            (do (emsg e_z1_not_allowed)
+                            (let [win (emsg win, e_z1_not_allowed)]
                                 (reset! rc_did_emsg true)
-                                nil)
+                                [win nil])
 
-                        (byte \s) (let [#_Bytes ret (regnode (+ MOPEN 0))] (if (re-mult-next (u8 "\\zs")) ret nil))
-                        (byte \e) (let [#_Bytes ret (regnode (+ MCLOSE 0))] (if (re-mult-next (u8 "\\ze")) ret nil))
+                        (byte \s) (let [#_Bytes ret (regnode (+ MOPEN 0))  [win ?] (re-mult-next? win, (u8 "\\zs"))] [win (when ? ret)])
+                        (byte \e) (let [#_Bytes ret (regnode (+ MCLOSE 0)) [win ?] (re-mult-next? win, (u8 "\\ze"))] [win (when ? ret)])
 
-                        (do (emsg (u8 "E68: Invalid character after \\z"))
+                        (let [win (emsg win, (u8 "E68: Invalid character after \\z"))]
                             (reset! rc_did_emsg true)
-                            nil)
+                            [win nil])
                     ))
 
             (Magic (byte \%))
@@ -17481,42 +17484,43 @@
                     (condp ==? c
                         (byte \() ;; () without a back reference
                             (if @one_exactly
-                                (do (emsg* (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                (let [win (emsg* win, (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                     (reset! rc_did_emsg true)
-                                    nil)
-                                (let [a'flags (atom (int)) #_Bytes ret (bt-reg REG_NPAREN, a'flags)]
-                                    (if (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret) nil)
+                                    [win nil])
+                                (let [a'flags (atom (int)) [win #_Bytes ret] (bt-reg? win, REG_NPAREN, a'flags)]
+                                    [win (when (some? ret) (do (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASNL HASLOOKBH))) ret))]
                                 ))
 
                         ;; Catch \%^ and \%$ regardless of where they appear in the pattern -- regardless of whether or not it makes sense.
-                        (byte \^) (regnode BT_BOF)
-                        (byte \$) (regnode BT_EOF)
-                        (byte \#) (regnode BT_CURSOR)
-                        (byte \V) (regnode BT_VISUAL)
-                        (byte \C) (regnode BT_COMPOSING)
+                        (byte \^) [win (regnode BT_BOF)]
+                        (byte \$) [win (regnode BT_EOF)]
+                        (byte \#) [win (regnode BT_CURSOR)]
+                        (byte \V) [win (regnode BT_VISUAL)]
+                        (byte \C) [win (regnode BT_COMPOSING)]
 
                         ;; \%[abc]: Emit as a list of branches, all ending at the last branch which matches nothing.
                         (byte \[)
                             (if @one_exactly        ;; doesn't nest
-                                (do (emsg* (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                (let [win (emsg* win, (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                     (reset! rc_did_emsg true)
-                                    nil)
-                                (let-when [[#_Bytes lastnode #_Bytes ret :as _]
-                                        (loop-when [lastnode nil ret nil c (getchr)] (!= c (byte \])) => [lastnode ret]
+                                    [win nil])
+                                (let-when [[win [#_Bytes lastnode #_Bytes ret :as _]]
+                                        (loop-when [win win lastnode nil ret nil c (getchr)] (!= c (byte \])) => [win [lastnode ret]]
                                             (if (== c NUL)
-                                                (do (emsg* e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                                (let [win (emsg* win, e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                                     (reset! rc_did_emsg true)
-                                                    nil)
+                                                    [win nil])
                                                 (let [#_Bytes br (regnode BRANCH) ret (if (nil? ret) br (do (regtail lastnode, br) ret))]
                                                     (ungetchr)
-                                                    (let [_ (reset! one_exactly true) lastnode (bt-regatom a'fl) _ (reset! one_exactly false)]
-                                                        (recur-if (some? lastnode) [lastnode ret (getchr)] => nil)
+                                                    (let [_ (reset! one_exactly true) [win lastnode] (bt-regatom? win, a'fl) _ (reset! one_exactly false)]
+                                                        (recur-if (some? lastnode) [win lastnode ret (getchr)] => [win nil])
                                                     ))
-                                            ))] (some? _) => nil
+                                            ))] (some? _) => [win nil]
+
                                     (if (nil? ret)
-                                        (do (emsg* e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        (let [win (emsg* win, e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                             (reset! rc_did_emsg true)
-                                            nil)
+                                            [win nil])
                                         (let [#_Bytes lastbranch (regnode BRANCH) #_Bytes br (regnode NOTHING)]
                                             (when (!= ret JUST_CALC_SIZE)
                                                 (regtail lastnode, br)
@@ -17526,7 +17530,7 @@
                                                     (recur (if (== (re-op br) BRANCH) (do (regtail br, lastbranch) (operand br)) (regnext br)))
                                                 ))
                                             (swap! a'fl & (bit-not (| HASWIDTH SIMPLE)))
-                                            ret
+                                            [win ret]
                                         ))
                                 ))
 
@@ -17543,14 +17547,14 @@
                                         (byte \U) (gethexchrs 8)
                                     -1)]
                                 (if (< i 0)
-                                    (do (emsg* (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (let [win (emsg* win, (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                         (reset! rc_did_emsg true)
-                                        nil)
+                                        [win nil])
                                     (let [#_Bytes ret (regnode (if (use-multibytecode i) MULTIBYTECODE EXACTLY))]
                                         (if (zero? i) (regc 0x0a) (regmbc i))
                                         (regc NUL)
                                         (swap! a'fl | HASWIDTH)
-                                        ret)
+                                        [win ret])
                                 ))
 
                         (let-when [[ret :as _]
@@ -17577,15 +17581,17 @@
                                                     ))
                                                 [ret])
                                         ))
-                                )] (nil? _) => ret
-                            (do (emsg* (u8 "E71: Invalid character after %s%%"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                )] (nil? _) => [win ret]
+
+                            (let [win (emsg* win, (u8 "E71: Invalid character after %s%%"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                 (reset! rc_did_emsg true)
-                                nil))
+                                [win nil]
+                            ))
                     ))
 
-            (Magic (byte \[)) (regcoll- c, 0, a'fl)
+            (Magic (byte \[)) (regcoll- win, c, 0, a'fl)
 
-            (do-multibyte c, a'fl))
+            [win (do-multibyte c, a'fl)])
     ))
 
 (defn- #_final #_Bytes do-multibyte [#_int c, #_int' a'fl]
@@ -18009,28 +18015,27 @@
 ;; If "minval" is missing, the default is zero.
 ;; If "maxval" is missing, the default is a very big number.
 
-(defn- #_boolean read-limits [#_long' a'min, #_long' a'max]
-    (let [#_boolean reverse (at? @regparse (byte \-))
-          _ (when reverse (swap! regparse plus 1))
+(defn- #_[window_C boolean] read-limits? [#_window_C win, #_long' a'min, #_long' a'max]
+    (let [#_boolean reverse (at? @regparse (byte \-)) _ (when reverse (swap! regparse plus 1))
           #_Bytes start @regparse]
         (reset! a'min (getdigits regparse))
         (reset! a'max (cond
-            (at? @regparse (byte \,)) (if (asc-isdigit (.at (swap! regparse plus 1) 0)) (getdigits regparse) MAX_LIMIT)
-            (asc-isdigit (.at start 0)) @a'min                      ;; it was \{n} or \{-n}
-            :else MAX_LIMIT                                         ;; it was \{} or \{-}
+            (at? @regparse (byte \,))   (if (asc-isdigit (.at (swap! regparse plus 1) 0)) (getdigits regparse) MAX_LIMIT)
+            (asc-isdigit (.at start 0)) @a'min      ;; it was \{n} or \{-n}
+            :else                       MAX_LIMIT   ;; it was \{} or \{-}
         ))
-        (when (at? @regparse (byte \\)) (swap! regparse plus 1))    ;; allow either \{...} or \{...\}
-        (if (not-at? @regparse (byte \}))
-            (do
-                (emsg* (u8 "E554: Syntax error in %s{...}"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                (reset! rc_did_emsg true)
-                false)
-            (do ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
-                (when (or (and (not reverse) (< @a'max @a'min)) (and reverse (< @a'min @a'max)))
+        (when (at? @regparse (byte \\))
+            (swap! regparse plus 1))                ;; allow either \{...} or \{...\}
+        (if (at? @regparse (byte \}))
+            ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
+            (do (when (or (and (not reverse) (< @a'max @a'min)) (and reverse (< @a'min @a'max)))
                     (let [_ @a'min] (reset! a'min @a'max) (reset! a'max _)))
                 (skipchr) ;; let's be friends with the lexer again
-                true)
-        )
+                [win true])
+            (let [win (emsg* win, (u8 "E554: Syntax error in %s{...}"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
+                (reset! rc_did_emsg true)
+                [win false]
+            ))
     ))
 
 ;; Global work variables for vim-regexec().
@@ -19195,12 +19200,12 @@
 
 ;; Used in a place where no * or \+ can follow.
 
-(defn- #_boolean re-mult-next [#_Bytes what]
-    (if (== (re-multi-type (peekchr)) MULTI_MULT)
-        (do (emsg* (u8 "E888: (NFA regexp) cannot repeat %s"), what)
+(defn- #_[window_C boolean] re-mult-next? [#_window_C win, #_Bytes what]
+    (when' (== (re-multi-type (peekchr)) MULTI_MULT) => [win true]
+        (let [win (emsg* win, (u8 "E888: (NFA regexp) cannot repeat %s"), what)]
             (reset! rc_did_emsg true)
-            false)
-        true
+            [win false]
+        )
     ))
 
 (class! #_final decomp_C
@@ -20110,7 +20115,7 @@
 ;; We try to reuse parsing functions in regexp.c to
 ;; minimize surprise and keep the syntax consistent.
 
-(defn- #_boolean nfa-regcoll- [#_int c, #_int extra, #_Bytes o'regparse]
+(defn- #_[window_C boolean] nfa-regcoll- [#_window_C win, #_int c, #_int extra, #_Bytes o'regparse]
     ;; [abc]  uses NFA_START_COLL - NFA_END_COLL
     ;; [^abc] uses NFA_START_NEG_COLL - NFA_END_NEG_COLL
     ;; Each character is produced as a regular state,
@@ -20130,7 +20135,8 @@
                             (emc1 result))
                         (reset! regparse endp)
                         (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                        true)
+                        [win true])
+
                     ;; Failed to recognize a character class.
                     ;; Use the simple version that turns [abc] into 'a' OR 'b' OR 'c'.
                     (let-when [#_boolean negated (at? @regparse (byte \^))
@@ -20143,12 +20149,12 @@
                                 (swap! regparse #(.plus % (us-ptr2len-cc %)))
                                 (emc2 startc)
                                 startc)
-                          [extra :as _]
+                          [win [extra :as _]]
                             ;; Emit the OR branches for each character in the [].
-                            (loop-when [startc startc #_boolean emit_range false extra extra] (BLT @regparse, endp) => [extra]
-                                (let-when [#_int oldstartc startc
+                            (loop-when [startc startc #_boolean emit_range false extra extra] (BLT @regparse, endp) => [win [extra]]
+                                (let-when [o'startc startc
                                       [startc recur? :as _]
-                                        (if (at? @regparse (byte \[))
+                                        (when' (at? @regparse (byte \[)) => [-1 false]
                                             ;; Check for [: :], [= =], [. .].
                                             (let [#_int charclass (get-char-class regparse)
                                                   #_int equiclass (if (== charclass CLASS_NONE) (get-equi-class regparse) 0)
@@ -20176,27 +20182,23 @@
                                                         [-1 true])
                                                 ;; Try equivalence class [=a=] and the like.
                                                 (non-zero? equiclass)
-                                                    (if-not (nfa-emit-equi-class equiclass)
-                                                        (do ;; should never happen
-                                                            (emsg (u8 "E868: Error building NFA with equivalence class!"))
-                                                            (reset! rc_did_emsg true)
-                                                            nil)
+                                                    (do (nfa-emit-equi-class equiclass)
                                                         [-1 true])
                                                 ;; Try collating class like [. .].
                                                 (non-zero? collclass)
                                                     ;; Will emit the proper atom at the end of the while loop.
-                                                    [collclass false]     ;; allow [.a.]-x as a range
+                                                    [collclass false] ;; allow [.a.]-x as a range
                                                 :else
-                                                    [-1 false]
-                                                ))
-                                            [-1 false])
-                                ] (some? _) => nil
+                                                    [-1 false])
+                                            ))
+                                ] (some? _) => [win nil]
+
                                     (cond recur?
                                         (recur startc emit_range extra)
                                     ;; Try a range like 'a-x' or '\t-z'.  Also allows '-' as a start character.
-                                    (and (at? @regparse (byte \-)) (!= oldstartc -1))
+                                    (and (at? @regparse (byte \-)) (!= o'startc -1))
                                         (do (swap! regparse #(.plus % (us-ptr2len-cc %)))
-                                            (recur oldstartc true extra))       ;; reading the end of the range
+                                            (recur o'startc true extra)) ;; reading the end of the range
                                     :else
                                         ;; Now handle simple and escaped characters.
                                         ;; Only "\]", "\^", "\]" and "\\" are special in Vi.
@@ -20220,26 +20222,23 @@
                                                     [startc false])
                                               ;; Normal printable char.
                                               startc (if (== startc -1) (us-ptr2char @regparse) startc)
-                                              [startc emit_range extra :as _]
+                                              [win [startc emit_range extra :as _]]
                                                 ;; Previous char was '-', so this char is end of range.
-                                                (cond emit_range
-                                                    (let [#_int endc startc startc oldstartc]
-                                                        (if (< endc startc)
-                                                            (do (emsg e_invrange)
-                                                                (reset! rc_did_emsg true)
-                                                                nil)
-                                                            (do
-                                                                (cond (< (+ startc 2) endc)
-                                                                (do ;; Emit a range instead of the sequence of individual characters.
-                                                                    (if (zero? startc)
-                                                                        (emc1 1) ;; \x00 is translated to \x0a, start at \x01
-                                                                        (swap! post_array pop)) ;; remove NFA_CONCAT
-                                                                    (and (emc1 endc) (emc1 NFA_RANGE) (emc1 NFA_CONCAT)))
-                                                                :else ;; Emit the range.  "startc" was already emitted, so skip it.
-                                                                    (loop-when-recur [#_int c (inc startc)] (<= c endc) [(inc c)] (emc2 c)))
-                                                                [-1 false extra])
+                                                (if emit_range
+                                                    (let [#_int endc startc startc o'startc]
+                                                        (cond (< endc startc)
+                                                            (let [win (emsg win, e_invrange)] (reset! rc_did_emsg true) [win nil])
+                                                        (< (+ startc 2) endc)
+                                                            ;; Emit a range instead of the sequence of individual characters.
+                                                            (do (when' (zero? startc) => (swap! post_array pop) ;; remove NFA_CONCAT
+                                                                    (emc1 1)) ;; \x00 is translated to \x0a, start at \x01
+                                                                (emc1 endc) (emc1 NFA_RANGE) (emc1 NFA_CONCAT)
+                                                                [win [-1 false extra]])
+                                                        :else
+                                                            ;; Emit the range.  "startc" was already emitted, so skip it.
+                                                            (do (loop-when-recur [#_int c (inc startc)] (<= c endc) [(inc c)] (emc2 c))
+                                                                [win [-1 false extra]])
                                                         ))
-                                                :else
                                                     ;; This char (startc) is not part of a range.  Normally, just emit it.
                                                     ;; But if we get NUL from a collating char, then replace it with 0x0a.
                                                     ;; Needed to completely mimic the behaviour of the backtracking engine.
@@ -20249,16 +20248,18 @@
                                                                     (if (not negated) NFA_ADD_NL extra)
                                                                     (do (emc2 (if (and got_coll_char (zero? startc)) 0x0a startc)) extra)
                                                                 )]
-                                                        [startc emit_range extra]
+                                                        [win [startc emit_range extra]]
                                                     ))
-                                        ] (some? _) => nil
+                                        ] (some? _) => [win nil]
+
                                             (swap! regparse #(.plus % (us-ptr2len-cc %)))
                                             (recur startc emit_range extra)
                                         ))
                                 ))
-                    ] (some? _) => false
+                    ] (some? _) => [win false]
+
                         (swap! regparse #(.minus % (us-ptr-back o'regparse, %)))
-                        (when (at? @regparse (byte \-))       ;; if last, '-' is just a char
+                        (when (at? @regparse (byte \-)) ;; if last, '-' is just a char
                             (emc2 (byte \-)))
                         ;; skip the trailing ]
                         (reset! regparse endp)
@@ -20269,37 +20270,35 @@
                         (when (== extra NFA_ADD_NL)
                             (emc1 (if @reg_string NL NFA_NEWL))
                             (emc1 NFA_OR))
-                        true)
+                        [win true])
                 ))
         @reg_strict
-            (do (emsg e_missingbracket)
+            (let [win (emsg win, e_missingbracket)]
                 (reset! rc_did_emsg true)
-                false)
+                [win false])
         :else
-            (nfa-do-multibyte c, o'regparse))
+            [win (nfa-do-multibyte c, o'regparse)])
     ))
 
-(defn- #_boolean nfa-regclass- [#_int c, #_int extra, #_Bytes o'regparse]
+(defn- #_[window_C boolean] nfa-regclass- [#_window_C win, #_int c, #_int extra, #_Bytes o'regparse]
     (let [#_Bytes p (vim-strchr classchars, (no-Magic c))]
         (cond (nil? p)
-            (if (== extra NFA_ADD_NL)
-                (do (emsg* e_ill_char_class, c)
+            (when' (== extra NFA_ADD_NL) => [(emsg* win, (u8 "INTERNAL: Unknown character class char: %ld"), c) false]
+                (let [win (emsg* win, e_ill_char_class, c)]
                     (reset! rc_did_emsg true)
-                    false)
-                (do (emsg* (u8 "INTERNAL: Unknown character class char: %ld"), c)
-                    false
+                    [win false]
                 ))
         ;; When '.' is followed by a composing char ignore the dot, so that the composing char is matched here.
         (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
             (let [o'regparse @regparse c (getchr)]
-                (nfa-do-multibyte c, o'regparse))
+                [win (nfa-do-multibyte c, o'regparse)])
         :else
             (do (emc1 (... nfa_classcodes (BDIFF p, classchars)))
                 (when (== extra NFA_ADD_NL)
                     (emc1 NFA_NEWL)
                     (emc1 NFA_OR)
                     (swap! regflags | RF_HASNL))
-                true
+                [win true]
             ))
     ))
 
@@ -20316,24 +20315,24 @@
 ;;     or  \%( pattern \)
 ;;     or  \z( pattern \)
 
-(defn- #_boolean nfa-regatom []
+(defn- #_[window_C boolean] nfa-regatom? [#_window_C win]
     (let [#_Bytes o'regparse @regparse #_int c (getchr)]
         (condp ==? c
-            NUL (do (emsg e_nul_found) (reset! rc_did_emsg true) false)
+            NUL (let [win (emsg win, e_nul_found)] (reset! rc_did_emsg true) [win false])
 
-            (Magic (byte \^)) (emc1 NFA_BOL)
-            (Magic (byte \$)) (emc1 NFA_EOL)
-            (Magic (byte \<)) (emc1 NFA_BOW)
-            (Magic (byte \>)) (emc1 NFA_EOW)
+            (Magic (byte \^)) [win (emc1 NFA_BOL)]
+            (Magic (byte \$)) [win (emc1 NFA_EOL)]
+            (Magic (byte \<)) [win (emc1 NFA_BOW)]
+            (Magic (byte \>)) [win (emc1 NFA_EOW)]
 
             (Magic (byte \_))
                 (let [c (no-Magic (getchr))]
                     (condp == c
-                        NUL       (do (emsg e_nul_found) (reset! rc_did_emsg true) false)
-                        (byte \^) (emc1 NFA_BOL)                            ;; "\_^" is start-of-line
-                        (byte \$) (emc1 NFA_EOL)                            ;; "\_$" is end-of-line
-                        (byte \[) (nfa-regcoll- c, NFA_ADD_NL, o'regparse)  ;; "\_[" is collection plus newline
-                        #_else    (nfa-regclass- c, NFA_ADD_NL, o'regparse) ;; "\_x" is character class plus newline
+                        NUL       (let [win (emsg win, e_nul_found)] (reset! rc_did_emsg true) [win false])
+                        (byte \^) [win (emc1 NFA_BOL)]                           ;; "\_^" is start-of-line
+                        (byte \$) [win (emc1 NFA_EOL)]                           ;; "\_$" is end-of-line
+                        (byte \[) (nfa-regcoll- win, c, NFA_ADD_NL, o'regparse)  ;; "\_[" is collection plus newline
+                        #_else    (nfa-regclass- win, c, NFA_ADD_NL, o'regparse) ;; "\_x" is character class plus newline
                     ))
 
            [(Magic (byte \.))                   ;; Character classes.
@@ -20349,137 +20348,129 @@
             (Magic (byte \h)) (Magic (byte \H))
             (Magic (byte \a)) (Magic (byte \A))
             (Magic (byte \l)) (Magic (byte \L))
-            (Magic (byte \u)) (Magic (byte \U))] (nfa-regclass- c, 0, o'regparse)
+            (Magic (byte \u)) (Magic (byte \U))] (nfa-regclass- win, c, 0, o'regparse)
 
             (Magic (byte \n))
                 ;; In a string "\n" matches a newline character.  ;; In buffer text "\n" matches the end of a line.
-                (if @reg_string (emc1 NL) (do (emc1 NFA_NEWL) (swap! regflags | RF_HASNL) true))
+                [win (if @reg_string (emc1 NL) (do (emc1 NFA_NEWL) (swap! regflags | RF_HASNL) true))]
 
-            (Magic (byte \()) (nfa-reg REG_PAREN) ;; false: cascaded error
+            (Magic (byte \()) (nfa-reg? win, REG_PAREN) ;; false: cascaded error
 
            [(Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]
-                (do (emsg* e_misplaced, (no-Magic c)) false)
+                [(emsg* win, e_misplaced, (no-Magic c)) false]
 
            [(Magic (byte \=)) (Magic (byte \?)) (Magic (byte \+)) (Magic (byte \@)) (Magic (byte \*)) (Magic (byte \{))]
                 ;; these should follow an atom, not form an atom
-                (do (emsg* e_misplaced, (no-Magic c)) false)
+                [(emsg* win, e_misplaced, (no-Magic c)) false]
 
             (Magic (byte \~))
                 ;; Previous substitute pattern.  ;; Generated as "\%(pattern\)".
-                (let-when [#_Bytes s @reg_prev_sub] (some? s) => (do (emsg e_nopresub) false)
+                (let-when [#_Bytes s @reg_prev_sub] (some? s) => [(emsg win, e_nopresub) false]
                     (loop-when-recur [#_int i 0] (non-eos? s i) [(+ i (us-ptr2len s, i))]
                         (emc1 (us-ptr2char s, i))
                         (when (pos? i)
                             (emc1 NFA_CONCAT)))
-                    (emc1 NFA_NOPEN))
+                    [win (emc1 NFA_NOPEN)])
 
            [(Magic (byte \1)) (Magic (byte \2)) (Magic (byte \3)) (Magic (byte \4)) (Magic (byte \5)) (Magic (byte \6)) (Magic (byte \7)) (Magic (byte \8)) (Magic (byte \9))]
-                (do (emc1 (+ NFA_BACKREF1 (- (no-Magic c) (byte \1)))) (reset! nfa_has_backref true) true)
+                [win (do (emc1 (+ NFA_BACKREF1 (- (no-Magic c) (byte \1)))) (reset! nfa_has_backref true) true)]
 
             (Magic (byte \z))
                 (let [c (no-Magic (getchr))]
                     (condp ==? c
-                        (byte \s) (do (emc1 NFA_ZSTART)                          (re-mult-next (u8 "\\zs")))
-                        (byte \e) (do (emc1 NFA_ZEND) (reset! nfa_has_zend true) (re-mult-next (u8 "\\ze")))
+                        (byte \s) (do (emc1 NFA_ZSTART)                          (re-mult-next? win, (u8 "\\zs")))
+                        (byte \e) (do (emc1 NFA_ZEND) (reset! nfa_has_zend true) (re-mult-next? win, (u8 "\\ze")))
 
                        [(byte \1) (byte \2) (byte \3) (byte \4) (byte \5) (byte \6) (byte \7) (byte \8) (byte \9)] ;; \z1...\z9
-                            (do (emsg e_z1_not_allowed) (reset! rc_did_emsg true) false)
+                            (let [win (emsg win, e_z1_not_allowed)] (reset! rc_did_emsg true) [win false])
 
                         (byte \() ;; \z(    ;; sic!)
-                            (do (emsg e_z_not_allowed) (reset! rc_did_emsg true) false)
+                            (let [win (emsg win, e_z_not_allowed)] (reset! rc_did_emsg true) [win false])
 
-                        (do (emsg* (u8 "E867: (NFA) Unknown operator '\\z%c'"), (no-Magic c)) false)
+                        [(emsg* win, (u8 "E867: (NFA) Unknown operator '\\z%c'"), (no-Magic c)) false]
                     ))
 
             (Magic (byte \%))
                 (let [c (no-Magic (getchr))]
                     (condp ==? c
-                        (byte \() (and (nfa-reg REG_NPAREN) (emc1 NFA_NOPEN)) ;; () without a back reference
+                        (byte \() (let [[win ?] (nfa-reg? win, REG_NPAREN)] [win (and ? (emc1 NFA_NOPEN))]) ;; () without a back reference
 
                        [(byte \d)   ;; %d123 decimal
                         (byte \o)   ;; %o123 octal
                         (byte \x)   ;; %xab hex 2
                         (byte \u)   ;; %uabcd hex 4
                         (byte \U)]  ;; %U1234abcd hex 8
-                        (let [#_int nr (condp == c
-                                (byte \d) (getdecchrs)
-                                (byte \o) (getoctchrs)
-                                (byte \x) (gethexchrs 2)
-                                (byte \u) (gethexchrs 4)
-                                (byte \U) (gethexchrs 8)
-                                          -1)]
-                            (if (< nr 0)
-                                (do (emsg* (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                    (reset! rc_did_emsg true)
-                                    false)
-                                ;; A NUL is stored in the text as NL.
-                                ;; TODO: what if a composing character follows?
-                                (emc1 (if (zero? nr) 0x0a nr))
-                            ))
+                            (let [#_int nr (condp == c
+                                    (byte \d) (getdecchrs)
+                                    (byte \o) (getoctchrs)
+                                    (byte \x) (gethexchrs 2)
+                                    (byte \u) (gethexchrs 4)
+                                    (byte \U) (gethexchrs 8)
+                                              -1)]
+                                (if (< nr 0)
+                                    (let [win (emsg* win, (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
+                                        (reset! rc_did_emsg true)
+                                        [win false])
+                                    ;; A NUL is stored in the text as NL.
+                                    ;; TODO: what if a composing character follows?
+                                    [win (emc1 (if (zero? nr) 0x0a nr))]
+                                ))
 
                         ;; Catch \%^ and \%$ regardless of where they appear in the pattern -- regardless of whether or not it makes sense.
-                        (byte \^) (emc1 NFA_BOF)
-                        (byte \$) (emc1 NFA_EOF)
-                        (byte \#) (emc1 NFA_CURSOR)
-                        (byte \V) (emc1 NFA_VISUAL)
-                        (byte \C) (emc1 NFA_ANY_COMPOSING)
+                        (byte \^) [win (emc1 NFA_BOF)]
+                        (byte \$) [win (emc1 NFA_EOF)]
+                        (byte \#) [win (emc1 NFA_CURSOR)]
+                        (byte \V) [win (emc1 NFA_VISUAL)]
+                        (byte \C) [win (emc1 NFA_ANY_COMPOSING)]
 
                         (byte \[) ;; \%[abc]
-                            (let-when [[#_int n c :as _]
-                                (loop-when [n 0 c (peekchr)] (!= c (byte \])) => [n c]
+                            (let-when [[win [#_int n c :as _]]
+                                (loop-when [win win n 0 c (peekchr)] (!= c (byte \])) => [win [n c]]
                                     (cond (== c NUL)
-                                        (do (emsg* e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        (let [win (emsg* win, e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                             (reset! rc_did_emsg true)
-                                            nil)
-                                    (nfa-regatom) ;; recursive call!
-                                        (recur (inc n) (peekchr))
+                                            [win nil])
+                                    :else
+                                        (let [[win ?] (nfa-regatom? win)] ;; recursive call!
+                                            (recur-if ? [win (inc n) (peekchr)] => [win nil]))
                                     ))
-                            ] (some? _) => false
+                            ] (some? _) => [win false]
+
                                 (getchr)       ;; get the ]
                                 (if (zero? n)
-                                    (do (emsg* e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (let [win (emsg* win, e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))]
                                         (reset! rc_did_emsg true)
-                                        false)
+                                        [win false])
                                     (do
                                         (emc1 NFA_OPT_CHARS)
                                         (emc1 n)
-
                                         ;; Emit as "\%(\%[abc]\)" to be able to handle "\%[abc]*" which would
                                         ;; cause the empty string to be matched an unlimited number of times.
                                         ;; NFA_NOPEN is added only once at a position, while NFA_SPLIT is added
                                         ;; multiple times.  This is more efficient than not allowing NFA_SPLIT
                                         ;; multiple times, it is used a lot.
-
-                                        (emc1 NFA_NOPEN))
+                                        [win (emc1 NFA_NOPEN)])
                                 ))
 
                         (let [#_int cmp c [#_int n c]
                                 (loop-when-recur [n 0 c (if (any == c (byte \<) (byte \>)) (getchr) c)] (asc-isdigit c) [(+ (* n 10) (- c (byte \0))) (getchr)] => [n c])]
                             (cond (any == c (byte \l) (byte \c) (byte \v))
-                            (do
-                                (condp == c
-                                    (byte \l) (emc1 (condp == cmp (byte \<) NFA_LNUM_LT (byte \>) NFA_LNUM_GT NFA_LNUM)) ;; \%{n}l  \%{n}<l  \%{n}>l
-                                    (byte \c) (emc1 (condp == cmp (byte \<) NFA_COL_LT  (byte \>) NFA_COL_GT  NFA_COL))  ;; \%{n}c  \%{n}<c  \%{n}>c
-                                    (byte \v) (emc1 (condp == cmp (byte \<) NFA_VCOL_LT (byte \>) NFA_VCOL_GT NFA_VCOL)) ;; \%{n}v  \%{n}<v  \%{n}>v
-                                )
-                                (emc1 n)
-                            )
+                                (do (condp == c
+                                        (byte \l) (emc1 (condp == cmp (byte \<) NFA_LNUM_LT (byte \>) NFA_LNUM_GT NFA_LNUM))  ;; \%{n}l  \%{n}<l  \%{n}>l
+                                        (byte \c) (emc1 (condp == cmp (byte \<) NFA_COL_LT  (byte \>) NFA_COL_GT  NFA_COL))   ;; \%{n}c  \%{n}<c  \%{n}>c
+                                        (byte \v) (emc1 (condp == cmp (byte \<) NFA_VCOL_LT (byte \>) NFA_VCOL_GT NFA_VCOL))) ;; \%{n}v  \%{n}<v  \%{n}>v
+                                    [win (emc1 n)])
                             (and (== c (byte \')) (zero? n))
-                            (do
-                                (emc1 (condp == cmp (byte \<) NFA_MARK_LT (byte \>) NFA_MARK_GT NFA_MARK)) ;; \%'m  \%<'m  \%>'m
-                                (emc1 (getchr))
-                            )
+                                (do (emc1 (condp == cmp (byte \<) NFA_MARK_LT (byte \>) NFA_MARK_GT NFA_MARK)) ;; \%'m  \%<'m  \%>'m
+                                    [win (emc1 (getchr))])
                             :else
-                            (do
-                                (emsg* (u8 "E867: (NFA) Unknown operator '\\%%%c'"), (no-Magic c))
-                                false
+                                [(emsg* win, (u8 "E867: (NFA) Unknown operator '\\%%%c'"), (no-Magic c)) false]
                             ))
-                        )
                     ))
 
-            (Magic (byte \[)) (nfa-regcoll- c, 0, o'regparse)
+            (Magic (byte \[)) (nfa-regcoll- win, c, 0, o'regparse)
 
-            #_else            (nfa-do-multibyte c, o'regparse))
+            #_else            [win (nfa-do-multibyte c, o'regparse)])
     ))
 
 (defn- #_final #_boolean nfa-do-multibyte [#_int c, #_Bytes o'regparse]
@@ -20510,94 +20501,98 @@
 ;; piece   ::=      atom
 ;;      or  atom  multi
 
-(defn- #_boolean nfa-regpiece []
+(defn- #_[window_C boolean] nfa-regpiece? [#_window_C win]
     ;; Save the current parse state, so that we can use it if <atom>{m,n} is next.
     ;; Store current pos in the postfix form for \{m,n} involving 0s.
-    (let-when [o'state (save-parse-state) o'array @post_array] (nfa-regatom) => false ;; cascaded error
+    (let-when [o'state (save-parse-state) o'array @post_array [win ?] (nfa-regatom? win)] ? => [win false] ;; cascaded error
 
-        (let-when [#_int op (peekchr)] (!= (re-multi-type op) NOT_MULTI) => true
+        (let-when [#_int op (peekchr)] (!= (re-multi-type op) NOT_MULTI) => [win true]
             (skipchr)
 
-            (let-when [_ (condp ==? op
-                (Magic (byte \*)) (do (emc1 NFA_STAR) nil)
-                (Magic (byte \+))
-                    (do ;; Trick:  Normally, (a*)\+ would match the whole input "aaa".  The first and
-                        ;; only submatch would be "aaa".  But the backtracking engine interprets the
-                        ;; plus as "try matching one more time", and a* matches a second time at the
-                        ;; end of the input, the empty string.  The submatch will be the empty string.
-                        ;;
-                        ;; In order to be consistent with the old engine,
-                        ;; we replace <atom>+ with <atom><atom>*
-                        (restore-parse-state o'state)
-                        (reset! curchr -1)
-                        (if (nfa-regatom)
-                            (do (emc1 NFA_STAR) (emc1 NFA_CONCAT) (skipchr) nil) ;; skip the \+
-                            false
-                        ))
-                (Magic (byte \@))
-                    (let [#_int c2 (getdecchrs) op (no-Magic (getchr))
-                          [op #_int i]
-                            (condp == op
-                                (byte \=) [op NFA_PREV_ATOM_NO_WIDTH]                       ;; \@=
-                                (byte \!) [op NFA_PREV_ATOM_NO_WIDTH_NEG]                   ;; \@!
-                                (byte \<)
-                                    (let [op (no-Magic (getchr))]
-                                        (condp == op
-                                            (byte \=) [op NFA_PREV_ATOM_JUST_BEFORE]        ;; \@<=
-                                            (byte \!) [op NFA_PREV_ATOM_JUST_BEFORE_NEG]    ;; \@<!
-                                                      [op 0]))
-                                (byte \>) [op NFA_PREV_ATOM_LIKE_PATTERN]                   ;; \@>
-                                          [op 0]
-                            )]
-                        (if (zero? i)
-                            (do (emsg* (u8 "E869: (NFA) Unknown operator '\\@%c'"), op) false)
-                            (do (emc1 i)
-                                (when (any == i NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
-                                    (emc1 c2))
-                                nil)
-                        ))
-               [(Magic (byte \?)) (Magic (byte \=))] (do (emc1 NFA_QUEST) nil)
-                (Magic (byte \{))
-                    ;; a{2,5} will expand to 'aaa?a?a?'
-                    ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
-                    ;; \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parenthesis have the same id
-                    (let [#_int c2 (peekchr)
-                          #_boolean greedy (if (any == c2 (byte \-) (Magic (byte \-))) (do (skipchr) false) true)
-                          a'minval (atom (long)) a'maxval (atom (long))]
+            (let-when [[win _]
+                (condp ==? op
+                    (Magic (byte \*)) (do (emc1 NFA_STAR) [win nil])
 
-                        (cond (not (read-limits a'minval, a'maxval))
-                            (do (emsg (u8 "E870: (NFA regexp) Error reading repetition limits"))
-                                (reset! rc_did_emsg true)
-                                false)
-                        ;; <atom>{0,inf}, <atom>{0,} and <atom>{} are equivalent to <atom>*
-                        (and (zero? @a'minval) (== @a'maxval MAX_LIMIT))
-                            (do (if greedy
-                                    (emc1 NFA_STAR)             ;; {{   ;; \{}, \{0,}
-                                    (emc1 NFA_STAR_NONGREEDY))  ;; {{   ;; \{-}, \{-0,}
-                                nil)
-                        ;; Special case: x{0} or x{-0}.
-                        (zero? @a'maxval)
-                            (do ;; Ignore result of previous call to nfa-regatom().
-                                (reset! post_array o'array)
-                                ;; NFA_EMPTY is 0-length and works everywhere.
-                                (emc1 NFA_EMPTY)
-                                true)
-                        ;; The engine is very inefficient (uses too many states) when the maximum
-                        ;; is much larger than the minimum and when the maximum is large.
-                        ;; Bail out if we can use the other engine.
-                        (and (flag? @nfa_re_flags RE_AUTO) (< (min (+ @a'minval 200) 500) @a'maxval))
-                            false
-                        :else     ;; Ignore previous call to nfa-regatom().
-                            (let-when [_ (reset! post_array o'array)
-                                  ;; Save parse state after the repeated atom and the \{}.
-                                  o''state (save-parse-state)
-                                  #_int quest (if greedy NFA_QUEST NFA_QUEST_NONGREEDY)
-                                  _ (loop-when [#_int i 0] (< i @a'maxval) => nil
-                                        ;; Goto beginning of the repeated atom.
-                                        (restore-parse-state o'state)
-                                        (let [o'count (count @post_array)]
-                                            (if (nfa-regatom)
-                                                (do ;; after "minval" times, atoms are optional
+                    (Magic (byte \+))
+                        (do ;; Trick:  Normally, (a*)\+ would match the whole input "aaa".  The first and
+                            ;; only submatch would be "aaa".  But the backtracking engine interprets the
+                            ;; plus as "try matching one more time", and a* matches a second time at the
+                            ;; end of the input, the empty string.  The submatch will be the empty string.
+                            ;;
+                            ;; In order to be consistent with the old engine,
+                            ;; we replace <atom>+ with <atom><atom>*
+                            (restore-parse-state o'state)
+                            (reset! curchr -1)
+                            (let-when [[win ?] (nfa-regatom? win)] ? => [win false]
+                                (emc1 NFA_STAR) (emc1 NFA_CONCAT) (skipchr) [win nil] ;; skip the \+
+                            ))
+
+                    (Magic (byte \@))
+                        (let [#_int c2 (getdecchrs) op (no-Magic (getchr))
+                              [op #_int i]
+                                (condp == op
+                                    (byte \=) [op NFA_PREV_ATOM_NO_WIDTH]                       ;; \@=
+                                    (byte \!) [op NFA_PREV_ATOM_NO_WIDTH_NEG]                   ;; \@!
+                                    (byte \<)
+                                        (let [op (no-Magic (getchr))]
+                                            (condp == op
+                                                (byte \=) [op NFA_PREV_ATOM_JUST_BEFORE]        ;; \@<=
+                                                (byte \!) [op NFA_PREV_ATOM_JUST_BEFORE_NEG]    ;; \@<!
+                                                          [op 0]))
+                                    (byte \>) [op NFA_PREV_ATOM_LIKE_PATTERN]                   ;; \@>
+                                              [op 0]
+                                )]
+                            (if (zero? i)
+                                [(emsg* win, (u8 "E869: (NFA) Unknown operator '\\@%c'"), op) false]
+                                (do (emc1 i)
+                                    (when (any == i NFA_PREV_ATOM_JUST_BEFORE NFA_PREV_ATOM_JUST_BEFORE_NEG)
+                                        (emc1 c2))
+                                    [win nil])
+                            ))
+
+                   [(Magic (byte \?)) (Magic (byte \=))] (do (emc1 NFA_QUEST) [win nil])
+
+                    (Magic (byte \{))
+                        ;; a{2,5} will expand to 'aaa?a?a?'
+                        ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
+                        ;; \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parenthesis have the same id
+                        (let [#_int c2 (peekchr)
+                              #_boolean greedy (if (any == c2 (byte \-) (Magic (byte \-))) (do (skipchr) false) true)
+                              a'minval (atom (long)) a'maxval (atom (long)) [win ?] (read-limits? win, a'minval, a'maxval)]
+                            (cond (not ?)
+                                (let [win (emsg win, (u8 "E870: (NFA regexp) Error reading repetition limits"))]
+                                    (reset! rc_did_emsg true)
+                                    [win false])
+                            ;; <atom>{0,inf}, <atom>{0,} and <atom>{} are equivalent to <atom>*
+                            (and (zero? @a'minval) (== @a'maxval MAX_LIMIT))
+                                (do (if greedy
+                                        (emc1 NFA_STAR)             ;; {{   ;; \{}, \{0,}
+                                        (emc1 NFA_STAR_NONGREEDY))  ;; {{   ;; \{-}, \{-0,}
+                                    [win nil])
+                            ;; Special case: x{0} or x{-0}.
+                            (zero? @a'maxval)
+                                (do ;; Ignore result of previous call to nfa-regatom().
+                                    (reset! post_array o'array)
+                                    ;; NFA_EMPTY is 0-length and works everywhere.
+                                    (emc1 NFA_EMPTY)
+                                    [win true])
+                            ;; The engine is very inefficient (uses too many states) when the maximum
+                            ;; is much larger than the minimum and when the maximum is large.
+                            ;; Bail out if we can use the other engine.
+                            (and (flag? @nfa_re_flags RE_AUTO) (< (min (+ @a'minval 200) 500) @a'maxval))
+                                [win false]
+                            :else     ;; Ignore previous call to nfa-regatom().
+                                (let-when [_ (reset! post_array o'array)
+                                      ;; Save parse state after the repeated atom and the \{}.
+                                      o''state (save-parse-state)
+                                      #_int quest (if greedy NFA_QUEST NFA_QUEST_NONGREEDY)
+                                      [win _]
+                                        (loop-when [win win #_int i 0] (< i @a'maxval) => [win nil]
+                                            ;; Goto beginning of the repeated atom.
+                                            (restore-parse-state o'state)
+                                            (let [o'count (count @post_array)]
+                                                (let-when [[win ?] (nfa-regatom? win)] ? => [win false]
+                                                    ;; after "minval" times, atoms are optional
                                                     (when (< @a'minval (inc i))
                                                         (if (== @a'maxval MAX_LIMIT)
                                                             (emc1 (if greedy NFA_STAR NFA_STAR_NONGREEDY))
@@ -20606,24 +20601,24 @@
                                                     (when (!= o'count (count o'array))
                                                         (emc1 NFA_CONCAT))
                                                     (if (and (< @a'minval (inc i)) (== @a'maxval MAX_LIMIT))
-                                                        nil
-                                                        (recur (inc i))
+                                                        [win nil]
+                                                        (recur win (inc i))
                                                     ))
-                                                false
-                                            ))
-                                    )] (nil? _) => _
-                                ;; Go to just after the repeated atom and the \{}.
-                                (restore-parse-state o''state)
-                                (reset! curchr -1)
-                                nil)
-                        ))
-                nil)] (nil? _) => _
+                                            ))] (nil? _) => [win _]
 
-                (if (!= (re-multi-type (peekchr)) NOT_MULTI)
-                    (do (emsg (u8 "E871: (NFA regexp) Can't have a multi follow a multi !"))
+                                    ;; Go to just after the repeated atom and the \{}.
+                                    (restore-parse-state o''state)
+                                    (reset! curchr -1)
+                                    [win nil])
+                            ))
+
+                    [win nil])] (nil? _) => [win _]
+
+                (when' (!= (re-multi-type (peekchr)) NOT_MULTI) => [win true]
+                    (let [win (emsg win, (u8 "E871: (NFA regexp) Can't have a multi follow a multi !"))]
                         (reset! rc_did_emsg true)
-                        false)
-                    true)
+                        [win false]
+                    ))
             ))
     ))
 
@@ -20636,29 +20631,28 @@
 ;;      or  piece piece piece
 ;;      etc.
 
-(defn- #_boolean nfa-regconcat []
-    (loop [#_boolean first true]
+(defn- #_[window_C boolean] nfa-regconcat? [#_window_C win]
+    (loop [win win #_boolean first true]
         (condp ==? (peekchr)
            [NUL
             (Magic (byte \|))
             (Magic (byte \&))
             (Magic (byte \)))]
-                true
+                [win true]
 
-            (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur first))
-            (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur first))
-            (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur first))
+            (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur win first))
+            (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur win first))
+            (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur win first))
 
-            (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur first))
-            (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur first))
-            (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur first))
-            (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur first))
+            (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur win first))
+            (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur win first))
+            (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur win first))
+            (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur win first))
 
-            ;; :else
-            (when' (nfa-regpiece) => false
+            (let-when [[win ?] (nfa-regpiece? win)] ? => [win false]
                 (when-not first
                     (emc1 NFA_CONCAT))
-                (recur false)
+                (recur win false)
             ))
     ))
 
@@ -20673,25 +20667,24 @@
 ;;              or  concat \& concat \& concat
 ;;              etc.
 
-(defn- #_boolean nfa-regbranch []
-    (let [i (count @post_array)]
-        (when' (nfa-regconcat) => false ;; first branch, possibly the only one
-            (let [i (loop-when i (== (peekchr) (Magic (byte \&))) => i ;; try next concats
-                        (skipchr)
-                        (emc1 NFA_NOPEN)
-                        (emc1 NFA_PREV_ATOM_NO_WIDTH)
-                        (let [i (count @post_array)]
-                            (when' (nfa-regconcat) => nil
-                                (when (== (count @post_array) i) ;; if concat is empty, emit a node
-                                    (emc1 NFA_EMPTY))
-                                (emc1 NFA_CONCAT)
-                                (recur i)
-                            ))
-                    )]
-                (when' (some? i) => false
-                    (when (== (count @post_array) i) ;; if branch is empty, emit a node
-                        (emc1 NFA_EMPTY))
-                    true)
+(defn- #_[window_C boolean] nfa-regbranch? [#_window_C win]
+    (let-when [i (count @post_array) [win ?] (nfa-regconcat? win)] ? => [win false] ;; first branch, possibly the only one
+        (let [[win i]
+                (loop-when [win win i i] (== (peekchr) (Magic (byte \&))) => [win i] ;; try next concats
+                    (skipchr)
+                    (emc1 NFA_NOPEN)
+                    (emc1 NFA_PREV_ATOM_NO_WIDTH)
+                    (let-when [i (count @post_array) [win ?] (nfa-regconcat? win)] ? => [win nil]
+                        (when (== (count @post_array) i) ;; if concat is empty, emit a node
+                            (emc1 NFA_EMPTY))
+                        (emc1 NFA_CONCAT)
+                        (recur win i)
+                    )
+                )]
+            (when' (some? i) => [win false]
+                (when (== (count @post_array) i) ;; if branch is empty, emit a node
+                    (emc1 NFA_EMPTY))
+                [win true]
             ))
     ))
 
@@ -20707,53 +20700,57 @@
 ;;
 ;; paren: REG_NOPAREN, REG_PAREN or REG_NPAREN
 
-(defn- #_boolean nfa-reg [#_int paren]
-    (let-when [[#_int parno :as _]
-            (condp == paren
-                REG_PAREN
-                    (if (<= NSUBEXP @regnpar)
-                        (do (emsg (u8 "E872: (NFA regexp) Too many '('"))
-                            (reset! rc_did_emsg true)
-                            nil)
-                        (let [parno @regnpar]
-                            (swap! regnpar inc)
-                            [parno]
-                        ))
-                [0]
-            )] (and (some? _) (nfa-regbranch)) => false
+(defn- #_[window_C boolean] nfa-reg? [#_window_C win, #_int paren]
+    (let-when [[win #_int parno]
+            (when' (== paren REG_PAREN) => [win 0]
+                (if (< @regnpar NSUBEXP)
+                    (let [parno @regnpar]
+                        (swap! regnpar inc)
+                        [win parno])
+                    (let [win (emsg win, (u8 "E872: (NFA regexp) Too many '('"))]
+                        (reset! rc_did_emsg true)
+                        [win nil])
+                ))
+          [win ?] (if (some? parno) (nfa-regbranch? win) [win false])
+    ] ? => [win false]
 
-        (let-when [_
-                (loop-when [] (== (peekchr) (Magic (byte \|))) => :_
+        (let-when [[win _]
+                (loop-when win (== (peekchr) (Magic (byte \|))) => [win :_]
                     (skipchr)
-                    (when (nfa-regbranch) (emc1 NFA_OR) (recur))
-                )] (some? _) => false
+                    (let-when [[win ?] (nfa-regbranch? win)] ? => [win nil]
+                        (emc1 NFA_OR)
+                        (recur win)
+                    ))
+        ] (some? _) => [win false]
 
             ;; Check for proper termination.
             (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
-                (do (if (== paren REG_NPAREN)
-                        (emsg* e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                        (emsg* e_unmatchedp,  (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\"))))
+                (let [win (if (== paren REG_NPAREN)
+                            (emsg* win, e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                            (emsg* win, e_unmatchedp,  (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                        )]
                     (reset! rc_did_emsg true)
-                    false)
+                    [win false])
             (and (== paren REG_NOPAREN) (!= (peekchr) NUL))
-                (do (if (== (peekchr) (Magic (byte \))))
-                        (emsg* e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                        (emsg (u8 "E873: (NFA regexp) proper termination error")))
+                (let [win (if (== (peekchr) (Magic (byte \))))
+                            (emsg* win, e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                            (emsg win, (u8 "E873: (NFA regexp) proper termination error"))
+                        )]
                     (reset! rc_did_emsg true)
-                    false)
+                    [win false])
             :else ;; Here we set the flag allowing back references to this set of parentheses.
                 (do (when (== paren REG_PAREN)
-                        (swap! had_endbrace assoc parno true)     ;; have seen the close paren
+                        (swap! had_endbrace assoc parno true) ;; have seen the close paren
                         (emc1 (+ NFA_MOPEN parno)))
-                    true)
+                    [win true])
             ))
     ))
 
 ;; Parse r.e. and convert it into postfix form.
 ;; Return the postfix string on success, null otherwise.
 
-(defn- #_int* re2post []
-    (when (nfa-reg REG_NOPAREN) (emc1 NFA_MOPEN) @post_array))
+(defn- #_[window_C int*] re2post? [#_window_C win]
+    (let [[win ?] (nfa-reg? win, REG_NOPAREN)] [win (when ? (emc1 NFA_MOPEN) @post_array)]))
 
 ;; Allocate and initialize an nfa_state_C.
 ;;
@@ -22760,7 +22757,7 @@
         (nfa-regcomp-start expr, re_flags)
         (let [[win #_nfa_pattern_C pat]
                 ;; Build postfix form of the regexp.  Needed to build the NFA (and count its size).
-                (let [#_int* postfix (re2post)]
+                (let [[win #_int* postfix] (re2post? win)]
                     (when' (some? postfix) => [win nil] ;; cascaded (syntax?) error
                         ;; In order to build the NFA, we parse the input regexp twice:
                         ;; 1. first pass to count size (so we can allocate space),
