@@ -14137,7 +14137,7 @@
         ((ß int oldstate =) @State)
         (reset! State INSERT)             ;; don't want REPLACE for State
 
-        ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), (:lnum (:w_cursor @curwin)), true))
+        ((ß block_def_C bd =) (block-prep oap, false, (:lnum (:w_cursor @curwin)), true))
         (if (:is_short bd)
             ((ß RETURN) nil)
         )
@@ -14270,7 +14270,7 @@
 ;; Insert string "s" (b_insert ? before : after) block.
 ;; Caller must prepare for undo.
 
-(defn- #_void block-insert [#_oparg_C oap, #_Bytes s, #_boolean b_insert, #_block_def_C bdp]
+(defn- #_void block-insert [#_oparg_C oap, #_Bytes s, #_boolean b_insert, #_boolean is_MAX]
     (§
         ((ß int count =) 0)                                  ;; extra spaces to replace a cut TAB
         ((ß int spaces =) 0)                                 ;; non-zero if cutting a TAB
@@ -14281,8 +14281,8 @@
         ((ß int s_len =) (STRLEN s))
 
         (loop-when-recur [#_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-            ((ß bdp =) (block-prep oap, bdp, lnum, true))
-            (if (and (:is_short bdp) b_insert)
+            ((ß #_block_def_C bd =) (block-prep oap, is_MAX, lnum, true))
+            (if (and (:is_short bd) b_insert)
                 (ß CONTINUE)                               ;; OP_INSERT, line ends before block start
             )
 
@@ -14292,26 +14292,26 @@
             (ß int offset)
             (cond b_insert
             (do
-                ((ß q_ts =) (:start_char_vcols bdp))
-                ((ß spaces =) (:startspaces bdp))
+                ((ß q_ts =) (:start_char_vcols bd))
+                ((ß spaces =) (:startspaces bd))
                 ((ß count =) (if (non-zero? spaces) (dec q_ts) count))                   ;; we're cutting a TAB
-                ((ß offset =) (:textcol bdp))
+                ((ß offset =) (:textcol bd))
             )
             :else                                        ;; append
             (do
-                ((ß q_ts =) (:end_char_vcols bdp))
-                (cond (not (:is_short bdp))                      ;; spaces = padding after block
+                ((ß q_ts =) (:end_char_vcols bd))
+                (cond (not (:is_short bd))                      ;; spaces = padding after block
                 (do
-                    ((ß spaces =) (if (non-zero? (:endspaces bdp)) (- q_ts (:endspaces bdp)) 0))
+                    ((ß spaces =) (if (non-zero? (:endspaces bd)) (- q_ts (:endspaces bd)) 0))
                     ((ß count =) (if (non-zero? spaces) (dec q_ts) count))               ;; we're cutting a TAB
-                    ((ß offset =) (- (+ (:textcol bdp) (:textlen bdp)) (if (non-zero? spaces) 1 0)))
+                    ((ß offset =) (- (+ (:textcol bd) (:textlen bd)) (if (non-zero? spaces) 1 0)))
                 )
                 :else                                    ;; spaces = padding to block edge
                 (do
                     ;; if $ used, just append to EOL (ie spaces==0)
-                    ((ß spaces =) (if (not (:is_MAX bdp)) (inc (- (:end_vcol oap) (:end_vcol bdp))) spaces))
+                    ((ß spaces =) (if (not (:is_MAX bd)) (inc (- (:end_vcol oap) (:end_vcol bd))) spaces))
                     ((ß count =) spaces)
-                    ((ß offset =) (+ (:textcol bdp) (:textlen bdp)))
+                    ((ß offset =) (+ (:textcol bd) (:textlen bd)))
                 ))
             ))
 
@@ -14345,7 +14345,7 @@
             (BCOPY newp, (+ offset spaces), s, 0, s_len)
             ((ß offset =) (+ offset s_len))
 
-            (when (and (< 0 spaces) (not (:is_short bdp)))
+            (when (and (< 0 spaces) (not (:is_short bd)))
                 ;; insert post-padding
                 (copy-spaces (.plus newp (+ offset spaces)), (- q_ts spaces))
                 ;; We're splitting a TAB, don't copy it.
@@ -15012,7 +15012,7 @@
                 )
 
                 (loop-when-recur [#_long lnum (:lnum (:w_cursor @curwin))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-                    ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), lnum, true))
+                    ((ß block_def_C bd =) (block-prep oap, false, lnum, true))
                     (if (zero? (:textlen bd))    ;; nothing to delete
                         (ß CONTINUE)
                     )
@@ -15242,12 +15242,11 @@
 
         (cond (:block_mode oap)
         (do
-            ((ß block_def_C bd =) (NEW_block_def_C))
-            ((ß bd.is_MAX =) (== (:w_curswant @curwin) MAXCOL))
+            ((ß boolean is_MAX =) (== (:w_curswant @curwin) MAXCOL))
 
             (loop-when [] (<= (:lnum (:w_cursor @curwin)) (:lnum (:op_end oap)))
                 (swap! curwin assoc-in [:w_cursor :col] 0)    ;; make sure cursor position is valid
-                ((ß bd =) (block-prep oap, bd, (:lnum (:w_cursor @curwin)), true))
+                ((ß block_def_C bd =) (block-prep oap, is_MAX, (:lnum (:w_cursor @curwin)), true))
                 (when (and (zero? (:textlen bd)) (or (== @virtual_op FALSE) (:is_MAX bd)))
                     (swap! curwin update-in [:w_cursor :lnum] inc)
                     (ß CONTINUE)               ;; nothing to replace
@@ -15440,7 +15439,7 @@
         (cond (:block_mode oap)                     ;; Visual block mode
         (do
             (loop-when [] (<= (:lnum pos) (:lnum (:op_end oap)))
-                ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), (:lnum pos), false))
+                ((ß block_def_C bd =) (block-prep oap, false, (:lnum pos), false))
                 ((ß pos.col =) (:textcol bd))
                 ((ß did_change =) (or (swapchars (:op_type oap), pos, (:textlen bd)) did_change))
                 ((ß pos.lnum =) (inc (:lnum pos)))
@@ -15587,7 +15586,7 @@
                 (reset! ve_flags old_ve_flags)
             )
             ;; Get the info about the block before entering the text.
-            ((ß bd =) (block-prep oap, bd, (:lnum (:op_start oap)), true))
+            ((ß bd =) (block-prep oap, (:is_MAX bd), (:lnum (:op_start oap)), true))
             ((ß Bytes firstline =) (.plus (ml-get (:lnum (:op_start oap))) (:textcol bd)))
             ((ß firstline =) (if (== (:op_type oap) OP_APPEND) (.plus firstline (:textlen bd)) firstline))
             ((ß pre_textlen =) (STRLEN firstline))
@@ -15667,7 +15666,7 @@
             ;; Get the starting column again and correct the length.
             ;; Don't do this when "$" used, end-of-line will have changed.
 
-            ((ß block_def_C bd2 =) (block-prep oap, (NEW_block_def_C), (:lnum (:op_start oap)), true))
+            ((ß block_def_C bd2 =) (block-prep oap, false, (:lnum (:op_start oap)), true))
             (when (or (not (:is_MAX bd)) (< (:textlen bd2) (:textlen bd)))
                 (when (== (:op_type oap) OP_APPEND)
                     ((ß pre_textlen =) (+ pre_textlen (- (:textlen bd2) (:textlen bd))))
@@ -15691,7 +15690,7 @@
 
                 ;; block handled here
                 (when (u-save (:lnum (:op_start oap)), (inc (:lnum (:op_end oap))))
-                    (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), bd))
+                    (block-insert oap, ins_text, (== (:op_type oap) OP_INSERT), (:is_MAX bd)))
 
                 (swap! curwin assoc-in [:w_cursor :col] (:col (:op_start oap)))
                 (check-cursor)
@@ -15766,7 +15765,7 @@
                 ((ß Bytes ins_text =) (STRNDUP (.plus s textcol), ins_len))
 
                 (loop-when-recur [#_long linenr (inc (:lnum (:op_start oap)))] (<= linenr (:lnum (:op_end oap))) [(inc linenr)]
-                    ((ß block_def_C bd =) (block-prep oap, (NEW_block_def_C), linenr, true))
+                    ((ß block_def_C bd =) (block-prep oap, false, linenr, true))
                     (when (or (not (:is_short bd)) (!= @virtual_op FALSE))
                         ((ß pos_C vpos =) (NEW_pos_C))
 
@@ -15882,13 +15881,11 @@
                 (swap! y_current update :y_width dec))
         )
 
-        ((ß block_def_C bd =) (NEW_block_def_C))
-
         ((ß FOR) (ß nil (<= lnum yankendlnum) (ß lnum++, y_idx++))
             ((ß SWITCH) (:y_type @y_current)
                 ((ß CASE) MBLOCK)
                 (do
-                    ((ß bd =) (block-prep oap, bd, lnum, false))
+                    ((ß block_def_C bd =) (block-prep oap, false, lnum, false))
                     (yank-copy-line bd, y_idx)
                     (ß BREAK)
                 )
@@ -15901,11 +15898,11 @@
 
                 ((ß CASE) MCHAR)
                 (do
+                    ((ß block_def_C bd =) (NEW_block_def_C))
+
                     ((ß int startcol =) (ß 0, endcol = MAXCOL))
                     ((ß boolean is_oneChar =) false)
                     ((ß Bytes p =) (ml-get lnum))
-                    ((ß bd.startspaces =) 0)
-                    ((ß bd.endspaces =) 0)
 
                     (when (== lnum (:lnum (:op_start oap)))
                         ((ß startcol =) (:col (:op_start oap)))
@@ -16741,129 +16738,72 @@
 ;; - start/endspaces is the number of columns of the first/last yanked char
 ;;   that are to be yanked.
 
-(defn- #_block_def_C block-prep [#_oparg_C oap, #_block_def_C bdp, #_long lnum, #_boolean is_del]
-    (§
-        ((ß bdp.startspaces =) 0)
-        ((ß bdp.endspaces =) 0)
-        ((ß bdp.textlen =) 0)
-        ((ß bdp.start_vcol =) 0)
-        ((ß bdp.end_vcol =) 0)
-        ((ß bdp.is_short =) false)
-        ((ß bdp.is_oneChar =) false)
-        ((ß bdp.pre_whitesp =) 0)
-        ((ß bdp.pre_whitesp_c =) 0)
-        ((ß bdp.end_char_vcols =) 0)
-        ((ß bdp.start_char_vcols =) 0)
-
-        ((ß int incr =) 0)
-
-        ((ß Bytes line =) (ml-get lnum))
-
-        ((ß Bytes pstart =) line)
-        ((ß Bytes prev_pstart =) line)
-
-        (loop-when [] (and (< (:start_vcol bdp) (:start_vcol oap)) (non-eos? pstart))
-            ;; Count a tab for what it's worth (if list mode not on).
-            ((ß incr =) (lbr-chartabsize line, pstart, (:start_vcol bdp)))
-            ((ß bdp.start_vcol =) (+ (:start_vcol bdp) incr))
-            (cond (vim-iswhite (.at pstart 0))
-            (do
-                ((ß bdp.pre_whitesp =) (+ (:pre_whitesp bdp) incr))
-                ((ß bdp.pre_whitesp_c =) (inc (:pre_whitesp_c bdp)))
-            )
-            :else
-            (do
-                ((ß bdp.pre_whitesp =) 0)
-                ((ß bdp.pre_whitesp_c =) 0)
-            ))
-            ((ß prev_pstart =) pstart)
-            ((ß pstart =) (.plus pstart (us-ptr2len-cc pstart)))
-            (recur)
-        )
-
-        ((ß bdp.start_char_vcols =) incr)
-
-        (cond (< (:start_vcol bdp) (:start_vcol oap))        ;; line too short
-        (do
-            ((ß bdp.end_vcol =) (:start_vcol bdp))
-            ((ß bdp.is_short =) true)
-            (if (or (not is_del) (== (:op_type oap) OP_APPEND))
-                ((ß bdp.endspaces =) (+ (- (:end_vcol oap) (:start_vcol oap)) 1))
-            )
-        )
-        :else
-        (do
-            ;; notice: this converts partly selected Multibyte characters to spaces, too.
-            ((ß bdp.startspaces =) (- (:start_vcol bdp) (:start_vcol oap)))
-            (if (and is_del (non-zero? (:startspaces bdp)))
-                ((ß bdp.startspaces =) (- (:start_char_vcols bdp) (:startspaces bdp)))
-            )
-            ((ß Bytes[] a'pend =) (atom (#_Bytes object pstart)))
-            ((ß bdp.end_vcol =) (:start_vcol bdp))
-            (cond (< (:end_vcol oap) (:end_vcol bdp))        ;; it's all in one character
-            (do
-                ((ß bdp.is_oneChar =) true)
-                (cond (== (:op_type oap) OP_INSERT)
-                (do
-                    ((ß bdp.endspaces =) (- (:start_char_vcols bdp) (:startspaces bdp)))
-                )
-                (== (:op_type oap) OP_APPEND)
-                (do
-                    ((ß bdp.startspaces =) (+ (:startspaces bdp) (+ (- (:end_vcol oap) (:start_vcol oap)) 1)))
-                    ((ß bdp.endspaces =) (- (:start_char_vcols bdp) (:startspaces bdp)))
-                )
-                :else
-                (do
-                    ((ß bdp.startspaces =) (+ (- (:end_vcol oap) (:start_vcol oap)) 1))
-                    (when (and is_del (!= (:op_type oap) OP_LSHIFT))
-                        ;; just putting the sum of those two into
-                        ;; bdp.startspaces doesn't work for Visual replace,
-                        ;; so we have to split the tab in two
-                        ((ß bdp.startspaces =) (- (:start_char_vcols bdp) (- (:start_vcol bdp) (:start_vcol oap))))
-                        ((ß bdp.endspaces =) (- (:end_vcol bdp) (:end_vcol oap) 1))
-                    )
+(defn- #_block_def_C block-prep [#_oparg_C oap, #_boolean is_MAX, #_long lnum, #_boolean is_del]
+    (let [#_block_def_C bd (assoc (NEW_block_def_C) :is_MAX is_MAX)
+          #_Bytes line (ml-get lnum)
+          [#_int t bd #_Bytes p #_Bytes s]
+            (loop-when [t 0 bd bd p line s line] (and (< (:start_vcol bd) (:start_vcol oap)) (non-eos? s)) => [t bd p s]
+                ;; Count a tab for what it's worth (if list mode not on).
+                (let [t (lbr-chartabsize line, s, (:start_vcol bd))
+                      bd (update bd :start_vcol + t)
+                      bd (if (vim-iswhite (.at s 0))
+                            (-> bd (update :pre_whitesp + t) (update :pre_whitesp_c inc))
+                            (assoc bd :pre_whitesp 0 :pre_whitesp_c 0)
+                        )]
+                    (recur t bd s (.plus s (us-ptr2len-cc s)))
                 ))
-            )
-            :else
-            (do
-                ((ß Bytes prev_pend =) @a'pend)
-                (loop-when [] (and (<= (:end_vcol bdp) (:end_vcol oap)) (non-eos? @a'pend))
-                    ;; Count a tab for what it's worth (if list mode not on).
-                    ((ß prev_pend =) @a'pend)
-                    ((ß incr =) (lbr-chartabsize-adv line, a'pend, (:end_vcol bdp)))
-                    ((ß bdp.end_vcol =) (+ (:end_vcol bdp) incr))
-                    (recur)
-                )
-                (cond (and (<= (:end_vcol bdp) (:end_vcol oap)) (or (not is_del) (== (:op_type oap) OP_APPEND) (== (:op_type oap) OP_REPLACE))) ;; line too short
-                (do
-                    ((ß bdp.is_short =) true)
-                    ;; Alternative: include spaces to fill up the block.
-                    ;; Disadvantage: can lead to trailing spaces when
-                    ;; the line is short where the text is put.
-                    ;; if (!is_del || oap.op_type == OP_APPEND)
-                    ((ß bdp.endspaces =) (if (or (== (:op_type oap) OP_APPEND) (!= @virtual_op FALSE))
-                        (+ (- (:end_vcol oap) (:end_vcol bdp)) (if (:inclusive oap) 1 0))
-                        0 ;; replace doesn't add characters
-                    ))
-                )
-                (< (:end_vcol oap) (:end_vcol bdp))
-                (do
-                    ((ß bdp.endspaces =) (- (:end_vcol bdp) (:end_vcol oap) 1))
-                    (when (and (not is_del) (non-zero? (:endspaces bdp)))
-                        ((ß bdp.endspaces =) (- incr (:endspaces bdp)))
-                        (when (BNE @a'pend, pstart)
-                            (reset! a'pend prev_pend))
-                    )
-                ))
-            ))
-            ((ß bdp.end_char_vcols =) incr)
-            ((ß pstart =) (if (and is_del (non-zero? (:startspaces bdp))) prev_pstart pstart))
-            ((ß bdp.textlen =) (BDIFF @a'pend, pstart))
-        ))
-
-        ((ß bdp.textcol =) (BDIFF pstart, line))
-        ((ß bdp.textstart =) pstart)
-        bdp
+          bd (assoc bd :start_char_vcols t)
+          [bd s]
+            (cond (< (:start_vcol bd) (:start_vcol oap))        ;; line too short
+                (let [bd (assoc bd :end_vcol (:start_vcol bd) :is_short true)
+                      bd (if (or (not is_del) (== (:op_type oap) OP_APPEND)) (assoc bd :endspaces (inc (- (:end_vcol oap) (:start_vcol oap)))) bd)]
+                    [bd s])
+            :else ;; notice: this converts partly selected multibyte characters to spaces, too
+                (let [bd (assoc bd :startspaces (- (:start_vcol bd) (:start_vcol oap)))
+                      bd (if (and is_del (non-zero? (:startspaces bd))) (assoc bd :startspaces (- (:start_char_vcols bd) (:startspaces bd))) bd)
+                      a'pend (atom (#_Bytes object s))
+                      bd (assoc bd :end_vcol (:start_vcol bd))
+                      [bd t]
+                        (cond (< (:end_vcol oap) (:end_vcol bd))        ;; it's all in one character
+                            [(let [bd (assoc bd :is_oneChar true)] (cond
+                                (== (:op_type oap) OP_INSERT)
+                                    (assoc bd :endspaces (- (:start_char_vcols bd) (:startspaces bd)))
+                                (== (:op_type oap) OP_APPEND)
+                                    (let [bd (update bd :startspaces + (inc (- (:end_vcol oap) (:start_vcol oap))))]
+                                        (assoc bd :endspaces (- (:start_char_vcols bd) (:startspaces bd))))
+                                :else
+                                    (let-when [bd (assoc bd :startspaces (inc (- (:end_vcol oap) (:start_vcol oap))))] (and is_del (!= (:op_type oap) OP_LSHIFT)) => bd
+                                        ;; just putting the sum of those two into bd.startspaces doesn't work for Visual replace, so we have to split the tab in two
+                                        (assoc bd :startspaces (- (:start_char_vcols bd) (- (:start_vcol bd) (:start_vcol oap)))
+                                                  :endspaces (- (:end_vcol bd) (:end_vcol oap) 1)))
+                                )) t]
+                        :else
+                            (let [[#_Bytes prev_pend t bd]
+                                    (loop-when [prev_pend @a'pend t t bd bd] (and (<= (:end_vcol bd) (:end_vcol oap)) (non-eos? @a'pend)) => [prev_pend t bd]
+                                        ;; Count a tab for what it's worth (if list mode not on).
+                                        (let [prev_pend @a'pend t (lbr-chartabsize-adv line, a'pend, (:end_vcol bd))]
+                                            (recur prev_pend t (update bd :end_vcol + t)))
+                                    )]
+                                (cond (and (<= (:end_vcol bd) (:end_vcol oap)) (or (not is_del) (== (:op_type oap) OP_APPEND) (== (:op_type oap) OP_REPLACE))) ;; line too short
+                                    [(let [bd (assoc bd :is_short true)]
+                                        ;; Alternative: include spaces to fill up the block.
+                                        ;; Disadvantage: can lead to trailing spaces when the line is short where the text is put.
+                                        (assoc bd :endspaces (if (or (== (:op_type oap) OP_APPEND) (!= @virtual_op FALSE))
+                                            (+ (- (:end_vcol oap) (:end_vcol bd)) (if (:inclusive oap) 1 0))
+                                            0 ;; replace doesn't add characters
+                                        ))) t]
+                                (< (:end_vcol oap) (:end_vcol bd))
+                                    [(let-when [bd (assoc bd :endspaces (- (:end_vcol bd) (:end_vcol oap) 1))] (and (not is_del) (non-zero? (:endspaces bd))) => bd
+                                        (when (BNE @a'pend, s) (reset! a'pend prev_pend))
+                                        (assoc bd :endspaces (- t (:endspaces bd)))) t]
+                                :else
+                                    [bd t])
+                            ))
+                      bd (assoc bd :end_char_vcols t)
+                      s (if (and is_del (non-zero? (:startspaces bd))) p s)]
+                    [(assoc bd :textlen (BDIFF @a'pend, s)) s])
+            )]
+        (assoc bd :textstart s :textcol (BDIFF s, line))
     ))
 
 (final int NUMBUFLEN 30)        ;; length of a buffer to store a number in ASCII
@@ -17042,7 +16982,7 @@
                                     (condp == @VIsual_mode
                                         Ctrl_V
                                             (let [_ (reset! virtual_op (if (virtual-active) TRUE FALSE))
-                                                  #_block_def_C bd (block-prep oparg, (NEW_block_def_C), lnum, false)
+                                                  #_block_def_C bd (block-prep oparg, false, lnum, false)
                                                   _ (reset! virtual_op MAYBE)]
                                                 [(:textstart bd) (:textlen bd)])
                                         (byte \V)
