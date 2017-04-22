@@ -29710,8 +29710,7 @@
 (defn- #_void report-re-switch [#_Bytes pat]
     (when (< 0 @p_verbose)
         (msg-puts (u8 "Switching to backtracking RE engine for pattern: "))
-        (msg-puts pat)
-    )
+        (msg-puts pat))
     nil)
 
 ;; Match a regexp against a string.
@@ -30235,8 +30234,7 @@
                         (do
                             ;; For a match in the first column,
                             ;; set the position on the NUL in the previous line.
-                            ((ß pos =) (assoc pos :lnum (+ lnum (:lnum endpos))))
-                            ((ß pos =) (assoc pos :col (:col endpos)))
+                            ((ß pos =) (assoc pos :lnum (+ lnum (:lnum endpos)) :col (:col endpos)))
                             (cond (zero? (:col endpos))
                             (do
                                 (when (< 1 (:lnum pos))   ;; just in case
@@ -30255,8 +30253,7 @@
                         )
                         :else
                         (do
-                            ((ß pos =) (assoc pos :lnum (+ lnum (:lnum matchpos))))
-                            ((ß pos =) (assoc pos :col (:col matchpos)))
+                            ((ß pos =) (assoc pos :lnum (+ lnum (:lnum matchpos)) :col (:col matchpos)))
                         ))
                         ((ß pos =) (assoc pos :coladd 0))
                         ((ß found =) true)
@@ -30314,26 +30311,18 @@
             )
             (== (& options SEARCH_MSG) SEARCH_MSG)
             (do
-                (cond @p_ws
-                (do
-                    (emsg2 e_patnotf2, @mr_pattern)
+                (cond
+                    @p_ws        (emsg2 e_patnotf2, @mr_pattern)
+                    (zero? lnum) (emsg2 (u8 "E384: search hit TOP without match for: %s"), @mr_pattern)
+                    :else        (emsg2 (u8 "E385: search hit BOTTOM without match for: %s"), @mr_pattern)
                 )
-                (zero? lnum)
-                (do
-                    (emsg2 (u8 "E384: search hit TOP without match for: %s"), @mr_pattern)
-                )
-                :else
-                (do
-                    (emsg2 (u8 "E385: search hit BOTTOM without match for: %s"), @mr_pattern)
-                ))
             ))
             ((ß RETURN) 0)
         )
 
         ;; A pattern like "\n\zs" may go past the last line.
-        (when (> (:lnum pos) (:ml_line_count (:b_ml @curbuf)))
-            ((ß pos =) (assoc pos :lnum (:ml_line_count (:b_ml @curbuf))))
-            ((ß pos =) (assoc pos :col (STRLEN (ml-get (:lnum pos)))))
+        (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (< lmax (:lnum pos))
+            ((ß pos =) (assoc pos :lnum lmax :col (STRLEN (ml-get lmax))))
             (if (< 0 (:col pos))
                 ((ß pos =) (update pos :col dec))
             )
@@ -30345,8 +30334,8 @@
 ;; Return the number of the first subpat that matched.
 
 (defn- #_int first-submatch [#_regmmatch_C mm]
-    (loop-when [#_int submatch 1] (neg? (:lnum (... (:startpos mm) submatch))) => submatch
-        (recur-if (< submatch 9) [(inc submatch)] => 0)
+    (loop-when [i 1] (neg? (:lnum (... (:startpos mm) i))) => i
+        (recur-if (< i 9) [(inc i)] => 0)
     ))
 
 ;; Highest level string search function.
@@ -31408,8 +31397,7 @@
     (let [lmax (:ml_line_count (:b_ml @curbuf))]
         (loop-when [win (assoc-in win [:w_cursor :coladd] 0) n n] (pos? n) => [win true]
             ;; always move at least one char, unless on the last one in the buffer
-            (let [cls (cls-cursor win, bigword) eof (== (:lnum (:w_cursor win)) lmax)
-                  [win ?] (inc-cursor? win, false)]
+            (let [cls (cls-cursor win, bigword) eof (== (:lnum (:w_cursor win)) lmax) [win ?] (inc-cursor? win, false)]
                 (cond (or (== ? -1) (and (<= 1 ?) eof))         ;; started at last char in file
                     [win false]
                 (and (<= 1 ?) eol (== n 1))                     ;; started at last char in line
@@ -31422,9 +31410,9 @@
                             [win nil]
                         )
                     ] (not ?) => _
-                        ;; go to next non-white, but stop on a blank line
+                        ;; skip white space, but stop on an empty line
                         (let-when [[win ? :as _]
-                            (loop-when win (and (== (cls-cursor win, bigword) 0) (or (pos? (:col (:w_cursor win))) (non-eos? (ml-get (:lnum (:w_cursor win)))))) => [win nil]
+                            (loop-when win (and (zero? (cls-cursor win, bigword)) (not (and (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win)))))) => [win nil]
                                 (let [[win ?] (inc-cursor? win, false)] (if (or (== ? -1) (and (<= 1 ?) eol (== n 1))) [win true] (recur win)))
                             )
                         ] (not ?) => _
@@ -31444,38 +31432,29 @@
 ;; Returns false if top of the file was reached.
 
 (defn- #_[window_C boolean] bck-word? [#_window_C win, #_long n, #_boolean bigword, #_boolean stop]
-    (swap! curwin assoc-in [:w_cursor :coladd] 0)
-
-    (loop-when [n (dec n) stop stop] (<= 0 n) => true
-        (let-when [#_int sclass (cls-cursor win, bigword)] (!= (let [[_ ?] (dec-cursor? win, false)] (reset! curwin _) ?) -1) => false ;; started at start of file
-;           finished:
-            (§
-                (when (or (not stop) (== sclass (cls-cursor win, bigword)) (zero? sclass))
-                    ;; Skip white space before the word.
-                    ;; Stop on an empty line.
-
-                    (loop-when [] (== (cls-cursor win, bigword) 0)
-                        (if (and (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win))))
-                            (ß BREAK finished)
-                        )
-                        (if (== (let [[_ ?] (dec-cursor? win, false)] (reset! curwin _) ?) -1) ;; hit start of file, stop here
-                            ((ß RETURN) true)
-                        )
-                        (recur)
-                    )
-
-                    ;; Move backward to start of this word.
-
-                    (if (let [[_ ?] (skip-chars? win, (cls-cursor win, bigword), bigword, BACKWARD)] (reset! curwin _) ?)
-                        ((ß RETURN) true)
-                    )
+    (loop-when [win (assoc-in win [:w_cursor :coladd] 0) n n stop stop] (pos? n) => [win true]
+        (let-when [cls (cls-cursor win, bigword) [win ?] (dec-cursor? win, false)] (!= ? -1) => [win false] ;; started at start of file
+            (let-when [[win ? :as _]
+                (if (or (not stop) (== (cls-cursor win, bigword) cls) (zero? cls))
+                    (loop [win win]
+                        (let [cls' (cls-cursor win, bigword)]
+                            (if (zero? cls')
+                                ;; skip white space before the word, but stop on an empty line
+                                (if (and (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win))))
+                                    [win nil]
+                                    (let-when [[win ?] (dec-cursor? win, false)] (!= ? -1) => [win true] ;; hit start of file, stop here
+                                        (recur win)
+                                    ))
+                                ;; move backward to start of this word
+                                (let-when [[win ?] (skip-chars? win, cls', bigword, BACKWARD)] (not ?) => [win true]
+                                    [(inc-cursor win, false) nil] ;; overshot - forward one
+                                ))
+                        ))
+                    [(inc-cursor win, false) nil] ;; overshot - forward one
                 )
-
-                (swap! curwin inc-cursor false)                   ;; overshot - forward one
-            )
-
-            (recur (dec n) false)
-        )
+            ] (not ?) => _
+                (recur win (dec n) false)
+            ))
     ))
 
 (defn- #_window_C bck-word [#_window_C win, #_long n, #_boolean bigword, #_boolean stop]
@@ -31485,61 +31464,42 @@
 
 ;; Move to the end of the word.
 ;;
-;; There is an apparent bug in the 'e' motion of the real vi.  At least on the
-;; System V Release 3 version for the 80386.  Unlike 'b' and 'w', the 'e' motion
-;; crosses blank lines.  When the real vi crosses a blank line in an 'e' motion,
-;; the cursor is placed on the FIRST character of the next non-blank line.
-;; The 'E' command, however, works correctly.  Since this appears to be a bug,
-;; I have not duplicated it here.
-;;
 ;; Returns false if end of the file was reached.
 ;; If stop is true and we are already on the end of a word, move one less.
 ;; If empty is true stop on an empty line.
 
 (defn- #_[window_C boolean] end-word? [#_window_C win, #_long n, #_boolean bigword, #_boolean stop, #_boolean empty]
-    (swap! curwin assoc-in [:w_cursor :coladd] 0)
-
-    (loop-when [n (dec n) stop stop] (<= 0 n) => true
-        (let-when [#_int sclass (cls-cursor win, bigword)] (!= (let [[_ ?] (inc-cursor? win, false)] (reset! curwin _) ?) -1) => false
-;           finished:
-            (§
+    (loop-when [win (assoc-in win [:w_cursor :coladd] 0) n n stop stop] (pos? n) => [win true]
+        (let-when [cls (cls-cursor win, bigword) [win ?] (inc-cursor? win, false)] (!= ? -1) => [win false]
+            (let-when [[win ? :as _]
                 ;; If we're in the middle of a word, we just have to move to the end of it.
-
-                (cond (and (== (cls-cursor win, bigword) sclass) (non-zero? sclass))
-                (do
-                    ;; Move forward to end of the current word
-
-                    (if (let [[_ ?] (skip-chars? win, sclass, bigword, FORWARD)] (reset! curwin _) ?)
-                        ((ß RETURN) false)
+                (cond (and (== (cls-cursor win, bigword) cls) (non-zero? cls))
+                    ;; move forward to end of the current word
+                    (let-when [[win ?] (skip-chars? win, cls, bigword, FORWARD)] (not ?) => [win false]
+                        [(dec-cursor win, false) nil] ;; overshot - one char backward
                     )
-                )
-                (or (not stop) (zero? sclass))
-                (do
+                (or (not stop) (zero? cls))
                     ;; We were at the end of a word.  Go to the end of the next word.
-                    ;; First skip white space, if 'empty' is true, stop at empty line.
-
-                    (loop-when [] (== (cls-cursor win, bigword) 0)
-                        (if (and empty (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win))))
-                            (ß BREAK finished)
-                        )
-                        (if (== (let [[_ ?] (inc-cursor? win, false)] (reset! curwin _) ?) -1)     ;; hit end of file, stop here
-                            ((ß RETURN) false)
-                        )
-                        (recur)
-                    )
-
-                    ;; Move forward to the end of this word.
-
-                    (if (let [[_ ?] (skip-chars? win, (cls-cursor win, bigword), bigword, FORWARD)] (reset! curwin _) ?)
-                        ((ß RETURN) false)
-                    )
-                ))
-
-                (swap! curwin dec-cursor false)                   ;; overshot - one char backward
-            )
-
-            (recur (dec n) false) ;; we move only one word less
-        )
+                    ;; First skip white space, if "empty" is true, stop at empty line.
+                    (loop [win win]
+                        (let [cls' (cls-cursor win, bigword)]
+                            (if (zero? cls')
+                                (if (and empty (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win))))
+                                    [win nil]
+                                    (let-when [[win ?] (inc-cursor? win, false)] (!= ? -1) => [win false] ;; hit end of file, stop here
+                                        (recur win)
+                                    ))
+                                ;; move forward to the end of this word
+                                (let-when [[win ?] (skip-chars? win, cls', bigword, FORWARD)] (not ?) => [win false]
+                                    [(dec-cursor win, false) nil] ;; overshot - one char backward
+                                ))
+                        ))
+                :else
+                    [(dec-cursor win, false) nil] ;; overshot - one char backward
+                )
+            ] (nil? ?) => _
+                (recur win (dec n) false) ;; we move only one word less
+            ))
     ))
 
 (defn- #_window_C end-word [#_window_C win, #_long n, #_boolean bigword, #_boolean stop, #_boolean empty]
@@ -31553,21 +31513,27 @@
 ;; If eol is true, stop at end of line.
 
 (defn- #_[window_C boolean] bckend-word? [#_window_C win, #_long n, #_boolean bigword, #_boolean eol]
-    (swap! curwin assoc-in [:w_cursor :coladd] 0)
-    (loop-when [n (dec n)] (<= 0 n) => true
-        (let [#_int sclass (cls-cursor win, bigword) ;; starting class
-              #_int i (let [[_ ?] (dec-cursor? win, false)] (reset! curwin _) ?)]
-            (cond (== i -1)
-                false
-            (and eol (== i 1))
-                true
-            :else
-                ;; Move backward to before the start of this word.
-                (let-when [step- #(let [#_int i (let [[_ ?] (dec-cursor? win, false)] (reset! curwin _) ?)] (or (== i -1) (and eol (== i 1))))
-                           _ (when (non-zero? sclass) (loop-when [] (== (cls-cursor win, bigword) sclass) (if (step-) true (recur))))] (nil? _) => _
-                    ;; Move backward to end of the previous word.
-                    (let-when [_ (loop-when [] (and (== (cls-cursor win, bigword) 0) (not (and (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win)))))) (if (step-) true (recur)))] (nil? _) => _
-                        (recur (dec n))
+    (loop-when [win (assoc-in win [:w_cursor :coladd] 0) n n] (pos? n) => [win true]
+        (let [cls (cls-cursor win, bigword) [win ?] (dec-cursor? win, false)]
+            (cond (== ? -1)
+                [win false]
+            (and eol (== ? 1))
+                [win true]
+            :else ;; move backward to before the start of this word
+                (let-when [[win ? :as _]
+                    (if (non-zero? cls)
+                        (loop-when win (== (cls-cursor win, bigword) cls) => [win nil]
+                            (let [[win ?] (dec-cursor? win, false)] (if (or (== ? -1) (and eol (== ? 1))) [win true] (recur win))))
+                        [win nil]
+                    )
+                ] (not ?) => _
+                    ;; move backward to end of the previous word
+                    (let-when [[win ? :as _]
+                        (loop-when win (and (zero? (cls-cursor win, bigword)) (not (and (zero? (:col (:w_cursor win))) (lineempty (:lnum (:w_cursor win)))))) => [win nil]
+                            (let [[win ?] (dec-cursor? win, false)] (if (or (== ? -1) (and eol (== ? 1))) [win true] (recur win)))
+                        )
+                    ] (not ?) => _
+                        (recur win (dec n))
                     ))
             ))
     ))
