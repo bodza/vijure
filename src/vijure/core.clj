@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -815,9 +815,6 @@
 (final int HL_UNDERCURL       0x10)
 (final int HL_STANDOUT        0x20)
 (final int HL_ALL             0x3f)
-
-;; special attribute addition: put message in history
-(final int MSG_HIST           0x1000)
 
 ;; values for State
 ;;
@@ -2222,54 +2219,6 @@
         (field int          ml_usedchunks)
     ])
 
-;; What's pending for being reactivated at the ":endtry" of this try conditional:
-
-(final byte
-    CSTP_NONE       0,    ;; nothing pending in ":finally" clause
-    CSTP_ERROR      1,    ;; an error is pending
-    CSTP_INTERRUPT  2,    ;; an interrupt is pending
-    CSTP_THROW      4)    ;; a throw is pending
-
-;; A list of error messages that can be converted to an exception.  "throw_msg"
-;; is only set in the first element of the list.  Usually, it points to the
-;; original message stored in that element, but sometimes it points to a later
-;; message in the list.  See cause_errthrow() below.
-
-(class! #_final msglist_C
-    [
-        (field Bytes        msg)            ;; original message
-        (field Bytes        throw_msg)      ;; "msg" to throw: usually original one
-        (field msglist_C    next)           ;; next of several messages in a row
-    ])
-
-;; Structure describing an exception.
-;; (don't use "struct exception", it's used by the math library).
-
-(class! #_final except_C
-    [
-        (field int          type)           ;; exception type
-        (field Bytes        value)          ;; exception value
-        (field msglist_C    messages)       ;; message(s) causing error exception
-        (field except_C     caught)         ;; next exception on the caught stack
-    ])
-
-;; The exception types.
-
-(final int
-    ET_USER      0,       ;; exception caused by ":throw" command
-    ET_ERROR     1,       ;; error exception
-    ET_INTERRUPT 2)       ;; interrupt exception triggered by Ctrl-C
-
-;; Structure to save the error/interrupt/exception state between calls to
-;; enter_cleanup() and leave_cleanup().  Must be allocated as an automatic
-;; variable by the (common) caller of these functions.
-
-(class! #_final cleanup_C
-    [
-        (field int          pending)        ;; error/interrupt/exception state
-        (field except_C     exception)      ;; exception value
-    ])
-
 ;; Structure shared between syntax.c and screen.c.
 
 (class! #_final attrentry_C
@@ -2988,24 +2937,18 @@
     RANGE           0x001,   ;; allow a linespecs
     BANG            0x002,   ;; allow a ! after the command name
     EXTRA           0x004,   ;; allow extra args after command name
-    XFILE           0x008,   ;; expand wildcards in extra part
     NOSPC           0x010,   ;; no spaces allowed in the extra part
     DFLALL          0x020,   ;; default file range is 1,$
     NEEDARG         0x080,   ;; argument required
     REGSTR          0x200,   ;; allow "x for register designation
     COUNT           0x400,   ;; allow count in argument, after command
-    NOTRLCOM        0x800,   ;; no trailing comment allowed
     ZEROR          0x1000,   ;; zero line number allowed
     USECTRLV       0x2000,   ;; do not remove CTRL-V from argument
     NOTADR         0x4000,   ;; number before command is not an address
-    BUFNAME       0x10000,   ;; accepts buffer name
-    BUFUNL        0x20000,   ;; accepts unlisted buffer too
     CMDWIN       0x100000,   ;; allowed in cmdline window
     EXFLAGS      0x400000,   ;; allow flags after count in argument
 
-    FILES (| XFILE EXTRA),   ;; multiple extra files allowed
-    WORD1 (| EXTRA NOSPC),   ;; one extra word allowed
-    FILE1 (| FILES NOSPC))   ;; 1 file allowed, defaults to current file
+    WORD1 (| EXTRA NOSPC))   ;; one extra word allowed
 
 ;; values for cmd_addr_type
 (final byte
@@ -3037,122 +2980,119 @@
     CMD_delmarks 21,
     CMD_display 22,
     CMD_digraphs 23,
-    CMD_edit 24,
-    CMD_earlier 25,
-    CMD_ex 26,
-    CMD_fixdel 27,
-    CMD_global 28,
-    CMD_goto 29,
-    CMD_hide 30,
-    CMD_history 31,
-    CMD_insert 32,
-    CMD_iabbrev 33,
-    CMD_iabclear 34,
-    CMD_imap 35,
-    CMD_imapclear 36,
-    CMD_inoremap 37,
-    CMD_inoreabbrev 38,
-    CMD_iunmap 39,
-    CMD_iunabbrev 40,
-    CMD_join 41,
-    CMD_jumps 42,
-    CMD_k 43,
-    CMD_keepmarks 44,
-    CMD_keepjumps 45,
-    CMD_keeppatterns 46,
-    CMD_keepalt 47,
-    CMD_list 48,
-    CMD_later 49,
-    CMD_left 50,
-    CMD_leftabove 51,
-    CMD_lockmarks 52,
-    CMD_move 53,
-    CMD_mark 54,
-    CMD_map 55,
-    CMD_mapclear 56,
-    CMD_marks 57,
-    CMD_messages 58,
-    CMD_nmap 59,
-    CMD_nmapclear 60,
-    CMD_nnoremap 61,
-    CMD_noremap 62,
-    CMD_nohlsearch 63,
-    CMD_noreabbrev 64,
-    CMD_normal 65,
-    CMD_number 66,
-    CMD_nunmap 67,
-    CMD_omap 68,
-    CMD_omapclear 69,
-    CMD_only 70,
-    CMD_onoremap 71,
-    CMD_ounmap 72,
-    CMD_print 73,
-    CMD_put 74,
-    CMD_quit 75,
-    CMD_quitall 76,
-    CMD_qall 77,
-    CMD_redo 78,
-    CMD_redraw 79,
-    CMD_redrawstatus 80,
-    CMD_registers 81,
-    CMD_resize 82,
-    CMD_retab 83,
-    CMD_right 84,
-    CMD_rightbelow 85,
-    CMD_substitute 86,
-    CMD_set 87,
-    CMD_setglobal 88,
-    CMD_setlocal 89,
-    CMD_silent 90,
-    CMD_smagic 91,
-    CMD_smap 92,
-    CMD_smapclear 93,
-    CMD_snomagic 94,
-    CMD_snoremap 95,
-    CMD_split 96,
-    CMD_stop 97,
-    CMD_startinsert 98,
-    CMD_startgreplace 99,
-    CMD_startreplace 100,
-    CMD_stopinsert 101,
-    CMD_sunmap 102,
-    CMD_suspend 103,
-    CMD_syncbind 104,
-    CMD_t 105,
-    CMD_topleft 106,
-    CMD_undo 107,
-    CMD_undojoin 108,
-    CMD_undolist 109,
-    CMD_unabbreviate 110,
-    CMD_unmap 111,
-    CMD_unsilent 112,
-    CMD_vglobal 113,
-    CMD_verbose 114,
-    CMD_vertical 115,
-    CMD_visual 116,
-    CMD_vmap 117,
-    CMD_vmapclear 118,
-    CMD_vnoremap 119,
-    CMD_vsplit 120,
-    CMD_vunmap 121,
-    CMD_wincmd 122,
-    CMD_xmap 123,
-    CMD_xmapclear 124,
-    CMD_xnoremap 125,
-    CMD_xunmap 126,
-    CMD_yank 127,
-    CMD_z 128,
+    CMD_earlier 24,
+    CMD_fixdel 25,
+    CMD_global 26,
+    CMD_goto 27,
+    CMD_hide 28,
+    CMD_history 29,
+    CMD_insert 30,
+    CMD_iabbrev 31,
+    CMD_iabclear 32,
+    CMD_imap 33,
+    CMD_imapclear 34,
+    CMD_inoremap 35,
+    CMD_inoreabbrev 36,
+    CMD_iunmap 37,
+    CMD_iunabbrev 38,
+    CMD_join 39,
+    CMD_jumps 40,
+    CMD_k 41,
+    CMD_keepmarks 42,
+    CMD_keepjumps 43,
+    CMD_keeppatterns 44,
+    CMD_keepalt 45,
+    CMD_list 46,
+    CMD_later 47,
+    CMD_left 48,
+    CMD_leftabove 49,
+    CMD_lockmarks 50,
+    CMD_move 51,
+    CMD_mark 52,
+    CMD_map 53,
+    CMD_mapclear 54,
+    CMD_marks 55,
+
+    CMD_nmap 57,
+    CMD_nmapclear 58,
+    CMD_nnoremap 59,
+    CMD_noremap 60,
+    CMD_nohlsearch 61,
+    CMD_noreabbrev 62,
+    CMD_normal 63,
+    CMD_number 64,
+    CMD_nunmap 65,
+    CMD_omap 66,
+    CMD_omapclear 67,
+    CMD_only 68,
+    CMD_onoremap 69,
+    CMD_ounmap 70,
+    CMD_print 71,
+    CMD_put 72,
+    CMD_quit 73,
+    CMD_quitall 74,
+    CMD_qall 75,
+    CMD_redo 76,
+    CMD_redraw 77,
+    CMD_redrawstatus 78,
+    CMD_registers 79,
+    CMD_resize 80,
+    CMD_retab 81,
+    CMD_right 82,
+    CMD_rightbelow 83,
+    CMD_substitute 84,
+    CMD_set 85,
+    CMD_setglobal 86,
+    CMD_setlocal 87,
+    CMD_silent 88,
+    CMD_smagic 89,
+    CMD_smap 90,
+    CMD_smapclear 91,
+    CMD_snomagic 92,
+    CMD_snoremap 93,
+    CMD_split 94,
+    CMD_stop 95,
+    CMD_startinsert 96,
+    CMD_startgreplace 97,
+    CMD_startreplace 98,
+    CMD_stopinsert 99,
+    CMD_sunmap 100,
+    CMD_suspend 101,
+    CMD_syncbind 102,
+    CMD_t 103,
+    CMD_topleft 104,
+    CMD_undo 105,
+    CMD_undojoin 106,
+    CMD_undolist 107,
+    CMD_unabbreviate 108,
+    CMD_unmap 109,
+    CMD_unsilent 110,
+    CMD_vglobal 111,
+    CMD_verbose 112,
+    CMD_vertical 113,
+    CMD_vmap 114,
+    CMD_vmapclear 115,
+    CMD_vnoremap 116,
+    CMD_vsplit 117,
+    CMD_vunmap 118,
+    CMD_wincmd 119,
+    CMD_xmap 120,
+    CMD_xmapclear 121,
+    CMD_xnoremap 122,
+    CMD_xunmap 123,
+    CMD_yank 124,
+    CMD_z 125,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 129,
-    CMD_and 130,
-    CMD_lshift 131,
-    CMD_equal 132,
-    CMD_rshift 133,
-    CMD_tilde 134,
+    CMD_pound 126,
+    CMD_and 127,
+    CMD_lshift 128,
+    CMD_equal 129,
+    CMD_rshift 130,
+    CMD_tilde 131,
 
-    CMD_SIZE 135)     ;; MUST be after all real commands!
+    CMD_SIZE 132)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3326,10 +3266,8 @@
 (atom! boolean  msg_nowait)         ;; don't wait for this msg
 (atom! int      emsg_off)           ;; don't display errors for now
 (atom! boolean  info_message)       ;; printing informative message
-(atom! boolean  msg_hist_off)       ;; don't add messages to history
 (atom! boolean  need_clr_eos)       ;; need to clear text before displaying a message
 (atom! int      emsg_skip)          ;; don't display errors for expression that is skipped
-(atom! boolean  emsg_severe)        ;; use message of next of several emsg() calls for throw
 (atom! boolean  did_emsg)           ;; set by emsg() when the message is displayed or thrown
 (atom! boolean  did_emsg_syntax)    ;; did_emsg set because of a syntax error
 (atom! boolean  called_emsg)        ;; always set by emsg()
@@ -3352,56 +3290,6 @@
 
 (atom! int      lines_left      -1)     ;; lines left for listing
 (atom! boolean  msg_no_more)            ;; don't use more prompt, truncate messages
-
-;; The exception currently being thrown.  Used to pass an exception to
-;; a different cstack.  Also used for discarding an exception before it is
-;; caught or made pending.  Only valid when did_throw is true.
-
-(atom! except_C current_exception)
-
-;; did_throw: An exception is being thrown.  Reset when the exception is caught
-;; or as long as it is pending in a finally clause.
-
-(atom! boolean did_throw)
-
-;; need_rethrow: set to true when a throw that cannot be handled in do_cmdline()
-;; must be propagated to the cstack of the previously called do_cmdline().
-
-(atom! boolean need_rethrow)
-
-;; When "force_abort" is true, always skip commands after an error message,
-;; even after the outermost ":endif", ":endwhile" or ":endfor" or for a
-;; function without the "abort" flag.  It is set to true when "trylevel" is
-;; non-zero (and ":silent!" was not used) or an exception is being thrown at
-;; the time an error is detected.  It is set to false when "trylevel" gets
-;; zero again and there was no error or interrupt or throw.
-
-(atom! boolean force_abort)
-
-;; "msg_list" points to a variable in the stack of do_cmdline() which keeps
-;; the list of arguments of several emsg() calls, one of which is to be
-;; converted to an error exception immediately after the failing command
-;; returns.  The message to be used for the exception value is pointed to by
-;; the "throw_msg" field of the first element in the list.  It is usually the
-;; same as the "msg" field of that element, but can be identical to the "msg"
-;; field of a later list element, when the "emsg_severe" flag was set when the
-;; emsg() call was made.
-
-(atom! msglist_C* msg_list)
-
-;; suppress_errthrow: When true, don't convert an error to an exception.  Used
-;; when displaying the interrupt message or reporting an exception that is still
-;; uncaught at the top level (which has already been discarded then).  Also used
-;; for the error message when no exception can be thrown.
-
-(atom! boolean suppress_errthrow)
-
-;; The stack of all caught and not finished exceptions.  The exception on the
-;; top of the stack is the one got by evaluation of v:exception.  The complete
-;; stack of all caught and pending exceptions is embedded in the various
-;; cstacks; the pending exceptions, however, are not on the caught stack.
-
-(atom! except_C caught_stack)
 
 (atom! boolean  scroll_region)                  ;; term supports scroll region
 (atom! int      t_colors)                       ;; int value of T_CCO
@@ -5046,17 +4934,6 @@
 (atom! Bytes    confirm_msg)            ;; ":confirm" message
 (atom! Bytes    confirm_msg_tail)       ;; tail of "confirm_msg"
 
-(class! #_final msg_hist_C
-    [
-        (field msg_hist_C   next)
-        (field Bytes        msg)
-        (field int          attr)
-    ])
-
-(atom! msg_hist_C first_msg_hist)
-(atom! msg_hist_C last_msg_hist)
-(atom! int msg_hist_len)
-
 ;; When writing messages to the screen, there are many different situations.
 ;; A number of variables is used to remember the current state:
 ;; msg_didany       true when messages were written since the last time the user reacted to a prompt.
@@ -5111,14 +4988,6 @@
 ;       if (3 <= @msg__entered)
 ;           return true;
 ;       @msg__entered++;
-
-        ;; Add message to history (unless it's a repeated kept message or a truncated message)
-;       if (BNE(s, @keep_msg)
-;               || (s.at(0) != (byte)'<'
-;                   && @last_msg_hist != null
-;                   && @last_msg_hist.msg != null
-;                   && STRCMP(s, @last_msg_hist.msg) != 0))
-;           add_msg_hist(s, -1, attr);
 
         ;; When displaying "keep_msg", don't let msg_start() free it, caller must do that.
 ;       if (BEQ(s, @keep_msg))
@@ -5274,8 +5143,6 @@
 
 (defn- #_boolean emsg [#_Bytes s]
     (§
-;       boolean[] ignore = { false };
-
         ;; Skip this if not giving error messages at the moment.
 ;       if (emsg_not_now())
 ;           return true;
@@ -5283,27 +5150,8 @@
 ;       @called_emsg = true;
 ;       @ex_exitval = 1;
 
-        ;; If "emsg_severe" is true: When an error exception is to be thrown,
-        ;; prefer this message over previous messages for the same command.
-
-;       boolean severe = @emsg_severe;
-;       @emsg_severe = false;
-
 ;       if (@emsg_off == 0)
 ;       {
-            ;; Cause a throw of an error exception if appropriate.
-            ;; Don't display the error message in this case.
-            ;; (If no matching catch clause will be found, the message will be displayed later on.)
-            ;; "ignore" is set when the message should be ignored completely
-            ;; (used for the interrupt message).
-
-;           if (cause_errthrow(s, severe, ignore) == true)
-;           {
-;               if (!ignore[0])
-;                   @did_emsg = true;
-;               return true;
-;           }
-
             ;; When using ":silent! cmd" ignore error messages.
             ;; But do write it to the redirection file.
 
@@ -5364,14 +5212,9 @@
 
 (defn- #_Bytes msg_trunc_attr [#_Bytes s, #_boolean force, #_int attr]
     (§
-        ;; Add message to history before truncating.
-;       add_msg_hist(s, -1, attr);
-
 ;       s = msg_may_trunc(force, s);
 
-;       @msg_hist_off = true;
 ;       boolean b = msg_attr(s, attr);
-;       @msg_hist_off = false;
 
 ;       return (b) ? s : null;
     ))
@@ -5402,72 +5245,6 @@
 ;       }
 
 ;       return s;
-    ))
-
-(defn- #_void add_msg_hist [#_Bytes s, #_int len, #_int attr]
-    ;; len: -1 for undetermined length
-    (§
-;       final int MAX_MSG_HIST_LEN = 200;
-
-;       if (@msg_hist_off || @msg_silent != 0)
-;           return;
-
-        ;; don't let the message history get too big
-;       while (MAX_MSG_HIST_LEN < @msg_hist_len)
-;           delete_first_msg();
-
-        ;; allocate an entry and add the message at the end of the history
-;       msg_hist_C p = §_msg_hist_C();
-
-;       if (len < 0)
-;           len = STRLEN(s);
-        ;; remove leading and trailing newlines
-;       while (0 < len && s.at(0) == (byte)'\n')
-;       {
-;           s = s.plus(1);
-;           --len;
-;       }
-;       while (0 < len && s.at(len - 1) == (byte)'\n')
-;           --len;
-;       p.msg = STRNDUP(s, len);
-;       p.next = null;
-;       p.attr = attr;
-;       if (@last_msg_hist != null)
-;           @last_msg_hist.next = p;
-;       @last_msg_hist = p;
-;       if (@first_msg_hist == null)
-;           @first_msg_hist = @last_msg_hist;
-;       @msg_hist_len++;
-    ))
-
-;; Delete the first (oldest) message from the history.
-;; Returns false if there are no messages.
-
-(defn- #_boolean delete_first_msg []
-    (§
-;       if (@msg_hist_len <= 0)
-;           return false;
-
-;       msg_hist_C p = @first_msg_hist;
-;       @first_msg_hist = p.next;
-;       if (@first_msg_hist == null)
-;           @last_msg_hist = null;       ;; history is empty
-
-;       --@msg_hist_len;
-;       return true;
-    ))
-
-;; ":messages" command.
-
-(defn- #_void ex_messages [#_exarg_C _eap]
-    (§
-;       @msg_hist_off = true;
-
-;       for (msg_hist_C p = @first_msg_hist; p != null && !@got_int; p = p.next)
-;           if (p.msg != null)
-;               msg_attr(p.msg, p.attr);
-
-;       @msg_hist_off = false;
     ))
 
 ;; Call this after prompting the user.  This will avoid a hit-return message and a delay.
@@ -5708,15 +5485,6 @@
 ;       @keep_msg_attr = attr;
     ))
 
-;; If there currently is a message being displayed, set "keep_msg" to it, so
-;; that it will be displayed again after redraw.
-
-(defn- #_void set_keep_msg_from_hist []
-    (§
-;       if (@keep_msg == null && @last_msg_hist != null && @msg_scrolled == 0 && (@State & NORMAL) != 0)
-;           set_keep_msg(@last_msg_hist.msg, @last_msg_hist.attr);
-    ))
-
 ;; Prepare for outputting characters in the command line.
 
 (defn- #_void msg_start []
@@ -5819,13 +5587,6 @@
 (defn- #_int msg_outtrans_len_attr [#_Bytes p, #_int len, #_int attr]
     (§
 ;       int cells = 0;
-
-        ;; if MSG_HIST flag set, add message to history
-;       if ((attr & MSG_HIST) != 0)
-;       {
-;           add_msg_hist(p, len, attr);
-;           attr &= ~MSG_HIST;
-;       }
 
         ;; If the string starts with a composing character,
         ;; first draw a space on which the composing char can be drawn.
@@ -6183,13 +5944,6 @@
 
 ;       if (@msg_silent != 0)
 ;           return;
-
-        ;; if MSG_HIST flag set, add message to history
-;       if ((attr & MSG_HIST) != 0 && maxlen < 0)
-;       {
-;           add_msg_hist(str, -1, attr);
-;           attr &= ~MSG_HIST;
-;       }
 
         ;; When writing something to the screen after it has scrolled, requires
         ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
@@ -12057,7 +11811,7 @@
 ;               delbuf_msg(new_name);
 ;               return false;
 ;           }
-;           if (aborting())                     ;; autocmds may abort script processing
+;           if (@got_int)                     ;; autocmds may abort script processing
 ;               return false;
 ;           if (buf == @curbuf)                  ;; already in new buffer
 ;               auto_buf = true;
@@ -12075,7 +11829,7 @@
 ;               if (@curwin != oldwin && win_valid(oldwin) && oldwin.w_buffer == null)
 ;                   win_close(oldwin, false);
 
-;               if (aborting())                 ;; autocmds may abort script processing
+;               if (@got_int)                 ;; autocmds may abort script processing
 ;                   return false;
                 ;; Be careful again, like above.
 ;               if (!buf_valid(buf))            ;; new buffer has been deleted
@@ -12134,7 +11888,7 @@
             ;; Open the buffer and read the file.
 
 ;           open_buffer();
-;           if (aborting())
+;           if (@got_int)
 ;               retval = false;
 
             ;; If autocommands change the cursor position or topline,
@@ -12766,7 +12520,7 @@
             ;; Check for a match on each line.
 
 ;       long line2 = eap.line2;
-;       for (long lnum = eap.line1; lnum <= line2 && !(got_quit || aborting()); lnum++)
+;       for (long lnum = eap.line1; lnum <= line2 && !(got_quit || @got_int); lnum++)
 ;       {
 ;           long nmatch = vim_regexec_multi(regmatch, @curwin, @curbuf, lnum, 0, null);
 ;           if (nmatch != 0)                        ;; number of lines in match
@@ -14080,7 +13834,7 @@
 ;                               cmdline_paste(c, i == Ctrl_R, false);
 
                                 ;; When there was a serious error abort getting the command line.
-;                               if (aborting())
+;                               if (@got_int)
 ;                               {
 ;                                   gotesc = true;      ;; will free ccline.cmdbuff after putting it in history
 ;                                   break returncmd;    ;; back to cmd mode
@@ -16168,7 +15922,7 @@
 ;       else
 ;       {
             ;; autocmds may abort script processing
-;           if (aborting() && @cmdwin_result != K_IGNORE)
+;           if (@got_int && @cmdwin_result != K_IGNORE)
 ;               @cmdwin_result = Ctrl_C;
 
             ;; Set the new command line from the cmdline buffer.
@@ -16316,7 +16070,7 @@
         CMD_buffer,
         CMD_change,
         CMD_delete,
-        CMD_edit,
+        CMD_edit,
         CMD_fixdel,
         CMD_global,
         CMD_hide,
@@ -16458,43 +16212,17 @@
 ;       int count = 0;                              ;; line number count
 ;       boolean did_inc = false;                    ;; incremented redrawingDisabled
 
-        ;; For every pair of do_cmdline()/do_one_cmd() calls, use an extra memory
-        ;; location for storing error messages to be converted to an exception.
-        ;; This ensures that the do_errthrow() call in do_one_cmd() does not
-        ;; combine the messages stored by an earlier invocation of do_one_cmd()
-        ;; with the command name of the later one.  This would happen when
-        ;; BufWritePost autocommands are executed after a write error.
-;       msglist_C[] saved_msg_list = @msg_list;
-;       @msg_list = { null };
-
         ;; It's possible to create an endless loop with ":execute", catch that here.
         ;; The value of 200 allows nested function calls, ":source", etc.
 ;       if (@call_depth == 200)
 ;       {
 ;           emsg(u8("E169: Command too recursive"));
-            ;; When converting to an exception, we do not include the command name
-            ;; since this is not an error of the specific command.
-;           do_errthrow(false, null);
-;           @msg_list = saved_msg_list;
 ;           return false;
 ;       }
 ;       @call_depth++;
 
-        ;; Initialize "force_abort" and "suppress_errthrow" at the top level.
-
-;       if (@_0_recurse == 0)
-;       {
-;           @force_abort = false;
-;           @suppress_errthrow = false;
-;       }
-
-        ;; "did_throw" will be set to true when an exception is being thrown.
-
-;       @did_throw = false;
-
         ;; "did_emsg" will be set to true when emsg() is used,
         ;; in which case we cancel the whole command line, and any if/endif or loop.
-        ;; If force_abort is set, we cancel everything.
 
 ;       @did_emsg = false;
 
@@ -16515,7 +16243,7 @@
 ;       do
 ;       {
             ;; stop skipping cmds for an error msg after all endif/while/for
-;           if (next_cmdline == null && !@force_abort)
+;           if (next_cmdline == null)
 ;               @did_emsg = false;
 
             ;; "fgetline" and "cookie" passed to do_one_cmd()
@@ -16606,17 +16334,6 @@
 ;               BCOPY(cmdline_copy[0], next_cmdline, STRLEN(next_cmdline) + 1);
 ;               next_cmdline = cmdline_copy[0];
 ;           }
-
-            ;; If the outermost try conditional (across function calls and sourced files)
-            ;; is aborted because of an error, an interrupt, or an uncaught exception,
-            ;; cancel everything.  If it is left normally, reset force_abort to get
-            ;; the non-EH compatible abortion behavior for the rest of the script.
-
-;           if (!@did_emsg && !@got_int && !@did_throw)
-;               @force_abort = false;
-
-            ;; Convert an interrupt to an exception if appropriate.
-;           do_intthrow();
 ;       }
 
         ;; Continue executing command lines when:
@@ -16626,92 +16343,12 @@
         ;; - there is a command after '|', inside a :if, :while, :for or :try, or looping
         ;;   for ":source" command or function call.
 
-;       while (!(@got_int || (@did_emsg && @force_abort) || @did_throw)
-;               && !(@did_emsg
-;                   && used_getline
-;                           && (fgetline == getexmodeline || fgetline == getexline))
-;               && (next_cmdline != null
-;                           || (flags & DOCMD_REPEAT) != 0))
+;       while (!@got_int
+;               && !(@did_emsg && used_getline && (fgetline == getexmodeline || fgetline == getexline))
+;               && (next_cmdline != null || (flags & DOCMD_REPEAT) != 0))
 ;           ;
 
 ;       @did_emsg_syntax = false;
-
-        ;; If a missing ":endtry", ":endwhile", ":endfor", or ":endif" or a memory
-        ;; lack was reported above and the error message is to be converted to an
-        ;; exception, do this now after rewinding the cstack.
-;       do_errthrow(true, null);
-
-;       {
-            ;; When an exception is being thrown out of the outermost try conditional,
-            ;; discard the uncaught exception, disable the conversion of interrupts
-            ;; or errors to exceptions, and ensure that no more commands are executed.
-
-;           if (@did_throw)
-;           {
-;               Bytes p = null;
-;               msglist_C messages = null;
-
-                ;; If the uncaught exception is a user exception, report it as an error.
-                ;; If it is an error exception, display the saved error message now.
-                ;; For an interrupt exception, do nothing; the interrupt message is given elsewhere.
-
-;               switch (@current_exception.type)
-;               {
-;                   case ET_USER:
-;                       vim_snprintf(@ioBuff, IOSIZE, u8("E605: Exception not caught: %s"), @current_exception.value);
-;                       p = STRDUP(@ioBuff);
-;                       break;
-;                   case ET_ERROR:
-;                       messages = @current_exception.messages;
-;                       @current_exception.messages = null;
-;                       break;
-;                   case ET_INTERRUPT:
-;                       break;
-;                   default:
-;                       p = STRDUP(e_internal);
-;                       break;
-;               }
-
-;               discard_current_exception();        ;; uses ioBuff if 'verbose'
-;               @suppress_errthrow = true;
-;               @force_abort = true;
-
-;               if (messages != null)
-;               {
-;                   do
-;                   {
-;                       msglist_C next = messages.next;
-;                       emsg(messages.msg);
-;                       messages = next;
-;                   } while (messages != null);
-;               }
-;               else if (p != null)
-;               {
-;                   emsg(p);
-;               }
-;           }
-
-            ;; On an interrupt or an aborting error not converted to an exception,
-            ;; disable the conversion of errors to exceptions.  (Interrupts are not
-            ;; converted any more, here.) This enables also the interrupt message
-            ;; when force_abort is set and did_emsg unset in case of an interrupt
-            ;; from a finally clause after an error.
-
-;           else if (@got_int || (@did_emsg && @force_abort))
-;               @suppress_errthrow = true;
-;       }
-
-        ;; The current cstack will be freed when do_cmdline() returns.  An uncaught
-        ;; exception will have to be rethrown in the previous cstack.  If a function
-        ;; has just returned or a script file was just finished and the previous
-        ;; cstack belongs to the same function or, respectively, script file, it
-        ;; will have to be checked for finally clauses to be executed due to the
-        ;; ":return" or ":finish".  This is done in do_one_cmd().
-
-;       if (@did_throw)
-;           @need_rethrow = true;
-
-;       @msg_list = saved_msg_list;
 
         ;; If there was too much output to fit on the command line, ask the user to
         ;; hit return before redrawing the screen.  With the ":global" command we do
@@ -17026,14 +16663,7 @@
 ;               break;
 ;           }
 
-;           ea.skip = (@did_emsg || @got_int || @did_throw);
-
-            ;; If the ">quit" debug command is used, throw an interrupt exception and skip the next command.
-;           if (!ea.skip && @got_int)
-;           {
-;               ea.skip = true;
-;               do_intthrow();
-;           }
+;           ea.skip = (@did_emsg || @got_int);
 
             ;; 3. Skip over the range to find the command.  Let "p" point to after it.
             ;;
@@ -17389,10 +17019,8 @@
 ;           }
 
             ;; Check for a count.
-            ;; When accepting a BUFNAME, don't use "123foo" as a count, it's a buffer name.
 
-;           if ((ea.argt & COUNT) != 0 && asc_isdigit(ea.arg.at(0))
-;               && ((ea.argt & BUFNAME) == 0 || (p = skipdigits(ea.arg)).at(0) == NUL || vim_iswhite(p.at(0))))
+;           if ((ea.argt & COUNT) != 0 && asc_isdigit(ea.arg.at(0)))
 ;           {
 ;               long n;
 ;               { Bytes[] __ = { ea.arg }; n = getdigits(__); ea.arg = __[0]; }
@@ -17477,24 +17105,6 @@
 ;               }
 ;           }
 
-            ;; Accept buffer name.  Cannot be used at the same time with a buffer number.
-            ;; Don't do this for a user command.
-
-;           if ((ea.argt & BUFNAME) != 0 && ea.arg.at(0) != NUL && ea.addr_count == 0)
-;           {
-                ;; Ignore trailing spaces.
-
-;               p = ea.arg.plus(STRLEN(ea.arg));
-;               while (BLT(ea.arg, p) && vim_iswhite(p.at(-1)))
-;                   p = p.minus(1);
-
-;               ea.line2 = buflist_findpat(ea.arg, p);
-;               if (ea.line2 < 0)       ;; failed
-;                   break doend;
-;               ea.addr_count = 1;
-;               ea.arg = skipwhite(p);
-;           }
-
             ;; 7. Switch on command name.
             ;;
             ;; The "ea" structure holds the arguments that can be used.
@@ -17509,16 +17119,6 @@
 ;           cmdnames[ea.cmdidx].cmd_func(ea);
 ;           if (ea.errmsg != null)
 ;               errormsg = ea.errmsg;
-
-            ;; If the command just executed called do_cmdline(), any throw or ":return"
-            ;; or ":finish" encountered there must also check the cstack of the still
-            ;; active do_cmdline() that called this do_one_cmd().  Rethrow an uncaught
-            ;; exception, or reanimate a returned function or finished script file and
-            ;; return or finish it again.
-
-;           if (@need_rethrow)
-;               @did_throw = true;
-;           @need_rethrow = false;
 ;       }
 
 ;       if (@curwin.w_cursor.lnum == 0)  ;; can happen with zero line number
@@ -17537,8 +17137,6 @@
 ;           }
 ;           emsg(errormsg);
 ;       }
-
-;       do_errthrow(true, (ea.cmdidx != CMD_SIZE) ? cmdnames[ea.cmdidx].cmd_name : null);
 
 ;       if (0 <= verbose_save)
 ;           @p_verbose = verbose_save;
@@ -18407,8 +18005,6 @@
 
 (defn- #_void ex_splitview [#_exarg_C eap]
     (§
-;       window_C old_curwin = @curwin;
-
 ;       if (win_split((0 < eap.addr_count) ? (int)eap.line2 : 0, (eap.cmd.at(0) == (byte)'v') ? WSP_VERT : 0) != false)
 ;       {
                 ;; Reset 'scrollbind' when editing another file,
@@ -18421,7 +18017,7 @@
 ;           else
 ;               do_check_scrollbind(false);
 
-;           do_exedit(eap, old_curwin);
+;           @ex_no_reprint = true;
 ;       }
     ))
 
@@ -18456,101 +18052,6 @@
 ;               n = 9999;
 ;           win_setheight_win(n, wp);
 ;       }
-    ))
-
-;; ":edit", ":visual".
-
-(defn- #_void ex_edit [#_exarg_C eap]
-    (§
-;       do_exedit(eap, null);
-    ))
-
-;; ":edit <file>" command and alikes.
-
-(defn- #_void do_exedit [#_exarg_C eap, #_window_C old_curwin]
-    ;; old_curwin: curwin before doing a split or null
-    (§
-;       int exmode_was = @exmode_active;
-
-        ;; ":vi" command ends Ex mode.
-
-;       if (@exmode_active != 0 && eap.cmdidx == CMD_visual)
-;       {
-;           @exmode_active = 0;
-;           if (eap.arg.at(0) == NUL)
-;           {
-                ;; Special case: ":global/pat/visual\NLvi-commands".
-;               if (@global_busy != 0)
-;               {
-;                   int rd = @redrawingDisabled;
-;                   int nwr = @no_wait_return;
-;                   boolean ms = @msg_scroll;
-
-;                   if (eap.nextcmd != null)
-;                   {
-;                       stuffReadbuff(eap.nextcmd);
-;                       eap.nextcmd = null;
-;                   }
-
-;                   if (exmode_was != EXMODE_VIM)
-;                       settmode(TMODE_RAW);
-;                   @redrawingDisabled = 0;
-;                   @no_wait_return = FALSE;
-;                   @need_wait_return = false;
-;                   @msg_scroll = false;
-;                   @must_redraw = CLEAR;
-
-;                   main_loop(false, true);
-
-;                   @redrawingDisabled = rd;
-;                   @no_wait_return = nwr;
-;                   @msg_scroll = ms;
-;               }
-;               return;
-;           }
-;       }
-
-;       if ((eap.cmdidx != CMD_split && eap.cmdidx != CMD_vsplit) || eap.arg.at(0) != NUL)
-;       {
-;           setpcmark();
-;           if (do_ecmd(eap.arg, eap,
-                        ;; ":edit" goes to first line if Vi compatible
-;                       (eap.arg.at(0) == NUL && eap.do_ecmd_lnum == 0 && vim_strbyte(@p_cpo, CPO_GOTO1) != null) ? ECMD_ONE : eap.do_ecmd_lnum,
-;                       (@cmdmod.hide ? ECMD_HIDE : 0) + (eap.forceit ? ECMD_FORCEIT : 0),
-;                       (old_curwin == null) ? @curwin : null) == false)
-;           {
-                ;; Editing the file failed.  If the window was split, close it.
-;               if (old_curwin != null)
-;               {
-;                   boolean need_hide = (curbufIsChanged() && @curbuf.b_nwindows <= 1);
-;                   if (!need_hide || @cmdmod.hide)
-;                   {
-;                       cleanup_C cs = §_cleanup_C();
-
-                        ;; Reset the error/interrupt/exception state here so that
-                        ;; aborting() returns false when closing a window.
-;                       enter_cleanup(cs);
-;                       win_close(@curwin, !need_hide && !@cmdmod.hide);
-
-                        ;; Restore the error/interrupt/exception state if not discarded
-                        ;; by a new aborting error, interrupt, or uncaught exception.
-;                       leave_cleanup(cs);
-;                   }
-;               }
-;           }
-;       }
-
-        ;; if ":split file" worked, set alternate file name in old window to new file
-
-;       if (old_curwin != null
-;               && eap.arg.at(0) != NUL
-;               && @curwin != old_curwin
-;               && win_valid(old_curwin)
-;               && old_curwin.w_buffer != @curbuf
-;               && !@cmdmod.keepalt)
-;           old_curwin.w_alt_fnum = @curbuf.b_fnum;
-
-;       @ex_no_reprint = true;
     ))
 
 ;; ":syncbind" forces all 'scrollbind' windows to have the same relative offset.
@@ -19144,524 +18645,6 @@
     (§
 ;       @no_hlsearch = true;
 ;       redraw_all_later(SOME_VALID);
-    ))
-
-;; ex_eval.c: functions for Ex command line for the +eval feature ---------------------------------
-
-;; Exception handling terms:
-;;
-;;      :try            ":try" command          \
-;;          ...         try block               |
-;;      :catch RE       ":catch" command        |
-;;          ...         catch clause            |- try conditional
-;;      :finally        ":finally" command      |
-;;          ...         finally clause          |
-;;      :endtry         ":endtry" command       /
-;;
-;; The try conditional may have any number of catch clauses and at most one
-;; finally clause.  A ":throw" command can be inside the try block, a catch
-;; clause, the finally clause, or in a function called or script sourced from
-;; there or even outside the try conditional.  Try conditionals may be nested.
-
-;; Configuration whether an exception is thrown on error or interrupt.  When
-;; the preprocessor macros below evaluate to false, an error (did_emsg) or
-;; interrupt (got_int) under an active try conditional terminates the script
-;; after the non-active finally clauses of all active try conditionals have been
-;; executed.  Otherwise, errors and/or interrupts are converted into catchable
-;; exceptions (did_throw additionally set), which terminate the script only if
-;; not caught.  For user exceptions, only did_throw is set.  (Note: got_int can
-;; be set asynchronously afterwards by a SIGINT, so did_throw && got_int is not
-;; a reliant test that the exception currently being thrown is an interrupt
-;; exception.  Similarly, did_emsg can be set afterwards on an error in an
-;; (unskipped) conditional command inside an inactive conditional, so did_throw
-;; && did_emsg is not a reliant test that the exception currently being thrown
-;; is an error exception.)  -  The macros can be defined as expressions checking
-;; for a variable that is allowed to be changed during execution of a script.
-
-;; When several errors appear in a row, setting "force_abort" is delayed until
-;; the failing command returned.  "cause_abort" is set to true meanwhile, in
-;; order to indicate that situation.  This is useful when "force_abort" was set
-;; during execution of a function call from an expression: the aborting of the
-;; expression evaluation is done without producing any error messages, but all
-;; error messages on parsing errors during the expression evaluation are given
-;; (even if a try conditional is active).
-
-(atom! boolean cause_abort)
-
-;; Return true when immediately aborting on error, or when an interrupt
-;; occurred or an exception was thrown but not caught.  Use for ":{range}call"
-;; to check whether an aborted function that does not handle a range itself
-;; should be called again for the next line in the range.  Also used for
-;; cancelling expression evaluation after a function call caused an immediate
-;; abort.  Note that the first emsg() call temporarily resets "force_abort"
-;; until the throw point for error messages has been reached.  That is, during
-;; cancellation of an expression evaluation after an aborting function call or
-;; due to a parsing error, aborting() always returns the same value.
-
-(defn- #_boolean aborting []
-    (§
-;       return (@did_emsg && @force_abort) || @got_int || @did_throw;
-    ))
-
-;; cause_errthrow(): Cause a throw of an error exception if appropriate.
-;; Return true if the error message should not be displayed by emsg().
-;; Sets "ignore", if the emsg() call should be ignored completely.
-;;
-;; When several messages appear in the same command, the first is usually the
-;; most specific one and used as the exception value.  The "severe" flag can be
-;; set to true, if a later but severer message should be used instead.
-
-(defn- #_boolean cause_errthrow [#_Bytes mesg, #_boolean severe, #_boolean* ignore]
-    (§
-        ;; Do nothing when displaying the interrupt message or reporting an
-        ;; uncaught exception (which has already been discarded then) at the top level.
-        ;; Also when no exception can be thrown.  The message will be displayed by emsg().
-
-;       if (@suppress_errthrow)
-;           return false;
-
-        ;; If emsg() has not been called previously, temporarily reset "force_abort" until
-        ;; the throw point for error messages has been reached.  This ensures that aborting()
-        ;; returns the same value for all errors that appear in the same command.
-        ;; This means particularly that for parsing errors during expression evaluation
-        ;; emsg() will be called multiply, even when the expression is evaluated from a finally
-        ;; clause that was activated due to an aborting error, interrupt, or exception.
-
-;       if (!@did_emsg)
-;       {
-;           @cause_abort = @force_abort;
-;           @force_abort = false;
-;       }
-
-        ;; If no try conditional is active and no exception is being thrown and
-        ;; there has not been an error in a try conditional or a throw so far, do
-        ;; nothing (for compatibility of non-EH scripts).  The message will then
-        ;; be displayed by emsg().  When ":silent!" was used and we are not
-        ;; currently throwing an exception, do nothing.  The message text will
-        ;; then be stored to v:errmsg by emsg() without displaying it.
-
-;       if ((!@cause_abort || @emsg_silent != 0) && !@did_throw)
-;           return false;
-
-        ;; Ignore an interrupt message when inside a try conditional or when an
-        ;; exception is being thrown or when an error in a try conditional or
-        ;; throw has been detected previously.  This is important in order that an
-        ;; interrupt exception is catchable by the innermost try conditional and
-        ;; not replaced by an interrupt message error exception.
-
-;       if (BEQ(mesg, e_interr))
-;       {
-;           ignore[0] = true;
-;           return true;
-;       }
-
-        ;; Ensure that all commands in nested function calls and sourced files
-        ;; are aborted immediately.
-
-;       @cause_abort = true;
-
-        ;; When an exception is being thrown, some commands (like conditionals) are
-        ;; not skipped.  Errors in those commands may affect what of the subsequent
-        ;; commands are regarded part of catch and finally clauses.  Catching the
-        ;; exception would then cause execution of commands not intended by the
-        ;; user, who wouldn't even get aware of the problem.  Therefor, discard the
-        ;; exception currently being thrown to prevent it from being caught.  Just
-        ;; execute finally clauses and terminate.
-
-;       if (@did_throw)
-;       {
-            ;; When discarding an interrupt exception, reset got_int to prevent the
-            ;; same interrupt being converted to an exception again and discarding
-            ;; the error exception we are about to throw here.
-;           if (@current_exception.type == ET_INTERRUPT)
-;               @got_int = false;
-;           discard_current_exception();
-;       }
-
-        ;; Prepare the throw of an error exception, so that everything will be aborted
-        ;; (except for executing finally clauses), until the error exception is caught;
-        ;; if still uncaught at the top level, the error message will be displayed and
-        ;; the script processing terminated then.  This function has no access to the
-        ;; conditional stack.  Thus, the actual throw is made after the failing command
-        ;; has returned.  Throw only the first of several errors in a row, except
-        ;; a severe error is following.
-
-;       if (@msg_list != null)
-;       {
-;           msglist_C last = null;
-;           for (msglist_C list = @msg_list[0]; list != null; list = list.next)
-;               last = list;
-
-;           msglist_C elem = §_msglist_C();
-
-;           elem.msg = STRDUP(mesg);
-;           elem.next = null;
-;           elem.throw_msg = null;
-;           if (last == null)
-;               @msg_list[0] = elem;
-;           else
-;               last.next = elem;
-;           if (last == null || severe)
-;           {
-                ;; Skip the extra "Vim " prefix for message "E458".
-;               Bytes tmsg = elem.msg;
-;               if (STRNCMP(tmsg, u8("Vim E"), 5) == 0
-;                       && asc_isdigit(tmsg.at(5))
-;                       && asc_isdigit(tmsg.at(6))
-;                       && asc_isdigit(tmsg.at(7))
-;                       && tmsg.at(8) == (byte)':'
-;                       && tmsg.at(9) == (byte)' ')
-;                   @msg_list[0].throw_msg = tmsg.plus(4);
-;               else
-;                   @msg_list[0].throw_msg = tmsg;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Free global "*msg_list" and the messages it contains, then set "*msg_list" to null.
-
-(defn- #_void free_global_msglist []
-    (§
-;       @msg_list[0] = null;
-    ))
-
-;; Throw the message specified in the call to cause_errthrow() above as an error exception.
-;; If !did, postpone the throw until do_cmdline() has returned (see do_one_cmd()).
-
-(defn- #_void do_errthrow [#_boolean did, #_Bytes cmdname]
-    (§
-        ;; Ensure that all commands in nested function calls and sourced files
-        ;; are aborted immediately.
-
-;       if (@cause_abort)
-;       {
-;           @cause_abort = false;
-;           @force_abort = true;
-;       }
-
-        ;; If no exception is to be thrown or the conversion should be done after
-        ;; returning to a previous invocation of do_one_cmd(), do nothing.
-;       if (@msg_list == null || @msg_list[0] == null)
-;           return;
-
-;       if (throw_exception(@msg_list[0], ET_ERROR, cmdname) != false)
-;       {
-;           if (did)
-;               @did_throw = true;
-;           else
-;               @need_rethrow = true;
-;       }
-;       @msg_list[0] = null;
-    ))
-
-;; do_intthrow(): Replace the current exception by an interrupt or interrupt
-;; exception if appropriate.  Return true if the current exception is discarded,
-;; false otherwise.
-
-(defn- #_boolean do_intthrow []
-    (§
-        ;; If no interrupt occurred or no try conditional is active and no exception
-        ;; is being thrown, do nothing (for compatibility of non-EH scripts).
-
-;       if (!@got_int || !@did_throw)
-;           return false;
-
-        ;; Throw an interrupt exception, so that everything will be aborted
-        ;; (except for executing finally clauses), until the interrupt exception
-        ;; is caught; if still uncaught at the top level, the script processing
-        ;; will be terminated then.  -  If an interrupt exception is already
-        ;; being thrown, do nothing.
-
-;       if (@did_throw)
-;       {
-;           if (@current_exception.type == ET_INTERRUPT)
-;               return false;
-
-            ;; An interrupt exception replaces any user or error exception.
-;           discard_current_exception();
-;       }
-;       if (throw_exception(u8("Vim:Interrupt"), ET_INTERRUPT, null) != false)
-;           @did_throw = true;
-
-;       return true;
-    ))
-
-;; Get an exception message that is to be stored in current_exception.value.
-
-(defn- #_Bytes get_exception_string [#_"/*msglist_C|Bytes*/Object" value, #_int type, #_Bytes cmdname]
-    (§
-;       Bytes ret;
-
-;       if (type == ET_ERROR)
-;       {
-;           Bytes mesg = ((msglist_C)value).throw_msg;
-
-;           Bytes val;
-;           if (cmdname != null && cmdname.at(0) != NUL)
-;           {
-;               int cmdlen = STRLEN(cmdname);
-;               ret = STRNDUP(u8("Vim("), 4 + cmdlen + 2 + STRLEN(mesg));
-;               STRCPY(ret.plus(4), cmdname);
-;               STRCPY(ret.plus(4 + cmdlen), u8("):"));
-;               val = ret.plus(4 + cmdlen + 2);
-;           }
-;           else
-;           {
-;               ret = STRNDUP(u8("Vim:"), 4 + STRLEN(mesg));
-;               val = ret.plus(4);
-;           }
-
-            ;; msg_add_fname() may have been used to prefix the message with a file name in quotes.
-            ;; In the exception value, put the file name in parentheses and move it to the end.
-;           for (Bytes p = mesg; ; p = p.plus(1))
-;           {
-;               if (p.at(0) == NUL
-;                       || (p.at(0) == (byte)'E'
-;                           && asc_isdigit(p.at(1))
-;                           && (p.at(2) == (byte)':'
-;                               || (asc_isdigit(p.at(2))
-;                                   && (p.at(3) == (byte)':'
-;                                       || (asc_isdigit(p.at(3))
-;                                           && p.at(4) == (byte)':'))))))
-;               {
-;                   if (p.at(0) == NUL || BEQ(p, mesg))
-;                       STRCAT(val, mesg);          ;; 'E123' missing or at beginning
-;                   else
-;                   {
-                        ;; '"filename" E123: message text'
-;                       if (mesg.at(0) != (byte)'"' || BLT(p.minus(2), mesg.plus(1)) || p.at(-2) != (byte)'"' || p.at(-1) != (byte)' ')
-                            ;; "E123:" is part of the file name.
-;                           continue;
-
-;                       STRCAT(val, p);
-;                       p.be(-2, NUL);
-;                       libC.sprintf(val.plus(STRLEN(p)), u8(" (%s)"), mesg.plus(1));
-;                       p.be(-2, (byte)'"');
-;                   }
-;                   break;
-;               }
-;           }
-;       }
-;       else
-;       {
-;           ret = (Bytes)value;
-;       }
-
-;       return ret;
-    ))
-
-;; Throw a new exception.  Return false when out of memory or it was tried to throw
-;; an illegal user exception.  "value" is the exception string for a user or
-;; interrupt exception, or points to a message list in case of an error exception.
-
-(defn- #_boolean throw_exception [#_"/*msglist_C|Bytes*/Object" value, #_int type, #_Bytes cmdname]
-    (§
-        ;; Disallow faking Interrupt or error exceptions as user exceptions.
-        ;; They would be treated differently from real interrupt or error exceptions
-        ;; when no active try block is found, see do_cmdline().
-
-;       if (type == ET_USER)
-;       {
-;           Bytes v = (Bytes)value;
-;           if (STRNCMP(v, u8("Vim"), 3) == 0 && (v.at(3) == NUL || v.at(3) == (byte)':' || v.at(3) == (byte)'('))
-;           {
-;               emsg(u8("E608: Cannot :throw exceptions with 'Vim' prefix"));
-;               @current_exception = null;
-;               return false;
-;           }
-;       }
-
-;       except_C excp = §_except_C();
-
-;       if (type == ET_ERROR)
-            ;; Store the original message and prefix the exception value with
-            ;; "Vim:" or, if a command name is given, "Vim(cmdname):".
-;           excp.messages = (msglist_C)value;
-
-;       excp.value = get_exception_string(value, type, cmdname);
-;       excp.type = type;
-
-;       @current_exception = excp;
-;       return true;
-    ))
-
-;; Discard an exception.  "was_finished" is set when the exception
-;; has been caught and the catch clause has been ended normally.
-
-(defn- #_void discard_exception [#_except_C excp, #_boolean was_finished]
-    (§
-;       if (excp == null)
-;           emsg(e_internal);
-    ))
-
-;; Discard the exception currently being thrown.
-
-(defn- #_void discard_current_exception []
-    (§
-;       discard_exception(@current_exception, false);
-;       @current_exception = null;
-;       @did_throw = false;
-;       @need_rethrow = false;
-    ))
-
-;; If something is made pending in a finally clause, report it if required by
-;; the 'verbose' option.
-
-(defn- #_void report_make_pending [#_int pending, #_Object value]
-    (§
-    ))
-
-;; If something pending in a finally clause is resumed at the ":endtry", report
-;; it if required by the 'verbose' option.
-
-(defn- #_void report_resume_pending [#_int pending, #_Object value]
-    (§
-    ))
-
-;; If something pending in a finally clause is discarded, report it if required
-;; by the 'verbose' option.
-
-(defn- #_void report_discard_pending [#_int pending, #_Object value]
-    (§
-    ))
-
-;; enter_cleanup() and leave_cleanup()
-;;
-;; Functions to be called before/after invoking a sequence of autocommands for
-;; cleanup for a failed command.  (Failure means here that a call to emsg()
-;; has been made, an interrupt occurred, or there is an uncaught exception
-;; from a previous autocommand execution of the same command.)
-;;
-;; Call enter_cleanup() with a pointer to a cleanup_C and pass the same
-;; pointer to leave_cleanup().  The cleanup_C structure stores the pending
-;; error/interrupt/exception state.
-
-;; This function works a bit like ex_finally() except that there was not
-;; actually an extra try block around the part that failed and an error or
-;; interrupt has not (yet) been converted to an exception.  This function
-;; saves the error/interrupt/ exception state and prepares for the call to
-;; do_cmdline() that is going to be made for the cleanup autocommand execution.
-
-(defn- #_void enter_cleanup [#_cleanup_C csp]
-    (§
-;       int pending = CSTP_NONE;
-
-        ;; Postpone did_emsg, got_int, did_throw.  The pending values will be
-        ;; restored by leave_cleanup() except if there was an aborting error,
-        ;; interrupt, or uncaught exception after this function ends.
-
-;       if (@did_emsg || @got_int || @did_throw || @need_rethrow)
-;       {
-;           csp.pending = (@did_emsg     ? CSTP_ERROR     : 0)
-;                       | (@got_int      ? CSTP_INTERRUPT : 0)
-;                       | (@did_throw    ? CSTP_THROW     : 0)
-;                       | (@need_rethrow ? CSTP_THROW     : 0);
-
-            ;; If we are currently throwing an exception (did_throw), save it as
-            ;; well.  On an error not yet converted to an exception, update
-            ;; "force_abort" and reset "cause_abort" (as do_errthrow() would do).
-            ;; This is needed for the do_cmdline() call that is going to be made
-            ;; for autocommand execution.  We need not save "*msg_list", because
-            ;; there is an extra instance for every call of do_cmdline(), anyway.
-
-;           if (@did_throw || @need_rethrow)
-;               csp.exception = @current_exception;
-;           else
-;           {
-;               csp.exception = null;
-;               if (@did_emsg)
-;               {
-;                   @force_abort |= @cause_abort;
-;                   @cause_abort = false;
-;               }
-;           }
-;           @did_emsg = @got_int = @did_throw = @need_rethrow = false;
-
-            ;; Report if required by the 'verbose' option.
-;           report_make_pending(pending, csp.exception);
-;       }
-;       else
-;       {
-;           csp.pending = CSTP_NONE;
-;           csp.exception = null;
-;       }
-    ))
-
-;; See comment above enter_cleanup() for how this function is used.
-;;
-;; This function is a bit like ex_endtry() except that there was not actually
-;; an extra try block around the part that failed and an error or interrupt
-;; had not (yet) been converted to an exception when the cleanup autocommand
-;; sequence was invoked.
-;;
-;; This function has to be called with the address of the cleanup_C structure
-;; filled by enter_cleanup() as an argument; it restores the error/interrupt/
-;; exception state saved by that function - except there was an aborting
-;; error, an interrupt or an uncaught exception during execution of the
-;; cleanup autocommands.  In the latter case, the saved error/interrupt/
-;; exception state is discarded.
-
-(defn- #_void leave_cleanup [#_cleanup_C csp]
-    (§
-;       int pending = csp.pending;
-
-;       if (pending == CSTP_NONE)   ;; nothing to do
-;           return;
-
-        ;; If there was an aborting error, an interrupt, or an uncaught exception
-        ;; after the corresponding call to enter_cleanup(), discard what has been
-        ;; made pending by it.  Report this to the user if required by the
-        ;; 'verbose' option.
-;       if (aborting() || @need_rethrow)
-;       {
-;           if ((pending & CSTP_THROW) != 0)
-                ;; Cancel the pending exception (includes report).
-;               discard_exception(csp.exception, false);
-;           else
-;               report_discard_pending(pending, null);
-
-            ;; If an error was about to be converted to an exception
-            ;; when enter_cleanup() was called, free the message list.
-;           if (@msg_list != null)
-;               free_global_msglist();
-;       }
-
-        ;; If there was no new error, interrupt, or throw between the calls
-        ;; to enter_cleanup() and leave_cleanup(), restore the pending
-        ;; error/interrupt/exception state.
-
-;       else
-;       {
-            ;; If there was an exception being thrown when enter_cleanup() was
-            ;; called, we need to rethrow it.  Make it the exception currently being thrown.
-
-;           if ((pending & CSTP_THROW) != 0)
-;               @current_exception = csp.exception;
-
-            ;; If an error was about to be converted to an exception when
-            ;; enter_cleanup() was called, let "cause_abort" take the part of
-            ;; "force_abort" (as done by cause_errthrow()).
-
-;           else if ((pending & CSTP_ERROR) != 0)
-;           {
-;               @cause_abort = @force_abort;
-;               @force_abort = false;
-;           }
-
-            ;; Restore the pending values of did_emsg, got_int, and did_throw.
-
-;           if ((pending & CSTP_ERROR) != 0)
-;               @did_emsg = true;
-;           if ((pending & CSTP_INTERRUPT) != 0)
-;               @got_int = true;
-;           if ((pending & CSTP_THROW) != 0)
-;               @need_rethrow = true;    ;; did_throw will be set by do_one_cmd()
-
-            ;; Report if required by the 'verbose' option.
-;           report_resume_pending(pending, (pending & CSTP_THROW) != 0 ? @current_exception : null);
-;       }
     ))
 
 ;;; ============================================================================================== VimJ
@@ -58734,13 +57717,13 @@
         ;; When interrupted and 'cpoptions' contains 'i' set changed flag.
 ;       if ((@got_int && vim_strbyte(@p_cpo, CPO_INTMOD) != null)
 ;                   || @modified_was_set     ;; ":set modified" used in autocmd
-;                   || (aborting() && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
+;                   || (@got_int && vim_strbyte(@p_cpo, CPO_INTMOD) != null))
 ;           changed();
 ;       else
 ;           unchanged(@curbuf, false);
 
         ;; require "!" to overwrite the file, because it wasn't read completely
-;       if (aborting())
+;       if (@got_int)
 ;           @curbuf.b_flags |= BF_READERR;
 
         ;; need to set w_topline, unless some autocommand already did that.
@@ -58840,7 +57823,7 @@
 ;                   return;
 ;               }
 ;           }
-;           if (aborting())     ;; autocmds may abort script processing
+;           if (@got_int)     ;; autocmds may abort script processing
 ;               return;
 ;       }
 
@@ -58866,7 +57849,7 @@
         ;; Autocommands may have deleted the buffer.
 ;       if (!buf_valid(buf))
 ;           return;
-;       if (aborting())             ;; autocmds may abort script processing
+;       if (@got_int)             ;; autocmds may abort script processing
 ;           return;
 
         ;; Autocommands may have opened or closed windows for this buffer.
@@ -58946,7 +57929,7 @@
 ;               return;
 ;       }
 ;       buf.b_closing = false;
-;       if (aborting())                 ;; autocommands may abort script processing
+;       if (@got_int)                 ;; autocommands may abort script processing
 ;           return;
 
         ;; It's possible that autocommands change curbuf to the one being deleted.
@@ -59020,7 +58003,7 @@
         ;; close_windows() may change curbuf
 ;       buffer_C prevbuf = @curbuf;
 
-;       if (buf_valid(prevbuf) && !aborting())
+;       if (buf_valid(prevbuf) && !@got_int)
 ;       {
 ;           window_C previouswin = @curwin;
 ;           if (prevbuf == @curbuf)
@@ -59034,7 +58017,7 @@
         ;; An autocommand may have deleted "buf", already entered it
         ;; (e.g., when it did ":bunload") or aborted the script processing!
         ;; If curwin.w_buffer is null, enter_buffer() will make it valid again
-;       if ((buf_valid(buf) && buf != @curbuf && !aborting()) || @curwin.w_buffer == null)
+;       if ((buf_valid(buf) && buf != @curbuf && !@got_int) || @curwin.w_buffer == null)
 ;       {
 ;           enter_buffer(buf);
 ;           if (old_tw != @curbuf.@b_p_tw)
@@ -59197,31 +58180,6 @@
 ;           @curwin.w_cursor.coladd = 0;
 ;           @curwin.w_set_curswant = true;
 ;       }
-    ))
-
-;; Find file in buffer list by a regexp pattern.
-;; Return fnum of the found buffer.
-;; Return < 0 for error.
-
-(defn- #_int buflist_findpat [#_Bytes pattern, #_Bytes pattern_end]
-    ;; pattern_end: pointer to first char after pattern
-    (§
-;       int match = -1;
-
-;       if (BEQ(pattern_end, pattern.plus(1)) && (pattern.at(0) == (byte)'%' || pattern.at(0) == (byte)'#'))
-;       {
-;           if (pattern.at(0) == (byte)'%')
-;               match = @curbuf.b_fnum;
-;           else
-;               match = @curwin.w_alt_fnum;
-;       }
-
-;       if (match == -2)
-;           emsg2(u8("E93: More than one match for %s"), pattern);
-;       else if (match < 0)
-;           emsg2(u8("E94: No matching buffer for %s"), pattern);
-
-;       return match;
     ))
 
 ;; find file in buffer list by number
@@ -76852,8 +75810,6 @@
 ;                   {
                         ;; Nr of colors changed, initialize highlighting and redraw everything.
                         ;; This causes a redraw, which usually clears the message.
-                        ;; Try keeping the message if it might work.
-;                       set_keep_msg_from_hist();
 ;                       set_color_count(i);
 ;                       init_highlight(true, false);
 ;                       redraw_asap(CLEAR);
@@ -85720,7 +84676,7 @@
 ;           if (one_window())
 ;               return false;
             ;; autocmds may abort script processing
-;           if (aborting())
+;           if (@got_int)
 ;               return false;
 ;       }
 
@@ -86709,7 +85665,7 @@
 ;           if (!win_valid(wp))
 ;               return;
             ;; autocmds may abort script processing
-;           if (aborting())
+;           if (@got_int)
 ;               return;
 ;       }
 
@@ -90268,78 +89224,76 @@
 (final cmdname_C* cmdnames
     [
         (->cmdname_C (u8 "append"),        ex_append,        (| BANG RANGE ZEROR CMDWIN),                                  ADDR_LINES),
-        (->cmdname_C (u8 "abbreviate"),    ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "abbreviate"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "ascii"),         ex_ascii,         (| CMDWIN),                                                   ADDR_LINES),
-        (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN),                                  ADDR_LINES),
-        (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "center"),        ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "cnoreabbrev"),   ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "cnoreabbrev"),   ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
-        (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "hide"),          ex_hide,          (| BANG RANGE NOTADR COUNT EXTRA NOTRLCOM),                   ADDR_WINDOWS),
+        (->cmdname_C (u8 "hide"),          ex_hide,          (| BANG RANGE NOTADR COUNT EXTRA),                            ADDR_WINDOWS),
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
-        (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "iabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "imapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "inoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "inoreabbrev"),   ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "iunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "iunabbrev"),     ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "inoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "inoreabbrev"),   ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "iunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "iunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "keepalt"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "keepalt"),       ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
+        (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "messages"),      ex_messages,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+
+        (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
+        (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,    (| CMDWIN),                                                   ADDR_LINES),
-        (->cmdname_C (u8 "noreabbrev"),    ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG NOTRLCOM USECTRLV CMDWIN),        ADDR_LINES),
+        (->cmdname_C (u8 "noreabbrev"),    ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG USECTRLV CMDWIN),                 ADDR_LINES),
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "nunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "omap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "nunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "omap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "omapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-        (->cmdname_C (u8 "onoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "onoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "quit"),          ex_quit,          (| BANG RANGE COUNT NOTADR CMDWIN),                           ADDR_WINDOWS),
@@ -90348,52 +89302,51 @@
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG NOTRLCOM CMDWIN),                       ADDR_LINES),
+        (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "smapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR),                                  ADDR_LINES),
+        (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startreplace"),  ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
         (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
+        (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "unabbreviate"),  ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
-        (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM CMDWIN),                            ADDR_LINES),
+        (->cmdname_C (u8 "unabbreviate"),  ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
+        (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA CMDWIN),                                     ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM CMDWIN),               ADDR_LINES),
-        (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1),                                               ADDR_LINES),
-        (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA CMDWIN),                        ADDR_LINES),
+        (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
+        (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "vmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR),                                  ADDR_LINES),
-        (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
+        (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "xmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "xnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "xunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "xnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
+        (->cmdname_C (u8 "xunmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "yank"),          ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "z"),             ex_z,             (| RANGE EXTRA EXFLAGS CMDWIN),                               ADDR_LINES),
 
