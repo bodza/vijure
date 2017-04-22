@@ -5722,7 +5722,7 @@
 
                 ;; At first match, remember current cursor position.
                 (when (not got_match)
-                    (setpcmark)
+                    (swap! curwin setpcmark)
                     ((ß got_match =) true)
                 )
 
@@ -8410,7 +8410,7 @@
 
 (defn- #_exarg_C ex-syncbind [#_exarg_C _eap]
     (let [#_window_C win' @curwin #_long lnum' (:lnum (:w_cursor @curwin))]
-        (setpcmark)
+        (swap! curwin setpcmark)
         (let [lmax (:ml_line_count (:b_ml @curbuf)) #_long topline ;; determine max topline
                 (if @(:wo_scb (:w_options @curwin))
                     (loop-when [t (:w_topline @curwin) #_window_C w @firstwin] (some? w) => (max 1 t)
@@ -8435,7 +8435,7 @@
         (reset! curwin win')
         (when @(:wo_scb (:w_options @curwin))
             (reset! did_syncbind true)
-            (checkpcmark)
+            (swap! curwin checkpcmark)
             (when (!= lnum' (:lnum (:w_cursor @curwin)))
                 (ins-typebuf (-> (Bytes. 2) (.be 0, Ctrl_O) (eos! 1)))
             ))
@@ -8910,13 +8910,13 @@
             (when (and (not @VIsual_active) @km_startsel)
                 (cond (flag? (:cmd_flags (... nv_cmds idx)) NV_SS)
                 (do
-                    (start-selection)
+                    (swap! curwin start-selection)
                     ((ß ca =) (unshift-special ca))
                     ((ß idx =) (find--command (:cmdchar ca)))
                 )
                 (and (flag? (:cmd_flags (... nv_cmds idx)) NV_SSS) (flag? @mod_mask MOD_MASK_SHIFT))
                 (do
-                    (start-selection)
+                    (swap! curwin start-selection)
                     (swap! mod_mask & (bit-not MOD_MASK_SHIFT))
                 ))
             )
@@ -8992,7 +8992,7 @@
         (when (and (== (:op_type oap) OP_NOP) (zero? (:regname oap)) (!= (:cmdchar ca) K_CURSORHOLD))
             (clear-showcmd))
 
-        (checkpcmark)                      ;; check if we moved since setting pcmark
+        (swap! curwin checkpcmark)                      ;; check if we moved since setting pcmark
         ((ß ca =) (assoc ca :searchbuf nil))
 
         (swap! curwin update :w_cursor mb-adjust-pos)
@@ -10253,7 +10253,7 @@
         ;; If line number given, set cursor.
 
         (when (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor @curwin))))
-            (setpcmark)
+            (swap! curwin setpcmark)
             (swap! curwin assoc-in [:w_cursor :lnum] (min (:count0 cap) (:ml_line_count (:b_ml @curbuf))))
             (swap! curwin check-cursor-col)
         )
@@ -10513,7 +10513,7 @@
                   _ (if sea?
                         (do ;; Put cursor at start of word, makes search skip the word under the cursor.
                             ;; Call setpcmark() first, so "*``" puts the cursor back where it was.
-                            (setpcmark)
+                            (swap! curwin setpcmark)
                             (swap! curwin assoc-in [:w_cursor :col] (BDIFF @a'ident, (ml-get (:lnum (:w_cursor @curwin)))))
                             (when (and (not g_cmd) (us-iswordp @a'ident))
                                 (STRCPY buf, (u8 "\\<")))
@@ -10614,7 +10614,7 @@
 
 (defn- #_cmdarg_C nv-scroll [#_cmdarg_C cap]
     (let [cap (update cap :oap assoc :motion_type MLINE)]
-        (setpcmark)
+        (swap! curwin setpcmark)
         (let [n (if (== (:cmdchar cap) (byte \L))
                     (let [_ (swap! curwin validate-botline)]
                         (max 1 (- (dec (:w_botline @curwin)) (dec (:count1 cap)))))
@@ -10885,7 +10885,7 @@
                             ))
                     )]
                 (if (some? pos)
-                    (do (setpcmark) (swap! curwin assoc :w_cursor pos :w_set_curswant true))
+                    (do (swap! curwin setpcmark) (swap! curwin assoc :w_cursor pos :w_set_curswant true))
                     (swap! curwin assoc :w_cursor cold))
                 cap)
 
@@ -10946,7 +10946,7 @@
             (if (< 100 (:count0 cap))
                 (do (clearopbeep (:oap cap)) cap)
                 (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
-                    (setpcmark)
+                    (swap! curwin setpcmark)
                     (let [lmax (:ml_line_count (:b_ml @curbuf))]
                         ;; Round up, so CTRL-G will give same value.
                         (swap! curwin assoc-in [:w_cursor :lnum] (min (/ (+ (* lmax (:count0 cap)) 99) 100) lmax)))
@@ -10958,7 +10958,7 @@
                 (if (nil? pos)
                     (do (clearopbeep (:oap cap)) cap)
                     (do
-                        (setpcmark)
+                        (swap! curwin setpcmark)
                         (swap! curwin assoc :w_cursor (assoc pos :coladd 0) :w_set_curswant true)
                         (let [[win cap] (adjust-for-sel @curwin, cap)] (reset! curwin win) cap)
                     ))
@@ -11195,7 +11195,7 @@
     (if (check-mark pos)
         (do
             (when (any == (:cmdchar cap) (byte \') (byte \`) (byte \[) (byte \]))
-                (setpcmark))
+                (swap! curwin setpcmark))
             (swap! curwin assoc :w_cursor pos)
             (if flag
                 (swap! curwin beginline (| BL_WHITE BL_FIX))
@@ -11422,11 +11422,9 @@
 
 ;; Start selection for Shift-movement keys.
 
-(defn- #_void start-selection []
-    ;; if 'selectmode' contains "key", start Select mode
-    (may-start-select (byte \k))
-    (swap! curwin n-start-visual-mode (byte \v))
-    nil)
+(defn- #_window_C start-selection [#_window_C win]
+    (may-start-select (byte \k)) ;; if 'selectmode' contains "key", start Select mode
+    (n-start-visual-mode win, (byte \v)))
 
 ;; Start Select mode, if "c" is in 'selectmode' and not in a mapping or menu.
 
@@ -11795,7 +11793,7 @@
 
             Ctrl_G
             (do
-                (cursor-pos-info)
+                (swap! curwin cursor-pos-info)
                 (ß BREAK)
             )
 
@@ -12211,7 +12209,7 @@
 
 (defn- #_cmdarg_C nv-goto [#_cmdarg_C cap]
     (let [lmax (:ml_line_count (:b_ml @curbuf)) lnum (if (zero? (:arg cap)) 1 lmax) cap (assoc-in cap [:oap :motion_type] MLINE)]
-        (setpcmark)
+        (swap! curwin setpcmark)
         (let [lnum (if (non-zero? (:count0 cap)) (:count0 cap) lnum)] ;; when a count is given, use it instead of the default lnum
             (swap! curwin assoc-in [:w_cursor :lnum] (max 1 (min lnum lmax)))
             (swap! curwin beginline (| BL_SOL BL_FIX))
@@ -15423,23 +15421,23 @@
 ;; In Visual mode, give some info about the selected region.  (In this case,
 ;; the *_count_cursor variables store running totals for the selection.)
 
-(defn- #_void cursor-pos-info []
+(defn- #_window_C cursor-pos-info [#_window_C win]
     (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
-        (msg no_lines_msg)
+        (do (msg no_lines_msg) win)
         (let-when [[#_pos_C min_pos #_pos_C max_pos #_oparg_C oparg #_long selected_lines]
                 (if @VIsual_active
-                    (let [[min_pos max_pos] (if (ltpos @VIsual_cursor, (:w_cursor @curwin)) [@VIsual_cursor (:w_cursor @curwin)] [(:w_cursor @curwin) @VIsual_cursor])
+                    (let [[min_pos max_pos] (if (ltpos @VIsual_cursor, (:w_cursor win)) [@VIsual_cursor (:w_cursor win)] [(:w_cursor win) @VIsual_cursor])
                           max_pos (update max_pos :col #(if (and (at? @p_sel (byte \e)) (< 0 %)) (dec %) %))
                           oparg (when (== @VIsual_mode Ctrl_V)
                                     (let [oparg (assoc (NEW_oparg_C) :is_VIsual true :block_mode true :op_type OP_NOP)
-                                          #_Bytes saved_sbr @p_sbr
+                                          o'sbr @p_sbr
                                           ;; Make 'sbr' empty for a moment to get the correct size.
                                           _ (reset! p_sbr EMPTY_OPTION)
                                           a'scol (atom (int (:start_vcol oparg))) a'ecol (atom (int (:end_vcol oparg)))
-                                          _ (getvcols @curwin, min_pos, max_pos, a'scol, a'ecol)
+                                          _ (getvcols win, min_pos, max_pos, a'scol, a'ecol)
                                           oparg (assoc oparg :start_vcol @a'scol :end_vcol @a'ecol)
-                                          _ (reset! p_sbr saved_sbr)
-                                          oparg (if (== (:w_curswant @curwin) MAXCOL) (assoc oparg :end_vcol MAXCOL) oparg)]
+                                          _ (reset! p_sbr o'sbr)
+                                          oparg (if (== (:w_curswant win) MAXCOL) (assoc oparg :end_vcol MAXCOL) oparg)]
                                         ;; Swap the start, end vcol if needed.
                                         (if (< (:end_vcol oparg) (:start_vcol oparg))
                                             (assoc oparg :start_vcol (:end_vcol oparg) :end_vcol (:start_vcol oparg))
@@ -15474,37 +15472,40 @@
                                 (swap! a'cursor_bytes #(if (some? s) (+ % (line-count-info s, a'cursor_words, a'cursor_chars, n, 1)) %)))
                         :else
                             ;; In non-visual mode, check for the line the cursor is on.
-                            (when (== lnum (:lnum (:w_cursor @curwin)))
+                            (when (== lnum (:lnum (:w_cursor win)))
                                 (swap! a'cursor_words + @a'words)
                                 (swap! a'cursor_chars + @a'chars)
-                                (reset! a'cursor_bytes (+ @a'bytes (line-count-info (ml-get lnum), a'cursor_words, a'cursor_chars, (inc (:col (:w_cursor @curwin))), 1)))
+                                (reset! a'cursor_bytes (+ @a'bytes (line-count-info (ml-get lnum), a'cursor_words, a'cursor_chars, (inc (:col (:w_cursor win))), 1)))
                             ))
                         ;; Add to the running totals.
                         (swap! a'bytes + (line-count-info (ml-get lnum), a'words, a'chars, MAXCOL, 1))
                         (recur miles (inc lnum)))
-                )] (some? _)
-            (§ cond @VIsual_active
-                (let [#_Bytes buf (Bytes. 50)]
-                    (if (and (== @VIsual_mode Ctrl_V) (< (:w_curswant @curwin) MAXCOL))
-;%%                     (vim_snprintf buf, (.size buf), (u8 "%ld Cols; "), (inc (- (:end_vcol oparg) (:start_vcol oparg))))
-                        (eos! buf))
-                    (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
-;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
-;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
-                    ))
-            :else
-                (let [#_Bytes s (ml-get (:lnum (:w_cursor @curwin))) #_Bytes buf1 (Bytes. 50) #_Bytes buf2 (Bytes. 40)]
-                    (swap! curwin validate-virtcol)
-                    (col-print buf1, (.size buf1), (inc (:col (:w_cursor @curwin))), (inc (:w_virtcol @curwin)))
-                    (col-print buf2, (.size buf2), (STRLEN s), (linetabsize s))
-                    (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
-;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
-;%%                     (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor @curwin)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
-                    ))
-            )
-            (msg @ioBuff)
-        ))
-    nil)
+                )] (some? _) => win
+
+            (§ let [win (if @VIsual_active
+                        (let [#_Bytes buf (Bytes. 50)]
+                            (if (and (== @VIsual_mode Ctrl_V) (< (:w_curswant win) MAXCOL))
+;%%                             (vim_snprintf buf, (.size buf), (u8 "%ld Cols; "), (inc (- (:end_vcol oparg) (:start_vcol oparg))))
+                                (eos! buf))
+                            (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
+;%%                             (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+;%%                             (vim_snprintf @ioBuff, IOSIZE, (u8 "Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf, selected_lines, lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                            )
+                            win)
+                        (let [#_Bytes s (ml-get (:lnum (:w_cursor win))) #_Bytes buf1 (Bytes. 50) #_Bytes buf2 (Bytes. 40)
+                              win (validate-virtcol win)]
+                            (col-print buf1, (.size buf1), (inc (:col (:w_cursor win))), (inc (:w_virtcol win)))
+                            (col-print buf2, (.size buf2), (STRLEN s), (linetabsize s))
+                            (if (and (== @a'cursor_chars @a'cursor_bytes) (== @a'chars @a'bytes))
+;%%                             (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_bytes, @a'bytes)
+;%%                             (vim_snprintf @ioBuff, IOSIZE, (u8 "Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, (:lnum (:w_cursor win)), lmax, @a'cursor_words, @a'words, @a'cursor_chars, @a'chars, @a'cursor_bytes, @a'bytes)
+                            )
+                            win)
+                    )]
+                (msg @ioBuff)
+                win
+            ))
+    ))
 
 ;; mark.c: functions for setting marks and jumping to them ----------------------------------------
 
@@ -15531,7 +15532,7 @@
 
         (any == c (byte \') (byte \`))
             (do (if (== pos (:w_cursor @curwin))
-                    (do (setpcmark) (swap! curwin assoc :w_prev_pcmark (:w_pcmark @curwin))) ;; keep it even when the cursor doesn't move
+                    (do (swap! curwin setpcmark) (swap! curwin assoc :w_prev_pcmark (:w_pcmark @curwin))) ;; keep it even when the cursor doesn't move
                     (swap! curwin assoc :w_pcmark pos))
                 true)
 
@@ -15574,48 +15575,46 @@
 
 ;; Set the previous context mark to the current position and add it to the jump list.
 
-(defn- #_void setpcmark []
-    (§
-        (swap! curwin assoc :w_prev_pcmark (:w_pcmark @curwin) :w_pcmark (:w_cursor @curwin))
+(defn- #_window_C setpcmark [#_window_C win]
+    (§ let [win (assoc win :w_prev_pcmark (:w_pcmark win), :w_pcmark (:w_cursor win))]
 
         ;; If jumplist is full: remove oldest entry.
-        (swap! curwin update :w_jumplistlen inc)
-        (when (< JUMPLISTSIZE (:w_jumplistlen @curwin))
-            (swap! curwin assoc :w_jumplistlen JUMPLISTSIZE)
+        ((ß win =) (update win :w_jumplistlen inc))
+        (when (< JUMPLISTSIZE (:w_jumplistlen win))
+            ((ß win =) (assoc win :w_jumplistlen JUMPLISTSIZE))
             (loop-when-recur [#_int i 1] (< i JUMPLISTSIZE) [(inc i)]
-                (COPY-fmark (... (:w_jumplist @curwin) (dec i)), (... (:w_jumplist @curwin) i))
+                (COPY-fmark (... (:w_jumplist win) (dec i)), (... (:w_jumplist win) i))
             )
         )
-        (swap! curwin assoc :w_jumplistidx (:w_jumplistlen @curwin))
-        ((ß fmark_C fm =) (... (:w_jumplist @curwin) (dec (:w_jumplistlen @curwin))))
+        ((ß win =) (assoc win :w_jumplistidx (:w_jumplistlen win)))
+        ((ß fmark_C fm =) (... (:w_jumplist win) (dec (:w_jumplistlen win))))
 
-        (COPY-pos (:mark fm), (:w_pcmark @curwin))
-        nil
+        (COPY-pos (:mark fm), (:w_pcmark win))
+        win
     ))
 
-;; To change context, call setpcmark(), then move the current position to
-;; where ever, then call checkpcmark().  This ensures that the previous
-;; context will only be changed if the cursor moved to a different line.
+;; To change context, call setpcmark(), then move the current position to where ever, then call checkpcmark().
+;; This ensures that the previous context will only be changed if the cursor moved to a different line.
 ;; If pcmark was deleted (with "dG") the previous mark is restored.
 
-(defn- #_void checkpcmark []
-    (when (and (non-zero? (:lnum (:w_prev_pcmark @curwin))) (or (eqpos (:w_pcmark @curwin), (:w_cursor @curwin)) (zero? (:lnum (:w_pcmark @curwin)))))
-        (swap! curwin assoc :w_pcmark (:w_prev_pcmark @curwin))
-        (swap! curwin assoc-in [:w_prev_pcmark :lnum] 0)      ;; show it has been checked
-    )
-    nil)
+(defn- #_window_C checkpcmark [#_window_C win]
+    (if (and (non-zero? (:lnum (:w_prev_pcmark win))) (or (zero? (:lnum (:w_pcmark win))) (eqpos (:w_pcmark win), (:w_cursor win))))
+        (let [win (assoc win :w_pcmark (:w_prev_pcmark win))]
+            (assoc-in win [:w_prev_pcmark :lnum] 0)) ;; show it has been checked
+        win
+    ))
 
 ;; Move "m" positions in the jump list ("m" may be negative).
 
 (defn- #_pos_C movemark [#_int m]
-    (dedupe-jumplist)
+    (swap! curwin dedupe-jumplist)
     (let-when [n (:w_jumplistlen @curwin)] (< -1 (+ (:w_jumplistidx @curwin) m) n) => nil
         ;; If first CTRL-O or CTRL-I command after a jump, add cursor position
         ;; to list.  Careful: If there are duplicates (CTRL-O immediately after
         ;; starting Vim on a file), another entry may have been removed.
         (let-when [_ (if (== (:w_jumplistidx @curwin) n)
                     (do
-                        (setpcmark)
+                        (swap! curwin setpcmark)
                         (swap! curwin update :w_jumplistidx dec)         ;; skip the new entry
                         (if (< -1 (+ (:w_jumplistidx @curwin) m)) :_ nil)
                     )
@@ -15871,19 +15870,20 @@
 ;; When deleting lines, this may create duplicate marks in the jumplist.
 ;; They will be removed here for the current window.
 
-(defn- #_void dedupe-jumplist []
-    (let [j* (:w_jumplist @curwin) n (:w_jumplistlen @curwin)
+(defn- #_window_C dedupe-jumplist [#_window_C win]
+    (§ let [n (:w_jumplistlen win)
           e (loop-when [e 0 i 0] (< i n) => e
-                (when (== (:w_jumplistidx @curwin) i)
-                    (swap! curwin assoc :w_jumplistidx e))
-                (let [m (loop-when-recur [m (inc i)] (and (< m n) (!= (:lnum (:mark (... j* m))) (:lnum (:mark (... j* i))))) [(inc m)] => m)
-                      e (if (<= n m) (do (COPY-fmark (... j* e), (... j* i)) (inc e)) e)]
+                (when (== (:w_jumplistidx win) i)
+                    ((ß win =) (assoc win :w_jumplistidx e)))
+                (let [m (loop-when-recur [m (inc i)] (and (< m n) (!= (:lnum (:mark (... (:w_jumplist win) m))) (:lnum (:mark (... (:w_jumplist win) i))))) [(inc m)] => m)
+                      e (if (<= n m) (do (COPY-fmark (... (:w_jumplist win) e), (... (:w_jumplist win) i)) (inc e)) e)]
                     (recur e (inc i))
                 ))]
-        (when (== (:w_jumplistidx @curwin) n)
-            (swap! curwin assoc :w_jumplistidx e))
-        (swap! curwin assoc :w_jumplistlen e))
-    nil)
+        (when (== (:w_jumplistidx win) n)
+            ((ß win =) (assoc win :w_jumplistidx e)))
+        ((ß win =) (assoc win :w_jumplistlen e))
+        win
+    ))
 
 ;; Copy the jumplist from window "won" to window "win".
 
@@ -17220,7 +17220,7 @@
                             ;; Redraw the display when no characters are waiting.
                             ;; Also shows mode, ruler and positions cursor.
 
-                            (ins-redraw true)
+                            (swap! curwin ins-redraw true)
 
                             (when @(:wo_scb (:w_options @curwin))
                                 (do-check-scrollbind true))
@@ -17243,7 +17243,7 @@
                             ;; CTRL-\ CTRL-O is like CTRL-O but without moving the cursor.
                             (when (== c Ctrl_BSL)
                                 ;; may need to redraw when no more chars available now
-                                (ins-redraw false)
+                                (swap! curwin ins-redraw false)
 
                                 (swap! no_mapping inc)
                                 (swap! allow_keys inc)
@@ -17276,7 +17276,7 @@
                             ((ß c =) (do-digraph c))
 
                             (when (any == c Ctrl_V Ctrl_Q)
-                                (ins-ctrl-v)
+                                (swap! curwin ins-ctrl-v)
                                 ((ß c =) Ctrl_V)         ;; pretend CTRL-V is last typed character
                                 (ß CONTINUE)
                             )
@@ -17622,7 +17622,7 @@
                                     )
                                 )
                                 ;; Try to perform smart-indenting.
-                                (ins-try-si c)
+                                (swap! curwin ins-try-si c)
 
                                 (when (== c (byte \space))
                                     (reset! a'inserted_space true)
@@ -17636,7 +17636,7 @@
                                 ;; Insert a normal character and check for abbreviations on a special character.
                                 ;; Let CTRL-] expand abbreviations without inserting it.
                                 (when (or (vim-iswordc c) (!= c Ctrl_RSB))
-                                    (insert-special c, false, false)
+                                    (swap! curwin insert-special c, false, false)
                                 )
 ;                           }
 
@@ -17675,50 +17675,51 @@
 ;; Only redraw when there are no characters available.
 ;; This speeds up inserting sequences of characters (e.g. for CTRL-R).
 
-(defn- #_void ins-redraw [#_boolean ready]
+(defn- #_window_C ins-redraw [#_window_C win, #_boolean ready]
     ;; ready: not busy with something
-    (when-not (char-avail)
-        (let [#_boolean lupd (and ready (pos? @(:wo_cole (:w_options @curwin))) (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
+    (if (char-avail)
+        win
+        (let [#_boolean lupd (and ready (pos? @(:wo_cole (:w_options win))) (not (eqpos @last_cursormoved, (:w_cursor win))))
               ;; Trigger CursorMoved if the cursor moved.
               [#_long lold #_long lnew]
                 (if lupd
                     (let [lold (:lnum @last_cursormoved)
-                          _ (reset! last_cursormoved (:w_cursor @curwin))
+                          _ (reset! last_cursormoved (:w_cursor win))
                           lnew (:lnum @last_cursormoved)]
                         [lold lnew])
                     [0 0])]
             (cond
                 (non-zero? @must_redraw) (update-screen 0)
-                (or @clear_cmdline @redraw_cmdline) (showmode)) ;; clear cmdline and show mode
-            (when (or (and lupd (or (!= lold lnew) (conceal-cursor-line @curwin))) (:w_redraw_cline @curwin))
-                (when (!= lold lnew)
-                    (swap! curwin update-single-line lold))
-                (swap! curwin update-single-line (if (zero? lnew) (:lnum (:w_cursor @curwin)) lnew))
-                (swap! curwin update :w_valid & (bit-not VALID_CROW)))
-            (swap! curwin showruler false)
-            (setcursor)
-            (reset! emsg_on_display false)    ;; may remove error message now
-        ))
-    nil)
+                (or @clear_cmdline @redraw_cmdline) (showmode) ;; clear cmdline and show mode
+            )
+            (let [win (if (or (and lupd (or (!= lold lnew) (conceal-cursor-line win))) (:w_redraw_cline win))
+                        (let [win (if (!= lold lnew) (update-single-line win, lold) win)
+                              win (update-single-line win, (if (zero? lnew) (:lnum (:w_cursor win)) lnew))]
+                            (update win :w_valid & (bit-not VALID_CROW)))
+                        win)
+                  win (showruler win, false)]
+                (setcursor)
+                (reset! emsg_on_display false)    ;; may remove error message now
+                win
+            ))
+    ))
 
 ;; Handle a CTRL-V or CTRL-Q typed in Insert mode.
 
-(defn- #_void ins-ctrl-v []
-    (ins-redraw false) ;; may need to redraw when no more chars available now
-    (let [#_boolean did_putchar (and (redrawing) (not (char-avail)))]
-        (when did_putchar
-            (swap! curwin edit-putchar (byte \^), true))
-        (append-redo CTRL_V_STR)   ;; CTRL-V
+(defn- #_window_C ins-ctrl-v [#_window_C win]
+    (let [win (ins-redraw win, false) ;; may need to redraw when no more chars available now
+          #_boolean putchar? (and (redrawing) (not (char-avail)))
+          win (if putchar? (edit-putchar win, (byte \^), true) win)]
+        (append-redo CTRL_V_STR)
         (add-to-showcmd-c Ctrl_V)
-        (let [#_int c (get-literal)]
-            (when did_putchar
-                ;; When the line fits in 'columns' the '^' is at the start
-                ;; of the next line and will not removed by the redraw.
-                (swap! curwin edit-unputchar))
+        (let [#_int c (get-literal)
+              ;; When the line fits in 'columns' the '^' is at the start
+              ;; of the next line and will not be removed by the redraw.
+              win (if putchar? (edit-unputchar win) win)]
             (clear-showcmd)
-            (insert-special c, false, true)
-        ))
-    nil)
+            (insert-special win, c, false, true)
+        )
+    ))
 
 ;; Put a character directly onto the screen.  It's not stored in a buffer.
 ;; Used while handling CTRL-K, CTRL-V, etc. in Insert mode.
@@ -17980,26 +17981,24 @@
 
 ;; Insert character, taking care of special keys and mod_mask.
 
-(defn- #_void insert-special [#_int c, #_boolean allow_modmask, #_boolean ctrl_v]
+(defn- #_window_C insert-special [#_window_C win, #_int c, #_boolean allow_modmask, #_boolean ctrl_v]
     ;; ctrl_v: c was typed after CTRL-V
-    (let-when [[c ctrl_v :as _]
+    (let [[win [c ctrl_v :as _]]
           ;; Special function key, translate into "<Key>".
           ;; Up to the last '>' is inserted with ins-str(), so as not to replace characters in replace mode.
           ;; Only use mod_mask for special keys, to avoid things like <S-Space>, unless 'allow_modmask' is true.
             (if (or (is-special c) (and (non-zero? @mod_mask) allow_modmask))
-                (let-when [#_Bytes s (get-special-key-name c, @mod_mask) #_int n (STRLEN s) c (.at s (dec n))] (< 2 n) => [c ctrl_v]
-                    (when (stop-arrow)
-                        (eos! s (dec n))
-                        (swap! curwin ins-str s)
-                        (append-redo-lit s, -1)
-                        [c false]
+                (let-when [#_Bytes s (get-special-key-name c, @mod_mask) #_int n (STRLEN s) c (.at s (dec n))] (< 2 n) => [win [c ctrl_v]]
+                    (if (stop-arrow)
+                        (let [_ (eos! s (dec n)) win (ins-str win, s)]
+                            (append-redo-lit s, -1)
+                            [win [c false]])
+                        [win nil]
                     ))
-                [c ctrl_v]
-            )] (some? _)
-        (when (stop-arrow)
-            (swap! curwin insert-char c, ctrl_v)
-        ))
-    nil)
+                [win [c ctrl_v]]
+            )]
+        (if (and (some? _) (stop-arrow)) (insert-char win, c, ctrl_v) win)
+    ))
 
 ;; Special characters in this context are those that need processing other
 ;; than the simple insertion that can be performed here.  This includes ESC
@@ -18509,7 +18508,7 @@
         (reset! pc_status PC_STATUS_UNSET)
         (when (and (redrawing) (not (char-avail)))
             ;; May need to redraw when no more chars available now.
-            (ins-redraw false)
+            (swap! curwin ins-redraw false)
             (swap! curwin edit-putchar (byte \"), true)  ;; """
             (add-to-showcmd-c Ctrl_R))
         ;; Don't map the register name.
@@ -18654,7 +18653,7 @@
 
 (defn- #_boolean ins-start-select [#_int c]
     (let-when [#_boolean iss- (fn [#_int c]
-                (start-selection)   ;; start selection right away, the cursor can move with CTRL-O when beyond the end of the line
+                (swap! curwin start-selection)   ;; start selection right away, the cursor can move with CTRL-O when beyond the end of the line
                 (stuff-char Ctrl_O) ;; execute the key in (insert) Select mode
                 (when (non-zero? @mod_mask)
                     (stuff-string (-> (Bytes. 4) (.be 0, KB_SPECIAL) (.be 1, KS_MODIFIER) (.be 2, @mod_mask) (eos! 3))))
@@ -19156,7 +19155,7 @@
     (let [a'putchar? (atom (boolean false))]
         (when (and (redrawing) (not (char-avail)))
             ;; May need to redraw when no more chars available now.
-            (ins-redraw false)
+            (swap! curwin ins-redraw false)
             (swap! curwin edit-putchar (byte \?), true)
             (reset! a'putchar? true)
             (add-to-showcmd-c Ctrl_K))
@@ -19166,14 +19165,14 @@
             (when @a'putchar?
                 (swap! curwin edit-unputchar))
             (cond (or (is-special c1) (non-zero? @mod_mask))         ;; special key
-                (do (clear-showcmd) (insert-special c1, true, false) NUL)
+                (do (clear-showcmd) (swap! curwin insert-special c1, true, false) NUL)
             (!= c1 ESC)
                 (do (reset! a'putchar? false)
                     (when (and (redrawing) (not (char-avail)))
                         ;; May need to redraw when no more chars available now.
-                        (ins-redraw false)
+                        (swap! curwin ins-redraw false)
                         (when (== (mb-char2cells c1) 1)
-                            (ins-redraw false)
+                            (swap! curwin ins-redraw false)
                             (swap! curwin edit-putchar c1, true)
                             (reset! a'putchar? true))
                         (add-to-showcmd-c c1))
@@ -19217,7 +19216,7 @@
                 ;; Digits, 'o' and 'x' are special after a CTRL-V, don't use it for these.
                 (when (and (< c 256) (not (asc-isalnum c)))
                     (append-redo CTRL_V_STR))
-                (insert-special c, true, false)
+                (swap! curwin insert-special c, true, false)
                 Ctrl_V) ;; pretend CTRL-V is last character
             NUL)
     ))
@@ -19225,59 +19224,54 @@
 ;; Try to do some very smart auto-indenting.
 ;; Used when inserting a "normal" character.
 
-(defn- #_void ins-try-si [#_int c]
+(defn- #_window_C ins-try-si [#_window_C win, #_int c]
     ;; do some very smart indenting when entering '{' or '}'
-    (when (or (and (or @did_si @can_si_back) (== c (byte \{))) (and @can_si (== c (byte \}))))
-        (let [a'pos (atom (#_pos_C object))]
-            ;; for '}' set indent equal to indent of line containing matching '{'
-            (cond (and (== c (byte \})) (some? (reset! a'pos (findmatch nil, (byte \{)))))
-                (let [#_pos_C old_pos (:w_cursor @curwin)
-                      ;; If the matching '{' has a ')' immediately before it (ignoring
-                      ;; white-space), then line up with the start of the line containing
-                      ;; the matching '(' if there is one.  This handles the case where
-                      ;; an "if (..\n..) {" statement continues over multiple lines.
-                      #_Bytes s (ml-get (:lnum @a'pos))
-                      #_int i (:col @a'pos)
-                      i (if (< 0 i) (loop-when-recur [i (dec i)] (and (< 0 i) (vim-iswhite (.at s i))) [(dec i)] => i) i)] ;; skip blanks before '{'
-                    (swap! curwin update :w_cursor assoc :lnum (:lnum @a'pos) :col i)
-                    (when (and (at? s i (byte \))) (some? (reset! a'pos (findmatch nil, (byte \()))))
-                        (swap! curwin assoc :w_cursor @a'pos))
-                    (let [#_int i (get-indent @curwin)]
-                        (swap! curwin assoc :w_cursor old_pos)
-                        (if (flag? @State VREPLACE_FLAG)
-                            (swap! curwin change-indent INDENT_SET, i, false, NUL, true)
-                            (swap! curwin set-indent i, SIN_CHANGED))
-                    ))
-            (< 0 (:col (:w_cursor @curwin)))
-                (let [#_boolean shl? true
-                      ;; when inserting '{' after "O" reduce indent,
-                      ;; but not more than indent of previous line
-                      shl? (if (and (== c (byte \{)) @can_si_back (< 1 (:lnum (:w_cursor @curwin))))
-                            (let [#_pos_C old_pos (:w_cursor @curwin)
-                                  #_int i (get-indent @curwin)
-                                  _ (loop-when [] (< 1 (:lnum (:w_cursor @curwin)))
-                                        (swap! curwin update-in [:w_cursor :lnum] dec)
-                                        (let [#_Bytes s (skipwhite (ml-get (:lnum (:w_cursor @curwin))))]
-                                            ;; ignore empty lines and lines starting with '#'
-                                            (recur-if (or (at? s (byte \#)) (eos? s)) [])
-                                        ))
-                                  shl? (and (< (get-indent @curwin) i) shl?)]
-                                (swap! curwin assoc :w_cursor old_pos)
-                                shl?)
-                            shl?)]
-                    (when shl?
-                        (swap! curwin shift-line true, false, 1, true))
-                ))
-        ))
-    ;; set indent of '#' always to 0
-    (when (and (< 0 (:col (:w_cursor @curwin))) @can_si (== c (byte \#)))
-        ;; remember current indent for next line
-        (reset! old_indent (get-indent @curwin))
-        (swap! curwin set-indent 0, SIN_CHANGED))
-    ;; Adjust ai_col, the char at this position can be deleted.
-    (when (< (:col (:w_cursor @curwin)) @ai_col)
-        (reset! ai_col (:col (:w_cursor @curwin))))
-    nil)
+    (let [win (if (or (and (or @did_si @can_si_back) (== c (byte \{))) (and @can_si (== c (byte \}))))
+                (let [a'pos (atom (#_pos_C object))]
+                    ;; for '}' set indent equal to indent of line containing matching '{'
+                    (cond (and (== c (byte \})) (some? (reset! a'pos (findmatch nil, (byte \{)))))
+                        ;; If the matching '{' has a ')' immediately before it (ignoring white-space),
+                        ;; then line up with the start of the line containing the matching '(' if there is one.
+                        ;; This handles the case where an "if (..\n..) {" statement continues over multiple lines.
+                        (let [o'cursor (:w_cursor win) #_Bytes s (ml-get (:lnum @a'pos)) #_int i (:col @a'pos)
+                              i (if (< 0 i) (loop-when-recur [i (dec i)] (and (< 0 i) (vim-iswhite (.at s i))) [(dec i)] => i) i) ;; skip blanks before '{'
+                              win (update win :w_cursor assoc :lnum (:lnum @a'pos) :col i)
+                              win (if (and (at? s i (byte \))) (some? (reset! a'pos (findmatch nil, (byte \()))))
+                                    (assoc win :w_cursor @a'pos)
+                                    win)
+                              #_int i (get-indent win) win (assoc win :w_cursor o'cursor)]
+                            (if (flag? @State VREPLACE_FLAG)
+                                (change-indent win, INDENT_SET, i, false, NUL, true)
+                                (set-indent win, i, SIN_CHANGED)
+                            ))
+                    (< 0 (:col (:w_cursor win)))
+                        ;; when inserting '{' after "O" reduce indent, but not more than indent of previous line
+                        (let [[win shl?]
+                                (if (and (== c (byte \{)) @can_si_back (< 1 (:lnum (:w_cursor win))))
+                                    (let [o'cursor (:w_cursor win) o'indent (get-indent win)
+                                          skip- #(loop-when [l %] (< 1 l) => l ;; ignore empty lines and lines starting with '#'
+                                                    (let [l (dec l) s (skipwhite (ml-get l))] (recur-if (or (at? s (byte \#)) (eos? s)) l => l)))
+                                          win (update-in win [:w_cursor :lnum] skip-)
+                                          shl? (< (get-indent win) o'indent)]
+                                        [(assoc win :w_cursor o'cursor) shl?])
+                                    [win true]
+                                )]
+                            (if shl? (shift-line win, true, false, 1, true) win))
+                    :else
+                        win))
+                win)
+          ;; set indent of '#' always to 0
+          win (if (and (< 0 (:col (:w_cursor win))) @can_si (== c (byte \#)))
+                (do ;; remember current indent for next line
+                    (reset! old_indent (get-indent win))
+                    (set-indent win, 0, SIN_CHANGED))
+                win
+            )]
+        ;; Adjust ai_col, the char at this position can be deleted.
+        (when (< (:col (:w_cursor win)) @ai_col)
+            (reset! ai_col (:col (:w_cursor win))))
+        win
+    ))
 
 ;; Handle the InsertCharPre autocommand.
 ;; "c" is the character that was typed.
@@ -30636,7 +30630,7 @@
             )
 
             (when (flag? options SEARCH_MARK)
-                (setpcmark))
+                (swap! curwin setpcmark))
             (swap! curwin assoc :w_cursor pos :w_set_curswant true)
 ;       }
 
@@ -31763,7 +31757,7 @@
 
         (cond (or (not @VIsual_active) (eqpos @VIsual_cursor, (:w_cursor @curwin)))
         (do
-            (setpcmark)
+            (swap! curwin setpcmark)
             (when (== what (byte \{))                    ;; ignore indent
                 (while (and (inindent @curwin, 1) (zero? (let [[_ ?] (inc-cursor? @curwin, false)] (reset! curwin _) ?)))
                     ;
@@ -38835,7 +38829,7 @@
 
         ((ß int old_flags =) (:uh_flags curhead))
         ((ß int new_flags =) (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) UH_EMPTYBUF 0)))
-        (setpcmark)
+        (swap! curwin setpcmark)
 
         ;; save marks before undo/redo
 
@@ -49179,8 +49173,8 @@
                       [#_long lold #_long lnew]
                         (if lupd
                             (let [lold (:lnum @last_cursormoved)
-                                _ (reset! last_cursormoved (:w_cursor @curwin))
-                                lnew (:lnum @last_cursormoved)]
+                                  _ (reset! last_cursormoved (:w_cursor @curwin))
+                                  lnew (:lnum @last_cursormoved)]
                                 [lold lnew])
                             [0 0])]
                     ;; Before redrawing, make sure "w_topline" is correct, and "w_leftcol" if lines don't wrap, and "w_skipcol" if lines wrap.
@@ -49308,7 +49302,7 @@
 
     (reset! no_wait_return TRUE)
 
-    (setpcmark)
+    (swap! curwin setpcmark)
 
     ;; If opened more than one window, start editing files in the other windows.
 
