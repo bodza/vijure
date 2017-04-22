@@ -3986,60 +3986,33 @@
 
 ;; Move to the start of screen line in already displayed text.
 
-(defn- #_msgchunk_C msg-sb-start [#_msgchunk_C mps]
-    (§
-        ((ß msgchunk_C mp =) mps)
-
-        (while (and (some? mp) (some? (:sb_prev mp)) (not (:sb_eol (:sb_prev mp))))
-            ((ß mp =) (:sb_prev mp))
-        )
-
-        mp
-    ))
+(defn- #_msgchunk_C msg-sb-start [#_msgchunk_C mp]
+    (loop-when-recur mp (and (some? mp) (some? (:sb_prev mp)) (not (:sb_eol (:sb_prev mp)))) (:sb_prev mp) => mp))
 
 ;; Display a screen line from previously displayed text at row "row".
 ;; Returns a pointer to the text for the next line (can be null).
 
-(defn- #_msgchunk_C disp-sb-line [#_int row, #_msgchunk_C smp]
-    (§
-        ((ß msgchunk_C mp =) smp)
-
-        (while true
-            (reset! msg_row row)
-            (reset! msg_col (:sb_msg_col mp))
-            ((ß Bytes p =) (:sb_text mp))
-            (if (at? p (byte \newline))             ;; don't display the line break
-                ((ß p =) (.plus p 1))
-            )
-            (msg-puts-display p, -1, (:sb_attr mp), true)
-            (if (or (:sb_eol mp) (nil? (:sb_next mp)))
-                (ß BREAK)
-            )
-            ((ß mp =) (:sb_next mp))
-        )
-
-        (:sb_next mp)
+(defn- #_msgchunk_C disp-sb-line [#_int row, #_msgchunk_C mp]
+    (loop [mp mp]
+        (reset! msg_row row)
+        (reset! msg_col (:sb_msg_col mp))
+        (let [#_Bytes p (:sb_text mp) p (if (at? p (byte \newline)) (.plus p 1) p)] ;; don't display the line break
+            (msg-puts-display p, -1, (:sb_attr mp), true))
+        (recur-if (and (not (:sb_eol mp)) (some? (:sb_next mp))) (:sb_next mp) => (:sb_next mp))
     ))
 
 ;; Output any postponed text for msg-puts-attr-len().
 
 (defn- #_int t-puts [#_int t_col, #_Bytes t_s, #_Bytes s, #_int attr]
-    (§
-        ;; output postponed text
-        (reset! msg_didout true)          ;; remember that line is not empty
-        (screen-puts-len t_s, (BDIFF s, t_s), @msg_row, @msg_col, attr)
-        (swap! msg_col + t_col)
-        ((ß t_col =) 0)
-        ;; If the string starts with a composing character,
-        ;; don't increment the column position for it.
-        (if (utf-iscomposing (us-ptr2char t_s))
-            (swap! msg_col dec))
-        (when (<= (int @Cols) @msg_col)
-            (reset! msg_col 0)
-            (swap! msg_row inc)
-        )
-        t_col
-    ))
+    (reset! msg_didout true)          ;; remember that line is not empty
+    (screen-puts-len t_s, (BDIFF s, t_s), @msg_row, @msg_col, attr)
+    ;; If the string starts with a composing character, don't increment the column position for it.
+    (let [n (if (utf-iscomposing (us-ptr2char t_s)) (dec t_col) t_col)]
+        (swap! msg_col + n))
+    (when (<= @Cols @msg_col)
+        (reset! msg_col 0)
+        (swap! msg_row inc))
+    0)
 
 ;; Returns true when messages should be printed with mch_errmsg().
 ;; This is used when there is no valid screen, so we can see error messages.
@@ -8097,15 +8070,9 @@
 ;; Returns the new value of ccline.cmdbuff and ccline.cmdbufflen.
 
 (defn- #_void alloc-cmdbuff [#_int len]
-    (§
-        ;; give some extra space to avoid having to allocate all the time
-
-        ((ß len =) (if (< len 80) 100 (+ len 20)))
-
-        (swap! ccline assoc :cmdbuff (Bytes. len))
-        (swap! ccline assoc :cmdbufflen len)
-        nil
-    ))
+    (let [len (if (< len 80) 100 (+ len 20))] ;; give some extra space to avoid having to allocate all the time
+        (swap! ccline assoc :cmdbuff (Bytes. len) :cmdbufflen len))
+    nil)
 
 ;; Re-allocate the command line to length len + something extra.
 
@@ -13845,7 +13812,7 @@
         ;; - 'virtualedit' is not "all" and not "onemore".
 
         (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar) NUL) (or (not @VIsual_active) (at? @p_sel (byte \o))) (not (virtual-active)) (non-flag? @ve_flags VE_ONEMORE))
-            (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))
+            (swap! curwin update-in [:w_cursor :col] dec)
             ;; prevent cursor from moving on the trail byte
             (mb-adjust-pos (:w_cursor @curwin))
             ((ß oap.inclusive =) true)
@@ -19179,59 +19146,43 @@
 ;; remove "len" characters from typebuf.tb_buf[typebuf.tb_off]
 
 (defn- #_void del-typebuf [#_int len]
-    (§
-        (if (non-zero? len)
-            (swap! typebuf update :tb_len - len)
+    (when (non-zero? len)
+        (swap! typebuf update :tb_len - len)
 
-            (cond (<= (+ (* 3 MAXMAPLEN) 3) (- (:tb_buflen @typebuf) (+ (:tb_off @typebuf) len)))
-            (do
-                (swap! typebuf update :tb_off + len)
-            )
-            :else
+        (if (<= (+ (* 3 MAXMAPLEN) 3) (- (:tb_buflen @typebuf) (+ (:tb_off @typebuf) len)))
+            (swap! typebuf update :tb_off + len)
             (let [#_int i (:tb_off @typebuf)]
                 ;; leave some extra room at the end to avoid reallocation
                 (swap! typebuf update :tb_off min MAXMAPLEN)
-
                 ;; adjust typebuf.tb_buf (include the NUL at the end)
                 (BCOPY (:tb_buf @typebuf), (:tb_off @typebuf), (:tb_buf @typebuf), (+ i len), (inc (:tb_len @typebuf)))
             ))
 
-            (when (zero? (ß ++@typebuf.tb_change_cnt))
-                (swap! typebuf assoc :tb_change_cnt 1)
-            )
+        (swap! typebuf update :tb_change_cnt inc)
+        (when (zero? (:tb_change_cnt @typebuf))
+            (swap! typebuf assoc :tb_change_cnt 1)
         )
-        nil
-    ))
+    )
+    nil)
 
 ;; Write typed characters to script file.
 ;; If recording is on put the character in the recordbuffer.
 
 (defn- #_void gotchars [#_Bytes chars, #_int len]
-    (§
-        ((ß Bytes buf =) (Bytes. 2))
-
+    (let [#_Bytes buf (Bytes. 2)]
         ;; Remember how many chars were last recorded.
-        (if @Recording
-            (swap! last_recorded_len + len)
-        )
-
+        (when @Recording (swap! last_recorded_len + len))
+        ;; Handle one byte at a time; no translation to be done.
         (dotimes [#_int i len]
-            ;; Handle one byte at a time; no translation to be done.
-            ((ß byte c =) (.at chars i))
-            (updatescript c)
-
-            (when @Recording
-                (.be buf 0, c)
-                (add-buff @recordbuff, buf, 1)
-            )
-        )
+            (let [#_byte c (.at chars i)]
+                (updatescript c)
+                (when @Recording (.be buf 0, c) (add-buff @recordbuff, buf, 1))
+            ))
         (may-sync-undo)
-
         ;; Since characters have been typed, consider the following to be in another mapping.
         ;; Search string will be kept in history.
-        (swap! maptick inc)
-        nil
-    ))
+        (swap! maptick inc))
+    nil)
 
 ;; Sync undo.  Called when typed characters are obtained from the typeahead
 ;; buffer, or when a menu is used.
@@ -22161,30 +22112,23 @@
 ;; But vi only supports ^T and ^D after an autoindent, we support it everywhere.
 
 (defn- #_void ins-shift [#_int c, #_int lastc]
-    (§
-        (if (not (stop-arrow))
-            ((ß RETURN) nil)
-        )
-
+    (when (stop-arrow)
         (appendCharToRedobuff c)
 
         ;; 0^D and ^^D: remove all indent.
 
-        (cond (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor @curwin))))
-        (do
-            (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))
-            (del-char false)                ;; delete the '^' or '0'
-            ;; In Replace mode, restore the characters that '^' or '0' replaced.
-            (if (flag? @State REPLACE_FLAG)
-                (replace-pop-ins))
-            (if (== lastc (byte \^))
-                (reset! old_indent (get-indent)))  ;; remember curr. indent
-            (change-indent INDENT_SET, 0, true, NUL, true)
-        )
-        :else
-        (do
-            (change-indent (if (== c Ctrl_D) INDENT_DEC INDENT_INC), 0, true, NUL, true)
-        ))
+        (if (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor @curwin))))
+            (do
+                (swap! curwin update-in [:w_cursor :col] dec)
+                (del-char false)                ;; delete the '^' or '0'
+                ;; In Replace mode, restore the characters that '^' or '0' replaced.
+                (if (flag? @State REPLACE_FLAG)
+                    (replace-pop-ins))
+                (if (== lastc (byte \^))
+                    (reset! old_indent (get-indent)))  ;; remember curr. indent
+                (change-indent INDENT_SET, 0, true, NUL, true)
+            )
+            (change-indent (if (== c Ctrl_D) INDENT_DEC INDENT_INC), 0, true, NUL, true))
 
         (if (and @did_ai (non-eos? (skipwhite (ml-get-curline))))
             (reset! did_ai false))
@@ -22192,31 +22136,21 @@
         (reset! can_si false)
         (reset! can_si_back false)
         (reset! can_cindent false)        ;; no cindenting after ^D or ^T
-        nil
-    ))
+    )
+    nil)
 
 (defn- #_void ins-del []
-    (§
-        (if (not (stop-arrow))
-            ((ß RETURN) nil)
-        )
-
+    (when (stop-arrow)
         (cond (== (gchar) NUL)              ;; delete newline
-        (do
-            ((ß int temp =) (:col (:w_cursor @curwin)))
-            (cond (or (not (can-bs BS_EOL)) (not (do-join 2, false, true, false, false)))                 ;; only if "eol" included
-            (do
-                (vim-beep)
+            (let [#_int _ (:col (:w_cursor @curwin))]
+                (if (and (can-bs BS_EOL) (do-join 2, false, true, false, false))                 ;; only if "eol" included
+                    (swap! curwin assoc-in [:w_cursor :col] _)
+                    (vim-beep)
+                )
             )
-            :else
-            (do
-                (swap! curwin assoc-in [:w_cursor :col] temp)
-            ))
-        )
         (not (del-char false))      ;; delete char under cursor
-        (do
             (vim-beep)
-        ))
+        )
 
         (reset! did_ai false)
         (reset! did_si false)
@@ -22224,24 +22158,20 @@
         (reset! can_si_back false)
 
         (appendCharToRedobuff K_DEL)
-        nil
-    ))
+    )
+    nil)
 
 ;; Delete one character for ins-bs().
 
 (defn- #_void ins-bs-one [#_int' a'vcolp]
     (dec-cursor)
     (getvcol @curwin, (:w_cursor @curwin), a'vcolp, nil, nil)
-    (cond (flag? @State REPLACE_FLAG)
-    (do
+    (if (flag? @State REPLACE_FLAG)
         ;; Don't delete characters before the insert point when in Replace mode.
-        (if (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor @curwin))))
+        (when (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor @curwin))))
             (replace-do-bs -1))
-    )
-    :else
-    (do
         (del-char false)
-    ))
+    )
     nil)
 
 ;; Handle Backspace, delete-word and delete-line in Insert mode.
@@ -22494,59 +22424,39 @@
     ))
 
 (defn- #_void ins-left []
-    (§
-        ((ß pos_C tpos =) (NEW_pos_C))
-        (COPY-pos tpos, (:w_cursor @curwin))
-
+    (let [#_pos_C tpos (:w_cursor @curwin)]
         (cond (oneleft)
-        (do
             (start-arrow tpos)
-        )
         ;; if 'whichwrap' set for cursor in insert mode may go to previous line
         (and (some? (vim-strchr @p_ww, (byte \[))) (< 1 (:lnum (:w_cursor @curwin))))
         (do
             (start-arrow tpos)
-            (swap! curwin assoc-in [:w_cursor :lnum] (dec (:lnum (:w_cursor @curwin))))
+            (swap! curwin update-in [:w_cursor :lnum] dec)
             (coladvance MAXCOL)
             (swap! curwin assoc :w_set_curswant true)   ;; so we stay at the end
         )
         :else
-        (do
             (vim-beep)
         ))
-        nil
-    ))
+    nil)
 
 (defn- #_void ins-home [#_int c]
-    (§
-        ((ß pos_C tpos =) (NEW_pos_C))
-        (COPY-pos tpos, (:w_cursor @curwin))
-
-        (if (== c K_C_HOME)
-            (swap! curwin assoc-in [:w_cursor :lnum] 1)
-        )
-        (swap! curwin assoc-in [:w_cursor :col] 0)
-        (swap! curwin assoc-in [:w_cursor :coladd] 0)
+    (let [#_pos_C tpos (:w_cursor @curwin)]
+        (when (== c K_C_HOME)
+            (swap! curwin assoc-in [:w_cursor :lnum] 1))
+        (swap! curwin update :w_cursor assoc :col 0 :coladd 0)
         (swap! curwin assoc :w_curswant 0)
-
-        (start-arrow tpos)
-        nil
-    ))
+        (start-arrow tpos))
+    nil)
 
 (defn- #_void ins-end [#_int c]
-    (§
-        ((ß pos_C tpos =) (NEW_pos_C))
-        (COPY-pos tpos, (:w_cursor @curwin))
-
-        (if (== c K_C_END)
-            (swap! curwin assoc-in [:w_cursor :lnum] (:ml_line_count (:b_ml @curbuf)))
-        )
+    (let [#_pos_C tpos (:w_cursor @curwin)]
+        (when (== c K_C_END)
+            (swap! curwin assoc-in [:w_cursor :lnum] (:ml_line_count (:b_ml @curbuf))))
         (coladvance MAXCOL)
         (swap! curwin assoc :w_curswant MAXCOL)
-
-        (start-arrow tpos)
-        nil
-    ))
+        (start-arrow tpos))
+    nil)
 
 (defn- #_void ins-s-left []
     (if (or (< 1 (:lnum (:w_cursor @curwin))) (< 0 (:col (:w_cursor @curwin))))
@@ -22574,7 +22484,7 @@
     (do
         (start-arrow (:w_cursor @curwin))
         (swap! curwin assoc :w_set_curswant true)
-        (swap! curwin assoc-in [:w_cursor :lnum] inc)
+        (swap! curwin update-in [:w_cursor :lnum] inc)
         (swap! curwin assoc-in [:w_cursor :col] 0)
     )
     :else
@@ -22595,89 +22505,61 @@
 
 (defn- #_void ins-up [#_boolean startcol]
     ;; startcol: when true move to insStart.col
-    (§
-        ((ß long old_topline =) (:w_topline @curwin))
-
-        ((ß pos_C tpos =) (NEW_pos_C))
-        (COPY-pos tpos, (:w_cursor @curwin))
-
-        (cond (cursor-up 1, true)
-        (do
-            (if startcol
-                (coladvance (getvcol-nolist @insStart)))
-            (if (!= old_topline (:w_topline @curwin))
-                (redraw-later VALID))
-            (start-arrow tpos)
-            (reset! can_cindent true)
-        )
-        :else
-        (do
-            (vim-beep)
-        ))
-        nil
-    ))
-
-(defn- #_void ins-pageup []
-    (§
-        (when (non-flag? @mod_mask MOD_MASK_CTRL)
-            ((ß pos_C tpos =) (NEW_pos_C))
-            (COPY-pos tpos, (:w_cursor @curwin))
-
-            (cond (onepage BACKWARD, 1)
+    (let [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)]
+        (if (cursor-up 1, true)
             (do
+                (if startcol
+                    (coladvance (getvcol-nolist @insStart)))
+                (if (!= (:w_topline @curwin) _)
+                    (redraw-later VALID))
                 (start-arrow tpos)
                 (reset! can_cindent true)
             )
-            :else
-            (do
+            (vim-beep)
+        ))
+    nil)
+
+(defn- #_void ins-pageup []
+    (when (non-flag? @mod_mask MOD_MASK_CTRL)
+        (let [#_pos_C tpos (:w_cursor @curwin)]
+            (if (onepage BACKWARD, 1)
+                (do
+                    (start-arrow tpos)
+                    (reset! can_cindent true)
+                )
                 (vim-beep)
-            ))
-        )
-        nil
-    ))
+            )
+        ))
+    nil)
 
 (defn- #_void ins-down [#_boolean startcol]
     ;; startcol: when true move to insStart.col
-    (§
-        ((ß long old_topline =) (:w_topline @curwin))
-
-        ((ß pos_C tpos =) (NEW_pos_C))
-        (COPY-pos tpos, (:w_cursor @curwin))
-
-        (cond (cursor-down 1, true)
-        (do
-            (if startcol
-                (coladvance (getvcol-nolist @insStart)))
-            (if (!= old_topline (:w_topline @curwin))
-                (redraw-later VALID))
-            (start-arrow tpos)
-            (reset! can_cindent true)
-        )
-        :else
-        (do
-            (vim-beep)
-        ))
-        nil
-    ))
-
-(defn- #_void ins-pagedown []
-    (§
-        (when (non-flag? @mod_mask MOD_MASK_CTRL)
-            ((ß pos_C tpos =) (NEW_pos_C))
-            (COPY-pos tpos, (:w_cursor @curwin))
-
-            (cond (onepage FORWARD, 1)
+    (let [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)]
+        (if (cursor-down 1, true)
             (do
+                (if startcol
+                    (coladvance (getvcol-nolist @insStart)))
+                (if (!= (:w_topline @curwin) _)
+                    (redraw-later VALID))
                 (start-arrow tpos)
                 (reset! can_cindent true)
             )
-            :else
-            (do
+            (vim-beep)
+        ))
+    nil)
+
+(defn- #_void ins-pagedown []
+    (when (non-flag? @mod_mask MOD_MASK_CTRL)
+        (let [#_pos_C tpos (:w_cursor @curwin)]
+            (if (onepage FORWARD, 1)
+                (do
+                    (start-arrow tpos)
+                    (reset! can_cindent true)
+                )
                 (vim-beep)
-            ))
-        )
-        nil
-    ))
+            )
+        ))
+    nil)
 
 (defn- #_void ins-drop []
     (do-put (byte \~), BACKWARD, 1, PUT_CURSEND)
@@ -22712,18 +22594,10 @@
 
         (appendToRedobuff (u8 "\t"))
 
-        (ß int temp)
-        (cond (and @p_sta ind)                       ;; insert tab in indent, use 'shiftwidth'
-        (do
-            ((ß temp =) (int (get-sw-value)))
-        )
-        (!= @(:b_p_sts @curbuf) 0)           ;; use 'softtabstop' when set
-        (do
-            ((ß temp =) (int (get-sts-value)))
-        )
-        :else                                    ;; otherwise use 'tabstop'
-        (do
-            ((ß temp =) (int @(:b_p_ts @curbuf)))
+        ((ß int temp =) (cond
+            (and @p_sta ind)           (int (get-sw-value))         ;; insert tab in indent, use 'shiftwidth'
+            (!= @(:b_p_sts @curbuf) 0) (int (get-sts-value))        ;; use 'softtabstop' when set
+            :else                      (int @(:b_p_ts @curbuf))     ;; otherwise use 'tabstop'
         ))
         ((ß temp =) (- temp (% (get-nolist-virtcol) temp)))
 
@@ -29168,10 +29042,10 @@
 
 (defn- #_int cstrncmp [#_Bytes s1, #_Bytes s2, #_int' a'n]
     (§
-        ((ß int result =) (if (not @ireg_ic) (STRNCMP s1, s2, @a'n) (us-strnicmp s1, s2, @a'n)))
+        ((ß int cmp =) (if (not @ireg_ic) (STRNCMP s1, s2, @a'n) (us-strnicmp s1, s2, @a'n)))
 
         ;; if it failed and it's utf8 and we want to combineignore
-        (when (and (non-zero? result) @ireg_icombine)
+        (when (and (non-zero? cmp) @ireg_icombine)
             ((ß Bytes[] a'str1 =) (atom (#_Bytes object s1)))
             ((ß Bytes[] a'str2 =) (atom (#_Bytes object s2)))
             ((ß int c1 =) (ß 0, c2 = 0))
@@ -29200,13 +29074,13 @@
                     )
                 )
             )
-            ((ß result =) (- c2 c1))
-            (if (zero? result)
+            ((ß cmp =) (- c2 c1))
+            (if (zero? cmp)
                 (reset! a'n (BDIFF @a'str2, s2))
             )
         )
 
-        result
+        cmp
     ))
 
 ;; This function is used a lot for simple searches, keep it fast!
