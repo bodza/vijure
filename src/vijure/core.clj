@@ -29960,24 +29960,23 @@
                         ;; Need to create new entry in "b_changelist".
                         (swap! curbuf assoc :b_new_change true)
 
-                        ((ß u_header_C uhp =) (if (< (get-undolevels) 0) nil (NEW_u_header_C)))
-
                         ;; If we undid more than we redid, move the entry lists before and including "b_u_curhead" to an alternate branch.
 
-                        (when (some? (:b_u_curhead @curbuf))
-                            (swap! curbuf assoc :b_u_newhead (:uh_next (:b_u_curhead @curbuf)), :b_u_curhead nil))
+                        (let-when [#_int i (:b_u_current @curbuf)] (< i (count (:b_u_headers @curbuf)))
+                            (swap! curbuf update :b_u_headers subvec 0 i))
 
                         ;; Free headers to keep the size right.
 
-                        (loop-when [] (and (< (get-undolevels) (count (:b_u_headers @curbuf))) (some? (:b_u_oldhead @curbuf)))
-                            (u-freeheader (:b_u_oldhead @curbuf), nil)
-                            (recur)
-                        )
+                        (let-when [#_int m (get-undolevels) #_int n (count (:b_u_headers @curbuf))] (< 0 m n)
+                            (swap! curbuf update :b_u_headers subvec (- n m) n)
+                            (swap! curbuf update :b_u_current - (- n m)))
 
-                        (when (nil? uhp)                ;; no undo at all
+                        (when (< (get-undolevels) 0)                ;; no undo at all
                             (swap! curbuf assoc :b_u_synced false)
                             ((ß RETURN) [win true])
                         )
+
+                        ((ß u_header_C uhp =) (NEW_u_header_C))
 
                         (swap! curbuf update :b_u_seq_last inc)
                         ((ß uhp =) (assoc uhp :uh_seq (:b_u_seq_last @curbuf)))
@@ -29994,7 +29993,8 @@
                         ((ß uhp =) (assoc uhp :uh_namedm (:b_namedm @curbuf)))
                         ((ß uhp =) (assoc uhp :uh_visual (:b_visual @curbuf)))
 
-                        (swap! curbuf assoc :b_u_newhead uhp)
+                        (swap! curbuf update :b_u_headers conj uhp)
+                        (swap! curbuf update :b_u_current inc)
                     )
                     :else
                     (do
@@ -30121,36 +30121,25 @@
         (reset! undo_undoes false))
     (u-doit win, n))
 
-;; Undo or redo, depending on "undo_undoes", "count" times.
+;; Undo or redo, depending on "undo_undoes", "n" times.
 
-(defn- #_window_C u-doit [#_window_C win, #_int count]
+(defn- #_window_C u-doit [#_window_C win, #_int n]
     (let-when [[win ?] (undo-allowed? win)] ? => win
         (reset! u_newcount 0)
         (reset! u_oldcount (if (:ml_empty (:b_ml @curbuf)) -1 0))
-        (let [[win e]
-                (loop-when [win win n count] (< 0 n) => [win nil]
+        (let [m (count (:b_u_headers @curbuf))
+              [win e]
+                (loop-when [win win i n] (< 0 i) => [win nil]
                     (cond @undo_undoes
-                    (do (cond
-                            (nil? (:b_u_curhead @curbuf)) (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf)) ;; first undo
-                            (< 0 (get-undolevels))        (swap! curbuf update :b_u_curhead :uh_next)              ;; multi level undo ;; get next undo
-                        )
-                        (if (or (zero? (count (:b_u_headers @curbuf))) (nil? (:b_u_curhead @curbuf)))
-                            (do (swap! curbuf assoc :b_u_curhead (:b_u_oldhead @curbuf))                ;; stick "b_u_curhead" at end
-                                [(beep-flush win) (when (== n count) (u8 "Already at oldest change"))]) ;; nothing to undo
-                            (recur (u-undoredo win, true) (dec n))
-                        ))
+                        (when' (< 0 (:b_u_current @curbuf)) => [(beep-flush win) (when (== i n) (u8 "Already at oldest change"))]
+                            (swap! curbuf update :b_u_current dec)
+                            (recur (u-undoredo win, true) (dec i)))
                     :else
-                    (do (if (or (nil? (:b_u_curhead @curbuf)) (<= (get-undolevels) 0))
-                            [(beep-flush win) (when (== n count) (u8 "Already at newest change"))] ;; nothing to redo
+                        (when' (< (:b_u_current @curbuf) m) => [(beep-flush win) (when (== i n) (u8 "Already at newest change"))]
                             (let [win (u-undoredo win, false)]
-                                ;; Advance for next redo.
-                                ;; Set "b_u_newhead" when at the end of the redoable changes.
-                                (when (nil? (:uh_prev (:b_u_curhead @curbuf)))
-                                    (swap! curbuf assoc :b_u_newhead (:b_u_curhead @curbuf)))
-                                (swap! curbuf update :b_u_curhead :uh_prev)
-                                (recur win (dec n))
-                            ))
-                    ))
+                                (swap! curbuf update :b_u_current inc)
+                                (recur win (dec i)))
+                        ))
                 )]
             (if (some? e) (msg win, e) (u-undo-end win, @undo_undoes, false))
         )
