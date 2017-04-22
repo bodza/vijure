@@ -42207,111 +42207,84 @@
                       col (inc endcol)]
                     [col (+ (aget @lineOffset row) col coloff) (+ off_from col) (Math/abs clear_width)])
                 [col off_to off_from endcol])
-    ]
-
-        ((ß boolean force =) false)              ;; force update rest of the line
-        ((ß boolean redraw_next =) (char-needs-redraw off_from, off_to, (- endcol col)))
-        ((ß boolean clear_next =) false)
-
-        (loop-when [] (< col endcol)
-            ((ß int char_cells =) (if (< (inc col) endcol) (utf-off2cells off_from, max_off_from) 1))             ;; 1: normal char; 2: occupies two display cells
-
-            ;; bool: does character need redraw?
-            ((ß boolean redraw_this =) redraw_next)
-            ;; redraw_this for next character
-            ((ß redraw_next =) (or force (char-needs-redraw (+ off_from char_cells), (+ off_to char_cells), (- endcol col char_cells))))
-
-            (when redraw_this
-                ;; When writing a single-width character over a double-width
-                ;; character and at the end of the redrawn text, need to clear out
-                ;; the right halve of the old character.
-                ;; Also required when writing the right halve of a double-width
-                ;; char over the left halve of an existing one.
-                ((ß clear_next =) (or (and (== (+ col char_cells) endcol) (or (and (== char_cells 1) (< 1 (utf-off2cells off_to, max_off_to))) (and (== char_cells 2) (== (utf-off2cells off_to, max_off_to) 1) (< 1 (utf-off2cells (inc off_to), max_off_to))))) clear_next))
-
-                (.be @screenLines off_to, (.at @screenLines off_from))
-                (aset @screenLinesUC off_to (aget @screenLinesUC off_from))
-                (when (non-zero? (aget @screenLinesUC off_from))
-                    (dotimes [#_int i @screen_mco]
-                        (aset (... @screenLinesC i) off_to (aget (... @screenLinesC i) off_from))
-                    )
-                )
-                (if (== char_cells 2)
-                    (.be @screenLines (inc off_to), (.at @screenLines (inc off_from)))
-                )
-
-                ;; The bold trick makes a single column of pixels appear in the
-                ;; next character.  When a bold character is removed, the next
-                ;; character should be redrawn too.  This happens for our own GUI
-                ;; and for some xterms.
-                (when @term_is_xterm
-                    ((ß int hl =) (aget @screenAttrs off_to))
-                    ((ß hl =) (if (< HL_ALL hl) 0 hl))
-                    ((ß redraw_next =) (or (flag? hl HL_BOLD) redraw_next))
-                )
-                (aset @screenAttrs off_to (aget @screenAttrs off_from))
-                ;; For simplicity, set the attributes of second half
-                ;; of a double-wide character equal to the first half.
-                (if (== char_cells 2)
-                    (aset @screenAttrs (inc off_to) (aget @screenAttrs off_from))
-                )
-
-                (screen-char off_to, row, (+ col coloff))
-            )
-
-            ((ß off_to =) (+ off_to char_cells))
-            ((ß off_from =) (+ off_from char_cells))
-            ((ß col =) (+ col char_cells))
-            (recur)
-        )
-
+          #_boolean redraw_next (char-needs-redraw off_from, off_to, (- endcol col))
+          [#_boolean clear_next off_to col]
+            (loop-when [redraw_next redraw_next clear_next false off_to off_to off_from off_from col col] (< col endcol) => [clear_next off_to col]
+                (let [#_int cells (if (< (inc col) endcol) (utf-off2cells off_from, max_off_from) 1) ;; 1: normal char; 2: occupies two display cells
+                      #_boolean redraw_this redraw_next
+                      redraw_next (char-needs-redraw (+ off_from cells), (+ off_to cells), (- endcol col cells)) ;; redraw_this for next character
+                      [clear_next redraw_next]
+                        (if redraw_this
+                            ;; When writing a single-width character over a double-width character and at the end of the redrawn text,
+                            ;; need to clear out the right halve of the old character.
+                            ;; Also required when writing the right halve of a double-width char over the left halve of an existing one.
+                            (let [clear_next (or (and (== (+ col cells) endcol)
+                                                      (or (and (== cells 1) (< 1 (utf-off2cells off_to, max_off_to)))
+                                                          (and (== cells 2) (== (utf-off2cells off_to, max_off_to) 1) (< 1 (utf-off2cells (inc off_to), max_off_to))))) clear_next)]
+                                (.be @screenLines off_to, (.at @screenLines off_from))
+                                (aset @screenLinesUC off_to (aget @screenLinesUC off_from))
+                                (when (non-zero? (aget @screenLinesUC off_from))
+                                    (dotimes [#_int i @screen_mco]
+                                        (aset (... @screenLinesC i) off_to (aget (... @screenLinesC i) off_from))
+                                    ))
+                                (when (== cells 2)
+                                    (.be @screenLines (inc off_to), (.at @screenLines (inc off_from))))
+                                ;; The bold trick makes a single column of pixels appear in the next character.
+                                ;; When a bold character is removed, the next character should be redrawn too.
+                                ;; This happens for our own GUI and for some xterms.
+                                (let [redraw_next
+                                        (if @term_is_xterm
+                                            (let [#_int hl (aget @screenAttrs off_to) hl (if (< HL_ALL hl) 0 hl)]
+                                                (or (flag? hl HL_BOLD) redraw_next))
+                                            redraw_next
+                                        )]
+                                    (aset @screenAttrs off_to (aget @screenAttrs off_from))
+                                    ;; For simplicity, set the attributes of second half
+                                    ;; of a double-wide character equal to the first half.
+                                    (when (== cells 2)
+                                        (aset @screenAttrs (inc off_to) (aget @screenAttrs off_from)))
+                                    (screen-char off_to, row, (+ col coloff))
+                                    [clear_next redraw_next]
+                                ))
+                            [clear_next redraw_next]
+                        )]
+                    (recur redraw_next clear_next (+ off_to cells) (+ off_from cells) (+ col cells)))
+            )]
         (when clear_next
             ;; Clear the second half of a double-wide character of which
             ;; the left half was overwritten with a single-wide character.
             (.be @screenLines off_to, (byte \space))
             (aset @screenLinesUC off_to 0)
-            (screen-char off_to, row, (+ col coloff))
-        )
-
-        (when (and (< 0 clear_width) (not rlflag))
-            ;; blank out the rest of the line
-            (loop-when [] (and (< col clear_width) (at? @screenLines off_to (byte \space)) (== (aget @screenAttrs off_to) 0) (== (aget @screenLinesUC off_to) 0))
-                ((ß off_to =) (inc off_to))
-                ((ß col =) (inc col))
-                (recur)
-            )
-            (when (< col clear_width)
-                (screen-fill row, (inc row), (+ col coloff), (+ clear_width coloff), (byte \space), (byte \space), 0)
-                ((ß off_to =) (+ off_to (- clear_width col)))
-                ((ß col =) clear_width)
-            )
-        )
-
-        (when (< 0 clear_width)
-            ;; For a window that's left of another, draw the separator char.
-            (cond (< (+ col coloff) @Cols)
-            (let [a'hl (atom (int)) #_int c (fillchar-vsep a'hl)]
-                (when (or (not-at? @screenLines off_to c) (!= (aget @screenLinesUC off_to) (if (<= 0x80 c) c 0)) (!= (aget @screenAttrs off_to) @a'hl))
-                    (.be @screenLines off_to, c)
-                    (aset @screenAttrs off_to @a'hl)
-                    (cond (<= 0x80 c)
-                    (do
-                        (aset @screenLinesUC off_to c)
-                        (aset (... @screenLinesC 0) off_to 0)
-                    )
-                    :else
-                    (do
-                        (aset @screenLinesUC off_to 0)
-                    ))
-                    (screen-char off_to, row, (+ col coloff))
-                )
-            )
-            :else
-            (do
-                (aset @lineWraps row false)
-            ))
-        )
-    )
+            (screen-char off_to, row, (+ col coloff)))
+        (let [[off_to col]
+                (if (and (< 0 clear_width) (not rlflag))
+                    (let [[off_to col] ;; blank out the rest of the line
+                            (loop-when-recur [off_to off_to col col]
+                                             (and (< col clear_width) (at? @screenLines off_to (byte \space)) (== (aget @screenAttrs off_to) 0) (== (aget @screenLinesUC off_to) 0))
+                                             [(inc off_to) (inc col)]
+                                          => [off_to col])]
+                        (if (< col clear_width)
+                            (do (screen-fill row, (inc row), (+ col coloff), (+ clear_width coloff), (byte \space), (byte \space), 0)
+                                [(+ off_to (- clear_width col)) clear_width])
+                            [off_to col]
+                        ))
+                    [off_to col]
+                )]
+            (when (< 0 clear_width)
+                ;; For a window that's left of another, draw the separator char.
+                (if (< (+ col coloff) @Cols)
+                    (let [a'hl (atom (int)) #_int c (fillchar-vsep a'hl)]
+                        (when (or (not-at? @screenLines off_to c) (!= (aget @screenLinesUC off_to) (if (<= 0x80 c) c 0)) (!= (aget @screenAttrs off_to) @a'hl))
+                            (.be @screenLines off_to, c)
+                            (aset @screenAttrs off_to @a'hl)
+                            (if (<= 0x80 c)
+                                (do (aset @screenLinesUC off_to c)
+                                    (aset (... @screenLinesC 0) off_to 0))
+                                (aset @screenLinesUC off_to 0))
+                            (screen-char off_to, row, (+ col coloff))
+                        ))
+                    (aset @lineWraps row false))
+            )))
     nil)
 
 ;; Mark all status lines for redraw.
