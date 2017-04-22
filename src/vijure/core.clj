@@ -56609,46 +56609,39 @@
         nil
     ))
 
-;; Scroll the current window down by "line_count" logical lines.  "CTRL-Y"
+;; Scroll the current window down by "n" logical lines.  "CTRL-Y"
 
-(defn- #_void scrolldown [#_long line_count]
-    (§
-        ((ß long done =) 0)              ;; total # of physical lines done
-        ((ß boolean moved =) false)
-
-        (validate-cursor)          ;; w_wrow needs to be valid
-        (while (<= 0 ((ß line_count =) (dec line_count)))
-            (if (== (:w_topline @curwin) 1)
-                (ß BREAK)
-            )
-            (swap! curwin update :w_topline dec)
-            ((ß done =) (+ done (plines (:w_topline @curwin))))
-
-            (swap! curwin update :w_botline dec)         ;; approximate w_botline
-            (invalidate-botline)
-        )
+(defn- #_void scrolldown [#_long n]
+    (validate-cursor)          ;; w_wrow needs to be valid
+    (let [#_long done              ;; total # of physical lines done
+            (loop-when [done 0 n n] (< 0 n) => done
+                (if (== (:w_topline @curwin) 1)
+                    done
+                    (do (swap! curwin update :w_topline dec)
+                        (let [done (+ done (plines (:w_topline @curwin)))]
+                            (swap! curwin update :w_botline dec)         ;; approximate w_botline
+                            (invalidate-botline)
+                            (recur done (dec n))
+                        ))
+                ))]
         (swap! curwin update :w_wrow + done)          ;; keep w_wrow updated
         (swap! curwin update :w_cline_row + done)     ;; keep w_cline_row updated
-
         ;; Compute the row number of the last row of the cursor line
         ;; and move the cursor onto the displayed part of the window.
-
-        ((ß int wrow =) (:w_wrow @curwin))
-        (when (and @(:wo_wrap (:w_options @curwin)) (non-zero? (:w_width @curwin)))
-            (validate-virtcol)
-            (validate-cheight)
-            ((ß wrow =) (+ wrow (- (:w_cline_height @curwin) 1 (/ (:w_virtcol @curwin) (:w_width @curwin)))))
-        )
-        (while (and (<= (:w_height @curwin) wrow) (< 1 (:lnum (:w_cursor @curwin))))
-            ((ß wrow =) (- wrow (plines (ß @curwin.w_cursor.lnum--))))
-            (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL)))
-            ((ß moved =) true)
-        )
-        (when moved
-            (coladvance (:w_curswant @curwin))
-        )
-        nil
-    ))
+        (let [#_int wrow (:w_wrow @curwin)
+              wrow (if (and @(:wo_wrap (:w_options @curwin)) (non-zero? (:w_width @curwin)))
+                  (do (validate-virtcol) (validate-cheight) (+ wrow (- (:w_cline_height @curwin) 1 (/ (:w_virtcol @curwin) (:w_width @curwin)))))
+                  wrow)
+              #_boolean moved
+                (loop-when [moved false wrow wrow] (and (<= (:w_height @curwin) wrow) (< 1 (:lnum (:w_cursor @curwin)))) => moved
+                    (let [wrow (- wrow (plines (:lnum (:w_cursor @curwin))))]
+                        (swap! curwin update-in [:w_cursor :lnum] dec)
+                        (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_WCOL VALID_CHEIGHT VALID_CROW VALID_VIRTCOL)))
+                        (recur true wrow)
+                    ))]
+            (when moved (coladvance (:w_curswant @curwin)))
+        ))
+    nil)
 
 ;; Scroll the current window up by "n" logical lines.  "CTRL-E"
 
@@ -56742,145 +56735,92 @@
 ;; This is messy stuff!!!
 
 (defn- #_void scroll-cursor-bot [#_int min_scroll, #_boolean set_topbot]
-    (§
-        ((ß long old_topline =) (:w_topline @curwin))
-        ((ß long old_botline =) (:w_botline @curwin))
-        ((ß int old_valid =) (:w_valid @curwin))
-        ((ß int old_empty_rows =) (:w_empty_rows @curwin))
-
-        ((ß lineoff_C loff =) (NEW_lineoff_C))
-        ((ß lineoff_C boff =) (NEW_lineoff_C))
-
-        ((ß long cln =) (:lnum (:w_cursor @curwin)))            ;; Cursor Line Number
-        (cond set_topbot
-        (do
-            (swap! curwin assoc :w_botline (inc cln))
-            ((ß int used =) 0)
-            ((ß FOR) (ß (swap! curwin assoc :w_topline (:w_botline @curwin)) (< 1 (:w_topline @curwin)) (swap! curwin assoc :w_topline (:lnum loff)))
-                ((ß loff.lnum =) (:w_topline @curwin))
-                ((ß loff =) (topline-back loff))
-                (if (or (== (:height loff) MAXCOL) (< (:w_height @curwin) (+ used (:height loff))))
-                    (ß BREAK)
+    (let [#_long old_topline (:w_topline @curwin) #_long old_botline (:w_botline @curwin)
+          #_int old_valid (:w_valid @curwin) #_int old_empty_rows (:w_empty_rows @curwin)
+          #_long cln (:lnum (:w_cursor @curwin))] ;; Cursor Line Number
+        (if set_topbot
+            (do
+                (swap! curwin assoc :w_botline (inc cln))
+                (swap! curwin assoc :w_topline (:w_botline @curwin))
+                (let [#_int used
+                        (loop-when [used 0] (< 1 (:w_topline @curwin)) => used
+                            (let [#_lineoff_C loff (topline-back (->lineoff_C (:w_topline @curwin) 0))]
+                                (if (or (== (:height loff) MAXCOL) (< (:w_height @curwin) (+ used (:height loff))))
+                                    used
+                                    (do (swap! curwin assoc :w_topline (:lnum loff)) (recur (+ used (:height loff))))
+                                )))]
+                    (set-empty-rows @curwin, used)
                 )
-                ((ß used =) (+ used (:height loff)))
+                (swap! curwin update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
+                (when (!= (:w_topline @curwin) old_topline)
+                    (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW))))
             )
-            (set-empty-rows @curwin, used)
-            (swap! curwin update :w_valid | VALID_BOTLINE VALID_BOTLINE_AP)
-            (when (!= (:w_topline @curwin) old_topline)
-                (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW))))
-        )
-        :else
-        (do
             (validate-botline)
-        ))
-
+        )
         ;; The lines of the cursor line itself are always used.
         (validate-cheight)
-        ((ß int used =) (:w_cline_height @curwin))
-        ((ß int scrolled =) 0)
-
-        ;; If the cursor is below botline, we will at least scroll by the height of the cursor line.
-        ;; Correct for empty lines, which are really part of botline.
-        (when (<= (:w_botline @curwin) cln)
-            ((ß scrolled =) used)
-            (if (== cln (:w_botline @curwin))
-                ((ß scrolled =) (- scrolled (:w_empty_rows @curwin)))
-            )
+        (let [#_int used (:w_cline_height @curwin)
+              ;; If the cursor is below botline, we will at least scroll by the height of the cursor line.
+              ;; Correct for empty lines, which are really part of botline.
+              #_int scrolled (if (<= (:w_botline @curwin) cln) (- used (if (== cln (:w_botline @curwin)) (:w_empty_rows @curwin) 0)) 0)
+              lmax (:ml_line_count (:b_ml @curbuf))
+              ;; Stop counting lines to scroll when
+              ;; - hitting start of the file
+              ;; - scrolled nothing or at least 'sj' lines
+              ;; - at least 'so' lines below the cursor
+              ;; - lines between botline and cursor have been counted
+              [used scrolled]
+                (loop-when [#_int extra 0, used used, scrolled scrolled, loff (->lineoff_C cln 0), boff (->lineoff_C cln 0)] (< 1 (:lnum loff)) => [used scrolled]
+                    ;; Stop when scrolled nothing or at least "min_scroll", found "extra"
+                    ;; context for 'scrolloff' and counted all lines below the window.
+                    (if (and (or (and (or (<= scrolled 0) (<= min_scroll scrolled)) (<= @p_so extra)) (< lmax (inc (:lnum boff)))) (<= (:lnum loff) (:w_botline @curwin)))
+                        [used scrolled]
+                        (let [loff (topline-back loff) ;; Add one line above.
+                            used (if (== (:height loff) MAXCOL) MAXCOL (+ used (:height loff)))]
+                            (if (< (:w_height @curwin) used)
+                                [used scrolled]
+                                ;; Count screen lines that are below the window.
+                                (let [scrolled (+ scrolled
+                    #_red!              (if (<= (:w_botline @curwin) (:lnum loff)) (- (:height loff) (if (== (:lnum loff) (:w_botline @curwin)) (:w_empty_rows @curwin) 0)) 0))]
+                                    (if (< (:lnum boff) lmax)
+                                        (let [boff (botline-forw boff) ;; Add one line below.
+                                            used (+ used (:height boff))]
+                                            (if (< (:w_height @curwin) used)
+                                                [used scrolled]
+                                                (let [[extra scrolled]
+                                                        (if (or (< extra @p_so) (< scrolled min_scroll))
+                                                            ;; Count screen lines that are below the window.
+                                                            (let [scrolled (+ scrolled
+                    #_red!              (if (<= (:w_botline @curwin) (:lnum boff)) (- (:height boff) (if (== (:lnum boff) (:w_botline @curwin)) (:w_empty_rows @curwin) 0)) 0))]
+                                                                [(+ extra (:height boff)) scrolled])
+                                                            [extra scrolled]
+                                                        )]
+                                                    (recur extra used scrolled loff boff))
+                                            ))
+                                        (recur extra used scrolled loff boff)
+                                    ))
+                            ))
+                    ))
+              #_long n
+                (cond (<= scrolled 0) ;; curwin.w_empty_rows is larger, no need to scroll
+                    0
+                (< (:w_height @curwin) used) ;; more than a screenfull, don't scroll but redraw
+                    used
+                :else ;; scroll minimal number of lines
+                    (loop-when [boff (->lineoff_C (dec (:w_topline @curwin)) 0) #_int i 0 n 0]
+                               (and (< i scrolled) (< (:lnum boff) (:w_botline @curwin)))
+                            => (if (< i scrolled) 9999 n) ;; below curwin.w_botline, don't scroll
+                        (let [boff (botline-forw boff)] (recur boff (+ i (:height boff)) (inc n))))
+                )]
+            ;; Scroll up if the cursor is off the bottom of the screen a bit, otherwise put it at 1/2 of the screen.
+            (if (and (<= (:w_height @curwin) n) (< min_scroll n)) (scroll-cursor-halfway false) (scrollup n))
         )
-
-        ;; Stop counting lines to scroll when
-        ;; - hitting start of the file
-        ;; - scrolled nothing or at least 'sj' lines
-        ;; - at least 'so' lines below the cursor
-        ;; - lines between botline and cursor have been counted
-
-        ((ß loff.lnum =) cln)
-        ((ß boff.lnum =) cln)
-
-        ((ß int extra =) 0)
-        (while (< 1 (:lnum loff))
-            ;; Stop when scrolled nothing or at least "min_scroll", found "extra"
-            ;; context for 'scrolloff' and counted all lines below the window.
-            (when (and (or (and (or (<= scrolled 0) (<= min_scroll scrolled)) (<= @p_so extra)) (< (:ml_line_count (:b_ml @curbuf)) (inc (:lnum boff)))) (<= (:lnum loff) (:w_botline @curwin)))
-                (ß BREAK)
-            )
-
-            ;; Add one line above.
-            ((ß loff =) (topline-back loff))
-            ((ß used =) (if (== (:height loff) MAXCOL) MAXCOL (+ used (:height loff))))
-            (if (< (:w_height @curwin) used)
-                (ß BREAK)
-            )
-            (when (<= (:w_botline @curwin) (:lnum loff))
-                ;; Count screen lines that are below the window.
-                ((ß scrolled =) (+ scrolled (:height loff)))
-                (if (== (:lnum loff) (:w_botline @curwin))
-                    ((ß scrolled =) (- scrolled (:w_empty_rows @curwin)))
-                )
-            )
-
-            (when (< (:lnum boff) (:ml_line_count (:b_ml @curbuf)))
-                ;; Add one line below.
-                ((ß boff =) (botline-forw boff))
-                ((ß used =) (+ used (:height boff)))
-                (if (< (:w_height @curwin) used)
-                    (ß BREAK)
-                )
-                (when (or (< extra @p_so) (< scrolled min_scroll))
-                    ((ß extra =) (+ extra (:height boff)))
-                    (when (<= (:w_botline @curwin) (:lnum boff))
-                        ;; Count screen lines that are below the window.
-                        ((ß scrolled =) (+ scrolled (:height boff)))
-                        (if (== (:lnum boff) (:w_botline @curwin))
-                            ((ß scrolled =) (- scrolled (:w_empty_rows @curwin)))
-                        )
-                    )
-                )
-            )
-        )
-
-        (ß long line_count)
-        ;; curwin.w_empty_rows is larger, no need to scroll
-        (cond (<= scrolled 0)
-        (do
-            ((ß line_count =) 0)
-        )
-        ;; more than a screenfull, don't scroll but redraw
-        (< (:w_height @curwin) used)
-        (do
-            ((ß line_count =) used)
-        )
-        ;; scroll minimal number of lines
-        :else
-        (do
-            ((ß line_count =) 0)
-            ((ß boff.lnum =) (dec (:w_topline @curwin)))
-            (ß int i)
-            ((ß FOR) (ß ((ß i =) 0) (and (< i scrolled) (< (:lnum boff) (:w_botline @curwin))) nil)
-                ((ß boff =) (botline-forw boff))
-                ((ß i =) (+ i (:height boff)))
-                ((ß line_count =) (inc line_count))
-            )
-            (if (< i scrolled)       ;; below curwin.w_botline, don't scroll
-                ((ß line_count =) 9999)
-            )
-        ))
-
-        ;; Scroll up if the cursor is off the bottom of the screen a bit.
-        ;; Otherwise put it at 1/2 of the screen.
-
-        (if (and (<= (:w_height @curwin) line_count) (< min_scroll line_count))
-            (scroll-cursor-halfway false)
-            (scrollup line_count))
-
         ;; If topline didn't change we need to restore w_botline and w_empty_rows (we changed them).
         ;; If topline did change, update-screen() will set botline.
-
         (when (and (== (:w_topline @curwin) old_topline) set_topbot)
             (swap! curwin assoc :w_botline old_botline :w_empty_rows old_empty_rows :w_valid old_valid))
-        (swap! curwin update :w_valid | VALID_TOPLINE)
-        nil
-    ))
+        (swap! curwin update :w_valid | VALID_TOPLINE))
+    nil)
 
 ;; Recompute topline to put the cursor halfway the window
 ;; If "atend" is true, also put it halfway at the end of the file.
