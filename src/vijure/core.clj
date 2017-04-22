@@ -2315,7 +2315,7 @@
 
 (final Bytes EMPTY_OPTION (u8 ""))
 
-(atom! boolean* breakat_flags 256) ;; which characters are in 'breakat'
+(atom! boolean* breakat_flags   256)        ;; which characters are in 'breakat'
 
 ;; Characters from 'fillchars' option.
 (atom! int
@@ -5475,81 +5475,52 @@
 (atom! boolean save_sm)
 (atom! boolean save_ru)
 
-;; paste-option-changed() - Called after "p_paste" was set or reset.
+;; Called after 'paste' was set or reset.
 
 (defn- #_void paste-option-changed []
-    (§
-        (cond @p_paste
-        (do
-            ;; Paste switched from off to on.
-            ;; Save the current values, so they can be restored later.
-
-            (when (not @old_p_paste)
-                ;; save options
-                ((ß buffer_C buf =) @curbuf)
-;               {
-                    ((ß buf.b_p_sts_nopaste =) @(:b_p_sts buf))
-                    ((ß buf.b_p_ai_nopaste =) @(:b_p_ai buf))
-;               }
-
-                ;; save global options
-                (reset! save_sm @p_sm)
-                (reset! save_ru @p_ru)
-            )
-
-            ;; Always set the option values, also when 'paste' is set when it is already on.
-
-            ;; set options
-            ((ß buffer_C buf =) @curbuf)
-;           {
-                ((ß buf.@b_p_sts =) 0)        ;; softtabstop is 0
-                ((ß buf.@b_p_ai =) false)         ;; no auto-indent
-;           }
-
-            ;; set global options
-            (reset! p_sm false)                   ;; no showmatch
-            (if @p_ru
-                (status-redraw-all))    ;; redraw to remove the ruler
-            (reset! p_ru false)                   ;; no ruler
+    (cond @p_paste
+    (do ;; Paste switched from off to on.
+        (when (not @old_p_paste)
+            ;; save options
+            (swap! curbuf assoc :b_p_sts_nopaste @(:b_p_sts @curbuf))
+            (swap! curbuf assoc :b_p_ai_nopaste @(:b_p_ai @curbuf))
+            ;; save global options
+            (reset! save_sm @p_sm)
+            (reset! save_ru @p_ru)
         )
-
-        ;; Paste switched from on to off: Restore saved values.
-
-        @old_p_paste
-        (do
-            ;; restore options
-            ((ß buffer_C buf =) @curbuf)
-;           {
-                ((ß buf.@b_p_sts =) (:b_p_sts_nopaste buf))
-                ((ß buf.@b_p_ai =) (:b_p_ai_nopaste buf))
-;           }
-
-            ;; restore global options
-            (reset! p_sm @save_sm)
-            (if (!= @p_ru @save_ru)
-                (status-redraw-all))    ;; redraw to draw the ruler
-            (reset! p_ru @save_ru)
-        ))
-
-        (reset! old_p_paste @p_paste)
-        nil
+        ;; Always set the option values, also when 'paste' is set when it is already on.
+        ;; set options
+        (reset! (:b_p_sts @curbuf) 0)       ;; softtabstop is 0
+        (reset! (:b_p_ai @curbuf) false)    ;; no auto-indent
+        ;; set global options
+        (reset! p_sm false)                 ;; no showmatch
+        (when @p_ru
+            (status-redraw-all))            ;; redraw to remove the ruler
+        (reset! p_ru false)                 ;; no ruler
+    )
+    @old_p_paste
+    (do ;; Paste switched from on to off.
+        ;; restore options
+        (reset! (:b_p_sts @curbuf) (:b_p_sts_nopaste @curbuf))
+        (reset! (:b_p_ai @curbuf) (:b_p_ai_nopaste @curbuf))
+        ;; restore global options
+        (reset! p_sm @save_sm)
+        (when (!= @p_ru @save_ru)
+            (status-redraw-all))            ;; redraw to draw the ruler
+        (reset! p_ru @save_ru)
     ))
+    (reset! old_p_paste @p_paste)
+    nil)
 
-;; fill-breakat-flags() -- called when 'breakat' changes value.
+;; Called when 'breakat' changes value.
 
 (defn- #_void fill-breakat-flags []
-    (§
-        (dotimes [#_int i 256]
-            ((ß @breakat_flags[i] =) false)
-        )
-
-        (when (some? @p_breakat)
-            (loop-when-recur [#_Bytes p @p_breakat] (non-eos? p) [(.plus p 1)]
-                ((ß @breakat_flags[char_u(p.at(0))] =) true)
-            )
-        )
-        nil
-    ))
+    (swap! breakat_flags #(into (empty %) (map (constantly false) %)))
+    (let-when [#_Bytes p @p_breakat] (some? p)
+        (loop-when-recur [#_int i 0] (non-eos? p i) [(inc i)]
+            (swap! breakat_flags assoc (char_u (.at p i)) true)
+        ))
+    nil)
 
 ;; Check an option that can be a range of string values.
 ;;
