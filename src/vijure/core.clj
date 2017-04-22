@@ -27497,17 +27497,11 @@
                 (when (at? @regparse (byte \[))
                     ;; Check for [: :], [= =], [. .].
                     (ß int charclass, equiclass = 0, collclass = 0)
-                    (let [__ (atom (#_Bytes object @regparse))]
-                        ((ß charclass =) (get-char-class __))
-                        (reset! regparse @__))
+                    ((ß charclass =) (get-char-class regparse))
                     (when (== charclass CLASS_NONE)
-                        (let [__ (atom (#_Bytes object @regparse))]
-                            ((ß equiclass =) (get-equi-class __))
-                            (reset! regparse @__))
+                        ((ß equiclass =) (get-equi-class regparse))
                         (when (zero? equiclass)
-                            (let [__ (atom (#_Bytes object @regparse))]
-                                ((ß collclass =) (get-coll-element __))
-                                (reset! regparse @__))
+                            ((ß collclass =) (get-coll-element regparse))
                         )
                     )
 
@@ -27695,39 +27689,36 @@
     ))
 
 (defn- #_boolean nfa-regclass- [#_int c, #_int extra, #_Bytes old_regparse]
-    (§
-        ((ß Bytes p =) (vim-strchr classchars, (no-Magic c)))
-        (when (nil? p)
-            (when (== extra NFA_ADD_NL)
-                (emsgn e_ill_char_class, (long c))
-                (reset! rc_did_emsg true)
-                ((ß RETURN) false)
-            )
-            (emsgn (u8 "INTERNAL: Unknown character class char: %ld"), (long c))
-            ((ß RETURN) false)
-        )
-        ;; When '.' is followed by a composing char ignore the dot,
-        ;; so that the composing char is matched here.
-        (when (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
-            ((ß old_regparse =) @regparse)
-            ((ß c =) (getchr))
-            ((ß RETURN) (nfa-do-multibyte c, old_regparse))
-        )
-        (emc1 (... nfa_classcodes (BDIFF p, classchars)))
-        (when (== extra NFA_ADD_NL)
-            (emc1 NFA_NEWL)
-            (emc1 NFA_OR)
-            (swap! regflags | RF_HASNL)
-        )
-        ((ß RETURN) true)
+    (let [#_Bytes p (vim-strchr classchars, (no-Magic c))]
+        (cond (nil? p)
+            (if (== extra NFA_ADD_NL)
+                (do (emsgn e_ill_char_class, (long c))
+                    (reset! rc_did_emsg true)
+                    false)
+                (do (emsgn (u8 "INTERNAL: Unknown character class char: %ld"), (long c))
+                    false
+                ))
+        ;; When '.' is followed by a composing char ignore the dot, so that the composing char is matched here.
+        (and (== c (Magic (byte \.))) (utf-iscomposing (peekchr)))
+            (let [old_regparse @regparse c (getchr)]
+                (nfa-do-multibyte c, old_regparse))
+        :else
+            (do (emc1 (... nfa_classcodes (BDIFF p, classchars)))
+                (when (== extra NFA_ADD_NL)
+                    (emc1 NFA_NEWL)
+                    (emc1 NFA_OR)
+                    (swap! regflags | RF_HASNL))
+                true
+            ))
     ))
 
 ;; Parse the lowest level.
 ;;
-;; An atom can be one of a long list of items.  Many atoms match one character
-;; in the text.  It is often an ordinary character or a character class.
-;; Braces can be used to make a pattern into an atom.  The "\z(\)" construct
-;; is only for syntax highlighting.
+;; An atom can be one of a long list of items.
+;; Many atoms match one character in the text.
+;; It is often an ordinary character or a character class.
+;; Braces can be used to make a pattern into an atom.
+;; The "\z(\)" construct is only for syntax highlighting.
 ;;
 ;; atom    ::=     ordinary-atom
 ;;     or  \( pattern \)
@@ -27735,76 +27726,26 @@
 ;;     or  \z( pattern \)
 
 (defn- #_boolean nfa-regatom []
-    (§
-        ((ß Bytes old_regparse =) @regparse)
-        ((ß int extra =) 0)
-
-        ((ß int c =) (getchr))
-
+    (let [#_Bytes old_regparse @regparse #_int c (getchr)]
         (condp ==? c
-            NUL
-            (do
-                (emsg e_nul_found)
-                (reset! rc_did_emsg true)
-                ((ß RETURN) false)
-            )
+            NUL (do (emsg e_nul_found) (reset! rc_did_emsg true) false)
 
-            (Magic (byte \^))
-            (do
-                (emc1 NFA_BOL)
-                ((ß RETURN) true)
-            )
-
-            (Magic (byte \$))
-            (do
-                (emc1 NFA_EOL)
-                ((ß RETURN) true)
-            )
-
-            (Magic (byte \<))
-            (do
-                (emc1 NFA_BOW)
-                ((ß RETURN) true)
-            )
-
-            (Magic (byte \>))
-            (do
-                (emc1 NFA_EOW)
-                ((ß RETURN) true)
-            )
+            (Magic (byte \^)) (emc1 NFA_BOL)
+            (Magic (byte \$)) (emc1 NFA_EOL)
+            (Magic (byte \<)) (emc1 NFA_BOW)
+            (Magic (byte \>)) (emc1 NFA_EOW)
 
             (Magic (byte \_))
-            (do
-                ((ß c =) (no-Magic (getchr)))
-                (when (== c NUL)
-                    (emsg e_nul_found)
-                    (reset! rc_did_emsg true)
-                    ((ß RETURN) false)
-                )
+                (let [c (no-Magic (getchr))]
+                    (condp == c
+                        NUL       (do (emsg e_nul_found) (reset! rc_did_emsg true) false)
+                        (byte \^) (emc1 NFA_BOL)                                 ;; "\_^" is start-of-line
+                        (byte \$) (emc1 NFA_EOL)                                 ;; "\_$" is end-of-line
+                        (byte \[) (nfa-regcoll- c, NFA_ADD_NL, old_regparse)     ;; "\_[" is collection plus newline
+                        #_else    (nfa-regclass- c, NFA_ADD_NL, old_regparse)    ;; "\_x" is character class plus newline
+                    ))
 
-                (when (== c (byte \^))       ;; "\_^" is start-of-line
-                    (emc1 NFA_BOL)
-                    ((ß RETURN) true)
-                )
-                (when (== c (byte \$))       ;; "\_$" is end-of-line
-                    (emc1 NFA_EOL)
-                    ((ß RETURN) true)
-                )
-
-                ((ß extra =) NFA_ADD_NL)
-
-                ;; "\_[" is collection plus newline
-                (if (== c (byte \[))
-                    ((ß RETURN) (nfa-regcoll- c, extra, old_regparse))
-                )
-
-                ;; "\_x" is character class plus newline
-                ((ß RETURN) (nfa-regclass- c, extra, old_regparse))
-            )
-
-            ;; Character classes.
-
-           [(Magic (byte \.))
+           [(Magic (byte \.))                   ;; Character classes.
             (Magic (byte \i)) (Magic (byte \I))
             (Magic (byte \k)) (Magic (byte \K))
             (Magic (byte \f)) (Magic (byte \F))
@@ -27817,277 +27758,145 @@
             (Magic (byte \h)) (Magic (byte \H))
             (Magic (byte \a)) (Magic (byte \A))
             (Magic (byte \l)) (Magic (byte \L))
-            (Magic (byte \u)) (Magic (byte \U))]
-            (do
-                ((ß RETURN) (nfa-regclass- c, extra, old_regparse))
-            )
+            (Magic (byte \u)) (Magic (byte \U))] (nfa-regclass- c, 0, old_regparse)
 
             (Magic (byte \n))
-            (do
-                (cond @reg_string
-                (do
-                    ;; In a string "\n" matches a newline character.
-                    (emc1 NL)
-                )
-                :else
-                (do
-                    ;; In buffer text "\n" matches the end of a line.
-                    (emc1 NFA_NEWL)
-                    (swap! regflags | RF_HASNL)
-                ))
-                ((ß RETURN) true)
-            )
+                ;; In a string "\n" matches a newline character.  ;; In buffer text "\n" matches the end of a line.
+                (if @reg_string (emc1 NL) (do (emc1 NFA_NEWL) (swap! regflags | RF_HASNL) true))
 
-            (Magic (byte \())
-            (do
-                (if (not (nfa-reg REG_PAREN))
-                    ((ß RETURN) false)           ;; cascaded error
-                )
-                ((ß RETURN) true)
-            )
+            (Magic (byte \()) (nfa-reg REG_PAREN) ;; false: cascaded error
 
            [(Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]
-            (do
-                (emsgn e_misplaced, (long (no-Magic c)))
-                ((ß RETURN) false)
-            )
+                (do (emsgn e_misplaced, (long (no-Magic c))) false)
 
            [(Magic (byte \=)) (Magic (byte \?)) (Magic (byte \+)) (Magic (byte \@)) (Magic (byte \*)) (Magic (byte \{))]
-            (do
                 ;; these should follow an atom, not form an atom
-                (emsgn e_misplaced, (long (no-Magic c)))
-                ((ß RETURN) false)
-            )
+                (do (emsgn e_misplaced, (long (no-Magic c))) false)
 
             (Magic (byte \~))
-            (do
-                ;; Previous substitute pattern.
-                ;; Generated as "\%(pattern\)".
-                (when (nil? @reg_prev_sub)
-                    (emsg e_nopresub)
-                    ((ß RETURN) false)
-                )
-                (loop-when-recur [#_Bytes lp @reg_prev_sub] (non-eos? lp) [(.plus lp (us-ptr2len lp))]
-                    (emc1 (us-ptr2char lp))
-                    (if (BNE lp, @reg_prev_sub)
-                        (emc1 NFA_CONCAT))
-                )
-                (emc1 NFA_NOPEN)
-                ((ß RETURN) true)
-            )
+                ;; Previous substitute pattern.  ;; Generated as "\%(pattern\)".
+                (let-when [#_Bytes s @reg_prev_sub] (some? s) => (do (emsg e_nopresub) false)
+                    (loop-when-recur [#_int i 0] (non-eos? s i) [(+ i (us-ptr2len s, i))]
+                        (emc1 (us-ptr2char s, i))
+                        (when (pos? i)
+                            (emc1 NFA_CONCAT)))
+                    (emc1 NFA_NOPEN))
 
            [(Magic (byte \1)) (Magic (byte \2)) (Magic (byte \3)) (Magic (byte \4)) (Magic (byte \5)) (Magic (byte \6)) (Magic (byte \7)) (Magic (byte \8)) (Magic (byte \9))]
-            (do
-                (emc1 (+ NFA_BACKREF1 (- (no-Magic c) (byte \1))))
-                (reset! nfa_has_backref true)
-                ((ß RETURN) true)
-            )
+                (do (emc1 (+ NFA_BACKREF1 (- (no-Magic c) (byte \1)))) (reset! nfa_has_backref true) true)
 
             (Magic (byte \z))
-            (do
-                ((ß c =) (no-Magic (getchr)))
-                (condp ==? c
-                    (byte \s)
-                    (do
-                        (emc1 NFA_ZSTART)
-                        (if (not (re-mult-next (u8 "\\zs")))
-                            ((ß RETURN) false)
-                        )
-                        ((ß RETURN) true)
-                    )
+                (let [c (no-Magic (getchr))]
+                    (condp ==? c
+                        (byte \s) (do (emc1 NFA_ZSTART)                          (re-mult-next (u8 "\\zs")))
+                        (byte \e) (do (emc1 NFA_ZEND) (reset! nfa_has_zend true) (re-mult-next (u8 "\\ze")))
 
-                    (byte \e)
-                    (do
-                        (emc1 NFA_ZEND)
-                        (reset! nfa_has_zend true)
-                        (if (not (re-mult-next (u8 "\\ze")))
-                            ((ß RETURN) false)
-                        )
-                        ((ß RETURN) true)
-                    )
+                       [(byte \1) (byte \2) (byte \3) (byte \4) (byte \5) (byte \6) (byte \7) (byte \8) (byte \9)] ;; \z1...\z9
+                            (if (!= @reg_do_extmatch REX_USE)
+                                (do (emsg e_z1_not_allowed) (reset! rc_did_emsg true) false)
+                                ;; No need to set nfa_has_backref, the sub-matches don't change when \z1 .. \z9 matches or not.
+                                (do (emc1 (+ NFA_ZREF1 (- (no-Magic c) (byte \1)))) (reset! re_has_z REX_USE) true))
 
-                   [(byte \1) (byte \2) (byte \3) (byte \4) (byte \5) (byte \6) (byte \7) (byte \8) (byte \9)]
-                    (do
-                        ;; \z1...\z9
-                        (when (!= @reg_do_extmatch REX_USE)
-                            (emsg e_z1_not_allowed)
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) false)
-                        )
-                        (emc1 (+ NFA_ZREF1 (- (no-Magic c) (byte \1))))
-                        ;; No need to set nfa_has_backref, the sub-matches
-                        ;; don't change when \z1 .. \z9 matches or not.
-                        (reset! re_has_z REX_USE)
-                        ((ß RETURN) true)
-                    )
+                        (byte \() ;; \z(    ;; sic!)
+                            (cond (!= @reg_do_extmatch REX_SET)
+                                (do (emsg e_z_not_allowed) (reset! rc_did_emsg true) false)
+                            (nfa-reg REG_ZPAREN)
+                                (do (reset! re_has_z REX_SET) true)
+                            :else
+                                false) ;; cascaded error
 
-                    (byte \()
-                    (do
-                        ;; \z(
-                        (when (!= @reg_do_extmatch REX_SET)
-                            (emsg e_z_not_allowed)
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) false)
-                        )
-                        (if (not (nfa-reg REG_ZPAREN))
-                            ((ß RETURN) false)           ;; cascaded error
-                        )
-                        (reset! re_has_z REX_SET)
-                        ((ß RETURN) true)
-                    )
-
-                    (do
-                        (emsgn (u8 "E867: (NFA) Unknown operator '\\z%c'"), (long (no-Magic c)))
-                        ((ß RETURN) false)
-                    )
-                )
-            )
+                        (do (emsgn (u8 "E867: (NFA) Unknown operator '\\z%c'"), (long (no-Magic c))) false)
+                    ))
 
             (Magic (byte \%))
-            (do
-                ((ß c =) (no-Magic (getchr)))
-                (condp ==? c
-                    ;; () without a back reference
-                    (byte \()
-                    (do
-                        (if (not (nfa-reg REG_NPAREN))
-                            ((ß RETURN) false)
-                        )
-                        (emc1 NFA_NOPEN)
-                        ((ß RETURN) true)
-                    )
+                (let [c (no-Magic (getchr))]
+                    (condp ==? c
+                        (byte \() (and (nfa-reg REG_NPAREN) (emc1 NFA_NOPEN)) ;; () without a back reference
 
-                   [(byte \d)   ;; %d123 decimal
-                    (byte \o)   ;; %o123 octal
-                    (byte \x)   ;; %xab hex 2
-                    (byte \u)   ;; %uabcd hex 4
-                    (byte \U)]  ;; %U1234abcd hex 8
-                    (do
-                        ((ß int nr =) (condp == c
-                            (byte \d) (getdecchrs)
-                            (byte \o) (getoctchrs)
-                            (byte \x) (gethexchrs 2)
-                            (byte \u) (gethexchrs 4)
-                            (byte \U) (gethexchrs 8)
-                                      -1
-                        ))
+                       [(byte \d)   ;; %d123 decimal
+                        (byte \o)   ;; %o123 octal
+                        (byte \x)   ;; %xab hex 2
+                        (byte \u)   ;; %uabcd hex 4
+                        (byte \U)]  ;; %U1234abcd hex 8
+                        (let [#_int nr (condp == c
+                                (byte \d) (getdecchrs)
+                                (byte \o) (getoctchrs)
+                                (byte \x) (gethexchrs 2)
+                                (byte \u) (gethexchrs 4)
+                                (byte \U) (gethexchrs 8)
+                                          -1)]
+                            (if (< nr 0)
+                                (do (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                    (reset! rc_did_emsg true)
+                                    false)
+                                ;; A NUL is stored in the text as NL.
+                                ;; TODO: what if a composing character follows?
+                                (emc1 (if (zero? nr) 0x0a nr))
+                            ))
 
-                        (when (< nr 0)
-                            (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) false)
-                        )
-                        ;; A NUL is stored in the text as NL.
-                        ;; TODO: what if a composing character follows?
-                        (emc1 (if (zero? nr) 0x0a nr))
-                        ((ß RETURN) true)
-                    )
+                        ;; Catch \%^ and \%$ regardless of where they appear in the pattern -- regardless of whether or not it makes sense.
+                        (byte \^) (emc1 NFA_BOF)
+                        (byte \$) (emc1 NFA_EOF)
+                        (byte \#) (emc1 NFA_CURSOR)
+                        (byte \V) (emc1 NFA_VISUAL)
+                        (byte \C) (emc1 NFA_ANY_COMPOSING)
 
-                    ;; Catch \%^ and \%$ regardless of where they appear in the
-                    ;; pattern -- regardless of whether or not it makes sense.
-                    (byte \^)
-                    (do
-                        (emc1 NFA_BOF)
-                        ((ß RETURN) true)
-                    )
+                        (byte \[) ;; \%[abc]
+                            (let-when [[#_int n c :as _]
+                                (loop-when [n 0 c (peekchr)] (!= c (byte \])) => [n c]
+                                    (cond (== c NUL)
+                                        (do (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                            (reset! rc_did_emsg true)
+                                            nil)
+                                    (nfa-regatom) ;; recursive call!
+                                        (recur (inc n) (peekchr))
+                                    ))
+                            ] (some? _) => false
+                                (getchr)       ;; get the ]
+                                (if (zero? n)
+                                    (do (emsg2 e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                        (reset! rc_did_emsg true)
+                                        false)
+                                    (do
+                                        (emc1 NFA_OPT_CHARS)
+                                        (emc1 n)
 
-                    (byte \$)
-                    (do
-                        (emc1 NFA_EOF)
-                        ((ß RETURN) true)
-                    )
+                                        ;; Emit as "\%(\%[abc]\)" to be able to handle "\%[abc]*" which would
+                                        ;; cause the empty string to be matched an unlimited number of times.
+                                        ;; NFA_NOPEN is added only once at a position, while NFA_SPLIT is added
+                                        ;; multiple times.  This is more efficient than not allowing NFA_SPLIT
+                                        ;; multiple times, it is used a lot.
 
-                    (byte \#)
-                    (do
-                        (emc1 NFA_CURSOR)
-                        ((ß RETURN) true)
-                    )
+                                        (emc1 NFA_NOPEN))
+                                ))
 
-                    (byte \V)
-                    (do
-                        (emc1 NFA_VISUAL)
-                        ((ß RETURN) true)
-                    )
-
-                    (byte \C)
-                    (do
-                        (emc1 NFA_ANY_COMPOSING)
-                        ((ß RETURN) true)
-                    )
-
-                    (byte \[)
-                    (do
-                        ;; \%[abc]
-                        ((ß int n =) (loop-when-recur [n 0] (!= ((ß c =) (peekchr)) (byte \])) [(inc n)] => n
-                            (when (== c NUL)
-                                (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                                (reset! rc_did_emsg true)
-                                ((ß RETURN) false)
+                        (let [#_int cmp c [#_int n c]
+                                (loop-when-recur [n 0 c (if (any == c (byte \<) (byte \>)) (getchr) c)] (asc-isdigit c) [(+ (* n 10) (- c (byte \0))) (getchr)] => [n c])]
+                            (cond (any == c (byte \l) (byte \c) (byte \v))
+                            (do
+                                (condp == c
+                                    (byte \l) (emc1 (condp == cmp (byte \<) NFA_LNUM_LT (byte \>) NFA_LNUM_GT NFA_LNUM)) ;; \%{n}l  \%{n}<l  \%{n}>l
+                                    (byte \c) (emc1 (condp == cmp (byte \<) NFA_COL_LT  (byte \>) NFA_COL_GT  NFA_COL))  ;; \%{n}c  \%{n}<c  \%{n}>c
+                                    (byte \v) (emc1 (condp == cmp (byte \<) NFA_VCOL_LT (byte \>) NFA_VCOL_GT NFA_VCOL)) ;; \%{n}v  \%{n}<v  \%{n}>v
+                                )
+                                (emc1 n)
                             )
-                            ;; recursive call!
-                            (if (not (nfa-regatom))
-                                ((ß RETURN) false)
+                            (and (== c (byte \')) (zero? n))
+                            (do
+                                (emc1 (condp == cmp (byte \<) NFA_MARK_LT (byte \>) NFA_MARK_GT NFA_MARK)) ;; \%'m  \%<'m  \%>'m
+                                (emc1 (getchr))
                             )
-                        ))
-                        (getchr)       ;; get the ]
-                        (when (zero? n)
-                            (emsg2 e_empty_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                            (reset! rc_did_emsg true)
-                            ((ß RETURN) false)
+                            :else
+                            (do
+                                (emsgn (u8 "E867: (NFA) Unknown operator '\\%%%c'"), (long (no-Magic c)))
+                                false
+                            ))
                         )
-                        (emc1 NFA_OPT_CHARS)
-                        (emc1 n)
+                    ))
 
-                        ;; Emit as "\%(\%[abc]\)" to be able to handle "\%[abc]*" which would
-                        ;; cause the empty string to be matched an unlimited number of times.
-                        ;; NFA_NOPEN is added only once at a position, while NFA_SPLIT is added
-                        ;; multiple times.  This is more efficient than not allowing NFA_SPLIT
-                        ;; multiple times, it is used a lot.
+            (Magic (byte \[)) (nfa-regcoll- c, 0, old_regparse)
 
-                        (emc1 NFA_NOPEN)
-                        ((ß RETURN) true)
-                    )
-
-                    (do
-                        ((ß int n =) 0)
-                        ((ß int cmp =) c)
-
-                        ((ß c =) (if (any == c (byte \<) (byte \>)) (getchr) c))
-                        (loop-when [] (asc-isdigit c)
-                            ((ß n =) (+ (* n 10) (- c (byte \0))))
-                            ((ß c =) (getchr))
-                            (recur)
-                        )
-                        (cond (any == c (byte \l) (byte \c) (byte \v))
-                        (do
-                            (cond
-                                (== c (byte \l)) (emc1 (cond (== cmp (byte \<)) NFA_LNUM_LT (== cmp (byte \>)) NFA_LNUM_GT :else NFA_LNUM)) ;; \%{n}l  \%{n}<l  \%{n}>l
-                                (== c (byte \c)) (emc1 (cond (== cmp (byte \<)) NFA_COL_LT  (== cmp (byte \>)) NFA_COL_GT  :else NFA_COL))  ;; \%{n}c  \%{n}<c  \%{n}>c
-                                :else            (emc1 (cond (== cmp (byte \<)) NFA_VCOL_LT (== cmp (byte \>)) NFA_VCOL_GT :else NFA_VCOL)) ;; \%{n}v  \%{n}<v  \%{n}>v
-                            )
-                            (emc1 n)
-                            ((ß RETURN) true)
-                        )
-                        (and (== c (byte \')) (zero? n))
-                        (do
-                            ;; \%'m  \%<'m  \%>'m
-                            (emc1 (cond (== cmp (byte \<)) NFA_MARK_LT (== cmp (byte \>)) NFA_MARK_GT :else NFA_MARK))
-                            (emc1 (getchr))
-                            ((ß RETURN) true)
-                        ))
-                        (emsgn (u8 "E867: (NFA) Unknown operator '\\%%%c'"), (long (no-Magic c)))
-                        ((ß RETURN) false)
-                    )
-                )
-            )
-
-            (Magic (byte \[))
-            (do
-                ((ß RETURN) (nfa-regcoll- c, extra, old_regparse))
-            )
-
-            ((ß RETURN) (nfa-do-multibyte c, old_regparse))
-        )
+            #_else            (nfa-do-multibyte c, old_regparse))
     ))
 
 (defn- #_final #_boolean nfa-do-multibyte [#_int c, #_Bytes old_regparse]
