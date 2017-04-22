@@ -5786,348 +5786,306 @@
                                                       [c ?]
                                                 ] (not ?) => ?
 
-                                                        ;; Big switch for a typed command line character.
+                                                        (condp ==? c ;; Big switch for a typed command line character.
 
-                                                        (condp ==? c
-                                                        [K_BS Ctrl_H K_DEL K_KDEL Ctrl_W]
-                                                            (do
-                                                                ((ß c =) (if (== c K_KDEL) K_DEL c))
+                                                           [K_BS Ctrl_H K_DEL K_KDEL Ctrl_W]
+                                                                (let [c (if (== c K_KDEL) K_DEL c)]
+                                                                    ;; Delete current character is the same as backspace on next character, except at end of line.
+                                                                    (when (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
+                                                                        (swap! ccline update :cmdpos inc))
+                                                                    (when (== c K_DEL)
+                                                                        (swap! ccline update :cmdpos #(+ % (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %)))))
+                                                                    (cond (< 0 (:cmdpos @ccline))
+                                                                        (let [#_Bytes p (:cmdbuff @ccline) #_int j (:cmdpos @ccline)
+                                                                              #_Bytes s (us-prevptr p, (.plus p j))
+                                                                              s (if (== c Ctrl_W)
+                                                                                    (let [s (loop-when-recur s (and (BLT p, s) (vim-isspace (.at s 0))) (us-prevptr p, s) => s)
+                                                                                          #_int cls (us-get-class s)
+                                                                                          s (loop-when-recur s (and (BLT p, s) (== (us-get-class s) cls)) (us-prevptr p, s) => s)]
+                                                                                        s (if (!= (us-get-class s) cls) (.plus s (us-ptr2len-cc s)) s))
+                                                                                    s
+                                                                                )]
+                                                                            (swap! ccline assoc :cmdpos (BDIFF s, p))
+                                                                            (swap! ccline update :cmdlen - (- j (:cmdpos @ccline)))
+                                                                            (loop-when-recur [#_int i (:cmdpos @ccline) j j] (< i (:cmdlen @ccline)) [(inc i) (inc j)]
+                                                                                (.be p i, (.at p j)))
+                                                                            ;; Truncate at the end, required for multi-byte chars.
+                                                                            (eos! p (:cmdlen @ccline))
+                                                                            (redrawcmd)
+                                                                            [c :cmdline_changed])
+                                                                    (and (zero? (:cmdlen @ccline)) (!= c Ctrl_W) (nil? (:cmdprompt @ccline)))
+                                                                        (do (swap! ccline assoc :cmdbuff nil) ;; no command line to return
+                                                                            (reset! msg_col 0)
+                                                                            (msg-putchar (byte \space)) ;; delete ':'
+                                                                            (reset! redraw_cmdline true)
+                                                                            [c :quit]) ;; back to cmd mode
+                                                                    :else
+                                                                        [c :cmdline_changed]
+                                                                    ))
 
-                                                                ;; Delete current character is the same as backspace on next character, except at end of line.
-
-                                                                (when (and (== c K_DEL) (!= (:cmdpos @ccline) (:cmdlen @ccline)))
-                                                                    (swap! ccline update :cmdpos inc))
-                                                                (when (== c K_DEL)
-                                                                    (swap! ccline update :cmdpos #(+ % (us-off-next (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %)))))
-                                                                (cond (< 0 (:cmdpos @ccline))
-                                                                (do
-                                                                    ((ß int j =) (:cmdpos @ccline))
-                                                                    ((ß Bytes p =) (us-prevptr (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) j)))
-
-                                                                    (when (== c Ctrl_W)
-                                                                        ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (vim-isspace (.at p 0))) (us-prevptr (:cmdbuff @ccline), p) => p))
-                                                                        ((ß int cls =) (us-get-class p))
-                                                                        ((ß p =) (loop-when-recur p (and (BLT (:cmdbuff @ccline), p) (== (us-get-class p) cls)) (us-prevptr (:cmdbuff @ccline), p) => p))
-                                                                        ((ß p =) (if (!= (us-get-class p) cls) (.plus p (us-ptr2len-cc p)) p))
-                                                                    )
-
-                                                                    (swap! ccline assoc :cmdpos (BDIFF p, (:cmdbuff @ccline)))
-                                                                    (swap! ccline update :cmdlen - (- j (:cmdpos @ccline)))
-                                                                    (loop-when-recur [#_int i (:cmdpos @ccline) j j] (< i (:cmdlen @ccline)) [(inc i) (inc j)]
-                                                                        (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
-                                                                    )
-                                                                    ;; Truncate at the end, required for multi-byte chars.
-                                                                    (eos! (:cmdbuff @ccline) (:cmdlen @ccline))
-                                                                    (redrawcmd)
-                                                                )
-                                                                (and (zero? (:cmdlen @ccline)) (!= c Ctrl_W) (nil? (:cmdprompt @ccline)))
-                                                                (do
-                                                                    (swap! ccline assoc :cmdbuff nil)     ;; no commandline to return
-
-                                                                    (reset! msg_col 0)
-                                                                    (msg-putchar (byte \space))           ;; delete ':'
-
-                                                                    (reset! redraw_cmdline true)
-                                                                    (ß BREAK :quit)            ;; back to cmd mode
-                                                                ))
-                                                                (ß BREAK cmdline_changed)
-                                                            )
-
-                                                        [K_INS K_KINS]
-                                                            (do
-                                                                (swap! ccline update :overstrike not)
-                                                                (ui-cursor-shape)              ;; may show different cursor shape
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                           [K_INS K_KINS]
+                                                                (do (swap! ccline update :overstrike not)
+                                                                    (ui-cursor-shape) ;; may show different cursor shape
+                                                                    [c :cmdline_not_changed])
 
                                                             Ctrl_HAT
-                                                            (do
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                                [c :cmdline_not_changed]
 
-                                                            Ctrl_U
-                                                            (do
-                                                                ;; delete all characters left of the cursor
-                                                                ((ß int i =) 0)
-                                                                ((ß int j =) (:cmdpos @ccline))
-                                                                (swap! ccline assoc :cmdpos i)
-                                                                (swap! ccline update :cmdlen - j)
-                                                                ((ß int n =) (:cmdlen @ccline))
-                                                                (loop-when-recur [i i j j] (< i n) [(inc i) (inc j)]
-                                                                    (.be (:cmdbuff @ccline) i, (.at (:cmdbuff @ccline) j))
-                                                                )
-                                                                ;; Truncate at the end, required for multi-byte chars.
-                                                                (eos! (:cmdbuff @ccline) n)
-                                                                (redrawcmd)
-                                                                (ß BREAK cmdline_changed)
-                                                            )
+                                                            Ctrl_U ;; Delete all characters left of the cursor.
+                                                                (let [#_int i 0 #_int j (:cmdpos @ccline)
+                                                                      _ (swap! ccline assoc :cmdpos i)
+                                                                      _ (swap! ccline update :cmdlen - j)
+                                                                      #_Bytes p (:cmdbuff @ccline) #_int n (:cmdlen @ccline)]
+                                                                    (loop-when-recur [i i j j] (< i n) [(inc i) (inc j)]
+                                                                        (.be p i, (.at p j)))
+                                                                    ;; Truncate at the end, required for multi-byte chars.
+                                                                    (eos! p n)
+                                                                    (redrawcmd)
+                                                                    [c :cmdline_changed])
 
-                                                        [ESC Ctrl_C]       ;; get here when ESC typed twice
-                                                            (do
-                                                                ((ß @a'gotesc =) true)              ;; will free ccline.cmdbuff after putting it in history
-                                                                (ß BREAK :quit)            ;; back to cmd mode
-                                                            )
+                                                           [ESC Ctrl_C] ;; get here when ESC typed twice
+                                                                (do (reset! a'gotesc true) ;; will free ccline.cmdbuff after putting it in history
+                                                                    [c :quit]) ;; back to cmd mode
 
-                                                            Ctrl_R                    ;; insert register
-                                                            (do
-                                                                (putcmdline (byte \"), true)    ;; """
-                                                                (swap! no_mapping inc)
-                                                                ((ß int k =) ((ß c =) (plain-vgetc)))  ;; CTRL-R <char>
-                                                                ((ß k =) (if (== k Ctrl_O) Ctrl_R k))             ;; CTRL-R CTRL-O == CTRL-R CTRL-R
-                                                                ((ß c =) (if (== k Ctrl_R) (plain-vgetc) c))      ;; CTRL-R CTRL-R <char>
-                                                                (swap! no_mapping dec)
+                                                            Ctrl_R ;; insert register
+                                                                (let-when [_ (putcmdline (byte \"), true) ;; """
+                                                                      _ (swap! no_mapping inc)
+                                                                      c (plain-vgetc) #_int k c             ;; CTRL-R <char>
+                                                                      k (if (== k Ctrl_O) Ctrl_R k)         ;; CTRL-R CTRL-O == CTRL-R CTRL-R
+                                                                      c (if (== k Ctrl_R) (plain-vgetc) c)  ;; CTRL-R CTRL-R <char>
+                                                                      _ (swap! no_mapping dec)
+                                                                      ;; Insert the result of an expression.
+                                                                      ;; Need to save the current command line, to be able to enter a new one...
+                                                                      c (if (== c (byte \=))
+                                                                            (if (== (:cmdfirstc @ccline) (byte \=)) ;; can't do this recursively
+                                                                                (do (beep-flush) ESC)
+                                                                                (let [o'cli (save-cmdline) c (get-expr-register) _ (restore-cmdline o'cli)]
+                                                                                    c
+                                                                                ))
+                                                                            c)
+                                                                      ? (when (!= c ESC)                    ;; use ESC to cancel inserting register
+                                                                            (cmdline-paste c, (== k Ctrl_R), false)
+                                                                            ;; When there was a serious error, abort getting the command line.
+                                                                            (if @got_int
+                                                                                (do (reset! a'gotesc true)  ;; will free ccline.cmdbuff after putting it in history
+                                                                                    :quit)                  ;; back to cmd mode
+                                                                                (do (reset! keyTyped false) ;; Don't do 'wildchar' completion.
+                                                                                    nil
+                                                                                ))
+                                                                        )] (not ?) => ?
 
-                                                                ;; Insert the result of an expression.
-                                                                ;; Need to save the current command line, to be able to enter a new one...
+                                                                    (redrawcmd)
+                                                                    [c :cmdline_changed])
 
-                                                                (when (== c (byte \=))
-                                                                    (cond (== (:cmdfirstc @ccline) (byte \=))    ;; can't do this recursively
-                                                                    (do
-                                                                        (beep-flush)
-                                                                        ((ß c =) ESC)
-                                                                    )
-                                                                    :else
-                                                                    (do
-                                                                        ((ß cmdline_info_C save_cli =) (save-cmdline))
-                                                                        ((ß c =) (get-expr-register))
-                                                                        (restore-cmdline save_cli)
-                                                                    ))
-                                                                )
-                                                                (when (!= c ESC)               ;; use ESC to cancel inserting register
-                                                                    (cmdline-paste c, (== k Ctrl_R), false)
+                                                           [K_RIGHT K_S_RIGHT K_C_RIGHT]
+                                                                (do (loop-when [] (< (:cmdpos @ccline) (:cmdlen @ccline))
+                                                                        (let [#_int n (cmdline-charsize (:cmdpos @ccline))]
+                                                                            (when-not (and @keyTyped (<= (* @Rows @Cols) (+ (:cmdspos @ccline) n)))
+                                                                                (swap! ccline update :cmdspos + n)
+                                                                                (swap! ccline update :cmdpos #(+ % (us-ptr2len-cc (:cmdbuff @ccline), %)))
+                                                                                (recur-if (and (or (== c K_S_RIGHT) (== c K_C_RIGHT)
+                                                                                                   (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+                                                                                               (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space)))
+                                                                                          []
+                                                                                ))
+                                                                        ))
+                                                                    (set-cmdspos-cursor)
+                                                                    [c :cmdline_not_changed])
 
-                                                                    ;; When there was a serious error abort getting the command line.
-                                                                    (when @got_int
-                                                                        ((ß @a'gotesc =) true)      ;; will free ccline.cmdbuff after putting it in history
-                                                                        (ß BREAK :quit)    ;; back to cmd mode
-                                                                    )
-                                                                    (reset! keyTyped false)       ;; Don't do 'wildchar' completion.
-                                                                )
-                                                                (redrawcmd)
-                                                                (ß BREAK cmdline_changed)
-                                                            )
+                                                           [K_LEFT K_S_LEFT K_C_LEFT]
+                                                                (do (when (< 0 (:cmdpos @ccline))
+                                                                        (loop []
+                                                                            (swap! ccline update :cmdpos dec)
+                                                                            ;; move to first byte of char
+                                                                            (swap! ccline update :cmdpos #(- % (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %))))
+                                                                            (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
+                                                                            (recur-if (and (< 0 (:cmdpos @ccline))
+                                                                                           (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+                                                                                           (not-at? (:cmdbuff @ccline) (dec (:cmdpos @ccline)) (byte \space)))
+                                                                                      []
+                                                                            ))
+                                                                        (set-cmdspos-cursor))
+                                                                    [c :cmdline_not_changed])
 
-                                                        [K_RIGHT K_S_RIGHT K_C_RIGHT]
-                                                            (do
-                                                                (loop-when [] (< (:cmdpos @ccline) (:cmdlen @ccline))
-                                                                    ((ß int n =) (cmdline-charsize (:cmdpos @ccline)))
-                                                                    (if (and @keyTyped (<= (* @Cols @Rows) (+ (:cmdspos @ccline) n)))
-                                                                        (ß BREAK)
-                                                                    )
-                                                                    (swap! ccline update :cmdspos + n)
-                                                                    (swap! ccline update :cmdpos #(+ % (us-ptr2len-cc (:cmdbuff @ccline), %)))
-                                                                    (recur-if (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (:cmdpos @ccline) (byte \space))) [])
-                                                                )
-                                                                (set-cmdspos-cursor)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
-
-                                                        [K_LEFT K_S_LEFT K_C_LEFT]
-                                                            (do
-                                                                (if (zero? (:cmdpos @ccline))
-                                                                    (ß BREAK cmdline_not_changed)
-                                                                )
-                                                                (loop []
-                                                                    (swap! ccline update :cmdpos dec)
-                                                                    ;; move to first byte of char
-                                                                    (swap! ccline update :cmdpos #(- % (us-head-off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) %))))
-                                                                    (swap! ccline update :cmdspos - (cmdline-charsize (:cmdpos @ccline)))
-                                                                    (recur-if (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (not-at? (:cmdbuff @ccline) (dec (:cmdpos @ccline)) (byte \space))) [])
-                                                                )
-                                                                (set-cmdspos-cursor)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
-
-                                                            K_IGNORE
-                                                            (do
-                                                                (ß BREAK cmdline_not_changed)          ;; Ignore mouse event or ex-window() result.
-                                                            )
+                                                            K_IGNORE ;; Ignore mouse event or ex-window() result.
+                                                                [c :cmdline_not_changed]
 
                                                             K_DROP
-                                                            (do
-                                                                (cmdline-paste (byte \~), true, false)
-                                                                (redrawcmd)
-                                                                (ß BREAK cmdline_changed)
-                                                            )
+                                                                (do (cmdline-paste (byte \~), true, false)
+                                                                    (redrawcmd)
+                                                                    [c :cmdline_changed])
 
-                                                            K_SELECT      ;; end of Select mode mapping - ignore
-                                                            (do
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                            K_SELECT ;; end of Select mode mapping - ignore
+                                                                [c :cmdline_not_changed]
 
-                                                        [Ctrl_B K_HOME K_KHOME K_S_HOME K_C_HOME]        ;; begin of command line
-                                                            (do
-                                                                (swap! ccline assoc :cmdpos 0)
-                                                                (set-cmdspos)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                           [Ctrl_B K_HOME K_KHOME K_S_HOME K_C_HOME] ;; begin of command line
+                                                                (do (swap! ccline assoc :cmdpos 0)
+                                                                    (set-cmdspos)
+                                                                    [c :cmdline_not_changed])
 
-                                                        [Ctrl_E K_END K_KEND K_S_END K_C_END]        ;; end of command line
-                                                            (do
-                                                                (swap! ccline assoc :cmdpos (:cmdlen @ccline))
-                                                                (set-cmdspos-cursor)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                           [Ctrl_E K_END K_KEND K_S_END K_C_END] ;; end of command line
+                                                                (do (swap! ccline assoc :cmdpos (:cmdlen @ccline))
+                                                                    (set-cmdspos-cursor)
+                                                                    [c :cmdline_not_changed])
 
                                                             Ctrl_L
-                                                            (do
-                                                                (when (and @p_is (any == firstc (byte \/) (byte \?)))
+                                                                (if (and @p_is (any == firstc (byte \/) (byte \?)))
                                                                     ;; Add a character from under the cursor for 'incsearch'.
-                                                                    (when (and @a'did_incsearch (not (eqpos (:w_cursor win), o'cursor)))
-                                                                        ((ß c =) (gchar-cursor win))
-                                                                        ;; If 'ignorecase' and 'smartcase' are set and the command line
-                                                                        ;; has no uppercase characters, convert the character to lowercase.
-                                                                        ((ß c =) (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline)))) (utf-tolower c) c))
-                                                                        (when (!= c NUL)
-                                                                            (when (or (== c firstc) (!= (vim-strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c) nil))
-                                                                                ;; put a backslash before special characters
-                                                                                (stuff-char c)
-                                                                                ((ß c =) (byte \\))
-                                                                            )
-                                                                            (ß BREAK)
-                                                                        )
-                                                                    )
-                                                                    (ß BREAK cmdline_not_changed)
-                                                                )
+                                                                    (if (and @a'did_incsearch (not (eqpos (:w_cursor win), o'cursor)))
+                                                                        (let [c (gchar-cursor win)
+                                                                              ;; If 'ignorecase' and 'smartcase' are set and the command line
+                                                                              ;; has no uppercase characters, convert the character to lowercase.
+                                                                              c (if (and @p_ic @p_scs (not (pat-has-uppercase (:cmdbuff @ccline)))) (utf-tolower c) c)]
+                                                                            (if (!= c NUL)
+                                                                                (let [c (if (or (== c firstc) (some? (vim-strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c)))
+                                                                                            ;; put a backslash before special characters
+                                                                                            (do (stuff-char c) (byte \\))
+                                                                                            c
+                                                                                        )]
+                                                                                    [c nil])
+                                                                                [c :cmdline_not_changed]
+                                                                            ))
+                                                                        [c :cmdline_not_changed])
+                                                                    [c nil])
 
-                                                                (ß BREAK)
-                                                            )
-
-                                                        [Ctrl_P K_UP   K_S_UP   K_PAGEUP   K_KPAGEUP     ;; previous match
+                                                           [Ctrl_P K_UP   K_S_UP   K_PAGEUP   K_KPAGEUP     ;; previous match
                                                             Ctrl_N K_DOWN K_S_DOWN K_PAGEDOWN K_KPAGEDOWN]  ;; next match
-                                                            (do
-                                                                (if (or (zero? @hislen) (== firstc NUL))    ;; no history
-                                                                    (ß BREAK cmdline_not_changed)
-                                                                )
-
-                                                                ((ß int i =) @a'hiscnt)
-
-                                                                ;; save current command string so it can be restored later
-                                                                (when (nil? @a'lookfor)
-                                                                    ((ß @a'lookfor =) (STRDUP (:cmdbuff @ccline)))
-                                                                    (if (nil? @a'lookfor)
+                                                                (do
+                                                                    (if (or (zero? @hislen) (== firstc NUL))    ;; no history
                                                                         (ß BREAK cmdline_not_changed)
                                                                     )
-                                                                    (eos! @a'lookfor (:cmdpos @ccline))
-                                                                )
 
-                                                                (loop []
-                                                                    ;; one step backwards
-                                                                    (cond (any == c K_UP K_S_UP Ctrl_P K_PAGEUP K_KPAGEUP)
-                                                                    (do
-                                                                        (cond (== @a'hiscnt @hislen)   ;; first time
-                                                                        (do
-                                                                            ((ß @a'hiscnt =) (... @hisidx histype))
+                                                                    ((ß int i =) @a'hiscnt)
+
+                                                                    ;; save current command string so it can be restored later
+                                                                    (when (nil? @a'lookfor)
+                                                                        ((ß @a'lookfor =) (STRDUP (:cmdbuff @ccline)))
+                                                                        (if (nil? @a'lookfor)
+                                                                            (ß BREAK cmdline_not_changed)
                                                                         )
-                                                                        (and (zero? @a'hiscnt) (!= (... @hisidx histype) (dec @hislen)))
+                                                                        (eos! @a'lookfor (:cmdpos @ccline))
+                                                                    )
+
+                                                                    (loop []
+                                                                        ;; one step backwards
+                                                                        (cond (any == c K_UP K_S_UP Ctrl_P K_PAGEUP K_KPAGEUP)
                                                                         (do
-                                                                            ((ß @a'hiscnt =) (dec @hislen))
+                                                                            (cond (== @a'hiscnt @hislen)   ;; first time
+                                                                            (do
+                                                                                ((ß @a'hiscnt =) (... @hisidx histype))
+                                                                            )
+                                                                            (and (zero? @a'hiscnt) (!= (... @hisidx histype) (dec @hislen)))
+                                                                            (do
+                                                                                ((ß @a'hiscnt =) (dec @hislen))
+                                                                            )
+                                                                            (!= @a'hiscnt (inc (... @hisidx histype)))
+                                                                            (do
+                                                                                ((ß @a'hiscnt =) (dec @a'hiscnt))
+                                                                            )
+                                                                            :else                    ;; at top of list
+                                                                            (do
+                                                                                ((ß @a'hiscnt =) i)
+                                                                                (ß BREAK)
+                                                                            ))
                                                                         )
-                                                                        (!= @a'hiscnt (inc (... @hisidx histype)))
+                                                                        :else    ;; one step forwards
                                                                         (do
-                                                                            ((ß @a'hiscnt =) (dec @a'hiscnt))
-                                                                        )
-                                                                        :else                    ;; at top of list
-                                                                        (do
+                                                                            ;; on last entry, clear the line
+                                                                            (when (== @a'hiscnt (... @hisidx histype))
+                                                                                ((ß @a'hiscnt =) @hislen)
+                                                                                (ß BREAK)
+                                                                            )
+
+                                                                            ;; not on a history line, nothing to do
+                                                                            (if (== @a'hiscnt @hislen)
+                                                                                (ß BREAK)
+                                                                            )
+                                                                            ((ß @a'hiscnt =) (if (== @a'hiscnt (dec @hislen)) 0 (inc @a'hiscnt)))   ;; wrap around
+                                                                        ))
+                                                                        (when (or (< @a'hiscnt 0) (nil? (... (... @history histype) @a'hiscnt)))
                                                                             ((ß @a'hiscnt =) i)
                                                                             (ß BREAK)
+                                                                        )
+                                                                        (when (or (and (!= c K_UP) (!= c K_DOWN)) (== @a'hiscnt i) (zero? (STRNCMP (... (... @history histype) @a'hiscnt), @a'lookfor, (STRLEN @a'lookfor))))
+                                                                            (ß BREAK)
+                                                                        )
+                                                                        (recur)
+                                                                    )
+
+                                                                    (when (!= @a'hiscnt i)        ;; jumped to other entry
+                                                                        (swap! ccline assoc :cmdbuff nil)
+
+                                                                        ((ß Bytes p =) (if (== @a'hiscnt @hislen)
+                                                                            @a'lookfor    ;; back to the old one
+                                                                            (... (... @history histype) @a'hiscnt)
                                                                         ))
-                                                                    )
-                                                                    :else    ;; one step forwards
-                                                                    (do
-                                                                        ;; on last entry, clear the line
-                                                                        (when (== @a'hiscnt (... @hisidx histype))
-                                                                            ((ß @a'hiscnt =) @hislen)
-                                                                            (ß BREAK)
+
+                                                                        (ß int old_firstc)
+                                                                        (cond (and (== histype HIST_SEARCH) (BNE p, @a'lookfor) (!= ((ß old_firstc =) (.at p (inc (STRLEN p)))) firstc))
+                                                                        (do
+                                                                            ;; Correct for the separator character used when
+                                                                            ;; adding the history entry vs the one used now.
+                                                                            ;; First loop: count length.
+                                                                            ;; Second loop: copy the characters.
+                                                                            (dotimes [round 2]
+                                                                                (let [n (loop-when-recur [n 0 i 0] (non-eos? p i) [(inc n) (inc i)] => n
+                                                                                            (if (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                                                                ;; Replace old sep with new sep, unless it is escaped.
+                                                                                                (if (< 0 round) (.be (:cmdbuff @ccline) n, firstc))
+                                                                                                (do
+                                                                                                    ;; Escape new sep, unless it is already escaped.
+                                                                                                    (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
+                                                                                                        (if (< 0 round) (.be (:cmdbuff @ccline) n, (byte \\)))
+                                                                                                        ((ß n =) (inc n))
+                                                                                                    )
+                                                                                                    (if (< 0 round) (.be (:cmdbuff @ccline) n, (.at p i)))
+                                                                                                ))
+                                                                                        )]
+                                                                                    (if (< 0 round) (eos! (:cmdbuff @ccline) n) (alloc-cmdbuff n))
+                                                                                ))
                                                                         )
+                                                                        :else
+                                                                        (do
+                                                                            (alloc-cmdbuff (STRLEN p))
+                                                                            (STRCPY (:cmdbuff @ccline), p)
+                                                                        ))
 
-                                                                        ;; not on a history line, nothing to do
-                                                                        (if (== @a'hiscnt @hislen)
-                                                                            (ß BREAK)
-                                                                        )
-                                                                        ((ß @a'hiscnt =) (if (== @a'hiscnt (dec @hislen)) 0 (inc @a'hiscnt)))   ;; wrap around
-                                                                    ))
-                                                                    (when (or (< @a'hiscnt 0) (nil? (... (... @history histype) @a'hiscnt)))
-                                                                        ((ß @a'hiscnt =) i)
-                                                                        (ß BREAK)
+                                                                        (let [n (STRLEN (:cmdbuff @ccline))] (swap! ccline assoc :cmdpos n :cmdlen n))
+                                                                        (redrawcmd)
+                                                                        (ß BREAK cmdline_changed)
                                                                     )
-                                                                    (when (or (and (!= c K_UP) (!= c K_DOWN)) (== @a'hiscnt i) (zero? (STRNCMP (... (... @history histype) @a'hiscnt), @a'lookfor, (STRLEN @a'lookfor))))
-                                                                        (ß BREAK)
-                                                                    )
-                                                                    (recur)
+                                                                    (beep-flush)
+                                                                    (ß BREAK cmdline_not_changed)
+                                                                    [c nil]
                                                                 )
 
-                                                                (when (!= @a'hiscnt i)        ;; jumped to other entry
-                                                                    (swap! ccline assoc :cmdbuff nil)
-
-                                                                    ((ß Bytes p =) (if (== @a'hiscnt @hislen)
-                                                                        @a'lookfor    ;; back to the old one
-                                                                        (... (... @history histype) @a'hiscnt)
-                                                                    ))
-
-                                                                    (ß int old_firstc)
-                                                                    (cond (and (== histype HIST_SEARCH) (BNE p, @a'lookfor) (!= ((ß old_firstc =) (.at p (inc (STRLEN p)))) firstc))
-                                                                    (do
-                                                                        ;; Correct for the separator character used when
-                                                                        ;; adding the history entry vs the one used now.
-                                                                        ;; First loop: count length.
-                                                                        ;; Second loop: copy the characters.
-                                                                        (dotimes [round 2]
-                                                                            (let [n (loop-when-recur [n 0 i 0] (non-eos? p i) [(inc n) (inc i)] => n
-                                                                                        (if (and (at? p i old_firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                                                                            ;; Replace old sep with new sep, unless it is escaped.
-                                                                                            (if (< 0 round) (.be (:cmdbuff @ccline) n, firstc))
-                                                                                            (do
-                                                                                                ;; Escape new sep, unless it is already escaped.
-                                                                                                (when (and (at? p i firstc) (or (zero? i) (not-at? p (dec i) (byte \\))))
-                                                                                                    (if (< 0 round) (.be (:cmdbuff @ccline) n, (byte \\)))
-                                                                                                    ((ß n =) (inc n))
-                                                                                                )
-                                                                                                (if (< 0 round) (.be (:cmdbuff @ccline) n, (.at p i)))
-                                                                                            ))
-                                                                                    )]
-                                                                                (if (< 0 round) (eos! (:cmdbuff @ccline) n) (alloc-cmdbuff n))
-                                                                            ))
+                                                           [Ctrl_V Ctrl_Q]
+                                                                (do
+                                                                    (putcmdline (byte \^), true)
+                                                                    ((ß c =) (get-literal))          ;; get next (two) character(s)
+                                                                    ((ß @a'do_abbr =) false)            ;; don't do abbreviation now
+                                                                    ;; may need to remove ^ when composing char was typed
+                                                                    (when (utf-iscomposing c)
+                                                                        (draw-cmdline (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
+                                                                        (msg-putchar (byte \space))
+                                                                        (cursorcmd)
                                                                     )
-                                                                    :else
-                                                                    (do
-                                                                        (alloc-cmdbuff (STRLEN p))
-                                                                        (STRCPY (:cmdbuff @ccline), p)
-                                                                    ))
-
-                                                                    (let [n (STRLEN (:cmdbuff @ccline))] (swap! ccline assoc :cmdpos n :cmdlen n))
-                                                                    (redrawcmd)
-                                                                    (ß BREAK cmdline_changed)
+                                                                    (ß BREAK)
+                                                                    [c nil]
                                                                 )
-                                                                (beep-flush)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
-
-                                                        [Ctrl_V Ctrl_Q]
-                                                            (do
-                                                                (putcmdline (byte \^), true)
-                                                                ((ß c =) (get-literal))          ;; get next (two) character(s)
-                                                                ((ß @a'do_abbr =) false)            ;; don't do abbreviation now
-                                                                ;; may need to remove ^ when composing char was typed
-                                                                (when (utf-iscomposing c)
-                                                                    (draw-cmdline (:cmdpos @ccline), (- (:cmdlen @ccline) (:cmdpos @ccline)))
-                                                                    (msg-putchar (byte \space))
-                                                                    (cursorcmd)
-                                                                )
-                                                                (ß BREAK)
-                                                            )
 
                                                             Ctrl_K
-                                                            (do
-                                                                (putcmdline (byte \?), true)
-                                                                ((ß c =) (get-digraph true))
-                                                                (if (!= c NUL)
-                                                                    (ß BREAK)
-                                                                )
+                                                                (do
+                                                                    (putcmdline (byte \?), true)
+                                                                    ((ß c =) (get-digraph true))
+                                                                    (if (!= c NUL)
+                                                                        (ß BREAK)
+                                                                    )
 
-                                                                (redrawcmd)
-                                                                (ß BREAK cmdline_not_changed)
-                                                            )
+                                                                    (redrawcmd)
+                                                                    (ß BREAK cmdline_not_changed)
+                                                                    [c nil]
+                                                                )
 
                                                             (do
                                                                 (when (== c @intr_char)
@@ -6142,6 +6100,7 @@
                                                                 (if (not (is-special c))
                                                                     (reset! mod_mask 0x0))
                                                                 (ß BREAK)
+                                                                [c nil]
                                                             )
                                                         )
 
@@ -15002,8 +14961,8 @@
                                                                                 (reset! a'nomove true))
                                                                             (reset! a'count 0)
                                                                             nil)
-                                                              [win c ?] ;; The big switch to handle a character in Insert mode.
-                                                                (condp ==? c
+                                                              [win c ?]
+                                                                (condp ==? c ;; Big switch to handle a character in Insert mode.
 
                                                                    [Ctrl_C ESC]                                             ;; end input mode
                                                                         (let [? (cond (and (== c Ctrl_C) (non-zero? @cmdwin_type))
