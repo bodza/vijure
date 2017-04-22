@@ -37916,100 +37916,55 @@
                         ))
                 )] (some? _) => [win false]
 
-            (let [#_window_C w1 win'
+            ;; allocate new window structure and link it in the window list
+            (let [#_window_C after
+                    (if (and (non-flag? flags WSP_TOP) (or (flag? flags (| WSP_BOT WSP_BELOW)) (and (non-flag? flags WSP_ABOVE) (if (flag? flags WSP_VERT) @p_spr @p_sb))))
+                        w0 (:w_prev w0))
+                  #_window_C w1
+                    (if (some? win')
+                        (win-append win', after)
+                        (let [w1 (newWindow after) w1 (assoc w1 :w_frame (newFrame w1))]
+                            (win-init w1, win) ;; make the contents of the new window the same as the current one
+                        ))
+                  ;; Reorganise the tree of frames to insert the new window.
+                  [#_frame_C f0 #_boolean before]
+                    (if (flag? flags (| WSP_TOP WSP_BOT))
+                        (let [f0 (if (or (and (== (:fr_layout @topframe) FR_COL) (non-flag? flags WSP_VERT)) (and (== (:fr_layout @topframe) FR_ROW) (flag? flags WSP_VERT)))
+                                    (let-when [f0 (:fr_child @topframe)] (flag? flags WSP_BOT) => f0
+                                        (loop-when-recur f0 (some? (:fr_next f0)) (:fr_next f0) => f0))
+                                    @topframe
+                                )]
+                            [f0 (flag? flags WSP_TOP)])
+                        [(:w_frame w0) (cond (flag? flags WSP_BELOW) false (flag? flags WSP_ABOVE) true (flag? flags WSP_VERT) (not @p_spr) :else (not @p_sb))])
+                  #_byte layout (if (flag? flags WSP_VERT) FR_ROW FR_COL)
+                  [w0 f0]
+                    (when' (or (nil? (:fr_parent f0)) (!= (:fr_layout (:fr_parent f0)) layout)) => [w0 f0]
+                        ;; Need to create a new frame in the tree to make a branch.
+                        (let [#_frame_C f1 f0
+                              f0 (assoc f0 :fr_layout layout)
+                              f1 (assoc f1 :fr_parent f0)
+                              f1 (assoc f1 :fr_next nil)
+                              f1 (assoc f1 :fr_prev nil)
+                              f0 (assoc f0 :fr_child f1)
+                              f0 (assoc f0 :fr_win nil)
+                              f0 f1]
+                            (if (some? (:fr_win f1))
+                                [(assoc w0 :w_frame f1) f0]
+                                (loop-when [f1 (:fr_child f1)] (some? f1) => [w0 f0]
+                                    ((ß f1 =) (assoc f1 :fr_parent f0))
+                                    (recur (:fr_next f1))
+                                ))
+                        ))
+                  #_frame_C f1 (:w_frame (if (some? win') win' w1))
+                  f1 (assoc f1 :fr_parent (:fr_parent f0))
+                  ;; Insert the new frame at the right place in the frame list.
+                  _ (if before
+                        (frame-insert f0, f1)
+                        (frame-append f0, f1))
+                  ;; Set "w_fraction" now so that the cursor keeps the same relative vertical position.
+                  w0 (if (< 0 (:w_height w0)) (set-fraction w0) w0)
+                  w1 (assoc w1 :w_fraction (:w_fraction w0))
             ]
-
-                ;; allocate new window structure and link it in the window list
-
-                (cond (and (non-flag? flags WSP_TOP) (or (flag? flags WSP_BOT) (flag? flags WSP_BELOW) (and (non-flag? flags WSP_ABOVE) (if (flag? flags WSP_VERT) @p_spr @p_sb))))
-                (do
-                    ;; new window below/right of current one
-                    (if (nil? win')
-                        ((ß w1 =) (newWindow w0))
-                        (win-append w0, w1))
-                )
-                :else
-                (do
-                    (if (nil? win')
-                        ((ß w1 =) (newWindow (:w_prev w0)))
-                        (win-append (:w_prev w0), w1))
-                ))
-
-                (when (nil? win')
-                    (if (nil? w1)
-                        ((ß RETURN) [win false])
-                    )
-
-                    ((ß w1 =) (assoc w1 :w_frame (newFrame w1)))
-
-                    ;; make the contents of the new window the same as the current one
-                    ((ß w1 =) (win-init w1, win))
-                )
-
-                ;; Reorganise the tree of frames to insert the new window.
-
-                (ß frame_C curfrp)
-                (ß boolean before)
-                (cond (flag? flags (| WSP_TOP WSP_BOT))
-                (do
-                    (cond (or (and (== (:fr_layout @topframe) FR_COL) (non-flag? flags WSP_VERT)) (and (== (:fr_layout @topframe) FR_ROW) (flag? flags WSP_VERT)))
-                    (do
-                        ((ß curfrp =) (:fr_child @topframe))
-                        (when (flag? flags WSP_BOT)
-                            (loop-when [] (some? (:fr_next curfrp))
-                                ((ß curfrp =) (:fr_next curfrp))
-                                (recur)
-                            )
-                        )
-                    )
-                    :else
-                    (do
-                        ((ß curfrp =) @topframe)
-                    ))
-                    ((ß before =) (flag? flags WSP_TOP))
-                )
-                :else
-                (do
-                    ((ß curfrp =) (:w_frame w0))
-                    ((ß before =) (cond (flag? flags WSP_BELOW) false (flag? flags WSP_ABOVE) true (flag? flags WSP_VERT) (not @p_spr) :else (not @p_sb)))
-                ))
-
-                ((ß byte layout =) (if (flag? flags WSP_VERT) FR_ROW FR_COL))
-                (when (or (nil? (:fr_parent curfrp)) (!= (:fr_layout (:fr_parent curfrp)) layout))
-                    ;; Need to create a new frame in the tree to make a branch.
-                    ((ß frame_C fr =) (NEW_frame_C))
-                    (COPY-frame fr, curfrp)
-                    ((ß curfrp =) (assoc curfrp :fr_layout layout))
-                    ((ß fr =) (assoc fr :fr_parent curfrp))
-                    ((ß fr =) (assoc fr :fr_next nil))
-                    ((ß fr =) (assoc fr :fr_prev nil))
-                    ((ß curfrp =) (assoc curfrp :fr_child fr))
-                    ((ß curfrp =) (assoc curfrp :fr_win nil))
-                    ((ß curfrp =) fr)
-                    (cond (some? (:fr_win fr))
-                    (do
-                        ((ß w0 =) (assoc w0 :w_frame fr))
-                    )
-                    :else
-                    (do
-                        (loop-when-recur [fr (:fr_child fr)] (some? fr) [(:fr_next fr)]
-                            ((ß fr =) (assoc fr :fr_parent curfrp))
-                        )
-                    ))
-                )
-
-                ((ß frame_C fr =) (if (nil? win') (:w_frame w1) (:w_frame win')))
-                ((ß fr =) (assoc fr :fr_parent (:fr_parent curfrp)))
-
-                ;; Insert the new frame at the right place in the frame list.
-                (if before
-                    (frame-insert curfrp, fr)
-                    (frame-append curfrp, fr))
-
-                ;; Set "w_fraction" now so that the cursor keeps the same relative vertical position.
-                (if (< 0 (:w_height w0))
-                    ((ß w0 =) (set-fraction w0)))
-                ((ß w1 =) (assoc w1 :w_fraction (:w_fraction w0)))
 
                 (cond (flag? flags WSP_VERT)
                 (do
@@ -38023,7 +37978,7 @@
                     (do
                         ;; set height and row of new window to full height
                         ((ß w1 =) (assoc w1 :w_winrow 0))
-                        ((ß w1 =) (win-new-height w1, (- (:fr_height curfrp) (if (< 0 @p_ls) 1 0))))
+                        ((ß w1 =) (win-new-height w1, (- (:fr_height f0) (if (< 0 @p_ls) 1 0))))
                         ((ß w1 =) (assoc w1 :w_status_height (if (< 0 @p_ls) 1 0)))
                     )
                     :else
@@ -38033,7 +37988,7 @@
                         ((ß w1 =) (win-new-height w1, (:w_height w0)))
                         ((ß w1 =) (assoc w1 :w_status_height (:w_status_height w0)))
                     ))
-                    ((ß fr =) (assoc fr :fr_height (:fr_height curfrp)))
+                    ((ß f1 =) (assoc f1 :fr_height (:fr_height f0)))
 
                     ;; "size1" of the current window goes to the new window,
                     ;; use one column for the vertical separator
@@ -38050,9 +38005,9 @@
                     (cond (flag? flags (| WSP_TOP WSP_BOT))
                     (do
                         (if (flag? flags WSP_BOT)
-                            (frame-add-vsep curfrp))
+                            (frame-add-vsep f0))
                         ;; Set width of neighbor frame.
-                        (frame-new-width curfrp, (- (:fr_width curfrp) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
+                        (frame-new-width f0, (- (:fr_width f0) (+ size1 (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
                     )
                     :else
                     (do
@@ -38085,13 +38040,13 @@
                         ((ß w1 =) (win-new-width w1, (:w_width w0)))
                         ((ß w1 =) (assoc w1 :w_vsep_width (:w_vsep_width w0)))
                     ))
-                    ((ß fr =) (assoc fr :fr_width (:fr_width curfrp)))
+                    ((ß f1 =) (assoc f1 :fr_width (:fr_width f0)))
 
                     ;; "size1" of the current window goes to the new window,
                     ;; use one row for the status line
                     ((ß w1 =) (win-new-height w1, size1))
                     (if (flag? flags (| WSP_TOP WSP_BOT))
-                        ((ß curfrp =) (frame-new-height curfrp, (- (:fr_height curfrp) (+ size1 STATUS_HEIGHT)), (flag? flags WSP_TOP), false))
+                        ((ß f0 =) (frame-new-height f0, (- (:fr_height f0) (+ size1 STATUS_HEIGHT)), (flag? flags WSP_TOP), false))
                         ((ß w0 =) (win-new-height w0, (- h0 (+ size1 STATUS_HEIGHT)))))
                     (cond before     ;; new window above current one
                     (do
@@ -38106,7 +38061,7 @@
                         ((ß w0 =) (assoc w0 :w_status_height STATUS_HEIGHT))
                     ))
                     (if (flag? flags WSP_BOT)
-                        (frame-add-statusline curfrp))
+                        (frame-add-statusline f0))
                     ((ß w1 =) (frame-fix-height w1))
                     ((ß w0 =) (frame-fix-height w0))
                 ))
@@ -38224,32 +38179,35 @@
             ;;    3. remove "w1" from the list
             ;;    4. insert "w1" after "wp2"
             ;; 5. exchange the status line height and vsep width
-            (let [#_window_C w1 (:fr_win f1) #_window_C w2 (:w_prev win) #_frame_C f2 (:fr_prev (:w_frame win))]
-                (when (!= (:w_prev w1) win)
-                    (win-remove win)
-                    (frame-remove (:w_frame win))
-                    (win-append (:w_prev w1), win)
-                    (frame-insert f1, (:w_frame win)))
-                (when (!= w1 w2)
-                    (win-remove w1)
-                    (frame-remove (:w_frame w1))
-                    (win-append w2, w1)
-                    (if (nil? f2)
-                        (frame-insert (:fr_child (:fr_parent (:w_frame w1))), (:w_frame w1))
-                        (frame-append f2, (:w_frame w1))
-                    ))
-                (let [swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
-                      [win w1] (-> [win w1] (swp- :w_status_height) (swp- :w_vsep_width))
-                      ;; If the windows are not in the same frame, exchange the sizes to avoid
-                      ;; messing up the window layout.  Otherwise fix the frame sizes.
-                      fix- #(-> % (frame-fix-height) (frame-fix-width))
-                      [win w1]
-                        (if (!= (:fr_parent (:w_frame win)) (:fr_parent (:w_frame w1)))
-                            (-> [win w1] (swp- :w_height) (swp- :w_width))
-                            [(fix- win) (fix- w1)]
-                        )]
-                    (win-comp-pos) ;; recompute window positions
-                    (-> win (win-enter w1) (redraw-later CLEAR)))
+            (let [#_window_C w1 (:fr_win f1) #_window_C w2 (:w_prev win) #_frame_C f2 (:fr_prev (:w_frame win))
+                  win (when' (!= (:w_prev w1) win) => win
+                        (let [win (win-remove win)
+                              _ (frame-remove (:w_frame win))
+                              win (win-append win, (:w_prev w1))]
+                            (frame-insert f1, (:w_frame win))
+                            win
+                        ))
+                  w1 (when' (!= w1 w2) => w1
+                        (let [w1 (win-remove w1)
+                              _ (frame-remove (:w_frame w1))
+                              w1 (win-append w1, w2)]
+                            (if (some? f2)
+                                (frame-append f2, (:w_frame w1))
+                                (frame-insert (:fr_child (:fr_parent (:w_frame w1))), (:w_frame w1)))
+                            w1
+                        ))
+                  swp- (fn [[x y] z] [(assoc x z (z y)) (assoc y z (z x))])
+                  [win w1] (-> [win w1] (swp- :w_status_height) (swp- :w_vsep_width))
+                  ;; If the windows are not in the same frame, exchange the sizes to avoid
+                  ;; messing up the window layout.  Otherwise fix the frame sizes.
+                  fix- #(-> % (frame-fix-height) (frame-fix-width))
+                  [win w1]
+                    (if (!= (:fr_parent (:w_frame win)) (:fr_parent (:w_frame w1)))
+                        (-> [win w1] (swp- :w_height) (swp- :w_width))
+                        [(fix- win) (fix- w1)]
+                    )]
+                (win-comp-pos) ;; recompute window positions
+                (-> win (win-enter w1) (redraw-later CLEAR))
             ))
     ))
 
@@ -38271,21 +38229,21 @@
                             ;; first window becomes last window ;; remove first window/frame from the list
                             (let [#_frame_C fr (:fr_child (:fr_parent (:w_frame win)))
                                   w1 (:fr_win fr)
-                                  _ (win-remove w1)
+                                  w1 (win-remove w1)
                                   _ (frame-remove fr)
                                   ;; find last frame and append removed window/frame after it
-                                  fr (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr)]
-                                (win-append (:fr_win fr), w1)
+                                  fr (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr)
+                                  w1 (win-append w1, (:fr_win fr))]
                                 (frame-append fr, (:w_frame w1))
                                 [w1 (:fr_win fr)] ;; previously last window
                             )
                             ;; last window becomes first window ;; find last window/frame in the list and remove it
                             (let [#_frame_C fr (loop-when-recur [fr (:w_frame win)] (some? (:fr_next fr)) [(:fr_next fr)] => fr)
-                                  w1 (:fr_win fr) w2 (:w_prev w1)] ;; will become last window
-                                (win-remove w1)
-                                (frame-remove fr)
-                                ;; append the removed window/frame before the first in the list
-                                (win-append (:w_prev (:fr_win (:fr_child (:fr_parent fr)))), w1)
+                                  w1 (:fr_win fr) w2 (:w_prev w1) ;; will become last window
+                                  w1 (win-remove w1)
+                                  _ (frame-remove fr)
+                                  ;; append the removed window/frame before the first in the list
+                                  w1 (win-append w1, (:w_prev (:fr_win (:fr_child (:fr_parent fr)))))]
                                 (frame-insert (:fr_child (:fr_parent fr)), fr)
                                 [w1 w2]
                             ))
@@ -38310,7 +38268,7 @@
         (let [#_int height (:w_height win) a'dir (atom (int))
               ;; Remove the window and frame from the tree of frames.
               _ (winframe-remove win, a'dir)
-              _ (win-remove win)
+              win (win-remove win)
               _ (last-status false) ;; may need to remove last status line
               _ (win-comp-pos)      ;; recompute window positions
               ;; Split a window on the desired side and put the window there.
@@ -39303,33 +39261,26 @@
 ;; Allocate a window structure and link it in the window list.
 
 (defn- #_window_C newWindow [#_window_C after]
-    (let [win (NEW_window_C)
-          win (win-alloc-lines win)]
-        ;; link the window in the window list
-        (win-append after, win)
-        (-> win
-            (assoc :w_width @Cols)
-            ;; We won't calculate "w_fraction" until resizing the window.
-            (assoc :w_prev_fraction_row -1)
-        )
+    (-> (NEW_window_C)
+        (win-alloc-lines)
+        (win-append after) ;; link the window in the window list
+        (assoc :w_width @Cols)
+        ;; We won't calculate "w_fraction" until resizing the window.
+        (assoc :w_prev_fraction_row -1)
     ))
 
 ;; Remove window "win" from the window list and free the structure.
 
-(defn- #_void win-free [#_window_C win]
+(defn- #_window_C win-free [#_window_C win]
     (when (== @prevwin win)
         (reset! prevwin nil))
-    (-> win (win-free-lines) (redraw-later SOME_VALID) (win-remove))
-    nil)
+    (-> win (win-free-lines) (redraw-later SOME_VALID) (win-remove)))
 
 ;; Append window "win" in the window list after window "after".
 
-(defn- #_void win-append [#_window_C after, #_window_C win]
-    (§
-        ((ß window_C before =) (if (nil? after) @firstwin (:w_next after)))      ;; after null is in front of the first
-
-        ((ß win =) (assoc win :w_next before))
-        ((ß win =) (assoc win :w_prev after))
+(defn- #_window_C win-append [#_window_C win, #_window_C after]
+    (let [#_window_C before (if (some? after) (:w_next after) @firstwin) ;; after null is in front of the first
+          win (assoc win :w_prev after :w_next before)]
         (if (nil? after)
             (reset! firstwin win)
             ((ß after =) (assoc after :w_next win))
@@ -39338,13 +39289,14 @@
             (reset! lastwin win)
             ((ß before =) (assoc before :w_prev win))
         )
-        nil
+        win
     ))
 
 ;; Remove a window from the window list.
 
-(defn- #_void win-remove [#_window_C win]
-    (§
+(defn- #_window_C win-remove [#_window_C win]
+    (let [
+    ]
         (if (some? (:w_prev win))
             ((ß win =) (assoc-in win [:w_prev :w_next] (:w_next win)))
             (reset! firstwin (:w_next win)))
@@ -39352,7 +39304,7 @@
         (if (some? (:w_next win))
             ((ß win =) (assoc-in win [:w_next :w_prev] (:w_prev win)))
             (reset! lastwin (:w_prev win)))
-        nil
+        win
     ))
 
 ;; Append frame "fr" in a frame list after frame "after".
