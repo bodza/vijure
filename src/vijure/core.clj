@@ -1176,21 +1176,11 @@
 
 ;; characters for the "p_cpo" option:
 (final byte
-    CPO_ALTREAD     \a,  ;; ":read" sets alternate file name
-    CPO_ALTWRITE    \A,  ;; ":write" sets alternate file name
-    CPO_BAR         \b,  ;; "\|" ends a mapping
     CPO_BSLASH      \B,  ;; backslash in mapping is not special
     CPO_SEARCH      \c,
-    CPO_CONCAT      \C,  ;; don't concatenate sourced lines
-    CPO_DOTTAG      \d,  ;; "./tags" in 'tags' is in current dir
     CPO_DIGRAPH     \D,  ;; no digraph after "r", "f", etc.
-    CPO_EXECBUF     \e,
     CPO_EMPTYREGION \E,  ;; operating on empty region is an error
-    CPO_FNAMER      \f,  ;; set file name for ":r file"
-    CPO_FNAMEW      \F,  ;; set file name for ":w file"
-    CPO_GOTO1       \g,  ;; goto line 1 for ":edit"
     CPO_INSEND      \H,  ;; "I" inserts before last blank in line
-    CPO_INTMOD      \i,  ;; interrupt a read makes buffer modified
     CPO_INDENT      \I,  ;; remove auto-indent more often
     CPO_JOINSP      \j,  ;; only use two spaces for join after '.'
     CPO_ENDOFSENT   \J,  ;; need two spaces to detect end of sentence
@@ -1202,28 +1192,19 @@
     CPO_MATCHBSL    \M,  ;; "%" ignores use of backslashes
     CPO_NUMCOL      \n,  ;; 'number' column also used for text
     CPO_LINEOFF     \o,
-    CPO_OVERNEW     \O,  ;; silently overwrite new file
     CPO_LISP        \p,  ;; 'lisp' indenting
-    CPO_FNAMEAPP    \P,  ;; set file name for ":w >>file"
     CPO_JOINCOL     \q,  ;; with "3J" use column after first join
     CPO_REDO        \r,
-    CPO_REMMARK     \R,  ;; remove marks when filtering
-    CPO_BUFOPT      \s,
-    CPO_BUFOPTGLOB  \S,
-    CPO_TAGPAT      \t,
     CPO_UNDO        \u,  ;; "u" undoes itself
     CPO_BACKSPACE   \v,  ;; "v" keep deleted text
     CPO_CW          \w,  ;; "cw" only changes one blank
-    CPO_FWRITE      \W,  ;; "w!" doesn't overwrite readonly files
     CPO_ESC         \x,
     CPO_REPLCNT     \X,  ;; "R" with a count only deletes chars once
     CPO_YANK        \y,
-    CPO_KEEPRO      \Z,  ;; don't reset 'readonly' on ":w!"
     CPO_DOLLAR      \$,
     CPO_FILTER      \!,
     CPO_MATCH       \%,
     CPO_STAR        \*,  ;; ":*" means ":@"
-    CPO_PLUS        \+,  ;; ":write file" resets 'modified'
     CPO_MINUS       \-,  ;; "9-" fails at and before line 9
     CPO_SPECI       \<,  ;; don't recognize <> in mappings
     CPO_REGAPPEND   \>,  ;; insert NL when appending to a register
@@ -1232,15 +1213,13 @@
     CPO_HASH        \#,  ;; "D", "o" and "O" do not use a count
     CPO_PARA        \{,  ;; "{" is also a paragraph boundary
     CPO_TSIZE       \|,  ;; $LINES and $COLUMNS overrule term size
-    CPO_PRESERVE    \&,  ;; keep swap file after :preserve
     CPO_SUBPERCENT  \/,  ;; % in :s string uses previous one
     CPO_BACKSL      \\,  ;; \ is not special in []
-    CPO_CHDIR       \.,  ;; don't chdir if buffer is modified
     CPO_SCOLON      \;)  ;; using "," and ";" will skip over char if cursor would not move
 
 ;; default values for Vim, Vi and POSIX
-(final Bytes CPO_VIM  (u8 "aABceFs"))
-(final Bytes CPO_ALL  (u8 "aAbBcCdDeEfFgHiIjJkKlLmMnoOpPqrRsStuvwWxXyZ$!%*-+<>#{|&/\\.;"))
+(final Bytes CPO_VIM  (u8 "Bc"))
+(final Bytes CPO_ALL  (u8 "BcDEHIjJkKlLmMnopqruvwxXy$!%*-<>#{|/\\;"))
 
 ;; characters for "p_ww" option:
 (final Bytes WW_ALL   (u8 "bshl<>[],~"))
@@ -1252,57 +1231,11 @@
 (final byte MOUSE_COMMAND \c)              ;; use mouse in Command-line mode
 (final byte MOUSE_HELP    \h)              ;; use mouse in help buffers
 (final byte MOUSE_RETURN  \r)              ;; use mouse for hit-return message
+
 (final Bytes MOUSE_A      (u8 "nvich"))    ;; used for 'a' flag
 (final Bytes MOUSE_ALL    (u8 "anvichr"))  ;; all possible characters
-(final byte MOUSE_NONE    \space)          ;; don't use Visual selection
-(final byte MOUSE_NONEF   \x)              ;; forced modeless selection
 
 (final Bytes COCU_ALL     (u8 "nvic"))     ;; flags for 'concealcursor'
-
-;; characters for "p_shm" option:
-(final byte SHM_RO        \r)              ;; readonly
-(final byte SHM_MOD       \m)              ;; modified
-(final byte SHM_FILE      \f)              ;; (file 1 of 2)
-(final byte SHM_LAST      \i)              ;; last line incomplete
-(final byte SHM_TEXT      \x)              ;; tx instead of textmode
-(final byte SHM_LINES     \l)              ;; "L" instead of "lines"
-(final byte SHM_NEW       \n)              ;; "[New]" instead of "[New file]"
-(final byte SHM_WRI       \w)              ;; "[w]" instead of "written"
-(final Bytes SHM_A        (u8 "rmfixlnw")) ;; represented by 'a' flag
-(final byte SHM_WRITE     \W)              ;; don't use "written" at all
-(final byte SHM_TRUNC     \t)              ;; trunctate file messages
-(final byte SHM_TRUNCALL  \T)              ;; trunctate all messages
-(final byte SHM_OVER      \o)              ;; overwrite file messages
-(final byte SHM_OVERALL   \O)              ;; overwrite more messages
-(final byte SHM_SEARCH    \s)              ;; no search hit bottom messages
-(final byte SHM_ATTENTION \A)              ;; no ATTENTION messages
-(final byte SHM_INTRO     \I)              ;; intro messages
-(final byte SHM_COMPLETIONMENU \c)         ;; completion menu messages
-(final Bytes SHM_ALL      (u8 "rmfixlnwaWtToOsAIc")) ;; all possible flags for 'shm'
-
-;; characters for p_go:
-(final byte GO_ASEL       \a)              ;; autoselect
-(final byte GO_ASELML     \A)              ;; autoselect modeless selection
-(final byte GO_BOT        \b)              ;; use bottom scrollbar
-(final byte GO_CONDIALOG  \c)              ;; use console dialog
-(final byte GO_TABLINE    \e)              ;; may show tabline
-(final byte GO_FORG       \f)              ;; start GUI in foreground
-(final byte GO_GREY       \g)              ;; use grey menu items
-(final byte GO_HORSCROLL  \h)              ;; flexible horizontal scrolling
-(final byte GO_ICON       \i)              ;; use Vim icon
-(final byte GO_LEFT       \l)              ;; use left scrollbar
-(final byte GO_VLEFT      \L)              ;; left scrollbar with vert split
-(final byte GO_MENUS      \m)              ;; use menu bar
-(final byte GO_NOSYSMENU  \M)              ;; don't source system menu
-(final byte GO_POINTER    \p)              ;; pointer enter/leave callbacks
-(final byte GO_ASELPLUS   \P)              ;; autoselectPlus
-(final byte GO_RIGHT      \r)              ;; use right scrollbar
-(final byte GO_VRIGHT     \R)              ;; right scrollbar with vert split
-(final byte GO_TEAROFF    \t)              ;; add tear-off menu items
-(final byte GO_TOOLBAR    \T)              ;; add toolbar
-(final byte GO_FOOTER     \F)              ;; add footer
-(final byte GO_VERTICAL   \v)              ;; arrange dialog buttons vertically
-(final Bytes GO_ALL       (u8 "aAbcefFghilmMprtTv")) ;; all possible flags for 'go'
 
 ;; flags for 'comments' option
 (final byte COM_NEST      \n)              ;; comments strings nest
@@ -1394,7 +1327,6 @@
 (atom! Bytes   p_sel)       ;; 'selection'
 (atom! Bytes   p_slm)       ;; 'selectmode'
 (atom! boolean p_sr)        ;; 'shiftround'
-(atom! Bytes   p_shm)       ;; 'shortmess'
 (atom! Bytes   p_sbr)       ;; 'showbreak'
 (atom! boolean p_sc)        ;; 'showcmd'
 (atom! boolean p_sm)        ;; 'showmatch'
@@ -1406,7 +1338,6 @@
 (atom! boolean p_sb)        ;; 'splitbelow'
 (atom! boolean p_spr)       ;; 'splitright'
 (atom! boolean p_sol)       ;; 'startofline'
-(atom! boolean p_terse)     ;; 'terse'
 (atom! boolean p_to)        ;; 'tildeop'
 (atom! boolean p_timeout)   ;; 'timeout'
 (atom! long    p_tm)        ;; 'timeoutlen'
@@ -3158,10 +3089,6 @@
 
 (atom! boolean  no_smartcase)                   ;; don't use 'smartcase' once
 
-(atom! boolean  need_check_timestamps)          ;; need to check file timestamps asap
-(atom! boolean  did_check_timestamps)           ;; did check timestamps recently
-(atom! int      no_check_timestamps)            ;; don't check timestamps
-
 (atom! int*     highlight_attr HLF_COUNT)       ;; highl. attr. for each context
 (atom! int*     highlight_user 9)               ;; user[1-9] attributes
 (atom! int*     highlight_stlnc 9)              ;; on top of user
@@ -3740,9 +3667,6 @@
 ;       {
 ;           if (stuff_empty())
 ;           {
-;               @did_check_timestamps = false;
-;               if (@need_check_timestamps)
-;                   check_timestamps(false);
 ;               if (@need_wait_return)                   ;; if wait_return still needed ...
 ;                   wait_return(FALSE);                 ;; ... call it now
 ;               if (@need_start_insertmode && goto_im() && !@VIsual_active)
@@ -4162,8 +4086,6 @@
 ;       libc.kill(0, SIGTSTP);              ;; send ourselves a STOP signal
 
 ;       settmode(TMODE_RAW);
-;       @need_check_timestamps = true;
-;       @did_check_timestamps = false;
     ))
 
 (defn- #_void mch_init []
@@ -4750,7 +4672,7 @@
 ;       Bytes buf = null;
 
         ;; May truncate message to avoid a hit-return prompt.
-;       if ((!@msg_scroll && !@need_wait_return && shortmess(SHM_TRUNCALL) && @msg_silent == 0) || force)
+;       if ((!@msg_scroll && !@need_wait_return && @msg_silent == 0) || force)
 ;       {
 ;           int room;
 ;           int len = mb_string2cells(s, -1);
@@ -4933,7 +4855,7 @@
 ;       emsg2(u8("E354: Invalid register name: '%s'"), transchar(name));
     ))
 
-;; Like msg(), but truncate to a single line if "p_shm" contains 't', or when "force" is true.
+;; Like msg(), but truncate to a single line when "force" is true.
 ;; This truncates in another way as for normal messages.
 ;; Careful: The string may be changed by msg_may_trunc()!
 ;; Returns a pointer to the printed message, if wait_return() not called.
@@ -4955,7 +4877,7 @@
     (§
 ;       int room = (int)(@Rows - @cmdline_row - 1) * (int)@Columns + @sc_col - 1;
 
-;       if ((force || shortmess(SHM_TRUNC)) && 0 < STRLEN(s) - room)
+;       if (0 < STRLEN(s) - room)
 ;       {
 ;           int cells = mb_string2cells(s, -1);
 
@@ -5031,10 +4953,6 @@
 
 ;           @State = HITRETURN;
 ;           setmouse();
-            ;; Avoid the sequence that the user types ":" at the hit-return prompt
-            ;; to start an Ex command, but the file-changed dialog gets in the way.
-;           if (@need_check_timestamps)
-;               check_timestamps(false);
 
 ;           hit_return_msg();
 
@@ -7643,7 +7561,6 @@
         (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       PV_NONE,   (u8 "")),
         (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        PV_NONE,    false),
         (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           p_sw,        PV_SW,      8#_L),
-        (utf8_opt (u8 "shortmess"),      (u8 "shm"),       P_FLAGLIST,                  p_shm,       PV_NONE,   (u8 "filnxtToO")),
         (utf8_opt (u8 "showbreak"),      (u8 "sbr"),       P_RALL,                      p_sbr,       PV_NONE,   (u8 "")),
         (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        PV_NONE,    false),
         (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        PV_NONE,    false),
@@ -7659,7 +7576,6 @@
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
-        (bool_opt (u8 "terse"),           null,            0,                           p_terse,     PV_NONE,    false),
         (long_opt (u8 "textwidth"),      (u8 "tw"),        P_RBUF,                      p_tw,        PV_TW,      0#_L),
         (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        PV_NONE,    false),
         (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   PV_NONE,    true),
@@ -9104,8 +9020,6 @@
 ;           Bytes p = null;
 ;           if (varp == p_ww)
 ;               p = WW_ALL;
-;           else if (varp == p_shm)
-;               p = SHM_ALL;
 ;           else if (varp == p_cpo)
 ;               p = CPO_ALL;
 ;           else if (varp == @curbuf.b_p_fo)
@@ -9427,25 +9341,8 @@
 
         ;; Handle side effects of changing a bool option.
 
-        ;; when 'terse' is set change 'shortmess'
-;       if (varp == p_terse)
-;       {
-;           Bytes p = vim_strchr(@p_shm, SHM_SEARCH);
-
-            ;; insert 's' in "p_shm"
-;           if (@p_terse && p == null)
-;           {
-;               STRCPY(@ioBuff, @p_shm);
-;               STRCAT(@ioBuff, u8("s"));
-;               set_string_option_direct(u8("shm"), -1, @ioBuff, OPT_FREE);
-;           }
-            ;; remove 's' from "p_shm"
-;           else if (!@p_terse && p != null)
-;               BCOPY(p, 0, p, 1, STRLEN(p, 1) + 1);
-;       }
-
         ;; when 'paste' is set or reset also change other options
-;       else if (varp == p_paste)
+;       if (varp == p_paste)
 ;       {
 ;           paste_option_changed();
 ;       }
@@ -10582,15 +10479,6 @@
 ;           return false;
 
 ;       return (vim_strchr(@curbuf.@b_p_fo, x) != null);
-    ))
-
-;; Return true if "x" is present in 'shortmess' option, or
-;; 'shortmess' contains 'a' and "x" is present in SHM_A.
-
-(defn- #_boolean shortmess [#_int x]
-    (§
-;       return (@p_shm != null
-;           && (vim_strchr(@p_shm, x) != null || (vim_strchr(@p_shm, 'a') != null && vim_strchr(SHM_A, x) != null)));
     ))
 
 (atom! boolean old_p_paste)
@@ -28844,11 +28732,7 @@
 ;                   byte_count_cursor, byte_count);
 ;       }
 
-        ;; Don't shorten this message, the user asked for it.
-;       Bytes p = @p_shm;
-;       @p_shm = u8("");
 ;       msg(@ioBuff);
-;       @p_shm = p;
     ))
 
 ;; mark.c: functions for setting marks and jumping to them ----------------------------------------
@@ -33307,15 +33191,6 @@
                 ;; set curwin.w_curswant for next K_DOWN or K_UP
 ;               if (!@arrow_used)
 ;                   @curwin.w_set_curswant = true;
-
-                ;; If there is no typeahead may check for timestamps
-                ;; (e.g., for when a menu invoked a shell command).
-;               if (stuff_empty())
-;               {
-;                   @did_check_timestamps = false;
-;                   if (@need_check_timestamps)
-;                       check_timestamps(false);
-;               }
 
                 ;; When emsg() was called msg_scroll will have been set.
 
@@ -51223,7 +51098,6 @@
 ;                   break;
 
                 ;; If 'wrapscan' is set we continue at the other end of the file.
-                ;; If 'shortmess' does not contain 's', we give a message.
                 ;; This message is also remembered in "keep_msg" for when the screen is redrawn.
                 ;; The "keep_msg" is cleared whenever another message is written.
 
@@ -51231,7 +51105,7 @@
 ;                   lnum = buf.b_ml.ml_line_count;
 ;               else
 ;                   lnum = 1;
-;               if (!shortmess(SHM_SEARCH) && (options & SEARCH_MSG) != 0)
+;               if ((options & SEARCH_MSG) != 0)
 ;                   give_warning((dir == BACKWARD) ? top_bot_msg : bot_top_msg, true);
 ;           }
 ;           if (@got_int || @called_emsg || break_loop)
@@ -56332,23 +56206,17 @@
 
 ;; Print info about the current buffer.
 
-(defn- #_void fileinfo [#_int fullname, #_boolean dont_truncate]
-    ;; fullname: when non-zero print full path
+(defn- #_void fileinfo [#_int _fullname, #_boolean dont_truncate]
     (§
 ;       Bytes buffer = new Bytes(IOSIZE);
 
 ;       Bytes p = buffer;
-;       if (1 < fullname)       ;; 2 CTRL-G: include buffer number
-;       {
-;           vim_snprintf(buffer, IOSIZE, u8("buf %d: "), 1);
-;           p = buffer.plus(STRLEN(buffer));
-;       }
 
 ;       (p = p.plus(1)).be(-1, (byte)'"');
-;       vim_strncpy(p, buf_spname(@curbuf, fullname != 0), IOSIZE - BDIFF(p, buffer) - 1);
+;       vim_strncpy(p, buf_spname(@curbuf), IOSIZE - BDIFF(p, buffer) - 1);
 
 ;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s"),
-;               bufIsChanged(@curbuf) ? (shortmess(SHM_MOD) ? u8(" [+]") : u8(" [Modified]")) : u8(" "),
+;               bufIsChanged(@curbuf) ? u8(" [Modified]") : u8(" "),
 ;               (@curbuf.b_flags & BF_NOTEDITED) != 0 ? u8("[Not edited]") : u8(""),
 ;               (@curbuf.b_flags & BF_NEW) != 0 ? u8("[New file]") : u8(""),
 ;               (bufIsChanged(@curbuf) || (@curbuf.b_flags & BF_WRITE_MASK) != 0) ? u8(" ") : u8(""));
@@ -56430,9 +56298,8 @@
     ))
 
 ;; Return special buffer name.
-;; Returns null when the buffer has a normal file name.
 
-(defn- #_Bytes buf_spname [#_buffer_C buf, #_boolean full]
+(defn- #_Bytes buf_spname [#_buffer_C buf]
     (§
 ;       return u8("[No Name]");
     ))
@@ -80668,7 +80535,7 @@
 
 (defn- #_void get_trans_bufname [#_buffer_C buf]
     (§
-;       vim_strncpy(@nameBuff, buf_spname(buf, false), MAXPATHL - 1);
+;       vim_strncpy(@nameBuff, buf_spname(buf), MAXPATHL - 1);
 ;       trans_characters(@nameBuff, MAXPATHL);
     ))
 
