@@ -259,7 +259,7 @@ public class VimB
         long st_mtime() { return layout.st_mtim_sec.get(memory); }
     }
 
-    /*private*/ static final class timeval_C extends struct_C
+    public/*private*/ static final class timeval_C extends struct_C
     {
         /*private*/ static final Bridge<timeval_C> BRIDGE = new Bridge<timeval_C>()
         {
@@ -282,7 +282,7 @@ public class VimB
 
         /*private*/ static final Layout layout = new Layout(jnr.ffi.Runtime.getSystemRuntime());
 
-        /*private*/ timeval_C()
+        public/*private*/ timeval_C()
         {
             super(layout);
         }
