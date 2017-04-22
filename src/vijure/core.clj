@@ -18319,9 +18319,8 @@
 
 (defn- #_[window_C Bytes int] one-regmatch- [#_window_C win, #_Bytes scan, #_int op]
     (let [a'win (atom (#_window_C object win)) a'next (atom (#_Bytes object (regnext scan)))
-          #_int status RA_CONT #_int c (us-ptr2char @reginput)
+          #_int status RA_CONT #_byte b (.at @reginput 0) #_int c (us-ptr2char @reginput)
           status
-    ]
             (condp ==? op
 
                 BT_BOL  (if (BNE @reginput, @regline) RA_NIL status)
@@ -18371,25 +18370,25 @@
                 ANY ;; does not match new lines
                     (if (== c NUL) RA_NIL RA_STEP)
 
-                IDENT   (if (not (vim-isidentc c))       RA_NIL RA_STEP)    SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))       RA_NIL RA_STEP)
-                KWORD   (if (not (us-iswordp @reginput)) RA_NIL RA_STEP)    SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput))) RA_NIL RA_STEP)
-                FNAME   (if (not (vim-isfnamec c))       RA_NIL RA_STEP)    SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))       RA_NIL RA_STEP)
-                PRINT   (if (not (vim-isprintc c))       RA_NIL RA_STEP)    SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc c)))       RA_NIL RA_STEP)
+                IDENT   (if (not (vim-isidentc c))       RA_NIL RA_STEP)        SIDENT  (if (or (asc-isdigit b) (not (vim-isidentc c)))       RA_NIL RA_STEP)
+                KWORD   (if (not (us-iswordp @reginput)) RA_NIL RA_STEP)        SKWORD  (if (or (asc-isdigit b) (not (us-iswordp @reginput))) RA_NIL RA_STEP)
+                FNAME   (if (not (vim-isfnamec c))       RA_NIL RA_STEP)        SFNAME  (if (or (asc-isdigit b) (not (vim-isfnamec c)))       RA_NIL RA_STEP)
+                PRINT   (if (not (vim-isprintc c))       RA_NIL RA_STEP)        SPRINT  (if (or (asc-isdigit b) (not (vim-isprintc c)))       RA_NIL RA_STEP)
 
-                WHITE   (if (not (vim-iswhite c))        RA_NIL RA_STEP)    NWHITE  (if (or (== c NUL)                           (vim-iswhite c))         RA_NIL RA_STEP)
-                DIGIT   (if (not (ri-digit c))           RA_NIL RA_STEP)    NDIGIT  (if (or (== c NUL)                           (ri-digit c))            RA_NIL RA_STEP)
-                HEX     (if (not (ri-hex c))             RA_NIL RA_STEP)    NHEX    (if (or (== c NUL)                           (ri-hex c))              RA_NIL RA_STEP)
-                OCTAL   (if (not (ri-octal c))           RA_NIL RA_STEP)    NOCTAL  (if (or (== c NUL)                           (ri-octal c))            RA_NIL RA_STEP)
-                WORD    (if (not (ri-word c))            RA_NIL RA_STEP)    NWORD   (if (or (== c NUL)                           (ri-word c))             RA_NIL RA_STEP)
-                HEAD    (if (not (ri-head c))            RA_NIL RA_STEP)    NHEAD   (if (or (== c NUL)                           (ri-head c))             RA_NIL RA_STEP)
-                ALPHA   (if (not (ri-alpha c))           RA_NIL RA_STEP)    NALPHA  (if (or (== c NUL)                           (ri-alpha c))            RA_NIL RA_STEP)
-                LOWER   (if (not (ri-lower c))           RA_NIL RA_STEP)    NLOWER  (if (or (== c NUL)                           (ri-lower c))            RA_NIL RA_STEP)
-                UPPER   (if (not (ri-upper c))           RA_NIL RA_STEP)    NUPPER  (if (or (== c NUL)                           (ri-upper c))            RA_NIL RA_STEP)
+                WHITE   (if (not (vim-iswhite c))        RA_NIL RA_STEP)        NWHITE  (if (or (== c NUL)           (vim-iswhite c))         RA_NIL RA_STEP)
+                DIGIT   (if (not (ri-digit c))           RA_NIL RA_STEP)        NDIGIT  (if (or (== c NUL)           (ri-digit c))            RA_NIL RA_STEP)
+                HEX     (if (not (ri-hex c))             RA_NIL RA_STEP)        NHEX    (if (or (== c NUL)           (ri-hex c))              RA_NIL RA_STEP)
+                OCTAL   (if (not (ri-octal c))           RA_NIL RA_STEP)        NOCTAL  (if (or (== c NUL)           (ri-octal c))            RA_NIL RA_STEP)
+                WORD    (if (not (ri-word c))            RA_NIL RA_STEP)        NWORD   (if (or (== c NUL)           (ri-word c))             RA_NIL RA_STEP)
+                HEAD    (if (not (ri-head c))            RA_NIL RA_STEP)        NHEAD   (if (or (== c NUL)           (ri-head c))             RA_NIL RA_STEP)
+                ALPHA   (if (not (ri-alpha c))           RA_NIL RA_STEP)        NALPHA  (if (or (== c NUL)           (ri-alpha c))            RA_NIL RA_STEP)
+                LOWER   (if (not (ri-lower c))           RA_NIL RA_STEP)        NLOWER  (if (or (== c NUL)           (ri-lower c))            RA_NIL RA_STEP)
+                UPPER   (if (not (ri-upper c))           RA_NIL RA_STEP)        NUPPER  (if (or (== c NUL)           (ri-upper c))            RA_NIL RA_STEP)
 
                 EXACTLY
                     (let [#_Bytes opnd (operand scan)]
                         ;; Inline the first byte for speed.
-                        (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_icase))
+                        (cond (and (not-at? opnd b) (not @ireg_icase))
                             RA_NIL
                         ;; Match empty string always works; happens when "~" is empty.
                         (eos? opnd)
@@ -18581,164 +18580,101 @@
                 (+ BRACE_COMPLEX 7)
                 (+ BRACE_COMPLEX 8)
                 (+ BRACE_COMPLEX 9)]
-                (do
-                    ((ß int no =) (- op BRACE_COMPLEX))
-                    (swap! brace_count update no inc)
-
-                    ;; If not matched enough times yet, try one more.
-                    (cond (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
-                    (do
-                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                            (let [
-                            ]
-                                (swap! regstack conj (reg-item RS_BRCPLX_MORE, scan, no, nil, (reg-save @backpos)))
-                                ((ß @a'next =) (operand scan))
-                                ;; We continue and handle the result when done.
-                                (ß BREAK) status
-                            )
-                        )
-                    )
-                    ;; If matched enough times, may try matching some more.
-                    (<= (... @brace_min no) (... @brace_max no))
-                    (do
-                        ;; Range is the normal way around, use longest match.
-                        (when (<= (... @brace_count no) (... @brace_max no))
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
-                                (let [
-                                ]
-                                    (swap! regstack conj (reg-item RS_BRCPLX_LONG, scan, no, nil, (reg-save @backpos)))
-                                    ((ß @a'next =) (operand scan))
+                    (let [#_int no (- op BRACE_COMPLEX)]
+                        (swap! brace_count update no inc)
+                        ;; If not matched enough times yet, try one more.
+                        (cond (<= (... @brace_count no) (min (... @brace_min no) (... @brace_max no)))
+                            (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                                (do (swap! regstack conj (reg-item RS_BRCPLX_MORE, scan, no, nil, (reg-save @backpos)))
+                                    (reset! a'next (operand scan))
                                     ;; We continue and handle the result when done.
-                                )
-                            )
-                        )
-                        (ß BREAK) status
-                    )
-                    :else
-                    (do
-                        ;; Range is backwards, use shortest match first.
-                        (when (<= (... @brace_count no) (... @brace_min no))
-                            (when' (enough-regstack?) => (do (emsg e_maxmempat) ((ß status =) RA_FAIL))
-                                (let [
-                                ]
-                                    (swap! regstack conj (reg-item RS_BRCPLX_SHORT, scan, 0, nil, (reg-save @backpos)))
-                                    ;; We continue and handle the result when done.
-                                )
-                            )
-                        )
-                        (ß BREAK) status
-                    ))
-                )
+                                    status
+                                ))
+                        ;; If matched enough times, may try matching some more.
+                        (<= (... @brace_min no) (... @brace_max no))
+                            ;; Range is the normal way around, use longest match.
+                            (when' (<= (... @brace_count no) (... @brace_max no)) => status
+                                (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                                    (do (swap! regstack conj (reg-item RS_BRCPLX_LONG, scan, no, nil, (reg-save @backpos)))
+                                        (reset! a'next (operand scan))
+                                        ;; We continue and handle the result when done.
+                                        status)
+                                ))
+                        :else
+                            ;; Range is backwards, use shortest match first.
+                            (when' (<= (... @brace_count no) (... @brace_min no)) => status
+                                (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                                    (do (swap! regstack conj (reg-item RS_BRCPLX_SHORT, scan, 0, nil, (reg-save @backpos)))
+                                        ;; We continue and handle the result when done.
+                                        status)
+                                ))
+                        ))
 
                [BRACE_SIMPLE STAR PLUS]
-                (do
-                    ((ß regstar_C rst =) (NEW_regstar_C))
-
-                    ;; Lookahead to avoid useless match attempts when we know what character comes next.
-
-                    (cond (== (re-op @a'next) EXACTLY)
-                    (do
-                        ((ß ? =) (.at (operand @a'next) 0))
-                        ((ß rst =) (assoc rst :rs_nextb ? :rs_nextb_ic (if @ireg_icase (if (utf-isupper ?) (utf-tolower ?) (utf-toupper ?)) ?)))
-                    )
-                    :else
-                    (do
-                        ((ß rst =) (assoc rst :rs_nextb NUL :rs_nextb_ic NUL))
-                    ))
-
-                    (cond (!= op BRACE_SIMPLE)
-                    (do
-                        ((ß rst =) (assoc rst :rs_minval (if (== op STAR) 0 1) :rs_maxval MAX_LIMIT))
-                    )
-                    :else
-                    (do
-                        ((ß rst =) (assoc rst :rs_minval @bl_minval :rs_maxval @bl_maxval))
-                    ))
-
-                    ;; When maxval > minval, try matching as much as possible, up to maxval.
-                    ;; When maxval < minval, try matching at least the minimal number
-                    ;; (since the range is backwards, that's also maxval!).
-
-                    ((ß rst =) (assoc rst :rs_count (regrepeat (operand scan), (:rs_maxval rst))))
-
-                    (cond @got_int
-                    (do
-                        (ß BREAK) RA_FAIL
-                    )
-                    (<= (min (:rs_minval rst) (:rs_maxval rst)) (:rs_count rst))
-                    (do
-                        ;; It could match.  Prepare for trying to match what follows.
-                        ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
-                        (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                            (let [
-                            ]
-                                (swap! regstack conj rst)
-                                (swap! regstack conj (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
-                                (ß BREAK) RA_BREAK      ;; skip the restore bits
-                            )
-                        )
-                    )
-                    :else
-                    (do
-                        (ß BREAK) RA_NIL
-                    ))
-                )
+                    (let [#_regstar_C rst (NEW_regstar_C)
+                          ;; Lookahead to avoid useless match attempts when we know what character comes next.
+                          rst (when' (== (re-op @a'next) EXACTLY) => (assoc rst :rs_nextb NUL :rs_nextb_ic NUL)
+                                (let [? (.at (operand @a'next) 0)]
+                                    (assoc rst :rs_nextb ? :rs_nextb_ic (if @ireg_icase (if (utf-isupper ?) (utf-tolower ?) (utf-toupper ?)) ?))
+                                ))
+                          rst (if (!= op BRACE_SIMPLE)
+                                (assoc rst :rs_minval (if (== op STAR) 0 1) :rs_maxval MAX_LIMIT)
+                                (assoc rst :rs_minval @bl_minval            :rs_maxval @bl_maxval))
+                          ;; When maxval > minval, try matching as much as possible, up to maxval.
+                          ;; When maxval < minval, try matching at least the minimal number
+                          ;; (since the range is backwards, that's also maxval!).
+                          rst (assoc rst :rs_count (regrepeat (operand scan), (:rs_maxval rst)))]
+                        (cond @got_int
+                            RA_FAIL
+                        (<= (min (:rs_minval rst) (:rs_maxval rst)) (:rs_count rst))
+                            ;; It could match.  Prepare for trying to match what follows.
+                            ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
+                            (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                                (do (swap! regstack conj rst)
+                                    (swap! regstack conj (reg-item (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
+                                    RA_BREAK ;; skip the restore bits
+                                ))
+                        :else
+                            RA_NIL
+                        ))
 
                [NOMATCH MATCH SUBPAT]
-                (do
-                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                        (let [
-                        ]
-                            (swap! regstack conj (reg-item RS_NOMATCH, scan, op, nil, (reg-save @backpos)))
-                            ((ß @a'next =) (operand scan))
+                    (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                        (do (swap! regstack conj (reg-item RS_NOMATCH, scan, op, nil, (reg-save @backpos)))
+                            (reset! a'next (operand scan))
                             ;; We continue and handle the result when done.
-                            (ß BREAK) status
-                        )
-                    )
-                )
+                            status
+                        ))
 
                [BEHIND NOBEHIND]
-                (do
-                    (when' (enough-regstack?) => (do (emsg e_maxmempat) (ß BREAK) RA_FAIL)
-                        (let [
-                        ]
-                            ;; Need to save the subexpr to be able to restore them
+                    (when' (enough-regstack?) => (do (swap! a'win emsg e_maxmempat) RA_FAIL)
+                        (do ;; Need to save the subexpr to be able to restore them
                             ;; when there is a match but we don't use it.
                             (swap! regstack conj (save-subexpr (NEW_regbehind_C), @reg_match))
                             (swap! regstack conj (reg-item RS_BEHIND1, scan, op, nil, (reg-save @backpos)))
                             ;; First try if what follows matches.
                             ;; If it does, then we check the behind match by looping.
-                            (ß BREAK) status
-                        )
-                    )
-                )
+                            status
+                        ))
 
                 BHPOS
-                (do
-                    ((ß status =) (if (or (!= (:rs_col @behind_pos) (BDIFF @reginput, @regline)) (!= (:rs_lnum @behind_pos) @reglnum)) RA_NIL status))
-                    (ß BREAK) status
-                )
+                    (if (or (!= (:rs_col @behind_pos) (BDIFF @reginput, @regline)) (!= (:rs_lnum @behind_pos) @reglnum)) RA_NIL status)
 
                 BT_NEWL
-                (do
-                    ((ß status =) (if (or (!= c NUL) (< @reg_lmax @reglnum)) RA_NIL RA_JUMP))
-                    (ß BREAK) status
-                )
+                    (if (or (!= c NUL) (< @reg_lmax @reglnum)) RA_NIL RA_JUMP)
 
                 BT_END
-                (do
-                    (ß BREAK) RA_MATCH ;; Success!
-                )
+                    RA_MATCH ;; Success!
 
-                (do
-                    (emsg e_re_corr)
-                    (ß BREAK) RA_FAIL
-                )
-            )
+                (do (swap! a'win emsg e_re_corr) RA_FAIL)
+            )]
         [@a'win @a'next status]
     ))
 
 (defn- #_[window_C Bytes int] seq-regmatch- [#_window_C win, #_Bytes scan]
+    ;; Some patterns may take a long time to match, e.g. "\([a-z]\+\)\+Q".
+    ;; Allow interrupting them with CTRL-C.
+    (fast-breakcheck)
     ;; Repeat for items that can be matched sequentially, without using "regstack".
     (loop-when [win win scan scan] (and (not @got_int) (some? scan)) => [win scan RA_FAIL]
         (let [#_int op (re-op scan)
@@ -18753,6 +18689,309 @@
                     status
                 )]
             (recur-if (== status RA_CONT) [win next] => [win scan status])
+        )
+    ))
+
+(defn- #_[Bytes int] pop-regmatch- [#_Bytes scan, #_int status]
+    ;; If there is something on "regstack", execute the code for the state.
+    ;; When the state is popped, loop and use the older state.
+    (do ;; loop [scan scan status status]
+        (let-when [? (count @regstack)] (and (< 0 ?) (!= status RA_FAIL)) => [scan status]
+            (let [vip (when (< 1 ?) (... @regstack (- ? 2))) rip #_regitem_C (... @regstack (- ? 1))
+                  [scan status]
+            ]
+                    (condp ==? (:ri_state rip)
+                        RS_NOPEN
+                            (do ;; Result is passed on as-is, simply pop the state.
+                                [(pop-regitem) status])
+
+                        RS_MOPEN
+                            (do ;; Pop the state.  Restore pointers when there is no match.
+                                (when (== status RA_NIL)
+                                    (swap! reg_match assoc-in [:m_startpos (:ri_no rip)] (:ri_sesave rip)))
+                                [(pop-regitem) status])
+
+                        RS_MCLOSE
+                            (do ;; Pop the state.  Restore pointers when there is no match.
+                                (when (== status RA_NIL)
+                                    (swap! reg_match assoc-in [:m_endpos (:ri_no rip)] (:ri_sesave rip)))
+                                [(pop-regitem) status])
+
+                        RS_BRANCH
+                            (cond (== status RA_MATCH)
+                                [(pop-regitem) status] ;; This branch matched, use it.
+                            :else
+                                (let [scan (when' (!= status RA_BREAK) => scan
+                                            ;; After a non-matching branch: try next one.
+                                            (swap! backpos reg-restore (:ri_regsave rip))
+                                            (:ri_scan rip)
+                                        )]
+                                    (cond (or (nil? scan) (!= (re-op scan) BRANCH))
+                                        [(pop-regitem) RA_NIL] ;; No more branches, didn't find a match.
+                                    :else
+                                        (do ;; Prepare to try a branch.
+                                            ((ß rip =) (assoc rip :ri_scan (regnext scan)))
+                                            ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
+                                            [(operand scan) status]
+                                        ))
+                                ))
+
+                        RS_BRCPLX_MORE
+                            (do ;; Pop the state.  Restore pointers when there is no match.
+                                (when (== status RA_NIL)
+                                    (swap! backpos reg-restore (:ri_regsave rip))
+                                    (swap! brace_count update (:ri_no rip) dec))
+                                [(pop-regitem) status])
+
+                        RS_BRCPLX_LONG
+                            (let [status ;; Pop the state.  Restore pointers when there is no match.
+                                    (when' (== status RA_NIL) => status
+                                        ;; There was no match, but we did find enough matches.
+                                        (swap! backpos reg-restore (:ri_regsave rip))
+                                        (swap! brace_count update (:ri_no rip) dec)
+                                        ;; Continue with the items after "\{}".
+                                        RA_CONT)
+                                  scan (pop-regitem) scan (if (== status RA_CONT) (regnext scan) scan)]
+                                [scan status])
+
+                        RS_BRCPLX_SHORT
+                            (do ;; Pop the state.  Restore pointers when there is no match.
+                                (when (== status RA_NIL)
+                                    ;; There was no match, try to match one more item.
+                                    (swap! backpos reg-restore (:ri_regsave rip)))
+                                (let-when [scan (pop-regitem)] (== status RA_NIL) => [scan status]
+                                    [(operand scan) RA_CONT]
+                                ))
+
+                        RS_NOMATCH
+                        (do
+                            ;; Pop the state.  If the operand matches for NOMATCH or
+                            ;; doesn't match for MATCH/SUBPAT, we fail.  Otherwise backup,
+                            ;; except for SUBPAT, and continue with the next item.
+                            (cond (== status (if (== (:ri_no rip) NOMATCH) RA_MATCH RA_NIL))
+                            (do
+                                ((ß status =) RA_NIL)
+                            )
+                            :else
+                            (do
+                                ((ß status =) RA_CONT)
+                                (when (!= (:ri_no rip) SUBPAT)        ;; zero-width
+                                    (swap! backpos reg-restore (:ri_regsave rip))
+                                )
+                            ))
+                            ((ß scan =) (pop-regitem))
+                            ((ß scan =) (if (== status RA_CONT) (regnext scan) scan))
+                            (ß BREAK) [scan status]
+                        )
+
+                        RS_BEHIND1
+                        (do
+                            (cond (== status RA_NIL)
+                            (do
+                                ((ß scan =) (pop-regitem))
+                                (drop-regbehind)
+                            )
+                            :else
+                            (do
+                                ;; The stuff after BEHIND/NOBEHIND matches.
+                                ;; Now try if the behind part does (not) match before the current
+                                ;; position in the input.  This must be done at every position in the
+                                ;; input and checking if the match ends at the current position.
+
+                                ;; save the position after the found match for next
+                                ((ß vip =) (assoc #_regbehind_C vip :rb_after (reg-save @backpos)))
+
+                                ;; Start looking for a match with operand at the current position.
+                                ;; Go back one character until we find the result, hitting the start
+                                ;; of the line or the previous line (for multi-line matching).
+                                ;; Set "behind_pos" to where the match should end, BHPOS will match it.
+                                ;; Save the current value.
+                                ((ß vip =) (assoc #_regbehind_C vip :rb_behind @behind_pos))
+                                (reset! behind_pos (:ri_regsave rip))
+
+                                ((ß rip =) (assoc rip :ri_state RS_BEHIND2))
+
+                                (swap! backpos reg-restore (:ri_regsave rip))
+                                ((ß scan =) (.plus (operand (:ri_scan rip)) 4))
+                            ))
+                            (ß BREAK) [scan status]
+                        )
+
+                        RS_BEHIND2
+                        (do
+                            ;; Looping for BEHIND / NOBEHIND match.
+
+                            (cond (and (== status RA_MATCH) (reg-save-equal @behind_pos))
+                            (do
+                                ;; found a match that ends where "next" started
+                                (reset! behind_pos (:rb_behind #_regbehind_C vip))
+                                (cond (== (:ri_no rip) BEHIND)
+                                (do
+                                    (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
+                                )
+                                :else
+                                (do
+                                    ;; But we didn't want a match.  Need to restore the subexpr,
+                                    ;; because what follows matched, so they have been set.
+                                    ((ß status =) RA_NIL)
+                                    (swap! reg_match restore-subexpr #_regbehind_C vip)
+                                ))
+                                ((ß scan =) (pop-regitem))
+                                (drop-regbehind)
+                            )
+                            :else
+                            (do
+                                ;; No match or a match that doesn't end where we want it:
+                                ;; go back one character.  May go to previous line once.
+                                ((ß boolean no =) true)
+                                ((ß long limit =) (operand-min (:ri_scan rip)))
+
+                                (cond (<= 1 limit (- (if (< (:rs_lnum (:ri_regsave rip)) (:rs_lnum @behind_pos)) (STRLEN @regline) (:rs_col @behind_pos)) (:rs_col (:ri_regsave rip))))
+                                (do
+                                    ((ß no =) false)
+                                )
+                                (zero? (:rs_col (:ri_regsave rip)))
+                                (do
+                                    (cond (or (< (:rs_lnum (:ri_regsave rip)) (:rs_lnum @behind_pos)) (nil? (reg-getline (ß --rip.ri_regsave.rs_lnum))))
+                                    (do
+                                        ((ß no =) false)
+                                    )
+                                    :else
+                                    (do
+                                        (swap! backpos reg-restore (:ri_regsave rip))
+                                        ((ß rip =) (assoc-in rip [:ri_regsave :rs_col] (STRLEN @regline)))
+                                    ))
+                                )
+                                :else
+                                (do
+                                    ((ß rip =) (update-in rip [:ri_regsave :rs_col] #(- % (inc (us-head-off @regline, (.plus @regline (dec %)))))))
+                                ))
+
+                                (cond no
+                                (do
+                                    ;; Advanced, prepare for finding match again.
+                                    (swap! backpos reg-restore (:ri_regsave rip))
+                                    ((ß scan =) (.plus (operand (:ri_scan rip)) 4))
+                                    (when (== status RA_MATCH)
+                                        ;; We did match, so subexpr may have been changed,
+                                        ;; need to restore them for the next try.
+                                        ((ß status =) RA_NIL)
+                                        (swap! reg_match restore-subexpr #_regbehind_C vip)
+                                    )
+                                )
+                                :else
+                                (do
+                                    ;; Can't advance.  For NOBEHIND that's a match.
+                                    (reset! behind_pos (:rb_behind #_regbehind_C vip))
+                                    (cond (== (:ri_no rip) NOBEHIND)
+                                    (do
+                                        (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
+                                        ((ß status =) RA_MATCH)
+                                    )
+                                    :else
+                                    (do
+                                        ;; We do want a proper match.  Need to restore the subexpr
+                                        ;; if we had a match, because they may have been set.
+                                        (when (== status RA_MATCH)
+                                            ((ß status =) RA_NIL)
+                                            (swap! reg_match restore-subexpr #_regbehind_C vip)
+                                        )
+                                    ))
+                                    ((ß scan =) (pop-regitem))
+                                    (drop-regbehind)
+                                ))
+                            ))
+                            (ß BREAK) [scan status]
+                        )
+
+                        [RS_STAR_LONG RS_STAR_SHORT]
+                        (do
+                            ((ß regstar_C rst =) (ß (regstar_C)vip))
+
+                            (when (== status RA_MATCH)
+                                ((ß scan =) (pop-regitem))
+                                (drop-regstar)
+                                (ß BREAK)
+                            )
+
+                            ;; Tried once already, restore input pointers.
+                            (when (!= status RA_BREAK)
+                                (swap! backpos reg-restore (:ri_regsave rip))
+                            )
+
+                            ;; Repeat until we found a position where it could match.
+                            (loop []
+                                (cond (!= status RA_BREAK)
+                                (do
+                                    ;; Tried first position already, advance.
+                                    (cond (== (:ri_state rip) RS_STAR_LONG)
+                                    (do
+                                        ;; Trying for longest match, but couldn't
+                                        ;; or didn't match -- back up one char.
+                                        (if (< (ß --rst.rs_count) (:rs_minval rst))
+                                            (ß BREAK)
+                                        )
+                                        (cond (BEQ @reginput, @regline)
+                                        (do
+                                            ;; backup to last char of previous line
+                                            (swap! reglnum dec)
+                                            (reset! regline (reg-getline @reglnum))
+                                            ;; Just in case regrepeat() didn't count right.
+                                            (if (nil? @regline)
+                                                (ß BREAK)
+                                            )
+                                            (reset! reginput (.plus @regline (STRLEN @regline)))
+                                            (fast-breakcheck)
+                                        )
+                                        :else
+                                        (do
+                                            (swap! reginput #(.minus % (us-ptr-back @regline, %)))
+                                        ))
+                                    )
+                                    :else
+                                    (do
+                                        ;; Range is backwards, use shortest match first.
+                                        ;; Careful: maxval and minval are exchanged!
+                                        ;; Couldn't or didn't match: try advancing one char.
+                                        (if (or (== (:rs_count rst) (:rs_minval rst)) (zero? (regrepeat (operand (:ri_scan rip)), 1)))
+                                            (ß BREAK)
+                                        )
+                                        ((ß rst =) (update rst :rs_count inc))
+                                    ))
+                                    (if @got_int
+                                        (ß BREAK)
+                                    )
+                                )
+                                :else
+                                (do
+                                    ((ß status =) RA_NIL)
+                                ))
+
+                                ;; If it could match, try it.
+                                (when (or (== (:rs_nextb rst) NUL) (at? @reginput (:rs_nextb rst)) (at? @reginput (:rs_nextb_ic rst)))
+                                    ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
+                                    ((ß scan =) (regnext (:ri_scan rip)))
+                                    ((ß status =) RA_CONT)
+                                    (ß BREAK)
+                                )
+                                (recur)
+                            )
+                            (when (!= status RA_CONT)
+                                ;; Failed.
+                                ((ß scan =) (pop-regitem))
+                                (drop-regstar)
+                                ((ß status =) RA_NIL)
+                            )
+                            (ß BREAK) [scan status]
+                        )
+                    )
+
+                ;; If we want to continue the inner loop or didn't pop a state, continue matching loop.
+                (if (or (== status RA_CONT) (ß == rip #_regitem_C (... @regstack (- (count @regstack) 1))))
+                    (ß BREAK) [scan status]
+                    (recur scan status)
+                )
+            )
         )
     ))
 
@@ -18772,380 +19011,26 @@
 ;; Leaves "reginput" and "reglnum" in an undefined state!
 
 (defn- #_[window_C boolean] bt-regmatch? [#_window_C win, #_Bytes scan]
-    (§
-        (ß int status)                 ;; one of the RA_ values above
-
-        ;; Make "regstack" and "backpos" empty.
-        (reset! regstack [])
-        (reset! backpos [])
-
-        ;; Repeat until "regstack" is empty.
-
-        (loop [win win]
-            ;; Some patterns may take a long time to match, e.g., "\([a-z]\+\)\+Q".
-            ;; Allow interrupting them with CTRL-C.
-            (fast-breakcheck)
-
-            ((ß [win scan status] =) (seq-regmatch- win, scan))
-
-            ;; If there is something on "regstack", execute the code for the state.
-            ;; If the state is popped, then loop and use the older state.
-
-            (loop-when [] (and (< 0 (count @regstack)) (!= status RA_FAIL))
-                ((ß Object vip =) (when (< 1 (count @regstack)) (... @regstack (- (count @regstack) 2))))
-                ((ß regitem_C rip =) #_regitem_C (... @regstack (- (count @regstack) 1)))
-
-                (condp ==? (:ri_state rip)
-                    RS_NOPEN
-                    (do
-                        ;; Result is passed on as-is, simply pop the state.
-                        ((ß scan =) (pop-regitem))
-                        (ß BREAK)
-                    )
-
-                    RS_MOPEN
-                    (do
-                        ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NIL)
-                            (swap! reg_match assoc-in [:m_startpos (:ri_no rip)] (:ri_sesave rip))
-                        )
-                        ((ß scan =) (pop-regitem))
-                        (ß BREAK)
-                    )
-
-                    RS_MCLOSE
-                    (do
-                        ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NIL)
-                            (swap! reg_match assoc-in [:m_endpos (:ri_no rip)] (:ri_sesave rip))
-                        )
-                        ((ß scan =) (pop-regitem))
-                        (ß BREAK)
-                    )
-
-                    RS_BRANCH
-                    (do
-                        (cond (== status RA_MATCH)
-                        (do
-                            ;; this branch matched, use it
-                            ((ß scan =) (pop-regitem))
-                        )
-                        :else
-                        (do
-                            (when (!= status RA_BREAK)
-                                ;; After a non-matching branch: try next one.
-                                (swap! backpos reg-restore (:ri_regsave rip))
-                                ((ß scan =) (:ri_scan rip))
-                            )
-                            (cond (or (nil? scan) (!= (re-op scan) BRANCH))
-                            (do
-                                ;; no more branches, didn't find a match
-                                ((ß status =) RA_NIL)
-                                ((ß scan =) (pop-regitem))
-                            )
-                            :else
-                            (do
-                                ;; Prepare to try a branch.
-                                ((ß rip =) (assoc rip :ri_scan (regnext scan)))
-                                ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                ((ß scan =) (operand scan))
-                            ))
-                        ))
-                        (ß BREAK)
-                    )
-
-                    RS_BRCPLX_MORE
-                    (do
-                        ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NIL)
-                            (swap! backpos reg-restore (:ri_regsave rip))
-                            (swap! brace_count update (:ri_no rip) dec)       ;; decrement match count
-                        )
-                        ((ß scan =) (pop-regitem))
-                        (ß BREAK)
-                    )
-
-                    RS_BRCPLX_LONG
-                    (do
-                        ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NIL)
-                            ;; There was no match, but we did find enough matches.
-                            (swap! backpos reg-restore (:ri_regsave rip))
-                            (swap! brace_count update (:ri_no rip) dec)
-                            ;; continue with the items after "\{}"
-                            ((ß status =) RA_CONT)
-                        )
-                        ((ß scan =) (pop-regitem))
-                        ((ß scan =) (if (== status RA_CONT) (regnext scan) scan))
-                        (ß BREAK)
-                    )
-
-                    RS_BRCPLX_SHORT
-                    (do
-                        ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NIL)
-                            ;; There was no match, try to match one more item.
-                            (swap! backpos reg-restore (:ri_regsave rip))
-                        )
-                        ((ß scan =) (pop-regitem))
-                        (when (== status RA_NIL)
-                            ((ß scan =) (operand scan))
-                            ((ß status =) RA_CONT)
-                        )
-                        (ß BREAK)
-                    )
-
-                    RS_NOMATCH
-                    (do
-                        ;; Pop the state.  If the operand matches for NOMATCH or
-                        ;; doesn't match for MATCH/SUBPAT, we fail.  Otherwise backup,
-                        ;; except for SUBPAT, and continue with the next item.
-                        (cond (== status (if (== (:ri_no rip) NOMATCH) RA_MATCH RA_NIL))
-                        (do
-                            ((ß status =) RA_NIL)
-                        )
-                        :else
-                        (do
-                            ((ß status =) RA_CONT)
-                            (when (!= (:ri_no rip) SUBPAT)        ;; zero-width
-                                (swap! backpos reg-restore (:ri_regsave rip))
-                            )
-                        ))
-                        ((ß scan =) (pop-regitem))
-                        ((ß scan =) (if (== status RA_CONT) (regnext scan) scan))
-                        (ß BREAK)
-                    )
-
-                    RS_BEHIND1
-                    (do
-                        (cond (== status RA_NIL)
-                        (do
-                            ((ß scan =) (pop-regitem))
-                            (drop-regbehind)
-                        )
-                        :else
-                        (do
-                            ;; The stuff after BEHIND/NOBEHIND matches.
-                            ;; Now try if the behind part does (not) match before the current
-                            ;; position in the input.  This must be done at every position in the
-                            ;; input and checking if the match ends at the current position.
-
-                            ;; save the position after the found match for next
-                            ((ß vip =) (assoc #_regbehind_C vip :rb_after (reg-save @backpos)))
-
-                            ;; Start looking for a match with operand at the current position.
-                            ;; Go back one character until we find the result, hitting the start
-                            ;; of the line or the previous line (for multi-line matching).
-                            ;; Set "behind_pos" to where the match should end, BHPOS will match it.
-                            ;; Save the current value.
-                            ((ß vip =) (assoc #_regbehind_C vip :rb_behind @behind_pos))
-                            (reset! behind_pos (:ri_regsave rip))
-
-                            ((ß rip =) (assoc rip :ri_state RS_BEHIND2))
-
-                            (swap! backpos reg-restore (:ri_regsave rip))
-                            ((ß scan =) (.plus (operand (:ri_scan rip)) 4))
-                        ))
-                        (ß BREAK)
-                    )
-
-                    RS_BEHIND2
-                    (do
-                        ;; Looping for BEHIND / NOBEHIND match.
-
-                        (cond (and (== status RA_MATCH) (reg-save-equal @behind_pos))
-                        (do
-                            ;; found a match that ends where "next" started
-                            (reset! behind_pos (:rb_behind #_regbehind_C vip))
-                            (cond (== (:ri_no rip) BEHIND)
-                            (do
-                                (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
-                            )
-                            :else
-                            (do
-                                ;; But we didn't want a match.  Need to restore the subexpr,
-                                ;; because what follows matched, so they have been set.
-                                ((ß status =) RA_NIL)
-                                (swap! reg_match restore-subexpr #_regbehind_C vip)
-                            ))
-                            ((ß scan =) (pop-regitem))
-                            (drop-regbehind)
-                        )
-                        :else
-                        (do
-                            ;; No match or a match that doesn't end where we want it:
-                            ;; go back one character.  May go to previous line once.
-                            ((ß boolean no =) true)
-                            ((ß long limit =) (operand-min (:ri_scan rip)))
-
-                            (cond (<= 1 limit (- (if (< (:rs_lnum (:ri_regsave rip)) (:rs_lnum @behind_pos)) (STRLEN @regline) (:rs_col @behind_pos)) (:rs_col (:ri_regsave rip))))
-                            (do
-                                ((ß no =) false)
-                            )
-                            (zero? (:rs_col (:ri_regsave rip)))
-                            (do
-                                (cond (or (< (:rs_lnum (:ri_regsave rip)) (:rs_lnum @behind_pos)) (nil? (reg-getline (ß --rip.ri_regsave.rs_lnum))))
-                                (do
-                                    ((ß no =) false)
-                                )
-                                :else
-                                (do
-                                    (swap! backpos reg-restore (:ri_regsave rip))
-                                    ((ß rip =) (assoc-in rip [:ri_regsave :rs_col] (STRLEN @regline)))
-                                ))
-                            )
-                            :else
-                            (do
-                                ((ß rip =) (update-in rip [:ri_regsave :rs_col] #(- % (inc (us-head-off @regline, (.plus @regline (dec %)))))))
-                            ))
-
-                            (cond no
-                            (do
-                                ;; Advanced, prepare for finding match again.
-                                (swap! backpos reg-restore (:ri_regsave rip))
-                                ((ß scan =) (.plus (operand (:ri_scan rip)) 4))
-                                (when (== status RA_MATCH)
-                                    ;; We did match, so subexpr may have been changed,
-                                    ;; need to restore them for the next try.
-                                    ((ß status =) RA_NIL)
-                                    (swap! reg_match restore-subexpr #_regbehind_C vip)
-                                )
-                            )
-                            :else
-                            (do
-                                ;; Can't advance.  For NOBEHIND that's a match.
-                                (reset! behind_pos (:rb_behind #_regbehind_C vip))
-                                (cond (== (:ri_no rip) NOBEHIND)
-                                (do
-                                    (swap! backpos reg-restore (:rb_after #_regbehind_C vip))
-                                    ((ß status =) RA_MATCH)
-                                )
-                                :else
-                                (do
-                                    ;; We do want a proper match.  Need to restore the subexpr
-                                    ;; if we had a match, because they may have been set.
-                                    (when (== status RA_MATCH)
-                                        ((ß status =) RA_NIL)
-                                        (swap! reg_match restore-subexpr #_regbehind_C vip)
-                                    )
-                                ))
-                                ((ß scan =) (pop-regitem))
-                                (drop-regbehind)
-                            ))
-                        ))
-                        (ß BREAK)
-                    )
-
-                   [RS_STAR_LONG RS_STAR_SHORT]
-                    (do
-                        ((ß regstar_C rst =) (ß (regstar_C)vip))
-
-                        (when (== status RA_MATCH)
-                            ((ß scan =) (pop-regitem))
-                            (drop-regstar)
-                            (ß BREAK)
-                        )
-
-                        ;; Tried once already, restore input pointers.
-                        (when (!= status RA_BREAK)
-                            (swap! backpos reg-restore (:ri_regsave rip))
-                        )
-
-                        ;; Repeat until we found a position where it could match.
-                        (loop []
-                            (cond (!= status RA_BREAK)
-                            (do
-                                ;; Tried first position already, advance.
-                                (cond (== (:ri_state rip) RS_STAR_LONG)
-                                (do
-                                    ;; Trying for longest match, but couldn't
-                                    ;; or didn't match -- back up one char.
-                                    (if (< (ß --rst.rs_count) (:rs_minval rst))
-                                        (ß BREAK)
-                                    )
-                                    (cond (BEQ @reginput, @regline)
-                                    (do
-                                        ;; backup to last char of previous line
-                                        (swap! reglnum dec)
-                                        (reset! regline (reg-getline @reglnum))
-                                        ;; Just in case regrepeat() didn't count right.
-                                        (if (nil? @regline)
-                                            (ß BREAK)
-                                        )
-                                        (reset! reginput (.plus @regline (STRLEN @regline)))
-                                        (fast-breakcheck)
-                                    )
-                                    :else
-                                    (do
-                                        (swap! reginput #(.minus % (us-ptr-back @regline, %)))
-                                    ))
-                                )
-                                :else
-                                (do
-                                    ;; Range is backwards, use shortest match first.
-                                    ;; Careful: maxval and minval are exchanged!
-                                    ;; Couldn't or didn't match: try advancing one char.
-                                    (if (or (== (:rs_count rst) (:rs_minval rst)) (zero? (regrepeat (operand (:ri_scan rip)), 1)))
-                                        (ß BREAK)
-                                    )
-                                    ((ß rst =) (update rst :rs_count inc))
-                                ))
-                                (if @got_int
-                                    (ß BREAK)
-                                )
-                            )
-                            :else
-                            (do
-                                ((ß status =) RA_NIL)
-                            ))
-
-                            ;; If it could match, try it.
-                            (when (or (== (:rs_nextb rst) NUL) (at? @reginput (:rs_nextb rst)) (at? @reginput (:rs_nextb_ic rst)))
-                                ((ß rip =) (assoc rip :ri_regsave (reg-save @backpos)))
-                                ((ß scan =) (regnext (:ri_scan rip)))
-                                ((ß status =) RA_CONT)
-                                (ß BREAK)
-                            )
-                            (recur)
-                        )
-                        (when (!= status RA_CONT)
-                            ;; Failed.
-                            ((ß scan =) (pop-regitem))
-                            (drop-regstar)
-                            ((ß status =) RA_NIL)
-                        )
-                        (ß BREAK)
-                    )
-                )
-
-                ;; If we want to continue the inner loop or didn't pop a state continue matching loop.
-                (if (or (== status RA_CONT) (== rip #_regitem_C (... @regstack (- (count @regstack) 1))))
-                    (ß BREAK)
-                )
-                (recur)
-            )
-
+    ;; Make "regstack" and "backpos" empty.
+    (reset! regstack [])
+    (reset! backpos [])
+    ;; Repeat until "regstack" is empty.
+    (loop [win win scan scan]
+        ;; "status": one of the RA_ values above
+        (let [[win scan #_int status] (seq-regmatch- win, scan) [scan status] (pop-regmatch- scan, status)]
             ;; May need to continue with the inner loop, starting at "scan".
-            (if (== status RA_CONT)
-                (ß CONTINUE) win
-            )
-
-            ;; When "regstack" is empty or something failed, we are done.
-
-            (when' (or (zero? (count @regstack)) (== status RA_FAIL)) => (recur win)
-                (when (nil? scan)
+            (when' (!= status RA_CONT) => (recur win scan)
+                ;; When "regstack" is empty or something failed, we are done.
+                (when' (or (zero? (count @regstack)) (== status RA_FAIL)) => (recur win scan)
                     ;; We get here only if there's trouble -- normally "case END" is the terminating point.
-                    (emsg e_re_corr)
-                )
-                (when (== status RA_FAIL)
-                    (reset! got_int true))
-
-                (reset! backpos nil)
-                (reset! regstack nil)
-
-                [win (== status RA_MATCH)]
-            )
-        )
+                    (let [win (if (nil? scan) (emsg win, e_re_corr) win)]
+                        (when (== status RA_FAIL)
+                            (reset! got_int true))
+                        (reset! backpos nil)
+                        (reset! regstack nil)
+                        [win (== status RA_MATCH)]
+                    ))
+            ))
     ))
 
 ;; Create an item for the "regstack".
