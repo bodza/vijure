@@ -18103,7 +18103,7 @@
     RS_STAR_LONG    10,     ;; STAR/PLUS/BRACE_SIMPLE longest match
     RS_STAR_SHORT   11)     ;; STAR/PLUS/BRACE_SIMPLE shortest match
 
-;; When there are alternatives, a RS_ is put on the "regstack" to remember what we are doing.
+;; When there are alternatives, an RS_ is pushed on "regstack" to remember what we are doing.
 ;; Before it may be another type of item, depending on "ri_state", to remember more things.
 
 (class! #_final regitem_C
@@ -18171,9 +18171,6 @@
     (reset! ireg_icase (:r_icase matcher))
     (reset! ireg_icombine false)
     (reset! ireg_maxcol (:r_maxcol matcher))
-
-    (reset! regstack [])
-    (reset! backpos [])
 
     (let [[win #_long nof]
             (let-when [#_bt_pattern_C pat (:r_pattern matcher) #_Bytes line (reg-getline 0)] (and (some? pat) (some? line)) => [(emsg win, e_null) 0] ;; Be paranoid...
@@ -18243,9 +18240,6 @@
                             ))
                     ))
             )]
-
-        (reset! backpos nil)
-        (reset! regstack nil)
 
         [win matcher nof]
     ))
@@ -18323,12 +18317,11 @@
 ;; bt-regmatch - main matching routine
 ;;
 ;; Conceptually the strategy is simple:
-;; check to see whether the current node matches, push an item onto the "regstack"
-;; and loop to see whether the rest matches, and then act accordingly.
+;; check to see whether the current node matches, push an item onto "regstack"
+;; and loop to see whether the rest matches, then act accordingly.
 ;;
-;; In practice we make some effort to avoid using the "regstack",
-;; in particular by going through "ordinary" nodes (that don't need to know
-;; whether the rest of the match failed) by a nested loop.
+;; In practice we make some effort to avoid using "regstack", in particular by going through
+;; "ordinary" nodes (that don't need to know whether the rest of the match failed) by a nested loop.
 ;;
 ;; Returns true when there is a match.
 ;; Leaves "reginput" and "reglnum" just after the last matched character.
@@ -18337,13 +18330,12 @@
 ;; Leaves "reginput" and "reglnum" in an undefined state!
 
 (defn- #_boolean bt-regmatch [#_Bytes scan, #_window_C win]
-    ;; scan: Current node.
     (§
         (ß int status)                 ;; one of the RA_ values above
 
         ;; Make "regstack" and "backpos" empty.
-        (swap! regstack assoc :ga_len 0)
-        (swap! backpos assoc :ga_len 0)
+        (reset! regstack [])
+        (reset! backpos [])
 
         ;; Repeat until "regstack" is empty.
 
@@ -18352,7 +18344,7 @@
             ;; Allow interrupting them with CTRL-C.
             (fast-breakcheck)
 
-            ;; Repeat for items that can be matched sequentially, without using the "regstack".
+            ;; Repeat for items that can be matched sequentially, without using "regstack".
 
             (loop []
                 (when (or @got_int (nil? scan))
@@ -18787,9 +18779,8 @@
 
                             (cond (if (<= (:rs_minval rst) (:rs_maxval rst)) (<= (:rs_minval rst) (:rs_count rst)) (<= (:rs_maxval rst) (:rs_count rst)))
                             (do
-                                ;; It could match.  Prepare for trying to match
-                                ;; what follows.  The code is below.  Parameters
-                                ;; are stored in a regstar_C on the "regstack".
+                                ;; It could match.  Prepare for trying to match what follows.
+                                ;; The code is below.  Parameters are stored in a regstar_C on "regstack".
                                 (cond (<= @p_mmp (>>> (:ga_len @regstack) 10))
                                 (do
                                     (emsg e_maxmempat)
@@ -18799,7 +18790,6 @@
                                 (do
                                     (.ga_grow @regstack 1)
                                     ((ß @regstack.ga_data[@regstack.ga_len++] =) rst)
-                                    ((ß rst =) nil)
 
                                     ((ß regitem_C rip =) (push-regitem (if (<= (:rs_minval rst) (:rs_maxval rst)) RS_STAR_LONG RS_STAR_SHORT), scan))
                                     ((ß status =) (if (nil? rip) RA_FAIL RA_BREAK))      ;; skip the restore bits
@@ -18919,8 +18909,8 @@
                 (recur)
             )
 
-            ;; If there is something on the "regstack", execute the code for the state.
-            ;; If the state is popped then loop and use the older state.
+            ;; If there is something on "regstack", execute the code for the state.
+            ;; If the state is popped, then loop and use the older state.
 
             (loop-when [] (and (< 0 (:ga_len @regstack)) (!= status RA_FAIL))
                 ((ß Object vip =) (if (< 1 (:ga_len @regstack)) (... (:ga_data @regstack) (- (:ga_len @regstack) 2)) nil))
@@ -19257,15 +19247,19 @@
                 (ß CONTINUE)
             )
 
-            ;; If the "regstack" is empty or something failed we are done.
+            ;; When "regstack" is empty or something failed, we are done.
 
             (when (or (zero? (:ga_len @regstack)) (== status RA_FAIL))
                 (when (nil? scan)
                     ;; We get here only if there's trouble -- normally "case END" is the terminating point.
                     (emsg e_re_corr)
                 )
-                (if (== status RA_FAIL)
+                (when (== status RA_FAIL)
                     (reset! got_int true))
+
+                (reset! backpos nil)
+                (reset! regstack nil)
+
                 ((ß RETURN) (== status RA_MATCH))
             )
             (recur)
@@ -19284,13 +19278,10 @@
             ((ß RETURN) nil)
         )
 
-        ((ß regitem_C rip =) (NEW_regitem_C))
+        ((ß regitem_C rip =) (-> (NEW_regitem_C) (assoc :ri_state state :ri_scan scan)))
 
         (.ga_grow @regstack 1)
         ((ß @regstack.ga_data[@regstack.ga_len++] =) rip)
-
-        ((ß rip =) (assoc rip :ri_state state))
-        ((ß rip =) (assoc rip :ri_scan scan))
 
         rip
     ))
@@ -21347,12 +21338,10 @@
             (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur first))
 
             ;; :else
-            (if (not (nfa-regpiece))
-                false
-                (do
-                    (when (not first) (emc1 NFA_CONCAT))
-                    (recur false)
-                )
+            (when' (nfa-regpiece) => false
+                (when-not first
+                    (emc1 NFA_CONCAT))
+                (recur false)
             ))
     ))
 
@@ -21369,28 +21358,23 @@
 
 (defn- #_boolean nfa-regbranch []
     (let [i @post_index]
-        (if (not (nfa-regconcat)) ;; first branch, possibly the only one
-            false
+        (when' (nfa-regconcat) => false ;; first branch, possibly the only one
             (let [i (loop-when i (== (peekchr) (Magic (byte \&))) => i ;; try next concats
                         (skipchr)
                         (emc1 NFA_NOPEN)
                         (emc1 NFA_PREV_ATOM_NO_WIDTH)
                         (let [i @post_index]
-                            (if (not (nfa-regconcat))
-                                false
-                                (do ;; if concat is empty, emit a node
-                                    (when (== @post_index i) (emc1 NFA_EMPTY))
-                                    (emc1 NFA_CONCAT)
-                                    (recur i)
-                                ))
-                        ))]
-                (if i
-                    (do ;; if branch is empty, emit a node
-                        (when (== @post_index i) (emc1 NFA_EMPTY))
-                        true
-                    )
-                    false
-                )
+                            (when' (nfa-regconcat) => nil
+                                (when (== @post_index i) ;; if concat is empty, emit a node
+                                    (emc1 NFA_EMPTY))
+                                (emc1 NFA_CONCAT)
+                                (recur i)
+                            ))
+                    )]
+                (when' (some? i) => false
+                    (when (== @post_index i) ;; if branch is empty, emit a node
+                        (emc1 NFA_EMPTY))
+                    true)
             ))
     ))
 
