@@ -37617,34 +37617,19 @@
 ;; Return true when end-of-file reached, false otherwise.
 
 (defn- #_boolean skip-chars [#_int cclass, #_int dir]
-    (§
-        (while (== (cls) cclass)
-            (if (== (if (== dir FORWARD) (inc-cursor) (dec-cursor)) -1)
-                ((ß RETURN) true)
-            )
-        )
-
-        false
+    (loop-when [] (== (cls) cclass) => false
+        (recur-if (!= (if (== dir FORWARD) (inc-cursor) (dec-cursor)) -1) [] => true)
     ))
 
 ;; Go back to the start of the word or the start of white space
 
 (defn- #_void back-in-line []
-    (§
-        ((ß int sclass =) (cls))                     ;; starting class
-
-        (while true
-            (if (zero? (:col (:w_cursor @curwin)))       ;; stop at start of line
-                (ß BREAK)
-            )
+    (let [sclass (cls)] ;; starting class
+        (loop-when [] (pos? (:col (:w_cursor @curwin)))     ;; stop at start of line
             (dec-cursor)
-            (when (!= (cls) sclass)                ;; stop at start of word
-                (inc-cursor)
-                (ß BREAK)
-            )
-        )
-        nil
-    ))
+            (recur-if (== (cls) sclass) [] => (inc-cursor)) ;; stop at start of word
+        ))
+    nil)
 
 ;; Find word under cursor, cursor at end.
 ;; Used while an operator is pending, and in Visual mode.
@@ -38893,28 +38878,16 @@
 (final Bytes transchar_buf (Bytes. 7))
 
 (defn- #_Bytes transchar [#_int c]
-    (§
-        ((ß int i =) 0)
-
-        (when (is-special c)      ;; special key code, display as ~@ char
-            (.be transchar_buf 0, (byte \~))
-            (.be transchar_buf 1, (byte \@))
-            ((ß i =) 2)
-            ((ß c =) (char_u (KB-SECOND c)))
+    (let [buf transchar_buf [#_int i c]
+            (if (is-special c) ;; special key code, display as ~@ char
+                (do (-> buf (.be 0, (byte \~)) (.be 1, (byte \@))) [2 (char_u (KB-SECOND c))])
+                [0 c]
+            )]
+        (if (or (and (not @chartab_initialized) (<= (byte \space) c (byte \~))) (and (< c 256) (vim-isprintc c)))
+            (-> buf (.be i, c) (eos! (inc i))) ;; printable character
+            (transchar-nonprint (.plus buf i), c)
         )
-
-        (cond (or (and (not @chartab_initialized) (<= (byte \space) c) (<= c (byte \~))) (and (< c 256) (vim-isprintc c)))
-        (do
-            ;; printable character
-            (.be transchar_buf i, c)
-            (eos! transchar_buf (inc i))
-        )
-        :else
-        (do
-            (transchar-nonprint (.plus transchar_buf i), c)
-        ))
-
-        transchar_buf
+        buf
     ))
 
 ;; Like transchar(), but called with a byte instead of a character.
@@ -38922,64 +38895,41 @@
 
 (defn- #_Bytes transchar-byte [#_byte b]
     (let [c (char_u b)]
-        (if (< c 0x80) (transchar c) (do (transchar-nonprint transchar_buf, c) transchar_buf))
+        (if (< c 0x80) (transchar c) (transchar-nonprint transchar_buf, c))
     ))
 
 ;; Convert non-printable character to two or more printable characters in "buf[]".
 ;; "buf" needs to be able to hold five bytes.
 ;; Does NOT work for multi-byte characters, c must be <= 255.
 
-(defn- #_void transchar-nonprint [#_Bytes buf, #_int c]
-    (§
-        (if (== c NL)
-            ((ß c =) NUL)                                    ;; we use newline in place of a NUL
-        )
-
-        (cond (flag? @dy_flags DY_UHEX)                  ;; 'display' has "uhex"
-        (do
+(defn- #_Bytes transchar-nonprint [#_Bytes buf, #_int c]
+    (let [c (if (== c NL) NUL c)]                                                           ;; we use newline in place of a NUL
+        (cond (flag? @dy_flags DY_UHEX)                                                     ;; 'display' has "uhex"
             (transchar-hex buf, c)
-        )
-        (<= c 0x7f)                             ;; 0x00 - 0x1f and 0x7f
-        (do
-            (.be buf 0, (byte \^))
-            (.be buf 1, (byte (bit-xor c 0x40)))                          ;; DEL displayed as ^?
-
-            (eos! buf 2)
-        )
+        (<= c 0x7f)                                                                         ;; 0x00 - 0x1f and 0x7f
+            (-> buf (.be 0, (byte \^)) (.be 1, (byte (bit-xor c 0x40))) (eos! 2))           ;; DEL displayed as ^?
         (<= 0x80 c)
-        (do
             (transchar-hex buf, c)
-        )
-        (and (<= (+ (byte \space) 0x80) c) (<= c (+ (byte \~) 0x80)))    ;; 0xa0 - 0xfe
-        (do
-            (.be buf 0, (byte \|))
-            (.be buf 1, (byte (- c 0x80)))
-            (eos! buf 2)
-        )
-        :else                                            ;; 0x80 - 0x9f and 0xff
-        (do
-            (.be buf 0, (byte \~))
-            (.be buf 1, (byte (bit-xor (- c 0x80) 0x40)))                 ;; 0xff displayed as ~?
-            (eos! buf 2)
+        (and (<= (+ (byte \space) 0x80) c) (<= c (+ (byte \~) 0x80)))                       ;; 0xa0 - 0xfe
+            (-> buf (.be 0, (byte \|)) (.be 1, (byte (- c 0x80))) (eos! 2))
+        :else                                                                               ;; 0x80 - 0x9f and 0xff
+            (-> buf (.be 0, (byte \~)) (.be 1, (byte (bit-xor (- c 0x80) 0x40))) (eos! 2))  ;; 0xff displayed as ~?
         ))
-        nil
-    ))
+    buf)
 
-(defn- #_void transchar-hex [#_Bytes buf, #_int c]
-    (§
-        ((ß int i =) 0)
-
-        (.be buf i, (byte \<))
+(defn- #_Bytes transchar-hex [#_Bytes buf, #_int c]
+    (let [#_int' a'i (atom (int 0))]
+        (.be buf @a'i, (byte \<))
         (when (< 0xff c)
-            (.be buf ((ß i =) (inc i)), (nr2hex (>>> c 12)))
-            (.be buf ((ß i =) (inc i)), (nr2hex (>>> c 8)))
+            (.be buf (swap! a'i inc), (nr2hex (>>> c 12)))
+            (.be buf (swap! a'i inc), (nr2hex (>>> c 8)))
         )
-        (.be buf ((ß i =) (inc i)), (nr2hex (>>> c 4)))
-        (.be buf ((ß i =) (inc i)), (nr2hex c))
-        (.be buf ((ß i =) (inc i)), (byte \>))
-        (eos! buf ((ß i =) (inc i)))
-        nil
-    ))
+        (.be buf (swap! a'i inc), (nr2hex (>>> c 4)))
+        (.be buf (swap! a'i inc), (nr2hex c))
+        (.be buf (swap! a'i inc), (byte \>))
+        (eos! buf (swap! a'i inc))
+    )
+    buf)
 
 ;; Convert the lower 4 bits of byte "c" to its hex character.
 ;; Lower case letters are used to avoid the confusion of <F1> being 0xf1 or function key 1.
@@ -39024,15 +38974,10 @@
 ;; counting TABs as two characters: "^I".
 
 (defn- #_int mb-string2cells [#_Bytes p, #_int len]
-    (§
-        ((ß int cells =) 0)
-
-        (loop-when-recur [#_int i 0] (and (or (< len 0) (< i len)) (non-eos? p i)) [(+ i (us-ptr2len-cc p, i))]
-            ((ß cells =) (+ cells (mb-ptr2cells (.plus p i))))
-        )
-
-        cells
-    ))
+    (loop-when-recur [#_int cells 0 #_int i 0]
+                     (and (or (< len 0) (< i len)) (non-eos? p i))
+                     [(+ cells (mb-ptr2cells (.plus p i))) (+ i (us-ptr2len-cc p, i))]
+                  => cells))
 
 ;; Return the number of characters 'c' will take on the screen,
 ;; taking into account the size of a tab.
@@ -39053,31 +38998,17 @@
 ;; Like linetabsize(), but starting at column "startcol".
 
 (defn- #_int linetabsize-col [#_Bytes _s, #_int startcol]
-    (§
-        ((ß Bytes[] a's =) (atom (#_Bytes object _s)))
-
-        ((ß int col =) startcol)
-
-        ((ß Bytes line =) @a's)        ;; pointer to start of line, for breakindent
-        (while (non-eos? @a's)
-            ((ß col =) (+ col (lbr-chartabsize-adv line, a's, col)))
-        )
-
-        col
+    (let [#_Bytes' a's (atom (#_Bytes object _s)) #_Bytes line @a's] ;; pointer to start of line, for breakindent
+        (loop-when-recur [#_int col startcol] (non-eos? @a's) [(+ col (lbr-chartabsize-adv line, a's, col))] => col)
     ))
 
 ;; Like linetabsize(), but for a given window instead of the current one.
 
-(defn- #_int win-linetabsize [#_window_C wp, #_Bytes line, #_int len]
-    (§
-        ((ß int col =) 0)
-
-        (loop-when-recur [#_Bytes s line] (and (non-eos? s) (or (== len MAXCOL) (BLT s, (.plus line len)))) [(.plus s (us-ptr2len-cc s))]
-            ((ß col =) (+ col (win-lbr-chartabsize wp, line, s, col, nil)))
-        )
-
-        col
-    ))
+(defn- #_int win-linetabsize [#_window_C win, #_Bytes line, #_int len]
+    (loop-when-recur [#_int col 0 #_Bytes s line]
+                     (and (non-eos? s) (or (== len MAXCOL) (BLT s, (.plus line len))))
+                     [(+ col (win-lbr-chartabsize win, line, s, col, nil)) (.plus s (us-ptr2len-cc s))]
+                  => col))
 
 ;; Return true if 'c' is a normal identifier character:
 ;; Letters and characters from the 'isident' option.
@@ -39127,10 +39058,9 @@
 
 (defn- #_int lbr-chartabsize-adv [#_Bytes line, #_Bytes' a's, #_int col]
     ;; line: start of the line
-    (§
-        ((ß int retval =) (lbr-chartabsize line, @a's, col))
-        (reset! a's (.plus @a's (us-ptr2len-cc @a's)))
-        retval
+    (let [#_int size (lbr-chartabsize line, @a's, col)]
+        (swap! a's #(.plus % (us-ptr2len-cc %)))
+        size
     ))
 
 ;; This function is used very often, keep it fast!!!!
@@ -39416,129 +39346,63 @@
 ;; Get virtual cursor column in the current window, pretending 'list' is off.
 
 (defn- #_int getvcol-nolist [#_pos_C posp]
-    (§
-        ((ß int[] a'vcol =) (atom (int)))
+    (let [#_int' a'vcol (atom (int))]
         (getvcol @curwin, posp, nil, a'vcol, nil)
         @a'vcol
     ))
 
 ;; Get virtual column in virtual mode.
 
-(defn- #_void getvvcol [#_window_C wp, #_pos_C pos, #_int' a'start, #_int' a'cursor, #_int' a'end]
-    (§
-        (cond (virtual-active)
-        (do
+(defn- #_void getvvcol [#_window_C win, #_pos_C pos, #_int' a'start, #_int' a'cursor, #_int' a'end]
+    (if (virtual-active)
+        (let [#_int' a'col (atom (int))]
             ;; For virtual mode, only want one value.
-            ((ß int[] a'col =) (atom (int)))
-            (getvcol wp, pos, a'col, nil, nil)
-            ((ß int coladd =) (:coladd pos))
-            ((ß int endadd =) 0)
-
-            ;; Cannot put the cursor on part of a wide character.
-            ((ß Bytes ptr =) (ml-get (:lnum pos)))
-            (when (< (:col pos) (STRLEN ptr))
-                ((ß int c =) (us-ptr2char ptr, (:col pos)))
-
-                (when (and (!= c TAB) (vim-isprintc c))
-                    ((ß endadd =) (dec (mb-char2cells c)))
-                    (if (< endadd coladd)    ;; past end of line
-                        ((ß endadd =) 0)
-                        ((ß coladd =) 0)
-                    )
-                )
-            )
-            (swap! a'col + coladd)
-            (if (some? a'start)
-                (reset! a'start @a'col)
-            )
-            (if (some? a'cursor)
-                (reset! a'cursor @a'col)
-            )
-            (if (some? a'end)
-                (reset! a'end (+ @a'col endadd))
-            )
-        )
-        :else
-        (do
-            (getvcol wp, pos, a'start, a'cursor, a'end)
-        ))
-        nil
-    ))
+            (getvcol win, pos, a'col, nil, nil)
+            (let [coladd (:coladd pos) [coladd endadd]
+                ;; Cannot put the cursor on part of a wide character.
+                    (let-when [#_Bytes s (ml-get (:lnum pos))] (< (:col pos) (STRLEN s)) => [coladd 0]
+                        (let-when [#_int c (us-ptr2char s, (:col pos))] (and (!= c TAB) (vim-isprintc c)) => [coladd 0]
+                            (let-when [endadd (dec (mb-char2cells c))] (< endadd coladd) => [0 endadd]
+                                [coladd 0] ;; past end of line
+                            )
+                        )
+                    )]
+                (swap! a'col + coladd)
+                (when (some? a'start) (reset! a'start @a'col))
+                (when (some? a'cursor) (reset! a'cursor @a'col))
+                (when (some? a'end) (reset! a'end (+ @a'col endadd)))
+            ))
+        (getvcol win, pos, a'start, a'cursor, a'end))
+    nil)
 
 ;; Get the leftmost and rightmost virtual column of pos1 and pos2.
 ;; Used for Visual block mode.
 
-(defn- #_void getvcols [#_window_C wp, #_pos_C pos1, #_pos_C pos2, #_int' a'left, #_int' a'right]
-    (§
-        ((ß int[] a'from1 =) (atom (int)))
-        ((ß int[] a'from2 =) (atom (int)))
-        ((ß int[] a'to1 =) (atom (int)))
-        ((ß int[] a'to2 =) (atom (int)))
-
-        (cond (ltpos pos1, pos2)
-        (do
-            (getvvcol wp, pos1, a'from1, nil, a'to1)
-            (getvvcol wp, pos2, a'from2, nil, a'to2)
+(defn- #_void getvcols [#_window_C win, #_pos_C pos1, #_pos_C pos2, #_int' a'left, #_int' a'right]
+    (let [a'from1 (atom (int)) a'from2 (atom (int)) a'to1 (atom (int)) a'to2 (atom (int))]
+        (if (ltpos pos1, pos2)
+            (do (getvvcol win, pos1, a'from1, nil, a'to1) (getvvcol win, pos2, a'from2, nil, a'to2))
+            (do (getvvcol win, pos2, a'from1, nil, a'to1) (getvvcol win, pos1, a'from2, nil, a'to2))
         )
-        :else
-        (do
-            (getvvcol wp, pos2, a'from1, nil, a'to1)
-            (getvvcol wp, pos1, a'from2, nil, a'to2)
-        ))
         (reset! a'left (min @a'from1 @a'from2))
-        (cond (< @a'to1 @a'to2)
-        (do
-            (reset! a'right (if (and (at? @p_sel (byte \e)) (<= @a'to1 (dec @a'from2))) (dec @a'from2) @a'to2))
-        )
-        :else
-        (do
-            (reset! a'right @a'to1)
-        ))
-        nil
-    ))
+        (reset! a'right (if (< @a'to1 @a'to2) (if (and (at? @p_sel (byte \e)) (<= @a'to1 (dec @a'from2))) (dec @a'from2) @a'to2) @a'to1)))
+    nil)
 
-;; Skip over ' ' and '\t'.
-
-(defn- #_Bytes skipwhite [#_Bytes q]
-    (§
-        ((ß Bytes p =) q)
-
-        (while (vim-iswhite (.at p 0))
-            ((ß p =) (.plus p 1))
-        )    ;; skip to next non-white
-        p
-    ))
-
-;; skip over digits
-
-(defn- #_Bytes skipdigits [#_Bytes q]
-    (§
-        ((ß Bytes p =) q)
-
-        (while (asc-isdigit (.at p 0))
-            ((ß p =) (.plus p 1))
-        )    ;; skip to next non-digit
-        p
-    ))
+(defn- #_Bytes skipwhite  [#_Bytes s] (loop-when-recur s (vim-iswhite (.at s 0)) (.plus s 1) => s)) ;; skip to next non-white
+(defn- #_Bytes skipdigits [#_Bytes s] (loop-when-recur s (asc-isdigit (.at s 0)) (.plus s 1) => s)) ;; skip to next non-digit
 
 (defn- #_boolean asc-isdigit  [#_int c] (<= (byte \0) c (byte \9)))
 (defn- #_boolean asc-isodigit [#_int c] (<= (byte \0) c (byte \7)))
 (defn- #_boolean asc-isxdigit [#_int c] (or (<= (byte \0) c (byte \9)) (<= (byte \a) c (byte \f)) (<= (byte \A) c (byte \F))))
 
-;; Getdigits: Get a number from a string and skip over it.
-;; Note: the argument is a pointer to a byte pointer!
+;; getdigits: Get a number from a string and skip over it.
 
-(defn- #_long getdigits [#_Bytes' a'pp]
-    (§
-        ((ß Bytes p =) @a'pp)
-        ((ß long retval =) (.atol libC p))
-        (if (at? p (byte \-))                  ;; skip negative sign
-            ((ß p =) (.plus p 1))
-        )
-        ((ß p =) (skipdigits p))              ;; skip to next non-digit
-        (reset! a'pp p)
-
-        retval
+(defn- #_long getdigits [#_Bytes' a's]
+    (§ let [n (.atol libC @a's)]
+        (when (at? @a's (byte \-))                  ;; skip negative sign
+            (swap! a's plus 1))
+        (swap! a's skipdigits)              ;; skip to next non-digit
+        n
     ))
 
 ;; Convert a string into a long and/or unsigned long, taking care of
@@ -41614,10 +41478,9 @@
 ;; skip: composing characters are skipped!
 ;; !skip: composing characters are returned as separate characters.
 
-(defn- #_int us-ptr2char-adv [#_Bytes' a'pp, #_boolean skip]
-    (§
-        ((ß int c =) (us-ptr2char @a'pp))
-        (reset! a'pp (.plus @a'pp (if skip (us-ptr2len-cc @a'pp) (us-ptr2len @a'pp))))
+(defn- #_int us-ptr2char-adv [#_Bytes' a's, #_boolean skip]
+    (let [#_int c (us-ptr2char @a's)]
+        (swap! a's #(.plus % (if skip (us-ptr2len-cc %) (us-ptr2len %))))
         c
     ))
 
@@ -41681,16 +41544,11 @@
 ;; Returns the produced number of bytes.
 
 (defn- #_int utfc-char2bytes [#_int off, #_Bytes buf]
-    (§
-        ((ß int len =) (utf-char2bytes (... @screenLinesUC off), buf))
-        (dotimes [#_int i @screen_mco]
-            (if (zero? (... (... @screenLinesC i) off))
-                (ß BREAK)
-            )
-            ((ß len =) (+ len (utf-char2bytes (... (... @screenLinesC i) off), (.plus buf len))))
-        )
-        len
-    ))
+    (loop-when-recur [#_int len (utf-char2bytes (... @screenLinesUC off), buf) #_int i 0]
+                     (and (< i @screen_mco) (non-zero? (... (... @screenLinesC i) off)))
+                     [(+ len (utf-char2bytes (... (... @screenLinesC i) off), (.plus buf len))) (inc i)]
+                  => len)
+)
 
 ;; Get the length of a UTF-8 byte sequence, not including any following composing characters.
 ;; Returns 0 for "".
@@ -44845,8 +44703,7 @@
 ;; Get the screen position of the cursor.
 
 (defn- #_int getviscol []
-    (§
-        ((ß int[] a'x =) (atom (int)))
+    (let [a'x (atom (int))]
         (getvvcol @curwin, (:w_cursor @curwin), a'x, nil, nil)
         @a'x
     ))
@@ -44854,25 +44711,16 @@
 ;; Get the screen position of character col with a coladd in the cursor line.
 
 (defn- #_int getviscol2 [#_int col, #_int coladd]
-    (§
-        ((ß pos_C pos =) (NEW_pos_C))
-        ((ß pos.lnum =) (:lnum (:w_cursor @curwin)))
-        ((ß pos.col =) col)
-        ((ß pos.coladd =) coladd)
-
-        ((ß int[] a'x =) (atom (int)))
+    (let [pos (->pos_C (:lnum (:w_cursor @curwin)) col coladd) a'x (atom (int))]
         (getvvcol @curwin, pos, a'x, nil, nil)
         @a'x
     ))
 
-;; Go to column "wcol", and add/insert white space as necessary to get the
-;; cursor in that column.
+;; Go to column "wcol", and add/insert white space as necessary to get the cursor in that column.
 ;; The caller must have saved the cursor line for undo!
 
 (defn- #_boolean coladvance-force [#_int wcol]
-    (§
-        ((ß boolean rc =) (coladvance2 (:w_cursor @curwin), true, false, wcol))
-
+    (let [#_boolean rc (coladvance2 (:w_cursor @curwin), true, false, wcol)]
         (cond (== wcol MAXCOL)
         (do
             (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
@@ -44895,9 +44743,7 @@
 ;; return true if desired column is reached, false if not
 
 (defn- #_boolean coladvance [#_int wcol]
-    (§
-        ((ß boolean rc =) (getvpos (:w_cursor @curwin), wcol))
-
+    (let [#_boolean rc (getvpos (:w_cursor @curwin), wcol)]
         (cond (or (== wcol MAXCOL) (not rc))
         (do
             (swap! curwin update :w_valid & (bit-not VALID_VIRTCOL))
@@ -45240,53 +45086,34 @@
 ;; Return true if the cursor was moved.
 
 (defn- #_boolean leftcol-changed []
-    (§
-        ((ß boolean retval =) false)
-
-        (changed-cline-bef-curs)
-        ((ß long lastcol =) (- (- (+ (:w_leftcol @curwin) (:w_width @curwin)) (curwin-col-off)) 1))
+    (changed-cline-bef-curs)
+    (let [#_long lastcol (dec (- (+ (:w_leftcol @curwin) (:w_width @curwin)) (curwin-col-off)))]
         (validate-virtcol)
-
         ;; If the cursor is right or left of the screen, move it to last or first character.
-
-        (cond (< (int (- lastcol @p_siso)) (:w_virtcol @curwin))
-        (do
-            ((ß retval =) true)
-            (coladvance (int (- lastcol @p_siso)))
-        )
-        (< (:w_virtcol @curwin) (+ (:w_leftcol @curwin) @p_siso))
-        (do
-            ((ß retval =) true)
-            (coladvance (int (+ (:w_leftcol @curwin) @p_siso)))
-        ))
-
-        ;; If the start of the character under the cursor is not on the screen,
-        ;; advance the cursor one more char.  If this fails (last char of the line),
-        ;; adjust the scrolling.
-
-        ((ß int[] a's =) (atom (int)))
-        ((ß int[] a'e =) (atom (int)))
-        (getvvcol @curwin, (:w_cursor @curwin), a's, nil, a'e)
-        (cond (< (int lastcol) @a'e)
-        (do
-            ((ß retval =) true)
-            (coladvance (- @a's 1))
-        )
-        (< @a's (:w_leftcol @curwin))
-        (do
-            ((ß retval =) true)
-            (when (not (coladvance (+ @a'e 1)))     ;; there isn't another character
-                (swap! curwin assoc :w_leftcol @a's)           ;; adjust w_leftcol instead
-                (changed-cline-bef-curs)
-            )
-        ))
-
-        (if retval
-            (swap! curwin assoc :w_set_curswant true)
-        )
-        (redraw-later NOT_VALID)
-        retval
-    ))
+        (let [#_boolean rc (cond
+                (< (- lastcol @p_siso) (:w_virtcol @curwin))              (do (coladvance (- lastcol @p_siso))              true)
+                (< (:w_virtcol @curwin) (+ (:w_leftcol @curwin) @p_siso)) (do (coladvance (+ (:w_leftcol @curwin) @p_siso)) true)
+                :else false)
+              a's (atom (int)) a'e (atom (int))]
+            ;; If the start of the char under the cursor is not on the screen, advance the cursor one more char.
+            ;; If this fails (last char of the line), adjust the scrolling.
+            (getvvcol @curwin, (:w_cursor @curwin), a's, nil, a'e)
+            (let [rc (cond
+                    (< lastcol @a'e)
+                        (do (coladvance (dec @a's)) true)
+                    (< @a's (:w_leftcol @curwin))
+                        (do
+                            (when (not (coladvance (inc @a'e)))         ;; there isn't another character
+                                (swap! curwin assoc :w_leftcol @a's)    ;; adjust w_leftcol instead
+                                (changed-cline-bef-curs))
+                            true
+                        )
+                    :else rc)]
+                (when rc
+                    (swap! curwin assoc :w_set_curswant true))
+                (redraw-later NOT_VALID)
+                rc
+            ))))
 
 ;; Various routines dealing with allocation and deallocation of memory.
 
@@ -45449,48 +45276,26 @@
 ;; with characters from 128 to 255 correctly.  It also doesn't return
 ;; a pointer to the NUL at the end of the string.
 
-(defn- #_Bytes vim-strchr [#_Bytes string, #_int c]
-    (§
-        (loop-when-recur [#_Bytes p string] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
-            (if (== (us-ptr2char p) c)
-                ((ß RETURN) p)
-            )
-        )
-
-        nil
+(defn- #_Bytes vim-strchr [#_Bytes p, #_int c]
+    (loop-when p (non-eos? p) => nil
+        (recur-if (!= (us-ptr2char p) c) (.plus p (us-ptr2len-cc p)) => p)
     ))
 
 ;; Version of strchr() that only works for bytes and handles unsigned char
 ;; strings with characters above 128 correctly.  It also doesn't return a
 ;; pointer to the NUL at the end of the string.
 
-(defn- #_Bytes vim-strbyte [#_Bytes string, #_byte b]
-    (§
-        (loop-when-recur [#_Bytes p string] (non-eos? p) [(.plus p 1)]
-            (if (at? p b)
-                ((ß RETURN) p)
-            )
-        )
-
-        nil
+(defn- #_Bytes vim-strbyte [#_Bytes p, #_byte b]
+    (loop-when p (non-eos? p) => nil
+        (recur-if (not-at? p b) (.plus p 1) => p)
     ))
 
-;; Search for last occurrence of "b" in "string".
+;; Search for last occurrence of "b" in "p".
 ;; Return null if not found.
 ;; Does not handle multi-byte char for "b"!
 
-(defn- #_Bytes vim-strrchr [#_Bytes string, #_byte b]
-    (§
-        ((ß Bytes q =) nil)
-
-        (loop-when-recur [#_Bytes p string] (non-eos? p) [(.plus p (us-ptr2len-cc p))]
-            (if (at? p b)
-                ((ß q =) p)
-            )
-        )
-
-        q
-    ))
+(defn- #_Bytes vim-strrchr [#_Bytes p, #_byte b]
+    (loop-when-recur [#_Bytes q nil p p] (non-eos? p) [(if (at? p b) p q) (.plus p (us-ptr2len-cc p))] => q))
 
 ;; Vim has its own isspace() function, because on some machines isspace()
 ;; can't handle characters above 128.
@@ -46281,31 +46086,24 @@
 ;; If 'cpoptions' contains 'u': Undo the previous undo or redo (vi compatible).
 ;; If 'cpoptions' does not contain 'u': Always undo.
 
-(defn- #_void u-undo [#_int count]
-    (§
-        ;; If we get an undo command while executing a macro, we behave like the original vi.
-        ;; If this happens twice in one macro the result will not be compatible.
-
-        (when (not (:b_u_synced @curbuf))
-            (u-sync true)
-            ((ß count =) 1)
-        )
-
+(defn- #_void u-undo [#_int n]
+    ;; If we get an undo command while executing a macro, we behave like the original vi.
+    ;; If this happens twice in one macro the result will not be compatible.
+    (let [n (if (not (:b_u_synced @curbuf)) (do (u-sync true) 1) n)]
         (if (nil? (vim-strbyte @p_cpo, CPO_UNDO))
             (reset! undo_undoes true)
             (swap! undo_undoes not))
-
-        (u-doit count)
-        nil
-    ))
+        (u-doit n)
+    )
+    nil)
 
 ;; If 'cpoptions' contains 'u': Repeat the previous undo or redo.
 ;; If 'cpoptions' does not contain 'u': Always redo.
 
-(defn- #_void u-redo [#_int count]
+(defn- #_void u-redo [#_int n]
     (if (nil? (vim-strbyte @p_cpo, CPO_UNDO))
         (reset! undo_undoes false))
-    (u-doit count)
+    (u-doit n)
     nil)
 
 ;; Undo or redo, depending on 'undo_undoes', 'count' times.
@@ -46919,25 +46717,17 @@
 
 ;; u-sync: stop adding to the current entry list
 
-(defn- #_void u-sync [#_boolean force]
-    ;; force: Also sync when no_u_sync is set.
-    (§
-        ;; Skip it when already synced or syncing is disabled.
-        (if (or (:b_u_synced @curbuf) (and (not force) (< 0 @no_u_sync)))
-            ((ß RETURN) nil)
-        )
-
-        (cond (< (get-undolevel) 0)
-        (do
+(defn- #_void u-sync [#_boolean force] ;; force: Also sync when no_u_sync is set.
+    ;; Skip it when already synced or syncing is disabled.
+    (if-not (or (:b_u_synced @curbuf) (and (not force) (< 0 @no_u_sync)))
+        (if (< (get-undolevel) 0)
             (swap! curbuf assoc :b_u_synced true)   ;; no entries, nothing to do
-        )
-        :else
-        (do
-            (u-getbot)                 ;; compute ue_bot of previous u-save()
-            (swap! curbuf assoc :b_u_curhead nil)
+            (do
+                (u-getbot)                 ;; compute ue_bot of previous u-save()
+                (swap! curbuf assoc :b_u_curhead nil)
+            )
         ))
-        nil
-    ))
+    nil)
 
 ;; Put the timestamp of an undo header in "buf[buflen]" in a nice format.
 
@@ -51508,9 +51298,9 @@
 
 (defn- #_void status-redraw-all []
     (§
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-            (when (non-zero? (:w_status_height wp))
-                ((ß wp.w_redr_status =) true)
+        (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+            (when (non-zero? (:w_status_height win))
+                ((ß win.w_redr_status =) true)
                 (redraw-later VALID)
             )
         )
@@ -51520,25 +51310,23 @@
 ;; Redraw all status lines that need to be redrawn.
 
 (defn- #_void redraw-statuslines []
-    (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-        (when (:w_redr_status wp)
-            (win-redr-status wp)
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+        (when (:w_redr_status win)
+            (win-redr-status win)
         )
     )
     nil)
 
 ;; Draw the verticap separator right of window "wp" starting with line "row".
 
-(defn- #_void draw-vsep-win [#_window_C wp, #_int row]
-    (§
-        (when (non-zero? (:w_vsep_width wp))
-            ;; draw the vertical separator right of this window
-            ((ß int[] a'hl =) (atom (int)))
-            ((ß int c =) (fillchar-vsep a'hl))
-            (screen-fill (+ (:w_winrow wp) row), (+ (:w_winrow wp) (:w_height wp)), (+ (:w_wincol wp) (:w_width wp)), (+ (:w_wincol wp) (:w_width wp) 1), c, (byte \space), @a'hl)
-        )
-        nil
-    ))
+(defn- #_void draw-vsep-win [#_window_C win, #_int row]
+    (when (non-zero? (:w_vsep_width win))
+        ;; draw the vertical separator right of this window
+        (let [a'hl (atom (int)) #_int fc (fillchar-vsep a'hl)
+              wr (:w_winrow win) wc (:w_wincol win) wh (:w_height win) ww (:w_width win)]
+            (screen-fill (+ wr row), (+ wr wh), (+ wc ww), (+ wc ww 1), fc, (byte \space), @a'hl)
+        ))
+    nil)
 
 (atom! boolean _3_busy)
 
@@ -54633,13 +54421,9 @@
     ;; next_curwin: pointer to current window to be or null
     ;; current: do only frame with current window
     ;; dir: 'v' for vertically, 'h' for horizontally, 'b' for both, 0 for using "p_ead"
-    (§
-        (if (zero? dir)
-            ((ß dir =) (.at @p_ead 0))
-        )
-        (win-equal-rec (if (nil? next_curwin) @curwin next_curwin), current, @topframe, dir, 0, 0, (int @Cols), (:fr_height @topframe))
-        nil
-    ))
+    (let [dir (if (zero? dir) (.at @p_ead 0) dir)]
+        (win-equal-rec (if (nil? next_curwin) @curwin next_curwin), current, @topframe, dir, 0, 0, @Cols, (:fr_height @topframe)))
+    nil)
 
 ;; Set a frame to a new position and height, spreading the available room
 ;; equally over contained frames.
@@ -55157,12 +54941,7 @@
 ;; Find the left-upper window in frame "frp".
 
 (defn- #_window_C frame2win [#_frame_C frp]
-    (§
-        (while (nil? (:fr_win frp))
-            ((ß frp =) (:fr_child frp))
-        )
-        (:fr_win frp)
-    ))
+    (loop-when-recur frp (nil? (:fr_win frp)) (:fr_child frp) => (:fr_win frp)))
 
 ;; Return true if frame "frp" contains window "wp".
 
@@ -55886,46 +55665,34 @@
 ;; Can be called with "curwin_invalid" true, which means that curwin has just
 ;; been closed and isn't valid.
 
-(defn- #_void win-enter-ext [#_window_C wp, #_boolean curwin_invalid]
-    (§
-        (if (and (== wp @curwin) (not curwin_invalid))        ;; nothing to do
-            ((ß RETURN) nil)
-        )
-
+(defn- #_void win-enter-ext [#_window_C win, #_boolean curwin_invalid]
+    (when (or (!= @curwin win) curwin_invalid)
         ;; Might need to scroll the old window before switching, e.g., when the cursor was moved.
         (update-topline)
-
         (when (not curwin_invalid)
             (reset! prevwin @curwin)       ;; remember for CTRL-W p
-            (swap! curwin assoc :w_redr_status true)
-        )
-        (reset! curwin wp)
+            (swap! curwin assoc :w_redr_status true))
+
+        (reset! curwin win)
+
         (check-cursor)
-        (if (not (virtual-active))
-            (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        )
+        (when (not (virtual-active))
+            (swap! curwin assoc-in [:w_cursor :coladd] 0))
         (changed-line-abv-curs)    ;; assume cursor position needs updating
-
         (swap! curwin assoc :w_redr_status true)
-        (if (non-zero? @restart_edit)
+        (when (non-zero? @restart_edit)
             (redraw-later VALID))    ;; causes status line redraw
-
         ;; set window height to desired minimal value
         (cond (and (< (:w_height @curwin) @p_wh) (not @(:wo_wfh (:w_options @curwin))))
-        (do
-            (win-setheight (int @p_wh))
-        )
+            (win-setheight @p_wh)
         (zero? (:w_height @curwin))
-        (do
             (win-setheight 1)
-        ))
-
+        )
         ;; set window width to desired minimal value
         (when (and (< (:w_width @curwin) @p_wiw) (not @(:wo_wfw (:w_options @curwin))))
-            (win-setwidth (int @p_wiw))
-        )
-        nil
-    ))
+            (win-setwidth @p_wiw)
+        ))
+    nil)
 
 ;; Allocate a window structure and link it in the window list.
 
