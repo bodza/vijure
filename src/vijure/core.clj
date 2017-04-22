@@ -17254,7 +17254,7 @@
 ;; Count the number of bytes, characters and "words" in a line.
 ;;
 ;; "Words" are counted by looking for boundaries between non-space and
-;; space characters.  (it seems to produce results that match 'wc'.)
+;; space characters.  (It seems to produce results that match 'wc'.)
 ;;
 ;; Return value is byte count; word count for the line is added to "*wc".
 ;; Char count is added to "*cc".
@@ -17265,38 +17265,17 @@
 ;; the size of the EOL character.
 
 (defn- #_int line-count-info [#_Bytes line, #_int' a'wc, #_int' a'cc, #_int limit, #_int eol_size]
-    (§
-        ((ß int words =) 0)
-        ((ß int chars =) 0)
-        ((ß boolean is_word =) false)
-
-        ((ß int i =) (loop-when [i 0] (and (< i limit) (non-eos? line i)) => i
-            (cond is_word
-            (do
-                (when (vim-isspace (.at line i))
-                    ((ß words =) (inc words))
-                    ((ß is_word =) false)
-                )
-            )
-            (not (vim-isspace (.at line i)))
-            (do
-                ((ß is_word =) true)
-            ))
-            ((ß chars =) (inc chars))
-            (recur (+ i (us-ptr2len-cc line, i)))
-        ))
-
-        ((ß words =) (if is_word (inc words) words))
-        (reset! a'wc (+ @a'wc words))
-
+    (let [[#_int words #_boolean word? #_int chars #_int bytes]
+            (loop-when [w* 0 w? false c* 0 b* 0] (and (< b* limit) (non-eos? line b*)) => [w* w? c* b*]
+                (let [[w* w?] (or (cond w? (when (vim-isspace (.at line b*)) [(inc w*) false]) (not (vim-isspace (.at line b*))) [w* true]) [w* w?])]
+                    (recur w* w? (inc c*) (+ b* (us-ptr2len-cc line, b*)))
+                ))
+          words (if word? (inc words) words)]
+        (swap! a'wc + words)
         ;; Add eol_size if the end of line was reached before hitting limit.
-        (when (and (< i limit) (eos? line i))
-            ((ß i =) (+ i eol_size))
-            ((ß chars =) (+ chars eol_size))
-        )
-        (reset! a'cc (+ @a'cc chars))
-
-        i
+        (let [[bytes chars] (if (and (< bytes limit) (eos? line bytes)) [(+ bytes eol_size) (+ chars eol_size)] [bytes chars])]
+            (swap! a'cc + chars)
+            bytes)
     ))
 
 ;; Give some info about the position of the cursor (for "g CTRL-G").
@@ -19031,49 +19010,21 @@
 
 (defn- #_int inchar [#_Bytes buf, #_int maxlen, #_long wait_time, #_int tb_change_cnt]
     ;; wait_time: milli seconds
-    (§
-        (when (or (== wait_time -1) (< 100 wait_time))   ;; flush output before waiting
-            (cursor-on)
+    (when (or (== wait_time -1) (< 100 wait_time))   ;; flush output before waiting
+        (cursor-on)
+        (out-flush))
+    ;; If we got an interrupt, skip all previously typed characters and return true if quit reading script file.
+    ;; Stop reading typeahead when a single CTRL-C was read, fill-input-buf() returns this when not able to read from stdin.
+    ;; Don't use *buf here, closescript() may have freed typebuf.tb_buf[] and "buf" may be pointing inside typebuf.tb_buf[].
+    (if @got_int
+        (let [#_final #_int DUM_LEN (+ (* MAXMAPLEN 3) 3) #_Bytes dum (Bytes. (inc DUM_LEN)) #_boolean retesc false] ;; return ESC with gotint
+            (loop [] (let [#_int n (ui-inchar dum, DUM_LEN, 0, 0)] (if (or (zero? n) (and (== n 1) (at? dum Ctrl_C))) (if retesc 1 0) (recur)))))
+        (do ;; Always flush the output characters when getting input characters from the user.
             (out-flush)
-        )
-
-        ((ß int len =) 0)
-        ((ß boolean retesc =) false)                     ;; return ESC with gotint
-
-        ;; If we got an interrupt, skip all previously typed characters
-        ;; and return true if quit reading script file.
-        ;; Stop reading typeahead when a single CTRL-C was read,
-        ;; fill-input-buf() returns this when not able to read from stdin.
-        ;; Don't use *buf here, closescript() may have freed typebuf.tb_buf[]
-        ;; and "buf" may be pointing inside typebuf.tb_buf[].
-
-        (when @got_int
-            ((ß final int DUM_LEN =) (+ (* MAXMAPLEN 3) 3))
-            ((ß Bytes dum =) (Bytes. (inc DUM_LEN)))
-
-            (loop []
-                ((ß len =) (ui-inchar dum, DUM_LEN, 0, 0))
-                (if (or (zero? len) (and (== len 1) (at? dum Ctrl_C)))
-                    (ß BREAK)
-                )
-                (recur)
-            )
-            ((ß RETURN) (if retesc 1 0))
-        )
-
-        ;; Always flush the output characters when getting input characters from the user.
-
-        (out-flush)
-
-        ;; Fill up to a third of the buffer, because each character may be tripled below.
-
-        ((ß len =) (ui-inchar buf, (/ maxlen 3), wait_time, tb_change_cnt))
-
-        (if (typebuf-changed tb_change_cnt)
-            ((ß RETURN) 0)
-        )
-
-        (fix-input-buffer buf, len)
+            ;; Fill up to a third of the buffer, because each character may be tripled below.
+            (let [#_int len (ui-inchar buf, (/ maxlen 3), wait_time, tb_change_cnt)]
+                (if (typebuf-changed tb_change_cnt) 0 (fix-input-buffer buf, len))
+            ))
     ))
 
 ;; Fix typed characters for use by vgetc() and check-termcode().
@@ -19881,44 +19832,29 @@
 
 (defn- #_void ins-redraw [#_boolean ready]
     ;; ready: not busy with something
-    (§
-        (if (char-avail)
-            ((ß RETURN) nil)
-        )
-
-        ((ß long conceal_old_cursor_line =) 0)
-        ((ß long conceal_new_cursor_line =) 0)
-        ((ß boolean conceal_update_lines =) false)
-
-        ;; Trigger CursorMoved if the cursor moved.
-        ;; Not when the popup menu is visible, the command might delete it.
-        (when (and ready (< 0 @(:wo_cole (:w_options @curwin))) (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
-            ((ß conceal_old_cursor_line =) (:lnum @last_cursormoved))
-            ((ß conceal_new_cursor_line =) (:lnum (:w_cursor @curwin)))
-            ((ß conceal_update_lines =) true)
-
-            (reset! last_cursormoved (:w_cursor @curwin))
-        )
-
-        (cond (non-zero? @must_redraw)
-        (do
-            (update-screen 0)
-        )
-        (or @clear_cmdline @redraw_cmdline)
-        (do
-            (showmode)             ;; clear cmdline and show mode
+    (when-not (char-avail)
+        (let [#_boolean lupd (and ready (pos? @(:wo_cole (:w_options @curwin))) (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
+              ;; Trigger CursorMoved if the cursor moved.
+              [#_long lold #_long lnew]
+                (if lupd
+                    (let [lold (:lnum @last_cursormoved)
+                          _ (reset! last_cursormoved (:w_cursor @curwin))
+                          lnew (:lnum @last_cursormoved)]
+                        [lold lnew])
+                    [0 0])]
+            (cond
+                (non-zero? @must_redraw) (update-screen 0)
+                (or @clear_cmdline @redraw_cmdline) (showmode)) ;; clear cmdline and show mode
+            (when (or (and lupd (or (!= lold lnew) (conceal-cursor-line @curwin))) @need_cursor_line_redraw)
+                (when (!= lold lnew)
+                    (update-single-line @curwin, lold))
+                (update-single-line @curwin, (if (zero? lnew) (:lnum (:w_cursor @curwin)) lnew))
+                (swap! curwin update :w_valid & (bit-not VALID_CROW)))
+            (showruler false)
+            (setcursor)
+            (reset! emsg_on_display false)    ;; may remove error message now
         ))
-        (when (or (and conceal_update_lines (or (!= conceal_old_cursor_line conceal_new_cursor_line) (conceal-cursor-line @curwin))) @need_cursor_line_redraw)
-            (if (!= conceal_old_cursor_line conceal_new_cursor_line)
-                (update-single-line @curwin, conceal_old_cursor_line))
-            (update-single-line @curwin, (if (zero? conceal_new_cursor_line) (:lnum (:w_cursor @curwin)) conceal_new_cursor_line))
-            (swap! curwin update :w_valid & (bit-not VALID_CROW))
-        )
-        (showruler false)
-        (setcursor)
-        (reset! emsg_on_display false)    ;; may remove error message now
-        nil
-    ))
+    nil)
 
 ;; Handle a CTRL-V or CTRL-Q typed in Insert mode.
 
@@ -20665,26 +20601,21 @@
 
 (defn- #_void replace-push [#_int c]
     ;; c: character that is replaced (NUL is none)
-    (§
-        (if (< @replace_stack_nr @replace_offset)      ;; nothing to do
-            ((ß RETURN) nil)
-        )
-
+    (when (<= @replace_offset @replace_stack_nr)
         (when (<= @replace_stack_len @replace_stack_nr)
             (swap! replace_stack_len + 50)
-            ((ß Bytes p =) (Bytes. @replace_stack_len))
-            (if (some? @replace_stack)
-                (BCOPY p, @replace_stack, @replace_stack_nr))
-            (reset! replace_stack p)
-        )
-
-        ((ß Bytes p =) (.plus @replace_stack (- @replace_stack_nr @replace_offset)))
-        (if (non-zero? @replace_offset)
-            (BCOPY p, 1, p, 0, @replace_offset))
-        (.be p 0, c)
-        (swap! replace_stack_nr inc)
-        nil
-    ))
+            (let [#_Bytes p (Bytes. @replace_stack_len)]
+                (when (some? @replace_stack)
+                    (BCOPY p, @replace_stack, @replace_stack_nr))
+                (reset! replace_stack p)
+            ))
+        (let [#_Bytes p (.plus @replace_stack (- @replace_stack_nr @replace_offset))]
+            (when (non-zero? @replace_offset)
+                (BCOPY p, 1, p, 0, @replace_offset))
+            (.be p 0, c)
+            (swap! replace_stack_nr inc)
+        ))
+    nil)
 
 ;; Push a character onto the replace stack.
 ;; Handles a multi-byte character in reverse byte order, so that the first byte is popped off first.
@@ -20708,16 +20639,14 @@
 
 (defn- #_void replace-join [#_int off]
     ;; off: offset for which NUL to remove
-    (§
-        (loop-when-recur [#_int i (dec @replace_stack_nr)] (<= 0 i) [(dec i)]
-            (when (and (eos? @replace_stack i) (< ((ß off =) (dec off)) 0))
+    (loop-when [off off #_int i (dec @replace_stack_nr)] (<= 0 i)
+        (if (eos? @replace_stack i)
+            (let-when [off (dec off)] (< off 0) => (recur off (dec i))
                 (swap! replace_stack_nr dec)
-                (BCOPY @replace_stack, i, @replace_stack, (inc i), (- @replace_stack_nr i))
-                ((ß RETURN) nil)
-            )
-        )
-        nil
-    ))
+                (BCOPY @replace_stack, i, @replace_stack, (inc i), (- @replace_stack_nr i)))
+            (recur off (dec i))
+        ))
+    nil)
 
 ;; Pop bytes from the replace stack until a NUL is found, and insert them
 ;; before the cursor.  Can only be used in REPLACE or VREPLACE mode.
@@ -21095,46 +21024,20 @@
 ;; Returns true when a CTRL-O and other keys stuffed.
 
 (defn- #_boolean ins-start-select [#_int c]
-    (§
-        (when @km_startsel
-            ((ß SWITCH) c
-                ((ß CASE) K_KHOME)
-                ((ß CASE) K_KEND)
-                ((ß CASE) K_PAGEUP)
-                ((ß CASE) K_KPAGEUP)
-                ((ß CASE) K_PAGEDOWN)
-                ((ß CASE) K_KPAGEDOWN)
-                (do
-                    (if (non-flag? @mod_mask MOD_MASK_SHIFT)
-                        (ß BREAK)
-                    )
-                    (ß FALLTHROUGH)
-                )
-                ((ß CASE) K_S_LEFT)
-                ((ß CASE) K_S_RIGHT)
-                ((ß CASE) K_S_UP)
-                ((ß CASE) K_S_DOWN)
-                ((ß CASE) K_S_END)
-                ((ß CASE) K_S_HOME)
-                (do
-                    ;; Start selection right away, the cursor can move with
-                    ;; CTRL-O when beyond the end of the line.
-                    (start-selection)
-
-                    ;; Execute the key in (insert) Select mode.
-                    (stuff-char Ctrl_O)
-                    (when (non-zero? @mod_mask)
-                        ((ß Bytes buf =) (Bytes. 4))
-                        (-> buf (.be 0, KB_SPECIAL) (.be 1, KS_MODIFIER) (.be 2, @mod_mask) (eos! 3))
-                        (stuff-string buf)
-                    )
-                    (stuff-char c)
-                    ((ß RETURN) true)
-                )
-            )
-        )
-
-        false
+    (let-when [#_boolean iss- (fn [#_int c]
+                (start-selection)   ;; start selection right away, the cursor can move with CTRL-O when beyond the end of the line
+                (stuff-char Ctrl_O) ;; execute the key in (insert) Select mode
+                (when (non-zero? @mod_mask)
+                    (stuff-string (-> (Bytes. 4) (.be 0, KB_SPECIAL) (.be 1, KS_MODIFIER) (.be 2, @mod_mask) (eos! 3))))
+                (stuff-char c)
+                true
+            )] @km_startsel => false
+        (condp ==? c
+            [K_KHOME K_KEND K_PAGEUP K_KPAGEUP K_PAGEDOWN K_KPAGEDOWN]
+                (and (flag? @mod_mask MOD_MASK_SHIFT) (iss- c))
+            [K_S_LEFT K_S_RIGHT K_S_UP K_S_DOWN K_S_END K_S_HOME]
+                (iss- c)
+            false)
     ))
 
 ;; <Insert> key in Insert mode: toggle insert/replace mode.
@@ -27822,67 +27725,48 @@
     ])
 
 (defn- #_void mb-decompose [#_int c, #_int' a'c1, #_int' a'c2, #_int' a'c3]
-    (§
-        (cond (<= 0xfb20 c 0xfb4f)
-        (do
-            ((ß decomp_C d =) (... decomp_table (- c 0xfb20)))
+    (if (<= 0xfb20 c 0xfb4f)
+        (let [#_decomp_C d (... decomp_table (- c 0xfb20))]
             (reset! a'c1 (:a d))
             (reset! a'c2 (:b d))
             (reset! a'c3 (:c d))
         )
-        :else
         (do
             (reset! a'c1 c)
-            (reset! a'c2 (reset! a'c3 0))
+            (reset! a'c2 0)
+            (reset! a'c3 0)
         ))
-        nil
-    ))
+    nil)
 
 ;; Compare two strings, ignore case if ireg_ic set.
 ;; Return 0 if strings match, non-zero otherwise.
 ;; Correct the length "*n" when composing characters are ignored.
 
 (defn- #_int cstrncmp [#_Bytes s1, #_Bytes s2, #_int' a'n]
-    (§
-        ((ß int cmp =) (if (not @ireg_ic) (STRNCMP s1, s2, @a'n) (us-strnicmp s1, s2, @a'n)))
-
+    (let-when [#_int cmp (if (not @ireg_ic) (STRNCMP s1, s2, @a'n) (us-strnicmp s1, s2, @a'n))] (and (non-zero? cmp) @ireg_icombine) => cmp
         ;; if it failed and it's utf8 and we want to combineignore
-        (when (and (non-zero? cmp) @ireg_icombine)
-            ((ß Bytes[] a'str1 =) (atom (#_Bytes object s1)))
-            ((ß Bytes[] a'str2 =) (atom (#_Bytes object s2)))
-            ((ß int c1 =) (ß 0, c2 = 0))
-
-            ;; We have to handle the strcmp() ourselves, since it is necessary
-            ;; to deal with the composing characters by ignoring them.
-            (loop-when [] (< (BDIFF @a'str1, s1) @a'n)
-                ((ß c1 =) (us-ptr2char-adv a'str1, true))
-                ((ß c2 =) (us-ptr2char-adv a'str2, true))
-
-                ;; Decompose the character if necessary into 'base' characters,
-                ;; because I don't care about Arabic, I will hard-code the Hebrew
-                ;; which I *do* care about!  So sue me...
-                (when (and (!= c1 c2) (or (not @ireg_ic) (!= (utf-fold c1) (utf-fold c2))))
-                    ((ß int[] a'c11 =) (atom (int)))
-                    ((ß int[] a'c12 =) (atom (int)))
-                    ((ß int[] a'junk =) (atom (int)))
-
-                    ;; decomposition necessary?
-                    (mb-decompose c1, a'c11, a'junk, a'junk)
-                    (mb-decompose c2, a'c12, a'junk, a'junk)
-                    ((ß c1 =) @a'c11)
-                    ((ß c2 =) @a'c12)
-                    (if (and (!= @a'c11 @a'c12) (or (not @ireg_ic) (!= (utf-fold @a'c11) (utf-fold @a'c12))))
-                        (ß BREAK)
-                    )
-                )
-                (recur)
-            )
-            ((ß cmp =) (- c2 c1))
+        (let [a's1 (atom (#_Bytes object s1)) a's2 (atom (#_Bytes object s2))
+              ;; We have to handle the strcmp() ourselves, since it is necessary
+              ;; to deal with the composing characters by ignoring them.
+              cmp (loop-when [#_int c1 0 #_int c2 0] (< (BDIFF @a's1, s1) @a'n) => (- c2 c1)
+                    (let [c1 (us-ptr2char-adv a's1, true) c2 (us-ptr2char-adv a's2, true)]
+                        ;; Decompose the character if necessary into 'base' characters,
+                        ;; because I don't care about Arabic, I will hard-code the Hebrew
+                        ;; which I *do* care about!  So sue me...
+                        (if (and (!= c1 c2) (or (not @ireg_ic) (!= (utf-fold c1) (utf-fold c2))))
+                            (let [a'c1 (atom (int)) a'c2 (atom (int)) _ (atom (int))]
+                                ;; decomposition necessary?
+                                (mb-decompose c1, a'c1, _, _)
+                                (mb-decompose c2, a'c2, _, _)
+                                (let-when [c1 @a'c1 c2 @a'c2] (or (== @a'c1 @a'c2) (and @ireg_ic (== (utf-fold @a'c1) (utf-fold @a'c2)))) => (- c2 c1)
+                                    (recur c1 c2)
+                                ))
+                            (recur c1 c2)
+                        ))
+                )]
             (when (zero? cmp)
-                (reset! a'n (BDIFF @a'str2, s2)))
-        )
-
-        cmp
+                (reset! a'n (BDIFF @a's2, s2)))
+            cmp)
     ))
 
 ;; This function is used a lot for simple searches, keep it fast!
