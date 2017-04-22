@@ -996,13 +996,6 @@
 (final int WSP_BELOW       32)      ;; put new window below/right
 (final int WSP_ABOVE       64)      ;; put new window above/left
 
-;; "flags" values for option-setting functions.
-;; When OPT_GLOBAL and OPT_LOCAL are both missing,
-;; set both local and global values, get local value.
-
-(final int OPT_GLOBAL      2)       ;; use global value
-(final int OPT_LOCAL       4)       ;; use local value
-
 ;; Magic chars used in confirm dialog strings.
 (final byte DLG_BUTTON_SEP  \newline)
 (final byte DLG_HOTKEY_CHAR \&)
@@ -1138,7 +1131,7 @@
 
 ;; option.h: definition of global variables for settable options
 
-;; Formatting options for "p_fo" 'formatoptions'.
+;; Formatting options for 'formatoptions'.
 (final byte
     FO_WRAP         \t,
     FO_WRAP_COMS    \c,
@@ -1280,7 +1273,6 @@
 (atom! Bytes   p_isp)       ;; 'isprint'
 (atom! boolean p_js)        ;; 'joinspaces'
 (atom! Bytes   p_km)        ;; 'keymodel'
-(atom! Bytes   p_kp)        ;; 'keywordprg'
 (atom! long    p_ls)        ;; 'laststatus'
 (atom! boolean p_lz)        ;; 'lazyredraw'
 (atom! Bytes   p_lcs)       ;; 'listchars'
@@ -1336,7 +1328,6 @@
 (final Bytes* p_ttym_values [ (u8 "xterm"), (u8 "xterm2"), null ])
 
 (atom! long    p_ttyscroll) ;; 'ttyscroll'
-(atom! long    p_ul)        ;; 'undolevels'
 (atom! long    p_ut)        ;; 'updatetime'
 (atom! long    p_verbose)   ;; 'verbose'
 (atom! Bytes   p_ve)        ;; 'virtualedit'
@@ -1352,7 +1343,6 @@
 (atom! boolean p_vb)        ;; 'visualbell'
 (atom! Bytes   p_ww)        ;; 'whichwrap'
 (atom! long    p_wc)        ;; 'wildchar'
-(atom! long    p_window)    ;; 'window'
 (atom! long    p_wh)        ;; 'winheight'
 (atom! long    p_wmh)       ;; 'winminheight'
 (atom! long    p_wmw)       ;; 'winminwidth'
@@ -2467,12 +2457,8 @@
 
         ;; Options local to a window.
         ;; They are local because they influence the layout of the window or depend on the window layout.
-        ;; There are two values:
-        ;; "w_onebuf_opt" is local to the buffer currently in this window,
-        ;; "w_allbuf_opt" is for all buffers in this window.
 
-        (field winopt_C     w_onebuf_opt    (§_winopt_C))
-        (field winopt_C     w_allbuf_opt    (§_winopt_C))
+        (field winopt_C     w_options    (§_winopt_C))
 
         ;; A few options have local flags for P_INSECURE.
         (field int*         w_p_cc_cols)        ;; array of columns to highlight or null
@@ -3635,7 +3621,7 @@
 ;           else if (@do_redraw || stuff_empty())
 ;           {
                 ;; Trigger CursorMoved if the cursor moved.
-;               if (!@finish_op && 0 < @curwin.w_onebuf_opt.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
+;               if (!@finish_op && 0 < @curwin.w_options.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
 ;               {
 ;                   conceal_old_cursor_line = @last_cursormoved.lnum;
 ;                   conceal_new_cursor_line = @curwin.w_cursor.lnum;
@@ -5339,7 +5325,7 @@
 
 (defn- #_void msg_prt_line [#_Bytes s, #_boolean list]
     (§
-;       if (@curwin.w_onebuf_opt.@wo_list)
+;       if (@curwin.w_options.@wo_list)
 ;           list = true;
 
         ;; find start of trailing whitespace
@@ -7198,7 +7184,6 @@
 ;;   - Add a PV_XX entry to the enum below.
 ;;   - Add a variable to the window or buffer struct in structs.h.
 ;;   - For a window option, add some code to copy_winopt().
-;;   - For a buffer option, add some code to buf_copy_options().
 ;;   - For a buffer string option, add code to check_buf_options().
 ;; - If it's a numeric option, add any necessary bounds checks to do_set().
 ;; - If it's a list of flags, add some code in do_set(), search for WW_ALL.
@@ -7208,12 +7193,11 @@
 
 ;; The options that are local to a window or buffer have "indir" set to
 ;; one of these values.  Special values:
-;; PV_NONE: global option.
+;; 0: global option.
 ;; PV_WIN is added: window-local option.
 ;; PV_BUF is added: buffer-local option.
 
 (final int
-    PV_NONE 0,
     PV_WIN  0x2000,
     PV_BUF  0x4000,
     PV_MASK 0x0fff)
@@ -7268,51 +7252,13 @@
     PV_WFW    (| WV_WFW    PV_WIN),
     PV_WRAP   (| WV_WRAP   PV_WIN))
 
-;; Options local to a window have a value local to a buffer and global to all buffers.
-;; Indicate this by setting "var" to VAR_WIN.
-
-(final Object VAR_WIN (Object.))
-
-;; These are the global values for options which are also local to a buffer.
-;; Only to be used in option.c!
-
-(atom! boolean p_ai)
-(atom! boolean p_ci)
-(atom! Bytes   p_cinw)
-(atom! Bytes   p_com)
-(atom! boolean p_et)
-(atom! Bytes   p_fo)
-(atom! Bytes   p_flp)
-(atom! boolean p_inf)
-(atom! Bytes   p_isk)
-(atom! boolean p_mod)
-(atom! Bytes   p_mps)
-(atom! Bytes   p_nf)
-(atom! boolean p_pi)
-(atom! Bytes   p_qe)
-(atom! boolean p_si)
-(atom! long    p_sts)
-(atom! long    p_sw)
-(atom! long    p_ts)
-(atom! long    p_tw)
-(atom! long    p_wm)
-
-;; Saved values for when 'paste' is set.
-(atom! long     p_tw_nopaste)
-(atom! long     p_wm_nopaste)
-(atom! long     p_sts_nopaste)
-(atom! boolean  p_ai_nopaste)
-
 (class! #_final vimoption_C
     [
         (field Bytes    fullname)   ;; full option name
         (field Bytes    shortname)  ;; permissible abbreviation
         (atom' long     flags)      ;; see below
-        (field Object   var)        ;; global option: pointer to variable;
-                                    ;; window-local option: VAR_WIN;
-                                    ;; buffer-local option: global value
-        (field int      indir)      ;; global option: PV_NONE;
-                                    ;; local option: indirect option index
+        (field Object   var)        ;; pointer to variable
+        (field int      indir)      ;; indirect option index
         (field Object   def_val)    ;; default value for variable
     ])
 
@@ -7337,7 +7283,6 @@
 (final int P_STRING             0x04)   ;; the option is a string
 
 (final int P_NODEFAULT          0x40)   ;; don't set to default value
-(final int P_WAS_SET           0x100)   ;; option has been set/reset
 
                                         ;; when option changed, what to display:
 (final int P_RSTAT            0x1000)   ;; redraw status lines
@@ -7373,7 +7318,7 @@
 
 (defn- #_vimoption_C term_opt [#_Bytes fname, #_Bytes* var]
     (§
-;       return utf8_opt(fname, null, P_RALL, var, PV_NONE, u8(""));
+;       return utf8_opt(fname, null, P_RALL, var, 0, u8(""));
     ))
 
 ;; vimoptions[] are initialized here.
@@ -7386,139 +7331,138 @@
 
 (final vimoption_C* vimoptions
     [
-        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      PV_NONE,   (u8 "single")),
-        (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
-        (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
-        (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   PV_NONE,   (u8 " \t!@*-+;:,./?")),
-        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      VAR_WIN,     PV_BRI,     false),
-        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     VAR_WIN,     PV_BRIOPT, (u8 "")),
-        (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     PV_NONE,    CTRL_F_STR),
-        (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            p_cinw,      PV_CINW,   (u8 "if,else,while,do,for,switch")),
-        (utf8_opt (u8 "clipboard"),      (u8 "cb"),     (| P_COMMA P_NODUP),            p_cb,        PV_NONE,   (u8 "")),
-        (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        PV_NONE,    1#_L),
-        (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       PV_NONE,    7#_L),
-        (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     VAR_WIN,     PV_CC,     (u8 "")),
-        (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     PV_NONE,    80#_L),
-        (utf8_opt (u8 "comments"),       (u8 "com"),    (| P_COMMA P_NODUP P_CURSWANT), p_com,       PV_COM,     COMMENTS_INIT),
-        (utf8_opt (u8 "concealcursor"),  (u8 "cocu"),      P_RWIN,                      VAR_WIN,     PV_COCU,   (u8 "")),
-        (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      VAR_WIN,     PV_COLE,    0#_L),
-        (bool_opt (u8 "copyindent"),     (u8 "ci"),        0,                           p_ci,        PV_CI,      false),
-        (utf8_opt (u8 "cpoptions"),      (u8 "cpo"),    (| P_RALL P_FLAGLIST),          p_cpo,       PV_NONE,    CPO_VIM),
-        (bool_opt (u8 "cursorbind"),     (u8 "crb"),       0,                           VAR_WIN,     PV_CRBIND,  false),
-        (bool_opt (u8 "cursorcolumn"),   (u8 "cuc"),       P_RWIN,                      VAR_WIN,     PV_CUC,     false),
-        (bool_opt (u8 "cursorline"),     (u8 "cul"),       P_RWIN,                      VAR_WIN,     PV_CUL,     false),
-        (bool_opt (u8 "delcombine"),     (u8 "deco"),      0,                           p_deco,      PV_NONE,    false),
-        (bool_opt (u8 "digraph"),        (u8 "dg"),        0,                           p_dg,        PV_NONE,    false),
-        (utf8_opt (u8 "display"),        (u8 "dy"),     (| P_COMMA P_RALL P_NODUP),     p_dy,        PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "eadirection"),    (u8 "ead"),       0,                           p_ead,       PV_NONE,   (u8 "both")),
-        (bool_opt (u8 "equalalways"),    (u8 "ea"),        P_RALL,                      p_ea,        PV_NONE,    true),
-        (bool_opt (u8 "errorbells"),     (u8 "eb"),        0,                           p_eb,        PV_NONE,    false),
-        (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        PV_NONE,    true),
-        (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           p_et,        PV_ET,      false),
-        (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       PV_NONE,   (u8 "vert:|,fold:-")),
-        (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  p_fo,        PV_FO,      DFLT_FO_VIM),
-        (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           p_flp,       PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
-        (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        PV_NONE,    false),
-        (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        PV_NONE,    HIGHLIGHT_INIT),
-        (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        PV_NONE,    50#_L),
-        (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       PV_NONE,    false),
-        (bool_opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        PV_NONE,    false),
-        (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        PV_NONE,    false),
-        (bool_opt (u8 "infercase"),      (u8 "inf"),       0,                           p_inf,       PV_INF,     false),
-        (bool_opt (u8 "insertmode"),     (u8 "im"),        0,                           p_im,        PV_NONE,    false),
-        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       PV_NONE,   (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
-        (utf8_opt (u8 "isident"),        (u8 "isi"),    (| P_COMMA P_NODUP),            p_isi,       PV_NONE,   (u8 "@,48-57,_,192-255")),
-        (utf8_opt (u8 "iskeyword"),      (u8 "isk"),    (| P_COMMA P_NODUP),            p_isk,       PV_ISK,    (u8 "@,48-57,_,192-255")),
-        (utf8_opt (u8 "isprint"),        (u8 "isp"),    (| P_RALL P_COMMA P_NODUP),     p_isp,       PV_NONE,   (u8 "@,161-255")),
-        (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        PV_NONE,    true),
-        (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           p_kp,        PV_KP,     (u8 ":echo")),
-        (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        PV_NONE,    1#_L),
-        (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        PV_NONE,    false),
-        (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      VAR_WIN,     PV_LBR,     false),
-        (long_opt (u8 "lines"),           null,         (| P_NODEFAULT P_RCLR),         Rows,        PV_NONE,    24#_L),
-        (bool_opt (u8 "list"),            null,            P_RWIN,                      VAR_WIN,     PV_LIST,    false),
-        (utf8_opt (u8 "listchars"),      (u8 "lcs"),    (| P_RALL P_COMMA P_NODUP),     p_lcs,       PV_NONE,   (u8 "eol:$")),
-        (bool_opt (u8 "magic"),           null,            0,                           p_magic,     PV_NONE,    true),
-        (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            p_mps,       PV_MPS,    (u8 "(:),{:},[:]")),
-        (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       PV_NONE,    5#_L),
-        (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       PV_NONE,    2#_L),
-        (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       PV_NONE,    1000#_L),
-        (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       PV_NONE,    1000#_L),
-        (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     p_mod,       PV_MOD,     false),
-        (bool_opt (u8 "more"),            null,            0,                           p_more,      PV_NONE,    true),
-        (utf8_opt (u8 "mouse"),           null,            P_FLAGLIST,                  p_mouse,     PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "mousemodel"),     (u8 "mousem"),    0,                           p_mousem,    PV_NONE,   (u8 "extend")),
-        (long_opt (u8 "mousetime"),      (u8 "mouset"),    0,                           p_mouset,    PV_NONE,    500#_L),
-        (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            p_nf,        PV_NF,     (u8 "octal,hex")),
-        (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      VAR_WIN,     PV_NU,      false),
-        (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      VAR_WIN,     PV_NUW,     4#_L),
-        (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    PV_NONE,   (u8 "")),
-        (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      PV_NONE,   (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
-        (bool_opt (u8 "paste"),           null,            0,                           p_paste,     PV_NONE,    false),
-        (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        PV_NONE,   (u8 "")),
-        (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           p_pi,        PV_PI,      false),
-        (bool_opt (u8 "prompt"),          null,            0,                           p_prompt,    PV_NONE,    true),
-        (utf8_opt (u8 "quoteescape"),    (u8 "qe"),        0,                           p_qe,        PV_QE,     (u8 "\\")),
-        (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       PV_NONE,    2000#_L),
-        (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        PV_NONE,    0#_L),
-        (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      VAR_WIN,     PV_RNU,     false),
-        (bool_opt (u8 "remap"),           null,            0,                           p_remap,     PV_NONE,    true),
-        (long_opt (u8 "report"),          null,            0,                           p_report,    PV_NONE,    2#_L),
-        (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        PV_NONE,    false),
-        (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           VAR_WIN,     PV_SCROLL,  12#_L),
-        (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           VAR_WIN,     PV_SCBIND,  false),
-        (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        PV_NONE,    1#_L),
-        (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        PV_NONE,    0#_L),
-        (utf8_opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       PV_NONE,   (u8 "ver,jump")),
-        (utf8_opt (u8 "sections"),       (u8 "sect"),      0,                           p_sections,  PV_NONE,   (u8 "SHNHH HUnhsh")),
-        (utf8_opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       PV_NONE,   (u8 "inclusive")),
-        (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       PV_NONE,   (u8 "")),
-        (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        PV_NONE,    false),
-        (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           p_sw,        PV_SW,      8#_L),
-        (utf8_opt (u8 "showbreak"),      (u8 "sbr"),       P_RALL,                      p_sbr,       PV_NONE,   (u8 "")),
-        (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        PV_NONE,    false),
-        (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        PV_NONE,    false),
-        (bool_opt (u8 "showmode"),       (u8 "smd"),       0,                           p_smd,       PV_NONE,    true),
-        (long_opt (u8 "sidescroll"),     (u8 "ss"),        0,                           p_ss,        PV_NONE,    0#_L),
-        (long_opt (u8 "sidescrolloff"),  (u8 "siso"),      P_RBUF,                      p_siso,      PV_NONE,    0#_L),
-        (bool_opt (u8 "smartcase"),      (u8 "scs"),       0,                           p_scs,       PV_NONE,    false),
-        (bool_opt (u8 "smartindent"),    (u8 "si"),        0,                           p_si,        PV_SI,      false),
-        (bool_opt (u8 "smarttab"),       (u8 "sta"),       0,                           p_sta,       PV_NONE,    false),
-        (long_opt (u8 "softtabstop"),    (u8 "sts"),       0,                           p_sts,       PV_STS,     0#_L),
-        (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        PV_NONE,    false),
-        (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       PV_NONE,    false),
-        (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
-        (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
-        (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
-        (long_opt (u8 "textwidth"),      (u8 "tw"),        P_RBUF,                      p_tw,        PV_TW,      0#_L),
-        (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        PV_NONE,    false),
-        (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   PV_NONE,    true),
-        (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        PV_NONE,    1000#_L),
-        (bool_opt (u8 "ttimeout"),        null,            0,                           p_ttimeout,  PV_NONE,    false),
-        (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       PV_NONE,    -1#_L),
-        (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        PV_NONE,    false),
-        (utf8_opt (u8 "ttymouse"),       (u8 "ttym"),      P_NODEFAULT,                 p_ttym,      PV_NONE,   (u8 "")),
-        (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, PV_NONE,    999#_L),
-        (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           p_ul,        PV_UL,      1000#_L),
-        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        PV_NONE,    4000#_L),
-        (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   PV_NONE,    0#_L),
-        (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        PV_NONE,   (u8 "")),
-        (bool_opt (u8 "visualbell"),     (u8 "vb"),        0,                           p_vb,        PV_NONE,    false),
-        (utf8_opt (u8 "whichwrap"),      (u8 "ww"),     (| P_COMMA P_FLAGLIST),         p_ww,        PV_NONE,   (u8 "b,s")),
-        (long_opt (u8 "wildchar"),       (u8 "wc"),        0,                           p_wc,        PV_NONE,   (long TAB)),
-        (long_opt (u8 "window"),         (u8 "wi"),        0,                           p_window,    PV_NONE,    0#_L),
-        (long_opt (u8 "winheight"),      (u8 "wh"),        0,                           p_wh,        PV_NONE,    1#_L),
-        (bool_opt (u8 "winfixheight"),   (u8 "wfh"),       P_RSTAT,                     VAR_WIN,     PV_WFH,     false),
-        (bool_opt (u8 "winfixwidth"),    (u8 "wfw"),       P_RSTAT,                     VAR_WIN,     PV_WFW,     false),
-        (long_opt (u8 "winminheight"),   (u8 "wmh"),       0,                           p_wmh,       PV_NONE,    1#_L),
-        (long_opt (u8 "winminwidth"),    (u8 "wmw"),       0,                           p_wmw,       PV_NONE,    1#_L),
-        (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       PV_NONE,    20#_L),
-        (bool_opt (u8 "wrap"),            null,            P_RWIN,                      VAR_WIN,     PV_WRAP,    true),
-        (long_opt (u8 "wrapmargin"),     (u8 "wm"),        0,                           p_wm,        PV_WM,      0#_L),
-        (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        PV_NONE,    true),
-        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        PV_NONE,    0#_L),
+        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      0,         (u8 "single")),
+        (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           null,        PV_AI,      false),
+        (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        0,         (u8 "light")),
+        (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        0,         (u8 "")),
+        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   0,         (u8 " \t!@*-+;:,./?")),
+        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      null,        PV_BRI,     false),
+        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
+        (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     0,          CTRL_F_STR),
+        (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            null,        PV_CINW,   (u8 "if,else,while,do,for,switch")),
+        (utf8_opt (u8 "clipboard"),      (u8 "cb"),     (| P_COMMA P_NODUP),            p_cb,        0,         (u8 "")),
+        (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        0,          1#_L),
+        (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7#_L),
+        (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     null,        PV_CC,     (u8 "")),
+        (long_opt (u8 "columns"),        (u8 "co"),     (| P_NODEFAULT P_RCLR),         Columns,     0,          80#_L),
+        (utf8_opt (u8 "comments"),       (u8 "com"),    (| P_COMMA P_NODUP P_CURSWANT), null,        PV_COM,     COMMENTS_INIT),
+        (utf8_opt (u8 "concealcursor"),  (u8 "cocu"),      P_RWIN,                      null,        PV_COCU,   (u8 "")),
+        (long_opt (u8 "conceallevel"),   (u8 "cole"),      P_RWIN,                      null,        PV_COLE,    0#_L),
+        (bool_opt (u8 "copyindent"),     (u8 "ci"),        0,                           null,        PV_CI,      false),
+        (utf8_opt (u8 "cpoptions"),      (u8 "cpo"),    (| P_RALL P_FLAGLIST),          p_cpo,       0,          CPO_VIM),
+        (bool_opt (u8 "cursorbind"),     (u8 "crb"),       0,                           null,        PV_CRBIND,  false),
+        (bool_opt (u8 "cursorcolumn"),   (u8 "cuc"),       P_RWIN,                      null,        PV_CUC,     false),
+        (bool_opt (u8 "cursorline"),     (u8 "cul"),       P_RWIN,                      null,        PV_CUL,     false),
+        (bool_opt (u8 "delcombine"),     (u8 "deco"),      0,                           p_deco,      0,          false),
+        (bool_opt (u8 "digraph"),        (u8 "dg"),        0,                           p_dg,        0,          false),
+        (utf8_opt (u8 "display"),        (u8 "dy"),     (| P_COMMA P_RALL P_NODUP),     p_dy,        0,         (u8 "")),
+        (utf8_opt (u8 "eadirection"),    (u8 "ead"),       0,                           p_ead,       0,         (u8 "both")),
+        (bool_opt (u8 "equalalways"),    (u8 "ea"),        P_RALL,                      p_ea,        0,          true),
+        (bool_opt (u8 "errorbells"),     (u8 "eb"),        0,                           p_eb,        0,          false),
+        (bool_opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        0,          true),
+        (bool_opt (u8 "expandtab"),      (u8 "et"),        0,                           null,        PV_ET,      false),
+        (utf8_opt (u8 "fillchars"),      (u8 "fcs"),    (| P_RALL P_COMMA P_NODUP),     p_fcs,       0,         (u8 "vert:|,fold:-")),
+        (utf8_opt (u8 "formatoptions"),  (u8 "fo"),        P_FLAGLIST,                  null,        PV_FO,      DFLT_FO_VIM),
+        (utf8_opt (u8 "formatlistpat"),  (u8 "flp"),       0,                           null,        PV_FLP,    (u8 "^\\s*\\d\\+[\\]:.)}\\t ]\\s*")),
+        (bool_opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        0,          false),
+        (utf8_opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        0,          HIGHLIGHT_INIT),
+        (long_opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50#_L),
+        (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       0,          false),
+        (bool_opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        0,          false),
+        (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        0,          false),
+        (bool_opt (u8 "infercase"),      (u8 "inf"),       0,                           null,        PV_INF,     false),
+        (bool_opt (u8 "insertmode"),     (u8 "im"),        0,                           p_im,        0,          false),
+        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       0,         (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
+        (utf8_opt (u8 "isident"),        (u8 "isi"),    (| P_COMMA P_NODUP),            p_isi,       0,         (u8 "@,48-57,_,192-255")),
+        (utf8_opt (u8 "iskeyword"),      (u8 "isk"),    (| P_COMMA P_NODUP),            null,        PV_ISK,    (u8 "@,48-57,_,192-255")),
+        (utf8_opt (u8 "isprint"),        (u8 "isp"),    (| P_RALL P_COMMA P_NODUP),     p_isp,       0,         (u8 "@,161-255")),
+        (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        0,          true),
+        (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        0,         (u8 "")),
+        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           null,        PV_KP,     (u8 ":echo")),
+        (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        0,          1#_L),
+        (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        0,          false),
+        (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      null,        PV_LBR,     false),
+        (long_opt (u8 "lines"),           null,         (| P_NODEFAULT P_RCLR),         Rows,        0,          24#_L),
+        (bool_opt (u8 "list"),            null,            P_RWIN,                      null,        PV_LIST,    false),
+        (utf8_opt (u8 "listchars"),      (u8 "lcs"),    (| P_RALL P_COMMA P_NODUP),     p_lcs,       0,         (u8 "eol:$")),
+        (bool_opt (u8 "magic"),           null,            0,                           p_magic,     0,          true),
+        (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            null,        PV_MPS,    (u8 "(:),{:},[:]")),
+        (long_opt (u8 "matchtime"),      (u8 "mat"),       0,                           p_mat,       0,          5#_L),
+        (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       0,          2#_L),
+        (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       0,          1000#_L),
+        (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       0,          1000#_L),
+        (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     null,        PV_MOD,     false),
+        (bool_opt (u8 "more"),            null,            0,                           p_more,      0,          true),
+        (utf8_opt (u8 "mouse"),           null,            P_FLAGLIST,                  p_mouse,     0,         (u8 "")),
+        (utf8_opt (u8 "mousemodel"),     (u8 "mousem"),    0,                           p_mousem,    0,         (u8 "extend")),
+        (long_opt (u8 "mousetime"),      (u8 "mouset"),    0,                           p_mouset,    0,          500#_L),
+        (utf8_opt (u8 "nrformats"),      (u8 "nf"),     (| P_COMMA P_NODUP),            null,        PV_NF,     (u8 "octal,hex")),
+        (bool_opt (u8 "number"),         (u8 "nu"),        P_RWIN,                      null,        PV_NU,      false),
+        (long_opt (u8 "numberwidth"),    (u8 "nuw"),       P_RWIN,                      null,        PV_NUW,     4#_L),
+        (utf8_opt (u8 "operatorfunc"),   (u8 "opfunc"),    0,                           p_opfunc,    0,         (u8 "")),
+        (utf8_opt (u8 "paragraphs"),     (u8 "para"),      0,                           p_para,      0,         (u8 "IPLPPPQPP TPHPLIPpLpItpplpipbp")),
+        (bool_opt (u8 "paste"),           null,            0,                           p_paste,     0,          false),
+        (utf8_opt (u8 "pastetoggle"),    (u8 "pt"),        0,                           p_pt,        0,         (u8 "")),
+        (bool_opt (u8 "preserveindent"), (u8 "pi"),        0,                           null,        PV_PI,      false),
+        (bool_opt (u8 "prompt"),          null,            0,                           p_prompt,    0,          true),
+        (utf8_opt (u8 "quoteescape"),    (u8 "qe"),        0,                           null,        PV_QE,     (u8 "\\")),
+        (long_opt (u8 "redrawtime"),     (u8 "rdt"),       0,                           p_rdt,       0,          2000#_L),
+        (long_opt (u8 "regexpengine"),   (u8 "re"),        0,                           p_re,        0,          0#_L),
+        (bool_opt (u8 "relativenumber"), (u8 "rnu"),       P_RWIN,                      null,        PV_RNU,     false),
+        (bool_opt (u8 "remap"),           null,            0,                           p_remap,     0,          true),
+        (long_opt (u8 "report"),          null,            0,                           p_report,    0,          2#_L),
+        (bool_opt (u8 "ruler"),          (u8 "ru"),        P_RSTAT,                     p_ru,        0,          false),
+        (long_opt (u8 "scroll"),         (u8 "scr"),       0,                           null,        PV_SCROLL,  12#_L),
+        (bool_opt (u8 "scrollbind"),     (u8 "scb"),       0,                           null,        PV_SCBIND,  false),
+        (long_opt (u8 "scrolljump"),     (u8 "sj"),        0,                           p_sj,        0,          1#_L),
+        (long_opt (u8 "scrolloff"),      (u8 "so"),        P_RALL,                      p_so,        0,          0#_L),
+        (utf8_opt (u8 "scrollopt"),      (u8 "sbo"),    (| P_COMMA P_NODUP),            p_sbo,       0,         (u8 "ver,jump")),
+        (utf8_opt (u8 "sections"),       (u8 "sect"),      0,                           p_sections,  0,         (u8 "SHNHH HUnhsh")),
+        (utf8_opt (u8 "selection"),      (u8 "sel"),       0,                           p_sel,       0,         (u8 "inclusive")),
+        (utf8_opt (u8 "selectmode"),     (u8 "slm"),    (| P_COMMA P_NODUP),            p_slm,       0,         (u8 "")),
+        (bool_opt (u8 "shiftround"),     (u8 "sr"),        0,                           p_sr,        0,          false),
+        (long_opt (u8 "shiftwidth"),     (u8 "sw"),        0,                           null,        PV_SW,      8#_L),
+        (utf8_opt (u8 "showbreak"),      (u8 "sbr"),       P_RALL,                      p_sbr,       0,         (u8 "")),
+        (bool_opt (u8 "showcmd"),        (u8 "sc"),        0,                           p_sc,        0,          false),
+        (bool_opt (u8 "showmatch"),      (u8 "sm"),        0,                           p_sm,        0,          false),
+        (bool_opt (u8 "showmode"),       (u8 "smd"),       0,                           p_smd,       0,          true),
+        (long_opt (u8 "sidescroll"),     (u8 "ss"),        0,                           p_ss,        0,          0#_L),
+        (long_opt (u8 "sidescrolloff"),  (u8 "siso"),      P_RBUF,                      p_siso,      0,          0#_L),
+        (bool_opt (u8 "smartcase"),      (u8 "scs"),       0,                           p_scs,       0,          false),
+        (bool_opt (u8 "smartindent"),    (u8 "si"),        0,                           null,        PV_SI,      false),
+        (bool_opt (u8 "smarttab"),       (u8 "sta"),       0,                           p_sta,       0,          false),
+        (long_opt (u8 "softtabstop"),    (u8 "sts"),       0,                           null,        PV_STS,     0#_L),
+        (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        0,          false),
+        (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       0,          false),
+        (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       0,          true),
+        (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      null,        PV_TS,      8#_L),
+        (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      0,         (u8 "")),
+        (long_opt (u8 "textwidth"),      (u8 "tw"),        P_RBUF,                      null,        PV_TW,      0#_L),
+        (bool_opt (u8 "tildeop"),        (u8 "top"),       0,                           p_to,        0,          false),
+        (bool_opt (u8 "timeout"),        (u8 "to"),        0,                           p_timeout,   0,          true),
+        (long_opt (u8 "timeoutlen"),     (u8 "tm"),        0,                           p_tm,        0,          1000#_L),
+        (bool_opt (u8 "ttimeout"),        null,            0,                           p_ttimeout,  0,          false),
+        (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       0,          -1#_L),
+        (bool_opt (u8 "ttyfast"),        (u8 "tf"),        0,                           p_tf,        0,          false),
+        (utf8_opt (u8 "ttymouse"),       (u8 "ttym"),      P_NODEFAULT,                 p_ttym,      0,         (u8 "")),
+        (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, 0,          999#_L),
+        (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           null,        PV_UL,      1000#_L),
+        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000#_L),
+        (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   0,          0#_L),
+        (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        0,         (u8 "")),
+        (bool_opt (u8 "visualbell"),     (u8 "vb"),        0,                           p_vb,        0,          false),
+        (utf8_opt (u8 "whichwrap"),      (u8 "ww"),     (| P_COMMA P_FLAGLIST),         p_ww,        0,         (u8 "b,s")),
+        (long_opt (u8 "wildchar"),       (u8 "wc"),        0,                           p_wc,        0,         (long TAB)),
+        (long_opt (u8 "winheight"),      (u8 "wh"),        0,                           p_wh,        0,          1#_L),
+        (bool_opt (u8 "winfixheight"),   (u8 "wfh"),       P_RSTAT,                     null,        PV_WFH,     false),
+        (bool_opt (u8 "winfixwidth"),    (u8 "wfw"),       P_RSTAT,                     null,        PV_WFW,     false),
+        (long_opt (u8 "winminheight"),   (u8 "wmh"),       0,                           p_wmh,       0,          1#_L),
+        (long_opt (u8 "winminwidth"),    (u8 "wmw"),       0,                           p_wmw,       0,          1#_L),
+        (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       0,          20#_L),
+        (bool_opt (u8 "wrap"),            null,            P_RWIN,                      null,        PV_WRAP,    true),
+        (long_opt (u8 "wrapmargin"),     (u8 "wm"),        0,                           null,        PV_WM,      0#_L),
+        (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        0,          true),
+        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0#_L),
 
         ;; terminal output codes
 
@@ -7582,7 +7526,7 @@
 
         ;; terminal key codes are not in here
 
-        (new_vimoption null, null, 0, null, PV_NONE, null)
+        (new_vimoption null, null, 0, null, 0, null)
     ])
 
 (final Bytes*
@@ -7639,33 +7583,22 @@
 
 (defn- #_void set_option_default [#_int opt_idx]
     (§
-;       Object varp = get_varp_scope(vimoptions[opt_idx], OPT_LOCAL);
+;       vimoption_C v = vimoptions[opt_idx];
+
+;       Object varp = get_varp(v);
 ;       if (varp != null)       ;; skip hidden option, nothing to do for it
 ;       {
-;           long flags = vimoptions[opt_idx].@flags;
-
-;           if ((flags & P_STRING) != 0)
+;           if ((v.@flags & P_STRING) != 0)
+;               ((Bytes[])varp)[0] = STRDUP((Bytes)v.def_val);
+;           else if ((v.@flags & P_NUM) != 0)
 ;           {
-;               if (vimoptions[opt_idx].indir != PV_NONE)
-;                   set_string_option_direct(null, opt_idx, (Bytes)vimoptions[opt_idx].def_val);
-;               else
-;                   ((Bytes[])varp)[0] = (Bytes)vimoptions[opt_idx].def_val;
-;           }
-;           else if ((flags & P_NUM) != 0)
-;           {
-;               if (vimoptions[opt_idx].indir == PV_SCROLL)
+;               if (v.indir == PV_SCROLL)
 ;                   win_comp_scroll(@curwin);
 ;               else
-;               {
-;                   ((long[])varp)[0] = (long)vimoptions[opt_idx].def_val;
-;                   ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((long[])varp)[0];
-;               }
+;                   ((long[])varp)[0] = (long)v.def_val;
 ;           }
 ;           else    ;; P_BOOL
-;           {
-;               ((boolean[])varp)[0] = (boolean)vimoptions[opt_idx].def_val;
-;               ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = ((boolean[])varp)[0];
-;           }
+;               ((boolean[])varp)[0] = (boolean)v.def_val;
 ;       }
     ))
 
@@ -7710,29 +7643,16 @@
         ;; Note that this default is wrong when the window height changes.
 
 ;       set_number_default(u8("scroll"), @Rows >>> 1);
-;       int idx = findoption(u8("scroll"));
-;       if (0 <= idx && (vimoptions[idx].@flags & P_WAS_SET) == 0)
-;           set_option_default(idx);
+;       win_comp_scroll(@curwin);
 ;       comp_col();
-
-        ;; 'window' is only for backwards compatibility with Vi.
-        ;; Default is Rows - 1.
-
-;       if (!option_was_set(u8("window")))
-;           @p_window = @Rows - 1;
-;       set_number_default(u8("window"), @Rows - 1);
 
         ;; If 'background' wasn't set by the user, try guessing the value,
         ;; depending on the terminal name.  Only need to check for terminals
         ;; with a dark background, that can handle color.
 
 ;       idx = findoption(u8("bg"));
-;       if (0 <= idx && (vimoptions[idx].@flags & P_WAS_SET) == 0 && term_bg_default().at(0) == (byte)'d')
-;       {
+;       if (0 <= idx && term_bg_default().at(0) == (byte)'d')
 ;           set_string_option_direct(null, idx, u8("dark"));
-            ;; don't mark it as set, when starting the GUI it may be changed again
-;           vimoptions[idx].@flags &= ~P_WAS_SET;
-;       }
     ))
 
 ;; Return "dark" or "light" depending on the kind of terminal.
@@ -7904,18 +7824,10 @@
 ;                       long flags;             ;; flags for current option
 ;                       if (0 <= opt_idx)
 ;                       {
-;                           if (vimoptions[opt_idx].var == null)   ;; hidden option: skip
-;                           {
-                                ;; Only give an error message when requesting
-                                ;; the value of a hidden option, ignore setting it.
-;                               if (vim_strchr(u8("=:!&<"), nextchar) == null
-;                                       && ((vimoptions[opt_idx].@flags & P_BOOL) == 0 || nextchar == '?'))
-;                                   errmsg = u8("E519: Option not supported");
-;                               break skip;
-;                           }
+;                           vimoption_C v = vimoptions[opt_idx];
 
-;                           flags = vimoptions[opt_idx].@flags;
-;                           varp = get_varp_scope(vimoptions[opt_idx], 0);
+;                           flags = v.@flags;
+;                           varp = get_varp(v);
 ;                       }
 ;                       else
 ;                       {
@@ -7984,7 +7896,7 @@
 ;                       {
 ;                           if ((flags & P_BOOL) != 0)          ;; boolean
 ;                           {
-;                               if (nextchar == '=' || nextchar == ':')
+;                               if (nextchar == '=' || nextchar == ':' || nextchar == '<')
 ;                               {
 ;                                   errmsg = e_invarg;
 ;                                   break skip;
@@ -7994,14 +7906,11 @@
 
                                 ;; ":set opt!": invert
                                 ;; ":set opt&": reset to default value
-                                ;; ":set opt<": reset to global value
 
 ;                               if (nextchar == '!')
 ;                                   value = !((boolean[])varp)[0];
 ;                               else if (nextchar == '&')
 ;                                   value = (boolean)vimoptions[opt_idx].def_val;
-;                               else if (nextchar == '<')
-;                                   value = ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
 ;                               else
 ;                               {
                                     ;; ":set invopt": invert
@@ -8022,7 +7931,7 @@
 ;                           }
 ;                           else                                ;; numeric or string
 ;                           {
-;                               if (vim_strchr(u8("=:&<"), nextchar) == null || prefix != 1)
+;                               if (vim_strchr(u8("=:&"), nextchar) == null || prefix != 1)
 ;                               {
 ;                                   errmsg = e_invarg;
 ;                                   break skip;
@@ -8034,7 +7943,6 @@
 
                                     ;; Different ways to set a number option:
                                     ;; &        set to default value
-                                    ;; <        set to global value
                                     ;; <xx>     accept special key codes for 'wildchar'
                                     ;; c        accept any non-digit for 'wildchar'
                                     ;; [-]0-9   set number
@@ -8043,8 +7951,6 @@
 ;                                   arg = arg.plus(1);
 ;                                   if (nextchar == '&')
 ;                                       value = (long)vimoptions[opt_idx].def_val;
-;                                   else if (nextchar == '<')
-;                                       value = ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
 ;                                   else if ((varp == p_wc)
 ;                                           && (arg.at(0) == (byte)'<' || arg.at(0) == (byte)'^'
 ;                                               || ((arg.at(1) == NUL || vim_iswhite(arg.at(1)))
@@ -8105,10 +8011,6 @@
 ;                                       else
 ;                                           newval = STRDUP(newval);
 ;                                   }
-;                                   else if (nextchar == '<')       ;; set to global val
-;                                   {
-;                                       newval = STRDUP(((Bytes[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0]);
-;                                   }
 ;                                   else
 ;                                   {
 ;                                       arg = arg.plus(1);      ;; jump to after the '=' or ':'
@@ -8117,55 +8019,9 @@
                                         ;; value was passed to :set by the user.
                                         ;; Misuse errbuf[] for the resulting string.
 
-;                                       if (varp == p_kp && (arg.at(0) == NUL || arg.at(0) == (byte)' '))
+;                                       if (varp == @curbuf.@b_p_kp && (arg.at(0) == NUL || arg.at(0) == (byte)' '))
 ;                                       {
 ;                                           STRCPY(errbuf, u8(":echo"));
-;                                           save_arg = arg;
-;                                           arg = errbuf;
-;                                       }
-
-                                        ;; Convert 'backspace' number to string, for
-                                        ;; adding, prepending and removing string.
-
-;                                       else if (varp == p_bs && asc_isdigit(@p_bs.at(0)))
-;                                       {
-;                                           int i = (int)getdigits(p_bs);
-;                                           switch (i)
-;                                           {
-;                                               case 0:
-;                                                   @p_bs = EMPTY_OPTION;
-;                                                   break;
-;                                               case 1:
-;                                                   @p_bs = STRDUP(u8("indent,eol"));
-;                                                   break;
-;                                               case 2:
-;                                                   @p_bs = STRDUP(u8("indent,eol,start"));
-;                                                   break;
-;                                           }
-;                                           oldval = @p_bs;
-;                                       }
-
-                                        ;; Convert 'whichwrap' number to string, for
-                                        ;; backwards compatibility with Vim 3.0.
-                                        ;; Misuse errbuf[] for the resulting string.
-
-;                                       else if (varp == p_ww && asc_isdigit(arg.at(0)))
-;                                       {
-;                                           errbuf.be(0, NUL);
-;                                           int i;
-;                                           { Bytes[] __ = { arg }; i = (int)getdigits(__); arg = __[0]; }
-;                                           if ((i & 1) != 0)
-;                                               STRCAT(errbuf, u8("b,"));
-;                                           if ((i & 2) != 0)
-;                                               STRCAT(errbuf, u8("s,"));
-;                                           if ((i & 4) != 0)
-;                                               STRCAT(errbuf, u8("h,l,"));
-;                                           if ((i & 8) != 0)
-;                                               STRCAT(errbuf, u8("<,>,"));
-;                                           if ((i & 16) != 0)
-;                                               STRCAT(errbuf, u8("[,],"));
-;                                           if (errbuf.at(0) != NUL)        ;; remove trailing ,
-;                                               errbuf.be(STRLEN(errbuf) - 1, NUL);
 ;                                           save_arg = arg;
 ;                                           arg = errbuf;
 ;                                       }
@@ -8337,9 +8193,6 @@
 ;                                   redraw_all_later(CLEAR);
 ;                               }
 ;                           }
-
-;                           if (0 <= opt_idx)
-;                               vimoptions[opt_idx].@flags |= P_WAS_SET;
 ;                       }
 ;                   }
 
@@ -8457,8 +8310,8 @@
 (defn- #_void check_options []
     (§
 ;       for (int opt_idx = 0; vimoptions[opt_idx].fullname != null; opt_idx++)
-;           if ((vimoptions[opt_idx].@flags & P_STRING) != 0 && vimoptions[opt_idx].var != null)
-;               check_string_option((Bytes[])get_varp(vimoptions[opt_idx], false));
+;           if ((vimoptions[opt_idx].@flags & P_STRING) != 0)
+;               check_string_option((Bytes[])get_varp(vimoptions[opt_idx]));
     ))
 
 ;; Check string options in a buffer for null value.
@@ -8499,12 +8352,10 @@
 
 (defn- #_void set_string_option_direct [#_Bytes name, #_int opt_idx, #_Bytes val]
     (§
-;       int idx = opt_idx;
-
-;       if (idx == -1)                      ;; use name
+;       if (opt_idx == -1)                      ;; use name
 ;       {
-;           idx = findoption(name);
-;           if (idx < 0)                    ;; not found (should not happen)
+;           opt_idx = findoption(name);
+;           if (opt_idx < 0)                    ;; not found (should not happen)
 ;           {
 ;               emsg2(e_intern2, u8("set_string_option_direct()"));
 ;               emsg2(u8("For option %s"), name);
@@ -8512,35 +8363,13 @@
 ;           }
 ;       }
 
-;       if (vimoptions[idx].var == null)       ;; can't set hidden option
-;           return;
-
-;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[idx], OPT_LOCAL);
-;       varp[0] = STRDUP(val);
-
-;       set_string_option_global(idx, varp);
-    ))
-
-;; Set global value for string option when it's a local option.
-
-(defn- #_void set_string_option_global [#_int opt_idx, #_Bytes* varp]
-    ;; opt_idx: option index
-    ;; varp: pointer to option variable
-    (§
 ;       vimoption_C v = vimoptions[opt_idx];
 
-        ;; the global value is always allocated
-;       Bytes[] pp;
-;       if (v.var == VAR_WIN)
+;       Object varp = get_varp(v);
+;       if (varp != null)       ;; can't set hidden option
 ;       {
-            ;; transform a pointer to a "w_onebuf_opt" option into a "w_allbuf_opt" option
-;           pp = (Bytes[])get_varp(v, true);
+;           ((Bytes[])varp)[0] = STRDUP(val);
 ;       }
-;       else
-;           pp = (Bytes[])v.var;
-
-;       if (v.indir != PV_NONE && pp != varp)
-;           pp[0] = STRDUP(varp[0]);
     ))
 
 ;; Set a string option to a new value, and handle the effects.
@@ -8548,19 +8377,16 @@
 
 (defn- #_Bytes set_string_option [#_int opt_idx, #_Bytes value]
     (§
-;       if (vimoptions[opt_idx].var == null)   ;; don't set hidden option
-;           return null;
+;       vimoption_C v = vimoptions[opt_idx];
 
-;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[opt_idx], OPT_LOCAL);
+;       Bytes[] varp = (Bytes[])get_varp(v);
+;       if (varp == null)   ;; don't set hidden option
+;           return null;
 
 ;       Bytes oldval = varp[0];
 ;       varp[0] = STRDUP(value);
 
-;       Bytes r = did_set_string_option(opt_idx, varp, oldval, null);
-;       if (r == null)
-;           vimoptions[opt_idx].@flags |= P_WAS_SET;
-
-;       return r;
+;       return did_set_string_option(opt_idx, varp, oldval, null);
     ))
 
 ;; Handle string options that need some action to perform when changed.
@@ -8572,12 +8398,10 @@
     ;; oldval: previous value of the option
     ;; errbuf: buffer for errors, or null
     (§
+;       vimoption_C v = vimoptions[opt_idx];
+
 ;       Bytes errmsg = null;
 ;       boolean did_chartab = false;
-
-        ;; Get the global option to compare with,
-        ;; otherwise we would have to check two values for all local options.
-;       Object gvarp = get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL);
 
         ;; 'term'
 ;       if (varp == T_NAME)
@@ -8592,7 +8416,7 @@
 ;       }
 
         ;; 'breakindentopt'
-;       else if (varp == @curwin.w_onebuf_opt.wo_briopt)
+;       else if (varp == @curwin.w_options.wo_briopt)
 ;       {
 ;           if (briopt_check(@curwin) == false)
 ;               errmsg = e_invarg;
@@ -8611,7 +8435,7 @@
 ;       }
 
         ;; 'colorcolumn'
-;       else if (varp == @curwin.w_onebuf_opt.wo_cc)
+;       else if (varp == @curwin.w_options.wo_cc)
 ;           errmsg = check_colorcolumn(@curwin);
 
         ;; 'highlight'
@@ -8622,7 +8446,7 @@
 ;       }
 
         ;; 'nrformats'
-;       else if (gvarp == p_nf)
+;       else if (varp == @curbuf.b_p_nf)
 ;       {
 ;           if (check_opt_strings(varp[0], p_nf_values, true) != true)
 ;               errmsg = e_invarg;
@@ -8658,7 +8482,7 @@
 ;       }
 
         ;; 'matchpairs'
-;       else if (gvarp == p_mps)
+;       else if (varp == @curbuf.b_p_mps)
 ;       {
 ;           for (Bytes p = varp[0]; p.at(0) != NUL; p = p.plus(1))
 ;           {
@@ -8685,7 +8509,7 @@
 ;       }
 
         ;; 'comments'
-;       else if (gvarp == p_com)
+;       else if (varp == @curbuf.b_p_com)
 ;       {
 ;           for (Bytes s = varp[0]; s.at(0) != NUL; )
 ;           {
@@ -8733,7 +8557,7 @@
 ;       }
 
         ;; terminal options
-;       else if (istermoption(vimoptions[opt_idx]) && @full_screen)
+;       else if (istermoption(v) && @full_screen)
 ;       {
             ;; ":set t_Co=0" and ":set t_Co=1" do ":set t_Co="
 ;           if (varp == T_CCO)
@@ -8852,12 +8676,7 @@
         ;; 'backspace'
 ;       else if (varp == p_bs)
 ;       {
-;           if (asc_isdigit(@p_bs.at(0)))
-;           {
-;               if ('2' < @p_bs.at(0) || @p_bs.at(1) != NUL)
-;                   errmsg = e_invarg;
-;           }
-;           else if (check_opt_strings(@p_bs, p_bs_values, true) != true)
+;           if (check_opt_strings(@p_bs, p_bs_values, true) != true)
 ;               errmsg = e_invarg;
 ;       }
 
@@ -8884,7 +8703,7 @@
 ;               p = CPO_ALL;
 ;           else if (varp == @curbuf.b_p_fo)
 ;               p = FO_ALL;
-;           else if (varp == @curwin.w_onebuf_opt.wo_cocu)
+;           else if (varp == @curwin.w_options.wo_cocu)
 ;               p = COCU_ALL;
 ;           else if (varp == p_mouse)
 ;               p = MOUSE_ALL;
@@ -8912,10 +8731,6 @@
 ;           if (varp == p_hl)
 ;               highlight_changed();
 ;       }
-;       else
-;       {
-;           set_string_option_global(opt_idx, varp);
-;       }
 
 ;       if (varp == p_mouse)
 ;       {
@@ -8925,9 +8740,9 @@
 ;               setmouse();             ;; in case 'mouse' changed
 ;       }
 
-;       if (@curwin.w_curswant != MAXCOL && (vimoptions[opt_idx].@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(vimoptions[opt_idx].@flags);
+;       check_redraw(v.@flags);
 
 ;       return errmsg;
     ))
@@ -8940,7 +8755,7 @@
 ;       int count = 0;
 ;       int[] color_cols = new int[256];
 
-;       for (Bytes s = wp.w_onebuf_opt.@wo_cc; s.at(0) != NUL && count < 255; )
+;       for (Bytes s = wp.w_options.@wo_cc; s.at(0) != NUL && count < 255; )
 ;       {
 ;           skip:
 ;           {
@@ -9190,10 +9005,10 @@
     ;; varp: pointer to the option variable
     ;; value: new value
     (§
+;       vimoption_C v = vimoptions[opt_idx];
+
 ;       boolean old_value = varp[0];
 ;       varp[0] = value;                    ;; set the new value
-
-;       ((boolean[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = value;
 
         ;; Handle side effects of changing a bool option.
 
@@ -9236,9 +9051,9 @@
 
         ;; when 'scrollbind' is set:
         ;; snapshot the current position to avoid a jump at the end of normal_cmd()
-;       else if (varp == @curwin.w_onebuf_opt.wo_scb)
+;       else if (varp == @curwin.w_options.wo_scb)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_scb)
+;           if (@curwin.w_options.@wo_scb)
 ;           {
 ;               do_check_scrollbind(false);
 ;               @curwin.w_scbind_pos = @curwin.w_topline;
@@ -9251,9 +9066,9 @@
 ;       }
 
         ;; If 'wrap' is set, set w_leftcol to zero.
-;       else if (varp == @curwin.w_onebuf_opt.wo_wrap)
+;       else if (varp == @curwin.w_options.wo_wrap)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_wrap)
+;           if (@curwin.w_options.@wo_wrap)
 ;               @curwin.w_leftcol = 0;
 ;       }
 
@@ -9265,12 +9080,10 @@
 
         ;; End of handling side effects for bool options.
 
-;       vimoptions[opt_idx].@flags |= P_WAS_SET;
-
 ;       comp_col();                     ;; in case 'ruler' or 'showcmd' changed
-;       if (@curwin.w_curswant != MAXCOL && (vimoptions[opt_idx].@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(vimoptions[opt_idx].@flags);
+;       check_redraw(v.@flags);
 
 ;       return null;
     ))
@@ -9387,14 +9200,6 @@
 ;           screenclear();      ;; will re-allocate the screen
 ;       }
 
-;       else if (varp == p_window)
-;       {
-;           if (@p_window < 1)
-;               @p_window = 1;
-;           else if (@Rows <= @p_window)
-;               @p_window = @Rows - 1;
-;       }
-
         ;; if "p_ch" changed value, change the command line height
 ;       else if (varp == p_ch)
 ;       {
@@ -9413,28 +9218,21 @@
 ;               command_height();
 ;       }
 
-;       else if (varp == @curwin.w_onebuf_opt.wo_cole)
+;       else if (varp == @curwin.w_options.wo_cole)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_cole < 0)
+;           if (@curwin.w_options.@wo_cole < 0)
 ;           {
 ;               errmsg = e_positive;
-;               @curwin.w_onebuf_opt.@wo_cole = 0;
+;               @curwin.w_options.@wo_cole = 0;
 ;           }
-;           else if (3 < @curwin.w_onebuf_opt.@wo_cole)
+;           else if (3 < @curwin.w_options.@wo_cole)
 ;           {
 ;               errmsg = e_invarg;
-;               @curwin.w_onebuf_opt.@wo_cole = 3;
+;               @curwin.w_options.@wo_cole = 3;
 ;           }
 ;       }
 
         ;; sync undo before 'undolevels' changes
-;       else if (varp == p_ul)
-;       {
-            ;; use the old value, otherwise u_sync() may not work properly
-;           @p_ul = old_value;
-;           u_sync(true);
-;           @p_ul = value;
-;       }
 ;       else if (varp == @curbuf.b_p_ul)
 ;       {
             ;; use the old value, otherwise u_sync() may not work properly
@@ -9444,17 +9242,17 @@
 ;       }
 
         ;; 'numberwidth' must be positive
-;       else if (varp == @curwin.w_onebuf_opt.wo_nuw)
+;       else if (varp == @curwin.w_options.wo_nuw)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_nuw < 1)
+;           if (@curwin.w_options.@wo_nuw < 1)
 ;           {
 ;               errmsg = e_positive;
-;               @curwin.w_onebuf_opt.@wo_nuw = 1;
+;               @curwin.w_options.@wo_nuw = 1;
 ;           }
-;           if (10 < @curwin.w_onebuf_opt.@wo_nuw)
+;           if (10 < @curwin.w_options.@wo_nuw)
 ;           {
 ;               errmsg = e_invarg;
-;               @curwin.w_onebuf_opt.@wo_nuw = 10;
+;               @curwin.w_options.@wo_nuw = 10;
 ;           }
 ;           @curwin.w_nrwidth_line_count = 0;    ;; trigger a redraw
 ;       }
@@ -9513,8 +9311,6 @@
 ;               if (@cmdline_row > @Rows - @p_ch && @p_ch < @Rows)
 ;                   @cmdline_row = (int)(@Rows - @p_ch);
 ;           }
-;           if (@Rows <= @p_window || !option_was_set(u8("window")))
-;               @p_window = @Rows - 1;
 ;       }
 
 ;       if (@curbuf.@b_p_ts <= 0)
@@ -9527,19 +9323,19 @@
 ;           errmsg = e_positive;
 ;           @p_tm = 0;
 ;       }
-;       if ((@curwin.w_onebuf_opt.@wo_scr <= 0 || (@curwin.w_height < @curwin.w_onebuf_opt.@wo_scr && 0 < @curwin.w_height)) && @full_screen)
+;       if ((@curwin.w_options.@wo_scr <= 0 || (@curwin.w_height < @curwin.w_options.@wo_scr && 0 < @curwin.w_height)) && @full_screen)
 ;       {
-;           if (varp == @curwin.w_onebuf_opt.wo_scr)
+;           if (varp == @curwin.w_options.wo_scr)
 ;           {
-;               if (@curwin.w_onebuf_opt.@wo_scr != 0)
+;               if (@curwin.w_options.@wo_scr != 0)
 ;                   errmsg = e_scroll;
 ;               win_comp_scroll(@curwin);
 ;           }
             ;; If 'scroll' became invalid because of a side effect silently adjust it.
-;           else if (@curwin.w_onebuf_opt.@wo_scr <= 0)
-;               @curwin.w_onebuf_opt.@wo_scr = 1;
-;           else ;; @curwin.w_onebuf_opt.@wo_scr > @curwin.w_height
-;               @curwin.w_onebuf_opt.@wo_scr = @curwin.w_height;
+;           else if (@curwin.w_options.@wo_scr <= 0)
+;               @curwin.w_options.@wo_scr = 1;
+;           else ;; @curwin.w_options.@wo_scr > @curwin.w_height
+;               @curwin.w_options.@wo_scr = @curwin.w_height;
 ;       }
 ;       if (@p_hi < 0)
 ;       {
@@ -9597,14 +9393,12 @@
 ;           @p_ss = 0;
 ;       }
 
-;       ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0] = varp[0];
-
-;       vimoptions[opt_idx].@flags |= P_WAS_SET;
+;       vimoption_C v = vimoptions[opt_idx];
 
 ;       comp_col();                     ;; in case 'columns' or 'ls' changed
-;       if (@curwin.w_curswant != MAXCOL && (vimoptions[opt_idx].@flags & (P_CURSWANT | P_RALL)) != 0)
+;       if (@curwin.w_curswant != MAXCOL && (v.@flags & (P_CURSWANT | P_RALL)) != 0)
 ;           @curwin.w_set_curswant = true;
-;       check_redraw(vimoptions[opt_idx].@flags);
+;       check_redraw(v.@flags);
 
 ;       return errmsg;
     ))
@@ -9630,7 +9424,7 @@
 ;           redraw_all_later(NOT_VALID);
     ))
 
-(atom! short* quick_tab 27)   ;; quick access table
+(atom! short* quick_tab (inc 26))   ;; quick access table
 
 ;; Find index for option 'arg'.
 ;; Return -1 if not found.
@@ -9710,7 +9504,7 @@
 ;       if ((flags & P_STRING) != 0)
 ;           return set_string_option(opt_idx, string);
 
-;       Object varp = get_varp_scope(vimoptions[opt_idx], 0);
+;       Object varp = get_varp(vimoptions[opt_idx]);
 ;       if (varp != null)   ;; hidden option is not changed
 ;       {
 ;           if (number == 0 && string != null)
@@ -9748,7 +9542,7 @@
 ;       int opt_idx = findoption(tname);
 ;       if (0 <= opt_idx)
 ;       {
-;           Object varp = get_varp(vimoptions[opt_idx], false);
+;           Object varp = get_varp(vimoptions[opt_idx]);
 ;           return (varp != null) ? ((Bytes[])varp)[0] : null;
 ;       }
 ;       return find_termcode(tname.plus(2));
@@ -9815,7 +9609,7 @@
 ;           {
 ;               boolean isterm = istermoption(vimoptions[i]);
 
-;               Object varp = get_varp(vimoptions[i], false);
+;               Object varp = get_varp(vimoptions[i]);
 
 ;               if (varp != null
 ;                       && ((all == 2 && isterm)
@@ -9892,7 +9686,7 @@
 ;       @silent_mode = false;
 ;       @info_message = true;
 
-;       Object varp = get_varp_scope(v, 0);
+;       Object varp = get_varp(v);
 
 ;       if ((v.@flags & P_BOOL) != 0 && ((varp == @curbuf.b_changed) ? !bufIsChanged(@curbuf) : !((boolean[])varp)[0]))
 ;           msg_puts(u8("no"));
@@ -10007,56 +9801,30 @@
 ;           @ru_col = 1;
     ))
 
-;; Get pointer to option variable, depending on local or global scope.
-
-(defn- #_Object get_varp_scope [#_vimoption_C v, #_int opt_flags]
-    (§
-;       if ((opt_flags & OPT_GLOBAL) != 0 && v.indir != PV_NONE)
-;       {
-;           if (v.var == VAR_WIN)
-;           {
-                ;; transform a pointer to a "w_onebuf_opt" option into a "w_allbuf_opt" option
-;               return get_varp(v, true);
-;           }
-
-;           return v.var;
-;       }
-
-;       return get_varp(v, false);
-    ))
-
 ;; Get pointer to option variable.
 
-(defn- #_Object get_varp [#_vimoption_C v, #_boolean all]
+(defn- #_Object get_varp [#_vimoption_C v]
     (§
-        ;; hidden option, always return null
-;       if (v.var == null)
-;           return null;
-
-;       winopt_C wop = (all) ? @curwin.w_allbuf_opt : @curwin.w_onebuf_opt;
-
 ;       switch (v.indir)
 ;       {
-;           case PV_NONE:   return v.var;
-
-;           case PV_BRI:    return wop.wo_bri;
-;           case PV_BRIOPT: return wop.wo_briopt;
-;           case PV_CC:     return wop.wo_cc;
-;           case PV_COCU:   return wop.wo_cocu;
-;           case PV_COLE:   return wop.wo_cole;
-;           case PV_CRBIND: return wop.wo_crb;
-;           case PV_CUC:    return wop.wo_cuc;
-;           case PV_CUL:    return wop.wo_cul;
-;           case PV_LBR:    return wop.wo_lbr;
-;           case PV_LIST:   return wop.wo_list;
-;           case PV_NU:     return wop.wo_nu;
-;           case PV_NUW:    return wop.wo_nuw;
-;           case PV_RNU:    return wop.wo_rnu;
-;           case PV_SCBIND: return wop.wo_scb;
-;           case PV_SCROLL: return wop.wo_scr;
-;           case PV_WFH:    return wop.wo_wfh;
-;           case PV_WFW:    return wop.wo_wfw;
-;           case PV_WRAP:   return wop.wo_wrap;
+;           case PV_BRI:    return @curwin.w_options.wo_bri;
+;           case PV_BRIOPT: return @curwin.w_options.wo_briopt;
+;           case PV_CC:     return @curwin.w_options.wo_cc;
+;           case PV_COCU:   return @curwin.w_options.wo_cocu;
+;           case PV_COLE:   return @curwin.w_options.wo_cole;
+;           case PV_CRBIND: return @curwin.w_options.wo_crb;
+;           case PV_CUC:    return @curwin.w_options.wo_cuc;
+;           case PV_CUL:    return @curwin.w_options.wo_cul;
+;           case PV_LBR:    return @curwin.w_options.wo_lbr;
+;           case PV_LIST:   return @curwin.w_options.wo_list;
+;           case PV_NU:     return @curwin.w_options.wo_nu;
+;           case PV_NUW:    return @curwin.w_options.wo_nuw;
+;           case PV_RNU:    return @curwin.w_options.wo_rnu;
+;           case PV_SCBIND: return @curwin.w_options.wo_scb;
+;           case PV_SCROLL: return @curwin.w_options.wo_scr;
+;           case PV_WFH:    return @curwin.w_options.wo_wfh;
+;           case PV_WFW:    return @curwin.w_options.wo_wfw;
+;           case PV_WRAP:   return @curwin.w_options.wo_wrap;
 
 ;           case PV_AI:     return @curbuf.b_p_ai;
 ;           case PV_CI:     return @curbuf.b_p_ci;
@@ -10080,13 +9848,9 @@
 ;           case PV_TW:     return @curbuf.b_p_tw;
 ;           case PV_UL:     return @curbuf.b_p_ul;
 ;           case PV_WM:     return @curbuf.b_p_wm;
-
-;           default:
-;               emsg(u8("E356: get_varp() ERROR"));
-;               break;
 ;       }
 
-;       return null;
+;       return v.var;
     ))
 
 ;; Copy options from one window to another.
@@ -10094,8 +9858,7 @@
 
 (defn- #_void win_copy_options [#_window_C wp_from, #_window_C wp_to]
     (§
-;       copy_winopt(wp_from.w_onebuf_opt, wp_to.w_onebuf_opt);
-;       copy_winopt(wp_from.w_allbuf_opt, wp_to.w_allbuf_opt);
+;       copy_winopt(wp_from.w_options, wp_to.w_options);
 ;       briopt_check(wp_to);
     ))
 
@@ -10129,8 +9892,7 @@
 
 (defn- #_void check_win_options [#_window_C win]
     (§
-;       check_winopt(win.w_onebuf_opt);
-;       check_winopt(win.w_allbuf_opt);
+;       check_winopt(win.w_options);
     ))
 
 ;; Check for null pointers in a winopt_C and replace them with EMPTY_OPTION.
@@ -10151,53 +9913,12 @@
 ;       clear_string_option(wop.wo_cocu);
     ))
 
-;; Copy global option values to local options for one buffer.
-;; Used when creating a new buffer.
-
-(defn- #_void buf_copy_options [#_buffer_C buf]
-    (§
-        ;; Skip this when the option defaults have not been set yet.
-        ;; Happens when main() allocates the first buffer.
-
-;       buf.@b_p_ai = @p_ai;
-;       buf.b_p_ai_nopaste = @p_ai_nopaste;
-;       buf.@b_p_sw = @p_sw;
-;       buf.@b_p_tw = @p_tw;
-;       buf.b_p_tw_nopaste = @p_tw_nopaste;
-;       buf.@b_p_wm = @p_wm;
-;       buf.b_p_wm_nopaste = @p_wm_nopaste;
-;       buf.@b_p_et = @p_et;
-;       buf.@b_p_inf = @p_inf;
-;       buf.@b_p_sts = @p_sts;
-;       buf.b_p_sts_nopaste = @p_sts_nopaste;
-;       buf.@b_p_com = STRDUP(@p_com);
-;       buf.@b_p_fo = STRDUP(@p_fo);
-;       buf.@b_p_flp = STRDUP(@p_flp);
-;       buf.@b_p_nf = STRDUP(@p_nf);
-;       buf.@b_p_mps = STRDUP(@p_mps);
-;       buf.@b_p_si = @p_si;
-;       buf.@b_p_ci = @p_ci;
-;       buf.@b_p_pi = @p_pi;
-;       buf.@b_p_cinw = STRDUP(@p_cinw);
-
-;       buf.@b_p_ul = @p_ul;
-;       buf.@b_p_kp = STRDUP(@p_kp);
-;       buf.@b_p_qe = STRDUP(@p_qe);
-
-;       buf.@b_p_isk = STRDUP(@p_isk);
-;       buf.@b_p_ts = @p_ts;
-
-;       check_buf_options(buf);         ;; make sure we don't have NULLs
-
-;       buf_init_chartab(buf, false);
-    ))
-
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
 ;; Must not be called with a hidden option!
 
 (defn- #_void option_value2string [#_vimoption_C v]
     (§
-;       Object varp = get_varp_scope(v, 0);
+;       Object varp = get_varp(v);
 
 ;       if ((v.@flags & P_NUM) != 0)
 ;       {
@@ -10276,11 +9997,6 @@
                 ;; save global options
 ;               @save_sm = @p_sm;
 ;               @save_ru = @p_ru;
-                ;; save global values for local buffer options
-;               @p_tw_nopaste = @p_tw;
-;               @p_wm_nopaste = @p_wm;
-;               @p_sts_nopaste = @p_sts;
-;               @p_ai_nopaste = @p_ai;
 ;           }
 
             ;; Always set the option values, also when 'paste' is set when it is already on.
@@ -10299,11 +10015,6 @@
 ;           if (@p_ru)
 ;               status_redraw_all();    ;; redraw to remove the ruler
 ;           @p_ru = false;                   ;; no ruler
-            ;; set global values for local buffer options
-;           @p_tw = 0;
-;           @p_wm = 0;
-;           @p_sts = 0;
-;           @p_ai = false;
 ;       }
 
         ;; Paste switched from on to off: Restore saved values.
@@ -10324,38 +10035,9 @@
 ;           if (@p_ru != @save_ru)
 ;               status_redraw_all();    ;; redraw to draw the ruler
 ;           @p_ru = @save_ru;
-            ;; set global values for local buffer options
-;           @p_tw = @p_tw_nopaste;
-;           @p_wm = @p_wm_nopaste;
-;           @p_sts = @p_sts_nopaste;
-;           @p_ai = @p_ai_nopaste;
 ;       }
 
 ;       @old_p_paste = @p_paste;
-    ))
-
-;; Return true when option "name" has been set.
-;; Only works correctly for global options.
-
-(defn- #_boolean option_was_set [#_Bytes name]
-    (§
-;       int idx = findoption(name);
-;       if (idx < 0)        ;; unknown option
-;           return false;
-;       if ((vimoptions[idx].@flags & P_WAS_SET) != 0)
-;           return true;
-
-;       return false;
-    ))
-
-;; Reset the flag indicating option "name" was set.
-
-(defn- #_void reset_option_was_set [#_Bytes name]
-    (§
-;       int idx = findoption(name);
-
-;       if (0 <= idx)
-;           vimoptions[idx].@flags &= ~P_WAS_SET;
     ))
 
 ;; fill_breakat_flags() -- called when 'breakat' changes value.
@@ -10421,13 +10103,6 @@
 (defn- #_boolean can_bs [#_int what]
     ;; what: BS_INDENT, BS_EOL or BS_START
     (§
-;       switch (@p_bs.at(0))
-;       {
-;           case '2': return true;
-;           case '1': return (what != BS_START);
-;           case '0': return false;
-;       }
-
 ;       return (vim_strchr(@p_bs, what) != null);
     ))
 
@@ -10522,7 +10197,7 @@
 ;       int bri_min = 20;
 ;       boolean bri_sbr = false;
 
-;       Bytes p = wp.w_onebuf_opt.@wo_briopt;
+;       Bytes p = wp.w_options.@wo_briopt;
 ;       while (p.at(0) != NUL)
 ;       {
 ;           if (STRNCMP(p, u8("shift:"), 6) == 0 && ((p.at(6) == (byte)'-' && asc_isdigit(p.at(7))) || asc_isdigit(p.at(6))))
@@ -10735,8 +10410,8 @@
 ;       long first_line = 0;                        ;; first changed line
 ;       long last_line = 0;                         ;; last changed line
 
-;       boolean save_list = @curwin.w_onebuf_opt.@wo_list;
-;       @curwin.w_onebuf_opt.@wo_list = false;     ;; don't want list mode here
+;       boolean save_list = @curwin.w_options.@wo_list;
+;       @curwin.w_options.@wo_list = false;     ;; don't want list mode here
 
 ;       int new_ts;
 ;       { Bytes[] __ = { eap.arg }; new_ts = (int)getdigits(__); eap.arg = __[0]; }
@@ -10836,7 +10511,7 @@
 ;       if (first_line != 0)
 ;           changed_lines(first_line, 0, last_line + 1, 0L);
 
-;       @curwin.w_onebuf_opt.@wo_list = save_list;     ;; restore 'list'
+;       @curwin.w_options.@wo_list = save_list;     ;; restore 'list'
 
 ;       @curbuf.@b_p_ts = new_ts;
 ;       coladvance(@curwin.w_curswant);
@@ -11002,7 +10677,7 @@
 
 (defn- #_void print_line_no_prefix [#_long lnum, #_boolean use_number, #_boolean list]
     (§
-;       if (@curwin.w_onebuf_opt.@wo_nu || use_number)
+;       if (@curwin.w_options.@wo_nu || use_number)
 ;       {
 ;           Bytes numbuf = new Bytes(30);
 
@@ -11199,7 +10874,7 @@
 ;       else if (@firstwin != @lastwin)
 ;           bigness = @curwin.w_height - 3;
 ;       else
-;           bigness = (int)@curwin.w_onebuf_opt.@wo_scr * 2;
+;           bigness = (int)@curwin.w_options.@wo_scr * 2;
 ;       if (bigness < 1)
 ;           bigness = 1;
 
@@ -11220,7 +10895,6 @@
 ;           else
 ;           {
 ;               bigness = libC.atoi(x);
-;               @p_window = bigness;
 ;               if (kind.at(0) == (byte)'=')
 ;                   bigness += 2;
 ;           }
@@ -16556,8 +16230,8 @@
                 ;; but keep it when doing ":split" without arguments.
 ;           if (eap.arg.at(0) != NUL)
 ;           {
-;               @curwin.w_onebuf_opt.@wo_scb = false;
-;               @curwin.w_onebuf_opt.@wo_crb = false;
+;               @curwin.w_options.@wo_scb = false;
+;               @curwin.w_options.@wo_crb = false;
 ;           }
 ;           else
 ;               do_check_scrollbind(false);
@@ -16608,12 +16282,12 @@
 
 ;       long topline;
             ;; determine max topline
-;       if (@curwin.w_onebuf_opt.@wo_scb)
+;       if (@curwin.w_options.@wo_scb)
 ;       {
 ;           topline = @curwin.w_topline;
 ;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;           {
-;               if (wp.w_onebuf_opt.@wo_scb)
+;               if (wp.w_options.@wo_scb)
 ;               {
 ;                   long y = @curbuf.b_ml.ml_line_count - @p_so;
 ;                   if (y < topline)
@@ -16632,7 +16306,7 @@
 
 ;       for (@curwin = @firstwin; @curwin != null; @curwin = @curwin.w_next)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_scb)
+;           if (@curwin.w_options.@wo_scb)
 ;           {
 ;               long y = topline - @curwin.w_topline;
 ;               if (0 < y)
@@ -16646,7 +16320,7 @@
 ;           }
 ;       }
 ;       @curwin = save_curwin;
-;       if (@curwin.w_onebuf_opt.@wo_scb)
+;       if (@curwin.w_options.@wo_scb)
 ;       {
 ;           @did_syncbind = true;
 ;           checkpcmark();
@@ -16979,7 +16653,7 @@
     (§
 ;       check_cursor();             ;; put cursor on valid line
 ;       update_topline();
-;       if (!@curwin.w_onebuf_opt.@wo_wrap)
+;       if (!@curwin.w_options.@wo_wrap)
 ;           validate_cursor();
 ;       update_curswant();
     ))
@@ -17884,13 +17558,13 @@
 
 ;       mb_adjust_pos(@curbuf, @curwin.w_cursor);
 
-;       if (@curwin.w_onebuf_opt.@wo_scb && toplevel)
+;       if (@curwin.w_options.@wo_scb && toplevel)
 ;       {
 ;           validate_cursor();              ;; may need to update w_leftcol
 ;           do_check_scrollbind(true);
 ;       }
 
-;       if (@curwin.w_onebuf_opt.@wo_crb && toplevel)
+;       if (@curwin.w_options.@wo_crb && toplevel)
 ;       {
 ;           validate_cursor();              ;; may need to update w_leftcol
 ;           do_check_cursorbind();
@@ -17936,7 +17610,7 @@
     (§
 ;       oparg_C oap = cap.oap;
 
-;       boolean lbr_saved = @curwin.w_onebuf_opt.@wo_lbr;
+;       boolean lbr_saved = @curwin.w_options.@wo_lbr;
 ;       boolean include_line_break = false;
 
         ;; Yank the visual area into the GUI selection register
@@ -17961,7 +17635,7 @@
 ;       if ((@finish_op || @VIsual_active) && oap.op_type != OP_NOP)
 ;       {
             ;; Avoid a problem with unwanted linebreaks in block mode.
-;           @curwin.w_onebuf_opt.@wo_lbr = false;
+;           @curwin.w_options.@wo_lbr = false;
 ;           oap.is_VIsual = @VIsual_active;
 ;           if (oap.motion_force == 'V')
 ;               oap.motion_type = MLINE;
@@ -18297,7 +17971,7 @@
 ;                           && oap.motion_force == NUL)
 ;                   {
                         ;; make sure redrawing is correct
-;                       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;                       @curwin.w_options.@wo_lbr = lbr_saved;
 ;                       redraw_curbuf_later(INVERTED);
 ;                   }
 ;               }
@@ -18329,7 +18003,7 @@
             ;; when 'modifiable' is off or creating a fold.
 ;           if (oap.is_VIsual && oap.empty)
 ;           {
-;               @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;               @curwin.w_options.@wo_lbr = lbr_saved;
 ;               redraw_curbuf_later(INVERTED);
 ;           }
 
@@ -18413,7 +18087,7 @@
 ;                   }
 ;                   else
 ;                   {
-;                       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;                       @curwin.w_options.@wo_lbr = lbr_saved;
 ;                       op_yank(oap, false, !gui_yank);
 ;                   }
 ;                   check_cursor_col();
@@ -18438,7 +18112,7 @@
 ;                           restart_edit_save = 0;
 ;                       @restart_edit = 0;
                         ;; Restore linebreak, so that when the user edits it looks as before.
-;                       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;                       @curwin.w_options.@wo_lbr = lbr_saved;
                         ;; Reset finish_op now, don't want it set inside edit().
 ;                       @finish_op = false;
 ;                       if (op_change(oap))         ;; will call edit()
@@ -18505,10 +18179,10 @@
 ;                       int restart_edit_save = @restart_edit;
 ;                       @restart_edit = 0;
                         ;; Restore linebreak, so that when the user edits it looks as before.
-;                       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;                       @curwin.w_options.@wo_lbr = lbr_saved;
 ;                       op_insert(oap, cap.count1);
                         ;; Reset linebreak, so that formatting works correctly.
-;                       @curwin.w_onebuf_opt.@wo_lbr = false;
+;                       @curwin.w_options.@wo_lbr = false;
 
                         ;; TODO: when inserting in several lines, should format all the lines.
 ;                       auto_format(false, true);
@@ -18528,7 +18202,7 @@
 ;                   else
 ;                   {
                         ;; Restore linebreak, so that when the user edits it looks as before.
-;                       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;                       @curwin.w_options.@wo_lbr = lbr_saved;
 ;                       op_replace(oap, cap.@nchar);
 ;                   }
 ;                   break;
@@ -18549,7 +18223,7 @@
 ;                        || oap.op_type == OP_RSHIFT
 ;                        || oap.op_type == OP_DELETE))
 ;               {
-;                   @curwin.w_onebuf_opt.@wo_lbr = false;
+;                   @curwin.w_options.@wo_lbr = false;
 ;                   coladvance(@curwin.w_curswant = old_col);
 ;               }
 ;           }
@@ -18561,7 +18235,7 @@
 ;           clearop(oap);
 ;       }
 
-;       @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
+;       @curwin.w_options.@wo_lbr = lbr_saved;
     ))
 
 ;; Handle filter operator and visual mode ":".
@@ -19775,7 +19449,7 @@
 
 (defn- #_void do_check_scrollbind [#_boolean check]
     (§
-;       if (check && @curwin.w_onebuf_opt.@wo_scb)
+;       if (check && @curwin.w_options.@wo_scb)
 ;       {
             ;; If a ":syncbind" command was just used, don't scroll, only reset the values.
 ;           if (@did_syncbind)
@@ -19831,7 +19505,7 @@
 ;       for (@curwin = @firstwin; @curwin != null; @curwin = @curwin.w_next)
 ;       {
             ;; skip original window and windows with 'noscrollbind'
-;           if (@curwin != old_curwin && @curwin.w_onebuf_opt.@wo_scb)
+;           if (@curwin != old_curwin && @curwin.w_options.@wo_scb)
 ;           {
                 ;; do the vertical scroll
 
@@ -20028,7 +19702,7 @@
 ;       else
 ;           coladvance(@curwin.w_curswant);
 
-;       if (0 < @curwin.w_cursor.col && @curwin.w_onebuf_opt.@wo_wrap)
+;       if (0 < @curwin.w_cursor.col && @curwin.w_options.@wo_wrap)
 ;       {
 ;           int virtcol;
 
@@ -20280,7 +19954,7 @@
 
 ;           case 'h':   ;; "zh" - scroll screen to the right
 ;           case K_LEFT:
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
 ;                   if (@curwin.w_leftcol < (int)cap.count1)
 ;                       @curwin.w_leftcol = 0;
@@ -20296,7 +19970,7 @@
 
 ;           case 'l':   ;; "zl" - scroll screen to the left
 ;           case K_RIGHT:
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
                         ;; scroll the window left
 ;                   @curwin.w_leftcol += (int)cap.count1;
@@ -20305,7 +19979,7 @@
 ;               break;
 
 ;           case 's':   ;; "zs" - scroll screen, cursor at the start
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
 ;                   int[] col = new int[1];
 ;                   getvcol(@curwin, @curwin.w_cursor, col, null, null);
@@ -20322,7 +19996,7 @@
 ;               break;
 
 ;           case 'e':   ;; "ze" - scroll screen, cursor at the end
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
 ;                   int[] col = new int[1];
 ;                   getvcol(@curwin, @curwin.w_cursor, null, null, col);
@@ -20553,9 +20227,9 @@
 
             ;; Allocate buffer to put the command in.
             ;; Inserting backslashes can double the length of the word.
-            ;; "p_kp" / "curbuf.b_p_kp" could be added and some numbers.
+            ;; "curbuf.b_p_kp" could be added and some numbers.
 
-;       Bytes kp = (@curbuf.@b_p_kp.at(0) == NUL) ? @p_kp : @curbuf.@b_p_kp;    ;; value of 'keywordprg'
+;       Bytes kp = @curbuf.@b_p_kp;    ;; value of 'keywordprg'
 
 ;       Bytes buf = new Bytes(n[0] * 2 + 30 + STRLEN(kp));
 ;       buf.be(0, NUL);
@@ -22229,7 +21903,7 @@
 
                     ;; with 'nowrap' it works just like the normal "j" command;
                     ;; also when in a closed fold
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
 ;                   oap.motion_type = MLINE;
 ;                   i = cursor_down(cap.count1, oap.op_type == OP_NOP);
@@ -22248,7 +21922,7 @@
 
                     ;; with 'nowrap' it works just like the normal "k" command;
                     ;; also when in a closed fold
-;               if (!@curwin.w_onebuf_opt.@wo_wrap)
+;               if (!@curwin.w_options.@wo_wrap)
 ;               {
 ;                   oap.motion_type = MLINE;
 ;                   i = cursor_up(cap.count1, oap.op_type == OP_NOP);
@@ -22282,7 +21956,7 @@
 
 ;               oap.motion_type = MCHAR;
 ;               oap.inclusive = false;
-;               if (@curwin.w_onebuf_opt.@wo_wrap && @curwin.w_width != 0)
+;               if (@curwin.w_options.@wo_wrap && @curwin.w_width != 0)
 ;               {
 ;                   int width1 = @curwin.w_width - curwin_col_off();
 ;                   int width2 = width1 + curwin_col_off2();
@@ -22298,7 +21972,7 @@
                     ;; and lines are wrapping the middle can be more to the left.
 ;               if (cap.@nchar == 'm')
 ;                   i += (@curwin.w_width - curwin_col_off()
-;                           + ((@curwin.w_onebuf_opt.@wo_wrap && 0 < i) ? curwin_col_off2() : 0)) / 2;
+;                           + ((@curwin.w_options.@wo_wrap && 0 < i) ? curwin_col_off2() : 0)) / 2;
 ;               coladvance(i);
 ;               if (flag)
 ;               {
@@ -22342,7 +22016,7 @@
 
 ;               oap.motion_type = MCHAR;
 ;               oap.inclusive = true;
-;               if (@curwin.w_onebuf_opt.@wo_wrap && @curwin.w_width != 0)
+;               if (@curwin.w_options.@wo_wrap && @curwin.w_width != 0)
 ;               {
 ;                   @curwin.w_curswant = MAXCOL; ;; so we stay at the end
 ;                   if (cap.count1 == 1)
@@ -22360,7 +22034,7 @@
 ;                       validate_virtcol();
 ;                       @curwin.w_curswant = @curwin.w_virtcol;
 ;                       @curwin.w_set_curswant = false;
-;                       if (0 < @curwin.w_cursor.col && @curwin.w_onebuf_opt.@wo_wrap)
+;                       if (0 < @curwin.w_cursor.col && @curwin.w_options.@wo_wrap)
 ;                       {
                                 ;; Check for landing on a character that got split at the end of the line.
                                 ;; We do not want to advance to the next screen line.
@@ -22600,7 +22274,7 @@
 ;                   && open_line(cap.cmdchar == 'O' ? BACKWARD : FORWARD,
 ;                       has_format_option(FO_OPEN_COMS) ? OPENLINE_DO_COM : 0, 0))
 ;           {
-;               if (0 < @curwin.w_onebuf_opt.@wo_cole && oldline != @curwin.w_cursor.lnum)
+;               if (0 < @curwin.w_options.@wo_cole && oldline != @curwin.w_cursor.lnum)
 ;                   update_single_line(@curwin, oldline);
                 ;; When '#' is in 'cpoptions' ignore the count.
 ;               if (vim_strbyte(@p_cpo, CPO_HASH) != null)
@@ -23797,7 +23471,7 @@
 
 ;       if (round)                      ;; round off indent
 ;       {
-;           int i = count / q_sw;       ;; number of "p_sw" rounded down
+;           int i = count / q_sw;       ;; number of 'shiftwidth' rounded down
 ;           int j = count % q_sw;       ;; extra spaces
 ;           if (j != 0 && left)         ;; first remove extra spaces
 ;               --amount;
@@ -26001,7 +25675,7 @@
 ;               @y_current = curr;
 ;           }
 
-;           if (@curwin.w_onebuf_opt.@wo_rnu)
+;           if (@curwin.w_options.@wo_rnu)
 ;               redraw_later(SOME_VALID);       ;; cursor moved to start
 
 ;           if (mess)                   ;; Display message about yank?
@@ -31209,7 +30883,7 @@
 ;                                   col = @curwin.w_cursor.col - 1;
 ;                               }
 ;                           }
-;                           else if (@curwin.w_onebuf_opt.@wo_wrap && 0 < @curwin.w_wrow)
+;                           else if (@curwin.w_options.@wo_wrap && 0 < @curwin.w_wrow)
 ;                           {
 ;                               --@curwin.w_wrow;
 ;                               @curwin.w_wcol = @curwin.w_width - 1;
@@ -32949,7 +32623,7 @@
                 ;; Don't do this when the topline changed already,
                 ;; it has already been adjusted (by insertchar() calling open_line())).
 
-;               if (@curbuf.b_mod_set && @curwin.w_onebuf_opt.@wo_wrap && !did_backspace && @curwin.w_topline == old_topline)
+;               if (@curbuf.b_mod_set && @curwin.w_options.@wo_wrap && !did_backspace && @curwin.w_topline == old_topline)
 ;               {
 ;                   int mincol = @curwin.w_wcol;
 ;                   validate_cursor_col();
@@ -32974,10 +32648,10 @@
 
 ;               ins_redraw(true);
 
-;               if (@curwin.w_onebuf_opt.@wo_scb)
+;               if (@curwin.w_options.@wo_scb)
 ;                   do_check_scrollbind(true);
 
-;               if (@curwin.w_onebuf_opt.@wo_crb)
+;               if (@curwin.w_options.@wo_crb)
 ;                   do_check_cursorbind();
 ;               update_curswant();
 ;               old_topline = @curwin.w_topline;
@@ -33452,7 +33126,7 @@
 
         ;; Trigger CursorMoved if the cursor moved.
         ;; Not when the popup menu is visible, the command might delete it.
-;       if (ready && 0 < @curwin.w_onebuf_opt.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
+;       if (ready && 0 < @curwin.w_options.@wo_cole && !eqpos(@last_cursormoved, @curwin.w_cursor))
 ;       {
 ;           conceal_old_cursor_line = @last_cursormoved.lnum;
 ;           conceal_new_cursor_line = @curwin.w_cursor.lnum;
@@ -33620,8 +33294,8 @@
 ;       }
 
         ;; for the following tricks we don't want list mode
-;       boolean save_p_list = @curwin.w_onebuf_opt.@wo_list;
-;       @curwin.w_onebuf_opt.@wo_list = false;
+;       boolean save_p_list = @curwin.w_options.@wo_list;
+;       @curwin.w_options.@wo_list = false;
 ;       int vc = getvcol_nolist(@curwin.w_cursor);
 ;       int vcol = vc;
 
@@ -33725,7 +33399,7 @@
 ;           insstart_less = MAXCOL;
 ;       }
 
-;       @curwin.w_onebuf_opt.@wo_list = save_p_list;
+;       @curwin.w_options.@wo_list = save_p_list;
 
 ;       if (new_cursor_col <= 0)
 ;           @curwin.w_cursor.col = 0;
@@ -34201,10 +33875,10 @@
 ;       boolean first_line = true;
 ;       boolean no_leader = false;
 ;       boolean do_comments = ((flags & INSCHAR_DO_COM) != 0);
-;       boolean has_lbr = @curwin.w_onebuf_opt.@wo_lbr;
+;       boolean has_lbr = @curwin.w_options.@wo_lbr;
 
         ;; make sure win_lbr_chartabsize() counts correctly
-;       @curwin.w_onebuf_opt.@wo_lbr = false;
+;       @curwin.w_options.@wo_lbr = false;
 
         ;; When 'ai' is off we don't want a space under the cursor to be deleted.
         ;; Replace it with an 'x' temporarily.
@@ -34495,7 +34169,7 @@
 ;       if (save_char != NUL)               ;; put back space after cursor
 ;           pchar_cursor(save_char);
 
-;       @curwin.w_onebuf_opt.@wo_lbr = has_lbr;
+;       @curwin.w_options.@wo_lbr = has_lbr;
 ;       if (!format_only && haveto_redraw)
 ;       {
 ;           update_topline();
@@ -34651,7 +34325,7 @@
 ;           textwidth = @curwin.w_width - (int)@curbuf.@b_p_wm;
 ;           if (@cmdwin_type != 0)
 ;               textwidth -= 1;
-;           if (@curwin.w_onebuf_opt.@wo_nu || @curwin.w_onebuf_opt.@wo_rnu)
+;           if (@curwin.w_options.@wo_nu || @curwin.w_options.@wo_rnu)
 ;               textwidth -= 8;
 ;       }
 ;       if (textwidth < 0)
@@ -36373,7 +36047,7 @@
 
 ;       if (!@curbuf.@b_p_et && (get_sts_value() != 0 || (@p_sta && ind)))
 ;       {
-;           boolean save_list = @curwin.w_onebuf_opt.@wo_list;
+;           boolean save_list = @curwin.w_options.@wo_list;
 
             ;; Get the current line.
             ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
@@ -36397,7 +36071,7 @@
 
             ;; When 'L' is not in 'cpoptions' a tab always takes up 'ts' spaces.
 ;           if (vim_strbyte(@p_cpo, CPO_LISTWM) == null)
-;               @curwin.w_onebuf_opt.@wo_list = false;
+;               @curwin.w_options.@wo_list = false;
 
             ;; Find first white before the cursor.
 ;           pos_C fpos = §_pos_C();
@@ -36490,7 +36164,7 @@
 ;               }
 ;           }
 
-;           @curwin.w_onebuf_opt.@wo_list = save_list;
+;           @curwin.w_options.@wo_list = save_list;
 ;       }
 
 ;       return false;
@@ -36748,7 +36422,7 @@
 
 (defn- #_int get_nolist_virtcol []
     (§
-;       if (@curwin.w_onebuf_opt.@wo_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
+;       if (@curwin.w_options.@wo_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
 ;           return getvcol_nolist(@curwin.w_cursor);
 
 ;       validate_virtcol();
@@ -51695,9 +51369,9 @@
 ;       else if (@curwin.w_topline <= lpos.lnum && lpos.lnum < @curwin.w_botline)
 ;       {
 ;           int[] vcol = new int[1];
-;           if (!@curwin.w_onebuf_opt.@wo_wrap)
+;           if (!@curwin.w_options.@wo_wrap)
 ;               getvcol(@curwin, lpos, null, vcol, null);
-;           if (@curwin.w_onebuf_opt.@wo_wrap || (@curwin.w_leftcol <= vcol[0] && vcol[0] < @curwin.w_leftcol + @curwin.w_width))
+;           if (@curwin.w_options.@wo_wrap || (@curwin.w_leftcol <= vcol[0] && vcol[0] < @curwin.w_leftcol + @curwin.w_width))
 ;           {
 ;               pos_C save_cursor = §_pos_C();
 ;               pos_C mpos = §_pos_C();
@@ -55624,7 +55298,7 @@
 ;       buf.b_op_start_orig = §_pos_C();
 ;       buf.b_op_end = §_pos_C();
 
-;       buf_copy_options(buf);
+;       buf_init_chartab(buf, false);
 
 ;       buf.b_u_synced = true;
 ;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
@@ -56257,7 +55931,7 @@
 
 (defn- #_int win_buf_chartabsize [#_window_C wp, #_buffer_C buf, #_Bytes p, #_int col]
     (§
-;       if (p.at(0) == TAB && (!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL))
+;       if (p.at(0) == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
 ;       {
 ;           int ts = (int)buf.@b_p_ts;
 ;           return ts - (col % ts);
@@ -56363,9 +56037,9 @@
 (defn- #_int lbr_chartabsize [#_Bytes line, #_Bytes s, #_int col]
     ;; line: start of the line
     (§
-;       if (!@curwin.w_onebuf_opt.@wo_lbr && @p_sbr.at(0) == NUL && !@curwin.w_onebuf_opt.@wo_bri)
+;       if (!@curwin.w_options.@wo_lbr && @p_sbr.at(0) == NUL && !@curwin.w_options.@wo_bri)
 ;       {
-;           if (@curwin.w_onebuf_opt.@wo_wrap)
+;           if (@curwin.w_options.@wo_wrap)
 ;               return win_nolbr_chartabsize(@curwin, s, col, null);
 
 ;           return win_buf_chartabsize(@curwin, @curbuf, s, col);
@@ -56397,9 +56071,9 @@
 
         ;; No 'linebreak', 'showbreak' and 'breakindent': return quickly.
 
-;       if (!wp.w_onebuf_opt.@wo_lbr && !wp.w_onebuf_opt.@wo_bri && @p_sbr.at(0) == NUL)
+;       if (!wp.w_options.@wo_lbr && !wp.w_options.@wo_bri && @p_sbr.at(0) == NUL)
 ;       {
-;           if (wp.w_onebuf_opt.@wo_wrap)
+;           if (wp.w_options.@wo_wrap)
 ;               return win_nolbr_chartabsize(wp, s, col, headp);
 
 ;           return win_buf_chartabsize(wp, @curbuf, s, col);
@@ -56414,8 +56088,8 @@
 
         ;; If 'linebreak' set check at a blank before a non-blank if the line needs a break here.
 
-;       if (wp.w_onebuf_opt.@wo_lbr && @breakat_flags[char_u(c)] && !@breakat_flags[char_u(s.at(1))]
-;                       && wp.w_onebuf_opt.@wo_wrap && wp.w_width != 0)
+;       if (wp.w_options.@wo_lbr && @breakat_flags[char_u(c)] && !@breakat_flags[char_u(s.at(1))]
+;                       && wp.w_options.@wo_wrap && wp.w_width != 0)
 ;       {
             ;; Count all characters from first non-blank after a blank up to next non-blank after a blank.
 
@@ -56450,7 +56124,7 @@
 ;               }
 ;           }
 ;       }
-;       else if (size == 2 && 1 < us_byte2len(s.at(0), false) && wp.w_onebuf_opt.@wo_wrap && in_win_border(wp, col))
+;       else if (size == 2 && 1 < us_byte2len(s.at(0), false) && wp.w_options.@wo_wrap && in_win_border(wp, col))
 ;       {
 ;           size++;         ;; Count the ">" in the last column.
 ;           mb_added = 1;
@@ -56460,7 +56134,7 @@
         ;; Set "*headp" to the size of what we add.
 
 ;       int added = 0;
-;       if ((@p_sbr.at(0) != NUL || wp.w_onebuf_opt.@wo_bri) && wp.w_onebuf_opt.@wo_wrap && col != 0)
+;       if ((@p_sbr.at(0) != NUL || wp.w_options.@wo_bri) && wp.w_options.@wo_wrap && col != 0)
 ;       {
 ;           int sbrlen = 0;
 ;           int numberwidth = win_col_off(wp);
@@ -56506,7 +56180,7 @@
 ;                   else
 ;                       added += mb_string2cells(@p_sbr, -1);
 ;               }
-;               if (wp.w_onebuf_opt.@wo_bri)
+;               if (wp.w_options.@wo_bri)
 ;                   added += get_breakindent_win(wp, line);
 
 ;               size += added;
@@ -56526,7 +56200,7 @@
 
 (defn- #_int win_nolbr_chartabsize [#_window_C wp, #_Bytes p, #_int col, #_int* headp]
     (§
-;       if (p.at(0) == TAB && (!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL))
+;       if (p.at(0) == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
 ;       {
 ;           int ts = (int)@curbuf.@b_p_ts;
 ;           return ts - (col % ts);
@@ -56589,7 +56263,7 @@
         ;; When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set use a simple loop.
         ;; Also use this when 'list' is set but tabs take their normal size.
 
-;       if ((!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL) && !wp.w_onebuf_opt.@wo_lbr && @p_sbr.at(0) == NUL && !wp.w_onebuf_opt.@wo_bri)
+;       if ((!wp.w_options.@wo_list || lcs_tab1[0] != NUL) && !wp.w_options.@wo_lbr && @p_sbr.at(0) == NUL && !wp.w_options.@wo_bri)
 ;       {
 ;           for ( ; ; p = p.plus(us_ptr2len_cc(p)))
 ;           {
@@ -56609,7 +56283,7 @@
 
                     ;; If a double-cell char doesn't fit at the end of a line,
                     ;; it wraps to the next line, it's like this char is three cells wide.
-;                   if (incr == 2 && wp.w_onebuf_opt.@wo_wrap && 1 < us_byte2len(p.at(0), false) && in_win_border(wp, vcol))
+;                   if (incr == 2 && wp.w_options.@wo_wrap && 1 < us_byte2len(p.at(0), false) && in_win_border(wp, vcol))
 ;                   {
 ;                       incr++;
 ;                       head[0] = 1;
@@ -56650,7 +56324,7 @@
 ;       {
 ;           if (p.at(0) == TAB
 ;                   && (@State & NORMAL) != 0
-;                   && !wp.w_onebuf_opt.@wo_list
+;                   && !wp.w_options.@wo_list
 ;                   && !virtual_active()
 ;                   && !(@VIsual_active && (@p_sel.at(0) == (byte)'e' || ltoreq(pos, @VIsual))))
 ;               cursor[0] = vcol + incr - 1;        ;; cursor at end
@@ -56663,13 +56337,13 @@
 
 (defn- #_int getvcol_nolist [#_pos_C posp]
     (§
-;       boolean list_save = @curwin.w_onebuf_opt.@wo_list;
-;       @curwin.w_onebuf_opt.@wo_list = false;
+;       boolean list_save = @curwin.w_options.@wo_list;
+;       @curwin.w_options.@wo_list = false;
 
 ;       int[] vcol = new int[1];
 ;       getvcol(@curwin, posp, null, vcol, null);
 
-;       @curwin.w_onebuf_opt.@wo_list = list_save;
+;       @curwin.w_options.@wo_list = list_save;
 
 ;       return vcol[0];
     ))
@@ -61164,7 +60838,7 @@
     (§
 ;       int bri = 0;
         ;; window width minus window margin space, i.e. what rests for text
-;       int eff_wwidth = wp.w_width - (((wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) == null) ? number_width(wp) + 1 : 0);
+;       int eff_wwidth = wp.w_width - (((wp.w_options.@wo_nu || wp.w_options.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) == null) ? number_width(wp) + 1 : 0);
 
         ;; used cached indent, unless pointer or 'tabstop' changed
 ;       if (BNE(@bri_prev_line, line) || @bri_prev_ts != @curbuf.@b_p_ts || @bri_prev_tick != @curbuf.b_changedtick)
@@ -61172,7 +60846,7 @@
 ;           @bri_prev_line = line;
 ;           @bri_prev_ts = @curbuf.@b_p_ts;
 ;           @bri_prev_tick = @curbuf.b_changedtick;
-;           @bri_prev_indent = get_indent_str(line, (int)@curbuf.@b_p_ts, wp.w_onebuf_opt.@wo_list);
+;           @bri_prev_indent = get_indent_str(line, (int)@curbuf.@b_p_ts, wp.w_options.@wo_list);
 ;       }
 ;       bri = @bri_prev_indent + wp.w_p_brishift;
 
@@ -62330,7 +62004,7 @@
 (defn- #_int plines_win [#_window_C wp, #_long lnum, #_boolean winheight]
     ;; winheight: when true limit to window height
     (§
-;       if (!wp.w_onebuf_opt.@wo_wrap)
+;       if (!wp.w_options.@wo_wrap)
 ;           return 1;
 
 ;       if (wp.w_width == 0)
@@ -62356,7 +62030,7 @@
 
         ;; If list mode is on, then the '$' at the end of the line may take up one extra column.
 
-;       if (wp.w_onebuf_opt.@wo_list && @lcs_eol != NUL)
+;       if (wp.w_options.@wo_list && @lcs_eol != NUL)
 ;           col += 1;
 
         ;; Add column offset for 'number', 'relativenumber' and 'foldcolumn'.
@@ -62380,7 +62054,7 @@
     (§
 ;       int lines = 0;
 
-;       if (!wp.w_onebuf_opt.@wo_wrap)
+;       if (!wp.w_options.@wo_wrap)
 ;           return lines + 1;
 
 ;       if (wp.w_width == 0)
@@ -62401,7 +62075,7 @@
         ;; This only fixes an error when the TAB wraps from one screen line to the next
         ;; (when 'columns' is not a multiple of 'ts').
 
-;       if (s.at(0) == TAB && (@State & NORMAL) != 0 && (!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL))
+;       if (s.at(0) == TAB && (@State & NORMAL) != 0 && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
 ;           col += win_lbr_chartabsize(wp, line, s, (int)col, null) - 1;
 
         ;; Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.
@@ -62491,11 +62165,11 @@
 ;           {
                 ;; Disable 'list' temporarily, unless 'cpo' contains the 'L' flag.
                 ;; Returns the old value of list, so when finished,
-                ;; curwin.w_onebuf_opt.wo_list should be set back to this.
+                ;; curwin.w_options.wo_list should be set back to this.
 
-;               boolean old_list = @curwin.w_onebuf_opt.@wo_list;
+;               boolean old_list = @curwin.w_options.@wo_list;
 ;               if (old_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
-;                   @curwin.w_onebuf_opt.@wo_list = false;
+;                   @curwin.w_options.@wo_list = false;
 
                 ;; In virtual replace mode each character may replace one or more
                 ;; characters (zero if it's a TAB).  Count the number of bytes to
@@ -62518,7 +62192,7 @@
 ;                       newlen += vcol[0] - new_vcol;
 ;               }
 
-;               @curwin.w_onebuf_opt.@wo_list = old_list;
+;               @curwin.w_options.@wo_list = old_list;
 ;           }
 ;           else if (oldp.at(col) != NUL)
 ;           {
@@ -63078,7 +62752,7 @@
 ;               }
 
             ;; relative numbering may require updating more
-;           if (wp.w_onebuf_opt.@wo_rnu)
+;           if (wp.w_options.@wo_rnu)
 ;               redraw_win_later(wp, SOME_VALID);
 ;       }
 
@@ -63671,7 +63345,7 @@
 ;           int width = @curwin.w_width - win_col_off(@curwin);
 
 ;           if (finetune
-;                   && @curwin.w_onebuf_opt.@wo_wrap
+;                   && @curwin.w_options.@wo_wrap
 ;                   && @curwin.w_width != 0
 ;                   && width <= wcol)
 ;           {
@@ -66234,7 +65908,7 @@
 ;           u_add_time(msgbuf, msgbuf.size(), uhp.uh_time);
 
 ;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (0 < wp.w_onebuf_opt.@wo_cole)
+;           if (0 < wp.w_options.@wo_cole)
 ;               redraw_win_later(wp, NOT_VALID);
 
 ;       smsg(u8("%ld %s; %s #%ld  %s"),
@@ -66969,41 +66643,37 @@
 ;       if (STRNCMP(term, u8("builtin_"), 8) == 0)
 ;           term = term.plus(8);
 
-        ;; If HAVE_TGETENT is not defined, only the builtin termcap is used.
-
+;       if (find_builtin_term(term) < 0)
 ;       {
-;           if (find_builtin_term(term) < 0)
+;           libC.fprintf(stderr, u8("\r\n"));
+;           libC.fprintf(stderr, u8("'%s' not known. Available builtin terminals are:\r\n"), term);
+;           btcap_C[] bts = builtin_termcaps;
+;           for (int i = 0; bts[i].bt_seq != null; i++)
 ;           {
-;               libC.fprintf(stderr, u8("\r\n"));
-;               libC.fprintf(stderr, u8("'%s' not known. Available builtin terminals are:\r\n"), term);
-;               btcap_C[] bts = builtin_termcaps;
-;               for (int i = 0; bts[i].bt_seq != null; i++)
-;               {
-;                   if (bts[i].bt_key == KS_NAME)
-;                       libC.fprintf(stderr, u8("    builtin_%s\r\n"), bts[i].bt_seq);
-;               }
-                ;; when user typed :set term=xxx, quit here
-;               if (@starting != NO_SCREEN)
-;               {
-;                   screen_start();         ;; don't know where cursor is now
-;                   wait_return(TRUE);
-;                   return false;
-;               }
-;               term = DEFAULT_TERM;
-;               libC.fprintf(stderr, u8("defaulting to '%s'\r\n"), term);
-;               if (@emsg_silent == 0)
-;               {
-;                   screen_start();         ;; don't know where cursor is now
-;                   out_flush();
-;                   ui_delay(2000L, true);
-;               }
-;               set_string_option_direct(u8("term"), -1, term);
-;               libc.fflush(stderr);
+;               if (bts[i].bt_key == KS_NAME)
+;                   libC.fprintf(stderr, u8("    builtin_%s\r\n"), bts[i].bt_seq);
 ;           }
-;           out_flush();
-;           clear_termoptions();            ;; clear old options
-;           parse_builtin_tcap(term);
+            ;; when user typed :set term=xxx, quit here
+;           if (@starting != NO_SCREEN)
+;           {
+;               screen_start();         ;; don't know where cursor is now
+;               wait_return(TRUE);
+;               return false;
+;           }
+;           term = DEFAULT_TERM;
+;           libC.fprintf(stderr, u8("defaulting to '%s'\r\n"), term);
+;           if (@emsg_silent == 0)
+;           {
+;               screen_start();         ;; don't know where cursor is now
+;               out_flush();
+;               ui_delay(2000L, true);
+;           }
+;           set_string_option_direct(u8("term"), -1, term);
+;           libc.fflush(stderr);
 ;       }
+;       out_flush();
+;       clear_termoptions();            ;; clear old options
+;       parse_builtin_tcap(term);
 
         ;; special: There is no info in the termcap about whether the cursor positioning
         ;; is relative to the start of the screen or to the start of the scrolling region.
@@ -67055,7 +66725,7 @@
 ;           {
 ;               set_option_value(u8("ttym"), 0L, ttym);
                 ;; Reset the WAS_SET flag, 'ttymouse' can be set to "xterm2" in check_termcode().
-;               reset_option_was_set(u8("ttym"));
+;               reset_option_was_set(u8("ttym"));
 ;           }
 ;           else
 ;               check_mouse_termcode();     ;; set mouse termcode anyway
@@ -67748,9 +67418,6 @@
 ;           ui_new_shellsize();
 ;       if (@old__Rows != @Rows)
 ;       {
-            ;; if 'window' uses the whole screen, keep it using that
-;           if (@p_window == @old__Rows - 1 || @old__Rows == 0)
-;               @p_window = @Rows - 1;
 ;           @old__Rows = @Rows;
 ;           shell_new_rows();       ;; update window sizes
 ;       }
@@ -67836,7 +67503,7 @@
 ;           }
 ;           else
 ;           {
-;               if (@curwin.w_onebuf_opt.@wo_scb)
+;               if (@curwin.w_options.@wo_scb)
 ;                   do_check_scrollbind(true);
 ;               if ((@State & CMDLINE) != 0)
 ;               {
@@ -67986,7 +67653,7 @@
 ;               && libc.isatty(1) != 0
 ;               && libc.isatty(@read_cmd_fd) != 0
 ;               && @T_U7.at(0) != NUL
-;               && !option_was_set(u8("ambiwidth")))
+;               && !option_was_set(u8("ambiwidth")))
 ;       {
 ;           Bytes buf = new Bytes(16);
 
@@ -68674,7 +68341,7 @@
 ;                       if (tp.at(1 + ((tp.at(0) != CSI) ? 1 : 0)) == '>' && j == 2)
 ;                       {
                             ;; Only set 'ttymouse' automatically if it was not set by the user already.
-;                           if (!option_was_set(u8("ttym")))
+;                           if (!option_was_set(u8("ttym")))
 ;                           {
                                 ;; if xterm version >= 95 use mouse dragging
 ;                               if (95 <= extra)
@@ -70895,7 +70562,7 @@
 ;           col += win.w_skipcol;
 ;       }
 
-;       if (!win.w_onebuf_opt.@wo_wrap)
+;       if (!win.w_options.@wo_wrap)
 ;           col += win.w_leftcol;
 
         ;; skip line number and fold column in front of the line
@@ -71275,7 +70942,7 @@
 
         ;; Force redraw when width of 'number' or 'relativenumber' column changes.
 ;       if (@curwin.w_redr_type < NOT_VALID
-;              && @curwin.w_nrwidth != ((@curwin.w_onebuf_opt.@wo_nu || @curwin.w_onebuf_opt.@wo_rnu) ? number_width(@curwin) : 0))
+;              && @curwin.w_nrwidth != ((@curwin.w_options.@wo_nu || @curwin.w_options.@wo_rnu) ? number_width(@curwin) : 0))
 ;           @curwin.w_redr_type = NOT_VALID;
 
         ;; Only start redrawing if there is really something to do.
@@ -71345,7 +71012,7 @@
 
 (defn- #_boolean conceal_cursor_line [#_window_C wp]
     (§
-;       if (wp.w_onebuf_opt.@wo_cocu.at(0) == NUL)
+;       if (wp.w_options.@wo_cocu.at(0) == NUL)
 ;           return false;
 
 ;       int c;
@@ -71360,14 +71027,14 @@
 ;       else
 ;           return false;
 
-;       return (vim_strchr(wp.w_onebuf_opt.@wo_cocu, c) != null);
+;       return (vim_strchr(wp.w_options.@wo_cocu, c) != null);
     ))
 
 ;; Check if the cursor line needs to be redrawn because of 'concealcursor'.
 
 (defn- #_void conceal_check_cursor_line []
     (§
-;       if (0 < @curwin.w_onebuf_opt.@wo_cole && conceal_cursor_line(@curwin))
+;       if (0 < @curwin.w_options.@wo_cole && conceal_cursor_line(@curwin))
 ;       {
 ;           @need_cursor_line_redraw = true;
             ;; Need to recompute cursor column, e.g., when starting Visual mode without concealing.
@@ -71483,7 +71150,7 @@
 ;       init_search_hl(wp);
 
         ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-;       int i = (wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu) ? number_width(wp) : 0;
+;       int i = (wp.w_options.@wo_nu || wp.w_options.@wo_rnu) ? number_width(wp) : 0;
 ;       if (wp.w_nrwidth != i)
 ;       {
 ;           type = NOT_VALID;
@@ -71546,7 +71213,7 @@
 
             ;; When line numbers are displayed, need to redraw all lines below
             ;; inserted/deleted lines.
-;           if (mod_top != 0 && buf.b_mod_xlines != 0 && wp.w_onebuf_opt.@wo_nu)
+;           if (mod_top != 0 && buf.b_mod_xlines != 0 && wp.w_options.@wo_nu)
 ;               mod_bot = MAXLNUM;
 ;       }
 
@@ -71812,7 +71479,7 @@
 ;                   int[] toc = new int[1];
 ;                   int save_ve_flags = @ve_flags;
 
-;                   if (@curwin.w_onebuf_opt.@wo_lbr)
+;                   if (@curwin.w_options.@wo_lbr)
 ;                       @ve_flags = VE_ALL;
 ;                   getvcols(wp, @VIsual, @curwin.w_cursor, fromc, toc);
 ;                   @ve_flags = save_ve_flags;
@@ -72380,7 +72047,7 @@
         ;; To speed up the loop below, set extra_check when there is linebreak,
         ;; trailing white space and/or syntax processing to be done.
 
-;       boolean extra_check = wp.w_onebuf_opt.@wo_lbr;  ;; has syntax or linebreak
+;       boolean extra_check = wp.w_options.@wo_lbr;  ;; has syntax or linebreak
 
         ;; Check for columns to display for 'colorcolumn'.
 ;       int[] color_cols = wp.w_p_cc_cols, cci = { 0 };         ;; pointer to according columns array
@@ -72500,7 +72167,7 @@
 ;       Bytes ptr = line;                                  ;; current position in "line"
 
         ;; find start of trailing whitespace
-;       if (wp.w_onebuf_opt.@wo_list && @lcs_trail != NUL)
+;       if (wp.w_options.@wo_list && @lcs_trail != NUL)
 ;       {
 ;           trailcol = STRLEN(ptr);
 ;           while (0 < trailcol && vim_iswhite(ptr.at(trailcol - 1)))
@@ -72513,7 +72180,7 @@
         ;; advance to the first character to be displayed.
 
 ;       int v;
-;       if (wp.w_onebuf_opt.@wo_wrap)
+;       if (wp.w_options.@wo_wrap)
 ;           v = wp.w_skipcol;
 ;       else
 ;           v = wp.w_leftcol;
@@ -72535,7 +72202,7 @@
             ;; - the visual mode is active,
             ;; the end of the line may be before the start of the displayed part.
 
-;           if (vcol < v && (wp.w_onebuf_opt.@wo_cuc || draw_color_col || virtual_active() || @VIsual_active))
+;           if (vcol < v && (wp.w_options.@wo_cuc || draw_color_col || virtual_active() || @VIsual_active))
 ;           {
 ;               vcol = v;
 ;           }
@@ -72558,7 +72225,7 @@
 ;               fromcol[0] = vcol;
 
             ;; When w_skipcol is non-zero, first line needs 'showbreak'.
-;           if (wp.w_onebuf_opt.@wo_wrap)
+;           if (wp.w_options.@wo_wrap)
 ;               need_showbreak = true;
 ;       }
 
@@ -72641,7 +72308,7 @@
 
         ;; Cursor line highlighting for 'cursorline' in the current window.
         ;; Not when Visual mode is active, because it's not clear what is selected then.
-;       if (wp.w_onebuf_opt.@wo_cul && lnum == wp.w_cursor.lnum && !(wp == @curwin && @VIsual_active))
+;       if (wp.w_options.@wo_cul && lnum == wp.w_cursor.lnum && !(wp == @curwin && @VIsual_active))
 ;       {
 ;           line_attr = hl_attr(HLF_CUL);
 ;           area_highlighting = true;
@@ -72674,7 +72341,7 @@
 ;                   draw_state = WL_NR;
                     ;; Display the absolute or relative line number.
                     ;; After the first fill with blanks when the 'n' flag isn't in 'cpo'.
-;                   if ((wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu)
+;                   if ((wp.w_options.@wo_nu || wp.w_options.@wo_rnu)
 ;                           && (row == startrow || vim_strbyte(@p_cpo, CPO_NUMCOL) == null))
 ;                   {
                         ;; Draw the line number (empty space after wrapping).
@@ -72683,14 +72350,14 @@
 ;                           long num;
 ;                           Bytes fmt = u8("%*ld ");
 
-;                           if (wp.w_onebuf_opt.@wo_nu && !wp.w_onebuf_opt.@wo_rnu)
+;                           if (wp.w_options.@wo_nu && !wp.w_options.@wo_rnu)
                                 ;; 'number' + 'norelativenumber'
 ;                               num = lnum;
 ;                           else
 ;                           {
                                 ;; 'relativenumber', don't use negative numbers
 ;                               num = Math.abs(get_cursor_rel_lnum(wp, lnum));
-;                               if (num == 0 && wp.w_onebuf_opt.@wo_nu && wp.w_onebuf_opt.@wo_rnu)
+;                               if (num == 0 && wp.w_options.@wo_nu && wp.w_options.@wo_rnu)
 ;                               {
                                     ;; 'number' + 'relativenumber'
 ;                                   num = lnum;
@@ -72711,7 +72378,7 @@
 ;                       char_attr = hl_attr(HLF_N);
                         ;; When 'cursorline' is set, highlight the line number of the current line differently.
                         ;; TODO: Can we use CursorLine instead of CursorLineNr when CursorLineNr isn't set?
-;                       if ((wp.w_onebuf_opt.@wo_cul || wp.w_onebuf_opt.@wo_rnu) && lnum == wp.w_cursor.lnum)
+;                       if ((wp.w_options.@wo_cul || wp.w_options.@wo_rnu) && lnum == wp.w_cursor.lnum)
 ;                           char_attr = hl_attr(HLF_CLN);
 ;                   }
 ;               }
@@ -72727,7 +72394,7 @@
 ;               if (draw_state == WL_BRI - 1 && n_extra == 0)
 ;               {
 ;                   draw_state = WL_BRI;
-;                   if (wp.w_onebuf_opt.@wo_bri && n_extra == 0 && row != startrow)
+;                   if (wp.w_options.@wo_bri && n_extra == 0 && row != startrow)
 ;                   {
 ;                       char_attr = 0; ;; was: hl_attr(HLF_AT);
 ;                       p_extra = null;
@@ -72757,7 +72424,7 @@
 ;                       if (tocol[0] == vcol)
 ;                           tocol[0] += n_extra;
                         ;; combine 'showbreak' with 'cursorline'
-;                       if (wp.w_onebuf_opt.@wo_cul && lnum == wp.w_cursor.lnum)
+;                       if (wp.w_options.@wo_cul && lnum == wp.w_cursor.lnum)
 ;                           char_attr = hl_combine_attr(char_attr, hl_attr(HLF_CUL));
 ;                   }
 ;               }
@@ -72784,7 +72451,7 @@
 ;               screen_line(screen_row, wp.w_wincol, col, -wp.w_width, false);
                 ;; Pretend we have finished updating the window,
                 ;; except when 'cursorcolumn' is set.
-;               if (wp.w_onebuf_opt.@wo_cuc)
+;               if (wp.w_options.@wo_cuc)
 ;                   row = wp.w_cline_row + wp.w_cline_height;
 ;               else
 ;                   row = wp.w_height;
@@ -73076,7 +72743,7 @@
 ;               ptr = ptr.plus(1);
 
                 ;; 'list' : change char 0xa0 to lcs_nbsp.
-;               if (wp.w_onebuf_opt.@wo_list && (c == 0xa0 || (mb_utf8 && mb_c == 0xa0)) && @lcs_nbsp != NUL)
+;               if (wp.w_options.@wo_list && (c == 0xa0 || (mb_utf8 && mb_c == 0xa0)) && @lcs_nbsp != NUL)
 ;               {
 ;                   c = @lcs_nbsp;
 ;                   if (area_attr == 0 && search_attr == 0)
@@ -73104,7 +72771,7 @@
 
                     ;; Found last space before word: check for line break.
 
-;                   if (wp.w_onebuf_opt.@wo_lbr && @breakat_flags[char_u((byte)c)] && !@breakat_flags[char_u(ptr.at(0))])
+;                   if (wp.w_options.@wo_lbr && @breakat_flags[char_u((byte)c)] && !@breakat_flags[char_u(ptr.at(0))])
 ;                   {
 ;                       int mb_off = us_head_off(line, ptr.minus(1));
 ;                       Bytes p = ptr.minus(mb_off + 1);
@@ -73126,7 +72793,7 @@
 ;                               old_boguscols = boguscols;
 ;                               boguscols = 0;
 ;                           }
-;                           if (!wp.w_onebuf_opt.@wo_list)
+;                           if (!wp.w_options.@wo_list)
 ;                               c = ' ';
 ;                       }
 ;                   }
@@ -73159,18 +72826,18 @@
                     ;; When getting a character from the file, we may have to turn it
                     ;; into something else on the way to putting it into "screenLines".
 
-;                   if (c == TAB && (!wp.w_onebuf_opt.@wo_list || lcs_tab1[0] != NUL))
+;                   if (c == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
 ;                   {
 ;                       int tab_len = 0;
 ;                       int vcol_adjusted = vcol; ;; removed showbreak length
                         ;; Only adjust the "tab_len" when at the first column
                         ;; after the showbreak value was drawn.
-;                       if (@p_sbr.at(0) != NUL && vcol == vcol_sbr && wp.w_onebuf_opt.@wo_wrap)
+;                       if (@p_sbr.at(0) != NUL && vcol == vcol_sbr && wp.w_options.@wo_wrap)
 ;                           vcol_adjusted = vcol - us_charlen(@p_sbr);
                         ;; tab amount depends on current column
 ;                       tab_len = (int)@curbuf.@b_p_ts - vcol_adjusted % (int)@curbuf.@b_p_ts - 1;
 
-;                       if (!wp.w_onebuf_opt.@wo_lbr || !wp.w_onebuf_opt.@wo_list)
+;                       if (!wp.w_options.@wo_lbr || !wp.w_options.@wo_list)
                             ;; tab amount depends on current column
 ;                           n_extra = tab_len;
 ;                       else
@@ -73182,7 +72849,7 @@
                                 ;; there are characters to conceal
 ;                               tab_len += vcol_off;
                             ;; boguscols before FIX_FOR_BOGUSCOLS macro from above
-;                           if (wp.w_onebuf_opt.@wo_list
+;                           if (wp.w_options.@wo_list
 ;                                       && lcs_tab1[0] != NUL && 0 < old_boguscols && tab_len < n_extra)
 ;                               tab_len += n_extra - tab_len;
 
@@ -73230,15 +72897,15 @@
                             ;; Make sure, the highlighting for the tab char will be
                             ;; correctly set further below (effectively reverts the
                             ;; FIX_FOR_BOGUSCOLS macro
-;                           if (n_extra == tab_len + vc_saved && wp.w_onebuf_opt.@wo_list && lcs_tab1[0] != NUL)
+;                           if (n_extra == tab_len + vc_saved && wp.w_options.@wo_list && lcs_tab1[0] != NUL)
 ;                               tab_len += vc_saved;
 ;                       }
 
 ;                       mb_utf8 = false;                    ;; don't draw as UTF-8
-;                       if (wp.w_onebuf_opt.@wo_list)
+;                       if (wp.w_options.@wo_list)
 ;                       {
 ;                           c = lcs_tab1[0];
-;                           if (wp.w_onebuf_opt.@wo_lbr)
+;                           if (wp.w_options.@wo_lbr)
 ;                               c_extra = NUL;              ;; using "p_extra" from above
 ;                           else
 ;                               c_extra = lcs_tab2[0];
@@ -73260,7 +72927,7 @@
 ;                       }
 ;                   }
 ;                   else if (c == NUL
-;                           && ((wp.w_onebuf_opt.@wo_list && 0 < @lcs_eol)
+;                           && ((wp.w_options.@wo_list && 0 < @lcs_eol)
 ;                               || ((0 <= fromcol[0] || 0 <= fromcol_prev)
 ;                                   && vcol < tocol[0]
 ;                                   && @VIsual_mode != Ctrl_V
@@ -73283,7 +72950,7 @@
 ;                               c_extra = NUL;
 ;                           }
 ;                       }
-;                       if (wp.w_onebuf_opt.@wo_list)
+;                       if (wp.w_options.@wo_list)
 ;                           c = @lcs_eol;
 ;                       else
 ;                           c = ' ';
@@ -73310,7 +72977,7 @@
 ;                       if (n_extra == 0)
 ;                           n_extra = mb_byte2cells((byte)c) - 1;
 ;                       c_extra = NUL;
-;                       if (wp.w_onebuf_opt.@wo_lbr)
+;                       if (wp.w_options.@wo_lbr)
 ;                       {
 ;                           Bytes p;
 
@@ -73359,15 +73026,15 @@
 ;                   }
 ;               }
 
-;               if (0 < wp.w_onebuf_opt.@wo_cole
+;               if (0 < wp.w_options.@wo_cole
 ;                   && (wp != @curwin || lnum != wp.w_cursor.lnum || conceal_cursor_line(wp))
 ;                   && (syntax_flags & HL_CONCEAL) != 0
-;                   && !(lnum_in_visual_area && vim_strchr(wp.w_onebuf_opt.@wo_cocu, 'v') == null))
+;                   && !(lnum_in_visual_area && vim_strchr(wp.w_options.@wo_cocu, 'v') == null))
 ;               {
 ;                   char_attr = conceal_attr;
 ;                   if (prev_syntax_id != syntax_seqnr[0]
-;                           && (syn_get_sub_char() != NUL || wp.w_onebuf_opt.@wo_cole == 1)
-;                           && wp.w_onebuf_opt.@wo_cole != 3)
+;                           && (syn_get_sub_char() != NUL || wp.w_options.@wo_cole == 1)
+;                           && wp.w_options.@wo_cole != 3)
 ;                   {
                         ;; First time at this concealed item: display one character.
 ;                       if (syn_get_sub_char() != NUL)
@@ -73382,7 +73049,7 @@
 ;                       if (0 < n_extra)
 ;                           vcol_off += n_extra;
 ;                       vcol += n_extra;
-;                       if (wp.w_onebuf_opt.@wo_wrap && 0 < n_extra)
+;                       if (wp.w_options.@wo_wrap && 0 < n_extra)
 ;                       {
 ;                           boguscols += n_extra;
 ;                           col += n_extra;
@@ -73435,8 +73102,8 @@
             ;; special character (via 'listchars' option "precedes:<char>".
 
 ;           if (lcs_prec_todo != NUL
-;                   && wp.w_onebuf_opt.@wo_list
-;                   && (wp.w_onebuf_opt.@wo_wrap ? 0 < wp.w_skipcol : 0 < wp.w_leftcol)
+;                   && wp.w_options.@wo_list
+;                   && (wp.w_options.@wo_wrap ? 0 < wp.w_skipcol : 0 < wp.w_leftcol)
 ;                   && WL_NR < draw_state
 ;                   && c != NUL)
 ;           {
@@ -73475,7 +73142,7 @@
 ;               long prevcol = BDIFF(ptr, line) - ((c == NUL) ? 1 : 0);
 
                 ;; we're not really at that column when skipping some text
-;               if (prevcol < (long)(wp.w_onebuf_opt.@wo_wrap ? wp.w_skipcol : wp.w_leftcol))
+;               if (prevcol < (long)(wp.w_options.@wo_wrap ? wp.w_skipcol : wp.w_leftcol))
 ;                   prevcol++;
 
                 ;; Invert at least one char, used for Visual and empty line or highlight
@@ -73567,7 +73234,7 @@
 ;               }
 
                 ;; Highlight 'cursorcolumn' & 'colorcolumn' past end of the line.
-;               if (wp.w_onebuf_opt.@wo_wrap)
+;               if (wp.w_options.@wo_wrap)
 ;                   v = wp.w_skipcol;
 ;               else
 ;                   v = wp.w_leftcol;
@@ -73583,7 +73250,7 @@
 ;               if (draw_color_col)
 ;                   draw_color_col = advance_color_col(vcol - vcol_off, color_cols, cci);
 
-;               if ((wp.w_onebuf_opt.@wo_cuc
+;               if ((wp.w_options.@wo_cuc
 ;                         && vcol - vcol_off - eol_hl_off <= wp.w_virtcol
 ;                         && wp.w_virtcol < wp.w_width * (row - startrow + 1) + v
 ;                         && lnum != wp.w_cursor.lnum)
@@ -73591,7 +73258,7 @@
 ;               {
 ;                   int rightmost_vcol = 0;
 
-;                   if (wp.w_onebuf_opt.@wo_cuc)
+;                   if (wp.w_options.@wo_cuc)
 ;                       rightmost_vcol = wp.w_virtcol;
 ;                   if (draw_color_col)
                         ;; determine rightmost colorcolumn to possibly draw
@@ -73607,7 +73274,7 @@
 ;                       if (draw_color_col)
 ;                           draw_color_col = advance_color_col(vcol - vcol_off, color_cols, cci);
 
-;                       if (wp.w_onebuf_opt.@wo_cuc && vcol - vcol_off == wp.w_virtcol)
+;                       if (wp.w_options.@wo_cuc && vcol - vcol_off == wp.w_virtcol)
 ;                           @screenAttrs[off++] = hl_attr(HLF_CUC);
 ;                       else if (draw_color_col && vcol - vcol_off == color_cols[cci[0]])
 ;                           @screenAttrs[off++] = hl_attr(HLF_MC);
@@ -73639,10 +73306,10 @@
 
             ;; line continues beyond line end
 ;           if (@lcs_ext != NUL
-;                   && !wp.w_onebuf_opt.@wo_wrap
+;                   && !wp.w_options.@wo_wrap
 ;                   && col == wp.w_width - 1
 ;                   && (ptr.at(0) != NUL
-;                       || (wp.w_onebuf_opt.@wo_list && 0 < lcs_eol_one)
+;                       || (wp.w_options.@wo_list && 0 < lcs_eol_one)
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
 ;           {
 ;               c = @lcs_ext;
@@ -73668,7 +73335,7 @@
 ;           vcol_save_attr = -1;
 ;           if (draw_state == WL_LINE && !lnum_in_visual_area)
 ;           {
-;               if (wp.w_onebuf_opt.@wo_cuc && vcol - vcol_off == wp.w_virtcol && lnum != wp.w_cursor.lnum)
+;               if (wp.w_options.@wo_cuc && vcol - vcol_off == wp.w_virtcol && lnum != wp.w_cursor.lnum)
 ;               {
 ;                   vcol_save_attr = char_attr;
 ;                   char_attr = hl_combine_attr(char_attr, hl_attr(HLF_CUC));
@@ -73727,13 +73394,13 @@
 ;               off++;
 ;               col++;
 ;           }
-;           else if (0 < wp.w_onebuf_opt.@wo_cole && is_concealing)
+;           else if (0 < wp.w_options.@wo_cole && is_concealing)
 ;           {
 ;               --n_skip;
 ;               vcol_off++;
 ;               if (0 < n_extra)
 ;                   vcol_off += n_extra;
-;               if (wp.w_onebuf_opt.@wo_wrap)
+;               if (wp.w_options.@wo_wrap)
 ;               {
                     ;; Special voodoo required if 'wrap' is on.
                     ;;
@@ -73798,7 +73465,7 @@
 
 ;           if (wp.w_width <= col
 ;                   && (ptr.at(0) != NUL
-;                       || (wp.w_onebuf_opt.@wo_list && @lcs_eol != NUL && BNE(p_extra, at_end_str))
+;                       || (wp.w_options.@wo_list && @lcs_eol != NUL && BNE(p_extra, at_end_str))
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
 ;           {
 ;               screen_line(screen_row, wp.w_wincol, col - boguscols, wp.w_width, false);
@@ -73808,7 +73475,7 @@
 
                 ;; When not wrapping and finished diff lines, or when displayed
                 ;; '$' and highlighting until last column, break here.
-;               if ((!wp.w_onebuf_opt.@wo_wrap) || lcs_eol_one == -1)
+;               if ((!wp.w_options.@wo_wrap) || lcs_eol_one == -1)
 ;                   break;
 
                 ;; When the window is too narrow draw all "@" lines.
@@ -76396,11 +76063,11 @@
 
             ;; In list mode virtcol needs to be recomputed.
 ;           int[] virtcol = { wp.w_virtcol };
-;           if (wp.w_onebuf_opt.@wo_list && lcs_tab1[0] == NUL)
+;           if (wp.w_options.@wo_list && lcs_tab1[0] == NUL)
 ;           {
-;               wp.w_onebuf_opt.@wo_list = false;
+;               wp.w_options.@wo_list = false;
 ;               getvvcol(wp, wp.w_cursor, null, virtcol, null);
-;               wp.w_onebuf_opt.@wo_list = true;
+;               wp.w_options.@wo_list = true;
 ;           }
 
 ;           final int RULER_BUF_LEN = 70;
@@ -76474,14 +76141,14 @@
 (defn- #_int number_width [#_window_C wp]
     (§
 ;       long lnum;
-;       if (wp.w_onebuf_opt.@wo_rnu && !wp.w_onebuf_opt.@wo_nu)
+;       if (wp.w_options.@wo_rnu && !wp.w_options.@wo_nu)
             ;; cursor line shows "0"
 ;           lnum = wp.w_height;
 ;       else
             ;; cursor line shows absolute line number
 ;           lnum = @curbuf.b_ml.ml_line_count;
 
-;       if (lnum == wp.w_nrwidth_line_count && wp.w_nuw_cached == wp.w_onebuf_opt.@wo_nuw)
+;       if (lnum == wp.w_nrwidth_line_count && wp.w_nuw_cached == wp.w_options.@wo_nuw)
 ;           return wp.w_nrwidth_width;
 
 ;       wp.w_nrwidth_line_count = lnum;
@@ -76494,11 +76161,11 @@
 ;       } while (0 < lnum);
 
         ;; 'numberwidth' gives the minimal width plus one
-;       if (n < wp.w_onebuf_opt.@wo_nuw - 1)
-;           n = (int)wp.w_onebuf_opt.@wo_nuw - 1;
+;       if (n < wp.w_options.@wo_nuw - 1)
+;           n = (int)wp.w_options.@wo_nuw - 1;
 
 ;       wp.w_nrwidth_width = n;
-;       wp.w_nuw_cached = wp.w_onebuf_opt.@wo_nuw;
+;       wp.w_nuw_cached = wp.w_options.@wo_nuw;
 ;       return n;
     ))
 
@@ -77085,7 +76752,7 @@
 
             ;; We don't like to take lines for the new window from a 'winfixwidth' window.
             ;; Take them from a window to the left or right instead, if possible.
-;           if (oldwin.w_onebuf_opt.@wo_wfw)
+;           if (oldwin.w_options.@wo_wfw)
 ;               win_setwidth_win(oldwin.w_width + new_size, oldwin);
 
             ;; Only make all windows the same width if one of them (except oldwin)
@@ -77167,7 +76834,7 @@
 
             ;; We don't like to take lines for the new window from a 'winfixheight' window.
             ;; Take them from a window above or below instead, if possible.
-;           if (oldwin.w_onebuf_opt.@wo_wfh)
+;           if (oldwin.w_options.@wo_wfh)
 ;           {
 ;               win_setheight_win(oldwin.w_height + new_size + STATUS_HEIGHT, oldwin);
 ;               oldwin_height = oldwin.w_height;
@@ -77299,7 +76966,7 @@
 
 ;       if ((flags & WSP_VERT) != 0)
 ;       {
-;           wp.w_onebuf_opt.@wo_scr = @curwin.w_onebuf_opt.@wo_scr;
+;           wp.w_options.@wo_scr = @curwin.w_options.@wo_scr;
 
 ;           if (need_status != 0)
 ;           {
@@ -78164,7 +77831,7 @@
 ;       {
             ;; When 'winfixheight' is set, try to find another frame in the column
             ;; (as close to the closed frame as possible) to distribute the height to.
-;           if (frp2.fr_win != null && frp2.fr_win.w_onebuf_opt.@wo_wfh)
+;           if (frp2.fr_win != null && frp2.fr_win.w_options.@wo_wfh)
 ;           {
 ;               frame_C frp = frp_close.fr_prev;
 ;               frame_C frp3 = frp_close.fr_next;
@@ -78172,7 +77839,7 @@
 ;               {
 ;                   if (frp != null)
 ;                   {
-;                       if (frp.fr_win != null && !frp.fr_win.w_onebuf_opt.@wo_wfh)
+;                       if (frp.fr_win != null && !frp.fr_win.w_options.@wo_wfh)
 ;                       {
 ;                           frp2 = frp;
 ;                           wp = frp.fr_win;
@@ -78182,7 +77849,7 @@
 ;                   }
 ;                   if (frp3 != null)
 ;                   {
-;                       if (frp3.fr_win != null && !frp3.fr_win.w_onebuf_opt.@wo_wfh)
+;                       if (frp3.fr_win != null && !frp3.fr_win.w_options.@wo_wfh)
 ;                       {
 ;                           frp2 = frp3;
 ;                           wp = frp3.fr_win;
@@ -78200,7 +77867,7 @@
 ;       {
             ;; When 'winfixwidth' is set, try to find another frame in the column
             ;; (as close to the closed frame as possible) to distribute the width to.
-;           if (frp2.fr_win != null && frp2.fr_win.w_onebuf_opt.@wo_wfw)
+;           if (frp2.fr_win != null && frp2.fr_win.w_options.@wo_wfw)
 ;           {
 ;               frame_C frp = frp_close.fr_prev;
 ;               frame_C frp3 = frp_close.fr_next;
@@ -78208,7 +77875,7 @@
 ;               {
 ;                   if (frp != null)
 ;                   {
-;                       if (frp.fr_win != null && !frp.fr_win.w_onebuf_opt.@wo_wfw)
+;                       if (frp.fr_win != null && !frp.fr_win.w_options.@wo_wfw)
 ;                       {
 ;                           frp2 = frp;
 ;                           wp = frp.fr_win;
@@ -78218,7 +77885,7 @@
 ;                   }
 ;                   if (frp3 != null)
 ;                   {
-;                       if (frp3.fr_win != null && !frp3.fr_win.w_onebuf_opt.@wo_wfw)
+;                       if (frp3.fr_win != null && !frp3.fr_win.w_options.@wo_wfw)
 ;                       {
 ;                           frp2 = frp3;
 ;                           wp = frp3.fr_win;
@@ -78429,7 +78096,7 @@
     (§
         ;; frame with one window: fixed height if 'winfixheight' set.
 ;       if (frp.fr_win != null)
-;           return frp.fr_win.w_onebuf_opt.@wo_wfh;
+;           return frp.fr_win.w_options.@wo_wfh;
 
 ;       if (frp.fr_layout == FR_ROW)
 ;       {
@@ -78457,7 +78124,7 @@
     (§
         ;; frame with one window: fixed width if 'winfixwidth' set.
 ;       if (frp.fr_win != null)
-;           return frp.fr_win.w_onebuf_opt.@wo_wfw;
+;           return frp.fr_win.w_options.@wo_wfw;
 
 ;       if (frp.fr_layout == FR_COL)
 ;       {
@@ -78875,9 +78542,9 @@
 ;       win_enter(wp);
 
         ;; Conceal cursor line in previous window, unconceal in current window.
-;       if (win_valid(owp) && 0 < owp.w_onebuf_opt.@wo_cole && @msg_scrolled == 0)
+;       if (win_valid(owp) && 0 < owp.w_options.@wo_cole && @msg_scrolled == 0)
 ;           update_single_line(owp, owp.w_cursor.lnum);
-;       if (0 < @curwin.w_onebuf_opt.@wo_cole && @msg_scrolled == 0)
+;       if (0 < @curwin.w_options.@wo_cole && @msg_scrolled == 0)
 ;           @need_cursor_line_redraw = true;
     ))
 
@@ -79022,13 +78689,13 @@
 ;           redraw_later(VALID);    ;; causes status line redraw
 
         ;; set window height to desired minimal value
-;       if (@curwin.w_height < @p_wh && !@curwin.w_onebuf_opt.@wo_wfh)
+;       if (@curwin.w_height < @p_wh && !@curwin.w_options.@wo_wfh)
 ;           win_setheight((int)@p_wh);
 ;       else if (@curwin.w_height == 0)
 ;           win_setheight(1);
 
         ;; set window width to desired minimal value
-;       if (@curwin.w_width < @p_wiw && !@curwin.w_onebuf_opt.@wo_wfw)
+;       if (@curwin.w_width < @p_wiw && !@curwin.w_options.@wo_wfw)
 ;           win_setwidth((int)@p_wiw);
 
 ;       setmouse();                 ;; in case jumped to/from help buffer
@@ -79068,8 +78735,7 @@
 
 (defn- #_void win_free [#_window_C wp]
     (§
-;       clear_winopt(wp.w_onebuf_opt);
-;       clear_winopt(wp.w_allbuf_opt);
+;       clear_winopt(wp.w_options);
 
 ;       if (@prevwin == wp)
 ;           @prevwin = null;
@@ -79391,7 +79057,7 @@
 
 ;               for (frame_C frp = curfrp.fr_parent.fr_child; frp != null; frp = frp.fr_next)
 ;               {
-;                   if (frp != curfrp && frp.fr_win != null && frp.fr_win.w_onebuf_opt.@wo_wfh)
+;                   if (frp != curfrp && frp.fr_win != null && frp.fr_win.w_options.@wo_wfh)
 ;                       room_reserved += frp.fr_height;
 ;                   room += frp.fr_height;
 ;                   if (frp != curfrp)
@@ -79461,7 +79127,7 @@
 ;               while (frp != null && take != 0)
 ;               {
 ;                   int h = frame_minheight(frp, null);
-;                   if (0 < room_reserved && frp.fr_win != null && frp.fr_win.w_onebuf_opt.@wo_wfh)
+;                   if (0 < room_reserved && frp.fr_win != null && frp.fr_win.w_options.@wo_wfh)
 ;                   {
 ;                       if (room_reserved >= frp.fr_height)
 ;                           room_reserved -= frp.fr_height;
@@ -79565,7 +79231,7 @@
 
 ;               for (frame_C frp = curfrp.fr_parent.fr_child; frp != null; frp = frp.fr_next)
 ;               {
-;                   if (frp != curfrp && frp.fr_win != null && frp.fr_win.w_onebuf_opt.@wo_wfw)
+;                   if (frp != curfrp && frp.fr_win != null && frp.fr_win.w_options.@wo_wfw)
 ;                       room_reserved += frp.fr_width;
 ;                   room += frp.fr_width;
 ;                   if (frp != curfrp)
@@ -79621,7 +79287,7 @@
 ;               while (frp != null && take != 0)
 ;               {
 ;                   int w = frame_minwidth(frp, null);
-;                   if (0 < room_reserved && frp.fr_win != null && frp.fr_win.w_onebuf_opt.@wo_wfw)
+;                   if (0 < room_reserved && frp.fr_win != null && frp.fr_win.w_options.@wo_wfw)
 ;                   {
 ;                       if (room_reserved >= frp.fr_width)
 ;                           room_reserved -= frp.fr_width;
@@ -79945,7 +79611,7 @@
 
         ;; Don't change w_topline when height is zero.  Don't set w_topline
         ;; when 'scrollbind' is set and this isn't the current window.
-;       if (0 < height && (!wp.w_onebuf_opt.@wo_scb || wp == @curwin))
+;       if (0 < height && (!wp.w_options.@wo_scb || wp == @curwin))
 ;       {
             ;; Find a value for w_topline that shows the cursor at the same
             ;; relative position in the window as before (more or less).
@@ -80049,9 +79715,9 @@
 
 (defn- #_void win_comp_scroll [#_window_C wp]
     (§
-;       wp.w_onebuf_opt.@wo_scr = (wp.w_height >>> 1);
-;       if (wp.w_onebuf_opt.@wo_scr == 0)
-;           wp.w_onebuf_opt.@wo_scr = 1;
+;       wp.w_options.@wo_scr = (wp.w_height >>> 1);
+;       if (wp.w_options.@wo_scr == 0)
+;           wp.w_options.@wo_scr = 1;
     ))
 
 ;; command_height: called whenever "p_ch" has been changed
@@ -80071,7 +79737,7 @@
 ;           frp = frp.fr_parent;
 
         ;; Avoid changing the height of a window with 'winfixheight' set.
-;       while (frp.fr_prev != null && frp.fr_layout == FR_LEAF && frp.fr_win.w_onebuf_opt.@wo_wfh)
+;       while (frp.fr_prev != null && frp.fr_layout == FR_LEAF && frp.fr_win.w_options.@wo_wfh)
 ;           frp = frp.fr_prev;
 
 ;       if (@starting != NO_SCREEN)
@@ -80335,7 +80001,7 @@
 
 (defn- #_void redraw_for_cursorline [#_window_C wp]
     (§
-;       if ((wp.w_onebuf_opt.@wo_rnu || wp.w_onebuf_opt.@wo_cul) && (wp.w_valid & VALID_CROW) == 0)
+;       if ((wp.w_options.@wo_rnu || wp.w_options.@wo_cul) && (wp.w_valid & VALID_CROW) == 0)
 ;           redraw_win_later(wp, SOME_VALID);
     ))
 
@@ -80754,7 +80420,7 @@
 ;           getvvcol(wp, wp.w_cursor, null, vcol, null);
 ;           wp.w_virtcol = vcol[0];
 ;           wp.w_valid |= VALID_VIRTCOL;
-;           if (wp.w_onebuf_opt.@wo_cuc)
+;           if (wp.w_options.@wo_cuc)
 ;               redraw_win_later(wp, SOME_VALID);
 ;       }
     ))
@@ -80784,7 +80450,7 @@
 ;           int width = @curwin.w_width - off + curwin_col_off2();
 
             ;; long line wrapping, adjust curwin.w_wrow
-;           if (@curwin.w_onebuf_opt.@wo_wrap && @curwin.w_width <= col && 0 < width)
+;           if (@curwin.w_options.@wo_wrap && @curwin.w_width <= col && 0 < width)
                 ;; use same formula as what is used in curs_columns()
 ;               col -= ((col - @curwin.w_width) / width + 1) * width;
 ;           if (@curwin.w_leftcol < col)
@@ -80802,7 +80468,7 @@
 
 (defn- #_int win_col_off [#_window_C wp]
     (§
-;       return (((wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu) ? number_width(wp) + 1 : 0)
+;       return (((wp.w_options.@wo_nu || wp.w_options.@wo_rnu) ? number_width(wp) + 1 : 0)
 ;             + ((@cmdwin_type == 0 || wp != @curwin) ? 0 : 1));
     ))
 
@@ -80816,7 +80482,7 @@
 
 (defn- #_int win_col_off2 [#_window_C wp]
     (§
-;       if ((wp.w_onebuf_opt.@wo_nu || wp.w_onebuf_opt.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) != null)
+;       if ((wp.w_options.@wo_nu || wp.w_options.@wo_rnu) && vim_strbyte(@p_cpo, CPO_NUMCOL) != null)
 ;           return number_width(wp) + 1;
 
 ;       return 0;
@@ -80873,7 +80539,7 @@
 ;           @curwin.w_wcol = @curwin.w_width - 1;
 ;           @curwin.w_wrow = @curwin.w_height - 1;
 ;       }
-;       else if (@curwin.w_onebuf_opt.@wo_wrap && @curwin.w_width != 0)
+;       else if (@curwin.w_options.@wo_wrap && @curwin.w_width != 0)
 ;       {
 ;           width = textwidth + curwin_col_off2();
 
@@ -81025,7 +80691,7 @@
 ;           redraw_later(NOT_VALID);
 
         ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
-;       if (@curwin.w_onebuf_opt.@wo_cuc && (@curwin.w_valid & VALID_VIRTCOL) == 0)
+;       if (@curwin.w_options.@wo_cuc && (@curwin.w_valid & VALID_VIRTCOL) == 0)
 ;           redraw_later(SOME_VALID);
 
 ;       @curwin.w_valid |= VALID_WCOL|VALID_WROW|VALID_VIRTCOL;
@@ -81056,7 +80722,7 @@
         ;; and move the cursor onto the displayed part of the window.
 
 ;       int wrow = @curwin.w_wrow;
-;       if (@curwin.w_onebuf_opt.@wo_wrap && @curwin.w_width != 0)
+;       if (@curwin.w_options.@wo_wrap && @curwin.w_width != 0)
 ;       {
 ;           validate_virtcol();
 ;           validate_cheight();
@@ -81532,18 +81198,7 @@
 
 ;           if (dir == FORWARD)
 ;           {
-;               if (@firstwin == @lastwin && 0 < @p_window && @p_window < @Rows - 1)
-;               {
-                    ;; Vi compatible scrolling.
-;                   if (@p_window <= 2)
-;                       @curwin.w_topline++;
-;                   else
-;                       @curwin.w_topline += @p_window - 2;
-;                   if (@curwin.w_topline > @curbuf.b_ml.ml_line_count)
-;                       @curwin.w_topline = @curbuf.b_ml.ml_line_count;
-;                   @curwin.w_cursor.lnum = @curwin.w_topline;
-;               }
-;               else if (@curbuf.b_ml.ml_line_count < @curwin.w_botline)
+;               if (@curbuf.b_ml.ml_line_count < @curwin.w_botline)
 ;               {
                     ;; at end of file
 ;                   @curwin.w_topline = @curbuf.b_ml.ml_line_count;
@@ -81556,30 +81211,13 @@
 ;                   get_scroll_overlap(loff, -1);
 ;                   @curwin.w_topline = loff.lnum;
 ;                   @curwin.w_cursor.lnum = @curwin.w_topline;
-;                   @curwin.w_valid &= ~(VALID_WCOL|VALID_CHEIGHT|VALID_WROW|
-;                                      VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
+;                   @curwin.w_valid &= ~(VALID_WCOL|VALID_CHEIGHT|VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
 ;               }
 ;           }
 ;           else    ;; dir == BACKWARDS
 ;           {
-;               if (@firstwin == @lastwin && 0 < @p_window && @p_window < @Rows - 1)
-;               {
-                    ;; Vi compatible scrolling (sort of).
-;                   if (@p_window <= 2)
-;                       --@curwin.w_topline;
-;                   else
-;                       @curwin.w_topline -= @p_window - 2;
-;                   if (@curwin.w_topline < 1)
-;                       @curwin.w_topline = 1;
-;                   @curwin.w_cursor.lnum = @curwin.w_topline + @p_window - 1;
-;                   if (@curwin.w_cursor.lnum > @curbuf.b_ml.ml_line_count)
-;                       @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;                   continue;
-;               }
-
-                ;; Find the line at the top of the window that is going to be the
-                ;; line at the bottom of the window.  Make sure this results in
-                ;; the same line as before doing CTRL-F.
+                ;; Find the line at the top of the window that is going to be the line at the bottom of the window.
+                ;; Make sure this results in the same line as before doing CTRL-F.
 ;               loff.lnum = @curwin.w_topline - 1;
 ;               get_scroll_overlap(loff, 1);
 
@@ -81587,8 +81225,7 @@
 ;                   loff.lnum = @curbuf.b_ml.ml_line_count;
 ;               @curwin.w_cursor.lnum = loff.lnum;
 
-                ;; Find the line just above the new topline to get the right line
-                ;; at the bottom of the window.
+                ;; Find the line just above the new topline to get the right line at the bottom of the window.
 ;               long n = 0;
 ;               while (n <= @curwin.w_height && 1 <= loff.lnum)
 ;               {
@@ -81715,8 +81352,8 @@
 ;       long scrolled = 0;
 
 ;       if (Prenum != 0)
-;           @curwin.w_onebuf_opt.@wo_scr = (@curwin.w_height < Prenum) ? @curwin.w_height : Prenum;
-;       int n = ((int)@curwin.w_onebuf_opt.@wo_scr <= @curwin.w_height) ? (int)@curwin.w_onebuf_opt.@wo_scr : @curwin.w_height;
+;           @curwin.w_options.@wo_scr = (@curwin.w_height < Prenum) ? @curwin.w_height : Prenum;
+;       int n = ((int)@curwin.w_options.@wo_scr <= @curwin.w_height) ? (int)@curwin.w_options.@wo_scr : @curwin.w_height;
 
 ;       validate_botline();
 ;       int room = @curwin.w_empty_rows;
@@ -81817,7 +81454,7 @@
 ;       for (@curwin = @firstwin; @curwin != null; @curwin = @curwin.w_next)
 ;       {
             ;; skip original window  and windows with 'noscrollbind'
-;           if (@curwin != old_curwin && @curwin.w_onebuf_opt.@wo_crb)
+;           if (@curwin != old_curwin && @curwin.w_options.@wo_crb)
 ;           {
 ;               @curwin.w_cursor.lnum = line;
 ;               @curwin.w_cursor.col = col;
@@ -81836,7 +81473,7 @@
 ;               redraw_later(VALID);
 
                 ;; Only scroll when 'scrollbind' hasn't done this.
-;               if (!@curwin.w_onebuf_opt.@wo_scb)
+;               if (!@curwin.w_options.@wo_scb)
 ;                   update_topline();
 ;               @curwin.w_redr_status = true;
 ;           }
