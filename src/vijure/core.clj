@@ -21903,172 +21903,112 @@
     ;; subs: pointers to subexpressions
     ;; pim: postponed look-behind match
     ;; off: byte offset, when -1 go to next line
-    (§
-        (condp ==? (:c state)
-           [NFA_NCLOSE
-            NFA_MCLOSE NFA_MCLOSE1 NFA_MCLOSE2 NFA_MCLOSE3 NFA_MCLOSE4 NFA_MCLOSE5 NFA_MCLOSE6 NFA_MCLOSE7 NFA_MCLOSE8 NFA_MCLOSE9
-            NFA_MOPEN
-            NFA_ZEND
-            NFA_SPLIT
-            NFA_EMPTY]
-            (do
-                ;; These nodes are not added themselves, but their "out0" and/or "out1" may be added below.
-                (ß BREAK)
-            )
+    (let-when [?
+            (condp ==? (:c state)
+               [NFA_NCLOSE
+                NFA_MCLOSE NFA_MCLOSE1 NFA_MCLOSE2 NFA_MCLOSE3 NFA_MCLOSE4 NFA_MCLOSE5 NFA_MCLOSE6 NFA_MCLOSE7 NFA_MCLOSE8 NFA_MCLOSE9
+                NFA_MOPEN
+                NFA_ZEND
+                NFA_SPLIT
+                NFA_EMPTY]
+                    ;; These nodes are not added themselves, but their "out0" and/or "out1" may be added below.
+                    :ignore
 
-           [NFA_BOL NFA_BOF]
-            (do
-                ;; "^" won't match past end-of-line, don't bother trying.
-                ;; Except when at the end of the line, or when we are going to the next line for a look-behind match.
-                (when (and (BLT @regline, @reginput) (non-eos? @reginput) (or (nil? @nfa_endp) (== @reglnum (:lnum @nfa_endp))))
-                    ((ß RETURN) nfl)
-                )
-                (ß FALLTHROUGH)
-            )
+               [NFA_BOL NFA_BOF]
+                    ;; "^" won't match past end-of-line, don't bother trying.
+                    ;; Except when at the end of the line, or when we are going to the next line for a look-behind match.
+                    (if (and (BLT @regline, @reginput) (non-eos? @reginput) (or (nil? @nfa_endp) (== @reglnum (:lnum @nfa_endp))))
+                        nil
+                        :apply)
 
-           [NFA_MOPEN1 NFA_MOPEN2 NFA_MOPEN3 NFA_MOPEN4 NFA_MOPEN5 NFA_MOPEN6 NFA_MOPEN7 NFA_MOPEN8 NFA_MOPEN9
-            NFA_NOPEN
-            NFA_ZSTART]
-            (do
-                ;; These nodes need to be added so that we can bail out
-                ;; when it was added to this list before at the same
-                ;; position to avoid an endless loop for "\(\)*"
-                (ß FALLTHROUGH)
-            )
+               [NFA_MOPEN1 NFA_MOPEN2 NFA_MOPEN3 NFA_MOPEN4 NFA_MOPEN5 NFA_MOPEN6 NFA_MOPEN7 NFA_MOPEN8 NFA_MOPEN9
+                NFA_NOPEN
+                NFA_ZSTART]
+                    ;; These nodes need to be added so that we can bail out when it was added to this list
+                    ;; before at the same position to avoid an endless loop for "\(\)*"
+                    :apply
 
-            (ß DEFAULT)
-            (do
-                (when (and (== (... (:lastlist state) @nfa_ll_index) (:nl_id nfl)) (!= (:c state) NFA_SKIP))
-                    ;; This state is already in the list, don't add it again,
-                    ;; unless it is an MOPEN that is used for a backreference or
-                    ;; when there is a PIM.  For NFA_MATCH check the position,
-                    ;; lower position is preferred.
-                    (if (and (not @nfa_has_backref) (nil? pim) (not (:nl_has_pim nfl)) (!= (:c state) NFA_MATCH))
-                        ((ß RETURN) nfl)
+                :apply
+            )
+    ] ? => nfl
+
+        (let-when [[nfl ?]
+                    (when' (== ? :apply) => [nfl :flow]
+                        (let-when [?
+                                (when' (and (== (... (:lastlist state) @nfa_ll_index) (:nl_id nfl)) (!= (:c state) NFA_SKIP)) => :flow
+                                    ;; This state is already in the list, don't add it again,
+                                    ;; unless it is an MOPEN that is used for a backref or when there is a PIM.
+                                    ;; For NFA_MATCH check the position, lower position is preferred.
+                                    (cond (and (not @nfa_has_backref) (nil? pim) (not (:nl_has_pim nfl)) (!= (:c state) NFA_MATCH))
+                                        nil
+                                    ;; Do not add the state again when it exists with the same positions.
+                                    (has-state-with-pos nfl, state, @a'subs, pim)
+                                        nil
+                                    :else
+                                        :flow
+                                    ))
+                        ] ? => [nfl nil]
+
+                            ;; When there are backreferences or PIMs,
+                            ;; the number of states may be (a lot) bigger than anticipated.
+                            (let [_ ((ß state =) (assoc-in state [:lastlist @nfa_ll_index] (:nl_id nfl)))
+                                  #_nfa_thread_C t (NEW_nfa_thread_C)
+                                  t (assoc t :th_state state)
+                                  t (if (some? pim) (assoc t :th_pim pim) (assoc-in t [:th_pim :np_result] NFA_PIM_UNUSED))
+                                  t (assoc t :th_subs @a'subs)
+                                  nfl (update nfl :nl_threads conj t)
+                                  nfl (if (some? pim) (assoc nfl :nl_has_pim true) nfl)]
+                                [nfl :flow]
+                            ))
                     )
+        ] ? => nfl
 
-                    ;; Do not add the state again when it exists with the same positions.
-                    (if (has-state-with-pos nfl, state, @a'subs, pim)
-                        ((ß RETURN) nfl)
-                    )
-                )
+            (condp ==? (:c state)
+                NFA_MATCH
+                    nfl
 
-                ;; When there are backreferences or PIMs,
-                ;; the number of states may be (a lot) bigger than anticipated.
+                NFA_SPLIT
+                    (-> nfl ;; order matters here
+                        (addstate (.out0 state), a'subs, pim, off)
+                        (addstate (.out1 state), a'subs, pim, off))
 
-                ;; add the state to the list
-                ((ß state.lastlist[@nfa_ll_index] =) (:nl_id nfl))
+               [NFA_EMPTY NFA_NOPEN NFA_NCLOSE]
+                    (addstate nfl, (.out0 state), a'subs, pim, off)
 
-                ((ß nfa_thread_C t =) (NEW_nfa_thread_C))
-                ((ß t =) (assoc t :th_state state))
-                (if (some? pim)
-                    ((ß t =) (assoc t :th_pim pim))
-                    ((ß t =) (assoc-in t [:th_pim :np_result] NFA_PIM_UNUSED))
-                )
-                ((ß t =) (assoc t :th_subs @a'subs))
+               [NFA_MOPEN NFA_MOPEN1 NFA_MOPEN2 NFA_MOPEN3 NFA_MOPEN4 NFA_MOPEN5 NFA_MOPEN6 NFA_MOPEN7 NFA_MOPEN8 NFA_MOPEN9
+                NFA_ZSTART]
+                    (let [#_int x (if (== (:c state) NFA_ZSTART) 0 (- (:c state) NFA_MOPEN))
+                          ;; Set the position (with "off" added) in the subexpression.
+                          ;; Save and restore it when it was in use.
+                          ;; Otherwise fill any gap.
+                          o'subs @a'subs
+                          _ (loop-when-recur [#_int i (:in_use @a'subs)] (< i x) [(inc i)]
+                                (swap! a'subs assoc-in [:rs_start i] LPOS-1)
+                                (swap! a'subs assoc-in [:rs_end i] LPOS-1))
+                          _ (swap! a'subs update :in_use max (inc x))
+                          _ (swap! a'subs assoc-in [:rs_start x] (if (== off -1) (lpos_C. (inc @reglnum) 0) (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off))))
+                          nfl (addstate nfl, (.out0 state), a'subs, pim, off)]
+                        (reset! a'subs o'subs)
+                        nfl)
 
-                ((ß nfl =) (update nfl :nl_threads conj t))
-                (when (some? pim)
-                    ((ß nfl =) (assoc nfl :nl_has_pim true)))
+               [NFA_MCLOSE
+                NFA_MCLOSE1 NFA_MCLOSE2 NFA_MCLOSE3 NFA_MCLOSE4 NFA_MCLOSE5 NFA_MCLOSE6 NFA_MCLOSE7 NFA_MCLOSE8 NFA_MCLOSE9
+                NFA_ZEND]
+                    (if (and (== (:c state) NFA_MCLOSE) @nfa_has_zend (not (neg? (:lnum (... (:rs_end @a'subs) 0)))))
+                        ;; Do not overwrite the position set by \ze.
+                        (addstate nfl, (.out0 state), a'subs, pim, off)
+                        (let [#_int x (if (== (:c state) NFA_ZEND) 0 (- (:c state) NFA_MCLOSE))
+                              ;; We don't fill in gaps here, there must have been an MOPEN that has done that.
+                              o'subs @a'subs
+                              _ (swap! a'subs update :in_use max (inc x))
+                              _ (swap! a'subs assoc-in [:rs_end x] (if (== off -1) (lpos_C. (inc @reglnum) 0) (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off))))
+                              nfl (addstate nfl, (.out0 state), a'subs, pim, off)]
+                            (reset! a'subs o'subs)
+                            nfl
+                        ))
 
-                (ß BREAK)
-            )
-        )
-
-        (condp ==? (:c state)
-            NFA_MATCH
-            (do
-                (ß BREAK)
-            )
-
-            NFA_SPLIT
-            (do
-                ;; order matters here
-                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
-                ((ß nfl =) (addstate nfl, (.out1 state), a'subs, pim, off))
-                (ß BREAK)
-            )
-
-           [NFA_EMPTY NFA_NOPEN NFA_NCLOSE]
-            (do
-                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
-                (ß BREAK)
-            )
-
-           [NFA_MOPEN NFA_MOPEN1 NFA_MOPEN2 NFA_MOPEN3 NFA_MOPEN4 NFA_MOPEN5 NFA_MOPEN6 NFA_MOPEN7 NFA_MOPEN8 NFA_MOPEN9
-            NFA_ZSTART]
-            (do
-                ((ß int x =) (if (== (:c state) NFA_ZSTART) 0 (- (:c state) NFA_MOPEN)))
-
-                (ß lpos_C o'start)
-                (ß int o'in_use)
-                ;; Set the position (with "off" added) in the subexpression.
-                ;; Save and restore it when it was in use.
-                ;; Otherwise fill any gap.
-                (cond (< x (:in_use @a'subs))
-                (do
-                    ((ß o'start =) (... (:rs_start @a'subs) x))
-                    ((ß o'in_use =) -1)
-                )
-                :else
-                (do
-                    ((ß o'start =) nil)
-                    ((ß o'in_use =) (:in_use @a'subs))
-                    (loop-when-recur [#_int i (:in_use @a'subs)] (< i x) [(inc i)]
-                        ((ß @a'subs =) (assoc-in @a'subs [:rs_start i] LPOS-1))
-                        ((ß @a'subs =) (assoc-in @a'subs [:rs_end i] LPOS-1))
-                    )
-                    ((ß @a'subs =) (assoc @a'subs :in_use (inc x)))
-                ))
-                ((ß @a'subs =) (if (== off -1)
-                    (assoc-in @a'subs [:rs_start x] (lpos_C. (inc @reglnum) 0))
-                    (assoc-in @a'subs [:rs_start x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
-                ))
-
-                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
-
-                (if (== o'in_use -1)
-                    ((ß @a'subs =) (assoc-in @a'subs [:rs_start x] o'start))
-                    ((ß @a'subs =) (assoc @a'subs :in_use o'in_use))
-                )
-
-                (ß BREAK)
-            )
-
-            NFA_MCLOSE
-            (do
-                (when (and @nfa_has_zend (not (neg? (:lnum (... (:rs_end @a'subs) 0)))))
-                    ;; Do not overwrite the position set by \ze.
-                    ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
-                    (ß BREAK)
-                )
-                (ß FALLTHROUGH)
-            )
-
-           [NFA_MCLOSE1 NFA_MCLOSE2 NFA_MCLOSE3 NFA_MCLOSE4 NFA_MCLOSE5 NFA_MCLOSE6 NFA_MCLOSE7 NFA_MCLOSE8 NFA_MCLOSE9
-            NFA_ZEND]
-            (do
-                ((ß int x =) (if (== (:c state) NFA_ZEND) 0 (- (:c state) NFA_MCLOSE)))
-
-                ;; We don't fill in gaps here, there must have been an MOPEN that has done that.
-                ((ß int o'in_use =) (:in_use @a'subs))
-                ((ß @a'subs =) (update @a'subs :in_use max (inc x)))
-                ((ß lpos_C o'end =) (... (:rs_end @a'subs) x))
-                ((ß @a'subs =) (if (== off -1)
-                    (assoc-in @a'subs [:rs_end x] (lpos_C. (inc @reglnum) 0))
-                    (assoc-in @a'subs [:rs_end x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
-                ))
-
-                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
-
-                ((ß @a'subs =) (assoc-in @a'subs [:rs_end x] o'end))
-                ((ß @a'subs =) (assoc @a'subs :in_use o'in_use))
-
-                (ß BREAK)
-            )
-        )
-
-        nfl
+                nfl
+            ))
     ))
 
 ;; Like addstate(), but the new state(s) are put at position "i".
