@@ -45908,31 +45908,21 @@
 )
 
 (defn- #_Bytes find-termcode [#_Bytes name]
-    (§
-        (dotimes [#_int i @tc_len]
-            (if (and (at? (:name (... @termcodes i)) 0 (.at name 0)) (at? (:name (... @termcodes i)) 1 (.at name 1)))
-                ((ß RETURN) (:code (... @termcodes i)))
-            )
-        )
-
-        nil
+    (loop-when [#_int i 0] (< i @tc_len) => nil
+        (let [tc (... @termcodes i)] (recur-if (not (and (at? (:name tc) 0 (.at name 0)) (at? (:name tc) 1 (.at name 1)))) [(inc i)] => (:code tc)))
     ))
 
 (defn- #_void del-termcode [#_Bytes name]
-    (§
-        (when (some? @termcodes)
-            (reset! need_gather true)         ;; need to fill termleader[]
-
-            (dotimes [#_int i @tc_len]
-                (when (and (at? (:name (... @termcodes i)) 0 (.at name 0)) (at? (:name (... @termcodes i)) 1 (.at name 1)))
-                    (del-termcode-idx i)
-                    ((ß RETURN) nil)
-                )
+    (when (some? @termcodes)
+        (reset! need_gather true)               ;; need to fill termleader[]
+        (loop-when [#_int i 0] (< i @tc_len)
+            (if (and (at? (:name (... @termcodes i)) 0 (.at name 0)) (at? (:name (... @termcodes i)) 1 (.at name 1)))
+                (del-termcode-idx i)
+                (recur (inc i))
             )
-        )
-        ;; Not found.  Give error message?
-        nil
-    ))
+        ))
+    ;; Not found.  Give error message?
+    nil)
 
 (defn- #_void del-termcode-idx [#_int idx]
     (§
@@ -49806,25 +49796,16 @@
 ;; This uses the contents of screenLines[] and doesn't change it.
 
 (defn- #_void screen-draw-rectangle [#_int row, #_int col, #_int height, #_int width, #_boolean invert]
-    (§
-        ;; Can't use "screenLines" unless initialized.
-        (if (nil? @screenLines)
-            ((ß RETURN) nil)
-        )
-
-        (if invert
+    (when (some? @screenLines) ;; can't use "screenLines" unless initialized
+        (when invert
             (reset! screen_char_attr HL_INVERSE))
         (loop-when-recur [#_int r row] (< r (+ row height)) [(inc r)]
-            ((ß int off =) (... @lineOffset r))
-            ((ß int max_off =) (+ off @screenCols))
-            (loop-when-recur [#_int c col] (< c (+ col width)) [(inc c)]
-                (screen-char (+ off c), r, c)
-                ((ß c =) (if (< 1 (utf-off2cells (+ off c), max_off)) (inc c) c))
-            )
-        )
-        (reset! screen_char_attr 0)
-        nil
-    ))
+            (let [#_int off (... @lineOffset r) #_int max_off (+ off @screenCols)]
+                (loop-when-recur [#_int c col] (< c (+ col width)) [(inc (if (< 1 (utf-off2cells (+ off c), max_off)) (inc c) c))]
+                    (screen-char (+ off c), r, c))
+            ))
+        (reset! screen_char_attr 0))
+    nil)
 
 ;; Redraw the characters for a vertically split window.
 
@@ -51295,8 +51276,6 @@
 
 ;; window.c ---------------------------------------------------------------------------------------
 
-(final window_C NOWIN (NEW_window_C))         ;; non-existing window
-
 (final Bytes m_onlyone (u8 "Already only one window"))
 
 ;; all CTRL-W window commands are handled here, called from normal-cmd().
@@ -51491,18 +51470,18 @@
             (ß int available)
             (cond (flag? flags (| WSP_BOT WSP_TOP))
             (do
-                ((ß minwidth =) (frame-minwidth @topframe, NOWIN))
+                ((ß minwidth =) (frame-minwidth @topframe, :NOWIN))
                 ((ß available =) (:fr_width @topframe))
                 ((ß needed =) (+ needed minwidth))
             )
             @p_ea
             (do
-                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), NOWIN))
+                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), :NOWIN))
                 ((ß frame_C prevfrp =) (:w_frame oldwin))
                 (loop-when-recur [#_frame_C frp (:fr_parent (:w_frame oldwin))] (some? frp) [(:fr_parent frp)]
                     (when (== (:fr_layout frp) FR_ROW)
                         (loop-when-recur [#_frame_C frp2 (:fr_child frp)] (some? frp2) [(:fr_next frp2)]
-                            ((ß minwidth =) (if (!= frp2 prevfrp) (+ minwidth (frame-minwidth frp2, NOWIN)) minwidth))
+                            ((ß minwidth =) (if (!= frp2 prevfrp) (+ minwidth (frame-minwidth frp2, :NOWIN)) minwidth))
                         )
                     )
                     ((ß prevfrp =) frp)
@@ -51512,7 +51491,7 @@
             )
             :else
             (do
-                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), NOWIN))
+                ((ß minwidth =) (frame-minwidth (:w_frame oldwin), :NOWIN))
                 ((ß available =) (:fr_width (:w_frame oldwin)))
                 ((ß needed =) (+ needed minwidth))
             ))
@@ -51558,18 +51537,18 @@
             (ß int available)
             (cond (flag? flags (| WSP_BOT WSP_TOP))
             (do
-                ((ß minheight =) (+ (frame-minheight @topframe, NOWIN) need_status))
+                ((ß minheight =) (+ (frame-minheight @topframe, :NOWIN) need_status))
                 ((ß available =) (:fr_height @topframe))
                 ((ß needed =) (+ needed minheight))
             )
             @p_ea
             (do
-                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), NOWIN) need_status))
+                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), :NOWIN) need_status))
                 ((ß frame_C prevfrp =) (:w_frame oldwin))
                 (loop-when-recur [#_frame_C frp (:fr_parent (:w_frame oldwin))] (some? frp) [(:fr_parent frp)]
                     (when (== (:fr_layout frp) FR_COL)
                         (loop-when-recur [#_frame_C frp2 (:fr_child frp)] (some? frp2) [(:fr_next frp2)]
-                            ((ß minheight =) (if (!= frp2 prevfrp) (+ minheight (frame-minheight frp2, NOWIN)) minheight))
+                            ((ß minheight =) (if (!= frp2 prevfrp) (+ minheight (frame-minheight frp2, :NOWIN)) minheight))
                         )
                     )
                     ((ß prevfrp =) frp)
@@ -51579,7 +51558,7 @@
             )
             :else
             (do
-                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), NOWIN) need_status))
+                ((ß minheight =) (+ (frame-minheight (:w_frame oldwin), :NOWIN) need_status))
                 ((ß available =) (:fr_height (:w_frame oldwin)))
                 ((ß needed =) (+ needed minheight))
             ))
@@ -52155,7 +52134,7 @@
 
             (when (!= dir (byte \v))                 ;; equalize frame widths
                 ;; Compute the maximum number of windows horizontally in this frame.
-                ((ß int n =) (frame-minwidth topfr, NOWIN))
+                ((ß int n =) (frame-minwidth topfr, :NOWIN))
                 ;; add one for the rightmost window, it doesn't have a separator
                 ((ß extra_sep =) (if (== (+ col width) @Cols) 1 0))
                 ((ß totwincount =) (/ (+ n extra_sep) (inc (int @p_wmw))))
@@ -52178,7 +52157,7 @@
                         ;; If 'winfixwidth' set keep the window width if possible.
                         ;; Watch out for this window being the next_curwin.
                         (when (frame-fixed-width fr)
-                            ((ß n =) (frame-minwidth fr, NOWIN))
+                            ((ß n =) (frame-minwidth fr, :NOWIN))
                             ((ß int new_size =) (:fr_width fr))
                             (cond (frame-has-win fr, next_curwin)
                             (do
@@ -52240,7 +52219,7 @@
                 :else
                 (do
                     ;; Compute the maximum number of windows horiz. in "fr".
-                    ((ß int n =) (frame-minwidth fr, NOWIN))
+                    ((ß int n =) (frame-minwidth fr, :NOWIN))
                     ((ß wincount =) (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc (int @p_wmw))))
                     ((ß int m =) (frame-minwidth fr, next_curwin))
                     ((ß boolean hnc =) (if has_next_curwin (frame-has-win fr, next_curwin) false))
@@ -52275,7 +52254,7 @@
 
             (when (!= dir (byte \h))                 ;; equalize frame heights
                 ;; Compute maximum number of windows vertically in this frame.
-                ((ß int n =) (frame-minheight topfr, NOWIN))
+                ((ß int n =) (frame-minheight topfr, :NOWIN))
                 ;; add one for the bottom window if it doesn't have a statusline
                 ((ß extra_sep =) (if (and (== (+ row height) @cmdline_row) (zero? @p_ls)) 1 0))
                 ((ß totwincount =) (/ (+ n extra_sep) (inc (int @p_wmh))))
@@ -52299,7 +52278,7 @@
                         ;; If 'winfixheight' set keep the window height if possible.
                         ;; Watch out for this window being the next_curwin.
                         (when (frame-fixed-height fr)
-                            ((ß n =) (frame-minheight fr, NOWIN))
+                            ((ß n =) (frame-minheight fr, :NOWIN))
                             ((ß int new_size =) (:fr_height fr))
                             (cond (frame-has-win fr, next_curwin)
                             (do
@@ -52361,7 +52340,7 @@
                 :else
                 (do
                     ;; Compute the maximum number of windows vert. in "fr".
-                    ((ß int n =) (frame-minheight fr, NOWIN))
+                    ((ß int n =) (frame-minheight fr, :NOWIN))
                     ((ß wincount =) (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc (int @p_wmh))))
                     ((ß int m =) (frame-minheight fr, next_curwin))
                     ((ß boolean hnc =) (if has_next_curwin (frame-has-win fr, next_curwin) false))
@@ -52714,68 +52693,40 @@
         nil
     ))
 
-;; Return true if height of frame "frp" should not be changed because of
-;; the 'winfixheight' option.
+;; Return true if height of frame "fr" should not be changed because of the 'winfixheight' option.
 
-(defn- #_boolean frame-fixed-height [#_frame_C frp]
-    (§
-        ;; frame with one window: fixed height if 'winfixheight' set.
-        (if (some? (:fr_win frp))
-            ((ß RETURN) @(:wo_wfh (:w_options (:fr_win frp))))
-        )
-
-        (when (== (:fr_layout frp) FR_ROW)
+(defn- #_boolean frame-fixed-height [#_frame_C fr]
+    (cond (some? (:fr_win fr))
+        ;; Frame with one window: fixed height if 'winfixheight' set.
+        @(:wo_wfh (:w_options (:fr_win fr)))
+    (== (:fr_layout fr) FR_ROW)
+        (loop-when [fr (:fr_child fr)] (some? fr) => false
             ;; The frame is fixed height if one of the frames in the row is fixed height.
-            (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-                (if (frame-fixed-height frp)
-                    ((ß RETURN) true)
-                )
-            )
-
-            ((ß RETURN) false)
+            (recur-if (not (frame-fixed-height fr)) [(:fr_next fr)] => true)
         )
-
-        ;; frp.fr_layout == FR_COL: the frame is fixed height
-        ;; if all of the frames in the row are fixed height.
-        (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-            (if (not (frame-fixed-height frp))
-                ((ß RETURN) false)
-            )
+    :else ;; (== (:fr_layout fr) FR_COL)
+        (loop-when [fr (:fr_child fr)] (some? fr) => true
+            ;; The frame is fixed height if all of the frames in the row are fixed height.
+            (recur-if (frame-fixed-height fr) [(:fr_next fr)] => false)
         )
-
-        true
     ))
 
-;; Return true if width of frame "frp" should not be changed
-;; because of the 'winfixwidth' option.
+;; Return true if width of frame "fr" should not be changed because of the 'winfixwidth' option.
 
-(defn- #_boolean frame-fixed-width [#_frame_C frp]
-    (§
-        ;; frame with one window: fixed width if 'winfixwidth' set.
-        (if (some? (:fr_win frp))
-            ((ß RETURN) @(:wo_wfw (:w_options (:fr_win frp))))
-        )
-
-        (when (== (:fr_layout frp) FR_COL)
+(defn- #_boolean frame-fixed-width [#_frame_C fr]
+    (cond (some? (:fr_win fr))
+        ;; Frame with one window: fixed width if 'winfixwidth' set.
+        @(:wo_wfw (:w_options (:fr_win fr)))
+    (== (:fr_layout fr) FR_COL)
+        (loop-when [fr (:fr_child fr)] (some? fr) => false
             ;; The frame is fixed width if one of the frames in the row is fixed width.
-            (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-                (if (frame-fixed-width frp)
-                    ((ß RETURN) true)
-                )
-            )
-
-            ((ß RETURN) false)
+            (recur-if (not (frame-fixed-width fr)) [(:fr_next fr)] => true)
         )
-
-        ;; frp.fr_layout == FR_ROW: the frame is fixed width
-        ;; if all of the frames in the row are fixed width.
-        (loop-when-recur [frp (:fr_child frp)] (some? frp) [(:fr_next frp)]
-            (if (not (frame-fixed-width frp))
-                ((ß RETURN) false)
-            )
+    :else ;; (== (:fr_layout fr) FR_ROW)
+        (loop-when [fr (:fr_child fr)] (some? fr) => true
+            ;; The frame is fixed width if all of the frames in the row are fixed width.
+            (recur-if (frame-fixed-width fr) [(:fr_next fr)] => false)
         )
-
-        true
     ))
 
 ;; Add a status line to windows at the bottom of "frp".
@@ -52974,90 +52925,39 @@
         nil
     ))
 
-;; Compute the minimal height for frame "topfrp".
+;; Compute the minimal height for frame "topfr".
 ;; Uses the 'winminheight' option.
 ;; When "next_curwin" isn't null, use "p_wh" for this window.
 ;; When "next_curwin" is NOWIN, don't use at least one line for the current window.
 
-(defn- #_int frame-minheight [#_frame_C topfrp, #_window_C next_curwin]
-    (§
-        (ß int m)
-
-        (cond (some? (:fr_win topfrp))
-        (do
-            (cond (== (:fr_win topfrp) next_curwin)
-            (do
-                ((ß m =) (+ (int @p_wh) (:w_status_height (:fr_win topfrp))))
-            )
-            :else
-            (do
-                ;; window: minimal height of the window plus status line
-                ((ß m =) (+ (int @p_wmh) (:w_status_height (:fr_win topfrp))))
-                ;; Current window is minimal one line high.
-                ((ß m =) (if (and (zero? @p_wmh) (== (:fr_win topfrp) @curwin) (nil? next_curwin)) (inc m) m))
+(defn- #_int frame-minheight [#_frame_C topfr, #_window_C next_curwin]
+    (cond (some? (:fr_win topfr))
+        (if (== (:fr_win topfr) next_curwin)
+            (+ @p_wh (:w_status_height (:fr_win topfr)))
+            (let [m (+ @p_wmh (:w_status_height (:fr_win topfr)))] ;; window: minimal height of the window plus status line
+                (if (and (zero? @p_wmh) (== (:fr_win topfr) @curwin) (nil? next_curwin)) (inc m) m) ;; current window is minimal one line high
             ))
-        )
-        (== (:fr_layout topfrp) FR_ROW)
-        (do
-            ;; get the minimal height from each frame in this row
-            ((ß m =) 0)
-            (loop-when-recur [#_frame_C frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)]
-                ((ß m =) (max (frame-minheight frp, next_curwin) m))
-            )
-        )
-        :else
-        (do
-            ;; Add up the minimal heights for all frames in this column.
-            ((ß m =) 0)
-            (loop-when-recur [#_frame_C frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)]
-                ((ß m =) (+ m (frame-minheight frp, next_curwin)))
-            )
-        ))
-
-        m
+    (== (:fr_layout topfr) FR_ROW) ;; get the minimal height from each frame in this row
+        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(max (frame-minheight fr, next_curwin) m) (:fr_next fr)] => m)
+    :else                          ;; add up the minimal heights for all frames in this column
+        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(+ m (frame-minheight fr, next_curwin)) (:fr_next fr)] => m)
     ))
 
-;; Compute the minimal width for frame "topfrp".
+;; Compute the minimal width for frame "topfr".
 ;; When "next_curwin" isn't null, use "p_wiw" for this window.
 ;; When "next_curwin" is NOWIN, don't use at least one column for the current window.
 
-(defn- #_int frame-minwidth [#_frame_C topfrp, #_window_C next_curwin]
-    ;; next_curwin: use "p_wh" and "p_wiw" for next_curwin
-    (§
-        (ß int m)
-
-        (cond (some? (:fr_win topfrp))
-        (do
-            (cond (== (:fr_win topfrp) next_curwin)
-            (do
-                ((ß m =) (+ (int @p_wiw) (:w_vsep_width (:fr_win topfrp))))
-            )
-            :else
-            (do
-                ;; window: minimal width of the window plus separator column
-                ((ß m =) (+ (int @p_wmw) (:w_vsep_width (:fr_win topfrp))))
-                ;; Current window is minimal one column wide.
-                ((ß m =) (if (and (zero? @p_wmw) (== (:fr_win topfrp) @curwin) (nil? next_curwin)) (inc m) m))
+(defn- #_int frame-minwidth [#_frame_C topfr, #_window_C next_curwin] ;; next_curwin: use "p_wh" and "p_wiw" for next_curwin
+    (cond (some? (:fr_win topfr))
+        (if (== (:fr_win topfr) next_curwin)
+            (+ @p_wiw (:w_vsep_width (:fr_win topfr)))
+            (let [m (+ @p_wmw (:w_vsep_width (:fr_win topfr)))] ;; window: minimal width of the window plus separator column
+                (if (and (zero? @p_wmw) (== (:fr_win topfr) @curwin) (nil? next_curwin)) (inc m) m) ;; current window is minimal one column wide
             ))
-        )
-        (== (:fr_layout topfrp) FR_COL)
-        (do
-            ;; get the minimal width from each frame in this column
-            ((ß m =) 0)
-            (loop-when-recur [#_frame_C frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)]
-                ((ß m =) (max (frame-minwidth frp, next_curwin) m))
-            )
-        )
-        :else
-        (do
-            ;; Add up the minimal widths for all frames in this row.
-            ((ß m =) 0)
-            (loop-when-recur [#_frame_C frp (:fr_child topfrp)] (some? frp) [(:fr_next frp)]
-                ((ß m =) (+ m (frame-minwidth frp, next_curwin)))
-            )
-        ))
-
-        m
+    (== (:fr_layout topfr) FR_COL) ;; get the minimal width from each frame in this column
+        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(max (frame-minwidth fr, next_curwin) m) (:fr_next fr)] => m)
+    :else                          ;; add up the minimal widths for all frames in this row
+        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(+ m (frame-minwidth fr, next_curwin)) (:fr_next fr)] => m)
     ))
 
 ;; Try to close all windows except current one.
@@ -53610,7 +53510,7 @@
                     (ß BREAK)
                 )
 
-                (frame-setheight (:fr_parent curfrp), (- (+ height (frame-minheight (:fr_parent curfrp), NOWIN)) (int @p_wmh) 1))
+                (frame-setheight (:fr_parent curfrp), (- (+ height (frame-minheight (:fr_parent curfrp), :NOWIN)) (int @p_wmh) 1))
             )
 
             ;; Compute the number of lines we will take from others frames (can be negative!).
@@ -53748,7 +53648,7 @@
                     (ß BREAK)
                 )
 
-                (frame-setwidth (:fr_parent curfrp), (- (+ width (frame-minwidth (:fr_parent curfrp), NOWIN)) (int @p_wmw) 1))
+                (frame-setwidth (:fr_parent curfrp), (- (+ width (frame-minwidth (:fr_parent curfrp), :NOWIN)) (int @p_wmw) 1))
             )
 
             ;; Compute the number of lines we will take from others frames (can be negative!).
