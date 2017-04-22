@@ -49902,54 +49902,41 @@
 ;; Returns MAYBE when not finished yet.
 
 (defn- #_maybean win-do-lines [#_window_C win, #_int row, #_int line_count, #_boolean mayclear, #_boolean del]
-    (§
-        (if (or (not (redrawing)) (<= line_count 0))
-            ((ß RETURN) FALSE)
-        )
-
-        ;; only a few lines left: redraw is faster
-        (when (and mayclear (< (- @Rows line_count) 5) (== (:w_width win) @Cols))
-            (screen-clear)      ;; will set win.w_lines_valid to 0
-            ((ß RETURN) FALSE)
-        )
-
-        ;; Delete all remaining lines
-
-        (when (<= (:w_height win) (+ row line_count))
-            (screen-fill (+ (:w_winrow win) row), (+ (:w_winrow win) (:w_height win)), (:w_wincol win), (+ (:w_wincol win) (:w_width win)), (byte \space), (byte \space), 0)
-            ((ß RETURN) TRUE)
-        )
-
-        ;; when scrolling, the message on the command line should be cleared,
-        ;; otherwise it will stay there forever.
-
+    (cond (or (not (redrawing)) (<= line_count 0))
+        FALSE
+    (and mayclear (< (- @Rows line_count) 5) (== (:w_width win) @Cols)) ;; only a few lines left: redraw is faster
+    (do
+        (screen-clear)      ;; will set win.w_lines_valid to 0
+        FALSE
+    )
+    (<= (:w_height win) (+ row line_count)) ;; delete all remaining lines
+    (do
+        (screen-fill (+ (:w_winrow win) row), (+ (:w_winrow win) (:w_height win)), (:w_wincol win), (+ (:w_wincol win) (:w_width win)), (byte \space), (byte \space), 0)
+        TRUE
+    )
+    :else
+    (do ;; When scrolling, the message on the command line should be cleared, otherwise it will stay there forever.
         (reset! clear_cmdline true)
-
-        ;; If the terminal can set a scroll region, use that.
-        ;; Always do this in a vertically split window.  This will redraw from
-        ;; screenLines[] when t_CV isn't defined.  That's faster than using win-line().
+        ;; If the terminal can set a scroll region, use that.  Always do this in a vertically split window.
+        ;; This will redraw from screenLines[] when t_CV isn't defined.  That's faster than using win-line().
         ;; Don't use a scroll region when we are going to redraw the text.
-
-        (when (or @scroll_region (!= (:w_width win) @Cols))
-            (if (and @scroll_region (or (== (:w_width win) @Cols) (non-eos? @T_CSV)))
+        (cond (or @scroll_region (!= (:w_width win) @Cols))
+        (do
+            (when (and @scroll_region (or (== (:w_width win) @Cols) (non-eos? @T_CSV)))
                 (scroll-region-set win, row))
-
-            ((ß boolean r =) (if del
-                (screen-del-lines (+ (:w_winrow win) row), 0, line_count, (- (:w_height win) row), false, win)
-                (screen-ins-lines (+ (:w_winrow win) row), 0, line_count, (- (:w_height win) row), win)
+            (let [#_boolean r (if del
+                        (screen-del-lines (+ (:w_winrow win) row), 0, line_count, (- (:w_height win) row), false, win)
+                        (screen-ins-lines (+ (:w_winrow win) row), 0, line_count, (- (:w_height win) row), win)
+                    )]
+                (when (and @scroll_region (or (== (:w_width win) @Cols) (non-eos? @T_CSV)))
+                    (scroll-region-reset))
+                (if r TRUE FALSE)
             ))
-
-            (if (and @scroll_region (or (== (:w_width win) @Cols) (non-eos? @T_CSV)))
-                (scroll-region-reset))
-
-            ((ß RETURN) (if r TRUE FALSE))
-        )
-
-        (if (some? (:w_next win))
-            ((ß RETURN) FALSE)
-        )
-
-        MAYBE
+        (some? (:w_next win))
+            FALSE
+        :else
+            MAYBE
+        ))
     ))
 
 ;; window 'win' and everything after it is messed up, mark it for redraw
@@ -52818,150 +52805,101 @@
         ))
     nil)
 
-;; Set the height of a frame to "height" and take care that all frames and
-;; windows inside it are resized.  Also resize frames on the left and right
-;; if the are in the same FR_ROW frame.
+;; Set the height of a frame to "height"
+;; and take care that all frames and windows inside it are resized.
+;; Also resize frames on the left and right if they are in the same FR_ROW frame.
 ;;
 ;; Strategy:
 ;; If the frame is part of a FR_COL frame, try fitting the frame in that frame.
-;; If that doesn't work (the FR_COL frame is too small), recursively go to
-;; containing frames to resize them and make room.
+;; If that doesn't work (the FR_COL frame is too small),
+;; recursively go to containing frames to resize them and make room.
 ;; If the frame is part of a FR_ROW frame, all frames must be resized as well.
 ;; Check for the minimal height of the FR_ROW frame.
 ;; At the top level we can also use change the command line height.
 
-(defn- #_void frame-setheight [#_frame_C curfrp, #_int height]
-    (§
-        ;; If the height already is the desired value, nothing to do.
-        (if (== (:fr_height curfrp) height)
-            ((ß RETURN) nil)
-        )
-
-        (cond (nil? (:fr_parent curfrp))
-        (do
-            ;; topframe: can only change the command line
-            ((ß height =) (min height (int (- @Rows @p_ch))))
-            (if (< 0 height)
-                (frame-new-height curfrp, height, false, false))
-        )
-        (== (:fr_layout (:fr_parent curfrp)) FR_ROW)
-        (do
-            ;; Row of frames: also need to resize frames left and right of this one.
-            ;; First check for the minimal height of these.
-            ((ß height =) (max (frame-minheight (:fr_parent curfrp), nil) height))
-            (frame-setheight (:fr_parent curfrp), height)
-        )
+(defn- #_void frame-setheight [#_frame_C cufr, #_int height]
+    (when (!= (:fr_height cufr) height)
+        (cond (nil? (:fr_parent cufr)) ;; topframe: can only change the command line
+            (let [height (min height (- @Rows @p_ch))]
+                (when (< 0 height)
+                    (frame-new-height cufr, height, false, false)))
+        (== (:fr_layout (:fr_parent cufr)) FR_ROW)
+            (let [height (max (frame-minheight (:fr_parent cufr), nil) height)]
+                ;; Row of frames: also need to resize frames left and right of this one.
+                ;; First check for the minimal height of these.
+                (frame-setheight (:fr_parent cufr), height))
         :else
-        (do
-;           // %% red. 3x
-            ((ß int room =) 0)                       ;; total number of lines available
-            ((ß int room_reserved =) 0)
-            ((ß int room_cmdline =) 0)               ;; lines available from cmdline
-
             ;; Column of frames: try to change only frames in this column.
             ;; Do this twice:
             ;; 1: compute room available, if it's not enough try resizing the containing frame.
             ;; 2: compute the room available and adjust the height to it.
             ;; Try not to reduce the height of a window with 'winfixheight' set.
-
-            (loop-when-recur [#_int run 1] (<= run 2) [(inc run)]
-                ((ß room =) 0)                   ;; total number of lines available
-                ((ß room_reserved =) 0)
-
-                (loop-when-recur [#_frame_C frp (:fr_child (:fr_parent curfrp))] (some? frp) [(:fr_next frp)]
-                    ((ß room_reserved =) (if (and (!= frp curfrp) (some? (:fr_win frp)) @(:wo_wfh (:w_options (:fr_win frp)))) (+ room_reserved (:fr_height frp)) room_reserved))
-                    ((ß room =) (+ room (:fr_height frp)))
-                    ((ß room =) (if (!= frp curfrp) (- room (frame-minheight frp, nil)) room))
-                )
-                (cond (!= (:fr_width curfrp) @Cols)
-                (do
-                    ((ß room_cmdline =) 0)
-                )
-                :else
-                (do
-                    ((ß room_cmdline =) (max 0 (- (int (- @Rows @p_ch)) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin)))))
-                ))
-
-                (if (<= height (+ room room_cmdline))
-                    (ß BREAK)
-                )
-                (when (or (== run 2) (== (:fr_width curfrp) @Cols))
-                    ((ß height =) (min height (+ room room_cmdline)))
-                    (ß BREAK)
-                )
-
-                (frame-setheight (:fr_parent curfrp), (- (+ height (frame-minheight (:fr_parent curfrp), :NOWIN)) (int @p_wmh) 1))
-            )
-
-            ;; Compute the number of lines we will take from others frames (can be negative!).
-
-            ((ß int take =) (- height (:fr_height curfrp)))
-
-            ;; If there is not enough room,
-            ;; also reduce the height of a window with 'winfixheight' set.
-
-            ((ß room_reserved =) (min room_reserved (- (+ room room_cmdline) height)))
-
-            ;; If there is only a 'winfixheight' window and making the window smaller,
-            ;; need to make the other window taller.
-
-            ((ß room_reserved =) (if (and (< take 0) (< (- room (:fr_height curfrp)) room_reserved)) 0 room_reserved))
-
-            (when (and (< 0 take) (< 0 room_cmdline))
-                ;; use lines from cmdline first
-                ((ß room_cmdline =) (min room_cmdline take))
-                ((ß take =) (- take room_cmdline))
-                (swap! topframe update :fr_height + room_cmdline)
-            )
-
-            ;; set the current frame to the new height
-
-            (frame-new-height curfrp, height, false, false)
-
-            ;; First take lines from the frames after the current frame.
-            ;; If that is not enough, takes lines from frames above the current frame.
-
-            (dotimes [#_int run 2]
-                ((ß frame_C frp =) (if (zero? run)
-                    (:fr_next curfrp)   ;; 1st run: start with next window
-                    (:fr_prev curfrp)   ;; 2nd run: start with prev window
-                ))
-                (loop-when [] (and (some? frp) (!= take 0))
-                    ((ß int h =) (frame-minheight frp, nil))
-                    (cond (and (< 0 room_reserved) (some? (:fr_win frp)) @(:wo_wfh (:w_options (:fr_win frp))))
-                    (do
-                        (cond (<= (:fr_height frp) room_reserved)
-                        (do
-                            ((ß room_reserved =) (- room_reserved (:fr_height frp)))
-                        )
-                        :else
-                        (do
-                            ((ß room_reserved =) (max (- (:fr_height frp) take) room_reserved))
-                            ((ß take =) (- take (- (:fr_height frp) room_reserved)))
-                            (frame-new-height frp, room_reserved, false, false)
-                            ((ß room_reserved =) 0)
+            (let [[#_int room #_int rest #_int rcmd height] ;; room: total number of lines available ;; rcmd: lines available from cmdline
+                    (loop-when [ro 0 re 0 rc 0 height height #_int run 1] (<= run 2) => [ro re rc height]
+                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent cufr))] (some? fr) => [ro re]
+                                (let [re (if (and (!= fr cufr) (some? (:fr_win fr)) @(:wo_wfh (:w_options (:fr_win fr)))) (+ re (:fr_height fr)) re)
+                                      ro (+ ro (:fr_height fr)) ro (if (!= fr cufr) (- ro (frame-minheight fr, nil)) ro)]
+                                    (recur ro re (:fr_next fr))
+                                ))
+                              rc (if (== (:fr_width cufr) @Cols) (max 0 (- (- @Rows @p_ch) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin)))) 0)]
+                            (cond (<= height (+ ro rc))
+                                [ro re rc height]
+                            (or (== run 2) (== (:fr_width cufr) @Cols))
+                                [ro re rc (min height (+ ro rc))]
+                            :else
+                            (do
+                                (frame-setheight (:fr_parent cufr), (- (+ height (frame-minheight (:fr_parent cufr), :NOWIN)) @p_wmh 1))
+                                (recur ro re rc height (inc run))
+                            ))
                         ))
-                    )
-                    :else
-                    (do
-                        (cond (< (- (:fr_height frp) take) h)
-                        (do
-                            ((ß take =) (- take (- (:fr_height frp) h)))
-                            (frame-new-height frp, h, false, false)
-                        )
-                        :else
-                        (do
-                            (frame-new-height frp, (- (:fr_height frp) take), false, false)
-                            ((ß take =) 0)
+                  ;; Compute the number of lines we will take from others frames (can be negative!).
+                  #_int take (- height (:fr_height cufr))
+                  ;; If there is not enough room, also reduce the height of a window with 'winfixheight' set.
+                  rest (min rest (- (+ room rcmd) height))
+                  ;; If there is only a 'winfixheight' window and making the window smaller, need to make the other window taller.
+                  rest (if (and (< take 0) (< (- room (:fr_height cufr)) rest)) 0 rest)
+                  take (if (and (< 0 take) (< 0 rcmd)) ;; use lines from cmdline first
+                            (let [rcmd (min rcmd take)] (swap! topframe update :fr_height + rcmd) (- take rcmd)) take)
+                  a'm (atom {:take take :rest rest})]
+                ;; Set the current frame to the new height.
+                (frame-new-height cufr, height, false, false)
+                ;; First take lines from the frames after the current frame.
+                ;; If that is not enough, takes lines from frames above the current frame.
+                (doseq [step- [:fr_next :fr_prev]]
+                    (loop-when [#_frame_C fr (step- cufr)] (and (some? fr) (non-zero? (:take @a'm)))
+                        (let [#_int h0 (frame-minheight fr, nil) h (:fr_height fr)]
+                            (cond (and (< 0 (:rest @a'm)) (some? (:fr_win fr)) @(:wo_wfh (:w_options (:fr_win fr))))
+                            (do
+                                (cond (<= h (:rest @a'm))
+                                (do
+                                    (swap! a'm update :rest - h)
+                                )
+                                :else
+                                (do
+                                    (swap! a'm update :rest max (- h (:take @a'm)))
+                                    (swap! a'm update :take - (- h (:rest @a'm)))
+                                    (frame-new-height fr, (:rest @a'm), false, false)
+                                    (swap! a'm assoc :rest 0)
+                                ))
+                            )
+                            :else
+                            (do
+                                (cond (< (- h (:take @a'm)) h0)
+                                (do
+                                    (swap! a'm update :take - (- h h0))
+                                    (frame-new-height fr, h0, false, false)
+                                )
+                                :else
+                                (do
+                                    (frame-new-height fr, (- h (:take @a'm)), false, false)
+                                    (swap! a'm assoc :take 0)
+                                ))
+                            ))
+                            (recur (step- fr))
                         ))
-                    ))
-                    ((ß frp =) (if (zero? run) (:fr_next frp) (:fr_prev frp)))
-                    (recur)
-                )
-            )
+                ))
         ))
-        nil
-    ))
+    nil)
 
 ;; Set the window width of window "win" and take care of repositioning other windows to fit around it.
 
@@ -52975,124 +52913,85 @@
 
 ;; Set the width of a frame to "width"
 ;; and take care that all frames and windows inside it are resized.
-;; Also resize frames above and below if the are in the same FR_ROW frame.
+;; Also resize frames above and below if they are in the same FR_ROW frame.
 ;;
 ;; Strategy is similar to frame-setheight().
 
-(defn- #_void frame-setwidth [#_frame_C curfrp, #_int width]
-    (§
-        ;; If the width already is the desired value, nothing to do.
-        (if (== (:fr_width curfrp) width)
-            ((ß RETURN) nil)
-        )
-
-        (when (nil? (:fr_parent curfrp))
-            ;; topframe: can't change width
-            ((ß RETURN) nil)
-        )
-
-        (cond (== (:fr_layout (:fr_parent curfrp)) FR_COL)
-        (do
-            ;; Column of frames: also need to resize frames above and below of this one.
-            ;; First check for the minimal width of these.
-            ((ß width =) (max (frame-minwidth (:fr_parent curfrp), nil) width))
-            (frame-setwidth (:fr_parent curfrp), width)
-        )
+(defn- #_void frame-setwidth [#_frame_C cufr, #_int width]
+    (when (and (!= (:fr_width cufr) width) (some? (:fr_parent cufr))) ;; if topframe: can't change width
+        (cond (== (:fr_layout (:fr_parent cufr)) FR_COL)
+            (let [width (max (frame-minwidth (:fr_parent cufr), nil) width)]
+                ;; Column of frames: also need to resize frames above and below of this one.
+                ;; First check for the minimal width of these.
+                (frame-setwidth (:fr_parent cufr), width))
         :else
-        (do
-;           // %% red. 2x
-            ((ß int room =) 0)                       ;; total number of lines available
-            ((ß int room_reserved =) 0)
-
             ;; Row of frames: try to change only frames in this row.
             ;; Do this twice:
             ;; 1: compute room available, if it's not enough try resizing the containing frame.
             ;; 2: compute the room available and adjust the width to it.
-
-            (loop-when-recur [#_int run 1] (<= run 2) [(inc run)]
-                ((ß room =) 0)
-                ((ß room_reserved =) 0)
-
-                (loop-when-recur [#_frame_C frp (:fr_child (:fr_parent curfrp))] (some? frp) [(:fr_next frp)]
-                    ((ß room_reserved =) (if (and (!= frp curfrp) (some? (:fr_win frp)) @(:wo_wfw (:w_options (:fr_win frp)))) (+ room_reserved (:fr_width frp)) room_reserved))
-                    ((ß room =) (+ room (:fr_width frp)))
-                    ((ß room =) (if (!= frp curfrp) (- room (frame-minwidth frp, nil)) room))
-                )
-
-                (if (<= width room)
-                    (ß BREAK)
-                )
-
-                (when (or (== run 2) (<= (- @Rows @p_ch) (:fr_height curfrp)))
-                    ((ß width =) (min width room))
-                    (ß BREAK)
-                )
-
-                (frame-setwidth (:fr_parent curfrp), (- (+ width (frame-minwidth (:fr_parent curfrp), :NOWIN)) (int @p_wmw) 1))
-            )
-
-            ;; Compute the number of lines we will take from others frames (can be negative!).
-
-            ((ß int take =) (- width (:fr_width curfrp)))
-
-            ;; If there is not enough room,
-            ;; also reduce the width of a window with 'winfixwidth' set.
-
-            ((ß room_reserved =) (min room_reserved (- room width)))
-
-            ;; If there is only a 'winfixwidth' window and making the window smaller,
-            ;; need to make the other window narrower.
-
-            ((ß room_reserved =) (if (and (< take 0) (< (- room (:fr_width curfrp)) room_reserved)) 0 room_reserved))
-
-            ;; set the current frame to the new width
-
-            (frame-new-width curfrp, width, false, false)
-
-            ;; First take lines from the frames right of the current frame.
-            ;; If that is not enough, takes lines from frames left of the current frame.
-
-            (dotimes [#_int run 2]
-                ((ß frame_C frp =) (if (zero? run)
-                    (:fr_next curfrp)   ;; 1st run: start with next window
-                    (:fr_prev curfrp)   ;; 2nd run: start with prev window
+            (let [[#_int room #_int rest width] ;; room: total number of lines available
+                    (loop-when [ro 0 re 0 width width #_int run 1] (<= run 2) => [ro re width]
+                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent cufr))] (some? fr) => [ro re]
+                                (let [re (if (and (!= fr cufr) (some? (:fr_win fr)) @(:wo_wfw (:w_options (:fr_win fr)))) (+ re (:fr_width fr)) re)
+                                      ro (+ ro (:fr_width fr)) ro (if (!= fr cufr) (- ro (frame-minwidth fr, nil)) ro)]
+                                    (recur ro re (:fr_next fr))
+                                ))]
+                            (cond (<= width ro)
+                                [ro re width]
+                            (or (== run 2) (<= (- @Rows @p_ch) (:fr_height cufr)))
+                                [ro re (min width ro)]
+                            :else
+                            (do
+                                (frame-setwidth (:fr_parent cufr), (- (+ width (frame-minwidth (:fr_parent cufr), :NOWIN)) @p_wmw 1))
+                                (recur ro re width (inc run))
+                            ))
+                        ))
+                  ;; Compute the number of lines we will take from others frames (can be negative!).
+                  #_int take (- width (:fr_width cufr))
+                  ;; If there is not enough room, also reduce the width of a window with 'winfixwidth' set.
+                  rest (min rest (- room width))
+                  ;; If there is only a 'winfixwidth' window and making the window smaller, need to make the other window narrower.
+                  rest (if (and (< take 0) (< (- room (:fr_width cufr)) rest)) 0 rest)
+                  a'm (atom {:take take :rest rest})]
+                ;; Set the current frame to the new width.
+                (frame-new-width cufr, width, false, false)
+                ;; First take lines from the frames right of the current frame.
+                ;; If that is not enough, takes lines from frames left of the current frame.
+                (doseq [step- [:fr_next :fr_prev]]
+                    (loop-when [#_frame_C fr (step- cufr)] (and (some? fr) (non-zero? (:take @a'm)))
+                        (let [#_int w0 (frame-minwidth fr, nil) w (:fr_width fr)]
+                            (cond (and (< 0 (:rest @a'm)) (some? (:fr_win fr)) @(:wo_wfw (:w_options (:fr_win fr))))
+                            (do
+                                (cond (<= w (:rest @a'm))
+                                (do
+                                    (swap! a'm update :rest - w)
+                                )
+                                :else
+                                (do
+                                    (swap! a'm update :rest max (- w (:take @a'm)))
+                                    (swap! a'm update :take - (- w (:rest @a'm)))
+                                    (frame-new-width fr, (:rest @a'm), false, false)
+                                    (swap! a'm assoc :rest 0)
+                                ))
+                            )
+                            :else
+                            (do
+                                (cond (< (- w (:take @a'm)) w0)
+                                (do
+                                    (swap! a'm update :take - (- w w0))
+                                    (frame-new-width fr, w0, false, false)
+                                )
+                                :else
+                                (do
+                                    (frame-new-width fr, (- w (:take @a'm)), false, false)
+                                    (swap! a'm assoc :take 0)
+                                ))
+                            ))
+                            (recur (step- fr))
+                        ))
                 ))
-                (loop-when [] (and (some? frp) (!= take 0))
-                    ((ß int w =) (frame-minwidth frp, nil))
-                    (cond (and (< 0 room_reserved) (some? (:fr_win frp)) @(:wo_wfw (:w_options (:fr_win frp))))
-                    (do
-                        (cond (<= (:fr_width frp) room_reserved)
-                        (do
-                            ((ß room_reserved =) (- room_reserved (:fr_width frp)))
-                        )
-                        :else
-                        (do
-                            ((ß room_reserved =) (max (- (:fr_width frp) take) room_reserved))
-                            ((ß take =) (- take (- (:fr_width frp) room_reserved)))
-                            (frame-new-width frp, room_reserved, false, false)
-                            ((ß room_reserved =) 0)
-                        ))
-                    )
-                    :else
-                    (do
-                        (cond (< (- (:fr_width frp) take) w)
-                        (do
-                            ((ß take =) (- take (- (:fr_width frp) w)))
-                            (frame-new-width frp, w, false, false)
-                        )
-                        :else
-                        (do
-                            (frame-new-width frp, (- (:fr_width frp) take), false, false)
-                            ((ß take =) 0)
-                        ))
-                    ))
-                    ((ß frp =) (if (zero? run) (:fr_next frp) (:fr_prev frp)))
-                    (recur)
-                )
-            )
         ))
-        nil
-    ))
+    nil)
 
 ;; Check 'winminheight' for a valid value.
 ;; TODO: handle vertical splits
@@ -53260,69 +53159,48 @@
 ;; command-height: called whenever "p_ch" has been changed
 
 (defn- #_void command-height []
-    (§
-        ((ß long old_p_ch =) @ch_used)
-
-        ;; Use the value of "p_ch" that we remembered.  This is needed for when the
-        ;; GUI starts up, we can't be sure in what order things happen.  And when
-        ;; "p_ch" was changed in another tab page.
+    (let [#_long old_p_ch @ch_used]
+        ;; Use the value of "p_ch" that we remembered.  This is needed for when the GUI starts up, we can't be sure in what order things happen.
         (reset! ch_used @p_ch)
-
         ;; Find bottom frame with width of screen.
-        ((ß frame_C frp =) (:w_frame @lastwin))
-        (loop-when [] (and (!= (:fr_width frp) @Cols) (some? (:fr_parent frp)))
-            ((ß frp =) (:fr_parent frp))
-            (recur)
-        )
-
-        ;; Avoid changing the height of a window with 'winfixheight' set.
-        (loop-when [] (and (some? (:fr_prev frp)) (== (:fr_layout frp) FR_LEAF) @(:wo_wfh (:w_options (:fr_win frp))))
-            ((ß frp =) (:fr_prev frp))
-            (recur)
-        )
-
-        (when (!= @starting NO_SCREEN)
-            (reset! cmdline_row (int (- @Rows @p_ch)))
-
-            (when (< old_p_ch @p_ch)                ;; "p_ch" got bigger
-                (loop-when [] (< old_p_ch @p_ch)
-                    (when (nil? frp)
-                        (emsg e_noroom)
-                        (reset! p_ch old_p_ch)
-                        (reset! ch_used @p_ch)
-                        (reset! cmdline_row (int (- @Rows @p_ch)))
-                        (ß BREAK)
-                    )
-                    ((ß int h =) (min (- (:fr_height frp) (frame-minheight frp, nil)) (int (- @p_ch old_p_ch))))
-                    ((ß old_p_ch =) (+ old_p_ch h))
-                    (frame-add-height frp, (- h))
-                    ((ß frp =) (:fr_prev frp))
-                    (recur)
-                )
-
-                ;; Recompute window positions.
-                (win-comp-pos)
-
-                ;; clear the lines added to cmdline
-                (if @full_screen
-                    (screen-fill @cmdline_row, @Rows, 0, @Cols, (byte \space), (byte \space), 0))
-                (reset! msg_row @cmdline_row)
-                (reset! redraw_cmdline true)
-                ((ß RETURN) nil)
-            )
-
-            (if (< @msg_row @cmdline_row)
-                (reset! msg_row @cmdline_row))
-            (reset! redraw_cmdline true)
-        )
-        (frame-add-height frp, (int (- old_p_ch @p_ch)))
-
-        ;; Recompute window positions.
-        (when (!= frp (:w_frame @lastwin))
-            (win-comp-pos)
-        )
-        nil
-    ))
+        (let-when [#_frame_C fr (loop-when-recur [fr (:w_frame @lastwin)] (and (!= (:fr_width fr) @Cols) (some? (:fr_parent fr))) [(:fr_parent fr)] => fr)
+                   ;; Avoid changing the height of a window with 'winfixheight' set.
+                   fr (loop-when-recur fr (and (some? (:fr_prev fr)) (== (:fr_layout fr) FR_LEAF) @(:wo_wfh (:w_options (:fr_win fr)))) (:fr_prev fr) => fr)
+                   _ (if (!= @starting NO_SCREEN)
+                        (do (reset! cmdline_row (- @Rows @p_ch))
+                            (if (< old_p_ch @p_ch)                ;; "p_ch" got bigger
+                                (do
+                                    (loop-when [#_long ch old_p_ch fr fr] (< ch @p_ch)
+                                        (if (some? fr)
+                                            (let [#_int h (min (- (:fr_height fr) (frame-minheight fr, nil)) (- @p_ch ch))]
+                                                (frame-add-height fr, (- h))
+                                                (recur (+ ch h) (:fr_prev fr)))
+                                            (do (emsg e_noroom)
+                                                (reset! p_ch ch)
+                                                (reset! ch_used @p_ch)
+                                                (reset! cmdline_row (- @Rows @p_ch)))
+                                        ))
+                                    ;; Recompute window positions.
+                                    (win-comp-pos)
+                                    ;; Clear the lines added to cmdline.
+                                    (when @full_screen
+                                        (screen-fill @cmdline_row, @Rows, 0, @Cols, (byte \space), (byte \space), 0))
+                                    (reset! msg_row @cmdline_row)
+                                    (reset! redraw_cmdline true)
+                                    nil)
+                                (do
+                                    (when (< @msg_row @cmdline_row)
+                                        (reset! msg_row @cmdline_row))
+                                    (reset! redraw_cmdline true)
+                                    :_)
+                            ))
+                        :_)] (some? _)
+            (frame-add-height fr, (- old_p_ch @p_ch))
+            ;; Recompute window positions.
+            (when (!= fr (:w_frame @lastwin))
+                (win-comp-pos))
+        ))
+    nil)
 
 ;; Resize frame "frp" to be "n" lines higher (negative for less high).
 ;; Also resize the frames it is contained in.
@@ -55301,124 +55179,78 @@
 
 ;;; ============================================================================================== VimG
 
-;; Main loop: Execute Normal mode commands until exiting Vim.
+;; Main loop: execute Normal mode commands until exiting Vim.
 ;; Also used to handle commands in the command-line window, until the window is closed.
 
 (defn- #_void main-loop [#_boolean cmdwin]
     ;; cmdwin: true when working in the command-line window
-    (§
-        ((ß #_"/*volatile*//*transient */"boolean previous_got_int =) false)     ;; "got_int" was true
-
-        ((ß long conceal_old_cursor_line =) 0)
-        ((ß long conceal_new_cursor_line =) 0)
-        ((ß boolean conceal_update_lines =) false)
-
-        ((ß oparg_C oa =) (NEW_oparg_C))                     ;; operator arguments
-
-        (loop-when [] (or (not cmdwin) (zero? @cmdwin_result))
+    (let [#_oparg_C oa (NEW_oparg_C)]                     ;; operator arguments
+        (while (or (not cmdwin) (zero? @cmdwin_result))
             (when (stuff-empty)
-                (if @need_wait_return                   ;; if wait-return still needed ...
+                (when @need_wait_return                   ;; if wait-return still needed ...
                     (wait-return FALSE))                 ;; ... call it now
                 (when (and @need_start_insertmode (goto-im) (not @VIsual_active))
                     (reset! need_start_insertmode false)
                     (stuff-string (u8 "i"))                 ;; start insert mode next
-                )
-            )
-
-            ;; Reset "got_int" now that we got back to the main loop.  Except when inside
-            ;; a ":g/pat/cmd" command, then the "got_int" needs to abort the ":g" command.
-            ;; For ":g/pat/vi" we reset "got_int" when used once.  When used
-            ;; a second time we go back to Ex mode and abort the ":g" command.
-            (cond @got_int
-            (do
-                (if (not @quit_more)
+                ))
+            ;; Reset "got_int" now that we got back to the main loop.
+            ;; Except when inside a ":g/pat/cmd" command, then the "got_int" needs to abort the ":g" command.
+            ;; For ":g/pat/vi" we reset "got_int" when used once.
+            ;; When used a second time we go back to Ex mode and abort the ":g" command.
+            (when @got_int
+                (when (not @quit_more)
                     (vgetc))                ;; flush all buffers
-                (reset! got_int false)
-
-                ((ß previous_got_int =) true)
-            )
-            :else
-            (do
-                ((ß previous_got_int =) false)
-            ))
-
+                (reset! got_int false))
             (reset! msg_scroll false)
             (reset! quit_more false)
-
             ;; If skip redraw is set (for ":" in wait-return()), don't redraw now.
             ;; If there is nothing in the stuff_buffer or do_redraw is true, update cursor and redraw.
-
             (cond @skip_redraw
-            (do
                 (reset! skip_redraw false)
-            )
             (or @do_redraw (stuff-empty))
-            (do
-                ;; Trigger CursorMoved if the cursor moved.
-                (when (and (not @finish_op) (< 0 @(:wo_cole (:w_options @curwin))) (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
-                    ((ß conceal_old_cursor_line =) (:lnum @last_cursormoved))
-                    ((ß conceal_new_cursor_line =) (:lnum (:w_cursor @curwin)))
-                    ((ß conceal_update_lines =) true)
-
-                    (reset! last_cursormoved (:w_cursor @curwin))
-                )
-
-                ;; Before redrawing, make sure w_topline is correct,
-                ;; and w_leftcol if lines don't wrap, and w_skipcol if lines wrap.
-
-                (update-topline)
-                (validate-cursor)
-
-                (cond @VIsual_active
-                (do
-                    (update-curbuf INVERTED)    ;; update inverted part
-                )
-                (non-zero? @must_redraw)
-                (do
-                    (update-screen 0)
-                )
-                (or @redraw_cmdline @clear_cmdline)
-                (do
-                    (showmode)
+                (let [#_boolean lupd (and (not @finish_op) (pos? @(:wo_cole (:w_options @curwin))) (not (eqpos @last_cursormoved, (:w_cursor @curwin))))
+                      ;; Trigger CursorMoved if the cursor moved.
+                      [#_long lold #_long lnew]
+                        (if lupd
+                            (let [lold (:lnum @last_cursormoved)
+                                _ (reset! last_cursormoved (:w_cursor @curwin))
+                                lnew (:lnum @last_cursormoved)]
+                                [lold lnew])
+                            [0 0])]
+                    ;; Before redrawing, make sure w_topline is correct, and w_leftcol if lines don't wrap, and w_skipcol if lines wrap.
+                    (update-topline)
+                    (validate-cursor)
+                    (cond
+                        @VIsual_active (update-curbuf INVERTED)    ;; update inverted part
+                        (non-zero? @must_redraw) (update-screen 0)
+                        (or @redraw_cmdline @clear_cmdline) (showmode))
+                    (redraw-statuslines)
+                    ;; display message after redraw
+                    (when (some? @keep_msg)
+                        ;; msg-attr-keep() will set "keep_msg" to null, must free the string here.
+                        ;; Don't reset "keep_msg", msg-attr-keep() uses it to check for duplicates.
+                        (msg-attr @keep_msg, @keep_msg_attr))
+                    (reset! emsg_on_display false)    ;; can delete error message now
+                    (reset! did_emsg false)
+                    (reset! msg_didany false)         ;; reset lines_left in msg-start()
+                    (may-clear-sb-text)        ;; clear scroll-back text on next msg
+                    (showruler false)
+                    (when (and lupd (or (!= lold lnew) (conceal-cursor-line @curwin) @need_cursor_line_redraw))
+                        (when (and (!= lold lnew) (<= lold (:ml_line_count (:b_ml @curbuf))))
+                            (update-single-line @curwin, lold))
+                        (update-single-line @curwin, lnew)
+                        (swap! curwin update :w_valid & (bit-not VALID_CROW)))
+                    (setcursor)
+                    (cursor-on)
+                    (reset! do_redraw false)
                 ))
-                (redraw-statuslines)
-                ;; display message after redraw
-                (when (some? @keep_msg)
-                    ;; msg-attr-keep() will set "keep_msg" to null, must free the string here.
-                    ;; Don't reset "keep_msg", msg-attr-keep() uses it to check for duplicates.
-                    (msg-attr @keep_msg, @keep_msg_attr)
-                )
-
-                (reset! emsg_on_display false)    ;; can delete error message now
-                (reset! did_emsg false)
-                (reset! msg_didany false)         ;; reset lines_left in msg-start()
-                (may-clear-sb-text)        ;; clear scroll-back text on next msg
-                (showruler false)
-
-                (when (and conceal_update_lines (or (!= conceal_old_cursor_line conceal_new_cursor_line) (conceal-cursor-line @curwin) @need_cursor_line_redraw))
-                    (if (and (!= conceal_old_cursor_line conceal_new_cursor_line) (<= conceal_old_cursor_line (:ml_line_count (:b_ml @curbuf))))
-                        (update-single-line @curwin, conceal_old_cursor_line))
-                    (update-single-line @curwin, conceal_new_cursor_line)
-                    (swap! curwin update :w_valid & (bit-not VALID_CROW))
-                )
-                (setcursor)
-                (cursor-on)
-
-                (reset! do_redraw false)
-            ))
-
             ;; Update w_curswant if w_set_curswant has been set.
             ;; Postponed until here to avoid computing w_virtcol too often.
-
             (update-curswant)
-
             ;; Get and execute a normal mode command.
-
             (normal-cmd oa, true)
-            (recur)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Exit properly.
 (defn- #_void getout [#_int exitval]
