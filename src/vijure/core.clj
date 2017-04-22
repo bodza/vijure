@@ -4,7 +4,7 @@
     (:import [java.util Arrays Comparator])
     (:gen-class))
 
-(org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes, vijure.VimB$timeval_C 'timeval_C, vijure.VimS$context_sha256_C 'context_sha256_C})
+(org.baznex.imports/rename {vijure.VimA$Bytes 'Bytes, vijure.VimB$timeval_C 'timeval_C})
 
 (import-static vijure.VimA u8)
 (import-static vijure.VimB SIGHUP SIGQUIT SIGILL SIGTRAP SIGABRT SIGFPE SIGBUS SIGSEGV SIGSYS SIGALRM SIGTERM SIGVTALRM SIGPROF SIGXCPU SIGXFSZ SIGUSR1 SIGUSR2 SIGINT SIGWINCH SIGTSTP SIGPIPE)
@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -1427,13 +1427,13 @@
 ;; The following are actual variables for the options:
 
 (atom! Bytes   p_ambw)      ;; 'ambiwidth'
-(atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_bg)        ;; 'background'
+(atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_breakat)   ;; 'breakat'
 (atom! Bytes   p_cedit)     ;; 'cedit'
-(atom! long    p_cwh)       ;; 'cmdwinheight'
 (atom! Bytes   p_cb)        ;; 'clipboard'
 (atom! long    p_ch)        ;; 'cmdheight'
+(atom! long    p_cwh)       ;; 'cmdwinheight'
 (atom! Bytes   p_cpo)       ;; 'cpoptions'
 (atom! boolean p_deco)      ;; 'delcombine'
 (atom! boolean p_dg)        ;; 'digraph'
@@ -1449,11 +1449,11 @@
 (atom! boolean p_ea)        ;; 'equalalways'
 (atom! boolean p_eb)        ;; 'errorbells'
 (atom! boolean p_ek)        ;; 'esckeys'
+(atom! Bytes   p_fcs)       ;; 'fillchar'
 (atom! boolean p_gd)        ;; 'gdefault'
-(atom! boolean p_prompt)    ;; 'prompt'
 (atom! Bytes   p_hl)        ;; 'highlight'
-(atom! boolean p_hls)       ;; 'hlsearch'
 (atom! long    p_hi)        ;; 'history'
+(atom! boolean p_hls)       ;; 'hlsearch'
 (atom! boolean p_ic)        ;; 'ignorecase'
 (atom! boolean p_is)        ;; 'incsearch'
 (atom! boolean p_im)        ;; 'insertmode'
@@ -1461,28 +1461,29 @@
 (atom! Bytes   p_isi)       ;; 'isident'
 (atom! Bytes   p_isp)       ;; 'isprint'
 (atom! boolean p_js)        ;; 'joinspaces'
-(atom! Bytes   p_kp)        ;; 'keywordprg'
 (atom! Bytes   p_km)        ;; 'keymodel'
-(atom! Bytes   p_lispwords) ;; 'lispwords'
+(atom! Bytes   p_kp)        ;; 'keywordprg'
 (atom! long    p_ls)        ;; 'laststatus'
-(atom! Bytes   p_lcs)       ;; 'listchars'
 (atom! boolean p_lz)        ;; 'lazyredraw'
+(atom! Bytes   p_lispwords) ;; 'lispwords'
+(atom! Bytes   p_lcs)       ;; 'listchars'
 (atom! boolean p_magic)     ;; 'magic'
 (atom! long    p_mat)       ;; 'matchtime'
 (atom! long    p_mco)       ;; 'maxcombine'
 (atom! long    p_mmd)       ;; 'maxmapdepth'
 (atom! long    p_mmp)       ;; 'maxmempattern'
+(atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_mouse)     ;; 'mouse'
 (atom! Bytes   p_mousem)    ;; 'mousemodel'
 (atom! long    p_mouset)    ;; 'mousetime'
-(atom! boolean p_more)      ;; 'more'
 (atom! Bytes   p_opfunc)    ;; 'operatorfunc'
 (atom! Bytes   p_para)      ;; 'paragraphs'
 (atom! boolean p_paste)     ;; 'paste'
 (atom! Bytes   p_pt)        ;; 'pastetoggle'
+(atom! boolean p_prompt)    ;; 'prompt'
 (atom! long    p_rdt)       ;; 'redrawtime'
-(atom! boolean p_remap)     ;; 'remap'
 (atom! long    p_re)        ;; 'regexpengine'
+(atom! boolean p_remap)     ;; 'remap'
 (atom! long    p_report)    ;; 'report'
 (atom! boolean p_ru)        ;; 'ruler'
 (atom! long    p_sj)        ;; 'scrolljump'
@@ -1502,7 +1503,6 @@
 (atom! boolean p_scs)       ;; 'smartcase'
 (atom! boolean p_sta)       ;; 'smarttab'
 (atom! boolean p_sb)        ;; 'splitbelow'
-(atom! Bytes   p_tal)       ;; 'tabline'
 (atom! boolean p_spr)       ;; 'splitright'
 (atom! boolean p_sol)       ;; 'startofline'
 (atom! boolean p_terse)     ;; 'terse'
@@ -1512,7 +1512,6 @@
 (atom! boolean p_ttimeout)  ;; 'ttimeout'
 (atom! long    p_ttm)       ;; 'ttimeoutlen'
 (atom! boolean p_tf)        ;; 'ttyfast'
-(atom! long    p_ttyscroll) ;; 'ttyscroll'
 (atom! Bytes   p_ttym)      ;; 'ttymouse'
 
 (final int
@@ -1521,10 +1520,10 @@
 (atom! int    ttym_flags)
 (final Bytes* p_ttym_values [ (u8 "xterm"), (u8 "xterm2"), null ])
 
+(atom! long    p_ttyscroll) ;; 'ttyscroll'
 (atom! long    p_ul)        ;; 'undolevels'
 (atom! long    p_ut)        ;; 'updatetime'
-(atom! Bytes   p_fcs)       ;; 'fillchar'
-(atom! boolean p_vb)        ;; 'visualbell'
+(atom! long    p_verbose)   ;; 'verbose'
 (atom! Bytes   p_ve)        ;; 'virtualedit'
 
 (final int
@@ -1535,10 +1534,10 @@
 (atom! int    ve_flags)
 (final Bytes* p_ve_values [ (u8 "block"), (u8 "insert"), (u8 "all"), (u8 "onemore"), null ])
 
-(atom! long    p_verbose)   ;; 'verbose'
-(atom! long    p_window)    ;; 'window'
+(atom! boolean p_vb)        ;; 'visualbell'
 (atom! Bytes   p_ww)        ;; 'whichwrap'
 (atom! long    p_wc)        ;; 'wildchar'
+(atom! long    p_window)    ;; 'window'
 (atom! long    p_wh)        ;; 'winheight'
 (atom! long    p_wmh)       ;; 'winminheight'
 (atom! long    p_wmw)       ;; 'winminwidth'
@@ -1555,7 +1554,6 @@
     BV_CINK   7,
     BV_CINO   8,
     BV_CINW   9,
-    BV_CM    10,
     BV_COM   11,
     BV_ET    14,
     BV_FLP   18,
@@ -1599,9 +1597,6 @@
     WV_WFH    18,
     WV_WFW    19,
     WV_WRAP   20)
-
-;; Value for "b_p_ul" indicating the global value must be used.
-(final int NO_LOCAL_UNDOLEVEL -123456)
 
 ;; ----------------------------------------------------------------------- ;;
 
@@ -2498,13 +2493,13 @@
         (atom' Bytes        b_p_cinw)           ;; 'cinwords'
         (atom' Bytes        b_p_com)            ;; 'comments'
         (atom' boolean      b_p_et)             ;; 'expandtab'
-        (field boolean      b_p_et_nobin)       ;; "b_p_et" saved for binary mode
         (atom' Bytes        b_p_fo)             ;; 'formatoptions'
         (atom' Bytes        b_p_flp)            ;; 'formatlistpat'
         (atom' boolean      b_p_inf)            ;; 'infercase'
         (atom' Bytes        b_p_isk)            ;; 'iskeyword'
         (atom' Bytes        b_p_kp)             ;; 'keywordprg'
         (atom' boolean      b_p_lisp)           ;; 'lisp'
+        (atom' Bytes        b_p_lw)             ;; 'lispwords'
         (atom' Bytes        b_p_mps)            ;; 'matchpairs'
         (atom' Bytes        b_p_nf)             ;; 'nrformats'
         (atom' boolean      b_p_pi)             ;; 'preserveindent'
@@ -2515,15 +2510,10 @@
         (field long         b_p_sts_nopaste)    ;; "b_p_sts" saved for paste mode
         (atom' long         b_p_ts)             ;; 'tabstop'
         (atom' long         b_p_tw)             ;; 'textwidth'
-        (field long         b_p_tw_nobin)       ;; "b_p_tw" saved for binary mode
         (field long         b_p_tw_nopaste)     ;; "b_p_tw" saved for paste mode
+        (atom' long         b_p_ul)             ;; 'undolevels'
         (atom' long         b_p_wm)             ;; 'wrapmargin'
-        (field long         b_p_wm_nobin)       ;; "b_p_wm" saved for binary mode
         (field long         b_p_wm_nopaste)     ;; "b_p_wm" saved for paste mode
-
-        ;; local values for options which are normally global
-        (atom' long         b_p_ul)             ;; 'undolevels' local value
-        (atom' Bytes        b_p_lw)             ;; 'lispwords' local value
 
         ;; end of buffer options
 
@@ -5945,22 +5935,6 @@
 ;       return cells;
     ))
 
-;; Return the lhs or rhs of a mapping, with the key codes
-;; turned into printable strings, in an allocated string.
-
-(defn- #_Bytes str2special_save [#_Bytes _s, #_boolean is_lhs]
-    ;; is_lhs: true for lhs, false for rhs
-    (§
-;       Bytes[] s = { _s };
-;       barray_C ba = new barray_C(40);
-
-;       while (s[0].at(0) != NUL)
-;           ba_concat(ba, str2special(s, is_lhs));
-;       ba_append(ba, NUL);
-
-;       return new Bytes(ba.ba_data);
-    ))
-
 (final Bytes buf7   (Bytes. 7))
 
 ;; Return the printable string for the key codes at "*sp".
@@ -7924,13 +7898,11 @@
 ;; The options that are local to a window or buffer have "indir" set to
 ;; one of these values.  Special values:
 ;; PV_NONE: global option.
-;; PV_WIN is added: window-local option
-;; PV_BUF is added: buffer-local option
-;; PV_BOTH is added: global option which also has a local value.
+;; PV_WIN is added: window-local option.
+;; PV_BUF is added: buffer-local option.
 
 (final int
     PV_NONE 0,
-    PV_BOTH 0x1000,
     PV_WIN  0x2000,
     PV_BUF  0x4000,
     PV_MASK 0x0fff)
@@ -7945,16 +7917,15 @@
     PV_CINK (| BV_CINK PV_BUF),
     PV_CINO (| BV_CINO PV_BUF),
     PV_CINW (| BV_CINW PV_BUF),
-    PV_CM   (| BV_CM   PV_BUF   PV_BOTH),
     PV_COM  (| BV_COM  PV_BUF),
     PV_ET   (| BV_ET   PV_BUF),
     PV_FLP  (| BV_FLP  PV_BUF),
     PV_FO   (| BV_FO   PV_BUF),
     PV_INF  (| BV_INF  PV_BUF),
     PV_ISK  (| BV_ISK  PV_BUF),
-    PV_KP   (| BV_KP   PV_BUF   PV_BOTH),
+    PV_KP   (| BV_KP   PV_BUF),
     PV_LISP (| BV_LISP PV_BUF),
-    PV_LW   (| BV_LW   PV_BUF   PV_BOTH),
+    PV_LW   (| BV_LW   PV_BUF),
     PV_MOD  (| BV_MOD  PV_BUF),
     PV_MPS  (| BV_MPS  PV_BUF),
     PV_NF   (| BV_NF   PV_BUF),
@@ -7965,7 +7936,7 @@
     PV_SW   (| BV_SW   PV_BUF),
     PV_TS   (| BV_TS   PV_BUF),
     PV_TW   (| BV_TW   PV_BUF),
-    PV_UL   (| BV_UL   PV_BUF   PV_BOTH),
+    PV_UL   (| BV_UL   PV_BUF),
     PV_WM   (| BV_WM   PV_BUF))
 
 ;; Definition of the PV_ values for window-local options.
@@ -8024,11 +7995,6 @@
 (atom! long    p_tw)
 (atom! long    p_wm)
 
-;; Saved values for when 'bin' is set.
-(atom! boolean  p_et_nobin)
-(atom! long     p_tw_nobin)
-(atom! long     p_wm_nobin)
-
 ;; Saved values for when 'paste' is set.
 (atom! long     p_tw_nopaste)
 (atom! long     p_wm_nopaste)
@@ -8082,7 +8048,6 @@
 (final int P_NODUP           0x10000)   ;; don't allow duplicate strings
 (final int P_FLAGLIST        0x20000)   ;; list of single-char flags
 
-(final int P_NOGLOB         0x100000)   ;; do not use local value for global vimrc
 (final int P_CURSWANT      0x2000000)   ;; update curswant required; not needed when there is a redraw flag
 
 (final Bytes COMMENTS_INIT (u8 "s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-"))
@@ -8229,7 +8194,6 @@
         (bool_opt (u8 "splitbelow"),     (u8 "sb"),        0,                           p_sb,        PV_NONE,    false),
         (bool_opt (u8 "splitright"),     (u8 "spr"),       0,                           p_spr,       PV_NONE,    false),
         (bool_opt (u8 "startofline"),    (u8 "sol"),       0,                           p_sol,       PV_NONE,    true),
-        (utf8_opt (u8 "tabline"),        (u8 "tal"),       P_RALL,                      p_tal,       PV_NONE,   (u8 "")),
         (long_opt (u8 "tabstop"),        (u8 "ts"),        P_RBUF,                      p_ts,        PV_TS,      8#_L),
         (utf8_opt (u8 "term"),            null,         (| P_NODEFAULT P_RALL),         T_NAME,      PV_NONE,   (u8 "")),
         (bool_opt (u8 "terse"),           null,            0,                           p_terse,     PV_NONE,    false),
@@ -8350,7 +8314,6 @@
 ;       set_options_default(0);
 
 ;       @curbuf.b_p_initialized = true;
-;       @curbuf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       check_buf_options(@curbuf);
 ;       check_win_options(@curwin);
 ;       check_options();
@@ -8509,7 +8472,7 @@
 ;; "opt_flags":
 ;; 0 for ":set"
 ;; OPT_GLOBAL   for ":setglobal"
-;; OPT_LOCAL    for ":setlocal" and a modeline
+;; OPT_LOCAL    for ":setlocal"
 ;; OPT_WINONLY  to only set window-local options
 ;; OPT_NOWIN    to skip setting window-local options
 ;;
@@ -8816,13 +8779,7 @@
 ;                                   if (nextchar == '&')
 ;                                       value = (long)vimoptions[opt_idx].def_val;
 ;                                   else if (nextchar == '<')
-;                                   {
-                                        ;; For 'undolevels' NO_LOCAL_UNDOLEVEL means to use the global value.
-;                                       if (varp == @curbuf.b_p_ul && opt_flags == OPT_LOCAL)
-;                                           value = NO_LOCAL_UNDOLEVEL;
-;                                       else
-;                                           value = ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
-;                                   }
+;                                       value = ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
 ;                                   else if ((varp == p_wc)
 ;                                           && (arg.at(0) == (byte)'<' || arg.at(0) == (byte)'^'
 ;                                               || ((arg.at(1) == NUL || vim_iswhite(arg.at(1)))
@@ -8859,17 +8816,12 @@
 ;                                       value = ((long[])varp)[0] * value;
 ;                                   if (removing)
 ;                                       value = ((long[])varp)[0] - value;
+
 ;                                   errmsg = set_num_option(opt_idx, (long[])varp, value, errbuf, errbuf.size(), opt_flags);
 ;                               }
 ;                               else if (0 <= opt_idx)                  ;; string
 ;                               {
 ;                                   Bytes save_arg = null;
-
-                                    ;; When using ":set opt=val" for a global option with a local value,
-                                    ;; the local value will be reset, use the global value here.
-;                                   if ((opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0
-;                                           && (vimoptions[opt_idx].indir & PV_BOTH) != 0)
-;                                       varp = vimoptions[opt_idx].var;
 
 ;                                   Bytes newval;
                                     ;; The old value is kept until we are sure that the new value is valid.
@@ -8953,13 +8905,7 @@
 ;                                           arg = errbuf;
 ;                                       }
 
-                                        ;; When setting the local value of a global option,
-                                        ;; the old value may be the global value.
-;                                       Bytes origval;
-;                                       if ((vimoptions[opt_idx].indir & PV_BOTH) != 0 && (opt_flags & OPT_LOCAL) != 0)
-;                                           origval = ((Bytes[])get_varp(vimoptions[opt_idx], false))[0];
-;                                       else
-;                                           origval = oldval;
+;                                       Bytes origval = oldval;
 
                                         ;; Copy the new string into allocated memory.
                                         ;; Can't use set_string_option_direct(),
@@ -9235,62 +9181,6 @@
 ;       return null;
     ))
 
-;; set_options_bin -- called when 'bin' changes value.
-
-(defn- #_void set_options_bin [#_boolean oldval, #_boolean newval, #_int opt_flags]
-    ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
-    (§
-        ;; The option values that are changed when 'bin' changes are
-        ;; copied when 'bin is set and restored when 'bin' is reset.
-
-;       if (newval)
-;       {
-;           if (!oldval)                    ;; switched on
-;           {
-;               if ((opt_flags & OPT_GLOBAL) == 0)
-;               {
-;                   @curbuf.b_p_tw_nobin = @curbuf.@b_p_tw;
-;                   @curbuf.b_p_wm_nobin = @curbuf.@b_p_wm;
-;                   @curbuf.b_p_et_nobin = @curbuf.@b_p_et;
-;               }
-;               if ((opt_flags & OPT_LOCAL) == 0)
-;               {
-;                   @p_tw_nobin = @p_tw;
-;                   @p_wm_nobin = @p_wm;
-;                   @p_et_nobin = @p_et;
-;               }
-;           }
-
-;           if ((opt_flags & OPT_GLOBAL) == 0)
-;           {
-;               @curbuf.@b_p_tw = 0;          ;; no automatic line wrap
-;               @curbuf.@b_p_wm = 0;          ;; no automatic line wrap
-;               @curbuf.@b_p_et = false;          ;; no expandtab
-;           }
-;           if ((opt_flags & OPT_LOCAL) == 0)
-;           {
-;               @p_tw = 0;
-;               @p_wm = 0;
-;               @p_et = false;
-;           }
-;       }
-;       else if (oldval)                    ;; switched off
-;       {
-;           if ((opt_flags & OPT_GLOBAL) == 0)
-;           {
-;               @curbuf.@b_p_tw = @curbuf.b_p_tw_nobin;
-;               @curbuf.@b_p_wm = @curbuf.b_p_wm_nobin;
-;               @curbuf.@b_p_et = @curbuf.b_p_et_nobin;
-;           }
-;           if ((opt_flags & OPT_LOCAL) == 0)
-;           {
-;               @p_tw = @p_tw_nobin;
-;               @p_wm = @p_wm_nobin;
-;               @p_et = @p_et_nobin;
-;           }
-;       }
-    ))
-
 ;; After setting various option values: recompute variables that depend on option values.
 
 (defn- #_void didset_options []
@@ -9381,11 +9271,6 @@
         ;; For buffer/window local option may also set the global value.
 ;       if (both)
 ;           set_string_option_global(idx, varp);
-
-        ;; When setting both values of a global option with a local value,
-        ;; make the local value empty, so that the global value is used.
-;       if ((vimoptions[idx].indir & PV_BOTH) != 0 && both)
-;           varp[0] = EMPTY_OPTION;
     ))
 
 ;; Set global value for string option when it's a local option.
@@ -9411,7 +9296,6 @@
     ))
 
 ;; Set a string option to a new value, and handle the effects.
-;;
 ;; Returns null on success or error message on error.
 
 (defn- #_Bytes set_string_option [#_int opt_idx, #_Bytes value, #_int opt_flags]
@@ -9420,10 +9304,7 @@
 ;       if (vimoptions[opt_idx].var == null)   ;; don't set hidden option
 ;           return null;
 
-;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[opt_idx],
-;               (opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0
-;                   ? ((vimoptions[opt_idx].indir & PV_BOTH) != 0 ? OPT_GLOBAL : OPT_LOCAL)
-;                   : opt_flags);
+;       Bytes[] varp = (Bytes[])get_varp_scope(vimoptions[opt_idx], (opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0 ? OPT_LOCAL : opt_flags);
 
 ;       Bytes oldval = varp[0];
 ;       varp[0] = STRDUP(value);
@@ -9795,20 +9676,10 @@
 ;           if (varp == p_hl)
 ;               highlight_changed();
 ;       }
-;       else
+;       else if ((opt_flags & OPT_LOCAL) == 0 && opt_flags != OPT_GLOBAL)
 ;       {
-;           if ((opt_flags & (OPT_LOCAL | OPT_GLOBAL)) == 0 && (vimoptions[opt_idx].indir & PV_BOTH) != 0)
-;           {
-                ;; Global option with local value set to use global value;
-                ;; free the local value and make it empty.
-;               Object v = get_varp_scope(vimoptions[opt_idx], OPT_LOCAL);
-;               ((Bytes[])v)[0] = EMPTY_OPTION;
-;           }
-;           else if ((opt_flags & OPT_LOCAL) == 0 && opt_flags != OPT_GLOBAL)
-;           {
-                ;; May set global value for local option.
-;               set_string_option_global(opt_idx, varp);
-;           }
+            ;; May set global value for local option.
+;           set_string_option_global(opt_idx, varp);
 ;       }
 
 ;       if (varp == p_mouse)
@@ -11019,17 +10890,6 @@
 ;           return v.var;
 ;       }
 
-;       if ((opt_flags & OPT_LOCAL) != 0 && (v.indir & PV_BOTH) != 0)
-;       {
-;           switch (v.indir)
-;           {
-;               case PV_KP:   return @curbuf.b_p_kp;
-;               case PV_LW:   return @curbuf.b_p_lw;
-;               case PV_UL:   return @curbuf.b_p_ul;
-;           }
-;           return null;        ;; "cannot happen"
-;       }
-
 ;       return get_varp(v, false);
     ))
 
@@ -11046,11 +10906,6 @@
 ;       switch (v.indir)
 ;       {
 ;           case PV_NONE:   return v.var;
-
-            ;; global option with local value: use local value if it's been set
-;           case PV_KP:     return (@curbuf.@b_p_kp.at(0) != NUL)          ? @curbuf.b_p_kp : v.var;
-;           case PV_LW:     return (@curbuf.@b_p_lw.at(0) != NUL)          ? @curbuf.b_p_lw : v.var;
-;           case PV_UL:     return (@curbuf.@b_p_ul != NO_LOCAL_UNDOLEVEL) ? @curbuf.b_p_ul : v.var;
 
 ;           case PV_BRI:    return wop.wo_bri;
 ;           case PV_BRIOPT: return wop.wo_briopt;
@@ -11083,7 +10938,9 @@
 ;           case PV_FO:     return @curbuf.b_p_fo;
 ;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
+;           case PV_KP:     return @curbuf.b_p_kp;
 ;           case PV_LISP:   return @curbuf.b_p_lisp;
+;           case PV_LW:     return @curbuf.b_p_lw;
 ;           case PV_MOD:    return @curbuf.b_changed;
 ;           case PV_MPS:    return @curbuf.b_p_mps;
 ;           case PV_NF:     return @curbuf.b_p_nf;
@@ -11094,6 +10951,7 @@
 ;           case PV_SW:     return @curbuf.b_p_sw;
 ;           case PV_TS:     return @curbuf.b_p_ts;
 ;           case PV_TW:     return @curbuf.b_p_tw;
+;           case PV_UL:     return @curbuf.b_p_ul;
 ;           case PV_WM:     return @curbuf.b_p_wm;
 
 ;           default:
@@ -11217,22 +11075,16 @@
 
                 ;; Always free the allocated strings.
 
-;               if (!buf.b_p_initialized)
-;                   free_buf_options(buf, true);
-;               else
-;                   free_buf_options(buf, false);
+;               free_buf_options(buf);
 
 ;               buf.@b_p_ai = @p_ai;
 ;               buf.b_p_ai_nopaste = @p_ai_nopaste;
 ;               buf.@b_p_sw = @p_sw;
 ;               buf.@b_p_tw = @p_tw;
 ;               buf.b_p_tw_nopaste = @p_tw_nopaste;
-;               buf.b_p_tw_nobin = @p_tw_nobin;
 ;               buf.@b_p_wm = @p_wm;
 ;               buf.b_p_wm_nopaste = @p_wm_nopaste;
-;               buf.b_p_wm_nobin = @p_wm_nobin;
 ;               buf.@b_p_et = @p_et;
-;               buf.b_p_et_nobin = @p_et_nobin;
 ;               buf.@b_p_inf = @p_inf;
 ;               buf.@b_p_sts = @p_sts;
 ;               buf.b_p_sts_nopaste = @p_sts_nopaste;
@@ -11250,12 +11102,10 @@
 ;               buf.@b_p_cinw = STRDUP(@p_cinw);
 ;               buf.@b_p_lisp = @p_lisp;
 
-                ;; Options that are normally global but also have a local value
-                ;; are not copied: start using the global value.
-;               buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
-;               buf.@b_p_kp = EMPTY_OPTION;
+;               buf.@b_p_ul = @p_ul;
+;               buf.@b_p_kp = STRDUP(@p_kp);
 ;               buf.@b_p_qe = STRDUP(@p_qe);
-;               buf.@b_p_lw = EMPTY_OPTION;
+;               buf.@b_p_lw = STRDUP(@p_lw);
 
                 ;; Don't copy the options set by ex_help(), use the saved values,
                 ;; when going from a help buffer to a non-help buffer.
@@ -59314,7 +59164,7 @@
 ;       if (free_options)
 ;       {
 ;           clear_wininfo(buf);                             ;; including window-local options
-;           free_buf_options(buf, true);
+;           free_buf_options(buf);
 ;       }
 ;       map_clear_int(buf, MAP_ALL_MODES, true, false);     ;; clear local mappings
 ;       map_clear_int(buf, MAP_ALL_MODES, true, true);      ;; clear local abbrevs
@@ -59539,9 +59389,8 @@
     ))
 
 ;; Free the memory for the options of a buffer.
-;; If "free_p_ff" is true also free 'fileformat', 'buftype' and 'fileencoding'.
 
-(defn- #_void free_buf_options [#_buffer_C buf, #_boolean free_p_ff]
+(defn- #_void free_buf_options [#_buffer_C buf]
     (§
 ;       clear_string_option(buf.b_p_kp);
 ;       clear_string_option(buf.b_p_mps);
@@ -59554,7 +59403,6 @@
 ;       clear_string_option(buf.b_p_cino);
 ;       clear_string_option(buf.b_p_cinw);
 ;       clear_string_option(buf.b_p_qe);
-;       buf.@b_p_ul = NO_LOCAL_UNDOLEVEL;
 ;       clear_string_option(buf.b_p_lw);
     ))
 
@@ -73170,9 +73018,6 @@
 
 (defn- #_long get_undolevel []
     (§
-;       if (@curbuf.@b_p_ul == NO_LOCAL_UNDOLEVEL)
-;           return @p_ul;
-
 ;       return @curbuf.@b_p_ul;
     ))
 
