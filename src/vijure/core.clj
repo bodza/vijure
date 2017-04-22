@@ -2259,7 +2259,7 @@
 (atom! Bytes    ioBuff      (Bytes. IOSIZE))        ;; sprintf's are done in this buffer, size is IOSIZE
 (atom! Bytes    nameBuff    (Bytes. MAXPATHL))      ;; file names are expanded in this buffer, size is MAXPATHL
 
-(atom! int      redrawingDisabled)          ;; When non-zero, postpone redrawing.
+(atom! int      no_redraw)          ;; When non-zero, postpone redrawing.
 
 (atom! typebuf_C typebuf    (NEW_typebuf_C))  ;; typeahead buffer
 (atom! boolean  stop_insert_mode)           ;; for ":stopinsert" and 'insertmode'
@@ -8407,7 +8407,7 @@
 
         ((ß boolean msg_didout_before_start =) false)
         ((ß int count =) 0)                              ;; line number count
-        ((ß boolean did_inc =) false)                    ;; incremented redrawingDisabled
+        ((ß boolean did_inc =) false)                    ;; incremented no_redraw
 
         ;; "did_emsg" will be set to true when emsg() is used,
         ;; in which case we cancel the whole command line, and any if/endif or loop.
@@ -8476,7 +8476,7 @@
                     (msg-start)
                     (reset! msg_scroll true)  ;; put messages below each other
                     (swap! no_wait_return inc)   ;; don't wait for return until finished
-                    (swap! redrawingDisabled inc)
+                    (swap! no_redraw inc)
                     ((ß did_inc =) true)
                 )
             )
@@ -8526,7 +8526,7 @@
         ;; this only once after the command is finished.
 
         (when did_inc
-            (swap! redrawingDisabled dec)
+            (swap! no_redraw dec)
             (swap! no_wait_return dec)
             (reset! msg_scroll false)
 
@@ -19731,14 +19731,13 @@
             (reset! pc_status PC_STATUS_UNSET)
 
             (swap! pc_col + (:w_wcol @curwin))
-            (if (mb-lefthalve @pc_row, @pc_col)
+            (when (mb-lefthalve @pc_row, @pc_col)
                 (reset! pc_status PC_STATUS_LEFT))
 
             ;; save the character to be able to put it back
             (when (== @pc_status PC_STATUS_UNSET)
                 (screen-getbytes @pc_row, @pc_col, pc_bytes, pc_attr)
-                (reset! pc_status PC_STATUS_SET)
-            )
+                (reset! pc_status PC_STATUS_SET))
             (screen-putchar c, @pc_row, @pc_col, attr)
         ))
     nil)
@@ -19751,8 +19750,8 @@
             (swap! curwin update :w_wcol inc))
         (if (any == @pc_status PC_STATUS_RIGHT PC_STATUS_LEFT)
             (redraw-winline (:lnum (:w_cursor @curwin)))
-            (screen-puts pc_bytes, (- @pc_row @msg_scrolled), @pc_col, @pc_attr))
-    )
+            (screen-puts pc_bytes, (- @pc_row @msg_scrolled), @pc_col, @pc_attr)
+        ))
     nil)
 
 ;; Insert an indent (for <Tab> or CTRL-T) or delete an indent (for CTRL-D).
@@ -20065,11 +20064,10 @@
 
 (defn- #_void start-arrow [#_pos_C end_insert_pos]
     ;; end_insert_pos: can be null
-    (when (not @arrow_used)                ;; something has been inserted
+    (when (not @arrow_used)             ;; something has been inserted
         (append-redo ESC_STR)
         (stop-insert end_insert_pos, false, false)
-        (reset! arrow_used true)          ;; this means we stopped the current insert
-    )
+        (reset! arrow_used true))       ;; this means we stopped the current insert
     nil)
 
 ;; stop-arrow() is called before a change is made in insert mode.
@@ -20083,27 +20081,22 @@
         (when (and (< (:col @insStart_orig) (:col @insStart)) (not @ins_need_undo))
             ;; Don't update the original insert position when moved to the right,
             ;; except when nothing was inserted yet.
-            (reset! update_insStart_orig false)
-        )
+            (reset! update_insStart_orig false))
         (reset! insStart_textlen (linetabsize (ml-get-curline)))
-
         (when (u-save-cursor)
             (reset! arrow_used false)
-            (reset! ins_need_undo false)
-        )
-
+            (reset! ins_need_undo false))
         (reset! ai_col 0)
         (when (flag? @State VREPLACE_FLAG)
             (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
-            (reset! vr_lines_changed 1)
-        )
+            (reset! vr_lines_changed 1))
         (reset-redo)
         (append-redo (u8 "1i"))         ;; pretend we start an insertion
         (reset! new_insert_skip 2)
     )
     @ins_need_undo
     (do
-        (if (u-save-cursor)
+        (when (u-save-cursor)
             (reset! ins_need_undo false))
     ))
 
@@ -20114,87 +20107,53 @@
 ;; It is null when we already jumped to another window/buffer.
 
 (defn- #_void stop-insert [#_pos_C end_insert_pos, #_boolean esc, #_boolean nomove]
-    ;; esc: called by ins-esc()
-    ;; nomove: <c-\><c-o>, don't move cursor
-    (§
-        (stop-redo-ins)
-        (replace-flush)            ;; abandon replace stack
-
-        ;; Save the inserted text for later redo with ^@ and CTRL-A.
-        ;; Don't do it when "restart_edit" was set and nothing was inserted,
-        ;; otherwise CTRL-O w and then <Left> will clear "last_insert".
-
-        ((ß Bytes ptr =) (get-inserted))
-        (when (or (zero? @did_restart_edit) (and (some? ptr) (< @new_insert_skip (STRLEN ptr))))
-            (reset! last_insert ptr)
-            (reset! last_insert_skip @new_insert_skip)
-        )
-
-        (when (and (not @arrow_used) (some? end_insert_pos))
-            ;; If we just did an auto-indent, remove the white space from the end of the line,
-            ;; and put the cursor back.  Do this when ESC was used or moving the cursor up/down.
-            ;; Check for the old position still being valid, just in case the text got changed
-            ;; unexpectedly.
-            (when (and (not nomove) @did_ai (or esc (and (nil? (vim-strbyte @p_cpo, CPO_INDENT)) (!= (:lnum (:w_cursor @curwin)) (:lnum end_insert_pos)))) (<= (:lnum end_insert_pos) (:ml_line_count (:b_ml @curbuf))))
-                (ß int cc)
-
-                ((ß pos_C tpos =) (NEW_pos_C))
-                (COPY-pos tpos, (:w_cursor @curwin))
-
+    ;; nomove: <c-\><c-o>, do not move the cursor
+    (stop-redo-ins)
+    (replace-flush)            ;; abandon replace stack
+    ;; Save the inserted text for later redo with ^@ and CTRL-A.
+    ;; Don't do it when "restart_edit" was set and nothing was inserted,
+    ;; otherwise CTRL-O w and then <Left> will clear "last_insert".
+    (let-when [#_Bytes s (get-inserted)] (or (zero? @did_restart_edit) (and (some? s) (< @new_insert_skip (STRLEN s))))
+        (reset! last_insert s)
+        (reset! last_insert_skip @new_insert_skip))
+    (when (and (not @arrow_used) (some? end_insert_pos))
+        ;; If we just did an auto-indent, remove the white space from the end of the line, and put the cursor back.
+        ;; Do this when ESC was used or moving the cursor up/down.
+        ;; Check for the old position still being valid, just in case the text got changed unexpectedly.
+        (when (and (not nomove) @did_ai
+                   (or esc (and (nil? (vim-strbyte @p_cpo, CPO_INDENT)) (!= (:lnum (:w_cursor @curwin)) (:lnum end_insert_pos))))
+                   (<= (:lnum end_insert_pos) (:ml_line_count (:b_ml @curbuf))))
+            (let [#_pos_C tpos (:w_cursor @curwin)]
                 (swap! curwin assoc :w_cursor end_insert_pos)
-                (check-cursor-col)                     ;; make sure it is not past the line
-                (loop []
-                    (when (and (== (gchar) NUL) (< 0 (:col (:w_cursor @curwin))))
-                        (swap! curwin update-in [:w_cursor :col] dec))
-                    ((ß cc =) (gchar))
-                    (if (not (vim-iswhite cc))
-                        (ß BREAK)
-                    )
-                    (if (not (del-char true))
-                        (ß BREAK)  ;; should not happen
-                    )
-                    (recur)
-                )
-                (cond (!= (:lnum (:w_cursor @curwin)) (:lnum tpos))
-                (do
-                    (swap! curwin assoc :w_cursor tpos)
-                )
-                :else
-                (do
-                    ;; reset tpos, could have been invalidated in the loop above
-                    (COPY-pos tpos, (:w_cursor @curwin))
-                    ((ß tpos.col =) (inc (:col tpos)))
-                    (if (and (!= cc NUL) (== (gchar tpos) NUL))
-                        (swap! curwin update-in [:w_cursor :col] inc)      ;; put cursor back on the NUL
-                    )
-                ))
-
+                (check-cursor-col) ;; make sure it is not past the line
+                (let [#_int cc (loop []
+                            (when (and (== (gchar) NUL) (< 0 (:col (:w_cursor @curwin))))
+                                (swap! curwin update-in [:w_cursor :col] dec))
+                            (let [cc (gchar)]
+                                (recur-if (and (vim-iswhite cc) (del-char true)) [] => cc))
+                        )]
+                    (if (!= (:lnum (:w_cursor @curwin)) (:lnum tpos))
+                        (swap! curwin assoc :w_cursor tpos)
+                        ;; reset tpos, could have been invalidated in the loop above
+                        (let [tpos (update (:w_cursor @curwin) :col inc)]
+                            (when (and (!= cc NUL) (== (gchar tpos) NUL))
+                                ;; put cursor back on the NUL
+                                (swap! curwin update-in [:w_cursor :col] inc)
+                            ))
+                    ))
                 ;; <C-S-Right> may have started Visual mode, adjust the position for deleted characters.
                 (when (and @VIsual_active (== (:lnum @VIsual) (:lnum (:w_cursor @curwin))))
-                    ((ß int len =) (STRLEN (ml-get-curline)))
-
-                    (when (< len (:col @VIsual))
-                        (swap! VIsual assoc :col len)
-                        (swap! VIsual assoc :coladd 0)
-                    )
-                )
-            )
-        )
-
-        (reset! did_ai false)
-        (reset! did_si false)
-        (reset! can_si false)
-        (reset! can_si_back false)
-
-        ;; Set '[ and '] to the inserted text.
-        ;; When end_insert_pos is null we are now in a different buffer.
-        (when (some? end_insert_pos)
-            (swap! curbuf assoc :b_op_start @insStart)
-            (swap! curbuf assoc :b_op_start_orig @insStart_orig)
-            (swap! curbuf assoc :b_op_end end_insert_pos)
-        )
-        nil
-    ))
+                    (let [#_int len (STRLEN (ml-get-curline))]
+                        (when (< len (:col @VIsual))
+                            (swap! VIsual assoc :col len :coladd 0)))
+                ))
+        ))
+    (reset! did_ai false) (reset! did_si false) (reset! can_si false) (reset! can_si_back false)
+    ;; Set '[ and '] to the inserted text.
+    ;; When end_insert_pos is null we are now in a different buffer.
+    (when (some? end_insert_pos)
+        (swap! curbuf assoc :b_op_start @insStart, :b_op_start_orig @insStart_orig, :b_op_end end_insert_pos))
+    nil)
 
 ;; Set the last inserted text to a single character.
 ;; Used for the replace command.
@@ -20381,12 +20340,10 @@
     (let [#_Bytes s (get-last-insert)]
         (when (some? s)
             (let [s (STRDUP s) #_int len (STRLEN s)]
-                (if (and (< 0 len) (at? s (dec len) ESC))       ;; remove trailing ESC
-                    (eos! s (dec len))
-                )
+                (when (and (< 0 len) (at? s (dec len) ESC))       ;; remove trailing ESC
+                    (eos! s (dec len)))
             ))
-        s
-    ))
+    s))
 
 ;; replace-stack functions
 ;;
@@ -20435,8 +20392,7 @@
     (let [#_int n (us-ptr2len-cc p)]
         (loop-when-recur [#_int i (dec n)] (<= 0 i) [(dec i)]
             (replace-push (.at p i)))
-        n
-    ))
+    n))
 
 ;; Pop one item from the replace stack.
 ;; return -1 if stack empty
@@ -20462,7 +20418,7 @@
 ;; before the cursor.  Can only be used in REPLACE or VREPLACE mode.
 
 (defn- #_void replace-pop-ins []
-    (let [#_int _ @State]
+    (let [_ @State]
         (reset! State NORMAL)                     ;; don't want REPLACE here
         (loop-when-recur [#_int cc (replace-pop)] (< 0 cc) [(replace-pop)]
             (mb-replace-pop-ins cc)
@@ -20470,62 +20426,34 @@
         (reset! State _))
     nil)
 
-;; Insert bytes popped from the replace stack. "cc" is the first byte.
+;; Insert bytes popped from the replace stack.  "cc" is the first byte.
 ;; If it indicates a multi-byte char, pop the other bytes too.
 
 (defn- #_void mb-replace-pop-ins [#_int cc]
-    (§
-        ((ß Bytes buf =) (Bytes. (inc MB_MAXBYTES)))
-
-        ((ß int n =) (mb-byte2len cc))
-        (cond (< 1 n)
-        (do
-            (.be buf 0, cc)
-            (loop-when-recur [#_int i 1] (< i n) [(inc i)]
-                (.be buf i, (replace-pop))
-            )
-            (ins-bytes-len buf, n)
-        )
-        :else
-        (do
-            (ins-char cc)
-        ))
-
-        ;; Handle composing chars.
-        (loop []
-            ((ß int c =) (replace-pop))
-            (if (== c -1)            ;; stack empty
-                (ß BREAK)
-            )
-            (cond (== ((ß n =) (mb-byte2len c)) 1)
-            (do
-                ;; Not a multi-byte char, put it back.
-                (replace-push c)
-                (ß BREAK)
-            )
-            :else
-            (do
-                (.be buf 0, c)
+    (let [#_Bytes buf (Bytes. (inc MB_MAXBYTES)) #_int n (mb-byte2len cc)]
+        (if (< 1 n)
+            (do (.be buf 0, cc)
                 (loop-when-recur [#_int i 1] (< i n) [(inc i)]
-                    (.be buf i, (replace-pop))
-                )
-                (cond (utf-iscomposing (us-ptr2char buf))
-                (do
-                    (ins-bytes-len buf, n)
-                )
-                :else
-                (do
-                    ;; Not a composing char, put it back.
-                    (loop-when-recur [#_int i (dec n)] (<= 0 i) [(dec i)]
-                        (replace-push (.at buf i))
-                    )
-                    (ß BREAK)
-                ))
-            ))
-            (recur)
-        )
-        nil
-    ))
+                    (.be buf i, (replace-pop)))
+                (ins-bytes-len buf, n))
+            (ins-char cc))
+        (loop [] ;; Handle composing chars.
+            (let-when [#_int c (replace-pop)] (!= c -1) ;; => stack empty
+                (let [#_int n (mb-byte2len c)]
+                    (if (== n 1)
+                        (replace-push c) ;; Not a multi-byte char, put it back.
+                        (do (.be buf 0, c)
+                            (loop-when-recur [#_int i 1] (< i n) [(inc i)]
+                                (.be buf i, (replace-pop)))
+                            (if (utf-iscomposing (us-ptr2char buf))
+                                (do (ins-bytes-len buf, n)
+                                    (recur))
+                                (loop-when-recur [#_int i (dec n)] (<= 0 i) [(dec i)]
+                                    (replace-push (.at buf i)))
+                            ))
+                    ))
+            )))
+    nil)
 
 ;; make the replace stack empty
 ;; (called when exiting replace mode)
@@ -20537,200 +20465,123 @@
     nil)
 
 ;; Handle doing a BS for one character.
+;;
 ;; cc < 0: replace stack empty, just move cursor
 ;; cc == 0: character was inserted, delete it
-;; cc > 0: character was replaced, put cc (first byte of original char) back
-;; and check for more characters to be put back
-;; When "limit_col" is >= 0, don't delete before this column.  Matters when
-;; using composing characters, use del-char-after-col() instead of del-char().
+;; cc > 0: character was replaced, put cc (first byte of original char) back and check for more to be put back
+;;
+;; When "limit_col" is >= 0, don't delete before this column.
+;; Matters when using composing characters, use del-char-after-col() instead of del-char().
 
 (defn- #_void replace-do-bs [#_int limit_col]
-    (§
-        ((ß int orig_len =) 0)
-        ((ß int orig_vcols =) 0)
-
-        ((ß int cc =) (replace-pop))
+    (let [#_int cc (replace-pop)]
         (cond (< 0 cc)
-        (do
-            ((ß int[] a'start_vcol =) (atom (int)))
-            (when (flag? @State VREPLACE_FLAG)
-                ;; Get the number of screen cells used by the character we are going to delete.
-                (getvcol @curwin, (:w_cursor @curwin), nil, a'start_vcol, nil)
-                ((ß orig_vcols =) (chartabsize (ml-get-cursor), @a'start_vcol))
-            )
-
-            (del-char-after-col limit_col)
-            ((ß orig_len =) (if (flag? @State VREPLACE_FLAG) (STRLEN (ml-get-cursor)) orig_len))
-            (replace-push cc)
-
-            (replace-pop-ins)
-
-            (when (flag? @State VREPLACE_FLAG)
-                ;; Get the number of screen cells used by the inserted characters.
-                ((ß Bytes p =) (ml-get-cursor))
-                ((ß int ins_len =) (- (STRLEN p) orig_len))
-                ((ß int vcol =) @a'start_vcol)
-                (loop-when-recur [#_int i 0] (< i ins_len) [(+ i (us-ptr2len-cc p, i))]
-                    ((ß vcol =) (+ vcol (chartabsize p, i, vcol)))
-                )
-                ((ß vcol =) (- vcol @a'start_vcol))
-
-                ;; Delete spaces that were inserted after the cursor to keep the text aligned.
-                (swap! curwin update-in [:w_cursor :col] + ins_len)
-                (loop-when [] (and (< orig_vcols vcol) (== (gchar) (byte \space)))
-                    (del-char false)
-                    ((ß orig_vcols =) (inc orig_vcols))
-                    (recur)
-                )
-                (swap! curwin update-in [:w_cursor :col] - ins_len)
-            )
-
-            ;; mark the buffer as changed and prepare for displaying
-            (changed-bytes (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)))
-        )
+            (let [a'start_vcol (atom (int))
+                  #_int orig_vcols
+                    (if (flag? @State VREPLACE_FLAG)
+                        (do ;; Get the number of screen cells used by the character we are going to delete.
+                            (getvcol @curwin, (:w_cursor @curwin), nil, a'start_vcol, nil)
+                            (chartabsize (ml-get-cursor), @a'start_vcol))
+                        0)]
+                (del-char-after-col limit_col)
+                (let [#_int orig_len (if (flag? @State VREPLACE_FLAG) (STRLEN (ml-get-cursor)) 0)]
+                    (replace-push cc)
+                    (replace-pop-ins)
+                    (when (flag? @State VREPLACE_FLAG)
+                        ;; Get the number of screen cells used by the inserted characters.
+                        (let [#_Bytes p (ml-get-cursor) #_int ins_len (- (STRLEN p) orig_len)
+                              #_int vcol (loop-when-recur [vcol @a'start_vcol #_int i 0] (< i ins_len) [(+ vcol (chartabsize p, i, vcol)) (+ i (us-ptr2len-cc p, i))] => vcol)
+                              vcol (- vcol @a'start_vcol)]
+                            ;; Delete spaces that were inserted after the cursor to keep the text aligned.
+                            (swap! curwin update-in [:w_cursor :col] + ins_len)
+                            (loop-when-recur orig_vcols (and (< orig_vcols vcol) (== (gchar) (byte \space))) (inc orig_vcols)
+                                (del-char false))
+                            (swap! curwin update-in [:w_cursor :col] - ins_len)
+                        ))
+                    ;; mark the buffer as changed and prepare for displaying
+                    (changed-bytes (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)))
+                ))
         (zero? cc)
-        (do
             (del-char-after-col limit_col)
         ))
-        nil
-    ))
+    nil)
 
 (defn- #_void ins-reg []
-    (§
-        ((ß boolean need_redraw =) false)
-        ((ß int literally =) 0)
-        ((ß boolean vis_active =) @VIsual_active)
-
+    (let [#_boolean vis_active @VIsual_active]
         ;; If we are going to wait for a character, show a '"'.
-
         (reset! pc_status PC_STATUS_UNSET)
         (when (and (redrawing) (not (char-avail)))
             ;; May need to redraw when no more chars available now.
             (ins-redraw false)
-
             (edit-putchar (byte \"), true)  ;; """
-            (add-to-showcmd-c Ctrl_R)
-        )
-
+            (add-to-showcmd-c Ctrl_R))
         ;; Don't map the register name.
         ;; This also prevents the mode message to be deleted when ESC is hit.
-
-        (swap! no_mapping inc)
-        ((ß int regname =) (plain-vgetc))
-        (when (any == regname Ctrl_R Ctrl_O Ctrl_P)
-            ;; Get a third key for literal register insertion.
-            ((ß literally =) regname)
-            (add-to-showcmd-c literally)
-            ((ß regname =) (plain-vgetc))
-        )
-        (swap! no_mapping dec)
-
-        ;; Don't call u-sync() while typing the expression or giving an error message for it.
-        ;; Only call it explicitly.
-        (swap! no_u_sync inc)
-        (when (== regname (byte \=))
-            ;; Sync undo when evaluating the expression calls setline() or append(),
-            ;; so that it can be undone separately.
-            (reset! u_sync_once 2)
-
-            ((ß regname =) (get-expr-register))
-        )
-        (cond (or (== regname NUL) (not (valid-yank-reg regname, false)))
-        (do
-            (vim-beep)
-            ((ß need_redraw =) true)     ;; remove the '"'
-        )
-        :else
-        (do
-            (cond (any == literally Ctrl_O Ctrl_P)
-            (do
-                ;; Append the command to the redo buffer.
-                (append-redo-char Ctrl_R)
-                (append-redo-char literally)
-                (append-redo-char regname)
-
-                (do-put regname, BACKWARD, 1, (| (if (== literally Ctrl_P) PUT_FIXINDENT 0) PUT_CURSEND))
-            )
-            (not (insert-reg regname, (non-zero? literally)))
-            (do
-                (vim-beep)
-                ((ß need_redraw =) true) ;; remove the '"'
-            )
-            @stop_insert_mode
-            (do
-                ;; When the '=' register was used and a function was invoked that
-                ;; did ":stopinsert" then stuff-empty() returns false but we won't
-                ;; insert anything, need to remove the '"'
-                ((ß need_redraw =) true)
-            ))
+        (let [_ (swap! no_mapping inc)
+              #_int regname (plain-vgetc)
+              ;; Get a third key for literal register insertion.
+              [#_int literally regname] (if (any == regname Ctrl_R Ctrl_O Ctrl_P) (do (add-to-showcmd-c regname) [regname (plain-vgetc)]) [0 regname])
+              _ (swap! no_mapping dec)
+              ;; Don't call u-sync() while typing the expression or giving an error message for it.
+              ;; Only call it explicitly.
+              _ (swap! no_u_sync inc)
+              regname (if (== regname (byte \=))
+                        (do ;; Sync undo when evaluating the expression calls setline() or append(),
+                            ;; so that it can be undone separately.
+                            (reset! u_sync_once 2)
+                            (get-expr-register))
+                        regname)
+              #_boolean need_redraw
+                    (cond (or (== regname NUL) (not (valid-yank-reg regname, false)))
+                        (do (vim-beep) true) ;; remove the '"'
+                    (any == literally Ctrl_O Ctrl_P)
+                        (do ;; Append the command to the redo buffer.
+                            (append-redo-char Ctrl_R)
+                            (append-redo-char literally)
+                            (append-redo-char regname)
+                            (do-put regname, BACKWARD, 1, (| (if (== literally Ctrl_P) PUT_FIXINDENT 0) PUT_CURSEND))
+                            false)
+                    (not (insert-reg regname, (non-zero? literally)))
+                        (do (vim-beep) true) ;; remove the '"'
+                    :else
+                        ;; When the '=' register was used and a function was invoked that did ":stopinsert",
+                        ;; then stuff-empty() returns false but we won't insert anything, need to remove the '"'.
+                        @stop_insert_mode)
+              _ (swap! no_u_sync dec)]
+            (when (== @u_sync_once 1)
+                (reset! ins_need_undo true))
+            (reset! u_sync_once 0)
+            (clear-showcmd)
+            ;; If the inserted register is empty, we need to remove the '"'.
+            (when (or need_redraw (stuff-empty))
+                (edit-unputchar))
+            ;; Disallow starting Visual mode here, would get a weird mode.
+            (when (and (not vis_active) @VIsual_active)
+                (end-visual-mode))
         ))
-        (swap! no_u_sync dec)
-        (if (== @u_sync_once 1)
-            (reset! ins_need_undo true))
-        (reset! u_sync_once 0)
-        (clear-showcmd)
-
-        ;; If the inserted register is empty, we need to remove the '"'.
-        (if (or need_redraw (stuff-empty))
-            (edit-unputchar))
-
-        ;; Disallow starting Visual mode here, would get a weird mode.
-        (when (and (not vis_active) @VIsual_active)
-            (end-visual-mode)
-        )
-        nil
-    ))
+    nil)
 
 ;; CTRL-G commands in Insert mode.
 
 (defn- #_void ins-ctrl-g []
-    (§
-        ;; Don't map the second key.  This also prevents the mode message to be deleted when ESC is hit.
+    ;; Don't map the second key.  This also prevents the mode message to be deleted when ESC is hit.
+    (let [_ (swap! no_mapping inc) #_int c (plain-vgetc) _ (swap! no_mapping dec)]
+        (condp ==? c
+           [K_UP   Ctrl_K (byte \k)] (ins-up true)   ;; CTRL-G k and CTRL-G <Up>: cursor up to insStart.col
+           [K_DOWN Ctrl_J (byte \j)] (ins-down true) ;; CTRL-G j and CTRL-G <Down>: cursor down to insStart.col
 
-        (swap! no_mapping inc)
-        ((ß int c =) (plain-vgetc))
-        (swap! no_mapping dec)
-        ((ß SWITCH) c
-            ;; CTRL-G k and CTRL-G <Up>: cursor up to insStart.col.
-            ((ß CASE) K_UP)
-            ((ß CASE) Ctrl_K)
-            ((ß CASE) (byte \k))
-            (do
-                (ins-up true)
-                (ß BREAK)
-            )
-
-            ;; CTRL-G j and CTRL-G <Down>: cursor down to insStart.col.
-            ((ß CASE) K_DOWN)
-            ((ß CASE) Ctrl_J)
-            ((ß CASE) (byte \j))
-            (do
-                (ins-down true)
-                (ß BREAK)
-            )
-
-            ;; CTRL-G u: start new undoable edit.
-            ((ß CASE) (byte \u))
-            (do
-                (u-sync true)
-                (reset! ins_need_undo true)
-
-                ;; Need to reset insStart, esp. because a BS that joins
-                ;; a line to the previous one must save for undo.
-                (reset! update_insStart_orig false)
-                (reset! insStart (:w_cursor @curwin))
-                (ß BREAK)
-            )
+            (byte \u)                                ;; CTRL-G u: start new undoable edit
+                (do (u-sync true)
+                    (reset! ins_need_undo true)
+                    ;; Need to reset insStart,
+                    ;; esp. because a BS that joins a line to the previous one must save for undo.
+                    (reset! update_insStart_orig false)
+                    (reset! insStart (:w_cursor @curwin)))
 
             ;; Unknown CTRL-G command, reserved for future expansion.
-            (ß DEFAULT)
-            (do
-                (vim-beep)
-                (ß BREAK)
-            )
-        )
-        nil
-    ))
+            (vim-beep)
+        ))
+    nil)
 
 ;; CTRL-^ in Insert mode.
 
@@ -20741,93 +20592,63 @@
 
 (atom! boolean disabled_redraw)
 
-;; Handle ESC in insert mode.
-;; Returns true when leaving insert mode, false when going to repeat the insert.
+;; Handle ESC in Insert mode.
+;; Returns true when leaving Insert mode, false when going to repeat the insert.
 
 (defn- #_boolean ins-esc [#_long' a'count, #_int cmdchar, #_boolean nomove]
-    ;; nomove: don't move cursor
-    (§
-        ((ß int temp =) (:col (:w_cursor @curwin)))
-
+    ;; nomove: do not move the cursor
+    (let [#_int temp (:col (:w_cursor @curwin))]
         (when @disabled_redraw
-            (swap! redrawingDisabled dec)
-            (reset! disabled_redraw false)
-        )
-        (when (not @arrow_used)
-            ;; Don't append the ESC for "r<CR>" and "grx".
-            ;; When 'insertmode' is set only CTRL-L stops Insert mode.
-            ;; Needed for when "count" is non-zero.
-
-            (if (and (!= cmdchar (byte \r)) (!= cmdchar (byte \v)))
-                (append-redo (if @p_im (u8 "\014") ESC_STR)))
-
-            ;; Repeating insert may take a long time.  Check for interrupt now and then.
-
-            (when (< 0 @a'count)
-                (line-breakcheck)
-                (when @got_int
-                    (reset! a'count 0))
-            )
-
-            (when (< 0 (ß --count[0]))       ;; repeat what was typed
-                ;; Vi repeats the insert without replacing characters.
-                (when (some? (vim-strbyte @p_cpo, CPO_REPLCNT))
-                    (swap! State & (bit-not REPLACE_FLAG)))
-
-                (start-redo-ins)
-                (if (any == cmdchar (byte \r) (byte \v))
-                    (stuff-redo ESC_STR))     ;; no ESC in redo buffer
-                (swap! redrawingDisabled inc)
-                (reset! disabled_redraw true)
-                ((ß RETURN) false)       ;; repeat the insert
-            )
-            (stop-insert (:w_cursor @curwin), true, nomove)
-        )
-
-        ;; When an autoindent was removed, curswant stays after the indent.
-        (when (and (== @restart_edit NUL) (== temp (:col (:w_cursor @curwin))))
-            (swap! curwin assoc :w_set_curswant true))
-
-        ;; Remember the last Insert position in the '^ mark.
-        (swap! curbuf assoc :b_last_insert (:w_cursor @curwin))
-
-        ;; The cursor should end up on the last inserted character.
-        ;; Don't do it for CTRL-O, unless past the end of the line.
-
-        (when (and (not nomove) (or (non-zero? (:col (:w_cursor @curwin))) (< 0 (:coladd (:w_cursor @curwin)))) (or (== @restart_edit NUL) (and (== (gchar) NUL) (not @VIsual_active))))
-            (cond (or (< 0 (:coladd (:w_cursor @curwin))) (== @ve_flags VE_ALL))
-            (do
-                (oneleft)
-                (when (!= @restart_edit NUL)
-                    (swap! curwin update-in [:w_cursor :coladd] inc))
-            )
-            :else
-            (do
-                (swap! curwin update-in [:w_cursor :col] dec)
-                ;; Correct cursor for multi-byte character.
-                (swap! curwin update :w_cursor mb-adjust-pos)
-            ))
-        )
-
-        (reset! State NORMAL)
-        ;; need to position cursor again (e.g. when on a TAB )
-        (changed-cline-bef-curs)
-
-        (ui-cursor-shape)          ;; may show different cursor shape
-
-        ;; When recording or for CTRL-O, need to display the new mode.
-        ;; Otherwise remove the mode message.
-
-        (cond (or @Recording (!= @restart_edit NUL))
-        (do
-            (showmode)
-        )
-        @p_smd
-        (do
-            (msg (u8 ""))
-        ))
-
-        true            ;; exit Insert mode
+            (swap! no_redraw dec)
+            (reset! disabled_redraw false))
+        (let-when [_ (if (not @arrow_used)
+                        (do ;; Don't append the ESC for "r<CR>" and "grx".
+                            ;; When 'insertmode' is set, only CTRL-L stops Insert mode.
+                            ;; Needed for when "count" is non-zero.
+                            (when (and (!= cmdchar (byte \r)) (!= cmdchar (byte \v)))
+                                (append-redo (if @p_im (u8 "\014") ESC_STR)))
+                            ;; Repeating insert may take a long time.  Check for interrupt now and then.
+                            (when (< 0 @a'count)
+                                (line-breakcheck) (when @got_int (reset! a'count 0)))
+                            (if (< 0 (swap! a'count dec))       ;; repeat what was typed
+                                (do ;; Vi repeats the insert without replacing characters.
+                                    (when (some? (vim-strbyte @p_cpo, CPO_REPLCNT))
+                                        (swap! State & (bit-not REPLACE_FLAG)))
+                                    (start-redo-ins)
+                                    (when (any == cmdchar (byte \r) (byte \v))
+                                        (stuff-redo ESC_STR))     ;; no ESC in redo buffer
+                                    (swap! no_redraw inc)
+                                    (reset! disabled_redraw true)
+                                    nil)
+                                (do (stop-insert (:w_cursor @curwin), true, nomove) :_)
+                            ))
+                        :_)] (some? _) => false       ;; repeat the insert
+            ;; When an autoindent was removed, curswant stays after the indent.
+            (when (and (== @restart_edit NUL) (== temp (:col (:w_cursor @curwin))))
+                (swap! curwin assoc :w_set_curswant true))
+            ;; Remember the last Insert position in the '^ mark.
+            (swap! curbuf assoc :b_last_insert (:w_cursor @curwin))
+            ;; The cursor should end up on the last inserted character.
+            ;; Don't do it for CTRL-O, unless past the end of the line.
+            (when (and (not nomove)
+                       (or (non-zero? (:col (:w_cursor @curwin))) (< 0 (:coladd (:w_cursor @curwin))))
+                       (or (== @restart_edit NUL) (and (== (gchar) NUL) (not @VIsual_active))))
+                (if (or (< 0 (:coladd (:w_cursor @curwin))) (== @ve_flags VE_ALL))
+                    (do (oneleft)
+                        (when (!= @restart_edit NUL)
+                            (swap! curwin update-in [:w_cursor :coladd] inc)))
+                    (do
+                        (swap! curwin update-in [:w_cursor :col] dec)
+                        ;; Correct cursor for multi-byte character.
+                        (swap! curwin update :w_cursor mb-adjust-pos))
+                ))
+            (reset! State NORMAL)
+            (changed-cline-bef-curs) ;; need to position the cursor again (e.g. when on a TAB)
+            (ui-cursor-shape)          ;; may show different cursor shape
+            ;; When recording or for CTRL-O, need to display the new mode.
+            ;; Otherwise remove the mode message.
+            (cond (or @Recording (!= @restart_edit NUL)) (showmode) @p_smd (msg (u8 "")))
+        true) ;; exit Insert mode
     ))
 
 ;; If 'keymodel' contains "startsel", may start selection.
@@ -20863,7 +20684,6 @@
 
 (defn- #_void ins-ctrl-o []
     (reset! restart_edit (cond (flag? @State VREPLACE_FLAG) (byte \V) (flag? @State REPLACE_FLAG) (byte \R) :else (byte \I)))
-
     (reset! ins_at_eol (if (virtual-active)
         false     ;; cursor always keeps its column
         (== (gchar) NUL)))
@@ -20877,306 +20697,220 @@
 (defn- #_void ins-shift [#_int c, #_int lastc]
     (when (stop-arrow)
         (append-redo-char c)
-
         ;; 0^D and ^^D: remove all indent.
-
         (if (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor @curwin))))
             (do
                 (swap! curwin update-in [:w_cursor :col] dec)
                 (del-char false)                ;; delete the '^' or '0'
                 ;; In Replace mode, restore the characters that '^' or '0' replaced.
-                (if (flag? @State REPLACE_FLAG)
+                (when (flag? @State REPLACE_FLAG)
                     (replace-pop-ins))
-                (if (== lastc (byte \^))
+                (when (== lastc (byte \^))
                     (reset! old_indent (get-indent)))  ;; remember curr. indent
                 (change-indent INDENT_SET, 0, true, NUL, true)
             )
             (change-indent (if (== c Ctrl_D) INDENT_DEC INDENT_INC), 0, true, NUL, true))
-
-        (if (and @did_ai (non-eos? (skipwhite (ml-get-curline))))
+        (when (and @did_ai (non-eos? (skipwhite (ml-get-curline))))
             (reset! did_ai false))
         (reset! did_si false)
         (reset! can_si false)
         (reset! can_si_back false)
-        (reset! can_cindent false)        ;; no cindenting after ^D or ^T
-    )
+        (reset! can_cindent false)) ;; no cindenting after ^D or ^T
     nil)
 
 (defn- #_void ins-del []
     (when (stop-arrow)
-        (cond (== (gchar) NUL)              ;; delete newline
-            (let [#_int _ (:col (:w_cursor @curwin))]
-                (if (and (can-bs BS_EOL) (do-join 2, false, true, false, false))                 ;; only if "eol" included
+        (if (== (gchar) NUL)                        ;; delete newline
+            (let [_ (:col (:w_cursor @curwin))]
+                (if (and (can-bs BS_EOL) (do-join 2, false, true, false, false))    ;; only if "eol" included
                     (swap! curwin assoc-in [:w_cursor :col] _)
                     (vim-beep)
-                )
-            )
-        (not (del-char false))      ;; delete char under cursor
-            (vim-beep)
-        )
-
-        (reset! did_ai false)
-        (reset! did_si false)
-        (reset! can_si false)
-        (reset! can_si_back false)
-
-        (append-redo-char K_DEL)
-    )
+                ))
+            (when (not (del-char false))            ;; delete char under cursor
+                (vim-beep)
+            ))
+        (reset! did_ai false) (reset! did_si false) (reset! can_si false) (reset! can_si_back false)
+        (append-redo-char K_DEL))
     nil)
 
 ;; Delete one character for ins-bs().
 
-(defn- #_void ins-bs-one [#_int' a'vcolp]
+(defn- #_void ins-bs-one [#_int' a'vcol]
     (dec-cursor)
-    (getvcol @curwin, (:w_cursor @curwin), a'vcolp, nil, nil)
+    (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil)
     (if (flag? @State REPLACE_FLAG)
         ;; Don't delete characters before the insert point when in Replace mode.
         (when (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor @curwin))))
             (replace-do-bs -1))
-        (del-char false)
-    )
+        (del-char false))
     nil)
 
-;; Handle Backspace, delete-word and delete-line in Insert mode.
+;; Handle backspace, delete-word and delete-line in Insert mode.
 ;; Return true when backspace was actually used.
 
-(defn- #_boolean ins-bs [#_int c, #_int mode, #_boolean' a'inserted_space_p]
-    (§
-        ((ß boolean did_backspace =) false)
+(defn- #_boolean ins-bs [#_int c, #_int mode, #_boolean' a'inserted_space]
+    ;; can't delete anything in an empty file
+    ;; can't backup past first character in buffer
+    ;; can't backup past starting point unless 'backspace' > 1
+    ;; can backup to a previous line if 'backspace' == 0
+    (cond (or (bufempty)
+              (and (== (:lnum (:w_cursor @curwin)) 1) (zero? (:col (:w_cursor @curwin))))
+              (and (not (can-bs BS_START)) (or @arrow_used (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (<= (:col (:w_cursor @curwin)) (:col @insStart_orig)))))
+              (and (not (can-bs BS_INDENT)) (not @arrow_used) (< 0 @ai_col) (<= (:col (:w_cursor @curwin)) @ai_col))
+              (and (not (can-bs BS_EOL)) (zero? (:col (:w_cursor @curwin)))))
+            (do (vim-beep) false)
 
-        ;; can't delete anything in an empty file
-        ;; can't backup past first character in buffer
-        ;; can't backup past starting point unless 'backspace' > 1
-        ;; can backup to a previous line if 'backspace' == 0
+    (not (stop-arrow))
+        false
 
-        (when (or (bufempty) (and (== (:lnum (:w_cursor @curwin)) 1) (zero? (:col (:w_cursor @curwin)))) (and (not (can-bs BS_START)) (or @arrow_used (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (<= (:col (:w_cursor @curwin)) (:col @insStart_orig))))) (and (not (can-bs BS_INDENT)) (not @arrow_used) (< 0 @ai_col) (<= (:col (:w_cursor @curwin)) @ai_col)) (and (not (can-bs BS_EOL)) (zero? (:col (:w_cursor @curwin)))))
-            (vim-beep)
-            ((ß RETURN) false)
-        )
+    :else
+        (let [#_boolean in_indent (inindent 0)]
+            (when in_indent
+                (reset! can_cindent false))
+            ;; Virtualedit:
+            ;;  BACKSPACE_CHAR eats a virtual space
+            ;;  BACKSPACE_WORD eats all coladd
+            ;;  BACKSPACE_LINE eats all coladd and keeps going
+            (let-when [_ (when (< 0 (:coladd (:w_cursor @curwin)))
+                            (condp == mode
+                                BACKSPACE_CHAR (do (swap! curwin update-in [:w_cursor :coladd] dec) true)
+                                BACKSPACE_WORD (do (swap! curwin assoc-in [:w_cursor :coladd] 0) true)
+                                BACKSPACE_LINE (do (swap! curwin assoc-in [:w_cursor :coladd] 0) nil)
+                            ))] (nil? _) => _
+                (let-when [#_boolean did_backspace
 
-        (if (not (stop-arrow))
-            ((ß RETURN) false)
-        )
+                        (cond (zero? (:col (:w_cursor @curwin))) ;; Delete newline!
+                            (let-when [#_long lnum (:lnum @insStart)
+                                       _ (cond
+                                            (!= lnum (:lnum (:w_cursor @curwin))) :_
+                                            (u-save (- lnum 2), (+ lnum 1)) (do (swap! insStart update :lnum dec) (swap! insStart assoc :col MAXCOL) :_)
+                                            :else nil
+                                        )] (some? _) => nil
+                                ;; In replace mode:
+                                ;; cc < 0: NL was inserted, delete it
+                                ;; cc >= 0: NL was replaced, put original characters back
+                                (let [#_int cc (if (flag? @State REPLACE_FLAG) (replace-pop) -1)]     ;; returns -1 if NL was inserted
+                                    ;; In replace mode, in the line we started replacing, we only move the cursor.
+                                    (if (and (flag? @State REPLACE_FLAG) (<= (:lnum (:w_cursor @curwin)) lnum))
+                                        (dec-cursor)
+                                        (do (if (and (flag? @State VREPLACE_FLAG) (<= (:lnum (:w_cursor @curwin)) @orig_line_count))
+                                                (dec-cursor)
+                                                (let [#_int temp (gchar)]      ;; remember current char
+                                                    (swap! curwin update-in [:w_cursor :lnum] dec)
+                                                    (do-join 2, false, false, false, false)
+                                                    (when (and (== temp NUL) (!= (gchar) NUL))
+                                                        (inc-cursor))
+                                                ))
+                                            ;; In REPLACE mode we have to put back the text that was replaced by the NL.
+                                            ;; On the replace stack is first a NUL-terminated sequence of characters
+                                            ;; that were deleted and then the characters that NL replaced.
+                                            (when (flag? @State REPLACE_FLAG)
+                                                ;; Do the next ins-char() in NORMAL state, to prevent ins-char()
+                                                ;; from replacing characters and avoiding showmatch().
+                                                (let [__ @State]
+                                                    (reset! State NORMAL)
+                                                    ;; restore characters (blanks) deleted after cursor
+                                                    (loop-when-recur cc (< 0 cc) (replace-pop)
+                                                        (let [_ (:col (:w_cursor @curwin))]
+                                                            (mb-replace-pop-ins cc)
+                                                            (swap! curwin assoc-in [:w_cursor :col] _)
+                                                        ))
+                                                    ;; restore the characters that NL replaced
+                                                    (replace-pop-ins)
+                                                    (reset! State __)
+                                                ))
+                                        ))
+                                    (reset! did_ai false)
+                                    false
+                                ))
+                        :else ;; Delete character(s) before the cursor.
+                            (let [#_int mincol ;; keep indent
+                                    (if (and (== mode BACKSPACE_LINE) @(:b_p_ai @curbuf))
+                                        (let [_ (:col (:w_cursor @curwin))]
+                                            (beginline BL_WHITE)
+                                            (let [mincol (if (< (:col (:w_cursor @curwin)) _) (:col (:w_cursor @curwin)) 0)]
+                                                (swap! curwin assoc-in [:w_cursor :col] _)
+                                                mincol))
+                                        0)]
+                                ;; Handle deleting one 'shiftwidth' or 'softtabstop'.
+                                (cond (and (== mode BACKSPACE_CHAR)
+                                           (or (and @p_sta in_indent)
+                                               (and (non-zero? (get-sts-value))
+                                                    (< 0 (:col (:w_cursor @curwin)))
+                                                    (let [s (ml-get-cursor)] (or (at? s -1 TAB) (and (at? s -1 (byte \space)) (or (not @a'inserted_space) @arrow_used)))))))
+                                    (do (reset! a'inserted_space false)
+                                        (let [#_int ts (if (and @p_sta in_indent) (get-sw-value) (get-sts-value))
+                                              ;; Compute the virtual column where we want to be.  Since 'showbreak' may
+                                              ;; get in the way, need to get the last column of the previous character.
+                                              a'vcol (atom (int)) _ (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil) #_int start_vcol @a'vcol _ (dec-cursor)
+                                              a'want_vcol (atom (int)) _ (getvcol @curwin, (:w_cursor @curwin), nil, nil, a'want_vcol)                _ (inc-cursor)]
+                                            (swap! a'want_vcol #(* (/ % ts) ts))
+                                            ;; delete characters until we are at or before "want_vcol"
+                                            (while (and (< @a'want_vcol @a'vcol) (vim-iswhite (.at (ml-get-cursor) -1)))
+                                                (ins-bs-one a'vcol))
+                                            ;; insert extra spaces until we are at "want_vcol"
+                                            (while (< @a'vcol @a'want_vcol)
+                                                ;; Remember the first char we inserted.
+                                                (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (< (:col (:w_cursor @curwin)) (:col @insStart_orig)))
+                                                    (swap! insStart_orig assoc :col (:col (:w_cursor @curwin))))
+                                                (if (flag? @State VREPLACE_FLAG)
+                                                    (ins-char (byte \space))
+                                                    (do
+                                                        (ins-str (u8 " "))
+                                                        (when (flag? @State REPLACE_FLAG)
+                                                            (replace-push NUL))
+                                                    ))
+                                                (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil))
+                                            ;; If we are now back where we started delete one character.
+                                            ;; Can happen when using 'sts' and 'linebreak'.
+                                            (when (<= start_vcol @a'vcol)
+                                                (ins-bs-one a'vcol))
+                                        ))
+                                :else ;; Delete upto starting point, start of line or previous word.
+                                    (loop [#_int pls 0 #_int cls (us-get-class (ml-get-cursor)) mode mode #_boolean temp false]
+                                        (dec-cursor)           ;; put cursor on char to be deleted
+                                        (let-when [#_int cc (gchar) pls cls cls (us-get-class (ml-get-cursor)) ;; look multi-byte character class
+                                              [mode temp :as _]
+                                                (cond (and (== mode BACKSPACE_WORD) (not (vim-isspace cc))) ;; start of word?
+                                                    [BACKSPACE_WORD_NOT_SPACE (vim-iswordc cc)]
+                                                (and (== mode BACKSPACE_WORD_NOT_SPACE) (or (vim-isspace cc) (!= (vim-iswordc cc) temp) (!= pls cls))) ;; end of word?
+                                                    (do (inc-cursor) nil)
+                                                :else
+                                                    [mode temp])] (some? _)
+                                            (if (flag? @State REPLACE_FLAG)
+                                                (replace-do-bs -1)
+                                                (§
+                                                    ((ß int[] cpc =) (ß new int[MAX_MCO]))   ;; composing characters
+                                                    (when @p_deco
+                                                        (us-ptr2char-cc (ml-get-cursor), cpc))
+                                                    (del-char false)
+                                                    ;; If there are combining characters and 'delcombine' is set,
+                                                    ;; move the cursor back.  Don't back up before the base character.
+                                                    (when (and @p_deco (!= (... cpc 0) NUL))
+                                                        (inc-cursor))
+                                                ))
+                                            (recur-if (and (!= mode BACKSPACE_CHAR) ;; !Just a single backspace?
+                                                           (< mincol (:col (:w_cursor @curwin)))
+                                                           (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (!= (:col (:w_cursor @curwin)) (:col @insStart_orig))))
+                                                      [pls cls mode temp]))
+                                    ))
+                                true
+                            ))
 
-        ((ß boolean in_indent =) (inindent 0))
-        (if in_indent
-            (reset! can_cindent false))
+                ] (some? did_backspace) => false
 
-        ;; Virtualedit:
-        ;;  BACKSPACE_CHAR eats a virtual space
-        ;;  BACKSPACE_WORD eats all coladd
-        ;;  BACKSPACE_LINE eats all coladd and keeps going
-
-        (when (< 0 (:coladd (:w_cursor @curwin)))
-            (when (== mode BACKSPACE_CHAR)
-                (swap! curwin update-in [:w_cursor :coladd] dec)
-                ((ß RETURN) true)
-            )
-            (when (== mode BACKSPACE_WORD)
-                (swap! curwin assoc-in [:w_cursor :coladd] 0)
-                ((ß RETURN) true)
-            )
-            (swap! curwin assoc-in [:w_cursor :coladd] 0)
-        )
-
-        ;; delete newline!
-
-        (cond (zero? (:col (:w_cursor @curwin)))
-        (do
-            ((ß long lnum =) (:lnum @insStart))
-            (when (== (:lnum (:w_cursor @curwin)) lnum)
-                (if (not (u-save (- (:lnum (:w_cursor @curwin)) 2), (+ (:lnum (:w_cursor @curwin)) 1)))
-                    ((ß RETURN) false)
-                )
-                (swap! insStart update :lnum dec)
-                (swap! insStart assoc :col MAXCOL)
-            )
-
-            ;; In replace mode:
-            ;; cc < 0: NL was inserted, delete it
-            ;; cc >= 0: NL was replaced, put original characters back
-
-            ((ß int cc =) (if (flag? @State REPLACE_FLAG) (replace-pop) -1))     ;; returns -1 if NL was inserted
-
-            ;; In replace mode, in the line we started replacing, we only move the cursor.
-
-            (cond (and (flag? @State REPLACE_FLAG) (<= (:lnum (:w_cursor @curwin)) lnum))
-            (do
-                (dec-cursor)
-            )
-            :else
-            (do
-                (cond (or (non-flag? @State VREPLACE_FLAG) (< @orig_line_count (:lnum (:w_cursor @curwin))))
-                (do
-                    ((ß int temp =) (gchar))      ;; remember current char
-                    (swap! curwin update-in [:w_cursor :lnum] dec)
-
-                    (do-join 2, false, false, false, false)
-                    (if (and (== temp NUL) (!= (gchar) NUL))
-                        (inc-cursor))
-                )
-                :else
-                (do
-                    (dec-cursor)
-                ))
-
-                ;; In REPLACE mode we have to put back the text that was replaced by the NL.
-                ;; On the replace stack is first a NUL-terminated sequence of characters
-                ;; that were deleted and then the characters that NL replaced.
-
-                (when (flag? @State REPLACE_FLAG)
-                    ;; Do the next ins-char() in NORMAL state, to prevent ins-char()
-                    ;; from replacing characters and avoiding showmatch().
-
-                    ((ß int oldState =) @State)
-                    (reset! State NORMAL)
-
-                    ;; restore characters (blanks) deleted after cursor
-
-                    (loop-when [] (< 0 cc)
-                        ((ß int save_col =) (:col (:w_cursor @curwin)))
-                        (mb-replace-pop-ins cc)
-                        (swap! curwin assoc-in [:w_cursor :col] save_col)
-                        ((ß cc =) (replace-pop))
-                        (recur)
-                    )
-                    ;; restore the characters that NL replaced
-                    (replace-pop-ins)
-                    (reset! State oldState)
-                )
-            ))
-            (reset! did_ai false)
-        )
-        :else
-        (do
-            ;; Delete character(s) before the cursor.
-
-            ((ß int mincol =) 0)
-                                                    ;; keep indent
-            (when (and (== mode BACKSPACE_LINE) @(:b_p_ai @curbuf))
-                ((ß int save_col =) (:col (:w_cursor @curwin)))
-                (beginline BL_WHITE)
-                ((ß mincol =) (if (< (:col (:w_cursor @curwin)) save_col) (:col (:w_cursor @curwin)) mincol))
-                (swap! curwin assoc-in [:w_cursor :col] save_col)
-            )
-
-            ;; Handle deleting one 'shiftwidth' or 'softtabstop'.
-
-            (cond (and (== mode BACKSPACE_CHAR) (or (and @p_sta in_indent) (and (non-zero? (get-sts-value)) (< 0 (:col (:w_cursor @curwin))) (or (at? (ml-get-cursor) -1 TAB) (and (at? (ml-get-cursor) -1 (byte \space)) (or (not @a'inserted_space_p) @arrow_used))))))
-            (do
-                (reset! a'inserted_space_p false)
-
-                ((ß int ts =) (int (if (and @p_sta in_indent) (get-sw-value) (get-sts-value))))
-
-                ;; Compute the virtual column where we want to be.  Since 'showbreak' may
-                ;; get in the way, need to get the last column of the previous character.
-                ((ß int[] a'vcol =) (atom (int)))
-                (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil)
-                ((ß int start_vcol =) @a'vcol)
-                (dec-cursor)
-                ((ß int[] a'want_vcol =) (atom (int)))
-                (getvcol @curwin, (:w_cursor @curwin), nil, nil, a'want_vcol)
-                (inc-cursor)
-                (reset! a'want_vcol (* (/ @a'want_vcol ts) ts))
-
-                ;; delete characters until we are at or before "want_vcol"
-                (while (and (< @a'want_vcol @a'vcol) (vim-iswhite (.at (ml-get-cursor) -1)))
-                    (ins-bs-one a'vcol))
-
-                ;; insert extra spaces until we are at "want_vcol"
-                (while (< @a'vcol @a'want_vcol)
-                    ;; Remember the first char we inserted.
+                    (reset! did_si false)
+                    (reset! can_si false)
+                    (reset! can_si_back false)
+                    (when (<= (:col (:w_cursor @curwin)) 1)
+                        (reset! did_ai false))
+                    ;; It's a little strange to put backspaces into the redo buffer, but it makes auto-indent a lot easier to deal with.
+                    (append-redo-char c)
+                    ;; If deleted before the insertion point, adjust it.
                     (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (< (:col (:w_cursor @curwin)) (:col @insStart_orig)))
                         (swap! insStart_orig assoc :col (:col (:w_cursor @curwin))))
-
-                    (cond (flag? @State VREPLACE_FLAG)
-                    (do
-                        (ins-char (byte \space))
-                    )
-                    :else
-                    (do
-                        (ins-str (u8 " "))
-                        (if (flag? @State REPLACE_FLAG)
-                            (replace-push NUL))
-                    ))
-                    (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil)
-                )
-
-                ;; If we are now back where we started delete one character.
-                ;; Can happen when using 'sts' and 'linebreak'.
-                (if (<= start_vcol @a'vcol)
-                    (ins-bs-one a'vcol))
-            )
-            :else ;; Delete upto starting point, start of line or previous word.
-            (do
-                ((ß int prev_cclass =) 0)
-                ((ß int cclass =) (us-get-class (ml-get-cursor)))
-
-                ((ß boolean temp =) false)
-                (loop []
-                    (dec-cursor)           ;; put cursor on char to be deleted
-
-                    ((ß int cc =) (gchar))
-                    ;; look multi-byte character class
-                    ((ß prev_cclass =) cclass)
-                    ((ß cclass =) (us-get-class (ml-get-cursor)))
-
-                    ;; start of word?
-                    (cond (and (== mode BACKSPACE_WORD) (not (vim-isspace cc)))
-                    (do
-                        ((ß mode =) BACKSPACE_WORD_NOT_SPACE)
-                        ((ß temp =) (vim-iswordc cc))
-                    )
-                    ;; end of word?
-                    (and (== mode BACKSPACE_WORD_NOT_SPACE) (or (vim-isspace cc) (!= (vim-iswordc cc) temp) (!= prev_cclass cclass)))
-                    (do
-                        (inc-cursor)
-                        (ß BREAK)
-                    ))
-
-                    (cond (flag? @State REPLACE_FLAG)
-                    (do
-                        (replace-do-bs -1)
-                    )
-                    :else
-                    (do
-                        ((ß int[] cpc =) (ß new int[MAX_MCO]))   ;; composing characters
-                        (if @p_deco
-                            (us-ptr2char-cc (ml-get-cursor), cpc))
-                        (del-char false)
-
-                        ;; If there are combining characters and 'delcombine' is set
-                        ;; move the cursor back.  Don't back up before the base character.
-
-                        (if (and @p_deco (!= (... cpc 0) NUL))
-                            (inc-cursor))
-                    ))
-                    ;; Just a single backspace?:
-                    (if (== mode BACKSPACE_CHAR)
-                        (ß BREAK)
-                    )
-                    (recur-if (and (< mincol (:col (:w_cursor @curwin))) (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (!= (:col (:w_cursor @curwin)) (:col @insStart_orig)))) [])
-                )
+                    did_backspace)
             ))
-            ((ß did_backspace =) true)
-        ))
-
-        (reset! did_si false)
-        (reset! can_si false)
-        (reset! can_si_back false)
-        (if (<= (:col (:w_cursor @curwin)) 1)
-            (reset! did_ai false))
-
-        ;; It's a little strange to put backspaces into the redo buffer,
-        ;; but it makes auto-indent a lot easier to deal with.
-
-        (append-redo-char c)
-
-        ;; If deleted before the insertion point, adjust it.
-        (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart_orig)) (< (:col (:w_cursor @curwin)) (:col @insStart_orig)))
-            (swap! insStart_orig assoc :col (:col (:w_cursor @curwin))))
-
-        did_backspace
     ))
 
 (defn- #_void ins-left []
@@ -21215,105 +20949,78 @@
     nil)
 
 (defn- #_void ins-s-left []
-    (if (or (< 1 (:lnum (:w_cursor @curwin))) (< 0 (:col (:w_cursor @curwin))))
-        (do
-            (start-arrow (:w_cursor @curwin))
-            (bck-word 1, false, false)
-            (swap! curwin assoc :w_set_curswant true)
-        )
-        (vim-beep)
-    )
+    (let-when [lmin 1] (or (< lmin (:lnum (:w_cursor @curwin))) (< 0 (:col (:w_cursor @curwin)))) => (vim-beep)
+        (start-arrow (:w_cursor @curwin))
+        (bck-word 1, false, false)
+        (swap! curwin assoc :w_set_curswant true))
     nil)
 
 (defn- #_void ins-right []
-    (cond (or (!= (gchar) NUL) (virtual-active))
-    (do
-        (start-arrow (:w_cursor @curwin))
-        (swap! curwin assoc :w_set_curswant true)
-        (if (virtual-active)
-            (oneright)
-            (swap! curwin update-in [:w_cursor :col] + (us-ptr2len-cc (ml-get-cursor)))
-        )
-    )
-    ;; if 'whichwrap' set for cursor in insert mode, may move the cursor to the next line
-    (and (some? (vim-strchr @p_ww, (byte \]))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
-    (do
-        (start-arrow (:w_cursor @curwin))
-        (swap! curwin assoc :w_set_curswant true)
-        (swap! curwin update-in [:w_cursor :lnum] inc)
-        (swap! curwin assoc-in [:w_cursor :col] 0)
-    )
-    :else
-        (vim-beep)
-    )
-    nil)
-
-(defn- #_void ins-s-right []
-    (if (or (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))) (!= (gchar) NUL))
+    (let [#_Bytes s (ml-get-cursor)]
+        (cond (or (!= (us-ptr2char s) NUL) (virtual-active))
         (do
             (start-arrow (:w_cursor @curwin))
-            (fwd-word 1, false, false)
             (swap! curwin assoc :w_set_curswant true)
-        )
-        (vim-beep)
-    )
-    nil)
-
-(defn- #_void ins-up [#_boolean startcol]
-    ;; startcol: when true move to insStart.col
-    (let [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)]
-        (if (cursor-up 1, true)
-            (do
-                (if startcol
-                    (coladvance (getvcol-nolist @insStart)))
-                (if (!= (:w_topline @curwin) _)
-                    (redraw-win-later @curwin, VALID))
-                (start-arrow tpos)
-                (reset! can_cindent true)
+            (if (virtual-active)
+                (oneright)
+                (swap! curwin update-in [:w_cursor :col] + (us-ptr2len-cc s))
             )
+        )
+        ;; if 'whichwrap' set for cursor in insert mode, may move the cursor to the next line
+        (and (some? (vim-strchr @p_ww, (byte \]))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
+        (do
+            (start-arrow (:w_cursor @curwin))
+            (swap! curwin assoc :w_set_curswant true)
+            (swap! curwin update-in [:w_cursor :lnum] inc)
+            (swap! curwin assoc-in [:w_cursor :col] 0)
+        )
+        :else
             (vim-beep)
         ))
     nil)
 
+(defn- #_void ins-s-right []
+    (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (or (< (:lnum (:w_cursor @curwin)) lmax) (!= (gchar) NUL)) => (vim-beep)
+        (start-arrow (:w_cursor @curwin))
+        (fwd-word 1, false, false)
+        (swap! curwin assoc :w_set_curswant true))
+    nil)
+
+(defn- #_void ins-up [#_boolean startcol]
+    ;; startcol: when true move to insStart.col
+    (let-when [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)] (cursor-up 1, true) => (vim-beep)
+        (when startcol
+            (coladvance (getvcol-nolist @insStart)))
+        (when (!= (:w_topline @curwin) _)
+            (redraw-win-later @curwin, VALID))
+        (start-arrow tpos)
+        (reset! can_cindent true))
+    nil)
+
 (defn- #_void ins-pageup []
     (when (non-flag? @mod_mask MOD_MASK_CTRL)
-        (let [#_pos_C tpos (:w_cursor @curwin)]
-            (if (onepage BACKWARD, 1)
-                (do
-                    (start-arrow tpos)
-                    (reset! can_cindent true)
-                )
-                (vim-beep)
-            )
+        (let-when [#_pos_C tpos (:w_cursor @curwin)] (onepage BACKWARD, 1) => (vim-beep)
+            (start-arrow tpos)
+            (reset! can_cindent true)
         ))
     nil)
 
 (defn- #_void ins-down [#_boolean startcol]
     ;; startcol: when true move to insStart.col
-    (let [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)]
-        (if (cursor-down 1, true)
-            (do
-                (if startcol
-                    (coladvance (getvcol-nolist @insStart)))
-                (if (!= (:w_topline @curwin) _)
-                    (redraw-win-later @curwin, VALID))
-                (start-arrow tpos)
-                (reset! can_cindent true)
-            )
-            (vim-beep)
-        ))
+    (let-when [#_long _ (:w_topline @curwin) #_pos_C tpos (:w_cursor @curwin)] (cursor-down 1, true) => (vim-beep)
+        (when startcol
+            (coladvance (getvcol-nolist @insStart)))
+        (when (!= (:w_topline @curwin) _)
+            (redraw-win-later @curwin, VALID))
+        (start-arrow tpos)
+        (reset! can_cindent true))
     nil)
 
 (defn- #_void ins-pagedown []
     (when (non-flag? @mod_mask MOD_MASK_CTRL)
-        (let [#_pos_C tpos (:w_cursor @curwin)]
-            (if (onepage FORWARD, 1)
-                (do
-                    (start-arrow tpos)
-                    (reset! can_cindent true)
-                )
-                (vim-beep)
-            )
+        (let-when [#_pos_C tpos (:w_cursor @curwin)] (onepage FORWARD, 1) => (vim-beep)
+            (start-arrow tpos)
+            (reset! can_cindent true)
         ))
     nil)
 
@@ -21353,108 +21060,58 @@
                         (when (and (not et) (or (non-zero? sts') (and @p_sta ind)))
                             ;; Get the current line.
                             ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
-
-%%                          (ß pos_C cursor)
-                            (ß Bytes saved_line)
-                            (ß Bytes s)
-                            (cond vrep?
-                            (do
-                                ((ß pos_C vpos =) (:w_cursor @curwin))
-                                ((ß cursor =) vpos)
-                                ((ß saved_line =) (STRDUP (ml-get-curline)))
-                                ((ß s =) (.plus saved_line (:col vpos)))
-                            )
-                            :else
-                            (do
-                                ((ß cursor =) (:w_cursor @curwin))
-                                ((ß saved_line =) nil)
-                                ((ß s =) (ml-get-cursor))
+                            (let [#_pos_C cpos (:w_cursor @curwin)
+                                  [#_Bytes s' #_Bytes s] (if vrep? (let [s' (STRDUP (ml-get-curline))] [s' (.plus s' (:col cpos))]) [nil (ml-get-cursor)])
+                                  ;; Find first white before the cursor.
+                                  [#_pos_C fpos s]
+                                    (loop-when-recur [fpos cpos s s] (and (< 0 (:col fpos)) (vim-iswhite (.at s -1))) [(update fpos :col dec) (.minus s 1)] => [fpos s])
+                                  ;; In Replace mode, don't change characters before the insert point.
+                                  [s fpos]
+                                    (if (and rep? (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
+                                        [(.plus s (- (:col @insStart) (:col fpos))) (assoc fpos :col (:col @insStart))]
+                                        [s fpos])
+                                  ;; compute virtual column numbers of first white and cursor
+                                  a'vcol (atom (int)) _ (getvcol @curwin, fpos, a'vcol, nil, nil)
+                                  a'want_vcol (atom (int)) _ (getvcol @curwin, cpos, a'want_vcol, nil, nil)
+                                  ;; Use as many TABs as possible.
+                                  ;; Beware of 'breakindent', 'showbreak' and 'linebreak' adding extra virtual columns.
+                                  [#_int x fpos s]
+                                    (loop-when [x -1 fpos fpos s s] (vim-iswhite (.at s 0)) => [x fpos s]
+                                        (let-when [#_int i (lbr-chartabsize nil, (u8 "\t"), @a'vcol)] (not (< @a'want_vcol (+ @a'vcol i))) => [x fpos s]
+                                            (swap! a'vcol + i)
+                                            (let [x (if (not-at? s TAB) (do (.be s 0, TAB)
+                                                        (if (< x 0)
+                                                            (let [x (:col fpos)] ;; column of first change
+                                                                (when (and (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
+                                                                    (swap! insStart assoc :col (:col fpos)))
+                                                                x)
+                                                            x))
+                                                        x)]
+                                                (recur x (update fpos :col inc) (.plus s 1)))
+                                        ))]
+                                (when (< -1 x)
+                                    (let [#_Bytes line s
+                                          [s #_int roff] ;; Skip over the spaces we need.
+                                            (loop-when-recur [s s roff 0] (and (< @a'vcol @a'want_vcol) (at? s (byte \space))) [(.plus s 1) (inc roff)] => [s roff]
+                                                (swap! a'vcol #(+ % (lbr-chartabsize line, s, %))))
+                                          [s roff] ;; Must have a char with 'showbreak' just before it.
+                                            (if (< @a'want_vcol @a'vcol) [(.minus s 1) (dec roff)] [s roff])
+                                          fpos (update fpos :col + roff)
+                                          ;; Delete following spaces.
+                                          #_int i (- (:col cpos) (:col fpos))]
+                                        (when (< 0 i)
+                                            (BCOPY s, 0, s, i, (inc (STRLEN s, i)))
+                                            ;; Correct replace stack.
+                                            (when (and rep? (not vrep?))
+                                                (loop-when-recur [#_int t i] (< 0 t) [(dec t)] (replace-join roff))
+                                            ))
+                                        ;; In VREPLACE mode, we haven't changed anything yet.
+                                        ;; Do it now by backspacing over the changed spacing and then inserting the new spacing.
+                                        (if vrep?
+                                            (do (backspace-until-column x) (ins-bytes-len (.plus s' x), (- (:col cpos) i x)))
+                                            (swap! curwin update-in [:w_cursor :col] - i))
+                                    ))
                             ))
-
-                            ;; Find first white before the cursor.
-                            ((ß pos_C fpos =) (:w_cursor @curwin))
-                            (loop-when [] (and (< 0 (:col fpos)) (vim-iswhite (.at s -1)))
-                                ((ß fpos.col =) (dec (:col fpos)))
-                                ((ß s =) (.minus s 1))
-                                (recur)
-                            )
-
-                            ;; In Replace mode, don't change characters before the insert point.
-                            (when (and rep? (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
-                                ((ß s =) (.plus s (- (:col @insStart) (:col fpos))))
-                                ((ß fpos.col =) (:col @insStart))
-                            )
-
-                            ;; compute virtual column numbers of first white and cursor
-                            ((ß int[] a'vcol =) (atom (int)))
-                            (getvcol @curwin, fpos, a'vcol, nil, nil)
-                            ((ß int[] a'want_vcol =) (atom (int)))
-                            (getvcol @curwin, cursor, a'want_vcol, nil, nil)
-
-                            ((ß int change_col =) -1)
-                            ;; Use as many TABs as possible.
-                            ;; Beware of 'breakindent', 'showbreak' and 'linebreak' adding extra virtual columns.
-                            (loop-when [] (vim-iswhite (.at s 0))
-                                ((ß int i =) (lbr-chartabsize nil, (u8 "\t"), @a'vcol))
-                                (if (< @a'want_vcol (+ @a'vcol i))
-                                    (ß BREAK)
-                                )
-                                (when (not-at? s TAB)
-                                    (.be s 0, TAB)
-                                    (when (< change_col 0)
-                                        ((ß change_col =) (:col fpos)) ;; column of first change
-                                        ;; May have to adjust insStart.
-                                        (when (and (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
-                                            (swap! insStart assoc :col (:col fpos)))
-                                    )
-                                )
-                                ((ß fpos.col =) (inc (:col fpos)))
-                                ((ß s =) (.plus s 1))
-                                (swap! a'vcol + i)
-                                (recur)
-                            )
-
-                            (when (<= 0 change_col)
-                                ((ß int repl_off =) 0)
-                                ((ß Bytes line =) s)
-
-                                ;; Skip over the spaces we need.
-                                (loop-when [] (and (< @a'vcol @a'want_vcol) (at? s (byte \space)))
-                                    (reset! a'vcol (+ @a'vcol (lbr-chartabsize line, s, @a'vcol)))
-                                    ((ß s =) (.plus s 1))
-                                    ((ß repl_off =) (inc repl_off))
-                                    (recur)
-                                )
-                                (when (< @a'want_vcol @a'vcol)
-                                    ;; Must have a char with 'showbreak' just before it.
-                                    ((ß s =) (.minus s 1))
-                                    ((ß repl_off =) (dec repl_off))
-                                )
-                                ((ß fpos.col =) (+ (:col fpos) repl_off))
-
-                                ;; Delete following spaces.
-                                ((ß int i =) (- (:col cursor) (:col fpos)))
-                                (when (< 0 i)
-                                    (BCOPY s, 0, s, i, (inc (STRLEN s, i)))
-                                    ;; Correct replace stack.
-                                    (when (and rep? (not vrep?))
-                                        (loop-when-recur [#_int t i] (< 0 t) [(dec t)] (replace-join repl_off))
-                                    )
-                                )
-                                ((ß cursor.col =) (- (:col cursor) i))
-
-                                ;; In VREPLACE mode, we haven't changed anything yet.  Do it now by
-                                ;; backspacing over the changed spacing and then inserting the new spacing.
-
-                                (when vrep?
-                                    ;; Backspace from real cursor to change_col.
-                                    (backspace-until-column change_col)
-                                    ;; Insert each char in saved_line from changed_col to ptr-cursor.
-                                    (ins-bytes-len (.plus saved_line change_col), (- (:col cursor) change_col))
-                                )
-                            )
-                        )
-
                         false
                     ))
             ))
@@ -48236,7 +47893,7 @@
             ;; Note that the window sizes are updated before reallocating the arrays,
             ;; thus we must not redraw here!
 
-            (swap! redrawingDisabled inc)
+            (swap! no_redraw inc)
 
             (win-new-shellsize)    ;; fit the windows in the new sized shell
 
@@ -48332,7 +47989,7 @@
             )
 
             (reset! _4_entered false)
-            (swap! redrawingDisabled dec)
+            (swap! no_redraw dec)
 
             ;; Do not apply autocommands more than 3 times to avoid an endless loop
             ;; in case applying autocommands always changes Rows or Cols.
@@ -49244,7 +48901,7 @@
 ;; Return true if redrawing should currently be done.
 
 (defn- #_boolean redrawing []
-    (and (zero? @redrawingDisabled) (not (and @p_lz (char-avail) (not @keyTyped) (not @do_redraw)))))
+    (and (zero? @no_redraw) (not (and @p_lz (char-avail) (not @keyTyped) (not @do_redraw)))))
 
 ;; Return true if printing messages should currently be done.
 
@@ -54055,7 +53712,7 @@
     (set-init-1)
 
     ;; Don't redraw until much later.
-    (swap! redrawingDisabled inc)
+    (swap! no_redraw inc)
 
     ;; mch-init() sets up the terminal (window) for use.
     ;; This must be done after resetting full_screen, otherwise it may move the cursor (MSDOS).
@@ -54120,7 +53777,7 @@
     ;; make the first window the current window
     (win-enter @firstwin)
 
-    (reset! redrawingDisabled 0)
+    (reset! no_redraw 0)
     (redraw-all-later NOT_VALID)
     (reset! no_wait_return FALSE)
     (reset! starting 0)
