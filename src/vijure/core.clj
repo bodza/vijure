@@ -2826,7 +2826,7 @@
     (do
         (restore-cterm-colors)         ;; get original colors back
         (msg-clr-eos-force)            ;; clear the rest of the display
-        (windgoto (dec (int @Rows)), 0)     ;; may have moved the cursor
+        (windgoto (dec @Rows), 0)     ;; may have moved the cursor
     ))
     nil)
 
@@ -2990,7 +2990,7 @@
         ;; check the output of configure.  It could probably not find a ncurses,
         ;; termcap or termlib library.
 
-        (term-set-winsize (int @Rows), (int @Cols))
+        (term-set-winsize @Rows, @Cols)
         (out-flush)
         (screen-start)                 ;; don't know where cursor is now
     )
@@ -3388,7 +3388,7 @@
         (reset! emsg_on_display false)    ;; can delete error message now
         (reset! lines_left -1)            ;; reset lines_left at next msg-start()
 
-        (when (and (some? @keep_msg) (<= (+ (* (int (- @Rows @cmdline_row 1)) (int @Cols)) @sc_col) (mb-string2cells @keep_msg)))
+        (when (and (some? @keep_msg) (<= (+ (* (int (- @Rows @cmdline_row 1)) @Cols) @sc_col) (mb-string2cells @keep_msg)))
             (reset! keep_msg nil)            ;; don't redisplay message, it's too long
         )
 
@@ -3628,7 +3628,7 @@
             ;; - When outputting a newline.
             ;; - When outputting a character in the last column.
 
-            (when (and (not recurse) (<= (dec @Rows) @msg_row) (or (at? s (byte \newline)) (<= (dec (int @Cols)) (+ @msg_col t_col)) (and (at? s TAB) (<= (& (dec (int @Cols)) (bit-not 7)) (+ @msg_col t_col))) (and (< 1 (us-ptr2cells s)) (<= (- (int @Cols) 2) (+ @msg_col t_col)))))
+            (when (and (not recurse) (<= (dec @Rows) @msg_row) (or (at? s (byte \newline)) (<= (dec @Cols) (+ @msg_col t_col)) (and (at? s TAB) (<= (& (dec @Cols) (bit-not 7)) (+ @msg_col t_col))) (and (< 1 (us-ptr2cells s)) (<= (- @Cols 2) (+ @msg_col t_col)))))
                 ;; The screen is scrolled up when at the last row (some terminals scroll
                 ;; automatically, some don't.  To avoid problems we scroll ourselves).
 
@@ -3645,9 +3645,9 @@
                 ;; Scroll the screen up one line.
                 (msg-scroll-up)
 
-                (reset! msg_row (- (int @Rows) 2))
-                (if (<= (int @Cols) @msg_col)     ;; can happen after screen resize
-                    (reset! msg_col (dec (int @Cols))))
+                (reset! msg_row (- @Rows 2))
+                (if (<= @Cols @msg_col)     ;; can happen after screen resize
+                    (reset! msg_col (dec @Cols)))
 
                 (ß boolean did_last_char)
 
@@ -3705,7 +3705,7 @@
                 )
             )
 
-            ((ß boolean wrap =) (or (at? s (byte \newline)) (<= (int @Cols) (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec (int @Cols)) (+ @msg_col t_col)))))
+            ((ß boolean wrap =) (or (at? s (byte \newline)) (<= @Cols (+ @msg_col t_col)) (and (< 1 (us-ptr2cells s)) (<= (dec @Cols) (+ @msg_col t_col)))))
 
             (when (and (< 0 t_col) (or wrap (at? s (byte \return)) (at? s (byte \backspace)) (at? s TAB) (at? s BELL)))
                 ;; output any postponed text
@@ -3722,7 +3722,7 @@
                 (reset! msg_didout false)         ;; remember that line is empty
                 (reset! msg_col 0)
                 (if (<= @Rows (swap! msg_row inc))      ;; safety check
-                    (reset! msg_row (dec (int @Rows))))
+                    (reset! msg_row (dec @Rows)))
             )
             (at? s (byte \return))            ;; go to column 0
             (do
@@ -3761,7 +3761,7 @@
 
                 ;; When a double-wide character doesn't fit, draw a single character here.
                 ;; Otherwise collect characters and draw them all at once later.
-                (cond (and (< 1 cells) (<= (dec (int @Cols)) (+ @msg_col t_col)))
+                (cond (and (< 1 cells) (<= (dec @Cols) (+ @msg_col t_col)))
                 (do
                     (if (< 1 len)
                         ((ß s =) (.minus (screen-puts-mbyte s, len, attr) 1))
@@ -3794,7 +3794,7 @@
 ;; Scroll the screen up one line for displaying the next message line.
 
 (defn- #_void msg-scroll-up []
-    (let [rows (int @Rows) cols (int @Cols)]
+    (let [rows @Rows cols @Cols]
         ;; scrolling up always works
         (screen-del-lines 0, 0, 1, rows, true, nil)
 
@@ -4026,20 +4026,20 @@
 
                 ((ß CASE) (byte \u))                   ;; up half a page
                 (do
-                    ((ß toscroll =) (- (/ (int @Rows) 2)))
+                    ((ß toscroll =) (- (/ @Rows 2)))
                     (ß BREAK)
                 )
 
                 ((ß CASE) (byte \d))                   ;; down half a page
                 (do
-                    ((ß toscroll =) (/ (int @Rows) 2))
+                    ((ß toscroll =) (/ @Rows 2))
                     (ß BREAK)
                 )
 
                 ((ß CASE) (byte \b))                   ;; one page back
                 ((ß CASE) K_PAGEUP)
                 (do
-                    ((ß toscroll =) (- (dec (int @Rows))))
+                    ((ß toscroll =) (- (dec @Rows)))
                     (ß BREAK)
                 )
 
@@ -4047,7 +4047,7 @@
                 ((ß CASE) (byte \f))
                 ((ß CASE) K_PAGEDOWN)
                 (do
-                    ((ß toscroll =) (dec (int @Rows)))
+                    ((ß toscroll =) (dec @Rows))
                     (ß BREAK)
                 )
 
@@ -4070,7 +4070,7 @@
                         ;; Since got_int is set all typeahead will be flushed, but we
                         ;; want to keep this ':', remember that in a special way.
                         (typeahead-noflush (byte \:))
-                        (reset! cmdline_row (dec (int @Rows)))         ;; put ':' on this line
+                        (reset! cmdline_row (dec @Rows))         ;; put ':' on this line
                         (reset! skip_redraw true)             ;; skip redraw once
                         (reset! need_wait_return false)       ;; don't wait in main()
                     )
@@ -4092,7 +4092,7 @@
                     ))
                     ;; When there is some more output (wrapping line)
                     ;; display that without another prompt.
-                    (reset! lines_left (dec (int @Rows)))
+                    (reset! lines_left (dec @Rows))
                     (ß BREAK)
                 )
 
@@ -4147,7 +4147,7 @@
                             ((ß mp_last =) (msg-sb-start (if (nil? mp_last) @last_msgchunk (:sb_prev mp_last))))
                         )
 
-                        (cond (and (== toscroll -1) (screen-ins-lines 0, 0, 1, (int @Rows), nil))
+                        (cond (and (== toscroll -1) (screen-ins-lines 0, 0, 1, @Rows, nil))
                         (do
                             ;; display line at top
                             (disp-sb-line 0, mp)
@@ -4171,15 +4171,15 @@
                         ;; scroll up, display line at bottom
                         (msg-scroll-up)
                         (inc-msg-scrolled)
-                        (screen-fill (- (int @Rows) 2), (dec (int @Rows)), 0, (int @Cols), (byte \space), (byte \space), 0)
-                        ((ß mp_last =) (disp-sb-line (- (int @Rows) 2), mp_last))
+                        (screen-fill (- @Rows 2), (dec @Rows), 0, @Cols, (byte \space), (byte \space), 0)
+                        ((ß mp_last =) (disp-sb-line (- @Rows 2), mp_last))
                         ((ß toscroll =) (dec toscroll))
                     )
                 ))
 
                 (when (<= toscroll 0)
                     ;; displayed the requested text, more prompt again
-                    (screen-fill (dec (int @Rows)), (int @Rows), 0, (int @Cols), (byte \space), (byte \space), 0)
+                    (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
                     (msg-moremsg false)
                     (ß CONTINUE)
                 )
@@ -4192,11 +4192,11 @@
         )
 
         ;; clear the --more-- message
-        (screen-fill (dec (int @Rows)), (int @Rows), 0, (int @Cols), (byte \space), (byte \space), 0)
+        (screen-fill (dec @Rows), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
         (reset! State oldState)
 
         (when @quit_more
-            (reset! msg_row (dec (int @Rows)))
+            (reset! msg_row (dec @Rows))
             (reset! msg_col 0)
         )
 
@@ -4211,7 +4211,7 @@
 
     (screen-putchar c, @msg_row, @msg_col, attr)
 
-    (when (<= (int @Cols) (swap! msg_col inc))
+    (when (<= @Cols (swap! msg_col inc))
         (reset! msg_col 0)
         (swap! msg_row inc)
     )
@@ -4219,9 +4219,9 @@
 
 (defn- #_void msg-moremsg [#_boolean full]
     (let [#_Bytes more (u8 "-- More --") #_int attr (hl-attr HLF_M)]
-        (screen-puts more, (dec (int @Rows)), 0, attr)
+        (screen-puts more, (dec @Rows), 0, attr)
         (when full
-            (screen-puts (u8 " SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (dec (int @Rows)), (mb-string2cells more), attr)
+            (screen-puts (u8 " SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (dec @Rows), (mb-string2cells more), attr)
         )
         nil
     ))
@@ -4232,16 +4232,16 @@
     (cond (== @State ASKMORE)
     (do
         (msg-moremsg true)      ;; display --more-- message again
-        (reset! msg_row (dec (int @Rows)))
+        (reset! msg_row (dec @Rows))
     )
     (== @State CONFIRM)
     (do
         (display-confirm-msg)  ;; display ":confirm" message again
-        (reset! msg_row (dec (int @Rows)))
+        (reset! msg_row (dec @Rows))
     )
     (any == @State HITRETURN SETWSIZE)
     (do
-        (when (== @msg_row (dec (int @Rows)))
+        (when (== @msg_row (dec @Rows))
             ;; Avoid drawing the "hit-enter" prompt below the previous one,
             ;; overwrite it.  Esp. useful when regaining focus and a
             ;; FocusGained autocmd exists but didn't draw anything.
@@ -4250,7 +4250,7 @@
             (msg-clr-eos)
         )
         (hit-return-msg)
-        (reset! msg_row (dec (int @Rows)))
+        (reset! msg_row (dec @Rows))
     ))
     nil)
 
@@ -4262,8 +4262,8 @@
 (defn- #_boolean msg-check-screen []
     (if (and @full_screen (screen-valid false))
         (do
-            (swap! msg_row min (dec (int @Rows)))
-            (swap! msg_col min (dec (int @Cols)))
+            (swap! msg_row min (dec @Rows))
+            (swap! msg_col min (dec @Cols))
             true
         )
         false
@@ -4291,8 +4291,8 @@
     )
     :else
     (do
-        (screen-fill @msg_row, (inc @msg_row), @msg_col, (int @Cols), (byte \space), (byte \space), 0)
-        (screen-fill (inc @msg_row), (int @Rows), 0, (int @Cols), (byte \space), (byte \space), 0)
+        (screen-fill @msg_row, (inc @msg_row), @msg_col, @Cols, (byte \space), (byte \space), 0)
+        (screen-fill (inc @msg_row), @Rows, 0, @Cols, (byte \space), (byte \space), 0)
     ))
     nil)
 
@@ -4323,7 +4323,7 @@
 ;; wait for hit-return and redraw the window later.
 
 (defn- #_void msg-check []
-    (when (and (== @msg_row (dec (int @Rows))) (<= @sc_col @msg_col))
+    (when (and (== @msg_row (dec @Rows)) (<= @sc_col @msg_col))
         (reset! need_wait_return true)
         (reset! redraw_cmdline true)
     )
@@ -5583,7 +5583,7 @@
                 )
                 (reset! Rows min)
             )
-            (when (< (int @Cols) MIN_COLS)
+            (when (< @Cols MIN_COLS)
                 (when (some? errbuf)
 ;%%                 (vim_snprintf errbuf, errbuflen, (u8 "E594: Need at least %d columns"), MIN_COLS)
                     ((ß errmsg =) errbuf)
@@ -5603,7 +5603,7 @@
             )
             @full_screen
             (do
-                (set-shellsize (int @Cols), (int @Rows), true)
+                (set-shellsize @Cols, @Rows, true)
             )
             :else
             (do
@@ -5751,37 +5751,23 @@
 ;; showoneopt: show the value of one option
 
 (defn- #_void showoneopt [#_vimoption_C v]
-    (§
-        (reset! info_message true)
-
-        ((ß Object varp =) (get-varp v))
-
+    (reset! info_message true)
+    (let [#_Object' varp (get-varp v)]
         (if (and (flag? (:flags v) P_BOOL) (not (boolean @varp)))
             (msg-puts (u8 "no"))
             (msg-puts (u8 "  ")))
-
         (msg-puts (:fullname v))
-
         (when (non-flag? (:flags v) P_BOOL)
             (msg-putchar (byte \=))
-
-            (cond (flag? (:flags v) P_NUM)
-            (do
-                (.sprintf libC @nameBuff, (u8 "%ld"), (long @varp))
-            )
-            (flag? (:flags v) P_STRING)
-            (do
-                (if (nil? @varp)              ;; just in case
-                    (eos! @nameBuff)
-                    (vim-strncpy @nameBuff, (ß (Bytes)@varp), (dec MAXPATHL)))
-            ))
-
-            (msg-outtrans @nameBuff)
-        )
-
-        (reset! info_message false)
-        nil
-    ))
+;%%         (cond (flag? (:flags v) P_NUM)
+;%%             (.sprintf libC @nameBuff, (u8 "%ld"), (long @varp))
+;%%         (flag? (:flags v) P_STRING)
+;%%             (if (nil? @varp)              ;; just in case
+;%%                 (eos! @nameBuff)
+;%%                 (vim-strncpy @nameBuff, #_Bytes @varp, (dec MAXPATHL))))
+            (msg-outtrans @nameBuff))
+        (reset! info_message false))
+    nil)
 
 ;; Compute columns for ruler and shown command. 'sc_col' is also used to
 ;; decide what the maximum length of a message on the status line can be.
@@ -5805,10 +5791,10 @@
             (if (or (not @p_ru) last_has_status)       ;; no need for separating space
                 (swap! sc_col inc))
         )
-        (swap! sc_col #(max 1 (- (int @Cols) %)))
-        (swap! ru_col #(max 1 (- (int @Cols) %)))
-        nil
-    ))
+        (swap! sc_col #(max 1 (- @Cols %)))
+        (swap! ru_col #(max 1 (- @Cols %)))
+    )
+    nil)
 
 ;; Get pointer to option variable.
 
@@ -7475,7 +7461,7 @@
                                     (ß BREAK)
                                 )
                                 ((ß int i =) (cmdline-charsize (:cmdpos @ccline)))
-                                (if (and @keyTyped (<= (* (int @Cols) (int @Rows)) (+ (:cmdspos @ccline) i)))
+                                (if (and @keyTyped (<= (* @Cols @Rows) (+ (:cmdspos @ccline) i)))
                                     (ß BREAK)
                                 )
                                 (swap! ccline update :cmdspos + i)
@@ -7936,7 +7922,7 @@
 
 (defn- #_void set-cmdspos-cursor []
     (set-cmdspos)
-    (let [#_int m (if @keyTyped (let [m (* (int @Cols) (int @Rows))] (if (< m 0) MAXCOL m)) MAXCOL)]
+    (let [#_int m (if @keyTyped (let [m (* @Cols @Rows)] (if (< m 0) MAXCOL m)) MAXCOL)]
         (loop-when [#_int i 0] (and (< i (:cmdlen @ccline)) (< i (:cmdpos @ccline)))
             (let [#_int c (cmdline-charsize i)]
                 ;; Count ">" for double-wide multi-byte char that doesn't fit.
@@ -7955,7 +7941,7 @@
 ;; character that doesn't fit, so that a ">" must be displayed.
 
 (defn- #_void correct-cmdspos [#_int idx, #_int cells]
-    (let [pos (.plus (:cmdbuff @ccline) idx) cols (int @Cols)]
+    (let [pos (.plus (:cmdbuff @ccline) idx) cols @Cols]
         (when (and (< 1 (us-ptr2len-cc pos)) (< 1 (us-ptr2cells pos)) (< cols (+ (% (:cmdspos @ccline) cols) cells)))
             (swap! ccline update :cmdspos inc)
         ))
@@ -8073,7 +8059,7 @@
             (swap! ccline update :cmdspos - i)
             (swap! msg_col - i)
             (when (< @msg_col 0)
-                (swap! msg_col + (int @Cols))
+                (swap! msg_col + @Cols)
                 (swap! msg_row dec)
             )
         )
@@ -8089,7 +8075,7 @@
             (reset! msg_no_more false)
         )
 
-        ((ß int m =) (if @keyTyped (let [m (* (int @Cols) (int @Rows))] (if (< m 0) MAXCOL m)) MAXCOL))
+        ((ß int m =) (if @keyTyped (let [m (* @Cols @Rows)] (if (< m 0) MAXCOL m)) MAXCOL))
 
         ((ß FOR) (ß ((ß i =) 0) (< i len) ((ß i =) (inc i)))
             ((ß c =) (cmdline-charsize (:cmdpos @ccline)))
@@ -8227,28 +8213,20 @@
 ;; When "literally" is false, insert as typed, but don't leave the command line.
 
 (defn- #_void cmdline-paste-str [#_Bytes _s, #_boolean literally]
-    (§
-        ((ß Bytes[] a's =) (atom (#_Bytes object _s)))
-        (cond literally
-        (do
+    (let [a's (atom (#_Bytes object _s))]
+        (if literally
             (put-on-cmdline @a's, -1, true)
-        )
-        :else
-        (do
             (while (non-eos? @a's)
-                ((ß int cv =) (.at @a's 0))
-                (if (and (== cv Ctrl_V) (non-eos? @a's 1))
-                    (swap! a's plus 1)
-                )
-                ((ß int c =) (us-ptr2char-adv a's, false))
-                (when (or (== cv Ctrl_V) (== c ESC) (== c Ctrl_C) (== c CAR) (== c NL) (== c Ctrl_L) (== c @intr_char) (and (== c Ctrl_BSL) (at? @a's Ctrl_N)))
-                    (stuff-char Ctrl_V)
-                )
-                (stuff-char c)
-            )
+                (let [#_int cv (.at @a's 0)]
+                    (when (and (== cv Ctrl_V) (non-eos? @a's 1))
+                        (swap! a's plus 1))
+                    (let [#_int c (us-ptr2char-adv a's, false)]
+                        (when (or (== cv Ctrl_V) (== c ESC) (== c Ctrl_C) (== c CAR) (== c NL) (== c Ctrl_L) (== c @intr_char) (and (== c Ctrl_BSL) (at? @a's Ctrl_N)))
+                            (stuff-char Ctrl_V))
+                        (stuff-char c))
+                ))
         ))
-        nil
-    ))
+    nil)
 
 ;; this function is called when the screen size changes and with incremental search
 
@@ -8261,19 +8239,19 @@
 
 (defn- #_void redrawcmdprompt []
     (let [firstc (:cmdfirstc @ccline) prompt (:cmdprompt @ccline)]
-        (if (!= firstc NUL)
+        (when (!= firstc NUL)
             (msg-putchar firstc))
         (if (some? prompt)
             (do
                 (msg-puts-attr prompt, (:cmdattr @ccline))
-                (swap! ccline assoc :cmdindent (+ @msg_col (* (- @msg_row @cmdline_row) (int @Cols))))
+                (swap! ccline assoc :cmdindent (+ @msg_col (* (- @msg_row @cmdline_row) @Cols)))
                 ;; do the reverse of set-cmdspos()
-                (if (!= firstc NUL)
+                (when (!= firstc NUL)
                     (swap! ccline update :cmdindent dec))
             )
             (dotimes [_ (:cmdindent @ccline)] (msg-putchar (byte \space)))
-        )
-        nil))
+        ))
+    nil)
 
 ;; Redraw what is currently on the command line.
 
@@ -8309,14 +8287,14 @@
     nil)
 
 (defn- #_void compute-cmdrow []
-    (reset! cmdline_row (if (non-zero? @msg_scrolled) (dec (int @Rows)) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin))))
+    (reset! cmdline_row (if (non-zero? @msg_scrolled) (dec @Rows) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin))))
     nil)
 
 (defn- #_void cursorcmd []
-    (reset! msg_row (+ @cmdline_row (/ (:cmdspos @ccline) (int @Cols))))
-    (reset! msg_col (% (:cmdspos @ccline) (int @Cols)))
+    (reset! msg_row (+ @cmdline_row (/ (:cmdspos @ccline) @Cols)))
+    (reset! msg_col (% (:cmdspos @ccline) @Cols))
     (if (<= @Rows @msg_row)
-        (reset! msg_row (dec (int @Rows))))
+        (reset! msg_row (dec @Rows)))
 
     (windgoto @msg_row, @msg_col)
     nil)
@@ -8726,17 +8704,8 @@
     ))
 
 (defn- #_int current-win-nr [#_window_C win]
-    (§
-        ((ß int nr =) 0)
-
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-            ((ß nr =) (inc nr))
-            (if (== wp win)
-                (ß BREAK)
-            )
-        )
-
-        nr
+    (loop-when [#_int n 0 #_window_C w @firstwin] (some? w) => n
+        (let [n (inc n)] (if (== w win) n (recur n (:w_next w))))
     ))
 
 ;; Execute one Ex command.
@@ -9267,39 +9236,23 @@
 
 ;; skip a range specifier of the form: addr [,addr] [;addr] ..
 ;;
-;; Backslashed delimiters after / or ? will be skipped, and commands will
-;; not be expanded between /'s and ?'s or after "'".
+;; Backslashed delimiters after / or ? will be skipped, and commands
+;; will not be expanded between /'s and ?'s or after "'".
 ;;
 ;; Also skip white space and ":" characters.
-;; Returns the "cmd" pointer advanced to beyond the range.
+;; Returns the "s" pointer advanced to beyond the range.
 
-(defn- #_Bytes skip-range [#_Bytes cmd]
-    (§
-        (while (some? (vim-strbyte (u8 " \t0123456789.$%'/?-+,;"), (.at cmd 0)))
-            (cond (at? cmd (byte \'))
-            (do
-                ((ß cmd =) (.plus cmd 1))
-            )
-            (or (at? cmd (byte \/)) (at? cmd (byte \?)))
-            (do
-                ((ß byte delim =) (.at ((ß cmd =) (.plus cmd 1)) -1))
-                (while (and (non-eos? cmd) (not-at? cmd delim))
-                    (if (and (at? ((ß cmd =) (.plus cmd 1)) -1 (byte \\)) (non-eos? cmd))
-                        ((ß cmd =) (.plus cmd 1))
-                    )
-                )
-            ))
-            (if (non-eos? cmd)
-                ((ß cmd =) (.plus cmd 1))
-            )
-        )
-
-        ;; Skip ":" and white space.
-        (while (at? cmd (byte \:))
-            ((ß cmd =) (skipwhite (.plus cmd 1)))
-        )
-
-        cmd
+(defn- #_Bytes skip-range [#_Bytes s]
+    (let [s (loop-when s (some? (vim-strbyte (u8 " \t0123456789.$%'/?-+,;"), (.at s 0))) => s
+                (let [s (cond (at? s (byte \'))
+                            (.plus s 1)
+                        (or (at? s (byte \/)) (at? s (byte \?)))
+                            (let [x (.at s 0)]
+                                (loop-when-recur [s (.plus s 1)] (and (non-eos? s) (not-at? s x)) [(if (and (at? s 0 (byte \\)) (non-eos? s 1)) (.plus s 2) (.plus s 1))] => s))
+                        :else s)]
+                    (recur (if (non-eos? s) (.plus s 1) s))
+                ))]
+        (loop-when-recur s (at? s (byte \:)) [(skipwhite (.plus s 1))] => s) ;; skip ":" and white space
     ))
 
 ;; get a single EX address
@@ -9570,7 +9523,7 @@
 ;; ":stop" and ":suspend": Suspend Vim.
 
 (defn- #_exarg_C ex-stop [#_exarg_C eap]
-    (windgoto (dec (int @Rows)), 0)
+    (windgoto (dec @Rows), 0)
     (out-char (byte \newline))
     (out-flush)
     (stop-termcap)
@@ -11268,9 +11221,9 @@
 
     (let [#_int len (STRLEN showcmd_buf)]
         (if (pos? len)
-            (screen-puts showcmd_buf, (dec (int @Rows)), @sc_col, 0))
+            (screen-puts showcmd_buf, (dec @Rows), @sc_col, 0))
         ;; clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
-        (screen-puts (.plus (u8 "          ") len), (dec (int @Rows)), (+ @sc_col len), 0)
+        (screen-puts (.plus (u8 "          ") len), (dec @Rows), (+ @sc_col len), 0)
         (reset! showcmd_is_clear (zero? len))
     )
 
@@ -14373,21 +14326,13 @@
 ;; Must only be called with a valid operator name!
 
 (defn- #_int get-op-type [#_int char1, #_int char2]
-    (§
-        (if (== char1 (byte \r))           ;; ignore second character
-            ((ß RETURN) OP_REPLACE)
-        )
-        (if (== char1 (byte \~))           ;; when tilde is an operator
-            ((ß RETURN) OP_TILDE)
-        )
-
-        (ß int i)
-        ((ß FOR) (ß ((ß i =) 0) true ((ß i =) (inc i)))
-            (if (and (== (... (... opchars i) 0) char1) (== (... (... opchars i) 1) char2))
-                (ß BREAK)
-            )
-        )
-        i
+    (cond
+        (== char1 (byte \r))           ;; ignore second character
+            OP_REPLACE
+        (== char1 (byte \~))           ;; when tilde is an operator
+            OP_TILDE
+        :else
+            (loop-when-recur [#_int i 0] (not (and (== (... (... opchars i) 0) char1) (== (... (... opchars i) 1) char2))) [(inc i)] => i)
     ))
 
 ;; Return true if operator "op" always works on whole lines.
@@ -14850,24 +14795,11 @@
 ;; Returns a pointer to allocated memory, or null for failure.
 
 (defn- #_Bytes get-expr-line []
-    (§
-        (if (nil? @expr_line)
-            ((ß RETURN) nil)
-        )
-
+    (let-when [#_Bytes e @expr_line] (some? e) => nil
         ;; Make a copy of the expression, because evaluating it may cause it to be changed.
-        ((ß Bytes expr_copy =) (STRDUP @expr_line))
-
-        ;; When we are invoked recursively limit the evaluation to 10 levels.
-        ;; Then return the string as-is.
-        (if (<= 10 @__nested)
-            ((ß RETURN) expr_copy)
-        )
-
-        (swap! __nested inc)
-        ((ß Bytes rv =) (eval-to-string expr_copy, nil))
-        (swap! __nested dec)
-        rv
+        ;; When invoked recursively, limit the evaluation to 10 levels, then return the string as-is.
+        (let-when [e (STRDUP e)] (< @__nested 10) => e
+            (swap! __nested inc) (let [e (eval-to-string e, nil)] (swap! __nested dec) e))
     ))
 
 ;; Check if 'regname' is a valid name of a yank register.
@@ -15968,31 +15900,21 @@
         nil
     ))
 
-;; Invoke swapchar() on "length" bytes at position "pos".
+;; Invoke swapchar() on "len" bytes at position "pos".
 ;; "pos" is advanced to just after the changed characters.
-;; "length" is rounded up to include the whole last multi-byte character.
+;; "len" is rounded up to include the whole last multi-byte character.
 ;; Also works correctly when the number of bytes changes.
 ;; Returns true if some character was changed.
 
-(defn- #_boolean swapchars [#_int op_type, #_pos_C pos, #_int length]
-    (§
-        ((ß boolean did_change =) false)
-
-        (loop-when-recur [#_int todo length] (< 0 todo) [(dec todo)]
-            ((ß int len =) (us-ptr2len-cc (ml-get-pos pos)))
-
-            ;; we're counting bytes, not characters
-            (if (< 0 len)
-                ((ß todo =) (- todo (dec len)))
-            )
-
-            ((ß did_change =) (| did_change (swapchar op_type, pos)))
+(defn- #_boolean swapchars [#_int op_type, #_pos_C pos, #_int len]
+    (loop-when [did_change false len len] (< 0 len) => did_change
+        (let [n (us-ptr2len-cc (ml-get-pos pos))
+              len (- len (if (< 0 n) (dec n) 0)) ;; we're counting bytes, not characters
+              did_change (| did_change (swapchar op_type, pos))]
             (if (== (incp pos) -1)     ;; at end of file
-                (ß BREAK)
-            )
-        )
-
-        did_change
+                did_change
+                (recur did_change (dec len))
+            ))
     ))
 
 ;; If op_type == OP_UPPER: make uppercase,
@@ -16002,69 +15924,32 @@
 ;; returns true when something actually changed.
 
 (defn- #_boolean swapchar [#_int op_type, #_pos_C pos]
-    (§
-        ((ß int c =) (gchar pos))
-
-        ;; Only do rot13 encoding for ASCII characters.
-        (if (and (<= 0x80 c) (== op_type OP_ROT13))
-            ((ß RETURN) false)
-        )
-
+    ;; Only do rot13 encoding for ASCII characters.
+    (let-when [#_int c (gchar pos)] (or (< c 0x80) (!= op_type OP_ROT13)) => false
         (when (and (== op_type OP_UPPER) (== c 0xdf))
-            ((ß pos_C sp =) (NEW_pos_C))
-            (COPY-pos sp, (:w_cursor @curwin))
-
-            ;; Special handling of German sharp s: change to "SS".
-            (swap! curwin assoc :w_cursor pos)
-            (del-char false)
-            (ins-char (byte \S))
-            (ins-char (byte \S))
-            (swap! curwin assoc :w_cursor sp)
-            (incp pos)
-        )
-
-        ((ß int nc =) c)
-        (cond (utf-islower c)
-        (do
-            (cond (== op_type OP_ROT13)
-            (do
-                ((ß nc =) (rot13 c, (byte \a)))
-            )
-            (!= op_type OP_LOWER)
-            (do
-                ((ß nc =) (utf-toupper c))
-            ))
-        )
-        (utf-isupper c)
-        (do
-            (cond (== op_type OP_ROT13)
-            (do
-                ((ß nc =) (rot13 c, (byte \A)))
-            )
-            (!= op_type OP_UPPER)
-            (do
-                ((ß nc =) (utf-tolower c))
-            ))
-        ))
-        (when (!= nc c)
-            (cond (or (<= 0x80 c) (<= 0x80 nc))
-            (do
-                ((ß pos_C sp =) (NEW_pos_C))
-                (COPY-pos sp, (:w_cursor @curwin))
-
+            (let [_ (:w_cursor @curwin)]
+                ;; Special handling of German sharp s: change to "SS".
                 (swap! curwin assoc :w_cursor pos)
-                ;; don't use del-char(), it also removes composing chars
-                (del-bytes (us-ptr2len (ml-get-cursor)), false, false)
-                (ins-char nc)
-                (swap! curwin assoc :w_cursor sp)
-            )
-            :else
-            (do
-                (.be (ml-get (:lnum pos)) (:col pos), nc)
+                (del-char false)
+                (ins-char (byte \S))
+                (ins-char (byte \S))
+                (swap! curwin assoc :w_cursor _)
+                (incp pos)
             ))
-            ((ß RETURN) true)
-        )
-        false
+        (let-when [#_int nc (cond
+                    (utf-islower c) (cond (== op_type OP_ROT13) (rot13 c, (byte \a)) (!= op_type OP_LOWER) (utf-toupper c) :else c)
+                    (utf-isupper c) (cond (== op_type OP_ROT13) (rot13 c, (byte \A)) (!= op_type OP_UPPER) (utf-tolower c) :else c)
+                    :else c)] (!= nc c) => false
+            (if (or (<= 0x80 c) (<= 0x80 nc))
+                (let [_ (:w_cursor @curwin)]
+                    (swap! curwin assoc :w_cursor pos)
+                    ;; don't use del-char(), it also removes composing chars
+                    (del-bytes (us-ptr2len (ml-get-cursor)), false, false)
+                    (ins-char nc)
+                    (swap! curwin assoc :w_cursor _)
+                )
+                (.be (ml-get (:lnum pos)) (:col pos), nc))
+            true)
     ))
 
 ;; op-insert - Insert and append operators for Visual mode.
@@ -17995,68 +17880,38 @@
     )
     nil)
 
-;; Move "count" positions in the jump list (count may be negative).
+;; Move "m" positions in the jump list ("m" may be negative).
 
-(defn- #_pos_C movemark [#_int count]
-    (§
-        (cleanup-jumplist)
-
-        (if (zero? (:w_jumplistlen @curwin))          ;; nothing to jump to
-            ((ß RETURN) nil)
-        )
-
-        (while true
-            (if (or (< (+ (:w_jumplistidx @curwin) count) 0) (<= (:w_jumplistlen @curwin) (+ (:w_jumplistidx @curwin) count)))
-                ((ß RETURN) nil)
-            )
-
-            ;; If first CTRL-O or CTRL-I command after a jump, add cursor position
-            ;; to list.  Careful: If there are duplicates (CTRL-O immediately after
-            ;; starting Vim on a file), another entry may have been removed.
-
-            (when (== (:w_jumplistidx @curwin) (:w_jumplistlen @curwin))
-                (setpcmark)
-                (swap! curwin update :w_jumplistidx dec)         ;; skip the new entry
-                (if (< (+ (:w_jumplistidx @curwin) count) 0)
-                    ((ß RETURN) nil)
-                )
-            )
-
-            (swap! curwin update :w_jumplistidx + count)
-
-            ((ß RETURN) (:mark (... (:w_jumplist @curwin) (:w_jumplistidx @curwin))))
+(defn- #_pos_C movemark [#_int m]
+    (cleanup-jumplist)
+    (let-when [n (:w_jumplistlen @curwin)] (< -1 (+ (:w_jumplistidx @curwin) m) n) => nil
+        ;; If first CTRL-O or CTRL-I command after a jump, add cursor position
+        ;; to list.  Careful: If there are duplicates (CTRL-O immediately after
+        ;; starting Vim on a file), another entry may have been removed.
+        (let-when [_ (if (== (:w_jumplistidx @curwin) n)
+                    (do
+                        (setpcmark)
+                        (swap! curwin update :w_jumplistidx dec)         ;; skip the new entry
+                        (if (< -1 (+ (:w_jumplistidx @curwin) m)) :_ nil)
+                    )
+                    :_)] (some? _) => nil
+            (swap! curwin update :w_jumplistidx + m)
+            (:mark (... (:w_jumplist @curwin) (:w_jumplistidx @curwin)))
         )
     ))
 
-;; Move "count" positions in the changelist (count may be negative).
+;; Move "m" positions in the changelist ("m" may be negative).
 
-(defn- #_pos_C movechangelist [#_int count]
-    (§
-        (if (zero? (:b_changelistlen @curbuf))    ;; nothing to jump to
-            ((ß RETURN) nil)
-        )
-
-        ((ß int n =) (:w_changelistidx @curwin))
-        (cond (< (+ n count) 0)
-        (do
-            (if (zero? n)
-                ((ß RETURN) nil)
-            )
-            ((ß n =) 0)
-        )
-        (<= (:b_changelistlen @curbuf) (+ n count))
-        (do
-            (if (== n (dec (:b_changelistlen @curbuf)))
-                ((ß RETURN) nil)
-            )
-            ((ß n =) (dec (:b_changelistlen @curbuf)))
-        )
-        :else
-        (do
-            ((ß n =) (+ n count))
-        ))
-        (swap! curwin assoc :w_changelistidx n)
-        (... (:b_changelist @curbuf) n)
+(defn- #_pos_C movechangelist [#_int m]
+    (let-when [n (:b_changelistlen @curbuf)] (non-zero? n) => nil
+        (let-when [i (:w_changelistidx @curwin)
+                   i (cond
+                        (< (+ i m) 0) (if (zero? i) nil 0)
+                        (<= n (+ i m)) (if (== i (dec n)) nil (dec n))
+                        :else (+ i m)
+                    )] (some? i) => nil
+            (swap! curwin assoc :w_changelistidx i)
+            (... (:b_changelist @curbuf) i))
     ))
 
 (defn- #_pos_C getmark [#_int c, #_boolean _changefile]
@@ -44094,7 +43949,7 @@
 
 ;%% (.sigset libC SIGHUP, #_"/*SIG_IGN*/"nil)
 
-    (windgoto (dec (int @Rows)), 0)
+    (windgoto (dec @Rows), 0)
 
     ;; Switch terminal mode back now, so messages end up on the "normal"
     ;; screen (if there are two screens).
@@ -48112,7 +47967,7 @@
             (!= type CLEAR)
             (do
                 (check-for-delay false)
-                (if (not (screen-ins-lines 0, 0, @msg_scrolled, (int @Rows), nil))
+                (if (not (screen-ins-lines 0, 0, @msg_scrolled, @Rows, nil))
                     ((ß type =) CLEAR)
                 )
                 (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
@@ -50456,7 +50311,7 @@
                     (ß BREAK)
                 )
 
-                (when (and (== @screen_cur_row (dec screen_row)) (== (:w_width wp) (int @Cols)))
+                (when (and (== @screen_cur_row (dec screen_row)) (== (:w_width wp) @Cols))
                     ;; Remember that the line wraps, used for modeless copy.
                     ((ß @lineWraps[screen_row - 1] =) true)
 
@@ -50468,14 +50323,14 @@
                     ;; Don't do this for double-width characters.
                     ;; Don't do this for a window not at the right screen border.
 
-                    (when (not (or (== (utf-off2cells (... @lineOffset screen_row), (+ (... @lineOffset screen_row) @screenCols)) 2) (== (utf-off2cells (+ (... @lineOffset (dec screen_row)) (- (int @Cols) 2)), (+ (... @lineOffset screen_row) @screenCols)) 2)))
-                        ((ß int eoff =) (+ (... @lineOffset (dec screen_row)) (dec (int @Cols))))
+                    (when (not (or (== (utf-off2cells (... @lineOffset screen_row), (+ (... @lineOffset screen_row) @screenCols)) 2) (== (utf-off2cells (+ (... @lineOffset (dec screen_row)) (- @Cols 2)), (+ (... @lineOffset screen_row) @screenCols)) 2)))
+                        ((ß int eoff =) (+ (... @lineOffset (dec screen_row)) (dec @Cols)))
 
                         ;; First make sure we are at the end of the screen line,
                         ;; then output the same character again to let the terminal know about the wrap.
                         ;; If the terminal doesn't auto-wrap, we overwrite the character.
                         (if (!= @screen_cur_col (:w_width wp))
-                            (screen-char eoff, (dec screen_row), (dec (int @Cols))))
+                            (screen-char eoff, (dec screen_row), (dec @Cols)))
 
                         ;; When there is a multi-byte character,
                         ;; just output a space to keep it simple.
@@ -50546,8 +50401,8 @@
         ((ß boolean clear_next =) false)
 
         ;; Check for illegal row and col, just in case.
-        ((ß row =) (min row (dec (int @Rows))))
-        ((ß endcol =) (min endcol (int @Cols)))
+        ((ß row =) (min row (dec @Rows)))
+        ((ß endcol =) (min endcol @Cols))
 
         ((ß int off_from =) (BDIFF @current_ScreenLine, @screenLines))
         ((ß int off_to =) (+ (... @lineOffset row) coloff))
@@ -50652,7 +50507,7 @@
 
         (when (< 0 clear_width)
             ;; For a window that's left of another, draw the separator char.
-            (cond (< (+ col coloff) (int @Cols))
+            (cond (< (+ col coloff) @Cols)
             (do
                 ((ß int[] a'hl =) (atom (int)))
                 ((ß int c =) (fillchar-vsep a'hl))
@@ -50756,7 +50611,7 @@
                 ((ß len =) (+ len 3))
             )
 
-            ((ß int this_ru_col =) (- @ru_col (- (int @Cols) (:w_width wp))))
+            ((ß int this_ru_col =) (- @ru_col (- @Cols (:w_width wp))))
             ((ß this_ru_col =) (max (/ (inc (:w_width wp)) 2) this_ru_col))
             (cond (<= this_ru_col 1)
             (do
@@ -51424,7 +51279,7 @@
         (cond (nil? wp)
         (do
             ((ß col =) 0)
-            ((ß width =) (int @Cols))
+            ((ß width =) @Cols)
         )
         :else
         (do
@@ -51467,7 +51322,7 @@
             ;; "normal" terminal, where a bold/italic space is just a space.
 
             ((ß boolean did_delete =) false)
-            (when (and (== c2 (byte \space)) (== end_col (int @Cols)) (can-clear @T_CE) (or (zero? attr) (and norm_term (<= attr HL_ALL) (zero? (& attr (bit-not (| HL_BOLD HL_ITALIC)))))))
+            (when (and (== c2 (byte \space)) (== end_col @Cols) (can-clear @T_CE) (or (zero? attr) (and norm_term (<= attr HL_ALL) (zero? (& attr (bit-not (| HL_BOLD HL_ITALIC)))))))
                 ;; check if we really need to clear something
 
                 ((ß int col =) start_col)
@@ -51539,10 +51394,10 @@
                     ((ß c =) c2)
                 )
             )
-            (if (== end_col (int @Cols))
+            (if (== end_col @Cols)
                 ((ß @lineWraps[row] =) false)
             )
-            (when (== row (dec (int @Rows)))                ;; overwritten the command line
+            (when (== row (dec @Rows))                ;; overwritten the command line
                 (reset! redraw_cmdline true)
                 (if (and (== c1 (byte \space)) (== c2 (byte \space)))
                     (reset! clear_cmdline false))      ;; command line has been cleared
@@ -51597,7 +51452,7 @@
             ;; Allocation of the screen buffers is done only when the size changes and
             ;; when Rows and Cols have been set and we have started doing full screen stuff.
 
-            (if (or (and (some? @screenLines) (== (int @Rows) @screenRows) (== (int @Cols) @screenCols) (some? @screenLinesUC) (== @p_mco @screen_mco)) (== (int @Rows) 0) (== (int @Cols) 0) (and (not @full_screen) (nil? @screenLines)))
+            (if (or (and (some? @screenLines) (== @Rows @screenRows) (== @Cols @screenCols) (some? @screenLinesUC) (== @p_mco @screen_mco)) (== @Rows 0) (== @Cols 0) (and (not @full_screen) (nil? @screenLines)))
                 ((ß RETURN) nil)
             )
 
@@ -51631,7 +51486,7 @@
                 (win-free-lines wp)
             )
 
-            ((ß Bytes slis =) (Bytes. (* (int (inc @Rows)) (int @Cols))))
+            ((ß Bytes slis =) (Bytes. (* (inc @Rows) @Cols)))
             (dotimes [#_int i MAX_MCO]
                 ((ß smco[i] =) nil)
             )
@@ -51649,7 +51504,7 @@
             )
 
             (dotimes [#_int r @Rows]
-                ((ß lofs[r] =) (* r (int @Cols)))
+                ((ß lofs[r] =) (* r @Cols))
                 ((ß lwrs[r] =) false)
 
                 ;; If the screen is not going to be cleared, copy as much as
@@ -51658,17 +51513,17 @@
                 ;; when executing an external command, for the GUI).
 
                 (when (not doclear)
-                    (BFILL slis, (... lofs r), (byte \space), (int @Cols))
-                    (AFILL sluc, (... lofs r), 0, (int @Cols))
+                    (BFILL slis, (... lofs r), (byte \space), @Cols)
+                    (AFILL sluc, (... lofs r), 0, @Cols)
                     (dotimes [#_int i @p_mco]
-                        (AFILL (... smco i), (... lofs r), 0, (int @Cols))
+                        (AFILL (... smco i), (... lofs r), 0, @Cols)
                     )
-                    (AFILL sats, (... lofs r), 0, (int @Cols))
+                    (AFILL sats, (... lofs r), 0, @Cols)
 
-                    ((ß int r0 =) (+ r (- @screenRows (int @Rows))))
+                    ((ß int r0 =) (+ r (- @screenRows @Rows)))
                     (when (and (<= 0 r0) (some? @screenLines))
                         ((ß int off =) (... @lineOffset r0))
-                        ((ß int len =) (min @screenCols (int @Cols)))
+                        ((ß int len =) (min @screenCols @Cols))
 
                         ;; When switching to utf-8 don't copy characters, they
                         ;; may be invalid now.  Also when "p_mco" changes.
@@ -51685,7 +51540,7 @@
             )
 
             ;; Use the last line of the screen for the current line.
-            (reset! current_ScreenLine (.plus slis (* (int @Rows) (int @Cols))))
+            (reset! current_ScreenLine (.plus slis (* @Rows @Cols)))
 
             (reset! screenLines slis)
             (reset! screenLinesUC sluc)
@@ -51699,8 +51554,8 @@
 
             ;; It's important that screenRows and screenCols reflect the actual
             ;; size of screenLines[].  Set them before calling anything.
-            (reset! screenRows (int @Rows))
-            (reset! screenCols (int @Cols))
+            (reset! screenRows @Rows)
+            (reset! screenCols @Cols)
 
             (reset! must_redraw CLEAR)        ;; need to clear the screen later
             (if doclear
@@ -51741,7 +51596,7 @@
 
         ;; blank out "screenLines"
         (dotimes [#_int i @Rows]
-            (lineclear (... @lineOffset i), (int @Cols))
+            (lineclear (... @lineOffset i), @Cols)
             ((ß @lineWraps[i] =) false)
         )
 
@@ -51755,7 +51610,7 @@
         (do
             ;; can't clear the screen, mark all chars with invalid attributes
             (dotimes [#_int i @Rows]
-                (lineinvalid (... @lineOffset i), (int @Cols))
+                (lineinvalid (... @lineOffset i), @Cols)
             )
             (reset! clear_cmdline true)
         ))
@@ -51862,7 +51717,7 @@
             ;; First check if the highlighting attributes allow us to write
             ;; characters to move the cursor to the right.
 
-            (cond (and (<= @screen_cur_row row) (< @screen_cur_col (int @Cols)))
+            (cond (and (<= @screen_cur_row row) (< @screen_cur_col @Cols))
             (do
                 (ß int plan)
                 (ß int wouldbe_col)
@@ -52070,7 +51925,7 @@
 
         ((ß boolean did_delete =) false)
         (when (or (some? (:w_next wp)) (non-zero? (:w_status_height wp)))
-            (cond (screen-del-lines 0, (- (+ (:w_winrow wp) (:w_height wp)) line_count), line_count, (int @Rows), false, nil)
+            (cond (screen-del-lines 0, (- (+ (:w_winrow wp) (:w_height wp)) line_count), line_count, @Rows, false, nil)
             (do
                 ((ß did_delete =) true)
             )
@@ -52086,11 +51941,11 @@
             ((ß wp.w_redr_status =) true)
             (reset! redraw_cmdline true)
             ((ß int nextrow =) (+ (:w_winrow wp) (:w_height wp) (:w_status_height wp)))
-            ((ß int lastrow =) (min (+ nextrow line_count) (int @Rows)))
+            ((ß int lastrow =) (min (+ nextrow line_count) @Rows))
             (screen-fill (- nextrow line_count), (- lastrow line_count), (:w_wincol wp), (+ (:w_wincol wp) (:w_width wp)), (byte \space), (byte \space), 0)
         )
 
-        (when (not (screen-ins-lines 0, (+ (:w_winrow wp) row), line_count, (int @Rows), nil))
+        (when (not (screen-ins-lines 0, (+ (:w_winrow wp) row), line_count, @Rows, nil))
             ;; deletion will have messed up other windows
             (when did_delete
                 ((ß wp.w_redr_status =) true)
@@ -52120,7 +51975,7 @@
             ((ß RETURN) (!= maybe FALSE))
         )
 
-        (if (not (screen-del-lines 0, (+ (:w_winrow wp) row), line_count, (int @Rows), false, nil))
+        (if (not (screen-del-lines 0, (+ (:w_winrow wp) row), line_count, @Rows, false, nil))
             ((ß RETURN) false)
         )
 
@@ -52129,7 +51984,7 @@
 
         (cond (or (some? (:w_next wp)) (non-zero? (:w_status_height wp)) (< @cmdline_row (dec @Rows)))
         (do
-            (when (not (screen-ins-lines 0, (- (+ (:w_winrow wp) (:w_height wp)) line_count), line_count, (int @Rows), nil))
+            (when (not (screen-ins-lines 0, (- (+ (:w_winrow wp) (:w_height wp)) line_count), line_count, @Rows, nil))
                 ((ß wp.w_redr_status =) true)
                 (win-rest-invalid (:w_next wp))
             )
@@ -52154,7 +52009,7 @@
         )
 
         ;; only a few lines left: redraw is faster
-        (when (and mayclear (< (- @Rows line_count) 5) (== (:w_width wp) (int @Cols)))
+        (when (and mayclear (< (- @Rows line_count) 5) (== (:w_width wp) @Cols))
             (screen-clear)      ;; will set wp.w_lines_valid to 0
             ((ß RETURN) FALSE)
         )
@@ -52176,8 +52031,8 @@
         ;; screenLines[] when t_CV isn't defined.  That's faster than using win-line().
         ;; Don't use a scroll region when we are going to redraw the text.
 
-        (when (or @scroll_region (!= (:w_width wp) (int @Cols)))
-            (if (and @scroll_region (or (== (:w_width wp) (int @Cols)) (non-eos? @T_CSV)))
+        (when (or @scroll_region (!= (:w_width wp) @Cols))
+            (if (and @scroll_region (or (== (:w_width wp) @Cols) (non-eos? @T_CSV)))
                 (scroll-region-set wp, row))
 
             ((ß boolean r =) (if del
@@ -52185,7 +52040,7 @@
                 (screen-ins-lines (+ (:w_winrow wp) row), 0, line_count, (- (:w_height wp) row), wp)
             ))
 
-            (if (and @scroll_region (or (== (:w_width wp) (int @Cols)) (non-eos? @T_CSV)))
+            (if (and @scroll_region (or (== (:w_width wp) @Cols) (non-eos? @T_CSV)))
                 (scroll-region-reset))
 
             ((ß RETURN) (if r TRUE FALSE))
@@ -52275,7 +52130,7 @@
         ((ß boolean result_empty =) (<= end (+ row line_count)))
 
         (ß int type)
-        (cond (and (some? wp) (!= (:w_width wp) (int @Cols)) (eos? @T_CSV))
+        (cond (and (some? wp) (!= (:w_width wp) @Cols) (eos? @T_CSV))
         (do
             ((ß type =) USE_REDRAW)
         )
@@ -52334,7 +52189,7 @@
         ((ß row =) (+ row off))
         ((ß end =) (+ end off))
         (dotimes [#_int i line_count]
-            (cond (and (some? wp) (!= (:w_width wp) (int @Cols)))
+            (cond (and (some? wp) (!= (:w_width wp) @Cols))
             (do
                 ;; need to copy part of a line
                 ((ß int j =) (- end 1 i))
@@ -52358,8 +52213,8 @@
                 ((ß @lineOffset[j + line_count] =) temp)
                 ((ß @lineWraps[j + line_count] =) false)
                 (if (can-clear (u8 " "))
-                    (lineclear temp, (int @Cols))
-                    (lineinvalid temp, (int @Cols)))
+                    (lineclear temp, @Cols)
+                    (lineinvalid temp, @Cols))
             ))
         )
 
@@ -52448,7 +52303,7 @@
         ;; 5. Use T_DL (delete line) if it exists.
         ;; 6. Redraw the characters from screenLines[].
 
-        (cond (and (some? wp) (!= (:w_width wp) (int @Cols)) (eos? @T_CSV))
+        (cond (and (some? wp) (!= (:w_width wp) @Cols) (eos? @T_CSV))
         (do
             ((ß type =) USE_REDRAW)
         )
@@ -52464,7 +52319,7 @@
         (do
             ((ß type =) USE_T_CDL)
         )
-        (and (can-clear @T_CE) result_empty (or (nil? wp) (== (:w_width wp) (int @Cols))))
+        (and (can-clear @T_CE) result_empty (or (nil? wp) (== (:w_width wp) @Cols)))
         (do
             ((ß type =) USE_T_CE)
         )
@@ -52490,7 +52345,7 @@
         ((ß row =) (+ row off))
         ((ß end =) (+ end off))
         (dotimes [#_int i line_count]
-            (cond (and (some? wp) (!= (:w_width wp) (int @Cols)))
+            (cond (and (some? wp) (!= (:w_width wp) @Cols))
             (do
                 ;; need to copy part of a line
                 ((ß int j =) (+ row i))
@@ -52515,8 +52370,8 @@
                 ((ß @lineOffset[j - line_count] =) temp)
                 ((ß @lineWraps[j - line_count] =) false)
                 (if (can-clear (u8 " "))
-                    (lineclear temp, (int @Cols))
-                    (lineinvalid temp, (int @Cols)))
+                    (lineclear temp, @Cols)
+                    (lineinvalid temp, @Cols))
             ))
         )
 
@@ -52684,7 +52539,7 @@
 
 (defn- #_void msg-pos-mode []
     (reset! msg_col 0)
-    (reset! msg_row (dec (int @Rows)))
+    (reset! msg_row (dec @Rows))
     nil)
 
 ;; Delete mode message.  Used when ESC is typed which is expected to end
@@ -52796,11 +52651,11 @@
             )
             :else
             (do
-                ((ß row =) (dec (int @Rows)))
+                ((ß row =) (dec @Rows))
                 ((ß fillchar =) (byte \space))
                 (reset! a'attr 0)
                 ((ß off =) 0)
-                ((ß width =) (int @Cols))
+                ((ß width =) @Cols)
             ))
 
             ((ß final int RULER_BUF_LEN =) 70)
@@ -52823,7 +52678,7 @@
             (if (zero? (:w_status_height wp))    ;; can't use last char of screen
                 ((ß oo =) (inc oo))
             )
-            ((ß int this_ru_col =) (- @ru_col (- (int @Cols) width)))
+            ((ß int this_ru_col =) (- @ru_col (- @Cols width)))
             ((ß this_ru_col =) (max 0 this_ru_col))
             ;; Never use more than half the window/screen width,
             ;; leave the other half for the filename.
@@ -53426,7 +53281,7 @@
             (cond (flag? flags (| WSP_TOP WSP_BOT))
             (do
                 ((ß wp.w_wincol =) 0)
-                (win-new-width wp, (int @Cols))
+                (win-new-width wp, @Cols)
                 ((ß wp.w_vsep_width =) 0)
             )
             :else
@@ -53472,11 +53327,11 @@
         ((ß oldwin.w_redr_status =) true)
 
         (when (non-zero? need_status)
-            (reset! msg_row (dec (int @Rows)))
+            (reset! msg_row (dec @Rows))
             (reset! msg_col @sc_col)
             (msg-clr-eos-force)    ;; old command/ruler may still be there
             (comp-col)
-            (reset! msg_row (dec (int @Rows)))
+            (reset! msg_row (dec @Rows))
             (reset! msg_col 0)            ;; put position back at start of line
         )
 
@@ -53792,7 +53647,7 @@
                 ;; Compute the maximum number of windows horizontally in this frame.
                 ((ß int n =) (frame-minwidth topfr, NOWIN))
                 ;; add one for the rightmost window, it doesn't have a separator
-                ((ß extra_sep =) (if (== (+ col width) (int @Cols)) 1 0))
+                ((ß extra_sep =) (if (== (+ col width) @Cols) 1 0))
                 ((ß totwincount =) (/ (+ n extra_sep) (inc (int @p_wmw))))
                 ((ß has_next_curwin =) (frame-has-win topfr, next_curwin))
 
@@ -54967,7 +54822,7 @@
         ;; link the window in the window list
         (win-append after, win)
         ((ß win.w_wincol =) 0)
-        ((ß win.w_width =) (int @Cols))
+        ((ß win.w_width =) @Cols)
 
         ;; position the display and the cursor at the top of the file
         ((ß win.w_topline =) 1)
@@ -55119,7 +54974,7 @@
 
 (defn- #_void shell-new-columns []
     (when (some? @firstwin)
-        (let [cols (int @Cols)]
+        (let [cols @Cols]
             ;; First try setting the widths of windows with 'winfixwidth'.
             ;; If that doesn't result in the right width, forget about that option.
             (frame-new-width @topframe, cols, false, true)
@@ -55250,7 +55105,7 @@
                         ((ß room =) (- room (frame-minheight frp, nil)))
                     )
                 )
-                (cond (!= (:fr_width curfrp) (int @Cols))
+                (cond (!= (:fr_width curfrp) @Cols)
                 (do
                     ((ß room_cmdline =) 0)
                 )
@@ -55262,7 +55117,7 @@
                 (if (<= height (+ room room_cmdline))
                     (ß BREAK)
                 )
-                (when (or (== run 2) (== (:fr_width curfrp) (int @Cols)))
+                (when (or (== run 2) (== (:fr_width curfrp) @Cols))
                     ((ß height =) (min height (+ room room_cmdline)))
                     (ß BREAK)
                 )
@@ -55665,7 +55520,7 @@
 
         ;; Find bottom frame with width of screen.
         ((ß frame_C frp =) (:w_frame @lastwin))
-        (while (and (!= (:fr_width frp) (int @Cols)) (some? (:fr_parent frp)))
+        (while (and (!= (:fr_width frp) @Cols) (some? (:fr_parent frp)))
             ((ß frp =) (:fr_parent frp))
         )
 
@@ -55697,7 +55552,7 @@
 
                 ;; clear the lines added to cmdline
                 (if @full_screen
-                    (screen-fill @cmdline_row, (int @Rows), 0, (int @Cols), (byte \space), (byte \space), 0))
+                    (screen-fill @cmdline_row, @Rows, 0, @Cols, (byte \space), (byte \space), 0))
                 (reset! msg_row @cmdline_row)
                 (reset! redraw_cmdline true)
                 ((ß RETURN) nil)
@@ -57838,7 +57693,7 @@
     (reset! exiting true)
 
     ;; Position the cursor on the last screen line, below all the text.
-    (windgoto (dec (int @Rows)), 0)
+    (windgoto (dec @Rows), 0)
 
     (when @did_emsg
         ;; give the user a chance to read the (error) message
