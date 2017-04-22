@@ -2423,8 +2423,10 @@
 
 ;; true if the current buffer is empty
 
+(defn- #_long line-count [#_buffer_C buf] (:ml_line_count (:b_ml buf)))
+
 (defn- #_boolean bufempty []
-    (and (== (:ml_line_count (:b_ml @curbuf)) 1) (lineempty 1)))
+    (and (== (line-count @curbuf) 1) (lineempty 1)))
 
 ;;; ============================================================================================== VimH
 
@@ -3654,15 +3656,12 @@
 ;; "g<" command.
 
 (defn- #_void show-sb-text []
-    (let [#_msgchunk_C mp (msg-sb-start @last_msgchunk)]
-        ;; Only show something if there is more than one line, otherwise it looks weird,
-        ;; typing a command without output results in one line.
-        (if (or (nil? mp) (nil? (:sb_prev mp)))
-            (vim-beep)
-            (do (do-more-prompt (byte \G)) (wait-return FALSE))
-        )
-        nil
-    ))
+    ;; Only show something if there is more than one line, otherwise it looks weird.
+    ;; Typing a command without output results in one line.
+    (let-when [#_msgchunk_C mp (msg-sb-start @last_msgchunk)] (and (some? mp) (some? (:sb_prev mp))) => (vim-beep)
+        (do-more-prompt (byte \G))
+        (wait-return FALSE))
+    nil)
 
 ;; Move to the start of screen line in already displayed text.
 
@@ -5437,7 +5436,7 @@
         ((ß boolean got_match =) false)
         ((ß long first_line =) 0)                        ;; first changed line
         ((ß long last_line =) 0)                          ;; below last changed line AFTER the change
-        ((ß long old_line_count =) (:ml_line_count (:b_ml @curbuf)))
+        ((ß long old_line_count =) (line-count @curbuf))
         ((ß boolean endcolumn =) false)                  ;; cursor in last column when done
         ((ß pos_C old_cursor =) (NEW_pos_C))
         (COPY-pos old_cursor, (:w_cursor @curwin))
@@ -5547,7 +5546,7 @@
             ;; The number of lines joined is the number of lines in the range plus one.
             ;; One less when the last line is included.
             ((ß int joined_lines_count =) (int (+ (- (:line2 eap) (:line1 eap)) 1)))
-            ((ß joined_lines_count =) (if (< (:line2 eap) (:ml_line_count (:b_ml @curbuf))) (inc joined_lines_count) joined_lines_count))
+            ((ß joined_lines_count =) (if (< (:line2 eap) (line-count @curbuf)) (inc joined_lines_count) joined_lines_count))
             (when (< 1 joined_lines_count)
                 (do-join joined_lines_count, false, true, true)
                 (reset! sub_nsubs (dec joined_lines_count))
@@ -5623,7 +5622,7 @@
                 ((ß RETURN) nil)
             )
             ((ß eap =) (assoc eap :line1 (:line2 eap)))
-            ((ß eap =) (assoc eap :line2 (min (+ (:line2 eap) (dec i)) (:ml_line_count (:b_ml @curbuf)))))
+            ((ß eap =) (assoc eap :line2 (min (+ (:line2 eap) (dec i)) (line-count @curbuf))))
         )
 
         ;; check for trailing command or garbage
@@ -5808,8 +5807,8 @@
 
                         ;; When the match included the "$" of the last line it may
                         ;; go beyond the last line of the buffer.
-                        (when (> nmatch (+ (- (:ml_line_count (:b_ml @curbuf)) sub_firstlnum) 1))
-                            ((ß nmatch =) (+ (- (:ml_line_count (:b_ml @curbuf)) sub_firstlnum) 1))
+                        (let-when [n' (inc (- (line-count @curbuf) sub_firstlnum))] (< n' nmatch)
+                            ((ß nmatch =) n')
                             ((ß skip_match =) true)
                         )
 
@@ -6026,7 +6025,7 @@
             ;; Need to subtract the number of added lines from "last_line" to get the line number
             ;; before the change (same as adding the number of deleted lines).
 
-            ((ß i =) (- (:ml_line_count (:b_ml @curbuf)) old_line_count))
+            ((ß i =) (- (line-count @curbuf) old_line_count))
             (changed-lines first_line, 0, (- last_line i), i)
         )
 
@@ -6812,8 +6811,8 @@
 
                     (swap! curwin update-in [:w_cursor :lnum] + @search_match_lines)
                     (swap! curwin assoc-in [:w_cursor :col] @search_match_endcol)
-                    (when (< (:ml_line_count (:b_ml @curbuf)) (:lnum (:w_cursor @curwin)))
-                        (swap! curwin assoc-in [:w_cursor :lnum] (:ml_line_count (:b_ml @curbuf)))
+                    (when (< (line-count @curbuf) (:lnum (:w_cursor @curwin)))
+                        (swap! curwin assoc-in [:w_cursor :lnum] (line-count @curbuf))
                         (swap! curwin coladvance MAXCOL)
                     )
                     (swap! curwin validate-cursor)
@@ -7720,7 +7719,7 @@
                             ADDR_LINES
                             (do
                                 ((ß ea =) (assoc ea :line1 1))
-                                ((ß ea =) (assoc ea :line2 (:ml_line_count (:b_ml @curbuf))))
+                                ((ß ea =) (assoc ea :line2 (line-count @curbuf)))
                                 (ß BREAK)
                             )
 
@@ -7821,10 +7820,10 @@
                 )
                 (non-zero? (:addr_count ea))
                 (do
-                    (when (< (:ml_line_count (:b_ml @curbuf)) (:line2 ea))
+                    (when (< (line-count @curbuf) (:line2 ea))
                         ;; With '-' in 'cpoptions' a line number past the file is an error,
                         ;; otherwise put it at the end of the file.
-                        ((ß ea =) (assoc ea :line2 (if (some? (vim-strbyte @p_cpo, CPO_MINUS)) -1 (:ml_line_count (:b_ml @curbuf)))))
+                        ((ß ea =) (assoc ea :line2 (if (some? (vim-strbyte @p_cpo, CPO_MINUS)) -1 (line-count @curbuf))))
                     )
 
                     (cond (< (:line2 ea) 0)
@@ -7930,7 +7929,7 @@
                 (condp == (:addr_type ea)
                     ADDR_LINES
                     (do
-                        ((ß ea =) (assoc ea :line2 (:ml_line_count (:b_ml @curbuf))))
+                        ((ß ea =) (assoc ea :line2 (line-count @curbuf)))
                         (ß BREAK)
                     )
 
@@ -7969,7 +7968,7 @@
 
                     ;; Be vi compatible: no error message for out of range.
 
-                    ((ß ea =) (update ea :line2 min (:ml_line_count (:b_ml @curbuf))))
+                    ((ß ea =) (update ea :line2 min (line-count @curbuf)))
                 ))
             )
 
@@ -8160,7 +8159,7 @@
                 (byte \$)                       ;; '$' = last line
                 (do
                     ((ß cmd =) (.plus cmd 1))
-                    ((ß lnum =) (condp == addr_type ADDR_LINES (:ml_line_count (:b_ml @curbuf)) ADDR_WINDOWS (current-win-nr nil) lnum))
+                    ((ß lnum =) (condp == addr_type ADDR_LINES (line-count @curbuf) ADDR_WINDOWS (current-win-nr nil) lnum))
                     (ß BREAK)
                 )
 
@@ -8339,7 +8338,7 @@
         (when (flag? (:argt eap) RANGE)
             (condp == (:addr_type eap)
                 ADDR_LINES
-                    (when (and (non-flag? (:argt eap) NOTADR) (< (:ml_line_count (:b_ml @curbuf)) (:line2 eap))) e_invrange)
+                    (when (and (non-flag? (:argt eap) NOTADR) (< (line-count @curbuf) (:line2 eap))) e_invrange)
                 ADDR_WINDOWS
                     (when (< (current-win-nr nil) (:line2 eap)) e_invrange)
             ))
@@ -8411,7 +8410,7 @@
 (defn- #_exarg_C ex-syncbind [#_exarg_C _eap]
     (let [#_window_C win' @curwin #_long lnum' (:lnum (:w_cursor @curwin))]
         (swap! curwin setpcmark)
-        (let [lmax (:ml_line_count (:b_ml @curbuf)) #_long topline ;; determine max topline
+        (let [lmax (line-count @curbuf) #_long topline ;; determine max topline
                 (if @(:wo_scb (:w_options @curwin))
                     (loop-when [t (:w_topline @curwin) #_window_C w @firstwin] (some? w) => (max 1 t)
                         (recur (if @(:wo_scb (:w_options w)) (min t (- lmax @p_so)) t) (:w_next w)))	;; red?
@@ -9116,7 +9115,7 @@
                 ;; Use the same size from redo_VIsual_lmax and redo_VIsual_vcol.
 
                 (COPY-pos (:op_start oap), (:w_cursor @curwin))
-                (swap! curwin assoc-in [:w_cursor :lnum] (min (+ (:lnum (:w_cursor @curwin)) (dec @redo_VIsual_lmax)) (:ml_line_count (:b_ml @curbuf))))
+                (swap! curwin assoc-in [:w_cursor :lnum] (min (+ (:lnum (:w_cursor @curwin)) (dec @redo_VIsual_lmax)) (line-count @curbuf)))
                 (reset! VIsual_mode @redo_VIsual_mode)
                 (when (or (== @redo_VIsual_vcol MAXCOL) (== @VIsual_mode (byte \v)))
                     (cond (== @VIsual_mode (byte \v))
@@ -9320,7 +9319,7 @@
                         ;; Try to include the newline,
                         ;; unless it's an operator that works on lines only.
                         (when (and (not-at? @p_sel (byte \o)) (not (op-on-lines (:op_type oap))))
-                            (cond (< (:lnum (:op_end oap)) (:ml_line_count (:b_ml @curbuf)))
+                            (cond (< (:lnum (:op_end oap)) (line-count @curbuf))
                             (do
                                 ((ß oap =) (update oap :op_end assoc :lnum (inc (:lnum (:op_end oap))) :col 0 :coladd 0))
                                 ((ß oap =) (update oap :line_count inc))
@@ -9418,7 +9417,7 @@
                [OP_JOIN_NS OP_JOIN]
                 (do
                     ((ß oap =) (update oap :line_count max 2))
-                    (if (< (:ml_line_count (:b_ml @curbuf)) (- (+ (:lnum (:w_cursor @curwin)) (:line_count oap)) 1))
+                    (if (< (line-count @curbuf) (dec (+ (:lnum (:w_cursor @curwin)) (:line_count oap))))
                         (beep-flush)
                         (do-join (int (:line_count oap)), (== (:op_type oap) OP_JOIN), true, true))
                     (ß BREAK)
@@ -9609,7 +9608,7 @@
     (stuff-char (byte \:))
     (if (:is_VIsual oap)
         (stuff-string (u8 "'<,'>"))
-        (let [start (:lnum (:op_start oap)) end (:lnum (:op_end oap)) cursor (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))]
+        (let [start (:lnum (:op_start oap)) end (:lnum (:op_end oap)) cursor (:lnum (:w_cursor @curwin)) lmax (line-count @curbuf)]
             ;; Make the range look nice, so it can be repeated.
             (if (== start cursor)
                 (stuff-char (byte \.))
@@ -9986,7 +9985,7 @@
           ;; check 'scrollopt' string for vertical and horizontal scroll options
           #_boolean want_ver (and (some? (vim-strchr @p_sbo, (byte \v))) (!= topline_diff 0))
           #_boolean want_hor (and (some? (vim-strchr @p_sbo, (byte \h))) (or (!= leftcol_diff 0) (!= topline_diff 0)))
-          lmax (:ml_line_count (:b_ml @curbuf))]
+          lmax (line-count @curbuf)]
         ;; loop through the scrollbound windows and scroll accordingly
         (reset! VIsual_select (reset! VIsual_active false))
         (loop-when-recur (reset! curwin @firstwin) (some? @curwin) (swap! curwin :w_next)
@@ -10125,7 +10124,7 @@
                     :else
                     (do
                         ;; to next line
-                        (when (== (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
+                        (when (== (:lnum (:w_cursor @curwin)) (line-count @curbuf))
                             ((ß retval =) false)
                             (ß BREAK)
                         )
@@ -10254,7 +10253,7 @@
 
         (when (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor @curwin))))
             (swap! curwin setpcmark)
-            (swap! curwin assoc-in [:w_cursor :lnum] (min (:count0 cap) (:ml_line_count (:b_ml @curbuf))))
+            (swap! curwin assoc-in [:w_cursor :lnum] (min (:count0 cap) (line-count @curbuf)))
             (swap! curwin check-cursor-col)
         )
 
@@ -10264,7 +10263,7 @@
                 (when (zero? (:count0 cap))
                     ;; No count given: put cursor at the line below screen.
                     (swap! curwin validate-botline) ;; make sure "w_botline" is valid
-                    (swap! curwin assoc-in [:w_cursor :lnum] (min (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf))))
+                    (swap! curwin assoc-in [:w_cursor :lnum] (min (:w_botline @curwin) (line-count @curbuf)))
                 )
                 (ß FALLTHROUGH)
             )
@@ -10418,7 +10417,7 @@
                 ;; If 'insertmode' changed, enter or exit Insert mode.
                 (when (!= @p_im _)
                     (reset! restart_edit (if @p_im (byte \i) 0)))
-                (let [start (:op_start (:oap cap)) lmax (:ml_line_count (:b_ml @curbuf))]
+                (let [start (:op_start (:oap cap)) lmax (line-count @curbuf)]
                     (cond (not cmd_result)
                         (clearop (:oap cap)) ;; the Ex command failed, do not execute the operator
                     (and (!= (:op_type (:oap cap)) OP_NOP) (or (< lmax (:lnum start)) (< (STRLEN (ml-get (:lnum start))) (:col start)) @did_emsg))
@@ -10618,7 +10617,7 @@
         (let [n (if (== (:cmdchar cap) (byte \L))
                     (let [_ (swap! curwin validate-botline)]
                         (max 1 (- (dec (:w_botline @curwin)) (dec (:count1 cap)))))
-                    (let [lmax (:ml_line_count (:b_ml @curbuf))
+                    (let [lmax (line-count @curbuf)
                           n (if (== (:cmdchar cap) (byte \M))
                                 (let [_ (swap! curwin validate-botline) ;; make sure "w_empty_rows" is valid
                                       half (/ (inc (- (:w_height @curwin) (:w_empty_rows @curwin))) 2)
@@ -10666,7 +10665,7 @@
                     (if (and (or (and (== (:cmdchar cap) (byte \space)) (some? (vim-strchr @p_ww, (byte \s))))
                                  (and (== (:cmdchar cap) (byte \l))     (some? (vim-strchr @p_ww, (byte \l))))
                                  (and (== (:cmdchar cap) K_RIGHT)       (some? (vim-strchr @p_ww, (byte \>)))))
-                             (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
+                             (< (:lnum (:w_cursor @curwin)) (line-count @curbuf)))
                         ;; When deleting we also count the NL as a character.
                         ;; Set cap.oap.inclusive when last char in the line is included, move to next line after that.
                         (let [_ (and (!= (:op_type (:oap cap)) OP_NOP) (not (:inclusive (:oap cap))) (not (lineempty (:lnum (:w_cursor @curwin)))))
@@ -10901,14 +10900,14 @@
                             (let [c (:w_cursor @curwin) v @VIsual_cursor s (if (ltoreq v, c) v c) e (if (eqpos s, v) c v)]
                                 (swap! curwin assoc :w_cursor (if (== dir BACKWARD) s e))
                                 [s e]))
-                      #_long lmax (:ml_line_count (:b_ml @curbuf))
+                      #_long lmax (line-count @curbuf)
                       #_int regname (adjust-clip-reg (:regname (:oap cap)))]
                     (prep-redo-cmd cap)
 
                     (do-put regname, dir, (:count1 cap), PUT_FIXINDENT)
 
                     (if visual?
-                        (let [n (if (== dir BACKWARD) (- (:ml_line_count (:b_ml @curbuf)) lmax) 0)]
+                        (let [n (if (== dir BACKWARD) (- (line-count @curbuf) lmax) 0)]
                             (reset! VIsual_cursor (update start :lnum + n))
                             (swap! curwin assoc :w_cursor (update end :lnum + n))
                             (reset! VIsual_active true)
@@ -10947,7 +10946,7 @@
                 (do (clearopbeep (:oap cap)) cap)
                 (let [cap (assoc-in cap [:oap :motion_type] MLINE)]
                     (swap! curwin setpcmark)
-                    (let [lmax (:ml_line_count (:b_ml @curbuf))]
+                    (let [lmax (line-count @curbuf)]
                         ;; Round up, so CTRL-G will give same value.
                         (swap! curwin assoc-in [:w_cursor :lnum] (min (/ (+ (* lmax (:count0 cap)) 99) 100) lmax)))
                     (swap! curwin beginline (| BL_SOL BL_FIX))
@@ -11169,7 +11168,7 @@
             (if (not (u-save-cursor))
                 cap
                 (let [more- #(or (!= (gchar-cursor @curwin) NUL)
-                                 (and (some? (vim-strchr @p_ww, (byte \~))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
+                                 (and (some? (vim-strchr @p_ww, (byte \~))) (< (:lnum (:w_cursor @curwin)) (line-count @curbuf))
                                       (do (swap! curwin update :w_cursor crlf)
                                           (if (< 1 %) (if (u-savesub (:lnum (:w_cursor @curwin))) (do (u-clearline) true) false) true))))
                       startpos (:w_cursor @curwin)
@@ -11366,7 +11365,7 @@
 
                         ;; For V and ^V, we multiply the number of lines even if there was only one.
                         (when (or (!= @resel_VIsual_mode (byte \v)) (< 1 @resel_VIsual_lmax))
-                            (swap! curwin update-in [:w_cursor :lnum] #(min (+ % (dec (* @resel_VIsual_lmax (:count0 cap)))) (:ml_line_count (:b_ml @curbuf)))))
+                            (swap! curwin update-in [:w_cursor :lnum] #(min (+ % (dec (* @resel_VIsual_lmax (:count0 cap)))) (line-count @curbuf))))
 
                         (reset! VIsual_mode @resel_VIsual_mode)
 
@@ -11514,7 +11513,7 @@
                     (ß BREAK)
                 )
 
-                (cond (or (zero? (:lnum (:vi_start (:b_visual @curbuf)))) (< (:ml_line_count (:b_ml @curbuf)) (:lnum (:vi_start (:b_visual @curbuf)))) (zero? (:lnum (:vi_end (:b_visual @curbuf)))))
+                (cond (or (zero? (:lnum (:vi_start (:b_visual @curbuf)))) (< (line-count @curbuf) (:lnum (:vi_start (:b_visual @curbuf)))) (zero? (:lnum (:vi_end (:b_visual @curbuf)))))
                 (do
                     (beep-flush)
                 )
@@ -12208,7 +12207,7 @@
 ;; cap.arg is TRUE for "G".
 
 (defn- #_cmdarg_C nv-goto [#_cmdarg_C cap]
-    (let [lmax (:ml_line_count (:b_ml @curbuf)) lnum (if (zero? (:arg cap)) 1 lmax) cap (assoc-in cap [:oap :motion_type] MLINE)]
+    (let [lmax (line-count @curbuf) lnum (if (zero? (:arg cap)) 1 lmax) cap (assoc-in cap [:oap :motion_type] MLINE)]
         (swap! curwin setpcmark)
         (let [lnum (if (non-zero? (:count0 cap)) (:count0 cap) lnum)] ;; when a count is given, use it instead of the default lnum
             (swap! curwin assoc-in [:w_cursor :lnum] (max 1 (min lnum lmax)))
@@ -12417,7 +12416,7 @@
 ;; Handle the CTRL-U and CTRL-D commands.
 
 (defn- #_cmdarg_C nv-halfpage [#_cmdarg_C cap]
-    (let [key (:cmdchar cap) lnum (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))]
+    (let [key (:cmdchar cap) lnum (:lnum (:w_cursor @curwin)) lmax (line-count @curbuf)]
         (cond
             (or (and (== key Ctrl_U) (== lnum 1)) (and (== key Ctrl_D) (== lnum lmax)))
                 (clearopbeep (:oap cap))
@@ -12436,7 +12435,7 @@
         cap
     :else
         (let [cap (update cap :count0 max 2)] ;; default for join is two lines!
-            (if (<= (dec (+ (:lnum (:w_cursor @curwin)) (:count0 cap))) (:ml_line_count (:b_ml @curbuf)))
+            (if (<= (dec (+ (:lnum (:w_cursor @curwin)) (:count0 cap))) (line-count @curbuf))
                 (do
                     (prep-redo (:regname (:oap cap)), (:count0 cap), NUL, (:cmdchar cap), NUL, NUL, (:nchar cap))
                     (do-join (:count0 cap), (== (:nchar cap) NUL), true, true)
@@ -12495,10 +12494,10 @@
                 (if visual?
                     (swap! curbuf update :b_visual assoc :vi_start (:b_op_start @curbuf) :vi_end (:b_op_end @curbuf)))
                 ;; When all lines were selected and deleted do-put() leaves an empty line that needs to be deleted now.
-                (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (and empty? (eos? (ml-get lmax)))
+                (let-when [lmax (line-count @curbuf)] (and empty? (eos? (ml-get lmax)))
                     (ml-delete lmax, true)
                     ;; If the cursor was in that line, move it to the end of the last line.
-                    (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (< lmax (:lnum (:w_cursor @curwin)))
+                    (let-when [lmax (line-count @curbuf)] (< lmax (:lnum (:w_cursor @curwin)))
                         (swap! curwin assoc-in [:w_cursor :lnum] lmax)
                         (swap! curwin coladvance MAXCOL)
                     ))
@@ -13486,7 +13485,7 @@
 
 (defn- #_boolean op-delete [#_oparg_C oap]
     (§
-        ((ß long old_lcount =) (:ml_line_count (:b_ml @curbuf)))
+        ((ß long old_lcount =) (line-count @curbuf))
         ((ß boolean did_yank =) false)
         ((ß int orig_regname =) (:regname oap))
 
@@ -13721,7 +13720,7 @@
                         (when (!= (gchar-cursor @curwin) NUL)
                             (swap! curwin assoc-in [:w_cursor :coladd] 0))
                     )
-                    (cond (and (== (:op_type oap) OP_DELETE) (:inclusive oap) (== (:lnum (:op_end oap)) (:ml_line_count (:b_ml @curbuf))) (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
+                    (cond (and (== (:op_type oap) OP_DELETE) (:inclusive oap) (== (:lnum (:op_end oap)) (line-count @curbuf)) (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
                     (do
                         ;; Special case: gH<Del> deletes the last line.
                         (swap! curwin del-lines 1, false)
@@ -13738,7 +13737,7 @@
                         ((ß RETURN) false)
                     )
 
-                    ((ß boolean delete_last_line =) (== (:lnum (:op_end oap)) (:ml_line_count (:b_ml @curbuf))))
+                    ((ß boolean delete_last_line =) (== (:lnum (:op_end oap)) (line-count @curbuf)))
                     (swap! curwin truncate-line true)                ;; delete from cursor to end of line
 
                     ((ß pos_C curpos =) (NEW_pos_C))
@@ -13748,7 +13747,7 @@
                     (swap! curwin del-lines (- (:line_count oap) 2), false)
 
                     (if delete_last_line
-                        ((ß oap =) (assoc-in oap [:op_end :lnum] (:ml_line_count (:b_ml @curbuf))))
+                        ((ß oap =) (assoc-in oap [:op_end :lnum] (line-count @curbuf)))
                     )
 
                     ((ß int n =) (- (inc (:col (:op_end oap))) (if (not (:inclusive oap)) 1 0)))
@@ -13757,7 +13756,7 @@
                         ;; Special case: gH<Del> deletes the last line.
                         (swap! curwin del-lines 1, false)
                         (swap! curwin assoc :w_cursor curpos)
-                        (swap! curwin assoc-in [:w_cursor :lnum] (min (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf))))
+                        (swap! curwin assoc-in [:w_cursor :lnum] (min (:lnum (:w_cursor @curwin)) (line-count @curbuf)))
                     )
                     :else
                     (do
@@ -13766,12 +13765,12 @@
                         (swap! curwin del-bytes n, (== @virtual_op FALSE), (and (== (:op_type oap) OP_DELETE) (not (:is_VIsual oap))))
                         (swap! curwin assoc :w_cursor curpos)
                     ))
-                    (if (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
+                    (if (< (:lnum (:w_cursor @curwin)) (line-count @curbuf))
                         (do-join 2, false, false, false))
                 ))
             ))
 
-            (msgmore (- (:ml_line_count (:b_ml @curbuf)) old_lcount))
+            (msgmore (- (line-count @curbuf) old_lcount))
 ;       }
 
         (cond (:block_mode oap)
@@ -14713,7 +14712,7 @@
             (ß long lnum)
             (cond (== y_type MBLOCK)
             (do
-                ((ß lnum =) (min (+ (:lnum (:w_cursor @curwin)) y_size 1) (inc (:ml_line_count (:b_ml @curbuf)))))
+                ((ß lnum =) (min (+ (:lnum (:w_cursor @curwin)) y_size 1) (inc (line-count @curbuf))))
                 (if (not (u-save (dec (:lnum (:w_cursor @curwin))), lnum))
                     (ß BREAK theend)
                 )
@@ -14803,8 +14802,8 @@
                     ((ß int delcount =) 0)
 
                     ;; add a new line
-                    (when (< (:ml_line_count (:b_ml @curbuf)) (:lnum (:w_cursor @curwin)))
-                        (if (not (ml-append (:ml_line_count (:b_ml @curbuf)), (u8 "")))
+                    (when (< (line-count @curbuf) (:lnum (:w_cursor @curwin)))
+                        (if (not (ml-append (line-count @curbuf), (u8 "")))
                             (ß BREAK)
                         )
                         ((ß nr_lines =) (inc nr_lines))
@@ -15073,7 +15072,7 @@
                         ;; put cursor after inserted text
                         (cond (== y_type MLINE)
                         (do
-                            (swap! curwin assoc-in [:w_cursor :lnum] (min (inc lnum) (:ml_line_count (:b_ml @curbuf))))
+                            (swap! curwin assoc-in [:w_cursor :lnum] (min (inc lnum) (line-count @curbuf)))
                             (swap! curwin assoc-in [:w_cursor :col] 0)
                         )
                         :else
@@ -15445,7 +15444,7 @@
                                     ))]
                         [min_pos max_pos oparg (inc (- (:lnum max_pos) (:lnum min_pos)))])
                     [nil nil nil 0])
-              lmin 1 lmax (:ml_line_count (:b_ml @curbuf))
+              lmin 1 lmax (line-count @curbuf)
               a'bytes (atom (int 0)) a'cursor_bytes (atom (int 0))
               a'chars (atom (int 0)) a'cursor_chars (atom (int 0))
               a'words (atom (int 0)) a'cursor_words (atom (int 0))
@@ -15688,7 +15687,7 @@
         ;; 'lnum' is negative if mark is in another file and can't get that file, error message already give then.
         (<= (:lnum pos) 0)
             (do (when (zero? (:lnum pos)) (emsg e_marknotset)) false)
-        (< (:ml_line_count (:b_ml @curbuf)) (:lnum pos))
+        (< (line-count @curbuf) (:lnum pos))
             (do (emsg e_markinval) false)
         :else
             true
@@ -17110,7 +17109,7 @@
                             REPLACE)
                     (any == cmdchar (byte \V) (byte \v))
                         (do (reset! State VREPLACE)
-                            (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
+                            (reset! orig_line_count (line-count @curbuf))
                             (reset! vr_lines_changed 1)
                             VREPLACE)
                     :else
@@ -17264,7 +17263,7 @@
                                 :else
                                 (do
                                     (when (== c Ctrl_O)
-                                        (ins-ctrl-o)
+                                        (ins-ctrl-o @curwin)
                                         (reset! ins_at_eol false) ;; cursor keeps its column
                                         (reset! a'nomove true)
                                     )
@@ -17336,7 +17335,7 @@
 
                                     Ctrl_O                        ;; execute one command
                                     (do
-                                        (ins-ctrl-o)
+                                        (ins-ctrl-o @curwin)
 
                                         ;; Don't move the cursor left when 'virtualedit' has "onemore".
                                         (when (flag? @ve_flags VE_ONEMORE)
@@ -17402,14 +17401,14 @@
 
                                    [Ctrl_D Ctrl_T]                        ;; make indent one shiftwidth smaller/greater
                                     (do
-                                        (ins-shift c, lastc)
+                                        (swap! curwin ins-shift c, lastc)
                                         (reset! a'inserted_space false)
                                         (ß BREAK normalchar)
                                     )
 
                                    [K_DEL K_KDEL]                        ;; delete character under the cursor
                                     (do
-                                        (ins-del)
+                                        (swap! curwin ins-del)
                                         (ß BREAK normalchar)
                                     )
 
@@ -18084,7 +18083,7 @@
             (reset! ins_need_undo false))
         (reset! ai_col 0)
         (when (flag? @State VREPLACE_FLAG)
-            (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
+            (reset! orig_line_count (line-count @curbuf))
             (reset! vr_lines_changed 1))
         (reset-redo)
         (append-redo (u8 "1i"))         ;; pretend we start an insertion
@@ -18117,7 +18116,7 @@
     ;; Check for the old position still being valid, just in case the text got changed unexpectedly.
     (let [win (if (and (not @arrow_used) (some? eoi) (not nomove) @did_ai
                        (or esc (and (nil? (vim-strbyte @p_cpo, CPO_INDENT)) (!= (:lnum (:w_cursor win)) (:lnum eoi))))
-                       (<= (:lnum eoi) (:ml_line_count (:b_ml @curbuf))))
+                       (<= (:lnum eoi) (line-count @curbuf)))
                 (let [#_pos_C tpos (:w_cursor win)
                       win (assoc win :w_cursor eoi)
                       win (check-cursor-col win) ;; make sure it is not past the line
@@ -18287,7 +18286,7 @@
 
 (defn- #_[window_C boolean] cursor-down? [#_window_C win, #_long n, #_boolean upd_topline]
     (let [[win ?] (if (< 0 n)
-                (let [lnum (:lnum (:w_cursor win)) lmax (:ml_line_count (:b_ml @curbuf))]
+                (let [lnum (:lnum (:w_cursor win)) lmax (line-count @curbuf)]
                     ;; This fails if the cursor is already in the last line
                     ;; or would move beyond the last line and '-' is in 'cpoptions'.
                     (if (or (<= lmax lnum) (and (< lmax (+ lnum n)) (some? (vim-strbyte @p_cpo, CPO_MINUS))))
@@ -18698,68 +18697,72 @@
 
 ;; Pressed CTRL-O in Insert mode.
 
-(defn- #_void ins-ctrl-o []
+(defn- #_void ins-ctrl-o [#_window_C win]
     (reset! restart_edit (cond (flag? @State VREPLACE_FLAG) (byte \V) (flag? @State REPLACE_FLAG) (byte \R) :else (byte \I)))
     (reset! ins_at_eol (if (virtual-active)
         false     ;; cursor always keeps its column
-        (== (gchar-cursor @curwin) NUL)))
+        (== (gchar-cursor win) NUL)))
     nil)
 
-;; If the cursor is on an indent, ^T/^D insert/delete one shiftwidth.
+;; If the cursor is on an indent, ^T/^D insert/delete one 'shiftwidth'.
 ;; Otherwise ^T/^D behave like a "<<" or ">>".
 ;; Always round the indent to 'shiftwidth', this is compatible with vi.
 ;; But vi only supports ^T and ^D after an autoindent, we support it everywhere.
 
-(defn- #_void ins-shift [#_int c, #_int lastc]
-    (when (stop-arrow)
-        (append-redo-char c)
-        ;; 0^D and ^^D: remove all indent.
-        (if (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor @curwin))))
-            (do
-                (swap! curwin update-in [:w_cursor :col] dec)
-                (swap! curwin del-char false)                ;; delete the '^' or '0'
-                ;; In Replace mode, restore the characters that '^' or '0' replaced.
-                (when (flag? @State REPLACE_FLAG)
-                    (swap! curwin replace-pop-ins))
-                (when (== lastc (byte \^))
-                    (reset! old_indent (get-indent @curwin)))  ;; remember curr. indent
-                (swap! curwin change-indent INDENT_SET, 0, true, NUL, true)
-            )
-            (swap! curwin change-indent (if (== c Ctrl_D) INDENT_DEC INDENT_INC), 0, true, NUL, true))
-        (when (and @did_ai (non-eos? (skipwhite (ml-get (:lnum (:w_cursor @curwin))))))
-            (reset! did_ai false))
-        (reset! did_si false)
-        (reset! can_si false)
-        (reset! can_si_back false)
-        (reset! can_cindent false)) ;; no cindenting after ^D or ^T
-    nil)
+(defn- #_window_C ins-shift [#_window_C win, #_int c, #_int lastc]
+    (if (stop-arrow)
+        (let [_ (append-redo-char c)
+              ;; 0^D and ^^D: remove all indent.
+              win (if (and (== c Ctrl_D) (any == lastc (byte \0) (byte \^)) (< 0 (:col (:w_cursor win))))
+                    (let [win (update-in win [:w_cursor :col] dec)
+                          win (del-char win, false)                 ;; delete the '^' or '0'
+                          ;; In Replace mode, restore the characters that '^' or '0' replaced.
+                          win (if (flag? @State REPLACE_FLAG) (replace-pop-ins win) win)]
+                        (when (== lastc (byte \^))
+                            (reset! old_indent (get-indent win)))   ;; remember curr. indent
+                        (change-indent win, INDENT_SET, 0, true, NUL, true))
+                    (change-indent win, (if (== c Ctrl_D) INDENT_DEC INDENT_INC), 0, true, NUL, true)
+                )]
+            (when (and @did_ai (non-eos? (skipwhite (ml-get (:lnum (:w_cursor win))))))
+                (reset! did_ai false))
+            (reset! did_si false)
+            (reset! can_si false)
+            (reset! can_si_back false)
+            (reset! can_cindent false) ;; no cindenting after ^D or ^T
+            win)
+        win
+    ))
 
-(defn- #_void ins-del []
-    (when (stop-arrow)
-        (if (== (gchar-cursor @curwin) NUL)                        ;; delete newline
-            (let [_ (:col (:w_cursor @curwin))]
-                (if (and (can-bs BS_EOL) (do-join 2, false, true, false))    ;; only if "eol" included
-                    (swap! curwin assoc-in [:w_cursor :col] _)
-                    (vim-beep)
-                ))
-            (when (not (let [[_ ?] (del-char? @curwin, false)] (reset! curwin _) ?))            ;; delete char under cursor
-                (vim-beep)
-            ))
-        (reset! did_ai false) (reset! did_si false) (reset! can_si false) (reset! can_si_back false)
-        (append-redo-char K_DEL))
-    nil)
+(defn- #_window_C ins-del [#_window_C win]
+    (if (stop-arrow)
+        (let [win (if (== (gchar-cursor win) NUL)
+                    ;; delete newline ;; only if "eol" included
+                    (let-when [] (can-bs BS_EOL) => (do (vim-beep) win)
+                        (let-when [o'col (:col (:w_cursor win)) ? (do-join 2, false, true, false)] ? => (do (vim-beep) win)
+                            (assoc-in win [:w_cursor :col] o'col)
+                        ))
+                    ;; delete char under cursor
+                    (let-when [[win ?] (del-char? win, false)] ? => (do (vim-beep) win)
+                        win)
+                )]
+            (reset! did_ai false) (reset! did_si false) (reset! can_si false) (reset! can_si_back false)
+            (append-redo-char K_DEL)
+            win)
+        win
+    ))
 
 ;; Delete one character for ins-bs().
 
-(defn- #_void ins-bs-one [#_int' a'vcol]
-    (swap! curwin dec-cursor false)
-    (getvcol @curwin, (:w_cursor @curwin), a'vcol, nil, nil)
-    (if (flag? @State REPLACE_FLAG)
-        ;; Don't delete characters before the insert point when in Replace mode.
-        (when (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor @curwin))))
-            (replace-do-bs -1))
-        (swap! curwin del-char false))
-    nil)
+(defn- #_window_C ins-bs-one [#_window_C win, #_int' a'vcol]
+    (let [win (dec-cursor win, false)]
+        (getvcol win, (:w_cursor win), a'vcol, nil, nil)
+        (if (flag? @State REPLACE_FLAG) ;; Don't delete characters before the insert point when in Replace mode.
+            (when (or (!= (:lnum (:w_cursor win)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor win))))
+                (replace-do-bs -1)
+                win)
+            (del-char win, false)
+        )
+    ))
 
 ;; Handle backspace, delete-word and delete-line in Insert mode.
 ;; Return true when backspace was actually used.
@@ -18863,7 +18866,7 @@
                                             (swap! a'want_vcol #(* (/ % ts) ts))
                                             ;; delete characters until we are at or before "want_vcol"
                                             (while (and (< @a'want_vcol @a'vcol) (vim-iswhite (.at (ml-get-cursor @curwin) -1)))
-                                                (ins-bs-one a'vcol))
+                                                (swap! curwin ins-bs-one a'vcol))
                                             ;; insert extra spaces until we are at "want_vcol"
                                             (while (< @a'vcol @a'want_vcol)
                                                 ;; Remember the first char we inserted.
@@ -18880,7 +18883,7 @@
                                             ;; If we are now back where we started delete one character.
                                             ;; Can happen when using 'sts' and 'linebreak'.
                                             (when (<= start_vcol @a'vcol)
-                                                (ins-bs-one a'vcol))
+                                                (swap! curwin ins-bs-one a'vcol))
                                         ))
                                 :else ;; Delete upto starting point, start of line or previous word.
                                     (loop [#_int pls 0 #_int cls (us-get-class (ml-get-cursor @curwin)) mode mode #_boolean temp false]
@@ -18953,7 +18956,7 @@
     ))
 
 (defn- #_window_C ins-end [#_window_C win, #_int c]
-    (let [lmax (:ml_line_count (:b_ml @curbuf)) o'cursor (:w_cursor win)
+    (let [lmax (line-count @curbuf) o'cursor (:w_cursor win)
           win (if (== c K_C_END) (assoc-in win, [:w_cursor :lnum] lmax) win)]
         (-> win
             (coladvance MAXCOL)
@@ -18970,7 +18973,7 @@
     ))
 
 (defn- #_window_C ins-right [#_window_C win]
-    (let [lmax (:ml_line_count (:b_ml @curbuf)) o'cursor (:w_cursor win) s (ml-get-cursor win)]
+    (let [lmax (line-count @curbuf) o'cursor (:w_cursor win) s (ml-get-cursor win)]
         (cond (or (!= (us-ptr2char s) NUL) (virtual-active))
             (let [win (start-arrow win, o'cursor)
                   win (assoc win :w_set_curswant true)]
@@ -18990,7 +18993,7 @@
     ))
 
 (defn- #_window_C ins-s-right [#_window_C win]
-    (let-when [lmax (:ml_line_count (:b_ml @curbuf)) o'cursor (:w_cursor win)] (or (< (:lnum o'cursor) lmax) (!= (gchar-cursor win) NUL)) => (do (vim-beep) win)
+    (let-when [lmax (line-count @curbuf) o'cursor (:w_cursor win)] (or (< (:lnum o'cursor) lmax) (!= (gchar-cursor win) NUL)) => (do (vim-beep) win)
         (-> win
             (start-arrow o'cursor)
             (fwd-word 1, false, false)
@@ -19213,7 +19216,7 @@
 
 (defn- #_[window_C int] ins-copychar [#_window_C win, #_long lnum]
     (let [[win c]
-            (if (<= 1 lnum (:ml_line_count (:b_ml @curbuf)))
+            (if (<= 1 lnum (line-count @curbuf))
                 (let [#_Bytes line (ml-get lnum) a's (atom (#_Bytes object line))
                       win (validate-virtcol win) vcol (:w_virtcol win)]
                     (loop-when-recur [#_Bytes prior @a's #_int i 0] ;; try to advance to the cursor column
@@ -21823,7 +21826,7 @@
     (reset! reg_match nil)
     (reset! reg_mmatch rmp)
     (reset! reg_firstlnum lnum)
-    (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
+    (reset! reg_maxline (- (line-count @curbuf) lnum))
     (reset! reg_line_lbr false)
     (reset! ireg_ic (:rmm_ic rmp))
     (reset! ireg_icombine false)
@@ -24203,7 +24206,7 @@
     (reset! reg_match nil)
     (reset! reg_mmatch rmp)
     (reset! reg_firstlnum lnum)
-    (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
+    (reset! reg_maxline (- (line-count @curbuf) lnum))
     (reset! reg_line_lbr false)
 
     (vim-regsub-both source, dest, copy, magic, backslash))
@@ -29649,7 +29652,7 @@
     (reset! reg_match nil)
     (reset! reg_mmatch rmp)
     (reset! reg_firstlnum lnum)
-    (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
+    (reset! reg_maxline (- (line-count @curbuf) lnum))
     (reset! reg_line_lbr false)
     (reset! ireg_ic (:rmm_ic rmp))
     (reset! ireg_icombine false)
@@ -30063,7 +30066,7 @@
                 ((ß extra_col =) 0)
             )
             ;; Watch out for the "col" being MAXCOL - 2, used in a closed fold.
-            (and (!= dir BACKWARD) (<= 1 (:lnum pos)) (<= (:lnum pos) (:ml_line_count (:b_ml @curbuf))) (< (:col pos) (- MAXCOL 2)))
+            (and (!= dir BACKWARD) (<= 1 (:lnum pos)) (<= (:lnum pos) (line-count @curbuf)) (< (:col pos) (- MAXCOL 2)))
             (do
                 ((ß Bytes ptr =) (.plus (ml-get (:lnum pos)) (:col pos)))
                 ((ß extra_col =) (if (eos? ptr) 1 (us-ptr2len-cc ptr)))
@@ -30098,7 +30101,7 @@
             ))
 
             (loop-when-recur [#_int loop 0] (< loop 2) [(inc loop)]   ;; loop twice if 'wrapscan' set
-                ((ß lnum =) (loop-when-recur lnum (and (< 0 lnum) (<= lnum (:ml_line_count (:b_ml @curbuf)))) [(+ lnum dir)] => lnum
+                ((ß lnum =) (loop-when-recur lnum (and (< 0 lnum) (<= lnum (line-count @curbuf))) [(+ lnum dir)] => lnum
                     ;; Stop after checking "stop_lnum", if it's set.
                     (if (and (non-zero? stop_lnum) (if (== dir FORWARD) (< stop_lnum lnum) (< lnum stop_lnum)))
                         (ß BREAK)
@@ -30121,7 +30124,7 @@
                         (COPY-lpos endpos, (... (:endpos regmatch) 0))
                         ((ß submatch =) (first-submatch regmatch))
                         ;; "lnum" may be past end of buffer for "\n\zs".
-                        ((ß Bytes ptr =) (if (< (:ml_line_count (:b_ml @curbuf)) (+ lnum (:lnum matchpos))) (u8 "") (ml-get (+ lnum (:lnum matchpos)))))
+                        ((ß Bytes ptr =) (if (< (line-count @curbuf) (+ lnum (:lnum matchpos))) (u8 "") (ml-get (+ lnum (:lnum matchpos)))))
 
                         ;; Forward search in the first line: match should be after
                         ;; the start position.  If not, continue at the end of the
@@ -30261,7 +30264,7 @@
                             :else
                             (do
                                 ((ß pos =) (update pos :col dec))
-                                (when (<= (:lnum pos) (:ml_line_count (:b_ml @curbuf)))
+                                (when (<= (:lnum pos) (line-count @curbuf))
                                     ((ß ptr =) (ml-get (:lnum pos)))
                                     ((ß pos =) (update pos :col #(- % (us-head-off ptr, (.plus ptr %)))))
                                 )
@@ -30309,7 +30312,7 @@
                 ;; This message is also remembered in "keep_msg" for when the screen is redrawn.
                 ;; The "keep_msg" is cleared whenever another message is written.
 
-                ((ß lnum =) (if (== dir BACKWARD) (:ml_line_count (:b_ml @curbuf)) 1))    ;; start second loop at the other end
+                ((ß lnum =) (if (== dir BACKWARD) (line-count @curbuf) 1))    ;; start second loop at the other end
                 (if (flag? options SEARCH_MSG)
                     (give-warning (if (== dir BACKWARD) top_bot_msg bot_top_msg), true))
             )
@@ -30337,7 +30340,7 @@
         )
 
         ;; A pattern like "\n\zs" may go past the last line.
-        (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (< lmax (:lnum pos))
+        (let-when [lmax (line-count @curbuf)] (< lmax (:lnum pos))
             ((ß pos =) (assoc pos :lnum lmax :col (STRLEN (ml-get lmax))))
             (if (< 0 (:col pos))
                 ((ß pos =) (update pos :col dec))
@@ -30570,7 +30573,7 @@
                                 ((ß [pos c] =) (loop-when [pos pos c c] (non-zero? c) => [pos c]
                                     (let [[pos ?] (incl pos)] (recur-if (!= ? -1) [pos (inc c)] => [pos c]))))
                                 (when (non-zero? c)                 ;; at end of buffer
-                                    ((ß pos =) (assoc pos :lnum (inc (:ml_line_count (:b_ml @curbuf)) :col 0)))
+                                    ((ß pos =) (assoc pos :lnum (inc (line-count @curbuf) :col 0)))
                                 )
                             )
                         )
@@ -30596,7 +30599,7 @@
 
                 (when (or (non-flag? options SEARCH_NOOF) (and (some? pat) (at? pat (byte \;))))
                     (cond (:line (:sp_off (... @spats 0)))       ;; add the offset to the line number
-                        (let [#_long l (+ (:lnum pos) (:off (:sp_off (... @spats 0)))) lmax (:ml_line_count (:b_ml @curbuf))]
+                        (let [#_long l (+ (:lnum pos) (:off (:sp_off (... @spats 0)))) lmax (line-count @curbuf)]
                             ((ß pos =) (assoc pos :lnum (cond (< l 1) 1 (< lmax l) lmax :else l) :col 0))
 
                             ((ß retval =) 2)                 ;; pattern found, line offset added
@@ -30953,7 +30956,7 @@
                 (loop-when [] (not @got_int)
                     (cond (< 0 hash_dir)
                     (do
-                        (if (== (:lnum @_2_pos) (:ml_line_count (:b_ml @curbuf)))
+                        (if (== (:lnum @_2_pos) (line-count @curbuf))
                             (ß BREAK)
                         )
                     )
@@ -31058,7 +31061,7 @@
             (do
                 (cond (at? linep (:col @_2_pos) NUL)
                 (do
-                    (if (== (:lnum @_2_pos) (:ml_line_count (:b_ml @curbuf)))    ;; end of file
+                    (if (== (:lnum @_2_pos) (line-count @curbuf))    ;; end of file
                         (ß BREAK)
                     )
                     (swap! _2_pos update :lnum inc)
@@ -31410,7 +31413,7 @@
 ;; If eol is true, last word stops at end of line (for operators).
 
 (defn- #_[window_C boolean] fwd-word? [#_window_C win, #_long n, #_boolean bigword, #_boolean eol]
-    (let [lmax (:ml_line_count (:b_ml @curbuf))]
+    (let [lmax (line-count @curbuf)]
         (loop-when [win (assoc-in win [:w_cursor :coladd] 0) n n] (pos? n) => [win true]
             ;; always move at least one char, unless on the last one in the buffer
             (let [cls (cls-cursor win, bigword) eof (== (:lnum (:w_cursor win)) lmax) [win ?] (inc-cursor? win, false)]
@@ -32167,7 +32170,7 @@
                                 (cond forward           ;; try again from start of buffer
                                     (NEW_pos_C)
                                 :else                   ;; try again from end of buffer
-                                (let [lmax (:ml_line_count (:b_ml @curbuf))]
+                                (let [lmax (line-count @curbuf)]
                                     ;; searching backwards, so set pos to last line and col
                                     (assoc pos :lnum lmax :col (STRLEN (ml-get lmax)))
                                 ))
@@ -32260,7 +32263,7 @@
 ;; (to avoid having to check for error everywhere).
 
 (defn- #_Bytes ml-get [#_long lnum]
-    (if-not (<= 0 lnum (:ml_line_count (:b_ml @curbuf)))
+    (if-not (<= 0 lnum (line-count @curbuf))
         (do
             (emsgn (u8 "E315: ml-get: invalid lnum: %ld"), lnum)
             (u8 "???")
@@ -32291,7 +32294,7 @@
 (defn- #_boolean ml-append [#_long lnum, #_Bytes line]
     ;; lnum: append after this line (can be 0)
     ;; line: text of the new line
-    (if-not (<= 0 lnum (:ml_line_count (:b_ml @curbuf)))
+    (if-not (<= 0 lnum (line-count @curbuf))
         false
         (do
 ;           %% insert @lnum STRDUP(line)
@@ -32309,7 +32312,7 @@
 ;; return false for failure, true otherwise
 
 (defn- #_boolean ml-replace [#_long lnum, #_Bytes line]
-    (if (or (not (<= 1 lnum (:ml_line_count (:b_ml @curbuf)))) (nil? line))           ;; just checking...
+    (if (or (not (<= 1 lnum (line-count @curbuf))) (nil? line))           ;; just checking...
         false
         (do
 ;           %% replace @(lnum - 1) STRDUP(line)
@@ -32326,7 +32329,7 @@
 ;; return false for failure, true otherwise
 
 (defn- #_boolean ml-delete [#_long lnum, #_boolean message]
-    (let [lmax (:ml_line_count (:b_ml @curbuf))]
+    (let [lmax (line-count @curbuf)]
         (cond (not (<= 1 lnum lmax))
             false
         (== lmax 1) ;; if the file becomes empty the last line is replaced by an empty line
@@ -32373,7 +32376,7 @@
 ;; Print info about the current buffer.
 
 (defn- #_void fileinfo [#_int _fullname]
-    (let [lnum (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))
+    (let [lnum (:lnum (:w_cursor @curwin)) lmax (line-count @curbuf)
           #_Bytes buf (Bytes. IOSIZE)]
         (let [#_Bytes p (-> buf (.be 0, (byte \")) (.plus 1))] ;; """
             (vim-strncpy p, (u8 "[No Name]"), (- IOSIZE (BDIFF p, buf) 1)))
@@ -32411,7 +32414,7 @@
 (defn- #_void get-rel-pos [#_window_C win, #_Bytes buf, #_int buflen]
     (if (<= 3 buflen) ;; need at least 3 chars for writing
         ;; number of lines above/below window
-        (let [above (dec (:w_topline win)) below (inc (- (:ml_line_count (:b_ml @curbuf)) (:w_botline win)))]
+        (let [above (dec (:w_topline win)) below (inc (- (line-count @curbuf) (:w_botline win)))]
             (cond (<= below 0)
                 (vim-strncpy buf, (if (zero? above) (u8 "All") (u8 "Bot")), (dec buflen))
             (<= above 0)
@@ -36095,7 +36098,7 @@
 ;; Find the next illegal byte sequence.
 
 (defn- #_window_C utf-find-illegal [#_window_C win]
-    (let-when [lmax (:ml_line_count (:b_ml @curbuf))
+    (let-when [lmax (line-count @curbuf)
         win' (loop [lnum (:lnum (:w_cursor win)) col (:col (:w_cursor win))]
                 (let-when [s (ml-get lnum)
                     win' (loop-when [i col] (non-eos? s i) => nil
@@ -36470,7 +36473,7 @@
                                         :else ;; (== dir BACKWARD)
                                             (let [[s ni] ;; Skip preprocessor directives, unless they are recognised as comments.
                                                     (if (at? s (byte \#))
-                                                        (let [lmax (:ml_line_count (:b_ml @curbuf))
+                                                        (let [lmax (line-count @curbuf)
                                                               [s #_boolean bashed]
                                                                 (loop-when [s s bashed false] (and (or (at? s (byte \#)) bashed) (< (:lnum (:w_cursor @curwin)) lmax)) => [s bashed]
                                                                     (let [bashed (and (non-eos? s) (at? s (dec (STRLEN s)) (byte \\)))]
@@ -36864,7 +36867,7 @@
             (let [n (loop-when [n 0] (and (< n nof) (non-flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)) => n
                         (ml-delete cln, true)
                         ;; If we delete the last line in the file, stop.
-                        (recur-if (<= cln (:ml_line_count (:b_ml @curbuf))) [(inc n)] => (inc n)))
+                        (recur-if (<= cln (line-count @curbuf)) [(inc n)] => (inc n)))
                   ;; Correct the cursor position before calling deleted-lines-mark(),
                   ;; it may trigger a callback to display the cursor.
                   win (assoc-in win [:w_cursor :col] 0)
@@ -37529,7 +37532,7 @@
     (let [#_Bytes s (ml-get-pos p)]
         (cond (non-eos? s) ;; still within line, move to next char (may be NUL)
             (let [#_int n (us-ptr2len-cc s)] [(update p :col + n) (if (non-eos? s n) 0 2)])
-        (!= (:lnum p) (:ml_line_count (:b_ml @curbuf))) ;; there is a next line
+        (!= (:lnum p) (line-count @curbuf)) ;; there is a next line
             [(assoc p :lnum (inc (:lnum p)) :col 0 :coladd 0) 1]
         :else
             [p -1]
@@ -37586,7 +37589,7 @@
 ;; Make sure win.w_cursor.lnum is valid.
 
 (defn- #_window_C check-cursor-lnum [#_window_C win]
-    (update-in win [:w_cursor :lnum] #(max 1 (min % (:ml_line_count (:b_ml @curbuf))))))
+    (update-in win [:w_cursor :lnum] #(max 1 (min % (line-count @curbuf)))))
 
 ;; Make sure win.w_cursor.col is valid.
 
@@ -38222,7 +38225,7 @@
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-save [#_long top, #_long bot]
-    (let [lmax (:ml_line_count (:b_ml @curbuf))]
+    (let [lmax (line-count @curbuf)]
         (if (or (< lmax top) (<= bot top) (< (inc lmax) bot))
             false   ;; rely on caller to do error messages
             (do
@@ -38252,7 +38255,7 @@
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-savedel [#_long lnum, #_long nlines]
-    (u-savecommon (dec lnum), (+ lnum nlines), (if (== nlines (:ml_line_count (:b_ml @curbuf))) 2 lnum), false))
+    (u-savecommon (dec lnum), (+ lnum nlines), (if (== nlines (line-count @curbuf)) 2 lnum), false))
 
 ;; Return true when undo is allowed.
 ;; Otherwise give an error message and return false.
@@ -38286,7 +38289,7 @@
                 ((ß RETURN) false)
             )
 
-            (when (< (inc (:ml_line_count (:b_ml @curbuf))) bot)
+            (when (< (inc (line-count @curbuf)) bot)
                 ;; This happens when the FileChangedRO autocommand changes
                 ;; the file in a way it becomes shorter.
                 (emsg (u8 "E881: Line count changed unexpectedly"))
@@ -38416,7 +38419,7 @@
 
                     ;; If lines have been inserted/deleted we give up.
                     ;; Also when the line was included in a multi-line save.
-                    (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc (:ml_line_count (:b_ml @curbuf))) (:ue_bot uep))) (!= (:ue_lcount uep) (:ml_line_count (:b_ml @curbuf)))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
+                    (if (or (if (!= (:uh_getbot_entry (:b_u_newhead @curbuf)) uep) (!= (+ (:ue_top uep) (:ue_size uep) 1) (if (zero? (:ue_bot uep)) (inc (line-count @curbuf)) (:ue_bot uep))) (!= (:ue_lcount uep) (line-count @curbuf))) (and (< 1 (:ue_size uep)) (<= (:ue_top uep) top) (<= (+ top 2) (+ (:ue_top uep) (:ue_size uep) 1))))
                         (ß BREAK)
                     )
 
@@ -38443,13 +38446,13 @@
                         (do
                             ((ß uep =) (assoc uep :ue_bot newbot))
                         )
-                        (< (:ml_line_count (:b_ml @curbuf)) bot)
+                        (< (line-count @curbuf) bot)
                         (do
                             ((ß uep =) (assoc uep :ue_bot 0))
                         )
                         :else
                         (do
-                            ((ß uep =) (assoc uep :ue_lcount (:ml_line_count (:b_ml @curbuf))))
+                            ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
                             (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
                         ))
                         ((ß RETURN) true)
@@ -38477,13 +38480,13 @@
         ;; Use 0 for ue_bot if bot is below last line.
         ;; Otherwise we have to compute ue_bot later.
 
-        (< (:ml_line_count (:b_ml @curbuf)) bot)
+        (< (line-count @curbuf) bot)
         (do
             ((ß uep =) (assoc uep :ue_bot 0))
         )
         :else
         (do
-            ((ß uep =) (assoc uep :ue_lcount (:ml_line_count (:b_ml @curbuf))))
+            ((ß uep =) (assoc uep :ue_lcount (line-count @curbuf)))
             (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] uep)
         ))
 
@@ -38845,14 +38848,14 @@
         ((ß visualinfo_C visualinfo =) (NEW_visualinfo_C))
         (COPY-visualinfo visualinfo, (:b_visual @curbuf))
 
-        (swap! curbuf update :b_op_start assoc :lnum (:ml_line_count (:b_ml @curbuf)) :col 0)
+        (swap! curbuf update :b_op_start assoc :lnum (line-count @curbuf) :col 0)
         (swap! curbuf update :b_op_end assoc :lnum 0 :col 0)
 
         ((ß FOR) (ß ((ß u_entry_C uep =) (ß curhead.uh_entry, nuep)) (some? uep) ((ß uep =) nuep))
             ((ß long top =) (:ue_top uep))
             ((ß long bot =) (:ue_bot uep))
-            ((ß bot =) (if (zero? bot) (inc (:ml_line_count (:b_ml @curbuf))) bot))
-            (when (or (> top (:ml_line_count (:b_ml @curbuf))) (<= bot top) (> bot (inc (:ml_line_count (:b_ml @curbuf)))))
+            ((ß bot =) (if (zero? bot) (inc (line-count @curbuf)) bot))
+            (when (or (> top (line-count @curbuf)) (<= bot top) (> bot (inc (line-count @curbuf))))
                 (emsg (u8 "E438: u-undo: line numbers wrong"))
                 (changed)          ;; don't want UNCHANGED now
                 ((ß RETURN) nil)
@@ -38901,7 +38904,7 @@
                     ((ß newarray[i] =) (STRDUP (ml-get lnum)))
                     ;; remember we deleted the last line in the buffer,
                     ;; and a dummy empty line will be inserted
-                    ((ß empty_buffer =) (or (== (:ml_line_count (:b_ml @curbuf)) 1) empty_buffer))
+                    ((ß empty_buffer =) (or (== (line-count @curbuf) 1) empty_buffer))
                     (ml-delete lnum, false)
                 )
             )
@@ -38985,7 +38988,7 @@
 
         (when (and (== (inc (:lnum (:uh_cursor curhead))) (:lnum (:w_cursor @curwin))) (< 1 (:lnum (:w_cursor @curwin))))
             (swap! curwin update-in [:w_cursor :lnum] dec))
-        (cond (<= (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
+        (cond (<= (:lnum (:w_cursor @curwin)) (line-count @curbuf))
         (do
             (cond (== (:lnum (:uh_cursor curhead)) (:lnum (:w_cursor @curwin)))
             (do
@@ -39114,7 +39117,7 @@
         (when (some? (u-get-headentry)) ;; check for corrupt undo list
             (let [#_u_entry_C uep (:uh_getbot_entry (:b_u_newhead @curbuf))]
                 (when (some? uep)
-                    (let [lmax (:ml_line_count (:b_ml @curbuf))]
+                    (let [lmax (line-count @curbuf)]
                         ;; the new ue_bot is computed from the number of lines that has been
                         ;; inserted (0 - deleted) since calling u-save().  This is equal to the
                         ;; old line count subtracted from the current line count.
@@ -39207,7 +39210,7 @@
 ;; save the line "lnum" for the "U" command
 
 (defn- #_void u-saveline [#_long lnum]
-    (when (and (!= lnum (:b_u_line_lnum @curbuf)) (<= 1 lnum (:ml_line_count (:b_ml @curbuf))))
+    (when (and (!= lnum (:b_u_line_lnum @curbuf)) (<= 1 lnum (line-count @curbuf)))
         (u-clearline)
         (let [cursor (:w_cursor @curwin)]
             (swap! curbuf assoc
@@ -39230,7 +39233,7 @@
 ;; We also allow the cursor to be in another line.
 
 (defn- #_window_C u-undoline [#_window_C win]
-    (let-when [uln (:b_u_line_lnum @curbuf)] (and (some? (:b_u_line_ptr @curbuf)) (<= uln (:ml_line_count (:b_ml @curbuf)))) => (do (beep-flush) win)
+    (let-when [uln (:b_u_line_lnum @curbuf)] (and (some? (:b_u_line_ptr @curbuf)) (<= uln (line-count @curbuf))) => (do (beep-flush) win)
         (if (u-savecommon (dec uln), (inc uln), 0, false)
             (let [#_Bytes s (STRDUP (ml-get uln))]
                 (ml-replace uln, (:b_u_line_ptr @curbuf))
@@ -41343,7 +41346,7 @@
             )
 
             ;; stop updating when hit the end of the file
-            (when (< (:ml_line_count (:b_ml @curbuf)) lnum)
+            (when (< (line-count @curbuf) lnum)
                 ((ß eof =) true)
                 (ß BREAK)
             )
@@ -41535,7 +41538,7 @@
                 ((ß lnum =) (inc lnum))
             ))
 
-            (when (< (:ml_line_count (:b_ml @curbuf)) lnum)
+            (when (< (line-count @curbuf) lnum)
                 ((ß eof =) true)
                 (ß BREAK)
             )
@@ -41578,7 +41581,7 @@
             (draw-vsep-win win, row)
             (cond eof                                ;; we hit the end of the file
             (do
-                ((ß win =) (assoc win :w_botline (inc (:ml_line_count (:b_ml @curbuf)))))
+                ((ß win =) (assoc win :w_botline (inc (line-count @curbuf))))
             )
             :else
             (do
@@ -44997,7 +45000,7 @@
     ;; If 'ruler' is off or redrawing is disabled, don't do anything.
     ;; Also check if cursor.lnum is valid, since win-redr-ruler() may be
     ;; called after deleting lines, before cursor.lnum is corrected.
-    (let-when [lmax (:ml_line_count (:b_ml @curbuf))] (and @p_ru (<= (:lnum (:w_cursor win)) lmax)) => win
+    (let-when [lmax (line-count @curbuf)] (and @p_ru (<= (:lnum (:w_cursor win)) lmax)) => win
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
         (let-when [#_boolean empty (and (non-flag? @State INSERT) (eos? (ml-get (:lnum (:w_cursor win)))))
               win (validate-virtcol win)
@@ -45061,7 +45064,7 @@
         :else
         (do
             ;; cursor line shows absolute line number
-            ((ß lnum =) (:ml_line_count (:b_ml @curbuf)))
+            ((ß lnum =) (line-count @curbuf))
         ))
 
         (if (and (== lnum (:w_nrwidth_line_count win)) (== (:w_nuw_cached win) @(:wo_nuw (:w_options win))))
@@ -47678,7 +47681,7 @@
 ;; Can be called after win.w_topline changed.
 
 (defn- #_window_C comp-botline [#_window_C win]
-    (let [win (check-cursor-moved win) lmax (:ml_line_count (:b_ml @curbuf))
+    (let [win (check-cursor-moved win) lmax (line-count @curbuf)
           ;; if "w_cline_row" is valid, start there; else have to start at "w_topline"
           [lnum done] (if (flag? (:w_valid win) VALID_CROW) [(:lnum (:w_cursor win)) (:w_cline_row win)] [(:w_topline win) 0])
           [lnum done win]
@@ -47752,7 +47755,7 @@
                     ;; but we don't want to spend (a lot of) time recomputing "w_botline" for every small change.
                     (let [win (if check_botline
                                 (let [win (if (non-flag? (:w_valid win) VALID_BOTLINE_AP) (validate-botline win) win)]
-                                    (if (<= (:w_botline win) (:ml_line_count (:b_ml @curbuf)))
+                                    (if (<= (:w_botline win) (line-count @curbuf))
                                         (let [cln (:lnum (:w_cursor win)) check_botline
                                                 (or (<= (:w_botline win) cln)
                                                     (and (<= (- (:w_botline win) @p_so) cln)
@@ -48117,7 +48120,7 @@
 ;; Scroll window "win" up by "n" logical lines.  "CTRL-E"
 
 (defn- #_window_C scrollup [#_window_C win, #_long n]
-    (let [lmax (:ml_line_count (:b_ml @curbuf))
+    (let [lmax (line-count @curbuf)
           win (assoc win :w_topline (min (+ (:w_topline win) n) lmax))
           win (assoc win :w_botline (min (+ (:w_botline win) n) (inc lmax))) ;; approximate "w_botline"
           win (update win :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE)))]
@@ -48142,7 +48145,7 @@
 ;; Lines below the last one are incredibly high: MAXCOL.
 
 (defn- #_lineoff_C botline-forw [#_lineoff_C loff, #_window_C win]
-    (let [n (inc (:lnum loff))] (assoc loff :lnum n :height (if (< (:ml_line_count (:b_ml @curbuf)) n) MAXCOL (plines win, n, true)))))
+    (let [n (inc (:lnum loff))] (assoc loff :lnum n :height (if (< (line-count @curbuf) n) MAXCOL (plines win, n, true)))))
 
 ;; Recompute topline to put the cursor at the top of the window.
 ;; Scroll at least "min_sj" lines.
@@ -48152,7 +48155,7 @@
     ;; Decrease topline until it has become 1 or (part of) the cursor line is moved off the screen or
     ;; moved at least 'scrolljump' lines and there are at least 'scrolloff' lines above and below the cursor.
     (let [o'topline (:w_topline win)
-          cln (:lnum (:w_cursor win)) lmax (:ml_line_count (:b_ml @curbuf))
+          cln (:lnum (:w_cursor win)) lmax (line-count @curbuf)
           win (validate-cheight win)
           #_int used (:w_cline_height win) #_int done (if (< cln (:w_topline win)) used 0)
           ;; Check if the lines from "top" to "bot" fit in the window.
@@ -48197,7 +48200,7 @@
 
 (defn- #_window_C scroll-cursor-bot [#_window_C win, #_int min_sj, #_boolean set_topbot]
     (let [o'topline (:w_topline win) o'botline (:w_botline win) o'valid (:w_valid win) o'empty_rows (:w_empty_rows win)
-          cln (:lnum (:w_cursor win)) lmax (:ml_line_count (:b_ml @curbuf))
+          cln (:lnum (:w_cursor win)) lmax (line-count @curbuf)
           win (if set_topbot
                 (let [win (assoc win :w_topline (inc cln) :w_botline (inc cln))
                       win (let [[win #_int used]
@@ -48278,7 +48281,7 @@
 ;; If "atend" is true, also put it halfway at the end of the file.
 
 (defn- #_window_C scroll-cursor-halfway [#_window_C win, #_boolean atend]
-    (let [cln (:lnum (:w_cursor win)) lmax (:ml_line_count (:b_ml @curbuf))
+    (let [cln (:lnum (:w_cursor win)) lmax (line-count @curbuf)
           #_long topline
             (loop-when [#_int above 0, #_int below 0, loff (->lineoff_C cln 0), boff (->lineoff_C cln 0), #_int used (plines win, cln, true), topline cln] (< 1 topline) => topline
                 (let-when [[below boff used :as _]
@@ -48312,7 +48315,7 @@
 
 (defn- #_window_C cursor-correct [#_window_C win]
     ;; How many lines we would like to have above/below the cursor depends on whether the first/last line of the file is on screen.
-    (let-when [aw @p_so, bw @p_so, lmin 1, lmax (:ml_line_count (:b_ml @curbuf))
+    (let-when [aw @p_so, bw @p_so, lmin 1, lmax (line-count @curbuf)
           [aw bw] (if (== (:w_topline win)      lmin)  [0 (min bw (/      (:w_height win)  2))] [aw bw])
           win (validate-botline win)
           [bw aw] (if (== (:w_botline win) (inc lmax)) [0 (min aw (/ (dec (:w_height win)) 2))] [bw aw])
@@ -48345,7 +48348,7 @@
 ;; return false for failure, true otherwise
 
 (defn- #_[window_C boolean] onepage? [#_window_C win, #_int dir, #_long count]
-    (let-when [lmin 1 lmax (:ml_line_count (:b_ml @curbuf))] (!= lmin lmax) => (do (beep-flush) [win false]) ;; nothing to do
+    (let-when [lmin 1 lmax (line-count @curbuf)] (!= lmin lmax) => (do (beep-flush) [win false]) ;; nothing to do
         (let [o'topline (:w_topline win)
               [win #_boolean ok]
                 (loop-when [win win count count] (< 0 count) => [win true]
@@ -48450,7 +48453,7 @@
     (let [scr (min @(:wo_scr (:w_options win)) (:w_height win))
           win (validate-botline win)
           win (cond ctrl_d ;; scroll the text up
-                (let [lmax (:ml_line_count (:b_ml @curbuf)) [win scr]
+                (let [lmax (line-count @curbuf) [win scr]
                         (loop-when [win win scr scr sed 0 room (:w_empty_rows win)] (and (< 0 scr) (<= (:w_botline win) lmax)) => [win scr]
                             (let [n (plines win, (:w_topline win), true) scr (- scr n)]
                                 (if (and (< scr 0) (< 0 sed))
@@ -49193,7 +49196,7 @@
                     (may-clear-sb-text)        ;; clear scroll-back text on next msg
                     (swap! curwin showruler false)
                     (when (and lupd (or (!= lold lnew) (conceal-cursor-line @curwin) (:w_redraw_cline @curwin)))
-                        (when (and (!= lold lnew) (<= lold (:ml_line_count (:b_ml @curbuf))))
+                        (when (and (!= lold lnew) (<= lold (line-count @curbuf)))
                             (swap! curwin update-single-line lold))
                         (swap! curwin update-single-line lnew)
                         (swap! curwin update :w_valid & (bit-not VALID_CROW)))
