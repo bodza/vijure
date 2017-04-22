@@ -4,8 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static vijure.VimB.*;
-
 public class VimA
 {
     public/*private*/ static final int char_u(byte b)
@@ -285,12 +283,12 @@ public class VimA
         while (b != NUL);
     }
 
-    public/*private*/ static final int strlen(Bytes s, int i)
+    public/*private*/ static final int STRLEN(Bytes s, int i)
     {
-        return strlen(s.plus(i));
+        return STRLEN(s.plus(i));
     }
 
-    public/*private*/ static int strlen(Bytes s)
+    public/*private*/ static int STRLEN(Bytes s)
     {
         for (Bytes p = s; ; p = p.plus(1))
             if (p.at(0) == NUL)
