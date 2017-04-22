@@ -36,11 +36,11 @@
     (map (fn [t] (let [t* (symbol (str t \*))]
         `(defn- ~t* [v#] (cond (sequential? v#) (mapv ~t v#) (number? v#) (recur (repeat v# nil)) :else (assert (nil? v#) (str "fuzzy " '~t* " " v#))))
     )) types)))
-(def'type* boolean byte byte* short int int* long object object*)
+(def'type* boolean byte byte* int int* long object object*)
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
@@ -48,17 +48,17 @@
 
 (def- F (map #(symbol (str % "_F")) '(ex_func nv_func)))
 
-(let [I '(byte byte! byte* byte** short short* int int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
+(let [I '(byte byte! byte* byte** int int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)))]
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (~t ~(second s))) (f t (nnext s))) '(nil)))]
         (defmacro final [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
 
-(let [I '(boolean boolean* short short* int int* int** long long* maybean) O (cons 'Bytes C) O* (concat '(Bytes* Object*) C*) O** C**
+(let [I '(boolean boolean* int int* int** long long* maybean) O (cons 'Bytes C) O* (concat '(Bytes* Object*) C*) O** C**
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)) (zipmap O** (repeat 'object**)))]
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (atom (~t ~(second s)))) (f t (nnext s))) '(nil)))]
         (defmacro atom! [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
 
-(let [I '#{boolean byte short int long} A '(byte* short* int*) O (concat '(Bytes Object) C F) O* (concat '(Bytes* Object*) C*) O** C**
+(let [I '#{boolean byte int long} A '(byte* int*) O (concat '(Bytes Object) C F) O* (concat '(Bytes* Object*) C*) O** C**
       T (merge (zipmap I I) (zipmap A A) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)) (zipmap O** (repeat 'object**)))]
     (letfn [(f' [[f t n & [v]]] (let [t' (T t)] (assert t' (str "unexpected type: " t))
             (case f atom' `[~n (atom (~t' ~v))]
@@ -1112,7 +1112,6 @@
 (atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_breakat)   ;; 'breakat'
 (atom! Bytes   p_cedit)     ;; 'cedit'
-(atom! Bytes   p_cb)        ;; 'clipboard'
 (atom! long    p_ch)        ;; 'cmdheight'
 (atom! long    p_cwh)       ;; 'cmdwinheight'
 (atom! Bytes   p_cpo)       ;; 'cpoptions'
@@ -2168,38 +2167,6 @@
 (final int CA_COMMAND_BUSY  1)  ;; skip restarting edit() once
 (final int CA_NO_ADJ_OP_END 2)  ;; don't adjust operator end
 
-;; ----------------------------------------------------------------------- ;;
-
-;; Selection states for modeless selection.
-(final int SELECT_CLEARED     0)
-(final int SELECT_IN_PROGRESS 1)
-(final int SELECT_DONE        2)
-
-(final int SELECT_MODE_CHAR   0)
-(final int SELECT_MODE_WORD   1)
-(final int SELECT_MODE_LINE   2)
-
-;; Info about selected text.
-(class! #_final clipboard_C
-    [
-        (field boolean      available)          ;; Is clipboard available?
-        (field boolean      owned)              ;; Flag: do we own the selection?
-        (field pos_C        cbd_start       (§_pos_C))  ;; start of selected area
-        (field pos_C        cbd_end         (§_pos_C))  ;; end of selected area
-        (field int          vmode)              ;; visual mode character
-
-        ;; Fields for selection that doesn't use Visual mode.
-        (field int          origin_row)
-        (field int          origin_start_col)
-        (field int          origin_end_col)
-        (field int          word_start_col)
-        (field int          word_end_col)
-
-        (field pos_C        cbd_prev        (§_pos_C))  ;; previous position
-        (field short        state)              ;; current selection state
-        (field short        mode)               ;; select by char, word, or line
-    ])
-
 ;;; ============================================================================================== VimE
 
 ;; ex_cmds.h --------------------------------------------------------------------------------------
@@ -2459,14 +2426,6 @@
 (atom! int**    screenLinesC    MAX_MCO)    ;; composing characters
 (atom! int      screen_mco)         ;; value of "p_mco" used when allocating screenLinesC[]
 
-;; Indexes for tab page line:
-;;      N > 0 for label of tab page N
-;;      N == 0 for no label
-;;      N < 0 for closing tab page -N
-;;      N == -999 for closing current tab page
-
-(atom! short*   tabPageIdxs)
-
 (atom! int      screenRows)         ;; actual size of screenLines[]
 (atom! int      screenColumns)      ;; actual size of screenLines[]
 
@@ -2570,22 +2529,6 @@
 ;; It means the screen size ('lines' and 'rows') must not be changed.
 
 (atom! boolean  updating_screen)
-
-(atom! clipboard_C clip_star (§_clipboard_C))
-(atom! clipboard_C clip_plus (§_clipboard_C))
-
-(final int
-    CLIP_UNNAMED      1,
-    CLIP_UNNAMED_PLUS 2)
-(atom! int      clip_unnamed)           ;; above two values or'ed
-(atom! int      clip_unnamed_saved)
-
-(atom! boolean  clip_autoselect_star)
-(atom! boolean  clip_autoselect_plus)
-(atom! boolean  clip_autoselectml)
-(atom! boolean  clip_html)
-(atom! regprog_C clip_exclude_prog)
-(atom! boolean  clip_did_set_selection true)
 
 ;; All windows are linked in a list.  "firstwin" points to the first entry,
 ;; "lastwin" to the last entry (can be the same as "firstwin") and "curwin"
@@ -2833,9 +2776,6 @@
 
 (atom! maybean  virtual_op  MAYBE)
 
-;; Display tick, incremented for each call to update_screen().
-(atom! short    display_tick)
-
 ;; Set when the cursor line needs to be redrawn.
 (atom! boolean  need_cursor_line_redraw)
 
@@ -2959,15 +2899,10 @@
 ;       params.argc = argc;
 ;       params.argv = argv;
 
-        ;; Init the table of Normal mode commands.
-;       init_normal_cmds();
-
         ;; Allocate space for the generic buffers (needed for set_init_1() and emsg2()).
 
 ;       @ioBuff = new Bytes(IOSIZE);
 ;       @nameBuff = new Bytes(MAXPATHL);
-
-;       clip_init(false);                       ;; initialise clipboard stuff
 
         ;; Check if we have an interactive window.
 
@@ -3367,7 +3302,7 @@
 ;               return 0;
 
             ;; For some terminals we only get one character at a time.
-            ;; We want the get all available characters, so we could keep on trying until none is available
+            ;; We want the get all available characters, so we could keep on trying until none is available.
             ;; For some other terminals this is quite slow, that's why we don't do it.
 
 ;           int len = read_from_input_buf(buf, maxlen);
@@ -4316,15 +4251,6 @@
 ;               --@no_mapping;
 ;               --@allow_keys;
 ;               @Recording = save_Recording;
-
-                ;; Strange way to allow copying (yanking) a modeless selection at
-                ;; the hit-enter prompt.  Use CTRL-Y, because the same is used in
-                ;; Cmdline-mode and it's harmless when there is no selection.
-;               if (c == Ctrl_Y && @clip_star.state == SELECT_DONE)
-;               {
-;                   clip_copy_modeless_selection(true);
-;                   c = K_IGNORE;
-;               }
 
                 ;; Allow scrolling back in the messages.
                 ;; Also accept scroll-down commands when messages fill the screen,
@@ -5417,8 +5343,7 @@
                     ;; because the same is used in Cmdline-mode and at the
                     ;; hit-enter prompt.  However, scrolling one line up
                     ;; might be expected...
-;                   if (@clip_star.state == SELECT_DONE)
-;                       clip_copy_modeless_selection(true);
+;                   
 ;                   continue;
 
 ;               default:                    ;; no valid response
@@ -6438,8 +6363,6 @@
 ;; The order of the options MUST be alphabetic for ":set all" and findoption().
 ;; All option names MUST start with a lowercase letter (for findoption()).
 ;; Exception: "t_" options are at the end.
-;; The options with a null variable are 'hidden': a set command for them is
-;; ignored and they are not printed.
 
 (final vimoption_C* vimoptions
     [
@@ -6452,7 +6375,6 @@
         (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
         (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     0,          CTRL_F_STR),
         (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            null,        PV_CINW,   (u8 "if,else,while,do,for,switch")),
-        (utf8_opt (u8 "clipboard"),      (u8 "cb"),     (| P_COMMA P_NODUP),            p_cb,        0,         (u8 "")),
         (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        0,          1#_L),
         (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7#_L),
         (utf8_opt (u8 "colorcolumn"),    (u8 "cc"),     (| P_COMMA P_NODUP P_RWIN),     null,        PV_CC,     (u8 "")),
@@ -6621,11 +6543,9 @@
         (term_opt (u8 "t_xn"), T_XN),
         (term_opt (u8 "t_xs"), T_XS),
         (term_opt (u8 "t_ZH"), T_CZH),
-        (term_opt (u8 "t_ZR"), T_CZR),
+        (term_opt (u8 "t_ZR"), T_CZR)
 
         ;; terminal key codes are not in here
-
-        (new_vimoption null, null, 0, null, 0, null)
     ])
 
 (final Bytes*
@@ -6666,9 +6586,6 @@
         ;; Parse default for 'fillchars'.
 ;       set_chars_option(p_fcs);
 
-        ;; Parse default for 'clipboard'.
-;       check_clipboard_option();
-
         ;; The cell width depends on the type of multi-byte characters.
 ;       init_chartab();
 
@@ -6684,27 +6601,25 @@
 ;       vimoption_C v = vimoptions[opt_idx];
 
 ;       Object varp = get_varp(v);
-;       if (varp != null)       ;; skip hidden option, nothing to do for it
+
+;       if ((v.@flags & P_STRING) != 0)
+;           ((Bytes[])varp)[0] = STRDUP((Bytes)v.def_val);
+;       else if ((v.@flags & P_NUM) != 0)
 ;       {
-;           if ((v.@flags & P_STRING) != 0)
-;               ((Bytes[])varp)[0] = STRDUP((Bytes)v.def_val);
-;           else if ((v.@flags & P_NUM) != 0)
-;           {
-;               if (v.indir == PV_SCROLL)
-;                   win_comp_scroll(@curwin);
-;               else
-;                   ((long[])varp)[0] = (long)v.def_val;
-;           }
-;           else    ;; P_BOOL
-;               ((boolean[])varp)[0] = (boolean)v.def_val;
+;           if (v.indir == PV_SCROLL)
+;               win_comp_scroll(@curwin);
+;           else
+;               ((long[])varp)[0] = (long)v.def_val;
 ;       }
+;       else    ;; P_BOOL
+;           ((boolean[])varp)[0] = (boolean)v.def_val;
     ))
 
 ;; Set all options (except terminal options) to their default value.
 
 (defn- #_void set_options_default []
     (§
-;       for (int i = 0; !istermoption(vimoptions[i]); i++)
+;       for (int i = 0; i < vimoptions.length && !istermoption(vimoptions[i]); i++)
 ;           if ((vimoptions[i].@flags & P_NODEFAULT) == 0)
 ;               set_option_default(i);
 
@@ -7407,7 +7322,7 @@
 
 (defn- #_void check_options []
     (§
-;       for (int opt_idx = 0; vimoptions[opt_idx].fullname != null; opt_idx++)
+;       for (int opt_idx = 0; opt_idx < vimoptions.length; opt_idx++)
 ;           if ((vimoptions[opt_idx].@flags & P_STRING) != 0)
 ;               check_string_option((Bytes[])get_varp(vimoptions[opt_idx]));
     ))
@@ -7435,13 +7350,6 @@
 ;           pp[0] = EMPTY_OPTION;
     ))
 
-;; Redraw the tab page text later.
-
-(defn- #_void redraw_titles []
-    (§
-        
-    ))
-
 ;; Set a string option to a new value (without checking the effect).
 ;; If ("opt_idx" == -1) "name" is used, otherwise "opt_idx" is used.
 
@@ -7460,11 +7368,9 @@
 
 ;       vimoption_C v = vimoptions[opt_idx];
 
-;       Object varp = get_varp(v);
-;       if (varp != null)       ;; can't set hidden option
-;       {
-;           ((Bytes[])varp)[0] = STRDUP(val);
-;       }
+;       Bytes[] varp = (Bytes[])get_varp(v);
+
+;       varp[0] = STRDUP(val);
     ))
 
 ;; Set a string option to a new value, and handle the effects.
@@ -7475,8 +7381,6 @@
 ;       vimoption_C v = vimoptions[opt_idx];
 
 ;       Bytes[] varp = (Bytes[])get_varp(v);
-;       if (varp == null)   ;; don't set hidden option
-;           return null;
 
 ;       Bytes oldval = varp[0];
 ;       varp[0] = STRDUP(value);
@@ -7707,10 +7611,6 @@
 ;               errmsg = e_invarg;
 ;       }
 
-        ;; 'clipboard'
-;       else if (varp == p_cb)
-;           errmsg = check_clipboard_option();
-
         ;; 'pastetoggle': translate key codes like in a mapping
 ;       else if (varp == p_pt)
 ;       {
@@ -7938,80 +7838,6 @@
 ;       return null;        ;; no error
     ))
 
-;; Extract the items in the 'clipboard' option and set global values.
-
-(defn- #_Bytes check_clipboard_option []
-    (§
-;       int new_unnamed = 0;
-;       boolean new_autoselect_star = false;
-;       boolean new_autoselect_plus = false;
-;       boolean new_autoselectml = false;
-;       boolean new_html = false;
-;       regprog_C new_exclude_prog = null;
-;       Bytes errmsg = null;
-
-;       for (Bytes p = @p_cb; p.at(0) != NUL; )
-;       {
-;           if (STRNCMP(p, u8("unnamed"), 7) == 0 && (p.at(7) == (byte)',' || p.at(7) == NUL))
-;           {
-;               new_unnamed |= CLIP_UNNAMED;
-;               p = p.plus(7);
-;           }
-;           else if (STRNCMP(p, u8("unnamedplus"), 11) == 0 && (p.at(11) == (byte)',' || p.at(11) == NUL))
-;           {
-;               new_unnamed |= CLIP_UNNAMED_PLUS;
-;               p = p.plus(11);
-;           }
-;           else if (STRNCMP(p, u8("autoselect"), 10) == 0 && (p.at(10) == (byte)',' || p.at(10) == NUL))
-;           {
-;               new_autoselect_star = true;
-;               p = p.plus(10);
-;           }
-;           else if (STRNCMP(p, u8("autoselectplus"), 14) == 0 && (p.at(14) == (byte)',' || p.at(14) == NUL))
-;           {
-;               new_autoselect_plus = true;
-;               p = p.plus(14);
-;           }
-;           else if (STRNCMP(p, u8("autoselectml"), 12) == 0 && (p.at(12) == (byte)',' || p.at(12) == NUL))
-;           {
-;               new_autoselectml = true;
-;               p = p.plus(12);
-;           }
-;           else if (STRNCMP(p, u8("html"), 4) == 0 && (p.at(4) == (byte)',' || p.at(4) == NUL))
-;           {
-;               new_html = true;
-;               p = p.plus(4);
-;           }
-;           else if (STRNCMP(p, u8("exclude:"), 8) == 0 && new_exclude_prog == null)
-;           {
-;               p = p.plus(8);
-;               new_exclude_prog = vim_regcomp(p, RE_MAGIC);
-;               if (new_exclude_prog == null)
-;                   errmsg = e_invarg;
-;               break;
-;           }
-;           else
-;           {
-;               errmsg = e_invarg;
-;               break;
-;           }
-;           if (p.at(0) == (byte)',')
-;               p = p.plus(1);
-;       }
-
-;       if (errmsg == null)
-;       {
-;           @clip_unnamed = new_unnamed;
-;           @clip_autoselect_star = new_autoselect_star;
-;           @clip_autoselect_plus = new_autoselect_plus;
-;           @clip_autoselectml = new_autoselectml;
-;           @clip_html = new_html;
-;           @clip_exclude_prog = new_exclude_prog;
-;       }
-
-;       return errmsg;
-    ))
-
 ;; Set the value of a boolean option, and take care of side effects.
 ;; Returns null for success, or an error message for an error.
 
@@ -8073,11 +7899,6 @@
 ;               do_check_scrollbind(false);
 ;               @curwin.w_scbind_pos = @curwin.w_topline;
 ;           }
-;       }
-
-;       else if (varp == @curbuf.b_changed)
-;       {
-;           redraw_titles();
 ;       }
 
         ;; If 'wrap' is set, set w_leftcol to zero.
@@ -8427,65 +8248,31 @@
 ;           redraw_all_later(NOT_VALID);
     ))
 
-(atom! short* quick_tab (inc 26))   ;; quick access table
-
 ;; Find index for option 'arg'.
 ;; Return -1 if not found.
 
 (defn- #_int findoption [#_Bytes arg]
     (§
-;       Bytes s;
-
-        ;; For first call: Initialize the quick-access table.
-        ;; It contains the index for the first option that starts with a certain letter.
-        ;; There are 26 letters, plus the first "t_" option.
-
-;       if (@quick_tab[1] == 0)
-;       {
-;           Bytes p = vimoptions[0].fullname;
-;           for (int opt_idx = 1; (s = vimoptions[opt_idx].fullname) != null; opt_idx++)
-;           {
-;               if (s.at(0) != p.at(0))
-;               {
-;                   if (s.at(0) == (byte)'t' && s.at(1) == (byte)'_')
-;                       @quick_tab[26] = (short)opt_idx;
-;                   else
-;                       @quick_tab[charOrdLow(s.at(0))] = (short)opt_idx;
-;               }
-;               p = s;
-;           }
-;       }
-
         ;; Check for name starting with an illegal character.
 
 ;       if (arg.at(0) < 'a' || 'z' < arg.at(0))
 ;           return -1;
 
-;       int opt_idx;
-;       boolean is_term_opt = (arg.at(0) == (byte)'t' && arg.at(1) == (byte)'_');
-;       if (is_term_opt)
-;           opt_idx = @quick_tab[26];
-;       else
-;           opt_idx = @quick_tab[charOrdLow(arg.at(0))];
-;       for ( ; (s = vimoptions[opt_idx].fullname) != null; opt_idx++)
+;       for (int opt_idx = 0; opt_idx < vimoptions.length; opt_idx++)
 ;       {
+;           Bytes s = vimoptions[opt_idx].fullname;
 ;           if (STRCMP(arg, s) == 0)                    ;; match full name
-;               break;
+;               return opt_idx;
 ;       }
-;       if (s == null && !is_term_opt)
+
+;       for (int opt_idx = 0; opt_idx < vimoptions.length; opt_idx++)
 ;       {
-;           opt_idx = @quick_tab[charOrdLow(arg.at(0))];
-;           for ( ; vimoptions[opt_idx].fullname != null; opt_idx++)
-;           {
-;               s = vimoptions[opt_idx].shortname;
-;               if (s != null && STRCMP(arg, s) == 0)   ;; match short name
-;                   break;
-;               s = null;
-;           }
+;           Bytes s = vimoptions[opt_idx].shortname;
+;           if (s != null && STRCMP(arg, s) == 0)       ;; match short name
+;               return opt_idx;
 ;       }
-;       if (s == null)
-;           opt_idx = -1;
-;       return opt_idx;
+
+;       return -1;
     ))
 
 ;; Set the value of option "name".
@@ -8508,29 +8295,27 @@
 ;           return set_string_option(opt_idx, string);
 
 ;       Object varp = get_varp(vimoptions[opt_idx]);
-;       if (varp != null)   ;; hidden option is not changed
+
+;       if (number == 0 && string != null)
 ;       {
-;           if (number == 0 && string != null)
-;           {
-;               int idx;
+;           int idx;
 
-                ;; Either we are given a string or we are setting option to zero.
-;               for (idx = 0; string.at(idx) == (byte)'0'; idx++)
+            ;; Either we are given a string or we are setting option to zero.
+;           for (idx = 0; string.at(idx) == (byte)'0'; idx++)
                 ;
-;               if (string.at(idx) != NUL || idx == 0)
-;               {
-                    ;; There's another character after zeros or the string is empty.
-                    ;; In both cases, we are trying to set a num option using a string.
-;                   emsg3(u8("E521: Number required: &%s = '%s'"), name, string);
-;                   return null;        ;; do nothing as we hit an error
-;               }
+;           if (string.at(idx) != NUL || idx == 0)
+;           {
+                ;; There's another character after zeros or the string is empty.
+                ;; In both cases, we are trying to set a num option using a string.
+;               emsg3(u8("E521: Number required: &%s = '%s'"), name, string);
+;               return null;        ;; do nothing as we hit an error
 ;           }
-
-;           if ((flags & P_NUM) != 0)
-;               return set_num_option(opt_idx, (long[])varp, number, null, 0);
-;           else
-;               return set_bool_option(opt_idx, (boolean[])varp, (number != 0));
 ;       }
+
+;       if ((flags & P_NUM) != 0)
+;           return set_num_option(opt_idx, (long[])varp, number, null, 0);
+;       else
+;           return set_bool_option(opt_idx, (boolean[])varp, (number != 0));
 
 ;       return null;
     ))
@@ -8592,16 +8377,13 @@
             ;; collect the items in items[]
 
 ;           int item_count = 0;
-;           for (int i = 0; vimoptions[i].fullname != null; i++)
+;           for (int i = 0; i < vimoptions.length; i++)
 ;           {
 ;               boolean isterm = istermoption(vimoptions[i]);
 
 ;               Object varp = get_varp(vimoptions[i]);
 
-;               if (varp != null
-;                       && ((all == 2 && isterm)
-;                           || (all == 1 && !isterm)
-;                           || (all == 0 && !optval_default(vimoptions[i], varp))))
+;               if ((all == 2 && isterm) || (all == 1 && !isterm) || (all == 0 && !optval_default(vimoptions[i], varp)))
 ;               {
 ;                   int len;
 ;                   if ((vimoptions[i].@flags & P_BOOL) != 0)
@@ -8709,7 +8491,7 @@
 
 (defn- #_void free_termoptions []
     (§
-;       for (int i = 0; vimoptions[i].fullname != null; i++)
+;       for (int i = 0; i < vimoptions.length; i++)
 ;           if (istermoption(vimoptions[i]))
 ;           {
 ;               ((Bytes[])vimoptions[i].var)[0] = EMPTY_OPTION;
@@ -8725,7 +8507,7 @@
 
 (defn- #_void free_one_termoption [#_Bytes* varp]
     (§
-;       for (int i = 0; vimoptions[i].fullname != null; i++)
+;       for (int i = 0; i < vimoptions.length; i++)
 ;           if (vimoptions[i].var == varp)
 ;           {
 ;               ((Bytes[])vimoptions[i].var)[0] = EMPTY_OPTION;
@@ -8738,7 +8520,7 @@
 
 (defn- #_void set_term_defaults []
     (§
-;       for (int i = 0; vimoptions[i].fullname != null; i++)
+;       for (int i = 0; i < vimoptions.length; i++)
 ;       {
 ;           if (istermoption(vimoptions[i]) && vimoptions[i].def_val != ((Bytes[])vimoptions[i].var)[0])
 ;               vimoptions[i].def_val = ((Bytes[])vimoptions[i].var)[0];
@@ -10675,9 +10457,9 @@
 ;       }
 ;       else
 ;       {
-;           start_global_changes();
+;           start_global_changes();
 ;           global_exe(cmd);
-;           end_global_changes();
+;           end_global_changes();
 ;       }
 
 ;       ml_clearmarked();                   ;; clear rest of the marks
@@ -11153,7 +10935,6 @@
 ;                           break cmdline_not_changed;
 ;                       }
 
-                     ;; case '@':   only in very old vi
 ;                       case Ctrl_U:
 ;                       {
                             ;; delete all characters left of the cursor
@@ -11171,12 +10952,7 @@
 ;                       case Ctrl_Y:
 ;                       {
                             ;; Copy the modeless selection, if there is one.
-;                           if (@clip_star.state != SELECT_CLEARED)
-;                           {
-;                               if (@clip_star.state == SELECT_DONE)
-;                                   clip_copy_modeless_selection(true);
-;                               break cmdline_not_changed;
-;                           }
+;                           
 ;                           break;
 ;                       }
 
@@ -14917,43 +14693,6 @@
         (field int          cmd_arg)            ;; value for ca.arg
     ])
 
-;; Compare function for qsort() below, that checks the command
-;; character through the index in nv_cmd_idx[].
-
-;   static final Comparator<Short> nv_compare = new Comparator<Short>()
-;   {
-;       public int compare(Short s1, Short s2)
-;       {
-            ;; The commands are sorted on absolute value.
-;           int c1 = nv_cmds[s1].cmd_char;
-;           int c2 = nv_cmds[s2].cmd_char;
-;           if (c1 < 0)
-;               c1 = -c1;
-;           if (c2 < 0)
-;               c2 = -c2;
-;           return c1 - c2;
-;       }
-;   };
-
-;; Initialize the nv_cmd_idx[] table.
-
-(defn- #_void init_normal_cmds []
-    (§
-        ;; Fill the index table with a one to one relation.
-;       for (int i = 0; i < nv_cmds.length; i++)
-;           nv_cmd_idx[i] = (short)i;
-
-        ;; Sort the commands by the command character.
-;       Arrays.sort(nv_cmd_idx, nv_compare);
-
-        ;; Find the first entry that can't be indexed by the command character.
-;       int i;
-;       for (i = 0; i < nv_cmds.length; i++)
-;           if (nv_cmds[nv_cmd_idx[i]].cmd_char != i)
-;               break;
-;       @nv_max_linear = i - 1;
-    ))
-
 ;; Search for a command in the commands table.
 ;; Returns -1 for invalid command.
 
@@ -14963,36 +14702,7 @@
 ;       if (0x100 <= cmdchar)
 ;           return -1;
 
-        ;; We use the absolute value of the character.
-        ;; Special keys have a negative value, but are sorted on their absolute value.
-;       if (cmdchar < 0)
-;           cmdchar = -cmdchar;
-
-        ;; If the character is in the first part: The character is the index into nv_cmd_idx[].
-;       if (cmdchar <= @nv_max_linear)
-;           return nv_cmd_idx[cmdchar];
-
-        ;; Perform a binary search.
-;       int bot = @nv_max_linear + 1;
-;       int top = nv_cmds.length - 1;
-;       int idx = -1;
-;       while (bot <= top)
-;       {
-;           int i = (top + bot) / 2;
-;           int c = nv_cmds[nv_cmd_idx[i]].cmd_char;
-;           if (c < 0)
-;               c = -c;
-;           if (cmdchar == c)
-;           {
-;               idx = nv_cmd_idx[i];
-;               break;
-;           }
-;           if (c < cmdchar)
-;               bot = i + 1;
-;           else
-;               top = i - 1;
-;       }
-;       return idx;
+;       %% return nv_cmds index for cmd_char or -1
     ))
 
 (atom! int old_mapped_len)
@@ -15201,9 +14911,7 @@
 ;           if (@VIsual_active)
 ;           {
                 ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-;               if (@km_stopsel
-;                       && (nv_cmds[idx].cmd_flags & NV_STS) != 0
-;                       && (@mod_mask & MOD_MASK_SHIFT) == 0)
+;               if (@km_stopsel && (nv_cmds[idx].cmd_flags & NV_STS) != 0 && (@mod_mask & MOD_MASK_SHIFT) == 0)
 ;               {
 ;                   end_visual_mode();
 ;                   redraw_curbuf_later(INVERTED);
@@ -15576,20 +15284,6 @@
 
 ;       boolean lbr_saved = @curwin.w_options.@wo_lbr;
 ;       boolean include_line_break = false;
-
-        ;; Yank the visual area into the GUI selection register
-        ;; before we operate on it and lose it forever.
-        ;; Don't do it if a specific register was specified, so that ""x"*P works.
-        ;; This could call do_pending_operator() recursively, but that's OK,
-        ;; because gui_yank will be true for the nested call.
-
-;       if ((@clip_star.available || @clip_plus.available)
-;               && oap.op_type != OP_NOP
-;               && !gui_yank
-;               && @VIsual_active
-;               && !@redo_VIsual_busy
-;               && oap.regname == 0)
-;           clip_auto_select();
 
 ;       pos_C old_cursor = §_pos_C();
 ;       COPY_pos(old_cursor, @curwin.w_cursor);
@@ -16278,14 +15972,6 @@
 
 (defn- #_void end_visual_mode []
     (§
-        ;; If we are using the clipboard, then remember what was selected in case
-        ;; we need to paste it somewhere while we still own the selection.
-        ;; Only do this when the clipboard is already owned.  Don't want to grab
-        ;; the selection when hitting ESC.
-
-;       if (@clip_star.available && @clip_star.owned)
-;           clip_auto_select();
-
 ;       @VIsual_active = false;
 
         ;; Save the current VIsual area for '< and '> marks, and "gv".
@@ -18965,9 +18651,6 @@
 
 ;       if (@p_smd && @msg_silent == 0)
 ;           @redraw_cmdline = true;  ;; show visual mode later
-        ;; Make sure the clipboard gets updated.  Needed because start and
-        ;; end may still be the same, and the selection needs to be owned.
-;       @clip_star.vmode = NUL;
 
         ;; Only need to redraw this line, unless still need to redraw
         ;; an old Visual area (when 'lazyredraw' is set).
@@ -19077,9 +18760,6 @@
 ;                   else
 ;                       may_start_select('c');
 
-                        ;; Make sure the clipboard gets updated.  Needed because start and
-                        ;; end are still the same, and the selection needs to be owned.
-;                   @clip_star.vmode = NUL;
 ;                   redraw_curbuf_later(INVERTED);
 ;                   showmode();
 ;               }
@@ -20155,8 +19835,7 @@
 ;               was_visual = true;
 ;               regname = cap.oap.regname;
 ;               regname = adjust_clip_reg(regname);
-;               if (regname == 0 || regname == '"' || asc_isdigit(regname) || regname == '-'
-;                       || (@clip_unnamed != 0 && (regname == '*' || regname == '+')))
+;               if (regname == 0 || regname == '"' || asc_isdigit(regname) || regname == '-')
 ;               {
                         ;; The delete is going to overwrite the register we want to put, save it first.
 ;                   reg1 = get_register(regname, true);
@@ -20255,7 +19934,7 @@
     ))
 
 ;; This table contains one entry for every Normal or Visual mode command.
-;; The order doesn't matter, init_normal_cmds() will create a sorted index.
+;; The order doesn't matter, init_normal_cmds() will create a sorted index.
 ;; It is faster when all keys from zero to '~' are present.
 
 (final nv_cmd_C* nv_cmds
@@ -20424,14 +20103,6 @@
         (->nv_cmd_C K_DROP,           nv_drop,        NV_STS,                 0               ),
         (->nv_cmd_C K_CURSORHOLD,     nv_cursorhold,  NV_KEEPREG,             0               ),
     ])
-
-;; Sorted index of commands in nv_cmds[].
-; %%    (final Short* nv_cmd_idx    (count nv_cmds))
-
-;; The highest index for which
-;; nv_cmds[idx].cmd_char == nv_cmd_idx[nv_cmds[idx].cmd_char].
-
-(atom! int nv_max_linear)
 
 ;; ops.c: implementation of op_shift, op_delete, op_tilde, op_change, op_yank, do_put and do_join
 
@@ -21099,12 +20770,6 @@
 ;       }
 ;       else if (regname == '-')
 ;           i = DELETION_REGISTER;
-        ;; When selection is not available, use register 0 instead of '*'.
-;       else if (@clip_star.available && regname == '*')
-;           i = STAR_REGISTER;
-        ;; When clipboard is not available, use register 0 instead of '+'.
-;       else if (@clip_plus.available && regname == '+')
-;           i = PLUS_REGISTER;
 ;       else if (!writing && regname == '~')
 ;           i = TILDE_REGISTER;
 ;       else                ;; not 0-9, a-z, A-Z or '-': use register 0
@@ -21116,48 +20781,12 @@
 ;           @y_previous = @y_current;
     ))
 
-;; When "regname" is a clipboard register, obtain the selection.
-;; If it's not available return zero, otherwise return "regname".
-
-(defn- #_int may_get_selection [#_int regname]
-    (§
-;       if (regname == '*')
-;       {
-;           if (!@clip_star.available)
-;               regname = 0;
-;           else
-;               clip_get_selection(@clip_star);
-;       }
-;       else if (regname == '+')
-;       {
-;           if (!@clip_plus.available)
-;               regname = 0;
-;           else
-;               clip_get_selection(@clip_plus);
-;       }
-;       return regname;
-    ))
-
 ;; Obtain the contents of a "normal" register.  The register is made empty.
 ;; The returned pointer has allocated memory, use put_register() later.
 
 (defn- #_yankreg_C get_register [#_int name, #_boolean copy]
     ;; copy: make a copy, if false make register empty.
     (§
-        ;; When Visual area changed, may have to update selection.  Obtain the selection too.
-;       if (name == '*' && @clip_star.available)
-;       {
-;           if (clip_isautosel_star())
-;               clip_update_selection(@clip_star);
-;           may_get_selection(name);
-;       }
-;       if (name == '+' && @clip_plus.available)
-;       {
-;           if (clip_isautosel_plus())
-;               clip_update_selection(@clip_plus);
-;           may_get_selection(name);
-;       }
-
 ;       get_yank_register(name, false);
 
 ;       yankreg_C reg = §_yankreg_C();
@@ -21189,9 +20818,6 @@
 ;       get_yank_register(name, false);
 ;       @y_current.y_array = null;
 ;       COPY_yankreg(@y_current, reg);
-
-        ;; Send text written to clipboard register to the clipboard.
-;       may_set_selection();
     ))
 
 (atom! int rec__regname)
@@ -21611,9 +21237,7 @@
             ;; Don't do this when "remcr" is true and the next line is empty.
 ;           if (@y_current.y_type == MLINE
 ;                   || (i < @y_current.y_size - 1
-;                       && !(remcr
-;                           && i == @y_current.y_size - 2
-;                           && @y_current.y_array[i + 1].at(0) == NUL)))
+;                           && !(remcr && i == @y_current.y_size - 2 && @y_current.y_array[i + 1].at(0) == NUL)))
 ;               cmdline_paste_str(u8("\r"), literally);
 
             ;; Check for CTRL-C in case someone tries to paste
@@ -21630,18 +21254,18 @@
 
 (defn- #_int adjust_clip_reg [#_int reg]
     (§
-        ;; If no reg. specified, and "unnamed" or "unnamedplus" is in 'clipboard',
-        ;; use '*' or '+' reg, respectively.  "unnamedplus" prevails.
-;       if (reg == 0 && (@clip_unnamed != 0 || @clip_unnamed_saved != 0))
-;       {
-;           if (@clip_unnamed != 0)
-;               reg = ((@clip_unnamed & CLIP_UNNAMED_PLUS) != 0 && @clip_plus.available) ? '+' : '*';
-;           else
-;               reg = ((@clip_unnamed_saved & CLIP_UNNAMED_PLUS) != 0 && @clip_plus.available) ? '+' : '*';
-;       }
-;       if (!@clip_star.available && reg == '*')
+;       if (reg == '*' || reg == '+')
 ;           reg = 0;
-;       if (!@clip_plus.available && reg == '+')
+
+;       return reg;
+    ))
+
+;; When "reg" is a clipboard register, obtain the selection.
+;; If it's not available return zero, otherwise return "reg".
+
+(defn- #_int may_get_selection [#_int reg]
+    (§
+;       if (reg == '*' || reg == '+')
 ;           reg = 0;
 
 ;       return reg;
@@ -21746,10 +21370,7 @@
 
                 ;; Yank into small delete register when no named register specified
                 ;; and the delete is within one line.
-;               if ((((@clip_unnamed & CLIP_UNNAMED) != 0 && oap.regname == '*')
-;                   || ((@clip_unnamed & CLIP_UNNAMED_PLUS) != 0 && oap.regname == '+')
-;                   || oap.regname == 0)
-;                       && oap.motion_type != MLINE && oap.line_count == 1)
+;               if (oap.regname == 0 && oap.motion_type != MLINE && oap.line_count == 1)
 ;               {
 ;                   oap.regname = '-';
 ;                   get_yank_register(oap.regname, true);
@@ -22665,9 +22286,9 @@
 ;       if (oap.regname == '_')                         ;; black hole: nothing to do
 ;           return true;
 
-;       if (!@clip_star.available && oap.regname == '*')
+;       if (oap.regname == '*')
 ;           oap.regname = 0;
-;       else if (!@clip_plus.available && oap.regname == '+')
+;       else if (oap.regname == '+')
 ;           oap.regname = 0;
 
 ;       if (!deleting)                                  ;; op_delete() already set y_current
@@ -22867,23 +22488,6 @@
 ;           {
 ;               @curbuf.b_op_start.col = 0;
 ;               @curbuf.b_op_end.col = MAXCOL;
-;           }
-
-            ;; If we were yanking to the '*' register, send result to clipboard.
-            ;; If no register was specified, and "unnamed" in 'clipboard',
-            ;; make a copy to the '*' register.
-
-;           if (@clip_star.available
-;                   && (curr == y_regs[STAR_REGISTER]
-;                       || (!deleting && oap.regname == 0
-;                       && ((@clip_unnamed | @clip_unnamed_saved) & CLIP_UNNAMED) != 0)))
-;           {
-;               if (curr != y_regs[STAR_REGISTER])
-                    ;; Copy the text from register 0 to the clipboard register.
-;                   copy_yank_reg(y_regs[STAR_REGISTER]);
-
-;               clip_own_selection(@clip_star);
-;               clip_gen_set_selection(@clip_star);
 ;           }
 
 ;           return true;
@@ -24177,260 +23781,6 @@
 ;       ptr = ml_get_buf(@curbuf, @curwin.w_cursor.lnum);
 
 ;       return true;
-    ))
-
-;; SELECTION / PRIMARY ('*')
-;;
-;; Text selection stuff that uses the GUI selection register '*'.  When using a
-;; GUI this may be text from another window, otherwise it is the last text we
-;; had highlighted with VIsual mode.  With mouse support, clicking the middle
-;; button performs the paste, otherwise you will need to do <"*p>. "
-;; If not under X, it is synonymous with the clipboard register '+'.
-;;
-;; X CLIPBOARD ('+')
-;;
-;; Text selection stuff that uses the GUI clipboard register '+'.
-;; Under X, this matches the standard cut/paste buffer CLIPBOARD selection.
-;; It will be used for unnamed cut/pasting is 'clipboard' contains "unnamed",
-;; otherwise you will need to do <"+p>. "
-;; If not under X, it is synonymous with the selection register '*'.
-
-;; Routine to export any final X selection we had to the environment
-;; so that the text is still available after vim has exited.  X selections
-;; only exist while the owning application exists, so we write to the
-;; permanent (while X runs) store CUT_BUFFER0.
-;; Dump the CLIPBOARD selection if we own it (it's logically the more
-;; 'permanent' of the two), otherwise the PRIMARY one.
-;; For now, use a hard-coded sanity limit of 1Mb of data.
-
-(defn- #_void clip_free_selection [#_clipboard_C cbd]
-    (§
-;       yankreg_C y_ptr = @y_current;
-
-;       if (cbd == @clip_plus)
-;           @y_current = y_regs[PLUS_REGISTER];
-;       else
-;           @y_current = y_regs[STAR_REGISTER];
-
-;       @y_current.y_array = null;
-;       @y_current.y_size = 0;
-
-;       @y_current = y_ptr;
-    ))
-
-;; Get the selected text and put it in the gui selection register '*' or '+'.
-
-(defn- #_void clip_get_selection [#_clipboard_C cbd]
-    (§
-;       if (cbd.owned)
-;       {
-;           if ((cbd == @clip_plus && y_regs[PLUS_REGISTER].y_array != null)
-;            || (cbd == @clip_star && y_regs[STAR_REGISTER].y_array != null))
-;               return;
-
-            ;; get the text between clip_star.cbd_start & clip_star.cbd_end
-;           yankreg_C old_y_previous = @y_previous;
-;           yankreg_C old_y_current = @y_current;
-;           pos_C old_cursor = §_pos_C();
-;           COPY_pos(old_cursor, @curwin.w_cursor);
-
-;           int old_curswant = @curwin.w_curswant;
-;           boolean old_set_curswant = @curwin.w_set_curswant;
-;           pos_C old_op_start = §_pos_C();
-;           COPY_pos(old_op_start, @curbuf.b_op_start);
-;           pos_C old_op_end = §_pos_C();
-;           COPY_pos(old_op_end, @curbuf.b_op_end);
-;           pos_C old_visual = §_pos_C();
-;           COPY_pos(old_visual, @VIsual);
-;           int old_visual_mode = @VIsual_mode;
-
-;           oparg_C oa = §_oparg_C();
-;           oa.regname = (cbd == @clip_plus) ? '+' : '*';
-;           oa.op_type = OP_YANK;
-
-;           cmdarg_C ca = §_cmdarg_C();
-;           ca.oap = oa;
-;           ca.cmdchar = 'y';
-;           ca.count1 = 1;
-;           ca.retval = CA_NO_ADJ_OP_END;
-
-;           do_pending_operator(ca, 0, true);
-
-;           @y_previous = old_y_previous;
-;           @y_current = old_y_current;
-;           COPY_pos(@curwin.w_cursor, old_cursor);
-
-;           changed_cline_bef_curs();               ;; need to update w_virtcol et al
-
-;           @curwin.w_curswant = old_curswant;
-;           @curwin.w_set_curswant = old_set_curswant;
-;           COPY_pos(@curbuf.b_op_start, old_op_start);
-;           COPY_pos(@curbuf.b_op_end, old_op_end);
-;           COPY_pos(@VIsual, old_visual);
-;           @VIsual_mode = old_visual_mode;
-;       }
-;       else
-;       {
-;           clip_free_selection(cbd);
-
-            ;; Try to get selected text from another window.
-;           clip_gen_request_selection(cbd);
-;       }
-    ))
-
-;; Convert from the GUI selection string into the '*'/'+' register.
-
-(defn- #_void clip_yank_selection [#_byte type, #_Bytes str, #_int len, #_clipboard_C cbd]
-    (§
-;       yankreg_C y_ptr;
-
-;       if (cbd == @clip_plus)
-;           y_ptr = y_regs[PLUS_REGISTER];
-;       else
-;           y_ptr = y_regs[STAR_REGISTER];
-
-;       clip_free_selection(cbd);
-
-;       str_to_reg(y_ptr, type, str, len, 0, false);
-    ))
-
-;; If we have written to a clipboard register, send the text to the clipboard.
-
-(defn- #_void may_set_selection []
-    (§
-;       if (@y_current == y_regs[STAR_REGISTER] && @clip_star.available)
-;       {
-;           clip_own_selection(@clip_star);
-;           clip_gen_set_selection(@clip_star);
-;       }
-;       else if (@y_current == y_regs[PLUS_REGISTER] && @clip_plus.available)
-;       {
-;           clip_own_selection(@clip_plus);
-;           clip_gen_set_selection(@clip_plus);
-;       }
-    ))
-
-;; Put a string into a register.  When the register is not empty, the string is appended.
-
-(defn- #_void str_to_reg [#_yankreg_C y_ptr, #_byte yank_type, #_Object str, #_int len, #_int blocklen, #_boolean str_list]
-    ;; y_ptr: pointer to yank register
-    ;; yank_type: MCHAR, MLINE, MBLOCK, MAUTO
-    ;; str: string to put in register
-    ;; len: length of string
-    ;; blocklen: width of Visual block
-    ;; str_list: true if str is Bytes[]
-    (§
-;       int extraline = 0;                      ;; extra line at the end
-;       boolean append = false;                 ;; append to last line in register
-
-;       if (y_ptr.y_array == null)              ;; null means empty register
-;           y_ptr.y_size = 0;
-
-;       byte type;                              ;; MCHAR, MLINE or MBLOCK
-;       if (yank_type == MAUTO)
-;           type = (str_list || (0 < len && (((Bytes)str).at(len - 1) == NL || ((Bytes)str).at(len - 1) == CAR))) ? MLINE : MCHAR;
-;       else
-;           type = yank_type;
-
-        ;; Count the number of lines within the string.
-
-;       int newlines = 0;                       ;; number of lines added
-;       if (str_list)
-;       {
-;           Bytes[] pp = (Bytes[])str;
-
-;           for (int i = 0; pp[i] != null; i++)
-;               newlines++;
-;       }
-;       else
-;       {
-;           Bytes p = (Bytes)str;
-
-;           for (int i = 0; i < len; i++)
-;               if (p.at(i) == (byte)'\n')
-;                   newlines++;
-;           if (type == MCHAR || len == 0 || p.at(len - 1) != (byte)'\n')
-;           {
-;               extraline = 1;
-;               newlines++;                     ;; count extra newline at the end
-;           }
-;           if (0 < y_ptr.y_size && y_ptr.y_type == MCHAR)
-;           {
-;               append = true;
-;               --newlines;                     ;; uncount newline when appending first line
-;           }
-;       }
-
-        ;; Allocate an array to hold the pointers to the new register lines.
-        ;; If the register was not empty, move the existing lines to the new array.
-
-;       Bytes[] pp = new Bytes[y_ptr.y_size + newlines];
-
-;       int lnum;
-;       for (lnum = 0; lnum < y_ptr.y_size; lnum++)
-;           pp[lnum] = y_ptr.y_array[lnum];
-;       y_ptr.y_array = pp;
-;       int maxlen = 0;
-
-        ;; Find the end of each line and save it into the array.
-
-;       if (str_list)
-;       {
-;           Bytes[] qq = (Bytes[])str;
-
-;           for (int i = 0; qq[i] != null; i++, lnum++)
-;           {
-;               int n = STRLEN(qq[i]);
-;               pp[lnum] = STRNDUP(qq[i], n);
-;               if (maxlen < n)
-;                   maxlen = n;
-;           }
-;       }
-;       else
-;       {
-;           Bytes p = (Bytes)str;
-
-;           for (int start = 0, i; start < len + extraline; start += i + 1)
-;           {
-;               for (i = start; i < len; i++)   ;; find the end of the line
-;                   if (p.at(i) == (byte)'\n')
-;                       break;
-;               i -= start;                     ;; i is now length of line
-;               if (maxlen < i)
-;                   maxlen = i;
-;               int extra = 0;
-;               if (append)
-;               {
-;                   --lnum;
-;                   extra = STRLEN(y_ptr.y_array[lnum]);
-;               }
-
-;               Bytes s = new Bytes(i + extra + 1);
-
-;               if (extra != 0)
-;                   BCOPY(s, y_ptr.y_array[lnum], extra);
-;               if (append)
-;                   y_ptr.y_array[lnum] = null;
-;               if (i != 0)
-;                   BCOPY(s, extra, p, start, i);
-;               extra += i;
-;               s.be(extra, NUL);
-;               y_ptr.y_array[lnum++] = s;
-;               while (0 <= --extra)
-;               {
-;                   if (s.at(0) == NUL)
-;                       s.be(0, (byte)'\n');        ;; replace NUL with newline
-;                   s = s.plus(1);
-;               }
-;               append = false;                     ;; only first line is appended
-;           }
-;       }
-;       y_ptr.y_type = type;
-;       y_ptr.y_size = lnum;
-;       if (type == MBLOCK)
-;           y_ptr.y_width = (blocklen < 0) ? maxlen - 1 : blocklen;
-;       else
-;           y_ptr.y_width = 0;
     ))
 
 ;; Count the number of bytes, characters and "words" in a line.
@@ -26763,7 +26113,7 @@
     ))
 
 ;; Check if a character is available, such that vgetc() will not block.
-;; If the next character is a special character or multi-byte, the returned character is not valid!.
+;; If the next character is a special character or multi-byte, the returned character is not valid!
 
 (defn- #_int vpeekc []
     (§
@@ -27378,11 +26728,13 @@
 ;                           timedout = true;
 ;                           continue;
 ;                       }
+
                         ;; When 'insertmode' is set, ESC just beeps in Insert mode.
                         ;; Use CTRL-L to make edit() return.
                         ;; For the command line only CTRL-C always breaks it.
                         ;; For the cmdline window: Alternate between ESC and CTRL-C:
                         ;; ESC for most situations and CTRL-C to close the cmdline window.
+
 ;                       if (@p_im && (@State & INSERT) != 0)
 ;                           c = Ctrl_L;
 ;                       else if ((@State & CMDLINE) != 0 || (0 < @cmdwin_type && @__tc == ESC))
@@ -27400,8 +26752,8 @@
                     ;; to do a blocking wait here.  Need to update the screen to display the changed
                     ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
                     ;; because there was something in the input buffer (e.g., termresponse).
-;                   if (((@State & INSERT) != 0 || @p_lz) && (@State & CMDLINE) == 0
-;                             && advance && @must_redraw != 0 && !@need_wait_return)
+
+;                   if (((@State & INSERT) != 0 || @p_lz) && (@State & CMDLINE) == 0 && advance && @must_redraw != 0 && !@need_wait_return)
 ;                   {
 ;                       update_screen(0);
 ;                       setcursor();            ;; put cursor back where it belongs
@@ -30705,7 +30057,7 @@
 ;       @pc_status = PC_STATUS_UNSET;
 ;       if (redrawing() && !char_avail())
 ;       {
-            ;; may need to redraw when no more chars available now
+            ;; May need to redraw when no more chars available now.
 ;           ins_redraw(false);
 
 ;           edit_putchar('"', true);
@@ -32421,7 +31773,7 @@
 ;; Specific version of character class functions.
 ;; Using a table to keep this fast.
 
-(atom! short* class_tab 256)
+(atom! int* class_tab 256)
 
 (final int RI_DIGIT    0x01)
 (final int RI_HEX      0x02)
@@ -47890,9 +47242,6 @@
 
 ;       may_start_select('c');
 
-        ;; Make sure the clipboard gets updated.  Needed because start and
-        ;; end are still the same, and the selection needs to be owned.
-;       @clip_star.vmode = NUL;
 ;       redraw_curbuf_later(INVERTED);
 ;       showmode();
 
@@ -58215,8 +57564,6 @@
 
 ;       @term_is_xterm = vim_is_xterm(term);
 
-;       clip_init(false);
-
 ;       ttest(true);                ;; make sure we have a valid set of terminal codes
 
 ;       @full_screen = true;             ;; we can use termcap codes from now on
@@ -60332,590 +59679,6 @@
 ;       mch_breakcheck();
     ))
 
-;; Functions for copying and pasting text between applications.
-;;
-;; This is always included in a GUI version, but may also be included when
-;; the clipboard and mouse is available to a terminal version such as xterm.
-;; Note: there are some more functions in ops.c that handle selection stuff.
-;;
-;; Also note that the majority of functions here deal with the X 'primary'
-;; (visible - for Visual mode use) selection, and only that.  There are no versions
-;; of these for the 'clipboard' selection, as Visual mode has no use for them.
-
-;; Selection stuff using Visual mode, for cutting and pasting text to other windows.
-
-;; Call this to initialise the clipboard.  Pass it false if the clipboard code
-;; is included, but the clipboard can not be used, or true if the clipboard can be used.
-;; E.g. unix may call this with false, then call it again with true if the GUI starts.
-
-(defn- #_void clip_init [#_boolean can_use]
-    (§
-;       for (clipboard_C cbd = @clip_star; ; )
-;       {
-;           cbd.available  = can_use;
-;           cbd.owned      = false;
-;           cbd.cbd_start.lnum = 0;
-;           cbd.cbd_start.col  = 0;
-;           cbd.cbd_end.lnum   = 0;
-;           cbd.cbd_end.col    = 0;
-;           cbd.state      = SELECT_CLEARED;
-
-;           if (cbd == @clip_plus)
-;               break;
-;           cbd = @clip_plus;
-;       }
-    ))
-
-;; Check whether the VIsual area has changed, and if so try to become the owner
-;; of the selection, and free any old converted selection we may still have
-;; lying around.  If the VIsual mode has ended, make a copy of what was
-;; selected so we can still give it to others.  Will probably have to make sure
-;; this is called whenever VIsual mode is ended.
-
-(defn- #_void clip_update_selection [#_clipboard_C cbd]
-    (§
-        ;; If visual mode is only due to a redo command ("."), then ignore it.
-;       if (!@redo_VIsual_busy && @VIsual_active && (@State & NORMAL) != 0)
-;       {
-;           pos_C start = §_pos_C();
-;           pos_C end = §_pos_C();
-;           if (ltpos(@VIsual, @curwin.w_cursor))
-;           {
-;               COPY_pos(start, @VIsual);
-;               COPY_pos(end, @curwin.w_cursor);
-;               end.col += us_ptr2len_cc(ml_get_cursor()) - 1;
-;           }
-;           else
-;           {
-;               COPY_pos(start, @curwin.w_cursor);
-;               COPY_pos(end, @VIsual);
-;           }
-
-;           if (!eqpos(cbd.cbd_start, start) || !eqpos(cbd.cbd_end, end) || cbd.vmode != @VIsual_mode)
-;           {
-;               clip_clear_selection(cbd);
-;               COPY_pos(cbd.cbd_start, start);
-;               COPY_pos(cbd.cbd_end, end);
-;               cbd.vmode = @VIsual_mode;
-;               clip_free_selection(cbd);
-;               clip_own_selection(cbd);
-;               clip_gen_set_selection(cbd);
-;           }
-;       }
-    ))
-
-(defn- #_void clip_own_selection [#_clipboard_C cbd]
-    (§
-        ;; Also want to check somehow that we are reading from the keyboard rather than a mapping etc.
-
-        ;; Only own the clipboard when we didn't own it yet.
-;       if (!cbd.owned && cbd.available)
-;           cbd.owned = (clip_gen_own_selection(cbd) == true);
-    ))
-
-(defn- #_void clip_lose_selection [#_clipboard_C cbd]
-    (§
-;       boolean visual_selection = false;
-
-;       if (cbd == @clip_star || cbd == @clip_plus)
-;           visual_selection = true;
-
-;       clip_free_selection(cbd);
-;       cbd.owned = false;
-;       if (visual_selection)
-;           clip_clear_selection(cbd);
-;       clip_gen_lose_selection(cbd);
-    ))
-
-(defn- #_void clip_copy_selection [#_clipboard_C cbd]
-    (§
-;       if (@VIsual_active && (@State & NORMAL) != 0 && cbd.available)
-;       {
-;           clip_update_selection(cbd);
-;           clip_free_selection(cbd);
-;           clip_own_selection(cbd);
-;           if (cbd.owned)
-;               clip_get_selection(cbd);
-;           clip_gen_set_selection(cbd);
-;       }
-    ))
-
-;; Save and restore "clip_unnamed" before doing possibly many changes.
-;; This prevents accessing the clipboard very often which might slow down Vim considerably.
-
-(atom! int global_change_count)         ;; if set, inside a start_global_changes
-(atom! boolean clipboard_needs_update)  ;; clipboard needs to be updated
-
-;; Save "clip_unnamed" and reset it.
-
-(defn- #_void start_global_changes []
-    (§
-;       if (1 < ++@global_change_count)
-;           return;
-
-;       @clip_unnamed_saved = @clip_unnamed;
-;       @clipboard_needs_update = false;
-
-;       if (@clip_did_set_selection)
-;       {
-;           @clip_unnamed = 0;
-;           @clip_did_set_selection = false;
-;       }
-    ))
-
-;; Restore "clip_unnamed" and set the selection when needed.
-
-(defn- #_void end_global_changes []
-    (§
-;       if (0 < --@global_change_count)  ;; recursive
-;           return;
-
-;       if (!@clip_did_set_selection)
-;       {
-;           @clip_did_set_selection = true;
-;           @clip_unnamed = @clip_unnamed_saved;
-;           @clip_unnamed_saved = 0;
-;           if (@clipboard_needs_update)
-;           {
-                ;; only store something in the clipboard,
-                ;; if we have yanked anything to it
-;               if ((@clip_unnamed & CLIP_UNNAMED) != 0)
-;               {
-;                   clip_own_selection(@clip_star);
-;                   clip_gen_set_selection(@clip_star);
-;               }
-;               if ((@clip_unnamed & CLIP_UNNAMED_PLUS) != 0)
-;               {
-;                   clip_own_selection(@clip_plus);
-;                   clip_gen_set_selection(@clip_plus);
-;               }
-;           }
-;       }
-    ))
-
-;; Called when Visual mode is ended: update the selection.
-
-(defn- #_void clip_auto_select []
-    (§
-;       if (clip_isautosel_star())
-;           clip_copy_selection(@clip_star);
-;       if (clip_isautosel_plus())
-;           clip_copy_selection(@clip_plus);
-    ))
-
-;; Return true if automatic selection of Visual area is desired for the * register.
-
-(defn- #_boolean clip_isautosel_star []
-    (§
-;       return @clip_autoselect_star;
-    ))
-
-;; Return true if automatic selection of Visual area is desired for the + register.
-
-(defn- #_boolean clip_isautosel_plus []
-    (§
-;       return @clip_autoselect_plus;
-    ))
-
-;; flags for clip_invert_area()
-(final int CLIP_CLEAR      1)
-(final int CLIP_SET        2)
-(final int CLIP_TOGGLE     3)
-
-;; Compare two screen positions ala strcmp()
-
-(defn- #_int clip_compare_pos [#_int row1, #_int col1, #_int row2, #_int col2]
-    (§
-;       if (row1 > row2) return 1;
-;       if (row1 < row2) return -1;
-;       if (col1 > col2) return 1;
-;       if (col1 < col2) return -1;
-
-;       return 0;
-    ))
-
-;; Start the selection
-
-(defn- #_void clip_start_selection [#_int col, #_int row, #_boolean repeated_click]
-    (§
-;       clipboard_C cbd = @clip_star;
-
-;       if (cbd.state == SELECT_DONE)
-;           clip_clear_selection(cbd);
-
-;       row = check_row(row);
-;       col = check_col(col);
-;       col = mb_fix_col(col, row);
-
-;       cbd.cbd_start.lnum = row;
-;       cbd.cbd_start.col = col;
-;       COPY_pos(cbd.cbd_end, cbd.cbd_start);
-;       cbd.origin_row = (int)cbd.cbd_start.lnum;
-;       cbd.state = SELECT_IN_PROGRESS;
-
-;       if (repeated_click)
-;       {
-;           if (SELECT_MODE_LINE < ++cbd.mode)
-;               cbd.mode = SELECT_MODE_CHAR;
-;       }
-;       else
-;           cbd.mode = SELECT_MODE_CHAR;
-
-;       switch (cbd.mode)
-;       {
-;           case SELECT_MODE_CHAR:
-;               cbd.origin_start_col = cbd.cbd_start.col;
-;               cbd.word_end_col = clip_get_line_end((int)cbd.cbd_start.lnum);
-;               break;
-
-;           case SELECT_MODE_WORD:
-;               clip_get_word_boundaries(cbd, (int)cbd.cbd_start.lnum, cbd.cbd_start.col);
-;               cbd.origin_start_col = cbd.word_start_col;
-;               cbd.origin_end_col   = cbd.word_end_col;
-
-;               clip_invert_area((int)cbd.cbd_start.lnum, cbd.word_start_col,
-;                                (int)cbd.cbd_end.lnum, cbd.word_end_col, CLIP_SET);
-;               cbd.cbd_start.col = cbd.word_start_col;
-;               cbd.cbd_end.col   = cbd.word_end_col;
-;               break;
-
-;           case SELECT_MODE_LINE:
-;               clip_invert_area((int)cbd.cbd_start.lnum, 0,
-;                                (int)cbd.cbd_start.lnum, (int)@Columns, CLIP_SET);
-;               cbd.cbd_start.col = 0;
-;               cbd.cbd_end.col   = (int)@Columns;
-;               break;
-;       }
-
-;       COPY_pos(cbd.cbd_prev, cbd.cbd_start);
-    ))
-
-;; Called from outside to clear selected region from the display
-
-(defn- #_void clip_clear_selection [#_clipboard_C cbd]
-    (§
-;       if (cbd.state == SELECT_CLEARED)
-;           return;
-
-;       clip_invert_area((int)cbd.cbd_start.lnum, cbd.cbd_start.col, (int)cbd.cbd_end.lnum, cbd.cbd_end.col, CLIP_CLEAR);
-;       cbd.state = SELECT_CLEARED;
-    ))
-
-;; Clear the selection if any lines from "row1" to "row2" are inside of it.
-
-(defn- #_void clip_may_clear_selection [#_int row1, #_int row2]
-    (§
-;       if (@clip_star.state == SELECT_DONE && @clip_star.cbd_start.lnum <= row2 && row1 <= @clip_star.cbd_end.lnum)
-;           clip_clear_selection(@clip_star);
-    ))
-
-;; Called before the screen is scrolled up or down.  Adjusts the line numbers
-;; of the selection.  Call with big number when clearing the screen.
-
-(defn- #_void clip_scroll_selection [#_int rows]
-    ;; rows: negative for scroll down
-    (§
-;       if (@clip_star.state == SELECT_CLEARED)
-;           return;
-
-;       long lnum = @clip_star.cbd_start.lnum - rows;
-;       if (lnum <= 0)
-;           @clip_star.cbd_start.lnum = 0;
-;       else if (@screenRows <= lnum)                ;; scrolled off of the screen
-;           @clip_star.state = SELECT_CLEARED;
-;       else
-;           @clip_star.cbd_start.lnum = lnum;
-
-;       lnum = @clip_star.cbd_end.lnum - rows;
-;       if (lnum < 0)                               ;; scrolled off of the screen
-;           @clip_star.state = SELECT_CLEARED;
-;       else if (@screenRows <= lnum)
-;           @clip_star.cbd_end.lnum = @screenRows - 1;
-;       else
-;           @clip_star.cbd_end.lnum = lnum;
-    ))
-
-;; Invert a region of the display between a starting and ending row and column
-;; Values for "how":
-;; CLIP_CLEAR:  undo inversion
-;; CLIP_SET:    set inversion
-;; CLIP_TOGGLE: set inversion if pos1 < pos2, undo inversion otherwise.
-;; 0: invert (GUI only).
-
-(defn- #_void clip_invert_area [#_int row1, #_int col1, #_int row2, #_int col2, #_int how]
-    (§
-;       boolean invert = false;
-
-;       if (how == CLIP_SET)
-;           invert = true;
-
-        ;; Swap the from and to positions so the from is always before.
-;       if (0 < clip_compare_pos(row1, col1, row2, col2))
-;       {
-;           int _row, _col;
-
-;           _row = row1;
-;           _col = col1;
-;           row1 = row2;
-;           col1 = col2;
-;           row2 = _row;
-;           col2 = _col;
-;       }
-;       else if (how == CLIP_TOGGLE)
-;           invert = true;
-
-        ;; If all on the same line, do it the easy way.
-;       if (row1 == row2)
-;       {
-;           clip_invert_rectangle(row1, col1, 1, col2 - col1, invert);
-;       }
-;       else
-;       {
-            ;; Handle a piece of the first line.
-;           if (0 < col1)
-;           {
-;               clip_invert_rectangle(row1, col1, 1, (int)@Columns - col1, invert);
-;               row1++;
-;           }
-
-            ;; Handle a piece of the last line.
-;           if (col2 < (int)@Columns - 1)
-;           {
-;               clip_invert_rectangle(row2, 0, 1, col2, invert);
-;               row2--;
-;           }
-
-            ;; Handle the rectangle thats left.
-;           if (row1 <= row2)
-;               clip_invert_rectangle(row1, 0, row2 - row1 + 1, (int)@Columns, invert);
-;       }
-    ))
-
-;; Invert or un-invert a rectangle of the screen.
-;; "invert" is true if the result is inverted.
-
-(defn- #_void clip_invert_rectangle [#_int row, #_int col, #_int height, #_int width, #_boolean invert]
-    (§
-;       screen_draw_rectangle(row, col, height, width, invert);
-    ))
-
-;; Copy the currently selected area into the '*' register so it will be available for pasting.
-;; When "both" is true also copy to the '+' register.
-
-(defn- #_void clip_copy_modeless_selection [#_boolean _both]
-    (§
-        ;; Can't use "screenLines" unless initialized.
-;       if (@screenLines == null)
-;           return;
-
-;       int row1 = (int)@clip_star.cbd_start.lnum;
-;       int col1 = @clip_star.cbd_start.col;
-;       int row2 = (int)@clip_star.cbd_end.lnum;
-;       int col2 = @clip_star.cbd_end.col;
-
-        ;; Make sure row1 <= row2, and if row1 == row2 that col1 <= col2.
-
-;       int row;
-;       if (row2 < row1)
-;       {
-;           row = row1; row1 = row2; row2 = row;
-;           row = col1; col1 = col2; col2 = row;
-;       }
-;       else if (row1 == row2 && col2 < col1)
-;       {
-;           row = col1; col1 = col2; col2 = row;
-;       }
-        ;; Correct starting point for being on right halve of double-wide char.
-;       Bytes p = @screenLines.plus(@lineOffset[row1]);
-;       if (p.at(col1) == 0)
-;           --col1;
-
-        ;; Create a temporary buffer for storing the text.
-;       int len = (row2 - row1 + 1) * (int)@Columns + 1;
-;       len *= MB_MAXBYTES;
-;       Bytes buffer = new Bytes(len);
-
-;       boolean add_newline_flag = false;
-
-        ;; Process each row in the selection.
-;       Bytes bufp;
-;       for (bufp = buffer, row = row1; row <= row2; row++)
-;       {
-;           int start_col;
-;           if (row == row1)
-;               start_col = col1;
-;           else
-;               start_col = 0;
-
-;           int end_col;
-;           if (row == row2)
-;               end_col = col2;
-;           else
-;               end_col = (int)@Columns;
-
-;           int line_end_col = clip_get_line_end(row);
-
-            ;; See if we need to nuke some trailing whitespace.
-;           if ((int)@Columns <= end_col && (row < row2 || line_end_col < end_col))
-;           {
-                ;; Get rid of trailing whitespace.
-;               end_col = line_end_col;
-;               if (end_col < start_col)
-;                   end_col = start_col;
-
-                ;; If the last line extended to the end, add an extra newline.
-;               if (row == row2)
-;                   add_newline_flag = true;
-;           }
-
-            ;; If after the first row, we need to always add a newline.
-;           if (row1 < row && !@lineWraps[row - 1])
-;               (bufp = bufp.plus(1)).be(-1, NL);
-
-;           if (row < @screenRows && end_col <= @screenColumns)
-;           {
-;               int off = @lineOffset[row];
-
-;               for (int i = start_col; i < end_col; i++)
-;               {
-                    ;; The base character is either in screenLinesUC[] or screenLines[].
-;                   if (@screenLinesUC[off + i] == 0)
-;                       (bufp = bufp.plus(1)).be(-1, @screenLines.at(off + i));
-;                   else
-;                   {
-;                       bufp = bufp.plus(utf_char2bytes(@screenLinesUC[off + i], bufp));
-;                       for (int ci = 0; ci < @screen_mco; ci++)
-;                       {
-                            ;; Add a composing character.
-;                           if (@screenLinesC[ci][off + i] == 0)
-;                               break;
-;                           bufp = bufp.plus(utf_char2bytes(@screenLinesC[ci][off + i], bufp));
-;                       }
-;                   }
-                    ;; Skip right halve of double-wide character.
-;                   if (@screenLines.at(off + i + 1) == 0)
-;                       i++;
-;               }
-;           }
-;       }
-
-        ;; Add a newline at the end if the selection ended there.
-;       if (add_newline_flag)
-;           (bufp = bufp.plus(1)).be(-1, NL);
-
-        ;; First cleanup any old selection and become the owner.
-;       clip_free_selection(@clip_star);
-;       clip_own_selection(@clip_star);
-
-        ;; Yank the text into the '*' register.
-;       clip_yank_selection(MCHAR, buffer, BDIFF(bufp, buffer), @clip_star);
-
-        ;; Make the register contents available to the outside world.
-;       clip_gen_set_selection(@clip_star);
-    ))
-
-;; Find the starting and ending positions of the word at the given row and column.
-;; Only white-separated words are recognized here.
-
-(defn- #_int __char_class [#_int c]
-    (§
-;       return (c <= ' ') ? ' ' : vim_iswordc(c, @curbuf) ? TRUE : FALSE;
-    ))
-
-(defn- #_void clip_get_word_boundaries [#_clipboard_C cbd, #_int row, #_int col]
-    (§
-;       if (@screenRows <= row || @screenColumns <= col || @screenLines == null)
-;           return;
-
-;       Bytes p = @screenLines.plus(@lineOffset[row]);
-        ;; Correct for starting in the right halve of a double-wide char.
-;       if (p.at(col) == 0)
-;           --col;
-;       int start_class = __char_class(p.at(col));
-
-;       int temp_col = col;
-;       for ( ; 0 < temp_col; temp_col--)
-;           if (__char_class(p.at(temp_col - 1)) != start_class && p.at(temp_col - 1) != 0)
-;               break;
-;       cbd.word_start_col = temp_col;
-
-;       temp_col = col;
-;       for ( ; temp_col < @screenColumns; temp_col++)
-;           if (__char_class(p.at(temp_col)) != start_class && p.at(temp_col) != 0)
-;               break;
-;       cbd.word_end_col = temp_col;
-    ))
-
-;; Find the column position for the last non-whitespace character on the given line.
-
-(defn- #_int clip_get_line_end [#_int row]
-    (§
-;       if (@screenRows <= row || @screenLines == null)
-;           return 0;
-
-;       int i;
-;       for (i = @screenColumns; 0 < i; i--)
-;           if (@screenLines.at(@lineOffset[row] + i - 1) != (byte)' ')
-;               break;
-;       return i;
-    ))
-
-;; Update the currently selected region by adding and/or subtracting from the
-;; beginning or end and inverting the changed area(s).
-
-(defn- #_void clip_update_modeless_selection [#_clipboard_C cbd, #_int row1, #_int col1, #_int row2, #_int col2]
-    (§
-        ;; See if we changed at the beginning of the selection.
-;       if (row1 != cbd.cbd_start.lnum || col1 != cbd.cbd_start.col)
-;       {
-;           clip_invert_area(row1, col1, (int)cbd.cbd_start.lnum, cbd.cbd_start.col, CLIP_TOGGLE);
-;           cbd.cbd_start.lnum = row1;
-;           cbd.cbd_start.col  = col1;
-;       }
-
-        ;; See if we changed at the end of the selection.
-;       if (row2 != cbd.cbd_end.lnum || col2 != cbd.cbd_end.col)
-;       {
-;           clip_invert_area((int)cbd.cbd_end.lnum, cbd.cbd_end.col, row2, col2, CLIP_TOGGLE);
-;           cbd.cbd_end.lnum = row2;
-;           cbd.cbd_end.col  = col2;
-;       }
-    ))
-
-(defn- #_boolean clip_gen_own_selection [#_clipboard_C _cbd]
-    (§
-;       return true;
-    ))
-
-(defn- #_void clip_gen_lose_selection [#_clipboard_C _cbd]
-    (§
-    ))
-
-(defn- #_void clip_gen_set_selection [#_clipboard_C cbd]
-    (§
-;       if (!@clip_did_set_selection)
-;       {
-            ;; Updating postponed, so that accessing the system clipboard won't
-            ;; hang Vim when accessing it many times (e.g. on a :g comand).
-;           if ((cbd == @clip_plus && (@clip_unnamed_saved & CLIP_UNNAMED_PLUS) != 0)
-;            || (cbd == @clip_star && (@clip_unnamed_saved & CLIP_UNNAMED) != 0))
-;           {
-;               @clipboard_needs_update = true;
-;               return;
-;           }
-;       }
-        ;; TODO
-    ))
-
-(defn- #_void clip_gen_request_selection [#_clipboard_C _cbd]
-    (§
-    ))
-
-(defn- #_boolean clip_gen_owner_exists [#_clipboard_C _cbd]
-    (§
-;       return true;
-    ))
-
 ;; Functions that handle the input buffer.
 ;; This is used for any GUI version, and the unix terminal version.
 ;;
@@ -61408,9 +60171,6 @@
 ;       }
 
 ;       @updating_screen = true;
-        ;; let syntax code know we're in a next round of display updating
-;       if (++@display_tick < 0)
-;           @display_tick = 0;
 
         ;; if the screen was scrolled up when displaying a message, scroll it down
 
@@ -61502,11 +60262,6 @@
 ;               {
 ;                   did_one = true;
 ;                   start_search_hl();
-                    ;; When Visual area changed, may have to update selection.
-;                   if (@clip_star.available && clip_isautosel_star())
-;                       clip_update_selection(@clip_star);
-;                   if (@clip_plus.available && clip_isautosel_plus())
-;                       clip_update_selection(@clip_plus);
 ;               }
 ;               win_update(wp);
 ;           }
@@ -64126,8 +62881,6 @@
 ;       if (@Columns < endcol)
 ;           endcol = (int)@Columns;
 
-;       clip_may_clear_selection(row, row);
-
 ;       int off_from = BDIFF(@current_ScreenLine, @screenLines);
 ;       int off_to = @lineOffset[row] + coloff;
 ;       int max_off_from = off_from + @screenColumns;
@@ -65111,8 +63864,6 @@
 
 (defn- #_void redraw_block [#_int row, #_int end, #_window_C wp]
     (§
-;       clip_may_clear_selection(row, end - 1);
-
 ;       int col;
 ;       int width;
 
@@ -65357,7 +64108,6 @@
 ;           int[] sats = new int[(int)(@Rows + 1) * (int)@Columns];
 ;           int[] lofs = new int[(int)@Rows];
 ;           boolean[] lwrs = new boolean[(int)@Rows];
-;           short[] tpis = new short[(int)@Columns];
 
 ;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
 ;               win_alloc_lines(wp);
@@ -65410,7 +64160,6 @@
 ;           @screenAttrs = sats;
 ;           @lineOffset = lofs;
 ;           @lineWraps = lwrs;
-;           @tabPageIdxs = tpis;
 
             ;; It's important that screenRows and screenColumns reflect the actual
             ;; size of screenLines[].  Set them before calling anything.
@@ -65452,9 +64201,6 @@
 
 ;       @screen_attr = -1;               ;; force setting the Normal colors
 ;       screen_stop_highlight();        ;; don't want highlighting here
-
-        ;; disable selection without redrawing it
-;       clip_scroll_selection(9999);
 
         ;; blank out "screenLines"
 ;       for (int i = 0; i < @Rows; i++)
@@ -66051,13 +64797,6 @@
 ;       if (@T_DB.at(0) != NUL)
 ;           screen_del_lines(off, end - line_count, line_count, end, false, wp);
 
-        ;; Remove a modeless selection when inserting lines halfway the screen
-        ;; or not the full width of the screen.
-;       if (0 < off + row || (wp != null && wp.w_width != (int)@Columns))
-;           clip_clear_selection(@clip_star);
-;       else
-;           clip_scroll_selection(-line_count);
-
 ;       int cursor_row;
 ;       if (@T_CCS.at(0) != NUL)      ;; cursor relative to region
 ;           cursor_row = row;
@@ -66201,13 +64940,6 @@
 ;           type = USE_T_CDL;
 ;       else
 ;           return false;
-
-        ;; Remove a modeless selection when deleting lines halfway the screen
-        ;; or not the full width of the screen.
-;       if (0 < off + row || (wp != null && wp.w_width != (int)@Columns))
-;           clip_clear_selection(@clip_star);
-;       else
-;           clip_scroll_selection(line_count);
 
 ;       int cursor_row;
 ;       int cursor_end;
