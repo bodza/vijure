@@ -4259,47 +4259,47 @@
 ;           {
 ;               case BS:                    ;; scroll one line back
 ;               case K_BS:
-;               case 'k':
+;               case (byte)'k':
 ;               case K_UP:
 ;                   toscroll = -1;
 ;                   break;
 
 ;               case CAR:                   ;; one extra line
 ;               case NL:
-;               case 'j':
+;               case (byte)'j':
 ;               case K_DOWN:
 ;                   toscroll = 1;
 ;                   break;
 
-;               case 'u':                   ;; Up half a page
+;               case (byte)'u':                   ;; Up half a page
 ;                   toscroll = -((int)@Rows / 2);
 ;                   break;
 
-;               case 'd':                   ;; Down half a page
+;               case (byte)'d':                   ;; Down half a page
 ;                   toscroll = (int)@Rows / 2;
 ;                   break;
 
-;               case 'b':                   ;; one page back
+;               case (byte)'b':                   ;; one page back
 ;               case K_PAGEUP:
 ;                   toscroll = -((int)@Rows - 1);
 ;                   break;
 
-;               case ' ':                   ;; one extra page
-;               case 'f':
+;               case (byte)' ':                   ;; one extra page
+;               case (byte)'f':
 ;               case K_PAGEDOWN:
 ;                   toscroll = (int)@Rows - 1;
 ;                   break;
 
-;               case 'g':                   ;; all the way back to the start
+;               case (byte)'g':                   ;; all the way back to the start
 ;                   toscroll = -999999;
 ;                   break;
 
-;               case 'G':                   ;; all the way to the end
+;               case (byte)'G':                   ;; all the way to the end
 ;                   toscroll = 999999;
                     (reset! lines_left 999999)
 ;                   break;
 
-;               case ':':                   ;; start new command line
+;               case (byte)':':                   ;; start new command line
                     (when (== @confirm_msg_used 0)
                         ;; Since got_int is set all typeahead will be flushed, but we
                         ;; want to keep this ':', remember that in a special way.
@@ -4309,7 +4309,7 @@
                         (reset! need_wait_return false)       ;; don't wait in main()
                     )
                     ;; FALLTHROUGH
-;               case 'q':                   ;; quit
+;               case (byte)'q':                   ;; quit
 ;               case Ctrl_C:
 ;               case ESC:
                     (cond (!= @confirm_msg_used 0)
@@ -7507,7 +7507,7 @@
 
         ;; set some variables for redrawcmd()
 
-;       @ccline.cmdfirstc = (firstc == '@') ? 0 : firstc;
+;       @ccline.cmdfirstc = (firstc == (byte)'@') ? 0 : firstc;
 ;       @ccline.cmdindent = 0;
 
         ;; alloc initial ccline.cmdbuff
@@ -7949,7 +7949,7 @@
                                         (when (or (== c firstc) (!= (vim_strchr (if @p_magic (u8 "\\^$.*[") (u8 "\\^$")), c) null))
                                             ;; put a backslash before special characters
                                             (stuffcharReadbuff c)
-;                                           c = '\\';
+;                                           c = (byte)'\\';
                                         )
 ;                                       break;
                                     )
@@ -9417,12 +9417,12 @@
 
 ;                       ea.cmd = ea.cmd.plus(1);
                         (when (not (§ ea.skip))
-;                           pos_C fp = getmark('<', false);
+;                           pos_C fp = getmark((byte)'<', false);
                             (if (not (check_mark fp))
 ;                               break doend;
                             )
 ;                           ea.line1 = fp.lnum;
-;                           fp = getmark('>', false);
+;                           fp = getmark((byte)'>', false);
                             (if (not (check_mark fp))
 ;                               break doend;
                             )
@@ -9585,7 +9585,7 @@
 ;                       errormsg = u8("E493: Backwards range given");
 ;                       break doend;
                     )
-                    (if (§ ask_yesno(u8("Backwards range given, OK to swap"), false) != 'y')
+                    (if (!= (ask_yesno (u8 "Backwards range given, OK to swap"), false) (byte \y))
 ;                       break doend;
                     )
 
@@ -9852,7 +9852,7 @@
 ;       {
 ;           switch (cmd.at(0))
 ;           {
-;               case '.':                       ;; '.' - Cursor position
+;               case (byte)'.':                       ;; '.' - Cursor position
 ;               {
 ;                   cmd = cmd.plus(1);
 ;                   switch (addr_type)
@@ -9868,7 +9868,7 @@
 ;                   break;
 ;               }
 
-;               case '$':                       ;; '$' - last line
+;               case (byte)'$':                       ;; '$' - last line
 ;               {
 ;                   cmd = cmd.plus(1);
 ;                   switch (addr_type)
@@ -9884,7 +9884,7 @@
 ;                   break;
 ;               }
 
-;               case '\'':                      ;; ''' - mark
+;               case (byte)'\'':                      ;; ''' - mark
 ;               {
                     (when (§ (cmd = cmd.plus(1)).at(0) == NUL)
 ;                       cmd = null;
@@ -9921,8 +9921,8 @@
 ;                   break;
 ;               }
 
-;               case '/':
-;               case '?':                   ;; '/' or '?' - search
+;               case (byte)'/':
+;               case (byte)'?':                   ;; '/' or '?' - search
 ;               {
 ;                   byte c = (cmd = cmd.plus(1)).at(-1);
                     (when (!= addr_type ADDR_LINES)
@@ -9953,7 +9953,7 @@
                         ;; This makes sure we never match in the current line,
                         ;; and can match anywhere in the next/previous line.
 
-;                       @curwin.w_cursor.col = (c == '/') ? MAXCOL : 0;
+;                       @curwin.w_cursor.col = (c == (byte)'/') ? MAXCOL : 0;
                         (reset! searchcmdlen 0)
                         (when (§ do_search(null, c, cmd, 1, SEARCH_HIS | SEARCH_MSG, null) == 0)
                             (COPY_pos (§ @curwin.w_cursor), save_pos)
@@ -9968,7 +9968,7 @@
 ;                   break;
 ;               }
 
-;               case '\\':              ;; "\?", "\/" or "\&", repeat search
+;               case (byte)'\\':              ;; "\?", "\/" or "\&", repeat search
 ;               {
 ;                   cmd = cmd.plus(1);
                     (when (!= addr_type ADDR_LINES)
@@ -10049,7 +10049,7 @@
 
 ;               int m;
                 (if (§ asc_isdigit(cmd.at(0)))
-;                   m = '+';                    ;; "number" is same as "+number"
+;                   m = (byte)'+';                    ;; "number" is same as "+number"
 ;                   m = (cmd = cmd.plus(1)).at(-1);
                 )
 ;               int n;
@@ -10449,8 +10449,8 @@
             ;; mapped in Insert mode.  Required for ":lmap" to work.
             (ins_char_typebuf c)
             (if (!= @restart_edit 0)
-;               c = 'd';
-;               c = 'c';
+;               c = (byte)'d';
+;               c = (byte)'c';
             )
             (reset! msg_nowait true)      ;; don't delay going to insert mode
         )
@@ -10466,7 +10466,7 @@
                 ;; Note that '0' is a command and not the start of a count,
                 ;; but it's part of a count after other digits.
 
-;               while (('1' <= c && c <= '9') || (ca.count0 != 0 && (c == K_DEL || c == K_KDEL || c == '0')))
+;               while (((byte)'1' <= c && c <= (byte)'9') || (ca.count0 != 0 && (c == K_DEL || c == K_KDEL || c == (byte)'0')))
 ;               {
                     (cond (or (== c K_DEL) (== c K_KDEL))
                     (§
@@ -10475,7 +10475,7 @@
                     )
                     :else
                     (§
-;                       ca.count0 = ca.count0 * 10 + (c - '0');
+;                       ca.count0 = ca.count0 * 10 + (c - (byte)'0');
                     ))
                     (if (< (§ ca.count0) 0)          ;; got too large!
 ;                       ca.count0 = 999999999;
@@ -10604,11 +10604,11 @@
 ;                   && (((nv_cmds[idx].cmd_flags & NV_NCH_NOP) == NV_NCH_NOP
 ;                           && oap.op_type == OP_NOP)
 ;                       || (nv_cmds[idx].cmd_flags & NV_NCH_ALW) == NV_NCH_ALW
-;                       || (ca.cmdchar == 'q'
+;                       || (ca.cmdchar == (byte)'q'
 ;                           && oap.op_type == OP_NOP
 ;                           && !@Recording
 ;                           && !@execReg)
-;                       || ((ca.cmdchar == 'a' || ca.cmdchar == 'i')
+;                       || ((ca.cmdchar == (byte)'a' || ca.cmdchar == (byte)'i')
 ;                           && (oap.op_type != OP_NOP || @VIsual_active))))
 ;           {
 ;               boolean repl = false;                   ;; get character for replace mode
@@ -10964,8 +10964,8 @@
 ;           if ((vim_strbyte(@p_cpo, CPO_YANK) != null || oap.op_type != OP_YANK)
 ;                   && ((!@VIsual_active || oap.motion_force != 0)
                         ;; Also redo Operator-pending Visual mode mappings.
-;                       || (@VIsual_active && cap.cmdchar == ':' && oap.op_type != OP_COLON))
-;                   && cap.cmdchar != 'D')
+;                       || (@VIsual_active && cap.cmdchar == (byte)':' && oap.op_type != OP_COLON))
+;                   && cap.cmdchar != (byte)'D')
 ;           {
 ;               prep_redo(oap.regname, cap.count0,
 ;                       get_op_char(oap.op_type), get_extra_op_char(oap.op_type),
@@ -11201,7 +11201,7 @@
                     )
                     (!= (§ cap.cmdchar) (byte \:))
                     (§
-;                       prep_redo(oap.regname, 0, NUL, 'v', get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.op_type == OP_REPLACE ? cap.@nchar : NUL);
+;                       prep_redo(oap.regname, 0, NUL, (byte)'v', get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.op_type == OP_REPLACE ? cap.@nchar : NUL);
                     ))
                     (when (not @redo_VIsual_busy)
                         (reset! redo_VIsual_mode @resel_VIsual_mode)
@@ -12126,8 +12126,8 @@
 
         ;; check 'scrollopt' string for vertical and horizontal scroll options
 
-;       boolean want_ver = (vim_strchr(@p_sbo, 'v') != null && topline_diff != 0);
-;       boolean want_hor = (vim_strchr(@p_sbo, 'h') != null && (leftcol_diff != 0 || topline_diff != 0));
+;       boolean want_ver = (vim_strchr(@p_sbo, (byte)'v') != null && topline_diff != 0);
+;       boolean want_hor = (vim_strchr(@p_sbo, (byte)'h') != null && (leftcol_diff != 0 || topline_diff != 0));
 
         ;; loop through the scrollbound windows and scroll accordingly
 
@@ -12222,7 +12222,7 @@
     (§
 ;       Bytes[] ptr = new Bytes[1];
 ;       int len = find_ident_under_cursor(ptr, FIND_IDENT);
-        (when (or (== len 0) (not (§ find_decl(ptr[0], len, nchar == 'd', thisblock, 0))))
+        (when (or (== len 0) (not (find_decl (§ ptr[0]), len, (== nchar (byte \d)), thisblock, 0)))
             (clearopbeep oap)
         )
     ))
@@ -12430,7 +12430,7 @@
 ;               return;
             )
 
-;           for (long n = nchar - '0'; ; )
+;           for (long n = nchar - (byte)'0'; ; )
 ;           {
                 (swap! no_mapping inc)
                 (swap! allow_keys inc)   ;; no mapping for nchar, but allow key codes
@@ -12446,7 +12446,7 @@
                 )
                 (asc_isdigit nchar)
                 (§
-;                   n = n * 10 + (nchar - '0');
+;                   n = n * 10 + (nchar - (byte)'0');
                 )
                 (== nchar CAR)
                 (§
@@ -12487,7 +12487,7 @@
 
 ;       switch (nchar)
 ;       {
-;           case '+':   ;; "z+", "z<CR>" and "zt": put cursor at top of screen
+;           case (byte)'+':   ;; "z+", "z<CR>" and "zt": put cursor at top of screen
                 (when (== (§ cap.count0) 0)
                     ;; No count given: put cursor at the line below screen.
                     (validate_botline) ;; make sure w_botline is valid
@@ -12504,21 +12504,21 @@
                 (beginline (§ BL_WHITE | BL_FIX))
                     ;; FALLTHROUGH
 
-;           case 't':
+;           case (byte)'t':
                 (scroll_cursor_top 0, true)
                 (redraw_later VALID)
 ;               break;
 
-;           case '.':   ;; "z." and "zz": put cursor in middle of screen
+;           case (byte)'.':   ;; "z." and "zz": put cursor in middle of screen
                 (beginline (§ BL_WHITE | BL_FIX))
                     ;; FALLTHROUGH
 
-;           case 'z':
+;           case (byte)'z':
                 (scroll_cursor_halfway true)
                 (redraw_later VALID)
 ;               break;
 
-;           case '^':   ;; "z^", "z-" and "zb": put cursor at bottom of screen
+;           case (byte)'^':   ;; "z^", "z-" and "zb": put cursor at bottom of screen
                 ;; Strange Vi behavior:
                 ;; <count>z^ finds line at top of window when <count> is at bottom of window,
                 ;; and puts that one at bottom of window.
@@ -12537,20 +12537,20 @@
                 ))
                     ;; FALLTHROUGH
 
-;           case '-':
+;           case (byte)'-':
                 (beginline (§ BL_WHITE | BL_FIX))
                     ;; FALLTHROUGH
 
-;           case 'b':
+;           case (byte)'b':
                 (scroll_cursor_bot 0, true)
                 (redraw_later VALID)
 ;               break;
 
-;           case 'H':   ;; "zH" - scroll screen right half-page
+;           case (byte)'H':   ;; "zH" - scroll screen right half-page
 ;               cap.count1 *= @curwin.w_width / 2;
                     ;; FALLTHROUGH
 
-;           case 'h':   ;; "zh" - scroll screen to the right
+;           case (byte)'h':   ;; "zh" - scroll screen to the right
 ;           case K_LEFT:
                 (when (not (§ @curwin.w_options.@wo_wrap))
                     (if (< (§ @curwin.w_leftcol) (§ (int)cap.count1))
@@ -12561,11 +12561,11 @@
                 )
 ;               break;
 
-;           case 'L':   ;; "zL" - scroll screen left half-page
+;           case (byte)'L':   ;; "zL" - scroll screen left half-page
 ;               cap.count1 *= @curwin.w_width / 2;
                     ;; FALLTHROUGH
 
-;           case 'l':   ;; "zl" - scroll screen to the left
+;           case (byte)'l':   ;; "zl" - scroll screen to the left
 ;           case K_RIGHT:
                 (when (not (§ @curwin.w_options.@wo_wrap))
                     ;; scroll the window left
@@ -12574,7 +12574,7 @@
                 )
 ;               break;
 
-;           case 's':   ;; "zs" - scroll screen, cursor at the start
+;           case (byte)'s':   ;; "zs" - scroll screen, cursor at the start
                 (when (not (§ @curwin.w_options.@wo_wrap))
 ;                   int[] col = new int[1];
                     (getvcol @curwin, (§ @curwin.w_cursor), col, null, null)
@@ -12589,7 +12589,7 @@
                 )
 ;               break;
 
-;           case 'e':   ;; "ze" - scroll screen, cursor at the end
+;           case (byte)'e':   ;; "ze" - scroll screen, cursor at the end
                 (when (not (§ @curwin.w_options.@wo_wrap))
 ;                   int[] col = new int[1];
                     (getvcol @curwin, (§ @curwin.w_cursor), null, null, col)
@@ -12704,7 +12704,7 @@
     (§
         (cond (and @VIsual_active @VIsual_select)
         (§
-;           cap.cmdchar = 'x';  ;; BS key behaves like 'x' in Select mode
+;           cap.cmdchar = (byte)'x';  ;; BS key behaves like 'x' in Select mode
             (v_visop cap)
         )
         :else
@@ -12757,11 +12757,11 @@
 ;           switch (cap.@nchar)
 ;           {
                                 ;; "ZZ": equivalent to ":x".
-;               case 'Z':   do_cmdline_cmd(u8("x"));
+;               case (byte)'Z':   do_cmdline_cmd(u8("x"));
 ;                           break;
 
                                 ;; "ZQ": equivalent to ":q!" (Elvis compatible).
-;               case 'Q':   do_cmdline_cmd(u8("q!"));
+;               case (byte)'Q':   do_cmdline_cmd(u8("q!"));
 ;                           break;
 
 ;               default:    clearopbeep(cap.oap);
@@ -12793,13 +12793,13 @@
     (§
 ;       int cmdchar = cap.cmdchar;
 
-;       boolean g_cmd = (cmdchar == 'g');
+;       boolean g_cmd = (cmdchar == (byte)'g');
         (if g_cmd                          ;; "g*", "g#", "g]" and "gCTRL-]"
 ;           cmdchar = cap.@nchar;
         )
 
         (if (== cmdchar (char_u POUND))       ;; the pound sign, '#' for English keyboards
-;           cmdchar = '#';
+;           cmdchar = (byte)'#';
         )
 
 ;       Bytes[] ident = { null };
@@ -12817,7 +12817,7 @@
         )
 
         (when (== (§ ident[0]) null)
-;           int type = (cmdchar == '*' || cmdchar == '#') ? (FIND_IDENT | FIND_STRING) : FIND_IDENT;
+;           int type = (cmdchar == (byte)'*' || cmdchar == (byte)'#') ? (FIND_IDENT | FIND_STRING) : FIND_IDENT;
 ;           n[0] = find_ident_under_cursor(ident, type);
             (when (== (§ n[0]) 0)
                 (clearop (§ cap.oap))
@@ -12838,8 +12838,8 @@
 
 ;       switch (cmdchar)
 ;       {
-;           case '*':
-;           case '#':
+;           case (byte)'*':
+;           case (byte)'#':
 ;           {
                 ;; Put cursor at start of word, makes search skip the word under the cursor.
                 ;; Call setpcmark() first, so "*``" puts the cursor back where it was.
@@ -12853,7 +12853,7 @@
 ;               break;
 ;           }
 
-;           case 'K':
+;           case (byte)'K':
 ;           {
                 ;; An external command will probably use an argument starting
                 ;; with "-" as an option.  To avoid trouble we skip the "-".
@@ -12877,7 +12877,7 @@
 ;               break;
 ;           }
 
-;           case ']':
+;           case (byte)']':
 ;           {
 ;               tag_cmd = true;
                 (STRCPY buf, (u8 "ts "))
@@ -13269,8 +13269,8 @@
 
         (when (and (== (§ cap.cmdchar) (byte \?)) (== (§ cap.oap.op_type) OP_ROT13))
             ;; Translate "g??" to "g?g?".
-;           cap.cmdchar = 'g';
-;           cap.@nchar = '?';
+;           cap.cmdchar = (byte)'g';
+;           cap.@nchar = (byte)'?';
             (nv_operator cap)
 ;           return;
         )
@@ -13340,7 +13340,7 @@
 
 (defn- #_void nv_csearch [#_cmdarg_C cap]
     (§
-;       boolean t_cmd = (cap.cmdchar == 't' || cap.cmdchar == 'T');
+;       boolean t_cmd = (cap.cmdchar == (byte)'t' || cap.cmdchar == (byte)'T');
 
 ;       cap.oap.motion_type = MCHAR;
         (cond (or (is_special (§ cap.@nchar)) (not (searchc cap, t_cmd)))
@@ -13389,7 +13389,7 @@
         (cond (or (and (== (§ cap.cmdchar) (byte \[)) (§ vim_strchr(u8("{(*/#mM"), cap.@nchar) != null)) (and (== (§ cap.cmdchar) (byte \])) (§ vim_strchr(u8("})*/#mM"), cap.@nchar) != null)))
         (§
             (if (== (§ cap.@nchar) (byte \*))
-;               cap.@nchar = '/';
+;               cap.@nchar = (byte)'/';
             )
 
 ;           int findc;
@@ -13397,8 +13397,8 @@
             (cond (or (== (§ cap.@nchar) (byte \m)) (== (§ cap.@nchar) (byte \M)))
             (§
                 (if (== (§ cap.cmdchar) (byte \[))
-;                   findc = '{';
-;                   findc = '}';
+;                   findc = (byte)'{';
+;                   findc = (byte)'}';
                 )
 ;               n = 9999;
             )
@@ -13414,7 +13414,7 @@
 
 ;           for ( ; 0 < n; --n)
 ;           {
-;               pos = findmatchlimit(cap.oap, findc, (cap.cmdchar == '[') ? FM_BACKWARD : FM_FORWARD, 0);
+;               pos = findmatchlimit(cap.oap, findc, (cap.cmdchar == (byte)'[') ? FM_BACKWARD : FM_FORWARD, 0);
                 (when (== pos null)
                     (cond (== (§ new_pos.lnum) 0) ;; nothing found
                     (§
@@ -13440,7 +13440,7 @@
 
             (when (or (== (§ cap.@nchar) (byte \m)) (== (§ cap.@nchar) (byte \M)))
                 ;; norm is true for "]M" and "[m"
-;               boolean norm = ((findc == '{') == (cap.@nchar == 'm'));
+;               boolean norm = ((findc == (byte)'{') == (cap.@nchar == (byte)'m'));
 
 ;               n = cap.count1;
                 ;; found a match: we were inside a method
@@ -13514,8 +13514,8 @@
         (§
 ;           int flag;
             (if (== (§ cap.@nchar) (§ cap.cmdchar))   ;; "]]" or "[["
-;               flag = '{';
-;               flag = '}';                 ;; "][" or "[]"
+;               flag = (byte)'{';
+;               flag = (byte)'}';                 ;; "][" or "[]"
             )
 
 ;           @curwin.w_set_curswant = true;
@@ -13523,7 +13523,7 @@
             ;; Imitate strange Vi behaviour: When using "]]" with an operator we also stop at '}'.
 
 ;           boolean b;
-;           { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, flag, (cap.oap.op_type != OP_NOP && cap.arg == FORWARD && flag == '{')); cap.oap.inclusive = __[0]; }
+;           { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, flag, (cap.oap.op_type != OP_NOP && cap.arg == FORWARD && flag == (byte)'{')); cap.oap.inclusive = __[0]; }
             (cond (not b)
             (§
                 (clearopbeep (§ cap.oap))
@@ -13540,7 +13540,7 @@
         (or (== (§ cap.@nchar) (byte \p)) (== (§ cap.@nchar) (byte \P)))
         (§
             (when (not (checkclearop (§ cap.oap)))
-;               int dir = (cap.cmdchar == ']' && cap.@nchar == 'p') ? FORWARD : BACKWARD;
+;               int dir = (cap.cmdchar == (byte)']' && cap.@nchar == (byte)'p') ? FORWARD : BACKWARD;
 ;               int regname = cap.oap.regname;
 ;               boolean was_visual = @VIsual_active;
 ;               long line_count = @curbuf.b_ml.ml_line_count;
@@ -13570,7 +13570,7 @@
                     (reset! VIsual_active true)
                     (when (== @VIsual_mode (byte \V))
                         ;; delete visually selected lines
-;                       cap.cmdchar = 'd';
+;                       cap.cmdchar = (byte)'d';
 ;                       cap.@nchar = NUL;
 ;                       cap.oap.regname = regname;
                         (nv_operator cap)
@@ -13592,7 +13592,7 @@
 ;           for (long n = cap.count1; 0 < n; --n)
 ;           {
                 (COPY_pos prev_pos, pos)
-;               pos = getnextmark(pos, (cap.cmdchar == '[') ? BACKWARD : FORWARD, cap.@nchar == '\'');
+;               pos = getnextmark(pos, (cap.cmdchar == (byte)'[') ? BACKWARD : FORWARD, cap.@nchar == (byte)'\'');
                 (if (== pos null)
 ;                   break;
                 )
@@ -13715,8 +13715,8 @@
         (cond (or (== (§ cap.oap.op_type) OP_LOWER) @VIsual_active)
         (§
             ;; translate "<Visual>u" to "<Visual>gu" and "guu" to "gugu"
-;           cap.cmdchar = 'g';
-;           cap.@nchar = 'u';
+;           cap.cmdchar = (byte)'g';
+;           cap.@nchar = (byte)'u';
             (nv_operator cap)
         )
         :else
@@ -13949,7 +13949,7 @@
     (§
         (cond @VIsual_active          ;; "R" is replace lines
         (§
-;           cap.cmdchar = 'c';
+;           cap.cmdchar = (byte)'c';
 ;           cap.@nchar = NUL;
             (reset! VIsual_mode_orig @VIsual_mode) ;; remember original area for gv
             (reset! VIsual_mode (byte \V))
@@ -13969,7 +13969,7 @@
     (§
         (cond @VIsual_active
         (§
-;           cap.cmdchar = 'r';
+;           cap.cmdchar = (byte)'r';
 ;           cap.@nchar = cap.@extra_char;
             (nv_replace cap)        ;; do same as "r" in Visual mode for now
         )
@@ -14104,7 +14104,7 @@
                 (reset! VIsual_mode_orig @VIsual_mode)
                 (reset! VIsual_mode (byte \V))
             )
-;           cap.cmdchar = 'c';
+;           cap.cmdchar = (byte)'c';
             (nv_operator cap)
         )
         :else
@@ -14118,7 +14118,7 @@
 (defn- #_void nv_abbrev [#_cmdarg_C cap]
     (§
         (if (or (== (§ cap.cmdchar) K_DEL) (== (§ cap.cmdchar) K_KDEL))
-;           cap.cmdchar = 'x';          ;; DEL key behaves like 'x'
+;           cap.cmdchar = (byte)'x';          ;; DEL key behaves like 'x'
         )
 
         ;; in Visual mode these commands are operators
@@ -14453,23 +14453,23 @@
 ;       {
             ;; "gR": Enter virtual replace mode.
 
-;           case 'R':
+;           case (byte)'R':
 ;               cap.arg = TRUE;
                 (nv_Replace cap)
 ;               break;
 
-;           case 'r':
+;           case (byte)'r':
                 (nv_vreplace cap)
 ;               break;
 
-;           case '&':
+;           case (byte)'&':
                 (do_cmdline_cmd (u8 "%s//~/&"))
 ;               break;
 
             ;; "gv": Reselect the previous Visual area.
             ;;       If Visual already active, exchange previous and current Visual area.
 
-;           case 'v':
+;           case (byte)'v':
                 (if (checkclearop oap)
 ;                   break;
                 )
@@ -14530,7 +14530,7 @@
 
             ;; "gV": Don't reselect the previous Visual area after a Select mode mapping of menu.
 
-;           case 'V':
+;           case (byte)'V':
                 (reset! VIsual_reselect false)
 ;               break;
 
@@ -14542,10 +14542,10 @@
 ;               cap.@nchar = Ctrl_H;
                     ;; FALLTHROUGH
 
-;           case 'h':
-;           case 'H':
+;           case (byte)'h':
+;           case (byte)'H':
 ;           case Ctrl_H:
-;               cap.cmdchar = cap.@nchar + ('v' - 'h');
+;               cap.cmdchar = cap.@nchar + ((byte)'v' - (byte)'h');
 ;               cap.arg = TRUE;
                 (nv_visual cap)
 ;               break;
@@ -14554,8 +14554,8 @@
             ;; "gn" selects next match
             ;; "gN" selects previous match
 
-;           case 'N':
-;           case 'n':
+;           case (byte)'N':
+;           case (byte)'n':
                 (if (not (current_search (§ cap.count1), (== (§ cap.@nchar) (byte \n))))
                     (clearopbeep oap))
 ;               break;
@@ -14563,7 +14563,7 @@
             ;; "gj" and "gk" two new funny movement keys -- up and down
             ;; movement based on *screen* line rather than *file* line.
 
-;           case 'j':
+;           case (byte)'j':
 ;           case K_DOWN:
 ;           {
 ;               boolean i;
@@ -14584,7 +14584,7 @@
 ;               break;
 ;           }
 
-;           case 'k':
+;           case (byte)'k':
 ;           case K_UP:
 ;           {
 ;               boolean i;
@@ -14607,19 +14607,19 @@
 
             ;; "gJ": join two lines without inserting a space.
 
-;           case 'J':
+;           case (byte)'J':
                 (nv_join cap)
 ;               break;
 
             ;; "g0", "g^" and "g$": Like "0", "^" and "$" but for screen lines.
             ;; "gm": middle of "g0" and "g$".
 
-;           case '^':
+;           case (byte)'^':
 ;               flag = true;
                     ;; FALLTHROUGH
 
-;           case '0':
-;           case 'm':
+;           case (byte)'0':
+;           case (byte)'m':
 ;           case K_HOME:
 ;           case K_KHOME:
 ;           {
@@ -14658,7 +14658,7 @@
 ;               break;
 ;           }
 
-;           case '_':
+;           case (byte)'_':
                 ;; "g_": to the last non-blank character in the line or <count> lines downward.
 ;               cap.oap.motion_type = MCHAR;
 ;               cap.oap.inclusive = true;
@@ -14684,7 +14684,7 @@
                 ))
 ;               break;
 
-;           case '$':
+;           case (byte)'$':
 ;           case K_END:
 ;           case K_KEND:
 ;           {
@@ -14740,18 +14740,18 @@
 
             ;; "g*" and "g#", like "*" and "#" but without using "\<" and "\>"
 
-;           case '*':
-;           case '#':
+;           case (byte)'*':
+;           case (byte)'#':
 ;           case char_u(POUND):             ;; pound sign (sometimes equal to '#')
 ;           case Ctrl_RSB:                  ;; :tag or :tselect for current identifier
-;           case ']':                       ;; :tselect for current identifier
+;           case (byte)']':                       ;; :tselect for current identifier
                 (nv_ident cap)
 ;               break;
 
             ;; ge and gE: go back to end of word
 
-;           case 'e':
-;           case 'E':
+;           case (byte)'e':
+;           case (byte)'E':
 ;               oap.motion_type = MCHAR;
 ;               @curwin.w_set_curswant = true;
 ;               oap.inclusive = true;
@@ -14767,7 +14767,7 @@
 
             ;; "gi": start Insert at the last position.
 
-;           case 'i':
+;           case (byte)'i':
                 (when (!= (§ @curbuf.b_last_insert.lnum) 0)
                     (COPY_pos (§ @curwin.w_cursor), (§ @curbuf.b_last_insert))
                     (check_cursor_lnum)
@@ -14779,13 +14779,13 @@
 ;                       @curwin.w_cursor.col = i;
                     )
                 )
-;               cap.cmdchar = 'i';
+;               cap.cmdchar = (byte)'i';
                 (nv_edit cap)
 ;               break;
 
             ;; "gI": Start insert in column 1.
 
-;           case 'I':
+;           case (byte)'I':
                 (beginline 0)
                 (if (not (checkclearopq oap))
                     (invoke_edit cap, false, (byte \g), false))
@@ -14793,24 +14793,24 @@
 
             ;; "g'm" and "g`m": jump to mark without setting pcmark.
 
-;           case '\'':
+;           case (byte)'\'':
 ;               cap.arg = TRUE;
                     ;; FALLTHROUGH
 
-;           case '`':
+;           case (byte)'`':
                 (nv_gomark cap)
 ;               break;
 
             ;; "gs": Goto sleep.
 
-;           case 's':
+;           case (byte)'s':
                 (do_sleep (* (§ cap.count1) 1000))
 ;               break;
 
             ;; "ga": Display the ascii value of the character under the cursor.
             ;;       It is displayed in decimal, hex, and octal.
 
-;           case 'a':
+;           case (byte)'a':
                 (do_ascii)
 ;               break;
 
@@ -14818,21 +14818,21 @@
             ;;       It is displayed in hex.
             ;; "8g8" finds illegal byte sequence.
 
-;           case '8':
+;           case (byte)'8':
                 (if (== (§ cap.count0) 8)
                     (utf_find_illegal)
 ;                   show_utf8();
                 )
 ;               break;
 
-;           case '<':
+;           case (byte)'<':
                 (show_sb_text)
 ;               break;
 
             ;; "gg": Goto the first line in file.
             ;;       With a count it goes to that line number like for "G".
 
-;           case 'g':
+;           case (byte)'g':
 ;               cap.arg = FALSE;
                 (nv_goto cap)
 ;               break;
@@ -14846,24 +14846,24 @@
             ;;  "g?"    rot13 encoding
             ;;  "g@"    call 'operatorfunc'
 
-;           case 'q':
-;           case 'w':
+;           case (byte)'q':
+;           case (byte)'w':
                 (COPY_pos (§ oap.cursor_start), (§ @curwin.w_cursor))
                     ;; FALLTHROUGH
 
-;           case '~':
-;           case 'u':
-;           case 'U':
-;           case '?':
-;           case '@':
+;           case (byte)'~':
+;           case (byte)'u':
+;           case (byte)'U':
+;           case (byte)'?':
+;           case (byte)'@':
                 (nv_operator cap)
 ;               break;
 
             ;; "gd": Find first occurrence of pattern under the cursor in the current function;
             ;; "gD": idem, but in the current file.
 
-;           case 'd':
-;           case 'D':
+;           case (byte)'d':
+;           case (byte)'D':
                 (nv_gd oap, (§ cap.@nchar), (== (§ cap.count0) 1))
 ;               break;
 
@@ -14872,18 +14872,18 @@
 
             ;; "gP" and "gp": same as "P" and "p" but leave cursor just after new text.
 
-;           case 'p':
-;           case 'P':
+;           case (byte)'p':
+;           case (byte)'P':
                 (nv_put cap)
 ;               break;
 
             ;; "go": goto byte count from start of buffer
-;           case 'o':
+;           case (byte)'o':
 ;               goto_byte(cap.count0);
 ;               break;
 
             ;; "gQ": improved Ex mode
-;           case 'Q':
+;           case (byte)'Q':
                 (when (text_locked)
                     (clearopbeep (§ cap.oap))
                     (text_locked_msg)
@@ -14895,19 +14895,19 @@
                 )
 ;               break;
 
-;           case ',':
+;           case (byte)',':
                 (nv_pcmark cap)
 ;               break;
 
-;           case ';':
+;           case (byte)';':
 ;               cap.count1 = -cap.count1;
                 (nv_pcmark cap)
 ;               break;
 
             ;; "g+" and "g-": undo or redo along the timeline.
 
-;           case '+':
-;           case '-':
+;           case (byte)'+':
+;           case (byte)'-':
                 (if (not (checkclearopq oap))
                     (undo_time (if (== (§ cap.@nchar) (byte \-)) (§ -cap.count1) (§ cap.count1)), false, false))
 ;               break;
@@ -14969,8 +14969,8 @@
         (cond (or (== (§ cap.oap.op_type) OP_UPPER) @VIsual_active)
         (§
             ;; translate "gUU" to "gUgU"
-;           cap.cmdchar = 'g';
-;           cap.@nchar = 'U';
+;           cap.cmdchar = (byte)'g';
+;           cap.@nchar = (byte)'U';
             (nv_operator cap)
         )
         (not (checkclearopq (§ cap.oap)))
@@ -15095,7 +15095,7 @@
 
         ;; Set inclusive for the "E" and "e" command.
 
-;       boolean word_end = (cap.cmdchar == 'e' || cap.cmdchar == 'E');
+;       boolean word_end = (cap.cmdchar == (byte)'e' || cap.cmdchar == (byte)'E');
 ;       cap.oap.inclusive = word_end;
 
 ;       boolean flag = false;
@@ -15234,7 +15234,7 @@
         )
         @VIsual_reselect
         (§
-;           cap.@nchar = 'v';        ;; fake "gv" command
+;           cap.@nchar = (byte)'v';        ;; fake "gv" command
 ;           cap.arg = TRUE;
             (nv_g_cmd cap)
         ))
@@ -15348,7 +15348,7 @@
     (§
         ;; <Insert> is equal to "i"
         (if (or (== (§ cap.cmdchar) K_INS) (== (§ cap.cmdchar) K_KINS))
-;           cap.cmdchar = 'i';
+;           cap.cmdchar = (byte)'i';
         )
 
         ;; in Visual mode "A" and "I" are an operator
@@ -15365,7 +15365,7 @@
         (§
 ;           switch (cap.cmdchar)
 ;           {
-;               case 'A':   ;; "A"ppend after the line
+;               case (byte)'A':   ;; "A"ppend after the line
 ;                   @curwin.w_set_curswant = true;
                     (cond (== @ve_flags VE_ALL)
                     (§
@@ -15383,13 +15383,13 @@
                     ))
 ;                   break;
 
-;               case 'I':   ;; "I"nsert before the first non-blank
+;               case (byte)'I':   ;; "I"nsert before the first non-blank
                     (if (§ vim_strbyte(@p_cpo, CPO_INSEND) == null)
                         (beginline BL_WHITE)
                         (beginline (§ BL_WHITE|BL_FIX)))
 ;                   break;
 
-;               case 'a':   ;; "a"ppend is like "i"nsert on the next character
+;               case (byte)'a':   ;; "a"ppend is like "i"nsert on the next character
                     ;; Increment coladd when in virtual space, increment the
                     ;; column otherwise, also to append after an unprintable char.
                     (cond (and (virtual_active) (or (< 0 (§ @curwin.w_cursor.coladd)) (== (§ ml_get_cursor().at(0)) NUL) (== (§ ml_get_cursor().at(0)) TAB)))
@@ -15414,7 +15414,7 @@
             )
 
             (invoke_edit cap, false, (§ cap.cmdchar), false)
-        )
+        ))
     ))
 
 ;; Invoke edit() and take care of "restart_edit" and the return value.
@@ -15460,39 +15460,39 @@
 ;       boolean flag;
 ;       switch (cap.@nchar)
 ;       {
-;           case 'w': ;; "aw" = a word
+;           case (byte)'w': ;; "aw" = a word
 ;                   flag = current_word(cap.oap, cap.count1, include, false);
 ;                   break;
-;           case 'W': ;; "aW" = a WORD
+;           case (byte)'W': ;; "aW" = a WORD
 ;                   flag = current_word(cap.oap, cap.count1, include, true);
 ;                   break;
-;           case 'b': ;; "ab" = a braces block
-;           case '(':
-;           case ')':
-;                   flag = current_block(cap.oap, cap.count1, include, '(', ')');
+;           case (byte)'b': ;; "ab" = a braces block
+;           case (byte)'(':
+;           case (byte)')':
+;                   flag = current_block(cap.oap, cap.count1, include, (byte)'(', (byte)')');
 ;                   break;
-;           case 'B': ;; "aB" = a Brackets block
-;           case '{':
-;           case '}':
-;                   flag = current_block(cap.oap, cap.count1, include, '{', '}');
+;           case (byte)'B': ;; "aB" = a Brackets block
+;           case (byte)'{':
+;           case (byte)'}':
+;                   flag = current_block(cap.oap, cap.count1, include, (byte)'{', (byte)'}');
 ;                   break;
-;           case '[': ;; "a[" = a [] block
-;           case ']':
-;                   flag = current_block(cap.oap, cap.count1, include, '[', ']');
+;           case (byte)'[': ;; "a[" = a [] block
+;           case (byte)']':
+;                   flag = current_block(cap.oap, cap.count1, include, (byte)'[', (byte)']');
 ;                   break;
-;           case '<': ;; "a<" = a <> block
-;           case '>':
-;                   flag = current_block(cap.oap, cap.count1, include, '<', '>');
+;           case (byte)'<': ;; "a<" = a <> block
+;           case (byte)'>':
+;                   flag = current_block(cap.oap, cap.count1, include, (byte)'<', (byte)'>');
 ;                   break;
-;           case 'p': ;; "ap" = a paragraph
-;                   flag = current_par(cap.oap, cap.count1, include, 'p');
+;           case (byte)'p': ;; "ap" = a paragraph
+;                   flag = current_par(cap.oap, cap.count1, include, (byte)'p');
 ;                   break;
-;           case 's': ;; "as" = a sentence
+;           case (byte)'s': ;; "as" = a sentence
 ;                   flag = current_sent(cap.oap, cap.count1, include);
 ;                   break;
-;           case '"': ;; "a"" = a double quoted string
-;           case '\'': ;; "a'" = a single quoted string
-;           case '`': ;; "a`" = a backtick quoted string
+;           case (byte)'"': ;; "a"" = a double quoted string
+;           case (byte)'\'': ;; "a'" = a single quoted string
+;           case (byte)'`': ;; "a`" = a backtick quoted string
 ;                   flag = current_quote(cap.oap, cap.count1, include, cap.@nchar);
 ;                   break;
 ;           default:
@@ -15515,8 +15515,8 @@
         (cond (== (§ cap.oap.op_type) OP_FORMAT)
         (§
             ;; "gqq" is the same as "gqgq": format line
-;           cap.cmdchar = 'g';
-;           cap.@nchar = 'q';
+;           cap.cmdchar = (byte)'g';
+;           cap.@nchar = (byte)'q';
             (nv_operator cap)
         )
         (not (checkclearop (§ cap.oap)))
@@ -15611,7 +15611,7 @@
         )
         :else
         (§
-;           int dir = (cap.cmdchar == 'P' || (cap.cmdchar == 'g' && cap.@nchar == 'P')) ? BACKWARD : FORWARD;
+;           int dir = (cap.cmdchar == (byte)'P' || (cap.cmdchar == (byte)'g' && cap.@nchar == (byte)'P')) ? BACKWARD : FORWARD;
             (prep_redo_cmd cap)
             (if (== (§ cap.cmdchar) (byte \g))
 ;               flags |= PUT_CURSEND;
@@ -15634,7 +15634,7 @@
                 )
 
                 ;; Now delete the selected text.
-;               cap.cmdchar = 'd';
+;               cap.cmdchar = (byte)'d';
 ;               cap.@nchar = NUL;
 ;               cap.oap.regname = NUL;
                 (nv_operator cap)
@@ -16496,7 +16496,7 @@
 
 (defn- #_int get_expr_register []
     (§
-;       Bytes new_line = getcmdline('=', 0);
+;       Bytes new_line = getcmdline((byte)'=', 0);
         (if (== new_line null)
 ;           return NUL;
         )
@@ -16567,7 +16567,7 @@
 ;       int i = regname;
         (cond (asc_isdigit i)
         (§
-;           i -= '0';
+;           i -= (byte)'0';
         )
         (asc_islower i)
         (§
@@ -16845,7 +16845,7 @@
             )
             :else
             (§
-;               buf.be(0, (@restart_edit == 'I') ? (byte)'i' : @restart_edit);
+;               buf.be(0, (@restart_edit == (byte)'I') ? (byte)'i' : @restart_edit);
 ;               buf.be(1, NUL);
             ))
 
@@ -16953,7 +16953,7 @@
             ;; Stuff a sequence of normal ASCII characters, that's fast.
             ;; Also stuff KB_SPECIAL to get the effect of a special key when "literally" is true.
 ;           Bytes start = arg[0];
-;           while ((' ' <= arg[0].at(0) && arg[0].at(0) < DEL) || (arg[0].at(0) == KB_SPECIAL && !literally))
+;           while (((byte)' ' <= arg[0].at(0) && arg[0].at(0) < DEL) || (arg[0].at(0) == KB_SPECIAL && !literally))
 ;               arg[0] = arg[0].plus(1);
             (if (BLT start, (§ arg[0]))
                 (stuffReadbuffLen start, (BDIFF (§ arg[0]), start)))
@@ -16979,29 +16979,29 @@
 
 ;       switch (regname)
 ;       {
-;           case '%':                                       ;; file name
-;           case '#':                                       ;; alternate file name
+;           case (byte)'%':                                       ;; file name
+;           case (byte)'#':                                       ;; alternate file name
 ;               argp[0] = null;
 ;               return false;
 
-;           case '=':                                       ;; result of expression
+;           case (byte)'=':                                       ;; result of expression
 ;               argp[0] = get_expr_line();
 ;               allocated[0] = true;
 ;               return true;
 
-;           case ':':                                       ;; last command line
+;           case (byte)':':                                       ;; last command line
                 (if (and (== @last_cmdline null) errmsg)
                     (emsg e_nolastcmd))
 ;               argp[0] = @last_cmdline;
 ;               return true;
 
-;           case '/':                                       ;; last search-pattern
+;           case (byte)'/':                                       ;; last search-pattern
                 (if (and (== (last_search_pat) null) errmsg)
                     (emsg e_noprevre))
 ;               argp[0] = last_search_pat();
 ;               return true;
 
-;           case '.':                                       ;; last inserted text
+;           case (byte)'.':                                       ;; last inserted text
 ;               argp[0] = get_last_insert_save();
 ;               allocated[0] = true;
                 (if (and (== (§ argp[0]) null) errmsg)
@@ -17020,7 +17020,7 @@
 ;               return true;
 ;           }
 
-;           case '_':               ;; black hole: always empty
+;           case (byte)'_':               ;; black hole: always empty
 ;               argp[0] = u8("");
 ;               return true;
 ;       }
@@ -17188,7 +17188,7 @@
                 ;; Yank into small delete register when no named register specified
                 ;; and the delete is within one line.
                 (when (and (== (§ oap.regname) 0) (!= (§ oap.motion_type) MLINE) (== (§ oap.line_count) 1))
-;                   oap.regname = '-';
+;                   oap.regname = (byte)'-';
                     (get_yank_register (§ oap.regname), true)
                     (if (op_yank oap, true, false)
 ;                       did_yank = true;
@@ -17200,7 +17200,7 @@
                 ;; confirmation before doing the delete.  This is crude, but simple.
                 ;; And it avoids doing a delete of something we can't put back if we want.
 
-                (when (and (not did_yank) (§ ask_yesno(u8("cannot yank; delete anyway"), true) != 'y'))
+                (when (and (not did_yank) (§ ask_yesno(u8("cannot yank; delete anyway"), true) != (byte)'y'))
                     (emsg e_abort)
 ;                   return false;
                 )
@@ -17446,7 +17446,7 @@
         )
 
         (if had_ctrl_v_cr
-;           c = (c == -1) ? '\r' : '\n';
+;           c = (c == -1) ? (byte)'\r' : (byte)'\n';
         )
 
         (mb_adjust_opend oap)
@@ -17787,7 +17787,7 @@
         (§
             (cond (== op_type OP_ROT13)
             (§
-;               nc = rot13(c, 'a');
+;               nc = rot13(c, (byte)'a');
             )
             (!= op_type OP_LOWER)
             (§
@@ -17798,7 +17798,7 @@
         (§
             (cond (== op_type OP_ROT13)
             (§
-;               nc = rot13(c, 'A');
+;               nc = rot13(c, (byte)'A');
             )
             (!= op_type OP_UPPER)
             (§
@@ -18407,7 +18407,7 @@
 ;                           y_array[y_size] = p;
                         )
 ;                       y_size++;
-;                       p = vim_strchr(p, '\n');
+;                       p = vim_strchr(p, (byte)'\n');
                         (when (!= p null)
                             (if (!= y_array null)
 ;                               p.be(0, NUL);
@@ -19220,9 +19220,9 @@
 
 (defn- #_boolean do_addsub [#_int command, #_long Prenum1]
     (§
-;       boolean dohex = (vim_strchr(@curbuf.@b_p_nf, 'x') != null);   ;; "heX"
-;       boolean dooct = (vim_strchr(@curbuf.@b_p_nf, 'o') != null);   ;; "Octal"
-;       boolean doalp = (vim_strchr(@curbuf.@b_p_nf, 'p') != null);   ;; "alPha"
+;       boolean dohex = (vim_strchr(@curbuf.@b_p_nf, (byte)'x') != null);   ;; "heX"
+;       boolean dooct = (vim_strchr(@curbuf.@b_p_nf, (byte)'o') != null);   ;; "Octal"
+;       boolean doalp = (vim_strchr(@curbuf.@b_p_nf, (byte)'p') != null);   ;; "alPha"
 
 ;       Bytes ptr = ml_get_curline();
 
@@ -19272,8 +19272,8 @@
                 (cond (< (alphaOrd firstdigit) Prenum1)
                 (§
                     (if (asc_isupper firstdigit)
-;                       firstdigit = 'A';
-;                       firstdigit = 'a';
+;                       firstdigit = (byte)'A';
+;                       firstdigit = (byte)'a';
                     )
                 )
                 :else
@@ -19286,8 +19286,8 @@
                 (cond (§ 26 - alphaOrd(firstdigit) - 1 < Prenum1)
                 (§
                     (if (asc_isupper firstdigit)
-;                       firstdigit = 'Z';
-;                       firstdigit = 'z';
+;                       firstdigit = (byte)'Z';
+;                       firstdigit = (byte)'z';
                     )
                 )
                 :else
@@ -19604,14 +19604,14 @@
 ;                       break;
 ;                   }
 
-;                   case 'V':
+;                   case (byte)'V':
 ;                   {
 ;                       s = ml_get(lnum);
 ;                       len = MAXCOL;
 ;                       break;
 ;                   }
 
-;                   case 'v':
+;                   case (byte)'v':
 ;                   {
 ;                       int start_col = (lnum == min_pos.lnum) ? min_pos.col : 0;
 ;                       int end_col = (lnum == max_pos.lnum) ? max_pos.col - start_col + 1 : MAXCOL;
@@ -19769,7 +19769,7 @@
                 (COPY_pos (§ @curbuf.b_visual.vi_end), pos))
             (when (== (§ @curbuf.b_visual.vi_mode) NUL)
                 ;; Visual_mode has not yet been set, use a sane default.
-;               @curbuf.b_visual.vi_mode = 'v';
+;               @curbuf.b_visual.vi_mode = (byte)'v';
             )
 ;           return true;
         )
@@ -19778,12 +19778,12 @@
 ;           return false;
         )
         (when (asc_islower c)
-;           int i = c - 'a';
+;           int i = c - (byte)'a';
             (COPY_pos (§ @curbuf.b_namedm[i]), pos)
 ;           return true;
         )
         (when (asc_isupper c)
-;           int i = c - 'A';
+;           int i = c - (byte)'A';
             (COPY_pos (§ namedfm[i].mark), pos)
 ;           return true;
         )
@@ -19977,13 +19977,13 @@
         )
         (asc_islower c)                    ;; normal named mark
         (§
-;           posp = buf.b_namedm[c - 'a'];
+;           posp = buf.b_namedm[c - (byte)'a'];
         )
         (or (asc_isupper c) (asc_isdigit c))  ;; named file mark
         (§
             (if (asc_isdigit c)
-;               c = c - '0' + NMARKS;
-;               c -= 'A';
+;               c = c - (byte)'0' + NMARKS;
+;               c -= (byte)'A';
             )
 ;           posp = namedfm[c].mark;
         ))
@@ -20708,7 +20708,7 @@
 ;       {
             ;; Put a string of normal characters in the redo buffer (that's faster).
 ;           Bytes start = s[0];
-;           while (' ' <= s[0].at(0) && s[0].at(0) < DEL && (len < 0 || BDIFF(s[0], str) < len))
+;           while ((byte)' ' <= s[0].at(0) && s[0].at(0) < DEL && (len < 0 || BDIFF(s[0], str) < len))
 ;               s[0] = s[0].plus(1);
 
             ;; Don't put '0' or '^' as last character, just in case a CTRL-D is typed next.
@@ -21197,22 +21197,22 @@
                 ;; a keypad or special function key was not mapped, use it like its ASCII equivalent
 ;               switch (c)
 ;               {
-;                   case K_KPLUS:       c = '+'; break;
-;                   case K_KMINUS:      c = '-'; break;
-;                   case K_KDIVIDE:     c = '/'; break;
-;                   case K_KMULTIPLY:   c = '*'; break;
+;                   case K_KPLUS:       c = (byte)'+'; break;
+;                   case K_KMINUS:      c = (byte)'-'; break;
+;                   case K_KDIVIDE:     c = (byte)'/'; break;
+;                   case K_KMULTIPLY:   c = (byte)'*'; break;
 ;                   case K_KENTER:      c = CAR; break;
-;                   case K_KPOINT:      c = '.'; break;
-;                   case K_K0:          c = '0'; break;
-;                   case K_K1:          c = '1'; break;
-;                   case K_K2:          c = '2'; break;
-;                   case K_K3:          c = '3'; break;
-;                   case K_K4:          c = '4'; break;
-;                   case K_K5:          c = '5'; break;
-;                   case K_K6:          c = '6'; break;
-;                   case K_K7:          c = '7'; break;
-;                   case K_K8:          c = '8'; break;
-;                   case K_K9:          c = '9'; break;
+;                   case K_KPOINT:      c = (byte)'.'; break;
+;                   case K_K0:          c = (byte)'0'; break;
+;                   case K_K1:          c = (byte)'1'; break;
+;                   case K_K2:          c = (byte)'2'; break;
+;                   case K_K3:          c = (byte)'3'; break;
+;                   case K_K4:          c = (byte)'4'; break;
+;                   case K_K5:          c = (byte)'5'; break;
+;                   case K_K6:          c = (byte)'6'; break;
+;                   case K_K7:          c = (byte)'7'; break;
+;                   case K_K8:          c = (byte)'8'; break;
+;                   case K_K9:          c = (byte)'9'; break;
 
 ;                   case K_XHOME:
 ;                   case K_ZHOME:
@@ -21493,7 +21493,7 @@
                                 (del_typebuf 1)
                             )
 ;                           break;          ;; got character, break for loop
-;                       )
+                        )
 
                         (when (< 0 keylen)         ;; full matching terminal code
 ;                           continue;           ;; try mapping again
@@ -23002,14 +23002,14 @@
                     (if (or (< nc (byte \0)) (< (byte \7) nc))
 ;                       break;
                     )
-;                   cc = cc * 8 + nc - '0';
+;                   cc = cc * 8 + nc - (byte)'0';
                 )
                 :else
                 (§
                     (if (not (asc_isdigit nc))
 ;                       break;
                     )
-;                   cc = cc * 10 + nc - '0';
+;                   cc = cc * 10 + nc - (byte)'0';
                 ))
 
 ;               i++;
@@ -23040,7 +23040,7 @@
         (when (== i 0)                 ;; no number entered
             (cond (== nc K_ZERO)       ;; NUL is stored as NL
             (§
-;               cc = '\n';
+;               cc = (byte)'\n';
 ;               nc = 0;
             )
             :else
@@ -23051,7 +23051,7 @@
         )
 
         (if (== cc 0)                ;; NUL is stored as NL
-;           cc = '\n';
+;           cc = (byte)'\n';
         )
 
         (swap! no_mapping dec)
@@ -23836,7 +23836,7 @@
 
                 ;; Delete spaces that were inserted after the cursor to keep the text aligned.
 ;               @curwin.w_cursor.col += ins_len;
-;               while (orig_vcols < vcol && gchar_cursor() == ' ')
+;               while (orig_vcols < vcol && gchar_cursor() == (byte)' ')
 ;               {
                     (del_char false)
 ;                   orig_vcols++;
@@ -23952,17 +23952,17 @@
             ;; CTRL-G k and CTRL-G <Up>: cursor up to insStart.col.
 ;           case K_UP:
 ;           case Ctrl_K:
-;           case 'k': ins_up(true);
+;           case (byte)'k': ins_up(true);
 ;                     break;
 
             ;; CTRL-G j and CTRL-G <Down>: cursor down to insStart.col.
 ;           case K_DOWN:
 ;           case Ctrl_J:
-;           case 'j': ins_down(true);
+;           case (byte)'j': ins_down(true);
 ;                     break;
 
             ;; CTRL-G u: start new undoable edit.
-;           case 'u': u_sync(true);
+;           case (byte)'u': u_sync(true);
                       (reset! ins_need_undo true)
 
                       ;; Need to reset insStart, esp. because a BS that joins
@@ -25037,7 +25037,7 @@
 
             ;; for '}' set indent equal to indent of line containing matching '{'
 
-            (cond (and (== c (byte \})) (§ (pos = findmatch(null, '{')) != null))
+            (cond (and (== c (byte \})) (!= (§ pos = findmatch(null, (§ byte \{))) null))
             (§
 ;               pos_C old_pos = §_pos_C();
                 (COPY_pos old_pos, (§ @curwin.w_cursor))
@@ -25055,7 +25055,7 @@
                 )
 ;               @curwin.w_cursor.lnum = pos.lnum;
 ;               @curwin.w_cursor.col = i;
-                (if (and (== (§ ptr.at(i)) (byte \))) (§ (pos = findmatch(null, '(')) != null))
+                (if (and (== (§ ptr.at(i)) (byte \))) (!= (§ pos = findmatch(null, (§ byte \())) null))
                     (COPY_pos (§ @curwin.w_cursor), pos))
 ;               i = get_indent();
                 (COPY_pos (§ @curwin.w_cursor), old_pos)
@@ -25440,15 +25440,13 @@
 ;; Return MULTI_MULT if c is a multi "multi" operator.
 
 (defn- #_int re_multi_type [#_int c]
-    (§
-        (if (or (== c (§ Magic('@'))) (== c (§ Magic('='))) (== c (§ Magic('?'))))
-;           return MULTI_ONE;
-        )
-        (if (or (== c (§ Magic('*'))) (== c (§ Magic('+'))) (== c (§ Magic('{'))))
-;           return MULTI_MULT;
-        )
-
-        NOT_MULTI
+    (cond
+        (or (== c (Magic (byte \@))) (== c (Magic (byte \=))) (== c (Magic (byte \?))))
+            MULTI_ONE
+        (or (== c (Magic (byte \*))) (== c (Magic (byte \+))) (== c (Magic (byte \{))))
+            MULTI_MULT
+        :else
+            NOT_MULTI
     ))
 
 ;; Flags to be passed up and down.
@@ -25489,10 +25487,10 @@
     (§
 ;       switch (c)
 ;       {
-;           case 'r':   return CAR;
-;           case 't':   return TAB;
-;           case 'e':   return ESC;
-;           case 'b':   return BS;
+;           case (byte)'r':   return CAR;
+;           case (byte)'t':   return TAB;
+;           case (byte)'e':   return ESC;
+;           case (byte)'b':   return BS;
 ;       }
         c
     ))
@@ -25827,7 +25825,7 @@
     (§
 ;       switch (c)
 ;       {
-;           case 'A':
+;           case (byte)'A':
 ;           case 0xc0: case 0xc1: case 0xc2:
 ;           case 0xc3: case 0xc4: case 0xc5:
 ;           case 0x100: case 0x102: case 0x104:
@@ -25842,7 +25840,7 @@
                 (regmbc 0x1ea2)
 ;               return;
 ;           }
-;           case 'a':
+;           case (byte)'a':
 ;           case 0xe0: case 0xe1: case 0xe2:
 ;           case 0xe3: case 0xe4: case 0xe5:
 ;           case 0x101: case 0x103: case 0x105:
@@ -25858,14 +25856,14 @@
 ;               return;
 ;           }
 
-;           case 'B':
+;           case (byte)'B':
 ;           case 0x1e02: case 0x1e06:
 ;           {
                 (regmbc (byte \B))
                 (regmbc 0x1e02) regmbc(0x1e06)
 ;               return;
 ;           }
-;           case 'b':
+;           case (byte)'b':
 ;           case 0x1e03: case 0x1e07:
 ;           {
                 (regmbc (byte \b))
@@ -25873,7 +25871,7 @@
 ;               return;
 ;           }
 
-;           case 'C':
+;           case (byte)'C':
 ;           case 0xc7:
 ;           case 0x106: case 0x108: case 0x10a: case 0x10c:
 ;           {
@@ -25882,7 +25880,7 @@
                 (regmbc 0x106) regmbc(0x108) (regmbc 0x10a) regmbc(0x10c)
 ;               return;
 ;           }
-;           case 'c':
+;           case (byte)'c':
 ;           case 0xe7:
 ;           case 0x107: case 0x109: case 0x10b: case 0x10d:
 ;           {
@@ -25892,7 +25890,7 @@
 ;               return;
 ;           }
 
-;           case 'D':
+;           case (byte)'D':
 ;           case 0x10e: case 0x110:
 ;           case 0x1e0a: case 0x1e0c: case 0x1e0e: case 0x1e10: case 0x1e12:
 ;           {
@@ -25901,7 +25899,7 @@
                 (regmbc 0x1e0a) regmbc(0x1e0c) (regmbc 0x1e0e) regmbc(0x1e10) (regmbc 0x1e12)
 ;               return;
 ;           }
-;           case 'd':
+;           case (byte)'d':
 ;           case 0x10f: case 0x111:
 ;           case 0x1e0b: case 0x1e0d: case 0x1e0f: case 0x1e11: case 0x1e13:
 ;           {
@@ -25911,7 +25909,7 @@
 ;               return;
 ;           }
 
-;           case 'E':
+;           case (byte)'E':
 ;           case 0xc8: case 0xc9: case 0xca: case 0xcb:
 ;           case 0x112: case 0x114: case 0x116: case 0x118: case 0x11a:
 ;           case 0x1eba: case 0x1ebc:
@@ -25922,7 +25920,7 @@
                 (regmbc 0x1eba) regmbc(0x1ebc)
 ;               return;
 ;           }
-;           case 'e':
+;           case (byte)'e':
 ;           case 0xe8: case 0xe9: case 0xea: case 0xeb:
 ;           case 0x113: case 0x115: case 0x117: case 0x119: case 0x11b:
 ;           case 0x1ebb: case 0x1ebd:
@@ -25934,14 +25932,14 @@
 ;               return;
 ;           }
 
-;           case 'F':
+;           case (byte)'F':
 ;           case 0x1e1e:
 ;           {
                 (regmbc (byte \F))
                 (regmbc 0x1e1e)
 ;               return;
 ;           }
-;           case 'f':
+;           case (byte)'f':
 ;           case 0x1e1f:
 ;           {
                 (regmbc (byte \f))
@@ -25949,7 +25947,7 @@
 ;               return;
 ;           }
 
-;           case 'G':
+;           case (byte)'G':
 ;           case 0x11c: case 0x11e: case 0x120: case 0x122:
 ;           case 0x1e4: case 0x1e6: case 0x1f4:
 ;           case 0x1e20:
@@ -25960,7 +25958,7 @@
                 (regmbc 0x1e20)
 ;               return;
 ;           }
-;           case 'g':
+;           case (byte)'g':
 ;           case 0x11d: case 0x11f: case 0x121: case 0x123:
 ;           case 0x1e5: case 0x1e7: case 0x1f5:
 ;           case 0x1e21:
@@ -25972,7 +25970,7 @@
 ;               return;
 ;           }
 
-;           case 'H':
+;           case (byte)'H':
 ;           case 0x124: case 0x126:
 ;           case 0x1e22: case 0x1e26: case 0x1e28:
 ;           {
@@ -25981,7 +25979,7 @@
                 (regmbc 0x1e22) regmbc(0x1e26) (regmbc 0x1e28)
 ;               return;
 ;           }
-;           case 'h':
+;           case (byte)'h':
 ;           case 0x125: case 0x127:
 ;           case 0x1e23: case 0x1e27: case 0x1e29: case 0x1e96:
 ;           {
@@ -25991,7 +25989,7 @@
 ;               return;
 ;           }
 
-;           case 'I':
+;           case (byte)'I':
 ;           case 0xcc: case 0xcd: case 0xce: case 0xcf:
 ;           case 0x128: case 0x12a: case 0x12c: case 0x12e: case 0x130:
 ;           case 0x1cf:
@@ -26004,7 +26002,7 @@
                 (regmbc 0x1ec8)
 ;               return;
 ;           }
-;           case 'i':
+;           case (byte)'i':
 ;           case 0xec: case 0xed: case 0xee: case 0xef:
 ;           case 0x129: case 0x12b: case 0x12d: case 0x12f: case 0x131:
 ;           case 0x1d0:
@@ -26018,14 +26016,14 @@
 ;               return;
 ;           }
 
-;           case 'J':
+;           case (byte)'J':
 ;           case 0x134:
 ;           {
                 (regmbc (byte \J))
                 (regmbc 0x134)
 ;               return;
 ;           }
-;           case 'j':
+;           case (byte)'j':
 ;           case 0x135: case 0x1f0:
 ;           {
                 (regmbc (byte \j))
@@ -26033,7 +26031,7 @@
 ;               return;
 ;           }
 
-;           case 'K':
+;           case (byte)'K':
 ;           case 0x136: case 0x1e8:
 ;           case 0x1e30: case 0x1e34:
 ;           {
@@ -26042,7 +26040,7 @@
                 (regmbc 0x1e30) regmbc(0x1e34)
 ;               return;
 ;           }
-;           case 'k':
+;           case (byte)'k':
 ;           case 0x137: case 0x1e9:
 ;           case 0x1e31: case 0x1e35:
 ;           {
@@ -26052,7 +26050,7 @@
 ;               return;
 ;           }
 
-;           case 'L':
+;           case (byte)'L':
 ;           case 0x139: case 0x13b: case 0x13d: case 0x13f: case 0x141:
 ;           case 0x1e3a:
 ;           {
@@ -26061,7 +26059,7 @@
                 (regmbc 0x1e3a)
 ;               return;
 ;           }
-;           case 'l':
+;           case (byte)'l':
 ;           case 0x13a: case 0x13c: case 0x13e: case 0x140: case 0x142:
 ;           case 0x1e3b:
 ;           {
@@ -26071,14 +26069,14 @@
 ;               return;
 ;           }
 
-;           case 'M':
+;           case (byte)'M':
 ;           case 0x1e3e: case 0x1e40:
 ;           {
                 (regmbc (byte \M))
                 (regmbc 0x1e3e) regmbc(0x1e40)
 ;               return;
 ;           }
-;           case 'm':
+;           case (byte)'m':
 ;           case 0x1e3f: case 0x1e41:
 ;           {
                 (regmbc (byte \m))
@@ -26086,7 +26084,7 @@
 ;               return;
 ;           }
 
-;           case 'N':
+;           case (byte)'N':
 ;           case 0xd1:
 ;           case 0x143: case 0x145: case 0x147:
 ;           case 0x1e44: case 0x1e48:
@@ -26097,7 +26095,7 @@
                 (regmbc 0x1e44) regmbc(0x1e48)
 ;               return;
 ;           }
-;           case 'n':
+;           case (byte)'n':
 ;           case 0xf1:
 ;           case 0x144: case 0x146: case 0x148: case 0x149:
 ;           case 0x1e45: case 0x1e49:
@@ -26109,7 +26107,7 @@
 ;               return;
 ;           }
 
-;           case 'O':
+;           case (byte)'O':
 ;           case 0xd2: case 0xd3: case 0xd4:
 ;           case 0xd5: case 0xd6: case 0xd8:
 ;           case 0x14c: case 0x14e: case 0x150:
@@ -26124,7 +26122,7 @@
                 (regmbc 0x1ece)
 ;               return;
 ;           }
-;           case 'o':
+;           case (byte)'o':
 ;           case 0xf2: case 0xf3: case 0xf4:
 ;           case 0xf5: case 0xf6: case 0xf8:
 ;           case 0x14d: case 0x14f: case 0x151:
@@ -26140,14 +26138,14 @@
 ;               return;
 ;           }
 
-;           case 'P':
+;           case (byte)'P':
 ;           case 0x1e54: case 0x1e56:
 ;           {
                 (regmbc (byte \P))
                 (regmbc 0x1e54) regmbc(0x1e56)
 ;               return;
 ;           }
-;           case 'p':
+;           case (byte)'p':
 ;           case 0x1e55: case 0x1e57:
 ;           {
                 (regmbc (byte \p))
@@ -26155,7 +26153,7 @@
 ;               return;
 ;           }
 
-;           case 'R':
+;           case (byte)'R':
 ;           case 0x154: case 0x156: case 0x158:
 ;           case 0x1e58: case 0x1e5e:
 ;           {
@@ -26164,7 +26162,7 @@
                 (regmbc 0x1e58) regmbc(0x1e5e)
 ;               return;
 ;           }
-;           case 'r':
+;           case (byte)'r':
 ;           case 0x155: case 0x157: case 0x159:
 ;           case 0x1e59: case 0x1e5f:
 ;           {
@@ -26174,7 +26172,7 @@
 ;               return;
 ;           }
 
-;           case 'S':
+;           case (byte)'S':
 ;           case 0x15a: case 0x15c: case 0x15e: case 0x160:
 ;           case 0x1e60:
 ;           {
@@ -26183,7 +26181,7 @@
                 (regmbc 0x1e60)
 ;               return;
 ;           }
-;           case 's':
+;           case (byte)'s':
 ;           case 0x15b: case 0x15d: case 0x15f: case 0x161:
 ;           case 0x1e61:
 ;           {
@@ -26193,7 +26191,7 @@
 ;               return;
 ;           }
 
-;           case 'T':
+;           case (byte)'T':
 ;           case 0x162: case 0x164: case 0x166:
 ;           case 0x1e6a: case 0x1e6e:
 ;           {
@@ -26202,7 +26200,7 @@
                 (regmbc 0x1e6a) regmbc(0x1e6e)
 ;               return;
 ;           }
-;           case 't':
+;           case (byte)'t':
 ;           case 0x163: case 0x165: case 0x167:
 ;           case 0x1e6b: case 0x1e6f: case 0x1e97:
 ;           {
@@ -26212,7 +26210,7 @@
 ;               return;
 ;           }
 
-;           case 'U':
+;           case (byte)'U':
 ;           case 0xd9: case 0xda: case 0xdb: case 0xdc:
 ;           case 0x168: case 0x16a: case 0x16c: case 0x16e:
 ;           case 0x170: case 0x172: case 0x1af: case 0x1d3:
@@ -26225,7 +26223,7 @@
                 (regmbc 0x1ee6)
 ;               return;
 ;           }
-;           case 'u':
+;           case (byte)'u':
 ;           case 0xf9: case 0xfa: case 0xfb: case 0xfc:
 ;           case 0x169: case 0x16b: case 0x16d: case 0x16f:
 ;           case 0x171: case 0x173: case 0x1b0: case 0x1d4:
@@ -26239,14 +26237,14 @@
 ;               return;
 ;           }
 
-;           case 'V':
+;           case (byte)'V':
 ;           case 0x1e7c:
 ;           {
                 (regmbc (byte \V))
                 (regmbc 0x1e7c)
 ;               return;
 ;           }
-;           case 'v':
+;           case (byte)'v':
 ;           case 0x1e7d:
 ;           {
                 (regmbc (byte \v))
@@ -26254,7 +26252,7 @@
 ;               return;
 ;           }
 
-;           case 'W':
+;           case (byte)'W':
 ;           case 0x174:
 ;           case 0x1e80: case 0x1e82: case 0x1e84: case 0x1e86:
 ;           {
@@ -26263,7 +26261,7 @@
                 (regmbc 0x1e80) regmbc(0x1e82) (regmbc 0x1e84) regmbc(0x1e86)
 ;               return;
 ;           }
-;           case 'w':
+;           case (byte)'w':
 ;           case 0x175:
 ;           case 0x1e81: case 0x1e83: case 0x1e85: case 0x1e87: case 0x1e98:
 ;           {
@@ -26273,14 +26271,14 @@
 ;               return;
 ;           }
 
-;           case 'X':
+;           case (byte)'X':
 ;           case 0x1e8a: case 0x1e8c:
 ;           {
                 (regmbc (byte \X))
                 (regmbc 0x1e8a) regmbc(0x1e8c)
 ;               return;
 ;           }
-;           case 'x':
+;           case (byte)'x':
 ;           case 0x1e8b: case 0x1e8d:
 ;           {
                 (regmbc (byte \x))
@@ -26288,7 +26286,7 @@
 ;               return;
 ;           }
 
-;           case 'Y':
+;           case (byte)'Y':
 ;           case 0xdd:
 ;           case 0x176: case 0x178:
 ;           case 0x1e8e: case 0x1ef2: case 0x1ef6: case 0x1ef8:
@@ -26299,7 +26297,7 @@
                 (regmbc 0x1e8e) regmbc(0x1ef2) (regmbc 0x1ef6) regmbc(0x1ef8)
 ;               return;
 ;           }
-;           case 'y':
+;           case (byte)'y':
 ;           case 0xfd: case 0xff:
 ;           case 0x177:
 ;           case 0x1e8f: case 0x1e99: case 0x1ef3: case 0x1ef7: case 0x1ef9:
@@ -26311,7 +26309,7 @@
 ;               return;
 ;           }
 
-;           case 'Z':
+;           case (byte)'Z':
 ;           case 0x179: case 0x17b: case 0x17d: case 0x1b5:
 ;           case 0x1e90: case 0x1e94:
 ;           {
@@ -26320,7 +26318,7 @@
                 (regmbc 0x1e90) regmbc(0x1e94)
 ;               return;
 ;           }
-;           case 'z':
+;           case (byte)'z':
 ;           case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
 ;           case 0x1e91: case 0x1e95:
 ;           {
@@ -26644,7 +26642,7 @@
         (§
             ;; Make a MOPEN node.
             (when (<= NSUBEXP @regnpar)
-                (emsg2 (§ u8("E51: Too many %s("), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\")))
+                (emsg2 (u8 "E51: Too many %s("), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                 (reset! rc_did_emsg true)
 ;               return null;
             )
@@ -26678,7 +26676,7 @@
 ;           flagp[0] &= ~HASWIDTH;
         )
 ;       flagp[0] |= flags[0] & (SPSTART | HASNL | HASLOOKBH);
-;       while (peekchr() == Magic('|'))
+;       while (peekchr() == Magic((byte)'|'))
 ;       {
             (skipchr)
 ;           br = regbranch(flags);
@@ -26704,7 +26702,7 @@
             (regoptail br, ender)
 
         ;; Check for proper termination.
-        (cond (and (!= paren REG_NOPAREN) (§ getchr() != Magic(')')))
+        (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
         (§
             (cond (== paren REG_ZPAREN)
             (§
@@ -26723,7 +26721,7 @@
         )
         (and (== paren REG_NOPAREN) (!= (peekchr) NUL))
         (§
-            (if (== @curchr (§ Magic(')')))
+            (if (== @curchr (Magic (byte \))))
                 (emsg2 e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                 (emsg e_trailing))
             (reset! rc_did_emsg true)
@@ -26763,7 +26761,7 @@
 ;           flagp[0] &= ~HASNL | (flags[0] & HASNL);
             (if (!= chain null)
                 (regtail chain, latest))
-            (if (§ peekchr() != Magic('&'))
+            (if (!= (peekchr) (Magic (byte \&)))
 ;               break;
             )
 
@@ -26795,46 +26793,46 @@
 ;           switch (peekchr())
 ;           {
 ;               case NUL:
-;               case Magic('|'):
-;               case Magic('&'):
-;               case Magic(')'):
+;               case Magic((byte)'|'):
+;               case Magic((byte)'&'):
+;               case Magic((byte)')'):
 ;                   cont = false;
 ;                   break;
 
-;               case Magic('Z'):
+;               case Magic((byte)'Z'):
 ;                   @regflags |= RF_ICOMBINE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('c'):
+;               case Magic((byte)'c'):
 ;                   @regflags |= RF_ICASE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('C'):
+;               case Magic((byte)'C'):
 ;                   @regflags |= RF_NOICASE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('v'):
+;               case Magic((byte)'v'):
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('m'):
+;               case Magic((byte)'m'):
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('M'):
+;               case Magic((byte)'M'):
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('V'):
+;               case Magic((byte)'V'):
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
                     (reset! curchr -1)
@@ -26895,7 +26893,7 @@
         (skipchr)
 ;       switch (op)
 ;       {
-;           case Magic('*'):
+;           case Magic((byte)'*'):
 ;           {
                 (cond (§ (flags[0] & SIMPLE) != 0)
                 (§
@@ -26913,7 +26911,7 @@
 ;               break;
 ;           }
 
-;           case Magic('+'):
+;           case Magic((byte)'+'):
 ;           {
                 (cond (§ (flags[0] & SIMPLE) != 0)
                 (§
@@ -26932,20 +26930,20 @@
 ;               break;
 ;           }
 
-;           case Magic('@'):
+;           case Magic((byte)'@'):
 ;           {
 ;               int lop = END;
 ;               int nr = getdecchrs();
 
 ;               switch (no_Magic(getchr()))
 ;               {
-;                   case '=': lop = MATCH; break;                   ;; \@=
-;                   case '!': lop = NOMATCH; break;                 ;; \@!
-;                   case '>': lop = SUBPAT; break;                  ;; \@>
-;                   case '<': switch (no_Magic(getchr()))
+;                   case (byte)'=': lop = MATCH; break;                   ;; \@=
+;                   case (byte)'!': lop = NOMATCH; break;                 ;; \@!
+;                   case (byte)'>': lop = SUBPAT; break;                  ;; \@>
+;                   case (byte)'<': switch (no_Magic(getchr()))
 ;                             {
-;                                 case '=': lop = BEHIND; break;    ;; \@<=
-;                                 case '!': lop = NOBEHIND; break;  ;; \@<!
+;                                 case (byte)'=': lop = BEHIND; break;    ;; \@<=
+;                                 case (byte)'!': lop = NOBEHIND; break;  ;; \@<!
 ;                             }
 ;                             break;
 ;               }
@@ -26974,8 +26972,8 @@
 ;               break;
 ;           }
 
-;           case Magic('?'):
-;           case Magic('='):
+;           case Magic((byte)'?'):
+;           case Magic((byte)'='):
 ;           {
                 ;; Emit x= as (x|).
                 (reginsert BRANCH, ret)                 ;; Either x
@@ -26986,7 +26984,7 @@
 ;               break;
 ;           }
 
-;           case Magic('{'):
+;           case Magic((byte)'{'):
 ;           {
 ;               long[] minval = new long[1];
 ;               long[] maxval = new long[1];
@@ -27021,7 +27019,7 @@
 
         (when (!= (§ re_multi_type(peekchr())) NOT_MULTI)
             ;; Can't have a multi follow a multi.
-            (if (§ peekchr() == Magic('*'))
+            (if (== (peekchr) (Magic (byte \*)))
 ;               libC.sprintf(@ioBuff, u8("E61: Nested %s*"), (MAGIC_ON <= @reg_magic) ? u8("") : u8("\\"));
 ;               libC.sprintf(@ioBuff, u8("E62: Nested %s%c"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), no_Magic(peekchr()));
             )
@@ -27074,23 +27072,23 @@
 ;       {
 ;           switch (c)
 ;           {
-;               case Magic('^'):
+;               case Magic((byte)'^'):
 ;                   ret = regnode(BOL);
 ;                   break;
 
-;               case Magic('$'):
+;               case Magic((byte)'$'):
 ;                   ret = regnode(EOL);
 ;                   break;
 
-;               case Magic('<'):
+;               case Magic((byte)'<'):
 ;                   ret = regnode(BOW);
 ;                   break;
 
-;               case Magic('>'):
+;               case Magic((byte)'>'):
 ;                   ret = regnode(EOW);
 ;                   break;
 
-;               case Magic('_'):
+;               case Magic((byte)'_'):
 ;               {
 ;                   c = no_Magic(getchr());
                     (when (== c (byte \^))           ;; "\_^" is start-of-line
@@ -27116,33 +27114,33 @@
 
                 ;; Character classes.
 
-;               case Magic('.'):
-;               case Magic('i'):
-;               case Magic('I'):
-;               case Magic('k'):
-;               case Magic('K'):
-;               case Magic('f'):
-;               case Magic('F'):
-;               case Magic('p'):
-;               case Magic('P'):
-;               case Magic('s'):
-;               case Magic('S'):
-;               case Magic('d'):
-;               case Magic('D'):
-;               case Magic('x'):
-;               case Magic('X'):
-;               case Magic('o'):
-;               case Magic('O'):
-;               case Magic('w'):
-;               case Magic('W'):
-;               case Magic('h'):
-;               case Magic('H'):
-;               case Magic('a'):
-;               case Magic('A'):
-;               case Magic('l'):
-;               case Magic('L'):
-;               case Magic('u'):
-;               case Magic('U'):
+;               case Magic((byte)'.'):
+;               case Magic((byte)'i'):
+;               case Magic((byte)'I'):
+;               case Magic((byte)'k'):
+;               case Magic((byte)'K'):
+;               case Magic((byte)'f'):
+;               case Magic((byte)'F'):
+;               case Magic((byte)'p'):
+;               case Magic((byte)'P'):
+;               case Magic((byte)'s'):
+;               case Magic((byte)'S'):
+;               case Magic((byte)'d'):
+;               case Magic((byte)'D'):
+;               case Magic((byte)'x'):
+;               case Magic((byte)'X'):
+;               case Magic((byte)'o'):
+;               case Magic((byte)'O'):
+;               case Magic((byte)'w'):
+;               case Magic((byte)'W'):
+;               case Magic((byte)'h'):
+;               case Magic((byte)'H'):
+;               case Magic((byte)'a'):
+;               case Magic((byte)'A'):
+;               case Magic((byte)'l'):
+;               case Magic((byte)'L'):
+;               case Magic((byte)'u'):
+;               case Magic((byte)'U'):
 ;               {
 ;                   Bytes p = vim_strchr(classchars, no_Magic(c));
                     (when (== p null)
@@ -27152,7 +27150,7 @@
                     )
                     ;; When '.' is followed by a composing char ignore the dot,
                     ;; so that the composing char is matched here.
-                    (when (and (== c (§ Magic('.'))) (§ utf_iscomposing(peekchr())))
+                    (when (and (== c (Magic (byte \.))) (§ utf_iscomposing(peekchr())))
 ;                       c = getchr();
 ;                       ret = regnode(MULTIBYTECODE);
                         (regmbc c)
@@ -27164,7 +27162,7 @@
 ;                   break;
 ;               }
 
-;               case Magic('n'):
+;               case Magic((byte)'n'):
 ;               {
                     (cond @reg_string
                     (§
@@ -27183,7 +27181,7 @@
 ;                   break;
 ;               }
 
-;               case Magic('('):
+;               case Magic((byte)'('):
 ;               {
                     (when @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27200,9 +27198,9 @@
 ;               }
 
 ;               case NUL:
-;               case Magic('|'):
-;               case Magic('&'):
-;               case Magic(')'):
+;               case Magic((byte)'|'):
+;               case Magic((byte)'&'):
+;               case Magic((byte)')'):
 ;               {
                     (if @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27211,22 +27209,22 @@
 ;                   return null;
 ;               }
 
-;               case Magic('='):
-;               case Magic('?'):
-;               case Magic('+'):
-;               case Magic('@'):
-;               case Magic('{'):
-;               case Magic('*'):
+;               case Magic((byte)'='):
+;               case Magic((byte)'?'):
+;               case Magic((byte)'+'):
+;               case Magic((byte)'@'):
+;               case Magic((byte)'{'):
+;               case Magic((byte)'*'):
 ;               {
 ;                   c = no_Magic(c);
-;                   libC.sprintf(@ioBuff, u8("E64: %s%c follows nothing"), (c == '*' ? MAGIC_ON <= @reg_magic : @reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), c);
+;                   libC.sprintf(@ioBuff, u8("E64: %s%c follows nothing"), (c == (byte)'*' ? MAGIC_ON <= @reg_magic : @reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), c);
 
                     (emsg @ioBuff)
                     (reset! rc_did_emsg true)
 ;                   return null;
 ;               }
 
-;               case Magic('~'):                    ;; previous substitute pattern
+;               case Magic((byte)'~'):                    ;; previous substitute pattern
 ;               {
                     (cond (!= @reg_prev_sub null)
                     (§
@@ -27251,17 +27249,17 @@
 ;                   break;
 ;               }
 
-;               case Magic('1'):
-;               case Magic('2'):
-;               case Magic('3'):
-;               case Magic('4'):
-;               case Magic('5'):
-;               case Magic('6'):
-;               case Magic('7'):
-;               case Magic('8'):
-;               case Magic('9'):
+;               case Magic((byte)'1'):
+;               case Magic((byte)'2'):
+;               case Magic((byte)'3'):
+;               case Magic((byte)'4'):
+;               case Magic((byte)'5'):
+;               case Magic((byte)'6'):
+;               case Magic((byte)'7'):
+;               case Magic((byte)'8'):
+;               case Magic((byte)'9'):
 ;               {
-;                   int refnum = c - Magic('0');
+;                   int refnum = c - Magic((byte)'0');
 
                     ;; Check if the back reference is legal.  We must have seen the close brace.
                     ;; TODO: Should also check that we don't refer to something
@@ -27285,12 +27283,12 @@
 ;                   break;
 ;               }
 
-;               case Magic('z'):
+;               case Magic((byte)'z'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
 ;                   {
-;                       case '(':
+;                       case (byte)'(':
 ;                       {
                             (when (!= @reg_do_extmatch REX_SET)
                                 (emsg e_z_not_allowed)
@@ -27311,26 +27309,26 @@
                             (reset! re_has_z REX_SET)
 ;                           break;
 ;                       }
-;                       case '1':
-;                       case '2':
-;                       case '3':
-;                       case '4':
-;                       case '5':
-;                       case '6':
-;                       case '7':
-;                       case '8':
-;                       case '9':
+;                       case (byte)'1':
+;                       case (byte)'2':
+;                       case (byte)'3':
+;                       case (byte)'4':
+;                       case (byte)'5':
+;                       case (byte)'6':
+;                       case (byte)'7':
+;                       case (byte)'8':
+;                       case (byte)'9':
 ;                       {
                             (when (!= @reg_do_extmatch REX_USE)
                                 (emsg e_z1_not_allowed)
                                 (reset! rc_did_emsg true)
 ;                               return null;
                             )
-;                           ret = regnode(ZREF + c - '0');
+;                           ret = regnode(ZREF + c - (byte)'0');
                             (reset! re_has_z REX_USE)
 ;                           break;
 ;                       }
-;                       case 's':
+;                       case (byte)'s':
 ;                       {
 ;                           ret = regnode(MOPEN + 0);
                             (if (not (§ re_mult_next(u8("\\zs"))))
@@ -27338,7 +27336,7 @@
                             )
 ;                           break;
 ;                       }
-;                       case 'e':
+;                       case (byte)'e':
 ;                       {
 ;                           ret = regnode(MCLOSE + 0);
                             (if (not (§ re_mult_next(u8("\\ze"))))
@@ -27356,13 +27354,13 @@
 ;                   break;
 ;               }
 
-;               case Magic('%'):
+;               case Magic((byte)'%'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
 ;                   {
                         ;; () without a back reference
-;                       case '(':
+;                       case (byte)'(':
 ;                       {
                             (when @one_exactly
                                 (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27379,29 +27377,29 @@
 ;                       }
                         ;; Catch \%^ and \%$ regardless of where they appear in the
                         ;; pattern -- regardless of whether or not it makes sense.
-;                       case '^':
+;                       case (byte)'^':
 ;                           ret = regnode(RE_BOF);
 ;                           break;
 
-;                       case '$':
+;                       case (byte)'$':
 ;                           ret = regnode(RE_EOF);
 ;                           break;
 
-;                       case '#':
+;                       case (byte)'#':
 ;                           ret = regnode(CURSOR);
 ;                           break;
 
-;                       case 'V':
+;                       case (byte)'V':
 ;                           ret = regnode(RE_VISUAL);
 ;                           break;
 
-;                       case 'C':
+;                       case (byte)'C':
 ;                           ret = regnode(RE_COMPOSING);
 ;                           break;
 
                         ;; \%[abc]: Emit as a list of branches,
                         ;; all ending at the last branch which matches nothing.
-;                       case '[':
+;                       case (byte)'[':
 ;                       {
                             (when @one_exactly        ;; doesn't nest
                                 (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27414,7 +27412,7 @@
 ;                           Bytes br;
 
 ;                           ret = null;
-;                           while ((c = getchr()) != ']')
+;                           while ((c = getchr()) != (byte)']')
 ;                           {
                                 (when (== c NUL)
                                     (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27461,20 +27459,20 @@
 ;                           flagp[0] &= ~(HASWIDTH | SIMPLE);
 ;                           break;
 ;                       }
-;                       case 'd':   ;; %d123 decimal
-;                       case 'o':   ;; %o123 octal
-;                       case 'x':   ;; %xab hex 2
-;                       case 'u':   ;; %uabcd hex 4
-;                       case 'U':   ;; %U1234abcd hex 8
+;                       case (byte)'d':   ;; %d123 decimal
+;                       case (byte)'o':   ;; %o123 octal
+;                       case (byte)'x':   ;; %xab hex 2
+;                       case (byte)'u':   ;; %uabcd hex 4
+;                       case (byte)'U':   ;; %U1234abcd hex 8
 ;                       {
 ;                           int i;
 ;                           switch (c)
 ;                           {
-;                               case 'd': i = getdecchrs(); break;
-;                               case 'o': i = getoctchrs(); break;
-;                               case 'x': i = gethexchrs(2); break;
-;                               case 'u': i = gethexchrs(4); break;
-;                               case 'U': i = gethexchrs(8); break;
+;                               case (byte)'d': i = getdecchrs(); break;
+;                               case (byte)'o': i = getoctchrs(); break;
+;                               case (byte)'x': i = gethexchrs(2); break;
+;                               case (byte)'u': i = gethexchrs(4); break;
+;                               case (byte)'U': i = gethexchrs(8); break;
 ;                               default:  i = -1; break;
 ;                           }
 
@@ -27505,7 +27503,7 @@
 ;                               long n = 0;
 ;                               while (asc_isdigit(c))
 ;                               {
-;                                   n = n * 10 + (c - '0');
+;                                   n = n * 10 + (c - (byte)'0');
 ;                                   c = getchr();
 ;                               }
 
@@ -27562,7 +27560,7 @@
 ;                   break;
 ;               }
 
-;               case Magic('['):
+;               case Magic((byte)'['):
 ;                   break collection;
 
 ;               default:
@@ -27609,7 +27607,7 @@
                     (cond (or (== (§ @regparse.at(0)) (byte \])) (== (§ @regparse.at(0)) NUL) (== startc -1) (and (== (§ @regparse.at(0)) (byte \\)) (== (§ @regparse.at(1)) (byte \n))))
                     (§
                         (regc (byte \-))
-;                       startc = '-';       ;; [--x] is a range
+;                       startc = (byte)'-';       ;; [--x] is a range
                     )
                     :else
                     (§
@@ -28126,65 +28124,65 @@
         (when (== @curchr -1)
 ;           switch (@curchr = @regparse.at(0))
 ;           {
-;               case '.':
-;               case '[':
-;               case '~':
+;               case (byte)'.':
+;               case (byte)'[':
+;               case (byte)'~':
                     ;; magic when 'magic' is on
                     (if (<= MAGIC_ON @reg_magic)
                         (reset! curchr (Magic @curchr)))
 ;                   break;
 
-;               case '(':
-;               case ')':
-;               case '{':
-;               case '%':
-;               case '+':
-;               case '=':
-;               case '?':
-;               case '@':
-;               case '!':
-;               case '&':
-;               case '|':
-;               case '<':
-;               case '>':
-;               case '#':       ;; future ext.
-;               case '"':       ;; future ext.
-;               case '\'':      ;; future ext.
-;               case ',':       ;; future ext.
-;               case '-':       ;; future ext.
-;               case ':':       ;; future ext.
-;               case ';':       ;; future ext.
-;               case '`':       ;; future ext.
-;               case '/':       ;; can't be used in / command
+;               case (byte)'(':
+;               case (byte)')':
+;               case (byte)'{':
+;               case (byte)'%':
+;               case (byte)'+':
+;               case (byte)'=':
+;               case (byte)'?':
+;               case (byte)'@':
+;               case (byte)'!':
+;               case (byte)'&':
+;               case (byte)'|':
+;               case (byte)'<':
+;               case (byte)'>':
+;               case (byte)'#':       ;; future ext.
+;               case (byte)'"':       ;; future ext.
+;               case (byte)'\'':      ;; future ext.
+;               case (byte)',':       ;; future ext.
+;               case (byte)'-':       ;; future ext.
+;               case (byte)':':       ;; future ext.
+;               case (byte)';':       ;; future ext.
+;               case (byte)'`':       ;; future ext.
+;               case (byte)'/':       ;; can't be used in / command
                     ;; magic only after "\v"
                     (if (== @reg_magic MAGIC_ALL)
                         (reset! curchr (Magic @curchr)))
 ;                   break;
 
-;               case '*':
+;               case (byte)'*':
                     ;; * is not magic as the very first character, e.g. "?*ptr",
                     ;; when after '^', e.g. "/^*ptr" and when after "\(", "\|", "\&".
                     ;; But "\(\*" is not magic, thus must be magic if "after_slash"
 ;                   if (MAGIC_ON <= @reg_magic
 ;                           && !@at_start
-;                           && !(@prev_at_start && @prevchr == Magic('^'))
-;                           && (@after_slash != 0 || (@prevchr != Magic('(') && @prevchr != Magic('&') && @prevchr != Magic('|'))))
+;                           && !(@prev_at_start && @prevchr == Magic((byte)'^'))
+;                           && (@after_slash != 0 || (@prevchr != Magic((byte)'(') && @prevchr != Magic((byte)'&') && @prevchr != Magic((byte)'|'))))
 ;                   {
                         (reset! curchr (Magic (byte \*)))
 ;                   }
 ;                   break;
 
-;               case '^':
+;               case (byte)'^':
                     ;; '^' is only magic as the very first character
                     ;; and if it's after "\(", "\|", "\&' or "\n"
 ;                   if (MAGIC_OFF <= @reg_magic
 ;                           && (@at_start
 ;                               || @reg_magic == MAGIC_ALL
-;                               || @prevchr == Magic('(')
-;                               || @prevchr == Magic('|')
-;                               || @prevchr == Magic('&')
-;                               || @prevchr == Magic('n')
-;                               || (no_Magic(@prevchr) == '(' && @prevprevchr == Magic('%'))))
+;                               || @prevchr == Magic((byte)'(')
+;                               || @prevchr == Magic((byte)'|')
+;                               || @prevchr == Magic((byte)'&')
+;                               || @prevchr == Magic((byte)'n')
+;                               || (no_Magic(@prevchr) == (byte)'(' && @prevprevchr == Magic((byte)'%'))))
 ;                   {
                         (reset! curchr (Magic (byte \^)))
                         (reset! at_start true)
@@ -28192,7 +28190,7 @@
 ;                   }
 ;                   break;
 
-;               case '$':
+;               case (byte)'$':
                     ;; '$' is only magic as the very last char
                     ;; and if it's in front of either "\|", "\)", "\&", or "\n"
                     (when (<= MAGIC_OFF @reg_magic)
@@ -28224,7 +28222,7 @@
                     )
 ;                   break;
 
-;               case '\\':
+;               case (byte)'\\':
 ;               {
 ;                   int c = @regparse.at(1);
 
@@ -28387,7 +28385,7 @@
 ;               break;
             )
 ;           nr *= 10;
-;           nr += c - '0';
+;           nr += c - (byte)'0';
             (reset! regparse (§ @regparse.plus(1)))
             (reset! curchr -1)    ;; no longer valid
 ;       }
@@ -28438,16 +28436,16 @@
 
 ;       switch ((@regparse = @regparse.plus(1)).at(-1))
 ;       {
-;           case 'd': nr = getdecchrs(); break;
-;           case 'o': nr = getoctchrs(); break;
-;           case 'x': nr = gethexchrs(2); break;
-;           case 'u': nr = gethexchrs(4); break;
-;           case 'U': nr = gethexchrs(8); break;
+;           case (byte)'d': nr = getdecchrs(); break;
+;           case (byte)'o': nr = getoctchrs(); break;
+;           case (byte)'x': nr = gethexchrs(2); break;
+;           case (byte)'u': nr = gethexchrs(4); break;
+;           case (byte)'U': nr = gethexchrs(8); break;
 ;       }
         (when (< nr 0)
             ;; If getting the number fails be backwards compatible: the character is a backslash.
             (reset! regparse (§ @regparse.minus(1)))
-;           nr = '\\';
+;           nr = (byte)'\\';
         )
 
         nr
@@ -29248,13 +29246,13 @@
 ;                                   || pos.lnum <= 0        ;; mark isn't set in reg_buf
 ;                                   || (pos.lnum == @reglnum + @reg_firstlnum
 ;                                           ? (pos.col == BDIFF(@reginput, @regline)
-;                                               ? (cmp == '<' || cmp == '>')
+;                                               ? (cmp == (byte)'<' || cmp == (byte)'>')
 ;                                               : (pos.col < BDIFF(@reginput, @regline)
-;                                                   ? cmp != '>'
-;                                                   : cmp != '<'))
+;                                                   ? cmp != (byte)'>'
+;                                                   : cmp != (byte)'<'))
 ;                                           : (pos.lnum < @reglnum + @reg_firstlnum
-;                                               ? cmp != '>'
-;                                               : cmp != '<')))
+;                                               ? cmp != (byte)'>'
+;                                               : cmp != (byte)'<')))
 ;                           {
 ;                               status = RA_NOMATCH;
 ;                           }
@@ -31757,22 +31755,22 @@
                     )
                     (and (<= (byte \0) (§ src.at(0))) (<= (§ src.at(0)) (byte \9)))
                     (§
-;                       no = (src = src.plus(1)).at(-1) - '0';
+;                       no = (src = src.plus(1)).at(-1) - (byte)'0';
                     )
                     (§ vim_strbyte(u8("uUlLeE"), src.at(0)) != null)
                     (§
 ;                       switch ((src = src.plus(1)).at(-1))
 ;                       {
-;                           case 'u':   func_one = do_upper;
+;                           case (byte)'u':   func_one = do_upper;
 ;                                       continue;
-;                           case 'U':   func_all = do_Upper;
+;                           case (byte)'U':   func_all = do_Upper;
 ;                                       continue;
-;                           case 'l':   func_one = do_lower;
+;                           case (byte)'l':   func_one = do_lower;
 ;                                       continue;
-;                           case 'L':   func_all = do_Lower;
+;                           case (byte)'L':   func_all = do_Lower;
 ;                                       continue;
-;                           case 'e':
-;                           case 'E':   func_one = func_all = null;
+;                           case (byte)'e':
+;                           case (byte)'E':   func_one = func_all = null;
 ;                                       continue;
 ;                       }
                     ))
@@ -31801,11 +31799,11 @@
                         ;; Check for abbreviations.
 ;                       switch (src.at(0))
 ;                       {
-;                           case 'r': b = CAR;    src = src.plus(1); break;
-;                           case 'n': b = NL;     src = src.plus(1); break;
-;                           case 't': b = TAB;    src = src.plus(1); break;
+;                           case (byte)'r': b = CAR;    src = src.plus(1); break;
+;                           case (byte)'n': b = NL;     src = src.plus(1); break;
+;                           case (byte)'t': b = TAB;    src = src.plus(1); break;
                          ;; case 'e': b = ESC;    src = src.plus(1); break;     ;; Oh no!  \e already has meaning in subst pat.
-;                           case 'b': b = Ctrl_H; src = src.plus(1); break;
+;                           case (byte)'b': b = Ctrl_H; src = src.plus(1); break;
 
                             ;; If "backslash" is true the backslash will be removed later.
                             ;; Used to insert a literal CR.
@@ -32467,7 +32465,7 @@
             (§
 ;               switch (p.at(0))
 ;               {
-;                   case '0':
+;                   case (byte)'0':
                         (cond (== (§ p.at(2)) (byte \9))
                         (§
 ;                           config |= CLASS_o9;
@@ -32478,7 +32476,7 @@
 ;                           config |= CLASS_o7;
 ;                           break;
                         ))
-;                   case 'a':
+;                   case (byte)'a':
                         (cond (== (§ p.at(2)) (byte \z))
                         (§
 ;                           config |= CLASS_az;
@@ -32489,7 +32487,7 @@
 ;                           config |= CLASS_af;
 ;                           break;
                         ))
-;                   case 'A':
+;                   case (byte)'A':
                         (cond (== (§ p.at(2)) (byte \Z))
                         (§
 ;                           config |= CLASS_AZ;
@@ -32599,28 +32597,28 @@
     (§
 ;       switch (c)
 ;       {
-;           case 'A':
+;           case (byte)'A':
 ;           case 0xc0: case 0xc1: case 0xc2:
 ;           case 0xc3: case 0xc4: case 0xc5:
 ;           case 0x100: case 0x102: case 0x104:
 ;           case 0x1cd: case 0x1de: case 0x1e0:
 ;           case 0x1ea2:
 ;           {
-;               return emc2('A')
+;               return emc2((byte)'A')
 ;                   && emc2(0xc0) && emc2(0xc1) && emc2(0xc2)
 ;                   && emc2(0xc3) && emc2(0xc4) && emc2(0xc5)
 ;                   && emc2(0x100) && emc2(0x102) && emc2(0x104)
 ;                   && emc2(0x1cd) && emc2(0x1de) && emc2(0x1e0)
 ;                   && emc2(0x1ea2);
 ;           }
-;           case 'a':
+;           case (byte)'a':
 ;           case 0xe0: case 0xe1: case 0xe2:
 ;           case 0xe3: case 0xe4: case 0xe5:
 ;           case 0x101: case 0x103: case 0x105:
 ;           case 0x1ce: case 0x1df: case 0x1e1:
 ;           case 0x1ea3:
 ;           {
-;               return emc2('a')
+;               return emc2((byte)'a')
 ;                   && emc2(0xe0) && emc2(0xe1) && emc2(0xe2)
 ;                   && emc2(0xe3) && emc2(0xe4) && emc2(0xe5)
 ;                   && emc2(0x101) && emc2(0x103) && emc2(0x105)
@@ -32628,253 +32626,253 @@
 ;                   && emc2(0x1ea3);
 ;           }
 
-;           case 'B':
+;           case (byte)'B':
 ;           case 0x1e02: case 0x1e06:
 ;           {
-;               return emc2('B')
+;               return emc2((byte)'B')
 ;                   && emc2(0x1e02) && emc2(0x1e06);
 ;           }
-;           case 'b':
+;           case (byte)'b':
 ;           case 0x1e03: case 0x1e07:
 ;           {
-;               return emc2('b')
+;               return emc2((byte)'b')
 ;                   && emc2(0x1e03) && emc2(0x1e07);
 ;           }
 
-;           case 'C':
+;           case (byte)'C':
 ;           case 0xc7:
 ;           case 0x106: case 0x108: case 0x10a: case 0x10c:
 ;           {
-;               return emc2('C')
+;               return emc2((byte)'C')
 ;                   && emc2(0xc7)
 ;                   && emc2(0x106) && emc2(0x108) && emc2(0x10a) && emc2(0x10c);
 ;           }
-;           case 'c':
+;           case (byte)'c':
 ;           case 0xe7:
 ;           case 0x107: case 0x109: case 0x10b: case 0x10d:
 ;           {
-;               return emc2('c')
+;               return emc2((byte)'c')
 ;                   && emc2(0xe7)
 ;                   && emc2(0x107) && emc2(0x109) && emc2(0x10b) && emc2(0x10d);
 ;           }
 
-;           case 'D':
+;           case (byte)'D':
 ;           case 0x10e: case 0x110:
 ;           case 0x1e0a: case 0x1e0c: case 0x1e0e: case 0x1e10: case 0x1e12:
 ;           {
-;               return emc2('D')
+;               return emc2((byte)'D')
 ;                   && emc2(0x10e) && emc2(0x110)
 ;                   && emc2(0x1e0a) && emc2(0x1e0c) && emc2(0x1e0e) && emc2(0x1e10) && emc2(0x1e12);
 ;           }
-;           case 'd':
+;           case (byte)'d':
 ;           case 0x10f: case 0x111:
 ;           case 0x1e0b: case 0x1e0d: case 0x1e0f: case 0x1e11: case 0x1e13:
 ;           {
-;               return emc2('d')
+;               return emc2((byte)'d')
 ;                   && emc2(0x10f) && emc2(0x111)
 ;                   && emc2(0x1e0b) && emc2(0x1e0d) && emc2(0x1e0f) && emc2(0x1e11) && emc2(0x1e13);
 ;           }
 
-;           case 'E':
+;           case (byte)'E':
 ;           case 0xc8: case 0xc9: case 0xca: case 0xcb:
 ;           case 0x112: case 0x114: case 0x116: case 0x118: case 0x11a:
 ;           case 0x1eba: case 0x1ebc:
 ;           {
-;               return emc2('E')
+;               return emc2((byte)'E')
 ;                   && emc2(0xc8) && emc2(0xc9) && emc2(0xca) && emc2(0xcb)
 ;                   && emc2(0x112) && emc2(0x114) && emc2(0x116) && emc2(0x118) && emc2(0x11a)
 ;                   && emc2(0x1eba) && emc2(0x1ebc);
 ;           }
-;           case 'e':
+;           case (byte)'e':
 ;           case 0xe8: case 0xe9: case 0xea: case 0xeb:
 ;           case 0x113: case 0x115: case 0x117: case 0x119: case 0x11b:
 ;           case 0x1ebb: case 0x1ebd:
 ;           {
-;               return emc2('e')
+;               return emc2((byte)'e')
 ;                   && emc2(0xe8) && emc2(0xe9) && emc2(0xea) && emc2(0xeb)
 ;                   && emc2(0x113) && emc2(0x115) && emc2(0x117) && emc2(0x119) && emc2(0x11b)
 ;                   && emc2(0x1ebb) && emc2(0x1ebd);
 ;           }
 
-;           case 'F':
+;           case (byte)'F':
 ;           case 0x1e1e:
 ;           {
-;               return emc2('F')
+;               return emc2((byte)'F')
 ;                   && emc2(0x1e1e);
 ;           }
-;           case 'f':
+;           case (byte)'f':
 ;           case 0x1e1f:
 ;           {
-;               return emc2('f')
+;               return emc2((byte)'f')
 ;                   && emc2(0x1e1f);
 ;           }
 
-;           case 'G':
+;           case (byte)'G':
 ;           case 0x11c: case 0x11e: case 0x120: case 0x122:
 ;           case 0x1e4: case 0x1e6: case 0x1f4:
 ;           case 0x1e20:
 ;           {
-;               return emc2('G')
+;               return emc2((byte)'G')
 ;                   && emc2(0x11c) && emc2(0x11e) && emc2(0x120) && emc2(0x122)
 ;                   && emc2(0x1e4) && emc2(0x1e6) && emc2(0x1f4)
 ;                   && emc2(0x1e20);
 ;           }
-;           case 'g':
+;           case (byte)'g':
 ;           case 0x11d: case 0x11f: case 0x121: case 0x123:
 ;           case 0x1e5: case 0x1e7: case 0x1f5:
 ;           case 0x1e21:
 ;           {
-;               return emc2('g')
+;               return emc2((byte)'g')
 ;                   && emc2(0x11d) && emc2(0x11f) && emc2(0x121) && emc2(0x123)
 ;                   && emc2(0x1e5) && emc2(0x1e7) && emc2(0x1f5)
 ;                   && emc2(0x1e21);
 ;           }
 
-;           case 'H':
+;           case (byte)'H':
 ;           case 0x124: case 0x126:
 ;           case 0x1e22: case 0x1e26: case 0x1e28:
 ;           {
-;               return emc2('H')
+;               return emc2((byte)'H')
 ;                   && emc2(0x124) && emc2(0x126)
 ;                   && emc2(0x1e22) && emc2(0x1e26) && emc2(0x1e28);
 ;           }
-;           case 'h':
+;           case (byte)'h':
 ;           case 0x125: case 0x127:
 ;           case 0x1e23: case 0x1e27: case 0x1e29: case 0x1e96:
 ;           {
-;               return emc2('h')
+;               return emc2((byte)'h')
 ;                   && emc2(0x125) && emc2(0x127)
 ;                   && emc2(0x1e23) && emc2(0x1e27) && emc2(0x1e29) && emc2(0x1e96);
 ;           }
 
-;           case 'I':
+;           case (byte)'I':
 ;           case 0xcc: case 0xcd: case 0xce: case 0xcf:
 ;           case 0x128: case 0x12a: case 0x12c: case 0x12e: case 0x130:
 ;           case 0x1cf:
 ;           case 0x1ec8:
 ;           {
-;               return emc2('I')
+;               return emc2((byte)'I')
 ;                   && emc2(0xcc) && emc2(0xcd) && emc2(0xce) && emc2(0xcf)
 ;                   && emc2(0x128) && emc2(0x12a) && emc2(0x12c) && emc2(0x12e) && emc2(0x130)
 ;                   && emc2(0x1cf)
 ;                   && emc2(0x1ec8);
 ;           }
-;           case 'i':
+;           case (byte)'i':
 ;           case 0xec: case 0xed: case 0xee: case 0xef:
 ;           case 0x129: case 0x12b: case 0x12d: case 0x12f: case 0x131:
 ;           case 0x1d0:
 ;           case 0x1ec9:
 ;           {
-;               return emc2('i')
+;               return emc2((byte)'i')
 ;                   && emc2(0xec) && emc2(0xed) && emc2(0xee) && emc2(0xef)
 ;                   && emc2(0x129) && emc2(0x12b) && emc2(0x12d) && emc2(0x12f) && emc2(0x131)
 ;                   && emc2(0x1d0)
 ;                   && emc2(0x1ec9);
 ;           }
 
-;           case 'J':
+;           case (byte)'J':
 ;           case 0x134:
 ;           {
-;               return emc2('J')
+;               return emc2((byte)'J')
 ;                   && emc2(0x134);
 ;           }
-;           case 'j':
+;           case (byte)'j':
 ;           case 0x135: case 0x1f0:
 ;           {
-;               return emc2('j')
+;               return emc2((byte)'j')
 ;                   && emc2(0x135) && emc2(0x1f0);
 ;           }
 
-;           case 'K':
+;           case (byte)'K':
 ;           case 0x136: case 0x1e8:
 ;           case 0x1e30: case 0x1e34:
 ;           {
-;               return emc2('K')
+;               return emc2((byte)'K')
 ;                   && emc2(0x136) && emc2(0x1e8)
 ;                   && emc2(0x1e30) && emc2(0x1e34);
 ;           }
-;           case 'k':
+;           case (byte)'k':
 ;           case 0x137: case 0x1e9:
 ;           case 0x1e31: case 0x1e35:
 ;           {
-;               return emc2('k')
+;               return emc2((byte)'k')
 ;                   && emc2(0x137) && emc2(0x1e9)
 ;                   && emc2(0x1e31) && emc2(0x1e35);
 ;           }
 
-;           case 'L':
+;           case (byte)'L':
 ;           case 0x139: case 0x13b: case 0x13d: case 0x13f: case 0x141:
 ;           case 0x1e3a:
 ;           {
-;               return emc2('L')
+;               return emc2((byte)'L')
 ;                   && emc2(0x139) && emc2(0x13b) && emc2(0x13d) && emc2(0x13f) && emc2(0x141)
 ;                   && emc2(0x1e3a);
 ;           }
-;           case 'l':
+;           case (byte)'l':
 ;           case 0x13a: case 0x13c: case 0x13e: case 0x140: case 0x142:
 ;           case 0x1e3b:
 ;           {
-;               return emc2('l')
+;               return emc2((byte)'l')
 ;                   && emc2(0x13a) && emc2(0x13c) && emc2(0x13e) && emc2(0x140) && emc2(0x142)
 ;                   && emc2(0x1e3b);
 ;           }
 
-;           case 'M':
+;           case (byte)'M':
 ;           case 0x1e3e: case 0x1e40:
 ;           {
-;               return emc2('M')
+;               return emc2((byte)'M')
 ;                   && emc2(0x1e3e) && emc2(0x1e40);
 ;           }
-;           case 'm':
+;           case (byte)'m':
 ;           case 0x1e3f: case 0x1e41:
 ;           {
-;               return emc2('m')
+;               return emc2((byte)'m')
 ;                   && emc2(0x1e3f) && emc2(0x1e41);
 ;           }
 
-;           case 'N':
+;           case (byte)'N':
 ;           case 0xd1:
 ;           case 0x143: case 0x145: case 0x147:
 ;           case 0x1e44: case 0x1e48:
 ;           {
-;               return emc2('N')
+;               return emc2((byte)'N')
 ;                   && emc2(0xd1)
 ;                   && emc2(0x143) && emc2(0x145) && emc2(0x147)
 ;                   && emc2(0x1e44) && emc2(0x1e48);
 ;           }
-;           case 'n':
+;           case (byte)'n':
 ;           case 0xf1:
 ;           case 0x144: case 0x146: case 0x148: case 0x149:
 ;           case 0x1e45: case 0x1e49:
 ;           {
-;               return emc2('n')
+;               return emc2((byte)'n')
 ;                   && emc2(0xf1)
 ;                   && emc2(0x144) && emc2(0x146) && emc2(0x148) && emc2(0x149)
 ;                   && emc2(0x1e45) && emc2(0x1e49);
 ;           }
 
-;           case 'O':
+;           case (byte)'O':
 ;           case 0xd2: case 0xd3: case 0xd4:
 ;           case 0xd5: case 0xd6: case 0xd8:
 ;           case 0x14c: case 0x14e: case 0x150:
 ;           case 0x1a0: case 0x1d1: case 0x1ea: case 0x1ec:
 ;           case 0x1ece:
 ;           {
-;               return emc2('O')
+;               return emc2((byte)'O')
 ;                   && emc2(0xd2) && emc2(0xd3) && emc2(0xd4)
 ;                   && emc2(0xd5) && emc2(0xd6) && emc2(0xd8)
 ;                   && emc2(0x14c) && emc2(0x14e) && emc2(0x150)
 ;                   && emc2(0x1a0) && emc2(0x1d1) && emc2(0x1ea) && emc2(0x1ec)
 ;                   && emc2(0x1ece);
 ;           }
-;           case 'o':
+;           case (byte)'o':
 ;           case 0xf2: case 0xf3: case 0xf4:
 ;           case 0xf5: case 0xf6: case 0xf8:
 ;           case 0x14d: case 0x14f: case 0x151:
 ;           case 0x1a1: case 0x1d2: case 0x1eb: case 0x1ed:
 ;           case 0x1ecf:
 ;           {
-;               return emc2('o')
+;               return emc2((byte)'o')
 ;                   && emc2(0xf2) && emc2(0xf3) && emc2(0xf4)
 ;                   && emc2(0xf5) && emc2(0xf6) && emc2(0xf8)
 ;                   && emc2(0x14d) && emc2(0x14f) && emc2(0x151)
@@ -32882,172 +32880,172 @@
 ;                   && emc2(0x1ecf);
 ;           }
 
-;           case 'P':
+;           case (byte)'P':
 ;           case 0x1e54: case 0x1e56:
 ;           {
-;               return emc2('P')
+;               return emc2((byte)'P')
 ;                   && emc2(0x1e54) && emc2(0x1e56);
 ;           }
-;           case 'p':
+;           case (byte)'p':
 ;           case 0x1e55: case 0x1e57:
 ;           {
-;               return emc2('p')
+;               return emc2((byte)'p')
 ;                   && emc2(0x1e55) && emc2(0x1e57);
 ;           }
 
-;           case 'R':
+;           case (byte)'R':
 ;           case 0x154: case 0x156: case 0x158:
 ;           case 0x1e58: case 0x1e5e:
 ;           {
-;               return emc2('R')
+;               return emc2((byte)'R')
 ;                   && emc2(0x154) && emc2(0x156) && emc2(0x158)
 ;                   && emc2(0x1e58) && emc2(0x1e5e);
 ;           }
-;           case 'r':
+;           case (byte)'r':
 ;           case 0x155: case 0x157: case 0x159:
 ;           case 0x1e59: case 0x1e5f:
 ;           {
-;               return emc2('r')
+;               return emc2((byte)'r')
 ;                   && emc2(0x155) && emc2(0x157) && emc2(0x159)
 ;                   && emc2(0x1e59) && emc2(0x1e5f);
 ;           }
 
-;           case 'S':
+;           case (byte)'S':
 ;           case 0x15a: case 0x15c: case 0x15e: case 0x160:
 ;           case 0x1e60:
 ;           {
-;               return emc2('S')
+;               return emc2((byte)'S')
 ;                   && emc2(0x15a) && emc2(0x15c) && emc2(0x15e) && emc2(0x160)
 ;                   && emc2(0x1e60);
 ;           }
-;           case 's':
+;           case (byte)'s':
 ;           case 0x15b: case 0x15d: case 0x15f: case 0x161:
 ;           case 0x1e61:
 ;           {
-;               return emc2('s')
+;               return emc2((byte)'s')
 ;                   && emc2(0x15b) && emc2(0x15d) && emc2(0x15f) && emc2(0x161)
 ;                   && emc2(0x1e61);
 ;           }
 
-;           case 'T':
+;           case (byte)'T':
 ;           case 0x162: case 0x164: case 0x166:
 ;           case 0x1e6a: case 0x1e6e:
 ;           {
-;               return emc2('T')
+;               return emc2((byte)'T')
 ;                   && emc2(0x162) && emc2(0x164) && emc2(0x166)
 ;                   && emc2(0x1e6a) && emc2(0x1e6e);
 ;           }
-;           case 't':
+;           case (byte)'t':
 ;           case 0x163: case 0x165: case 0x167:
 ;           case 0x1e6b: case 0x1e6f: case 0x1e97:
 ;           {
-;               return emc2('t')
+;               return emc2((byte)'t')
 ;                   && emc2(0x163) && emc2(0x165) && emc2(0x167)
 ;                   && emc2(0x1e6b) && emc2(0x1e6f) && emc2(0x1e97);
 ;           }
 
-;           case 'U':
+;           case (byte)'U':
 ;           case 0xd9: case 0xda: case 0xdb: case 0xdc:
 ;           case 0x168: case 0x16a: case 0x16c: case 0x16e:
 ;           case 0x170: case 0x172: case 0x1af: case 0x1d3:
 ;           case 0x1ee6:
 ;           {
-;               return emc2('U')
+;               return emc2((byte)'U')
 ;                   && emc2(0xd9) && emc2(0xda) && emc2(0xdb) && emc2(0xdc)
 ;                   && emc2(0x168) && emc2(0x16a) && emc2(0x16c) && emc2(0x16e)
 ;                   && emc2(0x170) && emc2(0x172) && emc2(0x1af) && emc2(0x1d3)
 ;                   && emc2(0x1ee6);
 ;           }
-;           case 'u':
+;           case (byte)'u':
 ;           case 0xf9: case 0xfa: case 0xfb: case 0xfc:
 ;           case 0x169: case 0x16b: case 0x16d: case 0x16f:
 ;           case 0x171: case 0x173: case 0x1b0: case 0x1d4:
 ;           case 0x1ee7:
 ;           {
-;               return emc2('u')
+;               return emc2((byte)'u')
 ;                   && emc2(0xf9) && emc2(0xfa) && emc2(0xfb) && emc2(0xfc)
 ;                   && emc2(0x169) && emc2(0x16b) && emc2(0x16d) && emc2(0x16f)
 ;                   && emc2(0x171) && emc2(0x173) && emc2(0x1b0) && emc2(0x1d4)
 ;                   && emc2(0x1ee7);
 ;           }
 
-;           case 'V':
+;           case (byte)'V':
 ;           case 0x1e7c:
 ;           {
-;               return emc2('V')
+;               return emc2((byte)'V')
 ;                   && emc2(0x1e7c);
 ;           }
-;           case 'v':
+;           case (byte)'v':
 ;           case 0x1e7d:
 ;           {
-;               return emc2('v')
+;               return emc2((byte)'v')
 ;                   && emc2(0x1e7d);
 ;           }
 
-;           case 'W':
+;           case (byte)'W':
 ;           case 0x174:
 ;           case 0x1e80: case 0x1e82: case 0x1e84: case 0x1e86:
 ;           {
-;               return emc2('W')
+;               return emc2((byte)'W')
 ;                   && emc2(0x174)
 ;                   && emc2(0x1e80) && emc2(0x1e82) && emc2(0x1e84) && emc2(0x1e86);
 ;           }
-;           case 'w':
+;           case (byte)'w':
 ;           case 0x175:
 ;           case 0x1e81: case 0x1e83: case 0x1e85: case 0x1e87: case 0x1e98:
 ;           {
-;               return emc2('w')
+;               return emc2((byte)'w')
 ;                   && emc2(0x175)
 ;                   && emc2(0x1e81) && emc2(0x1e83) && emc2(0x1e85) && emc2(0x1e87) && emc2(0x1e98);
 ;           }
 
-;           case 'X':
+;           case (byte)'X':
 ;           case 0x1e8a: case 0x1e8c:
 ;           {
-;               return emc2('X')
+;               return emc2((byte)'X')
 ;                   && emc2(0x1e8a) && emc2(0x1e8c);
 ;           }
-;           case 'x':
+;           case (byte)'x':
 ;           case 0x1e8b: case 0x1e8d:
 ;           {
-;               return emc2('x')
+;               return emc2((byte)'x')
 ;                   && emc2(0x1e8b) && emc2(0x1e8d);
 ;           }
 
-;           case 'Y':
+;           case (byte)'Y':
 ;           case 0xdd:
 ;           case 0x176: case 0x178:
 ;           case 0x1e8e: case 0x1ef2: case 0x1ef6: case 0x1ef8:
 ;           {
-;               return emc2('Y')
+;               return emc2((byte)'Y')
 ;                   && emc2(0xdd)
 ;                   && emc2(0x176) && emc2(0x178)
 ;                   && emc2(0x1e8e) && emc2(0x1ef2) && emc2(0x1ef6) && emc2(0x1ef8);
 ;           }
-;           case 'y':
+;           case (byte)'y':
 ;           case 0xfd: case 0xff:
 ;           case 0x177:
 ;           case 0x1e8f: case 0x1e99: case 0x1ef3: case 0x1ef7: case 0x1ef9:
 ;           {
-;               return emc2('y')
+;               return emc2((byte)'y')
 ;                   && emc2(0xfd) && emc2(0xff)
 ;                   && emc2(0x177)
 ;                   && emc2(0x1e8f) && emc2(0x1e99) && emc2(0x1ef3) && emc2(0x1ef7) && emc2(0x1ef9);
 ;           }
 
-;           case 'Z':
+;           case (byte)'Z':
 ;           case 0x179: case 0x17b: case 0x17d: case 0x1b5:
 ;           case 0x1e90: case 0x1e94:
 ;           {
-;               return emc2('Z')
+;               return emc2((byte)'Z')
 ;                   && emc2(0x179) && emc2(0x17b) && emc2(0x17d) && emc2(0x1b5)
 ;                   && emc2(0x1e90) && emc2(0x1e94);
 ;           }
-;           case 'z':
+;           case (byte)'z':
 ;           case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
 ;           case 0x1e91: case 0x1e95:
 ;           {
-;               return emc2('z')
+;               return emc2((byte)'z')
 ;                   && emc2(0x17a) && emc2(0x17c) && emc2(0x17e) && emc2(0x1b6)
 ;                   && emc2(0x1e91) && emc2(0x1e95);
 ;           }
@@ -33094,23 +33092,23 @@
                     (reset! rc_did_emsg true)
 ;                   return false;
 
-;               case Magic('^'):
+;               case Magic((byte)'^'):
                     (emc1 NFA_BOL)
 ;                   break;
 
-;               case Magic('$'):
+;               case Magic((byte)'$'):
                     (emc1 NFA_EOL)
 ;                   break;
 
-;               case Magic('<'):
+;               case Magic((byte)'<'):
                     (emc1 NFA_BOW)
 ;                   break;
 
-;               case Magic('>'):
+;               case Magic((byte)'>'):
                     (emc1 NFA_EOW)
 ;                   break;
 
-;               case Magic('_'):
+;               case Magic((byte)'_'):
 ;               {
 ;                   c = no_Magic(getchr());
                     (when (== c NUL)
@@ -33141,33 +33139,33 @@
 
                 ;; Character classes.
 
-;               case Magic('.'):
-;               case Magic('i'):
-;               case Magic('I'):
-;               case Magic('k'):
-;               case Magic('K'):
-;               case Magic('f'):
-;               case Magic('F'):
-;               case Magic('p'):
-;               case Magic('P'):
-;               case Magic('s'):
-;               case Magic('S'):
-;               case Magic('d'):
-;               case Magic('D'):
-;               case Magic('x'):
-;               case Magic('X'):
-;               case Magic('o'):
-;               case Magic('O'):
-;               case Magic('w'):
-;               case Magic('W'):
-;               case Magic('h'):
-;               case Magic('H'):
-;               case Magic('a'):
-;               case Magic('A'):
-;               case Magic('l'):
-;               case Magic('L'):
-;               case Magic('u'):
-;               case Magic('U'):
+;               case Magic((byte)'.'):
+;               case Magic((byte)'i'):
+;               case Magic((byte)'I'):
+;               case Magic((byte)'k'):
+;               case Magic((byte)'K'):
+;               case Magic((byte)'f'):
+;               case Magic((byte)'F'):
+;               case Magic((byte)'p'):
+;               case Magic((byte)'P'):
+;               case Magic((byte)'s'):
+;               case Magic((byte)'S'):
+;               case Magic((byte)'d'):
+;               case Magic((byte)'D'):
+;               case Magic((byte)'x'):
+;               case Magic((byte)'X'):
+;               case Magic((byte)'o'):
+;               case Magic((byte)'O'):
+;               case Magic((byte)'w'):
+;               case Magic((byte)'W'):
+;               case Magic((byte)'h'):
+;               case Magic((byte)'H'):
+;               case Magic((byte)'a'):
+;               case Magic((byte)'A'):
+;               case Magic((byte)'l'):
+;               case Magic((byte)'L'):
+;               case Magic((byte)'u'):
+;               case Magic((byte)'U'):
 ;               {
 ;                   Bytes p = vim_strchr(classchars, no_Magic(c));
                     (when (== p null)
@@ -33181,7 +33179,7 @@
                     )
                     ;; When '.' is followed by a composing char ignore the dot,
                     ;; so that the composing char is matched here.
-                    (when (and (== c (§ Magic('.'))) (§ utf_iscomposing(peekchr())))
+                    (when (and (== c (Magic (byte \.))) (§ utf_iscomposing(peekchr())))
 ;                       old_regparse = @regparse;
 ;                       c = getchr();
 ;                       return nfa_do_multibyte(c, old_regparse);
@@ -33195,7 +33193,7 @@
 ;                   break;
 ;               }
 
-;               case Magic('n'):
+;               case Magic((byte)'n'):
 ;               {
                     (cond @reg_string
                     (§
@@ -33211,29 +33209,29 @@
 ;                   break;
 ;               }
 
-;               case Magic('('):
+;               case Magic((byte)'('):
                     (if (not (nfa_reg REG_PAREN))
 ;                       return false;           ;; cascaded error
                     )
 ;                   break;
 
-;               case Magic('|'):
-;               case Magic('&'):
-;               case Magic(')'):
+;               case Magic((byte)'|'):
+;               case Magic((byte)'&'):
+;               case Magic((byte)')'):
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
 ;                   return false;
 
-;               case Magic('='):
-;               case Magic('?'):
-;               case Magic('+'):
-;               case Magic('@'):
-;               case Magic('*'):
-;               case Magic('{'):
+;               case Magic((byte)'='):
+;               case Magic((byte)'?'):
+;               case Magic((byte)'+'):
+;               case Magic((byte)'@'):
+;               case Magic((byte)'*'):
+;               case Magic((byte)'{'):
                     ;; these should follow an atom, not form an atom
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
 ;                   return false;
 
-;               case Magic('~'):
+;               case Magic((byte)'~'):
 ;               {
                     ;; Previous substitute pattern.
                     ;; Generated as "\%(pattern\)".
@@ -33251,32 +33249,32 @@
 ;                   break;
 ;               }
 
-;               case Magic('1'):
-;               case Magic('2'):
-;               case Magic('3'):
-;               case Magic('4'):
-;               case Magic('5'):
-;               case Magic('6'):
-;               case Magic('7'):
-;               case Magic('8'):
-;               case Magic('9'):
-                    (emc1 (§ NFA_BACKREF1 + (no_Magic(c) - '1')))
+;               case Magic((byte)'1'):
+;               case Magic((byte)'2'):
+;               case Magic((byte)'3'):
+;               case Magic((byte)'4'):
+;               case Magic((byte)'5'):
+;               case Magic((byte)'6'):
+;               case Magic((byte)'7'):
+;               case Magic((byte)'8'):
+;               case Magic((byte)'9'):
+                    (emc1 (+ NFA_BACKREF1 (- (no_Magic c) (byte \1))))
                     (reset! nfa_has_backref true)
 ;                   break;
 
-;               case Magic('z'):
+;               case Magic((byte)'z'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
 ;                   {
-;                       case 's':
+;                       case (byte)'s':
                             (emc1 NFA_ZSTART)
                             (if (not (§ re_mult_next(u8("\\zs"))))
 ;                               return false;
                             )
 ;                           break;
 
-;                       case 'e':
+;                       case (byte)'e':
                             (emc1 NFA_ZEND)
                             (reset! nfa_has_zend true)
                             (if (not (§ re_mult_next(u8("\\ze"))))
@@ -33284,15 +33282,15 @@
                             )
 ;                           break;
 
-;                       case '1':
-;                       case '2':
-;                       case '3':
-;                       case '4':
-;                       case '5':
-;                       case '6':
-;                       case '7':
-;                       case '8':
-;                       case '9':
+;                       case (byte)'1':
+;                       case (byte)'2':
+;                       case (byte)'3':
+;                       case (byte)'4':
+;                       case (byte)'5':
+;                       case (byte)'6':
+;                       case (byte)'7':
+;                       case (byte)'8':
+;                       case (byte)'9':
 ;                       {
                             ;; \z1...\z9
                             (when (!= @reg_do_extmatch REX_USE)
@@ -33300,14 +33298,14 @@
                                 (reset! rc_did_emsg true)
 ;                               return false;
                             )
-                            (emc1 (§ NFA_ZREF1 + (no_Magic(c) - '1')))
+                            (emc1 (+ NFA_ZREF1 (- (no_Magic c) (byte \1))))
                             ;; No need to set nfa_has_backref, the sub-matches
                             ;; don't change when \z1 .. \z9 matches or not.
                             (reset! re_has_z REX_USE)
 ;                           break;
 ;                       }
 
-;                       case '(':
+;                       case (byte)'(':
 ;                       {
                             ;; \z(
                             (when (!= @reg_do_extmatch REX_SET)
@@ -33329,34 +33327,34 @@
 ;                   break;
 ;               }
 
-;               case Magic('%'):
+;               case Magic((byte)'%'):
 ;               {
 ;                   c = no_Magic(getchr());
 ;                   switch (c)
 ;                   {
                         ;; () without a back reference
-;                       case '(':
+;                       case (byte)'(':
                             (if (not (nfa_reg REG_NPAREN))
 ;                               return false;
                             )
                             (emc1 NFA_NOPEN)
 ;                           break;
 
-;                       case 'd':   ;; %d123 decimal
-;                       case 'o':   ;; %o123 octal
-;                       case 'x':   ;; %xab hex 2
-;                       case 'u':   ;; %uabcd hex 4
-;                       case 'U':   ;; %U1234abcd hex 8
+;                       case (byte)'d':   ;; %d123 decimal
+;                       case (byte)'o':   ;; %o123 octal
+;                       case (byte)'x':   ;; %xab hex 2
+;                       case (byte)'u':   ;; %uabcd hex 4
+;                       case (byte)'U':   ;; %U1234abcd hex 8
 ;                       {
 ;                           int nr;
 
 ;                           switch (c)
 ;                           {
-;                               case 'd': nr = getdecchrs(); break;
-;                               case 'o': nr = getoctchrs(); break;
-;                               case 'x': nr = gethexchrs(2); break;
-;                               case 'u': nr = gethexchrs(4); break;
-;                               case 'U': nr = gethexchrs(8); break;
+;                               case (byte)'d': nr = getdecchrs(); break;
+;                               case (byte)'o': nr = getoctchrs(); break;
+;                               case (byte)'x': nr = gethexchrs(2); break;
+;                               case (byte)'u': nr = gethexchrs(4); break;
+;                               case (byte)'U': nr = gethexchrs(8); break;
 ;                               default:  nr = -1; break;
 ;                           }
 
@@ -33373,32 +33371,32 @@
 
                         ;; Catch \%^ and \%$ regardless of where they appear in the
                         ;; pattern -- regardless of whether or not it makes sense.
-;                       case '^':
+;                       case (byte)'^':
                             (emc1 NFA_BOF)
 ;                           break;
 
-;                       case '$':
+;                       case (byte)'$':
                             (emc1 NFA_EOF)
 ;                           break;
 
-;                       case '#':
+;                       case (byte)'#':
                             (emc1 NFA_CURSOR)
 ;                           break;
 
-;                       case 'V':
+;                       case (byte)'V':
                             (emc1 NFA_VISUAL)
 ;                           break;
 
-;                       case 'C':
+;                       case (byte)'C':
                             (emc1 NFA_ANY_COMPOSING)
 ;                           break;
 
-;                       case '[':
+;                       case (byte)'[':
 ;                       {
 ;                           int n;
 
                             ;; \%[abc]
-;                           for (n = 0; (c = peekchr()) != ']'; n++)
+;                           for (n = 0; (c = peekchr()) != (byte)']'; n++)
 ;                           {
                                 (when (== c NUL)
                                     (emsg2 e_missing_sb, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -33439,7 +33437,7 @@
                             )
 ;                           while (asc_isdigit(c))
 ;                           {
-;                               n = n * 10 + (c - '0');
+;                               n = n * 10 + (c - (byte)'0');
 ;                               c = getchr();
 ;                           }
                             (cond (or (== c (byte \l)) (== c (byte \c)) (== c (byte \v)))
@@ -33476,7 +33474,7 @@
 ;                   break;
 ;               }
 
-;               case Magic('['):
+;               case Magic((byte)'['):
 ;                   break collection;
 
 ;               default:
@@ -33535,7 +33533,7 @@
                 (emc1 NFA_START_COLL)
             ))
             (when (== (§ @regparse.at(0)) (byte \-))
-;               startc = '-';
+;               startc = (byte)'-';
                 (emc1 startc)
                 (emc1 NFA_CONCAT)
                 (reset! regparse (§ @regparse.plus(us_ptr2len_cc(@regparse))))
@@ -33848,13 +33846,13 @@
         (skipchr)
 ;       switch (op)
 ;       {
-;           case Magic('*'):
+;           case Magic((byte)'*'):
 ;           {
                 (emc1 NFA_STAR)
 ;               break;
 ;           }
 
-;           case Magic('+'):
+;           case Magic((byte)'+'):
 ;           {
                 ;; Trick: Normally, (a*)\+ would match the whole input "aaa".  The first and
                 ;; only submatch would be "aaa".  But the backtracking engine interprets the
@@ -33875,22 +33873,22 @@
 ;               break;
 ;           }
 
-;           case Magic('@'):
+;           case Magic((byte)'@'):
 ;           {
 ;               int c2 = getdecchrs();
 ;               op = no_Magic(getchr());
 ;               int i = 0;
 ;               switch (op)
 ;               {
-;                   case '=':
+;                   case (byte)'=':
                         ;; \@=
 ;                       i = NFA_PREV_ATOM_NO_WIDTH;
 ;                       break;
-;                   case '!':
+;                   case (byte)'!':
                         ;; \@!
 ;                       i = NFA_PREV_ATOM_NO_WIDTH_NEG;
 ;                       break;
-;                   case '<':
+;                   case (byte)'<':
 ;                       op = no_Magic(getchr());
                         (cond (== op (byte \=))
                         (§
@@ -33903,7 +33901,7 @@
 ;                           i = NFA_PREV_ATOM_JUST_BEFORE_NEG;
                         ))
 ;                       break;
-;                   case '>':
+;                   case (byte)'>':
                         ;; \@>
 ;                       i = NFA_PREV_ATOM_LIKE_PATTERN;
 ;                       break;
@@ -33918,14 +33916,14 @@
 ;               break;
 ;           }
 
-;           case Magic('?'):
-;           case Magic('='):
+;           case Magic((byte)'?'):
+;           case Magic((byte)'='):
 ;           {
                 (emc1 NFA_QUEST)
 ;               break;
 ;           }
 
-;           case Magic('{'):
+;           case Magic((byte)'{'):
 ;           {
                 ;; a{2,5} will expand to 'aaa?a?a?'
                 ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
@@ -33933,7 +33931,7 @@
 
 ;               boolean greedy = true;      ;; Braces are prefixed with '-' ?
 ;               int c2 = peekchr();
-                (when (or (== c2 (byte \-)) (== c2 (§ Magic('-'))))
+                (when (or (== c2 (byte \-)) (== c2 (Magic (byte \-))))
                     (skipchr)
 ;                   greedy = false;
                 )
@@ -33947,16 +33945,16 @@
 
                 ;;  <atom>{0,inf}, <atom>{0,} and <atom>{}  are equivalent to <atom>*
                 (when (and (== (§ minval[0]) 0) (== (§ maxval[0]) MAX_LIMIT))
-                    (cond greedy             ;; )) { (match the braces)
+                    (cond greedy            ;; { { (match the braces)
                     (§
-                        ;; \{), \{0,}
-                         :emc1 NFA_STAR)
+                        ;; \{}, \{0,}
+                        (emc1 NFA_STAR)
+                    )
+                    :else                   ;; { { (match the braces)
                     (§
-;                   else                    ;; { { (match the braces)
-;                   {
                         ;; \{-}, \{-0,}
                         (emc1 NFA_STAR_NONGREEDY)
-;                   }
+                    ))
 ;                   break;
                 )
 
@@ -34050,46 +34048,46 @@
 ;           switch (peekchr())
 ;           {
 ;               case NUL:
-;               case Magic('|'):
-;               case Magic('&'):
-;               case Magic(')'):
+;               case Magic((byte)'|'):
+;               case Magic((byte)'&'):
+;               case Magic((byte)')'):
 ;                   cont = false;
 ;                   break;
 
-;               case Magic('Z'):
+;               case Magic((byte)'Z'):
 ;                   @regflags |= RF_ICOMBINE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('c'):
+;               case Magic((byte)'c'):
 ;                   @regflags |= RF_ICASE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('C'):
+;               case Magic((byte)'C'):
 ;                   @regflags |= RF_NOICASE;
                     (skipchr_keepstart)
 ;                   break;
 
-;               case Magic('v'):
+;               case Magic((byte)'v'):
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('m'):
+;               case Magic((byte)'m'):
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('M'):
+;               case Magic((byte)'M'):
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
                     (reset! curchr -1)
 ;                   break;
 
-;               case Magic('V'):
+;               case Magic((byte)'V'):
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
                     (reset! curchr -1)
@@ -34132,7 +34130,7 @@
 
 ;       int ch = peekchr();
         ;; Try next concats.
-;       while (ch == Magic('&'))
+;       while (ch == Magic((byte)'&'))
 ;       {
             (skipchr)
             (emc1 NFA_NOPEN)
@@ -34194,7 +34192,7 @@
 ;           return false;                   ;; cascaded error
         )
 
-;       while (peekchr() == Magic('|'))
+;       while (peekchr() == Magic((byte)'|'))
 ;       {
             (skipchr)
             (if (not (nfa_regbranch))
@@ -34204,7 +34202,7 @@
 ;       }
 
         ;; Check for proper termination.
-        (cond (and (!= paren REG_NOPAREN) (§ getchr() != Magic(')')))
+        (cond (and (!= paren REG_NOPAREN) (!= (getchr) (Magic (byte \)))))
         (§
             (if (== paren REG_NPAREN)
                 (emsg2 e_unmatchedpp, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -34214,7 +34212,7 @@
         )
         (and (== paren REG_NOPAREN) (!= (peekchr) NUL))
         (§
-            (if (§ peekchr() == Magic(')'))
+            (if (== (peekchr) (Magic (byte \))))
                 (emsg2 e_unmatchedpar, (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                 (emsg (u8 "E873: (NFA regexp) proper termination error")))
             (reset! rc_did_emsg true)
@@ -38397,11 +38395,11 @@
 
         ;; Check for prefix "\%#=", that sets the regexp engine.
         (when (§ STRNCMP(expr, u8("\\%#="), 4) == 0)
-;           int newengine = expr.at(4) - '0';
+;           int newengine = expr.at(4) - (byte)'0';
 
             (cond (or (== newengine AUTOMATIC_ENGINE) (== newengine BACKTRACKING_ENGINE) (== newengine NFA_ENGINE))
             (§
-                (reset! regexp_engine (§ expr.at(4) - '0'))
+                (reset! regexp_engine (- (§ expr.at(4)) (byte \0)))
 ;               expr = expr.plus(5);
             )
             :else
@@ -38610,7 +38608,7 @@
 ;       spat_C sp = §_spat_C();
 
 ;       sp.magic = true;
-;       sp.sp_off.dir = '/';
+;       sp.sp_off.dir = (byte)'/';
 
         sp
     ))
@@ -39251,8 +39249,8 @@
 
         (when (§ (options & SEARCH_REV) != 0)
             (if (== dirc (byte \/))
-;               dirc = '?';
-;               dirc = '/';
+;               dirc = (byte)'?';
+;               dirc = (byte)'/';
             )
         )
 
@@ -39438,7 +39436,7 @@
                     ))
                 )
 
-;               int i = searchit(@curwin, @curbuf, pos, (dirc == '/') ? FORWARD : BACKWARD, searchstr, count,
+;               int i = searchit(@curwin, @curbuf, pos, (dirc == (byte)'/') ? FORWARD : BACKWARD, searchstr, count,
 ;                           (@spats[0].sp_off.end ? SEARCH_REV : 0)
 ;                               + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG + SEARCH_START
 ;                                   + ((pat != null && pat.at(0) == (byte)';') ? 0 : SEARCH_NOOF))),
@@ -39840,7 +39838,7 @@
 ;                       int bslcnt = 0;
 
                         ;; Set "match_escaped" if there are an odd number of backslashes.
-;                       for (int[] col = { @_2_pos.col }; check_prevcol(linep, col[0], '\\', col); )
+;                       for (int[] col = { @_2_pos.col }; check_prevcol(linep, col[0], (byte)'\\', col); )
 ;                           bslcnt++;
 ;                       match_escaped = (bslcnt & 1);
                     ))
@@ -40153,7 +40151,7 @@
                     )
 ;                   break;
 
-;               case '"':
+;               case (byte)'"':
                     ;; a quote that is preceded with an odd number of backslashes is ignored
                     (when (!= do_quotes 0)
 ;                       int col;
@@ -40175,7 +40173,7 @@
                 ;;   skipped, there is never a brace in them.
                 ;;   Ignore this when finding matches for `'.
 
-;               case '\'':
+;               case (byte)'\'':
                     (when (and (not cpo_match) (!= (§ initc[0]) (byte \')) (!= (§ findc[0]) (byte \')))
                         (cond (§ backwards[0])
                         (§
@@ -40216,7 +40214,7 @@
 ;                       int bslcnt = 0;
 
                         (when (not cpo_bsl)
-;                           for (int[] col = { @_2_pos.col }; check_prevcol(linep, col[0], '\\', col); )
+;                           for (int[] col = { @_2_pos.col }; check_prevcol(linep, col[0], (byte)'\\', col); )
 ;                               bslcnt++;
                         )
                         ;; Only accept a match when 'M' is in 'cpo'
@@ -40255,7 +40253,7 @@
     (§
 ;       Bytes p = line;
 
-;       while ((p = vim_strchr(p, '/')) != null)
+;       while ((p = vim_strchr(p, (byte)'/')) != null)
 ;       {
             ;; Accept a double /, unless it's preceded with * and followed by *,
             ;; because * / / * is an end and start of a C comment.
@@ -41773,9 +41771,9 @@
             ;; This also inits all 'isident' and 'isfname' flags to false.
 
 ;           int c = 0;
-;           while (c < ' ')
+;           while (c < (byte)' ')
 ;               chartab[c++] = (@dy_flags & DY_UHEX) != 0 ? (byte)4 : (byte)2;
-;           while (c <= '~')
+;           while (c <= (byte)'~')
 ;               chartab[c++] = 1 + CT_PRINT_CHAR;
 ;           while (c < 256)
 ;           {
@@ -41910,7 +41908,7 @@
 ;                               chartab[c] |= CT_FNAME_CHAR;
                             )
                         )
-                        :else /* i == 3 */           ;; (re)set keyword flag
+                        :else #_"/* i == 3 */"           ;; (re)set keyword flag
                         (§
                             (if tilde
                                 (reset_chartab buf, c)
@@ -42073,12 +42071,8 @@
 ;; Lower case letters are used to avoid the confusion of <F1> being 0xf1 or function key 1.
 
 (defn- #_int nr2hex [#_int c]
-    (§
-        (if (§ (c & 0xf) <= 9)
-;           return (c & 0xf) + '0';
-        )
-
-        (§ (c & 0xf) - 10 + 'a')
+    (let [n (& c 0xf)]
+        (if (< n 10) (+ (byte \0) n) (+ (byte \a) (- n 10)))
     ))
 
 ;; Return number of display cells occupied by byte "b".
@@ -42087,12 +42081,8 @@
 ;; For UTF-8 mode this will return 0 for bytes >= 0x80, because the number of cells depends on further bytes.
 
 (defn- #_int mb_byte2cells [#_byte b]
-    (§
-        (if (<= 0x80 (char_u b))
-;           return 0;
-        )
-
-        (§ chartab[char_u(b)] & CT_CELL_MASK)
+    (let [i (char_u b)]
+        (if (< i 0x80) (& (§ chartab[i]) CT_CELL_MASK) 0)
     ))
 
 ;; Return number of display cells occupied by character "c".
@@ -42690,9 +42680,9 @@
 
 (defn- #_boolean asc_isxdigit [#_int c]
     (§
-;       return ('0' <= c && c <= '9')
-;           || ('a' <= c && c <= 'f')
-;           || ('A' <= c && c <= 'F');
+;       return ((byte)'0' <= c && c <= (byte)'9')
+;           || ((byte)'a' <= c && c <= (byte)'f')
+;           || ((byte)'A' <= c && c <= (byte)'F');
     ))
 
 ;; Getdigits: Get a number from a string and skip over it.
@@ -42760,7 +42750,7 @@
 ;                           break;
                         )
                         (if (<= (byte \0) (§ ptr.at(n)))
-;                           hex = '0';      ;; assume octal
+;                           hex = (byte)'0';      ;; assume octal
                         )
 ;                   }
                 )
@@ -42775,7 +42765,7 @@
         (§
 ;           for ( ; asc_isodigit(ptr.at(0)); ptr = ptr.plus(1))         ;; octal
 ;           {
-;               long l = 8 * nr + (long)(ptr.at(0) - '0');
+;               long l = 8 * nr + (long)(ptr.at(0) - (byte)'0');
                 (if (< l nr)
 ;                   break;
                 )
@@ -42797,7 +42787,7 @@
         (§
 ;           for ( ; asc_isdigit(ptr.at(0)); ptr = ptr.plus(1))          ;; decimal
 ;           {
-;               long l = 10 * nr + (long)(ptr.at(0) - '0');
+;               long l = 10 * nr + (long)(ptr.at(0) - (byte)'0');
                 (if (< l nr)
 ;                   break;
                 )
@@ -42825,10 +42815,10 @@
 (defn- #_int hex2nr [#_int c]
     (§
         (if (and (<= (byte \a) c) (<= c (byte \f)))
-;           return c - 'a' + 10;
+;           return c - (byte)'a' + 10;
         )
         (if (and (<= (byte \A) c) (<= c (byte \F)))
-;           return c - 'A' + 10;
+;           return c - (byte)'A' + 10;
         )
 
         (- c (byte \0))
@@ -46963,7 +46953,7 @@
 
                     (when (== (§ p.at(0)) (byte \)))
 ;                       @curwin.w_cursor.col = BDIFF(p, s);
-;                       pos_C pos = findmatch(null, '(');
+;                       pos_C pos = findmatch(null, (byte)'(');
                         (when (!= pos null)
 ;                           @curwin.w_cursor.lnum = pos.lnum;
 ;                           newindent = get_indent();
@@ -46996,7 +46986,7 @@
 
 ;                       while ((s.at(0) == (byte)'#' || was_backslashed) && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
 ;                       {
-;                           was_backslashed = (s.at(0) != NUL && s.at(STRLEN(s) - 1) == '\\');
+;                           was_backslashed = (s.at(0) != NUL && s.at(STRLEN(s) - 1) == (byte)'\\');
 ;                           s = ml_get(++@curwin.w_cursor.lnum);
 ;                       }
                         (if was_backslashed
@@ -48002,7 +47992,7 @@
 
 (defn- #_int ask_yesno [#_Bytes q, #_boolean direct]
     (§
-;       int c = ' ';
+;       int c = (byte)' ';
 
 ;       int save_State = @State;
 
@@ -48014,14 +48004,14 @@
         (swap! no_mapping inc)
         (swap! allow_keys inc)               ;; no mapping here, but recognize keys
 
-;       while (c != 'y' && c != 'n')
+;       while (c != (byte)'y' && c != (byte)'n')
 ;       {
             ;; same highlighting as for wait_return
             (smsg_attr (hl_attr HLF_R), (§ u8("%s (y/n)?"), q))
 
 ;           c = (direct) ? get_keystroke() : plain_vgetc();
             (if (or (== c Ctrl_C) (== c ESC))
-;               c = 'n';
+;               c = (byte)'n';
             )
 
             (msg_putchar c)         ;; show what you typed
@@ -48860,7 +48850,7 @@
     (§
         (when (!= p null)
 ;           for (int c; (c = p.at(0)) != NUL; )
-;               (p = p.plus(1)).be(-1, (c < 'a' || 'z' < c) ? c : (c - 0x20));
+;               (p = p.plus(1)).be(-1, (c < (byte)'a' || (byte)'z' < c) ? c : (c - 0x20));
         )
     ))
 
@@ -49280,7 +49270,7 @@
 ;               table_idx = find_special_key_in_table(c);
             )
             (when (and (< table_idx 0) (not (vim_isprintc c)) (< c (byte \space)))
-;               c += '@';
+;               c += (byte)'@';
 ;               modifiers |= MOD_MASK_CTRL;
             )
         )
@@ -49291,7 +49281,7 @@
 ;       key__name.be(idx++, (byte)'<');
 
         ;; translate the modifier into a string
-;       for (int i = 0; i < mod_mask_table.length && mod_mask_table[i].name != 'A'; i++)
+;       for (int i = 0; i < mod_mask_table.length && mod_mask_table[i].name != (byte)'A'; i++)
             (when (§ (modifiers & mod_mask_table[i].mod_mask) == mod_mask_table[i].mod_flag)
 ;               key__name.be(idx++, mod_mask_table[i].name);
 ;               key__name.be(idx++, (byte)'-');
@@ -51026,22 +51016,22 @@
 ;           b = (cm = cm.plus(1)).at(-1);
 ;           switch (b)                              ;; % escape
 ;           {
-;               case 'd':                           ;; decimal
+;               case (byte)'d':                           ;; decimal
 ;                   p = _addfmt(p, u8("%d"), row);
 ;                   row = col;
 ;                   break;
 
-;               case '2':                           ;; 2 digit decimal
+;               case (byte)'2':                           ;; 2 digit decimal
 ;                   p = _addfmt(p, u8("%02d"), row);
 ;                   row = col;
 ;                   break;
 
-;               case '3':                           ;; 3 digit decimal
+;               case (byte)'3':                           ;; 3 digit decimal
 ;                   p = _addfmt(p, u8("%03d"), row);
 ;                   row = col;
 ;                   break;
 
-;               case '>':                           ;; %>xy: if >x, add y
+;               case (byte)'>':                           ;; %>xy: if >x, add y
 ;               {
 ;                   byte x = (cm = cm.plus(1)).at(-1), y = (cm = cm.plus(1)).at(-1);
                     (if (> col x)
@@ -51053,14 +51043,14 @@
 ;                   break;
 ;               }
 
-;               case '+':                           ;; %+c: add c
+;               case (byte)'+':                           ;; %+c: add c
 ;                   row += (cm = cm.plus(1)).at(-1);
 
-;               case '.':                           ;; print x/y
-;                   if (row == '\t'                 ;; these are
-;                    || row == '\n'                 ;; chars that
-;                    || row == '\004'               ;; UNIX hates
-;                    || row == '\000')
+;               case (byte)'.':                           ;; print x/y
+;                   if (row == (byte)'\t'                 ;; these are
+;                    || row == (byte)'\n'                 ;; chars that
+;                    || row == (byte)'\004'               ;; UNIX hates
+;                    || row == (byte)'\000')
 ;                   {
 ;                       row++;                      ;; so go to next pos
                         (if (== reverse (== row col))
@@ -51072,7 +51062,7 @@
 ;                   row = col;
 ;                   break;
 
-;               case 'r':                           ;; r: reverse
+;               case (byte)'r':                           ;; r: reverse
 ;               {
 ;                   int r = row;
 ;                   row = col;
@@ -51081,31 +51071,31 @@
 ;                   break;
 ;               }
 
-;               case 'i':                           ;; increment (1-origin screen)
+;               case (byte)'i':                           ;; increment (1-origin screen)
 ;                   col++;
 ;                   row++;
 ;                   break;
 
-;               case '%':                           ;; %%=% literally
+;               case (byte)'%':                           ;; %%=% literally
 ;                   (p = p.plus(1)).be(-1, (byte)'%');
 ;                   break;
 
-;               case 'n':                           ;; magic DM2500 code
+;               case (byte)'n':                           ;; magic DM2500 code
 ;                   row ^= 0140;
 ;                   col ^= 0140;
 ;                   break;
 
-;               case 'B':                           ;; bcd encoding
+;               case (byte)'B':                           ;; bcd encoding
 ;                   row = ((row / 10) << 4) + (row % 10);
 ;                   col = ((col / 10) << 4) + (col % 10);
 ;                   break;
 
-;               case 'D':                           ;; magic Delta Data code
+;               case (byte)'D':                           ;; magic Delta Data code
 ;                   row -= 2 * (row & 15);
 ;                   col -= 2 * (col & 15);
 ;                   break;
 
-;               case 'p':                           ;; so, what?
+;               case (byte)'p':                           ;; so, what?
 ;               {
 ;                   byte d = (cm = cm.plus(1)).at(-1);
                     (if (or (== d (byte \1)) (== d (byte \2)))       ;; ignore %p1 and %p2
@@ -51793,7 +51783,7 @@
             (if (and (<= 5 len) (== (§ code.at(len - 3)) (byte \;)))
 ;               return 2;
             )
-            (if (or (and (<= 4 len) (== (§ code.at(len - 3)) (byte \O))) (§ char_u(code.at(len - 3)) == 'O' + 0x80))
+            (if (or (and (<= 4 len) (== (§ code.at(len - 3)) (byte \O))) (== (char_u (§ code.at(len - 3))) (+ (byte \O) 0x80)))
 ;               return 1;
             )
         )
@@ -52710,19 +52700,19 @@
 ;       int c;
         (cond (§ (get_real_state() & VISUAL) != 0)
         (§
-;           c = 'v';
+;           c = (byte)'v';
         )
         (§ (@State & INSERT) != 0)
         (§
-;           c = 'i';
+;           c = (byte)'i';
         )
         (§ (@State & NORMAL) != 0)
         (§
-;           c = 'n';
+;           c = (byte)'n';
         )
         (§ (@State & CMDLINE) != 0)
         (§
-;           c = 'c';
+;           c = (byte)'c';
         )
         :else
         (§
@@ -53567,7 +53557,7 @@
             (§
                 ;; Last line isn't finished: Display "@@@" at the end.
 
-;               screen_fill(wp.w_winrow + wp.w_height - 1, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width - 3, wp.w_wincol + wp.w_width, '@', '@', hl_attr(HLF_AT));
+;               screen_fill(wp.w_winrow + wp.w_height - 1, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width - 3, wp.w_wincol + wp.w_width, (byte)'@', (byte)'@', hl_attr(HLF_AT));
                 (set_empty_rows wp, srow)
 ;               wp.w_botline = lnum;
             )
@@ -54079,7 +54069,7 @@
                         )
                         :else
                         (§
-;                           c_extra = ' ';
+;                           c_extra = (byte)' ';
                         ))
 ;                       n_extra = number_width(wp) + 1;
 ;                       char_attr = hl_attr(HLF_N);
@@ -54108,7 +54098,7 @@
                     (when (and (§ wp.w_options.@wo_bri) (== n_extra 0) (!= row startrow))
 ;                       char_attr = 0; ;; was: hl_attr(HLF_AT);
 ;                       p_extra = null;
-;                       c_extra = ' ';
+;                       c_extra = (byte)' ';
 ;                       n_extra = get_breakindent_win(wp, ml_get_buf(@curbuf, lnum));
                         ;; Correct end of highlighted area for 'breakindent',
                         ;; required when 'linebreak' is also set.
@@ -54345,7 +54335,7 @@
                     ;; If a double-width char doesn't fit display a '>' in the last column.
                     (cond (and (§ wp.w_width - 1 <= col) (== (utf_char2cells mb_c) 2))
                     (§
-;                       c = '>';
+;                       c = (byte)'>';
 ;                       mb_c = c;
 ;                       mb_l = 1;
 ;                       mb_utf8 = false;
@@ -54395,7 +54385,7 @@
 ;                       for (int i = @screen_mco - 1; 0 < i; --i)
 ;                           u8cc[i] = u8cc[i - 1];
 ;                       u8cc[0] = mb_c;
-;                       mb_c = ' ';
+;                       mb_c = (byte)' ';
                     )
                 )
 
@@ -54427,7 +54417,7 @@
                 ;; the character is displayed at the start of the next line.
                 (cond (and (§ wp.w_width - 1 <= col) (== (utf_char2cells mb_c) 2))
                 (§
-;                   c = '>';
+;                   c = (byte)'>';
 ;                   mb_c = c;
 ;                   mb_utf8 = false;
 ;                   mb_l = 1;
@@ -54446,7 +54436,7 @@
                 (when (and (< 0 n_skip) (< 1 mb_l) (== n_extra 0))
 ;                   n_extra = 1;
 ;                   c_extra = MB_FILLER_CHAR;
-;                   c = ' ';
+;                   c = (byte)' ';
                     (when (and (== area_attr 0) (== search_attr 0))
 ;                       n_attr = n_extra + 1;
 ;                       extra_attr = hl_attr(HLF_AT);
@@ -54476,7 +54466,7 @@
 ;                           n_extra = (int)@curbuf.@b_p_ts - vcol % (int)@curbuf.@b_p_ts - 1;
                         )
 
-;                       c_extra = (0 < mb_off) ? MB_FILLER_CHAR : ' ';
+;                       c_extra = (0 < mb_off) ? MB_FILLER_CHAR : (byte)' ';
                         (when (vim_iswhite c)
                             (when (== c TAB)       ;; See "Tab alignment" below.
 ;                               n_extra += vcol_off;
@@ -54486,7 +54476,7 @@
 ;                               old_boguscols = boguscols;
 ;                               boguscols = 0;
                             )
-;                           c = ' ';
+;                           c = (byte)' ';
                         )
                     )
 
@@ -54548,8 +54538,8 @@
 
 ;                       mb_utf8 = false;                    ;; don't draw as UTF-8
 
-;                       c_extra = ' ';
-;                       c = ' ';
+;                       c_extra = (byte)' ';
+;                       c = (byte)' ';
 ;                   }
 ;                   else if (c == NUL
 ;                           && ((0 <= fromcol[0] || 0 <= fromcol_prev)
@@ -54575,7 +54565,7 @@
 ;                               c_extra = NUL;
                             ))
                         )
-;                       c = ' ';
+;                       c = (byte)' ';
 ;                       lcs_eol_one = -1;
 ;                       ptr = ptr.minus(1);                 ;; put it back at the NUL
                         (when (not attr_pri)
@@ -54625,19 +54615,19 @@
 ;                       mb_utf8 = false;                    ;; don't draw as UTF-8
 ;                   }
 ;                   else if (@VIsual_active
-;                            && (@VIsual_mode == Ctrl_V || @VIsual_mode == 'v')
+;                            && (@VIsual_mode == Ctrl_V || @VIsual_mode == (byte)'v')
 ;                            && virtual_active()
 ;                            && tocol[0] != MAXCOL
 ;                            && vcol < tocol[0]
 ;                            && col < wp.w_width)
 ;                   {
-;                       c = ' ';
+;                       c = (byte)' ';
 ;                       ptr = ptr.minus(1);                             ;; put it back at the NUL
 ;                   }
 ;                   else if (line_attr != 0 && col - boguscols < wp.w_width)
 ;                   {
                         ;; Highlight until the right side of the window.
-;                       c = ' ';
+;                       c = (byte)' ';
 ;                       ptr = ptr.minus(1);                             ;; put it back at the NUL
 
                         ;; Remember we do the char for line highlighting.
@@ -54653,7 +54643,7 @@
 ;               if (0 < wp.w_options.@wo_cole
 ;                   && (wp != @curwin || lnum != wp.w_cursor.lnum || conceal_cursor_line(wp))
 ;                   && (syntax_flags & HL_CONCEAL) != 0
-;                   && !(lnum_in_visual_area && vim_strchr(wp.w_options.@wo_cocu, 'v') == null))
+;                   && !(lnum_in_visual_area && vim_strchr(wp.w_options.@wo_cocu, (byte)'v') == null))
 ;               {
 ;                   char_attr = conceal_attr;
                     (cond (and (!= prev_syntax_id (§ syntax_seqnr[0])) (or (!= (syn_get_sub_char) NUL) (== (§ wp.w_options.@wo_cole) 1)) (!= (§ wp.w_options.@wo_cole) 3))
@@ -54669,7 +54659,7 @@
                         )
                         :else
                         (§
-;                           c = ' ';
+;                           c = (byte)' ';
                         ))
 
 ;                       prev_syntax_id = syntax_seqnr[0];
@@ -55376,7 +55366,7 @@
             ;; draw the vertical separator right of this window
 ;           int[] hl = new int[1];
 ;           int c = fillchar_vsep(hl);
-;           screen_fill(wp.w_winrow + row, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width, wp.w_wincol + wp.w_width + 1, c, ' ', hl[0]);
+;           screen_fill(wp.w_winrow + row, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width, wp.w_wincol + wp.w_width + 1, c, (byte)' ', hl[0]);
         )
     ))
 
@@ -55602,7 +55592,7 @@
             (when (< @screenColumns (§ col + mbyte_cells))
                 ;; Only 1 cell left, but character requires 2 cells:
                 ;; display a '>' in the last column to avoid wrapping.
-;               c = '>';
+;               c = (byte)'>';
 ;               mbyte_cells = 1;
             )
 
@@ -57443,7 +57433,7 @@
 ;                   Bytes p;
 
                     ;; Don't concatenate separate words to avoid translation problems.
-;                   switch ((@VIsual_select ? 4 : 0) + ((@VIsual_mode == Ctrl_V) ? 2 : 0) + ((@VIsual_mode == 'V') ? 1 : 0))
+;                   switch ((@VIsual_select ? 4 : 0) + ((@VIsual_mode == Ctrl_V) ? 2 : 0) + ((@VIsual_mode == (byte)'V') ? 1 : 0))
 ;                   {
 ;                       case 0: p = u8(" VISUAL"); break;
 ;                       case 1: p = u8(" VISUAL LINE"); break;
@@ -57551,7 +57541,7 @@
 ;           return fill;
         )
         (if is_curwin
-;           return '^';
+;           return (byte)'^';
         )
 
         (byte \=)
@@ -57564,7 +57554,7 @@
     (§
 ;       attr[0] = hl_attr(HLF_C);
         (if (and (== (§ attr[0]) 0) (== @fill_vert (byte \space)))
-;           return '|';
+;           return (byte)'|';
 ;           return @fill_vert;
         )
     ))
@@ -57643,7 +57633,7 @@
             :else
             (§
 ;               row = (int)@Rows - 1;
-;               fillchar = ' ';
+;               fillchar = (byte)' ';
 ;               attr[0] = 0;
 ;               off = 0;
 ;               width = (int)@Columns;
@@ -57789,9 +57779,9 @@
 ;       switch (nchar)
 ;       {
             ;; split current window in two parts, horizontally
-;           case 'S':
+;           case (byte)'S':
 ;           case Ctrl_S:
-;           case 's':
+;           case (byte)'s':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57802,7 +57792,7 @@
 
             ;; split current window in two parts, vertically
 ;           case Ctrl_V:
-;           case 'v':
+;           case (byte)'v':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57813,7 +57803,7 @@
 
             ;; quit current window
 ;           case Ctrl_Q:
-;           case 'q':
+;           case (byte)'q':
                 (reset_VIsual_and_resel)
                 (cmd_with_count (u8 "quit"), cbuf, (§ cbuf.size()), Prenum)
                 (do_cmdline_cmd cbuf)
@@ -57821,7 +57811,7 @@
 
             ;; close current window
 ;           case Ctrl_C:
-;           case 'c':
+;           case (byte)'c':
                 (reset_VIsual_and_resel)
                 (cmd_with_count (u8 "close"), cbuf, (§ cbuf.size()), Prenum)
                 (do_cmdline_cmd cbuf)
@@ -57829,7 +57819,7 @@
 
             ;; close all but current window
 ;           case Ctrl_O:
-;           case 'o':
+;           case (byte)'o':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57841,9 +57831,9 @@
 
             ;; cursor to next window with wrap around
 ;           case Ctrl_W:
-;           case 'w':
+;           case (byte)'w':
             ;; cursor to previous window with wrap around
-;           case 'W':
+;           case (byte)'W':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57887,7 +57877,7 @@
 ;               break;
 
             ;; cursor to window below
-;           case 'j':
+;           case (byte)'j':
 ;           case K_DOWN:
 ;           case Ctrl_J:
                 (when (!= @cmdwin_type 0)
@@ -57898,7 +57888,7 @@
 ;               break;
 
             ;; cursor to window above
-;           case 'k':
+;           case (byte)'k':
 ;           case K_UP:
 ;           case Ctrl_K:
                 (when (!= @cmdwin_type 0)
@@ -57909,7 +57899,7 @@
 ;               break;
 
             ;; cursor to left window
-;           case 'h':
+;           case (byte)'h':
 ;           case K_LEFT:
 ;           case Ctrl_H:
 ;           case K_BS:
@@ -57921,7 +57911,7 @@
 ;               break;
 
             ;; cursor to right window
-;           case 'l':
+;           case (byte)'l':
 ;           case K_RIGHT:
 ;           case Ctrl_L:
                 (when (!= @cmdwin_type 0)
@@ -57932,19 +57922,19 @@
 ;               break;
 
             ;; cursor to top-left window
-;           case 't':
+;           case (byte)'t':
 ;           case Ctrl_T:
                 (win_goto @firstwin)
 ;               break;
 
             ;; cursor to bottom-right window
-;           case 'b':
+;           case (byte)'b':
 ;           case Ctrl_B:
                 (win_goto @lastwin)
 ;               break;
 
             ;; cursor to last accessed (previous) window
-;           case 'p':
+;           case (byte)'p':
 ;           case Ctrl_P:
                 (if (== @prevwin null)
                     (beep_flush)
@@ -57952,7 +57942,7 @@
 ;               break;
 
             ;; exchange current and next window
-;           case 'x':
+;           case (byte)'x':
 ;           case Ctrl_X:
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
@@ -57963,7 +57953,7 @@
 
             ;; rotate windows downwards
 ;           case Ctrl_R:
-;           case 'r':
+;           case (byte)'r':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57973,7 +57963,7 @@
 ;               break;
 
             ;; rotate windows upwards
-;           case 'R':
+;           case (byte)'R':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
@@ -57983,55 +57973,55 @@
 ;               break;
 
             ;; move window to the very top/bottom/left/right
-;           case 'K':
-;           case 'J':
-;           case 'H':
-;           case 'L':
+;           case (byte)'K':
+;           case (byte)'J':
+;           case (byte)'H':
+;           case (byte)'L':
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
 ;                   break;
                 )
-;               win_totop((int)Prenum, ((nchar == 'H' || nchar == 'L') ? WSP_VERT : 0) | ((nchar == 'H' || nchar == 'K') ? WSP_TOP : WSP_BOT));
+;               win_totop((int)Prenum, ((nchar == (byte)'H' || nchar == (byte)'L') ? WSP_VERT : 0) | ((nchar == (byte)'H' || nchar == (byte)'K') ? WSP_TOP : WSP_BOT));
 ;               break;
 
             ;; make all windows the same height
-;           case '=':
+;           case (byte)'=':
                 (win_equal null, false, (byte \b))
 ;               break;
 
             ;; increase current window height
-;           case '+':
+;           case (byte)'+':
                 (win_setheight (§ @curwin.w_height + (int)Prenum1))
 ;               break;
 
             ;; decrease current window height
-;           case '-':
+;           case (byte)'-':
                 (win_setheight (§ @curwin.w_height - (int)Prenum1))
 ;               break;
 
             ;; set current window height
 ;           case Ctrl__:
-;           case '_':
+;           case (byte)'_':
                 (win_setheight (if (!= Prenum 0) (int Prenum) 9999))
 ;               break;
 
             ;; increase current window width
-;           case '>':
+;           case (byte)'>':
                 (win_setwidth (§ @curwin.w_width + (int)Prenum1))
 ;               break;
 
             ;; decrease current window width
-;           case '<':
+;           case (byte)'<':
                 (win_setwidth (§ @curwin.w_width - (int)Prenum1))
 ;               break;
 
             ;; set current window width
-;           case '|':
+;           case (byte)'|':
                 (win_setwidth (if (!= Prenum 0) (int Prenum) 9999))
 ;               break;
 
             ;; jump to tag and split window if tag exists (in preview window)
-;           case ']':
+;           case (byte)']':
 ;           case Ctrl_RSB:
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
@@ -58052,7 +58042,7 @@
 ;               break;
 
             ;; CTRL-W g extended commands.
-;           case 'g':
+;           case (byte)'g':
 ;           case Ctrl_G:
                 (when (!= @cmdwin_type 0)
                     (emsg e_cmdwin)
@@ -58068,7 +58058,7 @@
                 (add_to_showcmd xchar)
 ;               switch (xchar)
 ;               {
-;                   case ']':
+;                   case (byte)']':
 ;                   case Ctrl_RSB:
                         ;; keep Visual mode, can select words to use as a tag
                         (if (!= Prenum 0)
@@ -59280,7 +59270,7 @@
 ;               }
             )
 ;           frame_new_height(frp2, frp2.fr_height + frp_close.fr_height, (frp2 == frp_close.fr_next) ? true : false, false);
-;           dirp[0] = 'v';
+;           dirp[0] = (byte)'v';
         )
         :else
         (§
@@ -59310,7 +59300,7 @@
 ;               }
             )
             (frame_new_width frp2, (+ (§ frp2.fr_width) (§ frp_close.fr_width)), (== frp2 (§ frp_close.fr_next)), false)
-;           dirp[0] = 'h';
+;           dirp[0] = (byte)'h';
         ))
 
         ;; If rows/columns go to a window below/right its positions need to be updated.
@@ -63271,34 +63261,34 @@
 
 ;                   switch (p.at(0))
 ;                   {
-;                       case 'b':
+;                       case (byte)'b':
 ;                           attr |= HL_BOLD;
 ;                           break;
-;                       case 'i':
+;                       case (byte)'i':
 ;                           attr |= HL_ITALIC;
 ;                           break;
-;                       case '-':
-;                       case 'n':                       ;; no highlighting
+;                       case (byte)'-':
+;                       case (byte)'n':                       ;; no highlighting
 ;                           break;
-;                       case 'r':
+;                       case (byte)'r':
 ;                           attr |= HL_INVERSE;
 ;                           break;
-;                       case 's':
+;                       case (byte)'s':
 ;                           attr |= HL_STANDOUT;
 ;                           break;
-;                       case 'u':
+;                       case (byte)'u':
 ;                           attr |= HL_UNDERLINE;
 ;                           break;
-;                       case 'c':
+;                       case (byte)'c':
 ;                           attr |= HL_UNDERCURL;
 ;                           break;
-;                       case ':':
+;                       case (byte)':':
 ;                       {
 ;                           p = p.plus(1);                        ;; highlight group name
                             (if (or (!= attr 0) (== (§ p.at(0)) NUL))      ;; no combinations
 ;                               return false;
                             )
-;                           Bytes end = vim_strchr(p, ',');
+;                           Bytes end = vim_strchr(p, (byte)',');
                             (if (== end null)
 ;                               end = p.plus(STRLEN(p));
                             )
