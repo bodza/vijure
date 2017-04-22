@@ -6029,8 +6029,8 @@
         )
 
         (when (non-zero? first_line)
-            ;; Need to subtract the number of added lines from "last_line" to get
-            ;; the line number before the change (same as adding the number of deleted lines).
+            ;; Need to subtract the number of added lines from "last_line" to get the line number
+            ;; before the change (same as adding the number of deleted lines).
 
             ((ß i =) (- (:ml_line_count (:b_ml @curbuf)) old_line_count))
             (changed-lines first_line, 0, (- last_line i), i)
@@ -6043,9 +6043,8 @@
         (cond (< start_nsubs @sub_nsubs)
         (do
             ;; Set the '[ and '] marks.
-            (swap! curbuf assoc-in [:b_op_start :lnum] (:line1 eap))
-            (swap! curbuf assoc-in [:b_op_end :lnum] line2)
-            (swap! curbuf assoc-in [:b_op_start :col] (ß @curbuf.b_op_end.col =) 0)
+            (swap! curbuf update :b_op_start assoc :lnum (:line1 eap) :col 0)
+            (swap! curbuf update :b_op_end assoc :lnum line2 :col 0)
 
             (if endcolumn
                 (swap! curwin coladvance MAXCOL)
@@ -6198,7 +6197,7 @@
 
         ;; autoindent for :insert and :append
         (when (<= firstc 0)
-;           (copy-chars (:cmdbuff @ccline), 0, (byte \space));
+;           (copy-chars (:cmdbuff @ccline), 0, 0, (byte \space));
             (eos! (:cmdbuff @ccline))
             (swap! ccline assoc :cmdpos 0 :cmdspos 0 :cmdlen 0)
         )
@@ -9424,7 +9423,7 @@
             (condp ==? (:op_type oap)
                [OP_LSHIFT OP_RSHIFT]
                 (do
-                    (op-shift oap, true, (if (:is_VIsual oap) (int (:count1 cap)) 1))
+                    (swap! curwin op-shift oap, true, (if (:is_VIsual oap) (int (:count1 cap)) 1))
                     (ß BREAK)
                 )
 
@@ -10708,7 +10707,7 @@
 
 ;; Cursor left commands.
 
-(defn- #_void skip-cc! [] (let-when [#_Bytes s (ml-get-cursor @curwin)] (non-eos? s) (swap! curwin update-in [:w_cursor :col] + (us-ptr2len-cc s))) nil)
+(defn- #_window_C skip-cc [#_window_C win] (let [#_Bytes s (ml-get-cursor win)] (if (non-eos? s) (update-in win [:w_cursor :col] + (us-ptr2len-cc s)) win)))
 
 (defn- #_cmdarg_C nv-left [#_cmdarg_C cap]
     (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
@@ -10732,7 +10731,7 @@
                         ;; When the NL before the first char has to be deleted we put the cursor on the NUL after the previous line.
                         ;; This is a very special case, be careful!  Don't adjust op_end now, otherwise it won't work.
                         (let [_ (and (or (== (:op_type (:oap cap)) OP_DELETE) (== (:op_type (:oap cap)) OP_CHANGE)) (not (lineempty (:lnum (:w_cursor @curwin)))))
-                              cap (if _ (do (skip-cc!) (update cap :retval | CA_NO_ADJ_OP_END)) cap)]
+                              cap (if _ (do (swap! curwin skip-cc) (update cap :retval | CA_NO_ADJ_OP_END)) cap)]
                             (recur cap (dec n))
                         )
                     )
@@ -10872,7 +10871,7 @@
                         (let [a'scol (atom (int)) a'ecol (atom (int))] (getvcol @curwin, (:w_cursor @curwin), a'scol, nil, a'ecol) (- @a'ecol @a'scol))
                         0
                     ))
-                (adjust-for-sel cap)
+                (let [[win cap] (adjust-for-sel @curwin, cap)] (reset! curwin win) cap)
             ))
     ))
 
@@ -10974,7 +10973,7 @@
                     (do
                         (setpcmark)
                         (swap! curwin assoc :w_cursor (assoc pos :coladd 0) :w_set_curswant true)
-                        (adjust-for-sel cap)
+                        (let [[win cap] (adjust-for-sel @curwin, cap)] (reset! curwin win) cap)
                     ))
             ))
     ))
@@ -11172,7 +11171,6 @@
 ;; Swap case for "~" command, when it does not work like an operator.
 
 (defn- #_pos_C crlf [#_pos_C pos] (assoc pos :lnum (inc (:lnum pos)) :col 0))
-(defn- #_pos_C crlf! [] (:w_cursor (swap! curwin update :w_cursor crlf)))
 
 (defn- #_cmdarg_C n-swapchar [#_cmdarg_C cap]
     (cond (checkclearopq (:oap cap))
@@ -11185,7 +11183,7 @@
                 cap
                 (let [more- #(or (!= (gchar-cursor @curwin) NUL)
                                  (and (some? (vim-strchr @p_ww, (byte \~))) (< (:lnum (:w_cursor @curwin)) (:ml_line_count (:b_ml @curbuf)))
-                                      (do (crlf!)
+                                      (do (swap! curwin update :w_cursor crlf)
                                           (if (< 1 %) (if (u-savesub (:lnum (:w_cursor @curwin))) (do (u-clearline) true) false) true))))
                       startpos (:w_cursor @curwin)
                       changed (loop-when [changed false n (:count1 cap)] (< 0 n) => changed
@@ -11414,7 +11412,7 @@
                         (if (zero? (:arg cap))
                             (may-start-select (byte \c))) ;; start Select mode when 'selectmode' contains "cmd"
 
-                        (n-start-visual-mode (:cmdchar cap))
+                        (swap! curwin n-start-visual-mode (:cmdchar cap))
 
                         (let [cap (if (and (!= @VIsual_mode (byte \V)) (at? @p_sel (byte \e))) (update cap :count1 inc) cap)]   ;; include one more char
                             (if (< 0 (:count0 cap))
@@ -11440,7 +11438,7 @@
 (defn- #_void start-selection []
     ;; if 'selectmode' contains "key", start Select mode
     (may-start-select (byte \k))
-    (n-start-visual-mode (byte \v))
+    (swap! curwin n-start-visual-mode (byte \v))
     nil)
 
 ;; Start Select mode, if "c" is in 'selectmode' and not in a mapping or menu.
@@ -11452,35 +11450,30 @@
 ;; Start Visual mode "c".
 ;; Should set VIsual_select before calling this.
 
-(defn- #_void n-start-visual-mode [#_int c]
+(defn- #_window_C n-start-visual-mode [#_window_C win, #_int c]
     ;; Check for redraw before changing the state.
-    (swap! curwin conceal-check-cursor-line)
-
-    (reset! VIsual_mode c)
-    (reset! VIsual_active true)
-    (reset! VIsual_reselect true)
-    ;; Corner case: the 0 position in a tab may change when going into
-    ;; virtualedit.  Recalculate curwin.w_cursor to avoid bad hilighting.
-
-    (when (and (== c Ctrl_V) (flag? @ve_flags VE_BLOCK) (== (gchar-cursor @curwin) TAB))
-        (swap! curwin validate-virtcol)
-        (swap! curwin coladvance (:w_virtcol @curwin))
-    )
-    (reset! VIsual_cursor (:w_cursor @curwin))
-
-    ;; Check for redraw after changing the state.
-    (swap! curwin conceal-check-cursor-line)
-
-    (when @p_smd
-        (reset! redraw_cmdline true))  ;; show visual mode later
-
-    ;; Only need to redraw this line, unless still need to redraw
-    ;; an old Visual area (when 'lazyredraw' is set).
-    (when (< (:w_redr_type @curwin) INVERTED)
-        (let [lnum (:lnum (:w_cursor @curwin))]
-            (swap! curwin assoc :w_old_cursor_lnum lnum :w_old_visual_lnum lnum))
-    )
-    nil)
+    (let [win (conceal-check-cursor-line win)
+          _ (reset! VIsual_mode c)
+          _ (reset! VIsual_active true)
+          _ (reset! VIsual_reselect true)
+          ;; Corner case: the 0 position in a tab may change when going into virtualedit.
+          ;; Recalculate "w_cursor" to avoid bad hilighting.
+          win (if (and (== c Ctrl_V) (flag? @ve_flags VE_BLOCK) (== (gchar-cursor win) TAB))
+                (let [win (validate-virtcol win)]
+                    (coladvance win, (:w_virtcol win)))
+                win)
+          _ (reset! VIsual_cursor (:w_cursor win))
+          ;; Check for redraw after changing the state.
+          win (conceal-check-cursor-line win)]
+        (when @p_smd ;; show visual mode later
+            (reset! redraw_cmdline true))
+        ;; Only need to redraw this line, unless still need to redraw
+        ;; an old Visual area (when 'lazyredraw' is set).
+        (if (< (:w_redr_type win) INVERTED)
+            (let [cln (:lnum (:w_cursor win))]
+                (assoc win :w_old_cursor_lnum cln, :w_old_visual_lnum cln))
+            win)
+    ))
 
 ;; CTRL-W: Window commands
 
@@ -11741,7 +11734,7 @@
                     (while (and (< 0 (:col (:w_cursor @curwin))) (vim-iswhite (.at ptr (:col (:w_cursor @curwin)))))
                         (swap! curwin update-in [:w_cursor :col] dec))
                     (swap! curwin assoc :w_set_curswant true)
-                    ((ß cap =) (adjust-for-sel cap))
+                    ((ß [@curwin cap] =) (adjust-for-sel @curwin, cap))
                 ))
                 (ß BREAK)
             )
@@ -12155,31 +12148,22 @@
         ;; Don't leave the cursor on the NUL past the end of line.
         ;; Unless we didn't move it forward.
         (when (ltpos startpos, (:w_cursor @curwin))
-            (adjust-cursor (:oap cap)))
+            ((ß [@curwin cap] =) (adjust-cursor @curwin, cap)))
 
         (if (and (not b) (== (:op_type (:oap cap)) OP_NOP))
             (clearopbeep (:oap cap))
-            ((ß cap =) (adjust-for-sel cap)))
+            ((ß [@curwin cap] =) (adjust-for-sel @curwin, cap)))
         nil
     ))
 
 ;; Used after a movement command: if the cursor ends up on the NUL after the end of the line,
 ;; may move it back to the last character and make the motion inclusive.
 
-(defn- #_void adjust-cursor [#_oparg_C oap]
-    (§
-        ;; The cursor cannot remain on the NUL when:
-        ;; - the column is > 0
-        ;; - not in Visual mode or 'selection' is "o"
-        ;; - 'virtualedit' is not "all" and not "onemore".
-
-        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar-cursor @curwin) NUL) (or (not @VIsual_active) (at? @p_sel (byte \o))) (not (virtual-active)) (non-flag? @ve_flags VE_ONEMORE))
-            (swap! curwin update-in [:w_cursor :col] dec)
-            ;; prevent cursor from moving on the trail byte
-            (swap! curwin update :w_cursor mb-adjust-pos)
-            ((ß oap =) (assoc oap :inclusive true))
-        )
-        nil
+(defn- #_[window_C cmdarg_C] adjust-cursor [#_window_C win, #_cmdarg_C cap]
+    ;; The cursor cannot remain on the NUL when: the column is > 0; not in Visual mode or 'selection' is "o"; 'virtualedit' is not "all" and not "onemore".
+    (if (and (< 0 (:col (:w_cursor win))) (== (gchar-cursor win) NUL) (or (not @VIsual_active) (at? @p_sel (byte \o))) (not (virtual-active)) (non-flag? @ve_flags VE_ONEMORE))
+        [(-> win (update-in [:w_cursor :col] dec) (update :w_cursor mb-adjust-pos)) (assoc-in cap [:oap :inclusive] true)]
+        [win cap]
     ))
 
 ;; "0" and "^" commands.
@@ -12194,16 +12178,13 @@
 
 ;; In exclusive Visual mode, may include the last character.
 
-(defn- #_cmdarg_C adjust-for-sel [#_cmdarg_C cap]
-    (if (and @VIsual_active (:inclusive (:oap cap)) (at? @p_sel (byte \e)) (!= (gchar-cursor @curwin) NUL) (ltpos @VIsual_cursor, (:w_cursor @curwin)))
-        (do
-            (swap! curwin inc-cursor' false)
-            (assoc-in cap [:oap :inclusive] false)
-        )
-        cap
+(defn- #_[window_C cmdarg_C] adjust-for-sel [#_window_C win, #_cmdarg_C cap]
+    (if (and @VIsual_active (:inclusive (:oap cap)) (at? @p_sel (byte \e)) (!= (gchar-cursor win) NUL) (ltpos @VIsual_cursor, (:w_cursor win)))
+        [(inc-cursor' win, false) (assoc-in cap [:oap :inclusive] false)]
+        [win cap]
     ))
 
-;; Exclude last character at end of Visual area for 'selection' == "exclusive".
+;; Exclude last character at end of Visual area for 'selection' is "exclusive".
 ;; Should check VIsual_mode before calling this.
 ;; Returns true when backed up to the previous line.
 
@@ -12859,57 +12840,54 @@
 
 ;; op-shift - handle a shift operation
 
-(defn- #_void op-shift [#_oparg_C oap, #_boolean curs_top, #_int amount]
-    (when (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap))))
-        (let [#_int block_col (if (:block_mode oap) (:col (:w_cursor @curwin)) 0)]
-
-            (loop-when-recur [#_long n (:line_count oap)] (< 0 n) [(dec n)]
-                (cond
-                    (eos? (ml-get (:lnum (:w_cursor @curwin)))) (swap! curwin assoc-in [:w_cursor :col] 0)
-                    (:block_mode oap)       (shift-block oap, amount)
-                    :else                   (shift-line (== (:op_type oap) OP_LSHIFT), @p_sr, amount, false)
-                )
-                (swap! curwin update-in [:w_cursor :lnum] inc))
-
-            (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0)
-
-            (cond (:block_mode oap)
-                (swap! curwin update :w_cursor assoc :lnum (:lnum (:op_start oap)) :col block_col)
-            curs_top      ;; put cursor on first line, for ">>"
-            (do
-                (swap! curwin assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
-                (swap! curwin beginline (| BL_SOL BL_FIX))     ;; shift-line() may have set cursor.col
-            )
-            :else
-                (swap! curwin update-in [:w_cursor :lnum] dec))         ;; put cursor on last line, for ":>"
-
-            (when (< @p_report (:line_count oap))
+(defn- #_window_C op-shift [#_window_C win, #_oparg_C oap, #_boolean curs_top, #_int amount]
+    (if (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap))))
+        (let [#_int block_col (if (:block_mode oap) (:col (:w_cursor win)) 0)
+              win (loop-when [win win #_long n (:line_count oap)] (< 0 n) => win
+                    (let [win (cond
+                                (eos? (ml-get (:lnum (:w_cursor win)))) (assoc-in win [:w_cursor :col] 0)
+                                (:block_mode oap)                       (shift-block win, oap, amount)
+                                :else                                   (shift-line win, (== (:op_type oap) OP_LSHIFT), @p_sr, amount, false)
+                            )]
+                        (recur (update-in win [:w_cursor :lnum] inc) (dec n))
+                    ))
+              _ (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0)
+              win (cond (:block_mode oap)
+                    (update win :w_cursor assoc :lnum (:lnum (:op_start oap)) :col block_col)
+                curs_top ;; put cursor on first line, for ">>"
+                    (-> win
+                        (assoc-in [:w_cursor :lnum] (:lnum (:op_start oap)))
+                        (beginline (| BL_SOL BL_FIX)) ;; shift-line() may have set cursor.col
+                    )
+                :else ;; put cursor on last line, for ":>"
+                    (update-in win [:w_cursor :lnum] dec)
+                )]
+            (let-when [n (:line_count oap)] (< @p_report n)
                 (let [#_Bytes s (if (== (:op_type oap) OP_RSHIFT) (u8 ">") (u8 "<"))]
-                    (cond (== (:line_count oap) 1)
+                    (cond (== n 1)
 ;%%                     (if (== amount 1)
 ;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed 1 time"), s)
 ;%%                         (.sprintf libC @ioBuff, (u8 "1 line %sed %d times"), s, amount))
                     :else
 ;%%                     (if (== amount 1)
-;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), (:line_count oap), s)
-;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), (:line_count oap), s, amount))
+;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed 1 time"), n, s)
+;%%                         (.sprintf libC @ioBuff, (u8 "%ld lines %sed %d times"), n, s, amount))
                     )
                     (msg @ioBuff)
                 ))
-
             ;; Set "'[" and "']" marks.
             (let [enum (:lnum (:op_end oap)) ecol (STRLEN (ml-get enum)) ecol (if (< 0 ecol) (dec ecol) ecol)]
                 (swap! curbuf assoc :b_op_start (:op_start oap))
-                (swap! curbuf update :b_op_end assoc :lnum enum :col ecol)
-            )
-        ))
-    nil)
+                (swap! curbuf update :b_op_end assoc :lnum enum :col ecol))
+            win)
+        win
+    ))
 
-;; Shift the current line one shiftwidth left (if left != 0) or right.
+;; Shift the current line one shiftwidth left (if "left" is true) or right.
 ;; Leaves cursor on first blank in the line.
 
-(defn- #_void shift-line [#_boolean left, #_boolean round, #_int amount, #_boolean call_changed_bytes]
-    (let [#_int sw (int (get-sw-value)) #_int n (get-indent) n (if round
+(defn- #_window_C shift-line [#_window_C win, #_boolean left, #_boolean round?, #_int amount, #_boolean call_changed_bytes]
+    (let [#_int sw (get-sw-value) #_int n (get-indent) n (if round?
             (let [#_int a (if (and (non-zero? (% n sw)) left) (dec amount) amount) n (/ n sw)]
                 (* (if left (max 0 (- n a)) (+ n a)) sw)            ;; round off indent
             )
@@ -12920,150 +12898,100 @@
             (change-indent INDENT_SET, n, false, NUL, call_changed_bytes)
             (set-indent n, (if call_changed_bytes SIN_CHANGED 0))
         ))
-    nil)
+    win)
 
 ;; Shift one line of the current block one shiftwidth right or left.
 ;; Leaves cursor on first character in block.
 
-(defn- #_void shift-block [#_oparg_C oap, #_int amount]
-    (§
-        ((ß boolean left =) (== (:op_type oap) OP_LSHIFT))
-
-        ((ß int oldcol =) (:col (:w_cursor @curwin)))
-        ((ß int q_sw =) (int (get-sw-value)))
-        ((ß int q_ts =) (int @(:b_p_ts @curbuf)))
-
-        ((ß int oldstate =) @State)
-        (reset! State INSERT)             ;; don't want REPLACE for State
-
-        ((ß block_def_C bd =) (block-prep oap, false, (:lnum (:w_cursor @curwin)), true))
-        (if (:is_short bd)
-            ((ß RETURN) nil)
-        )
-
+(defn- #_window_C shift-block [#_window_C win, #_oparg_C oap, #_int amount]
+    (let-when [#_boolean left (== (:op_type oap) OP_LSHIFT) o'col (:col (:w_cursor win))
+          q_sw (get-sw-value) q_ts @(:b_p_ts @curbuf) q_et @(:b_p_et @curbuf)
+          o'State @State _ (reset! State INSERT) ;; don't want REPLACE for State
+          #_block_def_C bd (block-prep oap, false, (:lnum (:w_cursor win)), true)
+    ] (not (:is_short bd)) => win
         ;; total is number of screen columns to be inserted/removed
-        ((ß int total =) (* amount q_sw))
-        ((ß Bytes oldp =) (ml-get (:lnum (:w_cursor @curwin))))
-        (ß Bytes newp)
-
-        (cond (not left)
-        (do
-            ;;  1. Get start vcol
-            ;;  2. Total ws vcols
-            ;;  3. Divvy into TABs & spp
-            ;;  4. Construct new string
-
-            ((ß total =) (+ total (:pre_whitesp bd)))    ;; all virtual WS upto & incl. a split TAB
-            ((ß int ws_vcol =) (- (:start_vcol bd) (:pre_whitesp bd)))
-            (if (non-zero? (:startspaces bd))
-                ((ß bd =) (update bd :textstart #(.plus % (us-ptr2len-cc %))))
-            )
-            (loop-when [] (vim-iswhite (.at (:textstart bd) 0))
-                ;; TODO: is passing bd.textstart for start of the line OK?
-                (ß int incr)
-                (let [__ (atom (#_Bytes object (:textstart bd)))]
-                    ((ß incr =) (lbr-chartabsize-adv (:textstart bd), __, (:start_vcol bd)))
-                    ((ß bd =) (assoc bd :textstart @__)))
-                ((ß total =) (+ total incr))
-                ((ß bd =) (update bd :start_vcol + incr))
-                (recur)
-            )
-            ;; OK, now total=all the VWS reqd, and textstart
-            ;; points at the 1st non-ws char in the block.
-            ((ß int i =) (if (not @(:b_p_et @curbuf)) (/ (+ (% ws_vcol q_ts) total) q_ts) 0)) ;; number of tabs
-            ((ß int j =) (if (non-zero? i) (% (+ (% ws_vcol q_ts) total) q_ts) total)) ;; number of spp
-            ;; if we're splitting a TAB, allow for it
-            ((ß bd =) (update bd :textcol - (- (:pre_whitesp_c bd) (if (non-zero? (:startspaces bd)) 1 0))))
-            ((ß int len =) (inc (STRLEN (:textstart bd))))
-            ((ß newp =) (Bytes. (+ (:textcol bd) i j len)))
-
-            (BCOPY newp, oldp, (:textcol bd))
-            (copy-chars (.plus newp (:textcol bd)), i, TAB)
-            (copy-chars (.plus newp (+ (:textcol bd) i)), j, (byte \space))
-            (BCOPY newp, (+ (:textcol bd) i j), (:textstart bd), 0, len)
+        (let [#_int total (* amount q_sw) #_Bytes oldp (ml-get (:lnum (:w_cursor win)))
+              [bd #_Bytes newp]
+                (if (not left)
+                    (let [total (+ total (:pre_whitesp bd)) ;; all virtual WS upto & incl. a split TAB
+                          #_int ws_vcol (- (:start_vcol bd) (:pre_whitesp bd))
+                          bd (if (non-zero? (:startspaces bd)) (update bd :textstart #(.plus % (us-ptr2len-cc %))) bd)
+                          [total bd]
+                            (loop-when [total total bd bd] (vim-iswhite (.at (:textstart bd) 0)) => [total bd]
+                                ;; TODO: is passing bd.textstart for start of the line OK?
+                                (let [__ (atom (#_Bytes object (:textstart bd)))
+                                      #_int n (lbr-chartabsize-adv (:textstart bd), __, (:start_vcol bd))
+                                      bd (assoc bd :textstart @__)]
+                                    (recur (+ total n) (update bd :start_vcol + n))
+                                ))
+                          ;; OK, now total=all the VWS reqd, and textstart points at the 1st non-ws char in the block.
+                          #_int i (if (not q_et) (/ (+ (% ws_vcol q_ts) total) q_ts) 0) ;; number of tabs
+                          #_int j (if (non-zero? i) (% (+ (% ws_vcol q_ts) total) q_ts) total) ;; number of spp
+                          ;; if we're splitting a TAB, allow for it
+                          bd (update bd :textcol - (- (:pre_whitesp_c bd) (if (non-zero? (:startspaces bd)) 1 0)))
+                          #_int m (:textcol bd) #_int n (inc (STRLEN (:textstart bd))) newp (Bytes. (+ m i j n))]
+                        (BCOPY newp, oldp, m)
+                        (copy-chars newp, m, i, TAB)
+                        (copy-chars newp, (+ m i), j, (byte \space))
+                        (BCOPY newp, (+ m i j), (:textstart bd), 0, n)
+                        [bd newp]
+                    )
+                    ;; Firstly, let's find the first non-whitespace character that is displayed
+                    ;; after the block's start column and the character's column number.
+                    ;; Also, let's calculate the width of all the whitespace characters that are
+                    ;; displayed in the block and precede the searched non-whitespace character.
+                    ;;
+                    ;; If "bd.startspaces" is set, "bd.textstart" points to the character,
+                    ;; the part of which is displayed at the block's beginning.
+                    ;; Let's start searching from the next character.
+                    (let [a'non_white (atom (#_Bytes object (:textstart bd)))
+                          _ (when (non-zero? (:startspaces bd))
+                                (swap! a'non_white #(.plus % (us-ptr2len-cc %))))
+                          ;; The character's column is in "bd.start_vcol".
+                          #_int non_white_col
+                            (loop-when [non_white_col (:start_vcol bd)] (vim-iswhite (.at @a'non_white 0)) => non_white_col
+                                (let [#_int n (lbr-chartabsize-adv (:textstart bd), a'non_white, non_white_col)]
+                                    (recur (+ non_white_col n))
+                                ))
+                          #_int block_space_width (- non_white_col (:start_vcol oap))
+                          ;; We will shift by "total" or "block_space_width", whichever is less.
+                          #_int shift_amount (min block_space_width total)
+                          ;; The column to which we will shift the text.
+                          #_int dest_col (- non_white_col shift_amount)
+                          ;; Now let's find out how much of the beginning of the line we can reuse without modification.
+                          #_Bytes verb_end (:textstart bd) ;; end of the part of the line which is copied verbatim
+                          #_int verb_width (:start_vcol bd) ;; the (displayed) width of this part of line
+                          ;; If "bd.startspaces" is set, "bd.textstart" points to the character preceding the block.
+                          ;; We have to subtract its width to obtain its column number.
+                          verb_width (- verb_width (if (non-zero? (:startspaces bd)) (:start_char_vcols bd) 0))
+                          [verb_width verb_end]
+                            (loop-when [verb_width verb_width verb_end verb_end] (< verb_width dest_col) => [verb_width verb_end]
+                                ;; TODO: is passing "verb_end" for start of the line OK?
+                                (let [#_int n (lbr-chartabsize verb_end, verb_end, verb_width)]
+                                    (if (< dest_col (+ verb_width n))
+                                        [verb_width verb_end]
+                                        (recur (+ verb_width n) (.plus verb_end (us-ptr2len-cc verb_end)))
+                                    )))
+                          ;; If "dest_col" is different from the width of the initial part of the line that will be copied,
+                          ;; it means we encountered a tab character, which we will have to partly replace with spaces.
+                          #_int n (- dest_col verb_width)
+                          ;; The replacement line will consist of:
+                          ;; - the beginning of the original line up to "verb_end",
+                          ;; - "n" number of spaces,
+                          ;; - the rest of the line, pointed to by "non_white".
+                          #_int m (BDIFF verb_end, oldp) ;; the length of the line after the block shift
+                          newp (Bytes. (+ m n (STRLEN @a'non_white) 1))]
+                        (BCOPY newp, oldp, m)
+                        (copy-chars newp, m, n, (byte \space))
+                        (BCOPY newp, (+ m n), @a'non_white, 0, (inc (STRLEN @a'non_white)))
+                        [bd newp]
+                    )
+                )]
+            (ml-replace (:lnum (:w_cursor win)), newp)
+            (changed-bytes (:lnum (:w_cursor win)), (:textcol bd))
+            (reset! State o'State)
+            (assoc-in win [:w_cursor :col] o'col)
         )
-        :else ;; left
-        (do
-            ;; Firstly, let's find the first non-whitespace character that is
-            ;; displayed after the block's start column and the character's column
-            ;; number.  Also, let's calculate the width of all the whitespace
-            ;; characters that are displayed in the block and precede the searched
-            ;; non-whitespace character.
-
-            ;; If "bd.startspaces" is set, "bd.textstart" points to the character,
-            ;; the part of which is displayed at the block's beginning.  Let's start
-            ;; searching from the next character.
-            ((ß Bytes[] a'non_white =) (atom (#_Bytes object (:textstart bd))))
-            (when (non-zero? (:startspaces bd))
-                (reset! a'non_white (.plus @a'non_white (us-ptr2len-cc @a'non_white))))
-
-            ;; The character's column is in "bd.start_vcol".
-            ((ß int non_white_col =) (:start_vcol bd))
-
-            (loop-when [] (vim-iswhite (.at @a'non_white 0))
-                ((ß int incr =) (lbr-chartabsize-adv (:textstart bd), a'non_white, non_white_col))
-                ((ß non_white_col =) (+ non_white_col incr))
-                (recur)
-            )
-
-            ((ß int block_space_width =) (- non_white_col (:start_vcol oap)))
-            ;; We will shift by "total" or "block_space_width", whichever is less.
-            ((ß int shift_amount =) (min block_space_width total))
-
-            ;; The column to which we will shift the text.
-            ((ß int destination_col =) (- non_white_col shift_amount))
-
-            ;; Now let's find out how much of the beginning
-            ;; of the line we can reuse without modification.
-
-            ;; end of the part of the line which is copied verbatim
-            ((ß Bytes verbatim_copy_end =) (:textstart bd))
-            ;; the (displayed) width of this part of line
-            ((ß int verbatim_copy_width =) (:start_vcol bd))
-
-            ;; If "bd.startspaces" is set, "bd.textstart" points to the character preceding the block.
-            ;; We have to subtract its width to obtain its column number.
-            ((ß verbatim_copy_width =) (- verbatim_copy_width (if (non-zero? (:startspaces bd)) (:start_char_vcols bd) 0)))
-            (loop-when [] (< verbatim_copy_width destination_col)
-                ((ß Bytes line =) verbatim_copy_end)
-
-                ;; TODO: is passing "verbatim_copy_end" for start of the line OK?
-                ((ß int incr =) (lbr-chartabsize line, verbatim_copy_end, verbatim_copy_width))
-                (if (< destination_col (+ verbatim_copy_width incr))
-                    (ß BREAK)
-                )
-                ((ß verbatim_copy_width =) (+ verbatim_copy_width incr))
-                ((ß verbatim_copy_end =) (.plus verbatim_copy_end (us-ptr2len-cc verbatim_copy_end)))
-                (recur)
-            )
-
-            ;; If "destination_col" is different from the width of the initial
-            ;; part of the line that will be copied, it means we encountered a tab
-            ;; character, which we will have to partly replace with spaces.
-            ((ß int fill =) (- destination_col verbatim_copy_width))
-
-            ;; The replacement line will consist of:
-            ;; - the beginning of the original line up to "verbatim_copy_end",
-            ;; - "fill" number of spaces,
-            ;; - the rest of the line, pointed to by "non_white".
-
-            ;; the length of the line after the block shift
-            ((ß int diff =) (BDIFF verbatim_copy_end, oldp))
-            ((ß int new_line_len =) (+ diff fill (STRLEN @a'non_white) 1))
-
-            ((ß newp =) (Bytes. new_line_len))
-
-            (BCOPY newp, oldp, diff)
-            (copy-chars (.plus newp diff), fill, (byte \space))
-            (BCOPY newp, (+ diff fill), @a'non_white, 0, (inc (STRLEN @a'non_white)))
-        ))
-
-        ;; replace the line
-        (ml-replace (:lnum (:w_cursor @curwin)), newp)
-        (changed-bytes (:lnum (:w_cursor @curwin)), (:textcol bd))
-        (reset! State oldstate)
-        (swap! curwin assoc-in [:w_cursor :col] oldcol)
-        nil
     ))
 
 ;; Insert string "s" ("ins" ? before : after) block.
@@ -13099,12 +13027,12 @@
                           #_Bytes q (Bytes. (+ (STRLEN p) n es 1))
                           _ (BCOPY q, p, x)                             ;; copy up to shifted part
                           p (.plus p x)
-                          _ (copy-chars (.plus q x), ct, (byte \space)) ;; insert pre-padding
+                          _ (copy-chars q, x, ct, (byte \space))        ;; insert pre-padding
                           _ (BCOPY q, (+ x ct), s, 0, n)                ;; copy the new text
                           x (+ x n)
                           [p es]
                             (if (and (< 0 ct) (not (:is_short bd)))
-                                (do (copy-chars (.plus q (+ x ct)), (- ts ct), (byte \space)) ;; insert post-padding
+                                (do (copy-chars q, (+ x ct), (- ts ct), (byte \space)) ;; insert post-padding
                                     ;; We're splitting a TAB, don't copy it.
                                     ;; We allowed for that TAB, remember this now.
                                     [(.plus p 1) (inc es)])
@@ -13135,7 +13063,7 @@
                                 (let [l (:lnum (:w_cursor @curwin))] [(if (zero? x) l x) l])
                                 [x y]
                             )]
-                    (crlf!)
+                    (swap! curwin update :w_cursor crlf)
                     (recur x y (dec i)))
             )]
         ;; put cursor on first non-blank of indented line
@@ -13701,7 +13629,7 @@
                     ;; copy up to deleted part
                     (BCOPY newp, oldp, (:textcol bd))
                     ;; insert spaces
-                    (copy-chars (.plus newp (:textcol bd)), (+ (:startspaces bd) (:endspaces bd)), (byte \space))
+                    (copy-chars newp, (:textcol bd), (+ (:startspaces bd) (:endspaces bd)), (byte \space))
                     ;; copy the part after the deleted part
                     ((ß oldp =) (.plus oldp (+ (:textcol bd) (:textlen bd))))
                     (BCOPY newp, (+ (:textcol bd) (:startspaces bd) (:endspaces bd)), oldp, 0, (inc (STRLEN oldp)))
@@ -13968,7 +13896,7 @@
                 (BCOPY newp, oldp, (:textcol bd))
                 ((ß oldp =) (.plus oldp (+ (:textcol bd) (:textlen bd))))
                 ;; insert pre-spaces
-                (copy-chars (.plus newp (:textcol bd)), (:startspaces bd), (byte \space))
+                (copy-chars newp, (:textcol bd), (:startspaces bd), (byte \space))
                 ;; insert replacement chars CHECK FOR ALLOCATED SPACE
                 ;; -1/-2 is used for entering CR literally.
                 (cond (or had_ctrl_v_cr (and (!= c (byte \return)) (!= c (byte \newline))))
@@ -13981,7 +13909,7 @@
 
                     (when (not (:is_short bd))
                         ;; insert post-spaces
-                        (copy-chars (.plus newp (STRLEN newp)), (:endspaces bd), (byte \space))
+                        (copy-chars newp, (STRLEN newp), (:endspaces bd), (byte \space))
                         ;; copy the part after the changed part
                         (BCOPY newp, (STRLEN newp), oldp, 0, (inc (STRLEN oldp)))
                     )
@@ -14422,7 +14350,7 @@
                         ;; copy up to block start
                         (BCOPY newp, oldp, (:textcol bd))
                         ((ß int offset =) (:textcol bd))
-                        (copy-chars (.plus newp offset), (:coladd vpos), (byte \space))
+                        (copy-chars newp, offset, (:coladd vpos), (byte \space))
                         ((ß offset =) (+ offset (:coladd vpos)))
                         (BCOPY newp, offset, ins_text, 0, ins_len)
                         ((ß offset =) (+ offset ins_len))
@@ -14651,11 +14579,11 @@
         ((ß Bytes pnew =) (Bytes. (+ (:startspaces bd) (:endspaces bd) (:textlen bd) 1)))
 
         ((ß @y_current.y_array[y_idx] =) pnew)
-        (copy-chars pnew, (:startspaces bd), (byte \space))
+        (copy-chars pnew, 0, (:startspaces bd), (byte \space))
         ((ß pnew =) (.plus pnew (:startspaces bd)))
         (BCOPY pnew, (:textstart bd), (:textlen bd))
         ((ß pnew =) (.plus pnew (:textlen bd)))
-        (copy-chars pnew, (:endspaces bd), (byte \space))
+        (copy-chars pnew, 0, (:endspaces bd), (byte \space))
         ((ß pnew =) (.plus pnew (:endspaces bd)))
         (eos! pnew)
         nil
@@ -14949,7 +14877,7 @@
                     (BCOPY p, oldp, (:textcol bd))
                     ((ß p =) (.plus p (:textcol bd)))
                     ;; may insert some spaces before the new text
-                    (copy-chars p, (:startspaces bd), (byte \space))
+                    (copy-chars p, 0, (:startspaces bd), (byte \space))
                     ((ß p =) (.plus p (:startspaces bd)))
                     ;; insert the new text
                     (dotimes [#_int j count]
@@ -14958,12 +14886,12 @@
 
                         ;; insert block's trailing spaces only if there's text behind
                         (when (and (or (< j (dec count)) (not shortline)) (non-zero? spaces))
-                            (copy-chars p, spaces, (byte \space))
+                            (copy-chars p, 0, spaces, (byte \space))
                             ((ß p =) (.plus p spaces))
                         )
                     )
                     ;; may insert some spaces after the new text
-                    (copy-chars p, (:endspaces bd), (byte \space))
+                    (copy-chars p, 0, (:endspaces bd), (byte \space))
                     ((ß p =) (.plus p (:endspaces bd)))
                     ;; move the text after the cursor to the end of the line.
                     (BCOPY p, 0, oldp, (+ (:textcol bd) delcount), (inc (- oldlen (:textcol bd) delcount)))
@@ -15260,7 +15188,7 @@
                         (let [t (aget spaces i)
                               q (.minus q n)
                               _ (BCOPY q, s, n)
-                              q (if (pos? t) (let [q (.minus q t)] (copy-chars q, t, (byte \space)) q) q)]
+                              q (if (pos? t) (let [q (.minus q t)] (copy-chars q, 0, t, (byte \space)) q) q)]
                             (mark-col-adjust (+ lnum i), 0, (- i), (- (+ (BDIFF q, line) t) (BDIFF s, s0)))
                             (if (zero? i)
                                 n
@@ -17891,7 +17819,7 @@
                 ;; Avoid being called recursively.
                 (when (flag? @State VREPLACE_FLAG)
                     (reset! State INSERT))
-                (shift-line (== type INDENT_DEC), round, 1, call_changed_bytes)
+                (swap! curwin shift-line (== type INDENT_DEC), round, 1, call_changed_bytes)
                 (reset! State _)
             ))
 
@@ -19372,7 +19300,8 @@
                                 (swap! curwin assoc :w_cursor old_pos)
                                 shl?)
                             shl?)]
-                    (when shl? (shift-line true, false, 1, true))
+                    (when shl?
+                        (swap! curwin shift-line true, false, 1, true))
                 ))
         ))
     ;; set indent of '#' always to 0
@@ -37835,8 +37764,8 @@
 ;; Copy a character a number of times.
 ;; Does not work for multi-byte characters!
 
-(defn- #_void copy-chars [#_Bytes s, #_int n, #_int c]
-    (dotimes [i n]
+(defn- #_void copy-chars [#_Bytes s, #_int i, #_int n, #_int c]
+    (loop-when-recur [i i n n] (< 0 n) [(inc i) (dec n)]
         (.be s i, c))
     nil)
 
