@@ -1064,7 +1064,6 @@
 (final int OPT_FREE        1)       ;; free old value if it was allocated
 (final int OPT_GLOBAL      2)       ;; use global value
 (final int OPT_LOCAL       4)       ;; use local value
-(final int OPT_MODELINE    8)       ;; option in modeline
 (final int OPT_WINONLY     16)      ;; only set window-local options
 (final int OPT_NOWIN       32)      ;; don't set window-local options
 
@@ -1556,7 +1555,6 @@
 
 (final int
     BV_AI     0,
-    BV_BIN    2,
     BV_CI     5,
     BV_CIN    6,
     BV_CINK   7,
@@ -1572,7 +1570,6 @@
     BV_KP    27,
     BV_LISP  28,
     BV_LW    29,
-    BV_MA    30,
     BV_MOD   31,
     BV_MPS   32,
     BV_NF    33,
@@ -2501,7 +2498,6 @@
         (atom' boolean      b_p_ai)             ;; 'autoindent'
         (field boolean      b_p_ai_nopaste)     ;; "b_p_ai" saved for paste mode
         (atom' boolean      b_p_ci)             ;; 'copyindent'
-        (atom' boolean      b_p_bin)            ;; 'binary'
         (atom' boolean      b_p_cin)            ;; 'cindent'
         (atom' Bytes        b_p_cino)           ;; 'cinoptions'
         (atom' Bytes        b_p_cink)           ;; 'cinkeys'
@@ -2516,7 +2512,6 @@
         (atom' Bytes        b_p_kp)             ;; 'keywordprg'
         (atom' boolean      b_p_lisp)           ;; 'lisp'
         (atom' Bytes        b_p_mps)            ;; 'matchpairs'
-        (atom' boolean      b_p_ma)             ;; 'modifiable'
         (atom' Bytes        b_p_nf)             ;; 'nrformats'
         (atom' boolean      b_p_pi)             ;; 'preserveindent'
         (atom' Bytes        b_p_qe)             ;; 'quoteescape'
@@ -3028,10 +3023,7 @@
     EDITCMD        0x8000,   ;; allow "+command" argument
     BUFNAME       0x10000,   ;; accepts buffer name
     BUFUNL        0x20000,   ;; accepts unlisted buffer too
-    ARGOPT        0x40000,   ;; allow "++opt=val" argument
-    SBOXOK        0x80000,   ;; allowed in the sandbox
     CMDWIN       0x100000,   ;; allowed in cmdline window
-    MODIFY       0x200000,   ;; forbidden in non-'modifiable' buffer
     EXFLAGS      0x400000,   ;; allow flags after count in argument
 
     FILES (| XFILE EXTRA),   ;; multiple extra files allowed
@@ -3133,63 +3125,62 @@
     CMD_right 86,
     CMD_rightbelow 87,
     CMD_substitute 88,
-    CMD_sandbox 89,
-    CMD_set 90,
-    CMD_setglobal 91,
-    CMD_setlocal 92,
-    CMD_silent 93,
-    CMD_smagic 94,
-    CMD_smap 95,
-    CMD_smapclear 96,
-    CMD_snomagic 97,
-    CMD_snoremap 98,
-    CMD_split 99,
-    CMD_stop 100,
-    CMD_startinsert 101,
-    CMD_startgreplace 102,
-    CMD_startreplace 103,
-    CMD_stopinsert 104,
-    CMD_sunmap 105,
-    CMD_suspend 106,
-    CMD_sview 107,
-    CMD_syncbind 108,
-    CMD_t 109,
-    CMD_topleft 110,
-    CMD_undo 111,
-    CMD_undojoin 112,
-    CMD_undolist 113,
-    CMD_unabbreviate 114,
-    CMD_unmap 115,
-    CMD_unsilent 116,
-    CMD_vglobal 117,
-    CMD_verbose 118,
-    CMD_vertical 119,
-    CMD_visual 120,
-    CMD_view 121,
-    CMD_vmap 122,
-    CMD_vmapclear 123,
-    CMD_vnoremap 124,
-    CMD_vnew 125,
-    CMD_vsplit 126,
-    CMD_vunmap 127,
-    CMD_wincmd 128,
-    CMD_xmap 129,
-    CMD_xmapclear 130,
-    CMD_xnoremap 131,
-    CMD_xunmap 132,
-    CMD_yank 133,
-    CMD_z 134,
+    CMD_set 89,
+    CMD_setglobal 90,
+    CMD_setlocal 91,
+    CMD_silent 92,
+    CMD_smagic 93,
+    CMD_smap 94,
+    CMD_smapclear 95,
+    CMD_snomagic 96,
+    CMD_snoremap 97,
+    CMD_split 98,
+    CMD_stop 99,
+    CMD_startinsert 100,
+    CMD_startgreplace 101,
+    CMD_startreplace 102,
+    CMD_stopinsert 103,
+    CMD_sunmap 104,
+    CMD_suspend 105,
+    CMD_sview 106,
+    CMD_syncbind 107,
+    CMD_t 108,
+    CMD_topleft 109,
+    CMD_undo 110,
+    CMD_undojoin 111,
+    CMD_undolist 112,
+    CMD_unabbreviate 113,
+    CMD_unmap 114,
+    CMD_unsilent 115,
+    CMD_vglobal 116,
+    CMD_verbose 117,
+    CMD_vertical 118,
+    CMD_visual 119,
+    CMD_view 120,
+    CMD_vmap 121,
+    CMD_vmapclear 122,
+    CMD_vnoremap 123,
+    CMD_vnew 124,
+    CMD_vsplit 125,
+    CMD_vunmap 126,
+    CMD_wincmd 127,
+    CMD_xmap 128,
+    CMD_xmapclear 129,
+    CMD_xnoremap 130,
+    CMD_xunmap 131,
+    CMD_yank 132,
+    CMD_z 133,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 135,
-    CMD_and 136,
-    CMD_lshift 137,
-    CMD_equal 138,
-    CMD_rshift 139,
-    CMD_tilde 140,
+    CMD_pound 134,
+    CMD_and 135,
+    CMD_lshift 136,
+    CMD_equal 137,
+    CMD_rshift 138,
+    CMD_tilde 139,
 
-    CMD_SIZE 141)     ;; MUST be after all real commands!
+    CMD_SIZE 140)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3212,17 +3203,11 @@
         (field long         do_ecmd_lnum)   ;; the line number in an edited file
         (field int          amount)         ;; number of '>' or '<' for shift command
         (field int          regname)        ;; register name (NUL if none)
-        (field int          force_bin)      ;; 0, FORCE_BIN or FORCE_NOBIN
-        (field boolean      read_edit)      ;; ++edit argument
-        (field int          bad_char)       ;; BAD_KEEP, BAD_DROP or replacement byte
         (field int          useridx)        ;; user command index
         (field Bytes        errmsg)         ;; returned error message
         (field getline_F    getline)
         (field Object       cookie)         ;; argument for getline()
     ])
-
-(final int FORCE_BIN 1)         ;; ":edit ++bin file"
-(final int FORCE_NOBIN 2)       ;; ":edit ++nobin file"
 
 ;; Values for "flags".
 (final int EXFLAG_LIST  0x01)   ;; 'l': list
@@ -3550,8 +3535,6 @@
                                         ;; Used for FileChangedRO.
 (atom! int      allbuf_lock)            ;; non-zero when no buffer name can be changed,
                                         ;; no buffer can be deleted and current directory can't be changed.
-(atom! int      sandbox)                ;; Non-zero when evaluating an expression in a "sandbox".
-                                        ;; Several things are not allowed then.
 
 (atom! boolean  silent_mode)            ;; set to true when "-s" commandline argument used for ex
 
@@ -3807,7 +3790,6 @@
     e_invcmd          (u8 "E476: Invalid command"),
     e_markinval       (u8 "E19: Mark has invalid line number"),
     e_marknotset      (u8 "E20: Mark not set"),
-    e_modifiable      (u8 "E21: Cannot make changes, 'modifiable' is off"),
     e_noabbr          (u8 "E24: No such abbreviation"),
     e_nobang          (u8 "E477: No ! allowed"),
     e_noinstext       (u8 "E29: No inserted text yet"),
@@ -3825,7 +3807,6 @@
     e_positive        (u8 "E487: Argument must be positive"),
     e_re_damg         (u8 "E43: Damaged match string"),
     e_re_corr         (u8 "E44: Corrupted regexp program"),
-    e_sandbox         (u8 "E48: Not allowed in sandbox"),
     e_secure          (u8 "E523: Not allowed here"),
     e_scroll          (u8 "E49: Invalid scroll size"),
     e_toocompl        (u8 "E74: Command too complex"),
@@ -3848,11 +3829,6 @@
 ;; values for vim_handle_signal() that are not a signal
 (final int SIGNAL_BLOCK    -1)
 (final int SIGNAL_UNBLOCK  -2)
-
-;; behavior for bad character, "++bad=" argument
-(final byte BAD_REPLACE    \?)      ;; replace it with '?' (default)
-(final int BAD_KEEP        -1)      ;; leave it
-(final int BAD_DROP        -2)      ;; erase it
 
 ;; flags for buf_freeall()
 (final int BFA_DEL         1)       ;; buffer is going to be deleted
@@ -3927,31 +3903,8 @@
         (field int      argc)
         (field Bytes*   argv)
 
-        (field int      edit_type)              ;; type of editing to do
-
         (field boolean  stdout_isatty)          ;; is stdout a terminal?
         (field Bytes    term)                   ;; specified terminal name
-    ])
-
-;; Values for edit_type.
-
-(final int EDIT_NONE   0)       ;; no edit type yet
-(final int EDIT_FILE   1)       ;; file name argument[s] given, use argument list
-(final int EDIT_STDIN  2)       ;; read file from stdin
-
-;; Different types of error messages.
-
-(final int ME_UNKNOWN_OPTION       0)
-(final int ME_TOO_MANY_ARGS        1)
-(final int ME_ARG_MISSING          2)
-(final int ME_GARBAGE              3)
-
-(final Bytes* main_errors
-    [
-        (u8 "Unknown option argument"),
-        (u8 "Too many edit arguments"),
-        (u8 "Argument missing after"),
-        (u8 "Garbage after option argument"),
     ])
 
 (defn #_int _main [#_int argc, #_Bytes* argv]
@@ -3989,14 +3942,6 @@
         ;; Set the default values for the options.
 
 ;       set_init_1();
-
-        ;; Figure out the way to work from the command name argv[0].
-        ;; "vimdiff" starts diff mode, "rvim" sets "restricted", etc.
-
-;       parse_command_name(params);
-
-        ;; Process the command line arguments.
-;       command_line_scan(params);
 
         ;; Don't redraw until much later.
 ;       @redrawingDisabled++;
@@ -4043,15 +3988,6 @@
 ;       @no_wait_return = FALSE;
 ;       if (@exmode_active == 0)
 ;           @msg_scroll = false;
-
-        ;; If "-" argument given: Read file from stdin.
-        ;; Do this before starting Raw mode, because it may change things that the
-        ;; writing end of the pipe doesn't like, e.g., in case stdin and stderr
-        ;; are the same terminal: "cat | vim -".
-        ;; Using autocommands here may cause trouble...
-
-;       if (params.edit_type == EDIT_STDIN)
-;           read_stdin();
 
         ;; When switching screens and something caused a message from a vimrc script,
         ;; need to output an extra newline on exit.
@@ -4297,229 +4233,6 @@
 ;       mch_exit(exitval);
     ))
 
-;; Get a (optional) count for a Vim argument.
-
-(defn- #_int get_number_arg [#_Bytes p, #_int* idx, #_int def]
-    ;; p: pointer to argument
-    ;; idx: index in argument, is incremented
-    ;; def: default value
-    (§
-;       if (asc_isdigit(p.at(idx[0])))
-;       {
-;           def = libC.atoi(p.plus(idx[0]));
-;           while (asc_isdigit(p.at(idx[0])))
-;               idx[0] += 1;
-;       }
-;       return def;
-    ))
-
-;; Check for: [r][e][vi|vim|view][ex[im]]
-;; If the executable name starts with "r" we disable shell commands.
-;; If the next character is "e" we run in Easy mode.
-;; If the next characters are "view" we start in readonly mode.
-;; If the next characters are "ex" we start in Ex mode.  If it's followed
-;; by "im" use improved Ex mode.
-
-(defn- #_void parse_command_name [#_mparm_C parmp]
-    (§
-;       Bytes s = gettail(parmp.argv[0]);
-
-;       if (asc_tolower(s.at(0)) == 'r')
-;       {
-;           @restricted = true;
-;           s = s.plus(1);
-;       }
-
-;       if (STRNCASECMP(s, u8("view"), 4) == 0)
-;       {
-;           @readonlymode = true;
-;           @curbuf.@b_p_ro = true;
-;           s = s.plus(4);
-;       }
-;       else if (STRNCASECMP(s, u8("vim"), 3) == 0)
-;           s = s.plus(3);
-
-;       if (STRNCASECMP(s, u8("ex"), 2) == 0)
-;       {
-;           if (STRNCASECMP(s.plus(2), u8("im"), 2) == 0)
-;               @exmode_active = EXMODE_VIM;
-;           else
-;               @exmode_active = EXMODE_NORMAL;
-;       }
-    ))
-
-;; Scan the command line arguments.
-
-(defn- #_void command_line_scan [#_mparm_C parmp]
-    (§
-;       int argc = parmp.argc;
-;       Bytes[] argv = parmp.argv;
-;       --argc;
-;       int i = 1;
-
-;       boolean had_minmin = false;     ;; found "--" argument
-;       int[] ai = { 1 };               ;; active option letter is argv[i].at(ai[0])
-
-;       while (0 < argc)
-;       {
-            ;; "+" or "+{number}" or "+/{pat}" or "+{command}" argument.
-
-;           if (argv[i].at(0) == (byte)'+' && !had_minmin)
-;           {
-;               ai[0] = -1;                         ;; skip to next argument
-;           }
-
-            ;; Optional argument.
-
-;           else if (argv[i].at(0) == (byte)'-' && !had_minmin)
-;           {
-;               boolean want_argument = false;
-;               int c = argv[i].at(ai[0]++);
-;               switch (c)
-;               {
-;                   case NUL:
-;                   {
-;                       if (@exmode_active != 0)     ;; "ex -" silent mode
-;                           @silent_mode = true;
-;                       else                        ;; "vim -" read from stdin
-;                       {
-;                           if (parmp.edit_type != EDIT_NONE)
-;                               mainerr(ME_TOO_MANY_ARGS, argv[i]);
-;                           parmp.edit_type = EDIT_STDIN;
-;                           @read_cmd_fd = 2;        ;; read from stderr instead of stdin
-;                       }
-;                       ai[0] = -1;                 ;; skip to next argument
-;                       break;
-;                   }
-
-;                   case '-':
-;                   {
-                        ;; "--" don't take any more option arguments
-                        ;; "--help" give help message
-;                       if (STRCASECMP(argv[i].plus(ai[0]), u8("help")) == 0)
-;                           usage();
-;                       else
-;                       {
-;                           if (argv[i].at(ai[0]) != NUL)
-;                               mainerr(ME_UNKNOWN_OPTION, argv[i]);
-;                           had_minmin = true;
-;                       }
-;                       if (!want_argument)
-;                           ai[0] = -1;             ;; skip to next argument
-;                       break;
-;                   }
-
-;                   case 'b':                       ;; "-b" binary mode
-;                   {
-                        ;; Needs to be effective before expanding file names,
-                        ;; because for Win32 this makes us edit a shortcut file itself,
-                        ;; instead of the file it links to.
-;                       set_options_bin(@curbuf.@b_p_bin, true, 0);
-;                       @curbuf.@b_p_bin = true;   ;; binary file I/O
-;                       break;
-;                   }
-
-;                   case 'e':                       ;; "-e" Ex mode
-;                       @exmode_active = EXMODE_NORMAL;
-;                       break;
-
-;                   case 'E':                       ;; "-E" Improved Ex mode
-;                       @exmode_active = EXMODE_VIM;
-;                       break;
-
-;                   case 'h':                       ;; "-h" give help message
-;                       usage();
-;                       break;
-
-;                   case 'l':                       ;; "-l" lisp mode, 'lisp' and 'showmatch' on
-;                       set_option_value(u8("lisp"), 1L, null, 0);
-;                       @p_sm = true;
-;                       break;
-
-;                   case 'M':                       ;; "-M" no changes or writing of files
-;                       reset_modifiable();
-                        ;; FALLTHROUGH
-;                   case 'm':                       ;; "-m" no writing of files
-;                       @p_write = false;
-;                       break;
-
-;                   case 'R':                       ;; "-R" readonly mode
-;                       @readonlymode = true;
-;                       @curbuf.@b_p_ro = true;
-;                       break;
-
-;                   case 'v':                       ;; "-v" Vi-mode (as if called "vi")
-;                       @exmode_active = 0;
-;                       break;
-
-;                   case 'Z':                       ;; "-Z" restricted mode
-;                       @restricted = true;
-;                       break;
-
-;                   case 'T':                       ;; "-T {terminal}" terminal name
-;                       want_argument = true;
-;                       break;
-
-;                   default:
-;                       mainerr(ME_UNKNOWN_OPTION, argv[i]);
-;                       break;
-;               }
-
-                ;; Handle option arguments with argument.
-
-;               if (want_argument)
-;               {
-                    ;; Check for garbage immediately after the option letter.
-
-;                   if (argv[i].at(ai[0]) != NUL)
-;                       mainerr(ME_GARBAGE, argv[i]);
-
-;                   --argc;
-;                   if (argc < 1)
-;                       mainerr_arg_missing(argv[i]);
-;                   i++;
-;                   ai[0] = -1;
-
-;                   switch (c)
-;                   {
-;                       case 'T':                   ;; "-T {terminal}" terminal name
-
-                            ;; The -T term argument is always available and when
-                            ;; HAVE_TERMLIB is supported it overrides the environment variable TERM.
-
-;                           parmp.term = argv[i];
-;                           break;
-;                   }
-;               }
-;           }
-
-            ;; File name argument.
-
-;           else
-;           {
-;               ai[0] = -1;                      ;; skip to next argument
-
-                ;; Check for only one type of editing.
-;               if (parmp.edit_type != EDIT_NONE && parmp.edit_type != EDIT_FILE)
-;                   mainerr(ME_TOO_MANY_ARGS, argv[i]);
-;               parmp.edit_type = EDIT_FILE;
-
-                ;; Add the file to the global argument list.
-                
-;           }
-
-            ;; If there are no more letters after the current "-", go to next argument.
-            ;; "ai" is set to -1 when the current argument is to be skipped.
-
-;           if (ai[0] <= 0 || argv[i].at(ai[0]) == NUL)
-;           {
-;               --argc;
-;               i++;
-;               ai[0] = 1;
-;           }
-;       }
-    ))
-
 ;; Print a warning if stdout is not a terminal.
 ;; When starting in Ex mode and commands come from a file, set Silent mode.
 
@@ -4596,75 +4309,6 @@
         ;; make the first window the current window
 ;       window_C win = @firstwin;
 ;       win_enter(win, false);
-    ))
-
-;; Give an error message main_errors[n] and exit.
-
-(defn- #_void mainerr [#_int n, #_Bytes str]
-    ;; n: one of the ME_ defines
-    ;; str: extra argument or null
-    (§
-;       reset_signals();            ;; kill us with CTRL-C here, if you like
-
-;       libC.fprintf(stderr, u8("%s\n"), VIMVERSION);
-;       libC.fprintf(stderr, u8("%s"), main_errors[n]);
-;       if (str != null)
-;           libC.fprintf(stderr, u8(": \"%s\""), str);
-;       libC.fprintf(stderr, u8("\nMore info with: \"vim -h\"\n"));
-
-;       mch_exit(1);
-    ))
-
-(defn- #_void mainerr_arg_missing [#_Bytes str]
-    (§
-;       mainerr(ME_ARG_MISSING, str);
-    ))
-
-;; print a message with three spaces prepended and '\n' appended.
-
-(defn- #_void main_msg [#_Bytes s]
-    (§
-;       libC.fprintf(stdout, u8("   %s\n"), s);
-    ))
-
-(final Bytes* __usage
-    [
-        (u8 "[file ..]       edit specified file(s)"),
-        (u8 "-               read text from stdin"),
-    ])
-
-;; Print messages for "vim -h" or "vim --help" and exit.
-
-(defn- #_void usage []
-    (§
-;       reset_signals();            ;; kill us with CTRL-C here, if you like
-
-;       libC.fprintf(stdout, u8("%s\n\nusage:"), VIMVERSION);
-;       for (int i = 0; ; i++)
-;       {
-;           libC.fprintf(stdout, u8(" vim [arguments] %s"), __usage[i]);
-;           if (i == __usage.length - 1)
-;               break;
-;           libC.fprintf(stdout, u8("\n   or:"));
-;       }
-
-;       libC.fprintf(stdout, u8("\n\nArguments:\n"));
-;       main_msg(u8("--\t\t\tOnly file names after this"));
-;       main_msg(u8("-v\t\t\tVi mode (like \"vi\")"));
-;       main_msg(u8("-e\t\t\tEx mode (like \"ex\")"));
-;       main_msg(u8("-E\t\t\tImproved Ex mode"));
-;       main_msg(u8("-R\t\t\tReadonly mode (like \"view\")"));
-;       main_msg(u8("-Z\t\t\tRestricted mode (like \"rvim\")"));
-;       main_msg(u8("-m\t\t\tModifications (writing files) not allowed"));
-;       main_msg(u8("-M\t\t\tModifications in text not allowed"));
-;       main_msg(u8("-b\t\t\tBinary mode"));
-;       main_msg(u8("-l\t\t\tLisp mode"));
-;       main_msg(u8("-T <terminal>\tSet terminal type to <terminal>"));
-;       main_msg(u8("+\t\t\tStart at end of file"));
-;       main_msg(u8("+<lnum>\t\tStart at line <lnum>"));
-;       main_msg(u8("-h  or  --help\tPrint Help (this message) and exit"));
-
-;       mch_exit(0);
     ))
 
 ;;; ============================================================================================== VimH
@@ -8318,7 +7962,6 @@
 
 (final int
     PV_AI   (| BV_AI   PV_BUF),
-    PV_BIN  (| BV_BIN  PV_BUF),
     PV_CI   (| BV_CI   PV_BUF),
     PV_CIN  (| BV_CIN  PV_BUF),
     PV_CINK (| BV_CINK PV_BUF),
@@ -8334,7 +7977,6 @@
     PV_KP   (| BV_KP   PV_BUF   PV_BOTH),
     PV_LISP (| BV_LISP PV_BUF),
     PV_LW   (| BV_LW   PV_BUF   PV_BOTH),
-    PV_MA   (| BV_MA   PV_BUF),
     PV_MOD  (| BV_MOD  PV_BUF),
     PV_MPS  (| BV_MPS  PV_BUF),
     PV_NF   (| BV_NF   PV_BUF),
@@ -8381,7 +8023,6 @@
 ;; Only to be used in option.c!
 
 (atom! boolean p_ai)
-(atom! boolean p_bin)
 (atom! boolean p_ci)
 (atom! boolean p_cin)
 (atom! Bytes   p_cink)
@@ -8394,7 +8035,6 @@
 (atom! boolean p_inf)
 (atom! Bytes   p_isk)
 (atom! boolean p_lisp)
-(atom! boolean p_ma)
 (atom! boolean p_mod)
 (atom! Bytes   p_mps)
 (atom! Bytes   p_nf)
@@ -8512,7 +8152,6 @@
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           p_ai,        PV_AI,      false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        PV_NONE,   (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        PV_NONE,   (u8 "")),
-        (bool_opt (u8 "binary"),         (u8 "bin"),       P_RSTAT,                     p_bin,       PV_BIN,     false),
         (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   PV_NONE,   (u8 " \t!@*-+;:,./?")),
         (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      VAR_WIN,     PV_BRI,     false),
         (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     VAR_WIN,     PV_BRIOPT, (u8 "")),
@@ -8575,7 +8214,6 @@
         (long_opt (u8 "maxcombine"),     (u8 "mco"),       P_CURSWANT,                  p_mco,       PV_NONE,    2#_L),
         (long_opt (u8 "maxmapdepth"),    (u8 "mmd"),       0,                           p_mmd,       PV_NONE,    1000#_L),
         (long_opt (u8 "maxmempattern"),  (u8 "mmp"),       0,                           p_mmp,       PV_NONE,    1000#_L),
-        (bool_opt (u8 "modifiable"),     (u8 "ma"),        P_NOGLOB,                    p_ma,        PV_MA,      true),
         (bool_opt (u8 "modified"),       (u8 "mod"),       P_RSTAT,                     p_mod,       PV_MOD,     false),
         (bool_opt (u8 "more"),            null,            0,                           p_more,      PV_NONE,    true),
         (utf8_opt (u8 "mouse"),           null,            P_FLAGLIST,                  p_mouse,     PV_NONE,   (u8 "")),
@@ -8907,7 +8545,6 @@
 ;; 0 for ":set"
 ;; OPT_GLOBAL   for ":setglobal"
 ;; OPT_LOCAL    for ":setlocal" and a modeline
-;; OPT_MODELINE for a modeline
 ;; OPT_WINONLY  to only set window-local options
 ;; OPT_NOWIN    to skip setting window-local options
 ;;
@@ -8934,7 +8571,7 @@
 ;               Bytes errmsg = null;
 ;               Bytes startarg = arg;      ;; remember for error message
 
-;               if (STRNCMP(arg, u8("all"), 3) == 0 && !asc_isalpha(arg.at(3)) && (opt_flags & OPT_MODELINE) == 0)
+;               if (STRNCMP(arg, u8("all"), 3) == 0 && !asc_isalpha(arg.at(3)))
 ;               {
                     ;; ":set all"  show all options.
                     ;; ":set all&" set all options to their default value.
@@ -8952,7 +8589,7 @@
 ;                       did_show = true;
 ;                   }
 ;               }
-;               else if (STRNCMP(arg, u8("termcap"), 7) == 0 && (opt_flags & OPT_MODELINE) == 0)
+;               else if (STRNCMP(arg, u8("termcap"), 7) == 0)
 ;               {
 ;                   showoptions(2, opt_flags);
 ;                   show_termcodes();
@@ -9101,23 +8738,6 @@
                         ;; Skip all options that are window-local (used for :vimgrep).
 ;                       if ((opt_flags & OPT_NOWIN) != 0 && 0 <= opt_idx && vimoptions[opt_idx].var == VAR_WIN)
 ;                           break skip;
-
-                        ;; Disallow changing some options from modelines.
-;                       if ((opt_flags & OPT_MODELINE) != 0)
-;                       {
-;                           if ((flags & (P_SECURE | P_NO_ML)) != 0)
-;                           {
-;                               errmsg = u8("E520: Not allowed in a modeline");
-;                               break skip;
-;                           }
-;                       }
-
-                        ;; Disallow changing some options in the sandbox.
-;                       if (@sandbox != 0 && (flags & P_SECURE) != 0)
-;                       {
-;                           errmsg = e_sandbox;
-;                           break skip;
-;                       }
 
 ;                       if (vim_strchr(u8("?=:!&<"), nextchar) != null)
 ;                       {
@@ -9605,15 +9225,14 @@
 ;; Sets the P_WAS_SET flag and takes care of the P_INSECURE flag.
 
 (defn- #_void did_set_option [#_int opt_idx, #_int opt_flags, #_boolean new_value]
-    ;; opt_flags: possibly with OPT_MODELINE
     ;; new_value: value was replaced completely
     (§
 ;       vimoptions[opt_idx].@flags |= P_WAS_SET;
 
-        ;; When an option is set in the sandbox from a modeline or in secure mode,
-        ;; set the P_INSECURE flag.  Otherwise, if a new value is stored reset the flag.
+        ;; When an option is set in secure mode, set the P_INSECURE flag.
+        ;; Otherwise, if a new value is stored reset the flag.
 ;       long[] p = insecure_flag(opt_idx, opt_flags);
-;       if (@secure != 0 || @sandbox != 0 || (opt_flags & OPT_MODELINE) != 0)
+;       if (@secure != 0)
 ;           p[0] |= P_INSECURE;
 ;       else if (new_value)
 ;           p[0] &= ~P_INSECURE;
@@ -9696,7 +9315,6 @@
 ;               @p_tw = 0;
 ;               @p_wm = 0;
 ;               @p_et = false;
-;               @p_bin = true;               ;; needed when called for the "-b" argument
 ;           }
 ;       }
 ;       else if (oldval)                    ;; switched off
@@ -9904,7 +9522,7 @@
 ;       Object gvarp = get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL);
 
         ;; Disallow changing some options from secure mode.
-;       if ((@secure != 0 || @sandbox != 0) && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
+;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
 ;       {
 ;           errmsg = e_secure;
 ;       }
@@ -10554,7 +10172,7 @@
     ;; opt_flags: OPT_LOCAL and/or OPT_GLOBAL
     (§
         ;; Disallow changing some options from secure mode.
-;       if ((@secure != 0 || @sandbox != 0) && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
+;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
 ;           return e_secure;
 
 ;       boolean old_value = varp[0];
@@ -10576,19 +10194,6 @@
 ;           if (@curbuf.@b_p_ro)
 ;               @curbuf.b_did_warn = false;
 
-;           redraw_titles();
-;       }
-
-        ;; when 'modifiable' is changed, redraw the window title
-;       else if (varp == @curbuf.b_p_ma)
-;       {
-;           redraw_titles();
-;       }
-
-        ;; when 'bin' is set also set some other options
-;       else if (varp == @curbuf.b_p_bin)
-;       {
-;           set_options_bin(old_value, @curbuf.@b_p_bin, opt_flags);
 ;           redraw_titles();
 ;       }
 
@@ -10703,7 +10308,7 @@
     ;; value: new value
     ;; errbuf: buffer for error messages
     ;; errbuflen: length of "errbuf"
-    ;; opt_flags: OPT_LOCAL, OPT_GLOBAL and OPT_MODELINE
+    ;; opt_flags: OPT_LOCAL and OPT_GLOBAL
     (§
 ;       Bytes errmsg = null;
 ;       long old_value = varp[0];
@@ -10711,7 +10316,7 @@
 ;       long old_Columns = @Columns;         ;; remember old Columns
 
         ;; Disallow changing some options from secure mode.
-;       if ((@secure != 0 || @sandbox != 0) && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
+;       if (@secure != 0 && (vimoptions[opt_idx].@flags & P_SECURE) != 0)
 ;           return e_secure;
 
 ;       varp[0] = value;
@@ -11187,13 +10792,6 @@
 
 ;       long flags = vimoptions[opt_idx].@flags;
 
-        ;; Disallow changing some options in the sandbox.
-;       if (0 < @sandbox && (flags & P_SECURE) != 0)
-;       {
-;           emsg(e_sandbox);
-;           return null;
-;       }
-
 ;       if ((flags & P_STRING) != 0)
 ;           return set_string_option(opt_idx, string, opt_flags);
 
@@ -11578,7 +11176,6 @@
 ;           case PV_WRAP:   return wop.wo_wrap;
 
 ;           case PV_AI:     return @curbuf.b_p_ai;
-;           case PV_BIN:    return @curbuf.b_p_bin;
 ;           case PV_CI:     return @curbuf.b_p_ci;
 ;           case PV_CIN:    return @curbuf.b_p_cin;
 ;           case PV_CINK:   return @curbuf.b_p_cink;
@@ -11591,7 +11188,6 @@
 ;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
 ;           case PV_LISP:   return @curbuf.b_p_lisp;
-;           case PV_MA:     return @curbuf.b_p_ma;
 ;           case PV_MOD:    return @curbuf.b_changed;
 ;           case PV_MPS:    return @curbuf.b_p_mps;
 ;           case PV_NF:     return @curbuf.b_p_nf;
@@ -11744,7 +11340,6 @@
 ;               buf.@b_p_wm = @p_wm;
 ;               buf.b_p_wm_nopaste = @p_wm_nopaste;
 ;               buf.b_p_wm_nobin = @p_wm_nobin;
-;               buf.@b_p_bin = @p_bin;
 ;               buf.@b_p_et = @p_et;
 ;               buf.b_p_et_nobin = @p_et_nobin;
 ;               buf.@b_p_inf = @p_inf;
@@ -11781,7 +11376,6 @@
 ;                   buf.@b_p_isk = STRDUP(@p_isk);
 ;                   did_isk = true;
 ;                   buf.@b_p_ts = @p_ts;
-;                   buf.@b_p_ma = @p_ma;
 ;               }
 ;           }
 
@@ -11795,17 +11389,6 @@
 ;       check_buf_options(buf);         ;; make sure we don't have NULLs
 ;       if (did_isk)
 ;           buf_init_chartab(buf, false);
-    ))
-
-;; Reset the 'modifiable' option and its default value.
-
-(defn- #_void reset_modifiable []
-    (§
-;       @curbuf.@b_p_ma = false;
-;       @p_ma = false;
-;       int opt_idx = findoption(u8("ma"));
-;       if (0 <= opt_idx)
-;           vimoptions[opt_idx].def_val = false;
     ))
 
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
@@ -12797,14 +12380,9 @@
 ;                   @curwin.w_buffer = buf;
 ;                   @curbuf = buf;
 ;                   @curbuf.b_nwindows++;
-
-                    ;; Set 'binary' when forced.
-;                   if (!oldbuf && eap != null)
-;                       set_file_options(eap);
 ;               }
 
-                ;; May get the window options from the last time this buffer was in this
-                ;; (or another) window.
+                ;; May get the window options from the last time this buffer was in this (or another) window.
                 ;; If not used before, reset the local window options to the global values.
                 ;; Also restores old folding stuff.
 ;               get_winopts(@curbuf);
@@ -13246,15 +12824,6 @@
 ;           emsg(e_curdir);
 ;           return true;
 ;       }
-
-        ;; In the sandbox more things are not allowed, including the things
-        ;; disallowed in secure mode.
-
-;       if (@sandbox != 0)
-;       {
-;           emsg(e_sandbox);
-;           return true;
-;       }
 ;       return false;
     ))
 
@@ -13290,7 +12859,6 @@
 ;       boolean endcolumn = false;                  ;; cursor in last column when done
 ;       pos_C old_cursor = §_pos_C();
 ;       COPY_pos(old_cursor, @curwin.w_cursor);
-;       boolean save_ma = false;
 
 ;       Bytes cmd = eap.arg;
 ;       if (@global_busy == 0)
@@ -13518,13 +13086,6 @@
 
 ;       if (eap.skip)       ;; not executing commands, only parsing
 ;           return;
-
-;       if (!@do__count && !@curbuf.@b_p_ma)
-;       {
-                ;; Substitution is not allowed in non-'modifiable' buffer.
-;           emsg(e_modifiable);
-;           return;
-;       }
 
 ;       regmmatch_C regmatch = §_regmmatch_C();
 ;       if (search_regcomp(pat, RE_SUBST, which_pat, SEARCH_HIS, regmatch) == false)
@@ -13847,23 +13408,11 @@
 
                             ;; 3. substitute the string.
 
-;                       if (@do__count)
-;                       {
-                                ;; prevent accidentally changing the buffer by a function
-;                           save_ma = @curbuf.@b_p_ma;
-;                           @curbuf.@b_p_ma = false;
-;                           @sandbox++;
-;                       }
                             ;; get length of substitution part
-;                       int sublen = vim_regsub_multi(regmatch,
-;                                           sub_firstlnum - regmatch.startpos[0].lnum,
-;                                           sub, sub_firstline, false, @p_magic, true);
+;                       int sublen = vim_regsub_multi(regmatch, sub_firstlnum - regmatch.startpos[0].lnum, sub, sub_firstline, false, @p_magic, true);
+
 ;                       if (@do__count)
-;                       {
-;                           @curbuf.@b_p_ma = save_ma;
-;                           @sandbox--;
 ;                           break skip;
-;                       }
 
                             ;; When the match included the "$" of the last line it may
                             ;; go beyond the last line of the buffer.
@@ -16906,7 +16455,6 @@
         ;; Create the command-line buffer empty.
 ;       do_ecmd(null, null, ECMD_ONE, ECMD_HIDE, null);
 ;       setfname(@curbuf, u8("[Command Line]"), true);
-;       @curbuf.@b_p_ma = true;
 ;       @curwin.w_onebuf_opt.@wo_scb = false;
 ;       @curwin.w_onebuf_opt.@wo_crb = false;
 
@@ -17628,7 +17176,6 @@
 ;       boolean save_msg_scroll = @msg_scroll;
 ;       int save_msg_silent = -1;
 ;       int did_esilent = 0;
-;       boolean did_sandbox = false;
 
 ;       exarg_C ea = §_exarg_C();     ;; Ex command arguments
 ;       ea.line1 = 1;
@@ -17785,14 +17332,6 @@
 
 ;                   case 's':
 ;                   {
-;                       if (checkforcmd(p, u8("sandbox"), 3))
-;                       {
-;                           ea.cmd = p[0];
-;                           if (!did_sandbox)
-;                               @sandbox++;
-;                           did_sandbox = true;
-;                           continue;
-;                       }
 ;                       if (checkforcmd(p, u8("silent"), 3))
 ;                       {
 ;                           ea.cmd = p[0];
@@ -18091,19 +17630,6 @@
 
 ;           if (!ea.skip)
 ;           {
-;               if (@sandbox != 0 && (ea.argt & SBOXOK) == 0)
-;               {
-                    ;; Command not allowed in sandbox.
-;                   errormsg = e_sandbox;
-;                   break doend;
-;               }
-;               if (!@curbuf.@b_p_ma && (ea.argt & MODIFY) != 0)
-;               {
-                    ;; Command not allowed in non-'modifiable' buffer.
-;                   errormsg = e_modifiable;
-;                   break doend;
-;               }
-
 ;               if (text_locked() && (ea.argt & CMDWIN) == 0)
 ;               {
                     ;; Command not allowed when editing the command line.
@@ -18113,6 +17639,7 @@
 ;                       errormsg = e_secure;
 ;                   break doend;
 ;               }
+
                 ;; Disallow editing another buffer when "curbuf_lock" is set.
                 ;; Do allow ":edit" (check for argument later).
                 ;; Do allow ":checktime" (it's postponed).
@@ -18172,17 +17699,6 @@
             ;; Skip to start of argument.
 
 ;           ea.arg = skipwhite(p);
-
-            ;; Check for "++opt=val" argument.
-            ;; Must be first, allow ":w ++enc=utf8 !cmd"
-
-;           if ((ea.argt & ARGOPT) != 0)
-;               while (ea.arg.at(0) == (byte)'+' && ea.arg.at(1) == (byte)'+')
-;                   if (getargopt(ea) == false && !ni)
-;                   {
-;                       errormsg = e_invarg;
-;                       break doend;
-;                   }
 
 ;           if (ea.cmdidx == CMD_lshift || ea.cmdidx == CMD_rshift)
 ;           {
@@ -18433,9 +17949,6 @@
 ;           @msg_scroll = save_msg_scroll;
 ;       }
 
-;       if (did_sandbox)
-;           --@sandbox;
-
 ;       if (ea.nextcmd != null && ea.nextcmd.at(0) == NUL)      ;; not really a next command
 ;           ea.nextcmd = null;
 
@@ -18589,7 +18102,7 @@
     [
         (field Bytes    name)
         (field int      minlen)
-        (field boolean  has_count)  ;; :123verbose  :3tab
+        (field boolean  has_count)  ;; :123verbose
     ])
 
 (final cmdmods_C* cmdmods
@@ -18605,7 +18118,6 @@
         (->cmdmods_C (u8 "leftabove"),    5, false),
         (->cmdmods_C (u8 "lockmarks"),    3, false),
         (->cmdmods_C (u8 "rightbelow"),   6, false),
-        (->cmdmods_C (u8 "sandbox"),      3, false),
         (->cmdmods_C (u8 "silent"),       3, false),
         (->cmdmods_C (u8 "topleft"),      2, false),
         (->cmdmods_C (u8 "unsilent"),     3, false),
@@ -19039,70 +18551,6 @@
 ;           p = p.plus(us_ptr2len_cc(p));
 ;       }
 ;       return p;
-    ))
-
-;; Get "++opt=arg" argument.
-;; Return false or true.
-
-(defn- #_boolean getargopt [#_exarg_C eap]
-    (§
-;       Bytes arg = eap.arg.plus(2);
-
-        ;; ":edit ++[no]bin[ary] file"
-;       if (STRNCMP(arg, u8("bin"), 3) == 0 || STRNCMP(arg, u8("nobin"), 5) == 0)
-;       {
-;           if (arg.at(0) == (byte)'n')
-;           {
-;               arg = arg.plus(2);
-;               eap.force_bin = FORCE_NOBIN;
-;           }
-;           else
-;               eap.force_bin = FORCE_BIN;
-;           Bytes[] p = { arg };
-;           if (!checkforcmd(p, u8("binary"), 3))
-;               return false;
-;           eap.arg = skipwhite(p[0]);
-;           return true;
-;       }
-
-        ;; ":read ++edit file"
-;       if (STRNCMP(arg, u8("edit"), 4) == 0)
-;       {
-;           eap.read_edit = true;
-;           eap.arg = skipwhite(arg.plus(4));
-;           return true;
-;       }
-
-;       int[] bad_char_idx = new int[1];
-;       int[] pp = null;
-
-;       if (STRNCMP(arg, u8("bad"), 3) == 0)
-;       {
-;           arg = arg.plus(3);
-;           pp = bad_char_idx;
-;       }
-
-;       if (pp == null || arg.at(0) != (byte)'=')
-;           return false;
-
-;       arg = arg.plus(1);
-;       pp[0] = BDIFF(arg, eap.cmd);
-;       arg = skip_cmd_arg(arg, false);
-;       eap.arg = skipwhite(arg);
-;       arg.be(0, NUL);
-
-        ;; Check ++bad= argument.  Must be a single-byte character, "keep" or "drop".
-;       Bytes p = eap.cmd.plus(bad_char_idx[0]);
-;       if (STRCASECMP(p, u8("keep")) == 0)
-;           eap.bad_char = BAD_KEEP;
-;       else if (STRCASECMP(p, u8("drop")) == 0)
-;           eap.bad_char = BAD_DROP;
-;       else if (us_byte2len(p.at(0), false) == 1 && p.at(1) == NUL)
-;           eap.bad_char = p.at(0);
-;       else
-;           return false;
-
-;       return true;
     ))
 
 ;; ":abbreviate" and friends.
@@ -20742,30 +20190,10 @@
 ;; eval.c: Expression evaluation ------------------------------------------------------------------
 
 ;; Top level evaluation function, returning a string.
-;; When "convert" is true convert a List into a sequence of lines.
-;; Return pointer to allocated memory, or null for failure.
 
-(defn- #_Bytes eval_to_string [#_Bytes arg, #_Bytes* nextcmd, #_boolean convert]
+(defn- #_Bytes eval_to_string [#_Bytes arg, #_Bytes* nextcmd]
     (§
 ;       return null;
-    ))
-
-;; Call eval_to_string() without using current local variables and using textlock.
-;; When "use_sandbox" is true use the sandbox.
-
-(defn- #_Bytes eval_to_string_safe [#_Bytes arg, #_Bytes* nextcmd, #_boolean use_sandbox]
-    (§
-;       Bytes retval;
-
-;       if (use_sandbox)
-;           @sandbox++;
-;       @textlock++;
-;       retval = eval_to_string(arg, nextcmd, false);
-;       if (use_sandbox)
-;           --@sandbox;
-;       --@textlock;
-
-;       return retval;
     ))
 
 ;; Put the time "msec" past now in "tm".
@@ -22048,7 +21476,7 @@
 
             ;; Force a redraw when operating on an empty Visual region,
             ;; when 'modifiable' is off or creating a fold.
-;           if (oap.is_VIsual && (oap.empty || !@curbuf.@b_p_ma))
+;           if (oap.is_VIsual && oap.empty)
 ;           {
 ;               @curwin.w_onebuf_opt.@wo_lbr = lbr_saved;
 ;               redraw_curbuf_later(INVERTED);
@@ -25376,14 +24804,9 @@
 ;       }
 ;       else if (!checkclearopq(cap.oap))
 ;       {
-;           if (!@curbuf.@b_p_ma)
-;               emsg(e_modifiable);
-;           else
-;           {
-;               if (virtual_active())
-;                   coladvance(getviscol());
-;               invoke_edit(cap, false, (cap.arg != 0) ? 'V' : 'R', false);
-;           }
+;           if (virtual_active())
+;               coladvance(getviscol());
+;           invoke_edit(cap, false, (cap.arg != 0) ? 'V' : 'R', false);
 ;       }
     ))
 
@@ -25395,22 +24818,17 @@
 ;       {
 ;           cap.cmdchar = 'r';
 ;           cap.@nchar = cap.@extra_char;
-;           nv_replace(cap);        ;; Do same as "r" in Visual mode for now
+;           nv_replace(cap);        ;; do same as "r" in Visual mode for now
 ;       }
 ;       else if (!checkclearopq(cap.oap))
 ;       {
-;           if (!@curbuf.@b_p_ma)
-;               emsg(e_modifiable);
-;           else
-;           {
-;               if (cap.@extra_char == Ctrl_V)       ;; get another character
-;                   cap.@extra_char = get_literal();
-;               stuffcharReadbuff(cap.@extra_char);
-;               stuffcharReadbuff(ESC);
-;               if (virtual_active())
-;                   coladvance(getviscol());
-;               invoke_edit(cap, true, 'v', false);
-;           }
+;           if (cap.@extra_char == Ctrl_V)       ;; get another character
+;               cap.@extra_char = get_literal();
+;           stuffcharReadbuff(cap.@extra_char);
+;           stuffcharReadbuff(ESC);
+;           if (virtual_active())
+;               coladvance(getviscol());
+;           invoke_edit(cap, true, 'v', false);
 ;       }
     ))
 
@@ -26769,12 +26187,6 @@
 ;       {
 ;           nv_object(cap);
 ;       }
-;       else if (!@curbuf.@b_p_ma && !@p_im)
-;       {
-                ;; Only give this error when 'insertmode' is off.
-;           emsg(e_modifiable);
-;           clearop(cap.oap);
-;       }
 ;       else if (!checkclearopq(cap.oap))
 ;       {
 ;           switch (cap.cmdchar)
@@ -27842,13 +27254,6 @@
 ;       long last_changed = 0;
 ;       long start_lnum = @curwin.w_cursor.lnum;
 
-        ;; Don't even try when 'modifiable' is off.
-;       if (!@curbuf.@b_p_ma)
-;       {
-;           emsg(e_modifiable);
-;           return;
-;       }
-
 ;       long i;
 ;       for (i = oap.line_count; 0 <= --i && !@got_int; )
 ;       {
@@ -27956,7 +27361,7 @@
 ;           return expr_copy;
 
 ;       @__nested++;
-;       Bytes rv = eval_to_string(expr_copy, null, true);
+;       Bytes rv = eval_to_string(expr_copy, null);
 ;       --@__nested;
 ;       return rv;
     ))
@@ -28596,12 +28001,6 @@
         ;; Nothing to delete, return here.  Do prepare undo, for op_change().
 ;       if (oap.empty)
 ;           return u_save_cursor();
-
-;       if (!@curbuf.@b_p_ma)
-;       {
-;           emsg(e_modifiable);
-;           return false;
-;       }
 
 ;       oap.regname = adjust_clip_reg(oap.regname);
 
@@ -36369,7 +35768,7 @@
 ;       int save_msg_col = @msg_col;
 ;       int save_msg_row = @msg_row;
 
-;       Bytes p = eval_to_string(expr, null, false);
+;       Bytes p = eval_to_string(expr, null);
 
 ;       --@textlock;
 ;       --@ex_normal_lock;
@@ -36667,12 +36066,6 @@
         ;; set insStart_orig to insStart
 ;       @update_insStart_orig = true;
 
-        ;; Don't allow inserting in the sandbox.
-;       if (@sandbox != 0)
-;       {
-;           emsg(e_sandbox);
-;           return false;
-;       }
         ;; Don't allow changes in the buffer while editing the cmdline.
         ;; The caller of getcmdline() may get confused.
 ;       if (@textlock != 0)
@@ -47366,7 +46759,7 @@
 ;               boolean save_ireg_ic = @ireg_ic;
 ;               @can_f_submatch = true;
 
-;               @eval_result = eval_to_string(source.plus(2), null, true);
+;               @eval_result = eval_to_string(source.plus(2), null);
 ;               if (@eval_result != null)
 ;               {
 ;                   boolean had_backslash = false;
@@ -60643,747 +60036,6 @@
 ;           vim_snprintf(buf, buflen, u8("%d-%d"), col, vcol);
     ))
 
-;; enum for "type" below
-(final int
-    Normal    0,
-    Empty     1,
-    Group     2,
-    Middle    3,
-    Highlight 4,
-    TabPage   5,
-    Trunc     6)
-
-(class! #_final stl_item_C
-    [
-        (field Bytes    start)
-        (field int      minwid)
-        (field int      maxwid)
-        (field int      type)
-    ])
-
-(defn- #_stl_item_C* ARRAY_stl_item [#_int n]
-    (vec (repeatedly n §_stl_item_C)))
-
-;; Build a string from the status line items in "fmt".
-;; Return length of string in screen cells.
-;;
-;; Normally works for window "wp", except when working for 'tabline' then it is "curwin".
-;;
-;; Items are drawn interspersed with the text that surrounds it
-;; Specials: %-<wid>(xxx%) => group, %= => middle marker, %< => truncation
-;; Item: %-<minwid>.<maxwid><itemch> All but <itemch> are optional
-;;
-;; If maxwidth is not zero, the string will be filled at any middle marker
-;; or truncated if too long, fillchar is used for all whitespace.
-
-(defn- #_int build_stl_str_hl [#_window_C wp, #_Bytes out, #_int outlen, #_Bytes fmt, #_boolean use_sandbox, #_int fillchar, #_int maxwidth, #_stl_hlrec_C* hltab, #_stl_hlrec_C* tabtab]
-    ;; out: buffer to write into != nameBuff
-    ;; outlen: length of out[]
-    ;; use_sandbox: "fmt" was set insecurely, use sandbox
-    ;; hltab: return: HL attributes (can be null)
-    ;; tabtab: return: tab page nrs (can be null)
-    (§
-;       int[] groupitem = new int[STL_MAX_ITEM];
-;       stl_item_C[] item = ARRAY_stl_item(STL_MAX_ITEM);
-
-;       final int TMPLEN = 70;
-
-        ;; When the format starts with "%!" then evaluate it as an expression and
-        ;; use the result as the actual format string.
-
-;       Bytes usefmt = fmt;
-;       if (fmt.at(0) == (byte)'%' && fmt.at(1) == (byte)'!')
-;       {
-;           usefmt = eval_to_string_safe(fmt.plus(2), null, use_sandbox);
-;           if (usefmt == null)
-;               usefmt = fmt;
-;       }
-
-;       if (fillchar == 0)
-;           fillchar = ' ';
-        ;; Can't handle a multi-byte fill character yet.
-;       else if (1 < utf_char2len(fillchar))
-;           fillchar = '-';
-
-        ;; Get line and check if empty (cursorpos will show "0-1").
-        ;; Note that 'p' will become invalid when getting another buffer line.
-;       Bytes p = ml_get_buf(wp.w_buffer, wp.w_cursor.lnum, false);
-;       boolean empty_line = (p.at(0) == NUL);
-
-        ;; Get the byte value now in case we need it below.
-        ;; This is more efficient than making a copy of the line.
-;       int byteval;
-;       if (STRLEN(p) < wp.w_cursor.col)
-;           byteval = 0;
-;       else
-;           byteval = us_ptr2char(p.plus(wp.w_cursor.col));
-
-;       int groupdepth = 0;
-;       p = out;
-;       int curitem = 0;
-;       boolean prevchar_isflag = true;
-;       boolean prevchar_isitem = false;
-
-;       Bytes s;
-;       for (s = usefmt; s.at(0) != NUL; )
-;       {
-;           if (curitem == STL_MAX_ITEM)
-;           {
-                ;; There are too many items.  Add the error code to the statusline
-                ;; to give the user a hint about what went wrong.
-;               if (BLT(p.plus(6), out.plus(outlen)))
-;               {
-;                   BCOPY(p, u8(" E541"), 5);
-;                   p = p.plus(5);
-;               }
-;               break;
-;           }
-
-;           if (s.at(0) != NUL && s.at(0) != (byte)'%')
-;               prevchar_isflag = prevchar_isitem = false;
-
-            ;; Handle up to the next '%' or the end.
-
-;           while (s.at(0) != NUL && s.at(0) != (byte)'%' && BLT(p.plus(1), out.plus(outlen)))
-;               (p = p.plus(1)).be(-1, (s = s.plus(1)).at(-1));
-;           if (s.at(0) == NUL || BLE(out.plus(outlen), p.plus(1)))
-;               break;
-
-            ;; Handle one '%' item.
-
-;           s = s.plus(1);
-;           if (s.at(0) == NUL)     ;; ignore trailing %
-;               break;
-;           if (s.at(0) == (byte)'%')
-;           {
-;               if (BLE(out.plus(outlen), p.plus(1)))
-;                   break;
-;               (p = p.plus(1)).be(-1, (s = s.plus(1)).at(-1));
-;               prevchar_isflag = prevchar_isitem = false;
-;               continue;
-;           }
-;           if (s.at(0) == STL_MIDDLEMARK)
-;           {
-;               s = s.plus(1);
-;               if (0 < groupdepth)
-;                   continue;
-;               item[curitem].type = Middle;
-;               item[curitem++].start = p;
-;               continue;
-;           }
-;           if (s.at(0) == STL_TRUNCMARK)
-;           {
-;               s = s.plus(1);
-;               item[curitem].type = Trunc;
-;               item[curitem++].start = p;
-;               continue;
-;           }
-;           if (s.at(0) == (byte)')')
-;           {
-;               s = s.plus(1);
-;               if (groupdepth < 1)
-;                   continue;
-;               groupdepth--;
-
-;               Bytes t = item[groupitem[groupdepth]].start;
-;               p.be(0, NUL);
-;               int l = mb_string2cells(t, -1);
-;               if (groupitem[groupdepth] + 1 < curitem && item[groupitem[groupdepth]].minwid == 0)
-;               {
-                    ;; remove group if all items are empty
-;                   int n;
-;                   for (n = groupitem[groupdepth] + 1; n < curitem; n++)
-;                       if (item[n].type == Normal)
-;                           break;
-;                   if (n == curitem)
-;                   {
-;                       p = t;
-;                       l = 0;
-;                   }
-;               }
-;               if (item[groupitem[groupdepth]].maxwid < l)
-;               {
-                    ;; truncate, remove n bytes of text at the start
-
-                    ;; Find the first character that should be included.
-;                   int n = 0;
-;                   while (item[groupitem[groupdepth]].maxwid <= l)
-;                   {
-;                       l -= mb_ptr2cells(t.plus(n));
-;                       n += us_ptr2len_cc(t.plus(n));
-;                   }
-
-;                   t.be(0, (byte)'<');
-;                   BCOPY(t, 1, t, n, BDIFF(p, t) - n);
-;                   p = p.minus(n - 1);
-                    ;; Fill up space left over by half a double-wide char.
-;                   while (++l < item[groupitem[groupdepth]].minwid)
-;                       (p = p.plus(1)).be(-1, fillchar);
-
-                    ;; correct the start of the items for the truncation
-;                   for (l = groupitem[groupdepth] + 1; l < curitem; l++)
-;                   {
-;                       item[l].start = item[l].start.minus(n);
-;                       if (BLT(item[l].start, t))
-;                           item[l].start = t;
-;                   }
-;               }
-;               else if (l < Math.abs(item[groupitem[groupdepth]].minwid))
-;               {
-                    ;; fill
-;                   int n = item[groupitem[groupdepth]].minwid;
-;                   if (n < 0)
-;                   {
-                        ;; fill by appending characters
-;                       n = 0 - n;
-;                       while (l++ < n && BLT(p.plus(1), out.plus(outlen)))
-;                           (p = p.plus(1)).be(-1, fillchar);
-;                   }
-;                   else
-;                   {
-                        ;; fill by inserting characters
-;                       BCOPY(t, n - l, t, 0, BDIFF(p, t));
-;                       l = n - l;
-;                       if (BLE(out.plus(outlen), p.plus(l)))
-;                           l = BDIFF(out.plus(outlen), p.minus(1));
-;                       p = p.plus(l);
-;                       for (n = groupitem[groupdepth] + 1; n < curitem; n++)
-;                           item[n].start = item[n].start.plus(l);
-;                       for ( ; 0 < l; l--)
-;                           (t = t.plus(1)).be(-1, fillchar);
-;                   }
-;               }
-;               continue;
-;           }
-;           int minwid = 0, maxwid = 9999;
-;           boolean zeropad = false;
-;           int l = 1;
-;           if (s.at(0) == (byte)'0')
-;           {
-;               s = s.plus(1);
-;               zeropad = true;
-;           }
-;           if (s.at(0) == (byte)'-')
-;           {
-;               s = s.plus(1);
-;               l = -1;
-;           }
-;           if (asc_isdigit(s.at(0)))
-;           {
-;               { Bytes[] __ = { s }; minwid = (int)getdigits(__); s = __[0]; }
-;               if (minwid < 0)     ;; overflow
-;                   minwid = 0;
-;           }
-;           if (s.at(0) == STL_USER_HL)
-;           {
-;               item[curitem].type = Highlight;
-;               item[curitem].start = p;
-;               item[curitem].minwid = (9 < minwid) ? 1 : minwid;
-;               s = s.plus(1);
-;               curitem++;
-;               continue;
-;           }
-;           if (s.at(0) == STL_TABPAGENR || s.at(0) == STL_TABCLOSENR)
-;           {
-;               if (s.at(0) == STL_TABCLOSENR)
-;               {
-;                   if (minwid == 0)
-;                   {
-                        ;; %X ends the close label, go back to the previously define tab label nr.
-;                       for (int n = curitem - 1; 0 <= n; --n)
-;                           if (item[n].type == TabPage && 0 <= item[n].minwid)
-;                           {
-;                               minwid = item[n].minwid;
-;                               break;
-;                           }
-;                   }
-;                   else
-                        ;; close nrs are stored as negative values
-;                       minwid = - minwid;
-;               }
-;               item[curitem].type = TabPage;
-;               item[curitem].start = p;
-;               item[curitem].minwid = minwid;
-;               s = s.plus(1);
-;               curitem++;
-;               continue;
-;           }
-;           if (s.at(0) == (byte)'.')
-;           {
-;               s = s.plus(1);
-;               if (asc_isdigit(s.at(0)))
-;               {
-;                   { Bytes[] __ = { s }; maxwid = (int)getdigits(__); s = __[0]; }
-;                   if (maxwid <= 0)        ;; overflow
-;                       maxwid = 50;
-;               }
-;           }
-;           minwid = (50 < minwid ? 50 : minwid) * l;
-;           if (s.at(0) == (byte)'(')
-;           {
-;               groupitem[groupdepth++] = curitem;
-;               item[curitem].type = Group;
-;               item[curitem].start = p;
-;               item[curitem].minwid = minwid;
-;               item[curitem].maxwid = maxwid;
-;               s = s.plus(1);
-;               curitem++;
-;               continue;
-;           }
-;           if (vim_strchr(STL_ALL, s.at(0)) == null)
-;           {
-;               s = s.plus(1);
-;               continue;
-;           }
-;           byte opt = (s = s.plus(1)).at(-1);
-
-            ;; OK - now for the real work.
-;           byte base = 'D';
-;           boolean itemisflag = false;
-;           boolean fillable = true;
-;           long num = -1;
-;           Bytes str = null;
-;           switch (opt)
-;           {
-;               case STL_FILEPATH:
-;               case STL_FULLPATH:
-;               case STL_FILENAME:
-;               {
-;                   fillable = false;   ;; don't change ' ' to fillchar
-;                   vim_strncpy(@nameBuff, buf_spname(wp.w_buffer, opt == STL_FULLPATH), MAXPATHL - 1);
-;                   trans_characters(@nameBuff, MAXPATHL);
-;                   if (opt != STL_FILENAME)
-;                       str = @nameBuff;
-;                   else
-;                       str = gettail(@nameBuff);
-;                   break;
-;               }
-
-;               case STL_VIM_EXPR: ;; '{'
-;               {
-;                   itemisflag = true;
-;                   Bytes[] t = { p };
-;                   while (s.at(0) != (byte)'}' && s.at(0) != NUL && BLT(p.plus(1), out.plus(outlen)))
-;                       (p = p.plus(1)).be(-1, (s = s.plus(1)).at(-1));
-;                   if (s.at(0) != (byte)'}')      ;; missing '}' or out of space
-;                       break;
-;                   s = s.plus(1);
-;                   p.be(0, NUL);
-;                   p = t[0];
-
-;                   buffer_C o_curbuf = @curbuf;
-;                   window_C o_curwin = @curwin;
-;                   @curwin = wp;
-;                   @curbuf = wp.w_buffer;
-
-;                   str = eval_to_string_safe(p, t, use_sandbox);
-
-;                   @curwin = o_curwin;
-;                   @curbuf = o_curbuf;
-
-;                   if (str != null && str.at(0) != 0)
-;                   {
-;                       if (skipdigits(str).at(0) == NUL)
-;                       {
-;                           num = libC.atoi(str);
-;                           str = null;
-;                           itemisflag = false;
-;                       }
-;                   }
-;                   break;
-;               }
-
-;               case STL_LINE:
-;               {
-;                   num = ((wp.w_buffer.b_ml.ml_flags & ML_EMPTY) != 0) ? 0 : wp.w_cursor.lnum;
-;                   break;
-;               }
-
-;               case STL_NUMLINES:
-;               {
-;                   num = wp.w_buffer.b_ml.ml_line_count;
-;                   break;
-;               }
-
-;               case STL_COLUMN:
-;               {
-;                   num = ((@State & INSERT) == 0 && empty_line) ? 0 : wp.w_cursor.col + 1;
-;                   break;
-;               }
-
-;               case STL_VIRTCOL:
-;               case STL_VIRTCOL_ALT:
-;               {
-                    ;; In list mode virtcol needs to be recomputed.
-;                   int[] virtcol = { wp.w_virtcol };
-;                   if (wp.w_onebuf_opt.@wo_list && lcs_tab1[0] == NUL)
-;                   {
-;                       wp.w_onebuf_opt.@wo_list = false;
-;                       getvcol(wp, wp.w_cursor, null, virtcol, null);
-;                       wp.w_onebuf_opt.@wo_list = true;
-;                   }
-;                   virtcol[0]++;
-                    ;; Don't display %V if it's the same as %c.
-;                   if (opt == STL_VIRTCOL_ALT && (virtcol[0] == (((@State & INSERT) == 0 && empty_line) ? 0 : wp.w_cursor.col + 1)))
-;                       break;
-;                   num = (long)virtcol[0];
-;                   break;
-;               }
-
-;               case STL_PERCENTAGE:
-;               {
-;                   num = (int)(wp.w_cursor.lnum * 100L / wp.w_buffer.b_ml.ml_line_count);
-;                   break;
-;               }
-
-;               case STL_ALTPERCENT:
-;               {
-;                   str = tmp;
-;                   get_rel_pos(wp, str, TMPLEN);
-;                   break;
-;               }
-
-;               case STL_ARGLISTSTAT:
-;               {
-;                   fillable = false;
-;                   tmp.be(0, NUL);
-;                   if (append_arg_number(wp, tmp, tmp.size(), false))
-;                       str = tmp;
-;                   break;
-;               }
-
-;               case STL_KEYMAP:
-;               {
-;                   fillable = false;
-;                   break;
-;               }
-
-;               case STL_PAGENUM:
-;               {
-;                   num = 0;
-;                   break;
-;               }
-
-;               case STL_BUFNO:
-;               {
-;                   num = wp.w_buffer.b_fnum;
-;                   break;
-;               }
-
-;               case STL_OFFSET_X:
-;                   base = 'X';
-;               case STL_OFFSET:
-;               {
-;                   long off = ml_find_line_or_offset(wp.w_buffer, wp.w_cursor.lnum, null);
-;                   num = ((wp.w_buffer.b_ml.ml_flags & ML_EMPTY) != 0 || off < 0)
-;                       ? 0
-;                       : off + 1 + (((@State & INSERT) == 0 && empty_line) ? 0 : wp.w_cursor.col);
-;                   break;
-;               }
-
-;               case STL_BYTEVAL_X:
-;                   base = 'X';
-;               case STL_BYTEVAL:
-;                   num = byteval;
-;                   if (num == NL)
-;                       num = 0;
-;                   break;
-
-;               case STL_ROFLAG:
-;               case STL_ROFLAG_ALT:
-;               {
-;                   itemisflag = true;
-;                   if (wp.w_buffer.@b_p_ro)
-;                       str = (opt == STL_ROFLAG_ALT) ? u8(",RO") : u8("[RO]");
-;                   break;
-;               }
-
-;               case STL_HELPFLAG:
-;               case STL_HELPFLAG_ALT:
-;               {
-;                   itemisflag = true;
-;                   break;
-;               }
-
-;               case STL_FILETYPE:
-;                   break;
-
-;               case STL_FILETYPE_ALT:
-;               {
-;                   itemisflag = true;
-;                   break;
-;               }
-
-;               case STL_MODIFIED:
-;               case STL_MODIFIED_ALT:
-;               {
-;                   itemisflag = true;
-;                   switch ((opt == STL_MODIFIED_ALT ? 1 : 0) + (bufIsChanged(wp.w_buffer) ? 2 : 0) + (!wp.w_buffer.@b_p_ma ? 4 : 0))
-;                   {
-;                       case 2: str = u8("[+]"); break;
-;                       case 3: str = u8(",+"); break;
-;                       case 4: str = u8("[-]"); break;
-;                       case 5: str = u8(",-"); break;
-;                       case 6: str = u8("[+-]"); break;
-;                       case 7: str = u8(",+-"); break;
-;                   }
-;                   break;
-;               }
-
-;               case STL_HIGHLIGHT:
-;               {
-;                   Bytes t = s;
-;                   while (s.at(0) != (byte)'#' && s.at(0) != NUL)
-;                       s = s.plus(1);
-;                   if (s.at(0) == (byte)'#')
-;                   {
-;                       item[curitem].type = Highlight;
-;                       item[curitem].start = p;
-;                       item[curitem].minwid = -syn_namen2id(t, BDIFF(s, t));
-;                       curitem++;
-;                   }
-;                   if (s.at(0) != NUL)
-;                       s = s.plus(1);
-;                   continue;
-;               }
-;           }
-
-;           item[curitem].start = p;
-;           item[curitem].type = Normal;
-;           if (str != null && str.at(0) != NUL)
-;           {
-;               Bytes t = str;
-;               if (itemisflag)
-;               {
-;                   if ((t.at(0) != NUL && t.at(1) != NUL)
-;                           && ((!prevchar_isitem && t.at(0) == (byte)',') || (prevchar_isflag && t.at(0) == (byte)' ')))
-;                       t = t.plus(1);
-;                   prevchar_isflag = true;
-;               }
-;               l = mb_string2cells(t, -1);
-;               if (0 < l)
-;                   prevchar_isitem = true;
-;               if (maxwid < l)
-;               {
-;                   while (maxwid <= l)
-;                   {
-;                       l -= mb_ptr2cells(t);
-;                       t = t.plus(us_ptr2len_cc(t));
-;                   }
-;                   if (BLE(out.plus(outlen), p.plus(1)))
-;                       break;
-;                   (p = p.plus(1)).be(-1, (byte)'<');
-;               }
-;               if (0 < minwid)
-;               {
-;                   for ( ; l < minwid && BLT(p.plus(1), out.plus(outlen)); l++)
-;                   {
-                        ;; Don't put a "-" in front of a digit.
-;                       if (l + 1 == minwid && fillchar == '-' && asc_isdigit(t.at(0)))
-;                           (p = p.plus(1)).be(-1, (byte)' ');
-;                       else
-;                           (p = p.plus(1)).be(-1, fillchar);
-;                   }
-;                   minwid = 0;
-;               }
-;               else
-;                   minwid *= -1;
-;               while (t.at(0) != NUL && BLT(p.plus(1), out.plus(outlen)))
-;               {
-;                   (p = p.plus(1)).be(-1, (t = t.plus(1)).at(-1));
-                    ;; Change a space by fillchar, unless fillchar is '-' and a digit follows.
-;                   if (fillable && p.at(-1) == (byte)' ' && (!asc_isdigit(t.at(0)) || fillchar != '-'))
-;                       p.be(-1, fillchar);
-;               }
-;               for ( ; l < minwid && BLT(p.plus(1), out.plus(outlen)); l++)
-;                   (p = p.plus(1)).be(-1, fillchar);
-;           }
-;           else if (0 <= num)
-;           {
-;               int nbase = (base == 'D' ? 10 : (base == 'O' ? 8 : 16));
-;               Bytes nstr = new Bytes(20);
-
-;               if (BLE(out.plus(outlen), p.plus(20)))
-;                   break;          ;; not sufficient space
-;               prevchar_isitem = true;
-;               Bytes t = nstr;
-;               if (opt == STL_VIRTCOL_ALT)
-;               {
-;                   (t = t.plus(1)).be(-1, (byte)'-');
-;                   minwid--;
-;               }
-;               (t = t.plus(1)).be(-1, (byte)'%');
-;               if (zeropad)
-;                   (t = t.plus(1)).be(-1, (byte)'0');
-;               (t = t.plus(1)).be(-1, (byte)'*');
-;               (t = t.plus(1)).be(-1, (nbase == 16) ? base : (nbase == 8) ? (byte)'o' : (byte)'d');
-;               t.be(0, NUL);
-
-;               l = 1;
-;               for (long n = num; nbase <= n; n /= nbase)
-;                   l++;
-;               if (opt == STL_VIRTCOL_ALT)
-;                   l++;
-;               if (maxwid < l)
-;               {
-;                   l += 2;
-;                   long n = l - maxwid;
-;                   while (maxwid < l--)
-;                       num /= nbase;
-;                   (t = t.plus(1)).be(-1, (byte)'>');
-;                   (t = t.plus(1)).be(-1, (byte)'%');
-;                   t.be(0, t.at(-3));
-;                   (t = t.plus(1)).be(0, NUL);
-;                   vim_snprintf(p, outlen - BDIFF(p, out), nstr, 0, num, n);
-;               }
-;               else
-;                   vim_snprintf(p, outlen - BDIFF(p, out), nstr, minwid, num);
-;               p = p.plus(STRLEN(p));
-;           }
-;           else
-;               item[curitem].type = Empty;
-
-;           if (0 <= num || (!itemisflag && str != null && str.at(0) != NUL))
-;               prevchar_isflag = false;        ;; Item not null, but not a flag.
-;           curitem++;
-;       }
-;       p.be(0, NUL);
-;       int itemcnt = curitem;
-
-;       int width = mb_string2cells(out, -1);
-;       if (0 < maxwidth && maxwidth < width)
-;       {
-            ;; Result is too long, must truncate somewhere.
-;           int l = 0;
-;           if (itemcnt == 0)
-;               s = out;
-;           else
-;           {
-;               for ( ; l < itemcnt; l++)
-;                   if (item[l].type == Trunc)
-;                   {
-                        ;; Truncate at %< item.
-;                       s = item[l].start;
-;                       break;
-;                   }
-;               if (l == itemcnt)
-;               {
-                    ;; No %< item, truncate first item.
-;                   l = 0;
-;                   s = item[l].start;
-;               }
-;           }
-
-;           if (maxwidth <= width - mb_string2cells(s, -1))
-;           {
-                ;; Truncation mark is beyond max length.
-;               s = out;
-;               width = 0;
-;               for ( ; ; )
-;               {
-;                   width += mb_ptr2cells(s);
-;                   if (maxwidth <= width)
-;                       break;
-;                   s = s.plus(us_ptr2len_cc(s));
-;               }
-                ;; Fill up for half a double-wide character.
-;               while (++width < maxwidth)
-;                   (s = s.plus(1)).be(-1, fillchar);
-;               for (l = 0; l < itemcnt; l++)
-;                   if (BLT(s, item[l].start))
-;                       break;
-;               itemcnt = l;
-;               (s = s.plus(1)).be(-1, (byte)'>');
-;               s.be(0, NUL);
-;           }
-;           else
-;           {
-;               int n = 0;
-;               while (maxwidth <= width)
-;               {
-;                   width -= mb_ptr2cells(s.plus(n));
-;                   n += us_ptr2len_cc(s.plus(n));
-;               }
-
-;               p = s.plus(n);
-;               BCOPY(s, 1, p, 0, STRLEN(p) + 1);
-;               s.be(0, (byte)'<');
-
-                ;; Fill up for half a double-wide character.
-;               while (++width < maxwidth)
-;               {
-;                   s = s.plus(STRLEN(s));
-;                   (s = s.plus(1)).be(-1, fillchar);
-;                   s.be(0, NUL);
-;               }
-
-;               --n;        ;; count the '<'
-;               for ( ; l < itemcnt; l++)
-;               {
-;                   if (BLE(s, item[l].start.minus(n)))
-;                       item[l].start = item[l].start.minus(n);
-;                   else
-;                       item[l].start = s;
-;               }
-;           }
-;           width = maxwidth;
-;       }
-;       else if (width < maxwidth && STRLEN(out) + maxwidth - width + 1 < outlen)
-;       {
-            ;; Apply STL_MIDDLE if any.
-;           int l;
-;           for (l = 0; l < itemcnt; l++)
-;               if (item[l].type == Middle)
-;                   break;
-;           if (l < itemcnt)
-;           {
-;               p = item[l].start.plus(maxwidth - width);
-;               BCOPY(p, item[l].start, STRLEN(item[l].start) + 1);
-;               for (s = item[l].start; BLT(s, p); s = s.plus(1))
-;                   s.be(0, fillchar);
-;               for (l++; l < itemcnt; l++)
-;                   item[l].start = item[l].start.plus(maxwidth - width);
-;               width = maxwidth;
-;           }
-;       }
-
-        ;; Store the info about highlighting.
-;       if (hltab != null)
-;       {
-;           int i = 0;
-;           for (int j = 0; j < itemcnt; j++)
-;           {
-;               if (item[j].type == Highlight)
-;               {
-;                   hltab[i].start = item[j].start;
-;                   hltab[i].userhl = item[j].minwid;
-;                   i++;
-;               }
-;           }
-;           hltab[i].start = null;
-;           hltab[i].userhl = 0;
-;       }
-
-        ;; Store the info about tab pages labels.
-;       if (tabtab != null)
-;       {
-;           int i = 0;
-;           for (int j = 0; j < itemcnt; j++)
-;           {
-;               if (item[j].type == TabPage)
-;               {
-;                   tabtab[i].start = item[j].start;
-;                   tabtab[i].userhl = item[j].minwid;
-;                   i++;
-;               }
-;           }
-;           tabtab[i].start = null;
-;           tabtab[i].userhl = 0;
-;       }
-
-;       return width;
-    ))
-
 ;; Get relative cursor position in window into "buf[buflen]", in the form 99%,
 ;; using "Top", "Bot" or "All" when appropriate.
 
@@ -74590,22 +73242,6 @@
 
 ;;; ============================================================================================== VimT
 
-;; fileio.c: read from and write to a file --------------------------------------------------------
-
-;; Set default or forced 'binary'.
-
-(defn- #_void set_file_options [#_exarg_C eap]
-    (§
-        ;; set or reset 'binary'
-;       if (eap != null && eap.force_bin != 0)
-;       {
-;           boolean oldval = @curbuf.@b_p_bin;
-
-;           @curbuf.@b_p_bin = (eap.force_bin == FORCE_BIN);
-;           set_options_bin(oldval, @curbuf.@b_p_bin, OPT_LOCAL);
-;       }
-    ))
-
 ;; Return true if the CursorHold event can be triggered.
 
 (defn- #_boolean trigger_cursorhold []
@@ -74769,20 +73405,6 @@
 
 (defn- #_boolean undo_allowed []
     (§
-        ;; Don't allow changes when 'modifiable' is off.
-;       if (!@curbuf.@b_p_ma)
-;       {
-;           emsg(e_modifiable);
-;           return false;
-;       }
-
-        ;; In the sandbox it's not allowed to change the text.
-;       if (@sandbox != 0)
-;       {
-;           emsg(e_sandbox);
-;           return false;
-;       }
-
         ;; Don't allow changes in the buffer while editing the cmdline.
         ;; The caller of getcmdline() may get confused.
 ;       if (@textlock != 0)
@@ -76359,7 +74981,7 @@
         (tcap KS_NAME,      null                        )
     ])
 
-;; DEFAULT_TERM is used, when no terminal is specified with -T option or $TERM.
+;; DEFAULT_TERM is used, when no terminal is specified with $TERM.
 
 (final Bytes DEFAULT_TERM (u8 "ansi"))
 
@@ -92326,40 +90948,40 @@
 
 (final cmdname_C* cmdnames
     [
-        (->cmdname_C (u8 "append"),        ex_append,        (| BANG RANGE ZEROR CMDWIN MODIFY),                           ADDR_LINES),
+        (->cmdname_C (u8 "append"),        ex_append,        (| BANG RANGE ZEROR CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "abbreviate"),    ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "abclear"),       ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "aboveleft"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "ascii"),         ex_ascii,         (| SBOXOK CMDWIN),                                            ADDR_LINES),
+        (->cmdname_C (u8 "ascii"),         ex_ascii,         (| CMDWIN),                                                   ADDR_LINES),
         (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN MODIFY),                           ADDR_LINES),
+        (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "center"),        ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 "center"),        ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "cnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cnoreabbrev"),   ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "cunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN MODIFY),                         ADDR_LINES),
+        (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
-        (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
+        (->cmdname_C (u8 "display"),       ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
+        (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "enew"),          ex_edit,             BANG,                                                      ADDR_LINES),
-        (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
+        (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL SBOXOK CMDWIN),                    ADDR_LINES),
-        (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT SBOXOK CMDWIN),                         ADDR_LINES),
+        (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "hide"),          ex_hide,          (| BANG RANGE NOTADR COUNT EXTRA NOTRLCOM),                   ADDR_WINDOWS),
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-        (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN MODIFY),                                 ADDR_LINES),
+        (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "iabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "imap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
@@ -92368,32 +90990,32 @@
         (->cmdname_C (u8 "inoreabbrev"),   ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "iunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "iunabbrev"),     ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN MODIFY),                   ADDR_LINES),
+        (->cmdname_C (u8 "join"),          ex_join,          (| BANG RANGE COUNT EXFLAGS CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 SBOXOK CMDWIN),                                ADDR_LINES),
+        (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "keepalt"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 "left"),          ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
-        (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 SBOXOK CMDWIN),                                ADDR_LINES),
+        (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+        (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
         (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "messages"),      ex_messages,         CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "new"),           ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
+        (->cmdname_C (u8 "new"),           ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "noremap"),       ex_map,           (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
-        (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,    (| SBOXOK CMDWIN),                                            ADDR_LINES),
+        (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,    (| CMDWIN),                                                   ADDR_LINES),
         (->cmdname_C (u8 "noreabbrev"),    ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG NOTRLCOM USECTRLV SBOXOK CMDWIN), ADDR_LINES),
+        (->cmdname_C (u8 "normal"),        ex_normal,        (| RANGE BANG EXTRA NEEDARG NOTRLCOM USECTRLV CMDWIN),        ADDR_LINES),
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "nunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "omap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
@@ -92401,8 +91023,8 @@
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
         (->cmdname_C (u8 "onoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN SBOXOK),                        ADDR_LINES),
-        (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN MODIFY),                    ADDR_LINES),
+        (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
+        (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "quit"),          ex_quit,          (| BANG RANGE COUNT NOTADR CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "quitall"),       ex_quit_all,         BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "qall"),          ex_quit_all,      (| BANG CMDWIN),                                              ADDR_LINES),
@@ -92411,21 +91033,20 @@
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA NOTRLCOM CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
-        (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN MODIFY),                    ADDR_LINES),
-        (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
+        (->cmdname_C (u8 "right"),         ex_align,         (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "sandbox"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
-        (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
-        (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN SBOXOK),                                      ADDR_LINES),
-        (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG NOTRLCOM SBOXOK CMDWIN),                ADDR_LINES),
+        (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
+        (->cmdname_C (u8 "setglobal"),     ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
+        (->cmdname_C (u8 "setlocal"),      ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
+        (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG NOTRLCOM CMDWIN),                       ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "smapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "snomagic"),      ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "snoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
+        (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startgreplace"), ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
@@ -92433,26 +91054,26 @@
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "sunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "sview"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
+        (->cmdname_C (u8 "sview"),         ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
-        (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 "t"),             ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "unabbreviate"),  ex_abbreviate,    (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "unmap"),         ex_unmap,         (| BANG EXTRA NOTRLCOM USECTRLV CMDWIN),                      ADDR_LINES),
-        (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM SBOXOK CMDWIN),                     ADDR_LINES),
+        (->cmdname_C (u8 "unsilent"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM CMDWIN),                            ADDR_LINES),
         (->cmdname_C (u8 "vglobal"),       ex_global,        (| RANGE EXTRA DFLALL CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM SBOXOK CMDWIN),        ADDR_LINES),
+        (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA NOTRLCOM CMDWIN),               ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA NOTRLCOM),                                   ADDR_LINES),
-        (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "view"),          ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
+        (->cmdname_C (u8 "visual"),        ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
+        (->cmdname_C (u8 "view"),          ex_edit,          (| BANG FILE1 EDITCMD),                                       ADDR_LINES),
         (->cmdname_C (u8 "vmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "vmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "vnoremap"),      ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "vnew"),          ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
-        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD ARGOPT),                   ADDR_LINES),
+        (->cmdname_C (u8 "vnew"),          ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
+        (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG FILE1 RANGE NOTADR EDITCMD),                          ADDR_LINES),
         (->cmdname_C (u8 "vunmap"),        ex_unmap,         (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
         (->cmdname_C (u8 "xmap"),          ex_map,           (| EXTRA NOTRLCOM USECTRLV CMDWIN),                           ADDR_LINES),
@@ -92465,11 +91086,11 @@
         ;; commands that don't start with a lowercase letter
 
         (->cmdname_C (u8 "#"),             ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
-        (->cmdname_C (u8 "&"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
-        (->cmdname_C (u8 "<"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN MODIFY),                        ADDR_LINES),
+        (->cmdname_C (u8 "&"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
+        (->cmdname_C (u8 "<"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "="),             ex_equal,         (| RANGE DFLALL EXFLAGS CMDWIN),                              ADDR_LINES),
-        (->cmdname_C (u8 ">"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN MODIFY),                        ADDR_LINES),
-        (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
+        (->cmdname_C (u8 ">"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
+        (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
     ])
 
 ;;; ============================================================================================== VimZ
