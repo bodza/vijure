@@ -88,7 +88,7 @@
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (~t ~(second s))) (f t (nnext s))) '(nil)))]
         (defmacro final [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
 
-(let [I '(boolean boolean* int int* int** long long* maybean) O (cons 'Bytes C) O* (concat '(Bytes* Object*) C*) O** C**
+(let [I '(boolean boolean* byte* int int* int** long long* maybean) O (cons 'Bytes C) O* (concat '(Bytes* Object*) C*) O** C**
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)) (zipmap O** (repeat 'object**)))]
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (atom (~t ~(second s)))) (f t (nnext s))) '(nil)))]
         (defmacro atom! [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
@@ -818,7 +818,7 @@
 
 (final int CT_CELL_MASK    0x07)    ;; mask: nr of display cells (1, 2 or 4)
 (final int CT_PRINT_CHAR   0x10)    ;; flag: set for printable chars
-(final int CT_ID_CHAR      0x20)    ;; flag: set for ID chars
+(final int CT_IDENT_CHAR   0x20)    ;; flag: set for ID chars
 (final int CT_FNAME_CHAR   0x40)    ;; flag: set for file name chars
 
 ;; arguments for win-split()
@@ -2272,7 +2272,7 @@
 (atom! boolean  keyStuffed)                 ;; true if current char from stuffbuf
 (atom! int      maptick)                    ;; tick for each non-mapped char
 
-(final byte*    chartab     256)            ;; table used in charset.c; see init-chartab()
+(atom! byte*    chartab     256)            ;; table used in charset.c; see init-chartab()
 
 (atom! int      must_redraw)                ;; type of redraw necessary
 (atom! boolean  skip_redraw)                ;; skip redraw once
@@ -33021,44 +33021,34 @@
 
 (atom! boolean chartab_initialized)
 
-;; b_chartab[] is an array of 8 ints, each bit representing one of the characters 0-255.
 (defn- #_void set-chartab [#_int c]
-    (§
-        ((ß @curbuf.b_chartab[c >>> 5] =) (| (... (:b_chartab @curbuf) (>>> c 5)) (<< 1 (& c 0x1f))))
-        nil
-    ))
+    (swap! curbuf update-in [:b_chartab (>>> c 5)] | (<< 1 (& c 0x1f)))
+    nil)
 
 (defn- #_void reset-chartab [#_int c]
-    (§
-        ((ß @curbuf.b_chartab[c >>> 5] =) (& (... (:b_chartab @curbuf) (>>> c 5)) (bit-not (<< 1 (& c 0x1f)))))
-        nil
-    ))
+    (swap! curbuf update-in [:b_chartab (>>> c 5)] & (bit-not (<< 1 (& c 0x1f))))
+    nil)
 
 (defn- #_int get-chartab [#_int c]
     (& (... (:b_chartab @curbuf) (>>> c 5)) (<< 1 (& c 0x1f))))
 
-;; Fill chartab[].  Also fills curbuf.b_chartab[] with flags for keyword
-;; characters for current buffer.
+;; Fill chartab[].  Also fills @curbuf.b_chartab[] with flags for keyword characters for current buffer.
 ;;
-;; Depends on the option settings 'iskeyword', 'isident', 'isfname',
-;; 'isprint' and 'encoding'.
+;; Depends on the option settings 'isident', 'isprint', 'isfname' and 'iskeyword'.
 ;;
 ;; The index in chartab[] depends on 'encoding':
 ;; - For non-multi-byte index with the byte (same as the character).
-;; - For UTF-8 index with the character (when first byte is up to 0x80 it is
-;;   the same as the character, if the first byte is 0x80 and above it depends
-;;   on further bytes).
+;; - For UTF-8 index with the character (when first byte is up to 0x80 it is the same
+;;   as the character, if the first byte is 0x80 and above it depends on further bytes).
 ;;
 ;; The contents of chartab[]:
-;; - The lower two bits, masked by CT_CELL_MASK, give the number of display
-;;   cells the character occupies (1 or 2).  Not valid for UTF-8 above 0x80.
-;; - CT_PRINT_CHAR bit is set when the character is printable (no need to
-;;   translate the character before displaying it).
+;; - The lower three bits, masked by CT_CELL_MASK, give the number of display cells
+;;   the character occupies (1, 2 or 4).  Not valid for UTF-8 above 0x80.
+;; - CT_PRINT_CHAR bit is set when the character is printable (no need to translate before displaying it).
 ;; - CT_FNAME_CHAR bit is set when the character can be in a file name.
-;; - CT_ID_CHAR bit is set when the character can be in an identifier.
+;; - CT_IDENT_CHAR bit is set when the character can be in an identifier.
 ;;
-;; Return false if 'iskeyword', 'isident', 'isfname' or 'isprint' option has
-;; an error, true otherwise.
+;; Return false if 'isident', 'isprint', 'isfname' or 'iskeyword' option has an error, true otherwise.
 
 (defn- #_boolean init-chartab [#_boolean global]
     ;; global: false: only set @curbuf.b_chartab[]
@@ -33070,13 +33060,13 @@
 
             ((ß int c =) 0)
             ((ß c =) (loop-when-recur c (< c (byte \space)) (inc c) => c
-                ((ß chartab[c] =) (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2)))
+                ((ß @chartab[c] =) (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2)))
             ))
             ((ß c =) (loop-when-recur c (<= c (byte \~)) (inc c) => c
-                ((ß chartab[c] =) (inc CT_PRINT_CHAR))
+                ((ß @chartab[c] =) (inc CT_PRINT_CHAR))
             ))
             (loop-when-recur c (< c 256) (inc c)
-                ((ß chartab[c] =) (if (<= 0xa0 c)
+                ((ß @chartab[c] =) (if (<= 0xa0 c)
                     (inc CT_PRINT_CHAR)    ;; bytes 0xa0 - 0xff are printable (latin1)
                     (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))   ;; the rest is unprintable by default
                 ))
@@ -33084,15 +33074,15 @@
 
             ;; Assume that every multi-byte char is a filename character.
             (loop-when-recur [c 0xa0] (< c 256) [(inc c)]
-                ((ß chartab[c] =) (| (... chartab c) CT_FNAME_CHAR))
+                ((ß @chartab[c] =) (| (... @chartab c) CT_FNAME_CHAR))
             )
         )
 
         ;; Init word char flags all to false.
 
-        (AFILL (:b_chartab @curbuf), 0)
+        (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
 
-        ;; Walk through the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
+        ;; Walk through the 'isident', 'isprint', 'isfname' and 'iskeyword' options.
         ;; Each option is a list of characters, character numbers or ranges,
         ;; separated by commas, e.g.: "200-210,x,#-178,-"
 
@@ -33166,9 +33156,9 @@
                         (condp == i
                             0 ;; (re)set ID flag
                                 (do
-                                    ((ß chartab[c] =) (if tilde
-                                        (& (... chartab c) (bit-not CT_ID_CHAR))
-                                        (| (... chartab c) CT_ID_CHAR)
+                                    ((ß @chartab[c] =) (if tilde
+                                        (& (... @chartab c) (bit-not CT_IDENT_CHAR))
+                                        (| (... @chartab c) CT_IDENT_CHAR)
                                     ))
                                 )
                             1 ;; (re)set printable
@@ -33176,21 +33166,21 @@
                                     (when (or (< c (byte \space)) (< (byte \~) c))
                                         (cond tilde
                                         (do
-                                            ((ß chartab[c] =) (byte (+ (& (... chartab c) (bit-not CT_CELL_MASK)) (if (flag? @dy_flags DY_UHEX) 4 2))))
-                                            ((ß chartab[c] =) (& (... chartab c) (bit-not CT_PRINT_CHAR)))
+                                            ((ß @chartab[c] =) (byte (+ (& (... @chartab c) (bit-not CT_CELL_MASK)) (if (flag? @dy_flags DY_UHEX) 4 2))))
+                                            ((ß @chartab[c] =) (& (... @chartab c) (bit-not CT_PRINT_CHAR)))
                                         )
                                         :else
                                         (do
-                                            ((ß chartab[c] =) (byte (+ (& (... chartab c) (bit-not CT_CELL_MASK)) 1)))
-                                            ((ß chartab[c] =) (| (... chartab c) CT_PRINT_CHAR))
+                                            ((ß @chartab[c] =) (byte (+ (& (... @chartab c) (bit-not CT_CELL_MASK)) 1)))
+                                            ((ß @chartab[c] =) (| (... @chartab c) CT_PRINT_CHAR))
                                         ))
                                     )
                                 )
                             2 ;; (re)set fname flag
                                 (do
-                                    ((ß chartab[c] =) (if tilde
-                                        (& (... chartab c) (bit-not CT_FNAME_CHAR))
-                                        (| (... chartab c) CT_FNAME_CHAR)
+                                    ((ß @chartab[c] =) (if tilde
+                                        (& (... @chartab c) (bit-not CT_FNAME_CHAR))
+                                        (| (... @chartab c) CT_FNAME_CHAR)
                                     ))
                                 )
                             3 ;; (re)set keyword flag
@@ -33315,7 +33305,7 @@
 
 (defn- #_int mb-byte2cells [#_byte b]
     (let [c (char_u b)]
-        (if (< c 0x80) (& (... chartab c) CT_CELL_MASK) 0)
+        (if (< c 0x80) (& (... @chartab c) CT_CELL_MASK) 0)
     ))
 
 ;; Return the number of screen cells occupied by character "c".
@@ -33327,7 +33317,7 @@
         (is-special c) (+ (mb-char2cells (char_u (KB-SECOND c))) 2)
         ;; UTF-8: above 0x80 need to check the value.
         (<= 0x80 c) (utf-char2cells c)
-        :else (& (... chartab (& c 0xff)) CT_CELL_MASK)
+        :else (& (... @chartab (& c 0xff)) CT_CELL_MASK)
     ))
 
 ;; Return the number of screen cells for character at "*s".
@@ -33338,7 +33328,7 @@
     ([s i]
         (let [c (char_u (.at s i))]
             ;; For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
-            (if (<= 0x80 c) (us-ptr2cells s, i) (& (... chartab c) CT_CELL_MASK))
+            (if (<= 0x80 c) (us-ptr2cells s, i) (& (... @chartab c) CT_CELL_MASK))
         )))
 
 ;; Return the number of screen cells for "*s" counting TABs as two characters: "^I".
@@ -33386,7 +33376,7 @@
 ;; Letters and characters from the 'isident' option.
 
 (defn- #_boolean vim-isidentc [#_int c]
-    (and (< 0 c 0x100) (flag? (... chartab c) CT_ID_CHAR)))
+    (and (< 0 c 0x100) (flag? (... @chartab c) CT_IDENT_CHAR)))
 
 ;; Return true if 'c' is a keyword character:
 ;; Letters and characters from 'iskeyword' option for current buffer.
@@ -33405,13 +33395,13 @@
 ;; Assume characters above 0x100 are valid (multi-byte).
 
 (defn- #_boolean vim-isfnamec [#_int c]
-    (or (<= 0x100 c) (and (< 0 c) (flag? (... chartab c) CT_FNAME_CHAR))))
+    (or (<= 0x100 c) (and (< 0 c) (flag? (... @chartab c) CT_FNAME_CHAR))))
 
 ;; Return true if 'c' is a printable character.
 ;; Assume characters above 0x100 are printable (multi-byte), except for Unicode.
 
 (defn- #_boolean vim-isprintc [#_int c]
-    (if (<= 0x100 c) (utf-printable c) (or (<= 0x100 c) (and (< 0 c) (flag? (... chartab c) CT_PRINT_CHAR)))))
+    (if (<= 0x100 c) (utf-printable c) (or (<= 0x100 c) (and (< 0 c) (flag? (... @chartab c) CT_PRINT_CHAR)))))
 
 ;; like chartabsize(), but also check for line breaks on the screen
 
@@ -43374,7 +43364,7 @@
 
                 ;; Handling of non-printable characters.
 
-                (when (zero? (& (... chartab (& c 0xff)) CT_PRINT_CHAR))
+                (when (zero? (& (... @chartab (& c 0xff)) CT_PRINT_CHAR))
                     ;; When getting a character from the file, we may have to turn it
                     ;; into something else on the way to putting it into "screenLines".
 
