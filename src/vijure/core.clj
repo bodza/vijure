@@ -40688,210 +40688,98 @@
 
 (defn- #_boolean set-indent [#_int size, #_int flags]
     ;; size: measured in spaces
-    (let [ts @(:b_p_ts @curbuf) et @(:b_p_et @curbuf) pi @(:b_p_pi @curbuf) curl (ml-get-curline)]
-
-        ((ß boolean doit =) false)
-        ((ß int m =) 0)                       ;; measured in spaces
-        ((ß boolean retval =) false)
-        ((ß int oi =) -1)                 ;; number of initial whitespace chars when 'et' and 'pi' are both set
-
-        ;; First check if there is anything to do and compute
-        ;; the number of characters needed for the indent.
-
-        ((ß int n =) size)
-        ((ß int i =) 0)                        ;; measured in characters
-        ((ß Bytes p =) curl)
-
-        ;; Calculate the buffer size for the new indent and check if it isn't already set.
-
-        ;; If 'expandtab' isn't set: use TABs; if both 'expandtab' and
-        ;; 'preserveindent' are set: count the number of characters at
-        ;; the beginning of the line to be copied.
-        (when (or (not et) (and (non-flag? flags SIN_INSERT) pi))
-            ;; If 'preserveindent' is set, then reuse as much as possible
-            ;; of the existing indent structure for the new indent.
-            (when (and (non-flag? flags SIN_INSERT) pi)
-                ((ß m =) 0)
-
-                ;; count as many characters as we can use
-                (loop-when [] (and (< 0 n) (vim-iswhite (.at p 0)))
-                    (cond (at? p TAB)
-                    (do
-                        ((ß int t =) (- ts (% m ts)))
-                        ;; stop if this tab will overshoot the target
-                        (if (< n t)
-                            (ß BREAK)
-                        )
-                        ((ß n =) (- n t))
-                        ((ß i =) (inc i))
-                        ((ß m =) (+ m t))
-                    )
-                    :else
-                    (do
-                        ((ß n =) (- n 1))
-                        ((ß i =) (inc i))
-                        ((ß m =) (+ m 1))
-                    ))
-                    ((ß p =) (.plus p 1))
-                    (recur)
-                )
-
-                ;; Set initial number of whitespace chars to copy
-                ;; if we are preserving indent but expandtab is set.
-                ((ß oi =) (if et i oi))
-
-                ;; Fill to next tabstop with a tab, if possible.
-                ((ß int t =) (- ts (% m ts)))
-                (when (and (<= t n) (== oi -1))
-                    ((ß doit =) true)
-                    ((ß n =) (- n t))
-                    ((ß i =) (inc i))
-                    ;; m = m + t;
-                )
+    (let-when [ts @(:b_p_ts @curbuf) et @(:b_p_et @curbuf) pi @(:b_p_pi @curbuf) curl (ml-get-curline) ins? (flag? flags SIN_INSERT)
+          #_boolean f! false
+          #_int oi -1           ;; number of initial whitespace chars when 'et' and 'pi' are both set
+          #_int n size
+          #_int m 0             ;; measured in spaces
+          #_int i 0             ;; measured in characters
+          #_Bytes s curl
+          ;; If 'expandtab' isn't set: use TABs;
+          ;; if both 'expandtab' and 'preserveindent' are set: count the number of chars at the beginning of the line to be copied.
+          [f! oi n m i s]
+            (if (or (not et) (and (not ins?) pi))
+                ;; If 'preserveindent' is set, then reuse as much as possible of the existing indent structure for the new indent.
+                (let [[f! oi n m i s]
+                        (if (and (not ins?) pi)
+                            (let [[n m i s]
+                                    (loop-when [n n m 0 i i s s] (and (< 0 n) (vim-iswhite (.at s 0))) => [n m i s]
+                                        (let [#_int k (if (at? s TAB) (let [#_int t (- ts (% m ts))] (if (< n t) nil t)) 1)] ;; stop if this tab will overshoot the target
+                                            (recur-if (some? k) [(- n k) (+ m k) (inc i) (.plus s 1)] => [n m i s])          ;; count as many characters as we can use
+                                        ))
+                                  ;; Set initial number of whitespace chars to copy if we are preserving indent but expandtab is set.
+                                  oi (if et i oi)
+                                  ;; Fill to next tabstop with a tab, if possible.
+                                  [f! n #_m i]
+                                    (let [#_int t (- ts (% m ts))] (if (and (<= t n) (== oi -1)) [true (- n t) #_(+ m t) (inc i)] [f! n #_m i]))]
+                                [f! oi n m i s])
+                            [f! oi n m i s])
+                      ;; count tabs required for indent
+                      [f! n #_m i s]
+                        (loop-when [f! f! n n #_m #_m i i s s] (<= ts n) => [f! n #_m i s]
+                            (let [[f! s] (if (not-at? s TAB) [true (.plus s 1)] [f! s])] (recur f! (- n ts) #_(+ m ts) (inc i) s))
+                        )]
+                    [f! oi n m i s])
+                [f! oi n m i s])
+          ;; count spaces required for indent
+          [f! n #_m i s]
+            (loop-when [f! f! n n #_m #_m i i s s] (< 0 n) => [f! n #_m i s]
+                (let [[f! s] (if (not-at? s (byte \space)) [true (.plus s 1)] [f! s])] (recur f! (- n 1) #_(+ m 1) (inc i) s))
             )
-
-            ;; count tabs required for indent
-            (loop-when [] (<= ts n)
-                (if (not-at? p TAB)
-                    ((ß doit =) true)
-                    ((ß p =) (.plus p 1))
-                )
-                ((ß n =) (- n ts))
-                ((ß i =) (inc i))
-                ;; m = m + ts;
-                (recur)
-            )
-        )
-        ;; count spaces required for indent
-        (loop-when [] (< 0 n)
-            (if (not-at? p (byte \space))
-                ((ß doit =) true)
-                ((ß p =) (.plus p 1))
-            )
-            ((ß n =) (dec n))
-            ((ß i =) (inc i))
-            ;; m = m + 1;
-            (recur)
-        )
-
-        ;; Return if the indent is OK already.
-        (if (and (not doit) (not (vim-iswhite (.at p 0))) (non-flag? flags SIN_INSERT))
-            ((ß RETURN) false)
-        )
+          ;; Return if the indent is OK already.
+          ] (or f! (vim-iswhite (.at s 0)) ins?) => false
 
         ;; Allocate memory for the new line.
-        ((ß p =) (if (flag? flags SIN_INSERT) curl (skipwhite p)))
-        ((ß int line_len =) (inc (STRLEN p)))
+        (let [s (if ins? curl (skipwhite s)) #_int l (inc (STRLEN s))
+              ;; If 'preserveindent' and 'expandtab' are both set, keep the original chars and allocate accordingly.
+              ;; We will fill the rest with spaces after the (when (not et) ...) below.
+              [#_int n i s #_Bytes line #_Bytes p]
+                (if (!= oi -1)
+                    ;; Set total length of indent in chars, which may have been undercounted until now.
+                    (let [n (- size m) i (+ oi n) line (Bytes. (+ (- (+ oi size) m) l))
+                          [s p] (loop-when-recur [s curl p line oi oi] (< 0 oi) [(.plus s 1) (.plus p 1) (dec oi)] => [s p]
+                                    (.be p 0, (.at s 0)))
+                          ;; Skip over any additional white space (useful when new indent is less than old).
+                          s (loop-when-recur s (vim-iswhite (.at s 0)) (.plus s 1) => s)]
+                        [n i s line p])
+                    (let [line (Bytes. (+ i l))] [size i s line line]))
+              ;; Put the characters in the new line.
+              ;; If 'expandtab' isn't set: use TABs.
+              [n s p] (if (not et)
+                    ;; If 'preserveindent' is set, reuse as much as possible of the existing indent structure for the new indent.
+                    (let [[n s p] (if (and (not ins?) pi)
+                                (let [[n int m s p]
+                                        (loop-when [n n m 0 s curl p p] (and (< 0 n) (vim-iswhite (.at s 0))) => [n m s p]
+                                            ;; stop if this tab will overshoot the target
+                                            (let-when [#_int k (if (at? s TAB) (let [#_int t (- ts (% m ts))] (if (< n t) nil t)) 1)] (some? k) => [n m s p]
+                                                (.be p 0, (.at s 0)) (recur (- n k) (+ m k) (.plus s 1) (.plus p 1))
+                                            ))
+                                      ;; Fill to next tabstop with a tab, if possible.
+                                      [n p] (let [#_int t (- ts (% m ts))] (if (<= t n) [(- n t) (-> p (.be 0, TAB) (.plus 1))] [n p]))]
+                                      [n (skipwhite s) p])
+                                [n s p])
+                          [n p] (loop-when-recur [n n p p] (<= ts n) [(- n ts) (-> p (.be 0, TAB) (.plus 1))] => [n p])]
+                        [n s p])
+                    [n s p])
+              [n p] (loop-when-recur [n n p p] (< 0 n) [(dec n) (-> p (.be 0, (byte \space)) (.plus 1))] => [n p])]
 
-        ;; If 'preserveindent' and 'expandtab' are both set keep the original
-        ;; characters and allocate accordingly.  We will fill the rest with spaces
-        ;; after the if (!curbuf.b_p_et) below.
-        (ß Bytes newline)
-        (ß Bytes s)
-        (cond (!= oi -1)
-        (do
-            ((ß newline =) (Bytes. (+ (- (+ oi size) m) line_len)))
+            (BCOPY p, s, l)
 
-            ((ß n =) (- size m))
-            ((ß i =) (+ oi n))     ;; Set total length of indent in characters,
-                                                ;; which may have been undercounted until now
-            ((ß p =) curl)
-            ((ß s =) newline)
-            (loop-when [] (< 0 oi)
-                (.be ((ß s =) (.plus s 1)) -1, (.at ((ß p =) (.plus p 1)) -1))
-                ((ß oi =) (dec oi))
-                (recur)
-            )
-
-            ;; Skip over any additional white space (useful when newindent is less than old).
-            (loop-when [] (vim-iswhite (.at p 0))
-                ((ß p =) (.plus p 1))
-                (recur)
-            )
-        )
-        :else
-        (do
-            ((ß n =) size)
-            ((ß newline =) (Bytes. (+ i line_len)))
-            ((ß s =) newline)
-        ))
-
-        ;; Put the characters in the new line.
-        ;; If 'expandtab' isn't set: use TABs.
-        (when (not et)
-            ;; If 'preserveindent' is set, then reuse as much as possible
-            ;; of the existing indent structure for the new indent.
-            (when (and (non-flag? flags SIN_INSERT) pi)
-                ((ß p =) curl)
-                ((ß m =) 0)
-
-                (loop-when [] (and (< 0 n) (vim-iswhite (.at p 0)))
-                    (cond (at? p TAB)
-                    (do
-                        ((ß int t =) (- ts (% m ts)))
-                        ;; stop if this tab will overshoot the target
-                        (if (< n t)
-                            (ß BREAK)
-                        )
-                        ((ß n =) (- n t))
-                        ((ß m =) (+ m t))
-                    )
-                    :else
-                    (do
-                        ((ß n =) (- n 1))
-                        ((ß m =) (+ m 1))
-                    ))
-                    (.be ((ß s =) (.plus s 1)) -1, (.at ((ß p =) (.plus p 1)) -1))
-                    (recur)
-                )
-
-                ;; Fill to next tabstop with a tab, if possible.
-                ((ß int t =) (- ts (% m ts)))
-                (when (<= t n)
-                    (.be ((ß s =) (.plus s 1)) -1, TAB)
-                    ((ß n =) (- n t))
-                )
-
-                ((ß p =) (skipwhite p))
-            )
-
-            (loop-when [] (<= ts n)
-                (.be ((ß s =) (.plus s 1)) -1, TAB)
-                ((ß n =) (- n ts))
-                (recur)
-            )
-        )
-        (loop-when [] (< 0 n)
-            (.be ((ß s =) (.plus s 1)) -1, (byte \space))
-            ((ß n =) (dec n))
-            (recur)
-        )
-        (BCOPY s, p, line_len)
-
-        ;; Replace the line (unless undo fails).
-        (when (or (non-flag? flags SIN_UNDO) (u-savesub (:lnum (:w_cursor @curwin))))
-            (ml-replace (:lnum (:w_cursor @curwin)), newline)
-            (if (flag? flags SIN_CHANGED)
-                (changed-bytes (:lnum (:w_cursor @curwin)), 0))
-            ;; Correct saved cursor position if it is in this line.
-            (when (== (:lnum @saved_cursor) (:lnum (:w_cursor @curwin)))
-                (cond (<= (BDIFF p, curl) (:col @saved_cursor))
-                (do
-                    ;; cursor was after the indent, adjust for the number of bytes added/removed
-                    (swap! saved_cursor update :col + (- i (BDIFF p, curl)))
-                )
-                (<= (BDIFF s, newline) (:col @saved_cursor))
-                (do
-                    ;; cursor was in the indent and is now after it; put it back
-                    ;; at the start of the indent (replacing spaces with TAB)
-                    (swap! saved_cursor assoc :col (BDIFF s, newline))
-                ))
-            )
-            ((ß retval =) true)
-        )
-
-        (swap! curwin assoc-in [:w_cursor :col] i)
-        retval
+            ;; Replace the line (unless undo fails).
+            (let [cln (:lnum (:w_cursor @curwin)) #_boolean ok (or (non-flag? flags SIN_UNDO) (u-savesub cln))]
+                (when ok
+                    (ml-replace cln, line)
+                    (when (flag? flags SIN_CHANGED) (changed-bytes cln, 0))
+                    ;; Correct saved cursor position if it is in this line.
+                    (when (== (:lnum @saved_cursor) cln)
+                        (cond
+                            ;; cursor was after the indent, adjust for the number of bytes added/removed
+                            (<= (BDIFF s, curl) (:col @saved_cursor)) (swap! saved_cursor update :col + (- i (BDIFF s, curl)))
+                            ;; cursor was in the indent and is now after it: put it back at the start of the indent (replacing spaces with TAB)
+                            (<= (BDIFF p, line) (:col @saved_cursor)) (swap! saved_cursor assoc :col (BDIFF p, line))
+                        )))
+                (swap! curwin assoc-in [:w_cursor :col] i)
+            ok))
     ))
 
 ;; Copy the indent from "src" to the current line (and fill to size).
