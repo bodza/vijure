@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(alist barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod dict dictitem except expand file fmark fragnode frame hashtab list listitem lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf typval u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(alist barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except expand file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(aentry attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos listitem llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(aentry attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -2677,87 +2677,6 @@
 ;       ht.ht_buckets = null;
     ))
 
-;; Structure to hold an internal variable without a name.
-
-(class! #_final typval_C
-    [
-        (field byte         tv_type)        ;; see below: VAR_NUMBER, VAR_STRING, etc.
-        (field byte         tv_lock)        ;; see below: VAR_LOCKED, VAR_FIXED
-
-        (field long         tv_number)      ;; number value
-        (field Bytes        tv_string)      ;; string value (can be null!)
-    ])
-
-(defn- #_void COPY_typval [#_typval_C tv1, #_typval_C tv0]
-    (§
-;       tv1.tv_type = tv0.tv_type;
-;       tv1.tv_lock = tv0.tv_lock;
-;       tv1.tv_number = tv0.tv_number;
-;       tv1.tv_string = tv0.tv_string;
-    ))
-
-(defn- #_typval_C* ARRAY_typval [#_int n]
-    (vec (repeatedly n §_typval_C)))
-
-;; Values for "tv_type".
-(final byte
-    VAR_UNKNOWN 0,
-    VAR_NUMBER  1,        ;; "tv_number" is used
-    VAR_STRING  2)        ;; "tv_string" is used
-
-;; Values for "dv_scope".
-(final byte
-    VAR_SCOPE     1,      ;; a:, v:, s:, etc. scope dictionaries
-    VAR_DEF_SCOPE 2)      ;; l:, g: scope dictionaries: here funcrefs are not allowed to mask existing functions
-
-;; Values for "tv_lock".
-(final byte
-    VAR_LOCKED  1,        ;; locked with lock(), can use unlock()
-    VAR_FIXED   2)        ;; locked forever
-
-;; Structure to hold an item of a list: an internal variable without a name.
-
-(class! #_final listitem_C
-    [
-        (field listitem_C   li_next)                    ;; next item in list
-        (field typval_C     li_tv       (§_typval_C))   ;; type and value of the variable
-    ])
-
-;; Structure to hold info about a list.
-
-(class! #_final list_C
-    [
-        (field listitem_C   lv_first)       ;; first item, null if none
-    ])
-
-;; Structure to hold an item of a Dictionary.
-;; Also used for a variable.
-
-(class! #_final dictitem_C
-    [
-        (field typval_C     di_tv       (§_typval_C))   ;; type and value of the variable
-        (field byte         di_flags)                   ;; flags (only used for variable)
-        (field Bytes        di_key)                     ;; key (== name for variable)
-    ])
-
-(final byte
-    DI_FLAGS_RO     1,        ;; "di_flags" value: read-only variable
-    DI_FLAGS_RO_SBX 2,        ;; "di_flags" value: read-only in the sandbox
-    DI_FLAGS_FIX    4,        ;; "di_flags" value: fixed variable, not allocated
-    DI_FLAGS_LOCK   8)        ;; "di_flags" value: locked variable
-
-;; Structure to hold info about a Dictionary.
-
-(class! #_final dict_C
-    [
-        (field byte         dv_lock)        ;; zero, VAR_LOCKED, VAR_FIXED
-        (field byte         dv_scope)       ;; zero, VAR_SCOPE, VAR_DEF_SCOPE
-        (field int          dv_refcount)    ;; reference count
-        (field int          dv_copyID)      ;; ID used by deepcopy()
-        (field hashtab_C    dv_hashtab      (§_hashtab_C))  ;; hashtab that refers to the items
-        (field dict_C       dv_copydict)    ;; copied dict used by deepcopy()
-    ])
-
 ;; buffer: structure that holds information about one file
 ;;
 ;; Several windows can share a single Buffer
@@ -3523,202 +3442,197 @@
     CMD_digraphs 51,
     CMD_edit 52,
     CMD_earlier 53,
-    CMD_echo 54,
-    CMD_echoerr 55,
-    CMD_echomsg 56,
-    CMD_echon 57,
-    CMD_enew 58,
-    CMD_ex 59,
-    CMD_execute 60,
-    CMD_exit 61,
-    CMD_files 62,
-    CMD_first 63,
-    CMD_fixdel 64,
-    CMD_global 65,
-    CMD_goto 66,
-    CMD_hide 67,
-    CMD_history 68,
-    CMD_insert 69,
-    CMD_iabbrev 70,
-    CMD_iabclear 71,
-    CMD_imap 72,
-    CMD_imapclear 73,
-    CMD_inoremap 74,
-    CMD_inoreabbrev 75,
-    CMD_iunmap 76,
-    CMD_iunabbrev 77,
-    CMD_join 78,
-    CMD_jumps 79,
-    CMD_k 80,
-    CMD_keepmarks 81,
-    CMD_keepjumps 82,
-    CMD_keeppatterns 83,
-    CMD_keepalt 84,
-    CMD_list 85,
-    CMD_last 86,
-    CMD_later 87,
-    CMD_left 88,
-    CMD_leftabove 89,
-    CMD_lmap 90,
-    CMD_lmapclear 91,
-    CMD_lnoremap 92,
-    CMD_lockmarks 93,
-    CMD_lunmap 94,
-    CMD_ls 95,
-    CMD_move 96,
-    CMD_mark 97,
-    CMD_map 98,
-    CMD_mapclear 99,
-    CMD_marks 100,
-    CMD_messages 101,
-    CMD_mode 102,
-    CMD_next 103,
-    CMD_new 104,
-    CMD_nmap 105,
-    CMD_nmapclear 106,
-    CMD_nnoremap 107,
-    CMD_noremap 108,
-    CMD_nohlsearch 109,
-    CMD_noreabbrev 110,
-    CMD_normal 111,
-    CMD_number 112,
-    CMD_nunmap 113,
-    CMD_open 114,
-    CMD_omap 115,
-    CMD_omapclear 116,
-    CMD_only 117,
-    CMD_onoremap 118,
-    CMD_ounmap 119,
-    CMD_print 120,
-    CMD_previous 121,
-    CMD_put 122,
-    CMD_quit 123,
-    CMD_quitall 124,
-    CMD_qall 125,
-    CMD_read 126,
-    CMD_redo 127,
-    CMD_redraw 128,
-    CMD_redrawstatus 129,
-    CMD_registers 130,
-    CMD_resize 131,
-    CMD_retab 132,
-    CMD_rewind 133,
-    CMD_right 134,
-    CMD_rightbelow 135,
-    CMD_rundo 136,
-    CMD_substitute 137,
-    CMD_sNext 138,
-    CMD_sargument 139,
-    CMD_sall 140,
-    CMD_sandbox 141,
-    CMD_saveas 142,
-    CMD_sbuffer 143,
-    CMD_sbNext 144,
-    CMD_sball 145,
-    CMD_sbfirst 146,
-    CMD_sblast 147,
-    CMD_sbmodified 148,
-    CMD_sbnext 149,
-    CMD_sbprevious 150,
-    CMD_sbrewind 151,
-    CMD_set 152,
-    CMD_setglobal 153,
-    CMD_setlocal 154,
-    CMD_sfirst 155,
-    CMD_silent 156,
-    CMD_sleep 157,
-    CMD_slast 158,
-    CMD_smagic 159,
-    CMD_smap 160,
-    CMD_smapclear 161,
-    CMD_snext 162,
-    CMD_snomagic 163,
-    CMD_snoremap 164,
-    CMD_sort 165,
-    CMD_split 166,
-    CMD_sprevious 167,
-    CMD_srewind 168,
-    CMD_stop 169,
-    CMD_startinsert 170,
-    CMD_startgreplace 171,
-    CMD_startreplace 172,
-    CMD_stopinsert 173,
-    CMD_sunhide 174,
-    CMD_sunmap 175,
-    CMD_suspend 176,
-    CMD_sview 177,
-    CMD_syncbind 178,
-    CMD_t 179,
-    CMD_tab 180,
-    CMD_tabclose 181,
-    CMD_tabdo 182,
-    CMD_tabedit 183,
-    CMD_tabfirst 184,
-    CMD_tabmove 185,
-    CMD_tablast 186,
-    CMD_tabnext 187,
-    CMD_tabnew 188,
-    CMD_tabonly 189,
-    CMD_tabprevious 190,
-    CMD_tabNext 191,
-    CMD_tabrewind 192,
-    CMD_tabs 193,
-    CMD_topleft 194,
-    CMD_undo 195,
-    CMD_undojoin 196,
-    CMD_undolist 197,
-    CMD_unabbreviate 198,
-    CMD_unhide 199,
-    CMD_unmap 200,
-    CMD_unsilent 201,
-    CMD_update 202,
-    CMD_vglobal 203,
-    CMD_verbose 204,
-    CMD_vertical 205,
-    CMD_visual 206,
-    CMD_view 207,
-    CMD_vmap 208,
-    CMD_vmapclear 209,
-    CMD_vnoremap 210,
-    CMD_vnew 211,
-    CMD_vsplit 212,
-    CMD_vunmap 213,
-    CMD_write 214,
-    CMD_wNext 215,
-    CMD_wall 216,
-    CMD_winsize 217,
-    CMD_wincmd 218,
-    CMD_windo 219,
-    CMD_winpos 220,
-    CMD_wnext 221,
-    CMD_wprevious 222,
-    CMD_wq 223,
-    CMD_wqall 224,
-    CMD_wundo 225,
-    CMD_xit 226,
-    CMD_xall 227,
-    CMD_xmap 228,
-    CMD_xmapclear 229,
-    CMD_xnoremap 230,
-    CMD_xunmap 231,
-    CMD_yank 232,
-    CMD_z 233,
+    CMD_enew 54,
+    CMD_ex 55,
+    CMD_exit 56,
+    CMD_files 57,
+    CMD_first 58,
+    CMD_fixdel 59,
+    CMD_global 60,
+    CMD_goto 61,
+    CMD_hide 62,
+    CMD_history 63,
+    CMD_insert 64,
+    CMD_iabbrev 65,
+    CMD_iabclear 66,
+    CMD_imap 67,
+    CMD_imapclear 68,
+    CMD_inoremap 69,
+    CMD_inoreabbrev 70,
+    CMD_iunmap 71,
+    CMD_iunabbrev 72,
+    CMD_join 73,
+    CMD_jumps 74,
+    CMD_k 75,
+    CMD_keepmarks 76,
+    CMD_keepjumps 77,
+    CMD_keeppatterns 78,
+    CMD_keepalt 79,
+    CMD_list 80,
+    CMD_last 81,
+    CMD_later 82,
+    CMD_left 83,
+    CMD_leftabove 84,
+    CMD_lmap 85,
+    CMD_lmapclear 86,
+    CMD_lnoremap 87,
+    CMD_lockmarks 88,
+    CMD_lunmap 89,
+    CMD_ls 90,
+    CMD_move 91,
+    CMD_mark 92,
+    CMD_map 93,
+    CMD_mapclear 94,
+    CMD_marks 95,
+    CMD_messages 96,
+    CMD_mode 97,
+    CMD_next 98,
+    CMD_new 99,
+    CMD_nmap 100,
+    CMD_nmapclear 101,
+    CMD_nnoremap 102,
+    CMD_noremap 103,
+    CMD_nohlsearch 104,
+    CMD_noreabbrev 105,
+    CMD_normal 106,
+    CMD_number 107,
+    CMD_nunmap 108,
+    CMD_open 109,
+    CMD_omap 110,
+    CMD_omapclear 111,
+    CMD_only 112,
+    CMD_onoremap 113,
+    CMD_ounmap 114,
+    CMD_print 115,
+    CMD_previous 116,
+    CMD_put 117,
+    CMD_quit 118,
+    CMD_quitall 119,
+    CMD_qall 120,
+    CMD_read 121,
+    CMD_redo 122,
+    CMD_redraw 123,
+    CMD_redrawstatus 124,
+    CMD_registers 125,
+    CMD_resize 126,
+    CMD_retab 127,
+    CMD_rewind 128,
+    CMD_right 129,
+    CMD_rightbelow 130,
+    CMD_rundo 131,
+    CMD_substitute 132,
+    CMD_sNext 133,
+    CMD_sargument 134,
+    CMD_sall 135,
+    CMD_sandbox 136,
+    CMD_saveas 137,
+    CMD_sbuffer 138,
+    CMD_sbNext 139,
+    CMD_sball 140,
+    CMD_sbfirst 141,
+    CMD_sblast 142,
+    CMD_sbmodified 143,
+    CMD_sbnext 144,
+    CMD_sbprevious 145,
+    CMD_sbrewind 146,
+    CMD_set 147,
+    CMD_setglobal 148,
+    CMD_setlocal 149,
+    CMD_sfirst 150,
+    CMD_silent 151,
+    CMD_sleep 152,
+    CMD_slast 153,
+    CMD_smagic 154,
+    CMD_smap 155,
+    CMD_smapclear 156,
+    CMD_snext 157,
+    CMD_snomagic 158,
+    CMD_snoremap 159,
+    CMD_sort 160,
+    CMD_split 161,
+    CMD_sprevious 162,
+    CMD_srewind 163,
+    CMD_stop 164,
+    CMD_startinsert 165,
+    CMD_startgreplace 166,
+    CMD_startreplace 167,
+    CMD_stopinsert 168,
+    CMD_sunhide 169,
+    CMD_sunmap 170,
+    CMD_suspend 171,
+    CMD_sview 172,
+    CMD_syncbind 173,
+    CMD_t 174,
+    CMD_tab 175,
+    CMD_tabclose 176,
+    CMD_tabdo 177,
+    CMD_tabedit 178,
+    CMD_tabfirst 179,
+    CMD_tabmove 180,
+    CMD_tablast 181,
+    CMD_tabnext 182,
+    CMD_tabnew 183,
+    CMD_tabonly 184,
+    CMD_tabprevious 185,
+    CMD_tabNext 186,
+    CMD_tabrewind 187,
+    CMD_tabs 188,
+    CMD_topleft 189,
+    CMD_undo 190,
+    CMD_undojoin 191,
+    CMD_undolist 192,
+    CMD_unabbreviate 193,
+    CMD_unhide 194,
+    CMD_unmap 195,
+    CMD_unsilent 196,
+    CMD_update 197,
+    CMD_vglobal 198,
+    CMD_verbose 199,
+    CMD_vertical 200,
+    CMD_visual 201,
+    CMD_view 202,
+    CMD_vmap 203,
+    CMD_vmapclear 204,
+    CMD_vnoremap 205,
+    CMD_vnew 206,
+    CMD_vsplit 207,
+    CMD_vunmap 208,
+    CMD_write 209,
+    CMD_wNext 210,
+    CMD_wall 211,
+    CMD_winsize 212,
+    CMD_wincmd 213,
+    CMD_windo 214,
+    CMD_winpos 215,
+    CMD_wnext 216,
+    CMD_wprevious 217,
+    CMD_wq 218,
+    CMD_wqall 219,
+    CMD_wundo 220,
+    CMD_xit 221,
+    CMD_xall 222,
+    CMD_xmap 223,
+    CMD_xmapclear 224,
+    CMD_xnoremap 225,
+    CMD_xunmap 226,
+    CMD_yank 227,
+    CMD_z 228,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_bang 234,
-    CMD_pound 235,
-    CMD_and 236,
-    CMD_star 237,
-    CMD_lshift 238,
-    CMD_equal 239,
-    CMD_rshift 240,
-    CMD_at 241,
-    CMD_Next 242,
-    CMD_Print 243,
-    CMD_tilde 244,
+    CMD_bang 229,
+    CMD_pound 230,
+    CMD_and 231,
+    CMD_star 232,
+    CMD_lshift 233,
+    CMD_equal 234,
+    CMD_rshift 235,
+    CMD_at 236,
+    CMD_Next 237,
+    CMD_Print 238,
+    CMD_tilde 239,
 
-    CMD_SIZE 245)     ;; MUST be after all real commands!
+    CMD_SIZE 240)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -22792,11 +22706,6 @@
 ;                   case CMD_botright:
 ;                   case CMD_browse:
 ;                   case CMD_confirm:
-;                   case CMD_echo:
-;                   case CMD_echoerr:
-;                   case CMD_echomsg:
-;                   case CMD_echon:
-;                   case CMD_execute:
 ;                   case CMD_hide:
 ;                   case CMD_keepalt:
 ;                   case CMD_keepjumps:
@@ -23443,14 +23352,6 @@
 
 ;           case CMD_setlocal:
 ;               set_context_in_set_cmd(xp, arg, OPT_LOCAL);
-;               break;
-
-;           case CMD_echo:
-;           case CMD_echon:
-;           case CMD_execute:
-;           case CMD_echomsg:
-;           case CMD_echoerr:
-;               set_context_for_expression(xp, arg, ea.cmdidx);
 ;               break;
 
 ;           case CMD_bdelete:
@@ -26459,75 +26360,13 @@
 
 ;; eval.c: Expression evaluation ------------------------------------------------------------------
 
-(final int DICT_MAXNEST 100)        ;; maximum nesting of lists and dicts
-
-(final Bytes e_undefvar          (u8 "E121: Undefined variable: %s"))
-(final Bytes e_missbrac          (u8 "E111: Missing ']'"))
-
-;; When recursively copying lists and dicts we need to remember which ones we
-;; have done to avoid endless recursiveness.  This unique ID is used for that.
-;; The last bit is used for previous_funccal, ignored when comparing.
-
-(atom! int current_copyID)
-(final int COPYID_INC 2)
-
-;; Abort conversion to string after a recursion error.
-(atom! boolean did_echo_string_emsg)
-
-(atom! int echo_attr)   ;; attributes used for ":echo"
-
-(final int FNE_INCL_BR     1)       ;; find_name_end(): include [] in name
-(final int FNE_CHECK_START 2)       ;; find_name_end(): check name starts with valid character
-
-;; Top level evaluation function, returning a boolean.
-;; Sets "error" to true if there was an error.
-;; Return true or false.
-
-(defn- #_boolean eval_to_bool [#_Bytes arg, #_boolean* error, #_Bytes* nextcmd, #_boolean skip]
-    ;; skip: only parse, don't execute
-    (§
-;       boolean result = false;
-
-;       if (skip)
-;           @emsg_skip++;
-
-;       typval_C tv = §_typval_C();
-;       if (eval0(arg, tv, nextcmd, !skip) == false)
-;           error[0] = true;
-;       else
-;       {
-;           error[0] = false;
-;           if (!skip)
-;           {
-;               result = (get_tv_number_chk(tv, error) != 0);
-;               clear_tv(tv);
-;           }
-;       }
-
-;       if (skip)
-;           --@emsg_skip;
-
-;       return result;
-    ))
-
 ;; Top level evaluation function, returning a string.
 ;; When "convert" is true convert a List into a sequence of lines.
 ;; Return pointer to allocated memory, or null for failure.
 
 (defn- #_Bytes eval_to_string [#_Bytes arg, #_Bytes* nextcmd, #_boolean convert]
     (§
-;       Bytes retval;
-
-;       typval_C tv = §_typval_C();
-;       if (eval0(arg, tv, nextcmd, true) == false)
-;           retval = null;
-;       else
-;       {
-;           retval = STRDUP(get_tv_string(tv));
-;           clear_tv(tv);
-;       }
-
-;       return retval;
+;       return null;
     ))
 
 ;; Call eval_to_string() without using current local variables and using textlock.
@@ -26616,1896 +26455,12 @@
 ;       xp.xp_pattern = arg;
     ))
 
-;; types for expressions
-
-(final int
-    TYPE_UNKNOWN 0,
-    TYPE_EQUAL   1,   ;; ==
-    TYPE_NEQUAL  2,   ;; !=
-    TYPE_GREATER 3,   ;; >
-    TYPE_GEQUAL  4,   ;; >=
-    TYPE_SMALLER 5,   ;; <
-    TYPE_SEQUAL  6,   ;; <=
-    TYPE_MATCH   7,   ;; =~
-    TYPE_NOMATCH 8)   ;; !~
-
-;; The "evaluate" argument: when false, the argument is only parsed but not executed.
-;; The function may return true, but the "rtv" will be of type VAR_UNKNOWN.
-;; The function still returns false for a syntax error.
-
-;; Handle zero level expression.
-;; This calls eval1() and handles error message and nextcmd.
-;; Put the result in "rtv" when returning true and "evaluate" is true.
-;; Note: "rtv.tv_lock" is not set.
-;; Return true or false.
-
-(defn- #_boolean eval0 [#_Bytes arg, #_typval_C rtv, #_Bytes* nextcmd, #_boolean evaluate]
-    (§
-;       Bytes[] p = { skipwhite(arg) };
-;       boolean ret = eval1(p, rtv, evaluate);
-
-;       if (ret == false || !ends_excmd(p[0].at(0)))
-;       {
-;           if (ret != false)
-;               clear_tv(rtv);
-
-            ;; Report the invalid expression unless the expression evaluation has
-            ;; been cancelled due to an aborting error, an interrupt, or an exception.
-
-;           if (!aborting())
-;               emsg2(e_invexpr2, arg);
-;           ret = false;
-;       }
-;       if (nextcmd != null)
-;           nextcmd[0] = check_nextcmd(p[0]);
-
-;       return ret;
-    ))
-
-;; Handle top level expression:
-;;      expr2 ? expr1 : expr1
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Note: "rtv.tv_lock" is not set.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval1 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate]
-    (§
-        ;; Get the first variable.
-
-;       if (eval2(arg, rtv, evaluate) == false)
-;           return false;
-
-;       if (arg[0].at(0) == (byte)'?')
-;       {
-;           boolean result = false;
-;           if (evaluate)
-;           {
-;               boolean[] error = { false };
-
-;               if (get_tv_number_chk(rtv, error) != 0)
-;                   result = true;
-;               clear_tv(rtv);
-;               if (error[0])
-;                   return false;
-;           }
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(arg[0].plus(1));
-;           if (eval1(arg, rtv, evaluate && result) == false) ;; recursive!
-;               return false;
-
-            ;; Check for the ":".
-
-;           if (arg[0].at(0) != (byte)':')
-;           {
-;               emsg(u8("E109: Missing ':' after '?'"));
-;               if (evaluate && result)
-;                   clear_tv(rtv);
-;               return false;
-;           }
-
-            ;; Get the third variable.
-
-;           arg[0] = skipwhite(arg[0].plus(1));
-;           typval_C var2 = §_typval_C();
-;           if (eval1(arg, var2, evaluate && !result) == false)     ;; recursive!
-;           {
-;               if (evaluate && result)
-;                   clear_tv(rtv);
-;               return false;
-;           }
-;           if (evaluate && !result)
-;               COPY_typval(rtv, var2);
-;       }
-
-;       return true;
-    ))
-
-;; Handle first level expression:
-;;      expr2 || expr2 || expr2     logical OR
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval2 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate]
-    (§
-;       boolean[] error = { false };
-
-        ;; Get the first variable.
-
-;       if (eval3(arg, rtv, evaluate) == false)
-;           return false;
-
-        ;; Repeat until there is no following "||".
-
-;       boolean first = true;
-;       boolean result = false;
-;       while (arg[0].at(0) == (byte)'|' && arg[0].at(1) == (byte)'|')
-;       {
-;           if (evaluate && first)
-;           {
-;               if (get_tv_number_chk(rtv, error) != 0)
-;                   result = true;
-;               clear_tv(rtv);
-;               if (error[0])
-;                   return false;
-;               first = false;
-;           }
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(arg[0].plus(2));
-;           typval_C var2 = §_typval_C();
-;           if (eval3(arg, var2, evaluate && !result) == false)
-;               return false;
-
-            ;; Compute the result.
-
-;           if (evaluate && !result)
-;           {
-;               if (get_tv_number_chk(var2, error) != 0)
-;                   result = true;
-;               clear_tv(var2);
-;               if (error[0])
-;                   return false;
-;           }
-;           if (evaluate)
-;           {
-;               rtv.tv_type = VAR_NUMBER;
-;               rtv.tv_number = result ? 1 : 0;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Handle second level expression:
-;;      expr3 && expr3 && expr3     logical AND
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval3 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate]
-    (§
-;       boolean[] error = { false };
-
-        ;; Get the first variable.
-
-;       if (eval4(arg, rtv, evaluate) == false)
-;           return false;
-
-        ;; Repeat until there is no following "&&".
-
-;       boolean first = true;
-;       boolean result = true;
-;       while (arg[0].at(0) == (byte)'&' && arg[0].at(1) == (byte)'&')
-;       {
-;           if (evaluate && first)
-;           {
-;               if (get_tv_number_chk(rtv, error) == 0)
-;                   result = false;
-;               clear_tv(rtv);
-;               if (error[0])
-;                   return false;
-;               first = false;
-;           }
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(arg[0].plus(2));
-;           typval_C var2 = §_typval_C();
-;           if (eval4(arg, var2, evaluate && result) == false)
-;               return false;
-
-            ;; Compute the result.
-
-;           if (evaluate && result)
-;           {
-;               if (get_tv_number_chk(var2, error) == 0)
-;                   result = false;
-;               clear_tv(var2);
-;               if (error[0])
-;                   return false;
-;           }
-;           if (evaluate)
-;           {
-;               rtv.tv_type = VAR_NUMBER;
-;               rtv.tv_number = result ? 1 : 0;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Handle third level expression:
-;;      var1 == var2
-;;      var1 =~ var2
-;;      var1 != var2
-;;      var1 !~ var2
-;;      var1 > var2
-;;      var1 >= var2
-;;      var1 < var2
-;;      var1 <= var2
-;;      var1 is var2
-;;      var1 isnot var2
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval4 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate]
-    (§
-;       int type = TYPE_UNKNOWN;
-;       boolean type_is = false;    ;; true for "is" and "isnot"
-;       int len = 2;
-
-        ;; Get the first variable.
-
-;       if (eval5(arg, rtv, evaluate) == false)
-;           return false;
-
-;       Bytes p = arg[0];
-;       switch (p.at(0))
-;       {
-;           case '=':
-;           {
-;               if (p.at(1) == (byte)'=')
-;                   type = TYPE_EQUAL;
-;               else if (p.at(1) == (byte)'~')
-;                   type = TYPE_MATCH;
-;               break;
-;           }
-;           case '!':
-;           {
-;               if (p.at(1) == (byte)'=')
-;                   type = TYPE_NEQUAL;
-;               else if (p.at(1) == (byte)'~')
-;                   type = TYPE_NOMATCH;
-;               break;
-;           }
-;           case '>':
-;           {
-;               if (p.at(1) != (byte)'=')
-;               {
-;                   type = TYPE_GREATER;
-;                   len = 1;
-;               }
-;               else
-;                   type = TYPE_GEQUAL;
-;               break;
-;           }
-;           case '<':
-;           {
-;               if (p.at(1) != (byte)'=')
-;               {
-;                   type = TYPE_SMALLER;
-;                   len = 1;
-;               }
-;               else
-;                   type = TYPE_SEQUAL;
-;               break;
-;           }
-;           case 'i':
-;           {
-;               if (p.at(1) == (byte)'s')
-;               {
-;                   if (p.at(2) == (byte)'n' && p.at(3) == (byte)'o' && p.at(4) == (byte)'t')
-;                       len = 5;
-;                   if (!vim_isIDc(p.at(len)))
-;                   {
-;                       type = (len == 2) ? TYPE_EQUAL : TYPE_NEQUAL;
-;                       type_is = true;
-;                   }
-;               }
-;               break;
-;           }
-;       }
-
-        ;; If there is a comparative operator, use it.
-
-;       if (type != TYPE_UNKNOWN)
-;       {
-;           boolean ic;
-
-            ;; extra question mark appended: ignore case
-;           if (p.at(len) == (byte)'?')
-;           {
-;               ic = true;
-;               len++;
-;           }
-            ;; extra '#' appended: match case
-;           else if (p.at(len) == (byte)'#')
-;           {
-;               ic = false;
-;               len++;
-;           }
-            ;; nothing appended: use 'ignorecase'
-;           else
-;               ic = @p_ic;
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(p.plus(len));
-;           typval_C var2 = §_typval_C();
-;           if (eval5(arg, var2, evaluate) == false)
-;           {
-;               clear_tv(rtv);
-;               return false;
-;           }
-
-;           if (evaluate)
-;           {
-;               boolean result = false;
-
-;               if (type_is && rtv.tv_type != var2.tv_type)
-;               {
-                    ;; For "is" a different type always means false, for "notis" it means true.
-;                   result = (type == TYPE_NEQUAL);
-;               }
-
-                ;; If one of the two variables is a number, compare as a number.
-                ;; When using "=~" or "!~", always compare as string.
-
-;               else if ((rtv.tv_type == VAR_NUMBER || var2.tv_type == VAR_NUMBER) && type != TYPE_MATCH && type != TYPE_NOMATCH)
-;               {
-;                   long n1 = get_tv_number(rtv);
-;                   long n2 = get_tv_number(var2);
-
-;                   switch (type)
-;                   {
-;                       case TYPE_EQUAL:    result = (n1 == n2); break;
-;                       case TYPE_NEQUAL:   result = (n1 != n2); break;
-;                       case TYPE_GREATER:  result = (n1 > n2); break;
-;                       case TYPE_GEQUAL:   result = (n1 >= n2); break;
-;                       case TYPE_SMALLER:  result = (n1 < n2); break;
-;                       case TYPE_SEQUAL:   result = (n1 <= n2); break;
-;                       case TYPE_UNKNOWN:
-;                       case TYPE_MATCH:
-;                       case TYPE_NOMATCH:  break;
-;                   }
-;               }
-
-;               else
-;               {
-;                   Bytes s1 = get_tv_string(rtv);
-;                   Bytes s2 = get_tv_string(var2);
-;                   int cmp = 0;
-;                   if (type != TYPE_MATCH && type != TYPE_NOMATCH)
-;                       cmp = ic ? us_strnicmp(s1, s2, MAXCOL) : STRCMP(s1, s2);
-
-;                   switch (type)
-;                   {
-;                       case TYPE_EQUAL:    result = (cmp == 0); break;
-;                       case TYPE_NEQUAL:   result = (cmp != 0); break;
-;                       case TYPE_GREATER:  result = (cmp > 0); break;
-;                       case TYPE_GEQUAL:   result = (cmp >= 0); break;
-;                       case TYPE_SMALLER:  result = (cmp < 0); break;
-;                       case TYPE_SEQUAL:   result = (cmp <= 0); break;
-
-;                       case TYPE_MATCH:
-;                       case TYPE_NOMATCH:
-;                       {
-                            ;; avoid 'l' flag in 'cpoptions'
-;                           Bytes save_cpo = @p_cpo;
-;                           @p_cpo = u8("");
-;                           regmatch_C regmatch = §_regmatch_C();
-;                           regmatch.regprog = vim_regcomp(s2, RE_MAGIC + RE_STRING);
-;                           regmatch.rm_ic = ic;
-;                           if (regmatch.regprog != null)
-;                           {
-;                               result = vim_regexec_nl(regmatch, s1, 0);
-;                               if (type == TYPE_NOMATCH)
-;                                   result = !result;
-;                           }
-;                           @p_cpo = save_cpo;
-;                           break;
-;                       }
-
-;                       case TYPE_UNKNOWN:  break;
-;                   }
-;               }
-
-;               clear_tv(rtv);
-;               clear_tv(var2);
-
-;               rtv.tv_type = VAR_NUMBER;
-;               rtv.tv_number = result ? 1 : 0;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Handle fourth level expression:
-;;      +       number addition
-;;      -       number subtraction
-;;      .       string concatenation
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval5 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate]
-    (§
-        ;; Get the first variable.
-
-;       if (eval6(arg, rtv, evaluate, false) == false)
-;           return false;
-
-        ;; Repeat computing, until no '+', '-' or '.' is following.
-
-;       for ( ; ; )
-;       {
-;           byte op = arg[0].at(0);
-;           if (op != '+' && op != '-' && op != '.')
-;               break;
-
-            ;; For "list + ...", an illegal use of the first operand as
-            ;; a number cannot be determined before evaluating the 2nd
-            ;; operand: if this is also a list, all is ok.
-            ;; For "something . ...", "something - ..." or "non-list + ...",
-            ;; we know that the first operand needs to be a string or number
-            ;; without evaluating the 2nd operand.  So check before to avoid
-            ;; side effects after an error.
-;           if (evaluate && get_tv_string_chk(rtv) == null)
-;           {
-;               clear_tv(rtv);
-;               return false;
-;           }
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(arg[0].plus(1));
-;           typval_C var2 = §_typval_C();
-;           if (eval6(arg, var2, evaluate, op == '.') == false)
-;           {
-;               clear_tv(rtv);
-;               return false;
-;           }
-
-;           if (evaluate)
-;           {
-                ;; Compute the result.
-
-;               if (op == '.')
-;               {
-;                   Bytes s1 = get_tv_string(rtv);         ;; already checked
-;                   Bytes s2 = get_tv_string_chk(var2);
-;                   if (s2 == null)                                     ;; type error ?
-;                   {
-;                       clear_tv(rtv);
-;                       clear_tv(var2);
-;                       return false;
-;                   }
-;                   Bytes s3 = concat_str(s1, s2);
-;                   clear_tv(rtv);
-;                   rtv.tv_type = VAR_STRING;
-;                   rtv.tv_string = s3;
-;               }
-;               else
-;               {
-;                   boolean[] error = { false };
-
-;                   long n1 = get_tv_number_chk(rtv, error);
-;                   if (error[0])
-;                   {
-                        ;; This can only happen for "list + non-list".
-                        ;; For "non-list + ..." or "something - ...",
-                        ;; we returned before evaluating the 2nd operand.
-;                       clear_tv(rtv);
-;                       return false;
-;                   }
-
-;                   long n2 = get_tv_number_chk(var2, error);
-;                   if (error[0])
-;                   {
-;                       clear_tv(rtv);
-;                       clear_tv(var2);
-;                       return false;
-;                   }
-;                   clear_tv(rtv);
-
-;                   if (op == '+')
-;                       n1 = n1 + n2;
-;                   else
-;                       n1 = n1 - n2;
-
-;                   rtv.tv_type = VAR_NUMBER;
-;                   rtv.tv_number = n1;
-;               }
-;               clear_tv(var2);
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Handle fifth level expression:
-;;      *       number multiplication
-;;      /       number division
-;;      %       number modulo
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval6 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate, #_boolean want_string]
-    ;; want_string: after "." operator
-    (§
-        ;; Get the first variable.
-
-;       if (eval7(arg, rtv, evaluate, want_string) == false)
-;           return false;
-
-        ;; Repeat computing, until no '*', '/' or '%' is following.
-
-;       for (boolean[] error = { false }; ; )
-;       {
-;           byte op = arg[0].at(0);
-;           if (op != '*' && op != '/' && op != '%')
-;               break;
-
-;           long n1;
-
-;           if (evaluate)
-;           {
-;               n1 = get_tv_number_chk(rtv, error);
-;               clear_tv(rtv);
-;               if (error[0])
-;                   return false;
-;           }
-;           else
-;               n1 = 0;
-
-            ;; Get the second variable.
-
-;           arg[0] = skipwhite(arg[0].plus(1));
-;           typval_C var2 = §_typval_C();
-;           if (eval7(arg, var2, evaluate, false) == false)
-;               return false;
-
-;           if (evaluate)
-;           {
-;               long n2 = get_tv_number_chk(var2, error);
-;               clear_tv(var2);
-;               if (error[0])
-;                   return false;
-
-                ;; Compute the result.
-
-;               if (op == '*')
-;                   n1 = n1 * n2;
-;               else if (op == '/')
-;               {
-;                   if (n2 == 0)        ;; give an error message?
-;                   {
-;                       if (n1 == 0)
-;                           n1 = -0x7fffffffL - 1L;     ;; similar to NaN
-;                       else if (n1 < 0)
-;                           n1 = -0x7fffffffL;
-;                       else
-;                           n1 = 0x7fffffffL;
-;                   }
-;                   else
-;                       n1 = n1 / n2;
-;               }
-;               else
-;               {
-;                   if (n2 == 0)        ;; give an error message?
-;                       n1 = 0;
-;                   else
-;                       n1 = n1 % n2;
-;               }
-
-;               rtv.tv_type = VAR_NUMBER;
-;               rtv.tv_number = n1;
-;           }
-;       }
-
-;       return true;
-    ))
-
-;; Handle sixth level expression:
-;;  number              number constant
-;;  "string"            string constant
-;;  'string'            literal string constant
-;;  &option-name        option value
-;;  @r                  register contents
-;;  identifier          variable value
-;;  function()          function call
-;;  $VAR                environment variable
-;;  (expression)        nested expression
-;;  [expr, expr]        List
-;;  {key: val, key: val}  Dictionary
-;;
-;;  Also handle:
-;;  ! in front          logical NOT
-;;  - in front          unary minus
-;;  + in front          unary plus (ignored)
-;;  trailing []         subscript in String or List
-;;  trailing .name      entry in Dictionary
-;;
-;; "arg" must point to the first non-white of the expression.
-;; "arg" is advanced to the next non-white after the recognized expression.
-;;
-;; Return true or false.
-
-(defn- #_boolean eval7 [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate, #_boolean _want_string]
-    ;; want_string: after "." operator
-    (§
-        ;; Initialise variable so that clear_tv() can't mistake this
-        ;; for a string and free a string that isn't there.
-
-;       rtv.tv_type = VAR_UNKNOWN;
-
-        ;; Skip '!' and '-' characters.  They are handled later.
-
-;       Bytes start_leader = arg[0];
-;       while (arg[0].at(0) == (byte)'!' || arg[0].at(0) == (byte)'-' || arg[0].at(0) == (byte)'+')
-;           arg[0] = skipwhite(arg[0].plus(1));
-;       Bytes end_leader = arg[0];
-
-;       maybean maybe = TRUE;
-
-;       switch (arg[0].at(0))
-;       {
-            ;; Number constant.
-
-;           case '0':
-;           case '1':
-;           case '2':
-;           case '3':
-;           case '4':
-;           case '5':
-;           case '6':
-;           case '7':
-;           case '8':
-;           case '9':
-;           {
-;               int[] len = new int[1];
-;               long[] n = new long[1];
-;               vim_str2nr(arg[0], null, len, TRUE, TRUE, n);
-;               arg[0] = arg[0].plus(len[0]);
-;               if (evaluate)
-;               {
-;                   rtv.tv_type = VAR_NUMBER;
-;                   rtv.tv_number = n[0];
-;               }
-;               break;
-;           }
-
-            ;; String constant: "string".
-
-;           case '"':   maybe = FALSE;
-;                       break;
-
-            ;; Literal string constant: 'str''ing'.
-
-;           case '\'':  maybe = FALSE;
-;                       break;
-
-            ;; List: [expr, expr]
-
-;           case '[':   maybe = FALSE;
-;                       break;
-
-            ;; Dictionary: {key: val, key: val}
-
-;           case '{':   maybe = FALSE;
-;                       break;
-
-            ;; Option value: &name
-
-;           case '&':   maybe = FALSE;
-;                       break;
-
-            ;; Register contents: @r.
-
-;           case '@':   arg[0] = arg[0].plus(1);
-;                       if (evaluate)
-;                       {
-;                           rtv.tv_type = VAR_STRING;
-;                           rtv.tv_string = get_reg_contents(arg[0].at(0), GREG_EXPR_SRC);
-;                       }
-;                       if (arg[0].at(0) != NUL)
-;                           arg[0] = arg[0].plus(1);
-;                       break;
-
-            ;; nested expression: (expression).
-
-;           case '(':   arg[0] = skipwhite(arg[0].plus(1));
-;                       maybe = eval1(arg, rtv, evaluate) ? TRUE : FALSE;   ;; recursive!
-;                       if (arg[0].at(0) == (byte)')')
-;                           arg[0] = arg[0].plus(1);
-;                       else if (maybe == TRUE)
-;                       {
-;                           emsg(u8("E110: Missing ')'"));
-;                           clear_tv(rtv);
-;                           maybe = FALSE;
-;                       }
-;                       break;
-
-;           default:    maybe = MAYBE;
-;                       break;
-;       }
-
-;       boolean ret;
-
-;       if (maybe != MAYBE)
-;           ret = (maybe != FALSE);
-;       else
-;       {
-            ;; Must be a variable or function name.
-            ;; Can also be a curly-braces kind of name: {expr}.
-
-;           Bytes s = arg[0];
-;           Bytes[] alias = new Bytes[1];
-;           int[] len = { get_name_len(arg, alias, evaluate, true) };
-;           if (alias[0] != null)
-;               s = alias[0];
-
-;           if (len[0] <= 0)
-;               ret = false;
-;           else
-;           {
-;               if (arg[0].at(0) == (byte)'(')
-;                   ret = false;
-;               else if (evaluate)
-;                   ret = get_var_tv(s, len[0], rtv, true, false);
-;               else
-;                   ret = true;
-;           }
-;       }
-
-;       arg[0] = skipwhite(arg[0]);
-
-        ;; Handle following '[', '(' and '.' for expr[expr], expr.name, expr(expr).
-;       if (ret)
-;           ret = handle_subscript(arg, rtv, evaluate, true);
-
-        ;; Apply logical NOT and unary '-', from right to left, ignore '+'.
-
-;       if (ret && evaluate && BLT(start_leader, end_leader))
-;       {
-;           boolean[] error = { false };
-
-;           long val = get_tv_number_chk(rtv, error);
-;           if (error[0])
-;           {
-;               clear_tv(rtv);
-;               ret = false;
-;           }
-;           else
-;           {
-;               while (BLT(start_leader, end_leader))
-;               {
-;                   end_leader = end_leader.minus(1);
-;                   if (end_leader.at(0) == (byte)'!')
-;                       val = (val == 0) ? TRUE : FALSE;
-;                   else if (end_leader.at(0) == (byte)'-')
-;                       val = -val;
-;               }
-;               clear_tv(rtv);
-;               rtv.tv_type = VAR_NUMBER;
-;               rtv.tv_number = val;
-;           }
-;       }
-
-;       return ret;
-    ))
-
-;; Evaluate an "[expr]" or "[expr:expr]" index.  Also "dict.key".
-;; "*arg" points to the '[' or '.'.
-;; Returns false or true.
-;; "*arg" is advanced to after the ']'.
-
-(defn- #_boolean eval_index [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate, #_boolean verbose]
-    ;; verbose: give error messages
-    (§
-;       boolean empty1 = false, empty2 = false;
-;       typval_C var1 = §_typval_C();
-;       typval_C var2 = §_typval_C();
-;       int n1, n2 = 0;
-;       int len = -1;
-;       boolean range = false;
-;       Bytes key = null;
-
-;       if (arg[0].at(0) == (byte)'.')
-;       {
-            ;; dict.name
-
-;           key = arg[0].plus(1);
-;           for (len = 0; asc_isalnum(key.at(len)) || key.at(len) == (byte)'_'; len++)
-            ;
-;           if (len == 0)
-;               return false;
-;           arg[0] = skipwhite(key.plus(len));
-;       }
-;       else
-;       {
-            ;; something[idx]
-            ;;
-            ;; Get the (first) variable from inside the [].
-
-;           arg[0] = skipwhite(arg[0].plus(1));
-;           if (arg[0].at(0) == (byte)':')
-;               empty1 = true;
-;           else if (eval1(arg, var1, evaluate) == false)       ;; recursive!
-;               return false;
-;           else if (evaluate && get_tv_string_chk(var1) == null)
-;           {
-                ;; not a number or string
-;               clear_tv(var1);
-;               return false;
-;           }
-
-            ;; Get the second variable from inside the [:].
-
-;           if (arg[0].at(0) == (byte)':')
-;           {
-;               range = true;
-;               arg[0] = skipwhite(arg[0].plus(1));
-;               if (arg[0].at(0) == (byte)']')
-;                   empty2 = true;
-;               else if (eval1(arg, var2, evaluate) == false)   ;; recursive!
-;               {
-;                   if (!empty1)
-;                       clear_tv(var1);
-;                   return false;
-;               }
-;               else if (evaluate && get_tv_string_chk(var2) == null)
-;               {
-                    ;; not a number or string
-;                   if (!empty1)
-;                       clear_tv(var1);
-;                   clear_tv(var2);
-;                   return false;
-;               }
-;           }
-
-            ;; Check for the ']'.
-;           if (arg[0].at(0) != (byte)']')
-;           {
-;               if (verbose)
-;                   emsg(e_missbrac);
-;               clear_tv(var1);
-;               if (range)
-;                   clear_tv(var2);
-;               return false;
-;           }
-;           arg[0] = skipwhite(arg[0].plus(1));     ;; skip the ']'
-;       }
-
-;       if (evaluate)
-;       {
-;           n1 = 0;
-;           if (!empty1)
-;           {
-;               n1 = (int)get_tv_number(var1);
-;               clear_tv(var1);
-;           }
-;           if (range)
-;           {
-;               if (empty2)
-;                   n2 = -1;
-;               else
-;               {
-;                   n2 = (int)get_tv_number(var2);
-;                   clear_tv(var2);
-;               }
-;           }
-
-;           switch (rtv.tv_type)
-;           {
-;               case VAR_NUMBER:
-;               case VAR_STRING:
-;               {
-;                   Bytes s = get_tv_string(rtv);
-;                   len = STRLEN(s);
-;                   if (range)
-;                   {
-                        ;; The resulting variable is a substring.
-                        ;; If the indexes are out of range, the result is empty.
-;                       if (n1 < 0)
-;                       {
-;                           n1 = len + n1;
-;                           if (n1 < 0)
-;                               n1 = 0;
-;                       }
-;                       if (n2 < 0)
-;                           n2 = len + n2;
-;                       else if (len <= n2)
-;                           n2 = len;
-;                       if (len <= n1 || n2 < 0 || n2 < n1)
-;                           s = null;
-;                       else
-;                           s = STRNDUP(s.plus(n1), n2 - n1 + 1);
-;                   }
-;                   else
-;                   {
-                        ;; The resulting variable is a string of a single character.
-                        ;; If the index is too big or negative, the result is empty.
-;                       if (len <= n1 || n1 < 0)
-;                           s = null;
-;                       else
-;                           s = STRNDUP(s.plus(n1), 1);
-;                   }
-;                   clear_tv(rtv);
-;                   rtv.tv_type = VAR_STRING;
-;                   rtv.tv_string = s;
-;                   break;
-;               }
-;           }
-;       }
-
-;       return true;
-    ))
-
-(atom! int _2_recurse)
-
-;; Return a string with the string representation of a variable.
-;; Does not put quotes around strings, as ":echo" displays values.
-;; When "copyID" is not null replace recursive lists and dicts with "...".
-;; May return null.
-
-(defn- #_Bytes echo_string [#_typval_C tv, #_int copyID]
-    (§
-;       if (DICT_MAXNEST <= @_2_recurse)
-;       {
-;           if (!@did_echo_string_emsg)
-;           {
-                ;; Only give this message once for a recursive call to avoid flooding
-                ;; the user with errors.  And stop iterating over lists and dicts.
-;               @did_echo_string_emsg = true;
-;               emsg(u8("E724: variable nested too deep for displaying"));
-;           }
-;           return u8("{E724}");
-;       }
-;       @_2_recurse++;
-
-;       Bytes r = null;
-
-;       switch (tv.tv_type)
-;       {
-;           case VAR_STRING:
-;           case VAR_NUMBER:
-;               r = get_tv_string(tv);
-;               break;
-
-;           default:
-;               emsg2(e_intern2, u8("echo_string()"));
-;               break;
-;       }
-
-;       if (--@_2_recurse == 0)
-;           @did_echo_string_emsg = false;
-;       return r;
-    ))
-
 ;; Function given to expandGeneric() to obtain the list of internal
 ;; or user defined variable or function names.
 
 (defn- #_Bytes get_expr_name [#_expand_C xp, #_int idx]
     (§
 ;       return null;
-    ))
-
-;; Implementation of the built-in functions
-
-(final int SP_NOMOVE       0x01)        ;; don't move cursor
-(final int SP_REPEAT       0x02)        ;; repeat to find outer pair
-(final int SP_RETCOUNT     0x04)        ;; return matchcount
-(final int SP_SETPCMARK    0x08)        ;; set previous context mark
-(final int SP_START        0x10)        ;; accept match at start position
-
-;; Search for a start/middle/end thing.
-;; Used by searchpair(), see its documentation for the details.
-;; Returns 0 or -1 for no match,
-
-(defn- #_long do_searchpair [#_Bytes spat, #_Bytes mpat, #_Bytes epat, #_int dir, #_Bytes skip, #_int flags, #_pos_C match_pos, #_long lnum_stop, #_long time_limit]
-    ;; spat: start pattern
-    ;; mpat: middle pattern
-    ;; epat: end pattern
-    ;; dir: BACKWARD or FORWARD
-    ;; skip: skip expression
-    ;; flags: SP_SETPCMARK and other SP_ values
-    ;; lnum_stop: stop at this line if not zero
-    ;; time_limit: stop after this many msec
-    (§
-;       long retval = 0;
-
-;       int nest = 1;
-;       int options = SEARCH_KEEP;
-
-        ;; Make 'cpoptions' empty, the 'l' flag should not be used here.
-;       Bytes save_cpo = @p_cpo;
-;       @p_cpo = EMPTY_OPTION;
-
-        ;; Set the time limit, if there is one.
-;       timeval_C tm = new timeval_C();
-;       profile_setlimit(time_limit, tm);
-
-        ;; Make two search patterns: start/end (pat2, for in nested pairs)
-        ;; and start/middle/end (pat3, for the top pair).
-;       Bytes pat2 = new Bytes(STRLEN(spat) + STRLEN(epat) + 15);
-;       Bytes pat3 = new Bytes(STRLEN(spat) + STRLEN(mpat) + STRLEN(epat) + 23);
-
-;       libC.sprintf(pat2, u8("\\(%s\\m\\)\\|\\(%s\\m\\)"), spat, epat);
-;       if (mpat.at(0) == NUL)
-;           STRCPY(pat3, pat2);
-;       else
-;           libC.sprintf(pat3, u8("\\(%s\\m\\)\\|\\(%s\\m\\)\\|\\(%s\\m\\)"), spat, epat, mpat);
-;       if ((flags & SP_START) != 0)
-;           options |= SEARCH_START;
-
-;       pos_C save_cursor = §_pos_C();
-;       COPY_pos(save_cursor, @curwin.w_cursor);
-;       pos_C pos = §_pos_C();
-;       COPY_pos(pos, @curwin.w_cursor);
-
-;       pos_C firstpos = §_pos_C();
-;       pos_C foundpos = §_pos_C();
-
-;       for (Bytes pat = pat3; ; )
-;       {
-;           int n = searchit(@curwin, @curbuf, pos, dir, pat, 1L, options, RE_SEARCH, lnum_stop, tm);
-;           if (n == 0 || (firstpos.lnum != 0 && eqpos(pos, firstpos)))
-                ;; didn't find it or found the first match again: FAIL
-;               break;
-
-;           if (firstpos.lnum == 0)
-;               COPY_pos(firstpos, pos);
-;           if (eqpos(pos, foundpos))
-;           {
-                ;; Found the same position again.  Can happen with a pattern that
-                ;; has "\zs" at the end and searching backwards.  Advance one
-                ;; character and try again.
-;               if (dir == BACKWARD)
-;                   decl(pos);
-;               else
-;                   incl(pos);
-;           }
-;           COPY_pos(foundpos, pos);
-
-            ;; clear the start flag to avoid getting stuck here
-;           options &= ~SEARCH_START;
-
-            ;; If the "skip" pattern matches, ignore this match.
-;           if (skip.at(0) != NUL)
-;           {
-;               boolean result;
-;               boolean[] error = new boolean[1];
-
-;               pos_C save_pos = §_pos_C();
-;               COPY_pos(save_pos, @curwin.w_cursor);
-;               COPY_pos(@curwin.w_cursor, pos);
-;               result = eval_to_bool(skip, error, null, false);
-;               COPY_pos(@curwin.w_cursor, save_pos);
-;               if (error[0])
-;               {
-                    ;; Evaluating {skip} caused an error, break here.
-;                   COPY_pos(@curwin.w_cursor, save_cursor);
-;                   retval = -1;
-;                   break;
-;               }
-;               if (result)
-;                   continue;
-;           }
-
-;           if ((dir == BACKWARD && n == 3) || (dir == FORWARD && n == 2))
-;           {
-                ;; Found end when searching backwards or start when searching forward:
-                ;; nested pair.
-;               nest++;
-;               pat = pat2;         ;; nested, don't search for middle
-;           }
-;           else
-;           {
-                ;; Found end when searching forward or start when searching backward:
-                ;; end of (nested) pair; or found middle in outer pair.
-;               if (--nest == 1)
-;                   pat = pat3;     ;; outer level, search for middle
-;           }
-
-;           if (nest == 0)
-;           {
-                ;; Found the match: return matchcount or line number.
-;               if ((flags & SP_RETCOUNT) != 0)
-;                   retval++;
-;               else
-;                   retval = pos.lnum;
-;               if ((flags & SP_SETPCMARK) != 0)
-;                   setpcmark();
-;               COPY_pos(@curwin.w_cursor, pos);
-;               if ((flags & SP_REPEAT) == 0)
-;                   break;
-;               nest = 1;       ;; search for next unmatched
-;           }
-;       }
-
-;       if (match_pos != null)
-;       {
-            ;; Store the match cursor position.
-;           match_pos.lnum = @curwin.w_cursor.lnum;
-;           match_pos.col = @curwin.w_cursor.col + 1;
-;       }
-
-        ;; If 'n' flag is used or search failed: restore cursor position.
-;       if ((flags & SP_NOMOVE) != 0 || retval == 0)
-;           COPY_pos(@curwin.w_cursor, save_cursor);
-
-;       if (@p_cpo == EMPTY_OPTION)
-;           @p_cpo = save_cpo;
-;       else
-        ; ;; Darn, evaluating {skip} expression changed the value.
-
-;       return retval;
-    ))
-
-;; Get the length of the name of a function or internal variable.
-;; "arg" is advanced to the first non-white character after the name.
-;; Return 0 if something is wrong.
-
-(defn- #_int get_id_len [#_Bytes* arg]
-    (§
-;       Bytes p;
-;       for (p = arg[0]; eval_isnamec(p.at(0)); p = p.plus(1))
-        ;
-;       if (BEQ(p, arg[0]))             ;; no name found
-;           return 0;
-
-;       int len = BDIFF(p, arg[0]);
-;       arg[0] = skipwhite(p);
-;       return len;
-    ))
-
-;; Get the length of the name of a variable or function.
-;; Only the name is recognized, does not handle ".key" or "[idx]".
-;; "arg" is advanced to the first non-white character after the name.
-;; Return -1 if curly braces expansion failed.
-;; Return 0 if something else is wrong.
-;; If the name contains 'magic' {}'s, expand them and return the
-;; expanded name in an allocated string via 'alias' - caller must free.
-
-(defn- #_int get_name_len [#_Bytes* arg, #_Bytes* alias, #_boolean evaluate, #_boolean verbose]
-    (§
-;       alias[0] = null;    ;; default to no alias
-
-;       if (arg[0].at(0) == KB_SPECIAL && arg[0].at(1) == KS_EXTRA && arg[0].at(2) == KE_SNR)
-;       {
-            ;; hard coded <SNR>, already translated
-;           arg[0] = arg[0].plus(3);
-;           return get_id_len(arg) + 3;
-;       }
-
-;       int len = 0;
-
-        ;; Find the end of the name; check for {} construction.
-
-;       Bytes[] expr_start = new Bytes[1];
-;       Bytes[] expr_end = new Bytes[1];
-;       Bytes p = find_name_end(arg[0], expr_start, expr_end, (0 < len) ? 0 : FNE_CHECK_START);
-;       if (expr_start[0] != null)
-;       {
-;           if (!evaluate)
-;           {
-;               len += BDIFF(p, arg[0]);
-;               arg[0] = skipwhite(p);
-;               return len;
-;           }
-
-;           Bytes temp_string = make_expanded_name(arg[0].minus(len), expr_start[0], expr_end[0], p);
-;           if (temp_string == null)
-;               return -1;
-;           alias[0] = temp_string;
-;           arg[0] = skipwhite(p);
-;           return STRLEN(temp_string);
-;       }
-
-;       len += get_id_len(arg);
-;       if (len == 0 && verbose)
-;           emsg2(e_invexpr2, arg[0]);
-
-;       return len;
-    ))
-
-;; Find the end of a variable or function name, taking care of magic braces.
-;; If "expr_start" is not null then "expr_start" and "expr_end" are set to the
-;; start and end of the first magic braces item.
-;; "flags" can have FNE_INCL_BR and FNE_CHECK_START.
-;; Return a pointer to just after the name.  Equal to "arg" if there is no valid name.
-
-(defn- #_Bytes find_name_end [#_Bytes arg, #_Bytes* expr_start, #_Bytes* expr_end, #_int flags]
-    (§
-;       if (expr_start != null)
-;       {
-;           expr_start[0] = null;
-;           expr_end[0] = null;
-;       }
-
-        ;; Quick check for valid starting character.
-;       if ((flags & FNE_CHECK_START) != 0 && !eval_isnamec1(arg.at(0)) && arg.at(0) != (byte)'{')
-;           return arg;
-
-;       Bytes p;
-
-;       int mb_nest = 0;
-;       int br_nest = 0;
-
-;       for (p = arg; p.at(0) != NUL
-;                       && (eval_isnamec(p.at(0))
-;                           || p.at(0) == (byte)'{'
-;                           || ((flags & FNE_INCL_BR) != 0 && (p.at(0) == (byte)'[' || p.at(0) == (byte)'.'))
-;                           || mb_nest != 0
-;                           || br_nest != 0); p = p.plus(us_ptr2len_cc(p)))
-;       {
-;           if (p.at(0) == (byte)'\'')
-;           {
-                ;; skip over 'string' to avoid counting [ and ] inside it.
-;               for (p = p.plus(1); p.at(0) != NUL && p.at(0) != (byte)'\''; p = p.plus(us_ptr2len_cc(p)))
-                ;
-;               if (p.at(0) == NUL)
-;                   break;
-;           }
-;           else if (p.at(0) == (byte)'"')
-;           {
-                ;; skip over "str\"ing" to avoid counting [ and ] inside it.
-;               for (p = p.plus(1); p.at(0) != NUL && p.at(0) != (byte)'"'; p = p.plus(us_ptr2len_cc(p)))
-;                   if (p.at(0) == (byte)'\\' && p.at(1) != NUL)
-;                       p = p.plus(1);
-;               if (p.at(0) == NUL)
-;                   break;
-;           }
-
-;           if (mb_nest == 0)
-;           {
-;               if (p.at(0) == (byte)'[')
-;                   br_nest++;
-;               else if (p.at(0) == (byte)']')
-;                   --br_nest;
-;           }
-
-;           if (br_nest == 0)
-;           {
-;               if (p.at(0) == (byte)'{')
-;               {
-;                   mb_nest++;
-;                   if (expr_start != null && expr_start[0] == null)
-;                       expr_start[0] = p;
-;               }
-;               else if (p.at(0) == (byte)'}')
-;               {
-;                   mb_nest--;
-;                   if (expr_start != null && mb_nest == 0 && expr_end[0] == null)
-;                       expr_end[0] = p;
-;               }
-;           }
-;       }
-
-;       return p;
-    ))
-
-;; Expands out the 'magic' {}'s in a variable/function name.
-;; Note that this can call itself recursively, to deal with
-;; constructs like foo{bar}{baz}{bam}
-;; The four pointer arguments point to "foo{expre}ss{ion}bar"
-;;                      "in_start"      ^
-;;                      "expr_start"       ^
-;;                      "expr_end"               ^
-;;                      "in_end"                            ^
-;;
-;; Returns a new allocated string, which the caller must free.
-;; Returns null for failure.
-
-(defn- #_Bytes make_expanded_name [#_Bytes in_start, #_Bytes _expr_start, #_Bytes _expr_end, #_Bytes in_end]
-    (§
-;       Bytes[] expr_start = { _expr_start };
-;       Bytes[] expr_end = { _expr_end };
-
-;       Bytes retval = null;
-;       Bytes[] nextcmd = { null };
-
-;       if (expr_end[0] == null || in_end == null)
-;           return null;
-;       expr_start[0].be(0, NUL);
-;       expr_end[0].be(0, NUL);
-
-;       byte c1 = in_end.at(0);
-;       in_end.be(0, NUL);
-
-;       Bytes s = eval_to_string(expr_start[0].plus(1), nextcmd, false);
-;       if (s != null && nextcmd[0] == null)
-;       {
-;           retval = new Bytes(STRLEN(s) + BDIFF(expr_start[0], in_start) + BDIFF(in_end, expr_end[0]) + 1);
-
-;           STRCPY(retval, in_start);
-;           STRCAT(retval, s);
-;           STRCAT(retval, expr_end[0].plus(1));
-;       }
-
-;       in_end.be(0, c1);               ;; put char back for error messages
-;       expr_start[0].be(0, (byte)'{');
-;       expr_end[0].be(0, (byte)'}');
-
-;       if (retval != null)
-;       {
-;           s = find_name_end(retval, expr_start, expr_end, 0);
-;           if (expr_start[0] != null)
-;           {
-                ;; Further expansion!
-;               s = make_expanded_name(retval, expr_start[0], expr_end[0], s);
-;               retval = s;
-;           }
-;       }
-
-;       return retval;
-    ))
-
-;; Return true if character "c" can be used in a variable or function name.
-;; Does not include '{' or '}' for magic braces.
-
-(defn- #_boolean eval_isnamec [#_int c]
-    (§
-;       return (asc_isalnum(c) || c == '_' || c == ':' || c == AUTOLOAD_CHAR);
-    ))
-
-;; Return true if character "c" can be used as the first character in a
-;; variable or function name (excluding '{' and '}').
-
-(defn- #_boolean eval_isnamec1 [#_int c]
-    (§
-;       return (asc_isalpha(c) || c == '_');
-    ))
-
-;; Get the value of internal variable "name".
-;; Return true or false.
-
-(defn- #_boolean get_var_tv [#_Bytes name, #_int len, #_typval_C rtv, #_boolean verbose, #_boolean no_autoload]
-    ;; len: length of "name"
-    ;; rtv: null when only checking existence
-    ;; verbose: may give error message
-    ;; no_autoload: do not use script autoloading
-    (§
-;       typval_C tv = null;
-;       typval_C atv = §_typval_C();
-
-        ;; truncate the name, so that we can use strcmp()
-;       int cc = name.at(len);
-;       name.be(len, NUL);
-
-        ;; Check for "b:changedtick".
-
-;       if (STRCMP(name, u8("b:changedtick")) == 0)
-;       {
-;           atv.tv_type = VAR_NUMBER;
-;           atv.tv_number = @curbuf.b_changedtick;
-;           tv = atv;
-;       }
-
-;       boolean ret = true;
-
-;       if (tv == null)
-;       {
-;           if (rtv != null && verbose)
-;               emsg2(e_undefvar, name);
-;           ret = false;
-;       }
-;       else if (rtv != null)
-;           copy_tv(tv, rtv);
-
-;       name.be(len, cc);
-
-;       return ret;
-    ))
-
-;; Handle expr[expr], expr[expr:expr] subscript and .name lookup.
-;; Also handle function call with Funcref variable: func(expr)
-;; Can all be combined: dict.func(expr)[idx]['func'](expr)
-
-(defn- #_boolean handle_subscript [#_Bytes* arg, #_typval_C rtv, #_boolean evaluate, #_boolean verbose]
-    ;; evaluate: do more than finding the end
-    ;; verbose: give error messages
-    (§
-;       boolean ret = true;
-
-;       while (ret
-;               && (arg[0].at(0) == (byte)'['
-;                   || (arg[0].at(0) == (byte)'(' && !evaluate))
-;               && !vim_iswhite(arg[0].at(-1)))
-;       {
-;           if (arg[0].at(0) == (byte)'(')
-;           {
-;               clear_tv(rtv);
-;               ret = false;
-;           }
-;           else ;; arg[0][0] == '[' || arg[0][0] == '.'
-;           {
-;               if (eval_index(arg, rtv, evaluate, verbose) == false)
-;               {
-;                   clear_tv(rtv);
-;                   ret = false;
-;               }
-;           }
-;       }
-
-;       return ret;
-    ))
-
-;; Free the memory for a variable value and set the value to null or 0.
-
-(defn- #_void clear_tv [#_typval_C varp]
-    (§
-;       if (varp != null)
-;       {
-;           switch (varp.tv_type)
-;           {
-;               case VAR_STRING:
-;                   varp.tv_string = null;
-;                   break;
-;               case VAR_NUMBER:
-;                   varp.tv_number = 0;
-;                   break;
-;               case VAR_UNKNOWN:
-;                   break;
-;               default:
-;                   emsg2(e_intern2, u8("clear_tv()"));
-;           }
-;           varp.tv_lock = 0;
-;       }
-    ))
-
-;; Get the number value of a variable.
-;; If it is a String variable, uses vim_str2nr().
-;; For incompatible types, return 0.
-
-(defn- #_long get_tv_number [#_typval_C varp]
-    (§
-;       boolean[] error = { false };
-
-;       return get_tv_number_chk(varp, error);     ;; return 0L on error
-    ))
-
-;; get_tv_number_chk() is similar to get_tv_number(), but informs the caller of incompatible types:
-;; it sets "*denote" to true if "denote" is not null or returns -1 otherwise.
-
-(defn- #_long get_tv_number_chk [#_typval_C varp, #_boolean* denote]
-    (§
-;       long[] n = { 0L };
-
-;       switch (varp.tv_type)
-;       {
-;           case VAR_NUMBER:
-;               return varp.tv_number;
-;           case VAR_STRING:
-;               if (varp.tv_string != null)
-;                   vim_str2nr(varp.tv_string, null, null, TRUE, TRUE, n);
-;               return n[0];
-;           default:
-;               emsg2(e_intern2, u8("get_tv_number()"));
-;               break;
-;       }
-;       if (denote == null)         ;; useful for values that must be unsigned
-;           n[0] = -1;
-;       else
-;           denote[0] = true;
-;       return n[0];
-    ))
-
-;; Get the string value of a variable.
-;; If it is a Number variable, the number is converted into a string.
-;; If the String variable has never been set, return an empty string.
-;; Never returns null.
-;; get_tv_string_chk() is similar, but return null on error.
-
-(defn- #_Bytes get_tv_string [#_typval_C varp]
-    (§
-;       Bytes res = get_tv_string_chk(varp);
-
-;       return (res != null) ? res : u8("");
-    ))
-
-(defn- #_Bytes get_tv_string_chk [#_typval_C varp]
-    (§
-;       switch (varp.tv_type)
-;       {
-;           case VAR_NUMBER:
-;               Bytes buf = new Bytes(NUMBUFLEN);
-;               libC.sprintf(buf, u8("%ld"), varp.tv_number);
-;               return buf;
-;           case VAR_STRING:
-;               if (varp.tv_string != null)
-;                   return varp.tv_string;
-;               return u8("");
-;           default:
-;               emsg2(e_intern2, u8("get_tv_string()"));
-;               break;
-;       }
-;       return null;
-    ))
-
-;; Copy the values from typval_C "from" to typval_C "to".
-;; When needed allocates string or increases reference count.
-;; Does not make a copy of a list or dict but copies the reference!
-;; It is OK for "from" and "to" to point to the same item.  This is used to make a copy later.
-
-(defn- #_void copy_tv [#_typval_C from, #_typval_C to]
-    (§
-;       to.tv_type = from.tv_type;
-;       to.tv_lock = 0;
-
-;       switch (from.tv_type)
-;       {
-;           case VAR_NUMBER:
-;               to.tv_number = from.tv_number;
-;               break;
-
-;           case VAR_STRING:
-;               if (from.tv_string == null)
-;                   to.tv_string = null;
-;               else
-;                   to.tv_string = STRDUP(from.tv_string);
-;               break;
-
-;           default:
-;               emsg2(e_intern2, u8("copy_tv()"));
-;               break;
-;       }
-    ))
-
-;; ":echo expr1 ..."    print each argument separated with a space, add a newline at the end.
-;; ":echon expr1 ..."   print each argument plain.
-
-(defn- #_void ex_echo [#_exarg_C eap]
-    (§
-;       Bytes[] arg = { eap.arg };
-;       boolean needclr = true;
-;       boolean atstart = true;
-
-;       if (eap.skip)
-;           @emsg_skip++;
-
-;       typval_C rtv = §_typval_C();
-
-;       while (arg[0].at(0) != NUL && arg[0].at(0) != (byte)'|' && arg[0].at(0) != (byte)'\n' && !@got_int)
-;       {
-                ;; If eval1() causes an error message the text from the command may
-                ;; still need to be cleared.  E.g., "echo 22,44".
-;           @need_clr_eos = needclr;
-
-;           Bytes p = arg[0];
-;           if (eval1(arg, rtv, !eap.skip) == false)
-;           {
-                    ;; Report the invalid expression unless the expression evaluation has been
-                    ;; cancelled due to an aborting error, an interrupt, or an exception.
-
-;               if (!aborting())
-;                   emsg2(e_invexpr2, p);
-;               @need_clr_eos = false;
-;               break;
-;           }
-;           @need_clr_eos = false;
-
-;           if (!eap.skip)
-;           {
-;               if (atstart)
-;               {
-;                   atstart = false;
-                        ;; Call msg_start() after eval1(),
-                        ;; evaluating the expression may cause a message to appear.
-;                   if (eap.cmdidx == CMD_echo)
-;                   {
-                            ;; Mark the saved text as finishing the line, so that what follows
-                            ;; is displayed on a new line when scrolling back at the more prompt.
-;                       msg_sb_eol();
-;                       msg_start();
-;                   }
-;               }
-;               else if (eap.cmdidx == CMD_echo)
-;                   msg_puts_attr(u8(" "), @echo_attr);
-;               @current_copyID += COPYID_INC;
-;               p = echo_string(rtv, @current_copyID);
-;               if (p != null)
-;                   for ( ; p.at(0) != NUL && !@got_int; p = p.plus(1))
-;                   {
-;                       if (p.at(0) == (byte)'\n' || p.at(0) == (byte)'\r' || p.at(0) == TAB)
-;                       {
-;                           if (p.at(0) != TAB && needclr)
-;                           {
-                                    ;; remove any text still there from the command
-;                               msg_clr_eos();
-;                               needclr = false;
-;                           }
-;                           msg_putchar_attr(p.at(0), @echo_attr);
-;                       }
-;                       else
-;                       {
-;                           int i = us_ptr2len_cc(p);
-
-;                           msg_outtrans_len_attr(p, i, @echo_attr);
-;                           p = p.plus(i - 1);
-;                       }
-;                   }
-;           }
-;           clear_tv(rtv);
-;           arg[0] = skipwhite(arg[0]);
-;       }
-
-;       eap.nextcmd = check_nextcmd(arg[0]);
-
-;       if (eap.skip)
-;           --@emsg_skip;
-;       else
-;       {
-                ;; remove text that may still be there from the command
-;           if (needclr)
-;               msg_clr_eos();
-;           if (eap.cmdidx == CMD_echo)
-;               msg_end();
-;       }
-    ))
-
-;; ":execute expr1 ..." execute the result of an expression.
-;; ":echomsg expr1 ..." print a message.
-;; ":echoerr expr1 ..." print an error.
-;; Each gets spaces around each argument and a newline at the end for echo commands.
-
-(defn- #_void ex_execute [#_exarg_C eap]
-    (§
-;       Bytes[] arg = { eap.arg };
-
-;       if (eap.skip)
-;           @emsg_skip++;
-
-;       barray_C ba = new barray_C(80);
-
-;       boolean ret = true;
-
-;       typval_C rtv = §_typval_C();
-
-;       while (arg[0].at(0) != NUL && arg[0].at(0) != (byte)'|' && arg[0].at(0) != (byte)'\n')
-;       {
-;           Bytes p = arg[0];
-;           if (eval1(arg, rtv, !eap.skip) == false)
-;           {
-                    ;; Report the invalid expression unless the expression evaluation has been
-                    ;; cancelled due to an aborting error, an interrupt, or an exception.
-
-;               if (!aborting())
-;                   emsg2(e_invexpr2, p);
-;               ret = false;
-;               break;
-;           }
-
-;           if (!eap.skip)
-;           {
-;               p = get_tv_string(rtv);
-;               int len = STRLEN(p);
-;               Bytes s = new Bytes(ba_grow(ba, len + 2));
-;               if (0 < ba.ba_len)
-;                   s.be(ba.ba_len++, (byte)' ');
-;               STRCPY(s.plus(ba.ba_len), p);
-;               ba.ba_len += len;
-;           }
-
-;           clear_tv(rtv);
-;           arg[0] = skipwhite(arg[0]);
-;       }
-
-;       if (ret && ba.ba_data != null)
-;       {
-;           if (eap.cmdidx == CMD_echomsg)
-;           {
-;               msg_attr(new Bytes(ba.ba_data), @echo_attr);
-;               out_flush();
-;           }
-;           else if (eap.cmdidx == CMD_echoerr)
-;           {
-                    ;; We don't want to abort following commands, restore did_emsg.
-;               boolean save_did_emsg = @did_emsg;
-;               emsg(new Bytes(ba.ba_data));
-;               if (!@force_abort)
-;                   @did_emsg = save_did_emsg;
-;           }
-;           else if (eap.cmdidx == CMD_execute)
-;               do_cmdline(new Bytes(ba.ba_data), eap.getline, eap.cookie, DOCMD_NOWAIT|DOCMD_VERBOSE);
-;       }
-
-;       ba_clear(ba);
-
-;       if (eap.skip)
-;           --@emsg_skip;
-
-;       eap.nextcmd = check_nextcmd(arg[0]);
-    ))
-
-;; Skip over the name of an option: "&option", "&g:option" or "&l:option".
-;; "arg" points to the "&" or '+' when called, to "option" when returning.
-;; Returns null when no option name found.  Otherwise pointer to the char
-;; after the option name.
-
-(defn- #_Bytes find_option_end [#_Bytes* arg, #_int* opt_flags]
-    (§
-;       Bytes p = arg[0];
-
-;       p = p.plus(1);
-;       if (p.at(0) == (byte)'g' && p.at(1) == (byte)':')
-;       {
-;           opt_flags[0] = OPT_GLOBAL;
-;           p = p.plus(2);
-;       }
-;       else if (p.at(0) == (byte)'l' && p.at(1) == (byte)':')
-;       {
-;           opt_flags[0] = OPT_LOCAL;
-;           p = p.plus(2);
-;       }
-;       else
-;           opt_flags[0] = 0;
-
-;       if (!asc_isalpha(p.at(0)))
-;           return null;
-;       arg[0] = p;
-
-;       if (p.at(0) == (byte)'t' && p.at(1) == (byte)'_' && p.at(2) != NUL && p.at(3) != NUL)
-;           p = p.plus(4);     ;; termcap option
-;       else
-;           while (asc_isalpha(p.at(0)))
-;               p = p.plus(1);
-;       return p;
-    ))
-
-;; Perform a substitution on "str" with pattern "pat" and substitute "sub".
-;; "flags" can be "g" to do a global substitute.
-;; Returns an allocated string, null for error.
-
-(defn- #_Bytes do_string_sub [#_Bytes str, #_Bytes pat, #_Bytes sub, #_Bytes flags]
-    (§
-        ;; Make 'cpoptions' empty, so that the 'l' flag doesn't work here.
-;       Bytes save_cpo = @p_cpo;
-;       @p_cpo = EMPTY_OPTION;
-
-;       barray_C ba = new barray_C(200);
-
-;       boolean do_all = (flags.at(0) == (byte)'g');
-
-;       regmatch_C regmatch = §_regmatch_C();
-;       regmatch.rm_ic = @p_ic;
-;       regmatch.regprog = vim_regcomp(pat, RE_MAGIC + RE_STRING);
-;       if (regmatch.regprog != null)
-;       {
-;           Bytes zero_width = null;
-;           Bytes tail = str;
-;           Bytes end = str.plus(STRLEN(str));
-;           while (vim_regexec_nl(regmatch, str, BDIFF(tail, str)))
-;           {
-                ;; Skip empty match except for first match.
-;               if (BEQ(regmatch.startp[0], regmatch.endp[0]))
-;               {
-;                   if (BEQ(zero_width, regmatch.startp[0]))
-;                   {
-                        ;; avoid getting stuck on a match with an empty string
-;                       int n = us_ptr2len_cc(tail);
-;                       ACOPY(ba.ba_data, ba.ba_len, tail.array, tail.index, n);
-;                       ba.ba_len += n;
-;                       tail = tail.plus(n);
-;                       continue;
-;                   }
-;                   zero_width = regmatch.startp[0];
-;               }
-
-                ;; Get some space for a temporary buffer to do the substitution into.
-                ;; It will contain:
-                ;; - The text up to where the match is.
-                ;; - The substituted text.
-                ;; - The text after the match.
-
-;               int sublen = vim_regsub(regmatch, sub, tail, false, true, false);
-;               ba_grow(ba, BDIFF(end, tail) + sublen - BDIFF(regmatch.endp[0], regmatch.startp[0]));
-
-                ;; copy the text up to where the match is
-;               int n = BDIFF(regmatch.startp[0], tail);
-;               ACOPY(ba.ba_data, ba.ba_len, tail.array, tail.index, n);
-                ;; add the substituted text
-;               vim_regsub(regmatch, sub, new Bytes(ba.ba_data, ba.ba_len + n), true, true, false);
-;               ba.ba_len += n + sublen - 1;
-;               tail = regmatch.endp[0];
-;               if (tail.at(0) == NUL)
-;                   break;
-;               if (!do_all)
-;                   break;
-;           }
-
-;           if (ba.ba_data != null)
-;               STRCPY(new Bytes(ba.ba_data, ba.ba_len), tail);
-;       }
-
-;       Bytes retval = STRDUP(ba.ba_data != null ? new Bytes(ba.ba_data) : str);
-;       ba_clear(ba);
-
-;       if (@p_cpo == EMPTY_OPTION)
-;           @p_cpo = save_cpo;
-;       else
-        ; ;; Darn, evaluating {sub} expression changed the value.
-
-;       return retval;
-    ))
-
-;; Store the current time in "tm".
-
-(defn- #_void profile_start [#_timeval_C tm]
-    (§
-;       libC._gettimeofday(tm);
-    ))
-
-;; Compute the elapsed time from "tm" till now and store in "tm".
-
-(defn- #_void profile_end [#_timeval_C tm]
-    (§
-;       timeval_C now = new timeval_C();
-;       libC._gettimeofday(now);
-
-;       tm.tv_usec(now.tv_usec() - tm.tv_usec());
-;       tm.tv_sec(now.tv_sec() - tm.tv_sec());
-;       if (tm.tv_usec() < 0)
-;       {
-;           tm.tv_usec(tm.tv_usec() + 1000000);
-;           tm.tv_sec(tm.tv_sec() - 1);
-;       }
-    ))
-
-;; Subtract the time "tm2" from "tm".
-
-(defn- #_void profile_sub [#_timeval_C tm1, #_timeval_C tm2]
-    (§
-;       tm1.tv_usec(tm1.tv_usec() - tm2.tv_usec());
-;       tm1.tv_sec(tm1.tv_sec() - tm2.tv_sec());
-;       if (tm1.tv_usec() < 0)
-;       {
-;           tm1.tv_usec(tm1.tv_usec() + 1000000);
-;           tm1.tv_sec(tm1.tv_sec() - 1);
-;       }
-    ))
-
-(final Bytes profile_msg_buf (Bytes. 50))
-
-;; Return a string that represents the time in "tm".
-;; Uses a static buffer!
-
-(defn- #_Bytes profile_msg [#_timeval_C tm]
-    (§
-;       libC.sprintf(profile_msg_buf, u8("%3ld.%06ld"), tm.tv_sec(), tm.tv_usec());
-;       return profile_msg_buf;
     ))
 
 ;; Put the time "msec" past now in "tm".
@@ -35957,17 +33912,6 @@
 ;           case '<': ;; "a<" = a <> block
 ;           case '>':
 ;                   flag = current_block(cap.oap, cap.count1, include, '<', '>');
-;                   break;
-;           case 't': ;; "at" = a tag block (xml and html)
-                    ;; Do not adjust oap.op_end in do_pending_operator()
-                    ;; otherwise there are different results for 'dit'
-                    ;; (note leading whitespace in last line):
-                    ;; 1) <b>      2) <b>
-                    ;;    foobar      foobar
-                    ;;    </b>            </b>
-
-;                   cap.retval |= CA_NO_ADJ_OP_END;
-;                   flag = current_tagblock(cap.oap, cap.count1, include);
 ;                   break;
 ;           case 'p': ;; "ap" = a paragraph
 ;                   flag = current_par(cap.oap, cap.count1, include, 'p');
@@ -66685,201 +64629,6 @@
 ;       }
 
 ;       return (lc != '/');
-    ))
-
-;; Find tag block under the cursor, cursor at end.
-
-(defn- #_boolean current_tagblock [#_oparg_C oap, #_long count_arg, #_boolean include]
-    ;; include: true == include white space
-    (§
-;       boolean retval = false;
-
-;       long count = count_arg;
-;       boolean do_include = include;
-;       boolean save_p_ws = @p_ws;
-;       boolean is_inclusive = true;
-
-;       @p_ws = false;
-
-;       pos_C old_pos = §_pos_C();
-;       COPY_pos(old_pos, @curwin.w_cursor);
-;       pos_C old_end = §_pos_C();
-;       COPY_pos(old_end, @curwin.w_cursor);         ;; remember where we started
-;       pos_C old_start = §_pos_C();
-;       COPY_pos(old_start, old_end);
-;       if (!@VIsual_active || @p_sel.at(0) == (byte)'e')
-;           decl(old_end);                          ;; old_end is inclusive
-
-        ;; If we start on "<aaa>" select that block.
-
-;       if (!@VIsual_active || eqpos(@VIsual, @curwin.w_cursor))
-;       {
-;           setpcmark();
-
-            ;; ignore indent
-;           while (inindent(1))
-;               if (inc_cursor() != 0)
-;                   break;
-
-;           if (in_html_tag(false))
-;           {
-                ;; cursor on start tag, move to its '>'
-;               while (ml_get_cursor().at(0) != (byte)'>')
-;                   if (inc_cursor() < 0)
-;                       break;
-;           }
-;           else if (in_html_tag(true))
-;           {
-                ;; cursor on end tag, move to just before it
-;               while (ml_get_cursor().at(0) != (byte)'<')
-;                   if (dec_cursor() < 0)
-;                       break;
-;               dec_cursor();
-;               COPY_pos(old_end, @curwin.w_cursor);
-;           }
-;       }
-;       else if (ltpos(@VIsual, @curwin.w_cursor))
-;       {
-;           COPY_pos(old_start, @VIsual);
-;           COPY_pos(@curwin.w_cursor, @VIsual); ;; cursor at low end of Visual
-;       }
-;       else
-;           COPY_pos(old_end, @VIsual);
-
-;       pos_C start_pos = §_pos_C();
-;       pos_C end_pos = §_pos_C();
-
-;       theend:
-;       {
-;           again:
-;           for ( ; ; )
-;           {
-                ;; Search backwards for unclosed "<aaa>".
-                ;; Put this position in start_pos.
-
-;               for (long n = 0; n < count; n++)
-;               {
-;                   if (do_searchpair(u8("<[^ \t>/!]\\+\\%(\\_s\\_[^>]\\{-}[^/]>\\|$\\|\\_s\\=>\\)"), u8(""), u8("</[^>]*>"), BACKWARD, u8(""), 0, null, 0, 0L) <= 0)
-;                   {
-;                       COPY_pos(@curwin.w_cursor, old_pos);
-;                       break theend;
-;                   }
-;               }
-
-;               COPY_pos(start_pos, @curwin.w_cursor);
-
-                ;; Search for matching "</aaa>".  First isolate the "aaa".
-
-;               inc_cursor();
-;               Bytes p = ml_get_cursor();
-;               Bytes cp;
-;               for (cp = p; cp.at(0) != NUL && cp.at(0) != (byte)'>' && !vim_iswhite(cp.at(0)); cp = cp.plus(us_ptr2len_cc(cp)))
-                ;
-;               int len = BDIFF(cp, p);
-;               if (len == 0)
-;               {
-;                   COPY_pos(@curwin.w_cursor, old_pos);
-;                   break theend;
-;               }
-
-;               Bytes spat = new Bytes(len + 31);
-;               Bytes epat = new Bytes(len + 9);
-;               libC.sprintf(spat, u8("<%.*s\\>\\%%(\\s\\_[^>]\\{-}[^/]>\\|>\\)\\c"), len, p);
-;               libC.sprintf(epat, u8("</%.*s>\\c"), len, p);
-
-;               long r = do_searchpair(spat, u8(""), epat, FORWARD, u8(""), 0, null, 0, 0L);
-
-;               if (r < 1 || ltpos(@curwin.w_cursor, old_end))
-;               {
-                    ;; Can't find other end or it's before the previous end.
-                    ;; Could be a HTML tag that doesn't have a matching end.
-                    ;; Search backwards for another starting tag.
-;                   count = 1;
-;                   COPY_pos(@curwin.w_cursor, start_pos);
-;                   continue again;
-;               }
-
-;               if (do_include || r < 1)
-;               {
-                    ;; Include up to the '>'.
-;                   while (ml_get_cursor().at(0) != (byte)'>')
-;                       if (inc_cursor() < 0)
-;                           break;
-;               }
-;               else
-;               {
-;                   Bytes c = ml_get_cursor();
-
-                    ;; Exclude the '<' of the end tag.
-                    ;; If the closing tag is on new line, do not decrement cursor, but
-                    ;; make operation exclusive, so that the linefeed will be selected
-;                   if (c.at(0) == (byte)'<' && !@VIsual_active && @curwin.w_cursor.col == 0)
-                        ;; do not decrement cursor
-;                       is_inclusive = false;
-;                   else if (c.at(0) == (byte)'<')
-;                       dec_cursor();
-;               }
-
-;               COPY_pos(end_pos, @curwin.w_cursor);
-
-;               if (!do_include)
-;               {
-                    ;; Exclude the start tag.
-;                   COPY_pos(@curwin.w_cursor, start_pos);
-;                   while (0 <= inc_cursor())
-;                       if (ml_get_cursor().at(0) == (byte)'>')
-;                       {
-;                           inc_cursor();
-;                           COPY_pos(start_pos, @curwin.w_cursor);
-;                           break;
-;                       }
-;                   COPY_pos(@curwin.w_cursor, end_pos);
-
-                    ;; If we now have the same text as before reset "do_include" and try again.
-;                   if (eqpos(start_pos, old_start) && eqpos(end_pos, old_end))
-;                   {
-;                       do_include = true;
-;                       COPY_pos(@curwin.w_cursor, old_start);
-;                       count = count_arg;
-;                       continue again;
-;                   }
-;               }
-
-;               break;
-;           }
-
-;           if (@VIsual_active)
-;           {
-                ;; If the end is before the start there is no text between tags,
-                ;; select the char under the cursor.
-;               if (ltpos(end_pos, start_pos))
-;                   COPY_pos(@curwin.w_cursor, start_pos);
-;               else if (@p_sel.at(0) == (byte)'e')
-;                   inc_cursor();
-;               COPY_pos(@VIsual, start_pos);
-;               @VIsual_mode = 'v';
-;               redraw_curbuf_later(INVERTED);  ;; update the inversion
-;               showmode();
-;           }
-;           else
-;           {
-;               COPY_pos(oap.op_start, start_pos);
-;               oap.motion_type = MCHAR;
-;               if (ltpos(end_pos, start_pos))
-;               {
-                    ;; End is before the start: there is no text between tags;
-                    ;; operate on an empty area.
-;                   COPY_pos(@curwin.w_cursor, start_pos);
-;                   oap.inclusive = false;
-;               }
-;               else
-;                   oap.inclusive = is_inclusive;
-;           }
-;           retval = true;
-;       }
-
-;       @p_ws = save_p_ws;
-;       return retval;
     ))
 
 (defn- #_boolean current_par [#_oparg_C oap, #_long count, #_boolean include, #_int type]
@@ -110060,13 +107809,8 @@
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "edit"),          ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "echo"),          ex_echo,          (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
-        (->cmdname_C (u8 "echoerr"),       ex_execute,       (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
-        (->cmdname_C (u8 "echomsg"),       ex_execute,       (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
-        (->cmdname_C (u8 "echon"),         ex_echo,          (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
         (->cmdname_C (u8 "enew"),          ex_edit,             BANG,                                                      ADDR_LINES),
         (->cmdname_C (u8 "ex"),            ex_edit,          (| BANG FILE1 EDITCMD ARGOPT),                                ADDR_LINES),
-        (->cmdname_C (u8 "execute"),       ex_execute,       (| EXTRA NOTRLCOM SBOXOK CMDWIN),                             ADDR_LINES),
         (->cmdname_C (u8 "exit"),          ex_exit,          (| RANGE BANG FILE1 ARGOPT DFLALL CMDWIN),                    ADDR_LINES),
         (->cmdname_C (u8 "files"),         ex_buflist,       (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "first"),         ex_rewind,        (| EXTRA BANG EDITCMD ARGOPT),                                ADDR_LINES),
