@@ -4675,10 +4675,10 @@
             ((ß errmsg =) (if (not (briopt-check @curwin)) e_invarg errmsg))
         )
 
-        ;; 'isident', 'iskeyword', 'isprint' or 'isfname' option: refill chartab[]
+        ;; 'isident', 'isprint', 'isfname' or 'iskeyword' option: refill chartab[]
         ;; If the new option is invalid, use old value.
 
-        (or (== varp p_isi) (== varp (:b_p_isk @curbuf)) (== varp p_isp) (== varp p_isf))
+        (any == varp p_isi p_isp p_isf (:b_p_isk @curbuf))
         (do
             (when (not (init-chartab true))
                 ((ß did_chartab =) true)     ;; need to restore it below
@@ -4816,19 +4816,8 @@
         ;; Options that are a list of flags.
         :else
         (do
-            ((ß Bytes p =) nil)
-            (cond (== varp p_ww)
-            (do
-                ((ß p =) WW_ALL)
-            )
-            (== varp p_cpo)
-            (do
-                ((ß p =) CPO_ALL)
-            )
-            (== varp (:wo_cocu (:w_options @curwin)))
-            (do
-                ((ß p =) COCU_ALL)
-            ))
+            ((ß Bytes p =) (condp == varp p_ww WW_ALL p_cpo CPO_ALL (:wo_cocu (:w_options @curwin)) COCU_ALL nil))
+
             (when (some? p)
                 (loop-when-recur [#_Bytes s (... varp 0)] (non-eos? s) [(.plus s 1)]
                     (when (nil? (vim-strchr p, (.at s 0)))
@@ -33045,166 +33034,58 @@
 ;; - The lower three bits, masked by CT_CELL_MASK, give the number of display cells
 ;;   the character occupies (1, 2 or 4).  Not valid for UTF-8 above 0x80.
 ;; - CT_PRINT_CHAR bit is set when the character is printable (no need to translate before displaying it).
-;; - CT_FNAME_CHAR bit is set when the character can be in a file name.
 ;; - CT_IDENT_CHAR bit is set when the character can be in an identifier.
+;; - CT_FNAME_CHAR bit is set when the character can be in a file name.
 ;;
 ;; Return false if 'isident', 'isprint', 'isfname' or 'iskeyword' option has an error, true otherwise.
 
 (defn- #_boolean init-chartab [#_boolean global]
     ;; global: false: only set @curbuf.b_chartab[]
-    (§
-        (when global
-            ;; Set the default size for printable characters:
-            ;; From <Space> to '~' is 1 (printable), others are 2 (not printable).
-            ;; This also inits all 'isident' and 'isfname' flags to false.
-
-            ((ß int c =) 0)
-            ((ß c =) (loop-when-recur c (< c (byte \space)) (inc c) => c
-                ((ß @chartab[c] =) (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2)))
-            ))
-            ((ß c =) (loop-when-recur c (<= c (byte \~)) (inc c) => c
-                ((ß @chartab[c] =) (inc CT_PRINT_CHAR))
-            ))
-            (loop-when-recur c (< c 256) (inc c)
-                ((ß @chartab[c] =) (if (<= 0xa0 c)
-                    (inc CT_PRINT_CHAR)    ;; bytes 0xa0 - 0xff are printable (latin1)
-                    (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))   ;; the rest is unprintable by default
-                ))
-            )
-
-            ;; Assume that every multi-byte char is a filename character.
-            (loop-when-recur [c 0xa0] (< c 256) [(inc c)]
-                ((ß @chartab[c] =) (| (... @chartab c) CT_FNAME_CHAR))
-            )
-        )
-
-        ;; Init word char flags all to false.
-
-        (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
-
-        ;; Walk through the 'isident', 'isprint', 'isfname' and 'iskeyword' options.
-        ;; Each option is a list of characters, character numbers or ranges,
-        ;; separated by commas, e.g.: "200-210,x,#-178,-"
-
-        (loop-when-recur [#_int i (if global 0 3)] (<= i 3) [(inc i)]
-            ((ß Bytes p =) (condp == i
-                0   @p_isi              ;; first round:  'isident'
-                1   @p_isp              ;; second round: 'isprint'
-                2   @p_isf              ;; third round:  'isfname'
-                3   @(:b_p_isk @curbuf) ;; fourth round: 'iskeyword'
-            ))
-
-            (loop-when [] (non-eos? p)
-                ((ß boolean tilde =) false)
-                ((ß boolean do_isalpha =) false)
-                (when (and (at? p (byte \^)) (non-eos? p 1))
-                    ((ß tilde =) true)
-                    ((ß p =) (.plus p 1))
-                )
-                (ß int c)
-                (cond (asc-isdigit (.at p 0))
-                (do
-                    (let [__ (atom (#_Bytes object p))]
-                        ((ß c =) (int (getdigits __)))
-                        ((ß p =) @__))
-                )
-                :else
-                (do
-                    (let [__ (atom (#_Bytes object p))]
-                        ((ß c =) (us-ptr2char-adv __, true))
-                        ((ß p =) @__))
-                ))
-                ((ß int c2 =) -1)
-                (when (and (at? p (byte \-)) (non-eos? p 1))
-                    ((ß p =) (.plus p 1))
-                    (cond (asc-isdigit (.at p 0))
-                    (do
-                        (let [__ (atom (#_Bytes object p))]
-                            ((ß c2 =) (int (getdigits __)))
-                            ((ß p =) @__))
-                    )
-                    :else
-                    (do
-                        (let [__ (atom (#_Bytes object p))]
-                            ((ß c2 =) (us-ptr2char-adv __, true))
-                            ((ß p =) @__))
-                    ))
-                )
-                (if (or (<= c 0) (<= 256 c) (and (< c2 c) (!= c2 -1)) (<= 256 c2) (not (or (eos? p) (at? p (byte \,)))))
-                    ((ß RETURN) false)
-                )
-
-                (when (== c2 -1)       ;; not a range
+    (when global
+        ;; Set the default size for printable characters:
+        ;; From <Space> to '~' is 1 (printable), others are 2 (not printable).
+        ;; This also inits all 'isident' and 'isfname' flags to false.
+        (let [wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))
+              ;; Assume that every multi-byte char is a filename character.
+              cls- #(condp < % (byte \space) wide DEL (inc CT_PRINT_CHAR) 0xa0 wide 256 (inc (+ CT_PRINT_CHAR CT_FNAME_CHAR)))]
+            (swap! chartab #(into (empty %) (map cls- %)))
+        ))
+    ;; Init word char flags all to false.
+    (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
+    ;; Walk through the 'isident', 'isprint', 'isfname' and 'iskeyword' options:
+    ;; characters, numbers or ranges separated by commas, e.g.: "48-57,x,#-37,-"
+    (and
+        (loop-when-recur [#_int round (if global 0 3)] (<= round 3) [(inc round)] => true
+            (loop-when [#_Bytes p (condp == round 0 @p_isi 1 @p_isp 2 @p_isf 3 @(:b_p_isk @curbuf))] (non-eos? p) => true
+                (let-when [gec- #(let [__ (atom (#_Bytes object %))] (if (asc-isdigit (.at % 0)) [(getdigits __) @__] [(us-ptr2char-adv __, true) @__]))
+                    [#_boolean ! p] (if (and (at? p (byte \^)) (non-eos? p 1)) [true (.plus p 1)] [false p])
+                    [#_int c p] (gec- p)
+                    [#_int e p] (if (and (at? p (byte \-)) (non-eos? p 1)) (gec- (.plus p 1)) [-1 p])
+                ] (and (< 0 c) (< c 256) (or (<= c e) (== e -1)) (< e 256) (or (eos? p) (at? p (byte \,)))) => false
                     ;; A single '@' (not "@-@"):
                     ;; Decide on letters being ID/printable/keyword chars with standard function isalpha().
                     ;; This takes care of locale for single-byte characters.
-
-                    (cond (== c (byte \@))
-                    (do
-                        ((ß do_isalpha =) true)
-                        ((ß c =) 1)
-                        ((ß c2 =) 255)
-                    )
-                    :else
-                    (do
-                        ((ß c2 =) c)
-                    ))
-                )
-
-                (loop-when [] (<= c c2)
-                    (when (or (not do_isalpha) (utf-islower c) (utf-isupper c))
-                        (condp == i
-                            0 ;; (re)set ID flag
-                                (do
-                                    ((ß @chartab[c] =) (if tilde
-                                        (& (... @chartab c) (bit-not CT_IDENT_CHAR))
-                                        (| (... @chartab c) CT_IDENT_CHAR)
-                                    ))
-                                )
-                            1 ;; (re)set printable
-                                (do
-                                    (when (or (< c (byte \space)) (< (byte \~) c))
-                                        (cond tilde
-                                        (do
-                                            ((ß @chartab[c] =) (byte (+ (& (... @chartab c) (bit-not CT_CELL_MASK)) (if (flag? @dy_flags DY_UHEX) 4 2))))
-                                            ((ß @chartab[c] =) (& (... @chartab c) (bit-not CT_PRINT_CHAR)))
-                                        )
-                                        :else
-                                        (do
-                                            ((ß @chartab[c] =) (byte (+ (& (... @chartab c) (bit-not CT_CELL_MASK)) 1)))
-                                            ((ß @chartab[c] =) (| (... @chartab c) CT_PRINT_CHAR))
-                                        ))
-                                    )
-                                )
-                            2 ;; (re)set fname flag
-                                (do
-                                    ((ß @chartab[c] =) (if tilde
-                                        (& (... @chartab c) (bit-not CT_FNAME_CHAR))
-                                        (| (... @chartab c) CT_FNAME_CHAR)
-                                    ))
-                                )
-                            3 ;; (re)set keyword flag
-                                (do
-                                    (if tilde
-                                        (reset-chartab c)
-                                        (set-chartab c))
-                                )
-                        )
-                    )
-                    ((ß c =) (inc c))
-                    (recur)
-                )
-
-                ((ß c =) (.at p 0))
-                ((ß p =) (skip-to-option-part p))
-                (when (and (== c (byte \,)) (eos? p))
-                    ;; Trailing comma is not allowed.
-                    ((ß RETURN) false)
-                )
-                (recur)
-            )
-        )
-
+                    (let [[#_boolean alpha c e] (cond (!= e -1) [false c e] (== c (byte \@)) [true 1 255] :else [false c c])
+                          wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))
+                          set- (fn [x y] (if ! (& x (bit-not y)) (| x y)))]
+                        (loop-when-recur c (<= c e) (inc c)
+                            (when (or (not alpha) (utf-islower c) (utf-isupper c))
+                                (condp == round
+                                    0 ;; (re)set ID flag
+                                        (swap! chartab update c set- CT_IDENT_CHAR)
+                                    1 ;; (re)set printable
+                                        (when (or (< c (byte \space)) (< (byte \~) c))
+                                            (swap! chartab update c #(-> % (& (bit-not CT_CELL_MASK)) (+ (if ! wide 1)) (set- CT_PRINT_CHAR))))
+                                    2 ;; (re)set fname flag
+                                        (swap! chartab update c set- CT_FNAME_CHAR)
+                                    3 ;; (re)set keyword flag
+                                        (if ! (reset-chartab c) (set-chartab c))
+                                )))
+                        (let [#_int c (.at p 0) p (skip-to-option-part p)]
+                            ;; Trailing comma is not allowed.
+                            (if (and (== c (byte \,)) (eos? p)) false (recur p))
+                        ))
+                )))
         (reset! chartab_initialized true)
         true
     ))
