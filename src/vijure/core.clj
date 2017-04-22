@@ -18254,7 +18254,8 @@
     (let-when [[win ?] (bt-regmatch? win, (.plus (:program pat) 1))] ? => [win 0]
         (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
             (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col)))
-        (let-when [e (:lnum (... (:m_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e) ;; use line number of "\ze"
+        ;; Pattern has a \ze, but it didn't match, use current end.  ;; Use line number of \ze.
+        (let-when [e (:lnum (... (:m_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e)
             (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))))
         [win (+ 1 @reglnum)]
     ))
@@ -23569,48 +23570,28 @@
         @nfa_match
     ))
 
-;; Try match of "prog" with at regline[col].
-;; Returns <= 0 for failure, number of lines contained in the match otherwise.
+;; Try matching "pat" at regline[col].
+;; Return <= 0 for failure, number of lines contained in the match otherwise.
 
-(defn- #_long nfa-regtry [#_nfa_pattern_C prog, #_int col, #_long nsec, #_window_C win]
+(defn- #_long nfa-regtry [#_nfa_pattern_C pat, #_int col, #_long nsec, #_window_C win]
     ;; nsec: timeout limit or 0
-    (§
-        (reset! reginput (.plus @regline col))
-        (reset! nfa_time_limit nsec)
-        (reset! nfa_time_count 0)
-
-        ((ß regsubs_C subs =) (new-regsubs))
-
-        ((ß int result =) (nfa-regmatch prog, (:start prog), subs, (new-regsubs), win))
-        (cond (== result FALSE)
-        (do
-            ((ß RETURN) 0)
-        )
-        (== result NFA_TOO_EXPENSIVE)
-        (do
-            ((ß RETURN) result)
-        ))
-
-        (loop-when-recur [#_int i 0] (< i (:in_use subs)) [(inc i)]
-            (swap! reg_match assoc-in [:m_startpos i] (... (:rs_start subs) i))
-            (swap! reg_match assoc-in [:m_endpos i] (... (:rs_end subs) i))
-        )
-
-        (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
-            (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col))
-        )
-        (cond (neg? (:lnum (... (:m_endpos @reg_match) 0)))
-        (do
-            ;; pattern has a \ze but it didn't match, use current end
-            (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline)))
-        )
-        :else
-        (do
-            ;; Use line number of "\ze".
-            (reset! reglnum (:lnum (... (:m_endpos @reg_match) 0)))
-        ))
-
-        (+ 1 @reglnum)
+    (reset! reginput (.plus @regline col))
+    (reset! nfa_time_limit nsec)
+    (reset! nfa_time_count 0)
+    (let [#_regsubs_C subs (new-regsubs) #_int ? (nfa-regmatch pat, (:start pat), subs, (new-regsubs), win)]
+;       %% poor "subs" !!
+        (condp == ? FALSE 0 NFA_TOO_EXPENSIVE ?
+            (do
+                (loop-when-recur [#_int i 0] (< i (:in_use subs)) [(inc i)]
+                    (swap! reg_match assoc-in [:m_startpos i] (... (:rs_start subs) i))
+                    (swap! reg_match assoc-in [:m_endpos i] (... (:rs_end subs) i)))
+                (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
+                    (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col)))
+                ;; Pattern has a \ze, but it didn't match, use current end.  ;; Use line number of \ze.
+                (let-when [e (:lnum (... (:m_endpos @reg_match) 0))] (neg? e) => (reset! reglnum e)
+                    (swap! reg_match assoc-in [:m_endpos 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))))
+                (+ 1 @reglnum)
+            ))
     ))
 
 ;; Compile a regular expression into internal code for the NFA matcher.
