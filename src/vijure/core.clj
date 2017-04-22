@@ -13458,7 +13458,7 @@
                                 (do (when advance ;; [sic!
                                         ;; key_typed = false;
                                         ;; When the command that stuffed something was typed, behave like the stuffed command was typed;
-                                        ;; needed e.g. for CTRL-W CTRl-] to open a fold.
+                                        ;; needed e.g. for CTRL-W CTRL-] to open a fold.
                                         (reset! key_stuffed true))
                                     [win c])
                                 ;; Loop until we either find a matching mapped key or we are sure that it is not a mapped key.
@@ -19578,7 +19578,7 @@
 
     NFA_CONCAT -1014,                     ;; concatenate two previous items (postfix only)
     NFA_OR -1013,                         ;; \| (postfix only)
-    NFA_STAR -1012,                       ;; greedy * (posfix only)
+    NFA_STAR -1012,                       ;; greedy * (postfix only)
     NFA_STAR_NONGREEDY -1011,             ;; non-greedy * (postfix only)
     NFA_QUEST -1010,                      ;; greedy \? (postfix only)
     NFA_QUEST_NONGREEDY -1009,            ;; non-greedy \? (postfix only)
@@ -21742,8 +21742,6 @@
         (field boolean          nl_has_pim)     ;; true when any state has a PIM
     ])
 
-;; Used during execution: whether a match has been found.
-(atom! int nfa_match)
 (atom! long nfa_time_limit)
 (atom! int nfa_time_count)
 
@@ -21897,10 +21895,9 @@
     ;; subs: pointers to subexpressions
     (and (== (... (:lastlist state) @nfa_ll_index) (:nl_id nfl)) (or (not @nfa_has_backref) (has-state-with-pos nfl, state, subs, nil))))
 
-;; Add "state" and possibly what follows to state list ".".
-;; Returns "subs".
+;; Add "state" and possibly what follows to list "nfl".
 
-(defn- #_[nfa_list_C regsubs_C] addstate [#_nfa_list_C nfl, #_nfa_state_C state, #_regsubs_C subs, #_nfa_pim_C pim, #_int off]
+(defn- #_nfa_list_C addstate [#_nfa_list_C nfl, #_nfa_state_C state, #_regsubs_C' a'subs, #_nfa_pim_C pim, #_int off]
     ;; nfl: runtime state list
     ;; state: state to update
     ;; subs: pointers to subexpressions
@@ -21915,18 +21912,16 @@
             NFA_SPLIT
             NFA_EMPTY]
             (do
-                ;; These nodes are not added themselves
-                ;; but their "out0" and/or "out1" may be added below.
+                ;; These nodes are not added themselves, but their "out0" and/or "out1" may be added below.
                 (ß BREAK)
             )
 
            [NFA_BOL NFA_BOF]
             (do
                 ;; "^" won't match past end-of-line, don't bother trying.
-                ;; Except when at the end of the line, or when we are going
-                ;; to the next line for a look-behind match.
+                ;; Except when at the end of the line, or when we are going to the next line for a look-behind match.
                 (when (and (BLT @regline, @reginput) (non-eos? @reginput) (or (nil? @nfa_endp) (== @reglnum (:lnum @nfa_endp))))
-                    ((ß RETURN) [nfl subs])
+                    ((ß RETURN) nfl)
                 )
                 (ß FALLTHROUGH)
             )
@@ -21949,12 +21944,12 @@
                     ;; when there is a PIM.  For NFA_MATCH check the position,
                     ;; lower position is preferred.
                     (if (and (not @nfa_has_backref) (nil? pim) (not (:nl_has_pim nfl)) (!= (:c state) NFA_MATCH))
-                        ((ß RETURN) [nfl subs])
+                        ((ß RETURN) nfl)
                     )
 
                     ;; Do not add the state again when it exists with the same positions.
-                    (if (has-state-with-pos nfl, state, subs, pim)
-                        ((ß RETURN) [nfl subs])
+                    (if (has-state-with-pos nfl, state, @a'subs, pim)
+                        ((ß RETURN) nfl)
                     )
                 )
 
@@ -21964,15 +21959,15 @@
                 ;; add the state to the list
                 ((ß state.lastlist[@nfa_ll_index] =) (:nl_id nfl))
 
-                ((ß nfa_thread_C thread =) (NEW_nfa_thread_C))
-                ((ß thread =) (assoc thread :th_state state))
+                ((ß nfa_thread_C t =) (NEW_nfa_thread_C))
+                ((ß t =) (assoc t :th_state state))
                 (if (some? pim)
-                    ((ß thread =) (assoc thread :th_pim pim))
-                    ((ß thread =) (assoc-in thread [:th_pim :np_result] NFA_PIM_UNUSED))
+                    ((ß t =) (assoc t :th_pim pim))
+                    ((ß t =) (assoc-in t [:th_pim :np_result] NFA_PIM_UNUSED))
                 )
-                ((ß thread =) (assoc thread :th_subs subs))
+                ((ß t =) (assoc t :th_subs @a'subs))
 
-                ((ß nfl =) (update nfl :nl_threads conj thread))
+                ((ß nfl =) (update nfl :nl_threads conj t))
                 (when (some? pim)
                     ((ß nfl =) (assoc nfl :nl_has_pim true)))
 
@@ -21989,14 +21984,14 @@
             NFA_SPLIT
             (do
                 ;; order matters here
-                ((ß [nfl subs] =) (addstate nfl, (.out0 state), subs, pim, off))
-                ((ß [nfl subs] =) (addstate nfl, (.out1 state), subs, pim, off))
+                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
+                ((ß nfl =) (addstate nfl, (.out1 state), a'subs, pim, off))
                 (ß BREAK)
             )
 
            [NFA_EMPTY NFA_NOPEN NFA_NCLOSE]
             (do
-                ((ß [nfl subs] =) (addstate nfl, (.out0 state), subs, pim, off))
+                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
                 (ß BREAK)
             )
 
@@ -22010,31 +22005,31 @@
                 ;; Set the position (with "off" added) in the subexpression.
                 ;; Save and restore it when it was in use.
                 ;; Otherwise fill any gap.
-                (cond (< x (:in_use subs))
+                (cond (< x (:in_use @a'subs))
                 (do
-                    ((ß o'start =) (... (:rs_start subs) x))
+                    ((ß o'start =) (... (:rs_start @a'subs) x))
                     ((ß o'in_use =) -1)
                 )
                 :else
                 (do
                     ((ß o'start =) nil)
-                    ((ß o'in_use =) (:in_use subs))
-                    (loop-when-recur [#_int i (:in_use subs)] (< i x) [(inc i)]
-                        ((ß subs =) (assoc-in subs [:rs_start i] LPOS-1))
-                        ((ß subs =) (assoc-in subs [:rs_end i] LPOS-1))
+                    ((ß o'in_use =) (:in_use @a'subs))
+                    (loop-when-recur [#_int i (:in_use @a'subs)] (< i x) [(inc i)]
+                        ((ß @a'subs =) (assoc-in @a'subs [:rs_start i] LPOS-1))
+                        ((ß @a'subs =) (assoc-in @a'subs [:rs_end i] LPOS-1))
                     )
-                    ((ß subs =) (assoc subs :in_use (inc x)))
+                    ((ß @a'subs =) (assoc @a'subs :in_use (inc x)))
                 ))
-                ((ß subs =) (if (== off -1)
-                    (assoc-in subs [:rs_start x] (lpos_C. (inc @reglnum) 0))
-                    (assoc-in subs [:rs_start x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
+                ((ß @a'subs =) (if (== off -1)
+                    (assoc-in @a'subs [:rs_start x] (lpos_C. (inc @reglnum) 0))
+                    (assoc-in @a'subs [:rs_start x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
-                ((ß [nfl subs] =) (addstate nfl, (.out0 state), subs, pim, off))
+                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
 
                 (if (== o'in_use -1)
-                    ((ß subs =) (assoc-in subs [:rs_start x] o'start))
-                    ((ß subs =) (assoc subs :in_use o'in_use))
+                    ((ß @a'subs =) (assoc-in @a'subs [:rs_start x] o'start))
+                    ((ß @a'subs =) (assoc @a'subs :in_use o'in_use))
                 )
 
                 (ß BREAK)
@@ -22042,9 +22037,9 @@
 
             NFA_MCLOSE
             (do
-                (when (and @nfa_has_zend (not (neg? (:lnum (... (:rs_end subs) 0)))))
+                (when (and @nfa_has_zend (not (neg? (:lnum (... (:rs_end @a'subs) 0)))))
                     ;; Do not overwrite the position set by \ze.
-                    ((ß [nfl subs] =) (addstate nfl, (.out0 state), subs, pim, off))
+                    ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
                     (ß BREAK)
                 )
                 (ß FALLTHROUGH)
@@ -22056,45 +22051,45 @@
                 ((ß int x =) (if (== (:c state) NFA_ZEND) 0 (- (:c state) NFA_MCLOSE)))
 
                 ;; We don't fill in gaps here, there must have been an MOPEN that has done that.
-                ((ß int o'in_use =) (:in_use subs))
-                ((ß subs =) (update subs :in_use max (inc x)))
-                ((ß lpos_C o'end =) (... (:rs_end subs) x))
-                ((ß subs =) (if (== off -1)
-                    (assoc-in subs [:rs_end x] (lpos_C. (inc @reglnum) 0))
-                    (assoc-in subs [:rs_end x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
+                ((ß int o'in_use =) (:in_use @a'subs))
+                ((ß @a'subs =) (update @a'subs :in_use max (inc x)))
+                ((ß lpos_C o'end =) (... (:rs_end @a'subs) x))
+                ((ß @a'subs =) (if (== off -1)
+                    (assoc-in @a'subs [:rs_end x] (lpos_C. (inc @reglnum) 0))
+                    (assoc-in @a'subs [:rs_end x] (lpos_C. @reglnum (+ (BDIFF @reginput, @regline) off)))
                 ))
 
-                ((ß [nfl subs] =) (addstate nfl, (.out0 state), subs, pim, off))
+                ((ß nfl =) (addstate nfl, (.out0 state), a'subs, pim, off))
 
-                ((ß subs =) (assoc-in subs [:rs_end x] o'end))
-                ((ß subs =) (assoc subs :in_use o'in_use))
+                ((ß @a'subs =) (assoc-in @a'subs [:rs_end x] o'end))
+                ((ß @a'subs =) (assoc @a'subs :in_use o'in_use))
 
                 (ß BREAK)
             )
         )
 
-        [nfl subs]
+        nfl
     ))
 
-;; Like addstate(), but the new state(s) are put at position "lin".
+;; Like addstate(), but the new state(s) are put at position "i".
 ;; Used for zero-width matches, next state to use is the added one.
 ;; This makes sure the order of states to be tried does not change, which matters for alternatives.
 
-(defn- #_[nfa_list_C regsubs_C int] addstate-here [#_nfa_list_C nfl, #_nfa_state_C state, #_regsubs_C subs, #_nfa_pim_C pim, #_int lin]
+(defn- #_[nfa_list_C int] addstate-here [#_nfa_list_C nfl, #_nfa_state_C state, #_regsubs_C' a'subs, #_nfa_pim_C pim, #_int i]
     ;; first add the state(s) at the end, so that we know how many there are
-    (let [o'n (count nfl) [nfl subs] (addstate nfl, state, subs, pim, 0)]
-        ;; nothing to do if "lin" was at the end of the list or no state got added
-        (when' (not (any == o'n (inc lin) (count nfl))) => [nfl subs lin]
+    (let [o'n (count nfl) nfl (addstate nfl, state, a'subs, pim, 0)]
+        ;; nothing to do if "i" was at the end of the list or no state got added
+        (when' (not (any == o'n (inc i) (count nfl))) => [nfl i]
             ;; re-order to put the new state at the current position
-            (let [nfl (update nfl :nl_threads #(into (subvec % 0 lin) (subvec % o'n) (subvec % (inc lin) o'n)))]
-                [nfl subs (dec lin)]
+            (let [nfl (update nfl :nl_threads #(into (subvec % 0 i) (subvec % o'n) (subvec % (inc i) o'n)))]
+                [nfl (dec i)]
             ))
     ))
 
-;; Check character class "class" against current character c.
+;; Check character class "cls" against current character "c".
 
-(defn- #_boolean check-char-class [#_int klass, #_int c]
-    (condp == klass
+(defn- #_boolean check-char-class [#_int cls, #_int c]
+    (condp == cls
         NFA_CLASS_ALNUM     (and (<= 1 c 255) (asc-isalnum c))
         NFA_CLASS_ALPHA     (and (<= 1 c 255) (asc-isalpha c))
         NFA_CLASS_BLANK     (any == c (byte \space) TAB)
@@ -22111,7 +22106,6 @@
         NFA_CLASS_RETURN    (== c (byte \return))
         NFA_CLASS_BACKSPACE (== c (byte \backspace))
         NFA_CLASS_ESCAPE    (== c ESC)
-        (do (emsg* e_ill_char_class, klass) false) ;; should not be here :P
     ))
 
 ;; Check for a match with subexpression "i".
@@ -22167,8 +22161,8 @@
 ;; Recursively call nfa-regmatch().
 ;; "pim" is null or contains info about a Postponed Invisible Match (start position).
 
-(defn- #_[window_C nfa_pattern_C int] recursive-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C submatch, #_regsubs_C subs]
-    (let [o'reglnum @reglnum o'reginput_col (BDIFF @reginput, @regline) o'nfa_match @nfa_match o'nfa_listid @nfa_listid o'nfa_endp @nfa_endp]
+(defn- #_[window_C nfa_pattern_C int] recursive-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C state, #_nfa_pim_C pim, #_regsubs_C' a'subs, #_regsubs_C' a'msubs]
+    (let [o'reglnum @reglnum o'reginput_col (BDIFF @reginput, @regline) o'nfa_listid @nfa_listid o'nfa_endp @nfa_endp]
         (when (some? pim) ;; start at the position where the postponed match was
             (reset! reginput (.plus @regline (:col (:np_end_pos pim)))))
         (let [#_lpos_C endp
@@ -22219,7 +22213,7 @@
               ;; Call nfa-regmatch() to check if the current concat matches at this position.
               ;; The concat ends with the node NFA_END_INVISIBLE.
               _ (reset! nfa_endp endp)
-              [win #_int ?] (nfa-regmatch? win, pat, (.out0 state), submatch, subs)
+              [win #_int ?] (nfa-regmatch? win, pat, (.out0 state), a'subs, a'msubs)
               pat (if (some? o'listids)
                     (nfa-restore-listids pat, o'listids)
                     (do (swap! nfa_ll_index dec)
@@ -22230,7 +22224,6 @@
             (reset! reglnum o'reglnum)
             (reset! regline (reg-getline @reglnum))
             (reset! reginput (.plus @regline o'reginput_col))
-            (reset! nfa_match o'nfa_match)
             (reset! nfa_listid o'nfa_listid)
             (reset! nfa_endp o'nfa_endp)
             [win pat ?])
@@ -22392,35 +22385,34 @@
 ;; Run NFA to determine whether it matches "reginput".
 ;; When "nfa_endp" is not null, it is a required end-of-match position.
 ;;
-;; Return true if there is a match, false otherwise.
-;; When there is a match, "submatch" contains the positions.
+;; Return TRUE if there is a match, FALSE otherwise.
+;; When there is a match, @a'msubs contains the positions.
 ;;
 ;; Note: caller must ensure that: start != null.
 
-(defn- #_[window_C int] nfa-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C start, #_regsubs_C submatch, #_regsubs_C subs]
+(defn- #_[window_C int] nfa-regmatch? [#_window_C win, #_nfa_pattern_C pat, #_nfa_state_C start, #_regsubs_C' a'subs, #_regsubs_C' a'msubs]
     ;; Some patterns may take a long time to match, especially when using recursive-regmatch().
     ;; Allow interrupting them with CTRL-C.
     (if (or (fast-breakcheck) (and (non-zero? @nfa_time_limit) (profile-passed-limit @nfa_time_limit)))
         [win FALSE]
 
-        (let [_ (reset! nfa_match FALSE) #_boolean toplevel (== (:c start) NFA_MOPEN)
+        (let [a'match (atom (int FALSE)) #_boolean toplevel (== (:c start) NFA_MOPEN)
               #_nfa_list_C ls1 (nfa_list_C. [] (inc @nfa_listid) false)
-              [ls1 subs] ;; Inline optimized code for addstate() if we know it's the first MOPEN.
-                (when' toplevel => (addstate ls1, start, subs, nil, 0)
-                    (let [subs (-> subs (assoc-in [:rs_start 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))) (assoc :in_use 1))]
-                        (addstate ls1, (.out0 start), subs, nil, 0)
+              ls1 ;; Inline optimized code for addstate() if we know it's the first MOPEN.
+                (when' toplevel => (addstate ls1, start, a'subs, nil, 0)
+                    (let [_ (swap! a'subs #(-> (assoc-in [:rs_start 0] (lpos_C. @reglnum (BDIFF @reginput, @regline))) (assoc :in_use 1)))]
+                        (addstate ls1, (.out0 start), a'subs, nil, 0)
                     ))
-;             %% poor "subs" !!
               a'go_to_nextline (atom (boolean false))]
 
             ;; Run for each character.
-            (loop [#_nfa_list_C ls0 nil ls1 ls1]                                                                ;; Too many states, retry with old engine.
-                (when' (or (< (swap! nfa_listid inc) NFA_MAX_STATES) (!= (:re_engine pat) AUTOMATIC_ENGINE)) => [win (reset! nfa_match NFA_TOO_EXPENSIVE)]
+            (loop [#_nfa_list_C ls0 nil ls1 ls1] ;; If too many states, retry with the old engine.
+                (when' (or (< (swap! nfa_listid inc) NFA_MAX_STATES) (!= (:re_engine pat) AUTOMATIC_ENGINE)) => [win NFA_TOO_EXPENSIVE]
 
                     (let [ls0 (assoc ls1 :nl_id @nfa_listid) ls1 (nfa_list_C. [] (inc @nfa_listid) false)] ;; swap lists
                         ;; If the state lists are empty, we can stop.
                         (if (zero? (count (:nl_threads ls0)))
-                            [win @nfa_match]
+                            [win @a'match]
 
                             (let-when [#_int curc (us-ptr2char @reginput)
                                   a'clen (atom (int (if (== curc NUL) (do (reset! a'go_to_nextline false) 0) (us-ptr2len-cc @reginput))))
@@ -22438,8 +22430,8 @@
                                                                 ;; "ireg_icombine" is not set, that is not really a match.
                                                                 (if (and (not @ireg_icombine) (utf-iscomposing curc))
                                                                     [win m nil]
-                                                                    (do (reset! nfa_match TRUE)
-                                                                        ((ß submatch =) (:th_subs t))
+                                                                    (do (reset! a'match TRUE)
+                                                                        (reset! a'msubs (:th_subs t))
                                                                         ;; Found the left-most longest match, do not look at any other states at this position.
                                                                         ;; When the list of states is going to be empty, quit without advancing, so that "reginput" is correct.
                                                                         (when (zero? (count (:nl_threads ls1)))
@@ -22454,15 +22446,15 @@
                                                                 ;; If we got here, it means that the current "invisible" group finished successfully,
                                                                 ;; so return control to the parent nfa-regmatch().
                                                                 ;; For a look-behind match only when it ends in the position in "nfa_endp"
-                                                                ;; submatches are stored in "subs", and used in the parent call.
+                                                                ;; submatches are stored in @a'subs, and used in the parent call.
                                                                 ;;
                                                                 ;; If "nfa_endp" is set, it's only a match if it ends at "nfa_endp".
                                                                 (if (and (some? @nfa_endp) (or (!= @reglnum (:lnum @nfa_endp)) (!= (BDIFF @reginput, @regline) (:col @nfa_endp))))
                                                                     [win m nil]
-                                                                    (do (reset! nfa_match TRUE)
+                                                                    (do (reset! a'match TRUE)
                                                                         ;; do not set submatches for \@!
                                                                         (when (!= (:c (:th_state t)) NFA_END_INVISIBLE_NEG)
-                                                                            ((ß subs =) (:th_subs t)))
+                                                                            (reset! a'subs (:th_subs t)))
                                                                         ;; See comment above at "goto nextchar".
                                                                         (when (zero? (count (:nl_threads ls1)))
                                                                             (reset! a'clen 0))
@@ -22479,23 +22471,21 @@
                                                             NFA_START_INVISIBLE_BEFORE_NEG_FIRST]
                                                                 (cond (or (!= (:np_result (:th_pim t)) NFA_PIM_UNUSED) (pim-first? (:c (:th_state t))))
                                                                     ;; Do it directly if there already is a PIM or when nfa-postprocess() detected it will work better.
-                                                                    (let [o'in_use (:in_use subs)]
-                                                                        ;; Copy submatch info for the recursive call, opposite of what happens on success below.
-                                                                        ((ß subs =) (copy-sub-off subs, (:th_subs t)))
+                                                                    (let [o'in_use (:in_use @a'subs)]
+                                                                        (swap! a'subs copy-sub-off (:th_subs t))
                                                                         ;; First try matching the invisible match, then what follows.
-                                                                        ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, submatch, subs))
-                                                                        (when' (!= ? NFA_TOO_EXPENSIVE) => (do (reset! nfa_match ?) [win m :return])
+                                                                        ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, a'subs, a'msubs))
+                                                                        (when' (!= ? NFA_TOO_EXPENSIVE) => (do (reset! a'match ?) [win m :return])
                                                                             ;; For \@! and \@<! it is a match when the result is false.
                                                                             (let [m (when' (!= (!= ? FALSE) (pim-neg? (:c (:th_state t)))) => m
-                                                                                        ;; Copy submatch info from the recursive call.
-                                                                                        ((ß t =) (update t :th_subs copy-sub-off subs))
+                                                                                        ((ß t =) (update t :th_subs copy-sub-off @a'subs))
                                                                                         ;; If the pattern has \ze and it matched in the sub pattern, use it.
-                                                                                        ((ß t =) (update t :th_subs copy-ze-off subs))
+                                                                                        ((ß t =) (update t :th_subs copy-ze-off @a'subs))
                                                                                         ;; "t.th_state.out1" is the corresponding END_INVISIBLE node.
                                                                                         ;; Add its out0 to the current list (zero-width match).
                                                                                         (assoc m :add_here true :add_state (.. t state (out1) (out0)))
                                                                                     )]
-                                                                                ((ß subs =) (assoc subs :in_use o'in_use))
+                                                                                (swap! a'subs assoc :in_use o'in_use)
                                                                                 [win m nil])
                                                                         ))
                                                                 :else
@@ -22504,7 +22494,7 @@
                                                                     (let [pim (nfa_pim_C. NFA_PIM_TODO (:th_state t) (NEW_regsubs_C) (lpos_C. @reglnum (BDIFF @reginput, @regline)))]
                                                                         ;; "t.th_state.out1" is the corresponding END_INVISIBLE node.
                                                                         ;; Add its out0 to the current list (zero-width match).
-                                                                        ((ß [ls0 (:th_subs t) i] =) (addstate-here ls0, (.. t state (out1) (out0)), (:th_subs t), pim, i))
+                                                                        ((ß [ls0 i] =) (addstate-here ls0, (.. t state (out1) (out0)), (:th_subs t), pim, i))
                                                                         [win m nil]
                                                                     ))
 
@@ -22518,13 +22508,13 @@
                                                                         )
                                                                 ] (nil? skip) => [win m nil]
 
-                                                                    (let [_ ((ß subs =) (copy-sub-off subs, (:th_subs t)))
-                                                                          _ ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, submatch, subs))]
-                                                                        (condp == ? NFA_TOO_EXPENSIVE (do (reset! nfa_match ?) [win m :return]) FALSE [win m nil]
-                                                                            (let [_ ((ß t =) (update t :th_subs copy-sub-off subs))
+                                                                    (let [_ (swap! a'subs copy-sub-off (:th_subs t))
+                                                                          _ ((ß [win pat #_int ?] =) (recursive-regmatch? win, pat, (:th_state t), nil, a'subs, a'msubs))]
+                                                                        (condp == ? NFA_TOO_EXPENSIVE (do (reset! a'match ?) [win m :return]) FALSE [win m nil]
+                                                                            (let [_ ((ß t =) (update t :th_subs copy-sub-off @a'subs))
                                                                                   ;; Now we need to skip over the matched text and then continue with what follows.
                                                                                   ;; TODO: multi-line match
-                                                                                  #_int blen (- (:col (... (:rs_end subs) 0)) (BDIFF @reginput, @regline))
+                                                                                  #_int blen (- (:col (... (:rs_end @a'subs) 0)) (BDIFF @reginput, @regline))
                                                                                   m (cond
                                                                         ;; Empty match: output of corresponding NFA_END_PATTERN/NFA_SKIP to be used at current position.
                                                                         (zero? blen)   (assoc m :add_here true :add_state (.. t state (out1) (out0) (out0)))
@@ -22870,11 +22860,11 @@
                                                                         (when' (and (some? pim) (or (zero? @a'clen) (match-follows (:add_state m), 0))) => [win pim nil]
                                                                             (let [[win pim #_int ?]
                                                                                     (when' (== (:np_result pim) NFA_PIM_TODO) => [win pim (if (== (:np_result pim) NFA_PIM_MATCH) TRUE FALSE)]
-                                                                                        (let [_ ((ß [win pat ?] =) (recursive-regmatch? win, pat, (:np_state pim), pim, submatch, subs))
+                                                                                        (let [_ ((ß [win pat ?] =) (recursive-regmatch? win, pat, (:np_state pim), pim, a'subs, a'msubs))
                                                                                               pim (assoc pim :np_result (if (!= ? FALSE) NFA_PIM_MATCH NFA_PIM_NOMATCH))
                                                                                               ;; For \@! and \@<! it is a match when the result is false.
                                                                                               pim (when' (!= (!= ? FALSE) (pim-neg? (:c (:np_state pim)))) => pim
-                                                                                                    (update pim :np_subs copy-sub-off subs)
+                                                                                                    (update pim :np_subs copy-sub-off @a'subs)
                                                                                                 )]
                                                                                             [win pim ?])
                                                                                     )]
@@ -22889,9 +22879,9 @@
                                                                         )] (not ?) => win
 
                                                                     (if (:add_here m)
-                                                                        (do ((ß [ls0 (:th_subs t) i] =) (addstate-here ls0, (:add_state m), (:th_subs t), pim, i))
+                                                                        (do ((ß [ls0 i] =) (addstate-here ls0, (:add_state m), (:th_subs t), pim, i))
                                                                             win)
-                                                                        (do ((ß [ls1 (:th_subs t)] =) (addstate ls1, (:add_state m), (:th_subs t), pim, (:add_off m)))
+                                                                        (do ((ß ls1 =) (addstate ls1, (:add_state m), (:th_subs t), pim, (:add_off m)))
                                                                             (when (< 0 (:add_count m))
                                                                                 ((ß ls1 =) (assoc-in ls1 [:nl_threads (dec (count (:nl_threads ls1))) :th_count] (:add_count m))))
                                                                             win)
@@ -22905,7 +22895,7 @@
                                         ;; The first found match is the leftmost one, thus the order of states matters!  Do not add the start state
                                         ;; in recursive calls of nfa-regmatch(), because recursive calls should only start in the first position.
                                         ;; Unless "nfa_endp" is not null, we match the end position.  Also don't start a match past the first line.
-                                        (when' (and (== @nfa_match FALSE)
+                                        (when' (and (== @a'match FALSE)
                                                     (or (and toplevel (== @reglnum 0) (non-zero? @a'clen) (or (== @ireg_maxcol 0) (< (BDIFF @reginput, @regline) @ireg_maxcol)))
                                                         (and (some? @nfa_endp)
                                                              (or (< @reglnum (:lnum @nfa_endp))
@@ -22930,15 +22920,15 @@
                                                         )] (some? add?) => [win :return]
 
                                                     (when' add? => [win nil]
-                                                        (let [subs (assoc-in subs [:rs_start 0 :col] (+ (BDIFF @reginput, @regline) @a'clen))]
-                                                            ((ß [ls1 subs] =) (addstate ls1, (.out0 start), subs, nil, @a'clen))
+                                                        (let [_ (swap! a'subs assoc-in [:rs_start 0 :col] (+ (BDIFF @reginput, @regline) @a'clen))]
+                                                            ((ß ls1 =) (addstate ls1, (.out0 start), a'subs, nil, @a'clen))
                                                             [win nil])
                                                     ))
                                             :else
-                                                (do ((ß [ls1 subs] =) (addstate ls1, start, subs, nil, @a'clen))
+                                                (do ((ß ls1 =) (addstate ls1, start, a'subs, nil, @a'clen))
                                                     [win nil])
                                             ))
-                                    )] (not ?) => [win @nfa_match]
+                                    )] (not ?) => [win @a'match]
 
                                 ;; Advance to the next character, or advance to the next line, or finish.
                                 (let [? (cond (non-zero? @a'clen)
@@ -22949,7 +22939,7 @@
                                             :finish
                                         )]
                                     ;; Allow interrupting with CTRL-C.
-                                    (when' (and (not ?) (not (slow-breakcheck))) => [win @nfa_match]
+                                    (when' (and (not ?) (not (slow-breakcheck))) => [win @a'match]
 
                                         ;; Check for timeout once in 20 times to avoid overhead.
                                         (let [? (when (and (non-zero? @nfa_time_limit) (== (swap! nfa_time_count inc) 20))
@@ -22957,7 +22947,7 @@
                                                     (when (profile-passed-limit @nfa_time_limit)
                                                         :timeout)
                                                 )]
-                                            (recur-if (not ?) [ls0 ls1] => [win @nfa_match]))
+                                            (recur-if (not ?) [ls0 ls1] => [win @a'match]))
                                     ))
                             ))
                     ))
@@ -22972,13 +22962,13 @@
     (reset! reginput (.plus @regline col))
     (reset! nfa_time_limit nsec)
     (reset! nfa_time_count 0)
-    (let [#_regsubs_C subs (new-regsubs) [win #_int ?] (nfa-regmatch? win, pat, (:start pat), subs, (new-regsubs))]
-;       %% poor "subs" !!
+    (let [a'subs (atom (#_regsubs_C object (new-regsubs))) a'msubs (atom (#_regsubs_C object (new-regsubs)))
+          [win #_int ?] (nfa-regmatch? win, pat, (:start pat), a'subs, a'msubs)]
         (condp == ? FALSE [win 0] NFA_TOO_EXPENSIVE [win ?]
             (do
-                (loop-when-recur [#_int i 0] (< i (:in_use subs)) [(inc i)]
-                    (swap! reg_match assoc-in [:m_startpos i] (... (:rs_start subs) i))
-                    (swap! reg_match assoc-in [:m_endpos i] (... (:rs_end subs) i)))
+                (loop-when-recur [#_int i 0] (< i (:in_use @a'msubs)) [(inc i)]
+                    (swap! reg_match assoc-in [:m_startpos i] (... (:rs_start @a'msubs) i))
+                    (swap! reg_match assoc-in [:m_endpos i] (... (:rs_end @a'msubs) i)))
                 (when (neg? (:lnum (... (:m_startpos @reg_match) 0)))
                     (swap! reg_match assoc-in [:m_startpos 0] (lpos_C. 0 col)))
                 ;; Pattern has a \ze, but it didn't match, use current end.  ;; Use line number of \ze.
