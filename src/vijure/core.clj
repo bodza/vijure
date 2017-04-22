@@ -41,7 +41,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except expand file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
@@ -877,51 +877,9 @@
 ;; Mask to check for flags that prevent normal writing.
 (final int BF_WRITE_MASK  (+ BF_NOTEDITED BF_NEW BF_READERR))
 
-;; values for xp_context when doing command line completion
-
-(final int
-    EXPAND_OK               -1,
-    EXPAND_NOTHING           0,
-    EXPAND_BUFFERS           9)
-
 ;; Values for exmode_active (0 is no exmode).
 (final int EXMODE_NORMAL      1)
 (final int EXMODE_VIM         2)
-
-;; Values for nextwild() and expandOne().  See expandOne() for meaning.
-(final int WILD_FREE          1)
-(final int WILD_EXPAND_FREE   2)
-(final int WILD_EXPAND_KEEP   3)
-(final int WILD_NEXT          4)
-(final int WILD_PREV          5)
-(final int WILD_ALL           6)
-(final int WILD_LONGEST       7)
-(final int WILD_ALL_KEEP      8)
-
-(final int WILD_LIST_NOTFOUND 0x01)
-(final int WILD_USE_NL        0x04)
-(final int WILD_NO_BEEP       0x08)
-(final int WILD_ADD_SLASH     0x10)
-(final int WILD_SILENT        0x40)
-(final int WILD_ESCAPE        0x80)
-(final int WILD_ICASE         0x100)
-(final int WILD_ALLLINKS      0x200)
-
-;; Flags for expand_wildcards().
-(final int EW_DIR          0x01)    ;; include directory names
-(final int EW_FILE         0x02)    ;; include file names
-(final int EW_NOTFOUND     0x04)    ;; include not found names
-(final int EW_ADDSLASH     0x08)    ;; append slash to directory name
-(final int EW_SILENT       0x20)    ;; don't print "1 returned" from shell
-(final int EW_ICASE        0x100)   ;; ignore case
-(final int EW_NOERROR      0x200)   ;; no error for bad regexp
-(final int EW_NOTWILD      0x400)   ;; add match with literal name if exists
-(final int EW_KEEPDOLLAR   0x800)   ;; do not escape $, $var is expanded
-
-;; Note: mostly EW_NOTFOUND and EW_SILENT are mutually exclusive: EW_NOTFOUND
-;; is used when executing commands and EW_SILENT for interactive expanding.
-
-(final int EW_ALLLINKS     0x1000)  ;; also links not pointing to existing file
 
 (final int SST_MIN_ENTRIES 150)     ;; minimal size for state stack array
 (final int SST_MAX_ENTRIES 1000)    ;; maximal size for state stack array
@@ -1521,11 +1479,6 @@
     STL_TABCLOSENR      \X)      ;; tab page close nr
 (final Bytes STL_ALL (u8 "fFtcvVlLknoObBrRhHmYyWwMqpPaN{#"))
 
-;; flags used for parsed 'wildmode'
-(final int WIM_FULL       1)
-(final int WIM_LONGEST    2)
-(final int WIM_LIST       4)
-
 ;; arguments for can_bs()
 (final byte BS_INDENT     \i)      ;; "Indent"
 (final byte BS_EOL        \o)      ;; "eOl"
@@ -1682,9 +1635,6 @@
 (atom! boolean p_wiv)       ;; 'weirdinvert'
 (atom! Bytes   p_ww)        ;; 'whichwrap'
 (atom! long    p_wc)        ;; 'wildchar'
-(atom! long    p_wcm)       ;; 'wildcharm'
-(atom! boolean p_wic)       ;; 'wildignorecase'
-(atom! Bytes   p_wim)       ;; 'wildmode'
 (atom! long    p_wh)        ;; 'winheight'
 (atom! long    p_wmh)       ;; 'winminheight'
 (atom! long    p_wmw)       ;; 'winminwidth'
@@ -2280,18 +2230,6 @@
 ;       bh1.bh_index = bh0.bh_index;
 ;       bh1.bh_space = bh0.bh_space;
     ))
-
-;; used for completion on the command line
-
-(class! #_final expand_C
-    [
-        (field int          xp_context)         ;; type of expansion
-        (field Bytes        xp_pattern)         ;; start of item to expand
-        (field int          xp_pattern_len)     ;; bytes in "xp_pattern" before cursor
-        (field Bytes        xp_arg)             ;; completion function
-        (field int          xp_numfiles)        ;; number of files found by file name completion
-        (field Bytes*       xp_files)           ;; list of files
-    ])
 
 ;; Command modifiers ":vertical", ":browse", ":confirm" and ":hide" set a flag.
 ;; This needs to be saved for recursive commands, put them in a structure for easy manipulation.
@@ -4163,9 +4101,6 @@
 
 (atom! long     sub_nsubs)              ;; total number of substitutions
 (atom! long     sub_nlines)             ;; total number of lines changed
-
-;; table to store parsed 'wildmode'
-(final byte*    wim_flags   4)
 
 ;; don't use 'hlsearch' temporarily
 (atom! boolean  no_hlsearch)
@@ -9627,9 +9562,6 @@
         (bool_opt (u8 "weirdinvert"),    (u8 "wiv"),       P_RCLR,                      p_wiv,       PV_NONE,    false),
         (utf8_opt (u8 "whichwrap"),      (u8 "ww"),     (| P_COMMA P_FLAGLIST),         p_ww,        PV_NONE,   (u8 "b,s")),
         (long_opt (u8 "wildchar"),       (u8 "wc"),        0,                           p_wc,        PV_NONE,   (long TAB)),
-        (long_opt (u8 "wildcharm"),      (u8 "wcm"),       0,                           p_wcm,       PV_NONE,    0#_L),
-        (bool_opt (u8 "wildignorecase"), (u8 "wic"),       0,                           p_wic,       PV_NONE,    false),
-        (utf8_opt (u8 "wildmode"),       (u8 "wim"),    (| P_COMMA P_NODUP),            p_wim,       PV_NONE,   (u8 "full")),
         (long_opt (u8 "window"),         (u8 "wi"),        0,                           p_window,    PV_NONE,    0#_L),
         (long_opt (u8 "winheight"),      (u8 "wh"),        0,                           p_wh,        PV_NONE,    1#_L),
         (bool_opt (u8 "winfixheight"),   (u8 "wfh"),       P_RSTAT,                     VAR_WIN,     PV_WFH,     false),
@@ -9750,9 +9682,6 @@
 ;       highlight_changed();
 
 ;       save_file_ff(@curbuf);       ;; Buffer is unchanged
-
-        ;; Parse default for 'wildmode'.
-;       check_opt_wim();
 
         ;; Parse default for 'fillchars'.
 ;       set_chars_option(p_fcs);
@@ -10256,13 +10185,13 @@
 ;                                       else
 ;                                           value = ((long[])get_varp_scope(vimoptions[opt_idx], OPT_GLOBAL))[0];
 ;                                   }
-;                                   else if ((varp == p_wc || varp == p_wcm)
+;                                   else if ((varp == p_wc)
 ;                                           && (arg.at(0) == (byte)'<' || arg.at(0) == (byte)'^'
 ;                                               || ((arg.at(1) == NUL || vim_iswhite(arg.at(1)))
 ;                                                   && !asc_isdigit(arg.at(0)))))
 ;                                   {
 ;                                       value = parse_key(arg);
-;                                       if (value == 0 && varp != p_wcm)
+;                                       if (value == 0)
 ;                                       {
 ;                                           errmsg = e_invarg;
 ;                                           break skip;
@@ -11021,13 +10950,6 @@
 ;               init_highlight(false, false);
 ;           }
 ;           else
-;               errmsg = e_invarg;
-;       }
-
-        ;; 'wildmode'
-;       else if (varp == p_wim)
-;       {
-;           if (check_opt_wim() == false)
 ;               errmsg = e_invarg;
 ;       }
 
@@ -13183,7 +13105,7 @@
 
 (defn- #_boolean wc_use_keyname [#_long* varp, #_long* wcp]
     (§
-;       if (varp == p_wc || varp == p_wcm)
+;       if (varp == p_wc)
 ;       {
 ;           wcp[0] = varp[0];
 ;           if (is_special((int)wcp[0]) || 0 <= find_special_key_in_table((int)wcp[0]))
@@ -13379,55 +13301,6 @@
 ;       }
 ;       if (flagp != null)
 ;           flagp[0] = new_flags;
-
-;       return true;
-    ))
-
-;; Read the 'wildmode' option, fill wim_flags[].
-
-(defn- #_boolean check_opt_wim []
-    (§
-;       byte[] new_wim_flags = new byte[4];
-;       for (int i = 0; i < 4; i++)
-;           new_wim_flags[i] = 0;
-
-;       int idx = 0;
-;       for (Bytes p = @p_wim; p.at(0) != NUL; p = p.plus(1))
-;       {
-;           int i;
-;           for (i = 0; asc_isalpha(p.at(i)); i++)
-            ;
-;           if (p.at(i) != NUL && p.at(i) != (byte)',' && p.at(i) != (byte)':')
-;               return false;
-;           if (i == 7 && STRNCMP(p, u8("longest"), 7) == 0)
-;               new_wim_flags[idx] |= WIM_LONGEST;
-;           else if (i == 4 && STRNCMP(p, u8("full"), 4) == 0)
-;               new_wim_flags[idx] |= WIM_FULL;
-;           else if (i == 4 && STRNCMP(p, u8("list"), 4) == 0)
-;               new_wim_flags[idx] |= WIM_LIST;
-;           else
-;               return false;
-;           p = p.plus(i);
-;           if (p.at(0) == NUL)
-;               break;
-;           if (p.at(0) == (byte)',')
-;           {
-;               if (idx == 3)
-;                   return false;
-;               idx++;
-;           }
-;       }
-
-        ;; fill remaining entries with last flag
-;       while (idx < 3)
-;       {
-;           new_wim_flags[idx + 1] = new_wim_flags[idx];
-;           idx++;
-;       }
-
-        ;; only when there are no errors, wim_flags[] is changed
-;       for (int i = 0; i < 4; i++)
-;           wim_flags[i] = new_wim_flags[i];
 
 ;       return true;
     ))
@@ -15148,8 +15021,7 @@
 
 ;       if (other)
 ;           @no_wait_return++;                   ;; don't wait for autowrite message
-;       if (other && !forceit && @curbuf.b_nwindows == 1 && !P_HID(@curbuf)
-;                      && curbufIsChanged() && autowrite(@curbuf, forceit) == false)
+;       if (other && !forceit && @curbuf.b_nwindows == 1 && !P_HID(@curbuf) && curbufIsChanged() && autowrite(@curbuf, forceit) == false)
 ;       {
 ;           if (@p_confirm && @p_write)
 ;               dialog_changed(@curbuf, false);
@@ -17068,10 +16940,6 @@
         (field Bytes        cmdprompt)      ;; message in front of cmdline
         (field int          cmdattr)        ;; attributes for prompt
         (field boolean      overstrike)     ;; Typing mode on the command line.  Shared by getcmdline() and put_on_cmdline().
-        (field expand_C     xpc)            ;; struct being used for expansion, "xp_pattern" may point into "cmdbuff"
-        (field int          xp_context)     ;; type of expansion
-        (field Bytes        xp_arg)         ;; user-defined expansion arg
-        (field boolean      input_fn)       ;; when true Invoked for input() function
     ])
 
 (defn- #_void COPY_cmdline_info [#_cmdline_info_C cli1, #_cmdline_info_C cli0]
@@ -17086,10 +16954,6 @@
 ;       cli1.cmdprompt = cli0.cmdprompt;
 ;       cli1.cmdattr = cli0.cmdattr;
 ;       cli1.overstrike = cli0.overstrike;
-;       cli1.xpc = cli0.xpc;
-;       cli1.xp_context = cli0.xp_context;
-;       cli1.xp_arg = cli0.xp_arg;
-;       cli1.input_fn = cli0.input_fn;
     ))
 
 ;; The current cmdline_info.  It is initialized in getcmdline() and after that
@@ -17147,7 +17011,6 @@
 ;       boolean did_incsearch = false;
 ;       boolean incsearch_postponed = false;
 ;       boolean did_wild_list = false;          ;; did wild_list() recently
-;       int wim_index = 0;                      ;; index in wim_flags[]
 ;       boolean save_msg_scroll = @msg_scroll;
 ;       int save_State = @State;                 ;; remember State when called
 ;       boolean some_key_typed = false;         ;; one of the keys was typed
@@ -17198,10 +17061,6 @@
 ;           @ccline.cmdlen = indent;
 ;       }
 
-;       expand_C xpc = §_expand_C();
-;       expandInit(xpc);
-;       @ccline.xpc = xpc;
-
 ;       if (@curwin.w_onebuf_opt.@wo_rl && @curwin.w_onebuf_opt.@wo_rlc.at(0) == (byte)'s' && (firstc == '/' || firstc == '?'))
 ;           @cmdmsg_rl = true;
 ;       else
@@ -17215,14 +17074,6 @@
 ;           @msg_scrolled += i;
 ;           redrawcmdprompt();              ;; draw prompt or indent
 ;           set_cmdspos();
-;       }
-;       xpc.xp_context = EXPAND_NOTHING;
-
-;       if (@ccline.input_fn)
-;       {
-;           xpc.xp_context = @ccline.xp_context;
-;           xpc.xp_pattern = @ccline.cmdbuff;
-;           xpc.xp_arg = @ccline.xp_arg;
 ;       }
 
         ;; Avoid scrolling when called by a recursive do_cmdline(),
@@ -17318,27 +17169,9 @@
 ;                   && c != K_PAGEDOWN && c != K_PAGEUP
 ;                   && c != K_KPAGEDOWN && c != K_KPAGEUP
 ;                   && c != K_LEFT && c != K_RIGHT
-;                   && (0 < xpc.xp_numfiles || (c != Ctrl_P && c != Ctrl_N)))
+;                   && c != Ctrl_P && c != Ctrl_N)
 ;           {
 ;               lookfor = null;
-;           }
-
-            ;; When there are matching completions to select <S-Tab> works like
-            ;; CTRL-P (unless 'wc' is <S-Tab>).
-
-;           if (c != @p_wc && c == K_S_TAB && 0 < xpc.xp_numfiles)
-;               c = Ctrl_P;
-
-            ;; free expanded names when finished walking through matches
-;           if (xpc.xp_numfiles != -1
-;                   && !(c == @p_wc && @keyTyped) && c != @p_wcm
-;                   && c != Ctrl_N && c != Ctrl_P && c != Ctrl_A
-;                   && c != Ctrl_L)
-;           {
-;               expandOne(xpc, null, null, 0, WILD_FREE);
-;               did_wild_list = false;
-;               xpc.xp_context = EXPAND_NOTHING;
-;               wim_index = 0;
 ;           }
 
 ;           cmdline_changed:
@@ -17467,90 +17300,13 @@
                     ;; - wildcard expansion is only done when the 'wildchar' key is really
                     ;;   typed, not when it comes from a macro
 
-;                   if ((c == @p_wc && !gotesc && @keyTyped) || c == @p_wcm)
+;                   if (c == @p_wc && !gotesc && @keyTyped)
 ;                   {
-;                       boolean res;
-;                       if (0 < xpc.xp_numfiles)    ;; typed "p_wc" at least twice
-;                       {
-                            ;; if 'wildmode' contains "list" may still need to list
-;                           if (1 < xpc.xp_numfiles
-;                                   && !did_wild_list
-;                                   && (wim_flags[wim_index] & WIM_LIST) != 0)
-;                           {
-;                               showmatches(xpc);
-;                               redrawcmd();
-;                               did_wild_list = true;
-;                           }
-;                           if ((wim_flags[wim_index] & WIM_LONGEST) != 0)
-;                               res = nextwild(xpc, WILD_LONGEST, WILD_NO_BEEP, firstc != '@');
-;                           else if ((wim_flags[wim_index] & WIM_FULL) != 0)
-;                               res = nextwild(xpc, WILD_NEXT, WILD_NO_BEEP, firstc != '@');
-;                           else
-;                               res = true;         ;; don't insert 'wildchar' now
-;                       }
-;                       else                        ;; typed "p_wc" first time
-;                       {
-;                           wim_index = 0;
-;                           int j = @ccline.cmdpos;
-                            ;; if 'wildmode' first contains "longest", get longest common part
-;                           if ((wim_flags[0] & WIM_LONGEST) != 0)
-;                               res = nextwild(xpc, WILD_LONGEST, WILD_NO_BEEP, firstc != '@');
-;                           else
-;                               res = nextwild(xpc, WILD_EXPAND_KEEP, WILD_NO_BEEP, firstc != '@');
-
-                            ;; if interrupted while completing, behave like it failed
-;                           if (@got_int)
-;                           {
-;                               vpeekc();           ;; remove <C-C> from input stream
-;                               @got_int = false;    ;; don't abandon the command line
-;                               expandOne(xpc, null, null, 0, WILD_FREE);
-;                               break cmdline_changed;
-;                           }
-
-                            ;; when more than one match, and 'wildmode' first contains "list",
-                            ;; or no change and 'wildmode' contains "longest,list", list all matches
-;                           if (res == true && 1 < xpc.xp_numfiles)
-;                           {
-                                ;; a "longest" that didn't do anything is skipped (but not "list:longest")
-;                               if (wim_flags[0] == WIM_LONGEST && @ccline.cmdpos == j)
-;                                   wim_index = 1;
-;                               if ((wim_flags[wim_index] & WIM_LIST) != 0)
-;                               {
-;                                   if ((wim_flags[0] & WIM_LONGEST) == 0)
-;                                   {
-                                        ;; remove match
-;                                       nextwild(xpc, WILD_PREV, 0, firstc != '@');
-;                                   }
-;                                   showmatches(xpc);
-;                                   redrawcmd();
-;                                   did_wild_list = true;
-;                                   if ((wim_flags[wim_index] & WIM_LONGEST) != 0)
-;                                       nextwild(xpc, WILD_LONGEST, WILD_NO_BEEP, firstc != '@');
-;                                   else if ((wim_flags[wim_index] & WIM_FULL) != 0)
-;                                       nextwild(xpc, WILD_NEXT, WILD_NO_BEEP, firstc != '@');
-;                               }
-;                               else
-;                                   vim_beep();
-;                           }
-;                       }
-;                       if (wim_index < 3)
-;                           wim_index++;
 ;                       if (c == ESC)
 ;                           gotesc = true;
-;                       if (res == true)
-;                           break cmdline_changed;
 ;                   }
 
 ;                   gotesc = false;
-
-                    ;; <S-Tab> goes to last match, in a clumsy way
-;                   if (c == K_S_TAB && @keyTyped)
-;                   {
-;                       if (nextwild(xpc, WILD_EXPAND_KEEP, 0, firstc != '@') == true
-;                               && nextwild(xpc, WILD_PREV, 0, firstc != '@') == true
-;                               && nextwild(xpc, WILD_PREV, 0, firstc != '@') == true)
-;                           break cmdline_changed;
-;                   }
 
 ;                   if (c == NUL || c == K_ZERO)        ;; NUL is stored as NL
 ;                       c = NL;
@@ -17751,11 +17507,7 @@
 
 ;                       case Ctrl_D:
 ;                       {
-;                           if (showmatches(xpc) == EXPAND_NOTHING)
-;                               break;      ;; Use ^D as normal char instead
-
-;                           redrawcmd();
-;                           continue;       ;; don't do incremental search now
+;                           break;      ;; Use ^D as normal char instead
 ;                       }
 
 ;                       case K_RIGHT:
@@ -17918,9 +17670,7 @@
 
 ;                       case Ctrl_A:        ;; all matches
 ;                       {
-;                           if (nextwild(xpc, WILD_ALL, 0, firstc != '@') == false)
-;                               break;
-;                           break cmdline_changed;
+;                           break;
 ;                       }
 
 ;                       case Ctrl_L:
@@ -17949,20 +17699,11 @@
 ;                               break cmdline_not_changed;
 ;                           }
 
-                            ;; completion: longest common part
-;                           if (nextwild(xpc, WILD_LONGEST, 0, firstc != '@') == false)
-;                               break;
-;                           break cmdline_changed;
+;                           break;
 ;                       }
 
 ;                       case Ctrl_N:        ;; next match
 ;                       case Ctrl_P:        ;; previous match
-;                           if (0 < xpc.xp_numfiles)
-;                           {
-;                               if (nextwild(xpc, (c == Ctrl_P) ? WILD_PREV : WILD_NEXT, 0, firstc != '@') == false)
-;                                   break;
-;                               break cmdline_changed;
-;                           }
 
 ;                       case K_UP:
 ;                       case K_DOWN:
@@ -18035,7 +17776,6 @@
 ;                           if (hiscnt != i)        ;; jumped to other entry
 ;                           {
 ;                               @ccline.cmdbuff = null;
-;                               xpc.xp_context = EXPAND_NOTHING;
 
 ;                               Bytes p;
 ;                               if (hiscnt == @hislen)
@@ -18285,9 +18025,6 @@
 ;       }
 
 ;       @cmdmsg_rl = false;
-
-;       expandCleanup(xpc);
-;       @ccline.xpc = null;
 
 ;       if (did_incsearch)
 ;       {
@@ -18760,18 +18497,6 @@
         ;; thus copy up to the NUL and add a NUL.
 ;       BCOPY(@ccline.cmdbuff, p, @ccline.cmdlen);
 ;       @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
-
-;       if (@ccline.xpc != null
-;               && @ccline.xpc.xp_pattern != null
-;               && @ccline.xpc.xp_context != EXPAND_NOTHING)
-;       {
-;           int i = BDIFF(@ccline.xpc.xp_pattern, p);
-
-            ;; If xp_pattern points inside the old cmdbuff,
-            ;; it needs to be adjusted to point into the newly allocated memory.
-;           if (0 <= i && i <= @ccline.cmdlen)
-;               @ccline.xpc.xp_pattern = @ccline.cmdbuff.plus(i);
-;       }
     ))
 
 ;; Draw part of the cmdline at the current cursor position;
@@ -18945,7 +18670,6 @@
 
 ;       @ccline.cmdbuff = null;
 ;       @ccline.cmdprompt = null;
-;       @ccline.xpc = null;
     ))
 
 ;; Restore ccline after it has been saved with save_cmdline().
@@ -19190,550 +18914,6 @@
 ;           return false;
 
 ;       return check_abbr(c, @ccline.cmdbuff, @ccline.cmdpos, 0);
-    ))
-
-;; Return false if this is not an appropriate context in which to do
-;; completion of anything, return true if it is (even if there are no matches).
-;; For the caller, this means that the character is just passed through like a
-;; normal character (instead of being expanded).  This allows :s/^I^D etc.
-
-(defn- #_boolean nextwild [#_expand_C xp, #_int type, #_int options, #_boolean escape]
-    ;; options: extra options for expandOne()
-    ;; escape: if true, escape the returned matches
-    (§
-;       if (xp.xp_numfiles == -1)
-;           xp.xp_context = EXPAND_NOTHING;
-
-;       if (xp.xp_context == EXPAND_NOTHING)
-;       {
-            ;; Caller can use the character as a normal char instead.
-;           return false;
-;       }
-
-;       msg_puts(u8("..."));            ;; show that we are busy
-;       out_flush();
-
-;       int i = BDIFF(xp.xp_pattern, @ccline.cmdbuff);
-;       xp.xp_pattern_len = @ccline.cmdpos - i;
-
-;       Bytes p2;
-;       if (type == WILD_NEXT || type == WILD_PREV)
-;       {
-            ;; Get next/previous match for a previous expanded pattern.
-
-;           p2 = expandOne(xp, null, null, 0, type);
-;       }
-;       else
-;       {
-            ;; Translate string into pattern and expand it.
-
-;           Bytes p1 = addstar(xp.xp_pattern, xp.xp_pattern_len, xp.xp_context);
-;           if (p1 == null)
-;               p2 = null;
-;           else
-;           {
-;               int use_options = options | WILD_ADD_SLASH|WILD_SILENT;
-;               if (escape)
-;                   use_options |= WILD_ESCAPE;
-
-;               if (@p_wic)
-;                   use_options += WILD_ICASE;
-;               p2 = expandOne(xp, p1, STRNDUP(@ccline.cmdbuff.plus(i), xp.xp_pattern_len), use_options, type);
-                ;; longest match: make sure it is not shorter, happens with :help
-;               if (p2 != null && type == WILD_LONGEST)
-;               {
-;                   int j;
-;                   for (j = 0; j < xp.xp_pattern_len; j++)
-;                        if (@ccline.cmdbuff.at(i + j) == (byte)'*' || @ccline.cmdbuff.at(i + j) == (byte)'?')
-;                            break;
-;                   if (STRLEN(p2) < j)
-;                       p2 = null;
-;               }
-;           }
-;       }
-
-;       if (p2 != null && !@got_int)
-;       {
-;           int difflen = STRLEN(p2) - xp.xp_pattern_len;
-;           if (@ccline.cmdbufflen < @ccline.cmdlen + difflen + 4)
-;           {
-;               realloc_cmdbuff(@ccline.cmdlen + difflen + 4);
-;               xp.xp_pattern = @ccline.cmdbuff.plus(i);
-;           }
-
-;           BCOPY(@ccline.cmdbuff, @ccline.cmdpos + difflen, @ccline.cmdbuff, @ccline.cmdpos, @ccline.cmdlen - @ccline.cmdpos + 1);
-;           BCOPY(@ccline.cmdbuff, i, p2, 0, STRLEN(p2));
-;           @ccline.cmdlen += difflen;
-;           @ccline.cmdpos += difflen;
-;       }
-
-;       redrawcmd();
-;       cursorcmd();
-
-;       if (xp.xp_numfiles <= 0 && p2 == null)
-;           beep_flush();
-;       else if (xp.xp_numfiles == 1)
-            ;; free expanded pattern
-;           expandOne(xp, null, null, 0, WILD_FREE);
-
-;       return true;
-    ))
-
-(atom! int findex)
-(atom! Bytes orig_save)    ;; kept value of orig
-
-;; Do wildcard expansion on the string 'str'.
-;; Chars that should not be expanded must be preceded with a backslash.
-;; Return a pointer to allocated memory containing the new string.
-;; Return null for failure.
-;;
-;; "orig" is the originally expanded string, copied to allocated memory.
-;; It should either be kept in "orig_save" or freed.  When "mode" is WILD_NEXT
-;; or WILD_PREV "orig" should be null.
-;;
-;; Results are cached in xp.xp_files and xp.xp_numfiles, except when "mode"
-;; is WILD_EXPAND_FREE or WILD_ALL.
-;;
-;; mode = WILD_FREE:        just free previously expanded matches
-;; mode = WILD_EXPAND_FREE: normal expansion, do not keep matches
-;; mode = WILD_EXPAND_KEEP: normal expansion, keep matches
-;; mode = WILD_NEXT:        use next match in multiple match, wrap to first
-;; mode = WILD_PREV:        use previous match in multiple match, wrap to first
-;; mode = WILD_ALL:         return all matches concatenated
-;; mode = WILD_LONGEST:     return longest matched part
-;; mode = WILD_ALL_KEEP:    get all matches, keep matches
-;;
-;; options = WILD_LIST_NOTFOUND:    list entries without a match
-;; options = WILD_USE_NL:           Use '\n' for WILD_ALL
-;; options = WILD_NO_BEEP:          Don't beep for multiple matches
-;; options = WILD_ADD_SLASH:        add a slash after directory names
-;; options = WILD_SILENT:           don't print warning messages
-;; options = WILD_ESCAPE:           put backslash before special chars
-;; options = WILD_ICASE:            ignore case for files
-;;
-;; The variable xp.xp_context must have been set!
-
-(defn- #_Bytes expandOne [#_expand_C xp, #_Bytes str, #_Bytes orig, #_int options, #_int mode]
-    ;; orig: allocated copy of original of expanded string
-    (§
-;       Bytes ss = null;
-
-        ;; first handle the case of using an old match
-
-;       if (mode == WILD_NEXT || mode == WILD_PREV)
-;       {
-;           if (0 < xp.xp_numfiles)
-;           {
-;               if (mode == WILD_PREV)
-;               {
-;                   if (@findex == -1)
-;                       @findex = xp.xp_numfiles;
-;                   --@findex;
-;               }
-;               else    ;; mode == WILD_NEXT
-;                   @findex++;
-
-                ;; When wrapping around, return the original string, set findex to -1.
-
-;               if (@findex < 0)
-;               {
-;                   if (@orig_save == null)
-;                       @findex = xp.xp_numfiles - 1;
-;                   else
-;                       @findex = -1;
-;               }
-;               if (xp.xp_numfiles <= @findex)
-;               {
-;                   if (@orig_save == null)
-;                       @findex = 0;
-;                   else
-;                       @findex = -1;
-;               }
-;               if (@findex == -1)
-;                   return STRDUP(@orig_save);
-
-;               return STRDUP(xp.xp_files[@findex]);
-;           }
-;           else
-;               return null;
-;       }
-
-        ;; free old names
-;       if (xp.xp_numfiles != -1 && mode != WILD_ALL && mode != WILD_LONGEST)
-;       {
-;           xp.xp_files = null;
-;           xp.xp_numfiles = -1;
-;           @orig_save = null;
-;       }
-;       @findex = 0;
-
-;       if (mode == WILD_FREE)      ;; only release file name
-;           return null;
-
-;       if (xp.xp_numfiles == -1)
-;       {
-;           @orig_save = orig;
-
-            ;; Do the expansion.
-
-;           boolean b;
-;           {
-;               int[] _1 = { xp.xp_numfiles };
-;               Bytes[][] _2 = { xp.xp_files };
-;               b = expandFromContext(xp, str, _1, _2, options);
-;               xp.xp_numfiles = _1[0];
-;               xp.xp_files = _2[0];
-;           }
-;           if (b == false)
-;           {
-;           }
-;           else if (xp.xp_numfiles == 0)
-;           {
-;               if ((options & WILD_SILENT) == 0)
-;                   emsg2(e_nomatch2, str);
-;           }
-;           else
-;           {
-                ;; Escape the matches for use on the command line.
-;               expandEscape(xp, str, xp.xp_numfiles, xp.xp_files, options);
-
-                ;; Check for matching suffixes in file names.
-
-;               if (mode != WILD_ALL && mode != WILD_ALL_KEEP && mode != WILD_LONGEST)
-;               {
-;                   int non_suf_match = 1;          ;; number without matching suffix
-;                   if (xp.xp_numfiles != 0)
-;                       non_suf_match = xp.xp_numfiles;
-;                   if (non_suf_match != 1)
-;                   {
-                        ;; Can we ever get here unless it's while expanding
-                        ;; interactively?  If not, we can get rid of this all
-                        ;; together.  Don't really want to wait for this message
-                        ;; (and possibly have to hit return to continue!).
-
-;                       if ((options & WILD_SILENT) == 0)
-;                           emsg(e_toomany);
-;                       else if ((options & WILD_NO_BEEP) == 0)
-;                           beep_flush();
-;                   }
-;                   if (!(non_suf_match != 1 && mode == WILD_EXPAND_FREE))
-;                       ss = STRDUP(xp.xp_files[0]);
-;               }
-;           }
-;       }
-
-        ;; Find longest common part.
-;       if (mode == WILD_LONGEST && 0 < xp.xp_numfiles)
-;       {
-;           int len;
-;           for (len = 0; xp.xp_files[0].at(len) != NUL; len++)
-;           {
-;               int i;
-;               for (i = 0; i < xp.xp_numfiles; i++)
-;               {
-;                   if (xp.xp_files[i].at(len) != xp.xp_files[0].at(len))
-;                       break;
-;               }
-;               if (i < xp.xp_numfiles)
-;               {
-;                   if ((options & WILD_NO_BEEP) == 0)
-;                       vim_beep();
-;                   break;
-;               }
-;           }
-;           ss = STRNDUP(xp.xp_files[0], len);
-;           @findex = -1;                        ;; next "p_wc" gets first one
-;       }
-
-        ;; Concatenate all matching names.
-;       if (mode == WILD_ALL && 0 < xp.xp_numfiles)
-;       {
-;           int len = 0;
-;           for (int i = 0; i < xp.xp_numfiles; i++)
-;               len += STRLEN(xp.xp_files[i]) + 1;
-
-;           ss = new Bytes(len);
-;           ss.be(0, NUL);
-
-;           for (int i = 0; i < xp.xp_numfiles; i++)
-;           {
-;               STRCAT(ss, xp.xp_files[i]);
-;               if (i != xp.xp_numfiles - 1)
-;                   STRCAT(ss, (options & WILD_USE_NL) != 0 ? u8("\n") : u8(" "));
-;           }
-;       }
-
-;       if (mode == WILD_EXPAND_FREE || mode == WILD_ALL)
-;           expandCleanup(xp);
-
-;       return ss;
-    ))
-
-;; Prepare an expand structure for use.
-
-(defn- #_void expandInit [#_expand_C xp]
-    (§
-;       xp.xp_pattern = null;
-;       xp.xp_pattern_len = 0;
-;       xp.xp_numfiles = -1;
-;       xp.xp_files = null;
-;       xp.xp_arg = null;
-    ))
-
-;; Cleanup an expand structure after use.
-
-(defn- #_void expandCleanup [#_expand_C xp]
-    (§
-;       if (0 <= xp.xp_numfiles)
-;       {
-;           xp.xp_files = null;
-;           xp.xp_numfiles = -1;
-;       }
-    ))
-
-(defn- #_void expandEscape [#_expand_C xp, #_Bytes str, #_int numfiles, #_Bytes* files, #_int options]
-    (§
-;       if ((options & WILD_ESCAPE) != 0)
-;       {
-;           if (xp.xp_context == EXPAND_BUFFERS)
-;           {
-                ;; Insert a backslash into a file name before a space, \, %, #
-                ;; and wildmatch characters, except '~'.
-
-;               for (int i = 0; i < numfiles; i++)
-;               {
-;                   Bytes p = vim_strsave_fnameescape(files[i]);
-;                   if (p != null)
-;                       files[i] = p;
-
-                    ;; If 'str' starts with "\~", replace "~" at start of files[i] with "\~".
-;                   if (str.at(0) == (byte)'\\' && str.at(1) == (byte)'~' && files[i].at(0) == (byte)'~')
-;                       files[i] = escape_fname(files[i]);
-;               }
-
-                ;; If the first file starts with a '+' escape it.
-                ;; Otherwise it could be seen as "+cmd".
-;               if (files[0].at(0) == (byte)'+')
-;                   files[0] = escape_fname(files[0]);
-;           }
-;       }
-    ))
-
-;; Escape special characters in "fname" for when used as a file name argument
-;; after a Vim command, or, when "shell" is non-zero, a shell command.
-;; Returns the result in allocated memory.
-
-(defn- #_Bytes vim_strsave_fnameescape [#_Bytes fname]
-    (§
-;       Bytes p = vim_strsave_escaped(fname, u8(" \t\n*?[{`$\\%#'\"|!<"));
-
-        ;; '>' and '+' are special at the start of some commands, e.g. ":edit" and ":write".
-        ;; "cd -" has a special meaning.
-;       if (p.at(0) == (byte)'>' || p.at(0) == (byte)'+' || (p.at(0) == (byte)'-' && p.at(1) == NUL))
-;           p = escape_fname(p);
-
-;       return p;
-    ))
-
-;; Put a backslash before the file name.
-
-(defn- #_Bytes escape_fname [#_Bytes fname]
-    (§
-;       Bytes p = new Bytes(STRLEN(fname) + 2);
-
-;       p.be(0, (byte)'\\');
-;       STRCPY(p.plus(1), fname);
-
-;       return p;
-    ))
-
-;; Show all matches for completion on the command line.
-;; Returns EXPAND_NOTHING when the character that triggered expansion
-;; should be inserted like a normal character.
-
-(defn- #_int showmatches [#_expand_C xp]
-    (§
-;       if (xp.xp_numfiles == -1)
-;       {
-;           xp.xp_context = EXPAND_NOTHING;
-;           return EXPAND_NOTHING;
-;       }
-
-;       int[] num_files = new int[1];
-;       Bytes[][] files_found = new Bytes[1][];
-
-;       num_files[0] = xp.xp_numfiles;
-;       files_found[0] = xp.xp_files;
-
-;       @msg_didany = false;             ;; lines_left will be set
-;       msg_start();                    ;; prepare for paging
-;       msg_putchar('\n');
-;       out_flush();
-;       @cmdline_row = @msg_row;
-;       @msg_didany = false;             ;; lines_left will be set again
-;       msg_start();                    ;; prepare for paging
-
-;       if (@got_int)
-;           @got_int = false;        ;; only int. the completion, not the cmd line
-;       else
-;       {
-            ;; find the length of the longest file name
-;           int maxlen = 0;
-;           for (int i = 0; i < num_files[0]; i++)
-;           {
-;               int len = mb_string2cells(files_found[0][i], -1);
-;               if (maxlen < len)
-;                   maxlen = len;
-;           }
-;           maxlen += 2;                                        ;; two spaces between file names
-
-            ;; compute the number of columns and lines for the listing
-;           int columns = ((int)@Columns + 2) / maxlen;
-;           if (columns < 1)
-;               columns = 1;
-;           int lines = (num_files[0] + columns - 1) / columns;
-
-;           int attr = hl_attr(HLF_D);                          ;; find out highlighting for directories
-
-            ;; list the files line by line
-;           for (int i = 0; i < lines; i++)
-;           {
-;               int lastlen = 999;
-;               for (int j = i; j < num_files[0]; j += lines)
-;               {
-;                   for (int k = maxlen - lastlen; 0 <= --k; )
-;                       msg_putchar(' ');
-;                   boolean isdir = false;
-;                   if (xp.xp_context == EXPAND_BUFFERS)
-;                   {
-                        ;; highlight directories
-;                       if (xp.xp_numfiles != -1)
-;                       {
-                            ;; Expansion was done before and special characters were escaped,
-                            ;; need to halve backslashes.
-
-;                           Bytes halved_slash = backslash_halve_save(files_found[0][j]);
-;                           isdir = mch_isdir((halved_slash != null) ? halved_slash : files_found[0][j]);
-;                       }
-;                       else
-                            ;; Expansion was done here, file names are literal.
-;                           isdir = mch_isdir(files_found[0][j]);
-;                   }
-;                   lastlen = msg_outtrans_attr(files_found[0][j], isdir ? attr : 0);
-;               }
-;               if (0 < @msg_col)                                ;; when not wrapped around
-;               {
-;                   msg_clr_eos();
-;                   msg_putchar('\n');
-;               }
-;               out_flush();                                    ;; show one line at a time
-;               if (@got_int)
-;               {
-;                   @got_int = false;
-;                   break;
-;               }
-;           }
-
-            ;; We redraw the command below the lines that we have just listed.
-            ;; This is a bit tricky, but it saves a lot of screen updating.
-
-;           @cmdline_row = @msg_row;                              ;; will put it back later
-;       }
-
-;       return EXPAND_OK;
-    ))
-
-;; Prepare a string for expansion.
-;; When expanding file names: The string will be used with expand_wildcards().
-;; Copy "fname[len]" into allocated memory and add a '*' at the end.
-;; When expanding other names: The string will be used with regcomp().
-;; Copy the name into allocated memory and prepend "^".
-
-(defn- #_Bytes addstar [#_Bytes fname, #_int len, #_int context]
-    (§
-;       int new_len = len + 2;                  ;; +2 for '^' at start, NUL at end
-;       for (int i = 0; i < len; i++)
-;       {
-;           if (fname.at(i) == (byte)'*' || fname.at(i) == (byte)'~')
-;               new_len++;                      ;; '*' needs to be replaced by ".*"
-                                                ;; '~' needs to be replaced by "\~"
-
-            ;; Buffer names are like file names.  "." should be literal.
-;           if (context == EXPAND_BUFFERS && fname.at(i) == (byte)'.')
-;               new_len++;                      ;; "." becomes "\."
-;       }
-
-;       Bytes retval = new Bytes(new_len);
-
-;       retval.be(0, (byte)'^');
-;       int j = 1;
-;       for (int i = 0; i < len; i++, j++)
-;       {
-            ;; Skip backslash.  But why?  At least keep it for custom expansion.
-;           if (fname.at(i) == (byte)'\\' && ++i == len)
-;               break;
-
-;           switch (fname.at(i))
-;           {
-;               case '*':   retval.be(j++, (byte)'.');
-;                           break;
-;               case '~':   retval.be(j++, (byte)'\\');
-;                           break;
-;               case '?':   retval.be(j, (byte)'.');
-;                           continue;
-;               case '.':   if (context == EXPAND_BUFFERS)
-;                               retval.be(j++, (byte)'\\');
-;                           break;
-;           }
-;           retval.be(j, fname.at(i));
-;       }
-;       retval.be(j, NUL);
-
-;       return retval;
-    ))
-
-;; Must parse the command line so far to work out what context we are in.
-;; Completion can then be done based on that context.
-;; This routine sets the variables:
-;;  xp.xp_pattern          The start of the pattern to be expanded within
-;;                          the command line (ends at the cursor).
-;;  xp.xp_context          The type of thing to expand.  Will be one of:
-;;
-;;  EXPAND_NOTHING          Unrecognised context for completion, use char
-;;                          like a normal char, rather than for completion.
-;;                          e.g. :s/^I/
-;;  EXPAND_BUFFERS          Complete file names for :buf and :sbuf commands.
-
-;; Do the expansion based on xp.xp_context and "pat".
-
-(defn- #_boolean expandFromContext [#_expand_C xp, #_Bytes pat, #_int* num_file, #_Bytes** file, #_int options]
-    ;; options: EW_ flags
-    (§
-;       int flags = EW_DIR;                     ;; include directories
-;       if ((options & WILD_LIST_NOTFOUND) != 0)
-;           flags |= EW_NOTFOUND;
-;       if ((options & WILD_ADD_SLASH) != 0)
-;           flags |= EW_ADDSLASH;
-;       if ((options & WILD_SILENT) != 0)
-;           flags |= EW_SILENT;
-;       if ((options & WILD_ALLLINKS) != 0)
-;           flags |= EW_ALLLINKS;
-
-;       file[0] = new Bytes[] { u8("") };
-;       num_file[0] = 0;
-
-;       if (xp.xp_context == EXPAND_BUFFERS)
-;           return expandBufnames(pat, num_file, file, options);
-
-;       regmatch_C regmatch = §_regmatch_C();
-;       regmatch.regprog = vim_regcomp(pat, @p_magic ? RE_MAGIC : 0);
-;       if (regmatch.regprog == null)
-;           return false;
-
-        ;; set ignore-case according to "p_ic", "p_scs" and "pat"
-;       regmatch.rm_ic = ignorecase(pat);
-
-;       return false;
     ))
 
 ;; Command line history stuff
@@ -20031,7 +19211,7 @@
 ;       if (p == null)
 ;           return NUL;
 ;       if (p.cmdfirstc == NUL)
-;           return (p.input_fn) ? '@' : '-';
+;           return '-';
 
 ;       return p.cmdfirstc;
     ))
@@ -21412,7 +20592,7 @@
             ;; We need the command to know what kind of range it uses.
 
 ;           Bytes cmd = ea.cmd;
-;           ea.cmd = skip_range(ea.cmd, null);
+;           ea.cmd = skip_range(ea.cmd);
 ;           if (ea.cmd.at(0) == (byte)'*' && vim_strbyte(@p_cpo, CPO_STAR) == null)
 ;               ea.cmd = skipwhite(ea.cmd.plus(1));
 
@@ -22322,15 +21502,13 @@
 ;; Also skip white space and ":" characters.
 ;; Returns the "cmd" pointer advanced to beyond the range.
 
-(defn- #_Bytes skip_range [#_Bytes cmd, #_int* ctx]
-    ;; ctx: pointer to xp_context or null
+(defn- #_Bytes skip_range [#_Bytes cmd]
     (§
 ;       while (vim_strbyte(u8(" \t0123456789.$%'/?-+,;"), cmd.at(0)) != null)
 ;       {
 ;           if (cmd.at(0) == (byte)'\'')
 ;           {
-;               if ((cmd = cmd.plus(1)).at(0) == NUL && ctx != null)
-;                   ctx[0] = EXPAND_NOTHING;
+;               cmd = cmd.plus(1);
 ;           }
 ;           else if (cmd.at(0) == (byte)'/' || cmd.at(0) == (byte)'?')
 ;           {
@@ -22338,8 +21516,6 @@
 ;               while (cmd.at(0) != NUL && cmd.at(0) != delim)
 ;                   if ((cmd = cmd.plus(1)).at(-1) == (byte)'\\' && cmd.at(0) != NUL)
 ;                       cmd = cmd.plus(1);
-;               if (cmd.at(0) == NUL && ctx != null)
-;                   ctx[0] = EXPAND_NOTHING;
 ;           }
 ;           if (cmd.at(0) != NUL)
 ;               cmd = cmd.plus(1);
@@ -66758,74 +65934,6 @@
 ;       return match;
     ))
 
-;; Find all buffer names that match.
-;; For command line expansion of ":buf" and ":sbuf".
-;; Return true if matches found, false otherwise.
-
-(defn- #_boolean expandBufnames [#_Bytes pat, #_int* num_file, #_Bytes** file, #_int _options]
-    (§
-;       int count = 0;
-
-;       num_file[0] = 0;                  ;; return values in case of FAIL
-;       file[0] = null;
-
-        ;; Make a copy of "pat" and change "^" to "\(^\|[\/]\)".
-;       Bytes patc;
-;       if (pat.at(0) == (byte)'^')
-;       {
-;           patc = new Bytes(STRLEN(pat) + 11);
-
-;           STRCPY(patc, u8("\\(^\\|[\\/]\\)"));
-;           STRCPY(patc.plus(11), pat.plus(1));
-;       }
-;       else
-;           patc = pat;
-
-;       regmatch_C regmatch = §_regmatch_C();
-
-        ;; attempt == 0: try match with    '\<', match at start of word
-        ;; attempt == 1: try match without '\<', match anywhere
-
-;       for (int attempt = 0; attempt <= 1; attempt++)
-;       {
-;           if (0 < attempt && BEQ(patc, pat))
-;               break;      ;; there was no anchor, no need to try again
-
-;           regmatch.regprog = vim_regcomp(patc.plus(attempt * 11), RE_MAGIC);
-;           if (regmatch.regprog == null)
-;               return false;
-
-            ;; round == 1: Count the matches.
-            ;; round == 2: Build the array to keep the matches.
-
-;           for (int round = 1; round <= 2; round++)
-;           {
-;               count = 0;
-;               for (buffer_C buf = @firstbuf; buf != null; buf = buf.b_next)
-;               {
-;                   Bytes p = buflist_match(regmatch, buf, @p_wic);
-;                   if (p != null)
-;                   {
-;                       if (round == 1)
-;                           count++;
-;                       else
-;                           file[0][count++] = STRDUP(p);
-;                   }
-;               }
-;               if (count == 0)             ;; no match found, break here
-;                   break;
-;               if (round == 1)
-;                   file[0] = new Bytes[count];
-;           }
-
-;           if (count != 0)                 ;; match(es) found, break here
-;               break;
-;       }
-
-;       num_file[0] = count;
-;       return (count != 0);
-    ))
-
 ;; Check for a match on the file name for buffer "buf" with regprog "prog".
 
 (defn- #_Bytes buflist_match [#_regmatch_C rmp, #_buffer_C buf, #_boolean ignore_case]
@@ -80117,72 +79225,6 @@
 ;       }
     ))
 
-;; Generic wildcard expansion code.
-;;
-;; Characters in "pat" that should not be expanded must be preceded with a backslash:
-;; e.g. "/path\ with\ spaces/my\*star*"
-;;
-;; Return false when no single file was found.
-;; In this case "num_file" is not set, and "file" may contain an error message.
-;; Return true when some files found.
-;; "num_file" is set to the number of matches, "file" to the array of matches.
-
-(defn- #_boolean dummy_expand_wildcards [#_int num_pats, #_Bytes* pats, #_int* num_files, #_Bytes** files, #_int flags]
-    ;; num_pats: number of input patterns
-    ;; pats: array of input patterns
-    ;; num_files: resulting number of files
-    ;; files: array of resulting files
-    ;; flags: EW_* flags
-    (§
-;       Growing<Bytes> ga = new Growing<Bytes>(Bytes.class, 30);
-
-;       for (int i = 0; i < num_pats; i++)
-;       {
-;           Bytes p = backslash_halve_save(pats[i]);
-
-            ;; When EW_NOTFOUND is used, always add files and dirs.  Makes "vim c:/" work.
-;           if ((flags & EW_NOTFOUND) != 0)
-;               addfile(ga, p, flags | EW_DIR | EW_FILE);
-;       }
-
-;       num_files[0] = ga.ga_len;
-;       files[0] = ga.ga_data;
-
-;       return (files[0] != null);
-    ))
-
-;; Add a file to a file list.  Accepted flags:
-;; EW_DIR       add directories
-;; EW_FILE      add files
-;; EW_NOTFOUND  add even when it doesn't exist
-;; EW_ADDSLASH  add slash after directory name
-;; EW_ALLLINKS  add symlink also when the referred file does not exist
-
-(defn- #_void addfile [#_Bytes* gap, #_Bytes f, #_int flags]
-    ;; f: filename
-    (§
-        ;; if the file/dir/link doesn't exist, may not add it
-;       if ((flags & EW_NOTFOUND) == 0)
-;       {
-;           stat_C st = new stat_C();
-;           if ((flags & EW_ALLLINKS) != 0 ? libC.lstat(f, st) < 0 : mch_getperm(f) < 0)
-;               return;
-;       }
-
-;       boolean isdir = mch_isdir(f);
-;       if ((isdir && (flags & EW_DIR) == 0) || (!isdir && (flags & EW_FILE) == 0))
-;           return;
-
-;       Bytes p = new Bytes(STRLEN(f) + (isdir ? 1 : 0) + 1);
-;       STRCPY(p, f);
-        ;; Append a slash or backslash after directory names if none is present.
-;       if (isdir && (flags & EW_ADDSLASH) != 0)
-;           add_pathsep(p);
-
-;       gap.ga_grow(1);
-;       gap.ga_data[gap.ga_len++] = p;
-    ))
-
 ;; Return true when need to go to Insert mode because of 'insertmode'.
 ;; Don't do this when still processing a command or a mapping.
 ;; Don't do this when inside a ":normal" command.
@@ -85214,7 +84256,7 @@
 ;               case '\\':
 ;                   if (p.at(1) == NUL)
 ;                       break;
-                    ;; Undo escaping from expandEscape():
+                    ;; Undo escaping from expandEscape():
                     ;; foo\?bar -> foo?bar
                     ;; foo\%bar -> foo%bar
                     ;; foo\,bar -> foo,bar
