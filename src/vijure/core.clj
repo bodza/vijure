@@ -78,7 +78,7 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info frame lpos match matcher memline nfa_pim nfa_state oparg pattern pos regsave regsubs soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(buffer cmdline_info frame lpos match matcher memline nfa_pim nfa_state oparg pattern pos regsave regsubs soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
 (def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr frag frame key_name lpos modmasktable nfa_state nfa_thread nv_cmd pos signalinfo spat termcode typebuf vimoption wline yankreg)))
 
@@ -86,7 +86,7 @@
 
 (def- F (map #(symbol (str % "_F")) '(ex_func nv_func re_func)))
 
-(let [I '(byte byte! byte* byte** int int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
+(let [I '(byte byte! byte* byte** int int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes'*) C*)
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)))]
     (letfn [(f [t s] (if s (cons `(def- ~(first s) (~t ~(second s))) (f t (nnext s))) '(nil)))]
         (defmacro final [t & s] (let [t' (T t)] (assert t' (str "unexpected type: " t)) (when s (cons 'do (f t' s)))))))
@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state? nfa-max-width alloc-frag fr-single fr-patch fr-append fr-push fr-pop post2nfa? nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg* msg? msg msg-attr? msg-attr msg-attr-keep? msg-strtrunc trunc-string emsg-allowed emsg? emsg emsg* wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg? getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste? cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor? prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg? put-reedit-in-typebuf put-in-typebuf insert-reg? stuffescaped get-spec-reg? cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark? one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc? plain-vgetc? vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted? get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp? regcomp-start bt-reg? bt-regbranch? bt-regconcat? bt-regpiece? bt-regatom? do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits? reg-getline bt-regexec? bt-regtry? reg-prev-class reg-match-visual bt-regmatch? reg-item pop-regitem drop-regbehind drop-regstar regrepeat regnext cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next? mb-decompose cstrncmp cstrchr regtilde vim-regsub? nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom? nfa-do-multibyte nfa-regpiece? nfa-regconcat? nfa-regbranch? nfa-reg? re2post? alloc-state? nfa-max-width alloc-frag fr-single fr-patch fr-append fr-push fr-pop post2nfa? nfa-postprocess new-regsubs copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-re-num-cmp recursive-regmatch? failure-chance skip-to-start find-match-text nfa-regmatch? nfa-regtry? nfa-regcomp? nfa-regexec? vim-regcomp? report-re-switch vim-regexec? new-spat search-regcomp? save-re-pat re-ignorecase? re-has-uppercase? last-search-expr last-search-matcher? searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char? linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed? get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry? u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl? screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -624,7 +624,7 @@
 ;; It is initialized with the default values by parse-builtin-tcap().
 ;; The values can be changed by setting the option with the same name.
 
-(final Bytes*' term_strings [ T_NAME T_CE T_AL  T_CAL T_DL  T_CDL T_CS  T_CL
+(final Bytes'* term_strings [ T_NAME T_CE T_AL  T_CAL T_DL  T_CDL T_CS  T_CL
                               T_CD   T_UT T_DA  T_DB  T_VI  T_VE  T_VS  T_ME
                               T_MR   T_MD T_SE  T_SO  T_CZH T_CZR T_UE  T_US
                               T_MS   T_CM T_SR  T_CRI T_VB  T_KS  T_KE  T_TI
@@ -1263,43 +1263,25 @@
     [
         ;; The following have a pointer and a number.
         ;; The number is used when reading the undo file in u_read_undo().
-        (field u_link_C     uh_next         (NEW_u_link_C))       ;; next undo header in list
-        (field u_link_C     uh_prev         (NEW_u_link_C))       ;; previous header in list
-        (field u_link_C     uh_alt_next     (NEW_u_link_C))       ;; next header for alt. redo
-        (field u_link_C     uh_alt_prev     (NEW_u_link_C))       ;; previous header for alt. redo
-        (field long         uh_seq)                             ;; sequence number, higher == newer undo
-        (field int          uh_walk)                            ;; used by undo-time()
-        (field u_entry_C    uh_entry)                           ;; pointer to first entry
-        (field u_entry_C    uh_getbot_entry)                    ;; pointer to where ue_bot must be set
-        (field pos_C        uh_cursor       (NEW_pos_C))          ;; cursor position before saving
+        (field u_link_C     uh_next         (NEW_u_link_C))         ;; next undo header in list
+        (field u_link_C     uh_prev         (NEW_u_link_C))         ;; previous header in list
+        (field u_link_C     uh_alt_next     (NEW_u_link_C))         ;; next header for alt. redo
+        (field u_link_C     uh_alt_prev     (NEW_u_link_C))         ;; previous header for alt. redo
+        (field long         uh_seq)                                 ;; sequence number, higher == newer undo
+        (field int          uh_walk)                                ;; used by undo-time()
+        (field u_entry_C    uh_entry)                               ;; pointer to first entry
+        (field u_entry_C    uh_getbot_entry)                        ;; pointer to where "ue_bot" must be set
+        (field pos_C        uh_cursor       (NEW_pos_C))            ;; cursor position before saving
         (field long         uh_cursor_vcol)
-        (field int          uh_flags)                           ;; see below
-        (field pos_C*       uh_namedm       (ARRAY-pos NMARKS)) ;; marks before undo/after redo
-        (field visualinfo_C uh_visual       (NEW_visualinfo_C))   ;; Visual areas before undo/after redo
-        (field long         uh_time)                            ;; timestamp when the change was made
+        (field int          uh_flags)                               ;; see below
+        (field pos_C*       uh_namedm       (ARRAY-pos NMARKS))     ;; marks before undo/after redo
+        (field visualinfo_C uh_visual       (NEW_visualinfo_C))     ;; Visual areas before undo/after redo
+        (field long         uh_time)                                ;; timestamp when the change was made
     ])
 
-;; values for uh_flags
+;; values for "uh_flags"
 (final int UH_CHANGED  0x01)            ;; "b_changed" flag before undo/after redo
 (final int UH_EMPTYBUF 0x02)            ;; buffer was empty
-
-;; structure used to store one block of the stuff/redo/recording buffers
-
-(class! #_final buffblock_C
-    [
-        (field buffblock_C  bb_next)        ;; pointer to next buffblock
-        (field Bytes        bb_str)         ;; contents
-    ])
-
-;; header used for the stuff buffer and the redo buffer
-
-(class! #_final buffheader_C
-    [
-        (field buffblock_C  bh_first    (NEW_buffblock_C))    ;; first (dummy) block of list
-        (field buffblock_C  bh_curr)        ;; buffblock for appending
-        (field int          bh_index)       ;; index for reading
-        (field int          bh_space)       ;; space in bh_curr for appending
-    ])
 
 ;; The memline structure holds all the information about a memline.
 
@@ -10676,8 +10658,8 @@
             ))
     ))
 
-;; Stuff a string into the typeahead buffer, such that edit() will insert it
-;; literally ("literally" true) or interpret is as typed characters.
+;; Stuff a string into the typeahead buffer, such that edit() will
+;; insert it literally or interpret it as typed characters.
 
 (defn- #_void stuffescaped [#_Bytes _arg, #_boolean literally]
     (let [a'arg (atom (#_Bytes object _arg))]
@@ -10688,8 +10670,8 @@
                 (while (or (and (<= (byte \space) (.at @a'arg 0)) (< (.at @a'arg 0) DEL)) (and (at? @a'arg KB_SPECIAL) (not literally)))
                     (swap! a'arg plus 1))
                 (when (BLT start, @a'arg)
-                    (stuff-redo-len start, (BDIFF @a'arg, start)))
-            )
+                    (stuff-string start, (BDIFF @a'arg, start))
+                ))
             ;; stuff a single special character
             (when (non-eos? @a'arg)
                 (let [#_int c (us-ptr2char-adv a'arg, false)]
@@ -12701,9 +12683,9 @@
 ;; Escaping KB_SPECIAL is done by inchar().
 ;; Un-escaping is done by vgetc().
 
-(atom! buffheader_C redobuff        (NEW_buffheader_C))
-(atom! buffheader_C old_redobuff    (NEW_buffheader_C))
-(atom! buffheader_C recordbuff      (NEW_buffheader_C))
+(atom! Bytes* redobuff        [])
+(atom! Bytes* old_redobuff    [])
+(atom! Bytes* recordbuff      [])
 
 ;; When block_redo is true redo buffer will not be changed;
 ;; used by edit() to repeat insertions and 'V' command for redoing.
@@ -12729,34 +12711,31 @@
 ;; Return the contents of a buffer as a single string.
 ;; KB_SPECIAL in the returned string is escaped.
 
-(defn- #_Bytes get-buffcont [#_buffheader_C buffer, #_boolean dozero]
+(defn- #_Bytes get-buffcont [#_Bytes* buffer, #_boolean dozero]
     ;; dozero: n == zero is not an error
-    (let-when [n (loop-when-recur [n 0 #_buffblock_C bp (:bb_next (:bh_first buffer))] (some? bp) [(+ n (STRLEN (:bb_str bp))) (:bb_next bp)] => n)] (or (< 0 n) dozero) => nil
-        (let [#_Bytes p (Bytes. (inc n))
-              n (loop-when [n 0 #_buffblock_C bp (:bb_next (:bh_first buffer))] (some? bp) => n
-                    (let [#_Bytes s (:bb_str bp)
-                          n (loop-when-recur [n n i 0] (non-eos? s i) [(inc n) (inc i)] => n
-                                (.be p n, (.at s i))
+    (let-when [n (loop-when-recur [n 0 [s & z] buffer] (some? s) [(+ n (STRLEN s)) z] => n)] (or (< 0 n) dozero) => nil
+        (let [q (Bytes. (inc n))
+              n (loop-when [n 0 [s & z] buffer] (some? s) => n
+                    (let [n (loop-when-recur [n n i 0] (non-eos? s i) [(inc n) (inc i)] => n
+                                (.be q n, (.at s i))
                             )]
-                        (recur n (:bb_next bp))
+                        (recur n z)
                     ))]
-            (eos! p n)
+            (eos! q n)
         )))
 
 ;; Return the contents of the record buffer as a single string and clear the record buffer.
 ;; KB_SPECIAL in the returned string is escaped.
 
 (defn- #_Bytes get-recorded []
-    (let [#_Bytes p (get-buffcont @recordbuff, true)]
-        (swap! recordbuff assoc-in [:bh_first :bb_next] nil)
-        ;; Remove the characters that were added the last time, these must be the
-        ;; (possibly mapped) characters that stopped the recording.
-        (let [n (STRLEN p) m @last_recorded_len
-              n (if (<= m n) (let [n (- n m)] (eos! p n) n) n)]
-            ;; When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
-            (when (and (< 0 n) (non-zero? @restart_edit) (at? p (dec n) Ctrl_O))
-                (eos! p (dec n)))
-            p)
+    (let [s (get-buffcont @recordbuff, true) _ (reset! recordbuff [])
+          ;; Remove the characters that were added the last time, these must be the
+          ;; (possibly mapped) characters that stopped the recording.
+          n (STRLEN s) m @last_recorded_len n (if (<= m n) (let [n (- n m)] (eos! s n) n) n)]
+        ;; When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
+        (when (and (< 0 n) (non-zero? @restart_edit) (at? s (dec n) Ctrl_O))
+            (eos! s (dec n)))
+        s
     ))
 
 ;; Return the contents of the redo buffer as a single string.
@@ -12768,7 +12747,7 @@
 ;; Add string "s" after the current block of buffer "buf".
 ;; KB_SPECIAL should have been escaped already.
 
-(defn- #_void add-buff [#_buffheader_C buf, #_Bytes s, #_long slen]
+(defn- #_void add-buff [#_buffheader_C buf, #_Bytes s, #_long slen]
     ;; slen: length of "s" or -1
     (§
         ((ß slen =) (if (< slen 0) (STRLEN s) slen))
@@ -12776,50 +12755,50 @@
             ((ß RETURN) nil)
         )
 
-        (cond (nil? (:bb_next (:bh_first buf)))       ;; first add to list
+        (cond (nil? (:bb_next (:bh_first buf)))       ;; first add to list
         (do
-            ((ß buf =) (assoc buf :bh_space 0))
-            ((ß buf =) (assoc buf :bh_curr (:bh_first buf)))
+            ((ß buf =) (assoc buf :bh_space 0))
+            ((ß buf =) (assoc buf :bh_curr (:bh_first buf)))
         )
-        (nil? (:bh_curr buf))           ;; buffer has already been read
+        (nil? (:bh_curr buf))           ;; buffer has already been read
         (do
             (swap! curwin emsg (u8 "E222: Add to read buffer"))
             ((ß RETURN) nil)
         )
-        (non-zero? (:bh_index buf))
+        (non-zero? (:bh_index buf))
         (do
-            ((ß buffblock_C bp =) (:bb_next (:bh_first buf)))
-            ((ß int len =) (+ (STRLEN (.plus (:bb_str bp) (:bh_index buf))) 1))
-            (BCOPY (:bb_str bp), 0, (:bb_str bp), (:bh_index buf), len)
+            ((ß buffblock_C bp =) (:bb_next (:bh_first buf)))
+            ((ß int len =) (+ (STRLEN (.plus (:bb_str bp) (:bh_index buf))) 1))
+            (BCOPY (:bb_str bp), 0, (:bb_str bp), (:bh_index buf), len)
         ))
-        ((ß buf =) (assoc buf :bh_index 0))
+        ((ß buf =) (assoc buf :bh_index 0))
 
-        (cond (<= (int slen) (:bh_space buf))
+        (cond (<= (int slen) (:bh_space buf))
         (do
-            ((ß int len =) (STRLEN (:bb_str (:bh_curr buf))))
-            (vim-strncpy (.plus (:bb_str (:bh_curr buf)) len), s, (int slen))
-            ((ß buf =) (update buf :bh_space - slen))
+            ((ß int len =) (STRLEN (:bb_str (:bh_curr buf))))
+            (vim-strncpy (.plus (:bb_str (:bh_curr buf)) len), s, (int slen))
+            ((ß buf =) (update buf :bh_space - slen))
         )
         :else
         (do
-            ((ß int len =) (max 20 (int slen)))            ;; minimal size for bb_str
+            ((ß int len =) (max 20 (int slen)))            ;; minimal size for bb_str
 
-            ((ß buffblock_C bp =) (NEW_buffblock_C))
+            ((ß buffblock_C bp =) (NEW_buffblock_C))
 
-            ((ß bp =) (assoc bp :bb_str (Bytes. (inc len))))
-            (vim-strncpy (:bb_str bp), s, (int slen))
-            ((ß buf =) (assoc buf :bh_space (- len (int slen))))
+            ((ß bp =) (assoc bp :bb_str (Bytes. (inc len))))
+            (vim-strncpy (:bb_str bp), s, (int slen))
+            ((ß buf =) (assoc buf :bh_space (- len (int slen))))
 
-            ((ß bp =) (assoc bp :bb_next (:bb_next (:bh_curr buf))))
-            ((ß buf =) (assoc-in buf [:bh_curr :bb_next] bp))
-            ((ß buf =) (assoc buf :bh_curr bp))
+            ((ß bp =) (assoc bp :bb_next (:bb_next (:bh_curr buf))))
+            ((ß buf =) (assoc-in buf [:bh_curr :bb_next] bp))
+            ((ß buf =) (assoc buf :bh_curr bp))
         ))
         nil
     ))
 
 ;; Add number "n" to buffer "buf".
 
-(defn- #_void add-num-buff [#_buffheader_C buf, #_long n]
+(defn- #_void add-num-buff [#_buffheader_C buf, #_long n]
     (let [#_Bytes number (Bytes. 32)]
         (ß .sprintf libC number, (u8 "%ld"), n)
         (add-buff buf, number, -1))
@@ -12828,7 +12807,7 @@
 ;; Add character 'c' to buffer "buf".
 ;; Translates special keys, NUL, KB_SPECIAL and multibyte characters.
 
-(defn- #_void add-char-buff [#_buffheader_C buf, #_int c]
+(defn- #_void add-char-buff [#_buffheader_C buf, #_int c]
     (let [bytes (Bytes. (inc MB_MAXBYTES)) n (if (is-special c) 1 (utf-char2bytes c, bytes)) temp (Bytes. 4)]
         (loop-when [c c i 0] (< i n)
             (let [c (if (not (is-special c)) (char_u (.at bytes i)) c)]
@@ -12841,53 +12820,47 @@
     nil)
 
 ;; First read ahead buffer.  Used for translated commands.
-(atom! buffheader_C readbuf1    (NEW_buffheader_C))
+(atom! Bytes* readbuf1    [])
 
 ;; Second read ahead buffer.  Used for redo.
-(atom! buffheader_C readbuf2    (NEW_buffheader_C))
+(atom! Bytes* readbuf2    [])
 
 ;; Get one byte from a read buffer.
-;; If advance == true go to the next char.
-;; No translation is done KB_SPECIAL is escaped.
+;; If "advance" is true, go to the next char.
+;; No translation is done, KB_SPECIAL is escaped.
 
-(defn- #_byte read-readbuf [#_buffheader_C buf, #_boolean advance]
-    (§
-        ((ß buffblock_C bp =) (:bb_next (:bh_first buf)))
-        (if (nil? bp) ;; buffer is empty
-            ((ß RETURN) NUL)
-        )
-
-        ((ß byte b =) (.at (:bb_str bp) (:bh_index buf)))
-
-        (when (and advance (at? (:bb_str bp) (ß ++buf.bh_index) NUL))
-            ((ß buf =) (assoc-in buf [:bh_first :bb_next] (:bb_next bp)))
-            ((ß buf =) (assoc buf :bh_index 0))
-        )
-
-        b
+(defn- #_byte read-readbuf [#_Bytes*' a'buf, #_boolean advance]
+    (when' (pos? (count @a'buf)) => NUL ;; buffer is empty
+        (let [#_Bytes s (... @a'buf 0) #_byte b (.at s 0)]
+            (when advance
+                (if (eos? s 1)
+                    (swap! a'buf subvec 1)
+                    (swap! a'buf assoc 0 (.plus s 1))
+                ))
+            b)
     ))
 
 ;; Get one byte from the read buffers.
-;; Use readbuf1 one first, use readbuf2 if that one is empty.
-;; If advance == true go to the next char.
-;; No translation is done KB_SPECIAL is escaped.
+;; Use "readbuf1" first, then use "readbuf2" if prior is empty.
+;; If "advance" is true, go to the next char.
+;; No translation is done, KB_SPECIAL is escaped.
 
 (defn- #_byte read-readbuffers [#_boolean advance]
-    (let [#_byte b (read-readbuf @readbuf1, advance)]
-        (if (== b NUL) (read-readbuf @readbuf2, advance) b)
+    (let [#_byte b (read-readbuf readbuf1, advance)]
+        (if (== b NUL) (read-readbuf readbuf2, advance) b)
     ))
 
 ;; Prepare the read buffers for reading (if they contain something).
 
 (defn- #_void start-stuff []
-    (when (some? (:bb_next (:bh_first @readbuf1))) (swap! readbuf1 assoc :bh_curr (:bh_first @readbuf1) :bh_space 0))
-    (when (some? (:bb_next (:bh_first @readbuf2))) (swap! readbuf2 assoc :bh_curr (:bh_first @readbuf2) :bh_space 0))
+    (when (some? (:bb_next (:bh_first @readbuf1))) (swap! readbuf1 assoc :bh_curr (:bh_first @readbuf1) :bh_space 0))
+    (when (some? (:bb_next (:bh_first @readbuf2))) (swap! readbuf2 assoc :bh_curr (:bh_first @readbuf2) :bh_space 0))
     nil)
 
 ;; Return true if the stuff buffer is empty.
 
 (defn- #_boolean stuff-empty []
-    (and (nil? (:bb_next (:bh_first @readbuf1))) (nil? (:bb_next (:bh_first @readbuf2)))))
+    (and (zero? (count @readbuf1)) (zero? (count @readbuf2))))
 
 ;; Remove the contents of the stuff buffer and the mapped characters in the typeahead buffer (used in case of an error).
 ;; If "flush_typeahead" is true, flush all typeahead characters (used when interrupted by a CTRL-C).
@@ -12913,24 +12886,20 @@
 
 (defn- #_void reset-redo []
     (when (not @block_redo)
-        (swap! old_redobuff assoc-in [:bh_first :bb_next] nil)
         (reset! old_redobuff @redobuff)
-        (swap! redobuff assoc-in [:bh_first :bb_next] nil)
-    )
+        (reset! redobuff []))
     nil)
 
 ;; Discard the contents of the redo buffer and restore the previous redo buffer.
 
 (defn- #_void cancel-redo []
     (when (not @block_redo)
-        (swap! redobuff assoc-in [:bh_first :bb_next] nil)
         (reset! redobuff @old_redobuff)
-        (swap! old_redobuff assoc-in [:bh_first :bb_next] nil)
+        (reset! old_redobuff [])
         (start-stuff)
         (while (!= (read-readbuffers true) NUL)
-            ;
-        )
-    )
+            nil
+        ))
     nil)
 
 ;; Append "s" to the redo buffer.
@@ -12938,7 +12907,7 @@
 
 (defn- #_void append-redo [#_Bytes s]
     (when (not @block_redo)
-        (add-buff @redobuff, s, -1))
+        (add-buff @redobuff, s, -1))
     nil)
 
 ;; Append to Redo buffer literally, escaping special characters with CTRL-V.
@@ -12957,16 +12926,16 @@
                     (when (and (eos? @a's) (any == (.at @a's -1) (byte \0) (byte \^)))
                         (swap! a's dec))
                     (when (BLT start, @a's)
-                        (add-buff @redobuff, start, (BDIFF @a's, start)))
+                        (add-buff @redobuff, start, (BDIFF @a's, start)))
                     (when (and (non-eos? @a's) (not (<= 0 len (BDIFF @a's, str))))
                         ;; Handle a special or multibyte character.  ;; Handle composing chars separately.
                         (let [#_int c (us-ptr2char-adv a's, false)]
                             (when (or (< c (byte \space)) (== c DEL) (and (eos? @a's) (any == c (byte \0) (byte \^))))
-                                (add-char-buff @redobuff, Ctrl_V))
+                                (add-char-buff @redobuff, Ctrl_V))
                             ;; CTRL-V '0' must be inserted as CTRL-V 048
                             (if (and (eos? @a's) (== c (byte \0)))
-                                (add-buff @redobuff, (u8 "048"), 3)
-                                (add-char-buff @redobuff, c))
+                                (add-buff @redobuff, (u8 "048"), 3)
+                                (add-char-buff @redobuff, c))
                             (recur)
                         ))
                 ))
@@ -12978,57 +12947,53 @@
 
 (defn- #_void append-redo-char [#_int c]
     (when (not @block_redo)
-        (add-char-buff @redobuff, c))
+        (add-char-buff @redobuff, c))
     nil)
 
 ;; Append a number to the redo buffer.
 
 (defn- #_void append-redo-number [#_long n]
     (when (not @block_redo)
-        (add-num-buff @redobuff, n))
+        (add-num-buff @redobuff, n))
     nil)
 
 ;; Append string "s" to the stuff buffer.
 ;; KB_SPECIAL must already have been escaped.
 
-(defn- #_void stuff-string [#_Bytes s]
-    (add-buff @readbuf1, s, -1)
-    nil)
+(defn- #_void stuff-string
+    ([#_Bytes s] (stuff-string s, -1))
+    ([#_Bytes s, #_long len] (add-buff @readbuf1, s, len) nil))
 
 ;; Append string "s" to the redo stuff buffer.
 ;; KB_SPECIAL must already have been escaped.
 
 (defn- #_void stuff-redo [#_Bytes s]
-    (add-buff @readbuf2, s, -1)
-    nil)
-
-(defn- #_void stuff-redo-len [#_Bytes s, #_long len]
-    (add-buff @readbuf1, s, len)
+    (add-buff @readbuf2, s, -1)
     nil)
 
 ;; Append a character to the stuff buffer.
 ;; Translates special keys, NUL, KB_SPECIAL and multibyte characters.
 
 (defn- #_void stuff-char [#_int c]
-    (add-char-buff @readbuf1, c)
+    (add-char-buff @readbuf1, c)
     nil)
 
 ;; Append a number to the stuff buffer.
 
 (defn- #_void stuff-num [#_long n]
-    (add-num-buff @readbuf1, n)
+    (add-num-buff @readbuf1, n)
     nil)
 
-(atom! buffblock_C redo_bp)
-(atom! Bytes redo_sp)
+(atom! buffblock_C redo_bp)
+(atom! Bytes redo_sp)
 
 ;; Prepare for redo; return false if nothing to redo, true otherwise.
 ;; If "old_redo" is true, use "old_redobuff" instead of "redobuff".
 
 (defn- #_boolean init-redo [#_boolean old_redo]
-    (reset! redo_bp (:bb_next (:bh_first (if old_redo @old_redobuff @redobuff))))
-    (if (some? @redo_bp)
-        (do (reset! redo_sp (:bb_str @redo_bp)) true)
+    (reset! redo_bp (:bb_next (:bh_first (if old_redo @old_redobuff @redobuff))))
+    (if (some? @redo_bp)
+        (do (reset! redo_sp (:bb_str @redo_bp)) true)
         false
     ))
 
@@ -13037,30 +13002,30 @@
 ;; The redo buffer is left as it is.
 
 (defn- #_int read-redo []
-    (if (non-eos? @redo_sp)
+    (if (non-eos? @redo_sp)
         ;; For a multi-byte character get all the bytes and return the converted character.
-        (let [n (if (or (not-at? @redo_sp KB_SPECIAL) (at? @redo_sp 1 KS_SPECIAL)) (mb-byte2len (char_u (.at @redo_sp 0))) 1) buf (Bytes. (inc MB_MAXBYTES))]
+        (let [n (if (or (not-at? @redo_sp KB_SPECIAL) (at? @redo_sp 1 KS_SPECIAL)) (mb-byte2len (char_u (.at @redo_sp 0))) 1) buf (Bytes. (inc MB_MAXBYTES))]
             (loop [i 0]
-                (let [c (if (at? @redo_sp KB_SPECIAL) ;; special key or escaped KB_SPECIAL
-                            (let [c (toSpecial (.at @redo_sp 1), (.at @redo_sp 2))] (swap! redo_sp plus 3) c)
-                            (let [c (char_u (.at @redo_sp 0))] (swap! redo_sp plus 1) c))]
-                    (when (and (eos? @redo_sp) (some? (:bb_next @redo_bp)))
-                        (swap! redo_bp :bb_next)
-                        (reset! redo_sp (:bb_str @redo_bp)))
+                (let [c (if (at? @redo_sp KB_SPECIAL) ;; special key or escaped KB_SPECIAL
+                            (let [c (toSpecial (.at @redo_sp 1), (.at @redo_sp 2))] (swap! redo_sp plus 3) c)
+                            (let [c (char_u (.at @redo_sp 0))] (swap! redo_sp plus 1) c))]
+                    (when (and (eos? @redo_sp) (some? (:bb_next @redo_bp)))
+                        (swap! redo_bp :bb_next)
+                        (reset! redo_sp (:bb_str @redo_bp)))
                     (.be buf i, c)
                     (cond
                         (== i (dec n)) (if (!= n 1) (us-ptr2char buf) c) ;; last byte of a character
-                        (eos? @redo_sp) NUL ;; cannot happen?
+                        (eos? @redo_sp) NUL ;; cannot happen?
                         :else (recur (inc i))
                     ))
             ))
         NUL
     ))
 
-;; Stuff the redo buffer into readbuf2.
+;; Stuff the redo buffer into "readbuf2".
 ;; Insert the redo count into the command.
 ;; If "old_redo" is true, the last but one command is repeated instead of the last command (inserting text).
-;; This is used for CTRL-O <.> in insert mode.
+;; This is used for CTRL-O <.> in Insert mode.
 ;;
 ;; Return false for failure, true otherwise.
 
@@ -13069,9 +13034,9 @@
         (let [c (read-redo)
               ;; copy the buffer name, if present
               c (if (== c (byte \"))  ;; """
-                    (let [_ (add-buff @readbuf2, (u8 "\""), 1)
+                    (let [_ (add-buff @readbuf2, (u8 "\""), 1)
                           c (read-redo) c (if (< (byte \0) c (byte \9)) (inc c) c)] ;; if a numbered buffer is used, increment the number
-                        (add-char-buff @readbuf2, c)
+                        (add-char-buff @readbuf2, c)
                         (read-redo))
                     c)
               c (if (== c (byte \v))   ;; redo Visual
@@ -13086,17 +13051,17 @@
               ;; try to enter the count (in place of a previous count)
               c (if (non-zero? count)
                     (let [c (loop-when-recur c (asc-isdigit c) (read-redo) => c)] ;; skip "old" count
-                        (add-num-buff @readbuf2, count)
+                        (add-num-buff @readbuf2, count)
                         c)
                     c)]
             ;; copy from the redo buffer into the stuff buffer
-            (add-char-buff @readbuf2, c)
+            (add-char-buff @readbuf2, c)
             (loop-when-recur [c (read-redo)] (!= c NUL) [(read-redo)] => true
-                (add-char-buff @readbuf2, c)
+                (add-char-buff @readbuf2, c)
             ))
     ))
 
-;; Repeat the last insert (R, o, O, a, A, i or I command) by stuffing the redo buffer into readbuf2.
+;; Repeat the last insert (R, o, O, a, A, i or I command) by stuffing the redo buffer into "readbuf2".
 ;; Return false for failure, true otherwise.
 
 (defn- #_boolean start-redo-ins []
@@ -13106,12 +13071,12 @@
             (loop-when [c (read-redo)] (!= c NUL)
                 (if (some? (vim-strchr (u8 "AaIiRrOo"), c))
                     (when (any == c (byte \O) (byte \o))
-                        (add-buff @readbuf2, NL_STR, -1))
+                        (add-buff @readbuf2, NL_STR, -1))
                     (recur (read-redo))
                 ))
             ;; copy the typed text from the redo buffer into the stuff buffer
             (loop-when-recur [c (read-redo)] (!= c NUL) [(read-redo)]
-                (add-char-buff @readbuf2, c))
+                (add-char-buff @readbuf2, c))
             (reset! block_redo true)
             true)
     ))
@@ -13217,7 +13182,7 @@
         (dotimes [#_int i len]
             (let [#_byte c (.at chars i)]
                 (updatescript c)
-                (when @Recording (.be s 0, c) (add-buff @recordbuff, s, 1))
+                (when @Recording (.be s 0, c) (add-buff @recordbuff, s, 1))
             ))
         (may-sync-undo win)
     ))
@@ -19076,7 +19041,7 @@
                             )]
                     (ret- s n))
 
-            #_(do (emsg e_re_corr) (ret- s n)) ;; Oh dear, called inappropriately.
+            #_(do (swap! curwin emsg e_re_corr) (ret- s n)) ;; Oh dear, called inappropriately.
         )
     ))
 
@@ -30045,7 +30010,7 @@
             (do
                 (when (== (+ top 2) bot)
                     (u-saveline win, (inc top)))
-                (u-savecommon win, top, bot, 0, false)
+                (u-savecommon win, top, bot, 0)
             ))
     ))
 
@@ -30054,21 +30019,21 @@
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-savesub [#_window_C win, #_long lnum]
-    (u-savecommon win, (dec lnum), (inc lnum), (inc lnum), false))
+    (u-savecommon win, (dec lnum), (inc lnum), (inc lnum)))
 
 ;; A new line is inserted before line "lnum" (used by :s command).
 ;; The line is inserted, so the new bottom line is lnum + 1.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-inssub [#_window_C win, #_long lnum]
-    (u-savecommon win, (dec lnum), lnum, (inc lnum), false))
+    (u-savecommon win, (dec lnum), lnum, (inc lnum)))
 
 ;; Save the lines "lnum" - "lnum" + nlines (used by delete command).
 ;; The lines are deleted, so the new bottom line is lnum, unless the buffer becomes empty.
 ;; Returns false when lines could not be saved, true otherwise.
 
 (defn- #_boolean u-savedel [#_window_C win, #_long lnum, #_long nlines]
-    (u-savecommon win, (dec lnum), (+ lnum nlines), (if (== nlines (line-count @curbuf)) 2 lnum), false))
+    (u-savecommon win, (dec lnum), (+ lnum nlines), (if (== nlines (line-count @curbuf)) 2 lnum)))
 
 ;; Return true when undo is allowed,
 ;; otherwise give an error message and return false.
@@ -30084,28 +30049,27 @@
     @(:b_p_ul @curbuf))
 
 ;; Common code for various ways to save text before a change.
+;;
 ;; "top" is the line above the first changed line.
 ;; "bot" is the line below the last changed line.
 ;; "newbot" is the new bottom line.  Use zero when not known.
-;; "reload" is true when saving for a buffer reload.
+;;
 ;; Returns false when lines could not be saved, true otherwise.
 
-(defn- #_boolean u-savecommon [#_window_C win, #_long top, #_long bot, #_long newbot, #_boolean reload]
+(defn- #_boolean u-savecommon [#_window_C win, #_long top, #_long bot, #_long newbot]
     (§
-        (when (not reload)
-            ;; When making changes is not allowed, return false.
-            ;; It's a crude way to make all change commands fail.
-            ((ß [win ?] =) (undo-allowed? win))
-            (if (not ?)
-                ((ß RETURN) false)
-            )
+        ;; When making changes is not allowed, return false.
+        ;; It's a crude way to make all change commands fail.
+        ((ß [win ?] =) (undo-allowed? win))
+        (if (not ?)
+            ((ß RETURN) false)
+        )
 
-            (when (< (inc (line-count @curbuf)) bot)
-                ;; This happens when the FileChangedRO autocommand changes
-                ;; the file in a way it becomes shorter.
-                ((ß win =) (emsg win, (u8 "E881: Line count changed unexpectedly")))
-                ((ß RETURN) false)
-            )
+        (when (< (inc (line-count @curbuf)) bot)
+            ;; This happens when the FileChangedRO autocommand changes
+            ;; the file in a way it becomes shorter.
+            ((ß win =) (emsg win, (u8 "E881: Line count changed unexpectedly")))
+            ((ß RETURN) false)
         )
 
         ((ß long size =) (- bot top 1))
@@ -31030,7 +30994,7 @@
 
 (defn- #_window_C u-undoline [#_window_C win]
     (let-when [uln (:b_u_line_lnum @curbuf)] (and (some? (:b_u_line_ptr @curbuf)) (<= uln (line-count @curbuf))) => (beep-flush win)
-        (when' (u-savecommon win, (dec uln), (inc uln), 0, false) => win
+        (when' (u-savecommon win, (dec uln), (inc uln), 0) => win
             (let [#_Bytes s (STRDUP (ml-get uln))]
                 (ml-replace uln, (:b_u_line_ptr @curbuf))
                 (changed-bytes uln, 0)
