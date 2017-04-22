@@ -17631,8 +17631,7 @@
     (let [#_Bytes ret @regcode]
         (if (== ret JUST_CALC_SIZE)
             (swap! regsize + 3)
-            (-> (swap! regcode plus 3) (.be -3, op) (eos! -2) (eos! -1))       ;; Null "next" pointer.
-        )
+            (-> (swap! regcode plus 3) (.be -3, op) (eos! -2) (eos! -1))) ;; Null "next" pointer.
         ret
     ))
 
@@ -17641,8 +17640,7 @@
 (defn- #_void regc [#_int b]
     (if (== @regcode JUST_CALC_SIZE)
         (swap! regsize inc)
-        (.be (swap! regcode plus 1) -1, b)
-    )
+        (.be (swap! regcode plus 1) -1, b))
     nil)
 
 ;; Emit (if appropriate) a multi-byte character of code.
@@ -17898,10 +17896,9 @@
 (defn- #_void skipchr []
     ;; peekchr() eats a backslash, do the same here
     (reset! prevchr_len (if (at? @regparse (byte \\)) 1 0))
+    ;; exclude composing chars that us-ptr2len-cc does include
     (when (non-eos? @regparse @prevchr_len)
-        ;; exclude composing chars that us-ptr2len-cc does include
-        (swap! prevchr_len #(+ % (us-ptr2len @regparse %)))
-    )
+        (swap! prevchr_len #(+ % (us-ptr2len @regparse %))))
     (swap! regparse plus @prevchr_len)
     (reset! prev_at_start @at_start)
     (reset! at_start false)
@@ -19746,8 +19743,7 @@
 ;; NFA regexp \1 .. \9 encountered.
 (atom! boolean nfa_has_backref)
 
-(atom! int* post_array)    ;; holds the postfix form of r.e.
-(atom! int post_index)
+(atom! int* post_array) ;; holds the postfix form of r.e.
 
 ;; If not null, match must end at this position.
 (atom! lpos_C nfa_endp)
@@ -19762,28 +19758,15 @@
 (atom! int nfa_ll_index)
 
 ;; Initialize internal variables before NFA compilation.
-;; Return true on success, false otherwise.
 
 (defn- #_void nfa-regcomp-start [#_Bytes expr, #_int re_flags]
     ;; re_flags: see vim-regcomp()
-    (§
-        ;; A reasonable estimation for maximum size.
-        ((ß int nstate_max =) (* (inc (STRLEN expr)) 25))
-
-        ;; Some items blow up in size, such as [A-z].  Add more space for that.
-        ;; When it is still not enough grow-post-array() will be used.
-        ((ß nstate_max =) (+ nstate_max 1000))
-
-        (reset! post_array (ß new int[nstate_max]))
-        (reset! post_index 0)
-
-        (reset! nfa_has_zend false)
-        (reset! nfa_has_backref false)
-
-        ;; shared with BT engine
-        (regcomp-start expr, re_flags)
-        nil
-    ))
+    (reset! post_array [])
+    (reset! nfa_has_zend false)
+    (reset! nfa_has_backref false)
+    ;; shared with BT engine
+    (regcomp-start expr, re_flags)
+    nil)
 
 ;; Figure out if the NFA state list starts with an anchor, must match at start of the line.
 
@@ -19951,290 +19934,172 @@
 
 ;; Helper functions used when doing re2post() ... bt-regatom() parsing.
 
-(defn- #_boolean emc1 [#_int c]
-    (§
-        (when (<= (count @post_array) @post_index)
-            (grow-post-array 1000))
+(defn- #_boolean emc1 [& #_int* c*]
+    (apply swap! post_array conj c*)
+    true)
 
-        ((ß @post_array[@post_index++] =) c)
-
-        true
-    ))
-
-(defn- #_boolean emc2 [#_int c]
-    (and (emc1 c) (emc1 NFA_CONCAT)))
+(defn- #_boolean emc2 [& #_int* c*]
+    (apply swap! post_array conj (interleave c* (repeat NFA_CONCAT)))
+    true)
 
 ;; Produce the bytes for equivalence class "c".
-;; Currently only handles latin1, latin9 and utf-8.
-;; Emits bytes in postfix notation: 'a,b,NFA_OR,c,NFA_OR' is equivalent to 'a OR b OR c'.
+;;
+;; Emits bytes in postfix notation:
+;; 'a b NFA_OR c NFA_OR' is equivalent to 'a OR b OR c'.
 ;;
 ;; NOTE! When changing this function, also update reg-equi-class()
 
 (defn- #_boolean nfa-emit-equi-class [#_int c]
     (condp ==? c
-       [(byte \A), 0xc0 0xc1 0xc2, 0xc3 0xc4 0xc5, 0x100 0x102 0x104, 0x1cd 0x1de 0x1e0, 0x1ea2]
-        (and (emc2 (byte \A))
-            (emc2 0xc0) (emc2 0xc1) (emc2 0xc2)
-            (emc2 0xc3) (emc2 0xc4) (emc2 0xc5)
-            (emc2 0x100) (emc2 0x102) (emc2 0x104)
-            (emc2 0x1cd) (emc2 0x1de) (emc2 0x1e0)
-            (emc2 0x1ea2))
+       [      (byte \A), 0xc0 0xc1 0xc2, 0xc3 0xc4 0xc5, 0x100 0x102 0x104, 0x1cd 0x1de 0x1e0, 0x1ea2]
+        (emc2 (byte \A), 0xc0 0xc1 0xc2, 0xc3 0xc4 0xc5, 0x100 0x102 0x104, 0x1cd 0x1de 0x1e0, 0x1ea2)
 
-       [(byte \a), 0xe0 0xe1 0xe2, 0xe3 0xe4 0xe5, 0x101 0x103 0x105, 0x1ce 0x1df 0x1e1, 0x1ea3]
-        (and (emc2 (byte \a))
-            (emc2 0xe0) (emc2 0xe1) (emc2 0xe2)
-            (emc2 0xe3) (emc2 0xe4) (emc2 0xe5)
-            (emc2 0x101) (emc2 0x103) (emc2 0x105)
-            (emc2 0x1ce) (emc2 0x1df) (emc2 0x1e1)
-            (emc2 0x1ea3))
+       [      (byte \a), 0xe0 0xe1 0xe2, 0xe3 0xe4 0xe5, 0x101 0x103 0x105, 0x1ce 0x1df 0x1e1, 0x1ea3]
+        (emc2 (byte \a), 0xe0 0xe1 0xe2, 0xe3 0xe4 0xe5, 0x101 0x103 0x105, 0x1ce 0x1df 0x1e1, 0x1ea3)
 
-       [(byte \B), 0x1e02 0x1e06]
-        (and (emc2 (byte \B))
-            (emc2 0x1e02) (emc2 0x1e06))
+       [      (byte \B), 0x1e02 0x1e06]
+        (emc2 (byte \B), 0x1e02 0x1e06)
 
-       [(byte \b), 0x1e03 0x1e07]
-        (and (emc2 (byte \b))
-            (emc2 0x1e03) (emc2 0x1e07))
+       [      (byte \b), 0x1e03 0x1e07]
+        (emc2 (byte \b), 0x1e03 0x1e07)
 
-       [(byte \C), 0xc7, 0x106 0x108 0x10a 0x10c]
-        (and (emc2 (byte \C))
-            (emc2 0xc7)
-            (emc2 0x106) (emc2 0x108) (emc2 0x10a) (emc2 0x10c))
+       [      (byte \C), 0xc7, 0x106 0x108 0x10a 0x10c]
+        (emc2 (byte \C), 0xc7, 0x106 0x108 0x10a 0x10c)
 
-       [(byte \c), 0xe7, 0x107 0x109 0x10b 0x10d]
-        (and (emc2 (byte \c))
-            (emc2 0xe7)
-            (emc2 0x107) (emc2 0x109) (emc2 0x10b) (emc2 0x10d))
+       [      (byte \c), 0xe7, 0x107 0x109 0x10b 0x10d]
+        (emc2 (byte \c), 0xe7, 0x107 0x109 0x10b 0x10d)
 
-       [(byte \D), 0x10e 0x110, 0x1e0a 0x1e0c 0x1e0e 0x1e10 0x1e12]
-        (and (emc2 (byte \D))
-            (emc2 0x10e) (emc2 0x110)
-            (emc2 0x1e0a) (emc2 0x1e0c) (emc2 0x1e0e) (emc2 0x1e10) (emc2 0x1e12))
+       [      (byte \D), 0x10e 0x110, 0x1e0a 0x1e0c 0x1e0e 0x1e10 0x1e12]
+        (emc2 (byte \D), 0x10e 0x110, 0x1e0a 0x1e0c 0x1e0e 0x1e10 0x1e12)
 
-       [(byte \d), 0x10f 0x111, 0x1e0b 0x1e0d 0x1e0f 0x1e11 0x1e13]
-        (and (emc2 (byte \d))
-            (emc2 0x10f) (emc2 0x111)
-            (emc2 0x1e0b) (emc2 0x1e0d) (emc2 0x1e0f) (emc2 0x1e11) (emc2 0x1e13))
+       [      (byte \d), 0x10f 0x111, 0x1e0b 0x1e0d 0x1e0f 0x1e11 0x1e13]
+        (emc2 (byte \d), 0x10f 0x111, 0x1e0b 0x1e0d 0x1e0f 0x1e11 0x1e13)
 
-       [(byte \E), 0xc8 0xc9 0xca 0xcb, 0x112 0x114 0x116 0x118 0x11a, 0x1eba 0x1ebc]
-        (and (emc2 (byte \E))
-            (emc2 0xc8) (emc2 0xc9) (emc2 0xca) (emc2 0xcb)
-            (emc2 0x112) (emc2 0x114) (emc2 0x116) (emc2 0x118) (emc2 0x11a)
-            (emc2 0x1eba) (emc2 0x1ebc))
+       [      (byte \E), 0xc8 0xc9 0xca 0xcb, 0x112 0x114 0x116 0x118 0x11a, 0x1eba 0x1ebc]
+        (emc2 (byte \E), 0xc8 0xc9 0xca 0xcb, 0x112 0x114 0x116 0x118 0x11a, 0x1eba 0x1ebc)
 
-       [(byte \e), 0xe8 0xe9 0xea 0xeb, 0x113 0x115 0x117 0x119 0x11b, 0x1ebb 0x1ebd]
-        (and (emc2 (byte \e))
-            (emc2 0xe8) (emc2 0xe9) (emc2 0xea) (emc2 0xeb)
-            (emc2 0x113) (emc2 0x115) (emc2 0x117) (emc2 0x119) (emc2 0x11b)
-            (emc2 0x1ebb) (emc2 0x1ebd))
+       [      (byte \e), 0xe8 0xe9 0xea 0xeb, 0x113 0x115 0x117 0x119 0x11b, 0x1ebb 0x1ebd]
+        (emc2 (byte \e), 0xe8 0xe9 0xea 0xeb, 0x113 0x115 0x117 0x119 0x11b, 0x1ebb 0x1ebd)
 
-       [(byte \F), 0x1e1e]
-        (and (emc2 (byte \F))
-            (emc2 0x1e1e))
+       [      (byte \F), 0x1e1e]
+        (emc2 (byte \F), 0x1e1e)
 
-       [(byte \f), 0x1e1f]
-        (and (emc2 (byte \f))
-            (emc2 0x1e1f))
+       [      (byte \f), 0x1e1f]
+        (emc2 (byte \f), 0x1e1f)
 
-       [(byte \G), 0x11c 0x11e 0x120 0x122, 0x1e4 0x1e6 0x1f4, 0x1e20]
-        (and (emc2 (byte \G))
-            (emc2 0x11c) (emc2 0x11e) (emc2 0x120) (emc2 0x122)
-            (emc2 0x1e4) (emc2 0x1e6) (emc2 0x1f4)
-            (emc2 0x1e20))
+       [      (byte \G), 0x11c 0x11e 0x120 0x122, 0x1e4 0x1e6 0x1f4, 0x1e20]
+        (emc2 (byte \G), 0x11c 0x11e 0x120 0x122, 0x1e4 0x1e6 0x1f4, 0x1e20)
 
-       [(byte \g), 0x11d 0x11f 0x121 0x123, 0x1e5 0x1e7 0x1f5, 0x1e21]
-        (and (emc2 (byte \g))
-            (emc2 0x11d) (emc2 0x11f) (emc2 0x121) (emc2 0x123)
-            (emc2 0x1e5) (emc2 0x1e7) (emc2 0x1f5)
-            (emc2 0x1e21))
+       [      (byte \g), 0x11d 0x11f 0x121 0x123, 0x1e5 0x1e7 0x1f5, 0x1e21]
+        (emc2 (byte \g), 0x11d 0x11f 0x121 0x123, 0x1e5 0x1e7 0x1f5, 0x1e21)
 
-       [(byte \H), 0x124 0x126, 0x1e22 0x1e26 0x1e28]
-        (and (emc2 (byte \H))
-            (emc2 0x124) (emc2 0x126)
-            (emc2 0x1e22) (emc2 0x1e26) (emc2 0x1e28))
+       [      (byte \H), 0x124 0x126, 0x1e22 0x1e26 0x1e28]
+        (emc2 (byte \H), 0x124 0x126, 0x1e22 0x1e26 0x1e28)
 
-       [(byte \h), 0x125 0x127, 0x1e23 0x1e27 0x1e29 0x1e96]
-        (and (emc2 (byte \h))
-            (emc2 0x125) (emc2 0x127)
-            (emc2 0x1e23) (emc2 0x1e27) (emc2 0x1e29) (emc2 0x1e96))
+       [      (byte \h), 0x125 0x127, 0x1e23 0x1e27 0x1e29 0x1e96]
+        (emc2 (byte \h), 0x125 0x127, 0x1e23 0x1e27 0x1e29 0x1e96)
 
-       [(byte \I), 0xcc 0xcd 0xce 0xcf, 0x128 0x12a 0x12c 0x12e 0x130, 0x1cf, 0x1ec8]
-        (and (emc2 (byte \I))
-            (emc2 0xcc) (emc2 0xcd) (emc2 0xce) (emc2 0xcf)
-            (emc2 0x128) (emc2 0x12a) (emc2 0x12c) (emc2 0x12e) (emc2 0x130)
-            (emc2 0x1cf)
-            (emc2 0x1ec8))
+       [      (byte \I), 0xcc 0xcd 0xce 0xcf, 0x128 0x12a 0x12c 0x12e 0x130, 0x1cf, 0x1ec8]
+        (emc2 (byte \I), 0xcc 0xcd 0xce 0xcf, 0x128 0x12a 0x12c 0x12e 0x130, 0x1cf, 0x1ec8)
 
-       [(byte \i), 0xec 0xed 0xee 0xef, 0x129 0x12b 0x12d 0x12f 0x131, 0x1d0, 0x1ec9]
-        (and (emc2 (byte \i))
-            (emc2 0xec) (emc2 0xed) (emc2 0xee) (emc2 0xef)
-            (emc2 0x129) (emc2 0x12b) (emc2 0x12d) (emc2 0x12f) (emc2 0x131)
-            (emc2 0x1d0)
-            (emc2 0x1ec9))
+       [      (byte \i), 0xec 0xed 0xee 0xef, 0x129 0x12b 0x12d 0x12f 0x131, 0x1d0, 0x1ec9]
+        (emc2 (byte \i), 0xec 0xed 0xee 0xef, 0x129 0x12b 0x12d 0x12f 0x131, 0x1d0, 0x1ec9)
 
-       [(byte \J), 0x134]
-        (and (emc2 (byte \J))
-            (emc2 0x134))
+       [      (byte \J), 0x134]
+        (emc2 (byte \J), 0x134)
 
-       [(byte \j), 0x135 0x1f0]
-        (and (emc2 (byte \j))
-            (emc2 0x135) (emc2 0x1f0))
+       [      (byte \j), 0x135 0x1f0]
+        (emc2 (byte \j), 0x135 0x1f0)
 
-       [(byte \K), 0x136 0x1e8, 0x1e30 0x1e34]
-        (and (emc2 (byte \K))
-            (emc2 0x136) (emc2 0x1e8)
-            (emc2 0x1e30) (emc2 0x1e34))
+       [      (byte \K), 0x136 0x1e8, 0x1e30 0x1e34]
+        (emc2 (byte \K), 0x136 0x1e8, 0x1e30 0x1e34)
 
-       [(byte \k), 0x137 0x1e9, 0x1e31 0x1e35]
-        (and (emc2 (byte \k))
-            (emc2 0x137) (emc2 0x1e9)
-            (emc2 0x1e31) (emc2 0x1e35))
+       [      (byte \k), 0x137 0x1e9, 0x1e31 0x1e35]
+        (emc2 (byte \k), 0x137 0x1e9, 0x1e31 0x1e35)
 
-       [(byte \L), 0x139 0x13b 0x13d 0x13f 0x141, 0x1e3a]
-        (and (emc2 (byte \L))
-            (emc2 0x139) (emc2 0x13b) (emc2 0x13d) (emc2 0x13f) (emc2 0x141)
-            (emc2 0x1e3a))
+       [      (byte \L), 0x139 0x13b 0x13d 0x13f 0x141, 0x1e3a]
+        (emc2 (byte \L), 0x139 0x13b 0x13d 0x13f 0x141, 0x1e3a)
 
-       [(byte \l), 0x13a 0x13c 0x13e 0x140 0x142, 0x1e3b]
-        (and (emc2 (byte \l))
-            (emc2 0x13a) (emc2 0x13c) (emc2 0x13e) (emc2 0x140) (emc2 0x142)
-            (emc2 0x1e3b))
+       [      (byte \l), 0x13a 0x13c 0x13e 0x140 0x142, 0x1e3b]
+        (emc2 (byte \l), 0x13a 0x13c 0x13e 0x140 0x142, 0x1e3b)
 
-       [(byte \M), 0x1e3e 0x1e40]
-        (and (emc2 (byte \M))
-            (emc2 0x1e3e) (emc2 0x1e40))
+       [      (byte \M), 0x1e3e 0x1e40]
+        (emc2 (byte \M), 0x1e3e 0x1e40)
 
-       [(byte \m), 0x1e3f 0x1e41]
-        (and (emc2 (byte \m))
-            (emc2 0x1e3f) (emc2 0x1e41))
+       [      (byte \m), 0x1e3f 0x1e41]
+        (emc2 (byte \m), 0x1e3f 0x1e41)
 
-       [(byte \N), 0xd1, 0x143 0x145 0x147, 0x1e44 0x1e48]
-        (and (emc2 (byte \N))
-            (emc2 0xd1)
-            (emc2 0x143) (emc2 0x145) (emc2 0x147)
-            (emc2 0x1e44) (emc2 0x1e48))
+       [      (byte \N), 0xd1, 0x143 0x145 0x147, 0x1e44 0x1e48]
+        (emc2 (byte \N), 0xd1, 0x143 0x145 0x147, 0x1e44 0x1e48)
 
-       [(byte \n), 0xf1, 0x144 0x146 0x148 0x149, 0x1e45 0x1e49]
-        (and (emc2 (byte \n))
-            (emc2 0xf1)
-            (emc2 0x144) (emc2 0x146) (emc2 0x148) (emc2 0x149)
-            (emc2 0x1e45) (emc2 0x1e49))
+       [      (byte \n), 0xf1, 0x144 0x146 0x148 0x149, 0x1e45 0x1e49]
+        (emc2 (byte \n), 0xf1, 0x144 0x146 0x148 0x149, 0x1e45 0x1e49)
 
-       [(byte \O), 0xd2 0xd3 0xd4, 0xd5 0xd6 0xd8, 0x14c 0x14e 0x150, 0x1a0 0x1d1 0x1ea 0x1ec, 0x1ece]
-        (and (emc2 (byte \O))
-            (emc2 0xd2) (emc2 0xd3) (emc2 0xd4)
-            (emc2 0xd5) (emc2 0xd6) (emc2 0xd8)
-            (emc2 0x14c) (emc2 0x14e) (emc2 0x150)
-            (emc2 0x1a0) (emc2 0x1d1) (emc2 0x1ea) (emc2 0x1ec)
-            (emc2 0x1ece))
+       [      (byte \O), 0xd2 0xd3 0xd4, 0xd5 0xd6 0xd8, 0x14c 0x14e 0x150, 0x1a0 0x1d1 0x1ea 0x1ec, 0x1ece]
+        (emc2 (byte \O), 0xd2 0xd3 0xd4, 0xd5 0xd6 0xd8, 0x14c 0x14e 0x150, 0x1a0 0x1d1 0x1ea 0x1ec, 0x1ece)
 
-       [(byte \o), 0xf2 0xf3 0xf4, 0xf5 0xf6 0xf8, 0x14d 0x14f 0x151, 0x1a1 0x1d2 0x1eb 0x1ed, 0x1ecf]
-        (and (emc2 (byte \o))
-            (emc2 0xf2) (emc2 0xf3) (emc2 0xf4)
-            (emc2 0xf5) (emc2 0xf6) (emc2 0xf8)
-            (emc2 0x14d) (emc2 0x14f) (emc2 0x151)
-            (emc2 0x1a1) (emc2 0x1d2) (emc2 0x1eb) (emc2 0x1ed)
-            (emc2 0x1ecf))
+       [      (byte \o), 0xf2 0xf3 0xf4, 0xf5 0xf6 0xf8, 0x14d 0x14f 0x151, 0x1a1 0x1d2 0x1eb 0x1ed, 0x1ecf]
+        (emc2 (byte \o), 0xf2 0xf3 0xf4, 0xf5 0xf6 0xf8, 0x14d 0x14f 0x151, 0x1a1 0x1d2 0x1eb 0x1ed, 0x1ecf)
 
-       [(byte \P), 0x1e54 0x1e56]
-        (and (emc2 (byte \P))
-            (emc2 0x1e54) (emc2 0x1e56))
+       [      (byte \P), 0x1e54 0x1e56]
+        (emc2 (byte \P), 0x1e54 0x1e56)
 
-       [(byte \p), 0x1e55 0x1e57]
-        (and (emc2 (byte \p))
-            (emc2 0x1e55) (emc2 0x1e57))
+       [      (byte \p), 0x1e55 0x1e57]
+        (emc2 (byte \p), 0x1e55 0x1e57)
 
-       [(byte \R), 0x154 0x156 0x158, 0x1e58 0x1e5e]
-        (and (emc2 (byte \R))
-            (emc2 0x154) (emc2 0x156) (emc2 0x158)
-            (emc2 0x1e58) (emc2 0x1e5e))
+       [      (byte \R), 0x154 0x156 0x158, 0x1e58 0x1e5e]
+        (emc2 (byte \R), 0x154 0x156 0x158, 0x1e58 0x1e5e)
 
-       [(byte \r), 0x155 0x157 0x159, 0x1e59 0x1e5f]
-        (and (emc2 (byte \r))
-            (emc2 0x155) (emc2 0x157) (emc2 0x159)
-            (emc2 0x1e59) (emc2 0x1e5f))
+       [      (byte \r), 0x155 0x157 0x159, 0x1e59 0x1e5f]
+        (emc2 (byte \r), 0x155 0x157 0x159, 0x1e59 0x1e5f)
 
-       [(byte \S), 0x15a 0x15c 0x15e 0x160, 0x1e60]
-        (and (emc2 (byte \S))
-            (emc2 0x15a) (emc2 0x15c) (emc2 0x15e) (emc2 0x160)
-            (emc2 0x1e60))
+       [      (byte \S), 0x15a 0x15c 0x15e 0x160, 0x1e60]
+        (emc2 (byte \S), 0x15a 0x15c 0x15e 0x160, 0x1e60)
 
-       [(byte \s), 0x15b 0x15d 0x15f 0x161, 0x1e61]
-        (and (emc2 (byte \s))
-            (emc2 0x15b) (emc2 0x15d) (emc2 0x15f) (emc2 0x161)
-            (emc2 0x1e61))
+       [      (byte \s), 0x15b 0x15d 0x15f 0x161, 0x1e61]
+        (emc2 (byte \s), 0x15b 0x15d 0x15f 0x161, 0x1e61)
 
-       [(byte \T), 0x162 0x164 0x166, 0x1e6a 0x1e6e]
-        (and (emc2 (byte \T))
-            (emc2 0x162) (emc2 0x164) (emc2 0x166)
-            (emc2 0x1e6a) (emc2 0x1e6e))
+       [      (byte \T), 0x162 0x164 0x166, 0x1e6a 0x1e6e]
+        (emc2 (byte \T), 0x162 0x164 0x166, 0x1e6a 0x1e6e)
 
-       [(byte \t), 0x163 0x165 0x167, 0x1e6b 0x1e6f 0x1e97]
-        (and (emc2 (byte \t))
-            (emc2 0x163) (emc2 0x165) (emc2 0x167)
-            (emc2 0x1e6b) (emc2 0x1e6f) (emc2 0x1e97))
+       [      (byte \t), 0x163 0x165 0x167, 0x1e6b 0x1e6f 0x1e97]
+        (emc2 (byte \t), 0x163 0x165 0x167, 0x1e6b 0x1e6f 0x1e97)
 
-       [(byte \U), 0xd9 0xda 0xdb 0xdc, 0x168 0x16a 0x16c 0x16e, 0x170 0x172 0x1af 0x1d3, 0x1ee6]
-        (and (emc2 (byte \U))
-            (emc2 0xd9) (emc2 0xda) (emc2 0xdb) (emc2 0xdc)
-            (emc2 0x168) (emc2 0x16a) (emc2 0x16c) (emc2 0x16e)
-            (emc2 0x170) (emc2 0x172) (emc2 0x1af) (emc2 0x1d3)
-            (emc2 0x1ee6))
+       [      (byte \U), 0xd9 0xda 0xdb 0xdc, 0x168 0x16a 0x16c 0x16e, 0x170 0x172 0x1af 0x1d3, 0x1ee6]
+        (emc2 (byte \U), 0xd9 0xda 0xdb 0xdc, 0x168 0x16a 0x16c 0x16e, 0x170 0x172 0x1af 0x1d3, 0x1ee6)
 
-       [(byte \u), 0xf9 0xfa 0xfb 0xfc, 0x169 0x16b 0x16d 0x16f, 0x171 0x173 0x1b0 0x1d4, 0x1ee7]
-        (and (emc2 (byte \u))
-            (emc2 0xf9) (emc2 0xfa) (emc2 0xfb) (emc2 0xfc)
-            (emc2 0x169) (emc2 0x16b) (emc2 0x16d) (emc2 0x16f)
-            (emc2 0x171) (emc2 0x173) (emc2 0x1b0) (emc2 0x1d4)
-            (emc2 0x1ee7))
+       [      (byte \u), 0xf9 0xfa 0xfb 0xfc, 0x169 0x16b 0x16d 0x16f, 0x171 0x173 0x1b0 0x1d4, 0x1ee7]
+        (emc2 (byte \u), 0xf9 0xfa 0xfb 0xfc, 0x169 0x16b 0x16d 0x16f, 0x171 0x173 0x1b0 0x1d4, 0x1ee7)
 
-       [(byte \V), 0x1e7c]
-        (and (emc2 (byte \V))
-            (emc2 0x1e7c))
+       [      (byte \V), 0x1e7c]
+        (emc2 (byte \V), 0x1e7c)
 
-       [(byte \v), 0x1e7d]
-        (and (emc2 (byte \v))
-            (emc2 0x1e7d))
+       [      (byte \v), 0x1e7d]
+        (emc2 (byte \v), 0x1e7d)
 
-       [(byte \W), 0x174, 0x1e80 0x1e82 0x1e84 0x1e86]
-        (and (emc2 (byte \W))
-            (emc2 0x174)
-            (emc2 0x1e80) (emc2 0x1e82) (emc2 0x1e84) (emc2 0x1e86))
+       [      (byte \W), 0x174, 0x1e80 0x1e82 0x1e84 0x1e86]
+        (emc2 (byte \W), 0x174, 0x1e80 0x1e82 0x1e84 0x1e86)
 
-       [(byte \w), 0x175, 0x1e81 0x1e83 0x1e85 0x1e87 0x1e98]
-        (and (emc2 (byte \w))
-            (emc2 0x175)
-            (emc2 0x1e81) (emc2 0x1e83) (emc2 0x1e85) (emc2 0x1e87) (emc2 0x1e98))
+       [      (byte \w), 0x175, 0x1e81 0x1e83 0x1e85 0x1e87 0x1e98]
+        (emc2 (byte \w), 0x175, 0x1e81 0x1e83 0x1e85 0x1e87 0x1e98)
 
-       [(byte \X), 0x1e8a 0x1e8c]
-        (and (emc2 (byte \X))
-            (emc2 0x1e8a) (emc2 0x1e8c))
+       [      (byte \X), 0x1e8a 0x1e8c]
+        (emc2 (byte \X), 0x1e8a 0x1e8c)
 
-       [(byte \x), 0x1e8b 0x1e8d]
-        (and (emc2 (byte \x))
-            (emc2 0x1e8b) (emc2 0x1e8d))
+       [      (byte \x), 0x1e8b 0x1e8d]
+        (emc2 (byte \x), 0x1e8b 0x1e8d)
 
-       [(byte \Y), 0xdd, 0x176 0x178, 0x1e8e 0x1ef2 0x1ef6 0x1ef8]
-        (and (emc2 (byte \Y))
-            (emc2 0xdd)
-            (emc2 0x176) (emc2 0x178)
-            (emc2 0x1e8e) (emc2 0x1ef2) (emc2 0x1ef6) (emc2 0x1ef8))
+       [      (byte \Y), 0xdd, 0x176 0x178, 0x1e8e 0x1ef2 0x1ef6 0x1ef8]
+        (emc2 (byte \Y), 0xdd, 0x176 0x178, 0x1e8e 0x1ef2 0x1ef6 0x1ef8)
 
-       [(byte \y), 0xfd 0xff, 0x177, 0x1e8f 0x1e99 0x1ef3 0x1ef7 0x1ef9]
-        (and (emc2 (byte \y))
-            (emc2 0xfd) (emc2 0xff)
-            (emc2 0x177)
-            (emc2 0x1e8f) (emc2 0x1e99) (emc2 0x1ef3) (emc2 0x1ef7) (emc2 0x1ef9))
+       [      (byte \y), 0xfd 0xff, 0x177, 0x1e8f 0x1e99 0x1ef3 0x1ef7 0x1ef9]
+        (emc2 (byte \y), 0xfd 0xff, 0x177, 0x1e8f 0x1e99 0x1ef3 0x1ef7 0x1ef9)
 
-       [(byte \Z), 0x179 0x17b 0x17d 0x1b5, 0x1e90 0x1e94]
-        (and (emc2 (byte \Z))
-            (emc2 0x179) (emc2 0x17b) (emc2 0x17d) (emc2 0x1b5)
-            (emc2 0x1e90) (emc2 0x1e94))
+       [      (byte \Z), 0x179 0x17b 0x17d 0x1b5, 0x1e90 0x1e94]
+        (emc2 (byte \Z), 0x179 0x17b 0x17d 0x1b5, 0x1e90 0x1e94)
 
-       [(byte \z), 0x17a 0x17c 0x17e 0x1b6, 0x1e91 0x1e95]
-        (and (emc2 (byte \z))
-            (emc2 0x17a) (emc2 0x17c) (emc2 0x17e) (emc2 0x1b6)
-            (emc2 0x1e91) (emc2 0x1e95))
+       [      (byte \z), 0x17a 0x17c 0x17e 0x1b6, 0x1e91 0x1e95]
+        (emc2 (byte \z), 0x17a 0x17c 0x17e 0x1b6, 0x1e91 0x1e95)
 
         ;; default: character itself
         (emc2 c)
@@ -20368,7 +20233,7 @@
                                                                 (do ;; Emit a range instead of the sequence of individual characters.
                                                                     (if (zero? startc)
                                                                         (emc1 1) ;; \x00 is translated to \x0a, start at \x01
-                                                                        (swap! post_index dec)) ;; remove NFA_CONCAT
+                                                                        (swap! post_array pop)) ;; remove NFA_CONCAT
                                                                     (and (emc1 endc) (emc1 NFA_RANGE) (emc1 NFA_CONCAT)))
                                                                 :else ;; Emit the range.  "startc" was already emitted, so skip it.
                                                                     (loop-when-recur [#_int c (inc startc)] (<= c endc) [(inc c)] (emc2 c)))
@@ -20647,10 +20512,8 @@
 
 (defn- #_boolean nfa-regpiece []
     ;; Save the current parse state, so that we can use it if <atom>{m,n} is next.
-    (let-when [#_parse_state_C old_state (save-parse-state)
-          ;; store current pos in the postfix form for \{m,n} involving 0s
-          #_int my_post_start @post_index
-    ] (nfa-regatom) => false           ;; cascaded error
+    ;; Store current pos in the postfix form for \{m,n} involving 0s.
+    (let-when [o'state (save-parse-state) o'post_array @post_array] (nfa-regatom) => false ;; cascaded error
 
         (let-when [#_int op (peekchr)] (!= (re-multi-type op) NOT_MULTI) => true
             (skipchr)
@@ -20665,7 +20528,7 @@
                         ;;
                         ;; In order to be consistent with the old engine,
                         ;; we replace <atom>+ with <atom><atom>*
-                        (restore-parse-state old_state)
+                        (restore-parse-state o'state)
                         (reset! curchr -1)
                         (if (nfa-regatom)
                             (do (emc1 NFA_STAR) (emc1 NFA_CONCAT) (skipchr) nil) ;; skip the \+
@@ -20715,7 +20578,7 @@
                         ;; Special case: x{0} or x{-0}.
                         (zero? @a'maxval)
                             (do ;; Ignore result of previous call to nfa-regatom().
-                                (reset! post_index my_post_start)
+                                (reset! post_array o'post_array)
                                 ;; NFA_EMPTY is 0-length and works everywhere.
                                 (emc1 NFA_EMPTY)
                                 true)
@@ -20725,14 +20588,14 @@
                         (and (flag? @nfa_re_flags RE_AUTO) (< (min (+ @a'minval 200) 500) @a'maxval))
                             false
                         :else     ;; Ignore previous call to nfa-regatom().
-                            (let-when [_ (reset! post_index my_post_start)
+                            (let-when [_ (reset! post_array o'post_array)
                                   ;; Save parse state after the repeated atom and the \{}.
-                                  #_parse_state_C new_state (save-parse-state)
+                                  o''state (save-parse-state)
                                   #_int quest (if greedy NFA_QUEST NFA_QUEST_NONGREEDY)
                                   _ (loop-when [#_int i 0] (< i @a'maxval) => nil
                                         ;; Goto beginning of the repeated atom.
-                                        (restore-parse-state old_state)
-                                        (let [#_int old_post_pos @post_index]
+                                        (restore-parse-state o'state)
+                                        (let [o''post_count (count @post_array)]
                                             (if (nfa-regatom)
                                                 (do ;; after "minval" times, atoms are optional
                                                     (when (< @a'minval (inc i))
@@ -20740,7 +20603,7 @@
                                                             (emc1 (if greedy NFA_STAR NFA_STAR_NONGREEDY))
                                                             (emc1 quest)
                                                         ))
-                                                    (when (!= old_post_pos my_post_start)
+                                                    (when (!= o''post_count (count o'post_array))
                                                         (emc1 NFA_CONCAT))
                                                     (if (and (< @a'minval (inc i)) (== @a'maxval MAX_LIMIT))
                                                         nil
@@ -20750,7 +20613,7 @@
                                             ))
                                     )] (nil? _) => _
                                 ;; Go to just after the repeated atom and the \{}.
-                                (restore-parse-state new_state)
+                                (restore-parse-state o''state)
                                 (reset! curchr -1)
                                 nil)
                         ))
@@ -20811,22 +20674,22 @@
 ;;              etc.
 
 (defn- #_boolean nfa-regbranch []
-    (let [i @post_index]
+    (let [i (count @post_array)]
         (when' (nfa-regconcat) => false ;; first branch, possibly the only one
             (let [i (loop-when i (== (peekchr) (Magic (byte \&))) => i ;; try next concats
                         (skipchr)
                         (emc1 NFA_NOPEN)
                         (emc1 NFA_PREV_ATOM_NO_WIDTH)
-                        (let [i @post_index]
+                        (let [i (count @post_array)]
                             (when' (nfa-regconcat) => nil
-                                (when (== @post_index i) ;; if concat is empty, emit a node
+                                (when (== (count @post_array) i) ;; if concat is empty, emit a node
                                     (emc1 NFA_EMPTY))
                                 (emc1 NFA_CONCAT)
                                 (recur i)
                             ))
                     )]
                 (when' (some? i) => false
-                    (when (== @post_index i) ;; if branch is empty, emit a node
+                    (when (== (count @post_array) i) ;; if branch is empty, emit a node
                         (emc1 NFA_EMPTY))
                     true)
             ))
@@ -21172,7 +21035,7 @@
 ;; Convert a postfix form into its equivalent NFA.
 ;; Return the NFA start state on success, null otherwise.
 
-(defn- #_nfa_state_C post2nfa [#_int* postfix, #_int over, #_nfa_pattern_C prog, #_boolean nfa_calc_size]
+(defn- #_nfa_state_C post2nfa [#_int* postfix, #_nfa_pattern_C prog, #_boolean nfa_calc_size]
     (§
         (if (nil? postfix)
             ((ß RETURN) nil)
@@ -21180,6 +21043,7 @@
 
         ((ß nfa_stack_C stack =) (if nfa_calc_size nil (new-nfa-stack (inc (:nstate prog)))))
 
+        ((ß int over =) (count postfix))
         ((ß int i =) (loop-when-recur [i 0] (< i over) [(inc i)] => i
             (condp ==? (... postfix i)
                 NFA_CONCAT
@@ -22909,25 +22773,19 @@
         (let [[win #_nfa_pattern_C pat]
                 ;; Build postfix form of the regexp.  Needed to build the NFA (and count its size).
                 (let [#_int* postfix (re2post)]
-                    (if (nil? postfix)
-                        (let [? (count @post_array)
-                              win (when' (<= ? @post_index) => win
-                                    (emsg* win, (u8 "Internal error: estimated max number of states insufficient: %ld"), ?)
-                                )]
-                            [win nil]) ;; cascaded (syntax?) error
-
+                    (when' (some? postfix) => [win nil] ;; cascaded (syntax?) error
                         ;; In order to build the NFA, we parse the input regexp twice:
                         ;; 1. first pass to count size (so we can allocate space),
                         ;; 2. second to emit code.
                         (let-when [pat (-> (NEW_nfa_pattern_C) (assoc :nstate 0))
                               ;; PASS 1.  Count number of NFA states in "pat.nstate".  Do not build the NFA.
-                              _ (post2nfa postfix, @post_index, pat, true)
+                              _ (post2nfa postfix, pat, true)
                               ;; allocate space for the compiled regexp
                               pat (assoc pat :states (ß new nfa_state_C[(:nstate pat)]))
                               _ (reset! nfa_states (:states pat))
                               pat (assoc pat :istate 0)
                               ;; PASS 2.  Build the NFA.
-                              #_nfa_state_C start (post2nfa postfix, @post_index, pat, false)
+                              #_nfa_state_C start (post2nfa postfix, pat, false)
                         ] (some? start) => [win nil]
 
                             [win (-> pat
@@ -22945,7 +22803,6 @@
                         ))
                 )]
             (reset! post_array nil)
-            (reset! post_index 0)
             (reset! nfa_states nil)
             [win #_pattern_C pat]
         )
