@@ -38732,100 +38732,65 @@
 ;; Translates the interrupt character for unix to ESC.
 
 (defn- #_int get-keystroke []
-    (§
-        (ß int c)
-
-        ((ß Bytes buf =) nil)
-
-        ((ß int buflen =) 150)
-        ((ß int[] a'len =) (atom (int 0)))
-        ((ß int waited =) 0)
-
-        (loop []
+    (let [a'len (atom (int 0))]
+        (loop [#_int buflen 150 #_Bytes buf (Bytes. buflen) #_int waited 0]
             (cursor-on)
             (out-flush)
-
-            ;; Leave some room for check-termcode() to insert a key code into (max 5 chars plus NUL).
+            ;; Leave room for check-termcode() to insert a key code (max 5 bytes plus NUL).
             ;; And fix-input-buffer() can triple the number of bytes.
-            ((ß int maxlen =) (/ (- buflen 6 @a'len) 3))
-            (cond (nil? buf)
-            (do
-                ((ß buf =) (Bytes. buflen))
-            )
-            (< maxlen 10)
-            (do
-                ;; Need some more space.
-                ;; This might happen when receiving a long escape sequence.
-                ((ß buflen =) (+ buflen 100))
-                ((ß Bytes p =) (Bytes. buflen))
-                (BCOPY p, buf, @a'len)
-                ((ß buf =) p)
-                ((ß maxlen =) (/ (- buflen 6 @a'len) 3))
+            (let [#_int maxlen (/ (- buflen @a'len 5 1) 3)
+                  [buflen buf maxlen]
+                    (if (< maxlen 10)
+                        ;; Need more space, might happen when receiving a long escape sequence.
+                        (let [buflen (+ buflen 100) #_Bytes p (Bytes. buflen)]
+                            (BCOPY p, buf, @a'len)
+                            [buflen p (/ (- buflen @a'len 5 1) 3)])
+                        [buflen buf maxlen])
+                  ;; First time: blocking wait.
+                  ;; Second time: wait up to 100ms for a terminal code to complete.
+                  #_int n (ui-inchar (.plus buf @a'len), maxlen, (if (zero? @a'len) -1 100), 0)
+                  waited
+                    (cond (< 0 n)
+                        (do ;; Replace zero by a special key code.
+                            (swap! a'len + (fix-input-buffer (.plus buf @a'len), n))
+                            0)
+                    (< 0 @a'len)
+                        (inc waited)                ;; keep track of the waiting time
+                    :else
+                        waited)
+                  ;; Incomplete termcode and not timed out yet: get more characters.
+                  n (check-termcode buf, buflen, a'len)
+                  #_int c
+                    (cond (and (< n 0) (or (not @p_ttimeout) (< (* waited 100) (if (< @p_ttm 0) @p_tm @p_ttm))))
+                        nil
+                    (== n KEYLEN_REMOVED)           ;; key code removed
+                        (do (when (and (non-zero? @must_redraw) (not @need_wait_return) (non-flag? @State CMDLINE))
+                                (update-screen 0)   ;; redrawing was postponed, do it now
+                                (setcursor))        ;; put cursor back where it belongs
+                            nil)
+                    :else
+                        (do (when (< 0 n)           ;; found a termcode: adjust length
+                                (reset! a'len n))
+                            (cond (zero? @a'len)    ;; nothing typed yet
+                                nil
+                            ;; Handle modifier and/or special key code.
+                            (at? buf KB_SPECIAL)
+                                (let-when [#_int c (toSpecial (.at buf 1), (.at buf 2))] (or (at? buf 1 KS_MODIFIER) (== c K_IGNORE)) => c
+                                    (when (at? buf 1 KS_MODIFIER)
+                                        (reset! mod_mask (char_u (.at buf 2))))
+                                    (swap! a'len - 3)
+                                    (when (< 0 @a'len)
+                                        (BCOPY buf, 0, buf, 3, @a'len))
+                                    nil)
+                            (< @a'len (mb-byte2len (char_u (.at buf 0))))
+                                nil                 ;; more bytes to get
+                            :else
+                                (let [#_int c (us-ptr2char (eos! buf (min @a'len (dec buflen))))]
+                                    (if (== c @intr_char) ESC c))
+                            ))
+                    )]
+                (recur-if (nil? c) [buflen buf waited] => c)
             ))
-
-            ;; First time: blocking wait.
-            ;; Second time: wait up to 100ms for a terminal code to complete.
-            ((ß int n =) (ui-inchar (.plus buf @a'len), maxlen, (if (zero? @a'len) -1 100), 0))
-            (cond (< 0 n)
-            (do
-                ;; Replace zero by a special key code.
-                ((ß n =) (fix-input-buffer (.plus buf @a'len), n))
-                (swap! a'len + n)
-                ((ß waited =) 0)
-            )
-            (< 0 @a'len)
-            (do
-                ((ß waited =) (inc waited))                   ;; keep track of the waiting time
-            ))
-
-            ;; Incomplete termcode and not timed out yet: get more characters.
-            ((ß n =) (check-termcode buf, buflen, a'len))
-            (if (and (< n 0) (or (not @p_ttimeout) (< (* waited 100) (if (< @p_ttm 0) @p_tm @p_ttm))))
-                (ß CONTINUE)
-            )
-
-            (when (== n KEYLEN_REMOVED)        ;; key code removed
-                (when (and (non-zero? @must_redraw) (not @need_wait_return) (non-flag? @State CMDLINE))
-                    ;; Redrawing was postponed, do it now.
-                    (update-screen 0)
-                    (setcursor)            ;; put cursor back where it belongs
-                )
-                (ß CONTINUE)
-            )
-            (if (< 0 n)                      ;; found a termcode: adjust length
-                (reset! a'len n)
-            )
-            (if (zero? @a'len)                   ;; nothing typed yet
-                (ß CONTINUE)
-            )
-
-            ;; Handle modifier and/or special key code.
-            (when (at? buf KB_SPECIAL)
-                ((ß c =) (toSpecial (.at buf 1), (.at buf 2)))
-                (when (or (at? buf 1 KS_MODIFIER) (== c K_IGNORE))
-                    (if (at? buf 1 KS_MODIFIER)
-                        (reset! mod_mask (char_u (.at buf 2))))
-                    (swap! a'len - 3)
-                    (if (< 0 @a'len)
-                        (BCOPY buf, 0, buf, 3, @a'len))
-                    (ß CONTINUE)
-                )
-                (ß BREAK)
-            )
-
-            (if (< @a'len (mb-byte2len (char_u (.at buf 0))))
-                (ß CONTINUE)                   ;; more bytes to get
-            )
-
-            (eos! buf (min @a'len (dec buflen)))
-            ((ß c =) (us-ptr2char buf))
-
-            ((ß c =) (if (== c @intr_char) ESC c))
-            (ß BREAK)
-            (recur)
-        )
-
-        c
     ))
 
 (defn- #_void msgmore [#_long n]
