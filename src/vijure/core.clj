@@ -39807,17 +39807,15 @@
 ;; Mark all windows to be redrawn later.
 
 (defn- #_void redraw-all-later [#_int type]
-    (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-        ((ß win =) (redraw-later win, type))
-    )
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+        (§ (ß win =) (redraw-later win, type)))
     nil)
 
 ;; Mark all windows that are editing the current buffer to be updated later.
 
 (defn- #_void redraw-curbuf-later [#_int type]
-    (§ loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-        ((ß win =) (redraw-later win, type))
-    )
+    (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+        (§ (ß win =) (redraw-later win, type)))
     nil)
 
 ;; Changed something in the current window, at buffer line "lnum", that
@@ -39840,135 +39838,109 @@
     (update-screen type)
     nil)
 
-;; update-screen()
-;;
 ;; Based on the current value of curwin.w_topline, transfer a screenfull
 ;; of stuff from Filemem to screenLines[], and update curwin.w_botline.
 
 (defn- #_void update-screen [#_int type]
-    (§
-        ;; Don't do anything if the screen structures are (not yet) valid.
-        (if (not (screen-valid true))
-            ((ß RETURN) nil)
-        )
+    ;; Don't do anything if the screen structures are (not yet) valid.
+    (when (screen-valid true)
+        (let [type (if (non-zero? @must_redraw)
+                    (let [type (max @must_redraw type)] ;; use maximal type
+                        ;; "must_redraw" is reset here, so when we run into some weird reason to redraw
+                        ;; while busy redrawing (e.g. asynchronous scrolling), or update-topline() in win-update() will cause a scroll,
+                        ;; the screen will be redrawn later or in win-update().
+                        (reset! must_redraw 0)
+                        type)
+                    type)
+              ;; Need to update w_lines[].
+              type (if (and (zero? (:w_lines_valid @curwin)) (< type NOT_VALID)) NOT_VALID type)]
+            ;; Postpone the redrawing when it's not needed and when being called recursively.
+            (if (or (not (redrawing)) @updating_screen)
+                (do (swap! curwin redraw-later type) ;; remember type for next time
+                    (reset! must_redraw type)
+                    (when (< INVERTED_ALL type)
+                        (swap! curwin assoc :w_lines_valid 0) ;; don't use w_lines[].wl_size now
+                    ))
+                (let [_ (reset! updating_screen true)
+                      ;; if the screen was scrolled up when displaying a message, scroll it down
+                      type (if (non-zero? @msg_scrolled)
+                            (let [_ (reset! clear_cmdline true)
+                                  type (cond (< (- @Rows 5) @msg_scrolled) ;; clearing is faster
+                                        CLEAR
+                                    (!= type CLEAR)
+                                        (let [_ (check-for-delay false) type (if (not (screen-ins-lines 0, 0, @msg_scrolled, @Rows, nil)) CLEAR type)]
+                                            (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+                                                (§ (ß win =)
+                                                    (cond (<= @msg_scrolled (:w_winrow win))
+                                                        win
+                                                    (and (< @msg_scrolled (+ (:w_winrow win) (:w_height win))) (< (:w_redr_type win) REDRAW_TOP)
+                                                         (< 0 (:w_lines_valid win)) (== (:w_topline win) (:wl_lnum (... (:w_lines win) 0))))
+                                                        (-> win
+                                                            (assoc :w_upd_rows (- @msg_scrolled (:w_winrow win)))
+                                                            (assoc :w_redr_type REDRAW_TOP))
+                                                    :else
+                                                        (let [win (assoc win :w_redr_type NOT_VALID)]
+                                                            (if (<= (+ (:w_winrow win) (:w_height win) (:w_status_height win)) @msg_scrolled)
+                                                                (assoc win :w_redr_status true)
+                                                                win
+                                                            ))
+                                                    )))
+                                            (reset! redraw_cmdline true)
+                                            type)
+                                    :else
+                                        type
+                                    )]
+                                (reset! msg_scrolled 0)
+                                (reset! need_wait_return false)
+                                type)
+                            type)
+                      ;; reset "cmdline_row" now (may have been changed temporarily)
+                      _ (compute-cmdrow)
+                      ;; first clear screen ;; will reset "clear_cmdline"
+                      type (if (== type CLEAR) (do (screen-clear) NOT_VALID) type)]
 
-        (when (non-zero? @must_redraw)
-            ((ß type =) (max @must_redraw type))             ;; use maximal type
+                    (when @clear_cmdline ;; going to clear cmdline (done below)
+                        (check-for-delay false))
+                    ;; Force redraw when width of 'number' or 'relativenumber' column changes.
+                    (when (and (< (:w_redr_type @curwin) NOT_VALID)
+                               (!= (:w_nrwidth @curwin) (if (or @(:wo_nu (:w_options @curwin)) @(:wo_rnu (:w_options @curwin))) (number-width @curwin) 0)))
+                        (swap! curwin assoc :w_redr_type NOT_VALID))
+                    ;; Only start redrawing if there is really something to do.
+                    (when (== type INVERTED)
+                        (swap! curwin update-curswant))
+                    (when (and (< (:w_redr_type @curwin) type)
+                               (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0))))
+                                        (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin)))
+                                                                               (== (:w_old_visual_mode @curwin) @VIsual_mode)
+                                                                               (flag? (:w_valid @curwin) VALID_VIRTCOL)
+                                                                               (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
+                        (swap! curwin assoc :w_redr_type type))
 
-            ;; "must_redraw" is reset here, so when we run into some weird reason to redraw while busy redrawing (e.g. asynchronous scrolling),
-            ;; or update-topline() in win-update() will cause a scroll, the screen will be redrawn later or in win-update().
-            (reset! must_redraw 0)
-        )
-
-        ;; Need to update w_lines[].
-        ((ß type =) (if (and (zero? (:w_lines_valid @curwin)) (< type NOT_VALID)) NOT_VALID type))
-
-        ;; Postpone the redrawing when it's not needed and when being called recursively.
-        (when (or (not (redrawing)) @updating_screen)
-            (swap! curwin redraw-later type)                 ;; remember type for next time
-            (reset! must_redraw type)
-            (if (< INVERTED_ALL type)
-                (swap! curwin assoc :w_lines_valid 0)       ;; don't use w_lines[].wl_size now
-            )
-            ((ß RETURN) nil)
-        )
-
-        (reset! updating_screen true)
-
-        ;; if the screen was scrolled up when displaying a message, scroll it down
-
-        (when (non-zero? @msg_scrolled)
-            (reset! clear_cmdline true)
-            (cond (< (- @Rows 5) @msg_scrolled)        ;; clearing is faster
-            (do
-                ((ß type =) CLEAR)
-            )
-            (!= type CLEAR)
-            (do
-                (check-for-delay false)
-                ((ß type =) (if (not (screen-ins-lines 0, 0, @msg_scrolled, @Rows, nil)) CLEAR type))
-                (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-                    (when (< (:w_winrow wp) @msg_scrolled)
-                        (cond (and (< @msg_scrolled (+ (:w_winrow wp) (:w_height wp))) (< (:w_redr_type wp) REDRAW_TOP) (< 0 (:w_lines_valid wp)) (== (:w_topline wp) (:wl_lnum (... (:w_lines wp) 0))))
-                        (do
-                            ((ß wp =) (assoc wp :w_upd_rows (- @msg_scrolled (:w_winrow wp))))
-                            ((ß wp =) (assoc wp :w_redr_type REDRAW_TOP))
-                        )
-                        :else
-                        (do
-                            ((ß wp =) (assoc wp :w_redr_type NOT_VALID))
-                            (if (<= (+ (:w_winrow wp) (:w_height wp) (:w_status_height wp)) @msg_scrolled)
-                                ((ß wp =) (assoc wp :w_redr_status true))
+                    ;; Go from top to bottom through the windows, redrawing the ones that need it.
+                    (swap! search_hl assoc-in [:rmm :regprog] nil)
+                    (loop-when-recur [#_boolean did_one false #_window_C win @firstwin] (some? win) [did_one (:w_next win)]
+                        (§ (ß [win did_one] =)
+                            (let [[win did_one]
+                                    (if (non-zero? (:w_redr_type win))
+                                        (let [_ (cursor-off) did_one (or did_one (do (start-search-hl) true))]
+                                            [(win-update win, false) did_one])
+                                        [win did_one]
+                                    )]
+                                ;; redraw status line after the window to minimize cursor movement
+                                [(if (:w_redr_status win) (do (cursor-off) (win-redr-status win)) win) did_one]
                             )
                         ))
-                    )
-                )
-                (reset! redraw_cmdline true)
-            ))
-            (reset! msg_scrolled 0)
-            (reset! need_wait_return false)
-        )
+                    (end-search-hl)
 
-        ;; reset cmdline_row now (may have been changed temporarily)
-        (compute-cmdrow)
-
-        (when (== type CLEAR)              ;; first clear screen
-            (screen-clear)              ;; will reset clear_cmdline
-            ((ß type =) NOT_VALID)
-        )
-
-        (when @clear_cmdline              ;; going to clear cmdline (done below)
-            (check-for-delay false))
-
-        ;; Force redraw when width of 'number' or 'relativenumber' column changes.
-        (when (and (< (:w_redr_type @curwin) NOT_VALID) (!= (:w_nrwidth @curwin) (if (or @(:wo_nu (:w_options @curwin)) @(:wo_rnu (:w_options @curwin))) (number-width @curwin) 0)))
-            (swap! curwin assoc :w_redr_type NOT_VALID))
-
-        ;; Only start redrawing if there is really something to do.
-
-        (when (== type INVERTED)
-            (swap! curwin update-curswant))
-        (when (and (< (:w_redr_type @curwin) type) (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0)))) (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin))) (== (:w_old_visual_mode @curwin) @VIsual_mode) (flag? (:w_valid @curwin) VALID_VIRTCOL) (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
-            (swap! curwin assoc :w_redr_type type))
-
-        ;; Go from top to bottom through the windows, redrawing the ones that need it.
-
-        ((ß boolean did_one =) false)
-        (swap! search_hl assoc-in [:rmm :regprog] nil)
-
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-            (when (non-zero? (:w_redr_type wp))
-                (cursor-off)
-                (when (not did_one)
-                    ((ß did_one =) true)
-                    (start-search-hl)
-                )
-                ((ß wp =) (win-update wp, false))
-            )
-
-            ;; redraw status line after the window to minimize cursor movement
-            (when (:w_redr_status wp)
-                (cursor-off)
-                ((ß wp =) (win-redr-status wp))
-            )
-        )
-        (end-search-hl)
-
-        ;; Reset b_mod_set flags.  Going through all windows is probably faster
-        ;; than going through all buffers (there could be many buffers).
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-            (swap! curbuf assoc :b_mod_set false)
-        )
-
-        (reset! updating_screen false)
-
-        ;; Clear or redraw the command line.
-        ;; Done last, because scrolling may mess up the command line.
-        (when (or @clear_cmdline @redraw_cmdline)
-            (showmode)
-        )
-        nil
-    ))
+                    (swap! curbuf assoc :b_mod_set false)
+                    (reset! updating_screen false)
+                    ;; Clear or redraw the command line.
+                    ;; Done last, because scrolling may mess up the command line.
+                    (when (or @clear_cmdline @redraw_cmdline)
+                        (showmode)
+                    ))
+            )))
+    nil)
 
 (defn- #_window_C update-single-line [#_window_C win, #_long lnum]
     (if (and (<= (:w_topline win) lnum) (< lnum (:w_botline win)))
