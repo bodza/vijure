@@ -9525,7 +9525,7 @@
                     )
                     :else
                     (do
-                        (op-tilde oap)
+                        ((ß oap =) (op-tilde oap))
                     ))
                     (swap! curwin check-cursor-col)
                     (ß BREAK)
@@ -14091,85 +14091,59 @@
 
 ;; Handle the (non-standard vi) tilde operator.  Also for "gu", "gU" and "g?".
 
-(defn- #_void op-tilde [#_oparg_C oap]
-    (§
-        (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
-            ((ß RETURN) nil)
-        )
-
-        ((ß pos_C pos =) (:op_start oap))
-        ((ß boolean changed =) false)
-
-        (cond (:block_mode oap)                 ;; Visual block mode
-        (do
-            (loop-when [] (<= (:lnum pos) (:lnum (:op_end oap)))
-                ((ß block_def_C bd =) (block-prep oap, false, (:lnum pos), false))
-                ((ß pos =) (assoc pos :col (:textcol bd)))
-                ((ß [pos ?] =) (swapchars (:op_type oap), pos, (:textlen bd)))
-                ((ß changed =) (or ? changed))
-                ((ß pos =) (update pos :lnum inc))
-                (recur)
-            )
-            (when changed
-                (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
-        )
-        :else                                   ;; not block mode
-        (do
-            (cond (== (:motion_type oap) MLINE)
-            (do
-                ((ß oap =) (assoc-in oap [:op_start :col] 0))
-                ((ß pos =) (assoc pos :col 0))
-                ((ß oap =) (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap))))))
-                (if (non-zero? (:col (:op_end oap)))
-                    ((ß oap =) (update-in oap [:op_end :col] dec))
-                )
-            )
-            (not (:inclusive oap))
-            (do
-                ((ß oap =) (update oap :op_end #(let [[_ ?] (decp %)] _)))
-            ))
-
-            (cond (== (:lnum pos) (:lnum (:op_end oap)))
-            (do
-                ((ß [pos ?] =) (swapchars (:op_type oap), pos, (inc (- (:col (:op_end oap)) (:col pos)))))
-                ((ß changed =) (or ? changed))
-            )
-            :else
-            (do
-                (loop []
-                    ((ß [pos ?] =) (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (inc (:col (:op_end oap))) (STRLEN (ml-get-pos pos)))))
-                    ((ß changed =) (or ? changed))
-                    (if (ltoreq (:op_end oap), pos)
-                        (ß BREAK)
+(defn- #_oparg_C op-tilde [#_oparg_C oap]
+    (if-not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap))))
+        oap
+        (let [[oap #_boolean changed]
+                (if (:block_mode oap)
+                    (let [changed
+                            (loop-when [#_pos_C pos (:op_start oap) changed false] (<= (:lnum pos) (:lnum (:op_end oap))) => changed
+                                (let [#_block_def_C bd (block-prep oap, false, (:lnum pos), false)
+                                      pos (assoc pos :col (:textcol bd))
+                                      [pos ?] (swapchars (:op_type oap), pos, (:textlen bd)) changed (or ? changed)]
+                                    (recur (update pos :lnum inc) changed))
+                            )]
+                        (when changed
+                            (changed-lines (:lnum (:op_start oap)), 0, (inc (:lnum (:op_end oap))), 0))
+                        [oap changed]
                     )
-                    ((ß [pos ?] =) (incp pos))
-                    (if (== ? -1)
-                        (ß BREAK)
-                    )
-                    (recur)
-                )
-            ))
-
-            (when changed
-                (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0)
-            )
-        ))
-
-        (when (and (not changed) (:is_VIsual oap))
+                    (let [#_pos_C pos (:op_start oap)
+                          [oap pos]
+                            (cond (== (:motion_type oap) MLINE)
+                                (let [oap (assoc-in oap [:op_start :col] 0)
+                                      oap (assoc-in oap [:op_end :col] (STRLEN (ml-get (:lnum (:op_end oap)))))
+                                      oap (if (non-zero? (:col (:op_end oap))) (update-in oap [:op_end :col] dec) oap)]
+                                    [oap (assoc pos :col 0)])
+                            (not (:inclusive oap))
+                                [(update oap :op_end #(let [[_ ?] (decp %)] _)) pos]
+                            :else
+                                [oap pos])
+                          changed
+                            (if (== (:lnum pos) (:lnum (:op_end oap)))
+                                (let [[_ ?] (swapchars (:op_type oap), pos, (inc (- (:col (:op_end oap)) (:col pos))))] ?)
+                                (loop [pos pos changed false]
+                                    (let [[pos ?] (swapchars (:op_type oap), pos, (if (== (:lnum pos) (:lnum (:op_end oap))) (inc (:col (:op_end oap))) (STRLEN (ml-get-pos pos))))
+                                        changed (or ? changed)]
+                                        (if (ltoreq (:op_end oap), pos)
+                                            changed
+                                            (let [[pos ?] (incp pos)]
+                                                (recur-if (!= ? -1) [pos changed] => changed)
+                                            ))
+                                    ))
+                            )]
+                        (when changed
+                            (changed-lines (:lnum (:op_start oap)), (:col (:op_start oap)), (inc (:lnum (:op_end oap))), 0))
+                        [oap changed])
+                )]
             ;; No change: need to remove the Visual selection.
-            (redraw-curbuf-later INVERTED)
+            (when (and (not changed) (:is_VIsual oap))
+                (redraw-curbuf-later INVERTED))
+            ;; Set '[ and '] marks.
+            (swap! curbuf assoc :b_op_start (:op_start oap), :b_op_end (:op_end oap))
+            (let-when [n (:line_count oap)] (< @p_report n)
+                (if (== n 1) (msg (u8 "1 line changed")) (smsg (u8 "%ld lines changed"), n)))
+            oap
         )
-
-        ;; Set '[ and '] marks.
-
-        (swap! curbuf assoc :b_op_start (:op_start oap), :b_op_end (:op_end oap))
-
-        (when (< @p_report (:line_count oap))
-            (if (== (:line_count oap) 1)
-                (msg (u8 "1 line changed"))
-                (smsg (u8 "%ld lines changed"), (:line_count oap)))
-        )
-        nil
     ))
 
 ;; Invoke swapchar() on "len" bytes at position "pos".
@@ -37660,74 +37634,58 @@
 (defn- #_int inc-cursor [#_boolean skip_eos]
     (let [[_ ?] ((if skip_eos incl incp) (:w_cursor @curwin))] ((ß (:w_cursor @curwin) =) _) ?))
 
-;; Increment the line pointer "lp" crossing line boundaries as necessary.
+;; Increment the line pointer "p" crossing line boundaries as necessary.
 ;; Return 1 when going to the next line.
 ;; Return 2 when moving forward onto a NUL at the end of the line.
 ;; Return -1 when at the end of file.
 ;; Return 0 otherwise.
 
-(defn- #_int incp [#_pos_C lp]
-    (§
-        ((ß Bytes s =) (ml-get-pos lp))
-
-        (when (non-eos? s)     ;; still within line, move to next char (may be NUL)
-            ((ß int n =) (us-ptr2len-cc s))
-
-            ((ß lp =) (update lp :col + n))
-            ((ß RETURN) (if (non-eos? s n) 0 2))
+(defn- #_[pos_C int] incp [#_pos_C p]
+    (let [#_Bytes s (ml-get-pos p)]
+        (cond (non-eos? s) ;; still within line, move to next char (may be NUL)
+            (let [#_int n (us-ptr2len-cc s)] [(update p :col + n) (if (non-eos? s n) 0 2)])
+        (!= (:lnum p) (:ml_line_count (:b_ml @curbuf))) ;; there is a next line
+            [(assoc p :lnum (inc (:lnum p)) :col 0 :coladd 0) 1]
+        :else
+            [p -1]
         )
-
-        (when (!= (:lnum lp) (:ml_line_count (:b_ml @curbuf)))   ;; there is a next line
-            ((ß lp =) (assoc lp :lnum (inc (:lnum lp)) :col 0 :coladd 0))
-            ((ß RETURN) 1)
-        )
-
-        -1
     ))
 
 ;; incl(): same as incp(), but skip the NUL at the end of non-empty lines
 
-(defn- #_int incl [#_pos_C lp]
-    (let [#_int r (let [[_ ?] (incp lp)] ((ß lp =) _) ?)]
-        (if (and (<= 1 r) (non-zero? (:col lp))) (let [[_ ?] (incp lp)] ((ß lp =) _) ?) r)
-    ))
+(defn- #_[pos_C int] incl [#_pos_C p]
+    (let [[p ? :as _] (incp p)] (if (and (<= 1 ?) (non-zero? (:col p))) (incp p) _)))
 
 ;; Decrement the cursor position.  See decp() for return values.
 
 (defn- #_int dec-cursor [#_boolean skip_eos]
     (let [[_ ?] ((if skip_eos decl decp) (:w_cursor @curwin))] ((ß (:w_cursor @curwin) =) _) ?))
 
-;; Decrement the line pointer "lp" crossing line boundaries as necessary.
+;; Decrement the line pointer "p" crossing line boundaries as necessary.
 ;; Return 1 when crossing a line, -1 when at start of file, 0 otherwise.
 
-(defn- #_int decp [#_pos_C lp]
-    (§
-        ((ß lp =) (assoc lp :coladd 0))
-
-        (when (< 0 (:col lp))         ;; still within line
-            ((ß lp =) (update lp :col dec))
-            ((ß Bytes s =) (ml-get (:lnum lp)))
-            ((ß lp =) (update lp :col #(- % (us-head-off s, (.plus s %)))))
-            ((ß RETURN) 0)
+(defn- #_[pos_C int] decp [#_pos_C p]
+    (let [p (assoc p :coladd 0)]
+        (cond (< 0 (:col p))                ;; still within line
+            (let [p (update p :col dec)
+                  #_Bytes s (ml-get (:lnum p))
+                  p (update p :col #(- % (us-head-off s, (.plus s %))))]
+                [p 0])
+        (< 1 (:lnum p))                     ;; there is a prior line
+            (let [p (update p :lnum dec)
+                  #_Bytes s (ml-get (:lnum p))
+                  p (assoc p :col (STRLEN s))
+                  p (update p :col #(- % (us-head-off s, (.plus s %))))]
+                [p 1])
+        :else
+            [p -1]                          ;; at start of file
         )
-
-        (when (< 1 (:lnum lp))        ;; there is a prior line
-            ((ß lp =) (update lp :lnum dec))
-            ((ß Bytes s =) (ml-get (:lnum lp)))
-            ((ß lp =) (assoc lp :col (STRLEN s)))
-            ((ß lp =) (update lp :col #(- % (us-head-off s, (.plus s %)))))
-            ((ß RETURN) 1)
-        )
-
-        -1                  ;; at start of file
     ))
 
 ;; decl(): same as decp(), but skip the NUL at the end of non-empty lines
 
-(defn- #_int decl [#_pos_C lp]
-    (let [#_int r (let [[_ ?] (decp lp)] ((ß lp =) _) ?)]
-        (if (and (== r 1) (non-zero? (:col lp))) (let [[_ ?] (decp lp)] ((ß lp =) _) ?) r)
-    ))
+(defn- #_[pos_C int] decl [#_pos_C p]
+    (let [[p ? :as _] (decp p)] (if (and (== ? 1) (non-zero? (:col p))) (decp p) _)))
 
 ;; Get the line number relative to the current cursor position,
 ;; i.e. the difference between line number and cursor position.
