@@ -53815,30 +53815,15 @@
     ))
 
 ;; Check 'winminheight' for a valid value.
+;; TODO: handle vertical splits
 
 (defn- #_void win-setminheight []
-    (§
-        ((ß boolean first =) true)
-
-        ;; loop until there is a 'winminheight' that is possible
-        (loop-when [] (< 0 @p_wmh)
-            ;; TODO: handle vertical splits
-            ((ß int room =) (int (- @p_wh)))
-            (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
-                ((ß room =) (+ room (- (:w_height win) @p_wmh)))
-            )
-            (if (<= 0 room)
-                (ß BREAK)
-            )
-            (swap! p_wmh dec)
-            (when first
-                (emsg e_noroom)
-                ((ß first =) false)
-            )
-            (recur)
-        )
-        nil
-    ))
+    (loop-when-recur [mess true]
+                     (and (pos? @p_wmh) (neg? (loop-when-recur [room (- @p_wh) win @firstwin] (some? win) [(+ room (- (:w_height win) @p_wmh)) (:w_next win)] => room)))
+                     [false]
+        (swap! p_wmh dec)
+        (when mess (emsg e_noroom)))
+    nil)
 
 (final long FRACTION_MULT 16384)
 
