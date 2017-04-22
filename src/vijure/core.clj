@@ -3984,308 +3984,288 @@
     (comp-col)
     nil)
 
-;; Parse 'arg' for option settings.
+;; Parse "arg" for option settings.
 ;;
-;; returns false if an error is detected, true otherwise
+;; Returns false if an error is detected, true otherwise.
 
-(defn- #_boolean do-set [#_Bytes arg]
-    ;; arg: option string (may be written to!)
-    (§
-        ((ß boolean did_show =) false)           ;; already showed one value
-
-        (loop-when-recur arg (non-eos? arg) (skipwhite arg) => true             ;; loop to process all options
-            ((ß Bytes errmsg =) nil)
-            ((ß Bytes startarg =) arg)      ;; remember for error message
-
-            ((ß int prefix =) 1)     ;; 1: nothing, 0: "no", 2: "inv" in front of name
-            (cond (and (zero? (STRNCMP arg, (u8 "no"), 2)) (non-zero? (STRNCMP arg, (u8 "novice"), 6)))
-            (do
-                ((ß prefix =) 0)
-                ((ß arg =) (.plus arg 2))
-            )
-            (zero? (STRNCMP arg, (u8 "inv"), 3))
-            (do
-                ((ß prefix =) 2)
-                ((ß arg =) (.plus arg 3))
-            ))
-
-;           skip:
-;           {
-                (when (at? arg (byte \<))
-                    ((ß errmsg =) e_invarg)
-                    (ß BREAK skip)
-                )
-
-                (ß int nextchar)           ;; next non-white char after option name
-
-                ;; find end of name
-                ((ß int len =) 0)
-                (loop-when [] (or (asc-isalnum (.at arg len)) (at? arg len (byte \_)))
-                    ((ß len =) (inc len))
-                    (recur)
-                )
-                ((ß nextchar =) (.at arg len))
-                (eos! arg len)                           ;; put NUL after name
-                ((ß vimoption_C v =) (findoption arg))
-                (.be arg len, nextchar)                      ;; restore nextchar
-
-                (when (nil? v)      ;; found a mismatch: skip
-                    ((ß errmsg =) (u8 "E518: Unknown option"))
-                    (ß BREAK skip)
-                )
-
-                ;; remember character after option name
-                ((ß byte afterchar =) (.at arg len))
-
-                ;; skip white space, allow ":set ai  ?"
-                (loop-when [] (vim-iswhite (.at arg len))
-                    ((ß len =) (inc len))
-                    (recur)
-                )
-
-                ((ß nextchar =) (.at arg len))
-
-                (when (and (!= nextchar NUL) (at? arg (inc len) (byte \=)))
-                    ((ß errmsg =) e_invarg)
-                    (ß BREAK skip)
-                )
-
-                (when (some? (vim-strchr (u8 "?=:!&<"), nextchar))
-                    ((ß arg =) (.plus arg len))
-                    (when (and (some? (vim-strchr (u8 "?!&<"), nextchar)) (non-eos? arg 1) (not (vim-iswhite (.at arg 1))))
-                        ((ß errmsg =) e_trailing)
-                        (ß BREAK skip)
+(defn- #_boolean do-set [#_Bytes arg]           ;; arg: option string (may be written to!)
+    (let [a'did_show (atom (boolean false))]    ;; already showed one value
+        (loop-when arg (non-eos? arg) => true   ;; loop to process all options
+            (let [#_Bytes startarg arg          ;; remember for error message
+                  [#_int prefix arg]            ;; 1: nothing, 0: "no", 2: "inv" in front of name
+                    (cond
+                        (zero? (STRNCMP arg, (u8 "no"), 2))  [0 (.plus arg 2)]
+                        (zero? (STRNCMP arg, (u8 "inv"), 3)) [2 (.plus arg 3)]
+                        :else                                [1 arg]
                     )
-                )
+                  [arg #_Bytes errmsg]
+            ]
 
-                ((ß Object varp =) (get-varp v))
+                    (if (at? arg (byte \<))
+                        [arg e_invarg]
 
-                ;; allow '=' and ':' as MSDOS command.com allows
-                ;; only one '=' character per "set" command line
-
-                (cond (or (== nextchar (byte \?)) (and (== prefix 1) (nil? (vim-strchr (u8 "=:&<"), nextchar)) (non-flag? (:flags v) P_BOOL)))
-                (do
-                    ;; print value
-                    (cond did_show
-                    (do
-                        (msg-putchar (byte \newline))      ;; cursor below last one
-                    )
-                    :else
-                    (do
-                        (gotocmdline true)      ;; cursor at status line
-                        ((ß did_show =) true)        ;; remember that we did a line
-                    ))
-
-                    (showoneopt v)
-
-                    ((ß errmsg =) (if (and (!= nextchar (byte \?)) (!= nextchar NUL) (not (vim-iswhite afterchar))) e_trailing errmsg))
-                )
-                :else
-                (do
-                    (cond (flag? (:flags v) P_BOOL)          ;; boolean
-                    (do
-                        (when (or (== nextchar (byte \=)) (== nextchar (byte \:)) (== nextchar (byte \<)))
-                            ((ß errmsg =) e_invarg)
-                            (ß BREAK skip)
-                        )
-
-                        (ß boolean value)
-
-                        ;; ":set opt!": invert
-                        ;; ":set opt&": reset to default value
-
-                        (cond (== nextchar (byte \!))
-                        (do
-                            ((ß value =) (not (boolean @varp)))
-                        )
-                        (== nextchar (byte \&))
-                        (do
-                            ((ß value =) (boolean (:def_val v)))
-                        )
-                        :else
-                        (do
-                            ;; ":set invopt": invert
-                            ;; ":set opt" or ":set noopt": set or reset
-
-                            (when (and (!= nextchar NUL) (not (vim-iswhite afterchar)))
-                                ((ß errmsg =) e_trailing)
-                                (ß BREAK skip)
+                        (let [
+                        ]
+                            ((ß int len =) 0)
+                            (loop-when [] (or (asc-isalnum (.at arg len)) (at? arg len (byte \_)))
+                                ((ß len =) (inc len))
+                                (recur)
                             )
-                            ((ß value =) (if (== prefix 2) (not (boolean @varp)) (!= prefix 0)))
-                        ))
+                            ((ß int nextchar =) (.at arg len)) ;; next non-white char after option name
+                            (eos! arg len)                           ;; put NUL after name
+                            ((ß vimoption_C v =) (findoption arg))
+                            (.be arg len, nextchar)                      ;; restore nextchar
 
-                        ((ß errmsg =) (set-bool-option v, #_boolean' varp, value))
-                    )
-                    :else                                ;; numeric or string
-                    (do
-                        (when (or (nil? (vim-strchr (u8 "=:&"), nextchar)) (!= prefix 1))
-                            ((ß errmsg =) e_invarg)
-                            (ß BREAK skip)
-                        )
+                            (if (nil? v) ;; found a mismatch: skip
+                                [arg (u8 "E518: Unknown option")]
 
-                        (cond (flag? (:flags v) P_NUM)       ;; numeric
-                        (do
-                            (ß long value)
+                                (let [
+                                ]
+                                    ;; remember character after option name
+                                    ((ß byte afterchar =) (.at arg len))
 
-                            ;; Different ways to set a number option:
-                            ;; &        set to default value
-                            ;; <xx>     accept special key codes for 'wildchar'
-                            ;; c        accept any non-digit for 'wildchar'
-                            ;; [-]0-9   set number
-                            ;; other    error
-
-                            ((ß arg =) (.plus arg 1))
-                            (cond (== nextchar (byte \&))
-                            (do
-                                ((ß value =) (long (:def_val v)))
-                            )
-                            (or (at? arg (byte \-)) (asc-isdigit (.at arg 0)))
-                            (do
-                                ((ß int[] a'ip =) (atom (int)))
-
-                                ;; Allow negative (for 'undolevels'), octal and hex numbers.
-                                ((ß value =) (let [__ (atom (long))] (vim-str2nr arg, nil, a'ip, true, true, __) @__))
-                                (when (and (non-eos? arg @a'ip) (not (vim-iswhite (.at arg @a'ip))))
-                                    ((ß errmsg =) e_invarg)
-                                    (ß BREAK skip)
-                                )
-                            )
-                            :else
-                            (do
-                                ((ß errmsg =) (u8 "E521: Number required after ="))
-                                (ß BREAK skip)
-                            ))
-
-                            ((ß errmsg =) (set-num-option v, #_long' varp, value))
-                        )
-                        :else                  ;; string
-                        (do
-                            ;; The old value is kept until we are sure that the new value is valid.
-                            ((ß Bytes oldval =) #_Bytes @varp)
-
-                            ((ß Bytes save_arg =) nil)
-                            (ß Bytes newval)
-
-                            (cond (== nextchar (byte \&))    ;; set to default val
-                            (do
-                                ((ß newval =) (STRDUP #_Bytes (:def_val v)))
-                            )
-                            :else
-                            (do
-                                ((ß arg =) (.plus arg 1))      ;; jump to after the '=' or ':'
-
-                                ;; Set 'keywordprg' to ":echo" if an empty value was passed to :set by the user.
-
-                                (when (and (== varp @(:b_p_kp @curbuf)) (or (eos? arg) (at? arg (byte \space))))
-                                    ((ß save_arg =) arg)
-                                    ((ß arg =) (u8 ":echo"))
-                                )
-
-                                ((ß Bytes origval =) oldval)
-
-                                ((ß newval =) (Bytes. (inc (STRLEN arg))))
-                                ((ß Bytes s =) newval)
-
-                                ;; Copy the string, skip over escaped chars.
-
-                                (loop-when [] (and (non-eos? arg) (not (vim-iswhite (.at arg 0))))
-                                    ((ß arg =) (if (and (at? arg (byte \\)) (non-eos? arg 1)) (.plus arg 1) arg))      ;; remove backslash
-                                    ((ß int i =) (us-ptr2len-cc arg))
-                                    (cond (< 1 i)
-                                    (do
-                                        ;; copy multibyte char
-                                        (BCOPY s, arg, i)
-                                        ((ß arg =) (.plus arg i))
-                                        ((ß s =) (.plus s i))
+                                    ;; skip white space, allow ":set ai  ?"
+                                    (loop-when [] (vim-iswhite (.at arg len))
+                                        ((ß len =) (inc len))
+                                        (recur)
                                     )
-                                    :else
-                                    (do
-                                        (.be s 0, (.at arg 0))
-                                        ((ß arg =) (.plus arg 1))
-                                        ((ß s =) (.plus s 1))
-                                    ))
-                                    (recur)
-                                )
-                                (eos! s)
 
-                                ;; Locate newval[] in origval[] when removing it and when adding to avoid duplicates.
-                                ((ß int i =) 0)
-                                (when (flag? (:flags v) P_NODUP)
-                                    ((ß i =) (STRLEN newval))
-                                    ((ß int bs =) 0)
-                                    ((ß s =) (loop-when-recur [s origval] (non-eos? s) [(.plus s 1)] => s
-                                        (if (and (or (non-flag? (:flags v) P_COMMA) (BEQ s, origval) (and (at? s -1 (byte \,)) (zero? (& bs 1)))) (zero? (STRNCMP s, newval, i)) (or (non-flag? (:flags v) P_COMMA) (at? s i (byte \,)) (eos? s i)))
-                                            (ß BREAK)
+                                    ((ß nextchar =) (.at arg len))
+
+                                    (if (and (!= nextchar NUL) (at? arg (inc len) (byte \=)))
+                                        [arg e_invarg]
+
+                                        (let [
+                                        ]
+                                            (when (some? (vim-strchr (u8 "?=:!&<"), nextchar))
+                                                ((ß arg =) (.plus arg len))
+                                                (when (and (some? (vim-strchr (u8 "?!&<"), nextchar)) (non-eos? arg 1) (not (vim-iswhite (.at arg 1))))
+                                                    (ß BREAK skip) [arg e_trailing]
+                                                )
+                                            )
+
+                                            ((ß Object varp =) (get-varp v))
+
+                                            ;; allow '=' and ':' as MSDOS command.com allows
+                                            ;; only one '=' character per "set" command line
+
+                                            (cond (or (== nextchar (byte \?)) (and (== prefix 1) (nil? (vim-strchr (u8 "=:&<"), nextchar)) (non-flag? (:flags v) P_BOOL)))
+                                                (do
+                                                    ;; print value
+                                                    (cond @a'did_show
+                                                    (do
+                                                        (msg-putchar (byte \newline))      ;; cursor below last one
+                                                    )
+                                                    :else
+                                                    (do
+                                                        (gotocmdline true)      ;; cursor at status line
+                                                        ((ß @a'did_show =) true)        ;; remember that we did a line
+                                                    ))
+
+                                                    (showoneopt v)
+
+                                                    [arg (when (and (!= nextchar (byte \?)) (!= nextchar NUL) (not (vim-iswhite afterchar))) e_trailing)]
+                                                )
+
+                                            (flag? (:flags v) P_BOOL)          ;; boolean
+                                                (do
+                                                    (when (or (== nextchar (byte \=)) (== nextchar (byte \:)) (== nextchar (byte \<)))
+                                                        (ß BREAK skip) [arg e_invarg]
+                                                    )
+
+                                                    (ß boolean value)
+
+                                                    ;; ":set opt!": invert
+                                                    ;; ":set opt&": reset to default value
+
+                                                    (cond (== nextchar (byte \!))
+                                                    (do
+                                                        ((ß value =) (not (boolean @varp)))
+                                                    )
+                                                    (== nextchar (byte \&))
+                                                    (do
+                                                        ((ß value =) (boolean (:def_val v)))
+                                                    )
+                                                    :else
+                                                    (do
+                                                        ;; ":set invopt": invert
+                                                        ;; ":set opt" or ":set noopt": set or reset
+
+                                                        (when (and (!= nextchar NUL) (not (vim-iswhite afterchar)))
+                                                            (ß BREAK skip) [arg e_trailing]
+                                                        )
+                                                        ((ß value =) (if (== prefix 2) (not (boolean @varp)) (!= prefix 0)))
+                                                    ))
+
+                                                    [arg (set-bool-option v, #_boolean' varp, value)]
+                                                )
+
+                                            (or (nil? (vim-strchr (u8 "=:&"), nextchar)) (!= prefix 1))
+                                                [arg e_invarg]
+
+                                            (flag? (:flags v) P_NUM)       ;; numeric
+                                                (do
+                                                    (ß long value)
+
+                                                    ;; Different ways to set a number option:
+                                                    ;; &        set to default value
+                                                    ;; <xx>     accept special key codes for 'wildchar'
+                                                    ;; c        accept any non-digit for 'wildchar'
+                                                    ;; [-]0-9   set number
+                                                    ;; other    error
+
+                                                    ((ß arg =) (.plus arg 1))
+                                                    (cond (== nextchar (byte \&))
+                                                    (do
+                                                        ((ß value =) (long (:def_val v)))
+                                                    )
+                                                    (or (at? arg (byte \-)) (asc-isdigit (.at arg 0)))
+                                                    (do
+                                                        ((ß int[] a'ip =) (atom (int)))
+
+                                                        ;; Allow negative (for 'undolevels'), octal and hex numbers.
+                                                        ((ß value =) (let [__ (atom (long))] (vim-str2nr arg, nil, a'ip, true, true, __) @__))
+                                                        (when (and (non-eos? arg @a'ip) (not (vim-iswhite (.at arg @a'ip))))
+                                                            (ß BREAK skip) [arg e_invarg]
+                                                        )
+                                                    )
+                                                    :else
+                                                    (do
+                                                        (ß BREAK skip) [arg (u8 "E521: Number required after =")]
+                                                    ))
+
+                                                    [arg (set-num-option v, #_long' varp, value)]
+                                                )
+
+                                            :else ;; (flag? (:flags v) P_STRING)                ;; string
+                                                (do
+                                                    ;; The old value is kept until we are sure that the new value is valid.
+                                                    ((ß Bytes oldval =) #_Bytes @varp)
+
+                                                    ((ß Bytes save_arg =) nil)
+                                                    (ß Bytes newval)
+
+                                                    (cond (== nextchar (byte \&))    ;; set to default val
+                                                    (do
+                                                        ((ß newval =) (STRDUP #_Bytes (:def_val v)))
+                                                    )
+                                                    :else
+                                                    (do
+                                                        ((ß arg =) (.plus arg 1))      ;; jump to after the '=' or ':'
+
+                                                        ;; Set 'keywordprg' to ":echo" if an empty value was passed to :set by the user.
+
+                                                        (when (and (== varp @(:b_p_kp @curbuf)) (or (eos? arg) (at? arg (byte \space))))
+                                                            ((ß save_arg =) arg)
+                                                            ((ß arg =) (u8 ":echo"))
+                                                        )
+
+                                                        ((ß Bytes origval =) oldval)
+
+                                                        ((ß newval =) (Bytes. (inc (STRLEN arg))))
+                                                        ((ß Bytes s =) newval)
+
+                                                        ;; Copy the string, skip over escaped chars.
+
+                                                        (loop-when [] (and (non-eos? arg) (not (vim-iswhite (.at arg 0))))
+                                                            ((ß arg =) (if (and (at? arg (byte \\)) (non-eos? arg 1)) (.plus arg 1) arg))      ;; remove backslash
+                                                            ((ß int i =) (us-ptr2len-cc arg))
+                                                            (cond (< 1 i)
+                                                            (do
+                                                                ;; copy multibyte char
+                                                                (BCOPY s, arg, i)
+                                                                ((ß arg =) (.plus arg i))
+                                                                ((ß s =) (.plus s i))
+                                                            )
+                                                            :else
+                                                            (do
+                                                                (.be s 0, (.at arg 0))
+                                                                ((ß arg =) (.plus arg 1))
+                                                                ((ß s =) (.plus s 1))
+                                                            ))
+                                                            (recur)
+                                                        )
+                                                        (eos! s)
+
+                                                        ;; Locate newval[] in origval[] when removing it and when adding to avoid duplicates.
+                                                        ((ß int i =) 0)
+                                                        (when (flag? (:flags v) P_NODUP)
+                                                            ((ß i =) (STRLEN newval))
+                                                            ((ß int bs =) 0)
+                                                            ((ß s =) (loop-when-recur [s origval] (non-eos? s) [(.plus s 1)] => s
+                                                                (if (and (or (non-flag? (:flags v) P_COMMA) (BEQ s, origval) (and (at? s -1 (byte \,)) (zero? (& bs 1)))) (zero? (STRNCMP s, newval, i)) (or (non-flag? (:flags v) P_COMMA) (at? s i (byte \,)) (eos? s i)))
+                                                                    (ß BREAK)
+                                                                )
+                                                                ;; Count backslashes.
+                                                                ;; Only a comma with an even number of backslashes before it is recognized as a separator.
+                                                                ((ß bs =) (if (and (BLT origval, s) (at? s -1 (byte \\))) (inc bs) 0))
+                                                            ))
+                                                        )
+
+                                                        (when (flag? (:flags v) P_FLAGLIST)
+                                                            ;; Remove flags that appear twice.
+                                                            ((ß s =) (loop-when-recur [s newval] (non-eos? s) [(.plus s 1)] => s
+                                                                (when (and (or (non-flag? (:flags v) P_COMMA) (not-at? s (byte \,))) (some? (vim-strbyte (.plus s 1), (.at s 0))))
+                                                                    (BCOPY s, 0, s, 1, (inc (STRLEN s, 1)))
+                                                                    ((ß s =) (.minus s 1))
+                                                                )
+                                                            ))
+                                                        )
+
+                                                        ((ß arg =) (if (some? save_arg) save_arg arg))   ;; number for 'whichwrap'
+                                                    ))
+
+                                                    ;; Set the new value.
+                                                    ((ß (Bytes)@varp =) newval)
+
+                                                    ;; Handle side effects, and set the global value for ":set" on local options.
+                                                    [arg (did-set-string-option v, #_Bytes' varp, oldval)]
+                                                )
+                                            )
                                         )
-                                        ;; Count backslashes.
-                                        ;; Only a comma with an even number of backslashes before it is recognized as a separator.
-                                        ((ß bs =) (if (and (BLT origval, s) (at? s -1 (byte \\))) (inc bs) 0))
-                                    ))
+                                    )
                                 )
-
-                                (when (flag? (:flags v) P_FLAGLIST)
-                                    ;; Remove flags that appear twice.
-                                    ((ß s =) (loop-when-recur [s newval] (non-eos? s) [(.plus s 1)] => s
-                                        (when (and (or (non-flag? (:flags v) P_COMMA) (not-at? s (byte \,))) (some? (vim-strbyte (.plus s 1), (.at s 0))))
-                                            (BCOPY s, 0, s, 1, (inc (STRLEN s, 1)))
-                                            ((ß s =) (.minus s 1))
-                                        )
-                                    ))
-                                )
-
-                                ((ß arg =) (if (some? save_arg) save_arg arg))   ;; number for 'whichwrap'
-                            ))
-
-                            ;; Set the new value.
-                            ((ß (Bytes)@varp =) newval)
-
-                            ;; Handle side effects, and set the global value for ":set" on local options.
-                            ((ß errmsg =) (did-set-string-option v, #_Bytes' varp, oldval))
-
-                            ;; If error detected, print the error message.
-                            (if (some? errmsg)
-                                (ß BREAK skip)
                             )
-                        ))
-                    ))
-                ))
-;           }
-
-            ;; Advance to next argument.
-            ;; - skip until a blank found, taking care of backslashes
-            ;; - skip blanks
-            ;; - skip one "=val" argument (for hidden options ":set gfn =xx")
-
-            (dotimes [_ 2]
-                (loop-when [] (and (non-eos? arg) (not (vim-iswhite (.at arg 0))))
-                    (if (and (at? ((ß arg =) (.plus arg 1)) -1 (byte \\)) (non-eos? arg))
-                        ((ß arg =) (.plus arg 1))
+                        )
                     )
-                    (recur)
-                )
-                ((ß arg =) (skipwhite arg))
-                (if (not-at? arg (byte \=))
-                    (ß BREAK)
-                )
-            )
 
-            (when (some? errmsg)
-                (vim-strncpy @ioBuff, errmsg, (dec IOSIZE))
-                ((ß int i =) (+ (STRLEN @ioBuff) 2))
-                (when (< (+ i (BDIFF arg, startarg)) IOSIZE)
-                    ;; append the argument with the error
-                    (STRCAT @ioBuff, (u8 ": "))
-                    (BCOPY @ioBuff, i, startarg, 0, (BDIFF arg, startarg))
-                    (eos! @ioBuff (+ i (BDIFF arg, startarg)))
+                ;; Advance to next argument.
+                ;; - skip until a blank found, taking care of backslashes
+                ;; - skip blanks
+                ;; - skip one "=val" argument (for hidden options ":set gfn =xx")
+
+                (dotimes [_ 2]
+                    (loop-when [] (and (non-eos? arg) (not (vim-iswhite (.at arg 0))))
+                        (if (and (at? ((ß arg =) (.plus arg 1)) -1 (byte \\)) (non-eos? arg))
+                            ((ß arg =) (.plus arg 1))
+                        )
+                        (recur)
+                    )
+                    ((ß arg =) (skipwhite arg))
+                    (if (not-at? arg (byte \=))
+                        (ß BREAK)
+                    )
                 )
-                ;; make sure all characters are printable
-                (trans-characters @ioBuff, IOSIZE)
 
-                (swap! no_wait_return inc)       ;; wait-return done later
-                (emsg @ioBuff)           ;; show error highlighted
-                (swap! no_wait_return dec)
+                (when (some? errmsg)
+                    (vim-strncpy @ioBuff, errmsg, (dec IOSIZE))
+                    ((ß int i =) (+ (STRLEN @ioBuff) 2))
+                    (when (< (+ i (BDIFF arg, startarg)) IOSIZE)
+                        ;; append the argument with the error
+                        (STRCAT @ioBuff, (u8 ": "))
+                        (BCOPY @ioBuff, i, startarg, 0, (BDIFF arg, startarg))
+                        (eos! @ioBuff (+ i (BDIFF arg, startarg)))
+                    )
+                    ;; make sure all characters are printable
+                    (trans-characters @ioBuff, IOSIZE)
 
-                ((ß RETURN) false)
+                    (swap! no_wait_return inc)       ;; wait-return done later
+                    (emsg @ioBuff)           ;; show error highlighted
+                    (swap! no_wait_return dec)
+
+                    ((ß RETURN) false)
+                )
+                (recur (skipwhite arg))
             )
         )
     ))
