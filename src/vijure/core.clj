@@ -7518,7 +7518,7 @@
         (loop-when-recur s (at? s (byte \:)) [(skipwhite (.plus s 1))] => s) ;; skip ":" and white space
     ))
 
-;; get a single EX address
+;; Get a single EX address.
 ;;
 ;; Set ptr to the next character after the part that was interpreted.
 ;; Set ptr to null when an error is encountered.
@@ -7529,189 +7529,101 @@
     ;; addr_type: flag: one of ADDR_LINES, ...
     ;; skip: only skip the address, don't use it
     ;; to_other_file: flag: may jump to other file
-    (§
-        ((ß long lnum =) MAXLNUM)
-        ((ß Bytes cmd =) (skipwhite @a'ptr))
+    (let [[#_long lnum #_Bytes s]
+            (loop [lnum MAXLNUM s (skipwhite @a'ptr)]
+                (let-when [[lnum s]
+                        (condp ==? (.at s 0)
+                            (byte \.) ;; '.' = cursor position
+                                [(condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum) (.plus s 1)]
 
-;       error:
-        (loop []
-            (condp ==? (.at cmd 0)
-                (byte \.)                       ;; '.' = cursor position
-                (do
-                    ((ß cmd =) (.plus cmd 1))
-                    ((ß lnum =) (condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum))
-                    (ß BREAK)
-                )
+                            (byte \$) ;; '$' = last line
+                                [(condp == addr_type ADDR_LINES (line-count @curbuf) ADDR_WINDOWS (current-win-nr nil) lnum) (.plus s 1)]
 
-                (byte \$)                       ;; '$' = last line
-                (do
-                    ((ß cmd =) (.plus cmd 1))
-                    ((ß lnum =) (condp == addr_type ADDR_LINES (line-count @curbuf) ADDR_WINDOWS (current-win-nr nil) lnum))
-                    (ß BREAK)
-                )
+                            (byte \') ;; ''' = mark
+                                (let [s (.plus s 1)]
+                                    (cond (eos? s)
+                                        [lnum nil]
+                                    (!= addr_type ADDR_LINES)
+                                        (do (emsg e_invaddr) [lnum nil])
+                                    skip
+                                        [lnum (.plus s 1)]
+                                    :else
+                                        ;; Only accept a mark in another file when it is used by itself: ":'M".
+                                        (let [#_pos_C p (getmark (.at s 0), (and to_other_file (eos? s 1)))]
+                                            (if (check-mark p)
+                                                [(:lnum p) (.plus s 1)]
+                                                [lnum nil]
+                                            ))
+                                    ))
 
-                (byte \')                      ;; ''' = mark
-                (do
-                    ((ß cmd =) (.plus cmd 1))
-                    (when (eos? cmd)
-                        ((ß cmd =) nil)
-                        (ß BREAK error)
-                    )
-                    (when (!= addr_type ADDR_LINES)
-                        (emsg e_invaddr)
-                        ((ß cmd =) nil)
-                        (ß BREAK error)
-                    )
-                    (cond skip
-                    (do
-                        ((ß cmd =) (.plus cmd 1))
-                    )
-                    :else
-                    (do
-                        ;; Only accept a mark in another file when it is used by itself: ":'M".
-                        ((ß pos_C fp =) (getmark (.at cmd 0), (and to_other_file (eos? cmd 1))))
-                        ((ß cmd =) (.plus cmd 1))
-                        (when (not (check-mark fp))
-                            ((ß cmd =) nil)
-                            (ß BREAK error)
-                        )
-                        ((ß lnum =) (:lnum fp))
+                           [(byte \/) (byte \?)] ;; '/' or '?' = search
+                                (let [#_byte c (.at s 0) s (.plus s 1)]
+                                    (cond (!= addr_type ADDR_LINES)
+                                        (do (emsg e_invaddr) [lnum nil])
+                                    skip
+                                        (let [s (skip-regexp s, c, @p_magic, nil)] [lnum (if (at? s c) (.plus s 1) s)])
+                                    :else
+                                        (let [o'cursor (:w_cursor @curwin)]
+                                            ;; When '/' or '?' follows another address, start from there.
+                                            (when (!= lnum MAXLNUM)
+                                                (swap! curwin assoc-in [:w_cursor :lnum] lnum))
+                                            ;; Start a forward search at the end of the line.
+                                            ;; Start a backward search at the start of the line.
+                                            ;; This makes sure we never match in the current line,
+                                            ;; and can match anywhere in the next/previous line.
+                                            (swap! curwin assoc-in [:w_cursor :col] (if (== c (byte \/)) MAXCOL 0))
+                                            (reset! searchcmdlen 0)
+                                            (if (zero? (do-search nil, c, s, 1, (| SEARCH_HIS SEARCH_MSG), nil))
+                                                (do (swap! curwin assoc :w_cursor o'cursor) [lnum nil])
+                                                (let [lnum (:lnum (:w_cursor @curwin))]
+                                                    (swap! curwin assoc :w_cursor o'cursor)
+                                                    ;; adjust command string pointer
+                                                    [lnum (.plus s @searchcmdlen)])
+                                            ))
+                                    ))
+
+                            (byte \\) ;; "\?", "\/" or "\&" = repeat search
+                                (let [s (.plus s 1)]
+                                    (if (!= addr_type ADDR_LINES)
+                                        (do (emsg e_invaddr) [lnum nil])
+                                        (let-when [[#_int i s]
+                                                (condp ==? (.at s 0)
+                                                    (byte \&)            [RE_SUBST s]
+                                                   [(byte \?) (byte \/)] [RE_SEARCH s]
+                                                    (do (emsg e_backslash) [i nil])
+                                                )] (some? s) => [lnum s]
+
+                                            (if skip
+                                                [lnum (.plus s 1)]
+                                                ;; When search follows another address, start from there.  ;; Start the search just like for the above do-search().
+                                                (let [#_pos_C pos (->pos_C (if (!= lnum MAXLNUM) lnum (:lnum (:w_cursor @curwin))) (if (at? s (byte \?)) 0 MAXCOL) 0)]
+                                                    (if (!= (searchit pos, (if (at? s (byte \?)) BACKWARD FORWARD), (u8 ""), 1, SEARCH_MSG, i, 0, nil) 0)
+                                                        [(:lnum pos) s]
+                                                        [lnum nil]
+                                                    ))
+                                            ))
+                                    ))
+
+                            (if (asc-isdigit (.at s 0)) ;; absolute line number
+                                (let [a's (atom s)] [(getdigits a's) @a's])
+                                [lnum s]
+                            ))
+                ] (some? s) => [lnum s]
+
+                    (let [[lnum s]
+                            (loop [lnum lnum s s]
+                                (let-when [s (skipwhite s)] (or (at? s (byte \-)) (at? s (byte \+)) (asc-isdigit (.at s 0))) => [lnum s]
+                                    ;; "+1" is same as ".+1" ;; "number" is same as "+number" ;; '+' is '+1', but '+0' is not '+1'
+                                    (let [lnum (if (== lnum MAXLNUM) (condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum) lnum)
+                                          [#_int m s] (if (asc-isdigit (.at s 0)) [(byte \+) s] [(.at s 0) (.plus s 1)])
+                                          [#_int n s] (if (asc-isdigit (.at s 0)) (let [a's (atom s)] [(getdigits a's) @a's]) [1 s])]
+                                        (recur ((if (== m (byte \-)) - +) lnum n) s)
+                                    ))
+                            )]
+                        (recur-if (any == (.at s 0) (byte \/) (byte \?)) [lnum s] => [lnum s])
                     ))
-                    (ß BREAK)
-                )
-
-               [(byte \/) (byte \?)]                  ;; '/' or '?' = search
-                (do
-                    ((ß byte c =) (.at ((ß cmd =) (.plus cmd 1)) -1))
-                    (when (!= addr_type ADDR_LINES)
-                        (emsg e_invaddr)
-                        ((ß cmd =) nil)
-                        (ß BREAK error)
-                    )
-                    (cond skip       ;; skip "/pat/"
-                    (do
-                        ((ß cmd =) (skip-regexp cmd, c, @p_magic, nil))
-                        ((ß cmd =) (if (at? cmd c) (.plus cmd 1) cmd))
-                    )
-                    :else
-                    (do
-                        ((ß pos_C save_pos =) (:w_cursor @curwin))
-
-                        ;; When '/' or '?' follows another address, start from there.
-
-                        (when (!= lnum MAXLNUM)
-                            (swap! curwin assoc-in [:w_cursor :lnum] lnum))
-
-                        ;; Start a forward search at the end of the line.
-                        ;; Start a backward search at the start of the line.
-                        ;; This makes sure we never match in the current line,
-                        ;; and can match anywhere in the next/previous line.
-
-                        (swap! curwin assoc-in [:w_cursor :col] (if (== c (byte \/)) MAXCOL 0))
-                        (reset! searchcmdlen 0)
-                        (when (zero? (do-search nil, c, cmd, 1, (| SEARCH_HIS SEARCH_MSG), nil))
-                            (swap! curwin assoc :w_cursor save_pos)
-                            ((ß cmd =) nil)
-                            (ß BREAK error)
-                        )
-                        ((ß lnum =) (:lnum (:w_cursor @curwin)))
-                        (swap! curwin assoc :w_cursor save_pos)
-                        ;; adjust command string pointer
-                        ((ß cmd =) (.plus cmd @searchcmdlen))
-                    ))
-                    (ß BREAK)
-                )
-
-                (byte \\)              ;; "\?", "\/" or "\&" = repeat search
-                (do
-                    ((ß cmd =) (.plus cmd 1))
-                    (when (!= addr_type ADDR_LINES)
-                        (emsg e_invaddr)
-                        ((ß cmd =) nil)
-                        (ß BREAK error)
-                    )
-                    (ß int i)
-                    (cond (at? cmd (byte \&))
-                    (do
-                        ((ß i =) RE_SUBST)
-                    )
-                    (or (at? cmd (byte \?)) (at? cmd (byte \/)))
-                    (do
-                        ((ß i =) RE_SEARCH)
-                    )
-                    :else
-                    (do
-                        (emsg e_backslash)
-                        ((ß cmd =) nil)
-                        (ß BREAK error)
-                    ))
-
-                    (when (not skip)
-                        ((ß pos_C pos =) (NEW_pos_C))
-
-                        ;; When search follows another address, start from there.
-
-                        ((ß pos =) (assoc pos :lnum (if (!= lnum MAXLNUM) lnum (:lnum (:w_cursor @curwin)))))
-
-                        ;; Start the search just like for the above do-search().
-
-                        ((ß pos =) (assoc pos :col (if (not-at? cmd (byte \?)) MAXCOL 0)))
-
-                        (cond (!= (searchit pos, (if (at? cmd (byte \?)) BACKWARD FORWARD), (u8 ""), 1, SEARCH_MSG, i, 0, nil) 0)
-                        (do
-                            ((ß lnum =) (:lnum pos))
-                        )
-                        :else
-                        (do
-                            ((ß cmd =) nil)
-                            (ß BREAK error)
-                        ))
-                    )
-                    ((ß cmd =) (.plus cmd 1))
-                    (ß BREAK)
-                )
-
-                (do
-                    (when (asc-isdigit (.at cmd 0))     ;; absolute line number
-                        (let [__ (atom (#_Bytes object cmd))]
-                            ((ß lnum =) (getdigits __))
-                            ((ß cmd =) @__))
-                    )
-                    (ß BREAK)
-                )
-            )
-
-            (loop []
-                ((ß cmd =) (skipwhite cmd))
-                (if (and (not-at? cmd (byte \-)) (not-at? cmd (byte \+)) (not (asc-isdigit (.at cmd 0))))
-                    (ß BREAK)
-                )
-
-                ((ß lnum =) (if (== lnum MAXLNUM) (condp == addr_type ADDR_LINES (:lnum (:w_cursor @curwin)) ADDR_WINDOWS (current-win-nr @curwin) lnum) lnum)) ;; "+1" is same as ".+1"
-
-                ((ß int m =) (if (asc-isdigit (.at cmd 0))
-                    (byte \+)                    ;; "number" is same as "+number"
-                    (.at ((ß cmd =) (.plus cmd 1)) -1)
-                ))
-                (ß int n)
-                (cond (not (asc-isdigit (.at cmd 0)))    ;; '+' is '+1', but '+0' is not '+1'
-                (do
-                    ((ß n =) 1)
-                )
-                :else
-                (do
-                    (let [__ (atom (#_Bytes object cmd))]
-                        ((ß n =) (int (getdigits __)))
-                        ((ß cmd =) @__))
-                ))
-                ((ß lnum =) ((if (== m (byte \-)) - +) lnum n))
-                (recur)
-            )
-
-            (recur-if (or (at? cmd (byte \/)) (at? cmd (byte \?))) [])
-        )
-
-        (reset! a'ptr cmd)
+            )]
+        (reset! a'ptr s)
         lnum
     ))
 
@@ -27114,7 +27026,7 @@
                     (swap! spats update-in [0 :sp_off] assoc :line false :end false :off 0)
 
                     ;; Check for a line offset or a character offset.
-                    ;; For get-address (echo off) we don't check for a character offset,
+                    ;; For get-address() (echo off) we don't check for a character offset,
                     ;; because it is meaningless and the 's' could be a substitute command.
 
                     (cond (or (at? p (byte \+)) (at? p (byte \-)) (asc-isdigit (.at p 0)))
