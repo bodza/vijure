@@ -2483,8 +2483,7 @@
 (defn- #_void mch-write [#_Bytes s, #_int len]
 ;%% (.write libC 1, s, len)
     (when (non-zero? @p_wd)           ;; Unix is too fast, slow down a bit more
-        (realWaitForChar @read_cmd_fd, @p_wd)
-    )
+        (realWaitForChar @read_cmd_fd, @p_wd))
     nil)
 
 ;; mch-inchar(): low level input function.
@@ -3186,178 +3185,119 @@
     nil)
 
 ;; wait for the user to hit a key (normally a return)
-;; if 'redraw' is true, clear and redraw the screen
-;; if 'redraw' is false, just redraw the screen
+;; if 'redraw' is TRUE, clear and redraw the screen
+;; if 'redraw' is FALSE, just redraw the screen
 ;; if 'redraw' is -1, don't redraw at all
 
 (defn- #_void wait-return [#_int redraw]
-    (§
-        (when (== redraw TRUE)
-            (reset! must_redraw CLEAR))
-
-        ;; When inside vgetc(), we can't wait for a typed character at all.
-        ;; With the global command (and some others) we only need one return at
-        ;; the end.  Adjust cmdline_row to avoid the next message overwriting the last one.
-
-        (if (< 0 @vgetc_busy)
-            ((ß RETURN) nil)
-        )
-
+    (when (== redraw TRUE)
+        (reset! must_redraw CLEAR))
+    ;; When inside vgetc(), we can't wait for a typed character at all.
+    ;; With the global command (and some others) we only need one return at the end.
+    ;; Adjust cmdline_row to avoid the next message overwriting the last one.
+    (when-not (< 0 @vgetc_busy)
         (reset! need_wait_return true)
-
-        (when (non-zero? @no_wait_return)
+        (if (non-zero? @no_wait_return)
             (reset! cmdline_row @msg_row)
-            ((ß RETURN) nil)
-        )
-
-        (ß int c)
-
-        ((ß int oldState =) @State)
-        (cond @quit_more
-        (do
-            ((ß c =) CAR)                    ;; just pretend CR was hit
-            (reset! quit_more false)
-            (reset! got_int false)
-        )
-        :else
-        (do
-            ;; Make sure the hit-return prompt is on screen when 'guioptions' was just changed.
-            (screen-alloc false)
-
-            (reset! State HITRETURN)
-
-            (hit-return-msg)
-
-            (ß boolean had_got_int)
-            (loop []
-                ;; Remember "got_int", if it is set vgetc() probably returns a CTRL-C,
-                ;; but we need to loop then.
-                ((ß had_got_int =) @got_int)
-
-                ;; Don't do mappings here, we put the character back in the typeahead buffer.
-                (swap! no_mapping inc)
-                (swap! allow_keys inc)
-
-                ;; Temporarily disable Recording.
-                ;; If Recording is active, the character will be recorded later,
-                ;; since it will be added to the typebuf after the loop.
-                ((ß boolean save_Recording =) @Recording)
-                (reset! Recording false)
-                ((ß c =) (safe-vgetc))
-                (if had_got_int
-                    (reset! got_int false))
-                (swap! no_mapping dec)
-                (swap! allow_keys dec)
-                (reset! Recording save_Recording)
-
-                ;; Allow scrolling back in the messages.
-                ;; Also accept scroll-down commands when messages fill the screen,
-                ;; to avoid that typing one 'j' too many makes the messages disappear.
-
-                (when @p_more
-                    (cond (any == c (byte \b) (byte \k) (byte \u) (byte \g) K_UP K_PAGEUP)
-                    (do
-                        (cond (< @Rows @msg_scrolled)
-                        (do
-                            ;; scroll back to show older messages
-                            (do-more-prompt c)
-                        )
-                        :else
-                        (do
-                            (reset! msg_didout false)
-                            ((ß c =) K_IGNORE)
-                            (reset! msg_col 0)
-                        ))
-                        (cond @quit_more
-                        (do
-                            ((ß c =) CAR)                ;; just pretend CR was hit
-                            (reset! quit_more false)
-                            (reset! got_int false)
-                        )
-                        (!= c K_IGNORE)
-                        (do
-                            ((ß c =) K_IGNORE)
+            (let [#_int oldState @State
+                  #_int c
+                    (if @quit_more
+                        (do (reset! quit_more false) (reset! got_int false) CAR) ;; just pretend CR was hit
+                        (do ;; Make sure the hit-return prompt is on screen when 'guioptions' was just changed.
+                            (screen-alloc false)
+                            (reset! State HITRETURN)
                             (hit-return-msg)
-                        ))
-                    )
-                    (and (< (- @Rows 2) @msg_scrolled) (any == c (byte \j) (byte \d) (byte \f) K_DOWN K_PAGEDOWN))
+                            (let [c (loop []
+                                        ;; Remember "got_int": if it is set, vgetc() probably returns a CTRL-C, but we need to loop then.
+                                        (let [#_boolean had_got_int @got_int
+                                              ;; Temporarily disable Recording.
+                                              ;; If Recording is active, the character will be recorded later,
+                                              ;; since it will be added to the typebuf after the loop.
+                                              #_boolean save_Recording @Recording
+                                              _ (reset! Recording false)
+                                              ;; Don't do mappings here, we put the character back in the typeahead buffer.
+                                              _ (swap! no_mapping inc) _ (swap! allow_keys inc) c (safe-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)
+                                              _ (reset! Recording save_Recording)
+                                              _ (when had_got_int (reset! got_int false))
+                                              ;; Allow scrolling back in the messages.
+                                              ;; Also accept scroll-down commands when messages fill the screen,
+                                              ;; to avoid that typing one 'j' too many makes the messages disappear.
+                                              c (if @p_more
+                                                    (cond (any == c (byte \b) (byte \k) (byte \u) (byte \g) K_UP K_PAGEUP)
+                                                        (let [c (if (< @Rows @msg_scrolled) ;; scroll back to show older messages
+                                                                    (do (do-more-prompt c) c)
+                                                                    (do (reset! msg_didout false) (reset! msg_col 0) K_IGNORE)
+                                                                )]
+                                                            (cond
+                                                                @quit_more (do (reset! quit_more false) (reset! got_int false) CAR) ;; just pretend CR was hit
+                                                                (!= c K_IGNORE) (do (hit-return-msg) K_IGNORE)
+                                                                :else c
+                                                            ))
+                                                    (and (< (- @Rows 2) @msg_scrolled) (any == c (byte \j) (byte \d) (byte \f) K_DOWN K_PAGEDOWN))
+                                                        K_IGNORE
+                                                    :else
+                                                        c)
+                                                    c
+                                                )]
+                                            (recur-if (or (and had_got_int (== c Ctrl_C)) (== c K_IGNORE)) [] => c)
+                                        )
+                                    )]
+                                (ui-breakcheck)
+                                (when-not (any == c (byte \return) (byte \newline) (byte \space) Ctrl_C)
+                                    ;; Put the character back in the typeahead buffer.
+                                    ;; Don't use the stuff buffer, because lmaps wouldn't work.
+                                    (ins-char-typebuf c)
+                                    (reset! do_redraw true))       ;; need a redraw even though there is typeahead
+                                c
+                            ))
+                    )]
+                ;; If the user hits ':', '?' or '/' we get a command line from the next line.
+                (when (any == c (byte \:) (byte \?) (byte \/))
+                    (reset! cmdline_row @msg_row)
+                    (reset! skip_redraw true)               ;; skip redraw once
+                    (reset! do_redraw false))
+                ;; If the window size changed set-shellsize() will redraw the screen.
+                ;; Otherwise the screen is only redrawn if 'redraw' is set and no ':' typed.
+                (let [#_int tmpState @State]
+                    (reset! State oldState)                 ;; restore State before set-shellsize
+                    (msg-check)
+                    ;; When switching screens, we need to output an extra newline on exit.
+                    (when (and (swapping-screen) (not @termcap_active))
+                        (reset! newline_on_exit true))
+                    (reset! need_wait_return false)
+                    (reset! did_wait_return true)
+                    (reset! emsg_on_display false)          ;; can delete error message now
+                    (reset! lines_left -1)                  ;; reset lines_left at next msg-start()
+                    (when (and (some? @keep_msg) (<= (+ (* (- @Rows @cmdline_row 1) @Cols) @sc_col) (mb-string2cells @keep_msg)))
+                        (reset! keep_msg nil))              ;; don't redisplay message, it's too long
+                    (cond (== tmpState SETWSIZE)            ;; got resize event while in vgetc()
                     (do
-                        ((ß c =) K_IGNORE)
+                        (start-termcap)                     ;; start termcap before redrawing
+                        (shell-resized)
+                    )
+                    (and (not @skip_redraw) (or (== redraw TRUE) (and (non-zero? @msg_scrolled) (!= redraw -1))))
+                    (do
+                        (start-termcap)                     ;; start termcap before redrawing
+                        (redraw-win-later @curwin, VALID)
                     ))
-                )
-                (recur-if (or (and had_got_int (== c Ctrl_C)) (== c K_IGNORE)) [])
-            )
-            (ui-breakcheck)
-
-            (when (and (nil? (vim-strchr (u8 "\r\n "), c)) (!= c Ctrl_C))
-                ;; Put the character back in the typeahead buffer.
-                ;; Don't use the stuff buffer, because lmaps wouldn't work.
-                (ins-char-typebuf c)
-                (reset! do_redraw true)       ;; need a redraw even though there is typeahead
-            )
+                ))
         ))
-
-        ;; If the user hits ':', '?' or '/' we get a command line from the next line.
-
-        (when (any == c (byte \:) (byte \?) (byte \/))
-            (reset! cmdline_row @msg_row)
-            (reset! skip_redraw true)         ;; skip redraw once
-            (reset! do_redraw false)
-        )
-
-        ;; If the window size changed set-shellsize() will redraw the screen.
-        ;; Otherwise the screen is only redrawn if 'redraw' is set and no ':' typed.
-
-        ((ß int tmpState =) @State)
-        (reset! State oldState)               ;; restore State before set-shellsize
-        (msg-check)
-
-        ;; When switching screens, we need to output an extra newline on exit.
-
-        (when (and (swapping-screen) (not @termcap_active))
-            (reset! newline_on_exit true))
-
-        (reset! need_wait_return false)
-        (reset! did_wait_return true)
-        (reset! emsg_on_display false)    ;; can delete error message now
-        (reset! lines_left -1)            ;; reset lines_left at next msg-start()
-
-        (when (and (some? @keep_msg) (<= (+ (* (int (- @Rows @cmdline_row 1)) @Cols) @sc_col) (mb-string2cells @keep_msg)))
-            (reset! keep_msg nil)            ;; don't redisplay message, it's too long
-        )
-
-        (cond (== tmpState SETWSIZE)       ;; got resize event while in vgetc()
-        (do
-            (start-termcap)             ;; start termcap before redrawing
-            (shell-resized)
-        )
-        (and (not @skip_redraw) (or (== redraw TRUE) (and (non-zero? @msg_scrolled) (!= redraw -1))))
-        (do
-            (start-termcap)             ;; start termcap before redrawing
-            (redraw-win-later @curwin, VALID)
-        ))
-        nil
-    ))
+    nil)
 
 ;; Write the hit-return prompt.
 
 (defn- #_void hit-return-msg []
     (let [#_boolean save_p_more @p_more]
-        (reset! p_more false)             ;; don't want see this message when scrolling back
-
-        (when @msg_didout             ;; start on a new line
+        (reset! p_more false)               ;; don't want see this message when scrolling back
+        (when @msg_didout                   ;; start on a new line
             (msg-putchar (byte \newline)))
         (when @got_int
             (msg-puts (u8 "Interrupt: ")))
-
         (msg-puts-attr (u8 "Press ENTER or type command to continue"), (hl-attr HLF_R))
-
         (when (not (msg-use-printf))
             (msg-clr-eos))
-
-        (reset! p_more save_p_more)
-        nil
-    ))
+        (reset! p_more save_p_more))
+    nil)
 
 ;; Set "keep_msg" to "s".  Free the old value and check for null pointer.
 
@@ -41503,8 +41443,8 @@
                 )
             ))
         )
-        nil
-    ))
+    )
+    nil)
 
 ;; Set terminal options.
 ;;
@@ -41533,8 +41473,8 @@
           bs (if (or (nil? bs) (eos? bs)) (let [bs CTRL_H_STR] (add-termcode (u8 "kb"), bs) bs) bs)
           #_Bytes del (find-termcode (u8 "kD"))]
         (when (and (or (nil? del) (eos? del)) (or (nil? bs) (not-at? bs DEL)))
-            (add-termcode (u8 "kD"), DEL_STR))
-    )
+            (add-termcode (u8 "kD"), DEL_STR)
+        ))
 
     (ttest true)                        ;; make sure we have a valid set of terminal codes
 
@@ -41567,9 +41507,8 @@
             ;; set out_pos to 0 before ui-write, to avoid recursiveness
             (reset! out_pos 0)
             (ui-write out_buf, len)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Sometimes a byte out of a multi-byte character is written with out-char().
 ;; To avoid flushing half of the character, call this function first.
@@ -41815,32 +41754,27 @@
         ;; If 'mr' or 'me' is not defined use 'so' and 'se'.
         (when (eos? @T_ME)
             (reset! T_ME @T_SE)
-            (reset! T_MR (reset! T_MD @T_SO))
-        )
+            (reset! T_MR (reset! T_MD @T_SO)))
 
         ;; If 'so' or 'se' is not defined use 'mr' and 'me'.
         (when (eos? @T_SO)
             (reset! T_SE @T_ME)
-            (reset! T_SO (if (eos? @T_MR) @T_MD @T_MR))
-        )
+            (reset! T_SO (if (eos? @T_MR) @T_MD @T_MR)))
 
         ;; If 'ZH' or 'ZR' is not defined use 'mr' and 'me'.
         (when (eos? @T_CZH)
             (reset! T_CZR @T_ME)
-            (reset! T_CZH (if (eos? @T_MR) @T_MD @T_MR))
-        )
+            (reset! T_CZH (if (eos? @T_MR) @T_MD @T_MR)))
 
         ;; "Sb" and "Sf" come in pairs.
         (when (or (eos? @T_CSB) (eos? @T_CSF))
             (reset! T_CSB EMPTY_OPTION)
-            (reset! T_CSF EMPTY_OPTION)
-        )
+            (reset! T_CSF EMPTY_OPTION))
 
         ;; "AB" and "AF" come in pairs.
         (when (or (eos? @T_CAB) (eos? @T_CAF))
             (reset! T_CAB EMPTY_OPTION)
-            (reset! T_CAF EMPTY_OPTION)
-        )
+            (reset! T_CAF EMPTY_OPTION))
 
         ;; If 'Sb' and 'AB' are not defined, reset "Co".
         (when (and (eos? @T_CSB) (eos? @T_CAB))
@@ -41856,11 +41790,10 @@
 
 (defn- #_void check-shellsize []
     (let [#_int min (min-rows)]
-        (if (< @Rows min)         ;; need room for one window and command line
+        (when (< @Rows min)         ;; need room for one window and command line
             (reset! Rows min))
-        (limit-screen-size)
-        nil
-    ))
+        (limit-screen-size))
+    nil)
 
 ;; Limit Rows and Cols to avoid an overflow in Rows * Cols.
 
@@ -41875,16 +41808,14 @@
 ;; Invoked just before the screen structures are going to be (re)allocated.
 
 (defn- #_void win-new-shellsize []
-    (if (or (!= @old__Rows @Rows) (!= @old__Columns @Cols))
+    (when (or (!= @old__Rows @Rows) (!= @old__Columns @Cols))
         (ui-new-shellsize))
     (when (!= @old__Rows @Rows)
         (reset! old__Rows @Rows)
-        (shell-new-rows)       ;; update window sizes
-    )
+        (shell-new-rows))           ;; update window sizes
     (when (!= @old__Columns @Cols)
         (reset! old__Columns @Cols)
-        (shell-new-columns)    ;; update window sizes
-    )
+        (shell-new-columns))        ;; update window sizes
     nil)
 
 ;; Call this function when the Vim shell has been resized in any way.
@@ -41983,35 +41914,31 @@
 
         (when (or (!= tmode TMODE_COOK) (!= @cur_tmode TMODE_COOK))
             (out-flush)
-            (mch-settmode tmode)                ;; machine specific function
+            (mch-settmode tmode)        ;; machine specific function
             (reset! cur_tmode tmode)
-            (out-flush)
-        )
-    )
+            (out-flush)))
     nil)
 
 (defn- #_void start-termcap []
     (when (and @full_screen (not @termcap_active))
-        (out-str @T_TI)                  ;; start termcap mode
-        (out-str @T_KS)                  ;; start "keypad transmit" mode
+        (out-str @T_TI)                 ;; start termcap mode
+        (out-str @T_KS)                 ;; start "keypad transmit" mode
         (out-flush)
         (reset! termcap_active true)
-        (screen-start)                 ;; don't know where cursor is now
-    )
+        (screen-start))                 ;; don't know where cursor is now
     nil)
 
 (defn- #_void stop-termcap []
     (screen-stop-highlight)
     (reset-cterm-colors)
     (when @termcap_active
-        (out-str @T_KE)                  ;; stop "keypad transmit" mode
+        (out-str @T_KE)                 ;; stop "keypad transmit" mode
         (out-flush)
         (reset! termcap_active false)
-        (cursor-on)                    ;; just in case it is still off
-        (out-str @T_TE)                  ;; stop termcap mode
-        (screen-start)                 ;; don't know where cursor is now
-        (out-flush)
-    )
+        (cursor-on)                     ;; just in case it is still off
+        (out-str @T_TE)                 ;; stop termcap mode
+        (screen-start)                  ;; don't know where cursor is now
+        (out-flush))
     nil)
 
 ;; Return true when saving and restoring the screen.
@@ -42027,8 +41954,7 @@
     (when (non-eos? @T_VS)
         (out-str @T_VS)
         (out-str @T_VE)
-        (screen-start)                 ;; don't know where cursor is now
-    )
+        (screen-start))             ;; don't know where cursor is now
     nil)
 
 (atom! boolean cursor_is_off)
@@ -42038,18 +41964,16 @@
 (defn- #_void cursor-on []
     (when @cursor_is_off
         (out-str @T_VE)
-        (reset! cursor_is_off false)
-    )
+        (reset! cursor_is_off false))
     nil)
 
 ;; Disable the cursor.
 
 (defn- #_void cursor-off []
     (when @full_screen
-        (if (not @cursor_is_off)
+        (when (not @cursor_is_off)
             (out-str @T_VI))          ;; disable cursor
-        (reset! cursor_is_off true)
-    )
+        (reset! cursor_is_off true))
     nil)
 
 (atom! int showing_mode NORMAL)
@@ -42069,12 +41993,12 @@
             )
         (flag? @State INSERT)
             (when (and (!= @showing_mode INSERT) (non-eos? @T_CSI))
-                (out-str @T_CSI)                 ;; Insert mode cursor
+                (out-str @T_CSI)                    ;; Insert mode cursor
                 (reset! showing_mode INSERT)
             )
         (!= @showing_mode NORMAL)
             (do
-                (out-str @T_CEI)                     ;; non-Insert mode cursor
+                (out-str @T_CEI)                    ;; non-Insert mode cursor
                 (reset! showing_mode NORMAL)
             )
         ))
@@ -42225,11 +42149,8 @@
             (or (and (<= 4 len) (at? code (- len 3) (byte \O))) (== (char_u (.at code (- len 3))) (+ (byte \O) 0x80)))
                 1
             :else
-                0
-        )
-        0
-    )
-)
+                0)
+        0))
 
 (defn- #_Bytes find-termcode [#_Bytes name]
     (loop-when [#_int i 0] (< i @tc_len) => nil
@@ -42521,14 +42442,10 @@
 (defn- #_int ui-inchar [#_Bytes buf, #_int maxlen, #_long wtime, #_int tb_change_cnt]
     ;; If we are going to wait for some time or block...
     (when (or (== wtime -1) (< 100 wtime))
-        ;; ... allow signals to kill us.
-        (vim-handle-signal SIGNAL_UNBLOCK)
-    )
+        (vim-handle-signal SIGNAL_UNBLOCK)) ;; ... allow signals to kill us.
     (let [#_int len (mch-inchar buf, maxlen, wtime, tb_change_cnt)]
         (when (or (== wtime -1) (< 100 wtime))
-            ;; block SIGHUP et al.
-            (vim-handle-signal SIGNAL_BLOCK)
-        )
+            (vim-handle-signal SIGNAL_BLOCK)) ;; block SIGHUP et al.
         len))
 
 ;; Delay for the given number of milliseconds.
@@ -42570,8 +42487,7 @@
 
 (defn- #_void ui-new-shellsize []
     (when (and @full_screen (not @exiting))
-        (mch-new-shellsize)
-    )
+        (mch-new-shellsize))
     nil)
 
 (defn- #_void ui-breakcheck []
