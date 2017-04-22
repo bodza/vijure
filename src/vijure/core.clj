@@ -939,7 +939,6 @@
     CPO_INDENT      \I,  ;; remove auto-indent more often
     CPO_JOINSP      \j,  ;; only use two spaces for join after '.'
     CPO_LITERAL     \l,  ;; take char after backslash in [] literal
-    CPO_LISTWM      \L,  ;; 'list' changes wrapmargin
     CPO_SHOWMATCH   \m,
     CPO_MATCHBSL    \M,  ;; "%" ignores use of backslashes
     CPO_NUMCOL      \n,  ;; 'number' column also used for text
@@ -968,7 +967,7 @@
 
 ;; default values for Vim, Vi and POSIX
 (final Bytes CPO_VIM  (u8 "c"))
-(final Bytes CPO_ALL  (u8 "cDEHIjlLmMnoqruvwxXy$!%*->#|/\\;"))
+(final Bytes CPO_ALL  (u8 "cDEHIjlmMnoqruvwxXy$!%*->#|/\\;"))
 
 ;; characters for "p_ww" option:
 (final Bytes WW_ALL   (u8 "bshl<>[],~"))
@@ -1097,7 +1096,6 @@
 ;; "indir" values for window-local options.
 
 (final int
-    WV_LIST    0,
     WV_COCU    1,
     WV_COLE    2,
     WV_CRBIND  3,
@@ -1379,7 +1377,6 @@
         (atom' boolean wo_bri)      ;; 'breakindent'
         (atom' Bytes   wo_briopt)   ;; 'breakindentopt'
         (atom' boolean wo_lbr)      ;; 'linebreak'
-        (atom' boolean wo_list)     ;; 'list'
         (atom' boolean wo_nu)       ;; 'number'
         (atom' boolean wo_rnu)      ;; 'relativenumber'
         (atom' long    wo_nuw)      ;; 'numberwidth'
@@ -2012,73 +2009,45 @@
     CMD_ascii 1,
     CMD_belowright 2,
     CMD_botright 3,
-    CMD_changes 4,
-    CMD_close 5,
-
-    CMD_delmarks 7,
-    CMD_digraphs 8,
-    CMD_earlier 9,
-    CMD_fixdel 10,
-
-    CMD_history 12,
-
-    CMD_jumps 14,
-    CMD_k 15,
-    CMD_keepmarks 16,
-    CMD_keepjumps 17,
-    CMD_keeppatterns 18,
-
-    CMD_later 20,
-    CMD_leftabove 21,
-    CMD_lockmarks 22,
-
-    CMD_mark 24,
-    CMD_marks 25,
-    CMD_nohlsearch 26,
-
-    CMD_only 28,
-
-    CMD_put 30,
-    CMD_redo 31,
-    CMD_redraw 32,
-    CMD_redrawstatus 33,
-    CMD_registers 34,
-    CMD_resize 35,
-    CMD_retab 36,
-    CMD_rightbelow 37,
-    CMD_substitute 38,
-    CMD_set 39,
-
-
-
-    CMD_split 43,
-    CMD_stop 44,
-    CMD_startinsert 45,
-    CMD_startgreplace 46,
-    CMD_startreplace 47,
-    CMD_stopinsert 48,
-    CMD_suspend 49,
-    CMD_syncbind 50,
-
-    CMD_topleft 52,
-    CMD_undo 53,
-    CMD_undojoin 54,
-    CMD_undolist 55,
-
-
-
-    CMD_vertical 59,
-    CMD_vsplit 60,
-
+    CMD_close 4,
+    CMD_delmarks 5,
+    CMD_digraphs 6,
+    CMD_earlier 7,
+    CMD_fixdel 8,
+    CMD_history 9,
+    CMD_keepmarks 10,
+    CMD_keepjumps 11,
+    CMD_keeppatterns 12,
+    CMD_later 13,
+    CMD_leftabove 14,
+    CMD_lockmarks 15,
+    CMD_nohlsearch 16,
+    CMD_only 17,
+    CMD_put 18,
+    CMD_redo 19,
+    CMD_redraw 20,
+    CMD_redrawstatus 21,
+    CMD_resize 22,
+    CMD_retab 23,
+    CMD_rightbelow 24,
+    CMD_substitute 25,
+    CMD_set 26,
+    CMD_split 27,
+    CMD_stop 28,
+    CMD_startinsert 29,
+    CMD_startgreplace 30,
+    CMD_startreplace 31,
+    CMD_stopinsert 32,
+    CMD_suspend 33,
+    CMD_syncbind 34,
+    CMD_topleft 35,
+    CMD_undo 36,
+    CMD_undojoin 37,
+    CMD_undolist 38,
+    CMD_vertical 39,
+    CMD_vsplit 40,
 
-;; commands that don't start with a lowercase letter
-
-
-
-
-
-
-    CMD_SIZE 66)     ;; MUST be after all real commands!
+    CMD_SIZE 41)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2482,10 +2451,7 @@
 (atom! int
     lcs_eol     \$,
     lcs_ext     NUL,
-    lcs_prec    NUL,
-    lcs_nbsp    NUL,
-    lcs_tab1    NUL,
-    lcs_tab2    NUL,
+    lcs_tab     NUL,
     lcs_trail   NUL,
     lcs_conceal \space)
 
@@ -5151,7 +5117,6 @@
 ;; The WV_ values are defined in option.h.
 
 (final int
-    PV_LIST   (| WV_LIST   PV_WIN),
     PV_COCU   (| WV_COCU   PV_WIN),
     PV_COLE   (| WV_COLE   PV_WIN),
     PV_CRBIND (| WV_CRBIND PV_WIN),
@@ -5290,7 +5255,6 @@
         (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        0,          false),
         (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      null,        PV_LBR,     false),
         (long_opt (u8 "lines"),           null,         (| P_NODEFAULT P_RCLR),         Rows,        0,          24),
-        (bool_opt (u8 "list"),            null,            P_RWIN,                      null,        PV_LIST,    false),
         (utf8_opt (u8 "listchars"),      (u8 "lcs"),    (| P_RALL P_COMMA P_NODUP),     p_lcs,       0,         (u8 "eol:$")),
         (bool_opt (u8 "magic"),           null,            0,                           p_magic,     0,          true),
         (utf8_opt (u8 "matchpairs"),     (u8 "mps"),    (| P_COMMA P_NODUP),            null,        PV_MPS,    (u8 "(:),{:},[:]")),
@@ -6512,9 +6476,7 @@
     [
         (->charstab_C lcs_eol,     (u8 "eol")     ),
         (->charstab_C lcs_ext,     (u8 "extends") ),
-        (->charstab_C lcs_nbsp,    (u8 "nbsp")    ),
-        (->charstab_C lcs_prec,    (u8 "precedes")),
-        (->charstab_C lcs_tab2,    (u8 "tab")     ),
+        (->charstab_C lcs_tab,     (u8 "tab")     ),
         (->charstab_C lcs_trail,   (u8 "trail")   ),
         (->charstab_C lcs_conceal, (u8 "conceal") ),
     ])
@@ -6549,8 +6511,6 @@
 ;               for (int i = 0; i < entries; i++)
 ;                   if (tab[i].cp != null)
 ;                       tab[i].@cp = (varp == p_lcs) ? NUL : ' ';
-;               if (varp == p_lcs)
-;                   lcs_tab1[0] = NUL;
 ;           }
 
 ;           for (Bytes p = varp[0]; p.at(0) != NUL; )
@@ -6565,7 +6525,7 @@
 ;                       c1 = us_ptr2char_adv(s, true);
 ;                       if (1 < utf_char2cells(c1))
 ;                           continue;
-;                       if (tab[i].cp == lcs_tab2)
+;                       if (tab[i].cp == lcs_tab)
 ;                       {
 ;                           if (s[0].at(0) == NUL)
 ;                               continue;
@@ -6577,11 +6537,8 @@
 ;                       {
 ;                           if (round != 0)
 ;                           {
-;                               if (tab[i].cp == lcs_tab2)
-;                               {
-;                                   lcs_tab1[0] = c1;
-;                                   lcs_tab2[0] = c2;
-;                               }
+;                               if (tab[i].cp == lcs_tab)
+;                                   lcs_tab[0] = c2;
 ;                               else if (tab[i].cp != null)
 ;                                   tab[i].@cp = c1;
 ;                           }
@@ -7342,7 +7299,6 @@
 ;           case PV_CUC:    return @curwin.w_options.wo_cuc;
 ;           case PV_CUL:    return @curwin.w_options.wo_cul;
 ;           case PV_LBR:    return @curwin.w_options.wo_lbr;
-;           case PV_LIST:   return @curwin.w_options.wo_list;
 ;           case PV_NU:     return @curwin.w_options.wo_nu;
 ;           case PV_NUW:    return @curwin.w_options.wo_nuw;
 ;           case PV_RNU:    return @curwin.w_options.wo_rnu;
@@ -7389,7 +7345,6 @@
 
 (defn- #_void copy_winopt [#_winopt_C from, #_winopt_C to]
     (§
-;       to.@wo_list = from.@wo_list;
 ;       to.@wo_nu = from.@wo_nu;
 ;       to.@wo_rnu = from.@wo_rnu;
 ;       to.@wo_nuw = from.@wo_nuw;
@@ -7791,9 +7746,6 @@
 ;       long first_line = 0;                        ;; first changed line
 ;       long last_line = 0;                         ;; last changed line
 
-;       boolean save_list = @curwin.w_options.@wo_list;
-;       @curwin.w_options.@wo_list = false;     ;; don't want list mode here
-
 ;       int new_ts;
 ;       { Bytes[] __ = { eap.arg }; new_ts = (int)getdigits(__); eap.arg = __[0]; }
 ;       if (new_ts < 0)
@@ -7891,8 +7843,6 @@
 ;           redraw_curbuf_later(NOT_VALID);
 ;       if (first_line != 0)
 ;           changed_lines(first_line, 0, last_line + 1, 0);
-
-;       @curwin.w_options.@wo_list = save_list;     ;; restore 'list'
 
 ;       @curbuf.@b_p_ts = new_ts;
 ;       coladvance(@curwin.w_curswant);
@@ -11317,17 +11267,11 @@
     (§
         ;; Isolate the command and search for it in the command table.
         ;; Exceptions:
-        ;; - the 'k' command can directly be followed by any character.
         ;; - the 's' command can be followed directly by 'c', 'g', 'i', 'I' or 'r',
         ;;      but :sre[wind] is another command, as are :scr[iptnames], :scs[cope], :sim[alt], :sig[ns] and :sil[ent].
 
 ;       Bytes p = eap.cmd;
-;       if (p.at(0) == (byte)'k')
-;       {
-;           eap.cmdidx = CMD_k;
-;           p = p.plus(1);
-;       }
-;       else if (p.at(0) == (byte)'s'
+;       if (p.at(0) == (byte)'s'
 ;               && ((p.at(1) == (byte)'c' && p.at(2) != (byte)'s' && p.at(2) != (byte)'r' && p.at(3) != (byte)'i' && p.at(4) != (byte)'p')
 ;                   || p.at(1) == (byte)'g'
 ;                   || (p.at(1) == (byte)'i' && p.at(2) != (byte)'m' && p.at(2) != (byte)'l' && p.at(2) != (byte)'g')
@@ -12001,26 +11945,6 @@
 ;       @redrawingDisabled = r;
 ;       @p_lz = p;
 ;       out_flush();
-    ))
-
-;; ":mark" and ":k".
-
-(defn- #_void ex_mark [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) == NUL)                   ;; No argument?
-;           emsg(e_argreq);
-;       else if (eap.arg.at(1) != NUL)              ;; more than one character?
-;           emsg(e_trailing);
-;       else
-;       {
-;           pos_C pos = §_pos_C();
-;           COPY_pos(pos, @curwin.w_cursor);
-;           @curwin.w_cursor.lnum = eap.line2;
-;           beginline(BL_WHITE | BL_FIX);
-;           if (setmark(eap.arg.at(0)) == false)    ;; set mark
-;               emsg(u8("E191: Argument must be a letter or forward/backward quote"));
-;           COPY_pos(@curwin.w_cursor, pos);
-;       }
     ))
 
 ;; ":startinsert", ":startreplace" and ":startgreplace"
@@ -17710,12 +17634,8 @@
 ;               @curwin.w_cursor.col = 0;
 ;           else if (oap.block_mode)
 ;               shift_block(oap, amount);
-;           else if (c0 != '#' || !preprocs_left())
-;           {
-                ;; Move the line right if it doesn't start with '#',
-                ;; 'smartindent' isn't set or 'cindent' isn't set or '#' isn't in 'cino'.
+;           else
 ;               shift_line(oap.op_type == OP_LSHIFT, @p_sr, amount, false);
-;           }
 ;       }
 
 ;       changed_lines(oap.op_start.lnum, 0, oap.op_end.lnum + 1, 0);
@@ -20439,9 +20359,7 @@
 ;                               if (cnt == count && i == y_size - 1)
 ;                                   lendiff = STRLEN(p);
 ;                               int indent;
-;                               if (p.at(0) == (byte)'#' && preprocs_left())
-;                                   indent = 0;     ;; leave # lines at start
-;                               else if (p.at(0) == NUL)
+;                               if (p.at(0) == NUL)
 ;                                   indent = 0;     ;; ignore empty lines
 ;                               else if (first_indent)
 ;                               {
@@ -20553,153 +20471,6 @@
 ;               @curwin.w_cursor.coladd = ecol[0] - scol[0] + 1;
 ;           }
 ;       }
-    ))
-
-;; Return true if lines starting with '#' should be left aligned.
-
-(defn- #_boolean preprocs_left []
-    (§
-;       return @curbuf.@b_p_si;
-    ))
-
-;; Return the character name of the register with the given number.
-(defn- #_int get_register_name [#_int num]
-    (§
-;       if (num == -1)
-;           return '"';
-;       else if (num < 10)
-;           return num + '0';
-;       else if (num == DELETION_REGISTER)
-;           return '-';
-;       else if (num == STAR_REGISTER)
-;           return '*';
-;       else if (num == PLUS_REGISTER)
-;           return '+';
-;       else
-;           return num + 'a' - 10;
-    ))
-
-;; ":dis" and ":registers": Display the contents of the yank registers.
-
-(defn- #_void ex_display [#_exarg_C eap]
-    (§
-;       Bytes arg = eap.arg;
-;       if (arg != null && arg.at(0) == NUL)
-;           arg = null;
-;       int attr = hl_attr(HLF_8);
-
-            ;; Highlight title.
-;       msg_puts_title(u8("\n--- Registers ---"));
-
-;       for (int i = -1; i < NUM_REGISTERS && !@got_int; i++)
-;       {
-;           int name = get_register_name(i);
-;           if (arg != null && vim_strchr(arg, name) == null)
-;               continue;       ;; did not ask for this register
-
-                ;; Adjust register name for "unnamed" in 'clipboard'.
-                ;; When it's a clipboard register, fill it with the current contents of the clipboard.
-;           name = adjust_clip_reg(name);
-;           may_get_selection(name);
-
-;           yankreg_C yb;
-;           if (i == -1)
-;           {
-;               if (@y_previous != null)
-;                   yb = @y_previous;
-;               else
-;                   yb = y_regs[0];
-;           }
-;           else
-;               yb = y_regs[i];
-
-;           if (yb.y_array != null)
-;           {
-;               msg_putchar('\n');
-;               msg_putchar('"');
-;               msg_putchar(name);
-;               msg_puts(u8("   "));
-
-;               int n = (int)@Columns - 6;
-;               for (int j = 0; j < yb.y_size && 1 < n; j++)
-;               {
-;                   if (j != 0)
-;                   {
-;                       msg_puts_attr(u8("^J"), attr);
-;                       n -= 2;
-;                   }
-
-;                   for (Bytes p = yb.y_array[j]; p.at(0) != NUL && 0 <= (n -= mb_ptr2cells(p)); p = p.plus(1))
-;                   {
-;                       int clen = us_ptr2len_cc(p);
-;                       msg_outtrans_len(p, clen);
-;                       p = p.plus(clen - 1);
-;                   }
-;               }
-;               if (1 < n && yb.y_type == MLINE)
-;                   msg_puts_attr(u8("^J"), attr);
-;               out_flush();                    ;; show one line at a time
-;           }
-;           ui_breakcheck();
-;       }
-
-            ;; display last inserted text
-
-;       Bytes p = get_last_insert();
-;       if (p != null && (arg == null || vim_strchr(arg, '.') != null) && !@got_int)
-;       {
-;           msg_puts(u8("\n\".   "));
-;           dis_msg(p, true);
-;       }
-
-            ;; display last command line
-
-;       if (@last_cmdline != null && (arg == null || vim_strchr(arg, ':') != null) && !@got_int)
-;       {
-;           msg_puts(u8("\n\":   "));
-;           dis_msg(@last_cmdline, false);
-;       }
-
-            ;; display last search pattern
-
-;       p = last_search_pat();
-;       if (p != null && (arg == null || vim_strchr(arg, '/') != null) && !@got_int)
-;       {
-;           msg_puts(u8("\n\"/   "));
-;           dis_msg(p, false);
-;       }
-
-            ;; display last used expression
-
-;       if (@expr_line != null && (arg == null || vim_strchr(arg, '=') != null) && !@got_int)
-;       {
-;           msg_puts(u8("\n\"=   "));
-;           dis_msg(@expr_line, false);
-;       }
-    ))
-
-;; display a string for do_dis()
-;; truncate at end of screen line
-
-(defn- #_void dis_msg [#_Bytes p, #_boolean skip_esc]
-    ;; skip_esc: if true, ignore trailing ESC
-    (§
-;       int n = (int)@Columns - 6;
-;       while (p.at(0) != NUL && !(p.at(0) == ESC && skip_esc && p.at(1) == NUL) && 0 <= (n -= mb_ptr2cells(p)))
-;       {
-;           int len = us_ptr2len_cc(p);
-;           if (1 < len)
-;           {
-;               msg_outtrans_len(p, len);
-;               p = p.plus(len);
-;           }
-;           else
-;           {
-;               msg_outtrans_len(p, 1);
-;               p = p.plus(1);
-;           }
-;       }
-;       ui_breakcheck();
     ))
 
 ;; Join 'count' lines (minimal 2) at cursor position.
@@ -21858,106 +21629,6 @@
 ;       buf.b_changelistlen = 0;
     ))
 
-;; Return the text at the mark.
-
-(defn- #_Bytes fm_getname [#_fmark_C fmark, #_int lead_len]
-    (§
-;       return mark_line(fmark.mark, lead_len);
-    ))
-
-;; Return the line at mark "mp".  Truncate to fit in window.
-;; The returned string has been allocated.
-
-(defn- #_Bytes mark_line [#_pos_C mp, #_int lead_len]
-    (§
-;       if (mp.lnum == 0 || @curbuf.b_ml.ml_line_count < mp.lnum)
-;           return STRDUP(u8("-invalid-"));
-
-;       Bytes s = STRNDUP(skipwhite(ml_get(mp.lnum)), (int)@Columns);
-
-        ;; Truncate the line to fit it in the window.
-;       int len = 0;
-;       Bytes p;
-;       for (p = s; p.at(0) != NUL; p = p.plus(us_ptr2len_cc(p)))
-;       {
-;           len += mb_ptr2cells(p);
-;           if ((int)@Columns - lead_len <= len)
-;               break;
-;       }
-;       p.be(0, NUL);
-
-;       return s;
-    ))
-
-;; print the marks
-
-(defn- #_void ex_marks [#_exarg_C eap]
-    (§
-;       Bytes arg = eap.arg;
-
-;       if (arg != null && arg.at(0) == NUL)
-;           arg = null;
-
-;       show_one_mark('\'', arg, @curwin.w_pcmark, null, true);
-;       for (int i = 0; i < NMARKS; i++)
-;           show_one_mark(i + 'a', arg, @curbuf.b_namedm[i], null, true);
-;       for (int i = 0; i < NMARKS + EXTRA_MARKS; i++)
-;       {
-;           Bytes name = fm_getname(namedfm[i], 15);
-;           if (name != null)
-;               show_one_mark((NMARKS <= i) ? i - NMARKS + '0' : i + 'A', arg, namedfm[i].mark, name, true);
-;       }
-;       show_one_mark('"', arg, @curbuf.b_last_cursor, null, true);
-;       show_one_mark('[', arg, @curbuf.b_op_start, null, true);
-;       show_one_mark(']', arg, @curbuf.b_op_end, null, true);
-;       show_one_mark('^', arg, @curbuf.b_last_insert, null, true);
-;       show_one_mark('.', arg, @curbuf.b_last_change, null, true);
-;       show_one_mark('<', arg, @curbuf.b_visual.vi_start, null, true);
-;       show_one_mark('>', arg, @curbuf.b_visual.vi_end, null, true);
-
-;       show_one_mark(-1, arg, null, null, false);
-    ))
-
-(atom! boolean did_title)
-
-(defn- #_void show_one_mark [#_int c, #_Bytes arg, #_pos_C p, #_Bytes name, #_boolean current]
-    ;; current: in current file
-    (§
-;       if (c == -1)                            ;; finish up
-;       {
-;           if (@did_title)
-;               @did_title = false;
-;           else
-;           {
-;               if (arg == null)
-;                   msg(u8("No marks set"));
-;               else
-;                   emsg2(u8("E283: No marks matching \"%s\""), arg);
-;           }
-;       }
-        ;; don't output anything if 'q' typed at --more-- prompt
-;       else if (!@got_int && (arg == null || vim_strchr(arg, c) != null) && p.lnum != 0)
-;       {
-;           if (!@did_title)
-;           {
-                ;; Highlight title.
-;               msg_puts_title(u8("\nmark line  col file/text"));
-;               @did_title = true;
-;           }
-;           msg_putchar('\n');
-;           if (!@got_int)
-;           {
-;               libC.sprintf(@ioBuff, u8(" %c %6ld %4d "), c, p.lnum, p.col);
-;               msg_outtrans(@ioBuff);
-;               if (name == null && current)
-;                   name = mark_line(p, 15);
-;               if (name != null)
-;                   msg_outtrans_attr(name, current ? hl_attr(HLF_D) : 0);
-;           }
-;           out_flush();                ;; show one line at a time
-;       }
-    ))
-
 ;; ":delmarks[!] [marks]"
 
 (defn- #_void ex_delmarks [#_exarg_C eap]
@@ -22027,78 +21698,6 @@
 ;                   }
 ;           }
 ;       }
-    ))
-
-;; print the jumplist
-
-(defn- #_void ex_jumps [#_exarg_C _eap]
-    (§
-;       cleanup_jumplist();
-
-            ;; Highlight title.
-;       msg_puts_title(u8("\n jump line  col file/text"));
-
-;       for (int i = 0; i < @curwin.w_jumplistlen && !@got_int; i++)
-;       {
-;           if (@curwin.w_jumplist[i].mark.lnum != 0)
-;           {
-;               Bytes name = fm_getname(@curwin.w_jumplist[i], 16);
-;               if (name == null)       ;; file name not available
-;                   continue;
-
-;               msg_putchar('\n');
-;               if (@got_int)
-;                   break;
-
-;               int x = @curwin.w_jumplistidx;
-;               libC.sprintf(@ioBuff, u8("%c %2d %5ld %4d "),
-;                   (i == x) ? (byte)'>' : (byte)' ',
-;                   (x < i) ? i - x : x - i,
-;                   @curwin.w_jumplist[i].mark.lnum,
-;                   @curwin.w_jumplist[i].mark.col);
-;               msg_outtrans(@ioBuff);
-;               msg_outtrans_attr(name, hl_attr(HLF_D));
-;               ui_breakcheck();
-;           }
-;           out_flush();
-;       }
-
-;       if (@curwin.w_jumplistidx == @curwin.w_jumplistlen)
-;           msg_puts(u8("\n>"));
-    ))
-
-;; print the changelist
-
-(defn- #_void ex_changes [#_exarg_C _eap]
-    (§
-            ;; Highlight title.
-;       msg_puts_title(u8("\nchange line  col text"));
-
-;       for (int i = 0; i < @curbuf.b_changelistlen && !@got_int; i++)
-;       {
-;           if (@curbuf.b_changelist[i].lnum != 0)
-;           {
-;               msg_putchar('\n');
-;               if (@got_int)
-;                   break;
-;               int x = @curwin.w_changelistidx;
-;               libC.sprintf(@ioBuff, u8("%c %3d %5ld %4d "),
-;                       (i == x) ? (byte)'>' : (byte)' ',
-;                       (x < i) ? i - x : x - i,
-;                       @curbuf.b_changelist[i].lnum,
-;                       @curbuf.b_changelist[i].col);
-;               msg_outtrans(@ioBuff);
-;               Bytes name = mark_line(@curbuf.b_changelist[i], 17);
-;               if (name == null)
-;                   break;
-;               msg_outtrans_attr(name, hl_attr(HLF_D));
-;               ui_breakcheck();
-;           }
-;           out_flush();
-;       }
-
-;       if (@curwin.w_changelistidx == @curbuf.b_changelistlen)
-;           msg_puts(u8("\n>"));
     ))
 
 (defn- #_long one_adjust [#_long add, #_long line1, #_long line2, #_long amount, #_long amount_after]
@@ -24763,9 +24362,6 @@
 ;           orig_col = @curwin.w_cursor.col;
 ;       }
 
-        ;; for the following tricks we don't want list mode
-;       boolean save_p_list = @curwin.w_options.@wo_list;
-;       @curwin.w_options.@wo_list = false;
 ;       int vc = getvcol_nolist(@curwin.w_cursor);
 ;       int vcol = vc;
 
@@ -24868,8 +24464,6 @@
 
 ;           insstart_less = MAXCOL;
 ;       }
-
-;       @curwin.w_options.@wo_list = save_p_list;
 
 ;       if (new_cursor_col <= 0)
 ;           @curwin.w_cursor.col = 0;
@@ -25175,7 +24769,6 @@
 ;       {
 ;           final int INPUT_BUFLEN = 100;
 ;           Bytes buf = new Bytes(INPUT_BUFLEN + 1);
-;           int virtcol = 0;
 
 ;           buf.be(0, c);
 ;           int i = 1;
@@ -26792,8 +26385,6 @@
 
 ;       if (!@curbuf.@b_p_et && (get_sts_value() != 0 || (@p_sta && ind)))
 ;       {
-;           boolean save_list = @curwin.w_options.@wo_list;
-
             ;; Get the current line.
             ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
 
@@ -26813,10 +26404,6 @@
 ;               ptr = ml_get_cursor();
 ;               cursor = @curwin.w_cursor;
 ;           }
-
-            ;; When 'L' is not in 'cpoptions' a tab always takes up 'ts' spaces.
-;           if (vim_strbyte(@p_cpo, CPO_LISTWM) == null)
-;               @curwin.w_options.@wo_list = false;
 
             ;; Find first white before the cursor.
 ;           pos_C fpos = §_pos_C();
@@ -26908,8 +26495,6 @@
 ;                   ins_bytes_len(saved_line.plus(change_col), cursor.col - change_col);
 ;               }
 ;           }
-
-;           @curwin.w_options.@wo_list = save_list;
 ;       }
 
 ;       return false;
@@ -27155,14 +26740,10 @@
 ;           @ai_col = @curwin.w_cursor.col;
     ))
 
-;; Get the value that w_virtcol would have when 'list' is off.
-;; Unless 'cpo' contains the 'L' flag.
+;; Get the value that w_virtcol would have when 'list' is off.
 
 (defn- #_int get_nolist_virtcol []
     (§
-;       if (@curwin.w_options.@wo_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
-;           return getvcol_nolist(@curwin.w_cursor);
-
 ;       validate_virtcol();
 ;       return @curwin.w_virtcol;
     ))
@@ -43845,7 +43426,7 @@
 
 (defn- #_int win_buf_chartabsize [#_window_C wp, #_buffer_C buf, #_Bytes p, #_int col]
     (§
-;       if (p.at(0) == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
+;       if (p.at(0) == TAB)
 ;       {
 ;           int ts = (int)buf.@b_p_ts;
 ;           return ts - (col % ts);
@@ -44114,7 +43695,7 @@
 
 (defn- #_int win_nolbr_chartabsize [#_window_C wp, #_Bytes p, #_int col, #_int* headp]
     (§
-;       if (p.at(0) == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
+;       if (p.at(0) == TAB)
 ;       {
 ;           int ts = (int)@curbuf.@b_p_ts;
 ;           return ts - (col % ts);
@@ -44177,7 +43758,7 @@
         ;; When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set use a simple loop.
         ;; Also use this when 'list' is set but tabs take their normal size.
 
-;       if ((!wp.w_options.@wo_list || lcs_tab1[0] != NUL) && !wp.w_options.@wo_lbr && @p_sbr.at(0) == NUL && !wp.w_options.@wo_bri)
+;       if (!wp.w_options.@wo_lbr && @p_sbr.at(0) == NUL && !wp.w_options.@wo_bri)
 ;       {
 ;           for ( ; ; p = p.plus(us_ptr2len_cc(p)))
 ;           {
@@ -44238,7 +43819,6 @@
 ;       {
 ;           if (p.at(0) == TAB
 ;                   && (@State & NORMAL) != 0
-;                   && !wp.w_options.@wo_list
 ;                   && !virtual_active()
 ;                   && !(@VIsual_active && (@p_sel.at(0) == (byte)'e' || ltoreq(pos, @VIsual))))
 ;               cursor[0] = vcol + incr - 1;        ;; cursor at end
@@ -44251,14 +43831,8 @@
 
 (defn- #_int getvcol_nolist [#_pos_C posp]
     (§
-;       boolean list_save = @curwin.w_options.@wo_list;
-;       @curwin.w_options.@wo_list = false;
-
 ;       int[] vcol = new int[1];
 ;       getvcol(@curwin, posp, null, vcol, null);
-
-;       @curwin.w_options.@wo_list = list_save;
-
 ;       return vcol[0];
     ))
 
@@ -48181,27 +47755,19 @@
 
 (defn- #_int get_indent []
     (§
-;       return get_indent_str(ml_get_curline(), (int)@curbuf.@b_p_ts, false);
+;       return get_indent_str(ml_get_curline(), (int)@curbuf.@b_p_ts);
     ))
 
 ;; count the size (in window cells) of the indent in line "ptr", with 'tabstop' at "ts"
 
-(defn- #_int get_indent_str [#_Bytes ptr, #_int ts, #_boolean list]
-    ;; list: if true, count only screen size for tabs
+(defn- #_int get_indent_str [#_Bytes ptr, #_int ts]
     (§
 ;       int count = 0;
 
 ;       for ( ; ptr.at(0) != NUL; ptr = ptr.plus(1))
 ;       {
 ;           if (ptr.at(0) == TAB)
-;           {
-;               if (!list || lcs_tab1[0] != NUL)       ;; count a tab for what it is worth
-;                   count += ts - (count % ts);
-;               else
-                    ;; In list mode, when tab is not set,
-                    ;; count screen char width for Tab, displays: ^I
-;                   count += mb_ptr2cells(ptr);
-;           }
+;               count += ts - (count % ts);         ;; count a tab for what it is worth
 ;           else if (ptr.at(0) == (byte)' ')
 ;               count++;                            ;; count a space for one
 ;           else
@@ -48546,7 +48112,7 @@
 ;           @bri_prev_line = line;
 ;           @bri_prev_ts = @curbuf.@b_p_ts;
 ;           @bri_prev_tick = @curbuf.b_changedtick;
-;           @bri_prev_indent = get_indent_str(line, (int)@curbuf.@b_p_ts, wp.w_options.@wo_list);
+;           @bri_prev_indent = get_indent_str(line, (int)@curbuf.@b_p_ts);
 ;       }
 ;       bri = @bri_prev_indent + wp.w_p_brishift;
 
@@ -48683,7 +48249,7 @@
 ;       {
             ;; count white space on current line
 
-;           newindent = get_indent_str(saved_line, (int)@curbuf.@b_p_ts, false);
+;           newindent = get_indent_str(saved_line, (int)@curbuf.@b_p_ts);
 ;           if (newindent == 0)
 ;               newindent = second_line_indent; ;; for ^^D command in insert mode
 
@@ -49017,11 +48583,6 @@
 
 ;       int col = win_linetabsize(wp, s, MAXCOL);
 
-        ;; If list mode is on, then the '$' at the end of the line may take up one extra column.
-
-;       if (wp.w_options.@wo_list && @lcs_eol != NUL)
-;           col += 1;
-
         ;; Add column offset for 'number', 'relativenumber' and 'foldcolumn'.
 
 ;       int width = wp.w_width - win_col_off(wp);
@@ -49064,7 +48625,7 @@
         ;; This only fixes an error when the TAB wraps from one screen line to the next
         ;; (when 'columns' is not a multiple of 'ts').
 
-;       if (s.at(0) == TAB && (@State & NORMAL) != 0 && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
+;       if (s.at(0) == TAB && (@State & NORMAL) != 0)
 ;           col += win_lbr_chartabsize(wp, line, s, (int)col, null) - 1;
 
         ;; Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.
@@ -49152,14 +48713,6 @@
 ;       {
 ;           if ((@State & VREPLACE_FLAG) != 0)
 ;           {
-                ;; Disable 'list' temporarily, unless 'cpo' contains the 'L' flag.
-                ;; Returns the old value of list, so when finished,
-                ;; curwin.w_options.wo_list should be set back to this.
-
-;               boolean old_list = @curwin.w_options.@wo_list;
-;               if (old_list && vim_strbyte(@p_cpo, CPO_LISTWM) == null)
-;                   @curwin.w_options.@wo_list = false;
-
                 ;; In virtual replace mode each character may replace one or more
                 ;; characters (zero if it's a TAB).  Count the number of bytes to
                 ;; be deleted to make room for the new character, counting screen
@@ -49180,8 +48733,6 @@
 ;                   if (new_vcol < vcol[0])
 ;                       newlen += vcol[0] - new_vcol;
 ;               }
-
-;               @curwin.w_options.@wo_list = old_list;
 ;           }
 ;           else if (oldp.at(col) != NUL)
 ;           {
@@ -56092,7 +55643,6 @@
 ;       int extra_attr = 0;                     ;; attributes when n_extra != 0
 
 ;       int lcs_eol_one = @lcs_eol;              ;; lcs_eol until it's been used
-;       int lcs_prec_todo = @lcs_prec;           ;; lcs_prec until it's been used
 
 ;       int saved_n_extra = 0;  ;; saved "extra" items for when draw_state becomes WL_LINE (again)
 ;       Bytes saved_p_extra = null;
@@ -56279,16 +55829,6 @@
 
 ;       Bytes line = ml_get_buf(@curbuf, lnum); ;; current line
 ;       Bytes ptr = line;                                  ;; current position in "line"
-
-        ;; find start of trailing whitespace
-;       if (wp.w_options.@wo_list && @lcs_trail != NUL)
-;       {
-;           trailcol = STRLEN(ptr);
-;           while (0 < trailcol && vim_iswhite(ptr.at(trailcol - 1)))
-;               --trailcol;
-;           trailcol += BDIFF(ptr, line);
-;           extra_check = true;
-;       }
 
         ;; 'nowrap' or 'wrap' and a single line that doesn't fit:
         ;; advance to the first character to be displayed.
@@ -56856,27 +56396,6 @@
 
 ;               ptr = ptr.plus(1);
 
-                ;; 'list' : change char 0xa0 to lcs_nbsp.
-;               if (wp.w_options.@wo_list && (c == 0xa0 || (mb_utf8 && mb_c == 0xa0)) && @lcs_nbsp != NUL)
-;               {
-;                   c = @lcs_nbsp;
-;                   if (area_attr == 0 && search_attr == 0)
-;                   {
-;                       n_attr = 1;
-;                       extra_attr = hl_attr(HLF_8);
-;                       saved_attr2 = char_attr;    ;; save current attr
-;                   }
-;                   mb_c = c;
-;                   if (1 < utf_char2len(c))
-;                   {
-;                       mb_utf8 = true;
-;                       u8cc[0] = 0;
-;                       c = 0xc0;
-;                   }
-;                   else
-;                       mb_utf8 = false;
-;               }
-
 ;               if (extra_check)
 ;               {
                     ;; Get syntax attribute, unless still at the start of the line
@@ -56907,8 +56426,7 @@
 ;                               old_boguscols = boguscols;
 ;                               boguscols = 0;
 ;                           }
-;                           if (!wp.w_options.@wo_list)
-;                               c = ' ';
+;                           c = ' ';
 ;                       }
 ;                   }
 
@@ -56940,7 +56458,7 @@
                     ;; When getting a character from the file, we may have to turn it
                     ;; into something else on the way to putting it into "screenLines".
 
-;                   if (c == TAB && (!wp.w_options.@wo_list || lcs_tab1[0] != NUL))
+;                   if (c == TAB)
 ;                   {
 ;                       int tab_len = 0;
 ;                       int vcol_adjusted = vcol; ;; removed showbreak length
@@ -56951,102 +56469,34 @@
                         ;; tab amount depends on current column
 ;                       tab_len = (int)@curbuf.@b_p_ts - vcol_adjusted % (int)@curbuf.@b_p_ts - 1;
 
-;                       if (!wp.w_options.@wo_lbr || !wp.w_options.@wo_list)
-                            ;; tab amount depends on current column
-;                           n_extra = tab_len;
-;                       else
-;                       {
-;                           int len = n_extra;
-;                           int saved_nextra = n_extra;
+                        ;; tab amount depends on current column
+;                       n_extra = tab_len;
 
-;                           if (0 < vcol_off)
-                                ;; there are characters to conceal
-;                               tab_len += vcol_off;
-                            ;; boguscols before FIX_FOR_BOGUSCOLS macro from above
-;                           if (wp.w_options.@wo_list
-;                                       && lcs_tab1[0] != NUL && 0 < old_boguscols && tab_len < n_extra)
-;                               tab_len += n_extra - tab_len;
+                        ;; Tab alignment should be identical regardless of
+                        ;; 'conceallevel' value.  So tab compensates of all
+                        ;; previous concealed characters, and thus resets
+                        ;; vcol_off and boguscols accumulated so far in the
+                        ;; line.  Note that the tab can be longer than
+                        ;; 'tabstop' when there are concealed characters.
 
-                            ;; if n_extra > 0, it gives the number of chars, to use for a tab,
-                            ;; else we need to calculate the width for a tab
-;                           len = tab_len * utf_char2len(lcs_tab2[0]);
-;                           if (0 < n_extra)
-;                               len += n_extra - tab_len;
-;                           c = lcs_tab1[0];
-;                           Bytes p = new Bytes(len + 1);
-;                           BFILL(p, 0, (byte)' ', len);
-;                           p.be(len, NUL);
-;                           p_extra_free = p;
-;                           for (int i = 0; i < tab_len; i++)
-;                           {
-;                               utf_char2bytes(lcs_tab2[0], p);
-;                               p = p.plus(utf_char2len(lcs_tab2[0]));
-;                               n_extra += utf_char2len(lcs_tab2[0]) - (0 < saved_nextra ? 1 : 0);
-;                           }
-;                           p_extra = p_extra_free;
-                            ;; n_extra will be increased by FIX_FOX_BOGUSCOLS
-                            ;; macro below, so need to adjust for that here
-;                           if (0 < vcol_off)
-;                               n_extra -= vcol_off;
-;                       }
-
-;                       {
-;                           int vc_saved = vcol_off;
-
-                            ;; Tab alignment should be identical regardless of
-                            ;; 'conceallevel' value.  So tab compensates of all
-                            ;; previous concealed characters, and thus resets
-                            ;; vcol_off and boguscols accumulated so far in the
-                            ;; line.  Note that the tab can be longer than
-                            ;; 'tabstop' when there are concealed characters.
-;                           {
-;                               n_extra += vcol_off;
-;                               vcol -= vcol_off;
-;                               vcol_off = 0;
-;                               col -= boguscols;
-;                               old_boguscols = boguscols;
-;                               boguscols = 0;
-;                           }
-
-                            ;; Make sure, the highlighting for the tab char will be
-                            ;; correctly set further below (effectively reverts the
-                            ;; FIX_FOR_BOGUSCOLS macro
-;                           if (n_extra == tab_len + vc_saved && wp.w_options.@wo_list && lcs_tab1[0] != NUL)
-;                               tab_len += vc_saved;
-;                       }
+;                       n_extra += vcol_off;
+;                       vcol -= vcol_off;
+;                       vcol_off = 0;
+;                       col -= boguscols;
+;                       old_boguscols = boguscols;
+;                       boguscols = 0;
 
 ;                       mb_utf8 = false;                    ;; don't draw as UTF-8
-;                       if (wp.w_options.@wo_list)
-;                       {
-;                           c = lcs_tab1[0];
-;                           if (wp.w_options.@wo_lbr)
-;                               c_extra = NUL;              ;; using "p_extra" from above
-;                           else
-;                               c_extra = lcs_tab2[0];
-;                           n_attr = tab_len + 1;
-;                           extra_attr = hl_attr(HLF_8);
-;                           saved_attr2 = char_attr;        ;; save current attr
-;                           mb_c = c;
-;                           if (1 < utf_char2len(c))
-;                           {
-;                               mb_utf8 = true;
-;                               u8cc[0] = 0;
-;                               c = 0xc0;
-;                           }
-;                       }
-;                       else
-;                       {
-;                           c_extra = ' ';
-;                           c = ' ';
-;                       }
+
+;                       c_extra = ' ';
+;                       c = ' ';
 ;                   }
 ;                   else if (c == NUL
-;                           && ((wp.w_options.@wo_list && 0 < @lcs_eol)
-;                               || ((0 <= fromcol[0] || 0 <= fromcol_prev)
+;                           && ((0 <= fromcol[0] || 0 <= fromcol_prev)
 ;                                   && vcol < tocol[0]
 ;                                   && @VIsual_mode != Ctrl_V
 ;                                   && col < wp.w_width
-;                                   && !(noinvcur && lnum == wp.w_cursor.lnum && vcol == wp.w_virtcol)))
+;                                   && !(noinvcur && lnum == wp.w_cursor.lnum && vcol == wp.w_virtcol))
 ;                           && 0 <= lcs_eol_one)
 ;                   {
                         ;; Display a '$' after the line or highlight an extra character if the line break is included.
@@ -57064,10 +56514,7 @@
 ;                               c_extra = NUL;
 ;                           }
 ;                       }
-;                       if (wp.w_options.@wo_list)
-;                           c = @lcs_eol;
-;                       else
-;                           c = ' ';
+;                       c = ' ';
 ;                       lcs_eol_one = -1;
 ;                       ptr = ptr.minus(1);                 ;; put it back at the NUL
 ;                       if (!attr_pri)
@@ -57210,44 +56657,6 @@
 ;                   && draw_state == WL_LINE
 ;                   && !attr_pri)
 ;               char_attr = extra_attr;
-
-            ;; Handle the case where we are in column 0 but not on the first
-            ;; character of the line and the user wants us to show us a
-            ;; special character (via 'listchars' option "precedes:<char>".
-
-;           if (lcs_prec_todo != NUL
-;                   && wp.w_options.@wo_list
-;                   && (wp.w_options.@wo_wrap ? 0 < wp.w_skipcol : 0 < wp.w_leftcol)
-;                   && WL_NR < draw_state
-;                   && c != NUL)
-;           {
-;               c = @lcs_prec;
-;               lcs_prec_todo = NUL;
-;               if (1 < utf_char2cells(mb_c))
-;               {
-                    ;; Double-width character being overwritten by the "precedes"
-                    ;; character, need to fill up half the character.
-;                   c_extra = MB_FILLER_CHAR;
-;                   n_extra = 1;
-;                   n_attr = 2;
-;                   extra_attr = hl_attr(HLF_AT);
-;               }
-;               mb_c = c;
-;               if (1 < utf_char2len(c))
-;               {
-;                   mb_utf8 = true;
-;                   u8cc[0] = 0;
-;                   c = 0xc0;
-;               }
-;               else
-;                   mb_utf8 = false;                ;; don't draw as UTF-8
-;               if (!attr_pri)
-;               {
-;                   saved_attr3 = char_attr;        ;; save current attr
-;                   char_attr = hl_attr(HLF_AT);    ;; later copied to char_attr
-;                   n_attr3 = 1;
-;               }
-;           }
 
             ;; At end of the text line or just after the last character.
 
@@ -57423,7 +56832,6 @@
 ;                   && !wp.w_options.@wo_wrap
 ;                   && col == wp.w_width - 1
 ;                   && (ptr.at(0) != NUL
-;                       || (wp.w_options.@wo_list && 0 < lcs_eol_one)
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
 ;           {
 ;               c = @lcs_ext;
@@ -57579,7 +56987,6 @@
 
 ;           if (wp.w_width <= col
 ;                   && (ptr.at(0) != NUL
-;                       || (wp.w_options.@wo_list && @lcs_eol != NUL && BNE(p_extra, at_end_str))
 ;                       || (n_extra != 0 && (c_extra != NUL || p_extra.at(0) != NUL))))
 ;           {
 ;               screen_line(screen_row, wp.w_wincol, col - boguscols, wp.w_width, false);
@@ -57653,7 +57060,6 @@
 ;               saved_c_extra = c_extra;
 ;               saved_char_attr = char_attr;
 ;               n_extra = 0;
-;               lcs_prec_todo = @lcs_prec;
 ;               need_showbreak = true;
 ;           }
 ;       }
@@ -60133,15 +59539,6 @@
 ;               width = (int)@Columns;
 ;           }
 
-            ;; In list mode virtcol needs to be recomputed.
-;           int[] virtcol = { wp.w_virtcol };
-;           if (wp.w_options.@wo_list && lcs_tab1[0] == NUL)
-;           {
-;               wp.w_options.@wo_list = false;
-;               getvvcol(wp, wp.w_cursor, null, virtcol, null);
-;               wp.w_options.@wo_list = true;
-;           }
-
 ;           final int RULER_BUF_LEN = 70;
 ;           Bytes buffer = new Bytes(RULER_BUF_LEN);
 
@@ -60150,7 +59547,7 @@
 
 ;           vim_snprintf(buffer, RULER_BUF_LEN, u8("%ld,"), ((@curbuf.b_ml.ml_flags & ML_EMPTY) != 0) ? 0 : wp.w_cursor.lnum);
 ;           int len = STRLEN(buffer);
-;           col_print(buffer.plus(len), RULER_BUF_LEN - len, (empty_line) ? 0 : wp.w_cursor.col + 1, virtcol[0] + 1);
+;           col_print(buffer.plus(len), RULER_BUF_LEN - len, (empty_line) ? 0 : wp.w_cursor.col + 1, wp.w_virtcol + 1);
 
             ;; Add a "50%" if there is room for it.
             ;; On the last line, don't print in the last column
@@ -65794,45 +65191,29 @@
         (->cmdname_C (u8 "ascii"),         ex_ascii,            CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "belowright"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "botright"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-        (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
-
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
-
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-
-        (->cmdname_C (u8 "jumps"),         ex_jumps,            CMDWIN,                                                    ADDR_LINES),
-        (->cmdname_C (u8 "k"),             ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-
-        (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
-
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
-
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
-        (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-
-
-
         (->cmdname_C (u8 "split"),         ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
         (->cmdname_C (u8 "stop"),          ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "startinsert"),   ex_startinsert,   (| BANG CMDWIN),                                              ADDR_LINES),
@@ -65841,24 +65222,12 @@
         (->cmdname_C (u8 "stopinsert"),    ex_stopinsert,    (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "suspend"),       ex_stop,          (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "syncbind"),      ex_syncbind,         0,                                                         ADDR_LINES),
-
         (->cmdname_C (u8 "topleft"),       ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "undo"),          ex_undo,          (| RANGE NOTADR COUNT ZEROR CMDWIN),                          ADDR_LINES),
         (->cmdname_C (u8 "undojoin"),      ex_undojoin,         CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "undolist"),      ex_undolist,         CMDWIN,                                                    ADDR_LINES),
-
-
-
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
-
-
-        ;; commands that don't start with a lowercase letter
-
-
-
-
-
     ])
 
 ;;; ============================================================================================== VimZ
