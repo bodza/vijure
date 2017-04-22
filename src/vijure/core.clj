@@ -929,10 +929,6 @@
 (final int WSP_BELOW       32)      ;; put new window below/right
 (final int WSP_ABOVE       64)      ;; put new window above/left
 
-;; Magic chars used in confirm dialog strings.
-(final byte DLG_BUTTON_SEP  \newline)
-(final byte DLG_HOTKEY_CHAR \&)
-
 ;; Values for "starting".
 (final int NO_SCREEN       2)       ;; no screen updating yet
 (final int NO_BUFFERS      1)       ;; not all buffers loaded yet
@@ -1228,7 +1224,6 @@
     BV_CI     5,
     BV_CINW   9,
     BV_ET    14,
-    BV_INF   25,
     BV_ISK   26,
     BV_KP    27,
     BV_MOD   31,
@@ -1481,7 +1476,6 @@
 
 (class! #_final reg_extmatch_C
     [
-        (field short        refcnt)
         (field Bytes*       matches     NSUBEXP)
     ])
 
@@ -1898,22 +1892,6 @@
         (field int          tb_change_cnt)      ;; nr of time "tb_buf" was changed; never zero
     ])
 
-(defn- #_void COPY_typebuf [#_typebuf_C tb1, #_typebuf_C tb0]
-    (§
-;       tb1.tb_buf = tb0.tb_buf;
-;       tb1.tb_noremap = tb0.tb_noremap;
-;       tb1.tb_buflen = tb0.tb_buflen;
-;       tb1.tb_off = tb0.tb_off;
-;       tb1.tb_len = tb0.tb_len;
-;       tb1.tb_maplen = tb0.tb_maplen;
-;       tb1.tb_silent = tb0.tb_silent;
-;       tb1.tb_no_abbr_cnt = tb0.tb_no_abbr_cnt;
-;       tb1.tb_change_cnt = tb0.tb_change_cnt;
-    ))
-
-(defn- #_typebuf_C* ARRAY_typebuf [#_int n]
-    (vec (repeatedly n §_typebuf_C)))
-
 ;; Struct to hold the saved typeahead for save_typeahead().
 (class! #_final tasave_C
     [
@@ -1956,9 +1934,6 @@
         (field Bytes        start)
         (field int          userhl)         ;; 0: no HL, 1-9: User HL, < 0 for syn ID
     ])
-
-(defn- #_stl_hlrec_C* ARRAY_stl_hlrec [#_int n]
-    (vec (repeatedly n §_stl_hlrec_C)))
 
 ;; buffer: structure that holds information about one file
 ;;
@@ -2057,7 +2032,6 @@
         (atom' boolean      b_p_ci)             ;; 'copyindent'
         (atom' Bytes        b_p_cinw)           ;; 'cinwords'
         (atom' boolean      b_p_et)             ;; 'expandtab'
-        (atom' boolean      b_p_inf)            ;; 'infercase'
         (atom' Bytes        b_p_isk)            ;; 'iskeyword'
         (atom' Bytes        b_p_kp)             ;; 'keywordprg'
         (atom' Bytes        b_p_mps)            ;; 'matchpairs'
@@ -2191,9 +2165,6 @@
         (field long     toplnum)    ;; top buffer line
         (field long     botlnum)    ;; bottom buffer line
     ])
-
-(defn- #_posmatch_C* ARRAY_posmatch [#_int n]
-    (vec (repeatedly n §_posmatch_C)))
 
 ;; matchitem_C provides a linked list for storing match items for ":match" and the match functions.
 
@@ -2472,133 +2443,120 @@
     CMD_change 7,
     CMD_cabbrev 8,
     CMD_cabclear 9,
-
-    CMD_changes 11,
-    CMD_close 12,
-    CMD_cmap 13,
-    CMD_cmapclear 14,
-    CMD_cnoremap 15,
-    CMD_cnoreabbrev 16,
-    CMD_copy 17,
-    CMD_cunmap 18,
-    CMD_cunabbrev 19,
-    CMD_delete 20,
-    CMD_delmarks 21,
-
-    CMD_digraphs 23,
-    CMD_earlier 24,
-    CMD_fixdel 25,
-    CMD_global 26,
-
-
-    CMD_history 29,
-    CMD_insert 30,
-    CMD_iabbrev 31,
-    CMD_iabclear 32,
-    CMD_imap 33,
-    CMD_imapclear 34,
-    CMD_inoremap 35,
-    CMD_inoreabbrev 36,
-    CMD_iunmap 37,
-    CMD_iunabbrev 38,
-    CMD_join 39,
-    CMD_jumps 40,
-    CMD_k 41,
-    CMD_keepmarks 42,
-    CMD_keepjumps 43,
-    CMD_keeppatterns 44,
-
-    CMD_list 46,
-    CMD_later 47,
-
-    CMD_leftabove 49,
-    CMD_lockmarks 50,
-    CMD_move 51,
-    CMD_mark 52,
-    CMD_map 53,
-    CMD_mapclear 54,
-    CMD_marks 55,
-
-    CMD_nmap 57,
-    CMD_nmapclear 58,
-    CMD_nnoremap 59,
-    CMD_noremap 60,
-    CMD_nohlsearch 61,
-    CMD_noreabbrev 62,
-    CMD_normal 63,
-    CMD_number 64,
-    CMD_nunmap 65,
-    CMD_omap 66,
-    CMD_omapclear 67,
-    CMD_only 68,
-    CMD_onoremap 69,
-    CMD_ounmap 70,
-    CMD_print 71,
-    CMD_put 72,
-
-
-
-    CMD_redo 76,
-    CMD_redraw 77,
-    CMD_redrawstatus 78,
-    CMD_registers 79,
-    CMD_resize 80,
-    CMD_retab 81,
-
-    CMD_rightbelow 83,
-    CMD_substitute 84,
-    CMD_set 85,
-
-
-    CMD_silent 88,
-    CMD_smagic 89,
-    CMD_smap 90,
-    CMD_smapclear 91,
-    CMD_snomagic 92,
-    CMD_snoremap 93,
-    CMD_split 94,
-    CMD_stop 95,
-    CMD_startinsert 96,
-    CMD_startgreplace 97,
-    CMD_startreplace 98,
-    CMD_stopinsert 99,
-    CMD_sunmap 100,
-    CMD_suspend 101,
-    CMD_syncbind 102,
-    CMD_t 103,
-    CMD_topleft 104,
-    CMD_undo 105,
-    CMD_undojoin 106,
-    CMD_undolist 107,
-    CMD_unabbreviate 108,
-    CMD_unmap 109,
-    CMD_unsilent 110,
-    CMD_vglobal 111,
-    CMD_verbose 112,
-    CMD_vertical 113,
-    CMD_vmap 114,
-    CMD_vmapclear 115,
-    CMD_vnoremap 116,
-    CMD_vsplit 117,
-    CMD_vunmap 118,
-    CMD_wincmd 119,
-    CMD_xmap 120,
-    CMD_xmapclear 121,
-    CMD_xnoremap 122,
-    CMD_xunmap 123,
-    CMD_yank 124,
-    CMD_z 125,
+    CMD_changes 10,
+    CMD_close 11,
+    CMD_cmap 12,
+    CMD_cmapclear 13,
+    CMD_cnoremap 14,
+    CMD_cnoreabbrev 15,
+    CMD_copy 16,
+    CMD_cunmap 17,
+    CMD_cunabbrev 18,
+    CMD_delete 19,
+    CMD_delmarks 20,
+    CMD_digraphs 21,
+    CMD_earlier 22,
+    CMD_fixdel 23,
+    CMD_global 24,
+    CMD_history 25,
+    CMD_insert 26,
+    CMD_iabbrev 27,
+    CMD_iabclear 28,
+    CMD_imap 29,
+    CMD_imapclear 30,
+    CMD_inoremap 31,
+    CMD_inoreabbrev 32,
+    CMD_iunmap 33,
+    CMD_iunabbrev 34,
+    CMD_join 35,
+    CMD_jumps 36,
+    CMD_k 37,
+    CMD_keepmarks 38,
+    CMD_keepjumps 39,
+    CMD_keeppatterns 40,
+    CMD_list 41,
+    CMD_later 42,
+    CMD_leftabove 43,
+    CMD_lockmarks 44,
+    CMD_move 45,
+    CMD_mark 46,
+    CMD_map 47,
+    CMD_mapclear 48,
+    CMD_marks 49,
+    CMD_nmap 50,
+    CMD_nmapclear 51,
+    CMD_nnoremap 52,
+    CMD_noremap 53,
+    CMD_nohlsearch 54,
+    CMD_noreabbrev 55,
+    CMD_normal 56,
+    CMD_number 57,
+    CMD_nunmap 58,
+    CMD_omap 59,
+    CMD_omapclear 60,
+    CMD_only 61,
+    CMD_onoremap 62,
+    CMD_ounmap 63,
+    CMD_print 64,
+    CMD_put 65,
+    CMD_redo 66,
+    CMD_redraw 67,
+    CMD_redrawstatus 68,
+    CMD_registers 69,
+    CMD_resize 70,
+    CMD_retab 71,
+    CMD_rightbelow 72,
+    CMD_substitute 73,
+    CMD_set 74,
+    CMD_silent 75,
+    CMD_smagic 76,
+    CMD_smap 77,
+    CMD_smapclear 78,
+    CMD_snomagic 79,
+    CMD_snoremap 80,
+    CMD_split 81,
+    CMD_stop 82,
+    CMD_startinsert 83,
+    CMD_startgreplace 84,
+    CMD_startreplace 85,
+    CMD_stopinsert 86,
+    CMD_sunmap 87,
+    CMD_suspend 88,
+    CMD_syncbind 89,
+    CMD_t 90,
+    CMD_topleft 91,
+    CMD_undo 92,
+    CMD_undojoin 93,
+    CMD_undolist 94,
+    CMD_unabbreviate 95,
+    CMD_unmap 96,
+    CMD_unsilent 97,
+    CMD_vglobal 98,
+    CMD_verbose 99,
+    CMD_vertical 100,
+    CMD_vmap 101,
+    CMD_vmapclear 102,
+    CMD_vnoremap 103,
+    CMD_vsplit 104,
+    CMD_vunmap 105,
+    CMD_wincmd 106,
+    CMD_xmap 107,
+    CMD_xmapclear 108,
+    CMD_xnoremap 109,
+    CMD_xunmap 110,
+    CMD_yank 111,
+    CMD_z 112,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 126,
-    CMD_and 127,
-    CMD_lshift 128,
-    CMD_equal 129,
-    CMD_rshift 130,
-    CMD_tilde 131,
+    CMD_pound 113,
+    CMD_and 114,
+    CMD_lshift 115,
+    CMD_equal 116,
+    CMD_rshift 117,
+    CMD_tilde 118,
 
-    CMD_SIZE 132)     ;; MUST be after all real commands!
+    CMD_SIZE 119)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -3153,10 +3111,6 @@
 (final int KEYLEN_PART_KEY -1)      ;; keylen value for incomplete key-code
 (final int KEYLEN_PART_MAP -2)      ;; keylen value for incomplete mapping
 (final int KEYLEN_REMOVED  9999)    ;; keylen value for removed sequence
-
-;; Flags for get_reg_contents().
-(final int GREG_NO_EXPR    1)       ;; Do not allow expression register
-(final int GREG_EXPR_SRC   2)       ;; Return expression itself for "=" register
 
 ;; Position comparisons
 
@@ -4785,14 +4739,6 @@
 ;       msg_puts_attr(buf, attr);
     ))
 
-(defn- #_void msg_outnum [#_long n]
-    (§
-;       Bytes buf = new Bytes(20);
-
-;       libC.sprintf(buf, u8("%ld"), n);
-;       msg_puts(buf);
-    ))
-
 ;; Output 'len' characters in 'p' (including NULs) with translation
 ;; if 'len' is -1, output upto a NUL character.
 ;; Use attributes 'attr'.
@@ -5490,14 +5436,6 @@
 ;       return mp;
     ))
 
-;; Mark the last message chunk as finishing the line.
-
-(defn- #_void msg_sb_eol []
-    (§
-;       if (@last_msgchunk != null)
-;           @last_msgchunk.sb_eol = true;
-    ))
-
 ;; Display a screen line from previously displayed text at row "row".
 ;; Returns a pointer to the text for the next line (can be null).
 
@@ -5975,271 +5913,6 @@
 ;       @msg_col = 0;
 
 ;       --@no_wait_return;
-    ))
-
-;; Advance msg cursor to column "col".
-
-(defn- #_void msg_advance [#_int col]
-    (§
-;       if (@msg_silent != 0)        ;; nothing to advance to
-;       {
-;           @msg_col = col;          ;; for redirection, may fill it up later
-;           return;
-;       }
-
-;       if ((int)@Columns <= col)         ;; not enough room
-;           col = (int)@Columns - 1;
-
-;       while (@msg_col < col)
-;           msg_putchar(' ');
-    ))
-
-;; Used for "confirm()" function, and the :confirm command prefix.
-;; Versions which haven't got flexible dialogs yet, and console
-;; versions, get this generic handler which uses the command line.
-;;
-;; Format of the "buttons" string:
-;; "Button1Name\nButton2Name\nButton3Name"
-;; The first button should normally be the default/accept
-;; The second button should be the 'Cancel' button
-;; Other buttons- use your imagination!
-;; A '&' in a button name becomes a shortcut, so each '&' should be before a different letter.
-
-(defn- #_int do_dialog [#_Bytes message, #_Bytes buttons, #_int dfltbutton, #_boolean ex_cmd]
-    ;; ex_cmd: when true pressing : accepts default and starts Ex command
-    (§
-;       int retval = 0;
-
-        ;; Don't output anything in silent mode ("ex -s").
-;       if (@silent_mode)
-;           return dfltbutton;      ;; return default option
-
-;       int oldState = @State;
-;       @State = CONFIRM;
-
-        ;; Since we wait for a keypress,
-        ;; don't make the user press RETURN as well afterwards.
-
-;       @no_wait_return++;
-;       Bytes hotkeys = msg_show_console_dialog(message, buttons, dfltbutton);
-
-;       if (hotkeys != null)
-;       {
-;           for ( ; ; )
-;           {
-                ;; Get a typed character directly from the user.
-;               int c = get_keystroke();
-;               switch (c)
-;               {
-;                   case CAR:           ;; User accepts default option
-;                   case NL:
-;                       retval = dfltbutton;
-;                       break;
-
-;                   case Ctrl_C:        ;; User aborts/cancels
-;                   case ESC:
-;                       retval = 0;
-;                       break;
-
-;                   default:            ;; Could be a hotkey?
-;                       if (c < 0)      ;; special keys are ignored here
-;                           continue;
-;                       if (c == ':' && ex_cmd)
-;                       {
-;                           retval = dfltbutton;
-;                           ins_char_typebuf(':');
-;                           break;
-;                       }
-
-                        ;; Make the character lowercase, as chars in "hotkeys" are.
-;                       c = utf_tolower(c);
-;                       retval = 1;
-;                       int i;
-;                       for (i = 0; hotkeys.at(i) != NUL; i++)
-;                       {
-;                           if (us_ptr2char(hotkeys.plus(i)) == c)
-;                               break;
-;                           i += us_ptr2len_cc(hotkeys.plus(i)) - 1;
-;                           retval++;
-;                       }
-;                       if (hotkeys.at(i) != NUL)
-;                           break;
-                        ;; No hotkey match, so keep waiting.
-;                       continue;
-;               }
-;               break;
-;           }
-;       }
-
-;       @State = oldState;
-
-;       --@no_wait_return;
-;       msg_end_prompt();
-
-;       return retval;
-    ))
-
-;; Copy one character from "*from" to "*to", taking care of multi-byte characters.
-;; Return the length of the character in bytes.
-
-(defn- #_int copy_char [#_Bytes from, #_Bytes to, #_boolean lowercase]
-    ;; lowercase: make character lower case
-    (§
-;       if (lowercase)
-;       {
-;           int c = utf_tolower(us_ptr2char(from));
-;           return utf_char2bytes(c, to);
-;       }
-;       else
-;       {
-;           int len = us_ptr2len_cc(from);
-;           BCOPY(to, from, len);
-;           return len;
-;       }
-    ))
-
-;; Format the dialog string, and display it at the bottom of the screen.
-;; Return a string of hotkey chars (if defined) for each 'button'.
-;; If a button has no hotkey defined, the first character of the button is used.
-;; The hotkeys can be multi-byte characters, but without combining chars.
-;;
-;; Returns an allocated string with hotkeys, or null for error.
-
-(defn- #_Bytes msg_show_console_dialog [#_Bytes message, #_Bytes buttons, #_int dfltbutton]
-    (§
-;       Bytes hotk = null;
-
-;       final int HOTK_LEN = MB_MAXBYTES;
-;       int lenhotkey = HOTK_LEN;           ;; count first button
-;       int len = 0;
-
-;       Bytes msgp = null;
-;       Bytes hotkp = null;
-
-;       final int HAS_HOTKEY_LEN = 30;
-
-;       boolean[] has_hotkey = new boolean[HAS_HOTKEY_LEN];
-;       has_hotkey[0] = false;
-;       boolean first_hotkey = false;       ;; first char of button is hotkey
-
-        ;; First loop: compute the size of memory to allocate.
-        ;; Second loop: copy to the allocated memory.
-
-;       for (int copy = 0; copy <= 1; copy++)
-;       {
-;           Bytes r = buttons;
-;           int idx = 0;
-;           while (r.at(0) != NUL)
-;           {
-;               if (r.at(0) == DLG_BUTTON_SEP)
-;               {
-;                   if (copy != 0)
-;                   {
-;                       (msgp = msgp.plus(1)).be(-1, (byte)',');
-;                       (msgp = msgp.plus(1)).be(-1, (byte)' ');        ;; '\n' -> ', '
-
-                        ;; advance to next hotkey and set default hotkey
-;                       hotkp = hotkp.plus(STRLEN(hotkp));
-;                       hotkp.be(copy_char(r.plus(1), hotkp, true), NUL);
-;                       if (dfltbutton != 0)
-;                           --dfltbutton;
-
-                        ;; If no hotkey is specified first char is used.
-;                       if (idx < HAS_HOTKEY_LEN - 1 && !has_hotkey[++idx])
-;                           first_hotkey = true;
-;                   }
-;                   else
-;                   {
-;                       len += 3;               ;; '\n' -> ', '; 'x' -> '(x)'
-;                       lenhotkey += HOTK_LEN;  ;; each button needs a hotkey
-;                       if (idx < HAS_HOTKEY_LEN - 1)
-;                           has_hotkey[++idx] = false;
-;                   }
-;               }
-;               else if (r.at(0) == DLG_HOTKEY_CHAR || first_hotkey)
-;               {
-;                   if (r.at(0) == DLG_HOTKEY_CHAR)
-;                       r = r.plus(1);
-;                   first_hotkey = false;
-;                   if (copy != 0)
-;                   {
-;                       if (r.at(0) == DLG_HOTKEY_CHAR)             ;; '&&a' -> '&a'
-;                           (msgp = msgp.plus(1)).be(-1, r.at(0));
-;                       else
-;                       {
-                            ;; '&a' -> '[a]'
-;                           (msgp = msgp.plus(1)).be(-1, (dfltbutton == 1) ? (byte)'[' : (byte)'(');
-;                           msgp = msgp.plus(copy_char(r, msgp, false));
-;                           (msgp = msgp.plus(1)).be(-1, (dfltbutton == 1) ? (byte)']' : (byte)')');
-
-                            ;; redefine hotkey
-;                           hotkp.be(copy_char(r, hotkp, true), NUL);
-;                       }
-;                   }
-;                   else
-;                   {
-;                       len++;          ;; '&a' -> '[a]'
-;                       if (idx < HAS_HOTKEY_LEN - 1)
-;                           has_hotkey[idx] = true;
-;                   }
-;               }
-;               else
-;               {
-                    ;; everything else copy literally
-;                   if (copy != 0)
-;                       msgp = msgp.plus(copy_char(r, msgp, false));
-;               }
-
-                ;; advance to the next character
-;               r = r.plus(us_ptr2len_cc(r));
-;           }
-
-;           if (copy != 0)
-;           {
-;               (msgp = msgp.plus(1)).be(-1, (byte)':');
-;               (msgp = msgp.plus(1)).be(-1, (byte)' ');
-;               msgp.be(0, NUL);
-;           }
-;           else
-;           {
-;               len += STRLEN(message)
-;                          + 2                      ;; for the NL's
-;                          + STRLEN(buttons)
-;                          + 3;                    ;; for the ": " and NUL
-;               lenhotkey++;                        ;; for the NUL
-
-                ;; If no hotkey is specified first char is used.
-;               if (!has_hotkey[0])
-;               {
-;                   first_hotkey = true;
-;                   len += 2;               ;; "x" -> "[x]"
-;               }
-
-                ;; Now allocate and load the strings
-
-;               @confirm_msg = new Bytes(len);
-;               @confirm_msg.be(0, (byte)'\n');
-;               STRCPY(@confirm_msg.plus(1), message);
-
-;               msgp = @confirm_msg.plus(1 + STRLEN(message));
-
-;               hotk = new Bytes(lenhotkey);
-;               hotkp = hotk;
-
-                ;; Define first default hotkey.
-                ;; Keep the hotkey string NUL terminated to avoid reading past the end.
-;               hotkp.be(copy_char(buttons, hotkp, true), NUL);
-
-                ;; Remember where the choices start,
-                ;; displaying starts here when "hotkp" typed at the more prompt.
-;               @confirm_msg_tail = msgp;
-;               (msgp = msgp.plus(1)).be(-1, (byte)'\n');
-;           }
-;       }
-
-;       display_confirm_msg();
-
-;       return hotk;
     ))
 
 ;; Display the ":confirm" message.  Also called when screen resized.
@@ -6883,7 +6556,6 @@
     PV_CI   (| BV_CI   PV_BUF),
     PV_CINW (| BV_CINW PV_BUF),
     PV_ET   (| BV_ET   PV_BUF),
-    PV_INF  (| BV_INF  PV_BUF),
     PV_ISK  (| BV_ISK  PV_BUF),
     PV_KP   (| BV_KP   PV_BUF),
     PV_MOD  (| BV_MOD  PV_BUF),
@@ -6997,13 +6669,13 @@
 
 (final vimoption_C* vimoptions
     [
-        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      0,         (u8 "single")),
+        (utf8_opt (u8 "ambiwidth"),      (u8 "ambw"),      P_RCLR,                      p_ambw,      0,         (u8 "single")),
         (bool_opt (u8 "autoindent"),     (u8 "ai"),        0,                           null,        PV_AI,      false),
         (utf8_opt (u8 "background"),     (u8 "bg"),        P_RCLR,                      p_bg,        0,         (u8 "light")),
         (utf8_opt (u8 "backspace"),      (u8 "bs"),     (| P_COMMA P_NODUP),            p_bs,        0,         (u8 "")),
-        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   0,         (u8 " \t!@*-+;:,./?")),
-        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      null,        PV_BRI,     false),
-        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
+        (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   0,         (u8 " \t!@*-+;:,./?")),
+        (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      null,        PV_BRI,     false),
+        (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
         (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     0,          CTRL_F_STR),
         (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            null,        PV_CINW,   (u8 "if,else,while,do,for,switch")),
         (utf8_opt (u8 "clipboard"),      (u8 "cb"),     (| P_COMMA P_NODUP),            p_cb,        0,         (u8 "")),
@@ -7033,15 +6705,14 @@
         (bool_opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       0,          false),
         (bool_opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        0,          false),
         (bool_opt (u8 "incsearch"),      (u8 "is"),        0,                           p_is,        0,          false),
-        (bool_opt (u8 "infercase"),      (u8 "inf"),       0,                           null,        PV_INF,     false),
         (bool_opt (u8 "insertmode"),     (u8 "im"),        0,                           p_im,        0,          false),
-        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       0,         (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
+        (utf8_opt (u8 "isfname"),        (u8 "isf"),    (| P_COMMA P_NODUP),            p_isf,       0,         (u8 "@,48-57,/,.,-,_,+,,,#,$,%,~,=")),
         (utf8_opt (u8 "isident"),        (u8 "isi"),    (| P_COMMA P_NODUP),            p_isi,       0,         (u8 "@,48-57,_,192-255")),
         (utf8_opt (u8 "iskeyword"),      (u8 "isk"),    (| P_COMMA P_NODUP),            null,        PV_ISK,    (u8 "@,48-57,_,192-255")),
         (utf8_opt (u8 "isprint"),        (u8 "isp"),    (| P_RALL P_COMMA P_NODUP),     p_isp,       0,         (u8 "@,161-255")),
         (bool_opt (u8 "joinspaces"),     (u8 "js"),        0,                           p_js,        0,          true),
         (utf8_opt (u8 "keymodel"),       (u8 "km"),     (| P_COMMA P_NODUP),            p_km,        0,         (u8 "")),
-        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           null,        PV_KP,     (u8 ":echo")),
+        (utf8_opt (u8 "keywordprg"),     (u8 "kp"),        0,                           null,        PV_KP,     (u8 ":echo")),
         (long_opt (u8 "laststatus"),     (u8 "ls"),        P_RALL,                      p_ls,        0,          1#_L),
         (bool_opt (u8 "lazyredraw"),     (u8 "lz"),        0,                           p_lz,        0,          false),
         (bool_opt (u8 "linebreak"),      (u8 "lbr"),       P_RWIN,                      null,        PV_LBR,     false),
@@ -7102,7 +6773,7 @@
         (long_opt (u8 "ttimeoutlen"),    (u8 "ttm"),       0,                           p_ttm,       0,          -1#_L),
         (long_opt (u8 "ttyscroll"),      (u8 "tsl"),       0,                           p_ttyscroll, 0,          999#_L),
         (long_opt (u8 "undolevels"),     (u8 "ul"),        0,                           null,        PV_UL,      1000#_L),
-        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000#_L),
+        (long_opt (u8 "updatetime"),     (u8 "ut"),        0,                           p_ut,        0,          4000#_L),
         (long_opt (u8 "verbose"),        (u8 "vbs"),       0,                           p_verbose,   0,          0#_L),
         (utf8_opt (u8 "virtualedit"),    (u8 "ve"),     (| P_COMMA P_NODUP P_CURSWANT), p_ve,        0,         (u8 "")),
         (bool_opt (u8 "visualbell"),     (u8 "vb"),        0,                           p_vb,        0,          false),
@@ -7116,7 +6787,7 @@
         (long_opt (u8 "winwidth"),       (u8 "wiw"),       0,                           p_wiw,       0,          20#_L),
         (bool_opt (u8 "wrap"),            null,            P_RWIN,                      null,        PV_WRAP,    true),
         (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        0,          true),
-        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0#_L),
+        (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0#_L),
 
         ;; terminal output codes
 
@@ -9090,22 +8761,6 @@
 ;       return null;
     ))
 
-;; Get the terminal code for a terminal option.
-;; Returns null when not found.
-
-(defn- #_Bytes get_term_code [#_Bytes tname]
-    (§
-;       if (tname.at(0) != (byte)'t' || tname.at(1) != (byte)'_' || tname.at(2) == NUL || tname.at(3) == NUL)
-;           return null;
-;       int opt_idx = findoption(tname);
-;       if (0 <= opt_idx)
-;       {
-;           Object varp = get_varp(vimoptions[opt_idx]);
-;           return (varp != null) ? ((Bytes[])varp)[0] : null;
-;       }
-;       return find_termcode(tname.plus(2));
-    ))
-
 (defn- #_Bytes get_highlight_default []
     (§
 ;       int i = findoption(u8("hl"));
@@ -9386,7 +9041,6 @@
 ;           case PV_CI:     return @curbuf.b_p_ci;
 ;           case PV_CINW:   return @curbuf.b_p_cinw;
 ;           case PV_ET:     return @curbuf.b_p_et;
-;           case PV_INF:    return @curbuf.b_p_inf;
 ;           case PV_ISK:    return @curbuf.b_p_isk;
 ;           case PV_KP:     return @curbuf.b_p_kp;
 ;           case PV_MOD:    return @curbuf.b_changed;
@@ -11525,7 +11179,7 @@
 
 (atom! cmdline_info_C ccline    (§_cmdline_info_C))
 
-(atom! int new_cmdpos)  ;; position set by set_cmdline_pos()
+(atom! int new_cmdpos)  ;; position set by set_cmdline_pos()
 
 (class! #_final histentry_C
     [
@@ -11758,7 +11412,7 @@
 ;                                   @ccline.cmdlen = len;
 ;                                   STRCPY(@ccline.cmdbuff, p);
 
-                                    ;; Restore the cursor or use the position set with set_cmdline_pos().
+                                    ;; Restore the cursor or use the position set with set_cmdline_pos().
 ;                                   if (@ccline.cmdlen < @new_cmdpos)
 ;                                       @ccline.cmdpos = @ccline.cmdlen;
 ;                                   else
@@ -11981,7 +11635,7 @@
 ;                               @keyTyped = false;       ;; Don't do "p_wc" completion.
 ;                               if (0 <= @new_cmdpos)
 ;                               {
-                                    ;; set_cmdline_pos() was used
+                                    ;; set_cmdline_pos() was used
 ;                                   if (@ccline.cmdlen < @new_cmdpos)
 ;                                       @ccline.cmdpos = @ccline.cmdlen;
 ;                                   else
@@ -13022,7 +12676,7 @@
 (atom! cmdline_info_C prev_ccline)
 
 ;; Save ccline, because obtaining the "=" register may execute "normal :cmd" and overwrite it.
-;; But get_cmdline_str() may need it, thus make it available globally in prev_ccline.
+;; But get_cmdline_str() may need it, thus make it available globally in prev_ccline.
 
 (defn- #_void save_cmdline [#_cmdline_info_C cli]
     (§
@@ -13477,252 +13131,6 @@
 ;           if (histype == HIST_SEARCH && in_map)
 ;               @last_maptick = @maptick;
 ;       }
-    ))
-
-;; Get identifier of newest history entry.
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_int get_history_idx [#_int histype]
-    (§
-;       if (@hislen == 0 || histype < 0 || HIST_COUNT <= histype || @hisidx[histype] < 0)
-;           return -1;
-
-;       return @history[histype][@hisidx[histype]].hisnum;
-    ))
-
-;; Get pointer to the command line info to use.
-;; cmdline_paste() may clear ccline and put the previous value in prev_ccline.
-
-(defn- #_cmdline_info_C get_ccline_ptr []
-    (§
-;       if ((@State & CMDLINE) == 0)
-;           return null;
-;       if (@ccline.cmdbuff != null)
-;           return @ccline;
-;       if (@prev_ccline != null && @prev_ccline.cmdbuff != null)
-;           return @prev_ccline;
-
-;       return null;
-    ))
-
-;; Get the current command line in allocated memory.
-;; Only works when the command line is being edited.
-;; Returns null when something is wrong.
-
-(defn- #_Bytes get_cmdline_str []
-    (§
-;       cmdline_info_C p = get_ccline_ptr();
-;       if (p == null)
-;           return null;
-
-;       return STRNDUP(p.cmdbuff, p.cmdlen);
-    ))
-
-;; Get the current command line position, counted in bytes.
-;; Zero is the first position.
-;; Only works when the command line is being edited.
-;; Returns -1 when something is wrong.
-
-(defn- #_int get_cmdline_pos []
-    (§
-;       cmdline_info_C p = get_ccline_ptr();
-;       if (p == null)
-;           return -1;
-
-;       return p.cmdpos;
-    ))
-
-;; Set the command line byte position to "pos".
-;; Zero is the first position.
-;; Only works when the command line is being edited.
-;; Returns 1 when failed, 0 when OK.
-
-(defn- #_int set_cmdline_pos [#_int pos]
-    (§
-;       cmdline_info_C p = get_ccline_ptr();
-;       if (p == null)
-;           return 1;
-
-        ;; The position is not set directly but after CTRL-\ e or CTRL-R = has changed the command line.
-;       if (pos < 0)
-;           @new_cmdpos = 0;
-;       else
-;           @new_cmdpos = pos;
-;       return 0;
-    ))
-
-;; Get the current command-line type.
-;; Returns ':' or '/' or '?' or '@' or '-'
-;; Only works when the command line is being edited.
-;; Returns NUL when something is wrong.
-
-(defn- #_int get_cmdline_type []
-    (§
-;       cmdline_info_C p = get_ccline_ptr();
-
-;       if (p == null)
-;           return NUL;
-;       if (p.cmdfirstc == NUL)
-;           return '-';
-
-;       return p.cmdfirstc;
-    ))
-
-;; Calculate history index from a number:
-;;   num > 0: seen as identifying number of a history entry
-;;   num < 0: relative position in history wrt newest entry
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_int calc_hist_idx [#_int histype, #_int num]
-    (§
-;       int i;
-;       if (@hislen == 0 || histype < 0 || HIST_COUNT <= histype || (i = @hisidx[histype]) < 0 || num == 0)
-;           return -1;
-
-;       boolean wrapped = false;
-
-;       histentry_C[] hist = @history[histype];
-;       if (0 < num)
-;       {
-;           while (num < hist[i].hisnum)
-;               if (--i < 0)
-;               {
-;                   if (wrapped)
-;                       break;
-;                   i += @hislen;
-;                   wrapped = true;
-;               }
-;           if (hist[i].hisnum == num && hist[i].hisstr != null)
-;               return i;
-;       }
-;       else if (-num <= @hislen)
-;       {
-;           i += num + 1;
-;           if (i < 0)
-;               i += @hislen;
-;           if (hist[i].hisstr != null)
-;               return i;
-;       }
-
-;       return -1;
-    ))
-
-;; Get a history entry by its index.
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_Bytes get_history_entry [#_int histype, #_int idx]
-    (§
-;       idx = calc_hist_idx(histype, idx);
-;       if (0 <= idx)
-;           return @history[histype][idx].hisstr;
-
-;       return u8("");
-    ))
-
-;; Clear all entries of a history.
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_boolean clr_history [#_int histype]
-    (§
-;       if (@hislen != 0 && 0 <= histype && histype < HIST_COUNT)
-;       {
-;           histentry_C[] hist = @history[histype];
-;           for (int i = @hislen; 0 < i--; )
-;           {
-;               hist[i].hisstr = null;
-;               clear_hist_entry(hist[i]);
-;           }
-;           @hisidx[histype] = -1;   ;; mark history as cleared
-;           @hisnum[histype] = 0;    ;; reset identifier counter
-;           return true;
-;       }
-
-;       return false;
-    ))
-
-;; Remove all entries matching {str} from a history.
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_boolean del_history_entry [#_int histype, #_Bytes str]
-    (§
-;       boolean found = false;
-
-;       regmatch_C regmatch = §_regmatch_C();
-;       regmatch.regprog = null;
-;       regmatch.rm_ic = false;     ;; always match case
-
-;       int idx;
-;       if (@hislen != 0
-;               && 0 <= histype
-;               && histype < HIST_COUNT
-;               && str.at(0) != NUL
-;               && 0 <= (idx = @hisidx[histype])
-;               && (regmatch.regprog = vim_regcomp(str, RE_MAGIC + RE_STRING)) != null)
-;       {
-;           int last = idx;
-;           int i = last;
-;           do
-;           {
-;               histentry_C hisptr = @history[histype][i];
-;               if (hisptr.hisstr == null)
-;                   break;
-;               if (vim_regexec(regmatch, hisptr.hisstr, 0))
-;               {
-;                   found = true;
-;                   hisptr.hisstr = null;
-;                   clear_hist_entry(hisptr);
-;               }
-;               else
-;               {
-;                   if (i != last)
-;                   {
-;                       COPY_histentry(@history[histype][last], hisptr);
-;                       clear_hist_entry(hisptr);
-;                   }
-;                   if (--last < 0)
-;                       last += @hislen;
-;               }
-;               if (--i < 0)
-;                   i += @hislen;
-;           } while (i != idx);
-
-;           if (@history[histype][idx].hisstr == null)
-;               @hisidx[histype] = -1;
-;       }
-
-;       return found;
-    ))
-
-;; Remove an indexed entry from a history.
-;; "histype" may be one of the HIST_ values.
-
-(defn- #_boolean del_history_idx [#_int histype, #_int idx]
-    (§
-;       int i = calc_hist_idx(histype, idx);
-;       if (i < 0)
-;           return false;
-
-;       idx = @hisidx[histype];
-;       @history[histype][i].hisstr = null;
-
-        ;; When deleting the last added search string in a mapping, reset
-        ;; last_maptick, so that the last added search string isn't deleted again.
-
-;       if (histype == HIST_SEARCH && @maptick == @last_maptick && i == idx)
-;           @last_maptick = -1;
-
-;       while (i != idx)
-;       {
-;           int j = (i + 1) % @hislen;
-;           COPY_histentry(@history[histype][i], @history[histype][j]);
-;           i = j;
-;       }
-;       clear_hist_entry(@history[histype][i]);
-;       if (--i < 0)
-;           i += @hislen;
-;       @hisidx[histype] = i;
-
-;       return true;
     ))
 
 ;; Get indices "num1,num2" that specify a range within a list (not a range of
@@ -14223,7 +13631,7 @@
 ;                   p[0] = skipwhite(skipdigits(p[0]));
 ;               switch (p[0].at(0))
 ;               {
-                    ;; When adding an entry, also modify cmd_exists().
+                    ;; When adding an entry, also modify cmd_exists().
 ;                   case 'a':
 ;                   {
 ;                       if (checkforcmd(p, u8("aboveleft"), 3))
@@ -15035,62 +14443,6 @@
         (->cmdmods_C (u8 "vertical"),     4, false),
     ])
 
-;; Return length of a command modifier (including optional count).
-;; Return zero when it's not a modifier.
-
-(defn- #_int modifier_len [#_Bytes cmd]
-    (§
-;       Bytes p = cmd;
-
-;       if (asc_isdigit(cmd.at(0)))
-;           p = skipwhite(skipdigits(cmd));
-;       for (int i = 0; i < cmdmods.length; i++)
-;       {
-;           int j;
-;           for (j = 0; p.at(j) != NUL; j++)
-;               if (p.at(j) != cmdmods[i].name.at(j))
-;                   break;
-;           if (!asc_isalpha(p.at(j)) && cmdmods[i].minlen <= j && (BEQ(p, cmd) || cmdmods[i].has_count))
-;               return j + BDIFF(p, cmd);
-;       }
-;       return 0;
-    ))
-
-;; Return > 0 if an Ex command "name" exists.
-;; Return 2 if there is an exact match.
-;; Return 3 if there is an ambiguous match.
-
-(defn- #_int cmd_exists [#_Bytes name]
-    (§
-        ;; Check command modifiers.
-;       for (int i = 0; i < cmdmods.length; i++)
-;       {
-;           int j;
-;           for (j = 0; name.at(j) != NUL; j++)
-;               if (name.at(j) != cmdmods[i].name.at(j))
-;                   break;
-;           if (name.at(j) == NUL && cmdmods[i].minlen <= j)
-;               return (cmdmods[i].name.at(j) == NUL) ? 2 : 1;
-;       }
-
-        ;; Check built-in commands and user defined commands.
-        ;; For ":2match" and ":3match" we need to skip the number.
-;       exarg_C ea = §_exarg_C();
-;       ea.cmd = (name.at(0) == (byte)'2' || name.at(0) == (byte)'3') ? name.plus(1) : name;
-;       ea.cmdidx = 0;
-
-;       boolean[] full = { false };
-;       Bytes p = find_command(ea, full);
-;       if (p == null)
-;           return 3;
-;       if (asc_isdigit(name.at(0)))
-;           return 0;
-;       if (skipwhite(p).at(0) != NUL)
-;           return 0;       ;; trailing garbage
-
-;       return (ea.cmdidx == CMD_SIZE) ? 0 : (full[0] ? 2 : 1);
-    ))
-
 ;; skip a range specifier of the form: addr [,addr] [;addr] ..
 ;;
 ;; Backslashed delimiters after / or ? will be skipped, and commands will
@@ -15448,11 +14800,6 @@
 (defn- #_void ex_abclear [#_exarg_C eap]
     (§
 ;       map_clear(eap.cmd, eap.arg, true, true);
-    ))
-
-(defn- #_boolean ends_excmd [#_int c]
-    (§
-;       return (c == NUL || c == '|' || c == '"' || c == '\n');
     ))
 
 ;; Check if *p is a separator between Ex commands.
@@ -17649,77 +16996,6 @@
 
 ;           @virtual_op = save_virtual_op;
 ;       }
-    ))
-
-;; Move "pos" back to the start of the word it's in.
-
-(defn- #_void find_start_of_word [#_pos_C pos]
-    (§
-;       Bytes line = ml_get(pos.lnum);
-;       int cclass = get_mouse_class(line.plus(pos.col));
-
-;       while (0 < pos.col)
-;       {
-;           int col = pos.col - 1;
-;           col -= us_head_off(line, line.plus(col));
-;           if (get_mouse_class(line.plus(col)) != cclass)
-;               break;
-;           pos.col = col;
-;       }
-    ))
-
-;; Move "pos" forward to the end of the word it's in.
-;; When 'selection' is "exclusive", the position is just after the word.
-
-(defn- #_void find_end_of_word [#_pos_C pos]
-    (§
-;       Bytes line = ml_get(pos.lnum);
-;       if (@p_sel.at(0) == (byte)'e' && 0 < pos.col)
-;       {
-;           --pos.col;
-;           pos.col -= us_head_off(line, line.plus(pos.col));
-;       }
-
-;       int cclass = get_mouse_class(line.plus(pos.col));
-;       while (line.at(pos.col) != NUL)
-;       {
-;           int col = pos.col + us_ptr2len_cc(line.plus(pos.col));
-;           if (get_mouse_class(line.plus(col)) != cclass)
-;           {
-;               if (@p_sel.at(0) == (byte)'e')
-;                   pos.col = col;
-;               break;
-;           }
-;           pos.col = col;
-;       }
-    ))
-
-;; Get class of a character for selection: same class means same word.
-;;  0: blank
-;;  1: punctuation groups
-;;  2: normal word character
-;; >2: multi-byte word character.
-
-(defn- #_int get_mouse_class [#_Bytes p]
-    (§
-;       if (1 < us_byte2len(p.at(0), false))
-;           return us_get_class(p, @curbuf);
-
-;       if (p.at(0) == (byte)' ' || p.at(0) == (byte)'\t')
-;           return 0;
-
-;       if (us_iswordb(p.at(0), @curbuf))
-;           return 2;
-
-        ;; There are a few special cases where we want certain combinations of
-        ;; characters to be considered as a single word.  These are things like
-        ;; "->", "/ *", "*=", "+=", "&=", "<=", ">=", "!=" etc.  Otherwise, each
-        ;; character is in its own class.
-
-;       if (p.at(0) != NUL && vim_strbyte(u8("-+*/%<>&|^!="), p.at(0)) != null)
-;           return 1;
-
-;       return char_u(p.at(0));
     ))
 
 (atom! boolean did_check_visual_highlight)
@@ -22667,18 +21943,6 @@
 ;       may_set_selection();
     ))
 
-;; return true if the current yank register has type MLINE
-
-(defn- #_boolean yank_register_mline [#_int regname]
-    (§
-;       if (regname != 0 && !valid_yank_reg(regname, false))
-;           return false;
-;       if (regname == '_')         ;; black hole is always empty
-;           return false;
-;       get_yank_register(regname, false);
-;       return (@y_current.y_type == MLINE);
-    ))
-
 (atom! int rec__regname)
 
 ;; Start or stop recording into a yank register.
@@ -25795,131 +25059,6 @@
 ;       }
     ))
 
-;; Replace the contents of the '~' register with str.
-
-(defn- #_void dnd_yank_drag_data [#_Bytes str, #_int len]
-    (§
-;       yankreg_C curr = @y_current;
-;       @y_current = y_regs[TILDE_REGISTER];
-;       @y_current.y_array = null;
-;       str_to_reg(@y_current, MCHAR, str, len, 0, false);
-;       @y_current = curr;
-    ))
-
-;; Return the type of a register.
-;; Used for getregtype()
-;; Returns MAUTO for error.
-
-(defn- #_byte get_reg_type [#_int regname, #_long* reglen]
-    (§
-;       switch (regname)
-;       {
-;           case '%':               ;; file name
-;           case '#':               ;; alternate file name
-;           case '=':               ;; expression
-;           case ':':               ;; last command line
-;           case '/':               ;; last search-pattern
-;           case '.':               ;; last inserted text
-;           case Ctrl_W:            ;; word under cursor
-;           case Ctrl_A:            ;; WORD (mnemonic All) under cursor
-;           case '_':               ;; black hole: always empty
-;               return MCHAR;
-;       }
-
-;       regname = may_get_selection(regname);
-
-;       if (regname != NUL && !valid_yank_reg(regname, false))
-;           return MAUTO;
-
-;       get_yank_register(regname, false);
-
-;       if (@y_current.y_array != null)
-;       {
-;           if (reglen != null && @y_current.y_type == MBLOCK)
-;               reglen[0] = @y_current.y_width;
-;           return @y_current.y_type;
-;       }
-
-;       return MAUTO;
-    ))
-
-;; Return the contents of a register as a single allocated string.
-;; Used for "@r" in expressions and for getreg().
-;; Returns null for error.
-;; Flags:
-;;      GREG_NO_EXPR    Do not allow expression register
-;;      GREG_EXPR_SRC   For the expression register: return expression itself,
-;;                      not the result of its evaluation.
-
-(defn- #_Bytes get_reg_contents [#_int regname, #_int flags]
-    (§
-        ;; Don't allow using an expression register inside an expression.
-;       if (regname == '=')
-;       {
-;           if ((flags & GREG_NO_EXPR) != 0)
-;               return null;
-;           if ((flags & GREG_EXPR_SRC) != 0)
-;               return get_expr_line_src();
-
-;           return get_expr_line();
-;       }
-
-;       if (regname == '@')     ;; "@@" is used for unnamed register
-;           regname = '"';
-
-        ;; check for valid regname
-;       if (regname != NUL && !valid_yank_reg(regname, false))
-;           return null;
-
-;       regname = may_get_selection(regname);
-
-;       Bytes[] ret = new Bytes[1];
-;       boolean[] allocated = new boolean[1];
-;       if (get_spec_reg(regname, ret, allocated, false))
-;       {
-;           if (ret[0] == null)
-;               return null;
-
-;           return allocated[0] ? ret[0] : STRDUP(ret[0]);
-;       }
-
-;       get_yank_register(regname, false);
-;       if (@y_current.y_array == null)
-;           return null;
-
-        ;; Compute length of resulting string.
-
-;       int len = 0;
-;       for (int i = 0; i < @y_current.y_size; i++)
-;       {
-;           len += STRLEN(@y_current.y_array[i]);
-
-            ;; Insert a newline between lines and after last line if y_type is MLINE.
-
-;           if (@y_current.y_type == MLINE || i < @y_current.y_size - 1)
-;               len++;
-;       }
-
-;       Bytes retval = new Bytes(len + 1);
-
-        ;; Copy the lines of the yank register into the string.
-
-;       len = 0;
-;       for (int i = 0; i < @y_current.y_size; i++)
-;       {
-;           STRCPY(retval.plus(len), @y_current.y_array[i]);
-;           len += STRLEN(retval, len);
-
-            ;; Insert a NL between lines and after the last line if y_type is MLINE.
-
-;           if (@y_current.y_type == MLINE || i < @y_current.y_size - 1)
-;               retval.be(len++, (byte)'\n');
-;       }
-;       retval.be(len, NUL);
-
-;       return retval;
-    ))
-
 ;; Put a string into a register.  When the register is not empty, the string is appended.
 
 (defn- #_void str_to_reg [#_yankreg_C y_ptr, #_byte yank_type, #_Object str, #_int len, #_int blocklen, #_boolean str_list]
@@ -27504,13 +26643,6 @@
 ;       return (@readbuf1.bh_first.bb_next == null && @readbuf2.bh_first.bb_next == null);
     ))
 
-;; Return true if readbuf1 is empty.  There may still be redo characters in readbuf2.
-
-(defn- #_boolean readbuf1_empty []
-    (§
-;       return (@readbuf1.bh_first.bb_next == null);
-    ))
-
 ;; Set a typeahead character that won't be flushed.
 
 (defn- #_void typeahead_noflush [#_int c]
@@ -27577,41 +26709,6 @@
 ;           start_stuff();
 ;           while (read_readbuffers(true) != NUL)
             ;
-;       }
-    ))
-
-;; Save redobuff and old_redobuff to save_redobuff and save_old_redobuff.
-;; Used before executing autocommands and user functions.
-
-(atom! int save__level)
-
-(defn- #_void saveRedobuff []
-    (§
-;       if (@save__level++ == 0)
-;       {
-;           COPY_buffheader(@save_redobuff, @redobuff);
-;           @redobuff.bh_first.bb_next = null;
-;           COPY_buffheader(@save_old_redobuff, @old_redobuff);
-;           @old_redobuff.bh_first.bb_next = null;
-
-            ;; Make a copy, so that ":normal ." in a function works.
-;           Bytes s = get_buffcont(@save_redobuff, false);
-;           if (s != null)
-;               add_buff(@redobuff, s, -1L);
-;       }
-    ))
-
-;; Restore redobuff and old_redobuff from save_redobuff and save_old_redobuff.
-;; Used after executing autocommands and user functions.
-
-(defn- #_void restoreRedobuff []
-    (§
-;       if (--@save__level == 0)
-;       {
-;           free_buff(@redobuff);
-;           COPY_buffheader(@redobuff, @save_redobuff);
-;           free_buff(@old_redobuff);
-;           COPY_buffheader(@old_redobuff, @save_old_redobuff);
 ;       }
     ))
 
@@ -27699,30 +26796,6 @@
 (defn- #_void stuffReadbuffLen [#_Bytes s, #_long len]
     (§
 ;       add_buff(@readbuf1, s, len);
-    ))
-
-;; Stuff "s" into the stuff buffer,
-;; leaving special key codes unmodified and escaping other KB_SPECIAL and CSI bytes.
-;; Change CR, LF and ESC into a space.
-
-(defn- #_void stuffReadbuffSpec [#_Bytes _s]
-    (§
-;       for (Bytes[] s = { _s }; s[0].at(0) != NUL; )
-;       {
-;           if (s[0].at(0) == KB_SPECIAL && s[0].at(1) != NUL && s[0].at(2) != NUL)
-;           {
-                ;; Insert special key literally.
-;               stuffReadbuffLen(s[0], 3L);
-;               s[0] = s[0].plus(3);
-;           }
-;           else
-;           {
-;               int c = us_ptr2char_adv(s, true);
-;               if (c == CAR || c == NL || c == ESC)
-;                   c = ' ';
-;               stuffcharReadbuff(c);
-;           }
-;       }
     ))
 
 ;; Append a character to the stuff buffer.
@@ -28461,18 +27534,6 @@
 ;       --@no_mapping;
 ;       --@allow_keys;
 
-;       return c;
-    ))
-
-;; Check if any character is available, also half an escape sequence.
-;; Trick: when no typeahead found, but there is something in the typeahead
-;; buffer, it must be an ESC that is recognized as the start of a key code.
-
-(defn- #_int vpeekc_any []
-    (§
-;       int c = vpeekc();
-;       if (c == NUL && 0 < @typebuf.tb_len)
-;           c = ESC;
 ;       return c;
     ))
 
@@ -30046,70 +29107,6 @@
 ;       out_flush();                        ;; show one line at a time
     ))
 
-;; Return true if a map exists that has "str" in the rhs for mode "modechars".
-;; Recognize termcap codes in "str".
-;; Also checks mappings local to the current buffer.
-
-(defn- #_boolean map_to_exists [#_Bytes str, #_Bytes modechars, #_boolean abbr]
-    (§
-;       Bytes rhs = replace_termcodes(str, false, true, false);
-
-;       int mode = 0;
-;       if (vim_strchr(modechars, 'n') != null)
-;           mode |= NORMAL;
-;       if (vim_strchr(modechars, 'v') != null)
-;           mode |= VISUAL + SELECTMODE;
-;       if (vim_strchr(modechars, 'x') != null)
-;           mode |= VISUAL;
-;       if (vim_strchr(modechars, 's') != null)
-;           mode |= SELECTMODE;
-;       if (vim_strchr(modechars, 'o') != null)
-;           mode |= OP_PENDING;
-;       if (vim_strchr(modechars, 'i') != null)
-;           mode |= INSERT;
-;       if (vim_strchr(modechars, 'c') != null)
-;           mode |= CMDLINE;
-
-;       return map_to_exists_mode(rhs, mode, abbr);
-    ))
-
-;; Return true if a map exists that has "str" in the rhs for mode "mode".
-;; Also checks mappings local to the current buffer.
-
-(defn- #_boolean map_to_exists_mode [#_Bytes rhs, #_int mode, #_boolean abbr]
-    (§
-        ;; Do it twice: once for global maps and once for local maps.
-;       for (boolean expand_buffer = false; !expand_buffer; expand_buffer = true)
-;       {
-;           for (int hash = 0; hash < 256; hash++)
-;           {
-;               mapblock_C mp;
-
-;               if (abbr)
-;               {
-;                   if (0 < hash)           ;; there is only one abbr list
-;                       break;
-;                   if (expand_buffer)
-;                       mp = @curbuf.@b_first_abbr;
-;                   else
-;                       mp = first_abbr[0];
-;               }
-;               else if (expand_buffer)
-;                   mp = @curbuf.b_maphash[hash][0];
-;               else
-;                   mp = maphash[hash][0];
-
-;               for ( ; mp != null; mp = mp.m_next)
-;               {
-;                   if ((mp.m_mode & mode) != 0 && STRSTR(mp.m_str, rhs) != null)
-;                       return true;
-;               }
-;           }
-;       }
-
-;       return false;
-    ))
-
 ;; Check for an abbreviation.
 ;; Cursor is at ptr[col].  When inserting, mincol is where insert started.
 ;; "c" is the character typed before check_abbr was called.
@@ -30430,86 +29427,10 @@
 ;       }
     ))
 
-;; Check the string "keys" against the lhs of all mappings.
-;; Return pointer to rhs of mapping (mapblock.m_str); null when no mapping found.
-
-(defn- #_Bytes check_map [#_Bytes keys, #_int mode, #_boolean exact, #_boolean ign_mod, #_boolean abbr, #_mapblock_C* mp_ptr, #_int* local_ptr]
-    ;; exact: require exact match
-    ;; ign_mod: ignore preceding modifier
-    ;; abbr: do abbreviations
-    ;; mp_ptr: return: pointer to mapblock or null
-    ;; local_ptr: return: buffer-local mapping or null
-    (§
-;       int len = STRLEN(keys);
-;       for (int local = 1; 0 <= local; --local)
-            ;; loop over all hash lists
-;           for (int hash = 0; hash < 256; hash++)
-;           {
-;               mapblock_C mp;
-;               if (abbr)
-;               {
-;                   if (0 < hash)           ;; there is only one list.
-;                       break;
-;                   if (local != 0)
-;                       mp = @curbuf.@b_first_abbr;
-;                   else
-;                       mp = first_abbr[0];
-;               }
-;               else if (local != 0)
-;                   mp = @curbuf.b_maphash[hash][0];
-;               else
-;                   mp = maphash[hash][0];
-
-;               for ( ; mp != null; mp = mp.m_next)
-;               {
-                    ;; skip entries with wrong mode, wrong length and not matching ones
-;                   if ((mp.m_mode & mode) != 0 && (!exact || mp.m_keylen == len))
-;                   {
-;                       int minlen;
-;                       if (mp.m_keylen < len)
-;                           minlen = mp.m_keylen;
-;                       else
-;                           minlen = len;
-;                       Bytes s = mp.m_keys;
-;                       if (ign_mod && s.at(0) == KB_SPECIAL && s.at(1) == KS_MODIFIER && s.at(2) != NUL)
-;                       {
-;                           s = s.plus(3);
-;                           if (mp.m_keylen - 3 < len)
-;                               minlen = mp.m_keylen - 3;
-;                       }
-;                       if (STRNCMP(s, keys, minlen) == 0)
-;                       {
-;                           if (mp_ptr != null)
-;                               mp_ptr[0] = mp;
-;                           if (local_ptr != null)
-;                               local_ptr[0] = local;
-;                           return mp.m_str;
-;                       }
-;                   }
-;               }
-;           }
-
-;       return null;
-    ))
-
 ;; Set up default mappings.
 
 (defn- #_void init_mappings []
     (§
-    ))
-
-;; Add a mapping "map" for mode "mode".
-;; Need to put string in allocated memory, because do_map() will modify it.
-
-(defn- #_void add_map [#_Bytes map, #_int mode]
-    (§
-;       Bytes cpo_save = @p_cpo;
-
-;       @p_cpo = u8("");                     ;; allow <> notation
-;       Bytes s = STRDUP(map);
-;       do_map(0, s, mode, false);
-
-;       @p_cpo = cpo_save;
     ))
 
 ;;; ============================================================================================== VimM
@@ -31764,11 +30685,6 @@
 (defn- #_boolean isspecial [#_int c]
     (§
 ;       return (c < ' ' || DEL <= c || c == '0' || c == '^');
-    ))
-
-(defn- #_boolean whitechar [#_int cc]
-    (§
-;       return (vim_iswhite(cc) && !utf_iscomposing(us_ptr2char(ml_get_cursor().plus(1))));
     ))
 
 ;; "flags": INSCHAR_CTRLV  - char typed just after CTRL-V
@@ -37625,18 +36541,7 @@
 
 (defn- #_reg_extmatch_C make_extmatch []
     (§
-;       reg_extmatch_C em = §_reg_extmatch_C();
-;       em.refcnt = 1;
-;       return em;
-    ))
-
-;; Add a reference to an extmatch.
-
-(defn- #_reg_extmatch_C ref_extmatch [#_reg_extmatch_C em]
-    (§
-;       if (em != null)
-;           em.refcnt++;
-;       return em;
+;       return §_reg_extmatch_C();
     ))
 
 ;; Try match of "prog" with at regline[col].
@@ -47278,35 +46183,6 @@
 ;       return @spats[@last_idx].pat;
     ))
 
-;; Reset search direction to forward.  For "gd" and "gD" commands.
-
-(defn- #_void reset_search_dir []
-    (§
-;       @spats[0].sp_off.dir = '/';
-    ))
-
-;; Set the last search pattern.  For ":let @/ =" and viminfo.
-;; Also set the saved search pattern, so that this works in an autocommand.
-
-(defn- #_void set_last_search_pat [#_Bytes s, #_int idx, #_boolean magic, #_boolean setlast]
-    (§
-        ;; An empty string means that nothing should be matched.
-;       @spats[idx].pat = (s.at(0) == NUL) ? null : STRDUP(s);
-;       @spats[idx].magic = magic;
-;       @spats[idx].no_scs = false;
-;       @spats[idx].sp_off.dir = '/';
-;       @spats[idx].sp_off.line = false;
-;       @spats[idx].sp_off.end = false;
-;       @spats[idx].sp_off.off = 0;
-
-;       if (setlast)
-;           @last_idx = idx;
-
-        ;; If 'hlsearch' set and search pat changed: need redraw.
-;       if (@p_hls && idx == @last_idx && !@no_hlsearch)
-;           redraw_all_later(SOME_VALID);
-    ))
-
 ;; Get a regexp program for the last used search pattern.
 ;; This is used for highlighting all matches in a window.
 ;; Values returned in regmatch.regprog and regmatch.rmm_ic.
@@ -47688,11 +46564,6 @@
 ;       }
 
 ;       return 1 + submatch;
-    ))
-
-(defn- #_void set_search_direction [#_byte dirc]
-    (§
-;       @spats[0].sp_off.dir = dirc;
     ))
 
 ;; Return the number of the first subpat that matched.
@@ -49073,19 +47944,6 @@
 ;       }
     ))
 
-(defn- #_void find_first_blank [#_pos_C posp]
-    (§
-;       while (decl(posp) != -1)
-;       {
-;           int c = gchar_pos(posp);
-;           if (!vim_iswhite(c))
-;           {
-;               incl(posp);
-;               break;
-;           }
-;       }
-    ))
-
 ;; Find word under cursor, cursor at end.
 ;; Used while an operator is pending, and in Visual mode.
 
@@ -49382,56 +48240,6 @@
 ;       }
 
 ;       return true;
-    ))
-
-;; Return true if the cursor is on a "<aaa>" tag.  Ignore "<aaa/>".
-;; When "end_tag" is true return true if the cursor is on "</aaa>".
-
-(defn- #_boolean in_html_tag [#_boolean end_tag]
-    (§
-;       Bytes line = ml_get_curline();
-
-;       Bytes p = line.plus(@curwin.w_cursor.col);
-;       while (BLT(line, p))
-;       {
-;           if (p.at(0) == (byte)'<')      ;; find '<' under/before cursor
-;               break;
-;           p = p.minus(us_ptr_back(line, p));
-;           if (p.at(0) == (byte)'>')      ;; find '>' before cursor
-;               break;
-;       }
-;       if (p.at(0) != (byte)'<')
-;           return false;
-
-;       pos_C pos = §_pos_C();
-;       pos.lnum = @curwin.w_cursor.lnum;
-;       pos.col = BDIFF(p, line);
-
-;       p = p.plus(us_ptr2len_cc(p));
-;       if (end_tag)
-;       {
-            ;; check that there is a '/' after the '<'
-;           return (p.at(0) == (byte)'/');
-;       }
-
-        ;; check that there is no '/' after the '<'
-;       if (p.at(0) == (byte)'/')
-;           return false;
-
-;       byte lc = NUL;
-
-        ;; check that the matching '>' is not preceded by '/'
-;       for ( ; ; )
-;       {
-;           if (incp(pos) < 0)
-;               return false;
-;           byte c = ml_get_pos(pos).at(0);
-;           if (c == '>')
-;               break;
-;           lc = c;
-;       }
-
-;       return (lc != '/');
     ))
 
 ;; Search quote char from string line[col].
@@ -50430,8 +49238,6 @@
 ;           getout(2);
 ;       }
 
-;       set_mtime(buf);
-
         ;; Always sync block number 0 to disk.
         ;; Only works when there's a swapfile, otherwise it's done when the file is created.
 
@@ -50491,39 +49297,6 @@
 (defn- #_void ml_close_all []
     (§
 ;       ml_close(@curbuf);
-    ))
-
-;; Update the timestamp in the .swp file.
-;; Used when the file has been written.
-
-(defn- #_void ml_timestamp [#_buffer_C buf]
-    (§
-;       memfile_C mfp = buf.b_ml.ml_mfp;
-;       if (mfp == null)
-;           return;
-
-;       block_hdr_C hp = mf_get(mfp, 0, 1);
-;       if (hp == null)
-;           return;
-
-;       zero_block_C b0p = (zero_block_C)hp.bh_data;
-;       if (b0p.b0_id != B0_ID)
-;       {
-;           emsg(u8("E304: Didn't get block 0??"));
-;           return;
-;       }
-
-;       set_mtime(buf);
-
-;       mf_put(mfp, hp, true, false);
-    ))
-
-;; Write timestamp into block 0.
-;; Also set buf.b_mtime.
-
-(defn- #_void set_mtime [#_buffer_C buf]
-    (§
-        
     ))
 
 ;; NOTE: The pointer returned by the ml_get_*() functions only remains valid until the next call!
@@ -52485,115 +51258,6 @@
 ;       }
     ))
 
-;; Translate a string into allocated memory, replacing special chars with printable chars.
-
-(defn- #_Bytes transstr [#_Bytes s]
-    (§
-;       Bytes hexbuf = new Bytes(11);
-
-        ;; Compute the length of the result, taking account of unprintable multi-byte characters.
-;       int len = 0;
-
-;       for (Bytes p = s; p.at(0) != NUL; )
-;       {
-;           int l = us_ptr2len_cc(p);
-;           if (1 < l)
-;           {
-;               int c = us_ptr2char(p);
-;               p = p.plus(l);
-;               if (vim_isprintc(c))
-;                   len += l;
-;               else
-;               {
-;                   transchar_hex(hexbuf, c);
-;                   len += STRLEN(hexbuf);
-;               }
-;           }
-;           else
-;           {
-;               l = mb_byte2cells((p = p.plus(1)).at(-1));
-;               if (0 < l)
-;                   len += l;
-;               else
-;                   len += 4;   ;; illegal byte sequence
-;           }
-;       }
-
-;       Bytes res = new Bytes(len + 1);
-;       res.be(0, NUL);
-
-;       for (Bytes p = s; p.at(0) != NUL; )
-;       {
-;           int l = us_ptr2len_cc(p);
-;           if (1 < l)
-;           {
-;               int c = us_ptr2char(p);
-;               if (vim_isprintc(c))
-;                   STRNCAT(res, p, l);     ;; append printable multi-byte char
-;               else
-;                   transchar_hex(res.plus(STRLEN(res)), c);
-;               p = p.plus(l);
-;           }
-;           else
-;               STRCAT(res, transchar_byte((p = p.plus(1)).at(-1)));
-;       }
-
-;       return res;
-    ))
-
-;; Convert the string "str[orglen]" to do ignore-case comparing.
-;; Puts the result in "buf[buflen]".
-
-(defn- #_Bytes str_foldcase [#_Bytes str, #_int orglen, #_Bytes buf, #_int buflen]
-    (§
-;       int len = orglen;
-
-;       if (buflen <= len)          ;; Ugly!
-;           len = buflen - 1;
-;       BCOPY(buf, str, len);
-;       buf.be(len, NUL);
-
-        ;; Make each character lower case.
-;       int i = 0;
-;       while (buf.at(i) != NUL)
-;       {
-;           int c = us_ptr2char(buf.plus(i));
-;           int olen = us_ptr2len(buf.plus(i));
-;           int lc = utf_tolower(c);
-
-            ;; Only replace the character when it is not an invalid
-            ;; sequence (ASCII character or more than one byte) and
-            ;; utf_tolower() doesn't return the original character.
-;           if ((c < 0x80 || 1 < olen) && c != lc)
-;           {
-;               int nlen = utf_char2len(lc);
-
-                ;; If the byte length changes, need to shift
-                ;; the following characters forward or backward.
-;               if (olen != nlen)
-;               {
-;                   if (olen < nlen && buflen <= len + nlen - olen)
-;                   {
-                        ;; out of memory, keep old char
-;                       lc = c;
-;                       nlen = olen;
-;                   }
-;                   if (olen != nlen)
-;                   {
-;                       BCOPY(buf, i + nlen, buf, i + olen, STRLEN(buf, i + olen) + 1);
-;                       len += nlen - olen;
-;                   }
-;               }
-;               utf_char2bytes(lc, buf.plus(i));
-;           }
-
-            ;; skip to next multi-byte char
-;           i += us_ptr2len_cc(buf.plus(i));
-;       }
-
-;       return buf;
-    ))
-
 ;; Catch 22: chartab[] can't be initialized before the options are initialized,
 ;; and initializing options may cause transchar() to be called!
 ;; When !chartab_initialized, don't use chartab[].
@@ -53277,39 +51941,6 @@
 ;       return p;
     ))
 
-;; skip over digits and hex characters
-
-(defn- #_Bytes skiphex [#_Bytes q]
-    (§
-;       Bytes p = q;
-
-;       while (asc_isxdigit(p.at(0)))   ;; skip to next non-digit
-;           p = p.plus(1);
-;       return p;
-    ))
-
-;; skip to digit (or NUL after the string)
-
-(defn- #_Bytes skiptodigit [#_Bytes q]
-    (§
-;       Bytes p = q;
-
-;       while (p.at(0) != NUL && !asc_isdigit(p.at(0)))       ;; skip to next digit
-;           p = p.plus(1);
-;       return p;
-    ))
-
-;; skip to hex character (or NUL after the string)
-
-(defn- #_Bytes skiptohex [#_Bytes q]
-    (§
-;       Bytes p = q;
-
-;       while (p.at(0) != NUL && !asc_isxdigit(p.at(0)))      ;; skip to next digit
-;           p = p.plus(1);
-;       return p;
-    ))
-
 ;; Variant of isdigit() that can handle characters > 0x100.
 ;; We don't use isdigit() here, because on some systems it also considers
 ;; superscript 1 to be a digit.
@@ -53335,28 +51966,6 @@
 ;           || ('A' <= c && c <= 'F');
     ))
 
-;; Skip over text until ' ' or '\t' or NUL.
-
-(defn- #_Bytes skiptowhite [#_Bytes p]
-    (§
-;       while (p.at(0) != (byte)' ' && p.at(0) != (byte)'\t' && p.at(0) != NUL)
-;           p = p.plus(1);
-;       return p;
-    ))
-
-;; Like skiptowhite(), but also skip escaped chars.
-
-(defn- #_Bytes skiptowhite_esc [#_Bytes p]
-    (§
-;       while (p.at(0) != (byte)' ' && p.at(0) != (byte)'\t' && p.at(0) != NUL)
-;       {
-;           if ((p.at(0) == (byte)'\\' || p.at(0) == Ctrl_V) && p.at(1) != NUL)
-;               p = p.plus(1);
-;           p = p.plus(1);
-;       }
-;       return p;
-    ))
-
 ;; Getdigits: Get a number from a string and skip over it.
 ;; Note: the argument is a pointer to a byte pointer!
 
@@ -53370,14 +51979,6 @@
 ;       pp[0] = p;
 
 ;       return retval;
-    ))
-
-;; Return true if "lbuf" is empty or only contains blanks.
-
-(defn- #_boolean vim_isblankline [#_Bytes lbuf]
-    (§
-;       Bytes p = skipwhite(lbuf);
-;       return (p.at(0) == NUL || p.at(0) == (byte)'\r' || p.at(0) == (byte)'\n');
     ))
 
 ;; Convert a string into a long and/or unsigned long, taking care of
@@ -53507,33 +52108,6 @@
 ;           return -1;
 
 ;       return (hex2nr(p.at(0)) << 4) + hex2nr(p.at(1));
-    ))
-
-;; Return true if "str" starts with a backslash that should be removed.
-
-(defn- #_boolean rem_backslash [#_Bytes str]
-    (§
-;       return (str.at(0) == (byte)'\\' && str.at(1) != NUL);
-    ))
-
-;; Halve the number of backslashes in a file name argument.
-;; For MS-DOS we only do this if the character after the backslash
-;; is not a normal file character.
-
-(defn- #_void backslash_halve [#_Bytes p]
-    (§
-;       for ( ; p.at(0) != NUL; p = p.plus(1))
-;           if (rem_backslash(p))
-;               BCOPY(p, 0, p, 1, STRLEN(p, 1) + 1);
-    ))
-
-;; backslash_halve() plus save the result in allocated memory.
-
-(defn- #_Bytes backslash_halve_save [#_Bytes p]
-    (§
-;       Bytes res = STRDUP(p);
-;       backslash_halve(res);
-;       return res;
     ))
 
 ;;; ============================================================================================== VimR
@@ -57233,33 +55807,6 @@
 ;       return col;
     ))
 
-;; Find the canonical name for encoding "enc".
-;; When the name isn't recognized, returns "enc" itself,
-;; but with all lower case characters and '_' replaced with '-'.
-;; Returns an allocated string.
-
-(defn- #_Bytes enc_canonize [#_Bytes enc]
-    (§
-;       if (STRCMP(enc, u8("default")) == 0)
-;           return STRDUP(u8("utf-8"));
-
-        ;; copy "enc" to allocated memory, with room for two '-'
-;       Bytes r = new Bytes(STRLEN(enc) + 3);
-
-        ;; Make it all lower case and replace '_' with '-'.
-;       Bytes p = r;
-;       for (Bytes s = enc; s.at(0) != NUL; s = s.plus(1))
-;       {
-;           if (s.at(0) == (byte)'_')
-;               (p = p.plus(1)).be(-1, (byte)'-');
-;           else
-;               (p = p.plus(1)).be(-1, asc_tolower(s.at(0)));
-;       }
-;       p.be(0, NUL);
-
-;       return r;
-    ))
-
 ;; misc.c: functions that didn't seem to fit elsewhere --------------------------------------------
 
 ;; Count the size (in window cells) of the indent in the current line.
@@ -58549,14 +57096,6 @@
 ;       return us_ptr2char(ml_get_cursor());
     ))
 
-;; Write a character at the current cursor position.
-;; It is directly written into the block.
-
-(defn- #_void pchar_cursor [#_int c]
-    (§
-;       ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true).be(@curwin.w_cursor.col, c);
-    ))
-
 ;; When extra == 0: Return true if the cursor is before or on the first non-blank in the line.
 ;; When extra == 1: Return true if the cursor is before the first non-blank in the line.
 
@@ -59767,49 +58306,6 @@
 ;       return p;
     ))
 
-;; Like STRNDUP(), but make all characters uppercase.
-;; This uses ASCII lower-to-upper case translation, language independent.
-
-(defn- #_Bytes vim_strnsave_up [#_Bytes string, #_int len]
-    (§
-;       Bytes p = STRNDUP(string, len);
-;       vim_strup(p);
-;       return p;
-    ))
-
-;; Make string "s" all upper-case and return it in allocated memory.
-;; Handles multi-byte characters as well as possible.
-
-(defn- #_Bytes strup_save [#_Bytes orig]
-    (§
-;       Bytes res = STRDUP(orig);
-
-;       for (Bytes p = res; p.at(0) != NUL; )
-;       {
-;           int c = us_ptr2char(p);
-;           int uc = utf_toupper(c);
-
-            ;; Reallocate string when byte count changes.
-            ;; This is rare, thus it's OK to do another calloc()/free().
-;           int l = us_ptr2len(p);
-;           int newl = utf_char2len(uc);
-;           if (newl != l)
-;           {
-;               Bytes s = new Bytes(STRLEN(res) + 1 + newl - l);
-
-;               BCOPY(s, res, BDIFF(p, res));
-;               STRCPY(s.plus(BDIFF(p, res) + newl), p.plus(l));
-;               p = s.plus(BDIFF(p, res));
-;               res = s;
-;           }
-
-;           utf_char2bytes(uc, p);
-;           p = p.plus(newl);
-;       }
-
-;       return res;
-    ))
-
 ;; copy a space a number of times
 
 (defn- #_void copy_spaces [#_Bytes s, #_int n]
@@ -59825,14 +58321,6 @@
     (§
 ;       for (int i = 0; i < n; i++)
 ;           s.be(i, c);
-    ))
-
-;; delete spaces at the end of a string
-
-(defn- #_void del_trailing_spaces [#_Bytes p]
-    (§
-;       for (int i = STRLEN(p); 0 < --i && vim_iswhite(p.at(i)) && p.at(i - 1) != (byte)'\\' && p.at(i - 1) != Ctrl_V; )
-;           p.be(i, NUL);
     ))
 
 ;; Like strncpy(), but always terminate the result with one NUL.
@@ -60578,14 +59066,6 @@
 ;           }
 
 ;       return 0;
-    ))
-
-(defn- #_Bytes get_key_name [#_int i]
-    (§
-;       if (i < key_names_table.length)
-;           return key_names_table[i].name;
-
-;       return null;
     ))
 
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
@@ -61936,24 +60416,6 @@
 ;       }
     ))
 
-;; Called after writing or reloading the file and setting "b_changed" to false.
-;; Now an undo means that the buffer is modified.
-
-(defn- #_void u_unchanged [#_buffer_C buf]
-    (§
-;       u_unch_branch(buf.b_u_oldhead);
-    ))
-
-(defn- #_void u_unch_branch [#_u_header_C uhp]
-    (§
-;       for (u_header_C uh = uhp; uh != null; uh = uh.uh_prev.ptr)
-;       {
-;           uh.uh_flags |= UH_CHANGED;
-;           if (uh.uh_alt_next.ptr != null)
-;               u_unch_branch(uh.uh_alt_next.ptr);  ;; recursive
-;       }
-    ))
-
 ;; Get pointer to last added entry.
 ;; If it's not valid, give an error message and return null.
 
@@ -62070,17 +60532,6 @@
 ;       --buf.b_u_numhead;
     ))
 
-;; invalidate the undo buffer; called when storage has already been released
-
-(defn- #_void u_clearall [#_buffer_C buf]
-    (§
-;       buf.b_u_newhead = buf.b_u_oldhead = buf.b_u_curhead = null;
-;       buf.b_u_synced = true;
-;       buf.b_u_numhead = 0;
-;       buf.b_u_line_ptr = null;
-;       buf.b_u_line_lnum = 0;
-    ))
-
 ;; save the line "lnum" for the "U" command
 
 (defn- #_void u_saveline [#_long lnum]
@@ -62144,15 +60595,6 @@
 ;       @curwin.w_cursor.col = t;
 ;       @curwin.w_cursor.lnum = @curbuf.b_u_line_lnum;
 ;       check_cursor_col();
-    ))
-
-;; Free all allocated memory blocks for the buffer 'buf'.
-
-(defn- #_void u_blockfree [#_buffer_C buf]
-    (§
-;       while (buf.b_u_oldhead != null)
-;           u_freeheader(buf, buf.b_u_oldhead, null);
-;       buf.b_u_line_ptr = null;
     ))
 
 ;; Check if the 'modified' flag is set.
@@ -63155,43 +61597,6 @@
 ;       @t_colors = libC.atoi(@T_CCO);
     ))
 
-;; Read the next num_bytes bytes from buf, and store them in bytes.
-;; Assume that buf has been through inchar().
-;; Returns the actual number of bytes used from buf (between num_bytes and num_bytes*2),
-;; or -1 if not enough bytes were available.
-
-(defn- #_int get_bytes_from_buf [#_Bytes buf, #_Bytes bytes, #_int num_bytes]
-    (§
-;       int len = 0;
-
-;       for (int i = 0; i < num_bytes; i++)
-;       {
-;           byte b = buf.at(len++);
-
-;           if (b == NUL)
-;               return -1;
-;           if (b == KB_SPECIAL)
-;           {
-;               if (buf.at(len) == NUL || buf.at(len + 1) == NUL)     ;; cannot happen?
-;                   return -1;
-;               if (buf.at(len++) == KS_ZERO)
-;                   b = NUL;
-                ;; else it should be KS_SPECIAL; when followed by KE_FILLER
-                ;; b is KB_SPECIAL, or followed by KE_CSI and b must be CSI.
-;               if (buf.at(len++) == KE_CSI)
-;                   b = CSI;
-;           }
-;           else if (b == CSI && buf.at(len) == KS_EXTRA && buf.at(len + 1) == KE_CSI)
-                ;; CSI is stored as CSI KS_SPECIAL KE_CSI to avoid confusion
-                ;; with the start of a special key.
-;               len += 2;
-
-;           bytes.be(i, b);
-;       }
-
-;       return len;
-    ))
-
 ;; Check if the new shell size is valid, correct it if it's too small or way too big.
 
 (defn- #_void check_shellsize []
@@ -63752,14 +62157,6 @@
 ;       for (int i = 0; i < @tc_len; i++)
 ;           if (@termcodes[i].name.at(0) == name.at(0) && @termcodes[i].name.at(1) == name.at(1))
 ;               return @termcodes[i].code;
-
-;       return null;
-    ))
-
-(defn- #_Bytes get_termcode [#_int i]
-    (§
-;       if (i < @tc_len)
-;           return @termcodes[i].name;
 
 ;       return null;
     ))
@@ -64616,88 +63013,6 @@
 ;       }
 ;       --@no_mapping;
 ;       --@allow_keys;
-    ))
-
-;; Translate an internal mapping/abbreviation representation into the
-;; corresponding external one recognized by :map/:abbrev commands;
-;; respects the current B/k/< settings of 'cpoption'.
-;;
-;; This function is called when expanding mappings/abbreviations on the
-;; command-line, and for building the "Ambiguous mapping..." error message.
-;;
-;; It uses a growarray to build the translation string since the latter
-;; can be wider than the original description.  The caller has to free
-;; the string afterwards.
-;;
-;; Returns null when there is a problem.
-
-(defn- #_Bytes translate_mapping [#_Bytes s]
-    (§
-;       barray_C ba = new barray_C(40);
-
-;       boolean cpo_bslash = (vim_strbyte(@p_cpo, CPO_BSLASH) != null);
-;       boolean cpo_special = (vim_strbyte(@p_cpo, CPO_SPECI) != null);
-;       boolean cpo_keycode = (vim_strbyte(@p_cpo, CPO_KEYCODE) == null);
-
-;       for ( ; s.at(0) != NUL; s = s.plus(1))
-;       {
-;           int c = char_u(s.at(0));
-;           if (c == char_u(KB_SPECIAL) && s.at(1) != NUL && s.at(2) != NUL)
-;           {
-;               int modifiers = 0;
-;               if (s.at(1) == KS_MODIFIER)
-;               {
-;                   s = s.plus(1);
-;                   modifiers = char_u((s = s.plus(1)).at(0));
-;                   c = char_u((s = s.plus(1)).at(0));
-;               }
-;               if (cpo_special && cpo_keycode && c == char_u(KB_SPECIAL) && modifiers == 0)
-;               {
-                    ;; try to find special key in termcodes
-;                   int i;
-;                   for (i = 0; i < @tc_len; i++)
-;                       if (@termcodes[i].name.at(0) == s.at(1) && @termcodes[i].name.at(1) == s.at(2))
-;                           break;
-;                   if (i < @tc_len)
-;                   {
-;                       ba_concat(ba, @termcodes[i].code);
-;                       s = s.plus(2);
-;                       continue;
-;                   }
-;               }
-;               if (c == char_u(KB_SPECIAL) && s.at(1) != NUL && s.at(2) != NUL)
-;               {
-;                   if (cpo_special)
-;                   {
-;                       ba_clear(ba);
-;                       return null;
-;                   }
-;                   c = toSpecial(s.at(1), s.at(2));
-;                   if (c == K_ZERO)                ;; display <Nul> as ^@
-;                       c = NUL;
-;                   s = s.plus(2);
-;               }
-;               if (is_special(c) || modifiers != 0)    ;; special key
-;               {
-;                   if (cpo_special)
-;                   {
-;                       ba_clear(ba);
-;                       return null;
-;                   }
-;                   ba_concat(ba, get_special_key_name(c, modifiers));
-;                   continue;
-;               }
-;           }
-;           if (c == ' ' || c == '\t' || c == Ctrl_J || c == Ctrl_V
-;                   || (c == '<' && !cpo_special)
-;                   || (c == '\\' && !cpo_bslash))
-;               ba_append(ba, cpo_bslash ? Ctrl_V : (byte)'\\');
-;           if (c != NUL)
-;               ba_append(ba, (byte)c);
-;       }
-
-;       ba_append(ba, NUL);
-;       return new Bytes(ba.ba_data);
     ))
 
 ;; ui.c: functions that handle the user interface.
@@ -72364,60 +70679,6 @@
 ;       }
     ))
 
-;; Move window "win1" to below/right of "win2" and make "win1" the current
-;; window.  Only works within the same frame!
-
-(defn- #_void win_move_after [#_window_C win1, #_window_C win2]
-    (§
-        ;; check if the arguments are reasonable
-;       if (win1 == win2)
-;           return;
-
-        ;; check if there is something to do
-;       if (win2.w_next != win1)
-;       {
-            ;; may need move the status line/vertical separator of the last window
-;           if (win1 == @lastwin)
-;           {
-;               int height = win1.w_prev.w_status_height;
-;               win1.w_prev.w_status_height = win1.w_status_height;
-;               win1.w_status_height = height;
-;               if (win1.w_prev.w_vsep_width == 1)
-;               {
-                    ;; Remove the vertical separator from the last-but-one window,
-                    ;; add it to the last window.  Adjust the frame widths.
-;                   win1.w_prev.w_vsep_width = 0;
-;                   win1.w_prev.w_frame.fr_width -= 1;
-;                   win1.w_vsep_width = 1;
-;                   win1.w_frame.fr_width += 1;
-;               }
-;           }
-;           else if (win2 == @lastwin)
-;           {
-;               int height = win1.w_status_height;
-;               win1.w_status_height = win2.w_status_height;
-;               win2.w_status_height = height;
-;               if (win1.w_vsep_width == 1)
-;               {
-                    ;; Remove the vertical separator from win1, add it to the last
-                    ;; window, win2.  Adjust the frame widths.
-;                   win2.w_vsep_width = 1;
-;                   win2.w_frame.fr_width += 1;
-;                   win1.w_vsep_width = 0;
-;                   win1.w_frame.fr_width -= 1;
-;               }
-;           }
-;           win_remove(win1);
-;           frame_remove(win1.w_frame);
-;           win_append(win2, win1);
-;           frame_append(win2.w_frame, win1.w_frame);
-
-;           win_comp_pos();             ;; recompute w_winrow for all windows
-;           redraw_later(NOT_VALID);
-;       }
-;       win_enter(win1);
-    ))
-
 ;; Make all windows the same height.
 ;; 'next_curwin' will soon be the current window, make sure it has enough rows.
 
@@ -73881,42 +72142,6 @@
 ;       win_comp_pos();                 ;; recompute w_winrow and w_wincol
     ))
 
-;; Save the size of all windows in "iap".
-
-(defn- #_void win_size_save [#_iarray_C iap]
-    (§
-;       ia_grow(iap, win_count() * 2);
-
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;       {
-;           iap.ia_data[iap.ia_len++] = wp.w_width + wp.w_vsep_width;
-;           iap.ia_data[iap.ia_len++] = wp.w_height;
-;       }
-    ))
-
-;; Restore window sizes, but only if the number of windows is still the same.
-;; Does not free the growarray.
-
-(defn- #_void win_size_restore [#_iarray_C iap]
-    (§
-;       if (win_count() * 2 == iap.ia_len)
-;       {
-            ;; The order matters, because frames contain other frames, but it's
-            ;; difficult to get right.  The easy way out is to do it twice.
-;           for (int round = 0; round < 2; round++)
-;           {
-;               int i = 0;
-;               for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;               {
-;                   frame_setwidth(wp.w_frame, iap.ia_data[i++]);
-;                   win_setheight_win(iap.ia_data[i++], wp);
-;               }
-;           }
-            ;; recompute the window positions
-;           win_comp_pos();
-;       }
-    ))
-
 ;; Update the position for all windows, using the width and height of the frames.
 ;; Returns the row just after the last window.
 
@@ -74345,226 +72570,6 @@
 ;               first = false;
 ;           }
 ;       }
-    ))
-
-;; Status line of dragwin is dragged "offset" lines down (negative is up).
-
-(defn- #_void win_drag_status_line [#_window_C dragwin, #_int offset]
-    (§
-;       frame_C fr = dragwin.w_frame;
-;       frame_C curfr = fr;
-;       if (fr != @topframe)         ;; more than one window
-;       {
-;           fr = fr.fr_parent;
-            ;; When the parent frame is not a column of frames, its parent should be.
-;           if (fr.fr_layout != FR_COL)
-;           {
-;               curfr = fr;
-;               if (fr != @topframe) ;; only a row of windows, may drag statusline
-;                   fr = fr.fr_parent;
-;           }
-;       }
-
-        ;; If this is the last frame in a column, may want to resize
-        ;; the parent frame instead (go two up to skip a row of frames).
-;       while (curfr != @topframe && curfr.fr_next == null)
-;       {
-;           if (fr != @topframe)
-;               fr = fr.fr_parent;
-;           curfr = fr;
-;           if (fr != @topframe)
-;               fr = fr.fr_parent;
-;       }
-
-;       boolean up;     ;; if true, drag status line up, otherwise down
-;       int room;
-
-;       if (offset < 0) ;; drag up
-;       {
-;           up = true;
-;           offset = -offset;
-            ;; sum up the room of the current frame and above it
-;           if (fr == curfr)
-;           {
-                ;; only one window
-;               room = fr.fr_height - frame_minheight(fr, null);
-;           }
-;           else
-;           {
-;               room = 0;
-;               for (fr = fr.fr_child; ; fr = fr.fr_next)
-;               {
-;                   room += fr.fr_height - frame_minheight(fr, null);
-;                   if (fr == curfr)
-;                       break;
-;               }
-;           }
-;           fr = curfr.fr_next;     ;; put fr at frame that grows
-;       }
-;       else            ;; drag down
-;       {
-;           up = false;
-
-            ;; Only dragging the last status line can reduce "p_ch".
-
-;           room = (int)@Rows - @cmdline_row;
-;           if (curfr.fr_next == null)
-;               room -= 1;
-;           else
-;               room -= @p_ch;
-;           if (room < 0)
-;               room = 0;
-            ;; sum up the room of frames below of the current one
-;           for (fr = curfr.fr_next; fr != null; fr = fr.fr_next)
-;               room += fr.fr_height - frame_minheight(fr, null);
-;           fr = curfr;                     ;; put fr at window that grows
-;       }
-
-;       if (room < offset)          ;; not enough room
-;           offset = room;          ;; move as far as we can
-;       if (offset <= 0)
-;           return;
-
-        ;; Grow frame fr by "offset" lines.
-        ;; Doesn't happen when dragging the last status line up.
-
-;       if (fr != null)
-;           frame_new_height(fr, fr.fr_height + offset, up, false);
-
-;       if (up)
-;           fr = curfr;             ;; current frame gets smaller
-;       else
-;           fr = curfr.fr_next;     ;; next frame gets smaller
-
-        ;; Now make the other frames smaller.
-
-;       while (fr != null && 0 < offset)
-;       {
-;           int n = frame_minheight(fr, null);
-;           if (fr.fr_height - offset <= n)
-;           {
-;               offset -= fr.fr_height - n;
-;               frame_new_height(fr, n, !up, false);
-;           }
-;           else
-;           {
-;               frame_new_height(fr, fr.fr_height - offset, !up, false);
-;               break;
-;           }
-;           if (up)
-;               fr = fr.fr_prev;
-;           else
-;               fr = fr.fr_next;
-;       }
-
-;       int row = win_comp_pos();
-;       screen_fill(row, @cmdline_row, 0, (int)@Columns, ' ', ' ', 0);
-;       @cmdline_row = row;
-
-;       @p_ch = @Rows - @cmdline_row;
-;       if (@p_ch < 1)
-;           @p_ch = 1;
-;       @ch_used = @p_ch;
-
-;       redraw_all_later(SOME_VALID);
-;       showmode();
-    ))
-
-;; Separator line of dragwin is dragged "offset" lines right (negative is left).
-
-(defn- #_void win_drag_vsep_line [#_window_C dragwin, #_int offset]
-    (§
-;       frame_C fr = dragwin.w_frame;
-;       if (fr == @topframe)         ;; only one window (cannot happen?)
-;           return;
-
-;       frame_C curfr = fr;
-;       fr = fr.fr_parent;
-        ;; When the parent frame is not a row of frames, its parent should be.
-;       if (fr.fr_layout != FR_ROW)
-;       {
-;           if (fr == @topframe)     ;; only a column of windows (cannot happen?)
-;               return;
-;           curfr = fr;
-;           fr = fr.fr_parent;
-;       }
-
-        ;; If this is the last frame in a row, may want to resize a parent frame instead.
-;       while (curfr.fr_next == null)
-;       {
-;           if (fr == @topframe)
-;               break;
-;           curfr = fr;
-;           fr = fr.fr_parent;
-;           if (fr != @topframe)
-;           {
-;               curfr = fr;
-;               fr = fr.fr_parent;
-;           }
-;       }
-
-;       boolean left;   ;; if true, drag separator line left, otherwise right
-;       int room;
-
-;       if (offset < 0) ;; drag left
-;       {
-;           left = true;
-;           offset = -offset;
-            ;; sum up the room of the current frame and left of it
-;           room = 0;
-;           for (fr = fr.fr_child; ; fr = fr.fr_next)
-;           {
-;               room += fr.fr_width - frame_minwidth(fr, null);
-;               if (fr == curfr)
-;                   break;
-;           }
-;           fr = curfr.fr_next;     ;; put fr at frame that grows
-;       }
-;       else            ;; drag right
-;       {
-;           left = false;
-            ;; sum up the room of frames right of the current one
-;           room = 0;
-;           for (fr = curfr.fr_next; fr != null; fr = fr.fr_next)
-;               room += fr.fr_width - frame_minwidth(fr, null);
-;           fr = curfr;             ;; put fr at window that grows
-;       }
-
-;       if (room < offset)          ;; not enough room
-;           offset = room;          ;; move as far as we can
-;       if (offset <= 0)            ;; No room at all, quit.
-;           return;
-
-        ;; grow frame fr by offset lines
-;       frame_new_width(fr, fr.fr_width + offset, left, false);
-
-        ;; shrink other frames: current and at the left or at the right
-;       if (left)
-;           fr = curfr;             ;; current frame gets smaller
-;       else
-;           fr = curfr.fr_next;     ;; next frame gets smaller
-
-;       while (fr != null && 0 < offset)
-;       {
-;           int n = frame_minwidth(fr, null);
-;           if (fr.fr_width - offset <= n)
-;           {
-;               offset -= fr.fr_width - n;
-;               frame_new_width(fr, n, !left, false);
-;           }
-;           else
-;           {
-;               frame_new_width(fr, fr.fr_width - offset, !left, false);
-;               break;
-;           }
-;           if (left)
-;               fr = fr.fr_prev;
-;           else
-;               fr = fr.fr_next;
-;       }
-
-;       win_comp_pos();
-;       redraw_all_later(NOT_VALID);
     ))
 
 (final long FRACTION_MULT 16384#_L)
@@ -76827,14 +74832,6 @@
 ;       }
     ))
 
-;; Like syn_name2id(), but take a pointer + length argument.
-
-(defn- #_int syn_namen2id [#_Bytes linep, #_int len]
-    (§
-;       Bytes name = STRNDUP(linep, len);
-;       return syn_name2id(name);
-    ))
-
 ;; Lookup a highlight group name and return it's ID.
 ;; If it is not found, 0 is returned.
 
@@ -77144,7 +75141,6 @@
         (->cmdname_C (u8 "change"),        ex_change,        (| BANG RANGE COUNT CMDWIN),                                  ADDR_LINES),
         (->cmdname_C (u8 "cabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "cabclear"),      ex_abclear,       (| EXTRA CMDWIN),                                             ADDR_LINES),
-
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "cmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -77156,13 +75152,10 @@
         (->cmdname_C (u8 "cunabbrev"),     ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
-
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
-
-
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -77179,10 +75172,8 @@
         (->cmdname_C (u8 "keepmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keepjumps"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "keeppatterns"),  ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
-
         (->cmdname_C (u8 "list"),          ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "later"),         ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
-
         (->cmdname_C (u8 "leftabove"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "lockmarks"),     ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "move"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
@@ -77190,7 +75181,6 @@
         (->cmdname_C (u8 "map"),           ex_map,           (| BANG EXTRA USECTRLV CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "mapclear"),      ex_mapclear,      (| EXTRA BANG CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
-
         (->cmdname_C (u8 "nmap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "nmapclear"),     ex_mapclear,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nnoremap"),      ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -77207,21 +75197,15 @@
         (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
-
-
-
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "registers"),     ex_display,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "resize"),        ex_resize,        (| RANGE NOTADR WORD1),                                       ADDR_LINES),
         (->cmdname_C (u8 "retab"),         ex_retab,         (| RANGE DFLALL BANG WORD1 CMDWIN),                           ADDR_LINES),
-
         (->cmdname_C (u8 "rightbelow"),    ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "substitute"),    ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "set"),           ex_set,           (| EXTRA CMDWIN),                                             ADDR_LINES),
-
-
         (->cmdname_C (u8 "silent"),        ex_wrongmodifier, (| NEEDARG EXTRA BANG CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "smagic"),        ex_submagic,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "smap"),          ex_map,           (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
