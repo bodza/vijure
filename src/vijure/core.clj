@@ -23,6 +23,9 @@
 
 (defmacro ... [a i] `(~a ~i))
 
+(defmacro flag? [x y] `(non-zero? (& ~x ~y)))
+(defmacro non-flag? [x y] `(zero? (& ~x ~y)))
+
 (def- % rem)
 
 (def- & bit-and)
@@ -2705,14 +2708,12 @@
     ))
 
 (defn- #_void mch_init []
-    (§
-        (reset! Columns 80)
-        (reset! Rows 24)
+    (reset! Columns 80)
+    (reset! Rows 24)
 
-        (out_flush)
-        (set_signals)
-        nil
-    ))
+    (out_flush)
+    (set_signals)
+    nil)
 
 (defn- #_void set_signals []
     (§
@@ -3005,18 +3006,16 @@
 ;; Try to set the window size to Rows and Columns.
 
 (defn- #_void mch_set_shellsize []
-    (§
-        (when (non-eos? @T_CWS)
-            ;; NOTE: if you get an error here that term_set_winsize() is undefined,
-            ;; check the output of configure.  It could probably not find a ncurses,
-            ;; termcap or termlib library.
+    (when (non-eos? @T_CWS)
+        ;; NOTE: if you get an error here that term_set_winsize() is undefined,
+        ;; check the output of configure.  It could probably not find a ncurses,
+        ;; termcap or termlib library.
 
-            (term_set_winsize (int @Rows), (int @Columns))
-            (out_flush)
-            (screen_start)                 ;; don't know where cursor is now
-        )
-        nil
-    ))
+        (term_set_winsize (int @Rows), (int @Columns))
+        (out_flush)
+        (screen_start)                 ;; don't know where cursor is now
+    )
+    nil)
 
 ;; Rows and/or Columns has changed.
 
@@ -3748,25 +3747,23 @@
 ;; When "maxlen" is >= 0 the message is not put in the history.
 
 (defn- #_void msg_puts_attr_len [#_Bytes str, #_int maxlen, #_int attr]
-    (§
-        ;; When writing something to the screen after it has scrolled, requires
-        ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
-        ;; after some prompt, and then outputting something without scrolling
+    ;; When writing something to the screen after it has scrolled, requires
+    ;; a wait-return prompt later.  Needed when scrolling, resetting need_wait_return
+    ;; after some prompt, and then outputting something without scrolling
 
-        (if (and (non-zero? @msg_scrolled) (not @msg_scrolled_ign))
-            (reset! need_wait_return true))
-        (reset! msg_didany true)          ;; remember that something was outputted
+    (if (and (non-zero? @msg_scrolled) (not @msg_scrolled_ign))
+        (reset! need_wait_return true))
+    (reset! msg_didany true)          ;; remember that something was outputted
 
-        ;; If there is no valid screen, use fprintf so we can see error messages.
-        ;; If termcap is not active, we may be writing in an alternate console window,
-        ;; cursor positioning may not work correctly (window size may be different,
-        ;; e.g. for Win32 console) or we just don't know where the cursor is.
+    ;; If there is no valid screen, use fprintf so we can see error messages.
+    ;; If termcap is not active, we may be writing in an alternate console window,
+    ;; cursor positioning may not work correctly (window size may be different,
+    ;; e.g. for Win32 console) or we just don't know where the cursor is.
 
-        (if (msg_use_printf)
-            (msg_puts_printf str, maxlen)
-            (msg_puts_display str, maxlen, attr, false))
-        nil
-    ))
+    (if (msg_use_printf)
+        (msg_puts_printf str, maxlen)
+        (msg_puts_display str, maxlen, attr, false))
+    nil)
 
 ;; The display part of msg_puts_attr_len().
 ;; May be called recursively to display scroll-back text.
@@ -3951,20 +3948,20 @@
 ;; Scroll the screen up one line for displaying the next message line.
 
 (defn- #_void msg_scroll_up []
-    (§
+    (let [rows (int @Rows) cols (int @Columns)]
         ;; scrolling up always works
-        (screen_del_lines 0, 0, 1, (int @Rows), true, null)
+        (screen_del_lines 0, 0, 1, rows, true, null)
 
         (when (not (can_clear (u8 " ")))
             ;; Scrolling up doesn't result in the right background.
             ;; Set the background here.  It's not efficient,
             ;; but avoids that we have to do it all over the code.
-            (screen_fill (- (int @Rows) 1), (int @Rows), 0, (int @Columns), (byte \space), (byte \space), 0)
+            (screen_fill (- rows 1), rows, 0, cols, (byte \space), (byte \space), 0)
 
             ;; Also clear the last char of the last but one line
             ;; if it was not cleared before to avoid a scroll-up.
-            (if (== (... @screenAttrs (+ (... @lineOffset (- (int @Rows) 2)) (- (int @Columns) 1))) -1)
-                (screen_fill (- (int @Rows) 2), (- (int @Rows) 1), (- (int @Columns) 1), (int @Columns), (byte \space), (byte \space), 0))
+            (if (== (... @screenAttrs (+ (... @lineOffset (- rows 2)) (- cols 1))) -1)
+                (screen_fill (- rows 2), (- rows 1), (- cols 1), cols, (byte \space), (byte \space), 0))
         )
         nil
     ))
@@ -4534,7 +4531,7 @@
         ;; we have to redraw the window.
         ;; Do not do this if we are abandoning the file or editing the command line.
 
-        (when (and (not @exiting) @need_wait_return (zero? (& @State CMDLINE)))
+        (when (and (not @exiting) @need_wait_return (non-flag? @State CMDLINE))
             (wait_return FALSE)
             ((ß RETURN) false)
         )
@@ -4556,23 +4553,19 @@
 ;; Use 'w' highlighting and may repeat the message after redrawing
 
 (defn- #_void give_warning [#_Bytes message, #_boolean hl]
-    (§
-        ;; Don't want a hit-enter prompt here.
-        (swap! no_wait_return inc)
+    ;; Don't want a hit-enter prompt here.
+    (swap! no_wait_return inc)
 
-        (reset! keep_msg null)
-        (if hl
-            (reset! keep_msg_attr (hl_attr HLF_W))
-            (reset! keep_msg_attr 0))
-        (if (and (msg_attr message, @keep_msg_attr) (zero? @msg_scrolled))
-            (set_keep_msg message, @keep_msg_attr))
-        (reset! msg_didout false)     ;; overwrite this message
-        (reset! msg_nowait true)      ;; don't wait for this message
-        (reset! msg_col 0)
+    (reset! keep_msg null)
+    (reset! keep_msg_attr (if hl (hl_attr HLF_W) 0))
+    (if (and (msg_attr message, @keep_msg_attr) (zero? @msg_scrolled))
+        (set_keep_msg message, @keep_msg_attr))
+    (reset! msg_didout false)     ;; overwrite this message
+    (reset! msg_nowait true)      ;; don't wait for this message
+    (reset! msg_col 0)
 
-        (swap! no_wait_return dec)
-        nil
-    ))
+    (swap! no_wait_return dec)
+    nil)
 
 ;; Display the ":confirm" message.  Also called when screen resized.
 
@@ -4870,18 +4863,18 @@
 
         ((ß Object varp =) (get_varp v))
 
-        (cond (non-zero? (& (:flags v) P_STRING))
+        (cond (flag? (:flags v) P_STRING)
         (§
             ((ß (Bytes)@varp =) (STRDUP (ß (Bytes)(v.def_val))))
         )
-        (non-zero? (& (:flags v) P_NUM))
+        (flag? (:flags v) P_NUM)
         (§
             (if (== (:indir v) PV_SCROLL)
                 (win_comp_scroll @curwin)
                 ((ß (long)@varp =) (long (:def_val v)))
             )
         )
-        (non-zero? (& (:flags v) P_BOOL))
+        (flag? (:flags v) P_BOOL)
         (§
             ((ß (boolean)@varp =) (boolean (:def_val v)))
         ))
@@ -4918,15 +4911,13 @@
 ;; Initialize the options, part two: After getting Rows and Columns and setting 'term'.
 
 (defn- #_void set_init_2 []
-    (§
-        ;; 'scroll' defaults to half the window height.
-        ;; Note that this default is wrong when the window height changes.
+    ;; 'scroll' defaults to half the window height.
+    ;; Note that this default is wrong when the window height changes.
 
-        (set_number_default (u8 "scroll"), (>>> @Rows 1))
-        (win_comp_scroll @curwin)
-        (comp_col)
-        nil
-    ))
+    (set_number_default (u8 "scroll"), (>>> @Rows 1))
+    (win_comp_scroll @curwin)
+    (comp_col)
+    nil)
 
 ;; Parse 'arg' for option settings.
 ;;
@@ -5009,7 +5000,7 @@
                 ;; allow '=' and ':' as MSDOS command.com allows
                 ;; only one '=' character per "set" command line
 
-                (cond (or (== nextchar (byte \?)) (and (== prefix 1) (nil? (vim_strchr (u8 "=:&<"), nextchar)) (zero? (& (:flags v) P_BOOL))))
+                (cond (or (== nextchar (byte \?)) (and (== prefix 1) (nil? (vim_strchr (u8 "=:&<"), nextchar)) (non-flag? (:flags v) P_BOOL)))
                 (§
                     ;; print value
                     (cond did_show
@@ -5030,7 +5021,7 @@
                 )
                 :else
                 (§
-                    (cond (non-zero? (& (:flags v) P_BOOL))          ;; boolean
+                    (cond (flag? (:flags v) P_BOOL)          ;; boolean
                     (§
                         (when (or (== nextchar (byte \=)) (== nextchar (byte \:)) (== nextchar (byte \<)))
                             ((ß errmsg =) e_invarg)
@@ -5074,7 +5065,7 @@
                             (ß BREAK skip)
                         )
 
-                        (cond (non-zero? (& (:flags v) P_NUM))       ;; numeric
+                        (cond (flag? (:flags v) P_NUM)       ;; numeric
                         (§
                             (ß long value)
 
@@ -5167,11 +5158,11 @@
 
                                 ;; Locate newval[] in origval[] when removing it and when adding to avoid duplicates.
                                 ((ß int i =) 0)
-                                (when (non-zero? (& (:flags v) P_NODUP))
+                                (when (flag? (:flags v) P_NODUP)
                                     ((ß i =) (STRLEN newval))
                                     ((ß int bs =) 0)
                                     ((ß FOR) (ß ((ß s =) origval) (non-eos? s) ((ß s =) (.plus s 1)))
-                                        (if (and (or (zero? (& (:flags v) P_COMMA)) (BEQ s, origval) (and (== (.at s -1) (byte \,)) (zero? (& bs 1)))) (zero? (STRNCMP s, newval, i)) (or (zero? (& (:flags v) P_COMMA)) (== (.at s i) (byte \,)) (eos? s i)))
+                                        (if (and (or (non-flag? (:flags v) P_COMMA) (BEQ s, origval) (and (== (.at s -1) (byte \,)) (zero? (& bs 1)))) (zero? (STRNCMP s, newval, i)) (or (non-flag? (:flags v) P_COMMA) (== (.at s i) (byte \,)) (eos? s i)))
                                             (ß BREAK)
                                         )
                                         ;; Count backslashes.
@@ -5183,10 +5174,10 @@
                                     )
                                 )
 
-                                (when (non-zero? (& (:flags v) P_FLAGLIST))
+                                (when (flag? (:flags v) P_FLAGLIST)
                                     ;; Remove flags that appear twice.
                                     ((ß FOR) (ß ((ß s =) newval) (non-eos? s) ((ß s =) (.plus s 1)))
-                                        (when (and (or (zero? (& (:flags v) P_COMMA)) (!= (.at s 0) (byte \,))) (non-nil? (vim_strbyte (.plus s 1), (.at s 0))))
+                                        (when (and (or (non-flag? (:flags v) P_COMMA) (!= (.at s 0) (byte \,))) (non-nil? (vim_strbyte (.plus s 1), (.at s 0))))
                                             (BCOPY s, 0, s, 1, (+ (STRLEN s, 1) 1))
                                             ((ß s =) (.minus s 1))
                                         )
@@ -5266,16 +5257,14 @@
 ;; After setting various option values: recompute variables that depend on option values.
 
 (defn- #_void didset_options []
-    (§
-        ;; initialize the table for 'iskeyword' et al.
-        (init_chartab)
+    ;; initialize the table for 'iskeyword' et al.
+    (init_chartab)
 
-        (opt_strings_flags @p_dy, p_dy_values, dy_flags, true)
-        (opt_strings_flags @p_ve, p_ve_values, ve_flags, true)
+    (opt_strings_flags @p_dy, p_dy_values, dy_flags, true)
+    (opt_strings_flags @p_ve, p_ve_values, ve_flags, true)
 
-        (briopt_check @curwin)
-        nil
-    ))
+    (briopt_check @curwin)
+    nil)
 
 ;; Check for string options that are null (normally only termcap options).
 
@@ -5529,7 +5518,7 @@
                 (highlight_changed))
         )
 
-        (if (and (!= (:w_curswant @curwin) MAXCOL) (non-zero? (& (:flags v) (| P_CURSWANT P_RALL))))
+        (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
             ((ß @curwin.w_set_curswant =) true)
         )
         (check_redraw (:flags v))
@@ -5616,7 +5605,7 @@
         (§
             (cond @p_im
             (§
-                (if (zero? (& @State INSERT))
+                (if (non-flag? @State INSERT)
                     (reset! need_start_insertmode true))
                 (reset! stop_insert_mode false)
             )
@@ -5669,7 +5658,7 @@
         ;; End of handling side effects for bool options.
 
         (comp_col)                     ;; in case 'ruler' or 'showcmd' changed
-        (if (and (!= (:w_curswant @curwin) MAXCOL) (non-zero? (& (:flags v) (| P_CURSWANT P_RALL))))
+        (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
             ((ß @curwin.w_set_curswant =) true)
         )
         (check_redraw (:flags v))
@@ -5958,7 +5947,7 @@
         ((ß vimoption_C v =) (... vimoptions opt_idx))
 
         (comp_col)                     ;; in case 'columns' or 'ls' changed
-        (if (and (!= (:w_curswant @curwin) MAXCOL) (non-zero? (& (:flags v) (| P_CURSWANT P_RALL))))
+        (if (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
             ((ß @curwin.w_set_curswant =) true)
         )
         (check_redraw (:flags v))
@@ -5974,12 +5963,12 @@
         ((ß boolean doclear =) (== (& flags P_RCLR) P_RCLR))
         ((ß boolean all =) (or (== (& flags P_RALL) P_RALL) doclear))
 
-        (if (or (non-zero? (& flags P_RSTAT)) all)      ;; mark all status lines dirty
+        (if (or (flag? flags P_RSTAT) all)      ;; mark all status lines dirty
             (status_redraw_all))
 
-        (if (or (non-zero? (& flags P_RBUF)) (non-zero? (& flags P_RWIN)) all)
+        (if (or (flag? flags P_RBUF) (flag? flags P_RWIN) all)
             (changed_window_setting))
-        (if (non-zero? (& flags P_RBUF))
+        (if (flag? flags P_RBUF)
             (redraw_curbuf_later NOT_VALID))
         (cond doclear
         (§
@@ -6038,20 +6027,20 @@
 
         ((ß Object varp =) (get_varp v))
 
-        (if (and (non-zero? (& (:flags v) P_BOOL)) (not (boolean @varp)))
+        (if (and (flag? (:flags v) P_BOOL) (not (boolean @varp)))
             (msg_puts (u8 "no"))
             (msg_puts (u8 "  ")))
 
         (msg_puts (:fullname v))
 
-        (when (zero? (& (:flags v) P_BOOL))
+        (when (non-flag? (:flags v) P_BOOL)
             (msg_putchar (byte \=))
 
-            (cond (non-zero? (& (:flags v) P_NUM))
+            (cond (flag? (:flags v) P_NUM)
             (§
                 (.sprintf libC @nameBuff, (u8 "%ld"), (long @varp))
             )
-            (non-zero? (& (:flags v) P_STRING))
+            (flag? (:flags v) P_STRING)
             (§
                 (if (nil? @varp)              ;; just in case
                     (eos! @nameBuff)
@@ -7928,7 +7917,7 @@
                                 ((ß @ccline.cmdspos +=) i)
                                 ((ß @ccline.cmdpos +=) (us_ptr2len_cc (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
 ;                           }
-                            (while (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (!= (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)) 0)) (!= (.at (:cmdbuff @ccline) (:cmdpos @ccline)) (byte \space)))
+                            (while (and (or (== c K_S_RIGHT) (== c K_C_RIGHT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (!= (.at (:cmdbuff @ccline) (:cmdpos @ccline)) (byte \space)))
 ;                               ;
                             )
                             (set_cmdspos_cursor)
@@ -7949,7 +7938,7 @@
                                 ((ß @ccline.cmdpos -=) (us_head_off (:cmdbuff @ccline), (.plus (:cmdbuff @ccline) (:cmdpos @ccline))))
                                 ((ß @ccline.cmdspos -=) (cmdline_charsize (:cmdpos @ccline)))
 ;                           }
-                            (while (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (!= (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)) 0)) (!= (.at (:cmdbuff @ccline) (- (:cmdpos @ccline) 1)) (byte \space)))
+                            (while (and (< 0 (:cmdpos @ccline)) (or (== c K_S_LEFT) (== c K_C_LEFT) (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))) (!= (.at (:cmdbuff @ccline) (- (:cmdpos @ccline) 1)) (byte \space)))
 ;                               ;
                             )
                             (set_cmdspos_cursor)
@@ -8865,26 +8854,22 @@
     nil)
 
 (defn- #_void cursorcmd []
-    (§
-        (reset! msg_row (+ @cmdline_row (/ (:cmdspos @ccline) (int @Columns))))
-        (reset! msg_col (% (:cmdspos @ccline) (int @Columns)))
-        (if (<= @Rows @msg_row)
-            (reset! msg_row (- (int @Rows) 1)))
+    (reset! msg_row (+ @cmdline_row (/ (:cmdspos @ccline) (int @Columns))))
+    (reset! msg_col (% (:cmdspos @ccline) (int @Columns)))
+    (if (<= @Rows @msg_row)
+        (reset! msg_row (dec (int @Rows))))
 
-        (windgoto @msg_row, @msg_col)
-        nil
-    ))
+    (windgoto @msg_row, @msg_col)
+    nil)
 
 (defn- #_void gotocmdline [#_boolean clr]
-    (§
-        (msg_start)
-        (reset! msg_col 0)           ;; always start in column 0
-        (if clr                ;; clear the bottom line(s)
-            (msg_clr_eos))      ;; will reset clear_cmdline
+    (msg_start)
+    (reset! msg_col 0)           ;; always start in column 0
+    (if clr                ;; clear the bottom line(s)
+        (msg_clr_eos))      ;; will reset clear_cmdline
 
-        (windgoto @cmdline_row, 0)
-        nil
-    ))
+    (windgoto @cmdline_row, 0)
+    nil)
 
 ;; Command line history stuff
 
@@ -9156,7 +9141,7 @@
         ;; keyTyped is only set when calling vgetc().
         ;; Reset it here when not calling vgetc() (sourced command lines).
 
-        (if (and (zero? (& flags DOCMD_KEYTYPED)) (not use_getline))
+        (if (and (non-flag? flags DOCMD_KEYTYPED) (not use_getline))
             (reset! keyTyped false))
 
 ; %%    ((ß Bytes[] cmdline_copy =) (ß { null }))                ;; copy of cmd line
@@ -9194,7 +9179,7 @@
 
                 ;; Keep the first typed line.  Clear it when more lines are typed.
 
-                (when (non-zero? (& flags DOCMD_KEEPLINE))
+                (when (flag? flags DOCMD_KEEPLINE)
                     (if (zero? count)
                         (reset! repeat_cmdline (STRDUP next_cmdline))
                         (reset! repeat_cmdline null))
@@ -9213,7 +9198,7 @@
                 ;; Don't do this when executing commands from a script or when being called recursive
                 ;; (e.g. for ":e +command file").
 
-                (when (and (zero? (& flags DOCMD_NOWAIT)) (zero? @_0_recurse))
+                (when (and (non-flag? flags DOCMD_NOWAIT) (zero? @_0_recurse))
                     ((ß msg_didout_before_start =) @msg_didout)
                     (reset! msg_didany false) ;; no output yet
                     (msg_start)
@@ -9229,7 +9214,7 @@
             ;;    "cmdline_copy" can change, e.g. for '%' and '#' expansion.
 
             (swap! _0_recurse inc)
-            ((ß next_cmdline =) (do_one_cmd cmdline_copy, (!= (& flags DOCMD_VERBOSE) 0)))
+            ((ß next_cmdline =) (do_one_cmd cmdline_copy, (flag? flags DOCMD_VERBOSE)))
             (swap! _0_recurse dec)
 
             (cond (nil? next_cmdline)
@@ -9604,7 +9589,7 @@
             ((ß ea.argt =) (:cmd_argt (... cmdnames (:cmdidx ea))))
 
             (when (not (:skip ea))
-                (when (and (text_locked) (zero? (& (:argt ea) CMDWIN)))
+                (when (and (text_locked) (non-flag? (:argt ea) CMDWIN))
                     ;; Command not allowed when editing the command line.
                     (if (non-zero? @cmdwin_type)
                         ((ß errormsg =) e_cmdwin)
@@ -9613,14 +9598,14 @@
                     (ß BREAK doend)
                 )
 
-                (when (and (zero? (& (:argt ea) RANGE)) (< 0 (:addr_count ea)))
+                (when (and (non-flag? (:argt ea) RANGE) (< 0 (:addr_count ea)))
                     ;; no range allowed
                     ((ß errormsg =) e_norange)
                     (ß BREAK doend)
                 )
             )
 
-            (when (and (zero? (& (:argt ea) BANG)) (:forceit ea)) ;; no <!> allowed
+            (when (and (non-flag? (:argt ea) BANG) (:forceit ea)) ;; no <!> allowed
                 ((ß errormsg =) e_nobang)
                 (ß BREAK doend)
             )
@@ -9650,7 +9635,7 @@
                 )
             )
 
-            (if (and (non-zero? (& (:argt ea) NOTADR)) (zero? (:addr_count ea))) ;; default is 1, not cursor
+            (if (and (flag? (:argt ea) NOTADR) (zero? (:addr_count ea))) ;; default is 1, not cursor
                 ((ß ea.line2 =) 1)
             )
 
@@ -9660,7 +9645,7 @@
 
             ((ß ea.arg =) (skipwhite p))
 
-            (when (and (non-zero? (& (:argt ea) DFLALL)) (zero? (:addr_count ea)))
+            (when (and (flag? (:argt ea) DFLALL) (zero? (:addr_count ea)))
                 ((ß ea.line1 =) 1)
                 ((ß SWITCH) (:addr_type ea)
                     ((ß CASE) ADDR_LINES)
@@ -9679,15 +9664,15 @@
 
             ;; Check for a count.
 
-            (when (and (non-zero? (& (:argt ea) COUNT)) (asc_isdigit (.at (:arg ea) 0)))
+            (when (and (flag? (:argt ea) COUNT) (asc_isdigit (.at (:arg ea) 0)))
                 (ß long n)
 ;               { Bytes[] __ = { ea.arg }; n = getdigits(__); ea.arg = __[0]; }
                 ((ß ea.arg =) (skipwhite (:arg ea)))
-                (when (and (<= n 0) (zero? (& (:argt ea) ZEROR)))
+                (when (and (<= n 0) (non-flag? (:argt ea) ZEROR))
                     ((ß errormsg =) e_zerocount)
                     (ß BREAK doend)
                 )
-                (cond (non-zero? (& (:argt ea) NOTADR))    ;; e.g. :buffer 2, :sleep 3
+                (cond (flag? (:argt ea) NOTADR)    ;; e.g. :buffer 2, :sleep 3
                 (§
                     ((ß ea.line2 =) n)
                     (if (zero? (:addr_count ea))
@@ -9708,12 +9693,12 @@
                 ))
             )
 
-            (when (and (zero? (& (:argt ea) EXTRA)) (non-eos? (:arg ea)) (!= (.at (:arg ea) 0) (byte \"))) ;; """
+            (when (and (non-flag? (:argt ea) EXTRA) (non-eos? (:arg ea)) (!= (.at (:arg ea) 0) (byte \"))) ;; """
                 ((ß errormsg =) e_trailing)
                 (ß BREAK doend)
             )
 
-            (when (and (non-zero? (& (:argt ea) NEEDARG)) (eos? (:arg ea)))
+            (when (and (flag? (:argt ea) NEEDARG) (eos? (:arg ea)))
                 ((ß errormsg =) e_argreq)
                 (ß BREAK doend)
             )
@@ -10150,11 +10135,11 @@
             ((ß RETURN) e_invrange)
         )
 
-        (when (non-zero? (& (:argt eap) RANGE))
+        (when (flag? (:argt eap) RANGE)
             ((ß SWITCH) (:addr_type eap)
                 ((ß CASE) ADDR_LINES)
                 (§
-                    (if (and (zero? (& (:argt eap) NOTADR)) (< (:ml_line_count (:b_ml @curbuf)) (:line2 eap)))
+                    (if (and (non-flag? (:argt eap) NOTADR) (< (:ml_line_count (:b_ml @curbuf)) (:line2 eap)))
                         ((ß RETURN) e_invrange)
                     )
                     (ß BREAK)
@@ -10177,7 +10162,7 @@
 
 (defn- #_void correct_range [#_exarg_C eap]
     (§
-        (when (zero? (& (:argt eap) ZEROR))    ;; zero in range not allowed
+        (when (non-flag? (:argt eap) ZEROR)    ;; zero in range not allowed
             (if (zero? (:line1 eap))
                 ((ß eap.line1 =) 1)
             )
@@ -10271,19 +10256,17 @@
 ;; ":stop" and ":suspend": Suspend Vim.
 
 (defn- #_void ex_stop [#_exarg_C eap]
-    (§
-        (windgoto (- (int @Rows) 1), 0)
-        (out_char (byte \newline))
-        (out_flush)
-        (stoptermcap)
-        (out_flush)            ;; needed for SUN to restore xterm buffer
-        (ui_suspend)           ;; call machine specific function
-        (starttermcap)
-        (scroll_start)         ;; scroll screen before redrawing
-        (redraw_later_clear)
-        (shell_resized)        ;; may have resized window
-        nil
-    ))
+    (windgoto (dec (int @Rows)), 0)
+    (out_char (byte \newline))
+    (out_flush)
+    (stoptermcap)
+    (out_flush)            ;; needed for SUN to restore xterm buffer
+    (ui_suspend)           ;; call machine specific function
+    (starttermcap)
+    (scroll_start)         ;; scroll screen before redrawing
+    (redraw_later_clear)
+    (shell_resized)        ;; may have resized window
+    nil)
 
 ;; ":syncbind" forces all 'scrollbind' windows to have the same relative offset.
 
@@ -10645,7 +10628,7 @@
 
             (when @VIsual_active
                 ;; when 'keymodel' contains "stopsel" may stop Select/Visual mode
-                (when (and @km_stopsel (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_STS)) (zero? (& @mod_mask MOD_MASK_SHIFT)))
+                (when (and @km_stopsel (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_STS)) (non-flag? @mod_mask MOD_MASK_SHIFT))
                     (end_visual_mode)
                     (redraw_curbuf_later INVERTED)
                 )
@@ -10662,7 +10645,7 @@
                             (ß BREAK normal_end)
                         )
                     )
-                    (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (non-zero? (& @mod_mask MOD_MASK_SHIFT)))
+                    (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
                     (§
                         ((ß @mod_mask &=) (bit-not MOD_MASK_SHIFT))
                     ))
@@ -10835,7 +10818,7 @@
                     (unshift_special ca)
                     ((ß idx =) (find__command (:cmdchar ca)))
                 )
-                (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (non-zero? (& @mod_mask MOD_MASK_SHIFT)))
+                (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
                 (§
                     (start_selection)
                     ((ß @mod_mask &=) (bit-not MOD_MASK_SHIFT))
@@ -10867,7 +10850,7 @@
             ;; Also wait a bit after an error message, e.g. for "^O:".
             ;; Don't redraw the screen, it would remove the message.
 
-            (when (and (or (and @p_smd (or (!= @restart_edit 0) (and @VIsual_active (== (:lnum old_pos) (:lnum (:w_cursor @curwin))) (== (:col old_pos) (:col (:w_cursor @curwin))))) (or @clear_cmdline @redraw_cmdline) (or @msg_didout (and @msg_didany @msg_scroll)) (not @msg_nowait) @keyTyped) (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display))) (== (:regname oap) 0) (== (& (:retval ca) CA_COMMAND_BUSY) 0) (stuff_empty) (not @did_wait_return) (== (:op_type oap) OP_NOP))
+            (when (and (or (and @p_smd (or (!= @restart_edit 0) (and @VIsual_active (== (:lnum old_pos) (:lnum (:w_cursor @curwin))) (== (:col old_pos) (:col (:w_cursor @curwin))))) (or @clear_cmdline @redraw_cmdline) (or @msg_didout (and @msg_didany @msg_scroll)) (not @msg_nowait) @keyTyped) (and (!= @restart_edit 0) (not @VIsual_active) (or @msg_scroll @emsg_on_display))) (== (:regname oap) 0) (non-flag? (:retval ca) CA_COMMAND_BUSY) (stuff_empty) (not @did_wait_return) (== (:op_type oap) OP_NOP))
                 ((ß int save_State =) @State)
 
                 ;; Draw the cursor with the right shape here.
@@ -10932,7 +10915,7 @@
         ;; (but not if still inside a mapping that started in Visual mode).
         ;; May switch from Visual to Select mode after CTRL-O command.
 
-        (when (and (== (:op_type oap) OP_NOP) (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1)) (zero? (& (:retval ca) CA_COMMAND_BUSY)) (stuff_empty) (zero? (:regname oap)))
+        (when (and (== (:op_type oap) OP_NOP) (or (and (non-zero? @restart_edit) (not @VIsual_active)) (== @restart_VIsual_select 1)) (non-flag? (:retval ca) CA_COMMAND_BUSY) (stuff_empty) (zero? (:regname oap)))
             (when (== @restart_VIsual_select 1)
                 (reset! VIsual_select true)
                 (showmode)
@@ -11333,7 +11316,7 @@
             ;; first non-blank in the line, the operator becomes linewise
             ;; (strange, but that's the way vi does it).
 
-            (cond (and (== (:motion_type oap) MCHAR) (not (:inclusive oap)) (== (& (:retval cap) CA_NO_ADJ_OP_END) 0) (== (:col (:op_end oap)) 0) (or (not (:is_VIsual oap)) (== (.at @p_sel 0) (byte \o))) (not (:block_mode oap)) (< 1 (:line_count oap)))
+            (cond (and (== (:motion_type oap) MCHAR) (not (:inclusive oap)) (non-flag? (:retval cap) CA_NO_ADJ_OP_END) (== (:col (:op_end oap)) 0) (or (not (:is_VIsual oap)) (== (.at @p_sel 0) (byte \o))) (not (:block_mode oap)) (< 1 (:line_count oap)))
             (§
                 ((ß oap.end_adjusted =) true)    ;; remember that we did this
                 (ß --oap.line_count)
@@ -11758,7 +11741,7 @@
         ;; if round == 0: try to find an identifier
         ;; if round == 1: try to find any non-white string
 
-        ((ß FOR) (ß ((ß round =) (if (non-zero? (& find_type FIND_IDENT)) 0 1)) (< round 2) (ß round++))
+        ((ß FOR) (ß ((ß round =) (if (flag? find_type FIND_IDENT) 0 1)) (< round 2) (ß round++))
             ;; 1. Skip to start of identifier/string.
 
             ((ß col =) startcol)
@@ -11777,7 +11760,7 @@
             (while (and (< 0 col) (!= this_class 0))
                 ((ß int prevcol =) (- col 1 (us_head_off p, (.plus p (dec col)))))
                 ((ß int prev_class =) (us_get_class (.plus p prevcol), @curbuf))
-                (if (and (!= this_class prev_class) (or (zero? round) (zero? prev_class) (non-zero? (& find_type FIND_IDENT))))
+                (if (and (!= this_class prev_class) (or (zero? round) (zero? prev_class) (flag? find_type FIND_IDENT)))
                     (ß BREAK)
                 )
                 ((ß col =) prevcol)
@@ -11787,7 +11770,7 @@
             (if (< 2 this_class)
                 ((ß this_class =) 2)
             )
-            (if (or (zero? (& find_type FIND_STRING)) (== this_class 2))
+            (if (or (non-flag? find_type FIND_STRING) (== this_class 2))
                 (ß BREAK)
             )
         )
@@ -11795,7 +11778,7 @@
         (when (or (eos? p col) (and (zero? round) (!= this_class 2)))
             ;; didn't find an identifier or string
 
-            (if (non-zero? (& find_type FIND_STRING))
+            (if (flag? find_type FIND_STRING)
                 (emsg (u8 "E348: No string under cursor"))
                 (emsg e_noident))
             ((ß RETURN) 0)
@@ -12285,7 +12268,7 @@
 
 (defn- #_void nv_page [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
-        (if (zero? (& @mod_mask MOD_MASK_CTRL))
+        (if (non-flag? @mod_mask MOD_MASK_CTRL)
             (onepage (:arg cap), (:count1 cap)))
     )
     nil)
@@ -13165,9 +13148,9 @@
 
 (defn- #_void nv_right [#_cmdarg_C cap]
     (§
-        (when (non-zero? (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+        (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
             ;; <C-Right> and <S-Right> move a word or WORD right
-            (if (non-zero? (& @mod_mask MOD_MASK_CTRL))
+            (if (flag? @mod_mask MOD_MASK_CTRL)
                 ((ß cap.arg =) TRUE)
             )
             (nv_wordcmd cap)
@@ -13242,9 +13225,9 @@
 
 (defn- #_void nv_left [#_cmdarg_C cap]
     (§
-        (when (non-zero? (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+        (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
             ;; <C-Left> and <S-Left> move a word or WORD left
-            (if (non-zero? (& @mod_mask MOD_MASK_CTRL))
+            (if (flag? @mod_mask MOD_MASK_CTRL)
                 ((ß cap.arg =) 1)
             )
             (nv_bck_word cap)
@@ -13296,7 +13279,7 @@
 
 (defn- #_void nv_up [#_cmdarg_C cap]
     (§
-        (cond (non-zero? (& @mod_mask MOD_MASK_SHIFT))
+        (cond (flag? @mod_mask MOD_MASK_SHIFT)
         (§
             ;; <S-Up> is page up
             ((ß cap.arg =) BACKWARD)
@@ -13322,7 +13305,7 @@
 
 (defn- #_void nv_down [#_cmdarg_C cap]
     (§
-        (cond (non-zero? (& @mod_mask MOD_MASK_SHIFT))
+        (cond (flag? @mod_mask MOD_MASK_SHIFT)
         (§
             ;; <S-Down> is page down
             ((ß cap.arg =) FORWARD)
@@ -13355,7 +13338,7 @@
 
 (defn- #_void nv_end [#_cmdarg_C cap]
     (§
-        (when (or (non-zero? (:arg cap)) (non-zero? (& @mod_mask MOD_MASK_CTRL)))    ;; CTRL-END = goto last line
+        (when (or (non-zero? (:arg cap)) (flag? @mod_mask MOD_MASK_CTRL))    ;; CTRL-END = goto last line
             ((ß cap.arg =) TRUE)
             (nv_goto cap)
             ((ß cap.count1 =) 1)             ;; to end of current line
@@ -14541,7 +14524,7 @@
         ;; Corner case: the 0 position in a tab may change when going into
         ;; virtualedit.  Recalculate curwin.w_cursor to avoid bad hilighting.
 
-        (when (and (== c Ctrl_V) (non-zero? (& @ve_flags VE_BLOCK)) (== (gchar_cursor) TAB))
+        (when (and (== c Ctrl_V) (flag? @ve_flags VE_BLOCK) (== (gchar_cursor) TAB))
             (validate_virtcol)
             (coladvance (:w_virtcol @curwin))
         )
@@ -15147,17 +15130,15 @@
 ;; "." command: redo last change.
 
 (defn- #_void nv_dot [#_cmdarg_C cap]
-    (§
-        (when (not (checkclearopq (:oap cap)))
-            ;; If "restart_edit" is true, the last but one command is repeated
-            ;; instead of the last command (inserting text).  This is used for
-            ;; CTRL-O <.> in insert mode.
+    (when (not (checkclearopq (:oap cap)))
+        ;; If "restart_edit" is true, the last but one command is repeated
+        ;; instead of the last command (inserting text).  This is used for
+        ;; CTRL-O <.> in insert mode.
 
-            (if (not (start_redo (:count0 cap), (and (non-zero? @restart_edit) (not @arrow_used))))
-                (clearopbeep (:oap cap)))
-        )
-        nil
-    ))
+        (if (not (start_redo (:count0 cap), (and (non-zero? @restart_edit) (not @arrow_used))))
+            (clearopbeep (:oap cap)))
+    )
+    nil)
 
 ;; CTRL-R: undo undo
 
@@ -15249,7 +15230,7 @@
 (defn- #_void nv_home [#_cmdarg_C cap]
     (§
         ;; CTRL-HOME is like "gg"
-        (cond (non-zero? (& @mod_mask MOD_MASK_CTRL))
+        (cond (flag? @mod_mask MOD_MASK_CTRL)
         (§
             (nv_goto cap)
         )
@@ -15378,7 +15359,7 @@
         ;; - not in Visual mode or 'selection' is "o"
         ;; - 'virtualedit' is not "all" and not "onemore".
 
-        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar_cursor) NUL) (or (not @VIsual_active) (== (.at @p_sel 0) (byte \o))) (not (virtual_active)) (zero? (& @ve_flags VE_ONEMORE)))
+        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar_cursor) NUL) (or (not @VIsual_active) (== (.at @p_sel 0) (byte \o))) (not (virtual_active)) (non-flag? @ve_flags VE_ONEMORE))
             (ß --@curwin.w_cursor.col)
             ;; prevent cursor from moving on the trail byte
             (mb_adjust_pos @curbuf, (:w_cursor @curwin))
@@ -16401,7 +16382,7 @@
         ))
 
         ;; Set new indent.
-        (if (non-zero? (& @State VREPLACE_FLAG))
+        (if (flag? @State VREPLACE_FLAG)
             (change_indent INDENT_SET, count, false, NUL, call_changed_bytes)
             (set_indent count, (if call_changed_bytes SIN_CHANGED 0)))
         nil
@@ -18605,7 +18586,7 @@
         ((ß regname =) (adjust_clip_reg regname))
         (may_get_selection regname)
 
-        (if (non-zero? (& flags PUT_FIXINDENT))
+        (if (flag? flags PUT_FIXINDENT)
             ((ß orig_indent =) (get_indent))
         )
 
@@ -18619,7 +18600,7 @@
             (stuff_inserted (if (== dir FORWARD) (if (== count -1) (byte \o) (byte \a)) (if (== count -1) (byte \O) (byte \i))), count, false)
             ;; Putting the text is done later, so can't really move the cursor
             ;; to the next character.  Use "l" to simulate it.
-            (if (and (non-zero? (& flags PUT_CURSEND)) (!= (gchar_cursor) NUL))
+            (if (and (flag? flags PUT_CURSEND) (!= (gchar_cursor) NUL))
                 (stuffcharReadbuff (byte \l)))
             ((ß RETURN) nil)
         )
@@ -18695,7 +18676,7 @@
 ;       theend:
 ;       {
             (when (== y_type MLINE)
-                (when (non-zero? (& flags PUT_LINE_SPLIT))
+                (when (flag? flags PUT_LINE_SPLIT)
                     ;; "p" or "P" in Visual mode: split the lines to put the text in between.
                     (if (not (u_save_cursor))
                         (ß BREAK theend)
@@ -18708,7 +18689,7 @@
                     (ß nr_lines++)
                     ((ß dir =) FORWARD)
                 )
-                (when (non-zero? (& flags PUT_LINE_FORWARD))
+                (when (flag? flags PUT_LINE_FORWARD)
                     ;; Must be "p" for a Visual block, put lines below the block.
                     (COPY_pos (:w_cursor @curwin), (:vi_end (:b_visual @curbuf)))
                     ((ß dir =) FORWARD)
@@ -18717,7 +18698,7 @@
                 (COPY_pos (:b_op_end @curbuf), (:w_cursor @curwin))     ;; default for '] mark
             )
 
-            (if (non-zero? (& flags PUT_LINE))        ;; :put command or "p" in Visual line mode.
+            (if (flag? flags PUT_LINE)        ;; :put command or "p" in Visual line mode.
                 ((ß y_type =) MLINE)
             )
 
@@ -18924,7 +18905,7 @@
                 ((ß @curbuf.b_op_end.lnum =) (- (:lnum (:w_cursor @curwin)) 1))
                 ((ß @curbuf.b_op_end.col =) (- (+ (:textcol bd) totlen) 1))
                 ((ß @curbuf.b_op_end.coladd =) 0)
-                (cond (non-zero? (& flags PUT_CURSEND))
+                (cond (flag? flags PUT_CURSEND)
                 (§
                     (COPY_pos (:w_cursor @curwin), (:b_op_end @curbuf))
                     (ß @curwin.w_cursor.col++)
@@ -19007,7 +18988,7 @@
 
                     (COPY_pos (:b_op_end @curbuf), (:w_cursor @curwin))
                     ;; For "CTRL-O p" in Insert mode, put cursor after last char.
-                    (if (and (non-zero? totlen) (or (non-zero? @restart_edit) (non-zero? (& flags PUT_CURSEND))))
+                    (if (and (non-zero? totlen) (or (non-zero? @restart_edit) (flag? flags PUT_CURSEND)))
                         (ß @curwin.w_cursor.col++)
                     )
                     (changed_bytes lnum, (... col 0))
@@ -19051,7 +19032,7 @@
                             )
                             (ß lnum++)
                             (ß nr_lines++)
-                            (when (non-zero? (& flags PUT_FIXINDENT))
+                            (when (flag? flags PUT_FIXINDENT)
                                 ((ß pos_C old_pos =) (NEW_pos_C))
                                 (COPY_pos old_pos, (:w_cursor @curwin))
                                 ((ß @curwin.w_cursor.lnum =) lnum)
@@ -19107,13 +19088,13 @@
                         ((ß @curbuf.b_op_end.col =) 0)
                     )
 
-                    (cond (non-zero? (& flags PUT_CURSLINE))
+                    (cond (flag? flags PUT_CURSLINE)
                     (§
                         ;; ":put": put cursor on last inserted line
                         ((ß @curwin.w_cursor.lnum =) lnum)
                         (beginline (| BL_WHITE BL_FIX))
                     )
-                    (non-zero? (& flags PUT_CURSEND))
+                    (flag? flags PUT_CURSEND)
                     (§
                         ;; put cursor after inserted text
                         (cond (== y_type MLINE)
@@ -19162,7 +19143,7 @@
 
 (defn- #_void adjust_cursor_eol []
     (§
-        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar_cursor) NUL) (zero? (& @ve_flags VE_ONEMORE)) (zero? @restart_edit) (zero? (& @State INSERT)))
+        (when (and (< 0 (:col (:w_cursor @curwin))) (== (gchar_cursor) NUL) (non-flag? @ve_flags VE_ONEMORE) (zero? @restart_edit) (non-flag? @State INSERT))
             ;; Put the cursor on the last character in the line.
             (dec_cursor)
 
@@ -21343,7 +21324,7 @@
 ;; - When no_u_sync is non-zero.
 
 (defn- #_void may_sync_undo []
-    (when (or (zero? (& @State (+ INSERT CMDLINE))) @arrow_used)
+    (when (or (non-flag? @State (+ INSERT CMDLINE)) @arrow_used)
         (u_sync false)
     )
     nil)
@@ -21752,7 +21733,7 @@
                         ;; Otherwise we behave like having gotten a CTRL-C.
                         ;; As a result typing CTRL-C in insert mode will really insert a CTRL-C.
 
-                        (if (and (non-zero? len) (non-zero? (& @State (+ INSERT CMDLINE))))
+                        (if (and (non-zero? len) (flag? @State (+ INSERT CMDLINE)))
                             ((ß c =) ESC)
                             ((ß c =) Ctrl_C)
                         )
@@ -21823,7 +21804,7 @@
                     ((ß int len =) 0)
                     ((ß int new_wcol =) (:w_wcol @curwin))
                     ((ß int new_wrow =) (:w_wrow @curwin))
-                    (when (and advance (== (:tb_len @typebuf) 1) (== (.at (:tb_buf @typebuf) (:tb_off @typebuf)) ESC) (zero? @no_mapping) (non-zero? (& @State INSERT)) (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout)) (zero? ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25, (:tb_change_cnt @typebuf)))))
+                    (when (and advance (== (:tb_len @typebuf) 1) (== (.at (:tb_buf @typebuf) (:tb_off @typebuf)) ESC) (zero? @no_mapping) (flag? @State INSERT) (or @p_timeout (and (== keylen KEYLEN_PART_KEY) @p_ttimeout)) (zero? ((ß len =) (inchar (.plus (:tb_buf @typebuf) (+ (:tb_off @typebuf) (:tb_len @typebuf))), 3, 25, (:tb_change_cnt @typebuf)))))
                         (when @mode_displayed
                             (unshowmode true)
                             ((ß mode_deleted =) true)
@@ -21905,7 +21886,7 @@
                     ;; text so far.  Also for when 'lazyredraw' is set and redrawing was postponed
                     ;; because there was something in the input buffer (e.g., termresponse).
 
-                    (when (and (or (non-zero? (& @State INSERT)) @p_lz) (zero? (& @State CMDLINE)) advance (non-zero? @must_redraw) (not @need_wait_return))
+                    (when (and (or (flag? @State INSERT) @p_lz) (non-flag? @State CMDLINE) advance (non-zero? @must_redraw) (not @need_wait_return))
                         (update_screen 0)
                         (setcursor)            ;; put cursor back where it belongs
                     )
@@ -21916,9 +21897,9 @@
                     ((ß int i =) 0)
                     ((ß int c1 =) 0)
                     (when (and (< 0 (:tb_len @typebuf)) advance)
-                        (when (and (non-zero? (& @State (| NORMAL INSERT))) (!= @State HITRETURN))
+                        (when (and (flag? @State (| NORMAL INSERT)) (!= @State HITRETURN))
                             ;; this looks nice when typing a dead character map
-                            (when (and (non-zero? (& @State INSERT)) (== (mb_ptr2cells (.plus (:tb_buf @typebuf) (- (+ (:tb_off @typebuf) (:tb_len @typebuf)) 1))) 1))
+                            (when (and (flag? @State INSERT) (== (mb_ptr2cells (.plus (:tb_buf @typebuf) (- (+ (:tb_off @typebuf) (:tb_len @typebuf)) 1))) 1))
                                 (edit_putchar (.at (:tb_buf @typebuf) (- (+ (:tb_off @typebuf) (:tb_len @typebuf)) 1)), false)
                                 (setcursor)    ;; put cursor back where it belongs
                                 ((ß c1 =) 1)
@@ -21940,7 +21921,7 @@
                         )
 
                         ;; this looks nice when typing a dead character map
-                        (when (and (non-zero? (& @State CMDLINE)) (zero? @cmdline_star) (== (mb_ptr2cells (.plus (:tb_buf @typebuf) (- (+ (:tb_off @typebuf) (:tb_len @typebuf)) 1))) 1))
+                        (when (and (flag? @State CMDLINE) (zero? @cmdline_star) (== (mb_ptr2cells (.plus (:tb_buf @typebuf) (- (+ (:tb_off @typebuf) (:tb_len @typebuf)) 1))) 1))
                             (putcmdline (.at (:tb_buf @typebuf) (- (+ (@typebuf.tb_off) (@typebuf.tb_len)) 1)), false)
                             ((ß c1 =) 1)
                         )
@@ -21954,9 +21935,9 @@
                     (if (non-zero? i)
                         (pop_showcmd))
                     (when (== c1 1)
-                        (if (non-zero? (& @State INSERT))
+                        (if (flag? @State INSERT)
                             (edit_unputchar))
-                        (if (non-zero? (& @State CMDLINE))
+                        (if (flag? @State CMDLINE)
                             (unputcmdline)
                             (setcursor))            ;; put cursor back where it belongs
                     )
@@ -21989,7 +21970,7 @@
         ;;   if we return an ESC to exit insert mode, the message is deleted;
         ;;   if we don't return an ESC, but deleted the message before, redisplay it.
 
-        (when (and advance @p_smd (non-zero? (& @State INSERT)))
+        (when (and advance @p_smd (flag? @State INSERT))
             (cond (and (== c ESC) (not mode_deleted) (zero? @no_mapping) @mode_displayed)
             (§
                 (if (and (non-zero? (:tb_len @typebuf)) (not @keyTyped))
@@ -22558,7 +22539,7 @@
                             (ins_ctrl_o)
 
                             ;; Don't move the cursor left when 'virtualedit' has "onemore".
-                            (when (non-zero? (& @ve_flags VE_ONEMORE))
+                            (when (flag? @ve_flags VE_ONEMORE)
                                 (reset! ins_at_eol false)
                                 ((ß nomove =) true)
                             )
@@ -22693,7 +22674,7 @@
 
                         ((ß CASE) K_LEFT)                        ;; <Left>
                         (§
-                            (if (non-zero? (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+                            (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
                                 (ins_s_left)
                                 (ins_left))
                             (ß BREAK normalchar)
@@ -22708,7 +22689,7 @@
 
                         ((ß CASE) K_RIGHT)                       ;; <Right>
                         (§
-                            (if (non-zero? (& @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL)))
+                            (if (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
                                 (ins_s_right)
                                 (ins_right))
                             (ß BREAK normalchar)
@@ -22723,7 +22704,7 @@
 
                         ((ß CASE) K_UP)                          ;; <Up>
                         (§
-                            (if (non-zero? (& @mod_mask MOD_MASK_SHIFT))
+                            (if (flag? @mod_mask MOD_MASK_SHIFT)
                                 (ins_pageup)
                                 (ins_up false))
                             (ß BREAK normalchar)
@@ -22739,7 +22720,7 @@
 
                         ((ß CASE) K_DOWN)                        ;; <Down>
                         (§
-                            (if (non-zero? (& @mod_mask MOD_MASK_SHIFT))
+                            (if (flag? @mod_mask MOD_MASK_SHIFT)
                                 (ins_pagedown)
                                 (ins_down false))
                             (ß BREAK normalchar)
@@ -23056,7 +23037,7 @@
         ((ß int orig_col =) 0)
 
         ;; VREPLACE mode needs to know what the line was like before changing.
-        (when (non-zero? (& @State VREPLACE_FLAG))
+        (when (flag? @State VREPLACE_FLAG)
             ((ß orig_line =) (STRDUP (ml_get_curline)))   ;; Deal with null below
             ((ß orig_col =) (:col (:w_cursor @curwin)))
         )
@@ -23099,7 +23080,7 @@
             ((ß int save_State =) @State)
 
             ;; Avoid being called recursively.
-            (if (non-zero? (& @State VREPLACE_FLAG))
+            (if (flag? @State VREPLACE_FLAG)
                 (reset! State INSERT))
             (shift_line (== type INDENT_DEC), round, 1, call_changed_bytes)
 
@@ -23123,7 +23104,7 @@
             )
             ((ß new_cursor_col +=) (:col (:w_cursor @curwin)))
         )
-        (zero? (& @State INSERT))
+        (non-flag? @State INSERT)
         (§
             ((ß new_cursor_col =) (:col (:w_cursor @curwin)))
         )
@@ -23179,7 +23160,7 @@
 
         ;; May have to adjust the start of the insert.
 
-        (when (non-zero? (& @State INSERT))
+        (when (flag? @State INSERT)
             (when (and (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (non-zero? (:col @insStart)))
                 (if (<= (:col @insStart) insstart_less)
                     ((ß @insStart.col =) 0)
@@ -23198,7 +23179,7 @@
         ;; If the number of characters before the cursor increased, need to push a
         ;; few NULs onto the replace stack.
 
-        (when (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)) (<= 0 start_col))
+        (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG) (<= 0 start_col))
             (while (< (:col (:w_cursor @curwin)) start_col)
                 (replace_join 0)        ;; remove a NUL from the replace stack
                 (ß --start_col)
@@ -23217,7 +23198,7 @@
         ;; it is always possible because we backspace over the whole line and then
         ;; put it back again the way we wanted it.
 
-        (when (non-zero? (& @State VREPLACE_FLAG))
+        (when (flag? @State VREPLACE_FLAG)
             ;; If 'orig_line' didn't allocate, just return.
             ;; At least we did the job, even if you can't backspace.
             (if (nil? orig_line)
@@ -23251,7 +23232,7 @@
         ;; find start of trailing white space
         (ß int i)
         ((ß FOR) (ß ((ß i =) (- (STRLEN line) 1)) (and (<= 0 i) (vim_iswhite (.at line i))) (ß i--))
-            (if (non-zero? (& @State REPLACE_FLAG))
+            (if (flag? @State REPLACE_FLAG)
                 (replace_join 0))        ;; remove a NUL from the replace stack
         )
         (.be line (inc i), NUL)
@@ -23266,7 +23247,7 @@
     (§
         (while (< col (:col (:w_cursor @curwin)))
             (ß --@curwin.w_cursor.col)
-            (cond (non-zero? (& @State REPLACE_FLAG))
+            (cond (flag? @State REPLACE_FLAG)
             (§
                 (replace_do_bs col)
             )
@@ -23335,7 +23316,7 @@
         (while true
             ((ß nc =) (plain_vgetc))
 
-            (if (and (zero? (& @State CMDLINE)) (== (mb_byte2len nc) 1))
+            (if (and (non-flag? @State CMDLINE) (== (mb_byte2len nc) 1))
                 (add_to_showcmd nc))
 
             (cond (or (== nc (byte \x)) (== nc (byte \X)))
@@ -23486,7 +23467,7 @@
         ;; Don't do this when there an InsertCharPre autocommand is defined,
         ;; because we need to fire the event for every character.
 
-        (cond (and (not (isspecial c)) (== (utf_char2len c) 1) (!= (vpeekc) NUL) (zero? (& @State REPLACE_FLAG)))
+        (cond (and (not (isspecial c)) (== (utf_char2len c) 1) (!= (vpeekc) NUL) (non-flag? @State REPLACE_FLAG))
         (§
             ((ß final int INPUT_BUFLEN =) 100)
             ((ß Bytes buf =) (Bytes. (inc INPUT_BUFLEN)))
@@ -23509,7 +23490,7 @@
             (do_digraph (.at buf (dec i)))      ;; may be the start of a digraph
             (eos! buf i)
             (ins_str buf)
-            (cond (non-zero? (& flags INSCHAR_CTRLV))
+            (cond (flag? flags INSCHAR_CTRLV)
             (§
                 (redo_literal (.at buf 0))
                 ((ß i =) 1)
@@ -23536,7 +23517,7 @@
             :else
             (§
                 (ins_char c)
-                (if (non-zero? (& flags INSCHAR_CTRLV))
+                (if (flag? flags INSCHAR_CTRLV)
                     (redo_literal c)
                     (appendCharToRedobuff c))
             ))
@@ -23597,7 +23578,7 @@
             )
 
             (reset! ai_col 0)
-            (when (non-zero? (& @State VREPLACE_FLAG))
+            (when (flag? @State VREPLACE_FLAG)
                 (reset! orig_line_count (:ml_line_count (:b_ml @curbuf)))
                 (reset! vr_lines_changed 1)
             )
@@ -23753,7 +23734,7 @@
 
 (defn- #_void beginline [#_int flags]
     (§
-        (cond (and (non-zero? (& flags BL_SOL)) (not @p_sol))
+        (cond (and (flag? flags BL_SOL) (not @p_sol))
         (§
             (coladvance (:w_curswant @curwin))
         )
@@ -23762,8 +23743,8 @@
             ((ß @curwin.w_cursor.col =) 0)
             ((ß @curwin.w_cursor.coladd =) 0)
 
-            (when (non-zero? (& flags (| BL_WHITE BL_SOL)))
-                ((ß FOR) (ß ((ß Bytes ptr =) (ml_get_curline)) (and (vim_iswhite (.at ptr 0)) (not (and (!= (& flags BL_FIX) 0) (eos? ptr 1)))) ((ß ptr =) (.plus ptr 1)))
+            (when (flag? flags (| BL_WHITE BL_SOL))
+                ((ß FOR) (ß ((ß Bytes ptr =) (ml_get_curline)) (and (vim_iswhite (.at ptr 0)) (not (and (flag? flags BL_FIX) (eos? ptr 1)))) ((ß ptr =) (.plus ptr 1)))
                     (ß @curwin.w_cursor.col++)
                 )
             )
@@ -23800,7 +23781,7 @@
         ((ß int l =) (us_ptr2len_cc ptr))
 
         ;; Move "l" bytes right, but don't end up on the NUL, unless 'virtualedit' contains "onemore".
-        (if (and (eos? ptr l) (zero? (& @ve_flags VE_ONEMORE)))
+        (if (and (eos? ptr l) (non-flag? @ve_flags VE_ONEMORE))
             ((ß RETURN) false)
         )
         ((ß @curwin.w_cursor.col +=) l)
@@ -24176,21 +24157,21 @@
         (cond (< 0 cc)
         (§
             ((ß int[] start_vcol =) (ß new int[1]))
-            (when (non-zero? (& @State VREPLACE_FLAG))
+            (when (flag? @State VREPLACE_FLAG)
                 ;; Get the number of screen cells used by the character we are going to delete.
                 (getvcol @curwin, (:w_cursor @curwin), null, start_vcol, null)
                 ((ß orig_vcols =) (chartabsize (ml_get_cursor), (... start_vcol 0)))
             )
 
             (del_char_after_col limit_col)
-            (if (non-zero? (& @State VREPLACE_FLAG))
+            (if (flag? @State VREPLACE_FLAG)
                 ((ß orig_len =) (STRLEN (ml_get_cursor)))
             )
             (replace_push cc)
 
             (replace_pop_ins)
 
-            (when (non-zero? (& @State VREPLACE_FLAG))
+            (when (flag? @State VREPLACE_FLAG)
                 ;; Get the number of screen cells used by the inserted characters.
                 ((ß Bytes p =) (ml_get_cursor))
                 ((ß int ins_len =) (- (STRLEN p) orig_len))
@@ -24475,7 +24456,7 @@
                 ((ß CASE) K_PAGEDOWN)
                 ((ß CASE) K_KPAGEDOWN)
                 (§
-                    (if (zero? (& @mod_mask MOD_MASK_SHIFT))
+                    (if (non-flag? @mod_mask MOD_MASK_SHIFT)
                         (ß BREAK)
                     )
                     (ß FALLTHROUGH)
@@ -24514,38 +24495,21 @@
 ;; <Insert> key in Insert mode: toggle insert/replace mode.
 
 (defn- #_void ins_insert [#_int replaceState]
-    (§
-        (if (non-zero? (& @State REPLACE_FLAG))
-            (reset! State INSERT)
-            (reset! State replaceState))
-        (appendCharToRedobuff K_INS)
-        (showmode)
-        (ui_cursor_shape)          ;; may show different cursor shape
-        nil
-    ))
+    (swap! State #(if (flag? % REPLACE_FLAG) INSERT replaceState))
+    (appendCharToRedobuff K_INS)
+    (showmode)
+    (ui_cursor_shape)          ;; may show different cursor shape
+    nil)
 
 ;; Pressed CTRL-O in Insert mode.
 
 (defn- #_void ins_ctrl_o []
-    (§
-        (cond (non-zero? (& @State VREPLACE_FLAG))
-        (§
-            (reset! restart_edit (byte \V))
-        )
-        (non-zero? (& @State REPLACE_FLAG))
-        (§
-            (reset! restart_edit (byte \R))
-        )
-        :else
-        (§
-            (reset! restart_edit (byte \I))
-        ))
+    (reset! restart_edit (cond (flag? @State VREPLACE_FLAG) (byte \V) (flag? @State REPLACE_FLAG) (byte \R) :else (byte \I)))
 
-        (if (virtual_active)
-            (reset! ins_at_eol false)     ;; cursor always keeps its column
-            (reset! ins_at_eol (== (gchar_cursor) NUL)))
-        nil
-    ))
+    (reset! ins_at_eol (if (virtual_active)
+        false     ;; cursor always keeps its column
+        (== (gchar_cursor) NUL)))
+    nil)
 
 ;; If the cursor is on an indent, ^T/^D insert/delete one shiftwidth.
 ;; Otherwise ^T/^D behave like a "<<" or ">>".
@@ -24567,7 +24531,7 @@
             (ß --@curwin.w_cursor.col)
             (del_char false)                ;; delete the '^' or '0'
             ;; In Replace mode, restore the characters that '^' or '0' replaced.
-            (if (non-zero? (& @State REPLACE_FLAG))
+            (if (flag? @State REPLACE_FLAG)
                 (replace_pop_ins))
             (if (== lastc (byte \^))
                 (reset! old_indent (get_indent)))  ;; remember curr. indent
@@ -24625,7 +24589,7 @@
     (§
         (dec_cursor)
         (getvcol @curwin, (:w_cursor @curwin), vcolp, null, null)
-        (cond (non-zero? (& @State REPLACE_FLAG))
+        (cond (flag? @State REPLACE_FLAG)
         (§
             ;; Don't delete characters before the insert point when in Replace mode.
             (if (or (!= (:lnum (:w_cursor @curwin)) (:lnum @insStart)) (<= (:col @insStart) (:col (:w_cursor @curwin))))
@@ -24698,19 +24662,19 @@
             ;; cc >= 0: NL was replaced, put original characters back
 
             ((ß int cc =) -1)
-            (if (non-zero? (& @State REPLACE_FLAG))
+            (if (flag? @State REPLACE_FLAG)
                 ((ß cc =) (replace_pop))     ;; returns -1 if NL was inserted
             )
 
             ;; In replace mode, in the line we started replacing, we only move the cursor.
 
-            (cond (and (non-zero? (& @State REPLACE_FLAG)) (<= (:lnum (:w_cursor @curwin)) lnum))
+            (cond (and (flag? @State REPLACE_FLAG) (<= (:lnum (:w_cursor @curwin)) lnum))
             (§
                 (dec_cursor)
             )
             :else
             (§
-                (cond (or (zero? (& @State VREPLACE_FLAG)) (< @orig_line_count (:lnum (:w_cursor @curwin))))
+                (cond (or (non-flag? @State VREPLACE_FLAG) (< @orig_line_count (:lnum (:w_cursor @curwin))))
                 (§
                     ((ß int temp =) (gchar_cursor))      ;; remember current char
                     (ß --@curwin.w_cursor.lnum)
@@ -24728,7 +24692,7 @@
                 ;; On the replace stack is first a NUL-terminated sequence of characters
                 ;; that were deleted and then the characters that NL replaced.
 
-                (when (non-zero? (& @State REPLACE_FLAG))
+                (when (flag? @State REPLACE_FLAG)
                     ;; Do the next ins_char() in NORMAL state, to prevent ins_char()
                     ;; from replacing characters and avoiding showmatch().
 
@@ -24800,14 +24764,14 @@
                         ((ß @insStart_orig.col =) (:col (:w_cursor @curwin)))
                     )
 
-                    (cond (non-zero? (& @State VREPLACE_FLAG))
+                    (cond (flag? @State VREPLACE_FLAG)
                     (§
                         (ins_char (byte \space))
                     )
                     :else
                     (§
                         (ins_str (u8 " "))
-                        (if (non-zero? (& @State REPLACE_FLAG))
+                        (if (flag? @State REPLACE_FLAG)
                             (replace_push NUL))
                     ))
                     (getvcol @curwin, (:w_cursor @curwin), vcol, null, null)
@@ -24846,7 +24810,7 @@
                         (ß BREAK)
                     ))
 
-                    (cond (non-zero? (& @State REPLACE_FLAG))
+                    (cond (flag? @State REPLACE_FLAG)
                     (§
                         (replace_do_bs -1)
                     )
@@ -25028,7 +24992,7 @@
 
 (defn- #_void ins_pageup []
     (§
-        (when (zero? (& @mod_mask MOD_MASK_CTRL))
+        (when (non-flag? @mod_mask MOD_MASK_CTRL)
             ((ß pos_C tpos =) (NEW_pos_C))
             (COPY_pos tpos, (:w_cursor @curwin))
 
@@ -25071,7 +25035,7 @@
 
 (defn- #_void ins_pagedown []
     (§
-        (when (zero? (& @mod_mask MOD_MASK_CTRL))
+        (when (non-flag? @mod_mask MOD_MASK_CTRL)
             ((ß pos_C tpos =) (NEW_pos_C))
             (COPY_pos tpos, (:w_cursor @curwin))
 
@@ -25142,14 +25106,14 @@
 
         (ins_char (byte \space))
         (while (< 0 (ß --temp))
-            (cond (non-zero? (& @State VREPLACE_FLAG))
+            (cond (flag? @State VREPLACE_FLAG)
             (§
                 (ins_char (byte \space))
             )
             :else
             (§
                 (ins_str (u8 " "))
-                (if (non-zero? (& @State REPLACE_FLAG))    ;; no char replaced
+                (if (flag? @State REPLACE_FLAG)    ;; no char replaced
                     (replace_push NUL))
             ))
         )
@@ -25164,7 +25128,7 @@
             (ß pos_C cursor)
             ((ß Bytes saved_line =) null)
             (ß Bytes ptr)
-            (cond (non-zero? (& @State VREPLACE_FLAG))
+            (cond (flag? @State VREPLACE_FLAG)
             (§
                 (COPY_pos pos, (:w_cursor @curwin))
                 ((ß cursor =) pos)
@@ -25186,7 +25150,7 @@
             )
 
             ;; In Replace mode, don't change characters before the insert point.
-            (when (and (non-zero? (& @State REPLACE_FLAG)) (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
+            (when (and (flag? @State REPLACE_FLAG) (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
                 ((ß ptr =) (.plus ptr (- (:col @insStart) (:col fpos))))
                 ((ß fpos.col =) (:col @insStart))
             )
@@ -25242,7 +25206,7 @@
                 (when (< 0 i)
                     (BCOPY ptr, 0, ptr, i, (+ (STRLEN ptr, i) 1))
                     ;; correct replace stack.
-                    (when (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)))
+                    (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                         ((ß FOR) (ß ((ß temp =) i) (<= 0 (ß --temp)) nil)
                             (replace_join repl_off)
                         )
@@ -25253,7 +25217,7 @@
                 ;; In VREPLACE mode, we haven't changed anything yet.  Do it now by
                 ;; backspacing over the changed spacing and then inserting the new spacing.
 
-                (when (non-zero? (& @State VREPLACE_FLAG))
+                (when (flag? @State VREPLACE_FLAG)
                     ;; Backspace from real cursor to change_col.
                     (backspace_until_column change_col)
 
@@ -25279,7 +25243,7 @@
         ;; In Replace mode, typing a NL will not delete the character under the cursor.
         ;; Only push a NUL on the replace stack, nothing to put back when the NL is deleted.
 
-        (when (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)))
+        (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
             (replace_push NUL)
         )
 
@@ -25454,7 +25418,7 @@
                     (COPY_pos (:w_cursor @curwin), pos))
                 ((ß i =) (get_indent))
                 (COPY_pos (:w_cursor @curwin), old_pos)
-                (if (non-zero? (& @State VREPLACE_FLAG))
+                (if (flag? @State VREPLACE_FLAG)
                     (change_indent INDENT_SET, i, false, NUL, true)
                     (set_indent i, SIN_CHANGED))
             )
@@ -25989,15 +25953,15 @@
         nil
     ))
 
-(defn- #_boolean ri_digit [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_DIGIT))))
-(defn- #_boolean ri_hex   [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_HEX))))
-(defn- #_boolean ri_octal [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_OCTAL))))
-(defn- #_boolean ri_word  [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_WORD))))
-(defn- #_boolean ri_head  [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_HEAD))))
-(defn- #_boolean ri_alpha [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_ALPHA))))
-(defn- #_boolean ri_lower [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_LOWER))))
-(defn- #_boolean ri_upper [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_UPPER))))
-(defn- #_boolean ri_white [#_int c] (and (< c 0x100) (non-zero? (& (... @class_tab c) RI_WHITE))))
+(defn- #_boolean ri_digit [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_DIGIT)))
+(defn- #_boolean ri_hex   [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_HEX)))
+(defn- #_boolean ri_octal [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_OCTAL)))
+(defn- #_boolean ri_word  [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_WORD)))
+(defn- #_boolean ri_head  [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_HEAD)))
+(defn- #_boolean ri_alpha [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_ALPHA)))
+(defn- #_boolean ri_lower [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_LOWER)))
+(defn- #_boolean ri_upper [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_UPPER)))
+(defn- #_boolean ri_white [#_int c] (and (< c 0x100) (flag? (... @class_tab c) RI_WHITE)))
 
 ;; flags for regflags
 (final int RF_ICASE    1)   ;; ignore case
@@ -26125,13 +26089,13 @@
 ;; Return true if compiled regular expression "prog" can match a line break.
 
 (defn- #_boolean re_multiline [#_regprog_C prog]
-    (non-zero? (& (:regflags prog) RF_HASNL)))
+    (flag? (:regflags prog) RF_HASNL))
 
 ;; Return true if compiled regular expression "prog" looks before the start
 ;; position (pattern contains "\@<=" or "\@<!").
 
 (defn- #_boolean re_lookbehind [#_regprog_C prog]
-    (non-zero? (& (:regflags prog) RF_LOOKBH)))
+    (flag? (:regflags prog) RF_LOOKBH))
 
 ;; Check for an equivalence class name "[=a=]".  "pp" points to the '['.
 ;; Returns a character representing the class.  Zero means that no item was
@@ -26866,10 +26830,10 @@
         ((ß r.regmust =) null)
         ((ß r.regmlen =) 0)
         ((ß r.regflags =) @regflags)
-        (if (non-zero? (& (... flags 0) HASNL))
+        (if (flag? (... flags 0) HASNL)
             ((ß r.regflags |=) RF_HASNL)
         )
-        (if (non-zero? (& (... flags 0) HASLOOKBH))
+        (if (flag? (... flags 0) HASLOOKBH)
             ((ß r.regflags |=) RF_LOOKBH)
         )
         ;; Remember whether this pattern has any \z specials in it.
@@ -26902,7 +26866,7 @@
             ;; When the r.e. starts with BOW, it is faster to look for a regmust first.
             ;; Used a lot for "#" and "*" commands.
 
-            (when (and (or (non-zero? (& (... flags 0) SPSTART)) (== (re_op scan) BOW) (== (re_op scan) EOW)) (zero? (& (... flags 0) HASNL)))
+            (when (and (or (flag? (... flags 0) SPSTART) (== (re_op scan) BOW) (== (re_op scan) EOW)) (non-flag? (... flags 0) HASNL))
                 ((ß Bytes longest =) null)
                 ((ß int len =) 0)
                 ((ß FOR) (ß nil (non-nil? scan) ((ß scan =) (regnext scan)))
@@ -26924,25 +26888,21 @@
 
 (defn- #_void regcomp_start [#_Bytes expr, #_int re_flags]
     ;; re_flags: see vim_regcomp()
-    (§
-        (initchr expr)
-        (if (non-zero? (& re_flags RE_MAGIC))
-            (reset! reg_magic MAGIC_ON)
-            (reset! reg_magic MAGIC_OFF))
-        (reset! reg_string (non-zero? (& re_flags RE_STRING)))
-        (reset! reg_strict (non-zero? (& re_flags RE_STRICT)))
-        (get_cpo_flags)
+    (initchr expr)
+    (reset! reg_magic (if (flag? re_flags RE_MAGIC) MAGIC_ON MAGIC_OFF))
+    (reset! reg_string (flag? re_flags RE_STRING))
+    (reset! reg_strict (flag? re_flags RE_STRICT))
+    (get_cpo_flags)
 
-        (reset! num_complex_braces 0)
-        (reset! regnpar 1)
-        (AFILL @had_endbrace, false)
-        (reset! regnzpar 1)
-        (reset! re_has_z 0)
-        (reset! regsize 0)
-        (reset! reg_toolong false)
-        (reset! regflags 0)
-        nil
-    ))
+    (reset! num_complex_braces 0)
+    (reset! regnpar 1)
+    (AFILL @had_endbrace, false)
+    (reset! regnzpar 1)
+    (reset! re_has_z 0)
+    (reset! regsize 0)
+    (reset! reg_toolong false)
+    (reset! regflags 0)
+    nil)
 
 ;; Parse regular expression, i.e. main body or parenthesized thing.
 ;;
@@ -27006,7 +26966,7 @@
         )
         ;; If one of the branches can be zero-width, the whole thing can.
         ;; If one of the branches has * at start or matches a line-break, the whole thing can.
-        (if (zero? (& (... flags 0) HASWIDTH))
+        (if (non-flag? (... flags 0) HASWIDTH)
             ((ß flagp[0] &=) (bit-not HASWIDTH))
         )
         ((ß flagp[0] |=) (& (... flags 0) (| SPSTART HASNL HASLOOKBH)))
@@ -27017,7 +26977,7 @@
                 ((ß RETURN) null)
             )
             (regtail ret, br)       ;; BRANCH -> BRANCH.
-            (if (zero? (& (... flags 0) HASWIDTH))
+            (if (non-flag? (... flags 0) HASWIDTH)
                 ((ß flagp[0] &=) (bit-not HASWIDTH))
             )
             ((ß flagp[0] |=) (& (... flags 0) (| SPSTART HASNL HASLOOKBH)))
@@ -27239,7 +27199,7 @@
         ((ß SWITCH) op
             ((ß CASE) (Magic (byte \*)))
             (§
-                (cond (non-zero? (& (... flags 0) SIMPLE))
+                (cond (flag? (... flags 0) SIMPLE)
                 (§
                     (reginsert STAR, ret)
                 )
@@ -27257,7 +27217,7 @@
 
             ((ß CASE) (Magic (byte \+)))
             (§
-                (cond (non-zero? (& (... flags 0) SIMPLE))
+                (cond (flag? (... flags 0) SIMPLE)
                 (§
                     (reginsert PLUS, ret)
                 )
@@ -27358,7 +27318,7 @@
                     ((ß RETURN) null)
                 )
 
-                (cond (non-zero? (& (... flags 0) SIMPLE))
+                (cond (flag? (... flags 0) SIMPLE)
                 (§
                     (reginsert BRACE_SIMPLE, ret)
                     (reginsert_limits BRACE_LIMITS, (... minval 0), (... maxval 0), ret)
@@ -28561,18 +28521,16 @@
 ;; Restore a previously saved parse state.
 
 (defn- #_void restore_parse_state [#_parse_state_C ps]
-    (§
-        (reset! regparse (:regparse ps))
-        (reset! prevchr_len (:prevchr_len ps))
-        (reset! curchr (:curchr ps))
-        (reset! prevchr (:prevchr ps))
-        (reset! prevprevchr (:prevprevchr ps))
-        (reset! nextchr (:nextchr ps))
-        (reset! at_start (:at_start ps))
-        (reset! prev_at_start (:prev_at_start ps))
-        (reset! regnpar (:regnpar ps))
-        nil
-    ))
+    (reset! regparse (:regparse ps))
+    (reset! prevchr_len (:prevchr_len ps))
+    (reset! curchr (:curchr ps))
+    (reset! prevchr (:prevchr ps))
+    (reset! prevprevchr (:prevprevchr ps))
+    (reset! nextchr (:nextchr ps))
+    (reset! at_start (:at_start ps))
+    (reset! prev_at_start (:prev_at_start ps))
+    (reset! regnpar (:regnpar ps))
+    nil)
 
 (atom! int after_slash)
 
@@ -28781,17 +28739,15 @@
 ;; put character back.  Works only once!
 
 (defn- #_void ungetchr []
-    (§
-        (reset! nextchr @curchr)
-        (reset! curchr @prevchr)
-        (reset! prevchr @prevprevchr)
-        (reset! at_start @prev_at_start)
-        (reset! prev_at_start false)
+    (reset! nextchr @curchr)
+    (reset! curchr @prevchr)
+    (reset! prevchr @prevprevchr)
+    (reset! at_start @prev_at_start)
+    (reset! prev_at_start false)
 
-        ;; Backup "regparse", so that it's at the same position as before the getchr().
-        (reset! regparse (.minus @regparse @prevchr_len))
-        nil
-    ))
+    ;; Backup "regparse", so that it's at the same position as before the getchr().
+    (swap! regparse #(.minus % @prevchr_len))
+    nil)
 
 ;; Get and return the value of the hex string at the current position.
 ;; Return -1 if there is no valid hex number.
@@ -29199,19 +29155,17 @@
 (defn- #_long bt_regexec_nl [#_regmatch_C rmp, #_Bytes line, #_int col, #_boolean line_lbr]
     ;; line: string to match against
     ;; col: column to start looking for match
-    (§
-        (reset! reg_match rmp)
-        (reset! reg_mmatch null)
-        (reset! reg_maxline 0)
-        (reset! reg_line_lbr line_lbr)
-        (reset! reg_buf @curbuf)
-        (reset! reg_win null)
-        (reset! ireg_ic (:rm_ic rmp))
-        (reset! ireg_icombine false)
-        (reset! ireg_maxcol 0)
+    (reset! reg_match rmp)
+    (reset! reg_mmatch null)
+    (reset! reg_maxline 0)
+    (reset! reg_line_lbr line_lbr)
+    (reset! reg_buf @curbuf)
+    (reset! reg_win null)
+    (reset! ireg_ic (:rm_ic rmp))
+    (reset! ireg_icombine false)
+    (reset! ireg_maxcol 0)
 
-        (bt_regexec_both line, col, null)
-    ))
+    (bt_regexec_both line, col, null))
 
 ;; Match a regexp against multiple lines.
 ;; "rmp.regprog" is a compiled regexp as returned by vim_regcomp().
@@ -29225,20 +29179,18 @@
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
-    (§
-        (reset! reg_match null)
-        (reset! reg_mmatch rmp)
-        (reset! reg_buf buf)
-        (reset! reg_win win)
-        (reset! reg_firstlnum lnum)
-        (reset! reg_maxline (- (:ml_line_count (:b_ml @reg_buf)) lnum))
-        (reset! reg_line_lbr false)
-        (reset! ireg_ic (:rmm_ic rmp))
-        (reset! ireg_icombine false)
-        (reset! ireg_maxcol (:rmm_maxcol rmp))
+    (reset! reg_match null)
+    (reset! reg_mmatch rmp)
+    (reset! reg_buf buf)
+    (reset! reg_win win)
+    (reset! reg_firstlnum lnum)
+    (reset! reg_maxline (- (:ml_line_count (:b_ml @reg_buf)) lnum))
+    (reset! reg_line_lbr false)
+    (reset! ireg_ic (:rmm_ic rmp))
+    (reset! ireg_icombine false)
+    (reset! ireg_maxcol (:rmm_maxcol rmp))
 
-        (bt_regexec_both null, col, nsec)
-    ))
+    (bt_regexec_both null, col, nsec))
 
 ;; Match a regexp against a string ("line" points to the string)
 ;; or multiple lines ("line" is null, use reg_getline()).
@@ -29289,17 +29241,17 @@
             )
 
             ;; If pattern contains "\c" or "\C": overrule value of ireg_ic.
-            (cond (non-zero? (& (:regflags prog) RF_ICASE))
+            (cond (flag? (:regflags prog) RF_ICASE)
             (§
                 (reset! ireg_ic true)
             )
-            (non-zero? (& (:regflags prog) RF_NOICASE))
+            (flag? (:regflags prog) RF_NOICASE)
             (§
                 (reset! ireg_ic false)
             ))
 
             ;; If pattern contains "\Z" overrule value of ireg_icombine.
-            (if (non-zero? (& (:regflags prog) RF_ICOMBINE))
+            (if (flag? (:regflags prog) RF_ICOMBINE)
                 (reset! ireg_icombine true))
 
             ;; If there is a "must appear" string, look for it.
@@ -32216,27 +32168,23 @@
 ;; Returns the size of the replacement, including terminating NUL.
 
 (defn- #_int vim_regsub [#_regmatch_C rmp, #_Bytes source, #_Bytes dest, #_boolean copy, #_boolean magic, #_boolean backslash]
-    (§
-        (reset! reg_match rmp)
-        (reset! reg_mmatch null)
-        (reset! reg_maxline 0)
-        (reset! reg_buf @curbuf)
-        (reset! reg_line_lbr true)
+    (reset! reg_match rmp)
+    (reset! reg_mmatch null)
+    (reset! reg_maxline 0)
+    (reset! reg_buf @curbuf)
+    (reset! reg_line_lbr true)
 
-        (vim_regsub_both source, dest, copy, magic, backslash)
-    ))
+    (vim_regsub_both source, dest, copy, magic, backslash))
 
 (defn- #_int vim_regsub_multi [#_regmmatch_C rmp, #_long lnum, #_Bytes source, #_Bytes dest, #_boolean copy, #_boolean magic, #_boolean backslash]
-    (§
-        (reset! reg_match null)
-        (reset! reg_mmatch rmp)
-        (reset! reg_buf @curbuf)           ;; always works on the current buffer!
-        (reset! reg_firstlnum lnum)
-        (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
-        (reset! reg_line_lbr false)
+    (reset! reg_match null)
+    (reset! reg_mmatch rmp)
+    (reset! reg_buf @curbuf)           ;; always works on the current buffer!
+    (reset! reg_firstlnum lnum)
+    (reset! reg_maxline (- (:ml_line_count (:b_ml @curbuf)) lnum))
+    (reset! reg_line_lbr false)
 
-        (vim_regsub_both source, dest, copy, magic, backslash)
-    ))
+    (vim_regsub_both source, dest, copy, magic, backslash))
 
 (atom! Bytes eval_result)
 
@@ -34739,7 +34687,7 @@
                 ;; The engine is very inefficient (uses too many states) when the
                 ;; maximum is much larger than the minimum and when the maximum is
                 ;; large.  Bail out if we can use the other engine.
-                (if (and (non-zero? (& @nfa_re_flags RE_AUTO)) (or (< (+ (... minval 0) 200) (... maxval 0)) (< 500 (... maxval 0))))
+                (if (and (flag? @nfa_re_flags RE_AUTO) (or (< (+ (... minval 0) 200) (... maxval 0)) (< 500 (... maxval 0))))
                     ((ß RETURN) false)
                 )
 
@@ -35740,7 +35688,7 @@
 
                 ((ß CASE) NFA_COMPOSING)     ;; char with composing char
                 (§
-                    (when (non-zero? (& @regflags RF_ICOMBINE))
+                    (when (flag? @regflags RF_ICOMBINE)
                         ;; TODO: use the base character only
                     )
                     (ß FALLTHROUGH)
@@ -39075,17 +39023,17 @@
         )
 
         ;; If pattern contains "\c" or "\C": overrule value of ireg_ic.
-        (cond (non-zero? (& (:regflags prog) RF_ICASE))
+        (cond (flag? (:regflags prog) RF_ICASE)
         (§
             (reset! ireg_ic true)
         )
-        (non-zero? (& (:regflags prog) RF_NOICASE))
+        (flag? (:regflags prog) RF_NOICASE)
         (§
             (reset! ireg_ic false)
         ))
 
         ;; If pattern contains "\Z" overrule value of ireg_icombine.
-        (if (non-zero? (& (:regflags prog) RF_ICOMBINE))
+        (if (flag? (:regflags prog) RF_ICOMBINE)
             (reset! ireg_icombine true))
 
         (reset! regline line)
@@ -39246,19 +39194,17 @@
 (defn- #_long nfa_regexec_nl [#_regmatch_C rmp, #_Bytes line, #_int col, #_boolean line_lbr]
     ;; line: string to match against
     ;; col: column to start looking for match
-    (§
-        (reset! reg_match rmp)
-        (reset! reg_mmatch null)
-        (reset! reg_maxline 0)
-        (reset! reg_line_lbr line_lbr)
-        (reset! reg_buf @curbuf)
-        (reset! reg_win null)
-        (reset! ireg_ic (:rm_ic rmp))
-        (reset! ireg_icombine false)
-        (reset! ireg_maxcol 0)
+    (reset! reg_match rmp)
+    (reset! reg_mmatch null)
+    (reset! reg_maxline 0)
+    (reset! reg_line_lbr line_lbr)
+    (reset! reg_buf @curbuf)
+    (reset! reg_win null)
+    (reset! ireg_ic (:rm_ic rmp))
+    (reset! ireg_icombine false)
+    (reset! ireg_maxcol 0)
 
-        (nfa_regexec_both line, col, null)
-    ))
+    (nfa_regexec_both line, col, null))
 
 ;; Match a regexp against multiple lines.
 ;; "rmp.regprog" is a compiled regexp as returned by vim_regcomp().
@@ -39289,20 +39235,18 @@
     ;; lnum: nr of line to start looking for match
     ;; col: column to start looking for match
     ;; nsec: timeout limit or 0
-    (§
-        (reset! reg_match null)
-        (reset! reg_mmatch rmp)
-        (reset! reg_buf buf)
-        (reset! reg_win win)
-        (reset! reg_firstlnum lnum)
-        (reset! reg_maxline (- (:ml_line_count (:b_ml @reg_buf)) lnum))
-        (reset! reg_line_lbr false)
-        (reset! ireg_ic (:rmm_ic rmp))
-        (reset! ireg_icombine false)
-        (reset! ireg_maxcol (:rmm_maxcol rmp))
+    (reset! reg_match null)
+    (reset! reg_mmatch rmp)
+    (reset! reg_buf buf)
+    (reset! reg_win win)
+    (reset! reg_firstlnum lnum)
+    (reset! reg_maxline (- (:ml_line_count (:b_ml @reg_buf)) lnum))
+    (reset! reg_line_lbr false)
+    (reset! ireg_ic (:rmm_ic rmp))
+    (reset! ireg_icombine false)
+    (reset! ireg_maxcol (:rmm_maxcol rmp))
 
-        (nfa_regexec_both null, col, nsec)
-    ))
+    (nfa_regexec_both null, col, nsec))
 
 ;; ----------------------------------------------------------------------- ;;
 
@@ -39589,7 +39533,7 @@
             ((ß magic =) (:magic (... @spats i)))
             (reset! no_smartcase (:no_scs (... @spats i)))
         )
-        (non-zero? (& options SEARCH_HIS))   ;; put new pattern in history
+        (flag? options SEARCH_HIS)   ;; put new pattern in history
         (§
             (add_to_history HIST_SEARCH, pat, NUL)
         ))
@@ -39599,7 +39543,7 @@
         ;; Save the currently used pattern in the appropriate place,
         ;; unless the pattern should not be remembered.
 
-        (when (zero? (& options SEARCH_KEEP))
+        (when (non-flag? options SEARCH_KEEP)
             ;; search or global command
             (if (or (== pat_save RE_SEARCH) (== pat_save RE_BOTH))
                 (save_re_pat RE_SEARCH, pat, magic))
@@ -39751,7 +39695,7 @@
 
         ((ß regmmatch_C regmatch =) (NEW_regmmatch_C))
         (when (not (search_regcomp pat, RE_SEARCH, pat_use, (& options (+ SEARCH_HIS SEARCH_KEEP)), regmatch))
-            (if (and (non-zero? (& options SEARCH_MSG)) (not @rc_did_emsg))
+            (if (and (flag? options SEARCH_MSG) (not @rc_did_emsg))
                 (emsg2 (u8 "E383: Invalid search string: %s"), @mr_pattern))
             ((ß RETURN) 0)
         )
@@ -39771,7 +39715,7 @@
             ;; When not accepting a match at the start position, set "extra_col" to a non-zero value.
             ;; Don't do that when starting at MAXCOL, since MAXCOL + 1 is zero.
             (ß int extra_col)
-            (cond (or (non-zero? (& options SEARCH_START)) (== (:col pos) MAXCOL))
+            (cond (or (flag? options SEARCH_START) (== (:col pos) MAXCOL))
             (§
                 ((ß extra_col =) 0)
             )
@@ -39803,7 +39747,7 @@
             ;; current position, gain some efficiency by skipping back a line.
             ;; Otherwise begin the search in the current line.
 
-            (cond (and (== dir BACKWARD) (zero? (:col start_pos)) (zero? (& options SEARCH_START)))
+            (cond (and (== dir BACKWARD) (zero? (:col start_pos)) (non-flag? options SEARCH_START))
             (§
                 ((ß lnum =) (- (:lnum pos) 1))
                 ((ß at_first_line =) false)
@@ -39856,7 +39800,7 @@
                             ;; one back afterwards, compare with that position,
                             ;; otherwise "/$" will get stuck on end of line.
 
-                            (while (and (zero? (:lnum matchpos)) (if (and (non-zero? (& options SEARCH_END)) first_match) (and (== nmatched 1) (< (- (:col endpos) 1) (+ (:col start_pos) extra_col))) (< (- (:col matchpos) (if (== (.at ptr (:col matchpos)) NUL) 1 0)) (+ (:col start_pos) extra_col))))
+                            (while (and (zero? (:lnum matchpos)) (if (and (flag? options SEARCH_END) first_match) (and (== nmatched 1) (< (- (:col endpos) 1) (+ (:col start_pos) extra_col))) (< (- (:col matchpos) (if (== (.at ptr (:col matchpos)) NUL) 1 0)) (+ (:col start_pos) extra_col))))
                                 ;; If vi-compatible searching, continue at the end
                                 ;; of the match, otherwise continue one position forward.
 
@@ -39881,7 +39825,7 @@
                                         ((ß matchcol +=) (us_ptr2len_cc (.plus ptr matchcol)))
                                     )
                                 ))
-                                (if (and (zero? matchcol) (non-zero? (& options SEARCH_START)))
+                                (if (and (zero? matchcol) (flag? options SEARCH_START))
                                     (ß BREAK)
                                 )
                                 (when (or (eos? ptr matchcol) (zero? ((ß nmatched =) (vim_regexec_multi regmatch, win, buf, (+ lnum (:lnum matchpos)), matchcol, nsec))))
@@ -39913,7 +39857,7 @@
                                 ;; position, we use it if it's the last match in
                                 ;; the line.  Always accept a position after
                                 ;; wrapping around.
-                                (cond (or (non-zero? loop) (if (non-zero? (& options SEARCH_END)) (or (< (+ lnum (:lnum (... (:endpos regmatch) 0))) (:lnum start_pos)) (and (== (+ lnum (:lnum (... (:endpos regmatch) 0))) (:lnum start_pos)) (<= (+ (- (:col (... (:endpos regmatch) 0)) 1) extra_col) (:col start_pos)))) (or (< (+ lnum (:lnum (... (:startpos regmatch) 0))) (:lnum start_pos)) (and (== (+ lnum (:lnum (... (:startpos regmatch) 0))) (:lnum start_pos)) (<= (+ (:col (... (:startpos regmatch) 0)) extra_col) (:col start_pos))))))
+                                (cond (or (non-zero? loop) (if (flag? options SEARCH_END) (or (< (+ lnum (:lnum (... (:endpos regmatch) 0))) (:lnum start_pos)) (and (== (+ lnum (:lnum (... (:endpos regmatch) 0))) (:lnum start_pos)) (<= (+ (- (:col (... (:endpos regmatch) 0)) 1) extra_col) (:col start_pos)))) (or (< (+ lnum (:lnum (... (:startpos regmatch) 0))) (:lnum start_pos)) (and (== (+ lnum (:lnum (... (:startpos regmatch) 0))) (:lnum start_pos)) (<= (+ (:col (... (:startpos regmatch) 0)) extra_col) (:col start_pos))))))
                                 (§
                                     ((ß match_ok =) true)
                                     (COPY_lpos matchpos, (... (:startpos regmatch) 0))
@@ -39970,7 +39914,7 @@
 
                         ;; With the SEARCH_END option move to the last character of the match.
                         ;; Don't do it for an empty match, end should be same as start then.
-                        (cond (and (non-zero? (& options SEARCH_END)) (zero? (& options SEARCH_NOOF)) (or (!= (:lnum matchpos) (:lnum endpos)) (!= (:col matchpos) (:col endpos))))
+                        (cond (and (flag? options SEARCH_END) (non-flag? options SEARCH_NOOF) (or (!= (:lnum matchpos) (:lnum endpos)) (!= (:col matchpos) (:col endpos))))
                         (§
                             ;; For a match in the first column,
                             ;; set the position on the NUL in the previous line.
@@ -40013,7 +39957,7 @@
 
                     ;; Cancel searching if a character was typed.  Used for 'incsearch'.
                     ;; Don't check too often, that would slowdown searching too much.
-                    (when (and (non-zero? (& options SEARCH_PEEK)) (zero? (& (- lnum (:lnum pos)) 0x3f)) (char_avail))
+                    (when (and (flag? options SEARCH_PEEK) (zero? (& (- lnum (:lnum pos)) 0x3f)) (char_avail))
                         ((ß break_loop =) true)
                         (ß BREAK)
                     )
@@ -40039,7 +39983,7 @@
                     ((ß lnum =) (:ml_line_count (:b_ml buf)))
                     ((ß lnum =) 1)
                 )
-                (if (non-zero? (& options SEARCH_MSG))
+                (if (flag? options SEARCH_MSG)
                     (give_warning (if (== dir BACKWARD) top_bot_msg bot_top_msg), true))
             )
             (if (or @got_int @called_emsg break_loop)
@@ -40154,7 +40098,7 @@
             ((ß @spats[0].sp_off.dir =) dirc)
         )
 
-        (when (non-zero? (& options SEARCH_REV))
+        (when (flag? options SEARCH_REV)
             (if (== dirc (byte \/))
                 ((ß dirc =) (byte \?))
                 ((ß dirc =) (byte \/))
@@ -40163,7 +40107,7 @@
 
         ;; Turn 'hlsearch' highlighting back on.
 
-        (when (and @no_hlsearch (zero? (& options SEARCH_KEEP)))
+        (when (and @no_hlsearch (non-flag? options SEARCH_KEEP))
             (redraw_all_later SOME_VALID)
             (reset! no_hlsearch false)
         )
@@ -40224,7 +40168,7 @@
                     (§
                         ((ß @spats[0].sp_off.line =) true)
                     )
-                    (and (non-zero? (& options SEARCH_OPT)) (or (== (.at p 0) (byte \e)) (== (.at p 0) (byte \s)) (== (.at p 0) (byte \b))))
+                    (and (flag? options SEARCH_OPT) (or (== (.at p 0) (byte \e)) (== (.at p 0) (byte \s)) (== (.at p 0) (byte \b))))
                     (§
                         (if (== (.at p 0) (byte \e))                           ;; end
                             ((ß @spats[0].sp_off.end =) (!= SEARCH_END 0))
@@ -40256,7 +40200,7 @@
                     ((ß pat =) p)                        ;; put "pat" after search command
                 )
 
-                (when (and (non-zero? (& options SEARCH_ECHO)) (messaging))
+                (when (and (flag? options SEARCH_ECHO) (messaging))
                     (ß Bytes p)
                     (if (eos? searchstr)
                         ((ß p =) (:pat (... @spats @last_idx)))
@@ -40362,7 +40306,7 @@
 
                 ;; Add character and/or line offset
 
-                (when (or (zero? (& options SEARCH_NOOF)) (and (non-nil? pat) (== (.at pat 0) (byte \;))))
+                (when (or (non-flag? options SEARCH_NOOF) (and (non-nil? pat) (== (.at pat 0) (byte \;))))
                     (cond (:line (:sp_off (... @spats 0)))       ;; add the offset to the line number
                     (§
                         ((ß long c =) (+ (:lnum pos) (:off (:sp_off (... @spats 0)))))
@@ -40411,7 +40355,7 @@
                 ;; - When an error happens the cursor isn't moved at all.
                 ;; Don't do this when called by get_address() (it handles ';' itself).
 
-                (if (or (zero? (& options SEARCH_OPT)) (nil? pat) (!= (.at pat 0) (byte \;)))
+                (if (or (non-flag? options SEARCH_OPT) (nil? pat) (!= (.at pat 0) (byte \;)))
                     (ß BREAK)
                 )
 
@@ -40424,13 +40368,13 @@
                 ((ß pat =) (.plus pat 1))
             )
 
-            (if (non-zero? (& options SEARCH_MARK))
+            (if (flag? options SEARCH_MARK)
                 (setpcmark))
             (COPY_pos (:w_cursor @curwin), pos)
             ((ß @curwin.w_set_curswant =) true)
 ;       }
 
-        (if (non-zero? (& options SEARCH_KEEP))
+        (if (flag? options SEARCH_KEEP)
             (COPY_soffset (:sp_off (... @spats 0)), old_off))
 
         retval
@@ -40619,11 +40563,11 @@
 
         ;; Direction to search when initc is '/', '*' or '#'.
         (ß int dir)
-        (cond (non-zero? (& flags FM_BACKWARD))
+        (cond (flag? flags FM_BACKWARD)
         (§
             ((ß dir =) BACKWARD)
         )
-        (non-zero? (& flags FM_FORWARD))
+        (flag? flags FM_FORWARD)
         (§
             ((ß dir =) FORWARD)
         )
@@ -40903,7 +40847,7 @@
 
             ;; If FM_BLOCKSTOP given, stop at a '{' or '}' in column 0.
 
-            (when (and (zero? (:col @_2_pos)) (non-zero? (& flags FM_BLOCKSTOP)) (or (== (.at linep 0) (byte \{)) (== (.at linep 0) (byte \}))))
+            (when (and (zero? (:col @_2_pos)) (flag? flags FM_BLOCKSTOP) (or (== (.at linep 0) (byte \{)) (== (.at linep 0) (byte \}))))
                 (if (and (== (.at linep 0) (... findc 0)) (zero? count))        ;; match!
                     ((ß RETURN) @_2_pos)
                 )
@@ -42654,7 +42598,7 @@
 
             ((ß int c =) 0)
             (while (< c (byte \space))
-                ((ß chartab[c++] =) (if (non-zero? (& @dy_flags DY_UHEX)) (byte 4) (byte 2)))
+                ((ß chartab[c++] =) (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2)))
             )
             (while (<= c (byte \~))
                 ((ß chartab[c++] =) (+ 1 CT_PRINT_CHAR))
@@ -42668,7 +42612,7 @@
                 :else
                 (§
                     ;; the rest is unprintable by default
-                    ((ß chartab[c++] =) (if (non-zero? (& @dy_flags DY_UHEX)) (byte 4) (byte 2)))
+                    ((ß chartab[c++] =) (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2)))
                 ))
             )
 
@@ -42772,7 +42716,7 @@
                             (when (or (< c (byte \space)) (< (byte \~) c))
                                 (cond tilde
                                 (§
-                                    ((ß chartab[c] =) (byte (+ (& (... chartab c) (bit-not CT_CELL_MASK)) (if (non-zero? (& @dy_flags DY_UHEX)) 4 2))))
+                                    ((ß chartab[c] =) (byte (+ (& (... chartab c) (bit-not CT_CELL_MASK)) (if (flag? @dy_flags DY_UHEX) 4 2))))
                                     ((ß chartab[c] &=) (bit-not CT_PRINT_CHAR))
                                 )
                                 :else
@@ -42904,7 +42848,7 @@
             ((ß c =) NUL)                                    ;; we use newline in place of a NUL
         )
 
-        (cond (non-zero? (& @dy_flags DY_UHEX))                  ;; 'display' has "uhex"
+        (cond (flag? @dy_flags DY_UHEX)                  ;; 'display' has "uhex"
         (§
             (transchar_hex buf, c)
         )
@@ -43070,7 +43014,7 @@
 ;; Letters and characters from the 'isident' option.
 
 (defn- #_boolean vim_isIDc [#_int c]
-    (and (< 0 c 0x100) (non-zero? (& (... chartab c) CT_ID_CHAR))))
+    (and (< 0 c 0x100) (flag? (... chartab c) CT_ID_CHAR)))
 
 ;; Return true if 'c' is a keyword character:
 ;; Letters and characters from 'iskeyword' option for current buffer.
@@ -43089,13 +43033,13 @@
 ;; Assume characters above 0x100 are valid (multi-byte).
 
 (defn- #_boolean vim_isfilec [#_int c]
-    (or (<= 0x100 c) (and (< 0 c) (non-zero? (& (... chartab c) CT_FNAME_CHAR)))))
+    (or (<= 0x100 c) (and (< 0 c) (flag? (... chartab c) CT_FNAME_CHAR))))
 
 ;; Return true if 'c' is a printable character.
 ;; Assume characters above 0x100 are printable (multi-byte), except for Unicode.
 
 (defn- #_boolean vim_isprintc [#_int c]
-    (if (<= 0x100 c) (utf_printable c) (or (<= 0x100 c) (and (< 0 c) (non-zero? (& (... chartab c) CT_PRINT_CHAR))))))
+    (if (<= 0x100 c) (utf_printable c) (or (<= 0x100 c) (and (< 0 c) (flag? (... chartab c) CT_PRINT_CHAR)))))
 
 ;; like chartabsize(), but also check for line breaks on the screen
 
@@ -43392,7 +43336,7 @@
             ((ß end[0] =) (- (+ vcol incr) 1))
         )
         (when (non-nil? cursor)
-            (cond (and (== (.at p 0) TAB) (non-zero? (& @State NORMAL)) (not (virtual_active)) (not (and @VIsual_active (or (== (.at @p_sel 0) (byte \e)) (ltoreq pos, @VIsual)))))
+            (cond (and (== (.at p 0) TAB) (flag? @State NORMAL) (not (virtual_active)) (not (and @VIsual_active (or (== (.at @p_sel 0) (byte \e)) (ltoreq pos, @VIsual)))))
             (§
                 ((ß cursor[0] =) (- (+ vcol incr) 1))        ;; cursor at end
             )
@@ -47247,10 +47191,10 @@
         ;; If 'expandtab' isn't set: use TABs; if both 'expandtab' and
         ;; 'preserveindent' are set: count the number of characters at
         ;; the beginning of the line to be copied.
-        (when (or (not @(:b_p_et @curbuf)) (and (zero? (& flags SIN_INSERT)) @(:b_p_pi @curbuf)))
+        (when (or (not @(:b_p_et @curbuf)) (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf)))
             ;; If 'preserveindent' is set, then reuse as much as possible
             ;; of the existing indent structure for the new indent.
-            (when (and (zero? (& flags SIN_INSERT)) @(:b_p_pi @curbuf))
+            (when (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf))
                 ((ß ind_done =) 0)
 
                 ;; count as many characters as we can use
@@ -47314,12 +47258,12 @@
         )
 
         ;; Return if the indent is OK already.
-        (if (and (not doit) (not (vim_iswhite (.at p 0))) (zero? (& flags SIN_INSERT)))
+        (if (and (not doit) (not (vim_iswhite (.at p 0))) (non-flag? flags SIN_INSERT))
             ((ß RETURN) false)
         )
 
         ;; Allocate memory for the new line.
-        (if (non-zero? (& flags SIN_INSERT))
+        (if (flag? flags SIN_INSERT)
             ((ß p =) oldline)
             ((ß p =) (skipwhite p))
         )
@@ -47361,7 +47305,7 @@
         (when (not @(:b_p_et @curbuf))
             ;; If 'preserveindent' is set, then reuse as much as possible
             ;; of the existing indent structure for the new indent.
-            (when (and (zero? (& flags SIN_INSERT)) @(:b_p_pi @curbuf))
+            (when (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf))
                 ((ß p =) oldline)
                 ((ß ind_done =) 0)
 
@@ -47406,9 +47350,9 @@
         (BCOPY s, p, line_len)
 
         ;; Replace the line (unless undo fails).
-        (when (or (zero? (& flags SIN_UNDO)) (u_savesub (:lnum (:w_cursor @curwin))))
+        (when (or (non-flag? flags SIN_UNDO) (u_savesub (:lnum (:w_cursor @curwin))))
             (ml_replace (:lnum (:w_cursor @curwin)), newline)
-            (if (non-zero? (& flags SIN_CHANGED))
+            (if (flag? flags SIN_CHANGED)
                 (changed_bytes (:lnum (:w_cursor @curwin)), 0))
             ;; Correct saved cursor position if it is in this line.
             (when (== (:lnum @saved_cursor) (:lnum (:w_cursor @curwin)))
@@ -47617,7 +47561,7 @@
         ((ß Bytes saved_line =) (STRDUP (ml_get_curline)))
         ((ß Bytes next_line =) null)            ;; copy of the next line
 
-        (when (non-zero? (& @State VREPLACE_FLAG))
+        (when (flag? @State VREPLACE_FLAG)
             ;; With VREPLACE we make a copy of the next line, which we will be starting to replace.
             ;; First make the new line empty and let vim play with the indenting and comment leader
             ;; to its heart's content.  Then we grab what it ended up putting on the new line, put
@@ -47647,7 +47591,7 @@
         ((ß int extra_len =) 0)                  ;; length of "p_extra" string
         ((ß int saved_char =) NUL)
 
-        (when (and (non-zero? (& @State INSERT)) (zero? (& @State VREPLACE_FLAG)))
+        (when (and (flag? @State INSERT) (non-flag? @State VREPLACE_FLAG))
             ((ß p_extra =) (.plus saved_line (:col (:w_cursor @curwin))))
             (when do_si              ;; need first char after new line break
                 ((ß Bytes p =) (skipwhite p_extra))
@@ -47809,11 +47753,11 @@
             ;; When in REPLACE mode, put the deleted blanks on the replace stack,
             ;; preceded by a NUL, so they can be put back when a BS is entered.
 
-            (if (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)))
+            (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                 (replace_push NUL))      ;; end of extra blanks
             (when @(:b_p_ai @curbuf)
                 (while (and (or (== (.at p_extra 0) (byte \space)) (== (.at p_extra 0) TAB)) (not (utf_iscomposing (us_ptr2char (.plus p_extra 1)))))
-                    (if (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)))
+                    (if (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                         (replace_push (.at p_extra 0)))
                     ((ß p_extra =) (.plus p_extra 1))
                     (ß less_cols_off++)
@@ -47838,7 +47782,7 @@
 ;       theend:
 ;       {
             (ß boolean did_append)
-            (cond (or (zero? (& @State VREPLACE_FLAG)) (<= @orig_line_count (:lnum old_cursor)))
+            (cond (or (non-flag? @State VREPLACE_FLAG) (<= @orig_line_count (:lnum old_cursor)))
             (§
                 (if (not (ml_append (:lnum (:w_cursor @curwin)), p_extra))
                     (ß BREAK theend)
@@ -47897,7 +47841,7 @@
                 ;; In REPLACE mode, for each character in the new indent, there must
                 ;; be a NUL on the replace stack, for when it is deleted with BS.
 
-                (when (and (non-zero? (& @State REPLACE_FLAG)) (zero? (& @State VREPLACE_FLAG)))
+                (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
                     ((ß FOR) (ß ((ß int n =) 0) (< n (:col (:w_cursor @curwin))) (ß n++))
                         (replace_push NUL)
                     )
@@ -47910,7 +47854,7 @@
             (COPY_pos (:w_cursor @curwin), old_cursor)
 
             (when (== dir FORWARD)
-                (when (or trunc_line (non-zero? (& @State INSERT)))
+                (when (or trunc_line (flag? @State INSERT))
                     ;; truncate current line at cursor
                     (.be saved_line (:col (:w_cursor @curwin)), NUL)
                     ;; Remove trailing white space.
@@ -47945,7 +47889,7 @@
             ;; telling it we're in normal INSERT mode.
 
             (ß int vreplace_mode)
-            (cond (non-zero? (& @State VREPLACE_FLAG))
+            (cond (flag? @State VREPLACE_FLAG)
             (§
                 ((ß vreplace_mode =) @State)          ;; so we know to put things right later
                 (reset! State INSERT)
@@ -47962,7 +47906,7 @@
             ;; original line, and inserts the new stuff char by char, pushing old stuff
             ;; onto the replace stack (via ins_char()).
 
-            (when (non-zero? (& @State VREPLACE_FLAG))
+            (when (flag? @State VREPLACE_FLAG)
                 ;; Put new line in "p_extra".
                 ((ß p_extra =) (STRDUP (ml_get_curline)))
 
@@ -48064,7 +48008,7 @@
         ;; This only fixes an error when the TAB wraps from one screen line to the next
         ;; (when 'columns' is not a multiple of 'ts').
 
-        (if (and (== (.at s 0) TAB) (non-zero? (& @State NORMAL)))
+        (if (and (== (.at s 0) TAB) (flag? @State NORMAL))
             ((ß col +=) (- (win_lbr_chartabsize wp, line, s, (int col), null) 1))
         )
 
@@ -48151,8 +48095,8 @@
         ((ß int oldlen =) 0)                             ;; nr of bytes deleted (0 when not replacing)
         ((ß int newlen =) charlen)                       ;; nr of bytes inserted
 
-        (when (non-zero? (& @State REPLACE_FLAG))
-            (cond (non-zero? (& @State VREPLACE_FLAG))
+        (when (flag? @State REPLACE_FLAG)
+            (cond (flag? @State VREPLACE_FLAG)
             (§
                 ;; In virtual replace mode each character may replace one or more
                 ;; characters (zero if it's a TAB).  Count the number of bytes to
@@ -48220,7 +48164,7 @@
         ;; If we're in Insert or Replace mode and 'showmatch' is set,
         ;; then briefly show the match for right parens and braces.
 
-        (when (and @p_sm (non-zero? (& @State INSERT)))
+        (when (and @p_sm (flag? @State INSERT))
             (showmatch (us_ptr2char buf))
         )
 
@@ -48341,7 +48285,7 @@
             ;; fixpos is true, we don't want to end up positioned at the NUL,
             ;; unless "restart_edit" is set or 'virtualedit' contains "onemore".
 
-            (when (and (< 0 col) fixpos (zero? @restart_edit) (zero? (& @ve_flags VE_ONEMORE)))
+            (when (and (< 0 col) fixpos (zero? @restart_edit) (non-flag? @ve_flags VE_ONEMORE))
                 (ß --@curwin.w_cursor.col)
                 ((ß @curwin.w_cursor.coladd =) 0)
                 ((ß @curwin.w_cursor.col -=) (us_head_off oldp, (.plus oldp (:col (:w_cursor @curwin)))))
@@ -48566,12 +48510,9 @@
     ;; col: column in first line with change
     ;; lnume: line below last changed line
     ;; xtra: number of extra lines (negative when deleting)
-    (§
-        (changed_lines_buf @curbuf, lnum, lnume, xtra)
-
-        (changed_common lnum, col, lnume, xtra)
-        nil
-    ))
+    (changed_lines_buf @curbuf, lnum, lnume, xtra)
+    (changed_common lnum, col, lnume, xtra)
+    nil)
 
 (defn- #_void changed_lines_buf [#_buffer_C buf, #_long lnum, #_long lnume, #_long xtra]
     ;; lnum: first line with change
@@ -48867,7 +48808,7 @@
             )
 
             (when (== n KEYLEN_REMOVED)        ;; key code removed
-                (when (and (non-zero? @must_redraw) (not @need_wait_return) (zero? (& @State CMDLINE)))
+                (when (and (non-zero? @must_redraw) (not @need_wait_return) (non-flag? @State CMDLINE))
                     ;; Redrawing was postponed, do it now.
                     (update_screen 0)
                     (setcursor)            ;; put cursor back where it belongs
@@ -48995,18 +48936,16 @@
 ;; avoid unsafe functions, such as allocating memory.
 
 (defn- #_void preserve_exit []
-    (§
-        (prepare_to_exit)
+    (prepare_to_exit)
 
-        (out_str @ioBuff)
-        (screen_start)                 ;; don't know where cursor is now
-        (out_flush)
+    (out_str @ioBuff)
+    (screen_start)                 ;; don't know where cursor is now
+    (out_flush)
 
-        (out_str (u8 "Vim: Finished.\n"))
+    (out_str (u8 "Vim: Finished.\n"))
 
-        (getout 1)
-        nil
-    ))
+    (getout 1)
+    nil)
 
 ;; Check for CTRL-C pressed, but only once in a while.
 ;; Should be used instead of ui_breakcheck() for functions that check for each line in the file.
@@ -49046,14 +48985,12 @@
 ;; Return true if in the current mode we need to use virtual.
 
 (defn- #_boolean virtual_active []
-    (§
-        ;; While an operator is being executed we return "virtual_op",
-        ;; because VIsual_active has already been reset,
-        ;; thus we can't check for "block" being used.
-        (if (!= @virtual_op MAYBE)
-            (!= @virtual_op FALSE)
-            (or (== @ve_flags VE_ALL) (and (!= (& @ve_flags VE_BLOCK) 0) @VIsual_active (== @VIsual_mode Ctrl_V)) (and (!= (& @ve_flags VE_INSERT) 0) (!= (& @State INSERT) 0)))
-        )
+    ;; While an operator is being executed we return "virtual_op",
+    ;; because VIsual_active has already been reset,
+    ;; thus we can't check for "block" being used.
+    (if (!= @virtual_op MAYBE)
+        (!= @virtual_op FALSE)
+        (or (== @ve_flags VE_ALL) (and (flag? @ve_flags VE_BLOCK) @VIsual_active (== @VIsual_mode Ctrl_V)) (and (flag? @ve_flags VE_INSERT) (flag? @State INSERT)))
     ))
 
 ;; Get the screen position of the cursor.
@@ -49140,7 +49077,7 @@
         ((ß int csize =) 0)
 ; %%    ((ß int[] head =) (ß { 0 }))
 
-        ((ß boolean one_more =) (or (!= (& @State INSERT) 0) (!= @restart_edit NUL) (and @VIsual_active (!= (.at @p_sel 0) (byte \o))) (and (!= (& @ve_flags VE_ONEMORE) 0) (< wcol MAXCOL))))
+        ((ß boolean one_more =) (or (flag? @State INSERT) (!= @restart_edit NUL) (and @VIsual_active (!= (.at @p_sel 0) (byte \o))) (and (flag? @ve_flags VE_ONEMORE) (< wcol MAXCOL))))
 
         ((ß Bytes line =) (ml_get_buf @curbuf, (:lnum pos)))
 
@@ -49167,7 +49104,7 @@
                     (ß csize--)
                 )
 
-                (when (and (< (/ csize width) (/ wcol width)) (or (zero? (& @State INSERT)) (< (inc csize) wcol)))
+                (when (and (< (/ csize width) (/ wcol width)) (or (non-flag? @State INSERT) (< (inc csize) wcol)))
                     ;; In case of line wrapping don't move the cursor beyond the
                     ;; right screen edge.  In Insert mode allow going just beyond
                     ;; the last character (like what happens when typing and
@@ -49427,7 +49364,7 @@
             ;; - in Insert mode or restarting Insert mode
             ;; - in Visual mode and 'selection' isn't "old"
             ;; - 'virtualedit' is set
-            (cond (or (non-zero? (& @State INSERT)) (non-zero? @restart_edit) (and @VIsual_active (!= (.at @p_sel 0) (byte \o))) (non-zero? (& @ve_flags VE_ONEMORE)) (virtual_active))
+            (cond (or (flag? @State INSERT) (non-zero? @restart_edit) (and @VIsual_active (!= (.at @p_sel 0) (byte \o))) (flag? @ve_flags VE_ONEMORE) (virtual_active))
             (§
                 ((ß win.w_cursor.col =) len)
             )
@@ -49952,9 +49889,9 @@
 
 (defn- #_int simplify_key [#_int key, #_int* modifiers]
     (§
-        (when (non-zero? (& (... modifiers 0) (| MOD_MASK_SHIFT MOD_MASK_CTRL MOD_MASK_ALT)))
+        (when (flag? (... modifiers 0) (| MOD_MASK_SHIFT MOD_MASK_CTRL MOD_MASK_ALT))
             ;; TAB is a special case.
-            (when (and (== key TAB) (non-zero? (& (... modifiers 0) MOD_MASK_SHIFT)))
+            (when (and (== key TAB) (flag? (... modifiers 0) MOD_MASK_SHIFT))
                 ((ß modifiers[0] &=) (bit-not MOD_MASK_SHIFT))
                 ((ß RETURN) K_S_TAB)
             )
@@ -50164,7 +50101,7 @@
 
 (defn- #_int get_real_state []
     (§
-        (when (non-zero? (& @State NORMAL))
+        (when (flag? @State NORMAL)
             (cond @VIsual_active
             (§
                 (if @VIsual_select
@@ -50215,7 +50152,7 @@
     (§
         (when (and (not @did_cursorhold) (ß hamis) (not @Recording) (zero? (:tb_len @typebuf)))
             ((ß int state =) (get_real_state))
-            (if (or (== state NORMAL_BUSY) (non-zero? (& state INSERT)))
+            (if (or (== state NORMAL_BUSY) (flag? state INSERT))
                 ((ß RETURN) true)
             )
         )
@@ -50639,13 +50576,10 @@
 ;; If 'cpoptions' does not contain 'u': Always redo.
 
 (defn- #_void u_redo [#_int count]
-    (§
-        (if (nil? (vim_strbyte @p_cpo, CPO_UNDO))
-            (reset! undo_undoes false))
-
-        (u_doit count)
-        nil
-    ))
+    (if (nil? (vim_strbyte @p_cpo, CPO_UNDO))
+        (reset! undo_undoes false))
+    (u_doit count)
+    nil)
 
 ;; Undo or redo, depending on 'undo_undoes', 'count' times.
 
@@ -51129,10 +51063,10 @@
 
         ((ß curhead.uh_entry =) newlist)
         ((ß curhead.uh_flags =) new_flags)
-        (if (and (non-zero? (& old_flags UH_EMPTYBUF)) (bufempty))
+        (if (and (flag? old_flags UH_EMPTYBUF) (bufempty))
             ((ß @curbuf.b_ml.ml_flags |=) ML_EMPTY)
         )
-        (if (non-zero? (& old_flags UH_CHANGED))
+        (if (flag? old_flags UH_CHANGED)
             (changed)
             (unchanged @curbuf))
 
@@ -52025,20 +51959,18 @@
 ;; normal text: use functions like msg_puts() and screen_putchar() for that.
 
 (defn- #_void out_str [#_Bytes s]
-    (§
-        (when (and (non-nil? s) (non-eos? s))
-            ;; avoid terminal strings being split up
-            (if (< (- OUT_SIZE 20) @out_pos)
-                (out_flush))
+    (when (and (non-nil? s) (non-eos? s))
+        ;; avoid terminal strings being split up
+        (if (< (- OUT_SIZE 20) @out_pos)
+            (out_flush))
 
-            (_tputs s, 1)
+        (_tputs s, 1)
 
-            ;; For testing we write one string at a time.
-            (if (non-zero? @p_wd)
-                (out_flush))
-        )
-        nil
-    ))
+        ;; For testing we write one string at a time.
+        (if (non-zero? @p_wd)
+            (out_flush))
+    )
+    nil)
 
 ;; cursor positioning using termcap parser
 
@@ -52217,19 +52149,17 @@
 ;; Invoked just before the screen structures are going to be (re)allocated.
 
 (defn- #_void win_new_shellsize []
-    (§
-        (if (or (!= @old__Rows @Rows) (!= @old__Columns @Columns))
-            (ui_new_shellsize))
-        (when (!= @old__Rows @Rows)
-            (reset! old__Rows @Rows)
-            (shell_new_rows)       ;; update window sizes
-        )
-        (when (!= @old__Columns @Columns)
-            (reset! old__Columns @Columns)
-            (shell_new_columns)    ;; update window sizes
-        )
-        nil
-    ))
+    (if (or (!= @old__Rows @Rows) (!= @old__Columns @Columns))
+        (ui_new_shellsize))
+    (when (!= @old__Rows @Rows)
+        (reset! old__Rows @Rows)
+        (shell_new_rows)       ;; update window sizes
+    )
+    (when (!= @old__Columns @Columns)
+        (reset! old__Columns @Columns)
+        (shell_new_columns)    ;; update window sizes
+    )
+    nil)
 
 ;; Call this function when the Vim shell has been resized in any way.
 ;; Will obtain the current size and redraw (also when size didn't change).
@@ -52308,7 +52238,7 @@
             (§
                 (if @(:wo_scb (:w_options @curwin))
                     (do_check_scrollbind true))
-                (cond (non-zero? (& @State CMDLINE))
+                (cond (flag? @State CMDLINE)
                 (§
                     (update_screen NOT_VALID)
                     (redrawcmdline)
@@ -52334,51 +52264,45 @@
 ;; or TMODE_COOK (for external commands and Ex mode).
 
 (defn- #_void settmode [#_int tmode]
-    (§
-        (when @full_screen
-            ;; When returning after calling a shell we want to really set the
-            ;; terminal to raw mode, even though we think it already is, because
-            ;; the shell program may have reset the terminal mode.
-            ;; When we think the terminal is normal, don't try to set it to
-            ;; normal again, because that causes problems (logout!) on some machines.
+    (when @full_screen
+        ;; When returning after calling a shell we want to really set the
+        ;; terminal to raw mode, even though we think it already is, because
+        ;; the shell program may have reset the terminal mode.
+        ;; When we think the terminal is normal, don't try to set it to
+        ;; normal again, because that causes problems (logout!) on some machines.
 
-            (when (or (!= tmode TMODE_COOK) (!= @cur_tmode TMODE_COOK))
-                (out_flush)
-                (mch_settmode tmode)                ;; machine specific function
-                (reset! cur_tmode tmode)
-                (out_flush)
-            )
+        (when (or (!= tmode TMODE_COOK) (!= @cur_tmode TMODE_COOK))
+            (out_flush)
+            (mch_settmode tmode)                ;; machine specific function
+            (reset! cur_tmode tmode)
+            (out_flush)
         )
-        nil
-    ))
+    )
+    nil)
 
 (defn- #_void starttermcap []
-    (§
-        (when (and @full_screen (not @termcap_active))
-            (out_str @T_TI)                  ;; start termcap mode
-            (out_str @T_KS)                  ;; start "keypad transmit" mode
-            (out_flush)
-            (reset! termcap_active true)
-            (screen_start)                 ;; don't know where cursor is now
-        )
-        nil
-    ))
+    (when (and @full_screen (not @termcap_active))
+        (out_str @T_TI)                  ;; start termcap mode
+        (out_str @T_KS)                  ;; start "keypad transmit" mode
+        (out_flush)
+        (reset! termcap_active true)
+        (screen_start)                 ;; don't know where cursor is now
+    )
+    nil)
 
 (defn- #_void stoptermcap []
-    (§
-        (screen_stop_highlight)
-        (reset_cterm_colors)
-        (when @termcap_active
-            (out_str @T_KE)                  ;; stop "keypad transmit" mode
-            (out_flush)
-            (reset! termcap_active false)
-            (cursor_on)                    ;; just in case it is still off
-            (out_str @T_TE)                  ;; stop termcap mode
-            (screen_start)                 ;; don't know where cursor is now
-            (out_flush)
-        )
-        nil
-    ))
+    (screen_stop_highlight)
+    (reset_cterm_colors)
+    (when @termcap_active
+        (out_str @T_KE)                  ;; stop "keypad transmit" mode
+        (out_flush)
+        (reset! termcap_active false)
+        (cursor_on)                    ;; just in case it is still off
+        (out_str @T_TE)                  ;; stop termcap mode
+        (screen_start)                 ;; don't know where cursor is now
+        (out_flush)
+    )
+    nil)
 
 ;; Return true when saving and restoring the screen.
 
@@ -52443,7 +52367,7 @@
                 )
             )
         )
-        (non-zero? (& @State INSERT))
+        (flag? @State INSERT)
         (§
             (when (and (!= @showing_mode INSERT) (non-eos? @T_CSI))
                 (out_str @T_CSI)                 ;; Insert mode cursor
@@ -52464,30 +52388,26 @@
 ;; Always the full width of the window, excluding the vertical separator.
 
 (defn- #_void scroll_region_set [#_window_C wp, #_int off]
-    (§
-        (out_str (_tgoto @T_CS, (- (+ (:w_winrow wp) (:w_height wp)) 1), (+ (:w_winrow wp) off)))
+    (out_str (_tgoto @T_CS, (- (+ (:w_winrow wp) (:w_height wp)) 1), (+ (:w_winrow wp) off)))
 
-        (if (and (non-eos? @T_CSV) (!= (:w_width wp) (int @Columns)))
-            (out_str (_tgoto @T_CSV, (- (+ (:w_wincol wp) (:w_width wp)) 1), (:w_wincol wp)))
-        )
+    (if (and (non-eos? @T_CSV) (!= (:w_width wp) (int @Columns)))
+        (out_str (_tgoto @T_CSV, (- (+ (:w_wincol wp) (:w_width wp)) 1), (:w_wincol wp)))
+    )
 
-        (screen_start)                 ;; don't know where cursor is now
-        nil
-    ))
+    (screen_start)                 ;; don't know where cursor is now
+    nil)
 
 ;; Reset scrolling region to the whole screen.
 
 (defn- #_void scroll_region_reset []
-    (§
-        (out_str (_tgoto @T_CS, (- (int @Rows) 1), 0))
+    (out_str (_tgoto @T_CS, (dec (int @Rows)), 0))
 
-        (if (non-eos? @T_CSV)
-            (out_str (_tgoto @T_CSV, (- (int @Columns) 1), 0))
-        )
+    (if (non-eos? @T_CSV)
+        (out_str (_tgoto @T_CSV, (dec (int @Columns)), 0))
+    )
 
-        (screen_start)                 ;; don't know where cursor is now
-        nil
-    ))
+    (screen_start)                 ;; don't know where cursor is now
+    nil)
 
 ;; List of terminal codes that are currently recognized.
 
@@ -52517,14 +52437,12 @@
 (atom! int tc_len)      ;; current number of entries in termcodes[]
 
 (defn- #_void clear_termcodes []
-    (§
-        (reset! tc_len 0)
-        (reset! tc_max_len 0)
-        (reset! termcodes null)
+    (reset! tc_len 0)
+    (reset! tc_max_len 0)
+    (reset! termcodes null)
 
-        (reset! need_gather true)         ;; need to fill termleader[]
-        nil
-    ))
+    (reset! need_gather true)         ;; need to fill termleader[]
+    nil)
 
 ;; Add a new entry to the list of terminal codes.
 ;; The list is kept alphabetical for ":set termcap"
@@ -52713,7 +52631,7 @@
 
         ;; Skip this position if "p_ek" is not set and *tp is an ESC and we are in Insert mode.
 
-        (if (and (== (.at tp 0) ESC) (not @p_ek) (non-zero? (& @State INSERT)))
+        (if (and (== (.at tp 0) ESC) (not @p_ek) (flag? @State INSERT))
             ((ß RETURN) 0)
         )
 
@@ -53155,12 +53073,9 @@
 ;; May update the shape of the cursor.
 
 (defn- #_void ui_cursor_shape []
-    (§
-        (term_cursor_shape)
-
-        (conceal_check_cursor_line)
-        nil
-    ))
+    (term_cursor_shape)
+    (conceal_check_cursor_line)
+    nil)
 
 ;; Check bounds for column number
 
@@ -53470,7 +53385,7 @@
 
         (if (== type INVERTED)
             (update_curswant))
-        (if (and (< (:w_redr_type @curwin) type) (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0)))) (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin))) (== (:w_old_visual_mode @curwin) @VIsual_mode) (non-zero? (& (:w_valid @curwin) VALID_VIRTCOL)) (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
+        (if (and (< (:w_redr_type @curwin) type) (not (or (and (== type VALID) (:wl_valid (... (:w_lines @curwin) 0)) (== (:w_topline @curwin) (:wl_lnum (... (:w_lines @curwin) 0)))) (and (== type INVERTED) @VIsual_active (== (:w_old_cursor_lnum @curwin) (:lnum (:w_cursor @curwin))) (== (:w_old_visual_mode @curwin) @VIsual_mode) (flag? (:w_valid @curwin) VALID_VIRTCOL) (== (:w_old_curswant @curwin) (:w_curswant @curwin))))))
             ((ß @curwin.w_redr_type =) type)
         )
 
@@ -53523,19 +53438,19 @@
         )
 
         (ß int c)
-        (cond (non-zero? (& (get_real_state) VISUAL))
+        (cond (flag? (get_real_state) VISUAL)
         (§
             ((ß c =) (byte \v))
         )
-        (non-zero? (& @State INSERT))
+        (flag? @State INSERT)
         (§
             ((ß c =) (byte \i))
         )
-        (non-zero? (& @State NORMAL))
+        (flag? @State NORMAL)
         (§
             ((ß c =) (byte \n))
         )
-        (non-zero? (& @State CMDLINE))
+        (flag? @State CMDLINE)
         (§
             ((ß c =) (byte \c))
         )
@@ -54044,7 +53959,7 @@
             ;; If we know the value of w_botline,
             ;; use it to restrict the update to the lines that are visible in the window.
 
-            (when (non-zero? (& (:w_valid wp) VALID_BOTLINE))
+            (when (flag? (:w_valid wp) VALID_BOTLINE)
                 (if (>= from (:w_botline wp))
                     ((ß from =) (- (:w_botline wp) 1))
                 )
@@ -54291,7 +54206,7 @@
                     ))
                 )
 
-                (cond (and (< idx (:w_lines_valid wp)) (:wl_valid (... (:w_lines wp) idx)) (== (:wl_lnum (... (:w_lines wp) idx)) lnum) (< (:w_topline wp) lnum) (== (& @dy_flags DY_LASTLINE) 0) (< (:w_height wp) (+ srow (:wl_size (... (:w_lines wp) idx)))))
+                (cond (and (< idx (:w_lines_valid wp)) (:wl_valid (... (:w_lines wp) idx)) (== (:wl_lnum (... (:w_lines wp) idx)) lnum) (< (:w_topline wp) lnum) (non-flag? @dy_flags DY_LASTLINE) (< (:w_height wp) (+ srow (:wl_size (... (:w_lines wp) idx)))))
                 (§
                     ;; This line is not going to fit.
                     ;; Don't draw anything here, will draw "@  " lines below.
@@ -54356,7 +54271,7 @@
 
                 ((ß wp.w_botline =) (inc lnum))
             )
-            (non-zero? (& @dy_flags DY_LASTLINE))     ;; 'display' has "lastline"
+            (flag? @dy_flags DY_LASTLINE)     ;; 'display' has "lastline"
             (§
                 ;; Last line isn't finished: Display "@@@" at the end.
 
@@ -55428,7 +55343,7 @@
                     ))
                 )
 
-                (cond (and (< 0 @(:wo_cole (:w_options wp))) (or (!= wp @curwin) (!= lnum (:lnum (:w_cursor wp))) (conceal_cursor_line wp)) (!= (& syntax_flags HL_CONCEAL) 0) (not (and lnum_in_visual_area (== (vim_strchr @(:wo_cocu (:w_options wp)), (byte \v)) null))))
+                (cond (and (< 0 @(:wo_cole (:w_options wp))) (or (!= wp @curwin) (!= lnum (:lnum (:w_cursor wp))) (conceal_cursor_line wp)) (flag? syntax_flags HL_CONCEAL) (not (and lnum_in_visual_area (== (vim_strchr @(:wo_cocu (:w_options wp)), (byte \v)) null))))
                 (§
                     ((ß char_attr =) conceal_attr)
                     (cond (and (!= prev_syntax_id (... syntax_seqnr 0)) (or (!= (syn_get_sub_char) NUL) (== @(:wo_cole (:w_options wp)) 1)) (!= @(:wo_cole (:w_options wp)) 3))
@@ -56028,7 +55943,7 @@
                     (if (< HL_ALL hl)
                         ((ß hl =) (syn_attr2attr hl))
                     )
-                    (if (non-zero? (& hl HL_BOLD))
+                    (if (flag? hl HL_BOLD)
                         ((ß redraw_next =) true)
                     )
                 )
@@ -56376,7 +56291,7 @@
                     (if (< HL_ALL n)
                         ((ß n =) (syn_attr2attr n))
                     )
-                    (if (non-zero? (& n HL_BOLD))
+                    (if (flag? n HL_BOLD)
                         ((ß force_redraw_next =) true)
                     )
                 )
@@ -56709,7 +56624,7 @@
                     ((ß attr =) (:ae_attr aep))
                 )
             )
-            (cond (and (non-zero? (& attr HL_BOLD)) (non-nil? @T_MD))          ;; bold
+            (cond (and (flag? attr HL_BOLD) (non-nil? @T_MD))          ;; bold
             (§
                 (out_str @T_MD)
             )
@@ -56719,13 +56634,13 @@
                 ;; and the new HL has a FG color defined, clear BOLD.
                 (out_str @T_ME)
             ))
-            (if (and (non-zero? (& attr HL_STANDOUT)) (non-nil? @T_SO))      ;; standout
+            (if (and (flag? attr HL_STANDOUT) (non-nil? @T_SO))      ;; standout
                 (out_str @T_SO))
-            (if (and (non-zero? (& attr (| HL_UNDERLINE HL_UNDERCURL))) (non-nil? @T_US)) ;; underline or undercurl
+            (if (and (flag? attr (| HL_UNDERLINE HL_UNDERCURL)) (non-nil? @T_US)) ;; underline or undercurl
                 (out_str @T_US))
-            (if (and (non-zero? (& attr HL_ITALIC)) (non-nil? @T_CZH))       ;; italic
+            (if (and (flag? attr HL_ITALIC) (non-nil? @T_CZH))       ;; italic
                 (out_str @T_CZH))
-            (if (and (non-zero? (& attr HL_INVERSE)) (non-nil? @T_MR))       ;; inverse (reverse)
+            (if (and (flag? attr HL_INVERSE) (non-nil? @T_MR))       ;; inverse (reverse)
                 (out_str @T_MR))
 
             ;; Output the color or start string after bold etc.,
@@ -56783,22 +56698,22 @@
             ;; Often all ending-codes are equal to T_ME.
             ;; Avoid outputting the same sequence several times.
 
-            (when (non-zero? (& @screen_attr HL_STANDOUT))
+            (when (flag? @screen_attr HL_STANDOUT)
                 (if (zero? (STRCMP @T_SE, @T_ME))
                     ((ß do_ME =) true)
                     (out_str @T_SE))
             )
-            (when (non-zero? (& @screen_attr (| HL_UNDERLINE HL_UNDERCURL)))
+            (when (flag? @screen_attr (| HL_UNDERLINE HL_UNDERCURL))
                 (if (zero? (STRCMP @T_UE, @T_ME))
                     ((ß do_ME =) true)
                     (out_str @T_UE))
             )
-            (when (non-zero? (& @screen_attr HL_ITALIC))
+            (when (flag? @screen_attr HL_ITALIC)
                 (if (zero? (STRCMP @T_CZR, @T_ME))
                     ((ß do_ME =) true)
                     (out_str @T_CZR))
             )
-            (if (or do_ME (non-zero? (& @screen_attr (| HL_BOLD HL_INVERSE))))
+            (if (or do_ME (flag? @screen_attr (| HL_BOLD HL_INVERSE)))
                 (out_str @T_ME))
 
             (when (< 1 @t_colors)
@@ -56819,20 +56734,18 @@
 ;; The machine specific code may override this again.
 
 (defn- #_void reset_cterm_colors []
-    (§
-        (when (< 1 @t_colors)
-            ;; set Normal cterm colors
-            (when (or (< 0 @cterm_normal_fg_color) (< 0 @cterm_normal_bg_color))
-                (out_str @T_OP)
-                (reset! screen_attr -1)
-            )
-            (when (non-zero? @cterm_normal_fg_bold)
-                (out_str @T_ME)
-                (reset! screen_attr -1)
-            )
+    (when (< 1 @t_colors)
+        ;; set Normal cterm colors
+        (when (or (< 0 @cterm_normal_fg_color) (< 0 @cterm_normal_bg_color))
+            (out_str @T_OP)
+            (reset! screen_attr -1)
         )
-        nil
-    ))
+        (when (non-zero? @cterm_normal_fg_bold)
+            (out_str @T_ME)
+            (reset! screen_attr -1)
+        )
+    )
+    nil)
 
 ;; Put character screenLines["off"] on the screen at position "row" and "col",
 ;; using the attributes from screenAttrs["off"].
@@ -57011,7 +56924,7 @@
                     ;; next character should be redrawn too.  This happens for our
                     ;; own GUI and for some xterms.
                     (when @term_is_xterm
-                        (cond (and (!= (.at @screenLines off) (byte \space)) (or (< HL_ALL (... @screenAttrs off)) (non-zero? (& (... @screenAttrs off) HL_BOLD))))
+                        (cond (and (!= (.at @screenLines off) (byte \space)) (or (< HL_ALL (... @screenAttrs off)) (flag? (... @screenAttrs off) HL_BOLD)))
                         (§
                             ((ß force_next =) true)
                         )
@@ -57060,16 +56973,14 @@
 ;; Used before clearing or redrawing the screen or the command line.
 
 (defn- #_void check_for_delay [#_boolean check_msg_scroll]
-    (§
-        (when (and (or @emsg_on_display (and check_msg_scroll @msg_scroll)) (not @did_wait_return))
-            (out_flush)
-            (ui_delay 1000, true)
-            (reset! emsg_on_display false)
-            (if check_msg_scroll
-                (reset! msg_scroll false))
-        )
-        nil
-    ))
+    (when (and (or @emsg_on_display (and check_msg_scroll @msg_scroll)) (not @did_wait_return))
+        (out_flush)
+        (ui_delay 1000, true)
+        (reset! emsg_on_display false)
+        (if check_msg_scroll
+            (reset! msg_scroll false))
+    )
+    nil)
 
 ;; screen_valid -  allocate screen buffers if size changed
 ;;   If "doclear" is true: clear screen if it has been resized.
@@ -57077,11 +56988,8 @@
 ;;      Returns false when starting up and screen not initialized yet.
 
 (defn- #_boolean screen_valid [#_boolean doclear]
-    (§
-        (screenalloc doclear)           ;; allocate screen buffers if size changed
-
-        (non-nil? @screenLines)
-    ))
+    (screenalloc doclear)           ;; allocate screen buffers if size changed
+    (non-nil? @screenLines))
 
 (atom! boolean _4_entered)  ;; avoid recursiveness
 
@@ -57560,14 +57468,12 @@
 ;; Set cursor to its position in the current window.
 
 (defn- #_void setcursor []
-    (§
-        (when (redrawing)
-            (validate_cursor)
+    (when (redrawing)
+        (validate_cursor)
 
-            (windgoto (+ (:w_winrow @curwin) (:w_wrow @curwin)), (+ (:w_wincol @curwin) (:w_wcol @curwin)))
-        )
-        nil
-    ))
+        (windgoto (+ (:w_winrow @curwin) (:w_wrow @curwin)), (+ (:w_wincol @curwin) (:w_wcol @curwin)))
+    )
+    nil)
 
 ;; insert 'line_count' lines at 'row' in window 'wp'
 ;; if 'invalid' is true the wp.w_lines[].wl_lnum is invalidated.
@@ -58127,7 +58033,7 @@
     (§
         ((ß int length =) 0)
 
-        ((ß boolean do_mode =) (and @p_smd (or (!= (& @State INSERT) 0) (!= @restart_edit 0) @VIsual_active)))
+        ((ß boolean do_mode =) (and @p_smd (or (flag? @State INSERT) (!= @restart_edit 0) @VIsual_active)))
         (cond (or do_mode @Recording)
         (§
             ;; Don't show mode right now, when not redrawing or inside a mapping.
@@ -58156,15 +58062,15 @@
             (when do_mode
                 (msg_puts_attr (u8 "--"), attr)
 
-                (cond (non-zero? (& @State VREPLACE_FLAG))
+                (cond (flag? @State VREPLACE_FLAG)
                 (§
                     (msg_puts_attr (u8 " VREPLACE"), attr)
                 )
-                (non-zero? (& @State REPLACE_FLAG))
+                (flag? @State REPLACE_FLAG)
                 (§
                     (msg_puts_attr (u8 " REPLACE"), attr)
                 )
-                (non-zero? (& @State INSERT))
+                (flag? @State INSERT)
                 (§
                     (msg_puts_attr (u8 " INSERT"), attr)
                 )
@@ -58181,7 +58087,7 @@
                     (msg_puts_attr (u8 " (vreplace)"), attr)
                 ))
 
-                (if (and (non-zero? (& @State INSERT)) @p_paste)
+                (if (and (flag? @State INSERT) @p_paste)
                     (msg_puts_attr (u8 " (paste)"), attr))
 
                 (when @VIsual_active
@@ -58376,7 +58282,7 @@
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
 
         ((ß boolean empty_line =) false)
-        (if (and (zero? (& @State INSERT)) (== (.at (ml_get_buf @curbuf, (:lnum (:w_cursor wp))) 0) NUL))
+        (if (and (non-flag? @State INSERT) (== (.at (ml_get_buf @curbuf, (:lnum (:w_cursor wp))) 0) NUL))
             ((ß empty_line =) true)
         )
 
@@ -58924,7 +58830,7 @@
 
 (defn- #_boolean win_split [#_int size, #_int flags]
     (§
-        (when (and (non-zero? (& flags WSP_TOP)) (non-zero? (& flags WSP_BOT)))
+        (when (and (flag? flags WSP_TOP) (flag? flags WSP_BOT))
             (emsg (u8 "E442: Can't split topleft and botright at the same time"))
             ((ß RETURN) false)
         )
@@ -58943,11 +58849,11 @@
         ((ß int oldwin_height =) 0)
 
         (ß window_C oldwin)
-        (cond (non-zero? (& flags WSP_TOP))
+        (cond (flag? flags WSP_TOP)
         (§
             ((ß oldwin =) @firstwin)
         )
-        (non-zero? (& flags WSP_BOT))
+        (flag? flags WSP_BOT)
         (§
             ((ß oldwin =) @lastwin)
         )
@@ -58967,7 +58873,7 @@
         )
 
         (ß byte layout)
-        (cond (non-zero? (& flags WSP_VERT))
+        (cond (flag? flags WSP_VERT)
         (§
             ((ß layout =) FR_ROW)
 
@@ -58978,7 +58884,7 @@
             ((ß int needed =) (inc wmw1))
             (ß int minwidth)
             (ß int available)
-            (cond (non-zero? (& flags (| WSP_BOT WSP_TOP)))
+            (cond (flag? flags (| WSP_BOT WSP_TOP))
             (§
                 ((ß minwidth =) (frame_minwidth @topframe, NOWIN))
                 ((ß available =) (:fr_width @topframe))
@@ -59055,7 +58961,7 @@
             ((ß int needed =) (+ wmh1 STATUS_HEIGHT))
             (ß int minheight)
             (ß int available)
-            (cond (non-zero? (& flags (| WSP_BOT WSP_TOP)))
+            (cond (flag? flags (| WSP_BOT WSP_TOP))
             (§
                 ((ß minheight =) (+ (frame_minheight @topframe, NOWIN) need_status))
                 ((ß available =) (:fr_height @topframe))
@@ -59136,7 +59042,7 @@
 
         ;; allocate new window structure and link it in the window list
 
-        (cond (and (zero? (& flags WSP_TOP)) (or (non-zero? (& flags WSP_BOT)) (non-zero? (& flags WSP_BELOW)) (and (zero? (& flags WSP_ABOVE)) (if (non-zero? (& flags WSP_VERT)) @p_spr @p_sb))))
+        (cond (and (non-flag? flags WSP_TOP) (or (flag? flags WSP_BOT) (flag? flags WSP_BELOW) (and (non-flag? flags WSP_ABOVE) (if (flag? flags WSP_VERT) @p_spr @p_sb))))
         (§
             ;; new window below/right of current one
             (if (nil? new_wp)
@@ -59165,12 +59071,12 @@
 
         (ß frame_C curfrp)
         (ß boolean before)
-        (cond (non-zero? (& flags (| WSP_TOP WSP_BOT)))
+        (cond (flag? flags (| WSP_TOP WSP_BOT))
         (§
-            (cond (or (and (== (:fr_layout @topframe) FR_COL) (zero? (& flags WSP_VERT))) (and (== (:fr_layout @topframe) FR_ROW) (non-zero? (& flags WSP_VERT))))
+            (cond (or (and (== (:fr_layout @topframe) FR_COL) (non-flag? flags WSP_VERT)) (and (== (:fr_layout @topframe) FR_ROW) (flag? flags WSP_VERT)))
             (§
                 ((ß curfrp =) (:fr_child @topframe))
-                (when (non-zero? (& flags WSP_BOT))
+                (when (flag? flags WSP_BOT)
                     (while (non-nil? (:fr_next curfrp))
                         ((ß curfrp =) (:fr_next curfrp))
                     )
@@ -59180,20 +59086,20 @@
             (§
                 ((ß curfrp =) @topframe)
             ))
-            ((ß before =) (non-zero? (& flags WSP_TOP)))
+            ((ß before =) (flag? flags WSP_TOP))
         )
         :else
         (§
             ((ß curfrp =) (:w_frame oldwin))
-            (cond (non-zero? (& flags WSP_BELOW))
+            (cond (flag? flags WSP_BELOW)
             (§
                 ((ß before =) false)
             )
-            (non-zero? (& flags WSP_ABOVE))
+            (flag? flags WSP_ABOVE)
             (§
                 ((ß before =) true)
             )
-            (non-zero? (& flags WSP_VERT))
+            (flag? flags WSP_VERT)
             (§
                 ((ß before =) (not @p_spr))
             )
@@ -59243,7 +59149,7 @@
             (set_fraction oldwin))
         ((ß wp.w_fraction =) (:w_fraction oldwin))
 
-        (cond (non-zero? (& flags WSP_VERT))
+        (cond (flag? flags WSP_VERT)
         (§
             ((ß wp.w_options.@wo_scr =) @(:wo_scr (:w_options @curwin)))
 
@@ -59251,7 +59157,7 @@
                 (win_new_height oldwin, (- (:w_height oldwin) 1))
                 ((ß oldwin.w_status_height =) need_status)
             )
-            (cond (non-zero? (& flags (| WSP_TOP WSP_BOT)))
+            (cond (flag? flags (| WSP_TOP WSP_BOT))
             (§
                 ;; set height and row of new window to full height
                 ((ß wp.w_winrow =) 0)
@@ -59279,12 +59185,12 @@
                 ((ß wp.w_vsep_width =) (:w_vsep_width oldwin))
                 ((ß oldwin.w_vsep_width =) 1)
             ))
-            (cond (non-zero? (& flags (| WSP_TOP WSP_BOT)))
+            (cond (flag? flags (| WSP_TOP WSP_BOT))
             (§
-                (if (non-zero? (& flags WSP_BOT))
+                (if (flag? flags WSP_BOT)
                     (frame_add_vsep curfrp))
                 ;; Set width of neighbor frame.
-                (frame_new_width curfrp, (- (:fr_width curfrp) (+ new_size (if (non-zero? (& flags WSP_TOP)) 1 0))), (non-zero? (& flags WSP_TOP)), false)
+                (frame_new_width curfrp, (- (:fr_width curfrp) (+ new_size (if (flag? flags WSP_TOP) 1 0))), (flag? flags WSP_TOP), false)
             )
             :else
             (§
@@ -59305,7 +59211,7 @@
         :else
         (§
             ;; width and column of new window is same as current window
-            (cond (non-zero? (& flags (| WSP_TOP WSP_BOT)))
+            (cond (flag? flags (| WSP_TOP WSP_BOT))
             (§
                 ((ß wp.w_wincol =) 0)
                 (win_new_width wp, (int @Columns))
@@ -59322,8 +59228,8 @@
             ;; "new_size" of the current window goes to the new window,
             ;; use one row for the status line
             (win_new_height wp, new_size)
-            (if (non-zero? (& flags (| WSP_TOP WSP_BOT)))
-                (frame_new_height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (non-zero? (& flags WSP_TOP)), false)
+            (if (flag? flags (| WSP_TOP WSP_BOT))
+                (frame_new_height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (flag? flags WSP_TOP), false)
                 (win_new_height oldwin, (- oldwin_height (+ new_size STATUS_HEIGHT))))
             (cond before     ;; new window above current one
             (§
@@ -59337,13 +59243,13 @@
                 ((ß wp.w_status_height =) (:w_status_height oldwin))
                 ((ß oldwin.w_status_height =) STATUS_HEIGHT)
             ))
-            (if (non-zero? (& flags WSP_BOT))
+            (if (flag? flags WSP_BOT)
                 (frame_add_statusline curfrp))
             (frame_fix_height wp)
             (frame_fix_height oldwin)
         ))
 
-        (if (non-zero? (& flags (| WSP_TOP WSP_BOT)))
+        (if (flag? flags (| WSP_TOP WSP_BOT))
             (win_comp_pos))
 
         ;; Both windows need redrawing
@@ -59365,11 +59271,11 @@
         ;; equalize the window sizes.
 
         (if (or do_equal (non-zero? dir))
-            (win_equal wp, true, (if (non-zero? (& flags WSP_VERT)) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
+            (win_equal wp, true, (if (flag? flags WSP_VERT) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
 
         ;; Don't change the window height/width to 'winheight' / 'winwidth' if a size was given.
         (ß int i)
-        (cond (non-zero? (& flags WSP_VERT))
+        (cond (flag? flags WSP_VERT)
         (§
             ((ß i =) (int @p_wiw))
             (if (non-zero? size)
@@ -59388,7 +59294,7 @@
         ;; make the new window the current window
 
         (win_enter wp)
-        (if (non-zero? (& flags WSP_VERT))
+        (if (flag? flags WSP_VERT)
             (reset! p_wiw i)
             (reset! p_wh i))
 
@@ -59629,7 +59535,7 @@
 
         ;; Split a window on the desired side and put the window there.
         (win_split_ins size, flags, @curwin, (... dir 0))
-        (when (zero? (& flags WSP_VERT))
+        (when (non-flag? flags WSP_VERT)
             (win_setheight height)
             (if @p_ea
                 (win_equal @curwin, true, (byte \v)))
@@ -62030,7 +61936,7 @@
         ;; Otherwise have to start at w_topline.
 
         (check_cursor_moved wp)
-        (cond (non-zero? (& (:w_valid wp) VALID_CROW))
+        (cond (flag? (:w_valid wp) VALID_CROW)
         (§
             ((ß lnum =) (:lnum (:w_cursor wp)))
             ((ß done =) (:w_cline_row wp))
@@ -62067,7 +61973,7 @@
 
 (defn- #_void redraw_for_cursorline [#_window_C wp]
     (let [options (:w_options wp)]
-        (when (and (or @(:wo_rnu options) @(:wo_cul options)) (zero? (& (:w_valid wp) VALID_CROW)))
+        (when (and (or @(:wo_rnu options) @(:wo_cul options)) (non-flag? (:w_valid wp) VALID_CROW))
             (redraw_win_later wp, SOME_VALID)
         )
         nil
@@ -62105,7 +62011,7 @@
         )
 
         (check_cursor_moved @curwin)
-        (if (non-zero? (& (:w_valid @curwin) VALID_TOPLINE))
+        (if (flag? (:w_valid @curwin) VALID_TOPLINE)
             ((ß RETURN) nil)
         )
 
@@ -62178,7 +62084,7 @@
         ;; for every small change.
 
         (when check_botline
-            (if (zero? (& (:w_valid @curwin) VALID_BOTLINE_AP))
+            (if (non-flag? (:w_valid @curwin) VALID_BOTLINE_AP)
                 (validate_botline))
 
             (when (<= (:w_botline @curwin) (:ml_line_count (:b_ml @curbuf)))
@@ -62370,7 +62276,7 @@
 ;; Make sure the value of curwin.w_botline is valid.
 
 (defn- #_void validate_botline []
-    (when (zero? (& (:w_valid @curwin) VALID_BOTLINE))
+    (when (non-flag? (:w_valid @curwin) VALID_BOTLINE)
         (comp_botline @curwin)
     )
     nil)
@@ -62447,7 +62353,7 @@
         )
 
         (check_cursor_moved wp)
-        (when (zero? (& (:w_valid wp) VALID_CHEIGHT))
+        (when (non-flag? (:w_valid wp) VALID_CHEIGHT)
             (cond (or all_invalid (== i (:w_lines_valid wp)) (and (< i (:w_lines_valid wp)) (or (not (:wl_valid (... (:w_lines wp) i))) (!= (:wl_lnum (... (:w_lines wp) i)) (:lnum (:w_cursor wp))))))
             (§
                 ((ß wp.w_cline_height =) (plines_win wp, (:lnum (:w_cursor wp)), true))
@@ -62479,7 +62385,7 @@
 (defn- #_void validate_virtcol_win [#_window_C wp]
     (§
         (check_cursor_moved wp)
-        (when (zero? (& (:w_valid wp) VALID_VIRTCOL))
+        (when (non-flag? (:w_valid wp) VALID_VIRTCOL)
 ; %%        ((ß int[] vcol =) (ß { (wp.w_virtcol) }))
             (getvvcol wp, (:w_cursor wp), null, vcol, null)
             ((ß wp.w_virtcol =) (... vcol 0))
@@ -62495,7 +62401,7 @@
 (defn- #_void validate_cheight []
     (§
         (check_cursor_moved @curwin)
-        (when (zero? (& (:w_valid @curwin) VALID_CHEIGHT))
+        (when (non-flag? (:w_valid @curwin) VALID_CHEIGHT)
             ((ß @curwin.w_cline_height =) (plines (:lnum (:w_cursor @curwin))))
             ((ß @curwin.w_valid |=) VALID_CHEIGHT)
         )
@@ -62507,7 +62413,7 @@
 (defn- #_void validate_cursor_col []
     (§
         (validate_virtcol)
-        (when (zero? (& (:w_valid @curwin) VALID_WCOL))
+        (when (non-flag? (:w_valid @curwin) VALID_WCOL)
             ((ß int col =) (:w_virtcol @curwin))
             ((ß int off =) (curwin_col_off))
             ((ß col +=) off)
@@ -62567,7 +62473,7 @@
 
         ;; Next make sure that w_cline_row is valid.
 
-        (if (zero? (& (:w_valid @curwin) VALID_CROW))
+        (if (non-flag? (:w_valid @curwin) VALID_CROW)
             (curs_rows @curwin))
 
         ;; Compute the number of virtual columns.
@@ -62759,7 +62665,7 @@
             (redraw_later NOT_VALID))
 
         ;; Redraw when w_virtcol changes and 'cursorcolumn' is set.
-        (if (and @(:wo_cuc (:w_options @curwin)) (zero? (& (:w_valid @curwin) VALID_VIRTCOL)))
+        (if (and @(:wo_cuc (:w_options @curwin)) (non-flag? (:w_valid @curwin) VALID_VIRTCOL))
             (redraw_later SOME_VALID))
 
         ((ß @curwin.w_valid |=) (| VALID_WCOL VALID_WROW VALID_VIRTCOL))
@@ -64363,24 +64269,18 @@
 
 ;; Exit properly.
 (defn- #_void getout [#_int exitval]
-    (§
-        (reset! exiting true)
+    (reset! exiting true)
 
-        ;; Position the cursor on the last screen line, below all the text.
-        (windgoto (- (int @Rows) 1), 0)
+    ;; Position the cursor on the last screen line, below all the text.
+    (windgoto (- (int @Rows) 1), 0)
 
-        (when @did_emsg
-            ;; give the user a chance to read the (error) message
-            (reset! no_wait_return FALSE)
-            (wait_return FALSE)
-        )
+    (when @did_emsg
+        ;; give the user a chance to read the (error) message
+        (reset! no_wait_return FALSE)
+        (wait_return FALSE)
+    )
 
-        ;; Position the cursor again, the autocommands may have moved it.
-        (windgoto (- (int @Rows) 1), 0)
-
-        (mch_exit exitval)
-        nil
-    ))
+    (mch_exit exitval))
 
 ;;; ============================================================================================== VimZ
 
