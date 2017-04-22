@@ -930,7 +930,6 @@
 
 ;; Values for action argument for do_buffer().
 (final int DOBUF_UNLOAD    2)       ;; unload specified buffer(s)
-(final int DOBUF_WIPE      4)       ;; delete specified buffer(s) really
 
 ;; Values for sub_cmd and which_pat argument for search_regcomp().
 ;; Also used for which_pat argument for searchit().
@@ -1014,13 +1013,6 @@
 (final int WSP_BOT         8)       ;; window at bottom-right of shell
 (final int WSP_BELOW       32)      ;; put new window below/right
 (final int WSP_ABOVE       64)      ;; put new window above/left
-
-;; flags for check_changed()
-
-(final int CCGD_MULTWIN    2)       ;; check also when several wins for the buf
-(final int CCGD_FORCEIT    4)       ;; ! used
-(final int CCGD_ALLBUF     8)       ;; may write all buffers
-(final int CCGD_EXCMD      16)      ;; may suggest using !
 
 ;; "flags" values for option-setting functions.
 ;; When OPT_GLOBAL and OPT_LOCAL are both missing, set both local and global
@@ -2071,12 +2063,10 @@
 ;       bh1.bh_space = bh0.bh_space;
     ))
 
-;; Command modifiers ":vertical" and ":hide" set a flag.
 ;; This needs to be saved for recursive commands, put them in a structure for easy manipulation.
 
 (class! #_final cmdmod_C
     [
-        (field boolean      hide)               ;; true when ":hide" was used
         (field int          split)              ;; flags for win_split()
         (field boolean      keepmarks)          ;; true when ":keepmarks" was used
         (field boolean      keepjumps)          ;; true when ":keepjumps" was used
@@ -2086,7 +2076,6 @@
 
 (defn- #_void ZER0_cmdmod [#_cmdmod_C cm]
     (§
-;       cm.hide = false;
 ;       cm.split = 0;
 ;       cm.keepmarks = false;
 ;       cm.keepjumps = false;
@@ -2096,7 +2085,6 @@
 
 (defn- #_void COPY_cmdmod [#_cmdmod_C cm1, #_cmdmod_C cm0]
     (§
-;       cm1.hide = cm0.hide;
 ;       cm1.split = cm0.split;
 ;       cm1.keepmarks = cm0.keepmarks;
 ;       cm1.keepjumps = cm0.keepjumps;
@@ -2623,7 +2611,6 @@
 
         (field window_C     w_prev)             ;; link to previous window
         (field window_C     w_next)             ;; link to next window
-        (field boolean      w_closing)          ;; window is being closed, don't let autocommands close it too
 
         (field frame_C      w_frame)            ;; frame containing this window
 
@@ -2955,7 +2942,7 @@
     CMD_fixdel 25,
     CMD_global 26,
     CMD_goto 27,
-    CMD_hide 28,
+
     CMD_history 29,
     CMD_insert 30,
     CMD_iabbrev 31,
@@ -3000,9 +2987,9 @@
     CMD_ounmap 70,
     CMD_print 71,
     CMD_put 72,
-    CMD_quit 73,
-    CMD_quitall 74,
-    CMD_qall 75,
+
+
+
     CMD_redo 76,
     CMD_redraw 77,
     CMD_redrawstatus 78,
@@ -3613,7 +3600,6 @@
     e_norange         (u8 "E481: No range allowed"),
     e_noroom          (u8 "E36: Not enough room"),
     e_nowrtmsg        (u8 "E37: No write since last change (add ! to override)"),
-    e_nowrtmsg_nobang (u8 "E37: No write since last change"),
     e_null            (u8 "E38: Null argument"),
     e_number_exp      (u8 "E39: Number expected"),
     e_patnotf2        (u8 "E486: Pattern not found: %s"),
@@ -11570,146 +11556,6 @@
 ;       @info_message = false;
     ))
 
-(defn- #_boolean create_command_line []
-    (§
-;       long newlnum = 1L;
-
-;       boolean auto_buf = false;   ;; true if autocommands brought us into the buffer unexpectedly
-
-;       long topline = 0;
-;       int newcol = -1;
-;       int solcol = -1;
-
-        ;; End Visual mode before switching to another buffer,
-        ;; so the text can be copied into the GUI selection buffer.
-
-;       reset_VIsual();
-
-;       buffer_C buf = newBuffer(0L);
-
-        ;; Make the (new) buffer the one used by the current window.
-        ;; If the current buffer was empty and has no file name, curbuf
-        ;; is returned by newBuffer(), nothing to do here.
-
-;       if (buf != @curbuf)
-;       {
-;           buf_copy_options(buf, BCO_ENTER);
-
-            ;; close the link to the current buffer
-;           u_sync(false);
-;           close_buffer(null, @curbuf, 0, false);
-
-;           if (buf == @curbuf)              ;; already in new buffer
-;               auto_buf = true;
-;           else
-;           {
-;               @curwin.w_buffer = buf;
-;               @curbuf = buf;
-;               @curbuf.b_nwindows++;
-;           }
-
-            ;; May get the window options from the last time this buffer was in this (or another) window.
-            ;; If not used before, reset the local window options to the global values.
-            ;; Also restores old folding stuff.
-;           get_winopts(@curbuf);
-;       }
-
-;       @curwin.w_pcmark.lnum = 1;
-;       @curwin.w_pcmark.col = 0;
-
-;       buffer_C buf = @curbuf;
-
-    ;; If we get here we are sure to start editing
-
-        ;; don't redraw until the cursor is in the right line
-;       @redrawingDisabled++;
-
-        ;; Assume success now.
-;       boolean retval = true;
-
-        ;; Reset cursor position, could be used by autocommands.
-
-;       check_cursor();
-
-;       if (!auto_buf)
-;       {
-;           win_init_empty(@curwin);
-
-            ;; Careful: open_buffer() and apply_autocmds() may change the current buffer and window.
-
-;           pos_C orig_pos = §_pos_C();
-;           COPY_pos(orig_pos, @curwin.w_cursor);
-;           topline = @curwin.w_topline;
-
-;           @curbuf.b_flags |= BF_CHECK_RO; ;; set/reset 'ro' flag
-
-            ;; Open the buffer and read the file.
-
-;           open_buffer();
-;           if (@got_int)
-;               retval = false;
-
-            ;; If autocommands change the cursor position or topline,
-            ;; we should keep it.  Also when it moves within a line.
-;           if (!eqpos(@curwin.w_cursor, orig_pos))
-;           {
-;               newlnum = @curwin.w_cursor.lnum;
-;               newcol = @curwin.w_cursor.col;
-;           }
-;           if (@curwin.w_topline == topline)
-;               topline = 0;
-
-            ;; Even when cursor didn't move we need to recompute topline.
-;           changed_line_abv_curs();
-;       }
-
-;       if (0 <= newcol)        ;; position set by autocommands
-;       {
-;           @curwin.w_cursor.lnum = newlnum;
-;           @curwin.w_cursor.col = newcol;
-;           check_cursor();
-;       }
-;       else if (0 < newlnum)   ;; line number from caller or old position
-;       {
-;           @curwin.w_cursor.lnum = newlnum;
-;           check_cursor_lnum();
-;           if (0 <= solcol && !@p_sol)
-;           {
-                ;; 'sol' is off: Use last known column.
-;               @curwin.w_cursor.col = solcol;
-;               check_cursor_col();
-;               @curwin.w_cursor.coladd = 0;
-;               @curwin.w_set_curswant = true;
-;           }
-;           else
-;               beginline(BL_SOL | BL_FIX);
-;       }
-;       else                    ;; no line number, go to last line in Ex mode
-;       {
-;           beginline(BL_WHITE | BL_FIX);
-;       }
-
-        ;; Check if cursors in other windows on the same buffer are still valid.
-;       check_lnums(false);
-
-;       --@redrawingDisabled;
-;       if (!@skip_redraw)
-;       {
-;           long n = @p_so;
-;           if (topline == 0)
-;               @p_so = 999;                 ;; force cursor halfway the window
-;           update_topline();
-;           @curwin.w_scbind_pos = @curwin.w_topline;
-;           @p_so = n;
-;           redraw_curbuf_later(NOT_VALID); ;; redraw this buffer later
-;       }
-
-;       if (@p_im)
-;           @need_start_insertmode = true;
-
-;       return retval;
-    ))
-
 (atom! int append_indent)       ;; autoindent for first line
 
 ;; ":insert" and ":append", also used by ":change"
@@ -15495,188 +15341,17 @@
 ;       }
     ))
 
-;; Open a window on the current command line and history.  Allow editing in
-;; the window.  Returns when the window is closed.
-;; Returns:
+;; Open a window on the current command line and history.
+;; Allow editing in the window.  When the window is closed,
+;; returns:
 ;;      CR       if the command is to be executed
 ;;      Ctrl_C   if it is to be abandoned
 ;;      K_IGNORE if editing continues
 
 (defn- #_int ex_window []
     (§
-;       buffer_C old_curbuf = @curbuf;
-;       window_C old_curwin = @curwin;
-
-;       int save_restart_edit = @restart_edit;
-;       int save_State = @State;
-
-        ;; Can't do this recursively.  Can't do it when typing a password.
-;       if (@cmdwin_type != 0 || 0 < @cmdline_star)
-;       {
-;           beep_flush();
-;           return K_IGNORE;
-;       }
-
-        ;; Save current window sizes.
-;       iarray_C winsizes = new iarray_C(1);
-;       win_size_save(winsizes);
-
-        ;; Create a window for the command-line buffer.
-;       if (win_split((int)@p_cwh, WSP_BOT) == false)
-;       {
-;           beep_flush();
-;           return K_IGNORE;
-;       }
-;       @cmdwin_type = get_cmdline_type();
-
-        ;; Create the command-line buffer empty.
-;       create_command_line();
-;       @curwin.w_onebuf_opt.@wo_scb = false;
-;       @curwin.w_onebuf_opt.@wo_crb = false;
-
-        ;; Showing the prompt may have set need_wait_return, reset it.
-;       @need_wait_return = false;
-
-;       int histtype = hist_char2type(@cmdwin_type);
-;       if (histtype == HIST_CMD && @p_wc == TAB)
-;       {
-;           add_map(u8("<buffer> <Tab> <C-X><C-V>"), INSERT);
-;           add_map(u8("<buffer> <Tab> a<C-X><C-V>"), NORMAL);
-;       }
-
-        ;; Reset 'textwidth' after setting 'filetype' (the Vim filetype plugin sets 'textwidth' to 78).
-;       @curbuf.@b_p_tw = 0;
-
-        ;; Fill the buffer with the history.
-;       init_history();
-;       if (0 < @hislen)
-;       {
-;           int i = @hisidx[histtype];
-;           if (0 <= i)
-;           {
-;               long lnum = 0;
-;               do
-;               {
-;                   if (++i == @hislen)
-;                       i = 0;
-;                   if (@history[histtype][i].hisstr != null)
-;                       ml_append(lnum++, @history[histtype][i].hisstr, 0, false);
-;               } while (i != @hisidx[histtype]);
-;           }
-;       }
-
-        ;; Replace the empty last line with the current command-line and put the cursor there.
-;       ml_replace(@curbuf.b_ml.ml_line_count, @ccline.cmdbuff, true);
-;       @curwin.w_cursor.lnum = @curbuf.b_ml.ml_line_count;
-;       @curwin.w_cursor.col = @ccline.cmdpos;
-;       changed_line_abv_curs();
-;       invalidate_botline();
-;       redraw_later(SOME_VALID);
-
-        ;; Save the command line info, can be used recursively.
-;       cmdline_info_C save_cli = §_cmdline_info_C();
-;       COPY_cmdline_info(save_cli, @ccline);
-;       @ccline.cmdbuff = null;
-;       @ccline.cmdprompt = null;
-
-;       @State = NORMAL;
-;       setmouse();
-
-;       if (@restart_edit != 0)      ;; autocmd with ":startinsert"
-;           stuffcharReadbuff(K_NOP);
-
-;       int i = @redrawingDisabled;
-;       @redrawingDisabled = 0;
-
-        ;; Call the main loop until <CR> or CTRL-C is typed.
-
-;       @cmdwin_result = 0;
-;       main_loop(true);
-
-;       @redrawingDisabled = i;
-
-        ;; Restore the command line info.
-;       COPY_cmdline_info(@ccline, save_cli);
-;       @cmdwin_type = 0;
-
-        ;; Safety check: The old window was deleted: It's a bug when this happens!
-;       if (!win_valid(old_curwin))
-;       {
-;           @cmdwin_result = Ctrl_C;
-;           emsg(u8("E199: Active window or buffer deleted"));
-;       }
-;       else
-;       {
-            ;; autocmds may abort script processing
-;           if (@got_int && @cmdwin_result != K_IGNORE)
-;               @cmdwin_result = Ctrl_C;
-
-            ;; Set the new command line from the cmdline buffer.
-;           if (@cmdwin_result == K_XF1 || @cmdwin_result == K_XF2) ;; :qa[!] typed
-;           {
-;               Bytes p = (@cmdwin_result == K_XF2) ? u8("qa") : u8("qa!");
-
-;               if (histtype == HIST_CMD)
-;               {
-                    ;; Execute the command directly.
-;                   @ccline.cmdbuff = STRDUP(p);
-;                   @cmdwin_result = CAR;
-;               }
-;               else
-;               {
-                    ;; First need to cancel what we were doing.
-;                   @ccline.cmdbuff = null;
-;                   stuffcharReadbuff(':');
-;                   stuffReadbuff(p);
-;                   stuffcharReadbuff(CAR);
-;               }
-;           }
-;           else if (@cmdwin_result == K_XF2)        ;; :qa typed
-;           {
-;               @ccline.cmdbuff = STRDUP(u8("qa"));
-;               @cmdwin_result = CAR;
-;           }
-;           else if (@cmdwin_result == Ctrl_C)
-;           {
-                ;; :q or :close, don't execute any command and don't modify the cmd window.
-;               @ccline.cmdbuff = null;
-;           }
-;           else
-;               @ccline.cmdbuff = STRDUP(ml_get_curline());
-
-;           if (@ccline.cmdbuff == null)
-;               @cmdwin_result = Ctrl_C;
-;           else
-;           {
-;               @ccline.cmdlen = STRLEN(@ccline.cmdbuff);
-;               @ccline.cmdbufflen = @ccline.cmdlen + 1;
-;               @ccline.cmdpos = @curwin.w_cursor.col;
-;               if (@ccline.cmdlen < @ccline.cmdpos)
-;                   @ccline.cmdpos = @ccline.cmdlen;
-;               if (@cmdwin_result == K_IGNORE)
-;               {
-;                   set_cmdspos_cursor();
-;                   redrawcmd();
-;               }
-;           }
-
-;           window_C wp = @curwin;
-;           buffer_C bp = @curbuf;
-;           win_goto(old_curwin);
-;           win_close(wp, true);
-
-;           close_buffer(null, bp, DOBUF_WIPE, false);
-
-            ;; Restore window sizes.
-;           win_size_restore(winsizes);
-;       }
-
-;       @restart_edit = save_restart_edit;
-
-;       @State = save_State;
-;       setmouse();
-
-;       return @cmdwin_result;
+;       beep_flush();
+;       return K_IGNORE;
     ))
 
 ;; ex_docmd.c: functions for executing an Ex command line -----------------------------------------
@@ -15721,7 +15396,7 @@
         CMD_edit,
         CMD_fixdel,
         CMD_global,
-        CMD_hide,
+        CMD_hide,
         CMD_insert,
         CMD_join,
         CMD_k,
@@ -15730,7 +15405,7 @@
         CMD_new,
         CMD_omap,
         CMD_print,
-        CMD_quit,
+        CMD_quit,
         CMD_redo,
         CMD_substitute,
         CMD_t,
@@ -16084,18 +15759,6 @@
 ;                       {
 ;                           ea.cmd = p[0];
 ;                           @cmdmod.keepjumps = true;
-;                           continue;
-;                       }
-;                       break;
-;                   }
-
-;                   case 'h':
-;                   {
-                        ;; ":hide" and ":hide | cmd" are not modifiers
-;                       if (BEQ(p[0], ea.cmd) && checkforcmd(p, u8("hide"), 3) && p[0].at(0) != NUL && !ends_excmd(p[0].at(0)))
-;                       {
-;                           ea.cmd = p[0];
-;                           @cmdmod.hide = true;
 ;                           continue;
 ;                       }
 ;                       break;
@@ -16613,7 +16276,6 @@
 ;                   case CMD_and:
 ;                   case CMD_belowright:
 ;                   case CMD_botright:
-;                   case CMD_hide:
 ;                   case CMD_keepjumps:
 ;                   case CMD_keepmarks:
 ;                   case CMD_keeppatterns:
@@ -16849,7 +16511,6 @@
         (->cmdmods_C (u8 "aboveleft"),    3, false),
         (->cmdmods_C (u8 "belowright"),   3, false),
         (->cmdmods_C (u8 "botright"),     2, false),
-        (->cmdmods_C (u8 "hide"),         3, false),
         (->cmdmods_C (u8 "keepjumps"),    5, false),
         (->cmdmods_C (u8 "keepmarks"),    3, false),
         (->cmdmods_C (u8 "keeppatterns"), 5, false),
@@ -17295,89 +16956,6 @@
 ;           return null;
     ))
 
-;; Call this function if we thought we were going to exit, but we won't
-;; (because of an error).  May need to restore the terminal mode.
-
-(defn- #_void not_exiting []
-    (§
-;       @exiting = false;
-;       settmode(TMODE_RAW);
-    ))
-
-;; ":quit": quit current window, quit Vim if the last window is closed.
-
-(defn- #_void ex_quit [#_exarg_C eap]
-    (§
-;       if (@cmdwin_type != 0)
-;       {
-;           @cmdwin_result = Ctrl_C;
-;           return;
-;       }
-
-            ;; Don't quit while editing the command line.
-;       if (text_locked())
-;       {
-;           text_locked_msg();
-;           return;
-;       }
-
-;       window_C wp;
-
-;       if (0 < eap.addr_count)
-;       {
-;           int wnr = (int)eap.line2;
-
-;           for (wp = @firstwin; wp.w_next != null; wp = wp.w_next)
-;               if (--wnr <= 0)
-;                   break;
-;       }
-;       else
-;           wp = @curwin;
-
-            ;; If there are more files or windows we won't exit.
-
-;       if (only_one_window())
-;           @exiting = true;
-;       if ((!@cmdmod.hide && check_changed(@curbuf, (eap.forceit ? CCGD_FORCEIT : 0) | CCGD_EXCMD))
-;               || (only_one_window() && check_changed_any(eap.forceit)))
-;       {
-;           not_exiting();
-;       }
-;       else
-;       {
-;           if (only_one_window())      ;; quit last window
-;               getout(0);
-                ;; close window; may free buffer
-;           win_close(wp, !@cmdmod.hide || eap.forceit);
-;       }
-    ))
-
-;; ":qall": try to quit all windows
-
-(defn- #_void ex_quit_all [#_exarg_C eap]
-    (§
-;       if (@cmdwin_type != 0)
-;       {
-;           if (eap.forceit)
-;               @cmdwin_result = K_XF1;      ;; ex_window() takes care of this
-;           else
-;               @cmdwin_result = K_XF2;
-;           return;
-;       }
-
-            ;; Don't quit while editing the command line.
-;       if (text_locked())
-;       {
-;           text_locked_msg();
-;           return;
-;       }
-
-;       @exiting = true;
-;       if (eap.forceit || !check_changed_any(false))
-;           getout(0);
-;       not_exiting();
-    ))
-
 ;; ":close": close current window, unless it is the last one
 
 (defn- #_void ex_close [#_exarg_C eap]
@@ -17409,14 +16987,13 @@
 ;       buffer_C buf = win.w_buffer;
 
 ;       boolean need_hide = (bufIsChanged(buf) && buf.b_nwindows <= 1);
-;       if (need_hide && !@cmdmod.hide && !forceit)
+;       if (need_hide && !forceit)
 ;       {
 ;           emsg(e_nowrtmsg);
 ;           return;
 ;       }
 
-        ;; free buffer when not hiding it or when it's a scratch buffer
-;       win_close(win, !need_hide && !@cmdmod.hide);
+;       win_close(win, !need_hide);
     ))
 
 ;; ":only".
@@ -17436,34 +17013,8 @@
 ;           }
 ;           win_goto(wp);
 ;       }
-;       close_others(true, eap.forceit);
-    ))
 
-(defn- #_void ex_hide [#_exarg_C eap]
-    (§
-;       if (eap.arg.at(0) != NUL && check_nextcmd(eap.arg) == null)
-;           eap.errmsg = e_invarg;
-;       else
-;       {
-                ;; ":hide" or ":hide | cmd": hide current window
-;           eap.nextcmd = check_nextcmd(eap.arg);
-;           if (!eap.skip)
-;           {
-;               if (eap.addr_count == 0)
-;                   win_close(@curwin, false);       ;; don't free buffer
-;               else
-;               {
-;                   int winnr = 0;
-;                   window_C win;
-;                   for (win = @firstwin; win != null; win = win.w_next)
-;                       if (++winnr == eap.line2)
-;                           break;
-;                   if (win == null)
-;                       win = @lastwin;
-;                   win_close(win, false);
-;               }
-;           }
-;       }
+;       close_others(true, eap.forceit);
     ))
 
 ;; ":stop" and ":suspend": Suspend Vim.
@@ -18210,137 +17761,12 @@
 ;       tm.tv_sec(0);
     ))
 
-;; Return true if buffer was changed and cannot be abandoned.
-;; For flags use the CCGD_ values.
-
-(defn- #_boolean check_changed [#_buffer_C buf, #_int flags]
-    (§
-;       boolean forceit = ((flags & CCGD_FORCEIT) != 0);
-
-;       if (!forceit && bufIsChanged(buf) && ((flags & CCGD_MULTWIN) != 0 || buf.b_nwindows <= 1))
-;       {
-;           if ((flags & CCGD_EXCMD) != 0)
-;               emsg(e_nowrtmsg);
-;           else
-;               emsg(e_nowrtmsg_nobang);
-
-;           return true;
-;       }
-
-;       return false;
-    ))
-
 ;; Return true if the buffer "buf" can be abandoned, either by making it
 ;; hidden, autowriting it or unloading it.
 
 (defn- #_boolean can_abandon [#_buffer_C buf, #_boolean forceit]
     (§
-;       return (@cmdmod.hide
-;                   || !bufIsChanged(buf)
-;                   || 1 < buf.b_nwindows
-;                   || forceit);
-    ))
-
-;; Add a buffer number to "bufnrs", unless it's already there.
-
-(defn- #_int add_bufnum [#_int* bufnrs, #_int bufnum, #_int nr]
-    (§
-;       for (int i = 0; i < bufnum; i++)
-;           if (bufnrs[i] == nr)
-;               return bufnum;
-
-;       bufnrs[bufnum++] = nr;
-;       return bufnum;
-    ))
-
-;; Return true if any buffer was changed and cannot be abandoned.
-;; That changed buffer becomes the current buffer.
-
-(defn- #_boolean check_changed_any [#_boolean hidden]
-    ;; hidden: only check hidden buffers
-    (§
-;       int bufnum = 0;
-;       int bufcount = 0;
-
-;       buffer_C buf;
-;       for (buf = @firstbuf; buf != null; buf = buf.b_next)
-;           bufcount++;
-
-;       if (bufcount == 0)
-;           return false;
-
-;       int[] bufnrs = new int[bufcount];
-
-        ;; curbuf
-;       bufnrs[bufnum++] = @curbuf.b_fnum;
-
-        ;; buf in curtab
-;       for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;           if (wp.w_buffer != @curbuf)
-;               bufnum = add_bufnum(bufnrs, bufnum, wp.w_buffer.b_fnum);
-
-        ;; any other buf
-;       for (buf = @firstbuf; buf != null; buf = buf.b_next)
-;           bufnum = add_bufnum(bufnrs, bufnum, buf.b_fnum);
-
-;       int i;
-;       for (i = 0; i < bufnum; i++)
-;       {
-;           buf = buflist_findnr(bufnrs[i]);
-;           if (buf == null)
-;               continue;
-;           if ((!hidden || buf.b_nwindows == 0) && bufIsChanged(buf))
-;           {
-                ;; Try auto-writing the buffer.  If this fails,
-                ;; but the buffer no longer exists, it's not changed, that's OK.
-;               if (check_changed(buf, CCGD_MULTWIN | CCGD_ALLBUF) && buf_valid(buf))
-;                   break;      ;; didn't save - still changes
-;           }
-;       }
-
-;       if (bufnum <= i)
-;           return false;
-
-;       @exiting = false;
-
-        ;; There must be a wait_return for this message, do_buffer() may cause a redraw.
-        ;; But wait_return() is a no-op when vgetc() is busy (Quit used from window menu),
-        ;; then make sure we don't cause a scroll up.
-;       if (0 < @vgetc_busy)
-;       {
-;           @msg_row = @cmdline_row;
-;           @msg_col = 0;
-;           @msg_didout = false;
-;       }
-;       if (emsg2(u8("E162: No write since last change for buffer \"%s\""), buf_spname(buf, false)))
-;       {
-;           int save = @no_wait_return;
-;           @no_wait_return = FALSE;
-;           wait_return(FALSE);
-;           @no_wait_return = save;
-;       }
-
-        ;; Try to find a window that contains the buffer.
-;       if (buf != @curbuf)
-;       {
-;           for (window_C wp = @firstwin; wp != null; wp = wp.w_next)
-;               if (wp.w_buffer == buf)
-;               {
-                    ;; Don't repeat a message in another tab page.
-;                   set_keep_msg(null, 0);
-
-;                   if (win_valid(wp))
-;                       win_enter(wp, true);
-
-;                   break;
-;               }
-;       }
-
-        ;; Open the changed buffer in the current window.
-;       if (buf != @curbuf)
-;           set_curbuf(buf);
-
-;       return true;
+;       return (!bufIsChanged(buf) || 1 < buf.b_nwindows || forceit);
     ))
 
 ;;; ============================================================================================== VimK
@@ -57216,19 +56642,13 @@
 ;; It can be:
 ;; 0                    buffer becomes hidden
 ;; DOBUF_UNLOAD         buffer is unloaded
-;; DOBUF_WIPE           buffer is unloaded and really deleted
 ;; When doing all but the first one on the current buffer, the caller should
 ;; get a new buffer very soon!
-;;
-;; When "abort_if_last" is true then do not close the buffer if autocommands
-;; cause there to be only one window with this buffer.  e.g. when ":quit" is
-;; supposed to close the window but autocommands close all other windows.
 
-(defn- #_void close_buffer [#_window_C win, #_buffer_C buf, #_int action, #_boolean abort_if_last]
+(defn- #_void close_buffer [#_window_C win, #_buffer_C buf, #_int action]
     ;; win: if not null, set b_last_cursor
     (§
 ;       boolean unload_buf = (action != 0);
-;       boolean wipe_buf = (action == DOBUF_WIPE);
 
 ;       if (win != null && win_valid(win))      ;; in case autocommands closed the window
 ;       {
@@ -57244,22 +56664,11 @@
         ;; When the buffer is no longer in a window, trigger BufWinLeave.
 ;       if (buf.b_nwindows == 1)
 ;       {
-;           if (abort_if_last && one_window())
+;           if (one_window())
 ;           {
                 ;; Autocommands made this the only window.
 ;               emsg(e_auabort);
 ;               return;
-;           }
-
-            ;; When the buffer becomes hidden, but is not unloaded, trigger BufHidden.
-;           if (!unload_buf)
-;           {
-;               if (abort_if_last && one_window())
-;               {
-                    ;; Autocommands made this the only window.
-;                   emsg(e_auabort);
-;                   return;
-;               }
 ;           }
 ;       }
 
@@ -57284,33 +56693,15 @@
 ;       if (0 < buf.b_nwindows)
 ;           --buf.b_nwindows;
 
-        ;; Remove the buffer from the list.
+;       free_buffer_stuff(buf);
 
-;       if (wipe_buf)
-;       {
-;           if (buf.b_prev == null)
-;               @firstbuf = buf.b_next;
-;           else
-;               buf.b_prev.b_next = buf.b_next;
-;           if (buf.b_next == null)
-;               @lastbuf = buf.b_prev;
-;           else
-;               buf.b_next.b_prev = buf.b_prev;
+        ;; Make it look like a new buffer.
+;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
 
-;           free_buffer_stuff(buf);
-;       }
-;       else
-;       {
-;           free_buffer_stuff(buf);
+        ;; Init the options when loaded again.
+;       buf.b_p_initialized = false;
 
-            ;; Make it look like a new buffer.
-;           buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
-
-            ;; Init the options when loaded again.
-;           buf.b_p_initialized = false;
-
-;           buf_clear_file(buf);
-;       }
+;       buf_clear_file(buf);
     ))
 
 ;; Make buffer not contain a file.
@@ -57358,85 +56749,6 @@
 ;           if (wip.wi_optset)
 ;               clear_winopt(wip.wi_opt);
 ;       }
-    ))
-
-;; Set current buffer to "buf".
-;; Closes current buffer.
-
-(defn- #_void set_curbuf [#_buffer_C buf]
-    (§
-;       long old_tw = @curbuf.@b_p_tw;
-
-;       setpcmark();
-
-;       buflist_setfpos(@curbuf, @curwin, @curwin.w_cursor.lnum, @curwin.w_cursor.col, true);   ;; remember curpos
-
-        ;; Don't restart Select mode after switching to another buffer.
-;       @VIsual_reselect = false;
-
-;       u_sync(false);
-;       close_buffer(@curbuf == @curwin.w_buffer ? @curwin : null, @curbuf, (!@cmdmod.hide && !bufIsChanged(@curbuf)) ? DOBUF_UNLOAD : 0, false);
-
-        ;; An autocommand may have deleted "buf", already entered it
-        ;; (e.g., when it did ":bunload") or aborted the script processing!
-        ;; If curwin.w_buffer is null, enter_buffer() will make it valid again
-
-;       if ((buf_valid(buf) && buf != @curbuf && !@got_int) || @curwin.w_buffer == null)
-;       {
-;           enter_buffer(buf);
-;           if (old_tw != @curbuf.@b_p_tw)
-;               check_colorcolumn(@curwin);
-;       }
-    ))
-
-;; Enter a new current buffer.
-;; Old curbuf must have been abandoned already!
-;; This also means "curbuf" may be pointing to freed memory.
-
-(defn- #_void enter_buffer [#_buffer_C buf]
-    (§
-        ;; Copy buffer and window local option values.
-;       buf_copy_options(buf, BCO_ENTER);
-;       get_winopts(buf);
-
-        ;; Get the buffer in the current window.
-;       @curwin.w_buffer = buf;
-;       @curbuf = buf;
-;       @curbuf.b_nwindows++;
-
-        ;; Cursor on first line by default.
-;       @curwin.w_cursor.lnum = 1;
-;       @curwin.w_cursor.col = 0;
-;       @curwin.w_cursor.coladd = 0;
-;       @curwin.w_set_curswant = true;
-;       @curwin.w_topline_was_set = false;
-
-        ;; mark cursor position as being invalid
-;       @curwin.w_valid = 0;
-
-        ;; Make sure the buffer is loaded.
-;       if (@curbuf.b_ml.ml_mfp == null)     ;; need to load the file
-;       {
-;           open_buffer();
-;       }
-;       else
-;       {
-;           if (@msg_silent == 0)
-;               @need_fileinfo = true;       ;; display file info after redraw
-;           buf_check_timestamp(@curbuf);    ;; check if file changed
-;           @curwin.w_topline = 1;
-;       }
-
-        ;; If autocommands did not change the cursor position,
-        ;; restore cursor lnum and possibly cursor col.
-;       if (@curwin.w_cursor.lnum == 1 && inindent(0))
-;           buflist_getfpos();
-
-        ;; when autocmds didn't change it
-;       if (@curwin.w_topline == 1 && !@curwin.w_topline_was_set)
-;           scroll_cursor_halfway(false);   ;; redisplay at correct position
-
-;       redraw_later(NOT_VALID);
     ))
 
 ;; functions for dealing with the buffer list
@@ -83669,8 +82981,7 @@
 
                 ;; Skip frame that is full width when splitting or closing a window,
                 ;; unless equalizing all frames.
-;               if (!current || dir != 'v'
-;                       || topfr.fr_parent != null || new_size != fr.fr_width || frame_has_win(fr, next_curwin))
+;               if (!current || dir != 'v' || topfr.fr_parent != null || new_size != fr.fr_width || frame_has_win(fr, next_curwin))
 ;                   win_equal_rec(next_curwin, current, fr, dir, col, row, new_size, height);
 ;               col += new_size;
 ;               width -= new_size;
@@ -83829,86 +83140,29 @@
 ;; Close window "win".  Only works for the current tab page.
 ;; If "free_buf" is true related buffer may be unloaded.
 ;;
-;; Called by :quit, :close, :xit and :wq.
 ;; Returns false when the window was not closed.
 
 (defn- #_boolean win_close [#_window_C win, #_boolean free_buf]
     (§
-;       boolean other_buffer = false;
-;       boolean close_curwin = false;
-
 ;       if (one_window())
 ;       {
 ;           emsg(u8("E444: Cannot close last window"));
 ;           return false;
 ;       }
 
-;       if (win.w_closing)
-;           return false; ;; window is already being closed
-
-        ;; When closing the last window in a tab page first go to another tab page
-        ;; and then close the window and the tab page to avoid that curwin and
-        ;; curtab are invalid while we are freeing memory.
 ;       if (@firstwin == @lastwin)
 ;           return false;
-
-;       if (win == @curwin)
-;       {
-            ;; Guess which window is going to be the new current window.
-            ;; This may change because of the autocommands (sigh).
-
-;           window_C wp = frame2win(win_altframe(win));
-
-            ;; Be careful: If autocommands delete the window or cause this window
-            ;; to be the last one left, return now.
-
-;           if (wp.w_buffer != @curbuf)
-;           {
-;               other_buffer = true;
-;               win.w_closing = true;
-;               if (!win_valid(win))
-;                   return false;
-;               win.w_closing = false;
-;               if (one_window())
-;                   return false;
-;           }
-;           win.w_closing = true;
-;           if (!win_valid(win))
-;               return false;
-;           win.w_closing = false;
-;           if (one_window())
-;               return false;
-            ;; autocmds may abort script processing
-;           if (@got_int)
-;               return false;
-;       }
 
         ;; Close the link to the buffer.
 
 ;       if (win.w_buffer != null)
-;       {
-;           win.w_closing = true;
-;           close_buffer(win, win.w_buffer, free_buf ? DOBUF_UNLOAD : 0, true);
-;           if (win_valid(win))
-;               win.w_closing = false;
-;       }
-
-;       if (only_one_window() && win_valid(win) && win.w_buffer == null && (one_window() || @firstwin == @lastwin))
-;       {
-            ;; Autocommands have close all windows, quit now.
-            ;; Restore curwin.w_buffer, otherwise writing viminfo may fail.
-;           if (@curwin.w_buffer == null)
-;               @curwin.w_buffer = @curbuf;
-;           getout(0);
-;       }
-        ;; Autocommands may have closed the window already,
-        ;; or closed the only other window or moved to another tab page.
-;       else if (!win_valid(win) || one_window() || @firstwin == @lastwin)
-;           return false;
+;           close_buffer(win, win.w_buffer, free_buf ? DOBUF_UNLOAD : 0);
 
         ;; Free the memory used for the window and get the window that received the screen space.
 ;       int[] dir = new int[1];
 ;       window_C wp = win_free_mem(win, dir);
+
+;       boolean close_curwin = false;
 
         ;; Make sure curwin isn't invalid.
         ;; It can cause severe trouble when printing an error message.
@@ -83919,14 +83173,14 @@
 ;           @curbuf = @curwin.w_buffer;
 ;           close_curwin = true;
 ;       }
+
 ;       if (@p_ea && (@p_ead.at(0) == (byte)'b' || @p_ead.at(0) == dir[0]))
 ;           win_equal(@curwin, true, dir[0]);
 ;       else
 ;           win_comp_pos();
+
 ;       if (close_curwin)
-;       {
 ;           win_enter_ext(wp, false, true);
-;       }
 
         ;; If last window has a status line now and we don't want one,
         ;; remove the status line.
@@ -84103,11 +83357,7 @@
 ;           return @curwin.w_frame;
 
 ;       frame_C frp = win.w_frame;
-;       boolean b;
-;       if (frp.fr_parent != null && frp.fr_parent.fr_layout == FR_ROW)
-;           b = @p_spr;
-;       else
-;           b = @p_sb;
+;       boolean b = (frp.fr_parent != null && frp.fr_parent.fr_layout == FR_ROW) ? @p_spr : @p_sb;
 ;       if ((!b && frp.fr_next != null) || frp.fr_prev == null)
 ;           return frp.fr_next;
 
@@ -84565,10 +83815,8 @@
     ))
 
 ;; Try to close all windows except current one.
-;; Buffers in the other windows become hidden if 'hidden' is set, or '!' is
-;; used and the buffer was modified.
-;;
-;; Used by ":bdel" and ":only".
+;; Buffers in the other windows become hidden if 'hidden' is set,
+;; or '!' is used and the buffer was modified.
 
 (defn- #_void close_others [#_boolean message, #_boolean forceit]
     ;; forceit: always hide all other windows
@@ -84598,7 +83846,7 @@
 ;                   if (bufIsChanged(wp.w_buffer))
 ;                       continue;
 ;               }
-;               win_close(wp, !@cmdmod.hide && !bufIsChanged(wp.w_buffer));
+;               win_close(wp, !bufIsChanged(wp.w_buffer));
 ;           }
 ;       }
 
@@ -84740,8 +83988,7 @@
 ;               if (nfr.fr_layout == FR_ROW)
 ;               {
                     ;; Find the frame at the cursor row.
-;                   while (fr.fr_next != null
-;                           && frame2win(fr).w_wincol + fr.fr_width <= @curwin.w_wincol + @curwin.w_wcol)
+;                   while (fr.fr_next != null && frame2win(fr).w_wincol + fr.fr_width <= @curwin.w_wincol + @curwin.w_wcol)
 ;                       fr = fr.fr_next;
 ;               }
 ;               if (nfr.fr_layout == FR_COL && up)
@@ -84794,8 +84041,7 @@
 ;               if (nfr.fr_layout == FR_COL)
 ;               {
                     ;; Find the frame at the cursor row.
-;                   while (fr.fr_next != null
-;                           && frame2win(fr).w_winrow + fr.fr_height <= @curwin.w_winrow + @curwin.w_wrow)
+;                   while (fr.fr_next != null && frame2win(fr).w_winrow + fr.fr_height <= @curwin.w_winrow + @curwin.w_wrow)
 ;                       fr = fr.fr_next;
 ;               }
 ;               if (nfr.fr_layout == FR_ROW && left)
@@ -88408,7 +87654,7 @@
         (->cmdname_C (u8 "fixdel"),        ex_fixdel,           CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "global"),        ex_global,        (| RANGE BANG EXTRA DFLALL CMDWIN),                           ADDR_LINES),
         (->cmdname_C (u8 "goto"),          ex_goto,          (| RANGE NOTADR COUNT CMDWIN),                                ADDR_LINES),
-        (->cmdname_C (u8 "hide"),          ex_hide,          (| BANG RANGE NOTADR COUNT EXTRA),                            ADDR_WINDOWS),
+
         (->cmdname_C (u8 "history"),       ex_history,       (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "insert"),        ex_append,        (| BANG RANGE CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "iabbrev"),       ex_abbreviate,    (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
@@ -88453,9 +87699,9 @@
         (->cmdname_C (u8 "ounmap"),        ex_unmap,         (| EXTRA USECTRLV CMDWIN),                                    ADDR_LINES),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "put"),           ex_put,           (| RANGE BANG REGSTR ZEROR CMDWIN),                           ADDR_LINES),
-        (->cmdname_C (u8 "quit"),          ex_quit,          (| BANG RANGE COUNT NOTADR CMDWIN),                           ADDR_WINDOWS),
-        (->cmdname_C (u8 "quitall"),       ex_quit_all,         BANG,                                                      ADDR_LINES),
-        (->cmdname_C (u8 "qall"),          ex_quit_all,      (| BANG CMDWIN),                                              ADDR_LINES),
+    
+    
+    
         (->cmdname_C (u8 "redo"),          ex_redo,             CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "redraw"),        ex_redraw,        (| BANG CMDWIN),                                              ADDR_LINES),
         (->cmdname_C (u8 "redrawstatus"),  ex_redrawstatus,  (| BANG CMDWIN),                                              ADDR_LINES),
