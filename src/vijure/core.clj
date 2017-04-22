@@ -40688,50 +40688,49 @@
 
 (defn- #_boolean set-indent [#_int size, #_int flags]
     ;; size: measured in spaces
-    (§
+    (let [ts @(:b_p_ts @curbuf) et @(:b_p_et @curbuf) pi @(:b_p_pi @curbuf) curl (ml-get-curline)]
+
         ((ß boolean doit =) false)
-        ((ß int ind_done =) 0)                       ;; measured in spaces
+        ((ß int m =) 0)                       ;; measured in spaces
         ((ß boolean retval =) false)
-        ((ß int orig_char_len =) -1)                 ;; number of initial whitespace chars
-                                                ;; when 'et' and 'pi' are both set
+        ((ß int oi =) -1)                 ;; number of initial whitespace chars when 'et' and 'pi' are both set
 
         ;; First check if there is anything to do and compute
         ;; the number of characters needed for the indent.
 
-        ((ß int todo =) size)
-        ((ß int ind_len =) 0)                        ;; measured in characters
-        ((ß Bytes oldline =) (ml-get-curline))
-        ((ß Bytes p =) oldline)
+        ((ß int n =) size)
+        ((ß int i =) 0)                        ;; measured in characters
+        ((ß Bytes p =) curl)
 
         ;; Calculate the buffer size for the new indent and check if it isn't already set.
 
         ;; If 'expandtab' isn't set: use TABs; if both 'expandtab' and
         ;; 'preserveindent' are set: count the number of characters at
         ;; the beginning of the line to be copied.
-        (when (or (not @(:b_p_et @curbuf)) (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf)))
+        (when (or (not et) (and (non-flag? flags SIN_INSERT) pi))
             ;; If 'preserveindent' is set, then reuse as much as possible
             ;; of the existing indent structure for the new indent.
-            (when (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf))
-                ((ß ind_done =) 0)
+            (when (and (non-flag? flags SIN_INSERT) pi)
+                ((ß m =) 0)
 
                 ;; count as many characters as we can use
-                (loop-when [] (and (< 0 todo) (vim-iswhite (.at p 0)))
+                (loop-when [] (and (< 0 n) (vim-iswhite (.at p 0)))
                     (cond (at? p TAB)
                     (do
-                        ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
+                        ((ß int t =) (- ts (% m ts)))
                         ;; stop if this tab will overshoot the target
-                        (if (< todo tab_pad)
+                        (if (< n t)
                             (ß BREAK)
                         )
-                        ((ß todo =) (- todo tab_pad))
-                        ((ß ind_len =) (inc ind_len))
-                        ((ß ind_done =) (+ ind_done tab_pad))
+                        ((ß n =) (- n t))
+                        ((ß i =) (inc i))
+                        ((ß m =) (+ m t))
                     )
                     :else
                     (do
-                        ((ß todo =) (dec todo))
-                        ((ß ind_len =) (inc ind_len))
-                        ((ß ind_done =) (inc ind_done))
+                        ((ß n =) (- n 1))
+                        ((ß i =) (inc i))
+                        ((ß m =) (+ m 1))
                     ))
                     ((ß p =) (.plus p 1))
                     (recur)
@@ -40739,39 +40738,39 @@
 
                 ;; Set initial number of whitespace chars to copy
                 ;; if we are preserving indent but expandtab is set.
-                ((ß orig_char_len =) (if @(:b_p_et @curbuf) ind_len orig_char_len))
+                ((ß oi =) (if et i oi))
 
                 ;; Fill to next tabstop with a tab, if possible.
-                ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
-                (when (and (<= tab_pad todo) (== orig_char_len -1))
+                ((ß int t =) (- ts (% m ts)))
+                (when (and (<= t n) (== oi -1))
                     ((ß doit =) true)
-                    ((ß todo =) (- todo tab_pad))
-                    ((ß ind_len =) (inc ind_len))
-                    ;; ind_done += tab_pad;
+                    ((ß n =) (- n t))
+                    ((ß i =) (inc i))
+                    ;; m = m + t;
                 )
             )
 
             ;; count tabs required for indent
-            (loop-when [] (<= (int @(:b_p_ts @curbuf)) todo)
+            (loop-when [] (<= ts n)
                 (if (not-at? p TAB)
                     ((ß doit =) true)
                     ((ß p =) (.plus p 1))
                 )
-                ((ß todo =) (- todo (int @(:b_p_ts @curbuf))))
-                ((ß ind_len =) (inc ind_len))
-                ;; ind_done += (int)curbuf.b_p_ts[0];
+                ((ß n =) (- n ts))
+                ((ß i =) (inc i))
+                ;; m = m + ts;
                 (recur)
             )
         )
         ;; count spaces required for indent
-        (loop-when [] (< 0 todo)
+        (loop-when [] (< 0 n)
             (if (not-at? p (byte \space))
                 ((ß doit =) true)
                 ((ß p =) (.plus p 1))
             )
-            ((ß todo =) (dec todo))
-            ((ß ind_len =) (inc ind_len))
-            ;; ++ind_done;
+            ((ß n =) (dec n))
+            ((ß i =) (inc i))
+            ;; m = m + 1;
             (recur)
         )
 
@@ -40781,7 +40780,7 @@
         )
 
         ;; Allocate memory for the new line.
-        ((ß p =) (if (flag? flags SIN_INSERT) oldline (skipwhite p)))
+        ((ß p =) (if (flag? flags SIN_INSERT) curl (skipwhite p)))
         ((ß int line_len =) (inc (STRLEN p)))
 
         ;; If 'preserveindent' and 'expandtab' are both set keep the original
@@ -40789,18 +40788,18 @@
         ;; after the if (!curbuf.b_p_et) below.
         (ß Bytes newline)
         (ß Bytes s)
-        (cond (!= orig_char_len -1)
+        (cond (!= oi -1)
         (do
-            ((ß newline =) (Bytes. (+ (- (+ orig_char_len size) ind_done) line_len)))
+            ((ß newline =) (Bytes. (+ (- (+ oi size) m) line_len)))
 
-            ((ß todo =) (- size ind_done))
-            ((ß ind_len =) (+ orig_char_len todo))     ;; Set total length of indent in characters,
+            ((ß n =) (- size m))
+            ((ß i =) (+ oi n))     ;; Set total length of indent in characters,
                                                 ;; which may have been undercounted until now
-            ((ß p =) oldline)
+            ((ß p =) curl)
             ((ß s =) newline)
-            (loop-when [] (< 0 orig_char_len)
+            (loop-when [] (< 0 oi)
                 (.be ((ß s =) (.plus s 1)) -1, (.at ((ß p =) (.plus p 1)) -1))
-                ((ß orig_char_len =) (dec orig_char_len))
+                ((ß oi =) (dec oi))
                 (recur)
             )
 
@@ -40812,59 +40811,59 @@
         )
         :else
         (do
-            ((ß todo =) size)
-            ((ß newline =) (Bytes. (+ ind_len line_len)))
+            ((ß n =) size)
+            ((ß newline =) (Bytes. (+ i line_len)))
             ((ß s =) newline)
         ))
 
         ;; Put the characters in the new line.
         ;; If 'expandtab' isn't set: use TABs.
-        (when (not @(:b_p_et @curbuf))
+        (when (not et)
             ;; If 'preserveindent' is set, then reuse as much as possible
             ;; of the existing indent structure for the new indent.
-            (when (and (non-flag? flags SIN_INSERT) @(:b_p_pi @curbuf))
-                ((ß p =) oldline)
-                ((ß ind_done =) 0)
+            (when (and (non-flag? flags SIN_INSERT) pi)
+                ((ß p =) curl)
+                ((ß m =) 0)
 
-                (loop-when [] (and (< 0 todo) (vim-iswhite (.at p 0)))
+                (loop-when [] (and (< 0 n) (vim-iswhite (.at p 0)))
                     (cond (at? p TAB)
                     (do
-                        ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
+                        ((ß int t =) (- ts (% m ts)))
                         ;; stop if this tab will overshoot the target
-                        (if (< todo tab_pad)
+                        (if (< n t)
                             (ß BREAK)
                         )
-                        ((ß todo =) (- todo tab_pad))
-                        ((ß ind_done =) (+ ind_done tab_pad))
+                        ((ß n =) (- n t))
+                        ((ß m =) (+ m t))
                     )
                     :else
                     (do
-                        ((ß todo =) (dec todo))
-                        ((ß ind_done =) (inc ind_done))
+                        ((ß n =) (- n 1))
+                        ((ß m =) (+ m 1))
                     ))
                     (.be ((ß s =) (.plus s 1)) -1, (.at ((ß p =) (.plus p 1)) -1))
                     (recur)
                 )
 
                 ;; Fill to next tabstop with a tab, if possible.
-                ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
-                (when (<= tab_pad todo)
+                ((ß int t =) (- ts (% m ts)))
+                (when (<= t n)
                     (.be ((ß s =) (.plus s 1)) -1, TAB)
-                    ((ß todo =) (- todo tab_pad))
+                    ((ß n =) (- n t))
                 )
 
                 ((ß p =) (skipwhite p))
             )
 
-            (loop-when [] (<= (int @(:b_p_ts @curbuf)) todo)
+            (loop-when [] (<= ts n)
                 (.be ((ß s =) (.plus s 1)) -1, TAB)
-                ((ß todo =) (- todo (int @(:b_p_ts @curbuf))))
+                ((ß n =) (- n ts))
                 (recur)
             )
         )
-        (loop-when [] (< 0 todo)
+        (loop-when [] (< 0 n)
             (.be ((ß s =) (.plus s 1)) -1, (byte \space))
-            ((ß todo =) (dec todo))
+            ((ß n =) (dec n))
             (recur)
         )
         (BCOPY s, p, line_len)
@@ -40876,10 +40875,10 @@
                 (changed-bytes (:lnum (:w_cursor @curwin)), 0))
             ;; Correct saved cursor position if it is in this line.
             (when (== (:lnum @saved_cursor) (:lnum (:w_cursor @curwin)))
-                (cond (<= (BDIFF p, oldline) (:col @saved_cursor))
+                (cond (<= (BDIFF p, curl) (:col @saved_cursor))
                 (do
                     ;; cursor was after the indent, adjust for the number of bytes added/removed
-                    (swap! saved_cursor update :col + (- ind_len (BDIFF p, oldline)))
+                    (swap! saved_cursor update :col + (- i (BDIFF p, curl)))
                 )
                 (<= (BDIFF s, newline) (:col @saved_cursor))
                 (do
@@ -40891,103 +40890,44 @@
             ((ß retval =) true)
         )
 
-        (swap! curwin assoc-in [:w_cursor :col] ind_len)
+        (swap! curwin assoc-in [:w_cursor :col] i)
         retval
     ))
 
-;; Copy the indent from ptr to the current line (and fill to size)
+;; Copy the indent from "src" to the current line (and fill to size).
 ;; Leaves the cursor on the first non-blank in the line.
-;; Returns true if the line was changed.
 
-(defn- #_boolean copy-indent [#_int size, #_Bytes src]
-    (§
-        ((ß Bytes p =) nil)
-        ((ß Bytes line =) nil)
-;       int ind_len = 0;	// %% red.
-        ((ß int line_len =) 0)
-
-        ;; Round 1: compute the number of characters needed for the indent.
-        ;; Round 2: copy the characters.
-        (dotimes [_ 2]
-            ((ß int todo =) size)
-            ((ß ind_len =) 0)
-            ((ß int ind_done =) 0)
-            ((ß Bytes s =) src)
-
-            ;; Count/copy the usable portion of the source line.
-            (loop-when [] (and (< 0 todo) (vim-iswhite (.at s 0)))
-                (cond (at? s TAB)
-                (do
-                    ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
-                    ;; Stop if this tab will overshoot the target.
-                    (if (< todo tab_pad)
-                        (ß BREAK)
-                    )
-                    ((ß todo =) (- todo tab_pad))
-                    ((ß ind_done =) (+ ind_done tab_pad))
-                )
-                :else
-                (do
-                    ((ß todo =) (dec todo))
-                    ((ß ind_done =) (inc ind_done))
-                ))
-                ((ß ind_len =) (inc ind_len))
-                (if (some? p)
-                    (.be ((ß p =) (.plus p 1)) -1, (.at s 0))
-                )
-                ((ß s =) (.plus s 1))
-                (recur)
-            )
-
-            ;; Fill to next tabstop with a tab, if possible.
-            ((ß int tab_pad =) (- (int @(:b_p_ts @curbuf)) (% ind_done (int @(:b_p_ts @curbuf)))))
-            (when (and (<= tab_pad todo) (not @(:b_p_et @curbuf)))
-                ((ß todo =) (- todo tab_pad))
-                ((ß ind_len =) (inc ind_len))
-                (if (some? p)
-                    (.be ((ß p =) (.plus p 1)) -1, TAB)
-                )
-            )
-
-            ;; Add tabs required for indent.
-            (loop-when [] (and (<= (int @(:b_p_ts @curbuf)) todo) (not @(:b_p_et @curbuf)))
-                ((ß todo =) (- todo (int @(:b_p_ts @curbuf))))
-                ((ß ind_len =) (inc ind_len))
-                (if (some? p)
-                    (.be ((ß p =) (.plus p 1)) -1, TAB)
-                )
-                (recur)
-            )
-
-            ;; Count/add spaces required for indent.
-            (loop-when [] (< 0 todo)
-                ((ß todo =) (dec todo))
-                ((ß ind_len =) (inc ind_len))
-                (if (some? p)
-                    (.be ((ß p =) (.plus p 1)) -1, (byte \space))
-                )
-                (recur)
-            )
-
-            (when (nil? p)
-                ;; Allocate memory for the result:
-                ;; the copied indent, new indent and the rest of the line.
-                ((ß line_len =) (+ (STRLEN (ml-get-curline)) 1))
-                ((ß line =) (Bytes. (+ ind_len line_len)))
-                ((ß p =) line)
-            )
-        )
-
-        ;; Append the original line.
-        (BCOPY p, (ml-get-curline), line_len)
-
+(defn- #_void copy-indent [#_int size, #_Bytes src]
+    (let [ts @(:b_p_ts @curbuf) et @(:b_p_et @curbuf) be' (fn [p b] (when (some? p) (-> p (.be 0, b) (.plus 1)))) curl (ml-get-curline) l' (inc (STRLEN curl))
+          ;; Round 1: compute the number of characters needed for the indent.
+          ;; Round 2: copy the characters.
+          [#_int i #_Bytes line]
+            (loop-when [i nil line nil #_Bytes p nil #_int round 0] (< round 2) => [i line]
+                (let [[#_int n #_int m i p] ;; Count/copy the usable portion of the source line.
+                        (loop-when [n size m 0 i 0 p p #_Bytes s src] (and (< 0 n) (vim-iswhite (.at s 0))) => [n m i p]
+                            ;; Stop if this tab will overshoot the target.
+                            (let [#_int k (if (at? s TAB) (let [#_int t (- ts (% m ts))] (if (< n t) nil t)) 1)]
+                                (recur-if (some? k) [(- n k) (+ m k) (inc i) (be' p (.at s 0)) (.plus s 1)] => [n m i p])
+                            ))
+                      ;; Fill to next tabstop with a tab, if possible.
+                      [n i p] (let [#_int t (- ts (% m ts))] (if (and (<= t n) (not et)) [(- n t) (inc i) (be' p TAB)] [n i p]))
+                      ;; Add tabs required for indent.
+                      [n i p] (loop-when-recur [n n i i p p] (and (<= ts n) (not et)) [(- n ts) (inc i) (be' p TAB)] => [n i p])
+                      ;; Count/add spaces required for indent.
+                      [n i p] (loop-when-recur [n n i i p p] (< 0 n) [(dec n) (inc i) (be' p (byte \space))] => [n i p])
+                      [line p] (if (nil? p)
+                                    ;; Allocate memory for the copied indent, the new indent and the rest of the line.
+                                    (let [line (Bytes. (+ i l'))] [line line])
+                                    ;; Append the original line.
+                                    (do (BCOPY p, curl, l') [line nil])
+                                )]
+                    (recur i line p (inc round)))
+            )]
         ;; Replace the line.
         (ml-replace (:lnum (:w_cursor @curwin)), line)
-
         ;; Put the cursor after the indent.
-        (swap! curwin assoc-in [:w_cursor :col] ind_len)
-        true
-    ))
+        (swap! curwin assoc-in [:w_cursor :col] i))
+    nil)
 
 (atom! int      bri_prev_indent)    ;; cached indent value
 (atom! long     bri_prev_ts)        ;; cached tabstop value
@@ -43554,67 +43494,45 @@
 
 ;; Undo or redo, depending on 'undo_undoes', 'count' times.
 
-(defn- #_void u-doit [#_int startcount]
-    (§
-        (if (not (undo-allowed))
-            ((ß RETURN) nil)
-        )
-
+(defn- #_void u-doit [#_int count]
+    (when (undo-allowed)
         (reset! u_newcount 0)
-        (reset! u_oldcount 0)
-        (if (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
-            (reset! u_oldcount -1))
-
-        (loop-when-recur [#_int count startcount] (< 0 count) [(dec count)]
-            (cond @undo_undoes
-            (do
-                (cond (nil? (:b_u_curhead @curbuf))             ;; first undo
-                (do
-                    (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf))
-                )
-                (< 0 (get-undolevel))               ;; multi level undo
-                (do
-                    ;; get next undo
-                    (swap! curbuf assoc :b_u_curhead (:ptr (:uh_next (:b_u_curhead @curbuf))))
-                ))
-                ;; nothing to undo
-                (when (or (zero? (:b_u_numhead @curbuf)) (nil? (:b_u_curhead @curbuf)))
-                    ;; stick curbuf.b_u_curhead at end
-                    (swap! curbuf assoc :b_u_curhead (:b_u_oldhead @curbuf))
-                    (beep-flush)
-                    (when (== count startcount)
-                        (msg (u8 "Already at oldest change"))
-                        ((ß RETURN) nil)
-                    )
-                    (ß BREAK)
-                )
-
-                (u-undoredo true)
-            )
-            :else
-            (do
-                (when (or (nil? (:b_u_curhead @curbuf)) (<= (get-undolevel) 0))
-                    (beep-flush)   ;; nothing to redo
-                    (when (== count startcount)
-                        (msg (u8 "Already at newest change"))
-                        ((ß RETURN) nil)
-                    )
-                    (ß BREAK)
-                )
-
-                (u-undoredo false)
-
-                ;; Advance for next redo.
-                ;; Set "newhead" when at the end of the redoable changes.
-                (when (nil? (:ptr (:uh_prev (:b_u_curhead @curbuf))))
-                    (swap! curbuf assoc :b_u_newhead (:b_u_curhead @curbuf)))
-                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev (:b_u_curhead @curbuf))))
-            ))
-        )
-
-        (u-undo-end @undo_undoes, false)
-        nil
-    ))
+        (reset! u_oldcount (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) -1 0))
+        (let [e (loop-when [n count] (< 0 n)
+                    (cond @undo_undoes
+                    (do (cond
+                            (nil? (:b_u_curhead @curbuf)) (swap! curbuf assoc :b_u_curhead (:b_u_newhead @curbuf))                   ;; first undo
+                            (< 0 (get-undolevel))         (swap! curbuf assoc :b_u_curhead (:ptr (:uh_next (:b_u_curhead @curbuf)))) ;; multi level undo ;; get next undo
+                        )
+                        (if (or (zero? (:b_u_numhead @curbuf)) (nil? (:b_u_curhead @curbuf)))
+                            (do
+                                (swap! curbuf assoc :b_u_curhead (:b_u_oldhead @curbuf)) ;; stick curbuf.b_u_curhead at end
+                                (beep-flush) ;; nothing to undo
+                                (when (== n count) (u8 "Already at oldest change"))
+                            )
+                            (do (u-undoredo true) (recur (dec n)))
+                        ))
+                    :else
+                    (do
+                        (if (or (nil? (:b_u_curhead @curbuf)) (<= (get-undolevel) 0))
+                            (do
+                                (beep-flush) ;; nothing to redo
+                                (when (== n count) (u8 "Already at newest change"))
+                            )
+                            (do
+                                (u-undoredo false)
+                                ;; Advance for next redo.
+                                ;; Set "newhead" when at the end of the redoable changes.
+                                (when (nil? (:ptr (:uh_prev (:b_u_curhead @curbuf))))
+                                    (swap! curbuf assoc :b_u_newhead (:b_u_curhead @curbuf)))
+                                (swap! curbuf assoc :b_u_curhead (:ptr (:uh_prev (:b_u_curhead @curbuf))))
+                                (recur (dec n))
+                            ))
+                    ))
+                )]
+            (if (some? e) (msg e) (u-undo-end @undo_undoes, false))
+        ))
+    nil)
 
 ;; Undo or redo over the timeline.
 ;; When "step" is negative go back in time, otherwise goes forward in time.
@@ -44048,8 +43966,7 @@
             ;; after adding lines at the end of the file, and then undoing it).
             ;; check-cursor() will move the cursor to the last line.  Move it to
             ;; the first column here.
-            (swap! curwin assoc-in [:w_cursor :col] 0)
-            (swap! curwin assoc-in [:w_cursor :coladd] 0)
+            (swap! curwin update :w_cursor assoc :col 0 :coladd 0)
         ))
 
         ;; Make sure the cursor is on an existing line and column.
@@ -44076,76 +43993,39 @@
 (defn- #_void u-undo-end [#_boolean did_undo, #_boolean absolute]
     ;; did_undo: just did an undo
     ;; absolute: used ":undo N"
-    (§
-        (if (not (messaging))        ;; 'lazyredraw' set, don't do messages now
-            ((ß RETURN) nil)
-        )
-
-        (if (non-zero? (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY))
+    (when (messaging)
+        (when (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
             (swap! u_newcount dec))
-
         (swap! u_oldcount - @u_newcount)
-
-        (ß Bytes msgstr)
-        (cond (== @u_oldcount -1)
-        (do
-            ((ß msgstr =) (u8 "more line"))
-        )
-        (< @u_oldcount 0)
-        (do
-            ((ß msgstr =) (u8 "more lines"))
-        )
-        (== @u_oldcount 1)
-        (do
-            ((ß msgstr =) (u8 "line less"))
-        )
-        (< 1 @u_oldcount)
-        (do
-            ((ß msgstr =) (u8 "fewer lines"))
-        )
-        :else
-        (do
-            (reset! u_oldcount @u_newcount)
-
-            ((ß msgstr =) (if (== @u_newcount 1) (u8 "change") (u8 "changes")))
+        (let [#_Bytes msgstr
+                (cond
+                    (==  @u_oldcount -1) (u8 "more line")
+                    (<   @u_oldcount  0) (u8 "more lines")
+                    (==  @u_oldcount  1) (u8 "line less")
+                    (< 1 @u_oldcount)    (u8 "fewer lines")
+                    :else (do
+                        (reset! u_oldcount @u_newcount)
+                        (if (== @u_newcount 1) (u8 "change") (u8 "changes"))
+                    ))
+              [#_u_header_C uhp did_undo]
+                (cond
+                    (nil? (:b_u_curhead @curbuf))                                   [(:b_u_newhead @curbuf) did_undo]
+                    ;; For ":undo N" we prefer a "after #N" message.
+                    (and absolute (some? (:ptr (:uh_next (:b_u_curhead @curbuf))))) [(:ptr (:uh_next (:b_u_curhead @curbuf))) false]
+                    did_undo                                                        [(:b_u_curhead @curbuf) did_undo]
+                    :else                                                           [(:ptr (:uh_next (:b_u_curhead @curbuf))) did_undo]
+                )
+              #_Bytes msgbuf (Bytes. 80)]
+            (if (some? uhp)
+                (u-add-time msgbuf, (.size msgbuf), (:uh_time uhp))
+                (eos! msgbuf))
+            (loop-when-recur [#_window_C win @firstwin] (some? win) [(:w_next win)]
+                (when (< 0 @(:wo_cole (:w_options win)))
+                    (redraw-win-later win, NOT_VALID)))
+            (smsg (u8 "%ld %s; %s #%ld  %s"), (if (< @u_oldcount 0) (- @u_oldcount) @u_oldcount), msgstr,
+                                              (if did_undo (u8 "before") (u8 "after")), (if (some? uhp) (:uh_seq uhp) 0), msgbuf)
         ))
-
-        (ß u_header_C uhp)
-        (cond (some? (:b_u_curhead @curbuf))
-        (do
-            ;; For ":undo N" we prefer a "after #N" message.
-            (cond (and absolute (some? (:ptr (:uh_next (:b_u_curhead @curbuf)))))
-            (do
-                ((ß uhp =) (:ptr (:uh_next (:b_u_curhead @curbuf))))
-                ((ß did_undo =) false)
-            )
-            did_undo
-            (do
-                ((ß uhp =) (:b_u_curhead @curbuf))
-            )
-            :else
-            (do
-                ((ß uhp =) (:ptr (:uh_next (:b_u_curhead @curbuf))))
-            ))
-        )
-        :else
-        (do
-            ((ß uhp =) (:b_u_newhead @curbuf))
-        ))
-
-        ((ß Bytes msgbuf =) (Bytes. 80))
-        (if (nil? uhp)
-            (eos! msgbuf)
-            (u-add-time msgbuf, (.size msgbuf), (:uh_time uhp)))
-
-        (loop-when-recur [#_window_C wp @firstwin] (some? wp) [(:w_next wp)]
-            (if (< 0 @(:wo_cole (:w_options wp)))
-                (redraw-win-later wp, NOT_VALID))
-        )
-
-        (smsg (u8 "%ld %s; %s #%ld  %s"), (if (< @u_oldcount 0) (- @u_oldcount) @u_oldcount), msgstr, (if did_undo (u8 "before") (u8 "after")), (if (nil? uhp) 0 (:uh_seq uhp)), msgbuf)
-        nil
-    ))
+    nil)
 
 ;; u-sync: stop adding to the current entry list
 
