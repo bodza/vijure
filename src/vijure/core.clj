@@ -80,7 +80,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(buffer cmdline_info frame lpos match matcher memline nfa_pim nfa_state oparg pattern pos regsave regsubs soffset termios typebuf u_entry u_header visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr frag frame key_name lpos modmasktable nfa_state nfa_thread nv_cmd pos signalinfo spat termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr frag frame key_name lpos modmasktable nfa_state nfa_thread nv_cmd pos signalinfo spat termcode typebuf u_entry u_header vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '()))
 
@@ -1236,8 +1236,8 @@
 
 (class! #_final visualinfo_C
     [
-        (field pos_C        vi_start    (NEW_pos_C))      ;; start pos of last VIsual
-        (field pos_C        vi_end      (NEW_pos_C))      ;; end position of last VIsual
+        (field pos_C        vi_start    (NEW_pos_C))    ;; start pos of last VIsual
+        (field pos_C        vi_end      (NEW_pos_C))    ;; end position of last VIsual
         (field int          vi_mode)                    ;; VIsual_mode of last VIsual
         (field int          vi_curswant)                ;; MAXCOL from "w_curswant"
     ])
@@ -1248,7 +1248,7 @@
     [
         (field long         ue_top)         ;; number of line above undo block
         (field long         ue_bot)         ;; number of line below undo block
-        (field long         ue_lcount)      ;; line count when u-save() called
+        (field long         ue_lmax)        ;; line count when u-save() called
         (field Bytes*       ue_array)       ;; array of lines in undo block
         (field long         ue_size)        ;; number of lines in "ue_array"
     ])
@@ -9344,7 +9344,7 @@
        [(byte \+) (byte \-)]
             (let [[cap ?] (checkclearopq? cap)
                   win (when' (not ?) => win
-                        (undo-time win, (if (== (:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false)
+                        (ß undo-time win, (if (== (:nchar cap) (byte \-)) (- (:count1 cap)) (:count1 cap)), false, false)
                     )]
                 [win cap])
 
@@ -29953,8 +29953,6 @@
         (let-when [lmax (line-count @curbuf)] (<= bot (inc lmax)) => [(emsg win, (u8 "E881: Line count changed unexpectedly")) false]
             (let-when [#_long size (- bot top 1)
                   [win _] ;; If "b_u_synced" is true, make a new header.
-            ] (nil? _) => [win _]
-
                     (cond (:b_u_synced @curbuf)
                         (do ;; Need to create new entry in "b_changelist".
                             (swap! curbuf assoc :b_new_change true)
@@ -29992,8 +29990,6 @@
                                 ;; Saves a lot of memory when making lots of changes inside the same line.
                                 ;; This is only possible if the previous change didn't increase or decrease the number of lines.
                                 ;; Check the ten last changes.  More doesn't make sense and takes too long.
-                        ] (nil? _) => [win _]
-
                                 (when' (== size 1) => [win nil]
                                     (let [#_int n (count (:b_u_headers @curbuf)) #_u_header_C uhp (... (:b_u_headers @curbuf) (dec n))
                                           #_int m (count (:uh_entries uhp)) #_u_entry_C getbot' (:uh_getbot uhp)]
@@ -30001,91 +29997,71 @@
                                             ;; If lines have been inserted/deleted, we give up.
                                             ;; Also when the line was included in a multi-line save.
                                             (let-when [#_u_entry_C uep (... (:uh_entries uhp) i) top' (:ue_top uep) bot' (:ue_bot uep) size' (:ue_size uep)]
-                                                      (and (if (== getbot' uep) (== (:ue_lcount uep) lmax) (== (+ top' size' 1) (if (zero? bot') (inc lmax) bot')))
+                                                      (and (if (== getbot' uep) (== (:ue_lmax uep) lmax) (== (+ top' size' 1) (if (zero? bot') (inc lmax) bot')))
                                                            (not (and (< 1 size') (<= top' top) (<= (+ top 2) (+ top' size' 1)))))
                                                    => [win nil]
                                                 ;; If it's the same line, we can skip saving it again.
                                                 (when' (and (== size' 1) (== top' top)) => (recur (inc i))
-%%                                                  (when (< 0 i)
-                                                        ;; It's not the last entry: get "ue_bot" for the last entry now.
-                                                        ;; Following deleted/inserted lines go to the re-used entry.
-                                                        ((ß win =) (u-getbot win))
-                                                        (swap! curbuf assoc :b_u_synced false)
-                                                        ;; Move the found entry to become the last entry.
-                                                        ;; The order of undo/redo doesn't matter for the entries we move it over,
-                                                        ;; since they don't change the line count and don't include this line.
-                                                        ;; It does matter for the found entry if the line count is changed by the executed command.
-                                                        ((ß prev_uep =) (assoc prev_uep :ue_next (:ue_next uep)))
-                                                        ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
-                                                        (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
-                                                    )
-                                                    ;; The executed command may change the line count.
-                                                    (cond (non-zero? newbot)
-                                                        ((ß uep =) (assoc uep :ue_bot newbot))
-                                                    (< lmax bot)
-                                                        ((ß uep =) (assoc uep :ue_bot 0))
-                                                    :else
-                                                    (do
-                                                        ((ß uep =) (assoc uep :ue_lcount lmax))
-                                                        (swap! curbuf assoc-in [:b_u_newhead :uh_getbot] uep)
+                                                    (let [win (when' (< 0 i) => win
+                                                                ;; It's not the last entry: get "ue_bot" for the last entry now.
+                                                                ;; Following deleted/inserted lines go to the re-used entry.
+                                                                (let [win (u-getbot win)]
+                                                                    (swap! curbuf assoc :b_u_synced false)
+                                                                    win
+                                                                ))
+                                                          ;; The executed command may change the line count.
+                                                          uep (cond (non-zero? newbot)
+                                                                (assoc uep :ue_bot newbot)
+                                                            (< lmax bot)
+                                                                (assoc uep :ue_bot 0)
+                                                            :else
+                                                                (let [uep (assoc uep :ue_lmax lmax)]
+                                                                    (swap! curbuf assoc-in [:b_u_headers (dec n) :uh_getbot] uep)
+                                                                    uep
+                                                                ))
+                                                          _ (when' (< 0 i) => (swap! curbuf assoc-in [:b_u_headers (dec n) :uh_entries i] uep)
+                                                                ;; Move the found entry to become the last entry.
+                                                                ;; The order of undo/redo doesn't matter for the entries we move it over,
+                                                                ;; since they don't change the line count and don't include this line.
+                                                                ;; It does matter for the found entry if the line count is changed by the executed command.
+                                                                (swap! curbuf update-in [:b_u_headers (dec n) :uh_entries] #(into [uep] (subvec % 0 i) (subvec % (inc i) m)))
+                                                            )]
+                                                        [win true]
                                                     ))
-                                                    [win true]
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
+                                            ))
+                                    ))
+                        ] (nil? _) => [win _]
 
-                            ;; Find line number for "ue_bot" for previous u-save().
                             [(u-getbot win) nil]
-                        )
-                    )
+                        ))
+            ] (nil? _) => [win _]
 
-                ;; add lines in front of entry list
+                (let-when [[#_Bytes* array _]
+                        (when' (< 0 size) => [nil nil]
+                            (loop-when [array (transient []) #_long lnum (inc top) #_int i 0] (< i size) => [(persistent! array) nil]
+                                (recur-if (not (fast-breakcheck)) [(conj! array (STRDUP (ml-get lnum))) (inc lnum) (inc i)] => [nil false])
+                            ))
+                ] (nil? _) => [win _]
 
-                ((ß u_entry_C uep =) (NEW_u_entry_C))
-
-                ((ß uep =) (assoc uep :ue_size size))
-                ((ß uep =) (assoc uep :ue_top top))
-                (cond (non-zero? newbot)
-                (do
-                    ((ß uep =) (assoc uep :ue_bot newbot))
-                )
-                ;; Use 0 for "ue_bot" if bot is below last line.
-                ;; Otherwise we have to compute "ue_bot" later.
-                (< lmax bot)
-                (do
-                    ((ß uep =) (assoc uep :ue_bot 0))
-                )
-                :else
-                (do
-                    ((ß uep =) (assoc uep :ue_lcount lmax))
-                    (swap! curbuf assoc-in [:b_u_newhead :uh_getbot] uep)
-                ))
-
-                (cond (< 0 size)
-                (do
-                    ((ß uep =) (assoc uep :ue_array (Bytes* size)))
-                    ((ß uep =) (loop-when [#_long lnum (inc top) #_int i 0] (< i size) => uep
-                        (if (fast-breakcheck)
-                            ((ß RETURN) [win false])
-                        )
-                        ((ß uep =) (assoc-in uep [:ue_array i] (STRDUP (ml-get lnum))))
-                        (recur (inc lnum) (inc i))
+                    (let [#_int n (count (:b_u_headers @curbuf))
+                          #_u_entry_C uep (assoc (NEW_u_entry_C) :ue_top top, :ue_array array, :ue_size size)
+                          uep (cond (non-zero? newbot)
+                                (assoc uep :ue_bot newbot)
+                            ;; Use 0 for "ue_bot" if bot is below last line.
+                            ;; Otherwise we have to compute "ue_bot" later.
+                            (< lmax bot)
+                                (assoc uep :ue_bot 0)
+                            :else
+                                (let [uep (assoc uep :ue_lmax lmax)]
+                                    (swap! curbuf assoc-in [:b_u_headers (dec n) :uh_getbot] uep)
+                                    uep
+                                ))
+                          _ (swap! curbuf update-in [:b_u_headers (dec n) :uh_entries] #(into [uep] %))]
+                        (swap! curbuf assoc :b_u_synced false)
+                        (reset! undo_undoes false)
+                        [win true]
                     ))
-                )
-                :else
-                (do
-                    ((ß uep =) (assoc uep :ue_array nil))
-                ))
-                ((ß uep =) (assoc uep :ue_next (:uh_entry (:b_u_newhead @curbuf))))
-                (swap! curbuf assoc-in [:b_u_newhead :uh_entry] uep)
-                (swap! curbuf assoc :b_u_synced false)
-                (reset! undo_undoes false)
-
-                [win true]
-            )
-        )
+            ))
     ))
 
 ;; If 'cpoptions' contains 'u': Undo the previous undo or redo (vi compatible).
@@ -30406,7 +30382,7 @@
                 (let [lmax (line-count @curbuf)
                       ;; The new "ue_bot" is computed from the number of lines that has been inserted (0 - deleted) since calling u-save().
                       ;; This is equal to the old line count subtracted from the current line count.
-                      uep (assoc uep :ue_bot (+ (:ue_top uep) (:ue_size uep) 1 (- lmax (:ue_lcount uep))))
+                      uep (assoc uep :ue_bot (+ (:ue_top uep) (:ue_size uep) 1 (- lmax (:ue_lmax uep))))
                       [win uep]
                         (when' (not (<= 1 (:ue_bot uep) lmax)) => [win uep]
                             ;; Assume all lines deleted, will get all the old lines back without deleting the current ones.
