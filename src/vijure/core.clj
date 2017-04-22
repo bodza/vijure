@@ -2481,7 +2481,7 @@
 
 (defn- #_void mch_write [#_Bytes s, #_int len]
     (§
-;       libC.write(1, s, len);
+        (§ libC.write(1, s, len))
         (when (non-zero? @p_wd)           ;; Unix is too fast, slow down a bit more
             (realWaitForChar @read_cmd_fd, @p_wd)
         )
@@ -2519,9 +2519,9 @@
 
             (when (not (waitForChar @p_ut))
                 (when (and (trigger_cursorhold) (<= 3 maxlen) (not (typebuf_changed tb_change_cnt)))
-;                   buf.be(0, KB_SPECIAL);
-;                   buf.be(1, KS_EXTRA);
-;                   buf.be(2, KE_CURSORHOLD);
+                    (.be buf 0, KB_SPECIAL)
+                    (.be buf 1, KS_EXTRA)
+                    (.be buf 2, KE_CURSORHOLD)
                     ((ß RETURN) (§ 3))
                 )
                 (before_blocking)
@@ -2581,9 +2581,9 @@
 ;           {
                 ((ß timespec_C ts =) (§ new timespec_C()))
 
-;               ts.tv_sec(msec / 1000);
-;               ts.tv_nsec((msec % 1000) * 1000000);
-;               libc.nanosleep(ts, null);
+                (§ ts.tv_sec(msec / 1000))
+                (§ ts.tv_nsec((msec % 1000) * 1000000))
+                (§ libc.nanosleep(ts, null))
 ;           }
 
             (settmode old_tmode)
@@ -2601,21 +2601,21 @@
 (defn- #_void sig_winch [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-;       libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null);
+        (§ libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null))
         (reset! do_resize true)
     ))
 
 (defn- #_void catch_sigint [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-;       libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null);
+        (§ libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null))
         (reset! got_int true)
     ))
 
 (defn- #_void catch_sigpwr [#_int _sigarg]
     (§
         ;; this is not required on all systems, but it doesn't hurt anybody
-;       libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null);
+        (§ libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null))
     ))
 
 (atom! int trap__entered)       ;; Count the number of times we got here.
@@ -2625,8 +2625,8 @@
 (defn- #_void may_core_dump []
     (§
         (when (non-zero? @deadly_signal)
-;           libC.sigset(@deadly_signal, /*SIG_DFL*/null);
-;           libc.kill(libc.getpid(), @deadly_signal);        ;; Die using the signal we caught
+            (§ libC.sigset(@deadly_signal, /*SIG_DFL*/null))
+            (§ libc.kill(libc.getpid(), @deadly_signal))        ;; Die using the signal we caught
         )
     ))
 
@@ -2653,7 +2653,7 @@
         ;; Remember how often we have been called.
         (swap! trap__entered inc)
 
-;       int i;
+        (ß int i)
 
         ;; try to find the name of this signal
         ((ß FOR) (ß (§ i = 0) (§ signal_info[i].sig != -1) (§ i++))
@@ -2676,9 +2676,9 @@
             (reset_signals)        ;; don't catch any signals anymore
             (may_core_dump)
             (if (<= 4 @trap__entered)
-;               libc._exit(8);
+                (§ libc._exit(8))
             )
-;           libc.exit(7);
+            (§ libc.exit(7))
         )
         (when (== @trap__entered 2)
             (out_str (u8 "Vim: Double signal, exiting\n"))
@@ -2686,7 +2686,7 @@
             (getout 1)
         )
 
-;       libC.sprintf(@ioBuff, u8("Vim: Caught deadly signal %s\n"), signal_info[i].name);
+        (§ libC.sprintf(@ioBuff, u8("Vim: Caught deadly signal %s\n"), signal_info[i].name))
 
         ;; Preserve files and exit.
         (preserve_exit)
@@ -2701,7 +2701,7 @@
         (settmode TMODE_COOK)
         (out_flush)                        ;; needed to disable mouse on some systems
 
-;       libc.kill(0, SIGTSTP);              ;; send ourselves a STOP signal
+        (§ libc.kill(0, SIGTSTP))              ;; send ourselves a STOP signal
 
         (settmode TMODE_RAW)
     ))
@@ -2719,26 +2719,26 @@
     (§
         ;; WINDOW CHANGE signal is handled with sig_winch().
 
-;       libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null);
+        (§ libC.sigset(SIGWINCH, /*(void (*)())sig_winch*/null))
 
         ;; We want the STOP signal to work, to make mch_suspend() work.
         ;; For "rvim" the STOP signal is ignored.
 
-;       libC.sigset(SIGTSTP, /*SIG_DFL*/null);
+        (§ libC.sigset(SIGTSTP, /*SIG_DFL*/null))
 
         ;; We want to ignore breaking of PIPEs.
 
-;       libC.sigset(SIGPIPE, /*SIG_IGN*/null);
+        (§ libC.sigset(SIGPIPE, /*SIG_IGN*/null))
 
         (catch_int_signal)
 
         ;; Ignore alarm signals (Perl's alarm() generates it).
 
-;       libC.sigset(SIGALRM, /*SIG_IGN*/null);
+        (§ libC.sigset(SIGALRM, /*SIG_IGN*/null))
 
         ;; Catch SIGPWR (power failure?) to preserve the swap files, so that no work will be lost.
 
-;       libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null);
+        (§ libC.sigset(SIGPWR, /*(void (*)())catch_sigpwr*/null))
 
         ;; Arrange for other signals to gracefully shutdown Vim.
 
@@ -2749,7 +2749,7 @@
 
 (defn- #_void catch_int_signal []
     (§
-;       libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null);
+        (§ libC.sigset(SIGINT, /*(void (*)())catch_sigint*/null))
     ))
 
 (defn- #_void reset_signals []
@@ -2766,13 +2766,13 @@
 
                 ;; Setup to use the alternate stack for the signal function.
 ;            // sa.sa_handler(func_deadly);
-;               libC.sigemptyset(/*&sa.sa_mask*/null);
+                (§ libC.sigemptyset(/*&sa.sa_mask*/null))
 ;            // sa.sa_flags(SA_ONSTACK);
-;               libC.sigaction(signal_info[i].sig, /*sa*/null, null);
+                (§ libC.sigaction(signal_info[i].sig, /*sa*/null, null))
             )
             (!= func_other SIG_ERR)
             (§
-;               libC.sigset(signal_info[i].sig, /*func_other*/null);
+                (§ libC.sigset(signal_info[i].sig, /*func_other*/null))
             ))
         )
     ))
@@ -2788,24 +2788,23 @@
 
 (defn- #_boolean vim_handle_signal [#_int sig]
     (§
-;       switch (sig)
-;       {
-;           case SIGNAL_BLOCK:
-;           {
+        ((ß SWITCH) (§ sig)
+            ((ß CASE) (§ SIGNAL_BLOCK))
+            (§
                 (reset! __blocked true)
                 (ß BREAK)
-;           }
-;           case SIGNAL_UNBLOCK:
-;           {
+            )
+            ((ß CASE) (§ SIGNAL_UNBLOCK))
+            (§
                 (reset! __blocked false)
                 (when (non-zero? @got_signal)
-;                   libc.kill(libc.getpid(), @got_signal);
+                    (§ libc.kill(libc.getpid(), @got_signal))
                     (reset! got_signal 0)
                 )
                 (ß BREAK)
-;           }
-;           default:
-;           {
+            )
+            (ß DEFAULT)
+            (§
                 (if (not @__blocked)
                     ((ß RETURN) (§ true))            ;; exit!
                 )
@@ -2813,8 +2812,8 @@
                 (if (!= sig SIGPWR)
                     (reset! got_int true))         ;; break any loops
                 (ß BREAK)
-;           }
-;       }
+            )
+        )
         false
     ))
 
@@ -2828,8 +2827,8 @@
             (cond (msg_use_printf)
             (§
                 (if @info_message
-;                   libC.fprintf(stdout, u8("\n"));
-;                   libC.fprintf(stderr, u8("\r\n"));
+                    (§ libC.fprintf(stdout, u8("\n")))
+                    (§ libC.fprintf(stderr, u8("\r\n")))
                 )
             )
             :else
@@ -2875,7 +2874,7 @@
 
         (may_core_dump)
 
-;       libc.exit(r);
+        (§ libc.exit(r))
     ))
 
 ;; for "new" tty systems
@@ -2886,7 +2885,7 @@
     (§
         (when (nil? @stm__told)
             (reset! stm__told (§ new termios_C()))
-;           libc.tcgetattr(@read_cmd_fd, @stm__told);
+            (§ libc.tcgetattr(@read_cmd_fd, @stm__told))
         )
 
         ((ß termios_C tnew =) (§ new termios_C()))
@@ -2896,15 +2895,15 @@
         (§
             ;; ~ICRNL enables typing ^V^M
 
-;           tnew.c_iflag(tnew.c_iflag() & ~(ICRNL));
-;           tnew.c_lflag(tnew.c_lflag() & ~(ICANON | ECHO | ISIG | ECHOE | IEXTEN));
-;           tnew.c_oflag(tnew.c_oflag() & ~(ONLCR));
-;           tnew.c_vmin((short)1);      ;; return after 1 char
-;           tnew.c_vtime((short)0);     ;; don't wait
+            (§ tnew.c_iflag(tnew.c_iflag() & ~(ICRNL)))
+            (§ tnew.c_lflag(tnew.c_lflag() & ~(ICANON | ECHO | ISIG | ECHOE | IEXTEN)))
+            (§ tnew.c_oflag(tnew.c_oflag() & ~(ONLCR)))
+            (§ tnew.c_vmin((short)1))      ;; return after 1 char
+            (§ tnew.c_vtime((short)0))     ;; don't wait
         )
         (== tmode TMODE_SLEEP)
         (§
-;           tnew.c_lflag(tnew.c_lflag() & ~(ECHO));
+            (§ tnew.c_lflag(tnew.c_lflag() & ~(ECHO)))
         ))
 
         ;; A signal may cause tcsetattr() to fail (e.g., SIGCONT).  Retry a few times.
@@ -2931,9 +2930,9 @@
         (when (§ libc.tcgetattr(@read_cmd_fd, keys) != -1)
             ((ß Bytes buf =) (§ new Bytes(2)))
 
-;           buf.be(0, keys.c_verase());
+            (.be buf (§ 0), (§ keys.c_verase()))
             (reset! intr_char (§ keys.c_vintr()))
-;           buf.be(1, NUL);
+            (.be buf 1, NUL)
             (add_termcode (u8 "kb"), buf)
 
             ;; If <BS> and <DEL> are now the same, redefine <DEL>.
@@ -2975,7 +2974,7 @@
         ;; 2. get size from environment
 
         (when (or (zero? columns) (zero? rows))
-;           Bytes p;
+            (ß Bytes p)
             (if (non-nil? (§ p = libC.getenv(u8("LINES"))))
                 ((ß rows =) (§ libC.atoi(p)))
             )
@@ -3048,8 +3047,8 @@
     (§
         ((ß timeval_C tv =) (§ new timeval_C()))
         (when (<= 0 msec)
-;           tv.tv_sec(msec / 1000);
-;           tv.tv_usec((msec % 1000) * 1000);
+            (§ tv.tv_sec(msec / 1000))
+            (§ tv.tv_usec((msec % 1000) * 1000))
         )
 
         ;; Select on ready for reading and exceptional condition (end of file).
@@ -3173,7 +3172,7 @@
 
         ;; May truncate message to avoid a hit-return prompt.
         (when (or (and (not @msg_scroll) (not @need_wait_return)) force)
-;           int room;
+            (ß int room)
             ((ß int len =) (§ mb_string2cells(s, -1)))
             (cond (non-zero? @msg_scrolled)
             (§
@@ -3206,13 +3205,13 @@
         ((ß int half =) (§ room / 2))
         ((ß int len =) (§ 0))
 
-;       int e;
+        (ß int e)
 
         ;; First part: Start of the string.
         ((ß FOR) (ß (§ e = 0) (§ len < half && e < buflen) (§ e++))
             (when (eos? s e)
                 ;; text fits without truncating!
-;               buf.be(e, NUL);
+                (.be buf e, NUL)
                 (ß RETURN)
             )
 
@@ -3221,13 +3220,13 @@
                 (ß BREAK)
             )
             ((ß len +=) (§ n))
-;           buf.be(e, s.at(e));
+            (.be buf (§ e), (§ s.at(e)))
 
             ((ß FOR) (ß (§ n = us_ptr2len_cc(s.plus(e))) (§ 0 < --n) (§ nil))
                 (if (== (§ ++e) buflen)
                     (ß BREAK)
                 )
-;               buf.be(e, s.at(e));
+                (.be buf (§ e), (§ s.at(e)))
             )
         )
 
@@ -3258,11 +3257,11 @@
                 ((ß len =) (§ buflen - e - 3 - 1))
             )
             (BCOPY buf, (+ e 3), s, i, len)
-;           buf.be(e + 3 + len - 1, NUL);
+            (§ buf.be(e + 3 + len - 1, NUL))
         )
         :else
         (§
-;           buf.be(e - 1, NUL);     ;; make sure it is truncated
+            (§ buf.be(e - 1, NUL))     ;; make sure it is truncated
         ))
     ))
 
@@ -3360,14 +3359,14 @@
                 ((ß RETURN) (§ s))
             )
 
-;           int n;
+            (ß int n)
             ((ß FOR) (ß (§ n = 0) (§ room <= cells) (§ n += us_ptr2len_cc(s.plus(n))))
                 ((ß cells -=) (§ us_ptr2cells(s.plus(n))))
             )
             (§ --n)
 
             ((ß s =) (§ s.plus(n)))
-;           s.be(0, (byte)'<');
+            (.be s (§ 0), (§ (byte)'<'))
         )
 
         s
@@ -3398,7 +3397,7 @@
             (ß RETURN)
         )
 
-;       int c;
+        (ß int c)
 
         ((ß int oldState =) (§ @State))
         (cond @quit_more
@@ -3416,7 +3415,7 @@
 
             (hit_return_msg)
 
-;           boolean had_got_int;
+            (ß boolean had_got_int)
 ;           do
 ;           {
                 ;; Remember "got_int", if it is set vgetc() probably returns a CTRL-C,
@@ -3606,14 +3605,14 @@
 
         (cond (is_special c)
         (§
-;           buf.be(0, KB_SPECIAL);
-;           buf.be(1, KB_SECOND(c));
-;           buf.be(2, KB_THIRD(c));
-;           buf.be(3, NUL);
+            (.be buf 0, KB_SPECIAL)
+            (.be buf 1, (KB_SECOND c))
+            (.be buf 2, (KB_THIRD c))
+            (.be buf 3, NUL)
         )
         :else
         (§
-;           buf.be(utf_char2bytes(c, buf), NUL);
+            (§ buf.be(utf_char2bytes(c, buf), NUL))
         ))
         (msg_puts_attr buf, attr)
     ))
@@ -3800,12 +3799,12 @@
                 (if (<= (int @Columns) @msg_col)     ;; can happen after screen resize
                     (reset! msg_col (- (int @Columns) 1)))
 
-;               boolean did_last_char;
+                (ß boolean did_last_char)
 
                 ;; Display char in last column before showing more-prompt.
                 (cond (<= (byte \space) (.at s 0))
                 (§
-;                   int len;
+                    (ß int len)
                     (cond (<= 0 maxlen)
                     (§
                         ;; avoid including composing chars after the end
@@ -3899,7 +3898,7 @@
             (§
                 ((ß int cells =) (§ us_ptr2cells(s)))
 
-;               int len;
+                (ß int len)
                 (cond (<= 0 maxlen)
                 (§
                     ;; avoid including composing chars after the end
@@ -4134,10 +4133,10 @@
                 (§ (p = p.plus(1)).be(-1, (byte)'\r'))
             )
             (§ (p = p.plus(1)).be(-1, s.at(0)))
-;           p.be(0, NUL);
+            (.be p 0, NUL)
             (if @info_message   ;; informative message, not an error
-;               libC.fprintf(stdout, u8("%s"), buf);
-;               libC.fprintf(stderr, u8("%s"), buf);
+                (§ libC.fprintf(stdout, u8("%s"), buf))
+                (§ libC.fprintf(stderr, u8("%s"), buf))
             )
 
             ;; primitive way to compute the current column
@@ -4176,7 +4175,7 @@
             (msg_moremsg false))
 
         (while (§ true)
-;           int c;
+            (ß int c)
 
             ;; Get a typed character directly from the user.
 
@@ -4191,51 +4190,67 @@
             ))
 
             ((ß int toscroll =) (§ 0))
-;           switch (c)
-;           {
-;               case BS:                    ;; scroll one line back
-;               case K_BS:
-;               case (byte)'k':
-;               case K_UP:
+            ((ß SWITCH) (§ c)
+                ((ß CASE) (§ BS))                    ;; scroll one line back
+                ((ß CASE) (§ K_BS))
+                ((ß CASE) (§ (byte)'k'))
+                ((ß CASE) (§ K_UP))
+                (§
                     ((ß toscroll =) (§ -1))
                     (ß BREAK)
+                )
 
-;               case CAR:                   ;; one extra line
-;               case NL:
-;               case (byte)'j':
-;               case K_DOWN:
+                ((ß CASE) (§ CAR))                   ;; one extra line
+                ((ß CASE) (§ NL))
+                ((ß CASE) (§ (byte)'j'))
+                ((ß CASE) (§ K_DOWN))
+                (§
                     ((ß toscroll =) (§ 1))
                     (ß BREAK)
+                )
 
-;               case (byte)'u':                   ;; Up half a page
+                ((ß CASE) (§ (byte)'u'))                   ;; up half a page
+                (§
                     ((ß toscroll =) (§ -((int)@Rows / 2)))
                     (ß BREAK)
+                )
 
-;               case (byte)'d':                   ;; Down half a page
+                ((ß CASE) (§ (byte)'d'))                   ;; down half a page
+                (§
                     ((ß toscroll =) (§ (int)@Rows / 2))
                     (ß BREAK)
+                )
 
-;               case (byte)'b':                   ;; one page back
-;               case K_PAGEUP:
+                ((ß CASE) (§ (byte)'b'))                   ;; one page back
+                ((ß CASE) (§ K_PAGEUP))
+                (§
                     ((ß toscroll =) (§ -((int)@Rows - 1)))
                     (ß BREAK)
+                )
 
-;               case (byte)' ':                   ;; one extra page
-;               case (byte)'f':
-;               case K_PAGEDOWN:
+                ((ß CASE) (§ (byte)' '))                   ;; one extra page
+                ((ß CASE) (§ (byte)'f'))
+                ((ß CASE) (§ K_PAGEDOWN))
+                (§
                     ((ß toscroll =) (§ (int)@Rows - 1))
                     (ß BREAK)
+                )
 
-;               case (byte)'g':                   ;; all the way back to the start
+                ((ß CASE) (§ (byte)'g'))                   ;; all the way back to the start
+                (§
                     ((ß toscroll =) (§ -999999))
                     (ß BREAK)
+                )
 
-;               case (byte)'G':                   ;; all the way to the end
+                ((ß CASE) (§ (byte)'G'))                   ;; all the way to the end
+                (§
                     ((ß toscroll =) (§ 999999))
                     (reset! lines_left 999999)
                     (ß BREAK)
+                )
 
-;               case (byte)':':                   ;; start new command line
+                ((ß CASE) (§ (byte)'))':                   ;; start new command line
+                (§
                     (when (zero? @confirm_msg_used)
                         ;; Since got_int is set all typeahead will be flushed, but we
                         ;; want to keep this ':', remember that in a special way.
@@ -4244,10 +4259,12 @@
                         (reset! skip_redraw true)             ;; skip redraw once
                         (reset! need_wait_return false)       ;; don't wait in main()
                     )
-                    ;; FALLTHROUGH
-;               case (byte)'q':                   ;; quit
-;               case Ctrl_C:
-;               case ESC:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ (byte)'q'))                   ;; quit
+                ((ß CASE) (§ Ctrl_C))
+                ((ß CASE) (§ ESC))
+                (§
                     (cond (non-zero? @confirm_msg_used)
                     (§
                         ;; Jump to the choices of the dialog.
@@ -4262,8 +4279,10 @@
                     ;; display that without another prompt.
                     (reset! lines_left (- (int @Rows) 1))
                     (ß BREAK)
+                )
 
-;               case Ctrl_Y:
+                ((ß CASE) (§ Ctrl_Y))
+                (§
                     ;; Strange way to allow copying (yanking) a modeless
                     ;; selection at the more prompt.  Use CTRL-Y,
                     ;; because the same is used in Cmdline-mode and at the
@@ -4271,16 +4290,19 @@
                     ;; might be expected...
 ;                   
                     (ß CONTINUE)
+                )
 
-;               default:                    ;; no valid response
+                (ß DEFAULT)                    ;; no valid response
+                (§
                     (msg_moremsg true)
                     (ß CONTINUE)
-;           }
+                )
+            )
 
             (when (non-zero? toscroll)
                 (cond (< toscroll 0)
                 (§
-;                   msgchunk_C mp;
+                    (ß msgchunk_C mp)
                     ;; go to start of last line
                     (cond (nil? mp_last)
                     (§
@@ -4391,7 +4413,7 @@
         ((ß int attr =) (§ hl_attr(HLF_M)))
         (screen_puts s, (- (int @Rows) 1), 0, attr)
         (when full
-;           screen_puts(u8(" SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (int)@Rows - 1, mb_string2cells(s, -1), attr);
+            (§ screen_puts(u8(" SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "), (int)@Rows - 1, mb_string2cells(s, -1), attr))
         )
     ))
 
@@ -4923,7 +4945,7 @@
                     (ß BREAK skip)
                 )
 
-;               int nextchar;           ;; next non-white char after option name
+                (ß int nextchar)           ;; next non-white char after option name
 
                 ;; find end of name
                 ((ß int len =) (§ 0))
@@ -4931,9 +4953,9 @@
                     (§ len++)
                 )
                 ((ß nextchar =) (§ arg.at(len)))
-;               arg.be(len, NUL);                           ;; put NUL after name
+                (.be arg len, NUL)                           ;; put NUL after name
                 ((ß int opt_idx =) (§ findoption(arg)))
-;               arg.be(len, nextchar);                      ;; restore nextchar
+                (.be arg len, nextchar)                      ;; restore nextchar
 
                 (when (== opt_idx -1)      ;; found a mismatch: skip
                     ((ß errmsg =) (§ u8("E518: Unknown option")))
@@ -4998,7 +5020,7 @@
                             (ß BREAK skip)
                         )
 
-;                       boolean value;
+                        (ß boolean value)
 
                         ;; ":set opt!": invert
                         ;; ":set opt&": reset to default value
@@ -5037,7 +5059,7 @@
 
                         (cond (non-zero? (& (. v flags) P_NUM))       ;; numeric
                         (§
-;                           long value;
+                            (ß long value)
 
                             ;; Different ways to set a number option:
                             ;; &        set to default value
@@ -5074,7 +5096,7 @@
                         (§
                             ((ß Bytes save_arg =) (§ null))
 
-;                           Bytes newval;
+                            (ß Bytes newval)
                             ;; The old value is kept until we are sure that the new value is valid.
                             ((ß Bytes oldval =) (§ (Bytes)@varp))
                             (cond (== nextchar (byte \&))    ;; set to default val
@@ -5124,7 +5146,7 @@
                                         (§ (s = s.plus(1)).be(-1, (arg = arg.plus(1)).at(-1)))
                                     ))
                                 )
-;                               s.be(0, NUL);
+                                (.be s 0, NUL)
 
                                 ;; Locate newval[] in origval[] when removing it and when adding to avoid duplicates.
                                 ((ß int i =) (§ 0))
@@ -5198,7 +5220,7 @@
                     ;; append the argument with the error
                     (STRCAT @ioBuff, (u8 ": "))
                     (BCOPY @ioBuff, i, startarg, 0, (BDIFF arg, startarg))
-;                   @ioBuff.be(i + BDIFF(arg, startarg), NUL);
+                    (§ @ioBuff.be(i + BDIFF(arg, startarg), NUL))
                 )
                 ;; make sure all characters are printable
                 (trans_characters @ioBuff, IOSIZE)
@@ -5220,7 +5242,7 @@
             ((ß RETURN) (§ u8("")))
         )
 
-;       libC.sprintf(errbuf, u8("E539: Illegal character <%s>"), transchar(c));
+        (§ libC.sprintf(errbuf, u8("E539: Illegal character <%s>"), transchar(c)))
         errbuf
     ))
 
@@ -5508,7 +5530,7 @@
                 ((ß RETURN) (§ e_invarg))
             )
 
-;           int col;
+            (ß int col)
 ;           Bytes[] __ = { s }; col = (int)getdigits(__); s = __[0];
 
             ((ß color_cols[count++] =) (§ col - 1))  ;; 1-based to 0-based
@@ -5533,7 +5555,7 @@
             ((ß wp.w_p_cc_cols =) (§ new int[count + 1]))
 
             ;; sort the columns for faster usage on screen redraw inside win_line()
-;           Arrays.sort(color_cols, 0, count);
+            (§ Arrays.sort(color_cols, 0, count))
 
             ((ß int j =) (§ 0))
             ((ß FOR) (ß (§ int i = 0) (§ i < count) (§ i++))
@@ -6006,12 +6028,12 @@
 
             (cond (non-zero? (& (. v flags) P_NUM))
             (§
-;               libC.sprintf(@nameBuff, u8("%ld"), (long)@varp);
+                (§ libC.sprintf(@nameBuff, u8("%ld"), (long)@varp))
             )
             (non-zero? (& (. v flags) P_STRING))
             (§
                 (if (nil? @varp)              ;; just in case
-;                   @nameBuff.be(0, NUL);
+                    (.be @nameBuff 0, NUL)
                     (vim_strncpy @nameBuff, (§ (Bytes)@varp), (- MAXPATHL 1)))
             ))
 
@@ -6058,43 +6080,141 @@
 
 (defn- #_Object get_varp [#_vimoption_C v]
     (§
-;       switch (v.indir)
-;       {
-;           case PV_BRI:    return @curwin.w_options.wo_bri;
-;           case PV_BRIOPT: return @curwin.w_options.wo_briopt;
-;           case PV_CC:     return @curwin.w_options.wo_cc;
-;           case PV_COCU:   return @curwin.w_options.wo_cocu;
-;           case PV_COLE:   return @curwin.w_options.wo_cole;
-;           case PV_CRBIND: return @curwin.w_options.wo_crb;
-;           case PV_CUC:    return @curwin.w_options.wo_cuc;
-;           case PV_CUL:    return @curwin.w_options.wo_cul;
-;           case PV_LBR:    return @curwin.w_options.wo_lbr;
-;           case PV_NU:     return @curwin.w_options.wo_nu;
-;           case PV_NUW:    return @curwin.w_options.wo_nuw;
-;           case PV_RNU:    return @curwin.w_options.wo_rnu;
-;           case PV_SCBIND: return @curwin.w_options.wo_scb;
-;           case PV_SCROLL: return @curwin.w_options.wo_scr;
-;           case PV_WFH:    return @curwin.w_options.wo_wfh;
-;           case PV_WFW:    return @curwin.w_options.wo_wfw;
-;           case PV_WRAP:   return @curwin.w_options.wo_wrap;
+        ((ß SWITCH) (§ v.indir)
+            ((ß CASE) (§ PV_BRI))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_bri))
+            )
+            ((ß CASE) (§ PV_BRIOPT))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_briopt))
+            )
+            ((ß CASE) (§ PV_CC))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_cc))
+            )
+            ((ß CASE) (§ PV_COCU))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_cocu))
+            )
+            ((ß CASE) (§ PV_COLE))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_cole))
+            )
+            ((ß CASE) (§ PV_CRBIND))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_crb))
+            )
+            ((ß CASE) (§ PV_CUC))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_cuc))
+            )
+            ((ß CASE) (§ PV_CUL))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_cul))
+            )
+            ((ß CASE) (§ PV_LBR))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_lbr))
+            )
+            ((ß CASE) (§ PV_NU))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_nu))
+            )
+            ((ß CASE) (§ PV_NUW))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_nuw))
+            )
+            ((ß CASE) (§ PV_RNU))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_rnu))
+            )
+            ((ß CASE) (§ PV_SCBIND))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_scb))
+            )
+            ((ß CASE) (§ PV_SCROLL))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_scr))
+            )
+            ((ß CASE) (§ PV_WFH))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_wfh))
+            )
+            ((ß CASE) (§ PV_WFW))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_wfw))
+            )
+            ((ß CASE) (§ PV_WRAP))
+            (§
+                ((ß RETURN) (§ @curwin.w_options.wo_wrap))
+            )
 
-;           case PV_AI:     return @curbuf.b_p_ai;
-;           case PV_CI:     return @curbuf.b_p_ci;
-;           case PV_CINW:   return @curbuf.b_p_cinw;
-;           case PV_ET:     return @curbuf.b_p_et;
-;           case PV_ISK:    return @curbuf.b_p_isk;
-;           case PV_KP:     return @curbuf.b_p_kp;
-;           case PV_MOD:    return @curbuf.b_changed;
-;           case PV_MPS:    return @curbuf.b_p_mps;
-;           case PV_NF:     return @curbuf.b_p_nf;
-;           case PV_PI:     return @curbuf.b_p_pi;
-;           case PV_QE:     return @curbuf.b_p_qe;
-;           case PV_SI:     return @curbuf.b_p_si;
-;           case PV_STS:    return @curbuf.b_p_sts;
-;           case PV_SW:     return @curbuf.b_p_sw;
-;           case PV_TS:     return @curbuf.b_p_ts;
-;           case PV_UL:     return @curbuf.b_p_ul;
-;       }
+            ((ß CASE) (§ PV_AI))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_ai))
+            )
+            ((ß CASE) (§ PV_CI))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_ci))
+            )
+            ((ß CASE) (§ PV_CINW))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_cinw))
+            )
+            ((ß CASE) (§ PV_ET))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_et))
+            )
+            ((ß CASE) (§ PV_ISK))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_isk))
+            )
+            ((ß CASE) (§ PV_KP))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_kp))
+            )
+            ((ß CASE) (§ PV_MOD))
+            (§
+                ((ß RETURN) (§ @curbuf.b_changed))
+            )
+            ((ß CASE) (§ PV_MPS))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_mps))
+            )
+            ((ß CASE) (§ PV_NF))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_nf))
+            )
+            ((ß CASE) (§ PV_PI))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_pi))
+            )
+            ((ß CASE) (§ PV_QE))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_qe))
+            )
+            ((ß CASE) (§ PV_SI))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_si))
+            )
+            ((ß CASE) (§ PV_STS))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_sts))
+            )
+            ((ß CASE) (§ PV_SW))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_sw))
+            )
+            ((ß CASE) (§ PV_TS))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_ts))
+            )
+            ((ß CASE) (§ PV_UL))
+            (§
+                ((ß RETURN) (§ @curbuf.b_p_ul))
+            )
+        )
 
         (. v var)
     ))
@@ -6312,7 +6432,7 @@
     (§
         ((ß Bytes ptr =) (§ @curbuf.@b_p_mps))
         (while (§ ptr.at(0) != NUL)
-;           Bytes prev;
+            (ß Bytes prev)
 
             (when (== (us_ptr2char ptr) (§ initc[0]))
                 (cond switchit
@@ -6408,7 +6528,7 @@
 
         ((ß int ci =) (§ 0))
 
-;       @ioBuff.be(0, NUL);
+        (.be @ioBuff 0, NUL)
         (when (< c 0x80)
             (if (== c NL)        ;; NUL is stored as NL
                 ((ß c =) (§ NUL))
@@ -6425,13 +6545,13 @@
             )
             :else
             (§
-;               buf1.be(0, NUL);
+                (.be buf1 0, NUL)
             ))
 
             ((ß Bytes buf2 =) (§ new Bytes(20)))
             (if (<= 0x80 c)
 ;               vim_snprintf(buf2, buf2.size(), u8("  <M-%s>"), transchar(c & 0x7f));
-;               buf2.be(0, NUL);
+                (.be buf2 0, NUL)
             )
 
 ;           vim_snprintf(@ioBuff, IOSIZE, u8("<%s>%s%s  %d,  Hex %02x,  Octal %03o"), transchar(c), buf1, buf2, cval, cval, cval);
@@ -6443,11 +6563,11 @@
             ((ß int len =) (§ STRLEN(@ioBuff)))
             ;; This assumes every multi-byte char is printable...
             (if (< 0 len)
-;               @ioBuff.be(len++, (byte)' ');
+                (§ @ioBuff.be(len++, (byte)' '))
             )
-;           @ioBuff.be(len++, (byte)'<');
+            (.be @ioBuff (§ len++), (§ (byte)'<'))
             (if (utf_iscomposing c)
-;               @ioBuff.be(len++, (byte)' ');                ;; draw composing char on top of a space
+                (§ @ioBuff.be(len++, (byte)' '))                ;; draw composing char on top of a space
             )
             ((ß len +=) (§ utf_char2bytes(c, @ioBuff.plus(len))))
 ;           vim_snprintf(@ioBuff.plus(len), IOSIZE - len, (c < 0x10000) ? u8("> %d, Hex %04x, Octal %o") : u8("> %d, Hex %08x, Octal %o"), c, c, c);
@@ -6469,18 +6589,18 @@
         ((ß Bytes first =) (§ skipwhite(line)))
 
         ;; find the character after the last non-blank character
-;       Bytes last;
+        (ß Bytes last)
         ((ß FOR) (ß (§ last = first.plus(STRLEN(first))) (§ BLT(first, last) && vim_iswhite(last.at(-1))) (§ last = last.minus(1)))
             ;
         )
 
         ((ß byte save =) (§ last.at(0)))
-;       last.be(0, NUL);
+        (.be last 0, NUL)
         ((ß int len =) (§ linetabsize(line)))        ;; get line length
         (if (non-nil? has_tab)                ;; check for embedded TAB
             ((ß has_tab[0] =) (§ (vim_strrchr(first, TAB) != null)))
         )
-;       last.be(0, save);
+        (.be last 0, save)
 
         len
     ))
@@ -6496,7 +6616,7 @@
         ((ß long first_line =) (§ 0))                        ;; first changed line
         ((ß long last_line =) (§ 0))                         ;; last changed line
 
-;       int new_ts;
+        (ß int new_ts)
 ;       { Bytes[] __ = { eap.arg }; new_ts = (int)getdigits(__); eap.arg = __[0]; }
         (when (< new_ts 0)
             (emsg e_positive)
@@ -6560,7 +6680,7 @@
                             (BCOPY new_line, (+ start_col len), ptr, col, (§ old_len - col + 1))
                             ((ß ptr =) (§ new_line.plus(start_col)))
                             ((ß FOR) (ß (§ col = 0) (§ col < len) (§ col++))
-;                               ptr.be(col, (col < num_tabs) ? (byte)'\t' : (byte)' ');
+                                (§ ptr.be(col, (col < num_tabs) ? (byte)'\t' : (byte)' '))
                             )
                             (ml_replace lnum, new_line)
                             (if (zero? first_line)
@@ -6642,7 +6762,7 @@
 
         ((ß long start_nsubs =) (§ @sub_nsubs))
 
-;       int which_pat;
+        (ß int which_pat)
         (if (== (. eap cmdidx) (§ CMD_tilde))
             ((ß which_pat =) (§ RE_LAST))            ;; use last used regexp
             ((ß which_pat =) (§ RE_SUBST))           ;; use last substitute regexp
@@ -6656,7 +6776,7 @@
                 (ß RETURN)
             )
 
-;           byte delimiter;
+            (ß byte delimiter)
 
             ;; undocumented vi feature:
             ;;  "\/sub/" and "\?sub?" use last used search pattern (almost like //sub/r).
@@ -7020,7 +7140,7 @@
                         ;; - length of substituted part
                         ;; - original text after match
 
-;                       Bytes p1;
+                        (ß Bytes p1)
                         (cond (== nmatch 1)
                         (§
                             ((ß p1 =) (§ sub_firstline))
@@ -7032,7 +7152,7 @@
                         ))
                         ((ß int copy_len =) (§ regmatch.startpos[0].col - copycol))
                         ((ß int needed_len =) (§ copy_len + (STRLEN(p1) - regmatch.endpos[0].col) + sublen + 1))
-;                       Bytes new_end;
+                        (ß Bytes new_end)
                         (cond (nil? new_start)
                         (§
                             ;; Get some space for a temporary buffer to do the substitution into
@@ -7040,7 +7160,7 @@
 
                             ((ß new_start_len =) (§ needed_len + 50))
                             ((ß new_start =) (§ new Bytes(new_start_len)))
-;                           new_start.be(0, NUL);
+                            (.be new_start 0, NUL)
                             ((ß new_end =) (§ new_start))
                         )
                         :else
@@ -7110,7 +7230,7 @@
                             (== (.at p1 0) CAR)
                             (§
                                 (when (u_inssub lnum)     ;; prepare for undo
-;                                   p1.be(0, NUL);                  ;; truncate up to the CR
+                                    (.be p1 0, NUL)                  ;; truncate up to the CR
                                     (ml_append (- lnum 1), new_start)
                                     (mark_adjust (+ lnum 1), MAXLNUM, 1, 0)
 
@@ -7287,7 +7407,7 @@
             ((ß Bytes msg_buf =) (§ new Bytes(MSG_BUF_LEN)))
             (if @got_int
                 (STRCPY msg_buf, (u8 "(Interrupted) "))
-;               msg_buf.be(0, NUL);
+                (.be msg_buf 0, NUL)
             )
             (if (== @sub_nsubs 1)
 ;               vim_snprintf_add(msg_buf, MSG_BUF_LEN, u8("%s"), (count_only) ? u8("1 match") : u8("1 substitution"));
@@ -7429,12 +7549,12 @@
         ;; alloc initial ccline.cmdbuff
         (alloc_cmdbuff 1)
         ((ß @ccline.cmdlen =) (§ @ccline.cmdpos = 0))
-;       @ccline.cmdbuff.be(0, NUL);
+        (.be (§ @ccline.cmdbuff) (§ 0), (§ NUL))
 
         ;; autoindent for :insert and :append
         (when (<= firstc 0)
 ;           copy_spaces(@ccline.cmdbuff, 0);
-;           @ccline.cmdbuff.be(0, NUL);
+            (.be (§ @ccline.cmdbuff) (§ 0), (§ NUL))
             ((ß @ccline.cmdpos =) (§ 0))
             ((ß @ccline.cmdspos =) (§ 0))
             ((ß @ccline.cmdlen =) (§ 0))
@@ -7485,7 +7605,7 @@
 
             ;; Get a character.
             ;; Ignore K_IGNORE, it should not do anything, such as stop completion.
-;           int c;
+            (ß int c)
 ;           do
 ;           {
                 ((ß c =) (§ safe_vgetc()))
@@ -7617,14 +7737,13 @@
 
                     ;; Big switch for a typed command line character.
 
-;                   switch (c)
-;                   {
-;                       case K_BS:
-;                       case Ctrl_H:
-;                       case K_DEL:
-;                       case K_KDEL:
-;                       case Ctrl_W:
-;                       {
+                    ((ß SWITCH) (§ c)
+                        ((ß CASE) (§ K_BS))
+                        ((ß CASE) (§ Ctrl_H))
+                        ((ß CASE) (§ K_DEL))
+                        ((ß CASE) (§ K_KDEL))
+                        ((ß CASE) (§ Ctrl_W))
+                        (§
                             (if (== c K_KDEL)
                                 ((ß c =) (§ K_DEL))
                             )
@@ -7660,11 +7779,11 @@
                                 ((ß @ccline.cmdlen -=) (§ j - @ccline.cmdpos))
                                 ((ß int i =) (§ @ccline.cmdpos))
                                 (while (§ i < @ccline.cmdlen)
-;                                   @ccline.cmdbuff.be(i++, @ccline.cmdbuff.at(j++));
+                                    (.be (§ @ccline.cmdbuff) (§ i++), (§ @ccline.cmdbuff.at(j++)))
                                 )
 
                                 ;; Truncate at the end, required for multi-byte chars.
-;                               @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
+                                (.be (§ @ccline.cmdbuff) (§ @ccline.cmdlen), (§ NUL))
                                 (redrawcmd)
                             )
                             (and (zero? (. @ccline cmdlen)) (!= c Ctrl_W) (nil? (. @ccline cmdprompt)))
@@ -7678,45 +7797,45 @@
                                 (ß BREAK returncmd)            ;; back to cmd mode
                             ))
                             (ß BREAK cmdline_changed)
-;                       }
+                        )
 
-;                       case K_INS:
-;                       case K_KINS:
-;                       {
+                        ((ß CASE) (§ K_INS))
+                        ((ß CASE) (§ K_KINS))
+                        (§
                             ((ß @ccline.overstrike =) (§ !@ccline.overstrike))
                             (ui_cursor_shape)              ;; may show different cursor shape
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case Ctrl_HAT:
-;                       {
+                        ((ß CASE) (§ Ctrl_HAT))
+                        (§
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case Ctrl_U:
-;                       {
+                        ((ß CASE) (§ Ctrl_U))
+                        (§
                             ;; delete all characters left of the cursor
                             ((ß int j =) (§ @ccline.cmdpos))
                             ((ß @ccline.cmdlen -=) (§ j))
                             ((ß int i =) (§ @ccline.cmdpos = 0))
                             (while (§ i < @ccline.cmdlen)
-;                               @ccline.cmdbuff.be(i++, @ccline.cmdbuff.at(j++));
+                                (.be (§ @ccline.cmdbuff) (§ i++), (§ @ccline.cmdbuff.at(j++)))
                             )
                             ;; Truncate at the end, required for multi-byte chars.
-;                           @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
+                            (.be (§ @ccline.cmdbuff) (§ @ccline.cmdlen), (§ NUL))
                             (redrawcmd)
                             (ß BREAK cmdline_changed)
-;                       }
+                        )
 
-;                       case ESC:       ;; get here when ESC typed twice
-;                       case Ctrl_C:
-;                       {
+                        ((ß CASE) (§ ESC))       ;; get here when ESC typed twice
+                        ((ß CASE) (§ Ctrl_C))
+                        (§
                             ((ß gotesc =) (§ true))              ;; will free ccline.cmdbuff after putting it in history
                             (ß BREAK returncmd)            ;; back to cmd mode
-;                       }
+                        )
 
-;                       case Ctrl_R:                    ;; insert register
-;                       {
+                        ((ß CASE) (§ Ctrl_R))                    ;; insert register
+                        (§
                             (putcmdline (byte \"), true)
                             (swap! no_mapping inc)
                             ((ß int i =) (§ c = plain_vgetc()))  ;; CTRL-R <char>
@@ -7764,12 +7883,12 @@
                             )
                             (redrawcmd)
                             (ß BREAK cmdline_changed)
-;                       }
+                        )
 
-;                       case K_RIGHT:
-;                       case K_S_RIGHT:
-;                       case K_C_RIGHT:
-;                       {
+                        ((ß CASE) (§ K_RIGHT))
+                        ((ß CASE) (§ K_S_RIGHT))
+                        ((ß CASE) (§ K_C_RIGHT))
+                        (§
 ;                           do
 ;                           {
                                 (if (<= (. @ccline cmdlen) (. @ccline cmdpos))
@@ -7787,12 +7906,12 @@
                             )
                             (set_cmdspos_cursor)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case K_LEFT:
-;                       case K_S_LEFT:
-;                       case K_C_LEFT:
-;                       {
+                        ((ß CASE) (§ K_LEFT))
+                        ((ß CASE) (§ K_S_LEFT))
+                        ((ß CASE) (§ K_C_LEFT))
+                        (§
                             (if (zero? (. @ccline cmdpos))
                                 (ß BREAK cmdline_not_changed)
                             )
@@ -7808,45 +7927,49 @@
                             )
                             (set_cmdspos_cursor)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case K_IGNORE:
+                        ((ß CASE) (§ K_IGNORE))
+                        (§
                             (ß BREAK cmdline_not_changed)          ;; Ignore mouse event or ex_window() result.
+                        )
 
-;                       case K_DROP:
-;                       {
+                        ((ß CASE) (§ K_DROP))
+                        (§
                             (cmdline_paste (byte \~), true, false)
                             (redrawcmd)
                             (ß BREAK cmdline_changed)
-;                       }
+                        )
 
-;                       case K_SELECT:      ;; end of Select mode mapping - ignore
+                        ((ß CASE) (§ K_SELECT))      ;; end of Select mode mapping - ignore
+                        (§
                             (ß BREAK cmdline_not_changed)
+                        )
 
-;                       case Ctrl_B:        ;; begin of command line
-;                       case K_HOME:
-;                       case K_KHOME:
-;                       case K_S_HOME:
-;                       case K_C_HOME:
-;                       {
+                        ((ß CASE) (§ Ctrl_B))        ;; begin of command line
+                        ((ß CASE) (§ K_HOME))
+                        ((ß CASE) (§ K_KHOME))
+                        ((ß CASE) (§ K_S_HOME))
+                        ((ß CASE) (§ K_C_HOME))
+                        (§
                             ((ß @ccline.cmdpos =) (§ 0))
                             (set_cmdspos)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case Ctrl_E:        ;; end of command line
-;                       case K_END:
-;                       case K_KEND:
-;                       case K_S_END:
-;                       case K_C_END:
-;                       {
+                        ((ß CASE) (§ Ctrl_E))        ;; end of command line
+                        ((ß CASE) (§ K_END))
+                        ((ß CASE) (§ K_KEND))
+                        ((ß CASE) (§ K_S_END))
+                        ((ß CASE) (§ K_C_END))
+                        (§
                             ((ß @ccline.cmdpos =) (§ @ccline.cmdlen))
                             (set_cmdspos_cursor)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case Ctrl_L:
-;                       {
+                        ((ß CASE) (§ Ctrl_L))
+                        (§
                             (when (and @p_is (or (== firstc (byte \/)) (== firstc (byte \?))))
                                 ;; Add a character from under the cursor for 'incsearch'.
                                 (when (and did_incsearch (not (eqpos (. @curwin w_cursor), old_cursor)))
@@ -7869,20 +7992,20 @@
                             )
 
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case Ctrl_N:        ;; next match
-;                       case Ctrl_P:        ;; previous match
+                        ((ß CASE) (§ Ctrl_N))        ;; next match
+                        ((ß CASE) (§ Ctrl_P))        ;; previous match
 
-;                       case K_UP:
-;                       case K_DOWN:
-;                       case K_S_UP:
-;                       case K_S_DOWN:
-;                       case K_PAGEUP:
-;                       case K_KPAGEUP:
-;                       case K_PAGEDOWN:
-;                       case K_KPAGEDOWN:
-;                       {
+                        ((ß CASE) (§ K_UP))
+                        ((ß CASE) (§ K_DOWN))
+                        ((ß CASE) (§ K_S_UP))
+                        ((ß CASE) (§ K_S_DOWN))
+                        ((ß CASE) (§ K_PAGEUP))
+                        ((ß CASE) (§ K_KPAGEUP))
+                        ((ß CASE) (§ K_PAGEDOWN))
+                        ((ß CASE) (§ K_KPAGEDOWN))
+                        (§
                             (if (or (zero? @hislen) (== firstc NUL))       ;; no history
                                 (ß BREAK cmdline_not_changed)
                             )
@@ -7895,7 +8018,7 @@
                                 (if (nil? lookfor)
                                     (ß BREAK cmdline_not_changed)
                                 )
-;                               lookfor.be(@ccline.cmdpos, NUL);
+                                (.be lookfor (§ @ccline.cmdpos), (§ NUL))
                             )
 
                             ((ß FOR) (ß (§ int n = STRLEN(lookfor)) (§ true) (§ nil))
@@ -7949,13 +8072,13 @@
                             (when (!= hiscnt i)        ;; jumped to other entry
                                 ((ß @ccline.cmdbuff =) (§ null))
 
-;                               Bytes p;
+                                (ß Bytes p)
                                 (if (== hiscnt @hislen)
                                     ((ß p =) (§ lookfor))    ;; back to the old one
                                     ((ß p =) (§ @history[histype][hiscnt].hisstr))
                                 )
 
-;                               int old_firstc;
+                                (ß int old_firstc)
                                 (cond (and (== histype HIST_SEARCH) (BNE p, lookfor) (§ (old_firstc = p.at(STRLEN(p) + 1)) != firstc))
                                 (§
                                     ;; Correct for the separator character used when
@@ -7970,7 +8093,7 @@
                                             (cond (and (== (.at p i) old_firstc) (or (zero? i) (!= (.at p (- i 1)) (byte \\))))
                                             (§
                                                 (if (< 0 round)
-;                                                   @ccline.cmdbuff.be(len, firstc);
+                                                    (.be (§ @ccline.cmdbuff) (§ len), (§ firstc))
                                                 )
                                             )
                                             :else
@@ -7978,19 +8101,19 @@
                                                 ;; Escape new sep, unless it is already escaped.
                                                 (when (and (== (.at p i) firstc) (or (zero? i) (!= (.at p (- i 1)) (byte \\))))
                                                     (if (< 0 round)
-;                                                       @ccline.cmdbuff.be(len, (byte)'\\');
+                                                        (.be (§ @ccline.cmdbuff) (§ len), (§ (byte)'\\'))
                                                     )
                                                     (§ len++)
                                                 )
                                                 (if (< 0 round)
-;                                                   @ccline.cmdbuff.be(len, p.at(i));
+                                                    (.be (§ @ccline.cmdbuff) (§ len), (§ p.at(i)))
                                                 )
                                             ))
                                             (§ len++)
                                         )
 
                                         (if (< 0 round)
-;                                           @ccline.cmdbuff.be(len, NUL);
+                                            (.be (§ @ccline.cmdbuff) (§ len), (§ NUL))
                                             (alloc_cmdbuff len))
                                     )
                                 )
@@ -8006,11 +8129,11 @@
                             )
                             (beep_flush)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       case Ctrl_V:
-;                       case Ctrl_Q:
-;                       {
+                        ((ß CASE) (§ Ctrl_V))
+                        ((ß CASE) (§ Ctrl_Q))
+                        (§
                             (putcmdline (byte \^), true)
                             ((ß c =) (§ get_literal()))          ;; get next (two) character(s)
                             ((ß do_abbr =) (§ false))            ;; don't do abbreviation now
@@ -8021,10 +8144,10 @@
                                 (cursorcmd)
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case Ctrl_K:
-;                       {
+                        ((ß CASE) (§ Ctrl_K))
+                        (§
                             (putcmdline (byte \?), true)
                             ((ß c =) (§ get_digraph(true)))
                             (if (!= c NUL)
@@ -8033,10 +8156,10 @@
 
                             (redrawcmd)
                             (ß BREAK cmdline_not_changed)
-;                       }
+                        )
 
-;                       default:
-;                       {
+                        (ß DEFAULT)
+                        (§
                             (when (== c @intr_char)
                                 ((ß gotesc =) (§ true))      ;; will free ccline.cmdbuff after putting it in history
                                 (ß BREAK returncmd)    ;; back to Normal mode
@@ -8049,8 +8172,8 @@
                             (if (not (is_special c))
                                 (reset! mod_mask 0x0))
                             (ß BREAK)
-;                       }
-;                   }
+                        )
+                    )
 
                     ;; End of switch on command line character.
                     ;; We come here if we have a normal character.
@@ -8068,7 +8191,7 @@
                     :else
                     (§
                         ((ß int j =) (§ utf_char2bytes(c, @ioBuff)))
-;                       @ioBuff.be(j, NUL);          ;; exclude composing chars
+                        (.be @ioBuff j, NUL)          ;; exclude composing chars
                         (put_on_cmdline @ioBuff, j, true)
                     ))
                     (ß BREAK cmdline_changed)
@@ -8096,7 +8219,7 @@
                 (COPY_pos (. @curwin w_cursor), old_cursor) ;; start at old position
 
                 ;; If there is no command line, don't do anything.
-;               int i;
+                (ß int i)
                 (cond (zero? (. @ccline cmdlen))
                 (§
                     ((ß i =) (§ 0))
@@ -8273,7 +8396,7 @@
 
 (defn- #_void set_cmdspos_cursor []
     (§
-;       int i, m, c;
+        (ß int i, m, c)
 
         (set_cmdspos)
         (cond @keyTyped
@@ -8351,7 +8474,7 @@
         ;; There isn't always a NUL after the command, but it may need to be there,
         ;; thus copy up to the NUL and add a NUL.
         (BCOPY (. @ccline cmdbuff), p, (. @ccline cmdlen))
-;       @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
+        (.be (§ @ccline.cmdbuff) (§ @ccline.cmdlen), (§ NUL))
     ))
 
 ;; Draw part of the cmdline at the current cursor position;
@@ -8441,7 +8564,7 @@
             ))
         ))
         (BCOPY (. @ccline cmdbuff), (. @ccline cmdpos), str, 0, len)
-;       @ccline.cmdbuff.be(@ccline.cmdlen, NUL);
+        (.be (§ @ccline.cmdbuff) (§ @ccline.cmdlen), (§ NUL))
 
         ;; When the inserted text starts with a composing character,
         ;; backup to the character before it.  There could be two of them.
@@ -8476,7 +8599,7 @@
             (reset! msg_no_more false)
         )
 
-;       int m;
+        (ß int m)
         (cond @keyTyped
         (§
             ((ß m =) (§ (int)@Columns * (int)@Rows))
@@ -8606,7 +8729,7 @@
 
             (when (and @p_is (== regname Ctrl_W))
                 ;; Locate start of last word in the cmd buffer.
-;               Bytes w;
+                (ß Bytes w)
                 ((ß FOR) (ß (§ w = @ccline.cmdbuff.plus(@ccline.cmdpos)) (§ BLT(@ccline.cmdbuff, w)) (§ nil))
                     ((ß int len =) (§ us_head_off(@ccline.cmdbuff, w.minus(1)) + 1))
                     (if (not (vim_iswordc (us_ptr2char (§ w.minus(len))), @curbuf))
@@ -8788,7 +8911,7 @@
                     )
                     (< @hislen newlen)                   ;; array becomes bigger
                     (§
-;                       int i;
+                        (ß int i)
                         ((ß FOR) (ß (§ i = 0) (§ i <= @hisidx[type]) (§ i++))
                             (COPY_histentry (§ temp[i]), (§ @history[type][i]))
                         )
@@ -9229,10 +9352,9 @@
                 (if (asc_isdigit (§ p[0].at(0)))
                     ((ß p[0] =) (§ skipwhite(skipdigits(p[0]))))
                 )
-;               switch (p[0].at(0))
-;               {
+                ((ß SWITCH) (§ p[0].at(0))
 ;                   
-;               }
+                )
                 (ß BREAK)
             )
 
@@ -9271,24 +9393,27 @@
                 )
 ;           }
 
-;           long lnum;
+            (ß long lnum)
 
             ;; repeat for all ',' or ';' separated addresses
             ((ß ea.cmd =) (§ cmd))
             (while (§ true)
                 ((ß ea.line1 =) (§ ea.line2))
-;               switch (ea.addr_type)
-;               {
-;                   case ADDR_LINES:
+                ((ß SWITCH) (§ ea.addr_type)
+                    ((ß CASE) (§ ADDR_LINES))
+                    (§
                         ;; default is current line number
                         ((ß ea.line2 =) (§ @curwin.w_cursor.lnum))
                         (ß BREAK)
+                    )
 
-;                   case ADDR_WINDOWS:
+                    ((ß CASE) (§ ADDR_WINDOWS))
+                    (§
                         ((ß lnum =) (§ current_win_nr(@curwin)))
                         ((ß ea.line2 =) (§ lnum))
                         (ß BREAK)
-;               }
+                    )
+                )
                 ((ß ea.cmd =) (§ skipwhite(ea.cmd)))
 ;               { Bytes[] __ = { ea.cmd }; lnum = get_address(__, ea.addr_type, ea.skip, ea.addr_count == 0); ea.cmd = __[0]; }
                 (if (nil? (. ea cmd))                 ;; error detected
@@ -9299,18 +9424,21 @@
                     (cond (== (§ ea.cmd.at(0)) (byte \%))          ;; '%' - all lines
                     (§
                         ((ß ea.cmd =) (§ ea.cmd.plus(1)))
-;                       switch (ea.addr_type)
-;                       {
-;                           case ADDR_LINES:
+                        ((ß SWITCH) (§ ea.addr_type)
+                            ((ß CASE) (§ ADDR_LINES))
+                            (§
                                 ((ß ea.line1 =) (§ 1))
                                 ((ß ea.line2 =) (§ @curbuf.b_ml.ml_line_count))
                                 (ß BREAK)
+                            )
 
-;                           case ADDR_WINDOWS:
+                            ((ß CASE) (§ ADDR_WINDOWS))
+                            (§
                                 ;; There is no Vim command which uses '%' and ADDR_WINDOWS.
                                 ((ß errormsg =) (§ e_invrange))
                                 (ß BREAK doend)
-;                       }
+                            )
+                        )
                         (§ ea.addr_count++)
                     )
                     (== (§ ea.cmd.at(0)) (byte \*))     ;; '*' - visual area
@@ -9516,22 +9644,25 @@
 
             (when (and (non-zero? (& (. ea argt) DFLALL)) (zero? (. ea addr_count)))
                 ((ß ea.line1 =) (§ 1))
-;               switch (ea.addr_type)
-;               {
-;                   case ADDR_LINES:
+                ((ß SWITCH) (§ ea.addr_type)
+                    ((ß CASE) (§ ADDR_LINES))
+                    (§
                         ((ß ea.line2 =) (§ @curbuf.b_ml.ml_line_count))
                         (ß BREAK)
+                    )
 
-;                   case ADDR_WINDOWS:
+                    ((ß CASE) (§ ADDR_WINDOWS))
+                    (§
                         ((ß ea.line2 =) (§ current_win_nr(null)))
                         (ß BREAK)
-;               }
+                    )
+                )
             )
 
             ;; Check for a count.
 
             (when (and (non-zero? (& (. ea argt) COUNT)) (asc_isdigit (§ ea.arg.at(0))))
-;               long n;
+                (ß long n)
 ;               { Bytes[] __ = { ea.arg }; n = getdigits(__); ea.arg = __[0]; }
                 ((ß ea.arg =) (§ skipwhite(ea.arg)))
                 (when (and (<= n 0) (zero? (& (. ea argt) ZEROR)))
@@ -9574,17 +9705,20 @@
             ;; Also make an exception for commands that handle a trailing command themselves.
 
             (when (. ea skip)
-;               switch (ea.cmdidx)
-;               {
+                ((ß SWITCH) (§ ea.cmdidx)
                     ;; Commands that handle '|' themselves.  Check: A command should
                     ;; either have the TRLBAR flag, appear in this list or appear in
                     ;; the list at ":help :bar".
-;                   case CMD_substitute:
+                    ((ß CASE) (§ CMD_substitute))
+                    (§
                         (ß BREAK)
+                    )
 
-;                   default:
+                    (ß DEFAULT)
+                    (§
                         (ß BREAK doend)
-;               }
+                    )
+                )
             )
 
             ;; 7. Switch on command name.
@@ -9648,7 +9782,7 @@
                 ((ß s =) (§ s.plus(len)))
             ))
         )
-;       d.be(0, NUL);
+        (.be d 0, NUL)
     ))
 
 ;; Find an Ex command by its name, either built-in or user.
@@ -9759,42 +9893,47 @@
 ;       error:
 ;       do
 ;       {
-;           switch (cmd.at(0))
-;           {
-;               case (byte)'.':                       ;; '.' - Cursor position
-;               {
+            ((ß SWITCH) (§ cmd.at(0))
+                ((ß CASE) (§ (byte)'.'))                       ;; '.' - Cursor position
+                (§
                     ((ß cmd =) (§ cmd.plus(1)))
-;                   switch (addr_type)
-;                   {
-;                       case ADDR_LINES:
+                    ((ß SWITCH) (§ addr_type)
+                        ((ß CASE) (§ ADDR_LINES))
+                        (§
                             ((ß lnum =) (§ @curwin.w_cursor.lnum))
                             (ß BREAK)
+                        )
 
-;                       case ADDR_WINDOWS:
+                        ((ß CASE) (§ ADDR_WINDOWS))
+                        (§
                             ((ß lnum =) (§ current_win_nr(@curwin)))
                             (ß BREAK)
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'$':                       ;; '$' - last line
-;               {
+                ((ß CASE) (§ (byte)'$'))                       ;; '$' - last line
+                (§
                     ((ß cmd =) (§ cmd.plus(1)))
-;                   switch (addr_type)
-;                   {
-;                       case ADDR_LINES:
+                    ((ß SWITCH) (§ addr_type)
+                        ((ß CASE) (§ ADDR_LINES))
+                        (§
                             ((ß lnum =) (§ @curbuf.b_ml.ml_line_count))
                             (ß BREAK)
+                        )
 
-;                       case ADDR_WINDOWS:
+                        ((ß CASE) (§ ADDR_WINDOWS))
+                        (§
                             ((ß lnum =) (§ current_win_nr(null)))
                             (ß BREAK)
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'\'':                      ;; ''' - mark
-;               {
+                ((ß CASE) (§ (byte)'\''))                      ;; ''' - mark
+                (§
                     (when (§ (cmd = cmd.plus(1)).at(0) == NUL)
                         ((ß cmd =) (§ null))
                         (ß BREAK error)
@@ -9828,11 +9967,11 @@
                         ))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'/':
-;               case (byte)'?':                   ;; '/' or '?' - search
-;               {
+                ((ß CASE) (§ (byte)'/'))
+                ((ß CASE) (§ (byte)'?'))                   ;; '/' or '?' - search
+                (§
                     ((ß byte c =) (§ (cmd = cmd.plus(1)).at(-1)))
                     (when (!= addr_type ADDR_LINES)
                         (emsg e_invaddr)
@@ -9875,17 +10014,17 @@
                         ((ß cmd =) (§ cmd.plus(@searchcmdlen)))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'\\':              ;; "\?", "\/" or "\&", repeat search
-;               {
+                ((ß CASE) (§ (byte)'\\'))              ;; "\?", "\/" or "\&", repeat search
+                (§
                     ((ß cmd =) (§ cmd.plus(1)))
                     (when (!= addr_type ADDR_LINES)
                         (emsg e_invaddr)
                         ((ß cmd =) (§ null))
                         (ß BREAK error)
                     )
-;                   int i;
+                    (ß int i)
                     (cond (== (.at cmd 0) (byte \&))
                     (§
                         ((ß i =) (§ RE_SUBST))
@@ -9924,16 +10063,16 @@
                     )
                     ((ß cmd =) (§ cmd.plus(1)))
                     (ß BREAK)
-;               }
+                )
 
-;               default:
-;               {
+                (ß DEFAULT)
+                (§
                     (when (asc_isdigit (§ cmd.at(0)))     ;; absolute line number
 ;                       Bytes[] __ = { cmd }; lnum = getdigits(__); cmd = __[0];
                     )
                     (ß BREAK)
-;               }
-;           }
+                )
+            )
 
             (while (§ true)
                 ((ß cmd =) (§ skipwhite(cmd)))
@@ -9942,25 +10081,28 @@
                 )
 
                 (when (== lnum MAXLNUM)
-;                   switch (addr_type)
-;                   {
-;                       case ADDR_LINES:
+                    ((ß SWITCH) (§ addr_type)
+                        ((ß CASE) (§ ADDR_LINES))
+                        (§
                             ;; "+1" is same as ".+1"
                             ((ß lnum =) (§ @curwin.w_cursor.lnum))
                             (ß BREAK)
+                        )
 
-;                       case ADDR_WINDOWS:
+                        ((ß CASE) (§ ADDR_WINDOWS))
+                        (§
                             ((ß lnum =) (§ current_win_nr(@curwin)))
                             (ß BREAK)
-;                   }
+                        )
+                    )
                 )
 
-;               int m;
+                (ß int m)
                 (if (asc_isdigit (§ cmd.at(0)))
                     ((ß m =) (§ (byte)'+'))                    ;; "number" is same as "+number"
                     ((ß m =) (§ (cmd = cmd.plus(1)).at(-1)))
                 )
-;               int n;
+                (ß int n)
                 (cond (not (asc_isdigit (§ cmd.at(0))))    ;; '+' is '+1', but '+0' is not '+1'
                 (§
                     ((ß n =) (§ 1))
@@ -9990,20 +10132,23 @@
         )
 
         (when (non-zero? (& (. eap argt) RANGE))
-;           switch (eap.addr_type)
-;           {
-;               case ADDR_LINES:
+            ((ß SWITCH) (§ eap.addr_type)
+                ((ß CASE) (§ ADDR_LINES))
+                (§
                     (if (and (zero? (& (. eap argt) NOTADR)) (< (.. @curbuf b_ml ml_line_count) (. eap line2)))
                         ((ß RETURN) (§ e_invrange))
                     )
                     (ß BREAK)
+                )
 
-;               case ADDR_WINDOWS:
+                ((ß CASE) (§ ADDR_WINDOWS))
+                (§
                     (if (< (current_win_nr null) (. eap line2))
                         ((ß RETURN) (§ e_invrange))
                     )
                     (ß BREAK)
-;           }
+                )
+            )
         )
 
         null
@@ -10051,7 +10196,7 @@
             )
             :else
             (§
-;               window_C win;
+                (ß window_C win)
                 ((ß int winnr =) (§ 0))
                 ((ß FOR) (ß (§ win = @firstwin) (§ win != null) (§ win = win.w_next))
                     (if (== (§ ++winnr) (. eap line2))
@@ -10087,7 +10232,7 @@
     (§
         (when (< 0 (. eap addr_count))
             ((ß int wnr =) (§ (int)eap.line2))
-;           window_C wp;
+            (ß window_C wp)
             ((ß FOR) (ß (§ wp = @firstwin) (§ 0 < --wnr) (§ nil))
                 (if (nil? (. wp w_next))
                     (ß BREAK)
@@ -10125,7 +10270,7 @@
 
         (setpcmark)
 
-;       long topline;
+        (ß long topline)
         ;; determine max topline
         (cond @(.. @curwin w_options wo_scb)
         (§
@@ -10168,8 +10313,8 @@
             (when (!= old_linenr (.. @curwin w_cursor lnum))
                 ((ß Bytes ctrl_o =) (§ new Bytes(2)))
 
-;               ctrl_o.be(0, Ctrl_O);
-;               ctrl_o.be(1, NUL);
+                (.be ctrl_o 0, Ctrl_O)
+                (.be ctrl_o 1, NUL)
 
                 (ins_typebuf ctrl_o)
             )
@@ -10512,7 +10657,7 @@
                 ;; Don't generate a CursorHold event here,
                 ;; most commands can't handle it, e.g. nv_replace(), nv_csearch().
                 (reset! did_cursorhold true)
-;               int[] cp;
+                (ß int[] cp)
                 (cond (== (. ca cmdchar) (byte \g))
                 (§
                     ;; For 'g' get the next character now, so that we can check for "gr", "g'" and "g`".
@@ -11062,11 +11207,11 @@
 
                     (cond (and (== (. cap cmdchar) (byte \g)) (or (== @(. cap nchar) (byte \n)) (== @(. cap nchar) (byte \N))))
                     (§
-;                       prep_redo(oap.regname, cap.count0, get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.motion_force, cap.cmdchar, cap.@nchar);
+                        (§ prep_redo(oap.regname, cap.count0, get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.motion_force, cap.cmdchar, cap.@nchar))
                     )
                     (!= (. cap cmdchar) (byte \:))
                     (§
-;                       prep_redo(oap.regname, 0, NUL, (byte)'v', get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.op_type == OP_REPLACE ? cap.@nchar : NUL);
+                        (§ prep_redo(oap.regname, 0, NUL, (byte)'v', get_op_char(oap.op_type), get_extra_op_char(oap.op_type), oap.op_type == OP_REPLACE ? cap.@nchar : NUL))
                     ))
                     (when (not @redo_VIsual_busy)
                         (reset! redo_VIsual_mode @resel_VIsual_mode)
@@ -11187,15 +11332,17 @@
                 ((ß oap.end_adjusted =) (§ false))
             ))
 
-;           switch (oap.op_type)
-;           {
-;               case OP_LSHIFT:
-;               case OP_RSHIFT:
+            ((ß SWITCH) (§ oap.op_type)
+                ((ß CASE) (§ OP_LSHIFT))
+                ((ß CASE) (§ OP_RSHIFT))
+                (§
                     (op_shift oap, true, (if (. oap is_VIsual) (int (. cap count1)) 1))
                     (ß BREAK)
+                )
 
-;               case OP_JOIN_NS:
-;               case OP_JOIN:
+                ((ß CASE) (§ OP_JOIN_NS))
+                ((ß CASE) (§ OP_JOIN))
+                (§
                     (if (< (. oap line_count) 2)
                         ((ß oap.line_count =) (§ 2))
                     )
@@ -11203,8 +11350,10 @@
                         (beep_flush)
                         (do_join (int (. oap line_count)), (== (. oap op_type) OP_JOIN), true, true, true))
                     (ß BREAK)
+                )
 
-;               case OP_DELETE:
+                ((ß CASE) (§ OP_DELETE))
+                (§
                     (reset! VIsual_reselect false)        ;; don't reselect now
                     (cond empty_region_error
                     (§
@@ -11216,8 +11365,10 @@
                         (op_delete oap)
                     ))
                     (ß BREAK)
+                )
 
-;               case OP_YANK:
+                ((ß CASE) (§ OP_YANK))
+                (§
                     (cond empty_region_error
                     (§
                         (when (not gui_yank)
@@ -11232,8 +11383,10 @@
                     ))
                     (check_cursor_col)
                     (ß BREAK)
+                )
 
-;               case OP_CHANGE:
+                ((ß CASE) (§ OP_CHANGE))
+                (§
                     (reset! VIsual_reselect false)        ;; don't reselect now
                     (cond empty_region_error
                     (§
@@ -11245,7 +11398,7 @@
                         ;; This is a new edit command, not a restart.
                         ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
                         ;; But do this only once and not when typed and 'insertmode' isn't set.
-;                       int restart_edit_save;
+                        (ß int restart_edit_save)
                         (if (or @p_im (not @keyTyped))
                             ((ß restart_edit_save =) (§ @restart_edit))
                             ((ß restart_edit_save =) (§ 0))
@@ -11262,25 +11415,33 @@
                             (reset! restart_edit restart_edit_save))
                     ))
                     (ß BREAK)
+                )
 
-;               case OP_INDENT:
+                ((ß CASE) (§ OP_INDENT))
+                (§
                     (op_reindent oap, (§ get_c_indent))
                     (ß BREAK)
+                )
 
-;               case OP_FILTER:
+                ((ß CASE) (§ OP_FILTER))
+                (§
                     (if (non-nil? (vim_strbyte @p_cpo, CPO_FILTER))
                         (appendToRedobuff (u8 "!\r"))    ;; use any last used !cmd
                         (reset! bangredo true))            ;; do_bang() will put cmd in redo buffer
-                    ;; FALLTHROUGH
+                    (ß FALLTHROUGH)
+                )
 
-;               case OP_COLON:
+                ((ß CASE) (§ OP_COLON))
+                (§
                     (op_colon oap)
                     (ß BREAK)
+                )
 
-;               case OP_TILDE:
-;               case OP_UPPER:
-;               case OP_LOWER:
-;               case OP_ROT13:
+                ((ß CASE) (§ OP_TILDE))
+                ((ß CASE) (§ OP_UPPER))
+                ((ß CASE) (§ OP_LOWER))
+                ((ß CASE) (§ OP_ROT13))
+                (§
                     (cond empty_region_error
                     (§
                         (vim_beep)
@@ -11292,21 +11453,29 @@
                     ))
                     (check_cursor_col)
                     (ß BREAK)
+                )
 
-;               case OP_FORMAT:
+                ((ß CASE) (§ OP_FORMAT))
+                (§
 ;                   op_format(oap, false);              ;; use internal function
                     (ß BREAK)
+                )
 
-;               case OP_FORMAT2:
+                ((ß CASE) (§ OP_FORMAT2))
+                (§
 ;                   op_format(oap, true);               ;; use internal function
                     (ß BREAK)
+                )
 
-;               case OP_FUNCTION:
+                ((ß CASE) (§ OP_FUNCTION))
+                (§
                     (op_function oap)                   ;; call 'operatorfunc'
                     (ß BREAK)
+                )
 
-;               case OP_INSERT:
-;               case OP_APPEND:
+                ((ß CASE) (§ OP_INSERT))
+                ((ß CASE) (§ OP_APPEND))
+                (§
                     (reset! VIsual_reselect false)           ;; don't reselect now
                     (cond empty_region_error
                     (§
@@ -11330,8 +11499,10 @@
                             (reset! restart_edit restart_edit_save))
                     ))
                     (ß BREAK)
+                )
 
-;               case OP_REPLACE:
+                ((ß CASE) (§ OP_REPLACE))
+                (§
                     (reset! VIsual_reselect false)    ;; don't reselect now
                     (cond empty_region_error
                     (§
@@ -11345,11 +11516,14 @@
                         (op_replace oap, @(. cap nchar))
                     ))
                     (ß BREAK)
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     (clearopbeep oap)
                     (ß BREAK)
-;           }
+                )
+            )
 
             (reset! virtual_op MAYBE)
 
@@ -11554,7 +11728,7 @@
         ((ß int col =) (§ 0))
         ((ß int this_class =) (§ 0))
 
-;       int round;
+        (ß int round)
 
         ;; if round == 0: try to find an identifier
         ;; if round == 1: try to find any non-white string
@@ -11692,15 +11866,38 @@
 
 (defn- #_void unshift_special [#_cmdarg_C cap]
     (§
-;       switch (cap.cmdchar)
-;       {
-;           case K_S_RIGHT: cap.cmdchar = K_RIGHT; break;
-;           case K_S_LEFT:  cap.cmdchar = K_LEFT; break;
-;           case K_S_UP:    cap.cmdchar = K_UP; break;
-;           case K_S_DOWN:  cap.cmdchar = K_DOWN; break;
-;           case K_S_HOME:  cap.cmdchar = K_HOME; break;
-;           case K_S_END:   cap.cmdchar = K_END; break;
-;       }
+        ((ß SWITCH) (§ cap.cmdchar)
+            ((ß CASE) (§ K_S_RIGHT))
+            (§
+                ((ß cap.cmdchar =) K_RIGHT)
+                (ß BREAK)
+            )
+            ((ß CASE) (§ K_S_LEFT))
+            (§
+                ((ß cap.cmdchar =) K_LEFT)
+                (ß BREAK)
+            )
+            ((ß CASE) (§ K_S_UP))
+            (§
+                ((ß cap.cmdchar =) K_UP)
+                (ß BREAK)
+            )
+            ((ß CASE) (§ K_S_DOWN))
+            (§
+                ((ß cap.cmdchar =) K_DOWN)
+                (ß BREAK)
+            )
+            ((ß CASE) (§ K_S_HOME))
+            (§
+                ((ß cap.cmdchar =) K_HOME)
+                (ß BREAK)
+            )
+            ((ß CASE) (§ K_S_END))
+            (§
+                ((ß cap.cmdchar =) K_END)
+                (ß BREAK)
+            )
+        )
 ;       { int[] __ = { @mod_mask }; cap.cmdchar = simplify_key(cap.cmdchar, __); @mod_mask = __[0]; }
     ))
 
@@ -11721,8 +11918,8 @@
         (cond (and @VIsual_active (not (char_avail)))
         (§
             ((ß boolean cursor_bot =) (§ ltpos(@VIsual, @curwin.w_cursor)))
-;           long lines;
-;           long top, bot;
+            (ß long lines)
+            (ß long top, bot)
 
             ;; Show the size of the Visual area.
             (cond cursor_bot
@@ -11747,18 +11944,18 @@
                 (reset! p_sbr EMPTY_OPTION)
                 (getvcols @curwin, (. @curwin w_cursor), @VIsual, leftcol, rightcol)
                 (reset! p_sbr saved_sbr)
-;               libC.sprintf(showcmd_buf, u8("%ldx%ld"), lines, (long)(rightcol[0] - leftcol[0] + 1));
+                (§ libC.sprintf(showcmd_buf, u8("%ldx%ld"), lines, (long)(rightcol[0] - leftcol[0] + 1)))
             )
             (or (== @VIsual_mode (byte \V)) (!= (. @VIsual lnum) (.. @curwin w_cursor lnum)))
             (§
-;               libC.sprintf(showcmd_buf, u8("%ld"), lines);
+                (§ libC.sprintf(showcmd_buf, u8("%ld"), lines))
             )
             :else
             (§
                 ((ß int bytes =) (§ 0))
                 ((ß int chars =) (§ 0))
 
-;               Bytes s, e;
+                (ß Bytes s, e)
                 (cond cursor_bot
                 (§
                     ((ß s =) (§ ml_get_pos(@VIsual)))
@@ -11781,16 +11978,16 @@
                     ((ß s =) (§ s.plus(l)))
                 )
                 (if (== bytes chars)
-;                   libC.sprintf(showcmd_buf, u8("%d"), chars);
-;                   libC.sprintf(showcmd_buf, u8("%d-%d"), chars, bytes);
+                    (§ libC.sprintf(showcmd_buf, u8("%d"), chars))
+                    (§ libC.sprintf(showcmd_buf, u8("%d-%d"), chars, bytes))
                 )
             ))
-;           showcmd_buf.be(SHOWCMD_COLS, NUL);      ;; truncate
+            (.be showcmd_buf SHOWCMD_COLS, NUL)      ;; truncate
             (reset! showcmd_visual true)
         )
         :else
         (§
-;           showcmd_buf.be(0, NUL);
+            (.be showcmd_buf 0, NUL)
             (reset! showcmd_visual false)
 
             ;; Don't actually display something if there is nothing to clear.
@@ -11819,7 +12016,7 @@
         )
 
         (when @showcmd_visual
-;           showcmd_buf.be(0, NUL);
+            (.be showcmd_buf 0, NUL)
             (reset! showcmd_visual false)
         )
 
@@ -11871,7 +12068,7 @@
         (if (< old_len len)
             ((ß len =) (§ old_len))
         )
-;       showcmd_buf.be(old_len - len, NUL);
+        (§ showcmd_buf.be(old_len - len, NUL))
 
         (when (not (char_avail))
             (display_showcmd)
@@ -12124,7 +12321,7 @@
             )
             :else
             (§
-;               int n;
+                (ß int n)
                 (if (< width1 linelen)
                     ((ß n =) (§ ((linelen - width1 - 1) / width2 + 1) * width2 + width1))
                     ((ß n =) (§ width1))
@@ -12158,7 +12355,7 @@
                 )
                 :else ;; dir == FORWARD
                 (§
-;                   int n;
+                    (ß int n)
                     (if (< width1 linelen)
                         ((ß n =) (§ ((linelen - width1 - 1) / width2 + 1) * width2 + width1))
                         ((ß n =) (§ width1))
@@ -12188,7 +12385,7 @@
             (coladvance (. @curwin w_curswant)))
 
         (when (and (< 0 (.. @curwin w_cursor col)) @(.. @curwin w_options wo_wrap))
-;           int virtcol;
+            (ß int virtcol)
 
             ;; Check for landing on a character that got split at the end of the
             ;; last line.  We want to advance a screenline, not end up in the same
@@ -12333,9 +12530,9 @@
             (check_cursor_col)
         )
 
-;       switch (nchar)
-;       {
-;           case (byte)'+':   ;; "z+", "z<CR>" and "zt": put cursor at top of screen
+        ((ß SWITCH) (§ nchar)
+            ((ß CASE) (§ (byte)'+'))   ;; "z+", "z<CR>" and "zt": put cursor at top of screen
+            (§
                 (when (zero? (. cap count0))
                     ;; No count given: put cursor at the line below screen.
                     (validate_botline) ;; make sure w_botline is valid
@@ -12344,29 +12541,39 @@
                         ((ß @curwin.w_cursor.lnum =) (§ @curwin.w_botline))
                     )
                 )
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case NL:
-;           case CAR:
-;           case K_KENTER:
+            ((ß CASE) (§ NL))
+            ((ß CASE) (§ CAR))
+            ((ß CASE) (§ K_KENTER))
+            (§
                 (beginline (§ BL_WHITE | BL_FIX))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'t':
+            ((ß CASE) (§ (byte)'t'))
+            (§
                 (scroll_cursor_top 0, true)
                 (redraw_later VALID)
                 (ß BREAK)
+            )
 
-;           case (byte)'.':   ;; "z." and "zz": put cursor in middle of screen
+            ((ß CASE) (§ (byte)'.'))   ;; "z." and "zz": put cursor in middle of screen
+            (§
                 (beginline (§ BL_WHITE | BL_FIX))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'z':
+            ((ß CASE) (§ (byte)'z'))
+            (§
                 (scroll_cursor_halfway true)
                 (redraw_later VALID)
                 (ß BREAK)
+            )
 
-;           case (byte)'^':   ;; "z^", "z-" and "zb": put cursor at bottom of screen
+            ((ß CASE) (§ (byte)'^'))   ;; "z^", "z-" and "zb": put cursor at bottom of screen
+            (§
                 ;; Strange Vi behavior:
                 ;; <count>z^ finds line at top of window when <count> is at bottom of window,
                 ;; and puts that one at bottom of window.
@@ -12383,23 +12590,31 @@
                 (§
                     ((ß @curwin.w_cursor.lnum =) (§ @curwin.w_topline - 1))
                 ))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'-':
+            ((ß CASE) (§ (byte)'-'))
+            (§
                 (beginline (§ BL_WHITE | BL_FIX))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'b':
+            ((ß CASE) (§ (byte)'b'))
+            (§
                 (scroll_cursor_bot 0, true)
                 (redraw_later VALID)
                 (ß BREAK)
+            )
 
-;           case (byte)'H':   ;; "zH" - scroll screen right half-page
+            ((ß CASE) (§ (byte)'H'))   ;; "zH" - scroll screen right half-page
+            (§
                 ((ß cap.count1 *=) (§ @curwin.w_width / 2))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'h':   ;; "zh" - scroll screen to the right
-;           case K_LEFT:
+            ((ß CASE) (§ (byte)'h'))   ;; "zh" - scroll screen to the right
+            ((ß CASE) (§ K_LEFT))
+            (§
                 (when (not @(.. @curwin w_options wo_wrap))
                     (if (< (. @curwin w_leftcol) (int (. cap count1)))
                         ((ß @curwin.w_leftcol =) (§ 0))
@@ -12408,21 +12623,27 @@
                     (leftcol_changed)
                 )
                 (ß BREAK)
+            )
 
-;           case (byte)'L':   ;; "zL" - scroll screen left half-page
+            ((ß CASE) (§ (byte)'L'))   ;; "zL" - scroll screen left half-page
+            (§
                 ((ß cap.count1 *=) (§ @curwin.w_width / 2))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'l':   ;; "zl" - scroll screen to the left
-;           case K_RIGHT:
+            ((ß CASE) (§ (byte)'l'))   ;; "zl" - scroll screen to the left
+            ((ß CASE) (§ K_RIGHT))
+            (§
                 (when (not @(.. @curwin w_options wo_wrap))
                     ;; scroll the window left
                     ((ß @curwin.w_leftcol +=) (§ (int)cap.count1))
                     (leftcol_changed)
                 )
                 (ß BREAK)
+            )
 
-;           case (byte)'s':   ;; "zs" - scroll screen, cursor at the start
+            ((ß CASE) (§ (byte)'s'))   ;; "zs" - scroll screen, cursor at the start
+            (§
                 (when (not @(.. @curwin w_options wo_wrap))
                     ((ß int[] col =) (§ new int[1]))
                     (getvcol @curwin, (. @curwin w_cursor), col, null, null)
@@ -12436,8 +12657,10 @@
                     )
                 )
                 (ß BREAK)
+            )
 
-;           case (byte)'e':   ;; "ze" - scroll screen, cursor at the end
+            ((ß CASE) (§ (byte)'e'))   ;; "ze" - scroll screen, cursor at the end
+            (§
                 (when (not @(.. @curwin w_options wo_wrap))
                     ((ß int[] col =) (§ new int[1]))
                     (getvcol @curwin, (. @curwin w_cursor), null, null, col)
@@ -12452,11 +12675,14 @@
                     )
                 )
                 (ß BREAK)
+            )
 
-;           default:
+            (ß DEFAULT)
+            (§
                 (clearopbeep (. cap oap))
                 (ß BREAK)
-;       }
+            )
+        )
     ))
 
 ;; "Q" command.
@@ -12602,18 +12828,27 @@
 (defn- #_void nv_Zet [#_cmdarg_C cap]
     (§
         (when (not (checkclearopq (. cap oap)))
-;           switch (cap.@nchar)
-;           {
-                                ;; "ZZ": equivalent to ":x".
-;               case (byte)'Z':   do_cmdline_cmd(u8("x"));
-                            (ß BREAK)
+            ((ß SWITCH) (§ cap.@nchar)
+                ;; "ZZ": equivalent to ":x".
+                ((ß CASE) (§ (byte)'Z'))
+                (§
+                    (do_cmdline_cmd (u8 "x"))
+                    (ß BREAK)
+                )
 
-                                ;; "ZQ": equivalent to ":q!" (Elvis compatible).
-;               case (byte)'Q':   do_cmdline_cmd(u8("q!"));
-                            (ß BREAK)
+                ;; "ZQ": equivalent to ":q!" (Elvis compatible).
+                ((ß CASE) (§ (byte)'Q'))
+                (§
+                    (do_cmdline_cmd (u8 "q!"))
+                    (ß BREAK)
+                )
 
-;               default:    clearopbeep(cap.oap);
-;           }
+                (ß DEFAULT)
+                (§
+                    (clearopbeep (§ cap.oap))
+                    (ß BREAK)
+                )
+            )
         )
     ))
 
@@ -12680,15 +12915,14 @@
         ((ß Bytes kp =) (§ @curbuf.@b_p_kp))    ;; value of 'keywordprg'
 
         ((ß Bytes buf =) (§ new Bytes(n[0] * 2 + 30 + STRLEN(kp))))
-;       buf.be(0, NUL);
+        (.be buf 0, NUL)
 
         ((ß boolean tag_cmd =) (§ false))
 
-;       switch (cmdchar)
-;       {
-;           case (byte)'*':
-;           case (byte)'#':
-;           {
+        ((ß SWITCH) (§ cmdchar)
+            ((ß CASE) (§ (byte)'*'))
+            ((ß CASE) (§ (byte)'#'))
+            (§
                 ;; Put cursor at start of word, makes search skip the word under the cursor.
                 ;; Call setpcmark() first, so "*``" puts the cursor back where it was.
 
@@ -12699,10 +12933,10 @@
                     (STRCPY buf, (u8 "\\<")))
                 (reset! no_smartcase true)        ;; don't use 'smartcase' now
                 (ß BREAK)
-;           }
+            )
 
-;           case (byte)'K':
-;           {
+            ((ß CASE) (§ (byte)'K'))
+            (§
                 ;; An external command will probably use an argument starting
                 ;; with "-" as an option.  To avoid trouble we skip the "-".
 
@@ -12716,7 +12950,7 @@
 
                 ;; When a count is given, turn it into a range.  Is this really what we want?
                 (if (!= (. cap count0) 0)
-;                   libC.sprintf(buf, u8(".,.+%ld"), cap.count0 - 1);
+                    (§ libC.sprintf(buf, u8(".,.+%ld"), cap.count0 - 1))
                 )
 
                 (if (!= (.at kp 0) (byte \:))
@@ -12724,29 +12958,29 @@
                 (STRCAT buf, (if (!= (.at kp 0) (byte \:)) kp (.plus kp 1)))
                 (STRCAT buf, (u8 " "))
                 (ß BREAK)
-;           }
+            )
 
-;           case (byte)']':
-;           {
+            ((ß CASE) (§ (byte)']'))
+            (§
                 ((ß tag_cmd =) (§ true))
                 (STRCPY buf, (u8 "ts "))
                 (ß BREAK)
-;           }
+            )
 
-;           default:
-;           {
+            (ß DEFAULT)
+            (§
                 ((ß tag_cmd =) (§ true))
                 (if g_cmd
                     (STRCPY buf, (u8 "tj "))
-;                   libC.sprintf(buf, u8("%ldta "), cap.count0);
+                    (§ libC.sprintf(buf, u8("%ldta "), cap.count0))
                 )
                 (ß BREAK)
-;           }
-;       }
+            )
+        )
 
         ;; Now grab the chars in the identifier
 
-;       Bytes aux;
+        (ß Bytes aux)
         (cond (== cmdchar (byte \*))
         (§
             ((ß aux =) (§ @p_magic ? u8("/.*~[^$\\") : u8("/^$\\")))
@@ -12778,7 +13012,7 @@
 
             (§ (p = p.plus(1)).be(-1, (ident[0] = ident[0].plus(1)).at(-1)))
         )
-;       p.be(0, NUL);
+        (.be p 0, NUL)
 
         ;; Execute the command.
 
@@ -12858,7 +13092,7 @@
         )
         :else
         (§
-;           long n;
+            (ß long n)
             (cond (== (. cap cmdchar) (byte \M))
             (§
                 (validate_botline)     ;; make sure w_empty_rows is valid
@@ -13238,8 +13472,8 @@
                 ((ß cap.@nchar =) (§ (byte)'/'))
             )
 
-;           int findc;
-;           long n;
+            (ß int findc)
+            (ß long n)
             (cond (or (== @(. cap nchar) (byte \m)) (== @(. cap nchar) (byte \M)))
             (§
                 (if (== (. cap cmdchar) (byte \[))
@@ -13355,7 +13589,7 @@
 
         (or (== @(. cap nchar) (byte \[)) (== @(. cap nchar) (byte \])))
         (§
-;           int flag;
+            (ß int flag)
             (if (== @(. cap nchar) (. cap cmdchar))   ;; "]]" or "[["
                 ((ß flag =) (§ (byte)'{'))
                 ((ß flag =) (§ (byte)'}'))                 ;; "][" or "[]"
@@ -13365,7 +13599,7 @@
 
             ;; Imitate strange Vi behaviour: When using "]]" with an operator we also stop at '}'.
 
-;           boolean b;
+            (ß boolean b)
 ;           { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, flag, (cap.oap.op_type != OP_NOP && cap.arg == FORWARD && flag == (byte)'{')); cap.oap.inclusive = __[0]; }
             (cond (not b)
             (§
@@ -13542,7 +13776,7 @@
         ((ß cap.oap.inclusive =) (§ false))
         ((ß cap.oap.use_reg_one =) (§ true))
         ((ß @curwin.w_set_curswant =) (§ true))
-;       boolean b;
+        (ß boolean b)
 ;       { boolean[] __ = { cap.oap.inclusive }; b = findpar(__, cap.arg, cap.count1, NUL, false); cap.oap.inclusive = __[0]; }
         (if (not b)
             (clearopbeep (. cap oap))
@@ -13586,7 +13820,7 @@
         )
 
         ;; get another character
-;       int had_ctrl_v;
+        (ß int had_ctrl_v)
         (cond (== @(. cap nchar) Ctrl_V)
         (§
             ((ß had_ctrl_v =) (§ Ctrl_V))
@@ -14008,7 +14242,7 @@
 
 (defn- #_void nv_gomark [#_cmdarg_C cap]
     (§
-;       int c;
+        (ß int c)
         (if (== (. cap cmdchar) (byte \g))
             ((ß c =) (§ cap.@extra_char))
             ((ß c =) (§ cap.@nchar))
@@ -14042,7 +14276,7 @@
 
 (defn- #_void nv_pcmark [#_cmdarg_C cap]
     (§
-;       pos_C pos;
+        (ß pos_C pos)
 
         (when (not (checkclearopq (. cap oap)))
             (if (== (. cap cmdchar) (byte \g))
@@ -14289,27 +14523,33 @@
         ((ß oparg_C oap =) (§ cap.oap))
         ((ß boolean flag =) (§ false))
 
-;       switch (cap.@nchar)
-;       {
+        ((ß SWITCH) (§ cap.@nchar)
             ;; "gR": Enter virtual replace mode.
 
-;           case (byte)'R':
+            ((ß CASE) (§ (byte)'R'))
+            (§
                 ((ß cap.arg =) (§ TRUE))
                 (nv_Replace cap)
                 (ß BREAK)
+            )
 
-;           case (byte)'r':
+            ((ß CASE) (§ (byte)'r'))
+            (§
                 (nv_vreplace cap)
                 (ß BREAK)
+            )
 
-;           case (byte)'&':
+            ((ß CASE) (§ (byte)'&'))
+            (§
                 (do_cmdline_cmd (u8 "%s//~/&"))
                 (ß BREAK)
+            )
 
             ;; "gv": Reselect the previous Visual area.
             ;;       If Visual already active, exchange previous and current Visual area.
 
-;           case (byte)'v':
+            ((ß CASE) (§ (byte)'v'))
+            (§
                 (if (checkclearop oap)
                     (ß BREAK)
                 )
@@ -14367,46 +14607,55 @@
                     (showmode)
                 ))
                 (ß BREAK)
+            )
 
             ;; "gV": Don't reselect the previous Visual area after a Select mode mapping of menu.
 
-;           case (byte)'V':
+            ((ß CASE) (§ (byte)'V'))
+            (§
                 (reset! VIsual_reselect false)
                 (ß BREAK)
+            )
 
             ;; "gh":  start Select mode.
             ;; "gH":  start Select line mode.
             ;; "g^H": start Select block mode.
 
-;           case K_BS:
+            ((ß CASE) (§ K_BS))
+            (§
                 ((ß cap.@nchar =) (§ Ctrl_H))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'h':
-;           case (byte)'H':
-;           case Ctrl_H:
+            ((ß CASE) (§ (byte)'h'))
+            ((ß CASE) (§ (byte)'H'))
+            ((ß CASE) (§ Ctrl_H))
+            (§
                 ((ß cap.cmdchar =) (§ cap.@nchar + ((byte)'v' - (byte)'h')))
                 ((ß cap.arg =) (§ TRUE))
                 (nv_visual cap)
                 (ß BREAK)
+            )
 
             ;; "gn", "gN" visually select next/previous search match
             ;; "gn" selects next match
             ;; "gN" selects previous match
 
-;           case (byte)'N':
-;           case (byte)'n':
+            ((ß CASE) (§ (byte)'N'))
+            ((ß CASE) (§ (byte)'n'))
+            (§
                 (if (not (current_search (. cap count1), (== @(. cap nchar) (byte \n))))
                     (clearopbeep oap))
                 (ß BREAK)
+            )
 
             ;; "gj" and "gk" two new funny movement keys -- up and down
             ;; movement based on *screen* line rather than *file* line.
 
-;           case (byte)'j':
-;           case K_DOWN:
-;           {
-;               boolean i;
+            ((ß CASE) (§ (byte)'j'))
+            ((ß CASE) (§ K_DOWN))
+            (§
+                (ß boolean i)
 
                 ;; with 'nowrap' it works just like the normal "j" command;
                 ;; also when in a closed fold
@@ -14422,12 +14671,12 @@
                 (if (not i)
                     (clearopbeep oap))
                 (ß BREAK)
-;           }
+            )
 
-;           case (byte)'k':
-;           case K_UP:
-;           {
-;               boolean i;
+            ((ß CASE) (§ (byte)'k'))
+            ((ß CASE) (§ K_UP))
+            (§
+                (ß boolean i)
 
                 ;; with 'nowrap' it works just like the normal "k" command;
                 ;; also when in a closed fold
@@ -14443,27 +14692,31 @@
                 (if (not i)
                     (clearopbeep oap))
                 (ß BREAK)
-;           }
+            )
 
             ;; "gJ": join two lines without inserting a space.
 
-;           case (byte)'J':
+            ((ß CASE) (§ (byte)'J'))
+            (§
                 (nv_join cap)
                 (ß BREAK)
+            )
 
             ;; "g0", "g^" and "g$": Like "0", "^" and "$" but for screen lines.
             ;; "gm": middle of "g0" and "g$".
 
-;           case (byte)'^':
+            ((ß CASE) (§ (byte)'^'))
+            (§
                 ((ß flag =) (§ true))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'0':
-;           case (byte)'m':
-;           case K_HOME:
-;           case K_KHOME:
-;           {
-;               int i;
+            ((ß CASE) (§ (byte)'0'))
+            ((ß CASE) (§ (byte)'m'))
+            ((ß CASE) (§ K_HOME))
+            ((ß CASE) (§ K_KHOME))
+            (§
+                (ß int i)
 
                 ((ß oap.motion_type =) (§ MCHAR))
                 ((ß oap.inclusive =) (§ false))
@@ -14496,9 +14749,10 @@
                 )
                 ((ß @curwin.w_set_curswant =) (§ true))
                 (ß BREAK)
-;           }
+            )
 
-;           case (byte)'_':
+            ((ß CASE) (§ (byte)'_'))
+            (§
                 ;; "g_": to the last non-blank character in the line or <count> lines downward.
                 ((ß cap.oap.motion_type =) (§ MCHAR))
                 ((ß cap.oap.inclusive =) (§ true))
@@ -14524,11 +14778,12 @@
                     (adjust_for_sel cap)
                 ))
                 (ß BREAK)
+            )
 
-;           case (byte)'$':
-;           case K_END:
-;           case K_KEND:
-;           {
+            ((ß CASE) (§ (byte)'$'))
+            ((ß CASE) (§ K_END))
+            ((ß CASE) (§ K_KEND))
+            (§
                 ((ß int col_off =) (§ curwin_col_off()))
 
                 ((ß oap.motion_type =) (§ MCHAR))
@@ -14577,38 +14832,45 @@
                     ((ß @curwin.w_set_curswant =) (§ false))
                 ))
                 (ß BREAK)
-;           }
+            )
 
             ;; "g*" and "g#", like "*" and "#" but without using "\<" and "\>"
 
-;           case (byte)'*':
-;           case (byte)'#':
-;           case char_u(POUND):             ;; pound sign (sometimes equal to '#')
-;           case Ctrl_RSB:                  ;; :tag or :tselect for current identifier
-;           case (byte)']':                       ;; :tselect for current identifier
+            ((ß CASE) (§ (byte)'*'))
+            ((ß CASE) (§ (byte)'#'))
+            ((ß CASE) (§ char_u(POUND)))             ;; pound sign (sometimes equal to '#')
+            ((ß CASE) (§ Ctrl_RSB))                  ;; :tag or :tselect for current identifier
+            ((ß CASE) (§ (byte)']'))                       ;; :tselect for current identifier
+            (§
                 (nv_ident cap)
                 (ß BREAK)
+            )
 
             ;; ge and gE: go back to end of word
 
-;           case (byte)'e':
-;           case (byte)'E':
+            ((ß CASE) (§ (byte)'e'))
+            ((ß CASE) (§ (byte)'E'))
+            (§
                 ((ß oap.motion_type =) (§ MCHAR))
                 ((ß @curwin.w_set_curswant =) (§ true))
                 ((ß oap.inclusive =) (§ true))
                 (if (not (bckend_word (. cap count1), (== @(. cap nchar) (byte \E)), false))
                     (clearopbeep oap))
                 (ß BREAK)
+            )
 
             ;; "g CTRL-G": display info about cursor position.
 
-;           case Ctrl_G:
+            ((ß CASE) (§ Ctrl_G))
+            (§
                 (cursor_pos_info)
                 (ß BREAK)
+            )
 
             ;; "gi": start Insert at the last position.
 
-;           case (byte)'i':
+            ((ß CASE) (§ (byte)'i'))
+            (§
                 (when (!= (.. @curbuf b_last_insert lnum) 0)
                     (COPY_pos (. @curwin w_cursor), (. @curbuf b_last_insert))
                     (check_cursor_lnum)
@@ -14623,60 +14885,77 @@
                 ((ß cap.cmdchar =) (§ (byte)'i'))
                 (nv_edit cap)
                 (ß BREAK)
+            )
 
             ;; "gI": Start insert in column 1.
 
-;           case (byte)'I':
+            ((ß CASE) (§ (byte)'I'))
+            (§
                 (beginline 0)
                 (if (not (checkclearopq oap))
                     (invoke_edit cap, false, (byte \g), false))
                 (ß BREAK)
+            )
 
             ;; "g'm" and "g`m": jump to mark without setting pcmark.
 
-;           case (byte)'\'':
+            ((ß CASE) (§ (byte)'\''))
+            (§
                 ((ß cap.arg =) (§ TRUE))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'`':
+            ((ß CASE) (§ (byte)'`'))
+            (§
                 (nv_gomark cap)
                 (ß BREAK)
+            )
 
             ;; "gs": Goto sleep.
 
-;           case (byte)'s':
+            ((ß CASE) (§ (byte)'s'))
+            (§
                 (do_sleep (* (. cap count1) 1000))
                 (ß BREAK)
+            )
 
             ;; "ga": Display the ascii value of the character under the cursor.
             ;;       It is displayed in decimal, hex, and octal.
 
-;           case (byte)'a':
+            ((ß CASE) (§ (byte)'a'))
+            (§
                 (do_ascii)
                 (ß BREAK)
+            )
 
             ;; "g8": Display the bytes used for the UTF-8 character under the cursor.
             ;;       It is displayed in hex.
             ;; "8g8" finds illegal byte sequence.
 
-;           case (byte)'8':
+            ((ß CASE) (§ (byte)'8'))
+            (§
                 (if (== (. cap count0) 8)
                     (utf_find_illegal)
-;                   show_utf8();
+                    (show_utf8)
                 )
                 (ß BREAK)
+            )
 
-;           case (byte)'<':
+            ((ß CASE) (§ (byte)'<'))
+            (§
                 (show_sb_text)
                 (ß BREAK)
+            )
 
             ;; "gg": Goto the first line in file.
             ;;       With a count it goes to that line number like for "G".
 
-;           case (byte)'g':
+            ((ß CASE) (§ (byte)'g'))
+            (§
                 ((ß cap.arg =) (§ FALSE))
                 (nv_goto cap)
                 (ß BREAK)
+            )
 
             ;; Two-character operators:
             ;;  "gq"    Format text.
@@ -14687,44 +14966,57 @@
             ;;  "g?"    rot13 encoding
             ;;  "g@"    call 'operatorfunc'
 
-;           case (byte)'q':
-;           case (byte)'w':
+            ((ß CASE) (§ (byte)'q'))
+            ((ß CASE) (§ (byte)'w'))
+            (§
                 (COPY_pos (. oap cursor_start), (. @curwin w_cursor))
-                    ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case (byte)'~':
-;           case (byte)'u':
-;           case (byte)'U':
-;           case (byte)'?':
-;           case (byte)'@':
+            ((ß CASE) (§ (byte)'~'))
+            ((ß CASE) (§ (byte)'u'))
+            ((ß CASE) (§ (byte)'U'))
+            ((ß CASE) (§ (byte)'?'))
+            ((ß CASE) (§ (byte)'@'))
+            (§
                 (nv_operator cap)
                 (ß BREAK)
+            )
 
             ;; "gd": Find first occurrence of pattern under the cursor in the current function;
             ;; "gD": idem, but in the current file.
 
-;           case (byte)'d':
-;           case (byte)'D':
+            ((ß CASE) (§ (byte)'d'))
+            ((ß CASE) (§ (byte)'D'))
+            (§
                 (nv_gd oap, @(. cap nchar), (== (. cap count0) 1))
                 (ß BREAK)
+            )
 
-;           case K_IGNORE:
+            ((ß CASE) (§ K_IGNORE))
+            (§
                 (ß BREAK)
+            )
 
             ;; "gP" and "gp": same as "P" and "p" but leave cursor just after new text.
 
-;           case (byte)'p':
-;           case (byte)'P':
+            ((ß CASE) (§ (byte)'p'))
+            ((ß CASE) (§ (byte)'P'))
+            (§
                 (nv_put cap)
                 (ß BREAK)
+            )
 
             ;; "go": goto byte count from start of buffer
-;           case (byte)'o':
+            ((ß CASE) (§ (byte)'o'))
+            (§
 ;               goto_byte(cap.count0);
                 (ß BREAK)
+            )
 
             ;; "gQ": improved Ex mode
-;           case (byte)'Q':
+            ((ß CASE) (§ (byte)'Q'))
+            (§
                 (when (text_locked)
                     (clearopbeep (. cap oap))
                     (text_locked_msg)
@@ -14735,28 +15027,37 @@
 ;                   do_exmode(true);
                 )
                 (ß BREAK)
+            )
 
-;           case (byte)',':
+            ((ß CASE) (§ (byte)','))
+            (§
                 (nv_pcmark cap)
                 (ß BREAK)
+            )
 
-;           case (byte)';':
+            ((ß CASE) (§ (byte)';'))
+            (§
                 ((ß cap.count1 =) (§ -cap.count1))
                 (nv_pcmark cap)
                 (ß BREAK)
+            )
 
             ;; "g+" and "g-": undo or redo along the timeline.
 
-;           case (byte)'+':
-;           case (byte)'-':
+            ((ß CASE) (§ (byte)'+'))
+            ((ß CASE) (§ (byte)'-'))
+            (§
                 (if (not (checkclearopq oap))
                     (undo_time (if (== @(. cap nchar) (byte \-)) (§ -cap.count1) (. cap count1)), false, false))
                 (ß BREAK)
+            )
 
-;           default:
+            (ß DEFAULT)
+            (§
                 (clearopbeep oap)
                 (ß BREAK)
-;       }
+            )
+        )
     ))
 
 ;; Handle "o" and "O" commands.
@@ -14978,7 +15279,7 @@
 
         ((ß cap.oap.motion_type =) (§ MCHAR))
         ((ß @curwin.w_set_curswant =) (§ true))
-;       boolean n;
+        (ß boolean n)
         (if word_end
             ((ß n =) (§ end_word(cap.count1, cap.arg != 0, flag, false)))
             ((ß n =) (§ fwd_word(cap.count1, cap.arg != 0, cap.oap.op_type != OP_NOP)))
@@ -15041,7 +15342,7 @@
 (defn- #_boolean unadjust_for_sel []
     (§
         (when (and (== (.at @p_sel 0) (byte \e)) (not (eqpos @VIsual, (. @curwin w_cursor))))
-;           pos_C pp;
+            (ß pos_C pp)
             (if (ltpos @VIsual, (. @curwin w_cursor))
                 ((ß pp =) (§ @curwin.w_cursor))
                 ((ß pp =) (§ @VIsual))
@@ -15086,7 +15387,7 @@
 
 (defn- #_void nv_goto [#_cmdarg_C cap]
     (§
-;       long lnum;
+        (ß long lnum)
         (if (!= (. cap arg) 0)
             ((ß lnum =) (§ @curbuf.b_ml.ml_line_count))
             ((ß lnum =) (§ 1))
@@ -15200,9 +15501,9 @@
         )
         (not (checkclearopq (. cap oap)))
         (§
-;           switch (cap.cmdchar)
-;           {
-;               case (byte)'A':   ;; "A"ppend after the line
+            ((ß SWITCH) (§ cap.cmdchar)
+                ((ß CASE) (§ (byte)'A'))   ;; "A"ppend after the line
+                (§
                     ((ß @curwin.w_set_curswant =) (§ true))
                     (cond (== @ve_flags VE_ALL)
                     (§
@@ -15219,14 +15520,18 @@
                         ((ß @curwin.w_cursor.col +=) (§ STRLEN(ml_get_cursor())))
                     ))
                     (ß BREAK)
+                )
 
-;               case (byte)'I':   ;; "I"nsert before the first non-blank
+                ((ß CASE) (§ (byte)'I'))   ;; "I"nsert before the first non-blank
+                (§
                     (if (nil? (vim_strbyte @p_cpo, CPO_INSEND))
                         (beginline BL_WHITE)
                         (beginline (§ BL_WHITE|BL_FIX)))
                     (ß BREAK)
+                )
 
-;               case (byte)'a':   ;; "a"ppend is like "i"nsert on the next character
+                ((ß CASE) (§ (byte)'a'))   ;; "a"ppend is like "i"nsert on the next character
+                (§
                     ;; Increment coladd when in virtual space, increment the
                     ;; column otherwise, also to append after an unprintable char.
                     (cond (and (virtual_active) (or (< 0 (.. @curwin w_cursor coladd)) (== (.at (ml_get_cursor) 0) NUL) (== (.at (ml_get_cursor) 0) TAB)))
@@ -15238,7 +15543,8 @@
                         (inc_cursor)
                     ))
                     (ß BREAK)
-;           }
+                )
+            )
 
             (when (and (!= (.. @curwin w_cursor coladd) 0) (!= (. cap cmdchar) (byte \A)))
                 ((ß int save_State =) (§ @State))
@@ -15284,7 +15590,7 @@
 
 (defn- #_void nv_object [#_cmdarg_C cap]
     (§
-;       boolean include;
+        (ß boolean include)
         (if (== (. cap cmdchar) (byte \i))
             ((ß include =) (§ false))    ;; "ix" = inner object: exclude white space
             ((ß include =) (§ true))     ;; "ax" = an object: include white space
@@ -15294,48 +15600,67 @@
         ((ß Bytes mps_save =) (§ @curbuf.@b_p_mps))
         ((ß @curbuf.@b_p_mps =) (§ u8("(:),{:},[:],<:>")))
 
-;       boolean flag;
-;       switch (cap.@nchar)
-;       {
-;           case (byte)'w': ;; "aw" = a word
-                    ((ß flag =) (§ current_word(cap.oap, cap.count1, include, false)))
-                    (ß BREAK)
-;           case (byte)'W': ;; "aW" = a WORD
-                    ((ß flag =) (§ current_word(cap.oap, cap.count1, include, true)))
-                    (ß BREAK)
-;           case (byte)'b': ;; "ab" = a braces block
-;           case (byte)'(':
-;           case (byte)')':
-                    ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'(', (byte)')')))
-                    (ß BREAK)
-;           case (byte)'B': ;; "aB" = a Brackets block
-;           case (byte)'{':
-;           case (byte)'}':
-                    ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'{', (byte)'}')))
-                    (ß BREAK)
-;           case (byte)'[': ;; "a[" = a [] block
-;           case (byte)']':
-                    ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'[', (byte)']')))
-                    (ß BREAK)
-;           case (byte)'<': ;; "a<" = a <> block
-;           case (byte)'>':
-                    ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'<', (byte)'>')))
-                    (ß BREAK)
-;           case (byte)'p': ;; "ap" = a paragraph
-                    ((ß flag =) (§ current_par(cap.oap, cap.count1, include, (byte)'p')))
-                    (ß BREAK)
-;           case (byte)'s': ;; "as" = a sentence
-                    ((ß flag =) (§ current_sent(cap.oap, cap.count1, include)))
-                    (ß BREAK)
-;           case (byte)'"': ;; "a"" = a double quoted string
-;           case (byte)'\'': ;; "a'" = a single quoted string
-;           case (byte)'`': ;; "a`" = a backtick quoted string
-                    ((ß flag =) (§ current_quote(cap.oap, cap.count1, include, cap.@nchar)))
-                    (ß BREAK)
-;           default:
-                    ((ß flag =) (§ false))
-                    (ß BREAK)
-;       }
+        (ß boolean flag)
+        ((ß SWITCH) (§ cap.@nchar)
+            ((ß CASE) (§ (byte)'w')) ;; "aw" = a word
+            (§
+                ((ß flag =) (§ current_word(cap.oap, cap.count1, include, false)))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'W')) ;; "aW" = a WORD
+            (§
+                ((ß flag =) (§ current_word(cap.oap, cap.count1, include, true)))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'b')) ;; "ab" = a braces block
+            ((ß CASE) (§ (byte)'('))
+            ((ß CASE) (§ (byte)')'))
+            (§
+                ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'(', (byte)')')))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'B')) ;; "aB" = a Brackets block
+            ((ß CASE) (§ (byte)'{'))
+            ((ß CASE) (§ (byte)'}'))
+            (§
+                ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'{', (byte)'}')))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'[')) ;; "a[" = a [] block
+            ((ß CASE) (§ (byte)']'))
+            (§
+                ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'[', (byte)']')))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'<')) ;; "a<" = a <> block
+            ((ß CASE) (§ (byte)'>'))
+            (§
+                ((ß flag =) (§ current_block(cap.oap, cap.count1, include, (byte)'<', (byte)'>')))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'p')) ;; "ap" = a paragraph
+            (§
+                ((ß flag =) (§ current_par(cap.oap, cap.count1, include, (byte)'p')))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'s')) ;; "as" = a sentence
+            (§
+                ((ß flag =) (§ current_sent(cap.oap, cap.count1, include)))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'"')) ;; "a"" = a double quoted string
+            ((ß CASE) (§ (byte)'\'')) ;; "a'" = a single quoted string
+            ((ß CASE) (§ (byte)'`')) ;; "a`" = a backtick quoted string
+            (§
+                ((ß flag =) (§ current_quote(cap.oap, cap.count1, include, cap.@nchar)))
+                (ß BREAK)
+            )
+            (ß DEFAULT)
+            (§
+                ((ß flag =) (§ false))
+                (ß BREAK)
+            )
+        )
 
         ((ß @curbuf.@b_p_mps =) (§ mps_save))
         (if (not flag)
@@ -15838,7 +16163,7 @@
             ((ß RETURN) (§ OP_TILDE))
         )
 
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = 0) (§ true) (§ i++))
             (if (and (== (§ opchars[i][0]) char1) (== (§ opchars[i][1]) char2))
                 (ß BREAK)
@@ -15921,15 +16246,15 @@
             (cond (== (. oap line_count) 1)
             (§
                 (if (== amount 1)
-;                   libC.sprintf(@ioBuff, u8("1 line %sed 1 time"), s);
-;                   libC.sprintf(@ioBuff, u8("1 line %sed %d times"), s, amount);
+                    (§ libC.sprintf(@ioBuff, u8("1 line %sed 1 time"), s))
+                    (§ libC.sprintf(@ioBuff, u8("1 line %sed %d times"), s, amount))
                 )
             )
             :else
             (§
                 (if (== amount 1)
-;                   libC.sprintf(@ioBuff, u8("%ld lines %sed 1 time"), oap.line_count, s);
-;                   libC.sprintf(@ioBuff, u8("%ld lines %sed %d times"), oap.line_count, s, amount);
+                    (§ libC.sprintf(@ioBuff, u8("%ld lines %sed 1 time"), oap.line_count, s))
+                    (§ libC.sprintf(@ioBuff, u8("%ld lines %sed %d times"), oap.line_count, s, amount))
                 )
             ))
             (msg @ioBuff)
@@ -16019,7 +16344,7 @@
         ;; total is number of screen columns to be inserted/removed
         ((ß int total =) (§ amount * q_sw))
         ((ß Bytes oldp =) (§ ml_get_curline()))
-;       Bytes newp;
+        (ß Bytes newp)
 
         (cond (not left)
         (§
@@ -16035,7 +16360,7 @@
             )
             (while (§ vim_iswhite(bd.textstart.at(0)))
                 ;; TODO: is passing bd.textstart for start of the line OK?
-;               int incr;
+                (ß int incr)
 ;               { Bytes[] __ = { bd.textstart }; incr = lbr_chartabsize_adv(bd.textstart, __, bd.start_vcol); bd.textstart = __[0]; }
                 ((ß total +=) (§ incr))
                 ((ß bd.start_vcol +=) (§ incr))
@@ -16164,8 +16489,8 @@
 
             ((ß Bytes oldp =) (§ ml_get(lnum)))
 
-;           int q_ts;
-;           int offset;
+            (ß int q_ts)
+            (ß int offset)
             (cond b_insert
             (§
                 ((ß q_ts =) (§ bdp.start_char_vcols))
@@ -16198,7 +16523,7 @@
             ))
 
             (when (< 0 spaces)
-;               int off;
+                (ß int off)
 
                 ;; Avoid starting halfway a multi-byte character.
                 (cond b_insert
@@ -16263,7 +16588,7 @@
         ((ß long last_changed =) (§ 0))
         ((ß long start_lnum =) (§ @curwin.w_cursor.lnum))
 
-;       long i;
+        (ß long i)
         ((ß FOR) (ß (§ i = oap.line_count) (§ 0 <= --i && !@got_int) (§ nil))
             ;; It's a slow thing to do, so give feedback,
             ;; so there's no worry that the computer's just hung.
@@ -16479,7 +16804,7 @@
 
 (defn- #_boolean do_record [#_int c]
     (§
-;       boolean retval;
+        (ß boolean retval)
 
         (cond (not @Recording)         ;; start recording
         (§
@@ -16668,14 +16993,14 @@
 
             (cond (== @restart_edit (byte \V))
             (§
-;               buf.be(0, (byte)'g');
-;               buf.be(1, (byte)'R');
-;               buf.be(2, NUL);
+                (.be buf (§ 0), (§ (byte)'g'))
+                (.be buf (§ 1), (§ (byte)'R'))
+                (.be buf 2, NUL)
             )
             :else
             (§
-;               buf.be(0, (@restart_edit == (byte)'I') ? (byte)'i' : @restart_edit);
-;               buf.be(1, NUL);
+                (§ buf.be(0, (@restart_edit == (byte)'I') ? (byte)'i' : @restart_edit))
+                (.be buf 1, NUL)
             ))
 
             (ins_typebuf buf)
@@ -16805,40 +17130,49 @@
         ((ß argp[0] =) (§ null))
         ((ß allocated[0] =) (§ false))
 
-;       switch (regname)
-;       {
-;           case (byte)'%':                                       ;; file name
-;           case (byte)'#':                                       ;; alternate file name
+        ((ß SWITCH) (§ regname)
+            ((ß CASE) (§ (byte)'%'))                                       ;; file name
+            ((ß CASE) (§ (byte)'#'))                                       ;; alternate file name
+            (§
                 ((ß argp[0] =) (§ null))
                 ((ß RETURN) (§ false))
+            )
 
-;           case (byte)'=':                                       ;; result of expression
+            ((ß CASE) (§ (byte)'='))                                       ;; result of expression
+            (§
                 ((ß argp[0] =) (§ get_expr_line()))
                 ((ß allocated[0] =) (§ true))
                 ((ß RETURN) (§ true))
+            )
 
-;           case (byte)':':                                       ;; last command line
+            ((ß CASE) (§ (byte)'))':                                       ;; last command line
+            (§
                 (if (and (nil? @last_cmdline) errmsg)
                     (emsg e_nolastcmd))
                 ((ß argp[0] =) (§ @last_cmdline))
                 ((ß RETURN) (§ true))
+            )
 
-;           case (byte)'/':                                       ;; last search-pattern
+            ((ß CASE) (§ (byte)'/'))                                       ;; last search-pattern
+            (§
                 (if (and (nil? (last_search_pat)) errmsg)
                     (emsg e_noprevre))
                 ((ß argp[0] =) (§ last_search_pat()))
                 ((ß RETURN) (§ true))
+            )
 
-;           case (byte)'.':                                       ;; last inserted text
+            ((ß CASE) (§ (byte)'.'))                                       ;; last inserted text
+            (§
                 ((ß argp[0] =) (§ get_last_insert_save()))
                 ((ß allocated[0] =) (§ true))
                 (if (and (nil? (§ argp[0])) errmsg)
                     (emsg e_noinstext))
                 ((ß RETURN) (§ true))
+            )
 
-;           case Ctrl_W:                                    ;; word under cursor
-;           case Ctrl_A:                                    ;; WORD (mnemonic All) under cursor
-;           {
+            ((ß CASE) (§ Ctrl_W))                                    ;; word under cursor
+            ((ß CASE) (§ Ctrl_A))                                    ;; WORD (mnemonic All) under cursor
+            (§
                 (if (not errmsg)
                     ((ß RETURN) (§ false))
                 )
@@ -16846,12 +17180,14 @@
                 ((ß argp[0] =) (§ (cnt != 0) ? STRNDUP(argp[0], cnt) : null))
                 ((ß allocated[0] =) (§ true))
                 ((ß RETURN) (§ true))
-;           }
+            )
 
-;           case (byte)'_':               ;; black hole: always empty
+            ((ß CASE) (§ (byte)'_'))               ;; black hole: always empty
+            (§
                 ((ß argp[0] =) (§ u8("")))
                 ((ß RETURN) (§ true))
-;       }
+            )
+        )
 
         false
     ))
@@ -17296,7 +17632,7 @@
 
                 ;; If the range starts in virtual space,
                 ;; count the initial coladd offset as part of "startspaces".
-;               int n;
+                (ß int n)
                 (cond (and (!= @virtual_op FALSE) (. bd is_short) (== (§ bd.textstart.at(0)) NUL))
                 (§
                     ((ß pos_C vpos =) (§ §_pos_C()))
@@ -17779,7 +18115,7 @@
                 ((ß firstline =) (§ firstline.plus(bd.textlen)))
             )
 
-;           int ins_len;
+            (ß int ins_len)
             (when (and (<= 0 pre_textlen) (< 0 (§ (ins_len = STRLEN(firstline) - pre_textlen))))
                 ((ß Bytes ins_text =) (§ STRNDUP(firstline, ins_len)))
 
@@ -17978,19 +18314,22 @@
         ((ß block_def_C bd =) (§ §_block_def_C()))
 
         ((ß FOR) (ß (§  ) (§ lnum <= yankendlnum) (§ lnum++, y_idx++))
-;           switch (@y_current.y_type)
-;           {
-;               case MBLOCK:
+            ((ß SWITCH) (§ @y_current.y_type)
+                ((ß CASE) (§ MBLOCK))
+                (§
                     (block_prep oap, bd, lnum, false)
                     (yank_copy_line bd, y_idx)
                     (ß BREAK)
+                )
 
-;               case MLINE:
+                ((ß CASE) (§ MLINE))
+                (§
                     (§ @y_current.y_array[y_idx] = STRDUP(ml_get(lnum)))
                     (ß BREAK)
+                )
 
-;               case MCHAR:
-;               {
+                ((ß CASE) (§ MCHAR))
+                (§
                     ((ß int startcol =) (§ 0, endcol = MAXCOL))
                     ((ß boolean is_oneChar =) (§ false))
                     ((ß Bytes p =) (§ ml_get(lnum)))
@@ -18044,14 +18383,14 @@
                     ((ß bd.textstart =) (§ p.plus(startcol)))
                     (yank_copy_line bd, y_idx)
                     (ß BREAK)
-;               }
-;           }
+                )
+            )
         )
 
         (when (!= curr @y_current)      ;; append the new block to the old block
             ((ß Bytes[] new_ptr =) (§ new Bytes[curr.y_size + @y_current.y_size]))
 
-;           int j;
+            (ß int j)
             ((ß FOR) (ß (§ j = 0) (§ j < curr.y_size) (§ j++))
                 ((ß new_ptr[j] =) (§ curr.y_array[j]))
             )
@@ -18136,7 +18475,7 @@
         ((ß pnew =) (§ pnew.plus(bd.textlen)))
         (copy_spaces pnew, (. bd endspaces))
         ((ß pnew =) (§ pnew.plus(bd.endspaces)))
-;       pnew.be(0, NUL);
+        (.be pnew 0, NUL)
     ))
 
 ;; Put contents of register "regname" into the text.
@@ -18195,8 +18534,8 @@
         ;; which may make "y_array" invalid.  Start undo now to avoid that.
         (u_save (.. @curwin w_cursor lnum), (+ (.. @curwin w_cursor lnum) 1))
 
-;       int y_type;
-;       int y_size;
+        (ß int y_type)
+        (ß int y_size)
         ((ß Bytes[] y_array =) (§ null))
 
         (cond (!= (§ insert_string[0]) null)
@@ -18216,7 +18555,7 @@
                         ((ß p =) (§ vim_strchr(p, (byte)'\n')))
                         (when (non-nil? p)
                             (if (non-nil? y_array)
-;                               p.be(0, NUL);
+                                (.be p 0, NUL)
                             )
                             ((ß p =) (§ p.plus(1)))
                             ;; A trailing '\n' makes the register linewise.
@@ -18282,7 +18621,7 @@
                 (ß BREAK theend)
             )
 
-;           long lnum;
+            (ß long lnum)
             (cond (== y_type MBLOCK)
             (§
                 ((ß lnum =) (§ @curwin.w_cursor.lnum + y_size + 1))
@@ -18615,7 +18954,7 @@
                                 (if (and (== cnt count) (== i (- y_size 1)))
                                     ((ß lendiff =) (§ STRLEN(p)))
                                 )
-;                               int indent;
+                                (ß int indent)
                                 (cond (eos? p)
                                 (§
                                     ((ß indent =) (§ 0))     ;; ignore empty lines
@@ -18811,7 +19150,7 @@
         ;; allocate the space for the new line
         ((ß Bytes newp =) (§ new Bytes(sumsize + 1)))
         ((ß Bytes cend =) (§ newp.plus(sumsize)))
-;       cend.be(0, NUL);
+        (.be cend 0, NUL)
 
         ;; Move affected lines to the new long one.
         ;;
@@ -19209,19 +19548,19 @@
             ((ß Bytes buf2 =) (§ new Bytes(NUMBUFLEN)))
             (cond (zero? (§ hex[0]))
             (§
-;               libC.sprintf(buf2, u8("%ld"), n[0]);
+                (§ libC.sprintf(buf2, u8("%ld"), n[0]))
             )
             (== (§ hex[0]) (byte \0))
             (§
-;               libC.sprintf(buf2, u8("%lo"), n[0]);
+                (§ libC.sprintf(buf2, u8("%lo"), n[0]))
             )
             (and (!= (§ hex[0]) 0) @hexupper)
             (§
-;               libC.sprintf(buf2, u8("%lX"), n[0]);
+                (§ libC.sprintf(buf2, u8("%lX"), n[0]))
             )
             :else
             (§
-;               libC.sprintf(buf2, u8("%lx"), n[0]);
+                (§ libC.sprintf(buf2, u8("%lx"), n[0]))
             ))
             ((ß length[0] -=) (§ STRLEN(buf2)))
 
@@ -19234,7 +19573,7 @@
                     (§ (ptr = ptr.plus(1)).be(-1, (byte)'0'))
                 )
             )
-;           ptr.be(0, NUL);
+            (.be ptr 0, NUL)
             (STRCAT buf1, buf2)
             (ins_str buf1)          ;; insert the new number
         ))
@@ -19261,7 +19600,7 @@
 
 (defn- #_int line_count_info [#_Bytes line, #_int* wc, #_int* cc, #_int limit, #_int eol_size]
     (§
-;       int i;
+        (ß int i)
 
         ((ß int words =) (§ 0))
         ((ß int chars =) (§ 0))
@@ -19389,10 +19728,9 @@
                 ((ß Bytes s =) (§ null))
                 ((ß int len =) (§ 0))
 
-;               switch (@VIsual_mode)
-;               {
-;                   case Ctrl_V:
-;                   {
+                ((ß SWITCH) (§ @VIsual_mode)
+                    ((ß CASE) (§ Ctrl_V))
+                    (§
                         (reset! virtual_op (if (virtual_active) TRUE FALSE))
                         ((ß block_def_C bd =) (§ §_block_def_C()))
                         (block_prep oparg, bd, lnum, false)
@@ -19400,25 +19738,25 @@
                         ((ß s =) (§ bd.textstart))
                         ((ß len =) (§ bd.textlen))
                         (ß BREAK)
-;                   }
+                    )
 
-;                   case (byte)'V':
-;                   {
+                    ((ß CASE) (§ (byte)'V'))
+                    (§
                         ((ß s =) (§ ml_get(lnum)))
                         ((ß len =) (§ MAXCOL))
                         (ß BREAK)
-;                   }
+                    )
 
-;                   case (byte)'v':
-;                   {
+                    ((ß CASE) (§ (byte)'v'))
+                    (§
                         ((ß int start_col =) (§ (lnum == min_pos.lnum) ? min_pos.col : 0))
                         ((ß int end_col =) (§ (lnum == max_pos.lnum) ? max_pos.col - start_col + 1 : MAXCOL))
 
                         ((ß s =) (§ ml_get(lnum).plus(start_col)))
                         ((ß len =) (§ end_col))
                         (ß BREAK)
-;                   }
-;               }
+                    )
+                )
 
                 (if (non-nil? s)
                     ((ß byte_count_cursor +=) (§ line_count_info(s, word_count_cursor, char_count_cursor, len, eol_size)))
@@ -19454,25 +19792,16 @@
             )
             :else
             (§
-;               buf1.be(0, NUL);
+                (.be buf1 0, NUL)
             ))
 
             (cond (and (== (§ char_count_cursor[0]) byte_count_cursor) (== (§ char_count[0]) byte_count))
             (§
-;               vim_snprintf(@ioBuff, IOSIZE,
-;                       u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"),
-;                       buf1, line_count_selected, @curbuf.b_ml.ml_line_count,
-;                       word_count_cursor[0], word_count[0],
-;                       byte_count_cursor, byte_count);
+;               vim_snprintf(@ioBuff, IOSIZE, u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"), buf1, line_count_selected, @curbuf.b_ml.ml_line_count, word_count_cursor[0], word_count[0], byte_count_cursor, byte_count);
             )
             :else
             (§
-;               vim_snprintf(@ioBuff, IOSIZE,
-;                       u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"),
-;                       buf1, line_count_selected, @curbuf.b_ml.ml_line_count,
-;                       word_count_cursor[0], word_count[0],
-;                       char_count_cursor[0], char_count[0],
-;                       byte_count_cursor, byte_count);
+;               vim_snprintf(@ioBuff, IOSIZE, u8("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"), buf1, line_count_selected, @curbuf.b_ml.ml_line_count, word_count_cursor[0], word_count[0], char_count_cursor[0], char_count[0], byte_count_cursor, byte_count);
             ))
         )
         :else
@@ -19484,22 +19813,11 @@
 
             (cond (and (== (§ char_count_cursor[0]) byte_count_cursor) (== (§ char_count[0]) byte_count))
             (§
-;               vim_snprintf(@ioBuff, IOSIZE,
-;                   u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"),
-;                   buf1, buf2,
-;                   @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count,
-;                   word_count_cursor[0], word_count[0],
-;                   byte_count_cursor, byte_count);
+;               vim_snprintf(@ioBuff, IOSIZE, u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"), buf1, buf2, @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, word_count_cursor[0], word_count[0], byte_count_cursor, byte_count);
             )
             :else
             (§
-;               vim_snprintf(@ioBuff, IOSIZE,
-;                   u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"),
-;                   buf1, buf2,
-;                   @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count,
-;                   word_count_cursor[0], word_count[0],
-;                   char_count_cursor[0], char_count[0],
-;                   byte_count_cursor, byte_count);
+;               vim_snprintf(@ioBuff, IOSIZE, u8("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; Byte %ld of %ld"), buf1, buf2, @curwin.w_cursor.lnum, @curbuf.b_ml.ml_line_count, word_count_cursor[0], word_count[0], char_count_cursor[0], char_count[0], byte_count_cursor, byte_count);
             ))
         ))
 
@@ -20112,7 +20430,7 @@
             (if (== (. @curwin w_jumplistidx) from)
                 ((ß @curwin.w_jumplistidx =) (§ to))
             )
-;           int i;
+            (ß int i)
             ((ß FOR) (ß (§ i = from + 1) (§ i < @curwin.w_jumplistlen) (§ i++))
                 (if (== (§ @curwin.w_jumplist[i].mark.lnum) (§ @curwin.w_jumplist[from].mark.lnum))
                     (ß BREAK)
@@ -20224,7 +20542,7 @@
                     (§ (q = q.plus(1)).be(-1, (s = s.plus(1)).at(-1)))
                 )
             )
-;           q.be(0, NUL);
+            (.be q 0, NUL)
         )
 
         p
@@ -20244,13 +20562,13 @@
         ((ß int len =) (§ STRLEN(p)))
         (when (<= @last_recorded_len len)
             ((ß len -=) (§ @last_recorded_len))
-;           p.be(len, NUL);
+            (.be p len, NUL)
         )
 
         ;; When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
 
         (if (and (< 0 len) (non-zero? @restart_edit) (§ p.at(len - 1) == Ctrl_O))
-;           p.be(len - 1, NUL);
+            (§ p.be(len - 1, NUL))
         )
 
         p
@@ -20323,7 +20641,7 @@
     (§
         ((ß Bytes number =) (§ new Bytes(32)))
 
-;       libC.sprintf(number, u8("%ld"), n);
+        (§ libC.sprintf(number, u8("%ld"), n))
         (add_buff buf, number, -1)
     ))
 
@@ -20346,15 +20664,15 @@
             (cond (or (is_special c) (== c (char_u KB_SPECIAL)) (== c NUL))
             (§
                 ;; translate special key code into three byte sequence
-;               temp.be(0, KB_SPECIAL);
-;               temp.be(1, KB_SECOND(c));
-;               temp.be(2, KB_THIRD(c));
-;               temp.be(3, NUL);
+                (.be temp 0, KB_SPECIAL)
+                (.be temp 1, (KB_SECOND c))
+                (.be temp 2, (KB_THIRD c))
+                (.be temp 3, NUL)
             )
             :else
             (§
-;               temp.be(0, c);
-;               temp.be(1, NUL);
+                (.be temp 0, c)
+                (.be temp 1, NUL)
             ))
 
             (add_buff buf, temp, -1)
@@ -20604,7 +20922,7 @@
     (§
         (when (non-eos? @redo_sp)
             ;; For a multi-byte character get all the bytes and return the converted character.
-;           int n;
+            (ß int n)
             (if (or (!= (.at @redo_sp 0) KB_SPECIAL) (== (.at @redo_sp 1) KS_SPECIAL))
                 ((ß n =) (§ mb_byte2len(char_u(@redo_sp.at(0)))))
                 ((ß n =) (§ 1))
@@ -20613,7 +20931,7 @@
             ((ß Bytes buf =) (§ new Bytes(MB_MAXBYTES + 1)))
 
             ((ß FOR) (ß (§ int i = 0) (§ true) (§ i++))
-;               int c;
+                (ß int c)
                 (cond (== (.at @redo_sp 0) KB_SPECIAL)   ;; special key or escaped KB_SPECIAL
                 (§
                     ((ß c =) (§ toSpecial(@redo_sp.at(1), @redo_sp.at(2))))
@@ -20630,7 +20948,7 @@
                     (reset! redo_sp (. @redo_bp bb_str))
                 )
 
-;               buf.be(i, c);
+                (.be buf i, c)
                 (when (== i (- n 1))                 ;; last byte of a character
                     (if (!= n 1)
                         ((ß c =) (§ us_ptr2char(buf)))
@@ -20802,14 +21120,14 @@
 
         (cond (is_special c)
         (§
-;           buf.be(0, KB_SPECIAL);
-;           buf.be(1, KB_SECOND(c));
-;           buf.be(2, KB_THIRD(c));
-;           buf.be(3, NUL);
+            (.be buf 0, KB_SPECIAL)
+            (.be buf 1, (KB_SECOND c))
+            (.be buf 2, (KB_THIRD c))
+            (.be buf 3, NUL)
         )
         :else
         (§
-;           buf.be(utf_char2bytes(c, buf), NUL);
+            (§ buf.be(utf_char2bytes(c, buf), NUL))
         ))
 
         (ins_typebuf buf)
@@ -20878,7 +21196,7 @@
             (updatescript c)
 
             (when @Recording
-;               buf.be(0, c);
+                (.be buf 0, c)
                 (add_buff @recordbuff, buf, 1)
             )
         )
@@ -20929,7 +21247,7 @@
 
 (defn- #_int vgetc []
     (§
-;       int c;
+        (ß int c)
 
         ;; If a character was put back with vungetc, it was already processed.
         ;; Return it directly.
@@ -20977,65 +21295,148 @@
                 )
 
                 ;; a keypad or special function key was not mapped, use it like its ASCII equivalent
-;               switch (c)
-;               {
-;                   case K_KPLUS:       c = (byte)'+'; break;
-;                   case K_KMINUS:      c = (byte)'-'; break;
-;                   case K_KDIVIDE:     c = (byte)'/'; break;
-;                   case K_KMULTIPLY:   c = (byte)'*'; break;
-;                   case K_KENTER:      c = CAR; break;
-;                   case K_KPOINT:      c = (byte)'.'; break;
-;                   case K_K0:          c = (byte)'0'; break;
-;                   case K_K1:          c = (byte)'1'; break;
-;                   case K_K2:          c = (byte)'2'; break;
-;                   case K_K3:          c = (byte)'3'; break;
-;                   case K_K4:          c = (byte)'4'; break;
-;                   case K_K5:          c = (byte)'5'; break;
-;                   case K_K6:          c = (byte)'6'; break;
-;                   case K_K7:          c = (byte)'7'; break;
-;                   case K_K8:          c = (byte)'8'; break;
-;                   case K_K9:          c = (byte)'9'; break;
+                ((ß SWITCH) (§ c)
+                    ((ß CASE) (§ K_KPLUS))
+                    (§
+                        ((ß c =) (§ (byte)'+'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_KMINUS))
+                    (§
+                        ((ß c =) (§ (byte)'-'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_KDIVIDE))
+                    (§
+                        ((ß c =) (§ (byte)'/'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_KMULTIPLY))
+                    (§
+                        ((ß c =) (§ (byte)'*'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_KENTER))
+                    (§
+                        ((ß c =) (§ CAR))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_KPOINT))
+                    (§
+                        ((ß c =) (§ (byte)'.'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K0))
+                    (§
+                        ((ß c =) (§ (byte)'0'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K1))
+                    (§
+                        ((ß c =) (§ (byte)'1'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K2))
+                    (§
+                        ((ß c =) (§ (byte)'2'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K3))
+                    (§
+                        ((ß c =) (§ (byte)'3'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K4))
+                    (§
+                        ((ß c =) (§ (byte)'4'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K5))
+                    (§
+                        ((ß c =) (§ (byte)'5'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K6))
+                    (§
+                        ((ß c =) (§ (byte)'6'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K7))
+                    (§
+                        ((ß c =) (§ (byte)'7'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K8))
+                    (§
+                        ((ß c =) (§ (byte)'8'))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_K9))
+                    (§
+                        ((ß c =) (§ (byte)'9'))
+                        (ß BREAK)
+                    )
 
-;                   case K_XHOME:
-;                   case K_ZHOME:
-                                        (cond (== @mod_mask MOD_MASK_SHIFT)
-                                        (§
-                                            ((ß c =) (§ K_S_HOME))
-                                            (reset! mod_mask 0)
-                                        )
-                                        (== @mod_mask MOD_MASK_CTRL)
-                                        (§
-                                            ((ß c =) (§ K_C_HOME))
-                                            (reset! mod_mask 0)
-                                        )
-                                        :else
-                                        (§
-                                            ((ß c =) (§ K_HOME))
-                                        ))
-                                        (ß BREAK)
-;                   case K_XEND:
-;                   case K_ZEND:
-                                        (cond (== @mod_mask MOD_MASK_SHIFT)
-                                        (§
-                                            ((ß c =) (§ K_S_END))
-                                            (reset! mod_mask 0)
-                                        )
-                                        (== @mod_mask MOD_MASK_CTRL)
-                                        (§
-                                            ((ß c =) (§ K_C_END))
-                                            (reset! mod_mask 0)
-                                        )
-                                        :else
-                                        (§
-                                            ((ß c =) (§ K_END))
-                                        ))
-                                        (ß BREAK)
+                    ((ß CASE) (§ K_XHOME))
+                    ((ß CASE) (§ K_ZHOME))
+                    (§
+                        (cond (== @mod_mask MOD_MASK_SHIFT)
+                        (§
+                            ((ß c =) (§ K_S_HOME))
+                            (reset! mod_mask 0)
+                        )
+                        (== @mod_mask MOD_MASK_CTRL)
+                        (§
+                            ((ß c =) (§ K_C_HOME))
+                            (reset! mod_mask 0)
+                        )
+                        :else
+                        (§
+                            ((ß c =) (§ K_HOME))
+                        ))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_XEND))
+                    ((ß CASE) (§ K_ZEND))
+                    (§
+                        (cond (== @mod_mask MOD_MASK_SHIFT)
+                        (§
+                            ((ß c =) (§ K_S_END))
+                            (reset! mod_mask 0)
+                        )
+                        (== @mod_mask MOD_MASK_CTRL)
+                        (§
+                            ((ß c =) (§ K_C_END))
+                            (reset! mod_mask 0)
+                        )
+                        :else
+                        (§
+                            ((ß c =) (§ K_END))
+                        ))
+                        (ß BREAK)
+                    )
 
-;                   case K_XUP:         c = K_UP; break;
-;                   case K_XDOWN:       c = K_DOWN; break;
-;                   case K_XLEFT:       c = K_LEFT; break;
-;                   case K_XRIGHT:      c = K_RIGHT; break;
-;               }
+                    ((ß CASE) (§ K_XUP))
+                    (§
+                        ((ß c =) (§ K_UP))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_XDOWN))
+                    (§
+                        ((ß c =) (§ K_DOWN))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_XLEFT))
+                    (§
+                        ((ß c =) (§ K_LEFT))
+                        (ß BREAK)
+                    )
+                    ((ß CASE) (§ K_XRIGHT))
+                    (§
+                        ((ß c =) (§ K_RIGHT))
+                        (ß BREAK)
+                    )
+                )
 
                 ;; For a multi-byte character get all the bytes and return the converted character.
                 ;; Note: This will loop until enough bytes are received!
@@ -21043,9 +21444,9 @@
                 ((ß int n =) (§ mb_byte2len(c)))
                 (when (< 1 n)
                     (swap! no_mapping inc)
-;                   buf.be(0, c);
+                    (.be buf 0, c)
                     ((ß FOR) (ß (§ int i = 1) (§ i < n) (§ i++))
-;                       buf.be(i, vgetorpeek(true));
+                        (.be buf i, (vgetorpeek true))
                         (when (== (.at buf i) KB_SPECIAL)
                             ;; Must be a KB_SPECIAL - KS_SPECIAL - KE_FILLER sequence,
                             ;; which represents a KB_SPECIAL (0x80).
@@ -21080,7 +21481,7 @@
 
 (defn- #_int plain_vgetc []
     (§
-;       int c;
+        (ß int c)
 
 ;       do
 ;       {
@@ -21107,7 +21508,7 @@
 
 (defn- #_boolean char_avail []
     (§
-;       int retval;
+        (ß int retval)
 
         (swap! no_mapping inc)
         ((ß retval =) (§ vpeekc()))
@@ -21178,7 +21579,7 @@
         ((ß int mapdepth =) (§ 0))               ;; check for recursive mapping
         ((ß boolean mode_deleted =) (§ false))   ;; set when mode has been deleted
 
-;       int c;
+        (ß int c)
 
 ;       do
 ;       {
@@ -21232,7 +21633,7 @@
 
                         (when advance
                             ;; Also record this character, it might be needed to get out of Insert mode.
-;                           @typebuf.tb_buf.be(0, c);
+                            (.be (§ @typebuf.tb_buf) (§ 0), (§ c))
                             (gotchars (. @typebuf tb_buf), 1)
                         )
 
@@ -21562,14 +21963,14 @@
             ;; timeout may generate K_CURSORHOLD
             (when (or (eos? p) (and (== (.at p 0) KB_SPECIAL) (or (< i 2) (!= (.at p 1) KS_EXTRA) (!= (.at p 2) KE_CURSORHOLD))))
                 (BCOPY p, 3, p, 1, i)
-;               p.be(2, KB_THIRD(char_u(p.at(0))));
-;               p.be(1, KB_SECOND(char_u(p.at(0))));
-;               p.be(0, KB_SPECIAL);
+                (.be p (§ 2), (§ KB_THIRD(char_u(p.at(0)))))
+                (.be p (§ 1), (§ KB_SECOND(char_u(p.at(0)))))
+                (.be p 0, KB_SPECIAL)
                 ((ß p =) (§ p.plus(2)))
                 ((ß len +=) (§ 2))
             )
         )
-;       p.be(0, NUL);           ;; add trailing NUL
+        (.be p 0, NUL)           ;; add trailing NUL
 
         len
     ))
@@ -21608,7 +22009,7 @@
                 ((ß s =) (§ s.plus(us_ptr2len_cc(s))))
             ))
         )
-;       d.be(0, NUL);
+        (.be d 0, NUL)
 
         res
     ))
@@ -21631,7 +22032,7 @@
                 (§ (d = d.plus(1)).be(-1, (s = s.plus(1)).at(-1)))
             ))
         )
-;       d.be(0, NUL);
+        (.be d 0, NUL)
     ))
 
 ;;; ============================================================================================== VimM
@@ -21981,12 +22382,14 @@
 ;               {
                     ;; The big switch to handle a character in insert mode.
 
-;                   switch (c)
-;                   {
-;                       case ESC:                           ;; end input mode
-                            ;; FALLTHROUGH
+                    ((ß SWITCH) (§ c)
+                        ((ß CASE) (§ ESC))                           ;; end input mode
+                        (§
+                            (ß FALLTHROUGH)
+                        )
 
-;                       case Ctrl_C:                        ;; end input mode
+                        ((ß CASE) (§ Ctrl_C))                        ;; end input mode
+                        (§
                             (when (and (== c Ctrl_C) (non-zero? @cmdwin_type))
                                 ;; Close the cmdline window.
                                 (reset! cmdwin_result K_IGNORE)
@@ -22009,16 +22412,20 @@
                                 (ß BREAK normalchar)
                             )
                             (ß BREAK doESCkey)
+                        )
 
-;                       case Ctrl_Z:                        ;; suspend when 'insertmode' set
+                        ((ß CASE) (§ Ctrl_Z))                        ;; suspend when 'insertmode' set
+                        (§
                             (if (not @p_im)
                                 (ß BREAK)            ;; insert CTRL-Z as normal char
                             )
                             (stuffReadbuff (u8 ":st\r"))
                             ((ß c =) (§ Ctrl_O))
-                            ;; FALLTHROUGH
+                            (ß FALLTHROUGH)
+                        )
 
-;                       case Ctrl_O:                        ;; execute one command
+                        ((ß CASE) (§ Ctrl_O))                        ;; execute one command
+                        (§
                             (ins_ctrl_o)
 
                             ;; Don't move the cursor left when 'virtualedit' has "onemore".
@@ -22028,161 +22435,223 @@
                             )
                             ((ß count[0] =) (§ 0))
                             (ß BREAK doESCkey)
+                        )
 
-;                       case K_INS:                         ;; toggle insert/replace mode
-;                       case K_KINS:
+                        ((ß CASE) (§ K_INS))                         ;; toggle insert/replace mode
+                        ((ß CASE) (§ K_KINS))
+                        (§
                             (ins_insert replaceState)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_SELECT:                      ;; end of Select mode mapping - ignore
+                        ((ß CASE) (§ K_SELECT))                      ;; end of Select mode mapping - ignore
+                        (§
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_HELP:                        ;; Help key works like <ESC> <Help>
-;                       case K_F1:
-;                       case K_XF1:
+                        ((ß CASE) (§ K_HELP))                        ;; Help key works like <ESC> <Help>
+                        ((ß CASE) (§ K_F1))
+                        ((ß CASE) (§ K_XF1))
+                        (§
                             (stuffcharReadbuff K_HELP)
                             (if @p_im
                                 (reset! need_start_insertmode true))
                             (ß BREAK doESCkey)
+                        )
 
-;                       case K_ZERO:                        ;; insert the previously inserted text
-;                       case NUL:
-;                       case Ctrl_A:
+                        ((ß CASE) (§ K_ZERO))                        ;; insert the previously inserted text
+                        ((ß CASE) (§ NUL))
+                        ((ß CASE) (§ Ctrl_A))
+                        (§
                             ;; For ^@ the trailing ESC will end the insert, unless there is an error.
                             (if (and (not (stuff_inserted NUL, 1, (== c Ctrl_A))) (!= c Ctrl_A) (not @p_im))
                                 (ß BREAK doESCkey)             ;; quit insert mode
                             )
                             ((ß inserted_space[0] =) (§ false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_R:                        ;; insert the contents of a register
+                        ((ß CASE) (§ Ctrl_R))                        ;; insert the contents of a register
+                        (§
                             (ins_reg)
                             ((ß inserted_space[0] =) (§ false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_G:                        ;; commands starting with CTRL-G
+                        ((ß CASE) (§ Ctrl_G))                        ;; commands starting with CTRL-G
+                        (§
                             (ins_ctrl_g)
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_HAT:                      ;; switch input mode and/or langmap
+                        ((ß CASE) (§ Ctrl_HAT))                      ;; switch input mode and/or langmap
+                        (§
                             (ins_ctrl_hat)
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl__:                        ;; switch between languages
+                        ((ß CASE) (§ Ctrl__))                        ;; switch between languages
+                        (§
                             (ß BREAK)
+                        )
 
-;                       case Ctrl_D:                        ;; make indent one shiftwidth smaller
-                            ;; FALLTHROUGH
-;                       case Ctrl_T:                        ;; make indent one shiftwidth greater
+                        ((ß CASE) (§ Ctrl_D))                        ;; make indent one shiftwidth smaller
+                        (§
+                            (ß FALLTHROUGH)
+                        )
+                        ((ß CASE) (§ Ctrl_T))                        ;; make indent one shiftwidth greater
+                        (§
                             (ins_shift c, lastc)
                             ((ß inserted_space[0] =) (§ false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_DEL:                         ;; delete character under the cursor
-;                       case K_KDEL:
+                        ((ß CASE) (§ K_DEL))                         ;; delete character under the cursor
+                        ((ß CASE) (§ K_KDEL))
+                        (§
                             (ins_del)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_BS:                          ;; delete character before the cursor
-;                       case Ctrl_H:
+                        ((ß CASE) (§ K_BS))                          ;; delete character before the cursor
+                        ((ß CASE) (§ Ctrl_H))
+                        (§
                             ((ß did_backspace =) (§ ins_bs(c, BACKSPACE_CHAR, inserted_space)))
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_W:                        ;; delete word before the cursor
+                        ((ß CASE) (§ Ctrl_W))                        ;; delete word before the cursor
+                        (§
                             ((ß did_backspace =) (§ ins_bs(c, BACKSPACE_WORD, inserted_space)))
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_U:                        ;; delete all inserted text in current line
+                        ((ß CASE) (§ Ctrl_U))                        ;; delete all inserted text in current line
+                        (§
                             ((ß did_backspace =) (§ ins_bs(c, BACKSPACE_LINE, inserted_space)))
                             ((ß inserted_space[0] =) (§ false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_IGNORE:                      ;; something mapped to nothing
+                        ((ß CASE) (§ K_IGNORE))                      ;; something mapped to nothing
+                        (§
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_CURSORHOLD:                  ;; didn't type something for a while
+                        ((ß CASE) (§ K_CURSORHOLD))                  ;; didn't type something for a while
+                        (§
                             (reset! did_cursorhold true)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_HOME:                        ;; <Home>
-;                       case K_KHOME:
-;                       case K_S_HOME:
-;                       case K_C_HOME:
+                        ((ß CASE) (§ K_HOME))                        ;; <Home>
+                        ((ß CASE) (§ K_KHOME))
+                        ((ß CASE) (§ K_S_HOME))
+                        ((ß CASE) (§ K_C_HOME))
+                        (§
                             (ins_home c)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_END:                         ;; <End>
-;                       case K_KEND:
-;                       case K_S_END:
-;                       case K_C_END:
+                        ((ß CASE) (§ K_END))                         ;; <End>
+                        ((ß CASE) (§ K_KEND))
+                        ((ß CASE) (§ K_S_END))
+                        ((ß CASE) (§ K_C_END))
+                        (§
                             (ins_end c)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_LEFT:                        ;; <Left>
+                        ((ß CASE) (§ K_LEFT))                        ;; <Left>
+                        (§
                             (if (non-zero? (§ @mod_mask & (MOD_MASK_SHIFT|MOD_MASK_CTRL)))
                                 (ins_s_left)
                                 (ins_left))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_S_LEFT:                      ;; <S-Left>
-;                       case K_C_LEFT:
+                        ((ß CASE) (§ K_S_LEFT))                      ;; <S-Left>
+                        ((ß CASE) (§ K_C_LEFT))
+                        (§
                             (ins_s_left)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_RIGHT:                       ;; <Right>
+                        ((ß CASE) (§ K_RIGHT))                       ;; <Right>
+                        (§
                             (if (non-zero? (§ @mod_mask & (MOD_MASK_SHIFT|MOD_MASK_CTRL)))
                                 (ins_s_right)
                                 (ins_right))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_S_RIGHT:                     ;; <S-Right>
-;                       case K_C_RIGHT:
+                        ((ß CASE) (§ K_S_RIGHT))                     ;; <S-Right>
+                        ((ß CASE) (§ K_C_RIGHT))
+                        (§
                             (ins_s_right)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_UP:                          ;; <Up>
+                        ((ß CASE) (§ K_UP))                          ;; <Up>
+                        (§
                             (if (non-zero? (& @mod_mask MOD_MASK_SHIFT))
                                 (ins_pageup)
                                 (ins_up false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_S_UP:                        ;; <S-Up>
-;                       case K_PAGEUP:
-;                       case K_KPAGEUP:
+                        ((ß CASE) (§ K_S_UP))                        ;; <S-Up>
+                        ((ß CASE) (§ K_PAGEUP))
+                        ((ß CASE) (§ K_KPAGEUP))
+                        (§
                             (ins_pageup)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_DOWN:                        ;; <Down>
+                        ((ß CASE) (§ K_DOWN))                        ;; <Down>
+                        (§
                             (if (non-zero? (& @mod_mask MOD_MASK_SHIFT))
                                 (ins_pagedown)
                                 (ins_down false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_S_DOWN:                      ;; <S-Down>
-;                       case K_PAGEDOWN:
-;                       case K_KPAGEDOWN:
+                        ((ß CASE) (§ K_S_DOWN))                      ;; <S-Down>
+                        ((ß CASE) (§ K_PAGEDOWN))
+                        ((ß CASE) (§ K_KPAGEDOWN))
+                        (§
                             (ins_pagedown)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_DROP:                        ;; drag-n-drop event
+                        ((ß CASE) (§ K_DROP))                        ;; drag-n-drop event
+                        (§
                             (ins_drop)
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_S_TAB:                       ;; when not mapped, use like a normal TAB
+                        ((ß CASE) (§ K_S_TAB))                       ;; when not mapped, use like a normal TAB
+                        (§
                             ((ß c =) (§ TAB))
-                            ;; FALLTHROUGH
-;                       case TAB:                           ;; TAB or Complete patterns along path
+                            (ß FALLTHROUGH)
+                        )
+                        ((ß CASE) (§ TAB))                           ;; TAB or Complete patterns along path
+                        (§
                             ((ß inserted_space[0] =) (§ false))
                             (if (ins_tab)
                                 (ß BREAK)            ;; insert TAB as a normal char
                             )
                             (ß BREAK normalchar)
+                        )
 
-;                       case K_KENTER:                      ;; <Enter>
+                        ((ß CASE) (§ K_KENTER))                      ;; <Enter>
+                        (§
                             ((ß c =) (§ CAR))
-                            ;; FALLTHROUGH
-;                       case CAR:
-;                       case NL:
+                            (ß FALLTHROUGH)
+                        )
+                        ((ß CASE) (§ CAR))
+                        ((ß CASE) (§ NL))
+                        (§
                             (when (non-zero? @cmdwin_type)
                                 ;; Execute the command in the cmdline window.
                                 (reset! cmdwin_result CAR)
@@ -22193,29 +22662,35 @@
                             )
                             ((ß inserted_space[0] =) (§ false))
                             (ß BREAK normalchar)
+                        )
 
-;                       case Ctrl_K:                        ;; digraph or keyword completion
+                        ((ß CASE) (§ Ctrl_K))                        ;; digraph or keyword completion
+                        (§
                             ((ß c =) (§ ins_digraph()))
                             (if (== c NUL)
                                 (ß BREAK normalchar)
                             )
                             (ß BREAK)
+                        )
 
-;                       case Ctrl_L:                        ;; whole line completion after ^X
-;                       {
+                        ((ß CASE) (§ Ctrl_L))                        ;; whole line completion after ^X
+                        (§
                             ;; CTRL-L with 'insertmode' set: Leave Insert mode.
                             (if @p_im
                                 (ß BREAK doESCkey)
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case Ctrl_Y:                        ;; copy from previous line or scroll down
-;                       case Ctrl_E:                        ;; copy from next     line or scroll up
+                        ((ß CASE) (§ Ctrl_Y))                        ;; copy from previous line or scroll down
+                        ((ß CASE) (§ Ctrl_E))                        ;; copy from next     line or scroll up
+                        (§
                             ((ß c =) (§ ins_ctrl_ey(c)))
                             (ß BREAK normalchar)
+                        )
 
-;                       default:
+                        (ß DEFAULT)
+                        (§
                             (when (== c @intr_char)             ;; special interrupt char
                                 ;; When 'insertmode' set, and not halfway a mapping, don't leave Insert mode.
                                 (when (goto_im)
@@ -22233,7 +22708,8 @@
                                 (ß BREAK doESCkey)
                             )
                             (ß BREAK)
-;                   }
+                        )
+                    )
 
                     ;; Insert a normal character.
 
@@ -22549,9 +23025,9 @@
                 ((ß ptr =) (§ new Bytes(i + 1)))
 
                 ((ß new_cursor_col +=) (§ i))
-;               ptr.be(i, NUL);
+                (.be ptr i, NUL)
                 (while (§ 0 <= --i)
-;                   ptr.be(i, (byte)' ');
+                    (§ ptr.be(i, (byte)' '))
                 )
                 (ins_str ptr)
             )
@@ -22619,7 +23095,7 @@
             ((ß Bytes new_line =) (§ STRDUP(ml_get_curline())))
 
             ;; We only put back the new line up to the cursor.
-;           new_line.be(@curwin.w_cursor.col, NUL);
+            (.be new_line (§ @curwin.w_cursor.col), (§ NUL))
 
             ;; Put back original line.
             (ml_replace (.. @curwin w_cursor lnum), orig_line)
@@ -22639,12 +23115,12 @@
 (defn- #_void truncate_spaces [#_Bytes line]
     (§
         ;; find start of trailing white space
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = STRLEN(line) - 1) (§ 0 <= i && vim_iswhite(line.at(i))) (§ i--))
             (if (non-zero? (& @State REPLACE_FLAG))
                 (replace_join 0))        ;; remove a NUL from the replace stack
         )
-;       line.be(i + 1, NUL);
+        (§ line.be(i + 1, NUL))
     ))
 
 ;; Backspace the cursor until the given column.  Handles REPLACE and VREPLACE
@@ -22715,7 +23191,7 @@
         ((ß boolean octal =) (§ false))
         ((ß int unicode =) (§ 0))
 
-;       int nc;
+        (ß int nc)
         (swap! no_mapping inc)               ;; don't map the next key hits
 
         ((ß int cc =) (§ 0))
@@ -22830,7 +23306,7 @@
                 (if (not (stop_arrow))
                     (ß RETURN)
                 )
-;               p.be(len - 1, NUL);
+                (§ p.be(len - 1, NUL))
                 (ins_str p)
                 (appendToRedobuffLit p, -1)
                 ((ß ctrlv =) (§ false))
@@ -22878,7 +23354,7 @@
             ((ß final int INPUT_BUFLEN =) (§ 100))
             ((ß Bytes buf =) (§ new Bytes(INPUT_BUFLEN + 1)))
 
-;           buf.be(0, c);
+            (.be buf 0, c)
             ((ß int i =) (§ 1))
 
             ;; Stop the string when:
@@ -22889,12 +23365,12 @@
 
             (while (§ (c = vpeekc()) != NUL && !isspecial(c) && mb_byte2len(c) == 1 && i < INPUT_BUFLEN)
                 ((ß c =) (§ vgetc()))
-;               buf.be(i++, c);
+                (.be buf (§ i++), (§ c))
             )
 
             (do_digraph -1)                 ;; clear digraphs
             (do_digraph (.at buf (- i 1)))      ;; may be the start of a digraph
-;           buf.be(i, NUL);
+            (.be buf i, NUL)
             (ins_str buf)
             (cond (non-zero? (& flags INSCHAR_CTRLV))
             (§
@@ -22916,7 +23392,7 @@
                 ((ß Bytes buf =) (§ new Bytes(MB_MAXBYTES + 1)))
 
                 (utf_char2bytes c, buf)
-;               buf.be(cc, NUL);
+                (.be buf cc, NUL)
                 (ins_char_bytes buf, cc)
                 (appendCharToRedobuff c)
             )
@@ -23027,7 +23503,7 @@
             ;; Check for the old position still being valid, just in case the text got changed
             ;; unexpectedly.
             (when (and (not nomove) @did_ai (or esc (and (nil? (vim_strbyte @p_cpo, CPO_INDENT)) (!= (.. @curwin w_cursor lnum) (. end_insert_pos lnum)))) (<= (. end_insert_pos lnum) (.. @curbuf b_ml ml_line_count)))
-;               int cc;
+                (ß int cc)
 
                 ((ß pos_C tpos =) (§ §_pos_C()))
                 (COPY_pos tpos, (. @curwin w_cursor))
@@ -23310,7 +23786,7 @@
             (stuffcharReadbuff c))
         ((ß Bytes esc_ptr =) (§ vim_strrchr(ptr, ESC)))
         (if (non-nil? esc_ptr)
-;           esc_ptr.be(0, NUL);     ;; remove the ESC
+            (.be esc_ptr 0, NUL)     ;; remove the ESC
         )
 
         ((ß byte last =) (§ NUL))
@@ -23321,7 +23797,7 @@
         ((ß Bytes last_ptr =) (§ (esc_ptr != null) ? esc_ptr.minus(1) : ptr.plus(STRLEN(ptr) - 1)))
         (when (and (BLE ptr, last_ptr) (or (== (.at last_ptr 0) (byte \0)) (== (.at last_ptr 0) (byte \^))) (or no_esc (and (== (.at ptr 0) Ctrl_D) (< 1 count))))
             ((ß last =) (§ last_ptr.at(0)))
-;           last_ptr.be(0, NUL);
+            (.be last_ptr 0, NUL)
         )
 
 ;       do
@@ -23333,11 +23809,11 @@
 ;       } while (0 < --count);
 
         (if (!= last NUL)
-;           last_ptr.be(0, last);
+            (.be last_ptr 0, last)
         )
 
         (if (non-nil? esc_ptr)
-;           esc_ptr.be(0, ESC);     ;; put the ESC back
+            (.be esc_ptr 0, ESC)     ;; put the ESC back
         )
 
         ;; may want to stuff a trailing ESC, to get out of Insert mode
@@ -23368,7 +23844,7 @@
         ((ß Bytes s =) (§ STRDUP(@last_insert.plus(@last_insert_skip))))
         ((ß int len =) (§ STRLEN(s)))
         (if (and (< 0 len) (§ s.at(len - 1) == ESC))       ;; remove trailing ESC
-;           s.be(len - 1, NUL);
+            (§ s.be(len - 1, NUL))
         )
         s
     ))
@@ -23412,7 +23888,7 @@
         ((ß Bytes p =) (§ @replace_stack.plus(@replace_stack_nr - @replace_offset)))
         (if (non-zero? @replace_offset)
             (BCOPY p, 1, p, 0, @replace_offset))
-;       p.be(0, c);
+        (.be p 0, c)
         (swap! replace_stack_nr inc)
     ))
 
@@ -23484,9 +23960,9 @@
         ((ß int n =) (§ mb_byte2len(cc)))
         (cond (< 1 n)
         (§
-;           buf.be(0, cc);
+            (.be buf 0, cc)
             ((ß FOR) (ß (§ int i = 1) (§ i < n) (§ i++))
-;               buf.be(i, replace_pop());
+                (.be buf (§ i), (§ replace_pop()))
             )
             (ins_bytes_len buf, n)
         )
@@ -23509,9 +23985,9 @@
             )
             :else
             (§
-;               buf.be(0, c);
+                (.be buf 0, c)
                 ((ß FOR) (ß (§ int i = 1) (§ i < n) (§ i++))
-;                   buf.be(i, replace_pop());
+                    (.be buf (§ i), (§ replace_pop()))
                 )
                 (cond (utf_iscomposing (us_ptr2char buf))
                 (§
@@ -23693,33 +24169,45 @@
         (swap! no_mapping inc)
         ((ß int c =) (§ plain_vgetc()))
         (swap! no_mapping dec)
-;       switch (c)
-;       {
+        ((ß SWITCH) (§ c)
             ;; CTRL-G k and CTRL-G <Up>: cursor up to insStart.col.
-;           case K_UP:
-;           case Ctrl_K:
-;           case (byte)'k': ins_up(true);
-                      (ß BREAK)
+            ((ß CASE) (§ K_UP))
+            ((ß CASE) (§ Ctrl_K))
+            ((ß CASE) (§ (byte)'k'))
+            (§
+                (ins_up true)
+                (ß BREAK)
+            )
 
             ;; CTRL-G j and CTRL-G <Down>: cursor down to insStart.col.
-;           case K_DOWN:
-;           case Ctrl_J:
-;           case (byte)'j': ins_down(true);
-                      (ß BREAK)
+            ((ß CASE) (§ K_DOWN))
+            ((ß CASE) (§ Ctrl_J))
+            ((ß CASE) (§ (byte)'j'))
+            (§
+                (ins_down true)
+                (ß BREAK)
+            )
 
             ;; CTRL-G u: start new undoable edit.
-;           case (byte)'u': u_sync(true);
-                      (reset! ins_need_undo true)
+            ((ß CASE) (§ (byte)'u'))
+            (§
+                (u_sync true)
+                (reset! ins_need_undo true)
 
-                      ;; Need to reset insStart, esp. because a BS that joins
-                      ;; a line to the previous one must save for undo.
-                      (reset! update_insStart_orig false)
-                      (COPY_pos @insStart, (. @curwin w_cursor))
-                      (ß BREAK)
+                ;; Need to reset insStart, esp. because a BS that joins
+                ;; a line to the previous one must save for undo.
+                (reset! update_insStart_orig false)
+                (COPY_pos @insStart, (. @curwin w_cursor))
+                (ß BREAK)
+            )
 
             ;; Unknown CTRL-G command, reserved for future expansion.
-;           default:  vim_beep();
-;       }
+            (ß DEFAULT)
+            (§
+                (vim_beep)
+                (ß BREAK)
+            )
+        )
     ))
 
 ;; CTRL-^ in Insert mode.
@@ -23831,24 +24319,26 @@
 (defn- #_boolean ins_start_select [#_int c]
     (§
         (when @km_startsel
-;           switch (c)
-;           {
-;               case K_KHOME:
-;               case K_KEND:
-;               case K_PAGEUP:
-;               case K_KPAGEUP:
-;               case K_PAGEDOWN:
-;               case K_KPAGEDOWN:
+            ((ß SWITCH) (§ c)
+                ((ß CASE) (§ K_KHOME))
+                ((ß CASE) (§ K_KEND))
+                ((ß CASE) (§ K_PAGEUP))
+                ((ß CASE) (§ K_KPAGEUP))
+                ((ß CASE) (§ K_PAGEDOWN))
+                ((ß CASE) (§ K_KPAGEDOWN))
+                (§
                     (if (zero? (& @mod_mask MOD_MASK_SHIFT))
                         (ß BREAK)
                     )
-                    ;; FALLTHROUGH
-;               case K_S_LEFT:
-;               case K_S_RIGHT:
-;               case K_S_UP:
-;               case K_S_DOWN:
-;               case K_S_END:
-;               case K_S_HOME:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ K_S_LEFT))
+                ((ß CASE) (§ K_S_RIGHT))
+                ((ß CASE) (§ K_S_UP))
+                ((ß CASE) (§ K_S_DOWN))
+                ((ß CASE) (§ K_S_END))
+                ((ß CASE) (§ K_S_HOME))
+                (§
                     ;; Start selection right away, the cursor can move with
                     ;; CTRL-O when beyond the end of the line.
                     (start_selection)
@@ -23858,15 +24348,16 @@
                     (when (non-zero? @mod_mask)
                         ((ß Bytes buf =) (§ new Bytes(4)))
 
-;                       buf.be(0, KB_SPECIAL);
-;                       buf.be(1, KS_MODIFIER);
-;                       buf.be(2, @mod_mask);
-;                       buf.be(3, NUL);
+                        (.be buf 0, KB_SPECIAL)
+                        (.be buf 1, KS_MODIFIER)
+                        (.be buf 2, @mod_mask)
+                        (.be buf 3, NUL)
                         (stuffReadbuff buf)
                     )
                     (stuffcharReadbuff c)
                     ((ß RETURN) (§ true))
-;           }
+                )
+            )
         )
 
         false
@@ -24127,7 +24618,7 @@
             (§
                 ((ß inserted_space_p[0] =) (§ false))
 
-;               int ts;
+                (ß int ts)
                 (if (and @p_sta in_indent)
                     ((ß ts =) (§ (int)get_sw_value(@curbuf)))
                     ((ß ts =) (§ (int)get_sts_value()))
@@ -24466,7 +24957,7 @@
 
         (appendToRedobuff (u8 "\t"))
 
-;       int temp;
+        (ß int temp)
         (cond (and @p_sta ind)                       ;; insert tab in indent, use 'shiftwidth'
         (§
             ((ß temp =) (§ (int)get_sw_value(@curbuf)))
@@ -24506,9 +24997,9 @@
             ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
 
             ((ß pos_C pos =) (§ §_pos_C()))
-;           pos_C cursor;
+            (ß pos_C cursor)
             ((ß Bytes saved_line =) (§ null))
-;           Bytes ptr;
+            (ß Bytes ptr)
             (cond (non-zero? (& @State VREPLACE_FLAG))
             (§
                 (COPY_pos pos, (. @curwin w_cursor))
@@ -24551,7 +25042,7 @@
                     (ß BREAK)
                 )
                 (when (!= (.at ptr 0) TAB)
-;                   ptr.be(0, TAB);
+                    (.be ptr 0, TAB)
                     (when (< change_col 0)
                         ((ß change_col =) (§ fpos.col)) ;; column of first change
                         ;; May have to adjust insStart.
@@ -24772,7 +25263,7 @@
         ;; do some very smart indenting when entering '{' or '}'
 
         (when (or (and (or @did_si @can_si_back) (== c (byte \{))) (and @can_si (== c (byte \}))))
-;           pos_C pos;
+            (ß pos_C pos)
 
             ;; for '}' set indent equal to indent of line containing matching '{'
 
@@ -25204,33 +25695,45 @@
 
 (defn- #_int backslash_trans [#_int c]
     (§
-;       switch (c)
-;       {
-;           case (byte)'r':   return CAR;
-;           case (byte)'t':   return TAB;
-;           case (byte)'e':   return ESC;
-;           case (byte)'b':   return BS;
-;       }
+        ((ß SWITCH) (§ c)
+            ((ß CASE) (§ (byte)'r'))
+            (§
+                ((ß RETURN) CAR)
+            )
+            ((ß CASE) (§ (byte)'t'))
+            (§
+                ((ß RETURN) TAB)
+            )
+            ((ß CASE) (§ (byte)'e'))
+            (§
+                ((ß RETURN) ESC)
+            )
+            ((ß CASE) (§ (byte)'b'))
+            (§
+                ((ß RETURN) BS)
+            )
+        )
         c
     ))
 
-(final int CLASS_ALNUM 0)
-(final int CLASS_ALPHA 1)
-(final int CLASS_BLANK 2)
-(final int CLASS_CNTRL 3)
-(final int CLASS_DIGIT 4)
-(final int CLASS_GRAPH 5)
-(final int CLASS_LOWER 6)
-(final int CLASS_PRINT 7)
-(final int CLASS_PUNCT 8)
-(final int CLASS_SPACE 9)
-(final int CLASS_UPPER 10)
-(final int CLASS_XDIGIT 11)
-(final int CLASS_TAB 12)
-(final int CLASS_RETURN 13)
-(final int CLASS_BACKSPACE 14)
-(final int CLASS_ESCAPE 15)
-(final int CLASS_NONE 99)
+(final int
+    CLASS_ALNUM 0,
+    CLASS_ALPHA 1,
+    CLASS_BLANK 2,
+    CLASS_CNTRL 3,
+    CLASS_DIGIT 4,
+    CLASS_GRAPH 5,
+    CLASS_LOWER 6,
+    CLASS_PRINT 7,
+    CLASS_PUNCT 8,
+    CLASS_SPACE 9,
+    CLASS_UPPER 10,
+    CLASS_XDIGIT 11,
+    CLASS_TAB 12,
+    CLASS_RETURN 13,
+    CLASS_BACKSPACE 14,
+    CLASS_ESCAPE 15,
+    CLASS_NONE 99)
 
 (final Bytes* class_names
     [
@@ -25541,15 +26044,14 @@
 
 (defn- #_void reg_equi_class [#_int c]
     (§
-;       switch (c)
-;       {
-;           case (byte)'A':
-;           case 0xc0: case 0xc1: case 0xc2:
-;           case 0xc3: case 0xc4: case 0xc5:
-;           case 0x100: case 0x102: case 0x104:
-;           case 0x1cd: case 0x1de: case 0x1e0:
-;           case 0x1ea2:
-;           {
+        ((ß SWITCH) (§ c)
+            ((ß CASE) (§ (byte)'A'))
+            ((ß CASE) (§ 0xc0)) ((ß CASE) (§ 0xc1)) ((ß CASE) (§ 0xc2))
+            ((ß CASE) (§ 0xc3)) ((ß CASE) (§ 0xc4)) ((ß CASE) (§ 0xc5))
+            ((ß CASE) (§ 0x100)) ((ß CASE) (§ 0x102)) ((ß CASE) (§ 0x104))
+            ((ß CASE) (§ 0x1cd)) ((ß CASE) (§ 0x1de)) ((ß CASE) (§ 0x1e0))
+            ((ß CASE) (§ 0x1ea2))
+            (§
                 (regmbc (byte \A))
                 (regmbc 0xc0) regmbc(0xc1) (regmbc 0xc2)
                 (regmbc 0xc3) regmbc(0xc4) (regmbc 0xc5)
@@ -25557,14 +26059,14 @@
                 (regmbc 0x1cd) regmbc(0x1de) (regmbc 0x1e0)
                 (regmbc 0x1ea2)
                 (ß RETURN)
-;           }
-;           case (byte)'a':
-;           case 0xe0: case 0xe1: case 0xe2:
-;           case 0xe3: case 0xe4: case 0xe5:
-;           case 0x101: case 0x103: case 0x105:
-;           case 0x1ce: case 0x1df: case 0x1e1:
-;           case 0x1ea3:
-;           {
+            )
+            ((ß CASE) (§ (byte)'a'))
+            ((ß CASE) (§ 0xe0)) ((ß CASE) (§ 0xe1)) ((ß CASE) (§ 0xe2))
+            ((ß CASE) (§ 0xe3)) ((ß CASE) (§ 0xe4)) ((ß CASE) (§ 0xe5))
+            ((ß CASE) (§ 0x101)) ((ß CASE) (§ 0x103)) ((ß CASE) (§ 0x105))
+            ((ß CASE) (§ 0x1ce)) ((ß CASE) (§ 0x1df)) ((ß CASE) (§ 0x1e1))
+            ((ß CASE) (§ 0x1ea3))
+            (§
                 (regmbc (byte \a))
                 (regmbc 0xe0) regmbc(0xe1) (regmbc 0xe2)
                 (regmbc 0xe3) regmbc(0xe4) (regmbc 0xe5)
@@ -25572,266 +26074,266 @@
                 (regmbc 0x1ce) regmbc(0x1df) (regmbc 0x1e1)
                 (regmbc 0x1ea3)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'B':
-;           case 0x1e02: case 0x1e06:
-;           {
+            ((ß CASE) (§ (byte)'B'))
+            ((ß CASE) (§ 0x1e02)) ((ß CASE) (§ 0x1e06))
+            (§
                 (regmbc (byte \B))
                 (regmbc 0x1e02) regmbc(0x1e06)
                 (ß RETURN)
-;           }
-;           case (byte)'b':
-;           case 0x1e03: case 0x1e07:
-;           {
+            )
+            ((ß CASE) (§ (byte)'b'))
+            ((ß CASE) (§ 0x1e03)) ((ß CASE) (§ 0x1e07))
+            (§
                 (regmbc (byte \b))
                 (regmbc 0x1e03) regmbc(0x1e07)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'C':
-;           case 0xc7:
-;           case 0x106: case 0x108: case 0x10a: case 0x10c:
-;           {
+            ((ß CASE) (§ (byte)'C'))
+            ((ß CASE) (§ 0xc7))
+            ((ß CASE) (§ 0x106)) ((ß CASE) (§ 0x108)) ((ß CASE) (§ 0x10a)) ((ß CASE) (§ 0x10c))
+            (§
                 (regmbc (byte \C))
                 (regmbc 0xc7)
                 (regmbc 0x106) regmbc(0x108) (regmbc 0x10a) regmbc(0x10c)
                 (ß RETURN)
-;           }
-;           case (byte)'c':
-;           case 0xe7:
-;           case 0x107: case 0x109: case 0x10b: case 0x10d:
-;           {
+            )
+            ((ß CASE) (§ (byte)'c'))
+            ((ß CASE) (§ 0xe7))
+            ((ß CASE) (§ 0x107)) ((ß CASE) (§ 0x109)) ((ß CASE) (§ 0x10b)) ((ß CASE) (§ 0x10d))
+            (§
                 (regmbc (byte \c))
                 (regmbc 0xe7)
                 (regmbc 0x107) regmbc(0x109) (regmbc 0x10b) regmbc(0x10d)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'D':
-;           case 0x10e: case 0x110:
-;           case 0x1e0a: case 0x1e0c: case 0x1e0e: case 0x1e10: case 0x1e12:
-;           {
+            ((ß CASE) (§ (byte)'D'))
+            ((ß CASE) (§ 0x10e)) ((ß CASE) (§ 0x110))
+            ((ß CASE) (§ 0x1e0a)) ((ß CASE) (§ 0x1e0c)) ((ß CASE) (§ 0x1e0e)) ((ß CASE) (§ 0x1e10)) ((ß CASE) (§ 0x1e12))
+            (§
                 (regmbc (byte \D))
                 (regmbc 0x10e) regmbc(0x110)
                 (regmbc 0x1e0a) regmbc(0x1e0c) (regmbc 0x1e0e) regmbc(0x1e10) (regmbc 0x1e12)
                 (ß RETURN)
-;           }
-;           case (byte)'d':
-;           case 0x10f: case 0x111:
-;           case 0x1e0b: case 0x1e0d: case 0x1e0f: case 0x1e11: case 0x1e13:
-;           {
+            )
+            ((ß CASE) (§ (byte)'d'))
+            ((ß CASE) (§ 0x10f)) ((ß CASE) (§ 0x111))
+            ((ß CASE) (§ 0x1e0b)) ((ß CASE) (§ 0x1e0d)) ((ß CASE) (§ 0x1e0f)) ((ß CASE) (§ 0x1e11)) ((ß CASE) (§ 0x1e13))
+            (§
                 (regmbc (byte \d))
                 (regmbc 0x10f) regmbc(0x111)
                 (regmbc 0x1e0b) regmbc(0x1e0d) (regmbc 0x1e0f) regmbc(0x1e11) (regmbc 0x1e13)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'E':
-;           case 0xc8: case 0xc9: case 0xca: case 0xcb:
-;           case 0x112: case 0x114: case 0x116: case 0x118: case 0x11a:
-;           case 0x1eba: case 0x1ebc:
-;           {
+            ((ß CASE) (§ (byte)'E'))
+            ((ß CASE) (§ 0xc8)) ((ß CASE) (§ 0xc9)) ((ß CASE) (§ 0xca)) ((ß CASE) (§ 0xcb))
+            ((ß CASE) (§ 0x112)) ((ß CASE) (§ 0x114)) ((ß CASE) (§ 0x116)) ((ß CASE) (§ 0x118)) ((ß CASE) (§ 0x11a))
+            ((ß CASE) (§ 0x1eba)) ((ß CASE) (§ 0x1ebc))
+            (§
                 (regmbc (byte \E))
                 (regmbc 0xc8) regmbc(0xc9) (regmbc 0xca) regmbc(0xcb)
                 (regmbc 0x112) regmbc(0x114) (regmbc 0x116) regmbc(0x118) (regmbc 0x11a)
                 (regmbc 0x1eba) regmbc(0x1ebc)
                 (ß RETURN)
-;           }
-;           case (byte)'e':
-;           case 0xe8: case 0xe9: case 0xea: case 0xeb:
-;           case 0x113: case 0x115: case 0x117: case 0x119: case 0x11b:
-;           case 0x1ebb: case 0x1ebd:
-;           {
+            )
+            ((ß CASE) (§ (byte)'e'))
+            ((ß CASE) (§ 0xe8)) ((ß CASE) (§ 0xe9)) ((ß CASE) (§ 0xea)) ((ß CASE) (§ 0xeb))
+            ((ß CASE) (§ 0x113)) ((ß CASE) (§ 0x115)) ((ß CASE) (§ 0x117)) ((ß CASE) (§ 0x119)) ((ß CASE) (§ 0x11b))
+            ((ß CASE) (§ 0x1ebb)) ((ß CASE) (§ 0x1ebd))
+            (§
                 (regmbc (byte \e))
                 (regmbc 0xe8) regmbc(0xe9) (regmbc 0xea) regmbc(0xeb)
                 (regmbc 0x113) regmbc(0x115) (regmbc 0x117) regmbc(0x119) (regmbc 0x11b)
                 (regmbc 0x1ebb) regmbc(0x1ebd)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'F':
-;           case 0x1e1e:
-;           {
+            ((ß CASE) (§ (byte)'F'))
+            ((ß CASE) (§ 0x1e1e))
+            (§
                 (regmbc (byte \F))
                 (regmbc 0x1e1e)
                 (ß RETURN)
-;           }
-;           case (byte)'f':
-;           case 0x1e1f:
-;           {
+            )
+            ((ß CASE) (§ (byte)'f'))
+            ((ß CASE) (§ 0x1e1f))
+            (§
                 (regmbc (byte \f))
                 (regmbc 0x1e1f)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'G':
-;           case 0x11c: case 0x11e: case 0x120: case 0x122:
-;           case 0x1e4: case 0x1e6: case 0x1f4:
-;           case 0x1e20:
-;           {
+            ((ß CASE) (§ (byte)'G'))
+            ((ß CASE) (§ 0x11c)) ((ß CASE) (§ 0x11e)) ((ß CASE) (§ 0x120)) ((ß CASE) (§ 0x122))
+            ((ß CASE) (§ 0x1e4)) ((ß CASE) (§ 0x1e6)) ((ß CASE) (§ 0x1f4))
+            ((ß CASE) (§ 0x1e20))
+            (§
                 (regmbc (byte \G))
                 (regmbc 0x11c) regmbc(0x11e) (regmbc 0x120) regmbc(0x122)
                 (regmbc 0x1e4) regmbc(0x1e6) (regmbc 0x1f4)
                 (regmbc 0x1e20)
                 (ß RETURN)
-;           }
-;           case (byte)'g':
-;           case 0x11d: case 0x11f: case 0x121: case 0x123:
-;           case 0x1e5: case 0x1e7: case 0x1f5:
-;           case 0x1e21:
-;           {
+            )
+            ((ß CASE) (§ (byte)'g'))
+            ((ß CASE) (§ 0x11d)) ((ß CASE) (§ 0x11f)) ((ß CASE) (§ 0x121)) ((ß CASE) (§ 0x123))
+            ((ß CASE) (§ 0x1e5)) ((ß CASE) (§ 0x1e7)) ((ß CASE) (§ 0x1f5))
+            ((ß CASE) (§ 0x1e21))
+            (§
                 (regmbc (byte \g))
                 (regmbc 0x11d) regmbc(0x11f) (regmbc 0x121) regmbc(0x123)
                 (regmbc 0x1e5) regmbc(0x1e7) (regmbc 0x1f5)
                 (regmbc 0x1e21)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'H':
-;           case 0x124: case 0x126:
-;           case 0x1e22: case 0x1e26: case 0x1e28:
-;           {
+            ((ß CASE) (§ (byte)'H'))
+            ((ß CASE) (§ 0x124)) ((ß CASE) (§ 0x126))
+            ((ß CASE) (§ 0x1e22)) ((ß CASE) (§ 0x1e26)) ((ß CASE) (§ 0x1e28))
+            (§
                 (regmbc (byte \H))
                 (regmbc 0x124) regmbc(0x126)
                 (regmbc 0x1e22) regmbc(0x1e26) (regmbc 0x1e28)
                 (ß RETURN)
-;           }
-;           case (byte)'h':
-;           case 0x125: case 0x127:
-;           case 0x1e23: case 0x1e27: case 0x1e29: case 0x1e96:
-;           {
+            )
+            ((ß CASE) (§ (byte)'h'))
+            ((ß CASE) (§ 0x125)) ((ß CASE) (§ 0x127))
+            ((ß CASE) (§ 0x1e23)) ((ß CASE) (§ 0x1e27)) ((ß CASE) (§ 0x1e29)) ((ß CASE) (§ 0x1e96))
+            (§
                 (regmbc (byte \h))
                 (regmbc 0x125) regmbc(0x127)
                 (regmbc 0x1e23) regmbc(0x1e27) (regmbc 0x1e29) regmbc(0x1e96)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'I':
-;           case 0xcc: case 0xcd: case 0xce: case 0xcf:
-;           case 0x128: case 0x12a: case 0x12c: case 0x12e: case 0x130:
-;           case 0x1cf:
-;           case 0x1ec8:
-;           {
+            ((ß CASE) (§ (byte)'I'))
+            ((ß CASE) (§ 0xcc)) ((ß CASE) (§ 0xcd)) ((ß CASE) (§ 0xce)) ((ß CASE) (§ 0xcf))
+            ((ß CASE) (§ 0x128)) ((ß CASE) (§ 0x12a)) ((ß CASE) (§ 0x12c)) ((ß CASE) (§ 0x12e)) ((ß CASE) (§ 0x130))
+            ((ß CASE) (§ 0x1cf))
+            ((ß CASE) (§ 0x1ec8))
+            (§
                 (regmbc (byte \I))
                 (regmbc 0xcc) regmbc(0xcd) (regmbc 0xce) regmbc(0xcf)
                 (regmbc 0x128) regmbc(0x12a) (regmbc 0x12c) regmbc(0x12e) (regmbc 0x130)
                 (regmbc 0x1cf)
                 (regmbc 0x1ec8)
                 (ß RETURN)
-;           }
-;           case (byte)'i':
-;           case 0xec: case 0xed: case 0xee: case 0xef:
-;           case 0x129: case 0x12b: case 0x12d: case 0x12f: case 0x131:
-;           case 0x1d0:
-;           case 0x1ec9:
-;           {
+            )
+            ((ß CASE) (§ (byte)'i'))
+            ((ß CASE) (§ 0xec)) ((ß CASE) (§ 0xed)) ((ß CASE) (§ 0xee)) ((ß CASE) (§ 0xef))
+            ((ß CASE) (§ 0x129)) ((ß CASE) (§ 0x12b)) ((ß CASE) (§ 0x12d)) ((ß CASE) (§ 0x12f)) ((ß CASE) (§ 0x131))
+            ((ß CASE) (§ 0x1d0))
+            ((ß CASE) (§ 0x1ec9))
+            (§
                 (regmbc (byte \i))
                 (regmbc 0xec) regmbc(0xed) (regmbc 0xee) regmbc(0xef)
                 (regmbc 0x129) regmbc(0x12b) (regmbc 0x12d) regmbc(0x12f) (regmbc 0x131)
                 (regmbc 0x1d0)
                 (regmbc 0x1ec9)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'J':
-;           case 0x134:
-;           {
+            ((ß CASE) (§ (byte)'J'))
+            ((ß CASE) (§ 0x134))
+            (§
                 (regmbc (byte \J))
                 (regmbc 0x134)
                 (ß RETURN)
-;           }
-;           case (byte)'j':
-;           case 0x135: case 0x1f0:
-;           {
+            )
+            ((ß CASE) (§ (byte)'j'))
+            ((ß CASE) (§ 0x135)) ((ß CASE) (§ 0x1f0))
+            (§
                 (regmbc (byte \j))
                 (regmbc 0x135) regmbc(0x1f0)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'K':
-;           case 0x136: case 0x1e8:
-;           case 0x1e30: case 0x1e34:
-;           {
+            ((ß CASE) (§ (byte)'K'))
+            ((ß CASE) (§ 0x136)) ((ß CASE) (§ 0x1e8))
+            ((ß CASE) (§ 0x1e30)) ((ß CASE) (§ 0x1e34))
+            (§
                 (regmbc (byte \K))
                 (regmbc 0x136) regmbc(0x1e8)
                 (regmbc 0x1e30) regmbc(0x1e34)
                 (ß RETURN)
-;           }
-;           case (byte)'k':
-;           case 0x137: case 0x1e9:
-;           case 0x1e31: case 0x1e35:
-;           {
+            )
+            ((ß CASE) (§ (byte)'k'))
+            ((ß CASE) (§ 0x137)) ((ß CASE) (§ 0x1e9))
+            ((ß CASE) (§ 0x1e31)) ((ß CASE) (§ 0x1e35))
+            (§
                 (regmbc (byte \k))
                 (regmbc 0x137) regmbc(0x1e9)
                 (regmbc 0x1e31) regmbc(0x1e35)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'L':
-;           case 0x139: case 0x13b: case 0x13d: case 0x13f: case 0x141:
-;           case 0x1e3a:
-;           {
+            ((ß CASE) (§ (byte)'L'))
+            ((ß CASE) (§ 0x139)) ((ß CASE) (§ 0x13b)) ((ß CASE) (§ 0x13d)) ((ß CASE) (§ 0x13f)) ((ß CASE) (§ 0x141))
+            ((ß CASE) (§ 0x1e3a))
+            (§
                 (regmbc (byte \L))
                 (regmbc 0x139) regmbc(0x13b) (regmbc 0x13d) regmbc(0x13f) (regmbc 0x141)
                 (regmbc 0x1e3a)
                 (ß RETURN)
-;           }
-;           case (byte)'l':
-;           case 0x13a: case 0x13c: case 0x13e: case 0x140: case 0x142:
-;           case 0x1e3b:
-;           {
+            )
+            ((ß CASE) (§ (byte)'l'))
+            ((ß CASE) (§ 0x13a)) ((ß CASE) (§ 0x13c)) ((ß CASE) (§ 0x13e)) ((ß CASE) (§ 0x140)) ((ß CASE) (§ 0x142))
+            ((ß CASE) (§ 0x1e3b))
+            (§
                 (regmbc (byte \l))
                 (regmbc 0x13a) regmbc(0x13c) (regmbc 0x13e) regmbc(0x140) (regmbc 0x142)
                 (regmbc 0x1e3b)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'M':
-;           case 0x1e3e: case 0x1e40:
-;           {
+            ((ß CASE) (§ (byte)'M'))
+            ((ß CASE) (§ 0x1e3e)) ((ß CASE) (§ 0x1e40))
+            (§
                 (regmbc (byte \M))
                 (regmbc 0x1e3e) regmbc(0x1e40)
                 (ß RETURN)
-;           }
-;           case (byte)'m':
-;           case 0x1e3f: case 0x1e41:
-;           {
+            )
+            ((ß CASE) (§ (byte)'m'))
+            ((ß CASE) (§ 0x1e3f)) ((ß CASE) (§ 0x1e41))
+            (§
                 (regmbc (byte \m))
                 (regmbc 0x1e3f) regmbc(0x1e41)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'N':
-;           case 0xd1:
-;           case 0x143: case 0x145: case 0x147:
-;           case 0x1e44: case 0x1e48:
-;           {
+            ((ß CASE) (§ (byte)'N'))
+            ((ß CASE) (§ 0xd1))
+            ((ß CASE) (§ 0x143)) ((ß CASE) (§ 0x145)) ((ß CASE) (§ 0x147))
+            ((ß CASE) (§ 0x1e44)) ((ß CASE) (§ 0x1e48))
+            (§
                 (regmbc (byte \N))
                 (regmbc 0xd1)
                 (regmbc 0x143) regmbc(0x145) (regmbc 0x147)
                 (regmbc 0x1e44) regmbc(0x1e48)
                 (ß RETURN)
-;           }
-;           case (byte)'n':
-;           case 0xf1:
-;           case 0x144: case 0x146: case 0x148: case 0x149:
-;           case 0x1e45: case 0x1e49:
-;           {
+            )
+            ((ß CASE) (§ (byte)'n'))
+            ((ß CASE) (§ 0xf1))
+            ((ß CASE) (§ 0x144)) ((ß CASE) (§ 0x146)) ((ß CASE) (§ 0x148)) ((ß CASE) (§ 0x149))
+            ((ß CASE) (§ 0x1e45)) ((ß CASE) (§ 0x1e49))
+            (§
                 (regmbc (byte \n))
                 (regmbc 0xf1)
                 (regmbc 0x144) regmbc(0x146) (regmbc 0x148) regmbc(0x149)
                 (regmbc 0x1e45) regmbc(0x1e49)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'O':
-;           case 0xd2: case 0xd3: case 0xd4:
-;           case 0xd5: case 0xd6: case 0xd8:
-;           case 0x14c: case 0x14e: case 0x150:
-;           case 0x1a0: case 0x1d1: case 0x1ea: case 0x1ec:
-;           case 0x1ece:
-;           {
+            ((ß CASE) (§ (byte)'O'))
+            ((ß CASE) (§ 0xd2)) ((ß CASE) (§ 0xd3)) ((ß CASE) (§ 0xd4))
+            ((ß CASE) (§ 0xd5)) ((ß CASE) (§ 0xd6)) ((ß CASE) (§ 0xd8))
+            ((ß CASE) (§ 0x14c)) ((ß CASE) (§ 0x14e)) ((ß CASE) (§ 0x150))
+            ((ß CASE) (§ 0x1a0)) ((ß CASE) (§ 0x1d1)) ((ß CASE) (§ 0x1ea)) ((ß CASE) (§ 0x1ec))
+            ((ß CASE) (§ 0x1ece))
+            (§
                 (regmbc (byte \O))
                 (regmbc 0xd2) regmbc(0xd3) (regmbc 0xd4)
                 (regmbc 0xd5) regmbc(0xd6) (regmbc 0xd8)
@@ -25839,14 +26341,14 @@
                 (regmbc 0x1a0) regmbc(0x1d1) (regmbc 0x1ea) regmbc(0x1ec)
                 (regmbc 0x1ece)
                 (ß RETURN)
-;           }
-;           case (byte)'o':
-;           case 0xf2: case 0xf3: case 0xf4:
-;           case 0xf5: case 0xf6: case 0xf8:
-;           case 0x14d: case 0x14f: case 0x151:
-;           case 0x1a1: case 0x1d2: case 0x1eb: case 0x1ed:
-;           case 0x1ecf:
-;           {
+            )
+            ((ß CASE) (§ (byte)'o'))
+            ((ß CASE) (§ 0xf2)) ((ß CASE) (§ 0xf3)) ((ß CASE) (§ 0xf4))
+            ((ß CASE) (§ 0xf5)) ((ß CASE) (§ 0xf6)) ((ß CASE) (§ 0xf8))
+            ((ß CASE) (§ 0x14d)) ((ß CASE) (§ 0x14f)) ((ß CASE) (§ 0x151))
+            ((ß CASE) (§ 0x1a1)) ((ß CASE) (§ 0x1d2)) ((ß CASE) (§ 0x1eb)) ((ß CASE) (§ 0x1ed))
+            ((ß CASE) (§ 0x1ecf))
+            (§
                 (regmbc (byte \o))
                 (regmbc 0xf2) regmbc(0xf3) (regmbc 0xf4)
                 (regmbc 0xf5) regmbc(0xf6) (regmbc 0xf8)
@@ -25854,198 +26356,198 @@
                 (regmbc 0x1a1) regmbc(0x1d2) (regmbc 0x1eb) regmbc(0x1ed)
                 (regmbc 0x1ecf)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'P':
-;           case 0x1e54: case 0x1e56:
-;           {
+            ((ß CASE) (§ (byte)'P'))
+            ((ß CASE) (§ 0x1e54)) ((ß CASE) (§ 0x1e56))
+            (§
                 (regmbc (byte \P))
                 (regmbc 0x1e54) regmbc(0x1e56)
                 (ß RETURN)
-;           }
-;           case (byte)'p':
-;           case 0x1e55: case 0x1e57:
-;           {
+            )
+            ((ß CASE) (§ (byte)'p'))
+            ((ß CASE) (§ 0x1e55)) ((ß CASE) (§ 0x1e57))
+            (§
                 (regmbc (byte \p))
                 (regmbc 0x1e55) regmbc(0x1e57)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'R':
-;           case 0x154: case 0x156: case 0x158:
-;           case 0x1e58: case 0x1e5e:
-;           {
+            ((ß CASE) (§ (byte)'R'))
+            ((ß CASE) (§ 0x154)) ((ß CASE) (§ 0x156)) ((ß CASE) (§ 0x158))
+            ((ß CASE) (§ 0x1e58)) ((ß CASE) (§ 0x1e5e))
+            (§
                 (regmbc (byte \R))
                 (regmbc 0x154) regmbc(0x156) (regmbc 0x158)
                 (regmbc 0x1e58) regmbc(0x1e5e)
                 (ß RETURN)
-;           }
-;           case (byte)'r':
-;           case 0x155: case 0x157: case 0x159:
-;           case 0x1e59: case 0x1e5f:
-;           {
+            )
+            ((ß CASE) (§ (byte)'r'))
+            ((ß CASE) (§ 0x155)) ((ß CASE) (§ 0x157)) ((ß CASE) (§ 0x159))
+            ((ß CASE) (§ 0x1e59)) ((ß CASE) (§ 0x1e5f))
+            (§
                 (regmbc (byte \r))
                 (regmbc 0x155) regmbc(0x157) (regmbc 0x159)
                 (regmbc 0x1e59) regmbc(0x1e5f)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'S':
-;           case 0x15a: case 0x15c: case 0x15e: case 0x160:
-;           case 0x1e60:
-;           {
+            ((ß CASE) (§ (byte)'S'))
+            ((ß CASE) (§ 0x15a)) ((ß CASE) (§ 0x15c)) ((ß CASE) (§ 0x15e)) ((ß CASE) (§ 0x160))
+            ((ß CASE) (§ 0x1e60))
+            (§
                 (regmbc (byte \S))
                 (regmbc 0x15a) regmbc(0x15c) (regmbc 0x15e) regmbc(0x160)
                 (regmbc 0x1e60)
                 (ß RETURN)
-;           }
-;           case (byte)'s':
-;           case 0x15b: case 0x15d: case 0x15f: case 0x161:
-;           case 0x1e61:
-;           {
+            )
+            ((ß CASE) (§ (byte)'s'))
+            ((ß CASE) (§ 0x15b)) ((ß CASE) (§ 0x15d)) ((ß CASE) (§ 0x15f)) ((ß CASE) (§ 0x161))
+            ((ß CASE) (§ 0x1e61))
+            (§
                 (regmbc (byte \s))
                 (regmbc 0x15b) regmbc(0x15d) (regmbc 0x15f) regmbc(0x161)
                 (regmbc 0x1e61)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'T':
-;           case 0x162: case 0x164: case 0x166:
-;           case 0x1e6a: case 0x1e6e:
-;           {
+            ((ß CASE) (§ (byte)'T'))
+            ((ß CASE) (§ 0x162)) ((ß CASE) (§ 0x164)) ((ß CASE) (§ 0x166))
+            ((ß CASE) (§ 0x1e6a)) ((ß CASE) (§ 0x1e6e))
+            (§
                 (regmbc (byte \T))
                 (regmbc 0x162) regmbc(0x164) (regmbc 0x166)
                 (regmbc 0x1e6a) regmbc(0x1e6e)
                 (ß RETURN)
-;           }
-;           case (byte)'t':
-;           case 0x163: case 0x165: case 0x167:
-;           case 0x1e6b: case 0x1e6f: case 0x1e97:
-;           {
+            )
+            ((ß CASE) (§ (byte)'t'))
+            ((ß CASE) (§ 0x163)) ((ß CASE) (§ 0x165)) ((ß CASE) (§ 0x167))
+            ((ß CASE) (§ 0x1e6b)) ((ß CASE) (§ 0x1e6f)) ((ß CASE) (§ 0x1e97))
+            (§
                 (regmbc (byte \t))
                 (regmbc 0x163) regmbc(0x165) (regmbc 0x167)
                 (regmbc 0x1e6b) regmbc(0x1e6f) (regmbc 0x1e97)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'U':
-;           case 0xd9: case 0xda: case 0xdb: case 0xdc:
-;           case 0x168: case 0x16a: case 0x16c: case 0x16e:
-;           case 0x170: case 0x172: case 0x1af: case 0x1d3:
-;           case 0x1ee6:
-;           {
+            ((ß CASE) (§ (byte)'U'))
+            ((ß CASE) (§ 0xd9)) ((ß CASE) (§ 0xda)) ((ß CASE) (§ 0xdb)) ((ß CASE) (§ 0xdc))
+            ((ß CASE) (§ 0x168)) ((ß CASE) (§ 0x16a)) ((ß CASE) (§ 0x16c)) ((ß CASE) (§ 0x16e))
+            ((ß CASE) (§ 0x170)) ((ß CASE) (§ 0x172)) ((ß CASE) (§ 0x1af)) ((ß CASE) (§ 0x1d3))
+            ((ß CASE) (§ 0x1ee6))
+            (§
                 (regmbc (byte \U))
                 (regmbc 0xd9) regmbc(0xda) (regmbc 0xdb) regmbc(0xdc)
                 (regmbc 0x168) regmbc(0x16a) (regmbc 0x16c) regmbc(0x16e)
                 (regmbc 0x170) regmbc(0x172) (regmbc 0x1af) regmbc(0x1d3)
                 (regmbc 0x1ee6)
                 (ß RETURN)
-;           }
-;           case (byte)'u':
-;           case 0xf9: case 0xfa: case 0xfb: case 0xfc:
-;           case 0x169: case 0x16b: case 0x16d: case 0x16f:
-;           case 0x171: case 0x173: case 0x1b0: case 0x1d4:
-;           case 0x1ee7:
-;           {
+            )
+            ((ß CASE) (§ (byte)'u'))
+            ((ß CASE) (§ 0xf9)) ((ß CASE) (§ 0xfa)) ((ß CASE) (§ 0xfb)) ((ß CASE) (§ 0xfc))
+            ((ß CASE) (§ 0x169)) ((ß CASE) (§ 0x16b)) ((ß CASE) (§ 0x16d)) ((ß CASE) (§ 0x16f))
+            ((ß CASE) (§ 0x171)) ((ß CASE) (§ 0x173)) ((ß CASE) (§ 0x1b0)) ((ß CASE) (§ 0x1d4))
+            ((ß CASE) (§ 0x1ee7))
+            (§
                 (regmbc (byte \u))
                 (regmbc 0xf9) regmbc(0xfa) (regmbc 0xfb) regmbc(0xfc)
                 (regmbc 0x169) regmbc(0x16b) (regmbc 0x16d) regmbc(0x16f)
                 (regmbc 0x171) regmbc(0x173) (regmbc 0x1b0) regmbc(0x1d4)
                 (regmbc 0x1ee7)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'V':
-;           case 0x1e7c:
-;           {
+            ((ß CASE) (§ (byte)'V'))
+            ((ß CASE) (§ 0x1e7c))
+            (§
                 (regmbc (byte \V))
                 (regmbc 0x1e7c)
                 (ß RETURN)
-;           }
-;           case (byte)'v':
-;           case 0x1e7d:
-;           {
+            )
+            ((ß CASE) (§ (byte)'v'))
+            ((ß CASE) (§ 0x1e7d))
+            (§
                 (regmbc (byte \v))
                 (regmbc 0x1e7d)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'W':
-;           case 0x174:
-;           case 0x1e80: case 0x1e82: case 0x1e84: case 0x1e86:
-;           {
+            ((ß CASE) (§ (byte)'W'))
+            ((ß CASE) (§ 0x174))
+            ((ß CASE) (§ 0x1e80)) ((ß CASE) (§ 0x1e82)) ((ß CASE) (§ 0x1e84)) ((ß CASE) (§ 0x1e86))
+            (§
                 (regmbc (byte \W))
                 (regmbc 0x174)
                 (regmbc 0x1e80) regmbc(0x1e82) (regmbc 0x1e84) regmbc(0x1e86)
                 (ß RETURN)
-;           }
-;           case (byte)'w':
-;           case 0x175:
-;           case 0x1e81: case 0x1e83: case 0x1e85: case 0x1e87: case 0x1e98:
-;           {
+            )
+            ((ß CASE) (§ (byte)'w'))
+            ((ß CASE) (§ 0x175))
+            ((ß CASE) (§ 0x1e81)) ((ß CASE) (§ 0x1e83)) ((ß CASE) (§ 0x1e85)) ((ß CASE) (§ 0x1e87)) ((ß CASE) (§ 0x1e98))
+            (§
                 (regmbc (byte \w))
                 (regmbc 0x175)
                 (regmbc 0x1e81) regmbc(0x1e83) (regmbc 0x1e85) regmbc(0x1e87) (regmbc 0x1e98)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'X':
-;           case 0x1e8a: case 0x1e8c:
-;           {
+            ((ß CASE) (§ (byte)'X'))
+            ((ß CASE) (§ 0x1e8a)) ((ß CASE) (§ 0x1e8c))
+            (§
                 (regmbc (byte \X))
                 (regmbc 0x1e8a) regmbc(0x1e8c)
                 (ß RETURN)
-;           }
-;           case (byte)'x':
-;           case 0x1e8b: case 0x1e8d:
-;           {
+            )
+            ((ß CASE) (§ (byte)'x'))
+            ((ß CASE) (§ 0x1e8b)) ((ß CASE) (§ 0x1e8d))
+            (§
                 (regmbc (byte \x))
                 (regmbc 0x1e8b) regmbc(0x1e8d)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'Y':
-;           case 0xdd:
-;           case 0x176: case 0x178:
-;           case 0x1e8e: case 0x1ef2: case 0x1ef6: case 0x1ef8:
-;           {
+            ((ß CASE) (§ (byte)'Y'))
+            ((ß CASE) (§ 0xdd))
+            ((ß CASE) (§ 0x176)) ((ß CASE) (§ 0x178))
+            ((ß CASE) (§ 0x1e8e)) ((ß CASE) (§ 0x1ef2)) ((ß CASE) (§ 0x1ef6)) ((ß CASE) (§ 0x1ef8))
+            (§
                 (regmbc (byte \Y))
                 (regmbc 0xdd)
                 (regmbc 0x176) regmbc(0x178)
                 (regmbc 0x1e8e) regmbc(0x1ef2) (regmbc 0x1ef6) regmbc(0x1ef8)
                 (ß RETURN)
-;           }
-;           case (byte)'y':
-;           case 0xfd: case 0xff:
-;           case 0x177:
-;           case 0x1e8f: case 0x1e99: case 0x1ef3: case 0x1ef7: case 0x1ef9:
-;           {
+            )
+            ((ß CASE) (§ (byte)'y'))
+            ((ß CASE) (§ 0xfd)) ((ß CASE) (§ 0xff))
+            ((ß CASE) (§ 0x177))
+            ((ß CASE) (§ 0x1e8f)) ((ß CASE) (§ 0x1e99)) ((ß CASE) (§ 0x1ef3)) ((ß CASE) (§ 0x1ef7)) ((ß CASE) (§ 0x1ef9))
+            (§
                 (regmbc (byte \y))
                 (regmbc 0xfd) regmbc(0xff)
                 (regmbc 0x177)
                 (regmbc 0x1e8f) regmbc(0x1e99) (regmbc 0x1ef3) regmbc(0x1ef7) (regmbc 0x1ef9)
                 (ß RETURN)
-;           }
+            )
 
-;           case (byte)'Z':
-;           case 0x179: case 0x17b: case 0x17d: case 0x1b5:
-;           case 0x1e90: case 0x1e94:
-;           {
+            ((ß CASE) (§ (byte)'Z'))
+            ((ß CASE) (§ 0x179)) ((ß CASE) (§ 0x17b)) ((ß CASE) (§ 0x17d)) ((ß CASE) (§ 0x1b5))
+            ((ß CASE) (§ 0x1e90)) ((ß CASE) (§ 0x1e94))
+            (§
                 (regmbc (byte \Z))
                 (regmbc 0x179) regmbc(0x17b) (regmbc 0x17d) regmbc(0x1b5)
                 (regmbc 0x1e90) regmbc(0x1e94)
                 (ß RETURN)
-;           }
-;           case (byte)'z':
-;           case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
-;           case 0x1e91: case 0x1e95:
-;           {
+            )
+            ((ß CASE) (§ (byte)'z'))
+            ((ß CASE) (§ 0x17a)) ((ß CASE) (§ 0x17c)) ((ß CASE) (§ 0x17e)) ((ß CASE) (§ 0x1b6))
+            ((ß CASE) (§ 0x1e91)) ((ß CASE) (§ 0x1e95))
+            (§
                 (regmbc (byte \z))
                 (regmbc 0x17a) regmbc(0x17c) (regmbc 0x17e) regmbc(0x1b6)
                 (regmbc 0x1e91) regmbc(0x1e95)
                 (ß RETURN)
-;           }
-;       }
+            )
+        )
 
         (regmbc c)
     ))
@@ -26111,7 +26613,7 @@
             )
             (== (.at p 0) (byte \[))
             (§
-;               boolean b;
+                (ß boolean b)
 ;               { Bytes[] __ = { p }; b = (get_char_class(__) == CLASS_NONE && get_equi_class(__) == 0 && get_coll_element(__) == 0); p = __[0]; }
                 (if b
                     ((ß p =) (§ p.plus(1))) ;; not a class name
@@ -26137,7 +26639,7 @@
     (§
         ((ß Bytes p =) (§ startp))
 
-;       int mymagic;
+        (ß int mymagic)
         (if magic
             ((ß mymagic =) (§ MAGIC_ON))
             ((ß mymagic =) (§ MAGIC_OFF))
@@ -26338,7 +26840,7 @@
 (defn- #_Bytes reg [#_int paren, #_int* flagp]
     ;; paren: REG_NOPAREN, REG_PAREN, REG_NPAREN or REG_ZPAREN
     (§
-;       Bytes ret;
+        (ß Bytes ret)
 
         ((ß flagp[0] =) (§ HASWIDTH))          ;; Tentatively.
 
@@ -26503,56 +27005,71 @@
         ((ß flagp[0] =) (§ WORST))             ;; Tentatively.
 
         ((ß FOR) (ß (§ boolean cont = true) (§ cont) (§ nil))
-;           switch (peekchr())
-;           {
-;               case NUL:
-;               case Magic((byte)'|'):
-;               case Magic((byte)'&'):
-;               case Magic((byte)')'):
+            ((ß SWITCH) (§ peekchr())
+                ((ß CASE) (§ NUL))
+                ((ß CASE) (§ Magic((byte)'|')))
+                ((ß CASE) (§ Magic((byte)'&')))
+                ((ß CASE) (§ Magic((byte)')')))
+                (§
                     ((ß cont =) (§ false))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'Z'):
+                ((ß CASE) (§ Magic((byte)'Z')))
+                (§
                     ((ß @regflags |=) (§ RF_ICOMBINE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'c'):
+                ((ß CASE) (§ Magic((byte)'c')))
+                (§
                     ((ß @regflags |=) (§ RF_ICASE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'C'):
+                ((ß CASE) (§ Magic((byte)'C')))
+                (§
                     ((ß @regflags |=) (§ RF_NOICASE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'v'):
+                ((ß CASE) (§ Magic((byte)'v')))
+                (§
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'m'):
+                ((ß CASE) (§ Magic((byte)'m')))
+                (§
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'M'):
+                ((ß CASE) (§ Magic((byte)'M')))
+                (§
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'V'):
+                ((ß CASE) (§ Magic((byte)'V')))
+                (§
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               default:
-;               {
+                (ß DEFAULT)
+                (§
                     ((ß int[] flags =) (§ new int[1]))
                     ((ß Bytes latest =) (§ regpiece(flags)))
                     (if (or (nil? latest) @reg_toolong)
@@ -26568,8 +27085,8 @@
                         ((ß first =) (§ latest))
                     )
                     (ß BREAK)
-;               }
-;           }
+                )
+            )
         )
 
         (if (nil? first)          ;; Loop ran zero times.
@@ -26604,10 +27121,9 @@
         ((ß flagp[0] =) (§ (WORST | SPSTART | (flags[0] & (HASNL | HASLOOKBH)))))
 
         (skipchr)
-;       switch (op)
-;       {
-;           case Magic((byte)'*'):
-;           {
+        ((ß SWITCH) (§ op)
+            ((ß CASE) (§ Magic((byte)'*')))
+            (§
                 (cond (non-zero? (& (§ flags[0]) SIMPLE))
                 (§
                     (reginsert STAR, ret)
@@ -26622,10 +27138,10 @@
                     (regtail ret, (regnode NOTHING))     ;; null.
                 ))
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'+'):
-;           {
+            ((ß CASE) (§ Magic((byte)'+')))
+            (§
                 (cond (non-zero? (& (§ flags[0]) SIMPLE))
                 (§
                     (reginsert PLUS, ret)
@@ -26641,25 +27157,47 @@
                 ))
                 ((ß flagp[0] =) (§ (WORST | HASWIDTH | (flags[0] & (HASNL | HASLOOKBH)))))
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'@'):
-;           {
+            ((ß CASE) (§ Magic((byte)'@')))
+            (§
                 ((ß int lop =) (§ END))
                 ((ß int nr =) (§ getdecchrs()))
 
-;               switch (no_Magic(getchr()))
-;               {
-;                   case (byte)'=': lop = MATCH; break;                   ;; \@=
-;                   case (byte)'!': lop = NOMATCH; break;                 ;; \@!
-;                   case (byte)'>': lop = SUBPAT; break;                  ;; \@>
-;                   case (byte)'<': switch (no_Magic(getchr()))
-;                             {
-;                                 case (byte)'=': lop = BEHIND; break;    ;; \@<=
-;                                 case (byte)'!': lop = NOBEHIND; break;  ;; \@<!
-;                             }
-                              (ß BREAK)
-;               }
+                ((ß SWITCH) (§ no_Magic(getchr()))
+                    ((ß CASE) (§ (byte)'='))
+                    (§
+                        ((ß lop =) MATCH)                ;; \@=
+                        (ß ^_BREAK)
+                    )
+                    ((ß CASE) (§ (byte)'!'))
+                    (§
+                        ((ß lop =) NOMATCH)              ;; \@!
+                        (ß ^_BREAK)
+                    )
+                    ((ß CASE) (§ (byte)'>'))
+                    (§
+                        ((ß lop =) SUBPAT)               ;; \@>
+                        (ß ^_BREAK)
+                    )
+                    ((ß CASE) (§ (byte)'<'))
+                    (§
+                        ((ß SWITCH) (§ no_Magic(getchr()))
+                            ((ß CASE) (§ (byte)'='))
+                            (§
+                                ((ß lop =) BEHIND)       ;; \@<=
+                                (ß BREAK)
+                            )
+                            ((ß CASE) (§ (byte)'!'))
+                            (§
+                                ((ß lop =) NOBEHIND)     ;; \@<!
+                                (ß BREAK)
+                            )
+                        )
+                        (ß BREAK)
+                    )
+                )
+
                 (when (== lop END)
                     (emsg2 (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                     (reset! rc_did_emsg true)
@@ -26683,11 +27221,11 @@
                     (reginsert lop, ret)
                 ))
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'?'):
-;           case Magic((byte)'='):
-;           {
+            ((ß CASE) (§ Magic((byte)'?')))
+            ((ß CASE) (§ Magic((byte)'=')))
+            (§
                 ;; Emit x= as (x|).
                 (reginsert BRANCH, ret)                 ;; Either x
                 (regtail ret, (regnode BRANCH))          ;; or
@@ -26695,10 +27233,10 @@
                 (regtail ret, next)
                 (regoptail ret, next)
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'{'):
-;           {
+            ((ß CASE) (§ Magic((byte)'{')))
+            (§
                 ((ß long[] minval =) (§ new long[1]))
                 ((ß long[] maxval =) (§ new long[1]))
                 (if (not (read_limits minval, maxval))
@@ -26727,14 +27265,14 @@
                     ((ß flagp[0] =) (§ (HASWIDTH | (flags[0] & (HASNL | HASLOOKBH)))))
                 )
                 (ß BREAK)
-;           }
-;       }
+            )
+        )
 
         (when (!= (re_multi_type (peekchr)) NOT_MULTI)
             ;; Can't have a multi follow a multi.
             (if (== (peekchr) (Magic (byte \*)))
-;               libC.sprintf(@ioBuff, u8("E61: Nested %s*"), (MAGIC_ON <= @reg_magic) ? u8("") : u8("\\"));
-;               libC.sprintf(@ioBuff, u8("E62: Nested %s%c"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), no_Magic(peekchr()));
+                (§ libC.sprintf(@ioBuff, u8("E61: Nested %s*"), (MAGIC_ON <= @reg_magic) ? u8("") : u8("\\")))
+                (§ libC.sprintf(@ioBuff, u8("E62: Nested %s%c"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), no_Magic(peekchr())))
             )
 
             (emsg @ioBuff)
@@ -26773,7 +27311,7 @@
 
 (defn- #_Bytes regatom [#_int* flagp]
     (§
-;       Bytes ret;
+        (ß Bytes ret)
 
         ((ß int extra =) (§ 0))
 
@@ -26783,26 +27321,33 @@
 
 ;       collection:
 ;       {
-;           switch (c)
-;           {
-;               case Magic((byte)'^'):
+            ((ß SWITCH) (§ c)
+                ((ß CASE) (§ Magic((byte)'^')))
+                (§
                     ((ß ret =) (§ regnode(BOL)))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'$'):
+                ((ß CASE) (§ Magic((byte)'$')))
+                (§
                     ((ß ret =) (§ regnode(EOL)))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'<'):
+                ((ß CASE) (§ Magic((byte)'<')))
+                (§
                     ((ß ret =) (§ regnode(BOW)))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'>'):
+                ((ß CASE) (§ Magic((byte)'>')))
+                (§
                     ((ß ret =) (§ regnode(EOW)))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'_'):
-;               {
+                ((ß CASE) (§ Magic((byte)'_')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
                     (when (== c (byte \^))           ;; "\_^" is start-of-line
                         ((ß ret =) (§ regnode(BOL)))
@@ -26822,39 +27367,39 @@
                     )
 
                     ;; "\_x" is character class plus newline
-                    ;; FALLTHROUGH
-;               }
+                    (ß FALLTHROUGH)
+                )
 
                 ;; Character classes.
 
-;               case Magic((byte)'.'):
-;               case Magic((byte)'i'):
-;               case Magic((byte)'I'):
-;               case Magic((byte)'k'):
-;               case Magic((byte)'K'):
-;               case Magic((byte)'f'):
-;               case Magic((byte)'F'):
-;               case Magic((byte)'p'):
-;               case Magic((byte)'P'):
-;               case Magic((byte)'s'):
-;               case Magic((byte)'S'):
-;               case Magic((byte)'d'):
-;               case Magic((byte)'D'):
-;               case Magic((byte)'x'):
-;               case Magic((byte)'X'):
-;               case Magic((byte)'o'):
-;               case Magic((byte)'O'):
-;               case Magic((byte)'w'):
-;               case Magic((byte)'W'):
-;               case Magic((byte)'h'):
-;               case Magic((byte)'H'):
-;               case Magic((byte)'a'):
-;               case Magic((byte)'A'):
-;               case Magic((byte)'l'):
-;               case Magic((byte)'L'):
-;               case Magic((byte)'u'):
-;               case Magic((byte)'U'):
-;               {
+                ((ß CASE) (§ Magic((byte)'.')))
+                ((ß CASE) (§ Magic((byte)'i')))
+                ((ß CASE) (§ Magic((byte)'I')))
+                ((ß CASE) (§ Magic((byte)'k')))
+                ((ß CASE) (§ Magic((byte)'K')))
+                ((ß CASE) (§ Magic((byte)'f')))
+                ((ß CASE) (§ Magic((byte)'F')))
+                ((ß CASE) (§ Magic((byte)'p')))
+                ((ß CASE) (§ Magic((byte)'P')))
+                ((ß CASE) (§ Magic((byte)'s')))
+                ((ß CASE) (§ Magic((byte)'S')))
+                ((ß CASE) (§ Magic((byte)'d')))
+                ((ß CASE) (§ Magic((byte)'D')))
+                ((ß CASE) (§ Magic((byte)'x')))
+                ((ß CASE) (§ Magic((byte)'X')))
+                ((ß CASE) (§ Magic((byte)'o')))
+                ((ß CASE) (§ Magic((byte)'O')))
+                ((ß CASE) (§ Magic((byte)'w')))
+                ((ß CASE) (§ Magic((byte)'W')))
+                ((ß CASE) (§ Magic((byte)'h')))
+                ((ß CASE) (§ Magic((byte)'H')))
+                ((ß CASE) (§ Magic((byte)'a')))
+                ((ß CASE) (§ Magic((byte)'A')))
+                ((ß CASE) (§ Magic((byte)'l')))
+                ((ß CASE) (§ Magic((byte)'L')))
+                ((ß CASE) (§ Magic((byte)'u')))
+                ((ß CASE) (§ Magic((byte)'U')))
+                (§
                     ((ß Bytes p =) (§ vim_strchr(classchars, no_Magic(c))))
                     (when (nil? p)
                         (emsg (u8 "E63: invalid use of \\_"))
@@ -26873,10 +27418,10 @@
                     ((ß ret =) (§ regnode(classcodes[BDIFF(p, classchars)] + extra)))
                     ((ß flagp[0] |=) (§ HASWIDTH | SIMPLE))
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'n'):
-;               {
+                ((ß CASE) (§ Magic((byte)'n')))
+                (§
                     (cond @reg_string
                     (§
                         ;; In a string "\n" matches a newline character.
@@ -26892,10 +27437,10 @@
                         ((ß flagp[0] |=) (§ HASWIDTH | HASNL))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'('):
-;               {
+                ((ß CASE) (§ Magic((byte)'(')))
+                (§
                     (when @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                         (reset! rc_did_emsg true)
@@ -26908,37 +27453,37 @@
                     )
                     ((ß flagp[0] |=) (§ flags[0] & (HASWIDTH | SPSTART | HASNL | HASLOOKBH)))
                     (ß BREAK)
-;               }
+                )
 
-;               case NUL:
-;               case Magic((byte)'|'):
-;               case Magic((byte)'&'):
-;               case Magic((byte)')'):
-;               {
+                ((ß CASE) (§ NUL))
+                ((ß CASE) (§ Magic((byte)'|')))
+                ((ß CASE) (§ Magic((byte)'&')))
+                ((ß CASE) (§ Magic((byte)')')))
+                (§
                     (if @one_exactly
                         (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                         (emsg e_internal))       ;; Supposed to be caught earlier.
                     (reset! rc_did_emsg true)
                     ((ß RETURN) (§ null))
-;               }
+                )
 
-;               case Magic((byte)'='):
-;               case Magic((byte)'?'):
-;               case Magic((byte)'+'):
-;               case Magic((byte)'@'):
-;               case Magic((byte)'{'):
-;               case Magic((byte)'*'):
-;               {
+                ((ß CASE) (§ Magic((byte)'=')))
+                ((ß CASE) (§ Magic((byte)'?')))
+                ((ß CASE) (§ Magic((byte)'+')))
+                ((ß CASE) (§ Magic((byte)'@')))
+                ((ß CASE) (§ Magic((byte)'{')))
+                ((ß CASE) (§ Magic((byte)'*')))
+                (§
                     ((ß c =) (§ no_Magic(c)))
-;                   libC.sprintf(@ioBuff, u8("E64: %s%c follows nothing"), (c == (byte)'*' ? MAGIC_ON <= @reg_magic : @reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), c);
+                    (§ libC.sprintf(@ioBuff, u8("E64: %s%c follows nothing"), (c == (byte)'*' ? MAGIC_ON <= @reg_magic : @reg_magic == MAGIC_ALL) ? u8("") : u8("\\"), c))
 
                     (emsg @ioBuff)
                     (reset! rc_did_emsg true)
                     ((ß RETURN) (§ null))
-;               }
+                )
 
-;               case Magic((byte)'~'):                    ;; previous substitute pattern
-;               {
+                ((ß CASE) (§ Magic((byte)'~')))                    ;; previous substitute pattern
+                (§
                     (cond (non-nil? @reg_prev_sub)
                     (§
                         ((ß ret =) (§ regnode(EXACTLY)))
@@ -26961,18 +27506,18 @@
                         ((ß RETURN) (§ null))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'1'):
-;               case Magic((byte)'2'):
-;               case Magic((byte)'3'):
-;               case Magic((byte)'4'):
-;               case Magic((byte)'5'):
-;               case Magic((byte)'6'):
-;               case Magic((byte)'7'):
-;               case Magic((byte)'8'):
-;               case Magic((byte)'9'):
-;               {
+                ((ß CASE) (§ Magic((byte)'1')))
+                ((ß CASE) (§ Magic((byte)'2')))
+                ((ß CASE) (§ Magic((byte)'3')))
+                ((ß CASE) (§ Magic((byte)'4')))
+                ((ß CASE) (§ Magic((byte)'5')))
+                ((ß CASE) (§ Magic((byte)'6')))
+                ((ß CASE) (§ Magic((byte)'7')))
+                ((ß CASE) (§ Magic((byte)'8')))
+                ((ß CASE) (§ Magic((byte)'9')))
+                (§
                     ((ß int refnum =) (§ c - Magic((byte)'0')))
 
                     ;; Check if the back reference is legal.  We must have seen the close brace.
@@ -26982,7 +27527,7 @@
                     (when (not (§ @had_endbrace[refnum]))
                         ;; Trick: check if "@<=" or "@<!" follows, in which case
                         ;; the \1 can appear before the referenced match.
-;                       Bytes p;
+                        (ß Bytes p)
                         ((ß FOR) (ß (§ p = @regparse) (§ p.at(0) != NUL) (§ p = p.plus(1)))
                             (if (and (== (.at p 0) (byte \@)) (== (.at p 1) (byte \<)) (or (== (.at p 2) (byte \!)) (== (.at p 2) (byte \=))))
                                 (ß BREAK)
@@ -26996,15 +27541,14 @@
                     )
                     ((ß ret =) (§ regnode(BACKREF + refnum)))
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'z'):
-;               {
+                ((ß CASE) (§ Magic((byte)'z')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
-;                   switch (c)
-;                   {
-;                       case (byte)'(':
-;                       {
+                    ((ß SWITCH) (§ c)
+                        ((ß CASE) (§ (byte)'('))
+                        (§
                             (when (!= @reg_do_extmatch REX_SET)
                                 (emsg e_z_not_allowed)
                                 (reset! rc_did_emsg true)
@@ -27023,17 +27567,17 @@
                             ((ß flagp[0] |=) (§ flags[0] & (HASWIDTH|SPSTART|HASNL|HASLOOKBH)))
                             (reset! re_has_z REX_SET)
                             (ß BREAK)
-;                       }
-;                       case (byte)'1':
-;                       case (byte)'2':
-;                       case (byte)'3':
-;                       case (byte)'4':
-;                       case (byte)'5':
-;                       case (byte)'6':
-;                       case (byte)'7':
-;                       case (byte)'8':
-;                       case (byte)'9':
-;                       {
+                        )
+                        ((ß CASE) (§ (byte)'1'))
+                        ((ß CASE) (§ (byte)'2'))
+                        ((ß CASE) (§ (byte)'3'))
+                        ((ß CASE) (§ (byte)'4'))
+                        ((ß CASE) (§ (byte)'5'))
+                        ((ß CASE) (§ (byte)'6'))
+                        ((ß CASE) (§ (byte)'7'))
+                        ((ß CASE) (§ (byte)'8'))
+                        ((ß CASE) (§ (byte)'9'))
+                        (§
                             (when (!= @reg_do_extmatch REX_USE)
                                 (emsg e_z1_not_allowed)
                                 (reset! rc_did_emsg true)
@@ -27042,41 +27586,40 @@
                             ((ß ret =) (§ regnode(ZREF + c - (byte)'0')))
                             (reset! re_has_z REX_USE)
                             (ß BREAK)
-;                       }
-;                       case (byte)'s':
-;                       {
+                        )
+                        ((ß CASE) (§ (byte)'s'))
+                        (§
                             ((ß ret =) (§ regnode(MOPEN + 0)))
                             (if (not (re_mult_next (u8 "\\zs")))
                                 ((ß RETURN) (§ null))
                             )
                             (ß BREAK)
-;                       }
-;                       case (byte)'e':
-;                       {
+                        )
+                        ((ß CASE) (§ (byte)'e'))
+                        (§
                             ((ß ret =) (§ regnode(MCLOSE + 0)))
                             (if (not (re_mult_next (u8 "\\ze")))
                                 ((ß RETURN) (§ null))
                             )
                             (ß BREAK)
-;                       }
-;                       default:
-;                       {
+                        )
+                        (ß DEFAULT)
+                        (§
                             (emsg (u8 "E68: Invalid character after \\z"))
                             (reset! rc_did_emsg true)
                             ((ß RETURN) (§ null))
-;                       }
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'%'):
-;               {
+                ((ß CASE) (§ Magic((byte)'%')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
-;                   switch (c)
-;                   {
+                    ((ß SWITCH) (§ c)
                         ;; () without a back reference
-;                       case (byte)'(':
-;                       {
+                        ((ß CASE) (§ (byte)'('))
+                        (§
                             (when @one_exactly
                                 (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                                 (reset! rc_did_emsg true)
@@ -27089,42 +27632,52 @@
                             )
                             ((ß flagp[0] |=) (§ flags[0] & (HASWIDTH | SPSTART | HASNL | HASLOOKBH)))
                             (ß BREAK)
-;                       }
+                        )
                         ;; Catch \%^ and \%$ regardless of where they appear in the
                         ;; pattern -- regardless of whether or not it makes sense.
-;                       case (byte)'^':
+                        ((ß CASE) (§ (byte)'^'))
+                        (§
                             ((ß ret =) (§ regnode(RE_BOF)))
                             (ß BREAK)
+                        )
 
-;                       case (byte)'$':
+                        ((ß CASE) (§ (byte)'$'))
+                        (§
                             ((ß ret =) (§ regnode(RE_EOF)))
                             (ß BREAK)
+                        )
 
-;                       case (byte)'#':
+                        ((ß CASE) (§ (byte)'#'))
+                        (§
                             ((ß ret =) (§ regnode(CURSOR)))
                             (ß BREAK)
+                        )
 
-;                       case (byte)'V':
+                        ((ß CASE) (§ (byte)'V'))
+                        (§
                             ((ß ret =) (§ regnode(RE_VISUAL)))
                             (ß BREAK)
+                        )
 
-;                       case (byte)'C':
+                        ((ß CASE) (§ (byte)'C'))
+                        (§
                             ((ß ret =) (§ regnode(RE_COMPOSING)))
                             (ß BREAK)
+                        )
 
                         ;; \%[abc]: Emit as a list of branches,
                         ;; all ending at the last branch which matches nothing.
-;                       case (byte)'[':
-;                       {
+                        ((ß CASE) (§ (byte)'['))
+                        (§
                             (when @one_exactly        ;; doesn't nest
                                 (emsg2 (u8 "E369: invalid item in %s%%[]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                                 (reset! rc_did_emsg true)
                                 ((ß RETURN) (§ null))
                             )
 
-;                           Bytes lastbranch;
+                            (ß Bytes lastbranch)
                             ((ß Bytes lastnode =) (§ null))
-;                           Bytes br;
+                            (ß Bytes br)
 
                             ((ß ret =) (§ null))
                             (while (§ (c = getchr()) != (byte)']')
@@ -27171,23 +27724,46 @@
                             )
                             ((ß flagp[0] &=) (§ ~(HASWIDTH | SIMPLE)))
                             (ß BREAK)
-;                       }
-;                       case (byte)'d':   ;; %d123 decimal
-;                       case (byte)'o':   ;; %o123 octal
-;                       case (byte)'x':   ;; %xab hex 2
-;                       case (byte)'u':   ;; %uabcd hex 4
-;                       case (byte)'U':   ;; %U1234abcd hex 8
-;                       {
-;                           int i;
-;                           switch (c)
-;                           {
-;                               case (byte)'d': i = getdecchrs(); break;
-;                               case (byte)'o': i = getoctchrs(); break;
-;                               case (byte)'x': i = gethexchrs(2); break;
-;                               case (byte)'u': i = gethexchrs(4); break;
-;                               case (byte)'U': i = gethexchrs(8); break;
-;                               default:  i = -1; break;
-;                           }
+                        )
+                        ((ß CASE) (§ (byte)'d'))   ;; %d123 decimal
+                        ((ß CASE) (§ (byte)'o'))   ;; %o123 octal
+                        ((ß CASE) (§ (byte)'x'))   ;; %xab hex 2
+                        ((ß CASE) (§ (byte)'u'))   ;; %uabcd hex 4
+                        ((ß CASE) (§ (byte)'U'))   ;; %U1234abcd hex 8
+                        (§
+                            (ß int i)
+                            ((ß SWITCH) (§ c)
+                                ((ß CASE) (§ (byte)'d'))
+                                (§
+                                    ((ß i =) (§ getdecchrs()))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'o'))
+                                (§
+                                    ((ß i =) (§ getoctchrs()))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'x'))
+                                (§
+                                    ((ß i =) (§ gethexchrs(2)))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'u'))
+                                (§
+                                    ((ß i =) (§ gethexchrs(4)))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'U'))
+                                (§
+                                    ((ß i =) (§ gethexchrs(8)))
+                                    (ß BREAK)
+                                )
+                                (ß DEFAULT)
+                                (§
+                                    ((ß i =) (§ -1))
+                                    (ß BREAK)
+                                )
+                            )
 
                             (when (< i 0)
                                 (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -27204,9 +27780,9 @@
                             (regc NUL)
                             ((ß flagp[0] |=) (§ HASWIDTH))
                             (ß BREAK)
-;                       }
-;                       default:
-;                       {
+                        )
+                        (ß DEFAULT)
+                        (§
                             (when (or (asc_isdigit c) (== c (byte \<)) (== c (byte \>)) (== c (byte \')))
                                 ((ß int cmp =) (§ c))
                                 (if (or (== cmp (byte \<)) (== cmp (byte \>)))
@@ -27267,17 +27843,21 @@
                             (emsg2 (u8 "E71: Invalid character after %s%%"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
                             (reset! rc_did_emsg true)
                             ((ß RETURN) (§ null))
-;                       }
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'['):
+                ((ß CASE) (§ Magic((byte)'[')))
+                (§
                     (ß BREAK collection)
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     ((ß RETURN) (§ do_multibyte(c, flagp)))
-;           }
+                )
+            )
 
             ((ß RETURN) (§ ret))
 ;       }
@@ -27289,7 +27869,7 @@
 
         (when (== (.at lp 0) (byte \]))     ;; there is a matching ']'
             ((ß int startc =) (§ -1))    ;; > 0 when next '-' is a range
-;           int endc;
+            (ß int endc)
 
             ;; In a character class, different parsing rules apply.
             ;; Not even \ is special anymore, nothing is.
@@ -27382,7 +27962,7 @@
                             ;; Using \n inside [^] does not change what
                             ;; matches.  "[^\n]" is the same as ".".
                             (when (== (.at ret 0) ANYOF)
-;                               ret.be(0, ANYOF + ADD_NL);
+                                (§ ret.be(0, ANYOF + ADD_NL))
                                 ((ß flagp[0] |=) (§ HASNL))
                             )
                             ;; else: must have had a \n already
@@ -27405,16 +27985,15 @@
                 )
                 (== (.at @regparse 0) (byte \[))
                 (§
-;                   int cu;
+                    (ß int cu)
 
-;                   int c_class;
+                    (ß int c_class)
 ;                   { Bytes[] __ = { @regparse }; c_class = get_char_class(__); @regparse = __[0]; }
                     ((ß startc =) (§ -1))
                     ;; Characters assumed to be 8 bits!
-;                   switch (c_class)
-;                   {
-;                       case CLASS_NONE:
-;                       {
+                    ((ß SWITCH) (§ c_class)
+                        ((ß CASE) (§ CLASS_NONE))
+                        (§
 ;                           { Bytes[] __ = { @regparse }; c_class = get_equi_class(__); @regparse = __[0]; }
                             (cond (non-zero? c_class)
                             (§
@@ -27437,90 +28016,122 @@
                                 ))
                             ))
                             (ß BREAK)
-;                       }
-;                       case CLASS_ALNUM:
+                        )
+                        ((ß CASE) (§ CLASS_ALNUM))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_isalnum cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_ALPHA:
+                        )
+                        ((ß CASE) (§ CLASS_ALPHA))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_isalpha cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_BLANK:
+                        )
+                        ((ß CASE) (§ CLASS_BLANK))
+                        (§
                             (regc (byte \space))
                             (regc (byte \tab))
                             (ß BREAK)
-;                       case CLASS_CNTRL:
+                        )
+                        ((ß CASE) (§ CLASS_CNTRL))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_iscntrl cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_DIGIT:
+                        )
+                        ((ß CASE) (§ CLASS_DIGIT))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_isdigit cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_GRAPH:
+                        )
+                        ((ß CASE) (§ CLASS_GRAPH))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_isgraph cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_LOWER:
+                        )
+                        ((ß CASE) (§ CLASS_LOWER))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (utf_islower cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_PRINT:
+                        )
+                        ((ß CASE) (§ CLASS_PRINT))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (vim_isprintc cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_PUNCT:
+                        )
+                        ((ß CASE) (§ CLASS_PUNCT))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_ispunct cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_SPACE:
+                        )
+                        ((ß CASE) (§ CLASS_SPACE))
+                        (§
                             ((ß FOR) (ß (§ cu = 9) (§ cu <= 13) (§ cu++))
                                 (regc cu)
                             )
                             (regc (byte \space))
                             (ß BREAK)
-;                       case CLASS_UPPER:
+                        )
+                        ((ß CASE) (§ CLASS_UPPER))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (utf_isupper cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_XDIGIT:
+                        )
+                        ((ß CASE) (§ CLASS_XDIGIT))
+                        (§
                             ((ß FOR) (ß (§ cu = 1) (§ cu <= 255) (§ cu++))
                                 (if (asc_isxdigit cu)
                                     (regc cu))
                             )
                             (ß BREAK)
-;                       case CLASS_TAB:
+                        )
+                        ((ß CASE) (§ CLASS_TAB))
+                        (§
                             (regc (byte \tab))
                             (ß BREAK)
-;                       case CLASS_RETURN:
+                        )
+                        ((ß CASE) (§ CLASS_RETURN))
+                        (§
                             (regc (byte \return))
                             (ß BREAK)
-;                       case CLASS_BACKSPACE:
+                        )
+                        ((ß CASE) (§ CLASS_BACKSPACE))
+                        (§
                             (regc (byte \backspace))
                             (ß BREAK)
-;                       case CLASS_ESCAPE:
+                        )
+                        ((ß CASE) (§ CLASS_ESCAPE))
+                        (§
                             (regc ESC)
                             (ß BREAK)
-;                   }
+                        )
+                    )
                 )
                 :else
                 (§
@@ -27559,7 +28170,7 @@
 
 (defn- #_final #_Bytes do_multibyte [#_int c, #_int* flagp]
     (§
-;       Bytes ret;
+        (ß Bytes ret)
 
         ;; A multi-byte character is handled as a separate atom
         ;; if it's before a multi and when it's a composing char.
@@ -27580,7 +28191,7 @@
         ;; But always emit at least one character.  Might be a Multi,
         ;; e.g., a "[" without matching "]".
 
-;       int len;
+        (ß int len)
         ((ß FOR) (ß (§ len = 0) (§ c != NUL && (len == 0 || (re_multi_type(peekchr()) == NOT_MULTI && !@one_exactly && !is_Magic(c)))) (§ len++))
             ((ß c =) (§ no_Magic(c)))
 
@@ -27678,7 +28289,7 @@
         ((ß Bytes place =) (§ opnd)) ;; Op node, where operand used to be.
         (§ (place = place.plus(1)).be(-1, op))
         (§ (place = place.plus(1)).be(-1, NUL))
-;       place.be(0, NUL);
+        (.be place 0, NUL)
     ))
 
 ;; Insert an operator in front of already-emitted operand.
@@ -27763,7 +28374,7 @@
             ((ß scan =) (§ temp))
         )
 
-;       int offset;
+        (ß int offset)
         (if (== (re_op scan) BACK)
             ((ß offset =) (§ BDIFF(scan, val)))
             ((ß offset =) (§ BDIFF(val, scan)))
@@ -27776,8 +28387,8 @@
         )
         :else
         (§
-;           scan.be(1, (byte)((offset >>> 8) & 0xff));
-;           scan.be(2, (byte)((offset      ) & 0xff));
+            (§ scan.be(1, (byte)((offset >>> 8) & 0xff)))
+            (§ scan.be(2, (byte)((offset      ) & 0xff)))
         ))
     ))
 
@@ -27847,44 +28458,48 @@
 (defn- #_int peekchr []
     (§
         (when (== @curchr -1)
-;           switch (@curchr = @regparse.at(0))
-;           {
-;               case (byte)'.':
-;               case (byte)'[':
-;               case (byte)'~':
+            ((ß SWITCH) (§ @curchr = @regparse.at(0))
+                ((ß CASE) (§ (byte)'.'))
+                ((ß CASE) (§ (byte)'['))
+                ((ß CASE) (§ (byte)'~'))
+                (§
                     ;; magic when 'magic' is on
                     (if (<= MAGIC_ON @reg_magic)
                         (reset! curchr (Magic @curchr)))
                     (ß BREAK)
+                )
 
-;               case (byte)'(':
-;               case (byte)')':
-;               case (byte)'{':
-;               case (byte)'%':
-;               case (byte)'+':
-;               case (byte)'=':
-;               case (byte)'?':
-;               case (byte)'@':
-;               case (byte)'!':
-;               case (byte)'&':
-;               case (byte)'|':
-;               case (byte)'<':
-;               case (byte)'>':
-;               case (byte)'#':       ;; future ext.
-;               case (byte)'"':       ;; future ext.
-;               case (byte)'\'':      ;; future ext.
-;               case (byte)',':       ;; future ext.
-;               case (byte)'-':       ;; future ext.
-;               case (byte)':':       ;; future ext.
-;               case (byte)';':       ;; future ext.
-;               case (byte)'`':       ;; future ext.
-;               case (byte)'/':       ;; can't be used in / command
+                ((ß CASE) (§ (byte)'('))
+                ((ß CASE) (§ (byte)')'))
+                ((ß CASE) (§ (byte)'{'))
+                ((ß CASE) (§ (byte)'%'))
+                ((ß CASE) (§ (byte)'+'))
+                ((ß CASE) (§ (byte)'='))
+                ((ß CASE) (§ (byte)'?'))
+                ((ß CASE) (§ (byte)'@'))
+                ((ß CASE) (§ (byte)'!'))
+                ((ß CASE) (§ (byte)'&'))
+                ((ß CASE) (§ (byte)'|'))
+                ((ß CASE) (§ (byte)'<'))
+                ((ß CASE) (§ (byte)'>'))
+                ((ß CASE) (§ (byte)'#'))       ;; future ext.
+                ((ß CASE) (§ (byte)'"'))       ;; future ext.
+                ((ß CASE) (§ (byte)'\''))      ;; future ext.
+                ((ß CASE) (§ (byte)','))       ;; future ext.
+                ((ß CASE) (§ (byte)'-'))       ;; future ext.
+                ((ß CASE) (§ (byte)'))':       ;; future ext.
+                ((ß CASE) (§ (byte)';'))       ;; future ext.
+                ((ß CASE) (§ (byte)'`'))       ;; future ext.
+                ((ß CASE) (§ (byte)'/'))       ;; can't be used in / command
+                (§
                     ;; magic only after "\v"
                     (if (== @reg_magic MAGIC_ALL)
                         (reset! curchr (Magic @curchr)))
                     (ß BREAK)
+                )
 
-;               case (byte)'*':
+                ((ß CASE) (§ (byte)'*'))
+                (§
                     ;; * is not magic as the very first character, e.g. "?*ptr",
                     ;; when after '^', e.g. "/^*ptr" and when after "\(", "\|", "\&".
                     ;; But "\(\*" is not magic, thus must be magic if "after_slash"
@@ -27892,8 +28507,10 @@
                         (reset! curchr (Magic (byte \*)))
                     )
                     (ß BREAK)
+                )
 
-;               case (byte)'^':
+                ((ß CASE) (§ (byte)'^'))
+                (§
                     ;; '^' is only magic as the very first character
                     ;; and if it's after "\(", "\|", "\&' or "\n"
                     (when (§ MAGIC_OFF <= @reg_magic && (@at_start || @reg_magic == MAGIC_ALL || @prevchr == Magic((byte)'(') || @prevchr == Magic((byte)'|') || @prevchr == Magic((byte)'&') || @prevchr == Magic((byte)'n') || (no_Magic(@prevchr) == (byte)'(' && @prevprevchr == Magic((byte)'%'))))
@@ -27902,8 +28519,10 @@
                         (reset! prev_at_start false)
                     )
                     (ß BREAK)
+                )
 
-;               case (byte)'$':
+                ((ß CASE) (§ (byte)'$'))
+                (§
                     ;; '$' is only magic as the very last char
                     ;; and if it's in front of either "\|", "\)", "\&", or "\n"
                     (when (<= MAGIC_OFF @reg_magic)
@@ -27927,9 +28546,10 @@
                         )
                     )
                     (ß BREAK)
+                )
 
-;               case (byte)'\\':
-;               {
+                ((ß CASE) (§ (byte)'\\'))
+                (§
                     ((ß int c =) (§ @regparse.at(1)))
 
                     (cond (== c NUL)
@@ -27971,12 +28591,14 @@
                         (reset! curchr (us_ptr2char (§ @regparse.plus(1))))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     (reset! curchr (us_ptr2char @regparse))
                     (ß BREAK)
-;           }
+                )
+            )
         )
 
         @curchr
@@ -28056,7 +28678,7 @@
 (defn- #_int gethexchrs [#_int maxinputlen]
     (§
         ((ß int nr =) (§ 0))
-;       int i;
+        (ß int i)
 
         ((ß FOR) (ß (§ i = 0) (§ i < maxinputlen) (§ i++))
             ((ß int c =) (§ @regparse.at(0)))
@@ -28081,7 +28703,7 @@
 (defn- #_int getdecchrs []
     (§
         ((ß int nr =) (§ 0))
-;       int i;
+        (ß int i)
 
         ((ß FOR) (ß (§ i = 0) (§ true) (§ i++))
             ((ß int c =) (§ @regparse.at(0)))
@@ -28111,7 +28733,7 @@
 (defn- #_int getoctchrs []
     (§
         ((ß int nr =) (§ 0))
-;       int i;
+        (ß int i)
 
         ((ß FOR) (ß (§ i = 0) (§ i < 3 && nr < 040) (§ i++))
             ((ß int c =) (§ @regparse.at(0)))
@@ -28137,14 +28759,33 @@
     (§
         ((ß int nr =) (§ -1))
 
-;       switch ((@regparse = @regparse.plus(1)).at(-1))
-;       {
-;           case (byte)'d': nr = getdecchrs(); break;
-;           case (byte)'o': nr = getoctchrs(); break;
-;           case (byte)'x': nr = gethexchrs(2); break;
-;           case (byte)'u': nr = gethexchrs(4); break;
-;           case (byte)'U': nr = gethexchrs(8); break;
-;       }
+        ((ß SWITCH) (§ (@regparse = @regparse.plus(1)).at(-1))
+            ((ß CASE) (§ (byte)'d'))
+            (§
+                ((ß nr =) (§ getdecchrs()))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'o'))
+            (§
+                ((ß nr =) (§ getoctchrs()))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'x'))
+            (§
+                ((ß nr =) (§ gethexchrs(2)))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'u'))
+            (§
+                ((ß nr =) (§ gethexchrs(4)))
+                (ß BREAK)
+            )
+            ((ß CASE) (§ (byte)'U'))
+            (§
+                ((ß nr =) (§ gethexchrs(8)))
+                (ß BREAK)
+            )
+        )
         (when (< nr 0)
             ;; If getting the number fails be backwards compatible: the character is a backslash.
             (reset! regparse (.minus @regparse 1))
@@ -28192,7 +28833,7 @@
         (if (== (.at @regparse 0) (byte \\))
             (reset! regparse (.plus @regparse 1)))                ;; allow either \{...} or \{...\}
         (when (!= (.at @regparse 0) (byte \}))
-;           libC.sprintf(@ioBuff, u8("E554: Syntax error in %s{...}"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\"));
+            (§ libC.sprintf(@ioBuff, u8("E554: Syntax error in %s{...}"), (@reg_magic == MAGIC_ALL) ? u8("") : u8("\\")))
 
             (emsg @ioBuff)
             (reset! rc_did_emsg true)
@@ -28485,7 +29126,7 @@
         (if (nil? @backpos)
             (create_backpos))
 
-;       bt_regprog_C prog;
+        (ß bt_regprog_C prog)
         (cond (nil? @reg_match)
         (§
             ((ß prog =) (§ (bt_regprog_C)@reg_mmatch.regprog))
@@ -28543,7 +29184,7 @@
                 (cond (not @ireg_ic)
                 (§
                     (while (§ (s = vim_strchr(s, c)) != null)
-;                       int cmp;
+                        (ß int cmp)
 ;                       { int[] __ = { prog.regmlen }; cmp = cstrncmp(s, prog.regmust, __); prog.regmlen = __[0]; }
                         (if (zero? cmp)
                             (ß BREAK)              ;; Found it.
@@ -28554,7 +29195,7 @@
                 :else
                 (§
                     (while (§ (s = cstrchr(s, c)) != null)
-;                       int cmp;
+                        (ß int cmp)
 ;                       { int[] __ = { prog.regmlen }; cmp = cstrncmp(s, prog.regmust, __); prog.regmlen = __[0]; }
                         (if (zero? cmp)
                             (ß BREAK)              ;; Found it.
@@ -28754,7 +29395,7 @@
 
         ((ß pos_C top =) (§ §_pos_C()))
         ((ß pos_C bot =) (§ §_pos_C()))
-;       int mode;
+        (ß int mode)
         (cond @VIsual_active
         (§
             (cond (ltpos @VIsual, (. wp w_cursor))
@@ -28854,7 +29495,7 @@
 (defn- #_boolean regmatch [#_Bytes scan]
     ;; scan: Current node.
     (§
-;       int status;                 ;; one of the RA_ values:
+        (ß int status)                 ;; one of the RA_ values:
 
         ;; Make "regstack" and "backpos" empty.
         ;; They are allocated and freed in bt_regexec_both() to reduce calloc()/free() calls.
@@ -28895,21 +29536,25 @@
                         ((ß op -=) (§ ADD_NL))
                     )
                     ((ß int c =) (§ us_ptr2char(@reginput)))
-;                   switch (op)
-;                   {
-;                       case BOL:
+                    ((ß SWITCH) (§ op)
+                        ((ß CASE) (§ BOL))
+                        (§
                             (if (BNE @reginput, @regline)
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case EOL:
+                        ((ß CASE) (§ EOL))
+                        (§
                             (if (!= c NUL)
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_BOF:
+                        ((ß CASE) (§ RE_BOF))
+                        (§
                             ;; We're not at the beginning of the file when below the first
                             ;; line where we started, not at the start of the line or we
                             ;; didn't start at the first line of the buffer.
@@ -28917,23 +29562,28 @@
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_EOF:
+                        ((ß CASE) (§ RE_EOF))
+                        (§
                             (if (or (!= @reglnum @reg_maxline) (!= c NUL))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case CURSOR:
+                        ((ß CASE) (§ CURSOR))
+                        (§
                             ;; Check if the buffer is in a window and compare the
                             ;; reg_win.w_cursor position to the match position.
                             (when (or (nil? @reg_win) (§ @reglnum + @reg_firstlnum != @reg_win.w_cursor.lnum) (!= (BDIFF @reginput, @regline) (§ @reg_win.w_cursor.col)))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_MARK:
-;                       {
+                        ((ß CASE) (§ RE_MARK))
+                        (§
                             ;; Compare the mark position to the match position.
                             ((ß int mark =) (§ operand(scan).at(0)))
                             ((ß int cmp =) (§ operand(scan).at(1)))
@@ -28945,41 +29595,49 @@
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case RE_VISUAL:
+                        ((ß CASE) (§ RE_VISUAL))
+                        (§
                             (if (not (reg_match_visual))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_LNUM:
+                        ((ß CASE) (§ RE_LNUM))
+                        (§
                             (if (or (non-nil? @reg_match) (not (re_num_cmp (+ @reglnum @reg_firstlnum), scan)))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_COL:
+                        ((ß CASE) (§ RE_COL))
+                        (§
                             (if (not (re_num_cmp (+ (BDIFF @reginput, @regline) 1), scan))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case RE_VCOL:
+                        ((ß CASE) (§ RE_VCOL))
+                        (§
                             (if (not (re_num_cmp (+ (long (win_linetabsize (if (nil? @reg_win) @curwin @reg_win), @regline, (BDIFF @reginput, @regline))) 1), scan))
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             (ß BREAK)
+                        )
 
-;                       case BOW:                           ;; \<word; reginput points to w
-;                       {
+                        ((ß CASE) (§ BOW))                           ;; \<word; reginput points to w
+                        (§
                             (cond (== c NUL)                   ;; Can't match at end of line
                             (§
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             :else
                             (§
-;                               int this_class;
+                                (ß int this_class)
 
                                 ;; Get class of current and previous char (if it exists).
                                 ((ß this_class =) (§ us_get_class(@reginput, @reg_buf)))
@@ -28993,17 +29651,17 @@
                                 ))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case EOW:                           ;; word\>; reginput points after d
-;                       {
+                        ((ß CASE) (§ EOW))                           ;; word\>; reginput points after d
+                        (§
                             (cond (BEQ @reginput, @regline)        ;; Can't match at start of line
                             (§
                                 ((ß status =) (§ RA_NOMATCH))
                             )
                             :else
                             (§
-;                               int this_class, prev_class;
+                                (ß int this_class, prev_class)
 
                                 ;; Get class of current and previous char (if it exists).
                                 ((ß this_class =) (§ us_get_class(@reginput, @reg_buf)))
@@ -29013,173 +29671,227 @@
                                 )
                             ))
                             (ß BREAK) ;; Matched with EOW
-;                       }
+                        )
 
-;                       case ANY:
+                        ((ß CASE) (§ ANY))
+                        (§
                             ;; ANY does not match new lines.
                             (if (== c NUL)
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case IDENT:
+                        ((ß CASE) (§ IDENT))
+                        (§
                             (if (not (vim_isIDc c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case SIDENT:
+                        ((ß CASE) (§ SIDENT))
+                        (§
                             (if (or (asc_isdigit (§ @reginput.at(0))) (not (vim_isIDc c)))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case KWORD:
+                        ((ß CASE) (§ KWORD))
+                        (§
                             (if (not (us_iswordp @reginput, @reg_buf))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case SKWORD:
+                        ((ß CASE) (§ SKWORD))
+                        (§
                             (if (or (asc_isdigit (§ @reginput.at(0))) (not (us_iswordp @reginput, @reg_buf)))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case FNAME:
+                        ((ß CASE) (§ FNAME))
+                        (§
                             (if (not (vim_isfilec c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case SFNAME:
+                        ((ß CASE) (§ SFNAME))
+                        (§
                             (if (or (asc_isdigit (§ @reginput.at(0))) (not (vim_isfilec c)))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case PRINT:
+                        ((ß CASE) (§ PRINT))
+                        (§
                             (if (not (vim_isprintc (us_ptr2char @reginput)))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case SPRINT:
+                        ((ß CASE) (§ SPRINT))
+                        (§
                             (if (or (asc_isdigit (§ @reginput.at(0))) (not (vim_isprintc (us_ptr2char @reginput))))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case WHITE:
+                        ((ß CASE) (§ WHITE))
+                        (§
                             (if (not (vim_iswhite c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NWHITE:
+                        ((ß CASE) (§ NWHITE))
+                        (§
                             (if (or (== c NUL) (vim_iswhite c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case DIGIT:
+                        ((ß CASE) (§ DIGIT))
+                        (§
                             (if (not (ri_digit c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NDIGIT:
+                        ((ß CASE) (§ NDIGIT))
+                        (§
                             (if (or (== c NUL) (ri_digit c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case HEX:
+                        ((ß CASE) (§ HEX))
+                        (§
                             (if (not (ri_hex c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NHEX:
+                        ((ß CASE) (§ NHEX))
+                        (§
                             (if (or (== c NUL) (ri_hex c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case OCTAL:
+                        ((ß CASE) (§ OCTAL))
+                        (§
                             (if (not (ri_octal c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NOCTAL:
+                        ((ß CASE) (§ NOCTAL))
+                        (§
                             (if (or (== c NUL) (ri_octal c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case WORD:
+                        ((ß CASE) (§ WORD))
+                        (§
                             (if (not (ri_word c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NWORD:
+                        ((ß CASE) (§ NWORD))
+                        (§
                             (if (or (== c NUL) (ri_word c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case HEAD:
+                        ((ß CASE) (§ HEAD))
+                        (§
                             (if (not (ri_head c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NHEAD:
+                        ((ß CASE) (§ NHEAD))
+                        (§
                             (if (or (== c NUL) (ri_head c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case ALPHA:
+                        ((ß CASE) (§ ALPHA))
+                        (§
                             (if (not (ri_alpha c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NALPHA:
+                        ((ß CASE) (§ NALPHA))
+                        (§
                             (if (or (== c NUL) (ri_alpha c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case LOWER:
+                        ((ß CASE) (§ LOWER))
+                        (§
                             (if (not (ri_lower c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NLOWER:
+                        ((ß CASE) (§ NLOWER))
+                        (§
                             (if (or (== c NUL) (ri_lower c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case UPPER:
+                        ((ß CASE) (§ UPPER))
+                        (§
                             (if (not (ri_upper c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case NUPPER:
+                        ((ß CASE) (§ NUPPER))
+                        (§
                             (if (or (== c NUL) (ri_upper c))
                                 ((ß status =) (§ RA_NOMATCH))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput)))))
                             (ß BREAK)
+                        )
 
-;                       case EXACTLY:
-;                       {
+                        ((ß CASE) (§ EXACTLY))
+                        (§
                             ((ß Bytes opnd =) (§ operand(scan)))
                             ;; Inline the first byte, for speed.
                             (cond (and (!= (.at opnd 0) (.at @reginput 0)) (not @ireg_ic))
@@ -29217,10 +29929,11 @@
                                     (reset! reginput (.plus @reginput (§ len[0]))))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case ANYOF:
-;                       case ANYBUT:
+                        ((ß CASE) (§ ANYOF))
+                        ((ß CASE) (§ ANYBUT))
+                        (§
                             (cond (== c NUL)
                             (§
                                 ((ß status =) (§ RA_NOMATCH))
@@ -29234,9 +29947,10 @@
                                 (reset! reginput (§ @reginput.plus(us_ptr2len_cc(@reginput))))
                             ))
                             (ß BREAK)
+                        )
 
-;                       case MULTIBYTECODE:
-;                       {
+                        ((ß CASE) (§ MULTIBYTECODE))
+                        (§
                             ((ß Bytes opnd =) (§ operand(scan)))
                             ;; Safety check (just in case 'encoding' was changed since compiling the program).
                             ((ß int len =) (§ us_ptr2len_cc(opnd)))
@@ -29279,22 +29993,24 @@
 
                             (reset! reginput (.plus @reginput len))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case RE_COMPOSING:
-;                       {
+                        ((ß CASE) (§ RE_COMPOSING))
+                        (§
                             ;; Skip composing characters.
                             (while (§ utf_iscomposing(us_ptr2char(@reginput)))
                                 (reset! reginput (§ @reginput.plus(us_ptr2len(@reginput))))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NOTHING:
+                        ((ß CASE) (§ NOTHING))
+                        (§
                             (ß BREAK)
+                        )
 
-;                       case BACK:
-;                       {
+                        ((ß CASE) (§ BACK))
+                        (§
                             ;; When we run into BACK we need to check if we don't keep
                             ;; looping without matching any input.  The second and later
                             ;; times a BACK is encountered it fails if the input is still
@@ -29304,7 +30020,7 @@
 
                             ((ß backpos_C[] bpp =) (§ @backpos.ga_data))
 
-;                           int i;
+                            (ß int i)
                             ((ß FOR) (ß (§ i = 0) (§ i < @backpos.ga_len) (§ i++))
                                 (if (BEQ (§ bpp[i].bp_scan), scan)
                                     (ß BREAK)
@@ -29328,19 +30044,19 @@
                                 (reg_save (§ bpp[i].bp_pos), @backpos))
 
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case MOPEN + 0:     ;; Match start: \zs
-;                       case MOPEN + 1:     ;; \(
-;                       case MOPEN + 2:
-;                       case MOPEN + 3:
-;                       case MOPEN + 4:
-;                       case MOPEN + 5:
-;                       case MOPEN + 6:
-;                       case MOPEN + 7:
-;                       case MOPEN + 8:
-;                       case MOPEN + 9:
-;                       {
+                        ((ß CASE) (§ MOPEN + 0))     ;; Match start: \zs
+                        ((ß CASE) (§ MOPEN + 1))     ;; \(
+                        ((ß CASE) (§ MOPEN + 2))
+                        ((ß CASE) (§ MOPEN + 3))
+                        ((ß CASE) (§ MOPEN + 4))
+                        ((ß CASE) (§ MOPEN + 5))
+                        ((ß CASE) (§ MOPEN + 6))
+                        ((ß CASE) (§ MOPEN + 7))
+                        ((ß CASE) (§ MOPEN + 8))
+                        ((ß CASE) (§ MOPEN + 9))
+                        (§
                             ((ß int no =) (§ op - MOPEN))
                             (cleanup_subexpr)
                             ((ß regitem_C rip =) (§ push_regitem(RS_MOPEN, scan)))
@@ -29355,26 +30071,28 @@
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NOPEN:         ;; \%(
-;                       case NCLOSE:        ;; \) after \%(
+                        ((ß CASE) (§ NOPEN))         ;; \%(
+                        ((ß CASE) (§ NCLOSE))        ;; \) after \%(
+                        (§
                             (if (nil? (push_regitem RS_NOPEN, scan))
                                 ((ß status =) (§ RA_FAIL))
                             )
                             ;; We simply continue and handle the result when done.
                             (ß BREAK)
+                        )
 
-;                       case ZOPEN + 1:
-;                       case ZOPEN + 2:
-;                       case ZOPEN + 3:
-;                       case ZOPEN + 4:
-;                       case ZOPEN + 5:
-;                       case ZOPEN + 6:
-;                       case ZOPEN + 7:
-;                       case ZOPEN + 8:
-;                       case ZOPEN + 9:
-;                       {
+                        ((ß CASE) (§ ZOPEN + 1))
+                        ((ß CASE) (§ ZOPEN + 2))
+                        ((ß CASE) (§ ZOPEN + 3))
+                        ((ß CASE) (§ ZOPEN + 4))
+                        ((ß CASE) (§ ZOPEN + 5))
+                        ((ß CASE) (§ ZOPEN + 6))
+                        ((ß CASE) (§ ZOPEN + 7))
+                        ((ß CASE) (§ ZOPEN + 8))
+                        ((ß CASE) (§ ZOPEN + 9))
+                        (§
                             ((ß int no =) (§ op - ZOPEN))
                             (cleanup_zsubexpr)
                             ((ß regitem_C rip =) (§ push_regitem(RS_ZOPEN, scan)))
@@ -29389,19 +30107,19 @@
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case MCLOSE + 0:    ;; Match end: \ze
-;                       case MCLOSE + 1:    ;; \)
-;                       case MCLOSE + 2:
-;                       case MCLOSE + 3:
-;                       case MCLOSE + 4:
-;                       case MCLOSE + 5:
-;                       case MCLOSE + 6:
-;                       case MCLOSE + 7:
-;                       case MCLOSE + 8:
-;                       case MCLOSE + 9:
-;                       {
+                        ((ß CASE) (§ MCLOSE + 0))    ;; Match end: \ze
+                        ((ß CASE) (§ MCLOSE + 1))    ;; \)
+                        ((ß CASE) (§ MCLOSE + 2))
+                        ((ß CASE) (§ MCLOSE + 3))
+                        ((ß CASE) (§ MCLOSE + 4))
+                        ((ß CASE) (§ MCLOSE + 5))
+                        ((ß CASE) (§ MCLOSE + 6))
+                        ((ß CASE) (§ MCLOSE + 7))
+                        ((ß CASE) (§ MCLOSE + 8))
+                        ((ß CASE) (§ MCLOSE + 9))
+                        (§
                             ((ß int no =) (§ op - MCLOSE))
                             (cleanup_subexpr)
                             ((ß regitem_C rip =) (§ push_regitem(RS_MCLOSE, scan)))
@@ -29416,18 +30134,18 @@
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case ZCLOSE + 1:    ;; \) after \z(
-;                       case ZCLOSE + 2:
-;                       case ZCLOSE + 3:
-;                       case ZCLOSE + 4:
-;                       case ZCLOSE + 5:
-;                       case ZCLOSE + 6:
-;                       case ZCLOSE + 7:
-;                       case ZCLOSE + 8:
-;                       case ZCLOSE + 9:
-;                       {
+                        ((ß CASE) (§ ZCLOSE + 1))    ;; \) after \z(
+                        ((ß CASE) (§ ZCLOSE + 2))
+                        ((ß CASE) (§ ZCLOSE + 3))
+                        ((ß CASE) (§ ZCLOSE + 4))
+                        ((ß CASE) (§ ZCLOSE + 5))
+                        ((ß CASE) (§ ZCLOSE + 6))
+                        ((ß CASE) (§ ZCLOSE + 7))
+                        ((ß CASE) (§ ZCLOSE + 8))
+                        ((ß CASE) (§ ZCLOSE + 9))
+                        (§
                             ((ß int no =) (§ op - ZCLOSE))
                             (cleanup_zsubexpr)
                             ((ß regitem_C rip =) (§ push_regitem(RS_ZCLOSE, scan)))
@@ -29442,18 +30160,18 @@
                                 ;; We simply continue and handle the result when done.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BACKREF + 1:
-;                       case BACKREF + 2:
-;                       case BACKREF + 3:
-;                       case BACKREF + 4:
-;                       case BACKREF + 5:
-;                       case BACKREF + 6:
-;                       case BACKREF + 7:
-;                       case BACKREF + 8:
-;                       case BACKREF + 9:
-;                       {
+                        ((ß CASE) (§ BACKREF + 1))
+                        ((ß CASE) (§ BACKREF + 2))
+                        ((ß CASE) (§ BACKREF + 3))
+                        ((ß CASE) (§ BACKREF + 4))
+                        ((ß CASE) (§ BACKREF + 5))
+                        ((ß CASE) (§ BACKREF + 6))
+                        ((ß CASE) (§ BACKREF + 7))
+                        ((ß CASE) (§ BACKREF + 8))
+                        ((ß CASE) (§ BACKREF + 9))
+                        (§
                             ((ß int[] len =) (§ new int[1]))
 
                             ((ß int no =) (§ op - BACKREF))
@@ -29506,18 +30224,18 @@
                             ;; Matched the backref, skip over it.
                             (reset! reginput (.plus @reginput (§ len[0])))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case ZREF + 1:
-;                       case ZREF + 2:
-;                       case ZREF + 3:
-;                       case ZREF + 4:
-;                       case ZREF + 5:
-;                       case ZREF + 6:
-;                       case ZREF + 7:
-;                       case ZREF + 8:
-;                       case ZREF + 9:
-;                       {
+                        ((ß CASE) (§ ZREF + 1))
+                        ((ß CASE) (§ ZREF + 2))
+                        ((ß CASE) (§ ZREF + 3))
+                        ((ß CASE) (§ ZREF + 4))
+                        ((ß CASE) (§ ZREF + 5))
+                        ((ß CASE) (§ ZREF + 6))
+                        ((ß CASE) (§ ZREF + 7))
+                        ((ß CASE) (§ ZREF + 8))
+                        ((ß CASE) (§ ZREF + 9))
+                        (§
                             (cleanup_zsubexpr)
                             ((ß int no =) (§ op - ZREF))
                             (cond (and (non-nil? @re_extmatch_in) (!= (§ @re_extmatch_in.matches[no]) null))
@@ -29532,10 +30250,10 @@
                                 ;; Backref was not set: Match an empty string.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BRANCH:
-;                       {
+                        ((ß CASE) (§ BRANCH))
+                        (§
                             (cond (!= (re_op next) BRANCH) ;; No choice.
                             (§
                                 ((ß next =) (§ operand(scan)))       ;; Avoid recursion.
@@ -29549,10 +30267,10 @@
                                 )
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BRACE_LIMITS:
-;                       {
+                        ((ß CASE) (§ BRACE_LIMITS))
+                        (§
                             (cond (== (re_op next) BRACE_SIMPLE)
                             (§
                                 (reset! bl_minval (operand_min scan))
@@ -29571,19 +30289,19 @@
                                 ((ß status =) (§ RA_FAIL))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BRACE_COMPLEX + 0:
-;                       case BRACE_COMPLEX + 1:
-;                       case BRACE_COMPLEX + 2:
-;                       case BRACE_COMPLEX + 3:
-;                       case BRACE_COMPLEX + 4:
-;                       case BRACE_COMPLEX + 5:
-;                       case BRACE_COMPLEX + 6:
-;                       case BRACE_COMPLEX + 7:
-;                       case BRACE_COMPLEX + 8:
-;                       case BRACE_COMPLEX + 9:
-;                       {
+                        ((ß CASE) (§ BRACE_COMPLEX + 0))
+                        ((ß CASE) (§ BRACE_COMPLEX + 1))
+                        ((ß CASE) (§ BRACE_COMPLEX + 2))
+                        ((ß CASE) (§ BRACE_COMPLEX + 3))
+                        ((ß CASE) (§ BRACE_COMPLEX + 4))
+                        ((ß CASE) (§ BRACE_COMPLEX + 5))
+                        ((ß CASE) (§ BRACE_COMPLEX + 6))
+                        ((ß CASE) (§ BRACE_COMPLEX + 7))
+                        ((ß CASE) (§ BRACE_COMPLEX + 8))
+                        ((ß CASE) (§ BRACE_COMPLEX + 9))
+                        (§
                             ((ß int no =) (§ op - BRACE_COMPLEX))
                             (§ ++@brace_count[no])
 
@@ -29640,12 +30358,12 @@
                                 )
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BRACE_SIMPLE:
-;                       case STAR:
-;                       case PLUS:
-;                       {
+                        ((ß CASE) (§ BRACE_SIMPLE))
+                        ((ß CASE) (§ STAR))
+                        ((ß CASE) (§ PLUS))
+                        (§
                             ((ß regstar_C rst =) (§ §_regstar_C()))
 
                             ;; Lookahead to avoid useless match attempts when we know
@@ -29722,12 +30440,12 @@
                             ))
 
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NOMATCH:
-;                       case MATCH:
-;                       case SUBPAT:
-;                       {
+                        ((ß CASE) (§ NOMATCH))
+                        ((ß CASE) (§ MATCH))
+                        ((ß CASE) (§ SUBPAT))
+                        (§
                             ((ß regitem_C rip =) (§ push_regitem(RS_NOMATCH, scan)))
                             (cond (nil? rip)
                             (§
@@ -29741,11 +30459,11 @@
                                 ;; We continue and handle the result when done.
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BEHIND:
-;                       case NOBEHIND:
-;                       {
+                        ((ß CASE) (§ BEHIND))
+                        ((ß CASE) (§ NOBEHIND))
+                        (§
                             ;; Need a bit of room to store extra positions.
                             (cond (<= @p_mmp (§ (@regstack.ga_len >>> 10)))
                             (§
@@ -29777,10 +30495,10 @@
                                 ))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case BHPOS:
-;                       {
+                        ((ß CASE) (§ BHPOS))
+                        (§
                             (cond (nil? @reg_match)
                             (§
                                 (when (or (!= (.. @behind_pos rs_pos col) (BDIFF @reginput, @regline)) (!= (.. @behind_pos rs_pos lnum) @reglnum))
@@ -29792,10 +30510,10 @@
                                 ((ß status =) (§ RA_NOMATCH))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NEWL:
-;                       {
+                        ((ß CASE) (§ NEWL))
+                        (§
                             (cond (and (or (!= c NUL) (non-nil? @reg_match) (< @reg_maxline @reglnum) @reg_line_lbr) (or (!= c (byte \newline)) (not @reg_line_lbr)))
                             (§
                                 ((ß status =) (§ RA_NOMATCH))
@@ -29809,17 +30527,21 @@
                                 (reg_nextline)
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case END:
+                        ((ß CASE) (§ END))
+                        (§
                             ((ß status =) (§ RA_MATCH))  ;; Success!
                             (ß BREAK)
+                        )
 
-;                       default:
+                        (ß DEFAULT)
+                        (§
                             (emsg e_re_corr)
                             ((ß status =) (§ RA_FAIL))
                             (ß BREAK)
-;                   }
+                        )
+                    )
                 ))
 
                 ;; If we can't continue sequentially, break the inner loop.
@@ -29838,47 +30560,56 @@
                 ((ß Object vip =) (§ (1 < @regstack.ga_len) ? @regstack.ga_data[@regstack.ga_len - 2] : null))
                 ((ß regitem_C rip =) (§ (regitem_C)@regstack.ga_data[@regstack.ga_len - 1]))
 
-;               switch (rip.rs_state)
-;               {
-;                   case RS_NOPEN:
+                ((ß SWITCH) (§ rip.rs_state)
+                    ((ß CASE) (§ RS_NOPEN))
+                    (§
                         ;; Result is passed on as-is, simply pop the state.
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_MOPEN:
+                    ((ß CASE) (§ RS_MOPEN))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ((ß @reg_startp[rip.rs_no] =) (§ restore_se(rip.rs_sesave, @reg_startpos[rip.rs_no], @reg_startp[rip.rs_no])))
                         )
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_ZOPEN:
+                    ((ß CASE) (§ RS_ZOPEN))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ((ß reg_startzp[rip.rs_no] =) (§ restore_se(rip.rs_sesave, reg_startzpos[rip.rs_no], reg_startzp[rip.rs_no])))
                         )
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_MCLOSE:
+                    ((ß CASE) (§ RS_MCLOSE))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ((ß @reg_endp[rip.rs_no] =) (§ restore_se(rip.rs_sesave, @reg_endpos[rip.rs_no], @reg_endp[rip.rs_no])))
                         )
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_ZCLOSE:
+                    ((ß CASE) (§ RS_ZCLOSE))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ((ß reg_endzp[rip.rs_no] =) (§ restore_se(rip.rs_sesave, reg_endzpos[rip.rs_no], reg_endzp[rip.rs_no])))
                         )
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_BRANCH:
-;                   {
+                    ((ß CASE) (§ RS_BRANCH))
+                    (§
                         (cond (== status RA_MATCH)
                         (§
                             ;; this branch matched, use it
@@ -29906,9 +30637,10 @@
                             ))
                         ))
                         (ß BREAK)
-;                   }
+                    )
 
-;                   case RS_BRCPLX_MORE:
+                    ((ß CASE) (§ RS_BRCPLX_MORE))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             (reg_restore (. rip rs_regsave), @backpos)
@@ -29916,8 +30648,10 @@
                         )
                         ((ß scan =) (§ pop_regitem()))
                         (ß BREAK)
+                    )
 
-;                   case RS_BRCPLX_LONG:
+                    ((ß CASE) (§ RS_BRCPLX_LONG))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ;; There was no match, but we did find enough matches.
@@ -29931,8 +30665,10 @@
                             ((ß scan =) (§ regnext(scan)))
                         )
                         (ß BREAK)
+                    )
 
-;                   case RS_BRCPLX_SHORT:
+                    ((ß CASE) (§ RS_BRCPLX_SHORT))
+                    (§
                         ;; Pop the state.  Restore pointers when there is no match.
                         (when (== status RA_NOMATCH)
                             ;; There was no match, try to match one more item.
@@ -29944,8 +30680,10 @@
                             ((ß status =) (§ RA_CONT))
                         )
                         (ß BREAK)
+                    )
 
-;                   case RS_NOMATCH:
+                    ((ß CASE) (§ RS_NOMATCH))
+                    (§
                         ;; Pop the state.  If the operand matches for NOMATCH or
                         ;; doesn't match for MATCH/SUBPAT, we fail.  Otherwise backup,
                         ;; except for SUBPAT, and continue with the next item.
@@ -29964,8 +30702,10 @@
                             ((ß scan =) (§ regnext(scan)))
                         )
                         (ß BREAK)
+                    )
 
-;                   case RS_BEHIND1:
+                    ((ß CASE) (§ RS_BEHIND1))
+                    (§
                         (cond (== status RA_NOMATCH)
                         (§
                             ((ß scan =) (§ pop_regitem()))
@@ -29995,9 +30735,10 @@
                             ((ß scan =) (§ operand(rip.rs_scan).plus(4)))
                         ))
                         (ß BREAK)
+                    )
 
-;                   case RS_BEHIND2:
-
+                    ((ß CASE) (§ RS_BEHIND2))
+                    (§
                         ;; Looping for BEHIND / NOBEHIND match.
 
                         (cond (and (== status RA_MATCH) (reg_save_equal @behind_pos))
@@ -30096,10 +30837,11 @@
                             ))
                         ))
                         (ß BREAK)
+                    )
 
-;                   case RS_STAR_LONG:
-;                   case RS_STAR_SHORT:
-;                   {
+                    ((ß CASE) (§ RS_STAR_LONG))
+                    ((ß CASE) (§ RS_STAR_SHORT))
+                    (§
                         ((ß regstar_C rst =) (§ (regstar_C)vip))
 
                         (when (== status RA_MATCH)
@@ -30174,9 +30916,9 @@
                             (drop_regstar)
                             ((ß status =) (§ RA_NOMATCH))
                         )
-;                   }
+                    )
                     (ß BREAK)
-;               }
+                )
 
                 ;; If we want to continue the inner loop or didn't pop a state continue matching loop.
                 (if (or (== status RA_CONT) (== rip (§ (regitem_C)@regstack.ga_data[@regstack.ga_len - 1])))
@@ -30256,17 +30998,17 @@
     (§
         ((ß long count =) (§ 0))
         ((ß int testval =) (§ 0))
-;       int mask;
+        (ß int mask)
 
         ((ß Bytes scan =) (§ @reginput))     ;; Make local copy of reginput for speed.
         ((ß Bytes opnd =) (§ operand(p)))
 
 ;       do_class:
 ;       {
-;           switch (re_op(p))
-;           {
-;               case ANY:
-;               case ANY + ADD_NL:
+            ((ß SWITCH) (§ re_op(p))
+                ((ß CASE) (§ ANY))
+                ((ß CASE) (§ ANY + ADD_NL))
+                (§
                     (while (§ count < maxcount)
                         ;; Matching anything means we continue until end-of-line (or
                         ;; end-of-file for ANY + ADD_NL), only limited by maxcount.
@@ -30285,13 +31027,17 @@
                         )
                     )
                     (ß BREAK do_class)
+                )
 
-;               case IDENT:
-;               case IDENT + ADD_NL:
+                ((ß CASE) (§ IDENT))
+                ((ß CASE) (§ IDENT + ADD_NL))
+                (§
                     ((ß testval =) (§ TRUE))
-                    ;; FALLTHROUGH
-;               case SIDENT:
-;               case SIDENT + ADD_NL:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ SIDENT))
+                ((ß CASE) (§ SIDENT + ADD_NL))
+                (§
                     (while (§ count < maxcount)
                         (cond (and (vim_isIDc (us_ptr2char scan)) (or (non-zero? testval) (not (asc_isdigit (§ scan.at(0))))))
                         (§
@@ -30319,13 +31065,17 @@
                         (§ count++)
                     )
                     (ß BREAK do_class)
+                )
 
-;               case KWORD:
-;               case KWORD + ADD_NL:
+                ((ß CASE) (§ KWORD))
+                ((ß CASE) (§ KWORD + ADD_NL))
+                (§
                     ((ß testval =) (§ TRUE))
-                    ;; FALLTHROUGH
-;               case SKWORD:
-;               case SKWORD + ADD_NL:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ SKWORD))
+                ((ß CASE) (§ SKWORD + ADD_NL))
+                (§
                     (while (§ count < maxcount)
                         (cond (and (us_iswordp scan, @reg_buf) (or (non-zero? testval) (not (asc_isdigit (§ scan.at(0))))))
                         (§
@@ -30353,13 +31103,17 @@
                         (§ count++)
                     )
                     (ß BREAK do_class)
+                )
 
-;               case FNAME:
-;               case FNAME + ADD_NL:
+                ((ß CASE) (§ FNAME))
+                ((ß CASE) (§ FNAME + ADD_NL))
+                (§
                     ((ß testval =) (§ TRUE))
-                    ;; FALLTHROUGH
-;               case SFNAME:
-;               case SFNAME + ADD_NL:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ SFNAME))
+                ((ß CASE) (§ SFNAME + ADD_NL))
+                (§
                     (while (§ count < maxcount)
                         (cond (and (vim_isfilec (us_ptr2char scan)) (or (non-zero? testval) (not (asc_isdigit (§ scan.at(0))))))
                         (§
@@ -30387,13 +31141,17 @@
                         (§ count++)
                     )
                     (ß BREAK do_class)
+                )
 
-;               case PRINT:
-;               case PRINT + ADD_NL:
+                ((ß CASE) (§ PRINT))
+                ((ß CASE) (§ PRINT + ADD_NL))
+                (§
                     ((ß testval =) (§ TRUE))
-                    ;; FALLTHROUGH
-;               case SPRINT:
-;               case SPRINT + ADD_NL:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ SPRINT))
+                ((ß CASE) (§ SPRINT + ADD_NL))
+                (§
                     (while (§ count < maxcount)
                         (cond (eos? scan)
                         (§
@@ -30421,99 +31179,136 @@
                         (§ count++)
                     )
                     (ß BREAK do_class)
+                )
 
-;               case WHITE:
-;               case WHITE + ADD_NL:
+                ((ß CASE) (§ WHITE))
+                ((ß CASE) (§ WHITE + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_WHITE))
                     (ß BREAK)
+                )
 
-;               case NWHITE:
-;               case NWHITE + ADD_NL:
+                ((ß CASE) (§ NWHITE))
+                ((ß CASE) (§ NWHITE + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_WHITE))
                     (ß BREAK)
+                )
 
-;               case DIGIT:
-;               case DIGIT + ADD_NL:
+                ((ß CASE) (§ DIGIT))
+                ((ß CASE) (§ DIGIT + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_DIGIT))
                     (ß BREAK)
+                )
 
-;               case NDIGIT:
-;               case NDIGIT + ADD_NL:
+                ((ß CASE) (§ NDIGIT))
+                ((ß CASE) (§ NDIGIT + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_DIGIT))
                     (ß BREAK)
+                )
 
-;               case HEX:
-;               case HEX + ADD_NL:
+                ((ß CASE) (§ HEX))
+                ((ß CASE) (§ HEX + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_HEX))
                     (ß BREAK)
+                )
 
-;               case NHEX:
-;               case NHEX + ADD_NL:
+                ((ß CASE) (§ NHEX))
+                ((ß CASE) (§ NHEX + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_HEX))
                     (ß BREAK)
+                )
 
-;               case OCTAL:
-;               case OCTAL + ADD_NL:
+                ((ß CASE) (§ OCTAL))
+                ((ß CASE) (§ OCTAL + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_OCTAL))
                     (ß BREAK)
+                )
 
-;               case NOCTAL:
-;               case NOCTAL + ADD_NL:
+                ((ß CASE) (§ NOCTAL))
+                ((ß CASE) (§ NOCTAL + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_OCTAL))
                     (ß BREAK)
+                )
 
-;               case WORD:
-;               case WORD + ADD_NL:
+                ((ß CASE) (§ WORD))
+                ((ß CASE) (§ WORD + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_WORD))
                     (ß BREAK)
+                )
 
-;               case NWORD:
-;               case NWORD + ADD_NL:
+                ((ß CASE) (§ NWORD))
+                ((ß CASE) (§ NWORD + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_WORD))
                     (ß BREAK)
+                )
 
-;               case HEAD:
-;               case HEAD + ADD_NL:
+                ((ß CASE) (§ HEAD))
+                ((ß CASE) (§ HEAD + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_HEAD))
                     (ß BREAK)
+                )
 
-;               case NHEAD:
-;               case NHEAD + ADD_NL:
+                ((ß CASE) (§ NHEAD))
+                ((ß CASE) (§ NHEAD + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_HEAD))
                     (ß BREAK)
+                )
 
-;               case ALPHA:
-;               case ALPHA + ADD_NL:
+                ((ß CASE) (§ ALPHA))
+                ((ß CASE) (§ ALPHA + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_ALPHA))
                     (ß BREAK)
+                )
 
-;               case NALPHA:
-;               case NALPHA + ADD_NL:
+                ((ß CASE) (§ NALPHA))
+                ((ß CASE) (§ NALPHA + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_ALPHA))
                     (ß BREAK)
+                )
 
-;               case LOWER:
-;               case LOWER + ADD_NL:
+                ((ß CASE) (§ LOWER))
+                ((ß CASE) (§ LOWER + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_LOWER))
                     (ß BREAK)
+                )
 
-;               case NLOWER:
-;               case NLOWER + ADD_NL:
+                ((ß CASE) (§ NLOWER))
+                ((ß CASE) (§ NLOWER + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_LOWER))
                     (ß BREAK)
+                )
 
-;               case UPPER:
-;               case UPPER + ADD_NL:
+                ((ß CASE) (§ UPPER))
+                ((ß CASE) (§ UPPER + ADD_NL))
+                (§
                     ((ß testval =) (§ mask = RI_UPPER))
                     (ß BREAK)
+                )
 
-;               case NUPPER:
-;               case NUPPER + ADD_NL:
+                ((ß CASE) (§ NUPPER))
+                ((ß CASE) (§ NUPPER + ADD_NL))
+                (§
                     ((ß mask =) (§ RI_UPPER))
                     (ß BREAK)
+                )
 
-;               case EXACTLY:
-;               {
+                ((ß CASE) (§ EXACTLY))
+                (§
                     ;; This doesn't do a multi-byte character, because a MULTIBYTECODE would have
                     ;; been used for it.  It does handle single-byte characters, such as latin1.
                     (cond @ireg_ic
@@ -30534,10 +31329,10 @@
                         )
                     ))
                     (ß BREAK do_class)
-;               }
+                )
 
-;               case MULTIBYTECODE:
-;               {
+                ((ß CASE) (§ MULTIBYTECODE))
+                (§
                     ;; Safety check (just in case 'encoding' was changed since compiling the program).
                     ((ß int len =) (§ us_ptr2len_cc(opnd)))
                     (when (< 1 len)
@@ -30546,7 +31341,7 @@
                             ((ß cf =) (§ utf_fold(us_ptr2char(opnd))))
                         )
                         (while (§ count < maxcount)
-;                           int i;
+                            (ß int i)
                             ((ß FOR) (ß (§ i = 0) (§ i < len) (§ i++))
                                 (if (!= (.at opnd i) (.at scan i))
                                     (ß BREAK)
@@ -30560,16 +31355,19 @@
                         )
                     )
                     (ß BREAK do_class)
-;               }
+                )
 
-;               case ANYOF:
-;               case ANYOF + ADD_NL:
+                ((ß CASE) (§ ANYOF))
+                ((ß CASE) (§ ANYOF + ADD_NL))
+                (§
                     ((ß testval =) (§ TRUE))
-                    ;; FALLTHROUGH
-;               case ANYBUT:
-;               case ANYBUT + ADD_NL:
+                    (ß FALLTHROUGH)
+                )
+                ((ß CASE) (§ ANYBUT))
+                ((ß CASE) (§ ANYBUT + ADD_NL))
+                (§
                     (while (§ count < maxcount)
-;                       int len;
+                        (ß int len)
                         (cond (eos? scan)
                         (§
                             (if (or (non-nil? @reg_match) (not (with_nl (re_op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
@@ -30602,8 +31400,10 @@
                         (§ count++)
                     )
                     (ß BREAK do_class)
+                )
 
-;               case NEWL:
+                ((ß CASE) (§ NEWL))
+                (§
                     (while (§ count < maxcount && ((scan.at(0) == NUL && @reglnum <= @reg_maxline && !@reg_line_lbr && @reg_match == null) || (scan.at(0) == (byte)'\n' && @reg_line_lbr)))
                         (§ count++)
                         (if @reg_line_lbr
@@ -30615,14 +31415,17 @@
                         )
                     )
                     (ß BREAK do_class)
+                )
 
-;               default:                ;; Oh dear.  Called inappropriately.
+                (ß DEFAULT)                ;; Oh dear.  Called inappropriately.
+                (§
                     (emsg e_re_corr)
                     (ß BREAK do_class)
-;           }
+                )
+            )
 
             (while (§ count < maxcount)
-;               int l;
+                (ß int l)
                 (cond (eos? scan)
                 (§
                     (if (or (non-nil? @reg_match) (not (with_nl (re_op p))) (< @reg_maxline @reglnum) @reg_line_lbr)
@@ -31065,7 +31868,7 @@
 
 (defn- #_int cstrncmp [#_Bytes s1, #_Bytes s2, #_int* n]
     (§
-;       int result;
+        (ß int result)
 
         (if (not @ireg_ic)
             ((ß result =) (§ STRNCMP(s1, s2, n[0])))
@@ -31119,7 +31922,7 @@
             ((ß RETURN) (§ vim_strchr(s, c)))
         )
 
-;       int cc;
+        (ß int cc)
         (cond (< 0x80 c)
         (§
             ((ß cc =) (§ utf_fold(c)))
@@ -31353,7 +32156,7 @@
                         ;; Skip over a backslashed character.
                         (cond (and (== (.at s 0) NL) (not @submatch_line_lbr))
                         (§
-;                           s.be(0, CAR);
+                            (.be s 0, CAR)
                         )
                         (and (== (.at s 0) (byte \\)) (non-eos? s 1))
                         (§
@@ -31365,7 +32168,7 @@
                             ;; Not when called from vim_regexec_nl().
 
                             (if (and (== (.at s 0) NL) (not @submatch_line_lbr))
-;                               s.be(0, CAR);
+                                (.be s 0, CAR)
                             )
                             ((ß had_backslash =) (§ true))
                         ))
@@ -31417,20 +32220,35 @@
                     )
                     (non-nil? (§ vim_strbyte(u8("uUlLeE"), src.at(0))))
                     (§
-;                       switch ((src = src.plus(1)).at(-1))
-;                       {
-;                           case (byte)'u':   func_one = do_upper;
-                                        (ß CONTINUE)
-;                           case (byte)'U':   func_all = do_Upper;
-                                        (ß CONTINUE)
-;                           case (byte)'l':   func_one = do_lower;
-                                        (ß CONTINUE)
-;                           case (byte)'L':   func_all = do_Lower;
-                                        (ß CONTINUE)
-;                           case (byte)'e':
-;                           case (byte)'E':   func_one = func_all = null;
-                                        (ß CONTINUE)
-;                       }
+                        ((ß SWITCH) (§ (src = src.plus(1)).at(-1))
+                            ((ß CASE) (§ (byte)'u'))
+                            (§
+                                ((ß func_one =) do_upper)
+                                (ß CONTINUE)
+                            )
+                            ((ß CASE) (§ (byte)'U'))
+                            (§
+                                ((ß func_all =) do_Upper)
+                                (ß CONTINUE)
+                            )
+                            ((ß CASE) (§ (byte)'l'))
+                            (§
+                                ((ß func_one =) do_lower)
+                                (ß CONTINUE)
+                            )
+                            ((ß CASE) (§ (byte)'L'))
+                            (§
+                                ((ß func_all =) do_Lower)
+                                (ß CONTINUE)
+                            )
+                            ((ß CASE) (§ (byte)'e'))
+                            ((ß CASE) (§ (byte)'E'))
+                            (§
+                                ((ß func_one =) null)
+                                ((ß func_all =) null)
+                                (ß CONTINUE)
+                            )
+                        )
                     ))
                 ))
                 (cond (< no 0)             ;; Ordinary character.
@@ -31451,30 +32269,56 @@
                         (ß CONTINUE)
                     )
 
-;                   int c;
+                    (ß int c)
                     (cond (and (== b (byte \\)) (non-eos? src))
                     (§
                         ;; Check for abbreviations.
-;                       switch (src.at(0))
-;                       {
-;                           case (byte)'r': b = CAR;    src = src.plus(1); break;
-;                           case (byte)'n': b = NL;     src = src.plus(1); break;
-;                           case (byte)'t': b = TAB;    src = src.plus(1); break;
-                         ;; case 'e': b = ESC;    src = src.plus(1); break;     ;; Oh no!  \e already has meaning in subst pat.
-;                           case (byte)'b': b = Ctrl_H; src = src.plus(1); break;
+                        ((ß SWITCH) (§ src.at(0))
+                            ((ß CASE) (§ (byte)'r'))
+                            (§
+                                ((ß b =) (§ CAR))
+                                ((ß src =) (§ src.plus(1)))
+                                (ß BREAK)
+                            )
+                            ((ß CASE) (§ (byte)'n'))
+                            (§
+                                ((ß b =) (§ NL))
+                                ((ß src =) (§ src.plus(1)))
+                                (ß BREAK)
+                            )
+                            ((ß CASE) (§ (byte)'t'))
+                            (§
+                                ((ß b =) (§ TAB))
+                                ((ß src =) (§ src.plus(1)))
+                                (ß BREAK)
+                            )
+                         ;; case (byte)'e':     ;; Oh no!  \e already has meaning in subst pat.
+                         ;; {
+                         ;;     b = ESC;
+                         ;;     src = src.plus(1);
+                         ;;     break;
+                         ;; }
+                            ((ß CASE) (§ (byte)'b'))
+                            (§
+                                ((ß b =) (§ Ctrl_H))
+                                ((ß src =) (§ src.plus(1)))
+                                (ß BREAK)
+                            )
 
                             ;; If "backslash" is true the backslash will be removed later.
                             ;; Used to insert a literal CR.
-;                           default:
+                            (ß DEFAULT)
+                            (§
                                 (when backslash
                                     (if copy
-;                                       dst.be(0, (byte)'\\');
+                                        (.be dst (§ 0), (§ (byte)'\\'))
                                     )
                                     ((ß dst =) (§ dst.plus(1)))
                                 )
                                 ((ß b =) (§ (src = src.plus(1)).at(-1)))
                                 (ß BREAK)
-;                       }
+                            )
+                        )
                         ((ß c =) (§ char_u(b)))
                     )
                     :else
@@ -31519,7 +32363,7 @@
                 )
                 :else
                 (§
-;                   Bytes s;
+                    (ß Bytes s)
                     (cond (nil? @reg_match)
                     (§
                         ((ß clnum =) (§ @reg_mmatch.startpos[no].lnum))
@@ -31554,7 +32398,7 @@
                                         (ß BREAK)
                                     )
                                     (if copy
-;                                       dst.be(0, CAR);
+                                        (.be dst 0, CAR)
                                     )
                                     ((ß dst =) (§ dst.plus(1)))
                                     ((ß s =) (§ reg_getline(++clnum)))
@@ -31583,8 +32427,8 @@
                                     ;; Number of backslashes will be halved later, double them here.
 
                                     (when copy
-;                                       dst.be(0, (byte)'\\');
-;                                       dst.be(1, s.at(0));
+                                        (.be dst (§ 0), (§ (byte)'\\'))
+                                        (.be dst (§ 1), (§ s.at(0)))
                                     )
                                     ((ß dst =) (§ dst.plus(2)))
                                 )
@@ -31629,7 +32473,7 @@
         ))
 
         (if copy
-;           dst.be(0, NUL);
+            (.be dst 0, NUL)
         )
 
         (+ (BDIFF dst, dest) 1)
@@ -31910,47 +32754,54 @@
         )
 
         ((ß FOR) (ß (§ nfa_state_C p = start) (§ p != null) (§ nil))
-;           switch (p.c)
-;           {
-;               case NFA_BOL:
-;               case NFA_BOF:
+            ((ß SWITCH) (§ p.c)
+                ((ß CASE) (§ NFA_BOL))
+                ((ß CASE) (§ NFA_BOF))
+                (§
                     ((ß RETURN) (§ true)) ;; yes!
+                )
 
-;               case NFA_ZSTART:
-;               case NFA_ZEND:
-;               case NFA_CURSOR:
-;               case NFA_VISUAL:
+                ((ß CASE) (§ NFA_ZSTART))
+                ((ß CASE) (§ NFA_ZEND))
+                ((ß CASE) (§ NFA_CURSOR))
+                ((ß CASE) (§ NFA_VISUAL))
 
-;               case NFA_MOPEN:
-;               case NFA_MOPEN1:
-;               case NFA_MOPEN2:
-;               case NFA_MOPEN3:
-;               case NFA_MOPEN4:
-;               case NFA_MOPEN5:
-;               case NFA_MOPEN6:
-;               case NFA_MOPEN7:
-;               case NFA_MOPEN8:
-;               case NFA_MOPEN9:
-;               case NFA_NOPEN:
-;               case NFA_ZOPEN:
-;               case NFA_ZOPEN1:
-;               case NFA_ZOPEN2:
-;               case NFA_ZOPEN3:
-;               case NFA_ZOPEN4:
-;               case NFA_ZOPEN5:
-;               case NFA_ZOPEN6:
-;               case NFA_ZOPEN7:
-;               case NFA_ZOPEN8:
-;               case NFA_ZOPEN9:
+                ((ß CASE) (§ NFA_MOPEN))
+                ((ß CASE) (§ NFA_MOPEN1))
+                ((ß CASE) (§ NFA_MOPEN2))
+                ((ß CASE) (§ NFA_MOPEN3))
+                ((ß CASE) (§ NFA_MOPEN4))
+                ((ß CASE) (§ NFA_MOPEN5))
+                ((ß CASE) (§ NFA_MOPEN6))
+                ((ß CASE) (§ NFA_MOPEN7))
+                ((ß CASE) (§ NFA_MOPEN8))
+                ((ß CASE) (§ NFA_MOPEN9))
+                ((ß CASE) (§ NFA_NOPEN))
+                ((ß CASE) (§ NFA_ZOPEN))
+                ((ß CASE) (§ NFA_ZOPEN1))
+                ((ß CASE) (§ NFA_ZOPEN2))
+                ((ß CASE) (§ NFA_ZOPEN3))
+                ((ß CASE) (§ NFA_ZOPEN4))
+                ((ß CASE) (§ NFA_ZOPEN5))
+                ((ß CASE) (§ NFA_ZOPEN6))
+                ((ß CASE) (§ NFA_ZOPEN7))
+                ((ß CASE) (§ NFA_ZOPEN8))
+                ((ß CASE) (§ NFA_ZOPEN9))
+                (§
                     ((ß p =) (§ p.out0()))
                     (ß BREAK)
+                )
 
-;               case NFA_SPLIT:
+                ((ß CASE) (§ NFA_SPLIT))
+                (§
                     ((ß RETURN) (§ nfa_get_reganch(p.out0(), depth + 1) && nfa_get_reganch(p.out1(), depth + 1)))
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     ((ß RETURN) (§ false)) ;; noooo!
-;           }
+                )
+            )
         )
 
         false
@@ -31965,73 +32816,74 @@
         )
 
         ((ß FOR) (ß (§ nfa_state_C p = start) (§ p != null) (§ nil))
-;           switch (p.c)
-;           {
+            ((ß SWITCH) (§ p.c)
                 ;; all kinds of zero-width matches
-;               case NFA_BOL:
-;               case NFA_BOF:
-;               case NFA_BOW:
-;               case NFA_EOW:
-;               case NFA_ZSTART:
-;               case NFA_ZEND:
-;               case NFA_CURSOR:
-;               case NFA_VISUAL:
-;               case NFA_LNUM:
-;               case NFA_LNUM_GT:
-;               case NFA_LNUM_LT:
-;               case NFA_COL:
-;               case NFA_COL_GT:
-;               case NFA_COL_LT:
-;               case NFA_VCOL:
-;               case NFA_VCOL_GT:
-;               case NFA_VCOL_LT:
-;               case NFA_MARK:
-;               case NFA_MARK_GT:
-;               case NFA_MARK_LT:
+                ((ß CASE) (§ NFA_BOL))
+                ((ß CASE) (§ NFA_BOF))
+                ((ß CASE) (§ NFA_BOW))
+                ((ß CASE) (§ NFA_EOW))
+                ((ß CASE) (§ NFA_ZSTART))
+                ((ß CASE) (§ NFA_ZEND))
+                ((ß CASE) (§ NFA_CURSOR))
+                ((ß CASE) (§ NFA_VISUAL))
+                ((ß CASE) (§ NFA_LNUM))
+                ((ß CASE) (§ NFA_LNUM_GT))
+                ((ß CASE) (§ NFA_LNUM_LT))
+                ((ß CASE) (§ NFA_COL))
+                ((ß CASE) (§ NFA_COL_GT))
+                ((ß CASE) (§ NFA_COL_LT))
+                ((ß CASE) (§ NFA_VCOL))
+                ((ß CASE) (§ NFA_VCOL_GT))
+                ((ß CASE) (§ NFA_VCOL_LT))
+                ((ß CASE) (§ NFA_MARK))
+                ((ß CASE) (§ NFA_MARK_GT))
+                ((ß CASE) (§ NFA_MARK_LT))
 
-;               case NFA_MOPEN:
-;               case NFA_MOPEN1:
-;               case NFA_MOPEN2:
-;               case NFA_MOPEN3:
-;               case NFA_MOPEN4:
-;               case NFA_MOPEN5:
-;               case NFA_MOPEN6:
-;               case NFA_MOPEN7:
-;               case NFA_MOPEN8:
-;               case NFA_MOPEN9:
-;               case NFA_NOPEN:
-;               case NFA_ZOPEN:
-;               case NFA_ZOPEN1:
-;               case NFA_ZOPEN2:
-;               case NFA_ZOPEN3:
-;               case NFA_ZOPEN4:
-;               case NFA_ZOPEN5:
-;               case NFA_ZOPEN6:
-;               case NFA_ZOPEN7:
-;               case NFA_ZOPEN8:
-;               case NFA_ZOPEN9:
+                ((ß CASE) (§ NFA_MOPEN))
+                ((ß CASE) (§ NFA_MOPEN1))
+                ((ß CASE) (§ NFA_MOPEN2))
+                ((ß CASE) (§ NFA_MOPEN3))
+                ((ß CASE) (§ NFA_MOPEN4))
+                ((ß CASE) (§ NFA_MOPEN5))
+                ((ß CASE) (§ NFA_MOPEN6))
+                ((ß CASE) (§ NFA_MOPEN7))
+                ((ß CASE) (§ NFA_MOPEN8))
+                ((ß CASE) (§ NFA_MOPEN9))
+                ((ß CASE) (§ NFA_NOPEN))
+                ((ß CASE) (§ NFA_ZOPEN))
+                ((ß CASE) (§ NFA_ZOPEN1))
+                ((ß CASE) (§ NFA_ZOPEN2))
+                ((ß CASE) (§ NFA_ZOPEN3))
+                ((ß CASE) (§ NFA_ZOPEN4))
+                ((ß CASE) (§ NFA_ZOPEN5))
+                ((ß CASE) (§ NFA_ZOPEN6))
+                ((ß CASE) (§ NFA_ZOPEN7))
+                ((ß CASE) (§ NFA_ZOPEN8))
+                ((ß CASE) (§ NFA_ZOPEN9))
+                (§
                     ((ß p =) (§ p.out0()))
                     (ß BREAK)
+                )
 
-;               case NFA_SPLIT:
-;               {
+                ((ß CASE) (§ NFA_SPLIT))
+                (§
                     ((ß int c1 =) (§ nfa_get_regstart(p.out0(), depth + 1)))
                     ((ß int c2 =) (§ nfa_get_regstart(p.out1(), depth + 1)))
 
                     (if (== c1 c2)
                         ((ß RETURN) (§ c1))      ;; yes!
+                        ((ß RETURN) (§ 0))
                     )
+                )
 
-                    ((ß RETURN) (§ 0))
-;               }
-
-;               default:
+                (ß DEFAULT)
+                (§
                     (if (< 0 (. p c))
                         ((ß RETURN) (§ p.c))     ;; yes!
+                        ((ß RETURN) (§ 0))
                     )
-
-                    ((ß RETURN) (§ 0))
-;           }
+                )
+            )
         )
 
         0
@@ -32067,7 +32919,7 @@
             ((ß s =) (§ s.plus(utf_char2bytes(p.c, s))))
             ((ß p =) (§ p.out0()))
         )
-;       s.be(0, NUL);
+        (.be s 0, NUL)
 
         ret
     ))
@@ -32115,9 +32967,9 @@
         (while (§ BLT(p, end))
             (cond (and (BLT (.plus p 2), end) (== (.at p 1) (byte \-)))
             (§
-;               switch (p.at(0))
-;               {
-;                   case (byte)'0':
+                ((ß SWITCH) (§ p.at(0))
+                    ((ß CASE) (§ (byte)'0'))
+                    (§
                         (cond (== (.at p 2) (byte \9))
                         (§
                             ((ß config |=) (§ CLASS_o9))
@@ -32128,7 +32980,10 @@
                             ((ß config |=) (§ CLASS_o7))
                             (ß BREAK)
                         ))
-;                   case (byte)'a':
+                        (ß FALLTHROUGH)
+                    )
+                    ((ß CASE) (§ (byte)'a'))
+                    (§
                         (cond (== (.at p 2) (byte \z))
                         (§
                             ((ß config |=) (§ CLASS_az))
@@ -32139,7 +32994,10 @@
                             ((ß config |=) (§ CLASS_af))
                             (ß BREAK)
                         ))
-;                   case (byte)'A':
+                        (ß FALLTHROUGH)
+                    )
+                    ((ß CASE) (§ (byte)'A'))
+                    (§
                         (cond (== (.at p 2) (byte \Z))
                         (§
                             ((ß config |=) (§ CLASS_AZ))
@@ -32150,10 +33008,13 @@
                             ((ß config |=) (§ CLASS_AF))
                             (ß BREAK)
                         ))
-                    ;; FALLTHROUGH
-;                   default:
+                        (ß FALLTHROUGH)
+                    )
+                    (ß DEFAULT)
+                    (§
                         ((ß RETURN) (§ 0))
-;               }
+                    )
+                )
                 ((ß p =) (§ p.plus(3)))
             )
             (and (BLT (.plus p 1), end) (== (.at p 0) (byte \\)) (== (.at p 1) (byte \n)))
@@ -32183,41 +33044,72 @@
 
         ((ß int nfa_add_nl =) (§ (newl) ? NFA_ADD_NL : 0))
 
-;       switch (config)
-;       {
-;           case CLASS_o9:
+        ((ß SWITCH) (§ config)
+            ((ß CASE) (§ CLASS_o9))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_DIGIT))
-;           case CLASS_not | CLASS_o9:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_o9))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NDIGIT))
-;           case CLASS_af | CLASS_AF | CLASS_o9:
+            )
+            ((ß CASE) (§ CLASS_af | CLASS_AF | CLASS_o9))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_HEX))
-;           case CLASS_not | CLASS_af | CLASS_AF | CLASS_o9:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_af | CLASS_AF | CLASS_o9))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NHEX))
-;           case CLASS_o7:
+            )
+            ((ß CASE) (§ CLASS_o7))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_OCTAL))
-;           case CLASS_not | CLASS_o7:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_o7))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NOCTAL))
-;           case CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore:
+            )
+            ((ß CASE) (§ CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_WORD))
-;           case CLASS_not | CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NWORD))
-;           case CLASS_az | CLASS_AZ | CLASS_underscore:
+            )
+            ((ß CASE) (§ CLASS_az | CLASS_AZ | CLASS_underscore))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_HEAD))
-;           case CLASS_not | CLASS_az | CLASS_AZ | CLASS_underscore:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_az | CLASS_AZ | CLASS_underscore))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NHEAD))
-;           case CLASS_az | CLASS_AZ:
+            )
+            ((ß CASE) (§ CLASS_az | CLASS_AZ))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_ALPHA))
-;           case CLASS_not | CLASS_az | CLASS_AZ:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_az | CLASS_AZ))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NALPHA))
-;           case CLASS_az:
+            )
+            ((ß CASE) (§ CLASS_az))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_LOWER_IC))
-;           case CLASS_not | CLASS_az:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_az))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NLOWER_IC))
-;           case CLASS_AZ:
+            )
+            ((ß CASE) (§ CLASS_AZ))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_UPPER_IC))
-;           case CLASS_not | CLASS_AZ:
+            )
+            ((ß CASE) (§ CLASS_not | CLASS_AZ))
+            (§
                 ((ß RETURN) (§ nfa_add_nl + NFA_NUPPER_IC))
-;       }
+            )
+        )
 
         0
     ))
@@ -32245,463 +33137,462 @@
 
 (defn- #_boolean nfa_emit_equi_class [#_int c]
     (§
-;       switch (c)
-;       {
-;           case (byte)'A':
-;           case 0xc0: case 0xc1: case 0xc2:
-;           case 0xc3: case 0xc4: case 0xc5:
-;           case 0x100: case 0x102: case 0x104:
-;           case 0x1cd: case 0x1de: case 0x1e0:
-;           case 0x1ea2:
-;           {
-;               return emc2((byte)'A')
-;                   && emc2(0xc0) && emc2(0xc1) && emc2(0xc2)
-;                   && emc2(0xc3) && emc2(0xc4) && emc2(0xc5)
-;                   && emc2(0x100) && emc2(0x102) && emc2(0x104)
-;                   && emc2(0x1cd) && emc2(0x1de) && emc2(0x1e0)
-;                   && emc2(0x1ea2);
-;           }
-;           case (byte)'a':
-;           case 0xe0: case 0xe1: case 0xe2:
-;           case 0xe3: case 0xe4: case 0xe5:
-;           case 0x101: case 0x103: case 0x105:
-;           case 0x1ce: case 0x1df: case 0x1e1:
-;           case 0x1ea3:
-;           {
-;               return emc2((byte)'a')
-;                   && emc2(0xe0) && emc2(0xe1) && emc2(0xe2)
-;                   && emc2(0xe3) && emc2(0xe4) && emc2(0xe5)
-;                   && emc2(0x101) && emc2(0x103) && emc2(0x105)
-;                   && emc2(0x1ce) && emc2(0x1df) && emc2(0x1e1)
-;                   && emc2(0x1ea3);
-;           }
+        ((ß SWITCH) (§ c)
+            ((ß CASE) (byte \A))
+            ((ß CASE) 0xc0) ((ß CASE) 0xc1) ((ß CASE) 0xc2)
+            ((ß CASE) 0xc3) ((ß CASE) 0xc4) ((ß CASE) 0xc5)
+            ((ß CASE) 0x100) ((ß CASE) 0x102) ((ß CASE) 0x104)
+            ((ß CASE) 0x1cd) ((ß CASE) 0x1de) ((ß CASE) 0x1e0)
+            ((ß CASE) 0x1ea2)
+            (§
+                ((ß RETURN) (and (emc2 (byte \A))
+                    (emc2 0xc0) (emc2 0xc1) (emc2 0xc2)
+                    (emc2 0xc3) (emc2 0xc4) (emc2 0xc5)
+                    (emc2 0x100) (emc2 0x102) (emc2 0x104)
+                    (emc2 0x1cd) (emc2 0x1de) (emc2 0x1e0)
+                    (emc2 0x1ea2)))
+            )
+            ((ß CASE) (byte \a))
+            ((ß CASE) 0xe0) ((ß CASE) 0xe1) ((ß CASE) 0xe2)
+            ((ß CASE) 0xe3) ((ß CASE) 0xe4) ((ß CASE) 0xe5)
+            ((ß CASE) 0x101) ((ß CASE) 0x103) ((ß CASE) 0x105)
+            ((ß CASE) 0x1ce) ((ß CASE) 0x1df) ((ß CASE) 0x1e1)
+            ((ß CASE) 0x1ea3)
+            (§
+                ((ß RETURN) (and (emc2 (byte \a))
+                    (emc2 0xe0) (emc2 0xe1) (emc2 0xe2)
+                    (emc2 0xe3) (emc2 0xe4) (emc2 0xe5)
+                    (emc2 0x101) (emc2 0x103) (emc2 0x105)
+                    (emc2 0x1ce) (emc2 0x1df) (emc2 0x1e1)
+                    (emc2 0x1ea3)))
+            )
 
-;           case (byte)'B':
-;           case 0x1e02: case 0x1e06:
-;           {
-;               return emc2((byte)'B')
-;                   && emc2(0x1e02) && emc2(0x1e06);
-;           }
-;           case (byte)'b':
-;           case 0x1e03: case 0x1e07:
-;           {
-;               return emc2((byte)'b')
-;                   && emc2(0x1e03) && emc2(0x1e07);
-;           }
+            ((ß CASE) (byte \B))
+            ((ß CASE) 0x1e02) ((ß CASE) 0x1e06)
+            (§
+                ((ß RETURN) (and (emc2 (byte \B))
+                    (emc2 0x1e02) (emc2 0x1e06)))
+            )
+            ((ß CASE) (byte \b))
+            ((ß CASE) 0x1e03) ((ß CASE) 0x1e07)
+            (§
+                ((ß RETURN) (and (emc2 (byte \b))
+                    (emc2 0x1e03) (emc2 0x1e07)))
+            )
 
-;           case (byte)'C':
-;           case 0xc7:
-;           case 0x106: case 0x108: case 0x10a: case 0x10c:
-;           {
-;               return emc2((byte)'C')
-;                   && emc2(0xc7)
-;                   && emc2(0x106) && emc2(0x108) && emc2(0x10a) && emc2(0x10c);
-;           }
-;           case (byte)'c':
-;           case 0xe7:
-;           case 0x107: case 0x109: case 0x10b: case 0x10d:
-;           {
-;               return emc2((byte)'c')
-;                   && emc2(0xe7)
-;                   && emc2(0x107) && emc2(0x109) && emc2(0x10b) && emc2(0x10d);
-;           }
+            ((ß CASE) (byte \C))
+            ((ß CASE) 0xc7)
+            ((ß CASE) 0x106) ((ß CASE) 0x108) ((ß CASE) 0x10a) ((ß CASE) 0x10c)
+            (§
+                ((ß RETURN) (and (emc2 (byte \C))
+                    (emc2 0xc7)
+                    (emc2 0x106) (emc2 0x108) (emc2 0x10a) (emc2 0x10c)))
+            )
+            ((ß CASE) (byte \c))
+            ((ß CASE) 0xe7)
+            ((ß CASE) 0x107) ((ß CASE) 0x109) ((ß CASE) 0x10b) ((ß CASE) 0x10d)
+            (§
+                ((ß RETURN) (and (emc2 (byte \c))
+                    (emc2 0xe7)
+                    (emc2 0x107) (emc2 0x109) (emc2 0x10b) (emc2 0x10d)))
+            )
 
-;           case (byte)'D':
-;           case 0x10e: case 0x110:
-;           case 0x1e0a: case 0x1e0c: case 0x1e0e: case 0x1e10: case 0x1e12:
-;           {
-;               return emc2((byte)'D')
-;                   && emc2(0x10e) && emc2(0x110)
-;                   && emc2(0x1e0a) && emc2(0x1e0c) && emc2(0x1e0e) && emc2(0x1e10) && emc2(0x1e12);
-;           }
-;           case (byte)'d':
-;           case 0x10f: case 0x111:
-;           case 0x1e0b: case 0x1e0d: case 0x1e0f: case 0x1e11: case 0x1e13:
-;           {
-;               return emc2((byte)'d')
-;                   && emc2(0x10f) && emc2(0x111)
-;                   && emc2(0x1e0b) && emc2(0x1e0d) && emc2(0x1e0f) && emc2(0x1e11) && emc2(0x1e13);
-;           }
+            ((ß CASE) (byte \D))
+            ((ß CASE) 0x10e) ((ß CASE) 0x110)
+            ((ß CASE) 0x1e0a) ((ß CASE) 0x1e0c) ((ß CASE) 0x1e0e) ((ß CASE) 0x1e10) ((ß CASE) 0x1e12)
+            (§
+                ((ß RETURN) (and (emc2 (byte \D))
+                    (emc2 0x10e) (emc2 0x110)
+                    (emc2 0x1e0a) (emc2 0x1e0c) (emc2 0x1e0e) (emc2 0x1e10) (emc2 0x1e12)))
+            )
+            ((ß CASE) (byte \d))
+            ((ß CASE) 0x10f) ((ß CASE) 0x111)
+            ((ß CASE) 0x1e0b) ((ß CASE) 0x1e0d) ((ß CASE) 0x1e0f) ((ß CASE) 0x1e11) ((ß CASE) 0x1e13)
+            (§
+                ((ß RETURN) (and (emc2 (byte \d))
+                    (emc2 0x10f) (emc2 0x111)
+                    (emc2 0x1e0b) (emc2 0x1e0d) (emc2 0x1e0f) (emc2 0x1e11) (emc2 0x1e13)))
+            )
 
-;           case (byte)'E':
-;           case 0xc8: case 0xc9: case 0xca: case 0xcb:
-;           case 0x112: case 0x114: case 0x116: case 0x118: case 0x11a:
-;           case 0x1eba: case 0x1ebc:
-;           {
-;               return emc2((byte)'E')
-;                   && emc2(0xc8) && emc2(0xc9) && emc2(0xca) && emc2(0xcb)
-;                   && emc2(0x112) && emc2(0x114) && emc2(0x116) && emc2(0x118) && emc2(0x11a)
-;                   && emc2(0x1eba) && emc2(0x1ebc);
-;           }
-;           case (byte)'e':
-;           case 0xe8: case 0xe9: case 0xea: case 0xeb:
-;           case 0x113: case 0x115: case 0x117: case 0x119: case 0x11b:
-;           case 0x1ebb: case 0x1ebd:
-;           {
-;               return emc2((byte)'e')
-;                   && emc2(0xe8) && emc2(0xe9) && emc2(0xea) && emc2(0xeb)
-;                   && emc2(0x113) && emc2(0x115) && emc2(0x117) && emc2(0x119) && emc2(0x11b)
-;                   && emc2(0x1ebb) && emc2(0x1ebd);
-;           }
+            ((ß CASE) (byte \E))
+            ((ß CASE) 0xc8) ((ß CASE) 0xc9) ((ß CASE) 0xca) ((ß CASE) 0xcb)
+            ((ß CASE) 0x112) ((ß CASE) 0x114) ((ß CASE) 0x116) ((ß CASE) 0x118) ((ß CASE) 0x11a)
+            ((ß CASE) 0x1eba) ((ß CASE) 0x1ebc)
+            (§
+                ((ß RETURN) (and (emc2 (byte \E))
+                    (emc2 0xc8) (emc2 0xc9) (emc2 0xca) (emc2 0xcb)
+                    (emc2 0x112) (emc2 0x114) (emc2 0x116) (emc2 0x118) (emc2 0x11a)
+                    (emc2 0x1eba) (emc2 0x1ebc)))
+            )
+            ((ß CASE) (byte \e))
+            ((ß CASE) 0xe8) ((ß CASE) 0xe9) ((ß CASE) 0xea) ((ß CASE) 0xeb)
+            ((ß CASE) 0x113) ((ß CASE) 0x115) ((ß CASE) 0x117) ((ß CASE) 0x119) ((ß CASE) 0x11b)
+            ((ß CASE) 0x1ebb) ((ß CASE) 0x1ebd)
+            (§
+                ((ß RETURN) (and (emc2 (byte \e))
+                    (emc2 0xe8) (emc2 0xe9) (emc2 0xea) (emc2 0xeb)
+                    (emc2 0x113) (emc2 0x115) (emc2 0x117) (emc2 0x119) (emc2 0x11b)
+                    (emc2 0x1ebb) (emc2 0x1ebd)))
+            )
 
-;           case (byte)'F':
-;           case 0x1e1e:
-;           {
-;               return emc2((byte)'F')
-;                   && emc2(0x1e1e);
-;           }
-;           case (byte)'f':
-;           case 0x1e1f:
-;           {
-;               return emc2((byte)'f')
-;                   && emc2(0x1e1f);
-;           }
+            ((ß CASE) (byte \F))
+            ((ß CASE) 0x1e1e)
+            (§
+                ((ß RETURN) (and (emc2 (byte \F))
+                    (emc2 0x1e1e)))
+            )
+            ((ß CASE) (byte \f))
+            ((ß CASE) 0x1e1f)
+            (§
+                ((ß RETURN) (and (emc2 (byte \f))
+                    (emc2 0x1e1f)))
+            )
 
-;           case (byte)'G':
-;           case 0x11c: case 0x11e: case 0x120: case 0x122:
-;           case 0x1e4: case 0x1e6: case 0x1f4:
-;           case 0x1e20:
-;           {
-;               return emc2((byte)'G')
-;                   && emc2(0x11c) && emc2(0x11e) && emc2(0x120) && emc2(0x122)
-;                   && emc2(0x1e4) && emc2(0x1e6) && emc2(0x1f4)
-;                   && emc2(0x1e20);
-;           }
-;           case (byte)'g':
-;           case 0x11d: case 0x11f: case 0x121: case 0x123:
-;           case 0x1e5: case 0x1e7: case 0x1f5:
-;           case 0x1e21:
-;           {
-;               return emc2((byte)'g')
-;                   && emc2(0x11d) && emc2(0x11f) && emc2(0x121) && emc2(0x123)
-;                   && emc2(0x1e5) && emc2(0x1e7) && emc2(0x1f5)
-;                   && emc2(0x1e21);
-;           }
+            ((ß CASE) (byte \G))
+            ((ß CASE) 0x11c) ((ß CASE) 0x11e) ((ß CASE) 0x120) ((ß CASE) 0x122)
+            ((ß CASE) 0x1e4) ((ß CASE) 0x1e6) ((ß CASE) 0x1f4)
+            ((ß CASE) 0x1e20)
+            (§
+                ((ß RETURN) (and (emc2 (byte \G))
+                    (emc2 0x11c) (emc2 0x11e) (emc2 0x120) (emc2 0x122)
+                    (emc2 0x1e4) (emc2 0x1e6) (emc2 0x1f4)
+                    (emc2 0x1e20)))
+            )
+            ((ß CASE) (byte \g))
+            ((ß CASE) 0x11d) ((ß CASE) 0x11f) ((ß CASE) 0x121) ((ß CASE) 0x123)
+            ((ß CASE) 0x1e5) ((ß CASE) 0x1e7) ((ß CASE) 0x1f5)
+            ((ß CASE) 0x1e21)
+            (§
+                ((ß RETURN) (and (emc2 (byte \g))
+                    (emc2 0x11d) (emc2 0x11f) (emc2 0x121) (emc2 0x123)
+                    (emc2 0x1e5) (emc2 0x1e7) (emc2 0x1f5)
+                    (emc2 0x1e21)))
+            )
 
-;           case (byte)'H':
-;           case 0x124: case 0x126:
-;           case 0x1e22: case 0x1e26: case 0x1e28:
-;           {
-;               return emc2((byte)'H')
-;                   && emc2(0x124) && emc2(0x126)
-;                   && emc2(0x1e22) && emc2(0x1e26) && emc2(0x1e28);
-;           }
-;           case (byte)'h':
-;           case 0x125: case 0x127:
-;           case 0x1e23: case 0x1e27: case 0x1e29: case 0x1e96:
-;           {
-;               return emc2((byte)'h')
-;                   && emc2(0x125) && emc2(0x127)
-;                   && emc2(0x1e23) && emc2(0x1e27) && emc2(0x1e29) && emc2(0x1e96);
-;           }
+            ((ß CASE) (byte \H))
+            ((ß CASE) 0x124) ((ß CASE) 0x126)
+            ((ß CASE) 0x1e22) ((ß CASE) 0x1e26) ((ß CASE) 0x1e28)
+            (§
+                ((ß RETURN) (and (emc2 (byte \H))
+                    (emc2 0x124) (emc2 0x126)
+                    (emc2 0x1e22) (emc2 0x1e26) (emc2 0x1e28)))
+            )
+            ((ß CASE) (byte \h))
+            ((ß CASE) 0x125) ((ß CASE) 0x127)
+            ((ß CASE) 0x1e23) ((ß CASE) 0x1e27) ((ß CASE) 0x1e29) ((ß CASE) 0x1e96)
+            (§
+                ((ß RETURN) (and (emc2 (byte \h))
+                    (emc2 0x125) (emc2 0x127)
+                    (emc2 0x1e23) (emc2 0x1e27) (emc2 0x1e29) (emc2 0x1e96)))
+            )
 
-;           case (byte)'I':
-;           case 0xcc: case 0xcd: case 0xce: case 0xcf:
-;           case 0x128: case 0x12a: case 0x12c: case 0x12e: case 0x130:
-;           case 0x1cf:
-;           case 0x1ec8:
-;           {
-;               return emc2((byte)'I')
-;                   && emc2(0xcc) && emc2(0xcd) && emc2(0xce) && emc2(0xcf)
-;                   && emc2(0x128) && emc2(0x12a) && emc2(0x12c) && emc2(0x12e) && emc2(0x130)
-;                   && emc2(0x1cf)
-;                   && emc2(0x1ec8);
-;           }
-;           case (byte)'i':
-;           case 0xec: case 0xed: case 0xee: case 0xef:
-;           case 0x129: case 0x12b: case 0x12d: case 0x12f: case 0x131:
-;           case 0x1d0:
-;           case 0x1ec9:
-;           {
-;               return emc2((byte)'i')
-;                   && emc2(0xec) && emc2(0xed) && emc2(0xee) && emc2(0xef)
-;                   && emc2(0x129) && emc2(0x12b) && emc2(0x12d) && emc2(0x12f) && emc2(0x131)
-;                   && emc2(0x1d0)
-;                   && emc2(0x1ec9);
-;           }
+            ((ß CASE) (byte \I))
+            ((ß CASE) 0xcc) ((ß CASE) 0xcd) ((ß CASE) 0xce) ((ß CASE) 0xcf)
+            ((ß CASE) 0x128) ((ß CASE) 0x12a) ((ß CASE) 0x12c) ((ß CASE) 0x12e) ((ß CASE) 0x130)
+            ((ß CASE) 0x1cf)
+            ((ß CASE) 0x1ec8)
+            (§
+                ((ß RETURN) (and (emc2 (byte \I))
+                    (emc2 0xcc) (emc2 0xcd) (emc2 0xce) (emc2 0xcf)
+                    (emc2 0x128) (emc2 0x12a) (emc2 0x12c) (emc2 0x12e) (emc2 0x130)
+                    (emc2 0x1cf)
+                    (emc2 0x1ec8)))
+            )
+            ((ß CASE) (byte \i))
+            ((ß CASE) 0xec) ((ß CASE) 0xed) ((ß CASE) 0xee) ((ß CASE) 0xef)
+            ((ß CASE) 0x129) ((ß CASE) 0x12b) ((ß CASE) 0x12d) ((ß CASE) 0x12f) ((ß CASE) 0x131)
+            ((ß CASE) 0x1d0)
+            ((ß CASE) 0x1ec9)
+            (§
+                ((ß RETURN) (and (emc2 (byte \i))
+                    (emc2 0xec) (emc2 0xed) (emc2 0xee) (emc2 0xef)
+                    (emc2 0x129) (emc2 0x12b) (emc2 0x12d) (emc2 0x12f) (emc2 0x131)
+                    (emc2 0x1d0)
+                    (emc2 0x1ec9)))
+            )
 
-;           case (byte)'J':
-;           case 0x134:
-;           {
-;               return emc2((byte)'J')
-;                   && emc2(0x134);
-;           }
-;           case (byte)'j':
-;           case 0x135: case 0x1f0:
-;           {
-;               return emc2((byte)'j')
-;                   && emc2(0x135) && emc2(0x1f0);
-;           }
+            ((ß CASE) (byte \J))
+            ((ß CASE) 0x134)
+            (§
+                ((ß RETURN) (and (emc2 (byte \J))
+                    (emc2 0x134)))
+            )
+            ((ß CASE) (byte \j))
+            ((ß CASE) 0x135) ((ß CASE) 0x1f0)
+            (§
+                ((ß RETURN) (and (emc2 (byte \j))
+                    (emc2 0x135) (emc2 0x1f0)))
+            )
 
-;           case (byte)'K':
-;           case 0x136: case 0x1e8:
-;           case 0x1e30: case 0x1e34:
-;           {
-;               return emc2((byte)'K')
-;                   && emc2(0x136) && emc2(0x1e8)
-;                   && emc2(0x1e30) && emc2(0x1e34);
-;           }
-;           case (byte)'k':
-;           case 0x137: case 0x1e9:
-;           case 0x1e31: case 0x1e35:
-;           {
-;               return emc2((byte)'k')
-;                   && emc2(0x137) && emc2(0x1e9)
-;                   && emc2(0x1e31) && emc2(0x1e35);
-;           }
+            ((ß CASE) (byte \K))
+            ((ß CASE) 0x136) ((ß CASE) 0x1e8)
+            ((ß CASE) 0x1e30) ((ß CASE) 0x1e34)
+            (§
+                ((ß RETURN) (and (emc2 (byte \K))
+                    (emc2 0x136) (emc2 0x1e8)
+                    (emc2 0x1e30) (emc2 0x1e34)))
+            )
+            ((ß CASE) (byte \k))
+            ((ß CASE) 0x137) ((ß CASE) 0x1e9)
+            ((ß CASE) 0x1e31) ((ß CASE) 0x1e35)
+            (§
+                ((ß RETURN) (and (emc2 (byte \k))
+                    (emc2 0x137) (emc2 0x1e9)
+                    (emc2 0x1e31) (emc2 0x1e35)))
+            )
 
-;           case (byte)'L':
-;           case 0x139: case 0x13b: case 0x13d: case 0x13f: case 0x141:
-;           case 0x1e3a:
-;           {
-;               return emc2((byte)'L')
-;                   && emc2(0x139) && emc2(0x13b) && emc2(0x13d) && emc2(0x13f) && emc2(0x141)
-;                   && emc2(0x1e3a);
-;           }
-;           case (byte)'l':
-;           case 0x13a: case 0x13c: case 0x13e: case 0x140: case 0x142:
-;           case 0x1e3b:
-;           {
-;               return emc2((byte)'l')
-;                   && emc2(0x13a) && emc2(0x13c) && emc2(0x13e) && emc2(0x140) && emc2(0x142)
-;                   && emc2(0x1e3b);
-;           }
+            ((ß CASE) (byte \L))
+            ((ß CASE) 0x139) ((ß CASE) 0x13b) ((ß CASE) 0x13d) ((ß CASE) 0x13f) ((ß CASE) 0x141)
+            ((ß CASE) 0x1e3a)
+            (§
+                ((ß RETURN) (and (emc2 (byte \L))
+                    (emc2 0x139) (emc2 0x13b) (emc2 0x13d) (emc2 0x13f) (emc2 0x141)
+                    (emc2 0x1e3a)))
+            )
+            ((ß CASE) (byte \l))
+            ((ß CASE) 0x13a) ((ß CASE) 0x13c) ((ß CASE) 0x13e) ((ß CASE) 0x140) ((ß CASE) 0x142)
+            ((ß CASE) 0x1e3b)
+            (§
+                ((ß RETURN) (and (emc2 (byte \l))
+                    (emc2 0x13a) (emc2 0x13c) (emc2 0x13e) (emc2 0x140) (emc2 0x142)
+                    (emc2 0x1e3b)))
+            )
 
-;           case (byte)'M':
-;           case 0x1e3e: case 0x1e40:
-;           {
-;               return emc2((byte)'M')
-;                   && emc2(0x1e3e) && emc2(0x1e40);
-;           }
-;           case (byte)'m':
-;           case 0x1e3f: case 0x1e41:
-;           {
-;               return emc2((byte)'m')
-;                   && emc2(0x1e3f) && emc2(0x1e41);
-;           }
+            ((ß CASE) (byte \M))
+            ((ß CASE) 0x1e3e) ((ß CASE) 0x1e40)
+            (§
+                ((ß RETURN) (and (emc2 (byte \M))
+                    (emc2 0x1e3e) (emc2 0x1e40)))
+            )
+            ((ß CASE) (byte \m))
+            ((ß CASE) 0x1e3f) ((ß CASE) 0x1e41)
+            (§
+                ((ß RETURN) (and (emc2 (byte \m))
+                    (emc2 0x1e3f) (emc2 0x1e41)))
+            )
 
-;           case (byte)'N':
-;           case 0xd1:
-;           case 0x143: case 0x145: case 0x147:
-;           case 0x1e44: case 0x1e48:
-;           {
-;               return emc2((byte)'N')
-;                   && emc2(0xd1)
-;                   && emc2(0x143) && emc2(0x145) && emc2(0x147)
-;                   && emc2(0x1e44) && emc2(0x1e48);
-;           }
-;           case (byte)'n':
-;           case 0xf1:
-;           case 0x144: case 0x146: case 0x148: case 0x149:
-;           case 0x1e45: case 0x1e49:
-;           {
-;               return emc2((byte)'n')
-;                   && emc2(0xf1)
-;                   && emc2(0x144) && emc2(0x146) && emc2(0x148) && emc2(0x149)
-;                   && emc2(0x1e45) && emc2(0x1e49);
-;           }
+            ((ß CASE) (byte \N))
+            ((ß CASE) 0xd1)
+            ((ß CASE) 0x143) ((ß CASE) 0x145) ((ß CASE) 0x147)
+            ((ß CASE) 0x1e44) ((ß CASE) 0x1e48)
+            (§
+                ((ß RETURN) (and (emc2 (byte \N))
+                    (emc2 0xd1)
+                    (emc2 0x143) (emc2 0x145) (emc2 0x147)
+                    (emc2 0x1e44) (emc2 0x1e48)))
+            )
+            ((ß CASE) (byte \n))
+            ((ß CASE) 0xf1)
+            ((ß CASE) 0x144) ((ß CASE) 0x146) ((ß CASE) 0x148) ((ß CASE) 0x149)
+            ((ß CASE) 0x1e45) ((ß CASE) 0x1e49)
+            (§
+                ((ß RETURN) (and (emc2 (byte \n))
+                    (emc2 0xf1)
+                    (emc2 0x144) (emc2 0x146) (emc2 0x148) (emc2 0x149)
+                    (emc2 0x1e45) (emc2 0x1e49)))
+            )
 
-;           case (byte)'O':
-;           case 0xd2: case 0xd3: case 0xd4:
-;           case 0xd5: case 0xd6: case 0xd8:
-;           case 0x14c: case 0x14e: case 0x150:
-;           case 0x1a0: case 0x1d1: case 0x1ea: case 0x1ec:
-;           case 0x1ece:
-;           {
-;               return emc2((byte)'O')
-;                   && emc2(0xd2) && emc2(0xd3) && emc2(0xd4)
-;                   && emc2(0xd5) && emc2(0xd6) && emc2(0xd8)
-;                   && emc2(0x14c) && emc2(0x14e) && emc2(0x150)
-;                   && emc2(0x1a0) && emc2(0x1d1) && emc2(0x1ea) && emc2(0x1ec)
-;                   && emc2(0x1ece);
-;           }
-;           case (byte)'o':
-;           case 0xf2: case 0xf3: case 0xf4:
-;           case 0xf5: case 0xf6: case 0xf8:
-;           case 0x14d: case 0x14f: case 0x151:
-;           case 0x1a1: case 0x1d2: case 0x1eb: case 0x1ed:
-;           case 0x1ecf:
-;           {
-;               return emc2((byte)'o')
-;                   && emc2(0xf2) && emc2(0xf3) && emc2(0xf4)
-;                   && emc2(0xf5) && emc2(0xf6) && emc2(0xf8)
-;                   && emc2(0x14d) && emc2(0x14f) && emc2(0x151)
-;                   && emc2(0x1a1) && emc2(0x1d2) && emc2(0x1eb) && emc2(0x1ed)
-;                   && emc2(0x1ecf);
-;           }
+            ((ß CASE) (byte \O))
+            ((ß CASE) 0xd2) ((ß CASE) 0xd3) ((ß CASE) 0xd4)
+            ((ß CASE) 0xd5) ((ß CASE) 0xd6) ((ß CASE) 0xd8)
+            ((ß CASE) 0x14c) ((ß CASE) 0x14e) ((ß CASE) 0x150)
+            ((ß CASE) 0x1a0) ((ß CASE) 0x1d1) ((ß CASE) 0x1ea) ((ß CASE) 0x1ec)
+            ((ß CASE) 0x1ece)
+            (§
+                ((ß RETURN) (and (emc2 (byte \O))
+                    (emc2 0xd2) (emc2 0xd3) (emc2 0xd4)
+                    (emc2 0xd5) (emc2 0xd6) (emc2 0xd8)
+                    (emc2 0x14c) (emc2 0x14e) (emc2 0x150)
+                    (emc2 0x1a0) (emc2 0x1d1) (emc2 0x1ea) (emc2 0x1ec)
+                    (emc2 0x1ece)))
+            )
+            ((ß CASE) (byte \o))
+            ((ß CASE) 0xf2) ((ß CASE) 0xf3) ((ß CASE) 0xf4)
+            ((ß CASE) 0xf5) ((ß CASE) 0xf6) ((ß CASE) 0xf8)
+            ((ß CASE) 0x14d) ((ß CASE) 0x14f) ((ß CASE) 0x151)
+            ((ß CASE) 0x1a1) ((ß CASE) 0x1d2) ((ß CASE) 0x1eb) ((ß CASE) 0x1ed)
+            ((ß CASE) 0x1ecf)
+            (§
+                ((ß RETURN) (and (emc2 (byte \o))
+                    (emc2 0xf2) (emc2 0xf3) (emc2 0xf4)
+                    (emc2 0xf5) (emc2 0xf6) (emc2 0xf8)
+                    (emc2 0x14d) (emc2 0x14f) (emc2 0x151)
+                    (emc2 0x1a1) (emc2 0x1d2) (emc2 0x1eb) (emc2 0x1ed)
+                    (emc2 0x1ecf)))
+            )
 
-;           case (byte)'P':
-;           case 0x1e54: case 0x1e56:
-;           {
-;               return emc2((byte)'P')
-;                   && emc2(0x1e54) && emc2(0x1e56);
-;           }
-;           case (byte)'p':
-;           case 0x1e55: case 0x1e57:
-;           {
-;               return emc2((byte)'p')
-;                   && emc2(0x1e55) && emc2(0x1e57);
-;           }
+            ((ß CASE) (byte \P))
+            ((ß CASE) 0x1e54) ((ß CASE) 0x1e56)
+            (§
+                ((ß RETURN) (and (emc2 (byte \P))
+                    (emc2 0x1e54) (emc2 0x1e56)))
+            )
+            ((ß CASE) (byte \p))
+            ((ß CASE) 0x1e55) ((ß CASE) 0x1e57)
+            (§
+                ((ß RETURN) (and (emc2 (byte \p))
+                    (emc2 0x1e55) (emc2 0x1e57)))
+            )
 
-;           case (byte)'R':
-;           case 0x154: case 0x156: case 0x158:
-;           case 0x1e58: case 0x1e5e:
-;           {
-;               return emc2((byte)'R')
-;                   && emc2(0x154) && emc2(0x156) && emc2(0x158)
-;                   && emc2(0x1e58) && emc2(0x1e5e);
-;           }
-;           case (byte)'r':
-;           case 0x155: case 0x157: case 0x159:
-;           case 0x1e59: case 0x1e5f:
-;           {
-;               return emc2((byte)'r')
-;                   && emc2(0x155) && emc2(0x157) && emc2(0x159)
-;                   && emc2(0x1e59) && emc2(0x1e5f);
-;           }
+            ((ß CASE) (byte \R))
+            ((ß CASE) 0x154) ((ß CASE) 0x156) ((ß CASE) 0x158)
+            ((ß CASE) 0x1e58) ((ß CASE) 0x1e5e)
+            (§
+                ((ß RETURN) (and (emc2 (byte \R))
+                    (emc2 0x154) (emc2 0x156) (emc2 0x158)
+                    (emc2 0x1e58) (emc2 0x1e5e)))
+            )
+            ((ß CASE) (byte \r))
+            ((ß CASE) 0x155) ((ß CASE) 0x157) ((ß CASE) 0x159)
+            ((ß CASE) 0x1e59) ((ß CASE) 0x1e5f)
+            (§
+                ((ß RETURN) (and (emc2 (byte \r))
+                    (emc2 0x155) (emc2 0x157) (emc2 0x159)
+                    (emc2 0x1e59) (emc2 0x1e5f)))
+            )
 
-;           case (byte)'S':
-;           case 0x15a: case 0x15c: case 0x15e: case 0x160:
-;           case 0x1e60:
-;           {
-;               return emc2((byte)'S')
-;                   && emc2(0x15a) && emc2(0x15c) && emc2(0x15e) && emc2(0x160)
-;                   && emc2(0x1e60);
-;           }
-;           case (byte)'s':
-;           case 0x15b: case 0x15d: case 0x15f: case 0x161:
-;           case 0x1e61:
-;           {
-;               return emc2((byte)'s')
-;                   && emc2(0x15b) && emc2(0x15d) && emc2(0x15f) && emc2(0x161)
-;                   && emc2(0x1e61);
-;           }
+            ((ß CASE) (byte \S))
+            ((ß CASE) 0x15a) ((ß CASE) 0x15c) ((ß CASE) 0x15e) ((ß CASE) 0x160)
+            ((ß CASE) 0x1e60)
+            (§
+                ((ß RETURN) (and (emc2 (byte \S))
+                    (emc2 0x15a) (emc2 0x15c) (emc2 0x15e) (emc2 0x160)
+                    (emc2 0x1e60)))
+            )
+            ((ß CASE) (byte \s))
+            ((ß CASE) 0x15b) ((ß CASE) 0x15d) ((ß CASE) 0x15f) ((ß CASE) 0x161)
+            ((ß CASE) 0x1e61)
+            (§
+                ((ß RETURN) (and (emc2 (byte \s))
+                    (emc2 0x15b) (emc2 0x15d) (emc2 0x15f) (emc2 0x161)
+                    (emc2 0x1e61)))
+            )
 
-;           case (byte)'T':
-;           case 0x162: case 0x164: case 0x166:
-;           case 0x1e6a: case 0x1e6e:
-;           {
-;               return emc2((byte)'T')
-;                   && emc2(0x162) && emc2(0x164) && emc2(0x166)
-;                   && emc2(0x1e6a) && emc2(0x1e6e);
-;           }
-;           case (byte)'t':
-;           case 0x163: case 0x165: case 0x167:
-;           case 0x1e6b: case 0x1e6f: case 0x1e97:
-;           {
-;               return emc2((byte)'t')
-;                   && emc2(0x163) && emc2(0x165) && emc2(0x167)
-;                   && emc2(0x1e6b) && emc2(0x1e6f) && emc2(0x1e97);
-;           }
+            ((ß CASE) (byte \T))
+            ((ß CASE) 0x162) ((ß CASE) 0x164) ((ß CASE) 0x166)
+            ((ß CASE) 0x1e6a) ((ß CASE) 0x1e6e)
+            (§
+                ((ß RETURN) (and (emc2 (byte \T))
+                    (emc2 0x162) (emc2 0x164) (emc2 0x166)
+                    (emc2 0x1e6a) (emc2 0x1e6e)))
+            )
+            ((ß CASE) (byte \t))
+            ((ß CASE) 0x163) ((ß CASE) 0x165) ((ß CASE) 0x167)
+            ((ß CASE) 0x1e6b) ((ß CASE) 0x1e6f) ((ß CASE) 0x1e97)
+            (§
+                ((ß RETURN) (and (emc2 (byte \t))
+                    (emc2 0x163) (emc2 0x165) (emc2 0x167)
+                    (emc2 0x1e6b) (emc2 0x1e6f) (emc2 0x1e97)))
+            )
 
-;           case (byte)'U':
-;           case 0xd9: case 0xda: case 0xdb: case 0xdc:
-;           case 0x168: case 0x16a: case 0x16c: case 0x16e:
-;           case 0x170: case 0x172: case 0x1af: case 0x1d3:
-;           case 0x1ee6:
-;           {
-;               return emc2((byte)'U')
-;                   && emc2(0xd9) && emc2(0xda) && emc2(0xdb) && emc2(0xdc)
-;                   && emc2(0x168) && emc2(0x16a) && emc2(0x16c) && emc2(0x16e)
-;                   && emc2(0x170) && emc2(0x172) && emc2(0x1af) && emc2(0x1d3)
-;                   && emc2(0x1ee6);
-;           }
-;           case (byte)'u':
-;           case 0xf9: case 0xfa: case 0xfb: case 0xfc:
-;           case 0x169: case 0x16b: case 0x16d: case 0x16f:
-;           case 0x171: case 0x173: case 0x1b0: case 0x1d4:
-;           case 0x1ee7:
-;           {
-;               return emc2((byte)'u')
-;                   && emc2(0xf9) && emc2(0xfa) && emc2(0xfb) && emc2(0xfc)
-;                   && emc2(0x169) && emc2(0x16b) && emc2(0x16d) && emc2(0x16f)
-;                   && emc2(0x171) && emc2(0x173) && emc2(0x1b0) && emc2(0x1d4)
-;                   && emc2(0x1ee7);
-;           }
+            ((ß CASE) (byte \U))
+            ((ß CASE) 0xd9) ((ß CASE) 0xda) ((ß CASE) 0xdb) ((ß CASE) 0xdc)
+            ((ß CASE) 0x168) ((ß CASE) 0x16a) ((ß CASE) 0x16c) ((ß CASE) 0x16e)
+            ((ß CASE) 0x170) ((ß CASE) 0x172) ((ß CASE) 0x1af) ((ß CASE) 0x1d3)
+            ((ß CASE) 0x1ee6)
+            (§
+                ((ß RETURN) (and (emc2 (byte \U))
+                    (emc2 0xd9) (emc2 0xda) (emc2 0xdb) (emc2 0xdc)
+                    (emc2 0x168) (emc2 0x16a) (emc2 0x16c) (emc2 0x16e)
+                    (emc2 0x170) (emc2 0x172) (emc2 0x1af) (emc2 0x1d3)
+                    (emc2 0x1ee6)))
+            )
+            ((ß CASE) (byte \u))
+            ((ß CASE) 0xf9) ((ß CASE) 0xfa) ((ß CASE) 0xfb) ((ß CASE) 0xfc)
+            ((ß CASE) 0x169) ((ß CASE) 0x16b) ((ß CASE) 0x16d) ((ß CASE) 0x16f)
+            ((ß CASE) 0x171) ((ß CASE) 0x173) ((ß CASE) 0x1b0) ((ß CASE) 0x1d4)
+            ((ß CASE) 0x1ee7)
+            (§
+                ((ß RETURN) (and (emc2 (byte \u))
+                    (emc2 0xf9) (emc2 0xfa) (emc2 0xfb) (emc2 0xfc)
+                    (emc2 0x169) (emc2 0x16b) (emc2 0x16d) (emc2 0x16f)
+                    (emc2 0x171) (emc2 0x173) (emc2 0x1b0) (emc2 0x1d4)
+                    (emc2 0x1ee7)))
+            )
 
-;           case (byte)'V':
-;           case 0x1e7c:
-;           {
-;               return emc2((byte)'V')
-;                   && emc2(0x1e7c);
-;           }
-;           case (byte)'v':
-;           case 0x1e7d:
-;           {
-;               return emc2((byte)'v')
-;                   && emc2(0x1e7d);
-;           }
+            ((ß CASE) (byte \V))
+            ((ß CASE) 0x1e7c)
+            (§
+                ((ß RETURN) (and (emc2 (byte \V))
+                    (emc2 0x1e7c)))
+            )
+            ((ß CASE) (byte \v))
+            ((ß CASE) 0x1e7d)
+            (§
+                ((ß RETURN) (and (emc2 (byte \v))
+                    (emc2 0x1e7d)))
+            )
 
-;           case (byte)'W':
-;           case 0x174:
-;           case 0x1e80: case 0x1e82: case 0x1e84: case 0x1e86:
-;           {
-;               return emc2((byte)'W')
-;                   && emc2(0x174)
-;                   && emc2(0x1e80) && emc2(0x1e82) && emc2(0x1e84) && emc2(0x1e86);
-;           }
-;           case (byte)'w':
-;           case 0x175:
-;           case 0x1e81: case 0x1e83: case 0x1e85: case 0x1e87: case 0x1e98:
-;           {
-;               return emc2((byte)'w')
-;                   && emc2(0x175)
-;                   && emc2(0x1e81) && emc2(0x1e83) && emc2(0x1e85) && emc2(0x1e87) && emc2(0x1e98);
-;           }
+            ((ß CASE) (byte \W))
+            ((ß CASE) 0x174)
+            ((ß CASE) 0x1e80) ((ß CASE) 0x1e82) ((ß CASE) 0x1e84) ((ß CASE) 0x1e86)
+            (§
+                ((ß RETURN) (and (emc2 (byte \W))
+                    (emc2 0x174)
+                    (emc2 0x1e80) (emc2 0x1e82) (emc2 0x1e84) (emc2 0x1e86)))
+            )
+            ((ß CASE) (byte \w))
+            ((ß CASE) 0x175)
+            ((ß CASE) 0x1e81) ((ß CASE) 0x1e83) ((ß CASE) 0x1e85) ((ß CASE) 0x1e87) ((ß CASE) 0x1e98)
+            (§
+                ((ß RETURN) (and (emc2 (byte \w))
+                    (emc2 0x175)
+                    (emc2 0x1e81) (emc2 0x1e83) (emc2 0x1e85) (emc2 0x1e87) (emc2 0x1e98)))
+            )
 
-;           case (byte)'X':
-;           case 0x1e8a: case 0x1e8c:
-;           {
-;               return emc2((byte)'X')
-;                   && emc2(0x1e8a) && emc2(0x1e8c);
-;           }
-;           case (byte)'x':
-;           case 0x1e8b: case 0x1e8d:
-;           {
-;               return emc2((byte)'x')
-;                   && emc2(0x1e8b) && emc2(0x1e8d);
-;           }
+            ((ß CASE) (byte \X))
+            ((ß CASE) 0x1e8a) ((ß CASE) 0x1e8c)
+            (§
+                ((ß RETURN) (and (emc2 (byte \X))
+                    (emc2 0x1e8a) (emc2 0x1e8c)))
+            )
+            ((ß CASE) (byte \x))
+            ((ß CASE) 0x1e8b) ((ß CASE) 0x1e8d)
+            (§
+                ((ß RETURN) (and (emc2 (byte \x))
+                    (emc2 0x1e8b) (emc2 0x1e8d)))
+            )
 
-;           case (byte)'Y':
-;           case 0xdd:
-;           case 0x176: case 0x178:
-;           case 0x1e8e: case 0x1ef2: case 0x1ef6: case 0x1ef8:
-;           {
-;               return emc2((byte)'Y')
-;                   && emc2(0xdd)
-;                   && emc2(0x176) && emc2(0x178)
-;                   && emc2(0x1e8e) && emc2(0x1ef2) && emc2(0x1ef6) && emc2(0x1ef8);
-;           }
-;           case (byte)'y':
-;           case 0xfd: case 0xff:
-;           case 0x177:
-;           case 0x1e8f: case 0x1e99: case 0x1ef3: case 0x1ef7: case 0x1ef9:
-;           {
-;               return emc2((byte)'y')
-;                   && emc2(0xfd) && emc2(0xff)
-;                   && emc2(0x177)
-;                   && emc2(0x1e8f) && emc2(0x1e99) && emc2(0x1ef3) && emc2(0x1ef7) && emc2(0x1ef9);
-;           }
+            ((ß CASE) (byte \Y))
+            ((ß CASE) 0xdd)
+            ((ß CASE) 0x176) ((ß CASE) 0x178)
+            ((ß CASE) 0x1e8e) ((ß CASE) 0x1ef2) ((ß CASE) 0x1ef6) ((ß CASE) 0x1ef8)
+            (§
+                ((ß RETURN) (and (emc2 (byte \Y))
+                    (emc2 0xdd)
+                    (emc2 0x176) (emc2 0x178)
+                    (emc2 0x1e8e) (emc2 0x1ef2) (emc2 0x1ef6) (emc2 0x1ef8)))
+            )
+            ((ß CASE) (byte \y))
+            ((ß CASE) 0xfd) ((ß CASE) 0xff)
+            ((ß CASE) 0x177)
+            ((ß CASE) 0x1e8f) ((ß CASE) 0x1e99) ((ß CASE) 0x1ef3) ((ß CASE) 0x1ef7) ((ß CASE) 0x1ef9)
+            (§
+                ((ß RETURN) (and (emc2 (byte \y))
+                    (emc2 0xfd) (emc2 0xff)
+                    (emc2 0x177)
+                    (emc2 0x1e8f) (emc2 0x1e99) (emc2 0x1ef3) (emc2 0x1ef7) (emc2 0x1ef9)))
+            )
 
-;           case (byte)'Z':
-;           case 0x179: case 0x17b: case 0x17d: case 0x1b5:
-;           case 0x1e90: case 0x1e94:
-;           {
-;               return emc2((byte)'Z')
-;                   && emc2(0x179) && emc2(0x17b) && emc2(0x17d) && emc2(0x1b5)
-;                   && emc2(0x1e90) && emc2(0x1e94);
-;           }
-;           case (byte)'z':
-;           case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
-;           case 0x1e91: case 0x1e95:
-;           {
-;               return emc2((byte)'z')
-;                   && emc2(0x17a) && emc2(0x17c) && emc2(0x17e) && emc2(0x1b6)
-;                   && emc2(0x1e91) && emc2(0x1e95);
-;           }
+            ((ß CASE) (byte \Z))
+            ((ß CASE) 0x179) ((ß CASE) 0x17b) ((ß CASE) 0x17d) ((ß CASE) 0x1b5)
+            ((ß CASE) 0x1e90) ((ß CASE) 0x1e94)
+            (§
+                ((ß RETURN) (and (emc2 (byte \Z))
+                    (emc2 0x179) (emc2 0x17b) (emc2 0x17d) (emc2 0x1b5)
+                    (emc2 0x1e90) (emc2 0x1e94)))
+            )
+            ((ß CASE) (byte \z))
+            ((ß CASE) 0x17a) ((ß CASE) 0x17c) ((ß CASE) 0x17e) ((ß CASE) 0x1b6)
+            ((ß CASE) 0x1e91) ((ß CASE) 0x1e95)
+            (§
+                ((ß RETURN) (and (emc2 (byte \z))
+                    (emc2 0x17a) (emc2 0x17c) (emc2 0x17e) (emc2 0x1b6)
+                    (emc2 0x1e91) (emc2 0x1e95)))
+            )
 
             ;; default: character itself
-;       }
+        )
 
         (emc2 c)
     ))
@@ -32735,31 +33626,40 @@
 
 ;       collection:
 ;       {
-;           switch (c)
-;           {
-;               case NUL:
+            ((ß SWITCH) (§ c)
+                ((ß CASE) (§ NUL))
+                (§
                     (emsg e_nul_found)
                     (reset! rc_did_emsg true)
                     ((ß RETURN) (§ false))
+                )
 
-;               case Magic((byte)'^'):
+                ((ß CASE) (§ Magic((byte)'^')))
+                (§
                     (emc1 NFA_BOL)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'$'):
+                ((ß CASE) (§ Magic((byte)'$')))
+                (§
                     (emc1 NFA_EOL)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'<'):
+                ((ß CASE) (§ Magic((byte)'<')))
+                (§
                     (emc1 NFA_BOW)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'>'):
+                ((ß CASE) (§ Magic((byte)'>')))
+                (§
                     (emc1 NFA_EOW)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'_'):
-;               {
+                ((ß CASE) (§ Magic((byte)'_')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
                     (when (== c NUL)
                         (emsg e_nul_found)
@@ -32784,39 +33684,39 @@
                     )
 
                     ;; "\_x" is character class plus newline
-                    ;; FALLTHROUGH
-;               }
+                    (ß FALLTHROUGH)
+                )
 
                 ;; Character classes.
 
-;               case Magic((byte)'.'):
-;               case Magic((byte)'i'):
-;               case Magic((byte)'I'):
-;               case Magic((byte)'k'):
-;               case Magic((byte)'K'):
-;               case Magic((byte)'f'):
-;               case Magic((byte)'F'):
-;               case Magic((byte)'p'):
-;               case Magic((byte)'P'):
-;               case Magic((byte)'s'):
-;               case Magic((byte)'S'):
-;               case Magic((byte)'d'):
-;               case Magic((byte)'D'):
-;               case Magic((byte)'x'):
-;               case Magic((byte)'X'):
-;               case Magic((byte)'o'):
-;               case Magic((byte)'O'):
-;               case Magic((byte)'w'):
-;               case Magic((byte)'W'):
-;               case Magic((byte)'h'):
-;               case Magic((byte)'H'):
-;               case Magic((byte)'a'):
-;               case Magic((byte)'A'):
-;               case Magic((byte)'l'):
-;               case Magic((byte)'L'):
-;               case Magic((byte)'u'):
-;               case Magic((byte)'U'):
-;               {
+                ((ß CASE) (§ Magic((byte)'.')))
+                ((ß CASE) (§ Magic((byte)'i')))
+                ((ß CASE) (§ Magic((byte)'I')))
+                ((ß CASE) (§ Magic((byte)'k')))
+                ((ß CASE) (§ Magic((byte)'K')))
+                ((ß CASE) (§ Magic((byte)'f')))
+                ((ß CASE) (§ Magic((byte)'F')))
+                ((ß CASE) (§ Magic((byte)'p')))
+                ((ß CASE) (§ Magic((byte)'P')))
+                ((ß CASE) (§ Magic((byte)'s')))
+                ((ß CASE) (§ Magic((byte)'S')))
+                ((ß CASE) (§ Magic((byte)'d')))
+                ((ß CASE) (§ Magic((byte)'D')))
+                ((ß CASE) (§ Magic((byte)'x')))
+                ((ß CASE) (§ Magic((byte)'X')))
+                ((ß CASE) (§ Magic((byte)'o')))
+                ((ß CASE) (§ Magic((byte)'O')))
+                ((ß CASE) (§ Magic((byte)'w')))
+                ((ß CASE) (§ Magic((byte)'W')))
+                ((ß CASE) (§ Magic((byte)'h')))
+                ((ß CASE) (§ Magic((byte)'H')))
+                ((ß CASE) (§ Magic((byte)'a')))
+                ((ß CASE) (§ Magic((byte)'A')))
+                ((ß CASE) (§ Magic((byte)'l')))
+                ((ß CASE) (§ Magic((byte)'L')))
+                ((ß CASE) (§ Magic((byte)'u')))
+                ((ß CASE) (§ Magic((byte)'U')))
+                (§
                     ((ß Bytes p =) (§ vim_strchr(classchars, no_Magic(c))))
                     (when (nil? p)
                         (when (== extra NFA_ADD_NL)
@@ -32841,10 +33741,10 @@
                         ((ß @regflags |=) (§ RF_HASNL))
                     )
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'n'):
-;               {
+                ((ß CASE) (§ Magic((byte)'n')))
+                (§
                     (cond @reg_string
                     (§
                         ;; In a string "\n" matches a newline character.
@@ -32857,32 +33757,38 @@
                         ((ß @regflags |=) (§ RF_HASNL))
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'('):
+                ((ß CASE) (§ Magic((byte)'(')))
+                (§
                     (if (not (nfa_reg REG_PAREN))
                         ((ß RETURN) (§ false))           ;; cascaded error
                     )
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'|'):
-;               case Magic((byte)'&'):
-;               case Magic((byte)')'):
+                ((ß CASE) (§ Magic((byte)'|')))
+                ((ß CASE) (§ Magic((byte)'&')))
+                ((ß CASE) (§ Magic((byte)')')))
+                (§
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
                     ((ß RETURN) (§ false))
+                )
 
-;               case Magic((byte)'='):
-;               case Magic((byte)'?'):
-;               case Magic((byte)'+'):
-;               case Magic((byte)'@'):
-;               case Magic((byte)'*'):
-;               case Magic((byte)'{'):
+                ((ß CASE) (§ Magic((byte)'=')))
+                ((ß CASE) (§ Magic((byte)'?')))
+                ((ß CASE) (§ Magic((byte)'+')))
+                ((ß CASE) (§ Magic((byte)'@')))
+                ((ß CASE) (§ Magic((byte)'*')))
+                ((ß CASE) (§ Magic((byte)'{')))
+                (§
                     ;; these should follow an atom, not form an atom
                     (emsgn e_misplaced, (§ (long)no_Magic(c)))
                     ((ß RETURN) (§ false))
+                )
 
-;               case Magic((byte)'~'):
-;               {
+                ((ß CASE) (§ Magic((byte)'~')))
+                (§
                     ;; Previous substitute pattern.
                     ;; Generated as "\%(pattern\)".
                     (when (nil? @reg_prev_sub)
@@ -32896,51 +33802,56 @@
                     )
                     (emc1 NFA_NOPEN)
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'1'):
-;               case Magic((byte)'2'):
-;               case Magic((byte)'3'):
-;               case Magic((byte)'4'):
-;               case Magic((byte)'5'):
-;               case Magic((byte)'6'):
-;               case Magic((byte)'7'):
-;               case Magic((byte)'8'):
-;               case Magic((byte)'9'):
+                ((ß CASE) (§ Magic((byte)'1')))
+                ((ß CASE) (§ Magic((byte)'2')))
+                ((ß CASE) (§ Magic((byte)'3')))
+                ((ß CASE) (§ Magic((byte)'4')))
+                ((ß CASE) (§ Magic((byte)'5')))
+                ((ß CASE) (§ Magic((byte)'6')))
+                ((ß CASE) (§ Magic((byte)'7')))
+                ((ß CASE) (§ Magic((byte)'8')))
+                ((ß CASE) (§ Magic((byte)'9')))
+                (§
                     (emc1 (+ NFA_BACKREF1 (- (no_Magic c) (byte \1))))
                     (reset! nfa_has_backref true)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'z'):
-;               {
+                ((ß CASE) (§ Magic((byte)'z')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
-;                   switch (c)
-;                   {
-;                       case (byte)'s':
+                    ((ß SWITCH) (§ c)
+                        ((ß CASE) (§ (byte)'s'))
+                        (§
                             (emc1 NFA_ZSTART)
                             (if (not (re_mult_next (u8 "\\zs")))
                                 ((ß RETURN) (§ false))
                             )
                             (ß BREAK)
+                        )
 
-;                       case (byte)'e':
+                        ((ß CASE) (§ (byte)'e'))
+                        (§
                             (emc1 NFA_ZEND)
                             (reset! nfa_has_zend true)
                             (if (not (re_mult_next (u8 "\\ze")))
                                 ((ß RETURN) (§ false))
                             )
                             (ß BREAK)
+                        )
 
-;                       case (byte)'1':
-;                       case (byte)'2':
-;                       case (byte)'3':
-;                       case (byte)'4':
-;                       case (byte)'5':
-;                       case (byte)'6':
-;                       case (byte)'7':
-;                       case (byte)'8':
-;                       case (byte)'9':
-;                       {
+                        ((ß CASE) (§ (byte)'1'))
+                        ((ß CASE) (§ (byte)'2'))
+                        ((ß CASE) (§ (byte)'3'))
+                        ((ß CASE) (§ (byte)'4'))
+                        ((ß CASE) (§ (byte)'5'))
+                        ((ß CASE) (§ (byte)'6'))
+                        ((ß CASE) (§ (byte)'7'))
+                        ((ß CASE) (§ (byte)'8'))
+                        ((ß CASE) (§ (byte)'9'))
+                        (§
                             ;; \z1...\z9
                             (when (!= @reg_do_extmatch REX_USE)
                                 (emsg e_z1_not_allowed)
@@ -32952,10 +33863,10 @@
                             ;; don't change when \z1 .. \z9 matches or not.
                             (reset! re_has_z REX_USE)
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case (byte)'(':
-;                       {
+                        ((ß CASE) (§ (byte)'('))
+                        (§
                             ;; \z(
                             (when (!= @reg_do_extmatch REX_SET)
                                 (emsg e_z_not_allowed)
@@ -32967,45 +33878,71 @@
                             )
                             (reset! re_has_z REX_SET)
                             (ß BREAK)
-;                       }
+                        )
 
-;                       default:
+                        (ß DEFAULT)
+                        (§
                             (emsgn (u8 "E867: (NFA) Unknown operator '\\z%c'"), (long (no_Magic c)))
                             ((ß RETURN) (§ false))
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'%'):
-;               {
+                ((ß CASE) (§ Magic((byte)'%')))
+                (§
                     ((ß c =) (§ no_Magic(getchr())))
-;                   switch (c)
-;                   {
+                    ((ß SWITCH) (§ c)
                         ;; () without a back reference
-;                       case (byte)'(':
+                        ((ß CASE) (§ (byte)'('))
+                        (§
                             (if (not (nfa_reg REG_NPAREN))
                                 ((ß RETURN) (§ false))
                             )
                             (emc1 NFA_NOPEN)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'d':   ;; %d123 decimal
-;                       case (byte)'o':   ;; %o123 octal
-;                       case (byte)'x':   ;; %xab hex 2
-;                       case (byte)'u':   ;; %uabcd hex 4
-;                       case (byte)'U':   ;; %U1234abcd hex 8
-;                       {
-;                           int nr;
+                        ((ß CASE) (§ (byte)'d'))   ;; %d123 decimal
+                        ((ß CASE) (§ (byte)'o'))   ;; %o123 octal
+                        ((ß CASE) (§ (byte)'x'))   ;; %xab hex 2
+                        ((ß CASE) (§ (byte)'u'))   ;; %uabcd hex 4
+                        ((ß CASE) (§ (byte)'U'))   ;; %U1234abcd hex 8
+                        (§
+                            (ß int nr)
 
-;                           switch (c)
-;                           {
-;                               case (byte)'d': nr = getdecchrs(); break;
-;                               case (byte)'o': nr = getoctchrs(); break;
-;                               case (byte)'x': nr = gethexchrs(2); break;
-;                               case (byte)'u': nr = gethexchrs(4); break;
-;                               case (byte)'U': nr = gethexchrs(8); break;
-;                               default:  nr = -1; break;
-;                           }
+                            ((ß SWITCH) (§ c)
+                                ((ß CASE) (§ (byte)'d'))
+                                (§
+                                    ((ß nr =) (§ getdecchrs()))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'o'))
+                                (§
+                                    ((ß nr =) (§ getoctchrs()))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'x'))
+                                (§
+                                    ((ß nr =) (§ gethexchrs(2)))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'u'))
+                                (§
+                                    ((ß nr =) (§ gethexchrs(4)))
+                                    (ß BREAK)
+                                )
+                                ((ß CASE) (§ (byte)'U'))
+                                (§
+                                    ((ß nr =) (§ gethexchrs(8)))
+                                    (ß BREAK)
+                                )
+                                (ß DEFAULT)
+                                (§
+                                    ((ß nr =) (§ -1))
+                                    (ß BREAK)
+                                )
+                            )
 
                             (when (< nr 0)
                                 (emsg2 (u8 "E678: Invalid character after %s%%[dxouU]"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
@@ -33016,33 +33953,43 @@
                             ;; TODO: what if a composing character follows?
                             (emc1 (if (zero? nr) 0x0a nr))
                             (ß BREAK)
-;                       }
+                        )
 
                         ;; Catch \%^ and \%$ regardless of where they appear in the
                         ;; pattern -- regardless of whether or not it makes sense.
-;                       case (byte)'^':
+                        ((ß CASE) (§ (byte)'^'))
+                        (§
                             (emc1 NFA_BOF)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'$':
+                        ((ß CASE) (§ (byte)'$'))
+                        (§
                             (emc1 NFA_EOF)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'#':
+                        ((ß CASE) (§ (byte)'#'))
+                        (§
                             (emc1 NFA_CURSOR)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'V':
+                        ((ß CASE) (§ (byte)'V'))
+                        (§
                             (emc1 NFA_VISUAL)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'C':
+                        ((ß CASE) (§ (byte)'C'))
+                        (§
                             (emc1 NFA_ANY_COMPOSING)
                             (ß BREAK)
+                        )
 
-;                       case (byte)'[':
-;                       {
-;                           int n;
+                        ((ß CASE) (§ (byte)'['))
+                        (§
+                            (ß int n)
 
                             ;; \%[abc]
                             ((ß FOR) (ß (§ n = 0) (§ (c = peekchr()) != (byte)']') (§ n++))
@@ -33073,10 +34020,10 @@
 
                             (emc1 NFA_NOPEN)
                             (ß BREAK)
-;                       }
+                        )
 
-;                       default:
-;                       {
+                        (ß DEFAULT)
+                        (§
                             ((ß int n =) (§ 0))
                             ((ß int cmp =) (§ c))
 
@@ -33116,17 +34063,21 @@
                             ))
                             (emsgn (u8 "E867: (NFA) Unknown operator '\\%%%c'"), (long (no_Magic c)))
                             ((ß RETURN) (§ false))
-;                       }
-;                   }
+                        )
+                    )
                     (ß BREAK)
-;               }
+                )
 
-;               case Magic((byte)'['):
+                ((ß CASE) (§ Magic((byte)'[')))
+                (§
                     (ß BREAK collection)
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     ((ß RETURN) (§ nfa_do_multibyte(c, old_regparse)))
-;           }
+                )
+            )
 
             ((ß RETURN) (§ true))
 ;       }
@@ -33193,7 +34144,7 @@
                 ((ß boolean got_coll_char =) (§ false))
                 (when (== (.at @regparse 0) (byte \[))
                     ;; Check for [: :], [= =], [. .].
-;                   int charclass, equiclass = 0, collclass = 0;
+                    (ß int charclass, equiclass = 0, collclass = 0)
 ;                   { Bytes[] __ = { @regparse }; charclass = get_char_class(__); @regparse = __[0]; }
                     (when (== charclass CLASS_NONE)
 ;                       { Bytes[] __ = { @regparse }; equiclass = get_equi_class(__); @regparse = __[0]; }
@@ -33204,57 +34155,88 @@
 
                     ;; Character class like [:alpha:].
                     (when (!= charclass CLASS_NONE)
-;                       switch (charclass)
-;                       {
-;                           case CLASS_ALNUM:
+                        ((ß SWITCH) (§ charclass)
+                            ((ß CASE) (§ CLASS_ALNUM))
+                            (§
                                 (emc1 NFA_CLASS_ALNUM)
                                 (ß BREAK)
-;                           case CLASS_ALPHA:
+                            )
+                            ((ß CASE) (§ CLASS_ALPHA))
+                            (§
                                 (emc1 NFA_CLASS_ALPHA)
                                 (ß BREAK)
-;                           case CLASS_BLANK:
+                            )
+                            ((ß CASE) (§ CLASS_BLANK))
+                            (§
                                 (emc1 NFA_CLASS_BLANK)
                                 (ß BREAK)
-;                           case CLASS_CNTRL:
+                            )
+                            ((ß CASE) (§ CLASS_CNTRL))
+                            (§
                                 (emc1 NFA_CLASS_CNTRL)
                                 (ß BREAK)
-;                           case CLASS_DIGIT:
+                            )
+                            ((ß CASE) (§ CLASS_DIGIT))
+                            (§
                                 (emc1 NFA_CLASS_DIGIT)
                                 (ß BREAK)
-;                           case CLASS_GRAPH:
+                            )
+                            ((ß CASE) (§ CLASS_GRAPH))
+                            (§
                                 (emc1 NFA_CLASS_GRAPH)
                                 (ß BREAK)
-;                           case CLASS_LOWER:
+                            )
+                            ((ß CASE) (§ CLASS_LOWER))
+                            (§
                                 (emc1 NFA_CLASS_LOWER)
                                 (ß BREAK)
-;                           case CLASS_PRINT:
+                            )
+                            ((ß CASE) (§ CLASS_PRINT))
+                            (§
                                 (emc1 NFA_CLASS_PRINT)
                                 (ß BREAK)
-;                           case CLASS_PUNCT:
+                            )
+                            ((ß CASE) (§ CLASS_PUNCT))
+                            (§
                                 (emc1 NFA_CLASS_PUNCT)
                                 (ß BREAK)
-;                           case CLASS_SPACE:
+                            )
+                            ((ß CASE) (§ CLASS_SPACE))
+                            (§
                                 (emc1 NFA_CLASS_SPACE)
                                 (ß BREAK)
-;                           case CLASS_UPPER:
+                            )
+                            ((ß CASE) (§ CLASS_UPPER))
+                            (§
                                 (emc1 NFA_CLASS_UPPER)
                                 (ß BREAK)
-;                           case CLASS_XDIGIT:
+                            )
+                            ((ß CASE) (§ CLASS_XDIGIT))
+                            (§
                                 (emc1 NFA_CLASS_XDIGIT)
                                 (ß BREAK)
-;                           case CLASS_TAB:
+                            )
+                            ((ß CASE) (§ CLASS_TAB))
+                            (§
                                 (emc1 NFA_CLASS_TAB)
                                 (ß BREAK)
-;                           case CLASS_RETURN:
+                            )
+                            ((ß CASE) (§ CLASS_RETURN))
+                            (§
                                 (emc1 NFA_CLASS_RETURN)
                                 (ß BREAK)
-;                           case CLASS_BACKSPACE:
+                            )
+                            ((ß CASE) (§ CLASS_BACKSPACE))
+                            (§
                                 (emc1 NFA_CLASS_BACKSPACE)
                                 (ß BREAK)
-;                           case CLASS_ESCAPE:
+                            )
+                            ((ß CASE) (§ CLASS_ESCAPE))
+                            (§
                                 (emc1 NFA_CLASS_ESCAPE)
                                 (ß BREAK)
-;                       }
+                            )
+                        )
                         (emc1 NFA_CONCAT)
                         (ß CONTINUE)
                     )
@@ -33423,7 +34405,7 @@
 
 (defn- #_final #_boolean nfa_do_multibyte [#_int c, #_Bytes old_regparse]
     (§
-;       int plen;
+        (ß int plen)
 
         ;; plen is length of current char with composing chars
         (cond (or (!= (utf_char2len c) (§ plen = us_ptr2len_cc(old_regparse))) (utf_iscomposing c))
@@ -33487,16 +34469,15 @@
         )
 
         (skipchr)
-;       switch (op)
-;       {
-;           case Magic((byte)'*'):
-;           {
+        ((ß SWITCH) (§ op)
+            ((ß CASE) (§ Magic((byte)'*')))
+            (§
                 (emc1 NFA_STAR)
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'+'):
-;           {
+            ((ß CASE) (§ Magic((byte)'+')))
+            (§
                 ;; Trick: Normally, (a*)\+ would match the whole input "aaa".  The first and
                 ;; only submatch would be "aaa".  But the backtracking engine interprets the
                 ;; plus as "try matching one more time", and a* matches a second time at the
@@ -33514,24 +34495,28 @@
                 (emc1 NFA_CONCAT)
                 (skipchr)          ;; skip the \+
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'@'):
-;           {
+            ((ß CASE) (§ Magic((byte)'@')))
+            (§
                 ((ß int c2 =) (§ getdecchrs()))
                 ((ß op =) (§ no_Magic(getchr())))
                 ((ß int i =) (§ 0))
-;               switch (op)
-;               {
-;                   case (byte)'=':
+                ((ß SWITCH) (§ op)
+                    ((ß CASE) (§ (byte)'='))
+                    (§
                         ;; \@=
                         ((ß i =) (§ NFA_PREV_ATOM_NO_WIDTH))
                         (ß BREAK)
-;                   case (byte)'!':
+                    )
+                    ((ß CASE) (§ (byte)'!'))
+                    (§
                         ;; \@!
                         ((ß i =) (§ NFA_PREV_ATOM_NO_WIDTH_NEG))
                         (ß BREAK)
-;                   case (byte)'<':
+                    )
+                    ((ß CASE) (§ (byte)'<'))
+                    (§
                         ((ß op =) (§ no_Magic(getchr())))
                         (cond (== op (byte \=))
                         (§
@@ -33544,11 +34529,14 @@
                             ((ß i =) (§ NFA_PREV_ATOM_JUST_BEFORE_NEG))
                         ))
                         (ß BREAK)
-;                   case (byte)'>':
+                    )
+                    ((ß CASE) (§ (byte)'>'))
+                    (§
                         ;; \@>
                         ((ß i =) (§ NFA_PREV_ATOM_LIKE_PATTERN))
                         (ß BREAK)
-;               }
+                    )
+                )
                 (when (zero? i)
                     (emsgn (u8 "E869: (NFA) Unknown operator '\\@%c'"), (long op))
                     ((ß RETURN) (§ false))
@@ -33557,17 +34545,17 @@
                 (if (or (== i NFA_PREV_ATOM_JUST_BEFORE) (== i NFA_PREV_ATOM_JUST_BEFORE_NEG))
                     (emc1 c2))
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'?'):
-;           case Magic((byte)'='):
-;           {
+            ((ß CASE) (§ Magic((byte)'?')))
+            ((ß CASE) (§ Magic((byte)'=')))
+            (§
                 (emc1 NFA_QUEST)
                 (ß BREAK)
-;           }
+            )
 
-;           case Magic((byte)'{'):
-;           {
+            ((ß CASE) (§ Magic((byte)'{')))
+            (§
                 ;; a{2,5} will expand to 'aaa?a?a?'
                 ;; a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
                 ;; \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parenthesis have the same id
@@ -33619,7 +34607,7 @@
 
                 ;; Ignore previous call to nfa_regatom().
                 (reset! post_index my_post_start)
-                ;; Save parse state after the repeated atom and the \{}.
+                ;; Save parse state after the repeated atom and the \{).
                 ((ß parse_state_C new_state =) (§ §_parse_state_C()))
                 (save_parse_state new_state)
 
@@ -33652,14 +34640,16 @@
                     )
                 )
 
-                ;; Go to just after the repeated atom and the \{}.
+                ;; Go to just after the repeated atom and the \{).
                 (restore_parse_state new_state)
                 (reset! curchr -1)
                 (ß BREAK)
 ;           }
 
-;           default:
+            (ß DEFAULT)
+            (§
                 (ß BREAK)
+            )
 ;       }
 
         (when (!= (re_multi_type (peekchr)) NOT_MULTI)
@@ -33686,55 +34676,71 @@
         ((ß boolean first =) (§ true))
 
         (while (§ cont)
-;           switch (peekchr())
-;           {
-;               case NUL:
-;               case Magic((byte)'|'):
-;               case Magic((byte)'&'):
-;               case Magic((byte)')'):
+            ((ß SWITCH) (§ peekchr())
+                ((ß CASE) (§ NUL))
+                ((ß CASE) (§ Magic((byte)'|')))
+                ((ß CASE) (§ Magic((byte)'&')))
+                ((ß CASE) (§ Magic((byte)')')))
+                (§
                     ((ß cont =) (§ false))
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'Z'):
+                ((ß CASE) (§ Magic((byte)'Z')))
+                (§
                     ((ß @regflags |=) (§ RF_ICOMBINE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'c'):
+                ((ß CASE) (§ Magic((byte)'c')))
+                (§
                     ((ß @regflags |=) (§ RF_ICASE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'C'):
+                ((ß CASE) (§ Magic((byte)'C')))
+                (§
                     ((ß @regflags |=) (§ RF_NOICASE))
                     (skipchr_keepstart)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'v'):
+                ((ß CASE) (§ Magic((byte)'v')))
+                (§
                     (reset! reg_magic MAGIC_ALL)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'m'):
+                ((ß CASE) (§ Magic((byte)'m')))
+                (§
                     (reset! reg_magic MAGIC_ON)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'M'):
+                ((ß CASE) (§ Magic((byte)'M')))
+                (§
                     (reset! reg_magic MAGIC_OFF)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               case Magic((byte)'V'):
+                ((ß CASE) (§ Magic((byte)'V')))
+                (§
                     (reset! reg_magic MAGIC_NONE)
                     (skipchr_keepstart)
                     (reset! curchr -1)
                     (ß BREAK)
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     (if (not (nfa_regpiece))
                         ((ß RETURN) (§ false))
                     )
@@ -33743,7 +34749,8 @@
                         ((ß first =) (§ false))
                     )
                     (ß BREAK)
-;           }
+                )
+            )
         )
 
         true
@@ -33904,8 +34911,8 @@
         ((ß nfa_state_C state =) (§ @nfa_states[prog.istate++] = §_nfa_state_C()))
 
         ((ß state.c =) (§ c))
-;       state.out0(out0);
-;       state.out1(out1);
+        (§ state.out0(out0))
+        (§ state.out1(out1))
         ((ß state.val =) (§ 0))
 
         ((ß state.id =) (§ prog.istate))
@@ -33928,15 +34935,16 @@
         ((ß int len =) (§ 0))
 
         ((ß FOR) (ß (§ nfa_state_C state = startstate) (§ state != null) (§ nil))
-;           switch (state.c)
-;           {
-;               case NFA_END_INVISIBLE:
-;               case NFA_END_INVISIBLE_NEG:
+            ((ß SWITCH) (§ state.c)
+                ((ß CASE) (§ NFA_END_INVISIBLE))
+                ((ß CASE) (§ NFA_END_INVISIBLE_NEG))
+                (§
                     ;; the end, return what we have
                     ((ß RETURN) (§ len))
+                )
 
-;               case NFA_SPLIT:
-;               {
+                ((ß CASE) (§ NFA_SPLIT))
+                (§
                     ;; two alternatives, use the maximum
                     ((ß int l =) (§ nfa_max_width(state.out0(), depth + 1)))
                     ((ß int r =) (§ nfa_max_width(state.out1(), depth + 1)))
@@ -33945,11 +34953,12 @@
                     )
 
                     ((ß RETURN) (§ len + (r < l ? l : r)))
-;               }
+                )
 
-;               case NFA_ANY:
-;               case NFA_START_COLL:
-;               case NFA_START_NEG_COLL:
+                ((ß CASE) (§ NFA_ANY))
+                ((ß CASE) (§ NFA_START_COLL))
+                ((ß CASE) (§ NFA_START_NEG_COLL))
+                (§
                     ;; matches some character, including composing chars
                     ((ß len +=) (§ MB_MAXBYTES))
                     (when (!= (. state c) NFA_ANY)
@@ -33958,153 +34967,165 @@
                         (ß CONTINUE)
                     )
                     (ß BREAK)
+                )
 
-;               case NFA_DIGIT:
-;               case NFA_WHITE:
-;               case NFA_HEX:
-;               case NFA_OCTAL:
+                ((ß CASE) (§ NFA_DIGIT))
+                ((ß CASE) (§ NFA_WHITE))
+                ((ß CASE) (§ NFA_HEX))
+                ((ß CASE) (§ NFA_OCTAL))
+                (§
                     ;; ascii
                     (§ len++)
                     (ß BREAK)
+                )
 
-;               case NFA_IDENT:
-;               case NFA_SIDENT:
-;               case NFA_KWORD:
-;               case NFA_SKWORD:
-;               case NFA_FNAME:
-;               case NFA_SFNAME:
-;               case NFA_PRINT:
-;               case NFA_SPRINT:
-;               case NFA_NWHITE:
-;               case NFA_NDIGIT:
-;               case NFA_NHEX:
-;               case NFA_NOCTAL:
-;               case NFA_WORD:
-;               case NFA_NWORD:
-;               case NFA_HEAD:
-;               case NFA_NHEAD:
-;               case NFA_ALPHA:
-;               case NFA_NALPHA:
-;               case NFA_LOWER:
-;               case NFA_NLOWER:
-;               case NFA_UPPER:
-;               case NFA_NUPPER:
-;               case NFA_LOWER_IC:
-;               case NFA_NLOWER_IC:
-;               case NFA_UPPER_IC:
-;               case NFA_NUPPER_IC:
-;               case NFA_ANY_COMPOSING:
+                ((ß CASE) (§ NFA_IDENT))
+                ((ß CASE) (§ NFA_SIDENT))
+                ((ß CASE) (§ NFA_KWORD))
+                ((ß CASE) (§ NFA_SKWORD))
+                ((ß CASE) (§ NFA_FNAME))
+                ((ß CASE) (§ NFA_SFNAME))
+                ((ß CASE) (§ NFA_PRINT))
+                ((ß CASE) (§ NFA_SPRINT))
+                ((ß CASE) (§ NFA_NWHITE))
+                ((ß CASE) (§ NFA_NDIGIT))
+                ((ß CASE) (§ NFA_NHEX))
+                ((ß CASE) (§ NFA_NOCTAL))
+                ((ß CASE) (§ NFA_WORD))
+                ((ß CASE) (§ NFA_NWORD))
+                ((ß CASE) (§ NFA_HEAD))
+                ((ß CASE) (§ NFA_NHEAD))
+                ((ß CASE) (§ NFA_ALPHA))
+                ((ß CASE) (§ NFA_NALPHA))
+                ((ß CASE) (§ NFA_LOWER))
+                ((ß CASE) (§ NFA_NLOWER))
+                ((ß CASE) (§ NFA_UPPER))
+                ((ß CASE) (§ NFA_NUPPER))
+                ((ß CASE) (§ NFA_LOWER_IC))
+                ((ß CASE) (§ NFA_NLOWER_IC))
+                ((ß CASE) (§ NFA_UPPER_IC))
+                ((ß CASE) (§ NFA_NUPPER_IC))
+                ((ß CASE) (§ NFA_ANY_COMPOSING))
+                (§
                     ;; possibly non-ascii
                     ((ß len +=) (§ 3))
                     (ß BREAK)
+                )
 
-;               case NFA_START_INVISIBLE:
-;               case NFA_START_INVISIBLE_NEG:
-;               case NFA_START_INVISIBLE_BEFORE:
-;               case NFA_START_INVISIBLE_BEFORE_NEG:
+                ((ß CASE) (§ NFA_START_INVISIBLE))
+                ((ß CASE) (§ NFA_START_INVISIBLE_NEG))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG))
+                (§
                     ;; zero-width, out1 points to the END state
                     ((ß state =) (§ state.out1().out0()))
                     (ß CONTINUE)
+                )
 
-;               case NFA_BACKREF1:
-;               case NFA_BACKREF2:
-;               case NFA_BACKREF3:
-;               case NFA_BACKREF4:
-;               case NFA_BACKREF5:
-;               case NFA_BACKREF6:
-;               case NFA_BACKREF7:
-;               case NFA_BACKREF8:
-;               case NFA_BACKREF9:
-;               case NFA_ZREF1:
-;               case NFA_ZREF2:
-;               case NFA_ZREF3:
-;               case NFA_ZREF4:
-;               case NFA_ZREF5:
-;               case NFA_ZREF6:
-;               case NFA_ZREF7:
-;               case NFA_ZREF8:
-;               case NFA_ZREF9:
-;               case NFA_NEWL:
-;               case NFA_SKIP:
+                ((ß CASE) (§ NFA_BACKREF1))
+                ((ß CASE) (§ NFA_BACKREF2))
+                ((ß CASE) (§ NFA_BACKREF3))
+                ((ß CASE) (§ NFA_BACKREF4))
+                ((ß CASE) (§ NFA_BACKREF5))
+                ((ß CASE) (§ NFA_BACKREF6))
+                ((ß CASE) (§ NFA_BACKREF7))
+                ((ß CASE) (§ NFA_BACKREF8))
+                ((ß CASE) (§ NFA_BACKREF9))
+                ((ß CASE) (§ NFA_ZREF1))
+                ((ß CASE) (§ NFA_ZREF2))
+                ((ß CASE) (§ NFA_ZREF3))
+                ((ß CASE) (§ NFA_ZREF4))
+                ((ß CASE) (§ NFA_ZREF5))
+                ((ß CASE) (§ NFA_ZREF6))
+                ((ß CASE) (§ NFA_ZREF7))
+                ((ß CASE) (§ NFA_ZREF8))
+                ((ß CASE) (§ NFA_ZREF9))
+                ((ß CASE) (§ NFA_NEWL))
+                ((ß CASE) (§ NFA_SKIP))
+                (§
                     ;; unknown width
                     ((ß RETURN) (§ -1))
+                )
 
-;               case NFA_BOL:
-;               case NFA_EOL:
-;               case NFA_BOF:
-;               case NFA_EOF:
-;               case NFA_BOW:
-;               case NFA_EOW:
-;               case NFA_MOPEN:
-;               case NFA_MOPEN1:
-;               case NFA_MOPEN2:
-;               case NFA_MOPEN3:
-;               case NFA_MOPEN4:
-;               case NFA_MOPEN5:
-;               case NFA_MOPEN6:
-;               case NFA_MOPEN7:
-;               case NFA_MOPEN8:
-;               case NFA_MOPEN9:
-;               case NFA_ZOPEN:
-;               case NFA_ZOPEN1:
-;               case NFA_ZOPEN2:
-;               case NFA_ZOPEN3:
-;               case NFA_ZOPEN4:
-;               case NFA_ZOPEN5:
-;               case NFA_ZOPEN6:
-;               case NFA_ZOPEN7:
-;               case NFA_ZOPEN8:
-;               case NFA_ZOPEN9:
-;               case NFA_ZCLOSE:
-;               case NFA_ZCLOSE1:
-;               case NFA_ZCLOSE2:
-;               case NFA_ZCLOSE3:
-;               case NFA_ZCLOSE4:
-;               case NFA_ZCLOSE5:
-;               case NFA_ZCLOSE6:
-;               case NFA_ZCLOSE7:
-;               case NFA_ZCLOSE8:
-;               case NFA_ZCLOSE9:
-;               case NFA_MCLOSE:
-;               case NFA_MCLOSE1:
-;               case NFA_MCLOSE2:
-;               case NFA_MCLOSE3:
-;               case NFA_MCLOSE4:
-;               case NFA_MCLOSE5:
-;               case NFA_MCLOSE6:
-;               case NFA_MCLOSE7:
-;               case NFA_MCLOSE8:
-;               case NFA_MCLOSE9:
-;               case NFA_NOPEN:
-;               case NFA_NCLOSE:
+                ((ß CASE) (§ NFA_BOL))
+                ((ß CASE) (§ NFA_EOL))
+                ((ß CASE) (§ NFA_BOF))
+                ((ß CASE) (§ NFA_EOF))
+                ((ß CASE) (§ NFA_BOW))
+                ((ß CASE) (§ NFA_EOW))
+                ((ß CASE) (§ NFA_MOPEN))
+                ((ß CASE) (§ NFA_MOPEN1))
+                ((ß CASE) (§ NFA_MOPEN2))
+                ((ß CASE) (§ NFA_MOPEN3))
+                ((ß CASE) (§ NFA_MOPEN4))
+                ((ß CASE) (§ NFA_MOPEN5))
+                ((ß CASE) (§ NFA_MOPEN6))
+                ((ß CASE) (§ NFA_MOPEN7))
+                ((ß CASE) (§ NFA_MOPEN8))
+                ((ß CASE) (§ NFA_MOPEN9))
+                ((ß CASE) (§ NFA_ZOPEN))
+                ((ß CASE) (§ NFA_ZOPEN1))
+                ((ß CASE) (§ NFA_ZOPEN2))
+                ((ß CASE) (§ NFA_ZOPEN3))
+                ((ß CASE) (§ NFA_ZOPEN4))
+                ((ß CASE) (§ NFA_ZOPEN5))
+                ((ß CASE) (§ NFA_ZOPEN6))
+                ((ß CASE) (§ NFA_ZOPEN7))
+                ((ß CASE) (§ NFA_ZOPEN8))
+                ((ß CASE) (§ NFA_ZOPEN9))
+                ((ß CASE) (§ NFA_ZCLOSE))
+                ((ß CASE) (§ NFA_ZCLOSE1))
+                ((ß CASE) (§ NFA_ZCLOSE2))
+                ((ß CASE) (§ NFA_ZCLOSE3))
+                ((ß CASE) (§ NFA_ZCLOSE4))
+                ((ß CASE) (§ NFA_ZCLOSE5))
+                ((ß CASE) (§ NFA_ZCLOSE6))
+                ((ß CASE) (§ NFA_ZCLOSE7))
+                ((ß CASE) (§ NFA_ZCLOSE8))
+                ((ß CASE) (§ NFA_ZCLOSE9))
+                ((ß CASE) (§ NFA_MCLOSE))
+                ((ß CASE) (§ NFA_MCLOSE1))
+                ((ß CASE) (§ NFA_MCLOSE2))
+                ((ß CASE) (§ NFA_MCLOSE3))
+                ((ß CASE) (§ NFA_MCLOSE4))
+                ((ß CASE) (§ NFA_MCLOSE5))
+                ((ß CASE) (§ NFA_MCLOSE6))
+                ((ß CASE) (§ NFA_MCLOSE7))
+                ((ß CASE) (§ NFA_MCLOSE8))
+                ((ß CASE) (§ NFA_MCLOSE9))
+                ((ß CASE) (§ NFA_NOPEN))
+                ((ß CASE) (§ NFA_NCLOSE))
 
-;               case NFA_LNUM_GT:
-;               case NFA_LNUM_LT:
-;               case NFA_COL_GT:
-;               case NFA_COL_LT:
-;               case NFA_VCOL_GT:
-;               case NFA_VCOL_LT:
-;               case NFA_MARK_GT:
-;               case NFA_MARK_LT:
-;               case NFA_VISUAL:
-;               case NFA_LNUM:
-;               case NFA_CURSOR:
-;               case NFA_COL:
-;               case NFA_VCOL:
-;               case NFA_MARK:
+                ((ß CASE) (§ NFA_LNUM_GT))
+                ((ß CASE) (§ NFA_LNUM_LT))
+                ((ß CASE) (§ NFA_COL_GT))
+                ((ß CASE) (§ NFA_COL_LT))
+                ((ß CASE) (§ NFA_VCOL_GT))
+                ((ß CASE) (§ NFA_VCOL_LT))
+                ((ß CASE) (§ NFA_MARK_GT))
+                ((ß CASE) (§ NFA_MARK_LT))
+                ((ß CASE) (§ NFA_VISUAL))
+                ((ß CASE) (§ NFA_LNUM))
+                ((ß CASE) (§ NFA_CURSOR))
+                ((ß CASE) (§ NFA_COL))
+                ((ß CASE) (§ NFA_VCOL))
+                ((ß CASE) (§ NFA_MARK))
 
-;               case NFA_ZSTART:
-;               case NFA_ZEND:
-;               case NFA_OPT_CHARS:
-;               case NFA_EMPTY:
-;               case NFA_START_PATTERN:
-;               case NFA_END_PATTERN:
-;               case NFA_COMPOSING:
-;               case NFA_END_COMPOSING:
+                ((ß CASE) (§ NFA_ZSTART))
+                ((ß CASE) (§ NFA_ZEND))
+                ((ß CASE) (§ NFA_OPT_CHARS))
+                ((ß CASE) (§ NFA_EMPTY))
+                ((ß CASE) (§ NFA_START_PATTERN))
+                ((ß CASE) (§ NFA_END_PATTERN))
+                ((ß CASE) (§ NFA_COMPOSING))
+                ((ß CASE) (§ NFA_END_COMPOSING))
+                (§
                     ;; zero-width
                     (ß BREAK)
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     (when (< (. state c) 0)
                         ;; don't know what this is
                         ((ß RETURN) (§ -1))
@@ -34112,7 +35133,8 @@
                     ;; normal character
                     ((ß len +=) (§ utf_char2len(state.c)))
                     (ß BREAK)
-;           }
+                )
+            )
 
             ;; normal way to continue
             ((ß state =) (§ state.out0()))
@@ -34244,12 +35266,11 @@
 
         ((ß nfa_stack_C stack =) (§ (nfa_calc_size) ? null : new_nfa_stack(prog.nstate + 1)))
 
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = 0) (§ i < over) (§ i++))
-;           switch (postfix[i])
-;           {
-;               case NFA_CONCAT:
-;               {
+            ((ß SWITCH) (§ postfix[i])
+                ((ß CASE) (§ NFA_CONCAT))
+                (§
                     ;; Concatenation.
                     ;; Pay attention: this operator does not exist in the r.e. itself (it is implicit, really).
                     ;; It is added when r.e. is translated to postfix form in re2post().
@@ -34269,10 +35290,10 @@
                     (fr_patch (. e1 fr_out), (. e2 fr_start))
                     (st_push stack, (alloc_frag (. e1 fr_start), (. e2 fr_out)))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_OR:
-;               {
+                ((ß CASE) (§ NFA_OR))
+                (§
                     ;; Alternation.
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34293,10 +35314,10 @@
                     )
                     (st_push stack, (alloc_frag s0, (fr_append (. e1 fr_out), (. e2 fr_out))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_STAR:
-;               {
+                ((ß CASE) (§ NFA_STAR))
+                (§
                     ;; Zero or more, prefer more.
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34314,10 +35335,10 @@
                     (fr_patch (. e0 fr_out), s0)
                     (st_push stack, (alloc_frag s0, (fr_single (. s0 out1))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_STAR_NONGREEDY:
-;               {
+                ((ß CASE) (§ NFA_STAR_NONGREEDY))
+                (§
                     ;; Zero or more, prefer zero.
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34335,10 +35356,10 @@
                     (fr_patch (. e0 fr_out), s0)
                     (st_push stack, (alloc_frag s0, (fr_single (. s0 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_QUEST:
-;               {
+                ((ß CASE) (§ NFA_QUEST))
+                (§
                     ;; one or zero atoms=> greedy match
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34355,10 +35376,10 @@
                     )
                     (st_push stack, (alloc_frag s0, (fr_append (. e0 fr_out), (fr_single (. s0 out1)))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_QUEST_NONGREEDY:
-;               {
+                ((ß CASE) (§ NFA_QUEST_NONGREEDY))
+                (§
                     ;; zero or one atoms => non-greedy match
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34375,11 +35396,11 @@
                     )
                     (st_push stack, (alloc_frag s0, (fr_append (. e0 fr_out), (fr_single (. s0 out0)))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_END_COLL:
-;               case NFA_END_NEG_COLL:
-;               {
+                ((ß CASE) (§ NFA_END_COLL))
+                ((ß CASE) (§ NFA_END_NEG_COLL))
+                (§
                     ;; On the stack is the sequence starting with NFA_START_COLL or
                     ;; NFA_START_NEG_COLL and all possible characters.  Patch it to
                     ;; add the output to the start.
@@ -34400,10 +35421,10 @@
 ;                   e0.fr_start.out1(s0);
                     (st_push stack, (alloc_frag (. e0 fr_start), (fr_single (. s0 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_RANGE:
-;               {
+                ((ß CASE) (§ NFA_RANGE))
+                (§
                     ;; Before this are two characters, the low and high end of a range.
                     ;; Turn them into two states with MIN and MAX.
                     (when nfa_calc_size
@@ -34426,10 +35447,10 @@
                     (fr_patch (. e1 fr_out), (. e2 fr_start))
                     (st_push stack, (alloc_frag (. e1 fr_start), (. e2 fr_out)))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_EMPTY:
-;               {
+                ((ß CASE) (§ NFA_EMPTY))
+                (§
                     ;; 0-length, used in a repetition with max/min count of 0
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34442,10 +35463,10 @@
                     )
                     (st_push stack, (alloc_frag s0, (fr_single (. s0 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_OPT_CHARS:
-;               {
+                ((ß CASE) (§ NFA_OPT_CHARS))
+                (§
                     ;; \%[abc] implemented as:
                     ;;    NFA_SPLIT
                     ;;    +-CHAR(a)
@@ -34482,41 +35503,50 @@
                     )
                     (st_push stack, (alloc_frag s0, (. e1 fr_out)))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_PREV_ATOM_NO_WIDTH:
-;               case NFA_PREV_ATOM_NO_WIDTH_NEG:
-;               case NFA_PREV_ATOM_JUST_BEFORE:
-;               case NFA_PREV_ATOM_JUST_BEFORE_NEG:
-;               case NFA_PREV_ATOM_LIKE_PATTERN:
-;               {
+                ((ß CASE) (§ NFA_PREV_ATOM_NO_WIDTH))
+                ((ß CASE) (§ NFA_PREV_ATOM_NO_WIDTH_NEG))
+                ((ß CASE) (§ NFA_PREV_ATOM_JUST_BEFORE))
+                ((ß CASE) (§ NFA_PREV_ATOM_JUST_BEFORE_NEG))
+                ((ß CASE) (§ NFA_PREV_ATOM_LIKE_PATTERN))
+                (§
                     ((ß boolean before =) (§ (postfix[i] == NFA_PREV_ATOM_JUST_BEFORE || postfix[i] == NFA_PREV_ATOM_JUST_BEFORE_NEG)))
                     ((ß boolean pattern =) (§ (postfix[i] == NFA_PREV_ATOM_LIKE_PATTERN)))
 
-;                   int start_state, end_state;
-;                   switch (postfix[i])
-;                   {
-;                       case NFA_PREV_ATOM_NO_WIDTH:
+                    (ß int start_state, end_state)
+                    ((ß SWITCH) (§ postfix[i])
+                        ((ß CASE) (§ NFA_PREV_ATOM_NO_WIDTH))
+                        (§
                             ((ß start_state =) (§ NFA_START_INVISIBLE))
                             ((ß end_state =) (§ NFA_END_INVISIBLE))
                             (ß BREAK)
-;                       case NFA_PREV_ATOM_NO_WIDTH_NEG:
+                        )
+                        ((ß CASE) (§ NFA_PREV_ATOM_NO_WIDTH_NEG))
+                        (§
                             ((ß start_state =) (§ NFA_START_INVISIBLE_NEG))
                             ((ß end_state =) (§ NFA_END_INVISIBLE_NEG))
                             (ß BREAK)
-;                       case NFA_PREV_ATOM_JUST_BEFORE:
+                        )
+                        ((ß CASE) (§ NFA_PREV_ATOM_JUST_BEFORE))
+                        (§
                             ((ß start_state =) (§ NFA_START_INVISIBLE_BEFORE))
                             ((ß end_state =) (§ NFA_END_INVISIBLE))
                             (ß BREAK)
-;                       case NFA_PREV_ATOM_JUST_BEFORE_NEG:
+                        )
+                        ((ß CASE) (§ NFA_PREV_ATOM_JUST_BEFORE_NEG))
+                        (§
                             ((ß start_state =) (§ NFA_START_INVISIBLE_BEFORE_NEG))
                             ((ß end_state =) (§ NFA_END_INVISIBLE_NEG))
                             (ß BREAK)
-;                       default: ;; NFA_PREV_ATOM_LIKE_PATTERN:
+                        )
+                        (ß DEFAULT) ;; NFA_PREV_ATOM_LIKE_PATTERN:
+                        (§
                             ((ß start_state =) (§ NFA_START_PATTERN))
                             ((ß end_state =) (§ NFA_END_PATTERN))
                             (ß BREAK)
-;                   }
+                        )
+                    )
 
                     ((ß int n =) (§ (before) ? postfix[++i] : 0))    ;; get the count
 
@@ -34551,7 +35581,7 @@
                         ;; NFA_ZEND -> NFA_END_PATTERN -> NFA_SKIP -> what follows.
                         ((ß nfa_state_C skip =) (§ alloc_state(prog, NFA_SKIP, null, null)))
                         ((ß nfa_state_C zend =) (§ alloc_state(prog, NFA_ZEND, s1, null)))
-;                       s1.out0(skip);
+                        (§ s1.out0(skip))
                         (fr_patch (. e0 fr_out), zend)
                         (st_push stack, (alloc_frag s0, (fr_single (. skip out0))))
                     )
@@ -34568,61 +35598,112 @@
                         )
                     ))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_COMPOSING:     ;; char with composing char
+                ((ß CASE) (§ NFA_COMPOSING))     ;; char with composing char
+                (§
                     (when (non-zero? (& @regflags RF_ICOMBINE))
                         ;; TODO: use the base character only
                     )
-                    ;; FALLTHROUGH
+                    (ß FALLTHROUGH)
+                )
 
-;               case NFA_MOPEN: ;; \( \) Submatch
-;               case NFA_MOPEN1:
-;               case NFA_MOPEN2:
-;               case NFA_MOPEN3:
-;               case NFA_MOPEN4:
-;               case NFA_MOPEN5:
-;               case NFA_MOPEN6:
-;               case NFA_MOPEN7:
-;               case NFA_MOPEN8:
-;               case NFA_MOPEN9:
-;               case NFA_ZOPEN: ;; \z( \) Submatch
-;               case NFA_ZOPEN1:
-;               case NFA_ZOPEN2:
-;               case NFA_ZOPEN3:
-;               case NFA_ZOPEN4:
-;               case NFA_ZOPEN5:
-;               case NFA_ZOPEN6:
-;               case NFA_ZOPEN7:
-;               case NFA_ZOPEN8:
-;               case NFA_ZOPEN9:
-;               case NFA_NOPEN: ;; \%( \) "Invisible Submatch"
-;               {
+                ((ß CASE) (§ NFA_MOPEN)) ;; \( \) Submatch
+                ((ß CASE) (§ NFA_MOPEN1))
+                ((ß CASE) (§ NFA_MOPEN2))
+                ((ß CASE) (§ NFA_MOPEN3))
+                ((ß CASE) (§ NFA_MOPEN4))
+                ((ß CASE) (§ NFA_MOPEN5))
+                ((ß CASE) (§ NFA_MOPEN6))
+                ((ß CASE) (§ NFA_MOPEN7))
+                ((ß CASE) (§ NFA_MOPEN8))
+                ((ß CASE) (§ NFA_MOPEN9))
+                ((ß CASE) (§ NFA_ZOPEN)) ;; \z( \) Submatch
+                ((ß CASE) (§ NFA_ZOPEN1))
+                ((ß CASE) (§ NFA_ZOPEN2))
+                ((ß CASE) (§ NFA_ZOPEN3))
+                ((ß CASE) (§ NFA_ZOPEN4))
+                ((ß CASE) (§ NFA_ZOPEN5))
+                ((ß CASE) (§ NFA_ZOPEN6))
+                ((ß CASE) (§ NFA_ZOPEN7))
+                ((ß CASE) (§ NFA_ZOPEN8))
+                ((ß CASE) (§ NFA_ZOPEN9))
+                ((ß CASE) (§ NFA_NOPEN)) ;; \%( \) "Invisible Submatch"
+                (§
                     (when nfa_calc_size
                         ((ß prog.nstate +=) (§ 2))
                         (ß BREAK)
                     )
 
                     ((ß int mopen =) (§ postfix[i], mclose))
-;                   switch (postfix[i])
-;                   {
-;                       case NFA_NOPEN: mclose = NFA_NCLOSE; break;
-;                       case NFA_ZOPEN: mclose = NFA_ZCLOSE; break;
-;                       case NFA_ZOPEN1: mclose = NFA_ZCLOSE1; break;
-;                       case NFA_ZOPEN2: mclose = NFA_ZCLOSE2; break;
-;                       case NFA_ZOPEN3: mclose = NFA_ZCLOSE3; break;
-;                       case NFA_ZOPEN4: mclose = NFA_ZCLOSE4; break;
-;                       case NFA_ZOPEN5: mclose = NFA_ZCLOSE5; break;
-;                       case NFA_ZOPEN6: mclose = NFA_ZCLOSE6; break;
-;                       case NFA_ZOPEN7: mclose = NFA_ZCLOSE7; break;
-;                       case NFA_ZOPEN8: mclose = NFA_ZCLOSE8; break;
-;                       case NFA_ZOPEN9: mclose = NFA_ZCLOSE9; break;
-;                       case NFA_COMPOSING: mclose = NFA_END_COMPOSING; break;
-;                       default:
+                    ((ß SWITCH) (§ postfix[i])
+                        ((ß CASE) (§ NFA_NOPEN))
+                        (§
+                            ((ß mclose =) (§ NFA_NCLOSE))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN1))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE1))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN2))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE2))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN3))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE3))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN4))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE4))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN5))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE5))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN6))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE6))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN7))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE7))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN8))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE8))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_ZOPEN9))
+                        (§
+                            ((ß mclose =) (§ NFA_ZCLOSE9))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ NFA_COMPOSING))
+                        (§
+                            ((ß mclose =) (§ NFA_END_COMPOSING))
+                            (ß BREAK)
+                        )
+                        (ß DEFAULT)
+                        (§
                             ;; NFA_MOPEN, NFA_MOPEN1 .. NFA_MOPEN9
                             ((ß mclose =) (§ postfix[i] + NSUBEXP))
                             (ß BREAK)
-;                   }
+                        )
+                    )
 
                     ;; Allow "NFA_MOPEN" as a valid postfix representation for the empty regexp "".
                     ;; In this case, the NFA will be NFA_MOPEN -> NFA_MCLOSE.  Note that this also
@@ -34665,27 +35746,27 @@
 
                     (st_push stack, (alloc_frag s0, (fr_single (. s1 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_BACKREF1:
-;               case NFA_BACKREF2:
-;               case NFA_BACKREF3:
-;               case NFA_BACKREF4:
-;               case NFA_BACKREF5:
-;               case NFA_BACKREF6:
-;               case NFA_BACKREF7:
-;               case NFA_BACKREF8:
-;               case NFA_BACKREF9:
-;               case NFA_ZREF1:
-;               case NFA_ZREF2:
-;               case NFA_ZREF3:
-;               case NFA_ZREF4:
-;               case NFA_ZREF5:
-;               case NFA_ZREF6:
-;               case NFA_ZREF7:
-;               case NFA_ZREF8:
-;               case NFA_ZREF9:
-;               {
+                ((ß CASE) (§ NFA_BACKREF1))
+                ((ß CASE) (§ NFA_BACKREF2))
+                ((ß CASE) (§ NFA_BACKREF3))
+                ((ß CASE) (§ NFA_BACKREF4))
+                ((ß CASE) (§ NFA_BACKREF5))
+                ((ß CASE) (§ NFA_BACKREF6))
+                ((ß CASE) (§ NFA_BACKREF7))
+                ((ß CASE) (§ NFA_BACKREF8))
+                ((ß CASE) (§ NFA_BACKREF9))
+                ((ß CASE) (§ NFA_ZREF1))
+                ((ß CASE) (§ NFA_ZREF2))
+                ((ß CASE) (§ NFA_ZREF3))
+                ((ß CASE) (§ NFA_ZREF4))
+                ((ß CASE) (§ NFA_ZREF5))
+                ((ß CASE) (§ NFA_ZREF6))
+                ((ß CASE) (§ NFA_ZREF7))
+                ((ß CASE) (§ NFA_ZREF8))
+                ((ß CASE) (§ NFA_ZREF9))
+                (§
                     (when nfa_calc_size
                         ((ß prog.nstate +=) (§ 2))
                         (ß BREAK)
@@ -34702,21 +35783,21 @@
                     (fr_patch (fr_single (. s0 out0)), s1)
                     (st_push stack, (alloc_frag s0, (fr_single (. s1 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_LNUM:
-;               case NFA_LNUM_GT:
-;               case NFA_LNUM_LT:
-;               case NFA_VCOL:
-;               case NFA_VCOL_GT:
-;               case NFA_VCOL_LT:
-;               case NFA_COL:
-;               case NFA_COL_GT:
-;               case NFA_COL_LT:
-;               case NFA_MARK:
-;               case NFA_MARK_GT:
-;               case NFA_MARK_LT:
-;               {
+                ((ß CASE) (§ NFA_LNUM))
+                ((ß CASE) (§ NFA_LNUM_GT))
+                ((ß CASE) (§ NFA_LNUM_LT))
+                ((ß CASE) (§ NFA_VCOL))
+                ((ß CASE) (§ NFA_VCOL_GT))
+                ((ß CASE) (§ NFA_VCOL_LT))
+                ((ß CASE) (§ NFA_COL))
+                ((ß CASE) (§ NFA_COL_GT))
+                ((ß CASE) (§ NFA_COL_LT))
+                ((ß CASE) (§ NFA_MARK))
+                ((ß CASE) (§ NFA_MARK_GT))
+                ((ß CASE) (§ NFA_MARK_LT))
+                (§
                     ((ß int n =) (§ postfix[++i])) ;; lnum, col or mark name
 
                     (when nfa_calc_size
@@ -34731,12 +35812,12 @@
                     ((ß s0.val =) (§ n))
                     (st_push stack, (alloc_frag s0, (fr_single (. s0 out0))))
                     (ß BREAK)
-;               }
+                )
 
-;               case NFA_ZSTART:
-;               case NFA_ZEND:
-;               default:
-;               {
+                ((ß CASE) (§ NFA_ZSTART))
+                ((ß CASE) (§ NFA_ZEND))
+                (ß DEFAULT)
+                (§
                     ;; Operands.
                     (when nfa_calc_size
                         (§ prog.nstate++)
@@ -34749,8 +35830,8 @@
                     )
                     (st_push stack, (alloc_frag s0, (fr_single (. s0 out0))))
                     (ß BREAK)
-;               }
-;           }
+                )
+            )
         )
 
         (when nfa_calc_size
@@ -34776,8 +35857,8 @@
 
         ((ß nfa_state_C state =) (§ @nfa_states[prog.istate++] = §_nfa_state_C()))
         ((ß state.c =) (§ NFA_MATCH))
-;       state.out0(null);
-;       state.out1(null);
+        (§ state.out0(null))
+        (§ state.out1(null))
         ((ß state.id =) (§ 0))
 
         (fr_patch (. e0 fr_out), state)
@@ -34796,7 +35877,7 @@
 
             ((ß int c =) (§ state.c))
             (when (or (== c NFA_START_INVISIBLE) (== c NFA_START_INVISIBLE_NEG) (== c NFA_START_INVISIBLE_BEFORE) (== c NFA_START_INVISIBLE_BEFORE_NEG))
-;               boolean directly;
+                (ß boolean directly)
 
                 ;; Do it directly when what follows is possibly the end of the match.
                 (cond (match_follows (§ state.out1().out0()), 0)
@@ -35098,7 +36179,7 @@
         (cond (nil? @reg_match)
         (§
             ((ß FOR) (ß (§ int i = 0) (§ i < todo) (§ i++))
-;               long s1, s2;
+                (ß long s1, s2)
 
                 (if (< i (. sub1 in_use))
                     ((ß s1 =) (§ sub1.rs_multi[i].start_lnum))
@@ -35136,7 +36217,7 @@
         :else
         (§
             ((ß FOR) (ß (§ int i = 0) (§ i < todo) (§ i++))
-;               Bytes sp1, sp2;
+                (ß Bytes sp1, sp2)
 
                 (if (< i (. sub1 in_use))
                     ((ß sp1 =) (§ sub1.rs_line[i].start))
@@ -35224,70 +36305,78 @@
         )
 
         ((ß FOR) (ß (§ nfa_state_C state = startstate) (§ state != null) (§ nil))
-;           switch (state.c)
-;           {
-;               case NFA_MATCH:
-;               case NFA_MCLOSE:
-;               case NFA_END_INVISIBLE:
-;               case NFA_END_INVISIBLE_NEG:
-;               case NFA_END_PATTERN:
+            ((ß SWITCH) (§ state.c)
+                ((ß CASE) (§ NFA_MATCH))
+                ((ß CASE) (§ NFA_MCLOSE))
+                ((ß CASE) (§ NFA_END_INVISIBLE))
+                ((ß CASE) (§ NFA_END_INVISIBLE_NEG))
+                ((ß CASE) (§ NFA_END_PATTERN))
+                (§
                     ((ß RETURN) (§ true))
+                )
 
-;               case NFA_SPLIT:
+                ((ß CASE) (§ NFA_SPLIT))
+                (§
                     ((ß RETURN) (§ match_follows(state.out0(), depth + 1) || match_follows(state.out1(), depth + 1)))
+                )
 
-;               case NFA_START_INVISIBLE:
-;               case NFA_START_INVISIBLE_FIRST:
-;               case NFA_START_INVISIBLE_BEFORE:
-;               case NFA_START_INVISIBLE_BEFORE_FIRST:
-;               case NFA_START_INVISIBLE_NEG:
-;               case NFA_START_INVISIBLE_NEG_FIRST:
-;               case NFA_START_INVISIBLE_BEFORE_NEG:
-;               case NFA_START_INVISIBLE_BEFORE_NEG_FIRST:
-;               case NFA_COMPOSING:
+                ((ß CASE) (§ NFA_START_INVISIBLE))
+                ((ß CASE) (§ NFA_START_INVISIBLE_FIRST))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_FIRST))
+                ((ß CASE) (§ NFA_START_INVISIBLE_NEG))
+                ((ß CASE) (§ NFA_START_INVISIBLE_NEG_FIRST))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG))
+                ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+                ((ß CASE) (§ NFA_COMPOSING))
+                (§
                     ;; skip ahead to next state
                     ((ß state =) (§ state.out1().out0()))
                     (ß CONTINUE)
+                )
 
-;               case NFA_ANY:
-;               case NFA_ANY_COMPOSING:
-;               case NFA_IDENT:
-;               case NFA_SIDENT:
-;               case NFA_KWORD:
-;               case NFA_SKWORD:
-;               case NFA_FNAME:
-;               case NFA_SFNAME:
-;               case NFA_PRINT:
-;               case NFA_SPRINT:
-;               case NFA_WHITE:
-;               case NFA_NWHITE:
-;               case NFA_DIGIT:
-;               case NFA_NDIGIT:
-;               case NFA_HEX:
-;               case NFA_NHEX:
-;               case NFA_OCTAL:
-;               case NFA_NOCTAL:
-;               case NFA_WORD:
-;               case NFA_NWORD:
-;               case NFA_HEAD:
-;               case NFA_NHEAD:
-;               case NFA_ALPHA:
-;               case NFA_NALPHA:
-;               case NFA_LOWER:
-;               case NFA_NLOWER:
-;               case NFA_UPPER:
-;               case NFA_NUPPER:
-;               case NFA_LOWER_IC:
-;               case NFA_NLOWER_IC:
-;               case NFA_UPPER_IC:
-;               case NFA_NUPPER_IC:
-;               case NFA_START_COLL:
-;               case NFA_START_NEG_COLL:
-;               case NFA_NEWL:
+                ((ß CASE) (§ NFA_ANY))
+                ((ß CASE) (§ NFA_ANY_COMPOSING))
+                ((ß CASE) (§ NFA_IDENT))
+                ((ß CASE) (§ NFA_SIDENT))
+                ((ß CASE) (§ NFA_KWORD))
+                ((ß CASE) (§ NFA_SKWORD))
+                ((ß CASE) (§ NFA_FNAME))
+                ((ß CASE) (§ NFA_SFNAME))
+                ((ß CASE) (§ NFA_PRINT))
+                ((ß CASE) (§ NFA_SPRINT))
+                ((ß CASE) (§ NFA_WHITE))
+                ((ß CASE) (§ NFA_NWHITE))
+                ((ß CASE) (§ NFA_DIGIT))
+                ((ß CASE) (§ NFA_NDIGIT))
+                ((ß CASE) (§ NFA_HEX))
+                ((ß CASE) (§ NFA_NHEX))
+                ((ß CASE) (§ NFA_OCTAL))
+                ((ß CASE) (§ NFA_NOCTAL))
+                ((ß CASE) (§ NFA_WORD))
+                ((ß CASE) (§ NFA_NWORD))
+                ((ß CASE) (§ NFA_HEAD))
+                ((ß CASE) (§ NFA_NHEAD))
+                ((ß CASE) (§ NFA_ALPHA))
+                ((ß CASE) (§ NFA_NALPHA))
+                ((ß CASE) (§ NFA_LOWER))
+                ((ß CASE) (§ NFA_NLOWER))
+                ((ß CASE) (§ NFA_UPPER))
+                ((ß CASE) (§ NFA_NUPPER))
+                ((ß CASE) (§ NFA_LOWER_IC))
+                ((ß CASE) (§ NFA_NLOWER_IC))
+                ((ß CASE) (§ NFA_UPPER_IC))
+                ((ß CASE) (§ NFA_NUPPER_IC))
+                ((ß CASE) (§ NFA_START_COLL))
+                ((ß CASE) (§ NFA_START_NEG_COLL))
+                ((ß CASE) (§ NFA_NEWL))
+                (§
                     ;; state will advance input
                     ((ß RETURN) (§ false))
+                )
 
-;               default:
+                (ß DEFAULT)
+                (§
                     (when (< 0 (. state c))
                         ;; state will advance input
                         ((ß RETURN) (§ false))
@@ -35296,7 +36385,8 @@
                     ;; Others: zero-width or possibly zero-width,
                     ;; might still find a match at the same position, keep looking.
                     (ß BREAK)
-;           }
+                )
+            )
             ((ß state =) (§ state.out0()))
         )
 
@@ -35333,74 +36423,78 @@
     (§
         ((ß regsubs_C subs =) (§ subs_arg))
 
-;       switch (state.c)
-;       {
-;           case NFA_NCLOSE:
-;           case NFA_MCLOSE:
-;           case NFA_MCLOSE1:
-;           case NFA_MCLOSE2:
-;           case NFA_MCLOSE3:
-;           case NFA_MCLOSE4:
-;           case NFA_MCLOSE5:
-;           case NFA_MCLOSE6:
-;           case NFA_MCLOSE7:
-;           case NFA_MCLOSE8:
-;           case NFA_MCLOSE9:
-;           case NFA_ZCLOSE:
-;           case NFA_ZCLOSE1:
-;           case NFA_ZCLOSE2:
-;           case NFA_ZCLOSE3:
-;           case NFA_ZCLOSE4:
-;           case NFA_ZCLOSE5:
-;           case NFA_ZCLOSE6:
-;           case NFA_ZCLOSE7:
-;           case NFA_ZCLOSE8:
-;           case NFA_ZCLOSE9:
-;           case NFA_MOPEN:
-;           case NFA_ZEND:
-;           case NFA_SPLIT:
-;           case NFA_EMPTY:
+        ((ß SWITCH) (§ state.c)
+            ((ß CASE) (§ NFA_NCLOSE))
+            ((ß CASE) (§ NFA_MCLOSE))
+            ((ß CASE) (§ NFA_MCLOSE1))
+            ((ß CASE) (§ NFA_MCLOSE2))
+            ((ß CASE) (§ NFA_MCLOSE3))
+            ((ß CASE) (§ NFA_MCLOSE4))
+            ((ß CASE) (§ NFA_MCLOSE5))
+            ((ß CASE) (§ NFA_MCLOSE6))
+            ((ß CASE) (§ NFA_MCLOSE7))
+            ((ß CASE) (§ NFA_MCLOSE8))
+            ((ß CASE) (§ NFA_MCLOSE9))
+            ((ß CASE) (§ NFA_ZCLOSE))
+            ((ß CASE) (§ NFA_ZCLOSE1))
+            ((ß CASE) (§ NFA_ZCLOSE2))
+            ((ß CASE) (§ NFA_ZCLOSE3))
+            ((ß CASE) (§ NFA_ZCLOSE4))
+            ((ß CASE) (§ NFA_ZCLOSE5))
+            ((ß CASE) (§ NFA_ZCLOSE6))
+            ((ß CASE) (§ NFA_ZCLOSE7))
+            ((ß CASE) (§ NFA_ZCLOSE8))
+            ((ß CASE) (§ NFA_ZCLOSE9))
+            ((ß CASE) (§ NFA_MOPEN))
+            ((ß CASE) (§ NFA_ZEND))
+            ((ß CASE) (§ NFA_SPLIT))
+            ((ß CASE) (§ NFA_EMPTY))
+            (§
                 ;; These nodes are not added themselves
                 ;; but their "out0" and/or "out1" may be added below.
                 (ß BREAK)
+            )
 
-;           case NFA_BOL:
-;           case NFA_BOF:
+            ((ß CASE) (§ NFA_BOL))
+            ((ß CASE) (§ NFA_BOF))
+            (§
                 ;; "^" won't match past end-of-line, don't bother trying.
                 ;; Except when at the end of the line, or when we are going
                 ;; to the next line for a look-behind match.
                 (when (and (BLT @regline, @reginput) (non-eos? @reginput) (or (nil? @nfa_endp) (non-nil? @reg_match) (== @reglnum (.. @nfa_endp se_pos lnum))))
                     ((ß RETURN) (§ subs))
                 )
-                ;; FALLTHROUGH
+                (ß FALLTHROUGH)
+            )
 
-;           case NFA_MOPEN1:
-;           case NFA_MOPEN2:
-;           case NFA_MOPEN3:
-;           case NFA_MOPEN4:
-;           case NFA_MOPEN5:
-;           case NFA_MOPEN6:
-;           case NFA_MOPEN7:
-;           case NFA_MOPEN8:
-;           case NFA_MOPEN9:
-;           case NFA_ZOPEN:
-;           case NFA_ZOPEN1:
-;           case NFA_ZOPEN2:
-;           case NFA_ZOPEN3:
-;           case NFA_ZOPEN4:
-;           case NFA_ZOPEN5:
-;           case NFA_ZOPEN6:
-;           case NFA_ZOPEN7:
-;           case NFA_ZOPEN8:
-;           case NFA_ZOPEN9:
-;           case NFA_NOPEN:
-;           case NFA_ZSTART:
+            ((ß CASE) (§ NFA_MOPEN1))
+            ((ß CASE) (§ NFA_MOPEN2))
+            ((ß CASE) (§ NFA_MOPEN3))
+            ((ß CASE) (§ NFA_MOPEN4))
+            ((ß CASE) (§ NFA_MOPEN5))
+            ((ß CASE) (§ NFA_MOPEN6))
+            ((ß CASE) (§ NFA_MOPEN7))
+            ((ß CASE) (§ NFA_MOPEN8))
+            ((ß CASE) (§ NFA_MOPEN9))
+            ((ß CASE) (§ NFA_ZOPEN))
+            ((ß CASE) (§ NFA_ZOPEN1))
+            ((ß CASE) (§ NFA_ZOPEN2))
+            ((ß CASE) (§ NFA_ZOPEN3))
+            ((ß CASE) (§ NFA_ZOPEN4))
+            ((ß CASE) (§ NFA_ZOPEN5))
+            ((ß CASE) (§ NFA_ZOPEN6))
+            ((ß CASE) (§ NFA_ZOPEN7))
+            ((ß CASE) (§ NFA_ZOPEN8))
+            ((ß CASE) (§ NFA_ZOPEN9))
+            ((ß CASE) (§ NFA_NOPEN))
+            ((ß CASE) (§ NFA_ZSTART))
+
                 ;; These nodes need to be added so that we can bail out
                 ;; when it was added to this list before at the same
                 ;; position to avoid an endless loop for "\(\)*"
 
-;           default:
-;           {
+            (ß DEFAULT)
+            (§
                 (when (and (== (§ state.lastlist[@nfa_ll_index]) (. nfl id)) (!= (. state c) NFA_SKIP))
                     ;; This state is already in the list, don't add it again,
                     ;; unless it is an MOPEN that is used for a backreference or
@@ -35455,50 +36549,55 @@
                     (copy_sub (.. thread th_subs rs_synt), (. subs rs_synt)))
 
                 (ß BREAK)
-;           }
-;       }
+            )
+        )
 
-;       switch (state.c)
-;       {
-;           case NFA_MATCH:
+        ((ß SWITCH) (§ state.c)
+            ((ß CASE) (§ NFA_MATCH))
+            (§
                 (ß BREAK)
+            )
 
-;           case NFA_SPLIT:
+            ((ß CASE) (§ NFA_SPLIT))
+            (§
                 ;; order matters here
                 ((ß subs =) (§ addstate(nfl, state.out0(), subs, pim, off)))
                 ((ß subs =) (§ addstate(nfl, state.out1(), subs, pim, off)))
                 (ß BREAK)
+            )
 
-;           case NFA_EMPTY:
-;           case NFA_NOPEN:
-;           case NFA_NCLOSE:
+            ((ß CASE) (§ NFA_EMPTY))
+            ((ß CASE) (§ NFA_NOPEN))
+            ((ß CASE) (§ NFA_NCLOSE))
+            (§
                 ((ß subs =) (§ addstate(nfl, state.out0(), subs, pim, off)))
                 (ß BREAK)
+            )
 
-;           case NFA_MOPEN:
-;           case NFA_MOPEN1:
-;           case NFA_MOPEN2:
-;           case NFA_MOPEN3:
-;           case NFA_MOPEN4:
-;           case NFA_MOPEN5:
-;           case NFA_MOPEN6:
-;           case NFA_MOPEN7:
-;           case NFA_MOPEN8:
-;           case NFA_MOPEN9:
-;           case NFA_ZOPEN:
-;           case NFA_ZOPEN1:
-;           case NFA_ZOPEN2:
-;           case NFA_ZOPEN3:
-;           case NFA_ZOPEN4:
-;           case NFA_ZOPEN5:
-;           case NFA_ZOPEN6:
-;           case NFA_ZOPEN7:
-;           case NFA_ZOPEN8:
-;           case NFA_ZOPEN9:
-;           case NFA_ZSTART:
-;           {
-;               int subidx;
-;               regsub_C sub;
+            ((ß CASE) (§ NFA_MOPEN))
+            ((ß CASE) (§ NFA_MOPEN1))
+            ((ß CASE) (§ NFA_MOPEN2))
+            ((ß CASE) (§ NFA_MOPEN3))
+            ((ß CASE) (§ NFA_MOPEN4))
+            ((ß CASE) (§ NFA_MOPEN5))
+            ((ß CASE) (§ NFA_MOPEN6))
+            ((ß CASE) (§ NFA_MOPEN7))
+            ((ß CASE) (§ NFA_MOPEN8))
+            ((ß CASE) (§ NFA_MOPEN9))
+            ((ß CASE) (§ NFA_ZOPEN))
+            ((ß CASE) (§ NFA_ZOPEN1))
+            ((ß CASE) (§ NFA_ZOPEN2))
+            ((ß CASE) (§ NFA_ZOPEN3))
+            ((ß CASE) (§ NFA_ZOPEN4))
+            ((ß CASE) (§ NFA_ZOPEN5))
+            ((ß CASE) (§ NFA_ZOPEN6))
+            ((ß CASE) (§ NFA_ZOPEN7))
+            ((ß CASE) (§ NFA_ZOPEN8))
+            ((ß CASE) (§ NFA_ZOPEN9))
+            ((ß CASE) (§ NFA_ZSTART))
+            (§
+                (ß int subidx)
+                (ß regsub_C sub)
                 (cond (== (. state c) NFA_ZSTART)
                 (§
                     ((ß subidx =) (§ 0))
@@ -35520,7 +36619,7 @@
                 ((ß save_lpos.col =) (§ 0))
                 ((ß Bytes save_ptr =) (§ null))
 
-;               int save_in_use;
+                (ß int save_in_use)
                 ;; Set the position (with "off" added) in the subexpression.
                 ;; Save and restore it when it was in use.
                 ;; Otherwise fill any gap.
@@ -35596,37 +36695,39 @@
                 ))
 
                 (ß BREAK)
-;           }
+            )
 
-;           case NFA_MCLOSE:
+            ((ß CASE) (§ NFA_MCLOSE))
+            (§
                 (when (and @nfa_has_zend (if (nil? @reg_match)) (<= 0 (§ subs.rs_norm.rs_multi[0].end_lnum)) (!= (§ subs.rs_norm.rs_line[0].end) null))
                     ;; Do not overwrite the position set by \ze.
                     ((ß subs =) (§ addstate(nfl, state.out0(), subs, pim, off)))
                     (ß BREAK)
                 )
-;           case NFA_MCLOSE1:
-;           case NFA_MCLOSE2:
-;           case NFA_MCLOSE3:
-;           case NFA_MCLOSE4:
-;           case NFA_MCLOSE5:
-;           case NFA_MCLOSE6:
-;           case NFA_MCLOSE7:
-;           case NFA_MCLOSE8:
-;           case NFA_MCLOSE9:
-;           case NFA_ZCLOSE:
-;           case NFA_ZCLOSE1:
-;           case NFA_ZCLOSE2:
-;           case NFA_ZCLOSE3:
-;           case NFA_ZCLOSE4:
-;           case NFA_ZCLOSE5:
-;           case NFA_ZCLOSE6:
-;           case NFA_ZCLOSE7:
-;           case NFA_ZCLOSE8:
-;           case NFA_ZCLOSE9:
-;           case NFA_ZEND:
-;           {
-;               int subidx;
-;               regsub_C sub;
+            )
+            ((ß CASE) (§ NFA_MCLOSE1))
+            ((ß CASE) (§ NFA_MCLOSE2))
+            ((ß CASE) (§ NFA_MCLOSE3))
+            ((ß CASE) (§ NFA_MCLOSE4))
+            ((ß CASE) (§ NFA_MCLOSE5))
+            ((ß CASE) (§ NFA_MCLOSE6))
+            ((ß CASE) (§ NFA_MCLOSE7))
+            ((ß CASE) (§ NFA_MCLOSE8))
+            ((ß CASE) (§ NFA_MCLOSE9))
+            ((ß CASE) (§ NFA_ZCLOSE))
+            ((ß CASE) (§ NFA_ZCLOSE1))
+            ((ß CASE) (§ NFA_ZCLOSE2))
+            ((ß CASE) (§ NFA_ZCLOSE3))
+            ((ß CASE) (§ NFA_ZCLOSE4))
+            ((ß CASE) (§ NFA_ZCLOSE5))
+            ((ß CASE) (§ NFA_ZCLOSE6))
+            ((ß CASE) (§ NFA_ZCLOSE7))
+            ((ß CASE) (§ NFA_ZCLOSE8))
+            ((ß CASE) (§ NFA_ZCLOSE9))
+            ((ß CASE) (§ NFA_ZEND))
+            (§
+                (ß int subidx)
+                (ß regsub_C sub)
                 (cond (== (. state c) NFA_ZEND)
                 (§
                     ((ß subidx =) (§ 0))
@@ -35644,7 +36745,7 @@
                 ))
 
                 ((ß lpos_C save_lpos =) (§ §_lpos_C()))
-;               Bytes save_ptr;
+                (ß Bytes save_ptr)
 
                 ;; We don't fill in gaps here, there must have been an MOPEN that has done that.
                 ((ß int save_in_use =) (§ sub.in_use))
@@ -35695,8 +36796,8 @@
                 ((ß sub.in_use =) (§ save_in_use))
 
                 (ß BREAK)
-;           }
-;       }
+            )
+        )
 
         subs
     ))
@@ -35774,109 +36875,142 @@
 
 (defn- #_boolean check_char_class [#_int klass, #_int c]
     (§
-;       switch (klass)
-;       {
-;           case NFA_CLASS_ALNUM:
+        ((ß SWITCH) (§ klass)
+            ((ß CASE) (§ NFA_CLASS_ALNUM))
+            (§
                 (if (and (<= 1 c) (<= c 255) (asc_isalnum c))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_ALPHA:
+            ((ß CASE) (§ NFA_CLASS_ALPHA))
+            (§
                 (if (and (<= 1 c) (<= c 255) (asc_isalpha c))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_BLANK:
+            ((ß CASE) (§ NFA_CLASS_BLANK))
+            (§
                 (if (or (== c (byte \space)) (== c (byte \tab)))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_CNTRL:
+            ((ß CASE) (§ NFA_CLASS_CNTRL))
+            (§
                 (if (and (<= 1 c) (<= c 255) (asc_iscntrl c))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_DIGIT:
+            ((ß CASE) (§ NFA_CLASS_DIGIT))
+            (§
                 (if (asc_isdigit c)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_GRAPH:
+            ((ß CASE) (§ NFA_CLASS_GRAPH))
+            (§
                 (if (and (<= 1 c) (<= c 255) (asc_isgraph c))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_LOWER:
+            ((ß CASE) (§ NFA_CLASS_LOWER))
+            (§
                 (if (utf_islower c)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_PRINT:
+            ((ß CASE) (§ NFA_CLASS_PRINT))
+            (§
                 (if (vim_isprintc c)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_PUNCT:
+            ((ß CASE) (§ NFA_CLASS_PUNCT))
+            (§
                 (if (and (<= 1 c) (<= c 255) (asc_ispunct c))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_SPACE:
+            ((ß CASE) (§ NFA_CLASS_SPACE))
+            (§
                 (if (or (and (<= 9 c) (<= c 13)) (== c (byte \space)))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_UPPER:
+            ((ß CASE) (§ NFA_CLASS_UPPER))
+            (§
                 (if (utf_isupper c)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_XDIGIT:
+            ((ß CASE) (§ NFA_CLASS_XDIGIT))
+            (§
                 (if (asc_isxdigit c)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_TAB:
+            ((ß CASE) (§ NFA_CLASS_TAB))
+            (§
                 (if (== c (byte \tab))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_RETURN:
+            ((ß CASE) (§ NFA_CLASS_RETURN))
+            (§
                 (if (== c (byte \return))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_BACKSPACE:
+            ((ß CASE) (§ NFA_CLASS_BACKSPACE))
+            (§
                 (if (== c (byte \backspace))
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           case NFA_CLASS_ESCAPE:
+            ((ß CASE) (§ NFA_CLASS_ESCAPE))
+            (§
                 (if (== c ESC)
                     ((ß RETURN) (§ true))
                 )
                 (ß BREAK)
+            )
 
-;           default:
+            (ß DEFAULT)
+            (§
                 ;; should not be here :P
                 (emsgn e_ill_char_class, (long klass))
                 ((ß RETURN) (§ false))
-;       }
+            )
+        )
 
         false
     ))
@@ -36153,10 +37287,9 @@
 
         ((ß int c =) (§ state.c))
 
-;       switch (c)
-;       {
-;           case NFA_SPLIT:
-;           {
+        ((ß SWITCH) (§ c)
+            ((ß CASE) (§ NFA_SPLIT))
+            (§
                 (when (or (== (§ state.out0().c) NFA_SPLIT) (== (§ state.out1().c) NFA_SPLIT))
                     ;; avoid recursive stuff
                     ((ß RETURN) (§ 1))
@@ -36166,136 +37299,160 @@
                 ((ß int l =) (§ failure_chance(state.out0(), depth + 1)))
                 ((ß int r =) (§ failure_chance(state.out1(), depth + 1)))
                 ((ß RETURN) (§ (l < r) ? l : r))
-;           }
+            )
 
-;           case NFA_ANY:
+            ((ß CASE) (§ NFA_ANY))
+            (§
                 ;; matches anything, unlikely to fail
                 ((ß RETURN) (§ 1))
+            )
 
-;           case NFA_MATCH:
-;           case NFA_MCLOSE:
-;           case NFA_ANY_COMPOSING:
+            ((ß CASE) (§ NFA_MATCH))
+            ((ß CASE) (§ NFA_MCLOSE))
+            ((ß CASE) (§ NFA_ANY_COMPOSING))
+            (§
                 ;; empty match works always
                 ((ß RETURN) (§ 0))
+            )
 
-;           case NFA_START_INVISIBLE:
-;           case NFA_START_INVISIBLE_FIRST:
-;           case NFA_START_INVISIBLE_NEG:
-;           case NFA_START_INVISIBLE_NEG_FIRST:
-;           case NFA_START_INVISIBLE_BEFORE:
-;           case NFA_START_INVISIBLE_BEFORE_FIRST:
-;           case NFA_START_INVISIBLE_BEFORE_NEG:
-;           case NFA_START_INVISIBLE_BEFORE_NEG_FIRST:
-;           case NFA_START_PATTERN:
+            ((ß CASE) (§ NFA_START_INVISIBLE))
+            ((ß CASE) (§ NFA_START_INVISIBLE_FIRST))
+            ((ß CASE) (§ NFA_START_INVISIBLE_NEG))
+            ((ß CASE) (§ NFA_START_INVISIBLE_NEG_FIRST))
+            ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE))
+            ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_FIRST))
+            ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG))
+            ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+            ((ß CASE) (§ NFA_START_PATTERN))
+            (§
                 ;; recursive regmatch is expensive, use low failure chance
                 ((ß RETURN) (§ 5))
+            )
 
-;           case NFA_BOL:
-;           case NFA_EOL:
-;           case NFA_BOF:
-;           case NFA_EOF:
-;           case NFA_NEWL:
+            ((ß CASE) (§ NFA_BOL))
+            ((ß CASE) (§ NFA_EOL))
+            ((ß CASE) (§ NFA_BOF))
+            ((ß CASE) (§ NFA_EOF))
+            ((ß CASE) (§ NFA_NEWL))
+            (§
                 ((ß RETURN) (§ 99))
+            )
 
-;           case NFA_BOW:
-;           case NFA_EOW:
+            ((ß CASE) (§ NFA_BOW))
+            ((ß CASE) (§ NFA_EOW))
+            (§
                 ((ß RETURN) (§ 90))
+            )
 
-;           case NFA_MOPEN:
-;           case NFA_MOPEN1:
-;           case NFA_MOPEN2:
-;           case NFA_MOPEN3:
-;           case NFA_MOPEN4:
-;           case NFA_MOPEN5:
-;           case NFA_MOPEN6:
-;           case NFA_MOPEN7:
-;           case NFA_MOPEN8:
-;           case NFA_MOPEN9:
-;           case NFA_ZOPEN:
-;           case NFA_ZOPEN1:
-;           case NFA_ZOPEN2:
-;           case NFA_ZOPEN3:
-;           case NFA_ZOPEN4:
-;           case NFA_ZOPEN5:
-;           case NFA_ZOPEN6:
-;           case NFA_ZOPEN7:
-;           case NFA_ZOPEN8:
-;           case NFA_ZOPEN9:
-;           case NFA_ZCLOSE:
-;           case NFA_ZCLOSE1:
-;           case NFA_ZCLOSE2:
-;           case NFA_ZCLOSE3:
-;           case NFA_ZCLOSE4:
-;           case NFA_ZCLOSE5:
-;           case NFA_ZCLOSE6:
-;           case NFA_ZCLOSE7:
-;           case NFA_ZCLOSE8:
-;           case NFA_ZCLOSE9:
-;           case NFA_NOPEN:
-;           case NFA_MCLOSE1:
-;           case NFA_MCLOSE2:
-;           case NFA_MCLOSE3:
-;           case NFA_MCLOSE4:
-;           case NFA_MCLOSE5:
-;           case NFA_MCLOSE6:
-;           case NFA_MCLOSE7:
-;           case NFA_MCLOSE8:
-;           case NFA_MCLOSE9:
-;           case NFA_NCLOSE:
+            ((ß CASE) (§ NFA_MOPEN))
+            ((ß CASE) (§ NFA_MOPEN1))
+            ((ß CASE) (§ NFA_MOPEN2))
+            ((ß CASE) (§ NFA_MOPEN3))
+            ((ß CASE) (§ NFA_MOPEN4))
+            ((ß CASE) (§ NFA_MOPEN5))
+            ((ß CASE) (§ NFA_MOPEN6))
+            ((ß CASE) (§ NFA_MOPEN7))
+            ((ß CASE) (§ NFA_MOPEN8))
+            ((ß CASE) (§ NFA_MOPEN9))
+            ((ß CASE) (§ NFA_ZOPEN))
+            ((ß CASE) (§ NFA_ZOPEN1))
+            ((ß CASE) (§ NFA_ZOPEN2))
+            ((ß CASE) (§ NFA_ZOPEN3))
+            ((ß CASE) (§ NFA_ZOPEN4))
+            ((ß CASE) (§ NFA_ZOPEN5))
+            ((ß CASE) (§ NFA_ZOPEN6))
+            ((ß CASE) (§ NFA_ZOPEN7))
+            ((ß CASE) (§ NFA_ZOPEN8))
+            ((ß CASE) (§ NFA_ZOPEN9))
+            ((ß CASE) (§ NFA_ZCLOSE))
+            ((ß CASE) (§ NFA_ZCLOSE1))
+            ((ß CASE) (§ NFA_ZCLOSE2))
+            ((ß CASE) (§ NFA_ZCLOSE3))
+            ((ß CASE) (§ NFA_ZCLOSE4))
+            ((ß CASE) (§ NFA_ZCLOSE5))
+            ((ß CASE) (§ NFA_ZCLOSE6))
+            ((ß CASE) (§ NFA_ZCLOSE7))
+            ((ß CASE) (§ NFA_ZCLOSE8))
+            ((ß CASE) (§ NFA_ZCLOSE9))
+            ((ß CASE) (§ NFA_NOPEN))
+            ((ß CASE) (§ NFA_MCLOSE1))
+            ((ß CASE) (§ NFA_MCLOSE2))
+            ((ß CASE) (§ NFA_MCLOSE3))
+            ((ß CASE) (§ NFA_MCLOSE4))
+            ((ß CASE) (§ NFA_MCLOSE5))
+            ((ß CASE) (§ NFA_MCLOSE6))
+            ((ß CASE) (§ NFA_MCLOSE7))
+            ((ß CASE) (§ NFA_MCLOSE8))
+            ((ß CASE) (§ NFA_MCLOSE9))
+            ((ß CASE) (§ NFA_NCLOSE))
+            (§
                 ((ß RETURN) (§ failure_chance(state.out0(), depth + 1)))
+            )
 
-;           case NFA_BACKREF1:
-;           case NFA_BACKREF2:
-;           case NFA_BACKREF3:
-;           case NFA_BACKREF4:
-;           case NFA_BACKREF5:
-;           case NFA_BACKREF6:
-;           case NFA_BACKREF7:
-;           case NFA_BACKREF8:
-;           case NFA_BACKREF9:
-;           case NFA_ZREF1:
-;           case NFA_ZREF2:
-;           case NFA_ZREF3:
-;           case NFA_ZREF4:
-;           case NFA_ZREF5:
-;           case NFA_ZREF6:
-;           case NFA_ZREF7:
-;           case NFA_ZREF8:
-;           case NFA_ZREF9:
+            ((ß CASE) (§ NFA_BACKREF1))
+            ((ß CASE) (§ NFA_BACKREF2))
+            ((ß CASE) (§ NFA_BACKREF3))
+            ((ß CASE) (§ NFA_BACKREF4))
+            ((ß CASE) (§ NFA_BACKREF5))
+            ((ß CASE) (§ NFA_BACKREF6))
+            ((ß CASE) (§ NFA_BACKREF7))
+            ((ß CASE) (§ NFA_BACKREF8))
+            ((ß CASE) (§ NFA_BACKREF9))
+            ((ß CASE) (§ NFA_ZREF1))
+            ((ß CASE) (§ NFA_ZREF2))
+            ((ß CASE) (§ NFA_ZREF3))
+            ((ß CASE) (§ NFA_ZREF4))
+            ((ß CASE) (§ NFA_ZREF5))
+            ((ß CASE) (§ NFA_ZREF6))
+            ((ß CASE) (§ NFA_ZREF7))
+            ((ß CASE) (§ NFA_ZREF8))
+            ((ß CASE) (§ NFA_ZREF9))
+            (§
                 ;; backreferences don't match in many places
                 ((ß RETURN) (§ 94))
+            )
 
-;           case NFA_LNUM_GT:
-;           case NFA_LNUM_LT:
-;           case NFA_COL_GT:
-;           case NFA_COL_LT:
-;           case NFA_VCOL_GT:
-;           case NFA_VCOL_LT:
-;           case NFA_MARK_GT:
-;           case NFA_MARK_LT:
-;           case NFA_VISUAL:
+            ((ß CASE) (§ NFA_LNUM_GT))
+            ((ß CASE) (§ NFA_LNUM_LT))
+            ((ß CASE) (§ NFA_COL_GT))
+            ((ß CASE) (§ NFA_COL_LT))
+            ((ß CASE) (§ NFA_VCOL_GT))
+            ((ß CASE) (§ NFA_VCOL_LT))
+            ((ß CASE) (§ NFA_MARK_GT))
+            ((ß CASE) (§ NFA_MARK_LT))
+            ((ß CASE) (§ NFA_VISUAL))
+            (§
                 ;; before/after positions don't match very often
                 ((ß RETURN) (§ 85))
+            )
 
-;           case NFA_LNUM:
+            ((ß CASE) (§ NFA_LNUM))
+            (§
                 ((ß RETURN) (§ 90))
+            )
 
-;           case NFA_CURSOR:
-;           case NFA_COL:
-;           case NFA_VCOL:
-;           case NFA_MARK:
+            ((ß CASE) (§ NFA_CURSOR))
+            ((ß CASE) (§ NFA_COL))
+            ((ß CASE) (§ NFA_VCOL))
+            ((ß CASE) (§ NFA_MARK))
+            (§
                 ;; specific positions rarely match
                 ((ß RETURN) (§ 98))
+            )
 
-;           case NFA_COMPOSING:
+            ((ß CASE) (§ NFA_COMPOSING))
+            (§
                 ((ß RETURN) (§ 95))
+            )
 
-;           default:
+            (ß DEFAULT)
+            (§
                 (when (< 0 c)
                     ;; character match fails often
                     ((ß RETURN) (§ 95))
                 )
-;       }
+            )
+        )
 
         ;; something else, includes character classes
         50
@@ -36325,7 +37482,7 @@
             ((ß boolean match =) (§ true))
             ((ß int len2 =) (§ utf_char2len(regstart)))                      ;; skip regstart
 
-;           int c1, c2;
+            (ß int c1, c2)
             ((ß FOR) (ß (§ int len1 = 0) (§ match_text.at(len1) != NUL) (§ len1 += utf_char2len(c1)))
                 ((ß c1 =) (§ us_ptr2char(match_text.plus(len1))))
                 ((ß c2 =) (§ us_ptr2char(@regline.plus(col[0] + len2))))
@@ -36471,10 +37628,9 @@
                     ((ß boolean add_here =) (§ false))
                     ((ß int add_count =) (§ 0))
 
-;                   switch (thread.state.c)
-;                   {
-;                       case NFA_MATCH:
-;                       {
+                    ((ß SWITCH) (§ thread.state.c)
+                        ((ß CASE) (§ NFA_MATCH))
+                        (§
                             ;; If the match ends before a composing characters and
                             ;; ireg_icombine is not set, that is not really a match.
                             (if (and (not @ireg_icombine) (utf_iscomposing curc))
@@ -36491,12 +37647,12 @@
                                 ((ß clen =) (§ 0))
                             )
                             (ß BREAK nextchar)
-;                       }
+                        )
 
-;                       case NFA_END_INVISIBLE:
-;                       case NFA_END_INVISIBLE_NEG:
-;                       case NFA_END_PATTERN:
-;                       {
+                        ((ß CASE) (§ NFA_END_INVISIBLE))
+                        ((ß CASE) (§ NFA_END_INVISIBLE_NEG))
+                        ((ß CASE) (§ NFA_END_PATTERN))
+                        (§
                             ;; This is only encountered after a NFA_START_INVISIBLE or
                             ;; NFA_START_INVISIBLE_BEFORE node.
                             ;; They surround a zero-width group, used with "\@=", "\&",
@@ -36524,17 +37680,17 @@
                                 ((ß clen =) (§ 0))
                             )
                             (ß BREAK nextchar)
-;                       }
+                        )
 
-;                       case NFA_START_INVISIBLE:
-;                       case NFA_START_INVISIBLE_FIRST:
-;                       case NFA_START_INVISIBLE_NEG:
-;                       case NFA_START_INVISIBLE_NEG_FIRST:
-;                       case NFA_START_INVISIBLE_BEFORE:
-;                       case NFA_START_INVISIBLE_BEFORE_FIRST:
-;                       case NFA_START_INVISIBLE_BEFORE_NEG:
-;                       case NFA_START_INVISIBLE_BEFORE_NEG_FIRST:
-;                       {
+                        ((ß CASE) (§ NFA_START_INVISIBLE))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_FIRST))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_NEG))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_NEG_FIRST))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_FIRST))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG))
+                        ((ß CASE) (§ NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
+                        (§
                             ;; Do it directly if there already is a PIM or when
                             ;; nfa_postprocess() detected it will work better.
                             (cond (or (!= (.. thread th_pim result) NFA_PIM_UNUSED) (== (.. thread state c) NFA_START_INVISIBLE_FIRST) (== (.. thread state c) NFA_START_INVISIBLE_NEG_FIRST) (== (.. thread state c) NFA_START_INVISIBLE_BEFORE_FIRST) (== (.. thread state c) NFA_START_INVISIBLE_BEFORE_NEG_FIRST))
@@ -36599,10 +37755,10 @@
                                 (addstate_here thislist, (§ thread.state.out1().out0(), thread.th_subs, pim, lidx))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_START_PATTERN:
-;                       {
+                        ((ß CASE) (§ NFA_START_PATTERN))
+                        (§
                             ((ß nfa_state_C skip =) (§ null))
 
                             ;; There is no point in trying to match the pattern
@@ -36636,7 +37792,7 @@
                                 ((ß RETURN) (§ @nfa_match))
                             )
                             (when (!= result FALSE)
-;                               int bytelen;
+                                (ß int bytelen)
 
                                 ;; Copy submatch info from the recursive call.
                                 (copy_sub_off (.. thread th_subs rs_norm), (. m rs_norm))
@@ -36677,24 +37833,28 @@
                                 ))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_BOL:
+                        ((ß CASE) (§ NFA_BOL))
+                        (§
                             (when (BEQ @reginput, @regline)
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
+                        )
 
-;                       case NFA_EOL:
+                        ((ß CASE) (§ NFA_EOL))
+                        (§
                             (when (== curc NUL)
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
+                        )
 
-;                       case NFA_BOW:
-;                       {
+                        ((ß CASE) (§ NFA_BOW))
+                        (§
                             ((ß boolean result =) (§ true))
                             (cond (== curc NUL)
                             (§
@@ -36702,7 +37862,7 @@
                             )
                             :else
                             (§
-;                               int this_class;
+                                (ß int this_class)
 
                                 ;; Get class of current and previous char (if it exists).
                                 ((ß this_class =) (§ us_get_class(@reginput, @reg_buf)))
@@ -36720,10 +37880,10 @@
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_EOW:
-;                       {
+                        ((ß CASE) (§ NFA_EOW))
+                        (§
                             ((ß boolean result =) (§ true))
                             (cond (BEQ @reginput, @regline)
                             (§
@@ -36731,7 +37891,7 @@
                             )
                             :else
                             (§
-;                               int this_class, prev_class;
+                                (ß int this_class, prev_class)
 
                                 ;; Get class of current and previous char (if it exists).
                                 ((ß this_class =) (§ us_get_class(@reginput, @reg_buf)))
@@ -36745,24 +37905,28 @@
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_BOF:
+                        ((ß CASE) (§ NFA_BOF))
+                        (§
                             (when (and (zero? @reglnum) (BEQ @reginput, @regline) (or (non-nil? @reg_match) (== @reg_firstlnum 1)))
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
+                        )
 
-;                       case NFA_EOF:
+                        ((ß CASE) (§ NFA_EOF))
+                        (§
                             (when (and (== @reglnum @reg_maxline) (== curc NUL))
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
+                        )
 
-;                       case NFA_COMPOSING:
-;                       {
+                        ((ß CASE) (§ NFA_COMPOSING))
+                        (§
                             ((ß int mc =) (§ curc))
                             ((ß int[] cchars =) (§ new int[MAX_MCO]))
                             ((ß int ccount =) (§ 0))
@@ -36775,7 +37939,7 @@
                                 ((ß len +=) (§ utf_char2len(mc)))
                             )
 
-;                           boolean result;
+                            (ß boolean result)
                             (cond (and @ireg_icombine (zero? len))
                             (§
                                 ;; If \Z was present, then ignore composing characters.
@@ -36812,7 +37976,7 @@
                                 ;; We do not check if all composing chars are matched.
                                 ((ß result =) (§ true))
                                 (while (§ sta.c != NFA_END_COMPOSING)
-;                                   int j;
+                                    (ß int j)
                                     ((ß FOR) (ß (§ j = 0) (§ j < ccount) (§ j++))
                                         (if (== (§ cchars[j]) (. sta c))
                                             (ß BREAK)
@@ -36837,10 +38001,10 @@
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NEWL:
-;                       {
+                        ((ß CASE) (§ NFA_NEWL))
+                        (§
                             (cond (and (== curc NUL) (not @reg_line_lbr) (nil? @reg_match) (<= @reglnum @reg_maxline))
                             (§
                                 ((ß go_to_nextline =) (§ true))
@@ -36856,11 +38020,11 @@
                                 ((ß add_off =) (§ 1))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_START_COLL:
-;                       case NFA_START_NEG_COLL:
-;                       {
+                        ((ß CASE) (§ NFA_START_COLL))
+                        ((ß CASE) (§ NFA_START_NEG_COLL))
+                        (§
                             ;; What follows is a list of characters, until NFA_END_COLL.
                             ;; One of them must match or none of them must match.
 
@@ -36916,17 +38080,20 @@
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_ANY:
+                        ((ß CASE) (§ NFA_ANY))
+                        (§
                             ;; Any char except NUL, (end of input) does not match.
                             (when (< 0 curc)
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
+                        )
 
-;                       case NFA_ANY_COMPOSING:
+                        ((ß CASE) (§ NFA_ANY_COMPOSING))
+                        (§
                             ;; On a composing character skip over it.
                             ;; Otherwise do nothing.
                             ;; Always matches.
@@ -36941,332 +38108,333 @@
                             ))
                             ((ß add_state =) (§ thread.state.out0()))
                             (ß BREAK)
+                        )
 
                         ;; Character classes like \a for alpha, \d for digit etc.
 
-;                       case NFA_IDENT:     ;;  \i
-;                       {
+                        ((ß CASE) (§ NFA_IDENT))     ;;  \i
+                        (§
                             ((ß boolean result =) (§ vim_isIDc(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_SIDENT:    ;;  \I
-;                       {
+                        ((ß CASE) (§ NFA_SIDENT))    ;;  \I
+                        (§
                             ((ß boolean result =) (§ !asc_isdigit(curc) && vim_isIDc(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_KWORD:     ;;  \k
-;                       {
+                        ((ß CASE) (§ NFA_KWORD))     ;;  \k
+                        (§
                             ((ß boolean result =) (§ us_iswordp(@reginput, @reg_buf)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_SKWORD:    ;;  \K
-;                       {
+                        ((ß CASE) (§ NFA_SKWORD))    ;;  \K
+                        (§
                             ((ß boolean result =) (§ !asc_isdigit(curc) && us_iswordp(@reginput, @reg_buf)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_FNAME:     ;;  \f
-;                       {
+                        ((ß CASE) (§ NFA_FNAME))     ;;  \f
+                        (§
                             ((ß boolean result =) (§ vim_isfilec(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_SFNAME:    ;;  \F
-;                       {
+                        ((ß CASE) (§ NFA_SFNAME))    ;;  \F
+                        (§
                             ((ß boolean result =) (§ !asc_isdigit(curc) && vim_isfilec(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_PRINT:     ;;  \p
-;                       {
+                        ((ß CASE) (§ NFA_PRINT))     ;;  \p
+                        (§
                             ((ß boolean result =) (§ vim_isprintc(us_ptr2char(@reginput))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_SPRINT:    ;;  \P
-;                       {
+                        ((ß CASE) (§ NFA_SPRINT))    ;;  \P
+                        (§
                             ((ß boolean result =) (§ !asc_isdigit(curc) && vim_isprintc(us_ptr2char(@reginput))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_WHITE:     ;;  \s
-;                       {
+                        ((ß CASE) (§ NFA_WHITE))     ;;  \s
+                        (§
                             ((ß boolean result =) (§ vim_iswhite(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NWHITE:    ;;  \S
-;                       {
+                        ((ß CASE) (§ NFA_NWHITE))    ;;  \S
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !vim_iswhite(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_DIGIT:     ;;  \d
-;                       {
+                        ((ß CASE) (§ NFA_DIGIT))     ;;  \d
+                        (§
                             ((ß boolean result =) (§ ri_digit(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NDIGIT:    ;;  \D
-;                       {
+                        ((ß CASE) (§ NFA_NDIGIT))    ;;  \D
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_digit(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_HEX:       ;;  \x
-;                       {
+                        ((ß CASE) (§ NFA_HEX))       ;;  \x
+                        (§
                             ((ß boolean result =) (§ ri_hex(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NHEX:      ;;  \X
-;                       {
+                        ((ß CASE) (§ NFA_NHEX))      ;;  \X
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_hex(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_OCTAL:     ;;  \o
-;                       {
+                        ((ß CASE) (§ NFA_OCTAL))     ;;  \o
+                        (§
                             ((ß boolean result =) (§ ri_octal(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NOCTAL:    ;;  \O
-;                       {
+                        ((ß CASE) (§ NFA_NOCTAL))    ;;  \O
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_octal(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_WORD:      ;;  \w
-;                       {
+                        ((ß CASE) (§ NFA_WORD))      ;;  \w
+                        (§
                             ((ß boolean result =) (§ ri_word(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NWORD:     ;;  \W
-;                       {
+                        ((ß CASE) (§ NFA_NWORD))     ;;  \W
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_word(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_HEAD:      ;;  \h
-;                       {
+                        ((ß CASE) (§ NFA_HEAD))      ;;  \h
+                        (§
                             ((ß boolean result =) (§ ri_head(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NHEAD:     ;;  \H
-;                       {
+                        ((ß CASE) (§ NFA_NHEAD))     ;;  \H
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_head(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_ALPHA:     ;;  \a
-;                       {
+                        ((ß CASE) (§ NFA_ALPHA))     ;;  \a
+                        (§
                             ((ß boolean result =) (§ ri_alpha(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NALPHA:    ;;  \A
-;                       {
+                        ((ß CASE) (§ NFA_NALPHA))    ;;  \A
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_alpha(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_LOWER:     ;;  \l
-;                       {
+                        ((ß CASE) (§ NFA_LOWER))     ;;  \l
+                        (§
                             ((ß boolean result =) (§ ri_lower(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NLOWER:    ;;  \L
-;                       {
+                        ((ß CASE) (§ NFA_NLOWER))    ;;  \L
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_lower(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_UPPER:     ;;  \\u (sic!)
-;                       {
+                        ((ß CASE) (§ NFA_UPPER))     ;;  \\u (sic!)
+                        (§
                             ((ß boolean result =) (§ ri_upper(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NUPPER:    ;;  \U
-;                       {
+                        ((ß CASE) (§ NFA_NUPPER))    ;;  \U
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !ri_upper(curc)))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_LOWER_IC:  ;; [a-z]
-;                       {
+                        ((ß CASE) (§ NFA_LOWER_IC))  ;; [a-z]
+                        (§
                             ((ß boolean result =) (§ ri_lower(curc) || (@ireg_ic && ri_upper(curc))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NLOWER_IC: ;; [^a-z]
-;                       {
+                        ((ß CASE) (§ NFA_NLOWER_IC)) ;; [^a-z]
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !(ri_lower(curc) || (@ireg_ic && ri_upper(curc)))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_UPPER_IC:  ;; [A-Z]
-;                       {
+                        ((ß CASE) (§ NFA_UPPER_IC))  ;; [A-Z]
+                        (§
                             ((ß boolean result =) (§ ri_upper(curc) || (@ireg_ic && ri_lower(curc))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_NUPPER_IC: ;; ^[A-Z]
-;                       {
+                        ((ß CASE) (§ NFA_NUPPER_IC)) ;; ^[A-Z]
+                        (§
                             ((ß boolean result =) (§ (curc != NUL) && !(ri_upper(curc) || (@ireg_ic && ri_lower(curc)))))
                             (when result
                                 ((ß add_state =) (§ thread.state.out0()))
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_BACKREF1:
-;                       case NFA_BACKREF2:
-;                       case NFA_BACKREF3:
-;                       case NFA_BACKREF4:
-;                       case NFA_BACKREF5:
-;                       case NFA_BACKREF6:
-;                       case NFA_BACKREF7:
-;                       case NFA_BACKREF8:
-;                       case NFA_BACKREF9:
-;                       case NFA_ZREF1:
-;                       case NFA_ZREF2:
-;                       case NFA_ZREF3:
-;                       case NFA_ZREF4:
-;                       case NFA_ZREF5:
-;                       case NFA_ZREF6:
-;                       case NFA_ZREF7:
-;                       case NFA_ZREF8:
-;                       case NFA_ZREF9: ;; \1 .. \9  \z1 .. \z9
-;                       {
-;                           int subidx;
+                        ((ß CASE) (§ NFA_BACKREF1))
+                        ((ß CASE) (§ NFA_BACKREF2))
+                        ((ß CASE) (§ NFA_BACKREF3))
+                        ((ß CASE) (§ NFA_BACKREF4))
+                        ((ß CASE) (§ NFA_BACKREF5))
+                        ((ß CASE) (§ NFA_BACKREF6))
+                        ((ß CASE) (§ NFA_BACKREF7))
+                        ((ß CASE) (§ NFA_BACKREF8))
+                        ((ß CASE) (§ NFA_BACKREF9))
+                        ((ß CASE) (§ NFA_ZREF1))
+                        ((ß CASE) (§ NFA_ZREF2))
+                        ((ß CASE) (§ NFA_ZREF3))
+                        ((ß CASE) (§ NFA_ZREF4))
+                        ((ß CASE) (§ NFA_ZREF5))
+                        ((ß CASE) (§ NFA_ZREF6))
+                        ((ß CASE) (§ NFA_ZREF7))
+                        ((ß CASE) (§ NFA_ZREF8))
+                        ((ß CASE) (§ NFA_ZREF9)) ;; \1 .. \9  \z1 .. \z9
+                        (§
+                            (ß int subidx)
                             ((ß int[] bytelen =) (§ new int[1]))
 
-;                           boolean result;
+                            (ß boolean result)
                             (cond (<= (.. thread state c) NFA_BACKREF9)
                             (§
                                 ((ß subidx =) (§ thread.state.c - NFA_BACKREF1 + 1))
@@ -37300,10 +38468,10 @@
                                 ))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_SKIP:
-;                       {
+                        ((ß CASE) (§ NFA_SKIP))
+                        (§
                             ;; character of previous matching \1 .. \9  or \@>
                             (cond (§ thread.count - clen <= 0)
                             (§
@@ -37319,36 +38487,36 @@
                                 ((ß add_count =) (§ thread.count - clen))
                             ))
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_LNUM:
-;                       case NFA_LNUM_GT:
-;                       case NFA_LNUM_LT:
-;                       {
+                        ((ß CASE) (§ NFA_LNUM))
+                        ((ß CASE) (§ NFA_LNUM_GT))
+                        ((ß CASE) (§ NFA_LNUM_LT))
+                        (§
                             ((ß boolean result =) (§ (@reg_match == null && nfa_re_num_cmp(thread.state.val, thread.state.c - NFA_LNUM, @reglnum + @reg_firstlnum))))
                             (when result
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_COL:
-;                       case NFA_COL_GT:
-;                       case NFA_COL_LT:
-;                       {
+                        ((ß CASE) (§ NFA_COL))
+                        ((ß CASE) (§ NFA_COL_GT))
+                        ((ß CASE) (§ NFA_COL_LT))
+                        (§
                             ((ß boolean result =) (§ nfa_re_num_cmp(thread.state.val, thread.state.c - NFA_COL, BDIFF(@reginput, @regline) + 1)))
                             (when result
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_VCOL:
-;                       case NFA_VCOL_GT:
-;                       case NFA_VCOL_LT:
-;                       {
+                        ((ß CASE) (§ NFA_VCOL))
+                        ((ß CASE) (§ NFA_VCOL_GT))
+                        ((ß CASE) (§ NFA_VCOL_LT))
+                        (§
                             ((ß int op =) (§ thread.state.c - NFA_VCOL))
                             ((ß int col =) (§ BDIFF(@reginput, @regline)))
                             ((ß window_C wp =) (§ (@reg_win == null) ? @curwin : @reg_win))
@@ -37378,12 +38546,12 @@
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_MARK:
-;                       case NFA_MARK_GT:
-;                       case NFA_MARK_LT:
-;                       {
+                        ((ß CASE) (§ NFA_MARK))
+                        ((ß CASE) (§ NFA_MARK_GT))
+                        ((ß CASE) (§ NFA_MARK_LT))
+                        (§
                             ((ß pos_C pos =) (§ getmark_buf(@reg_buf, thread.state.val, false)))
 
                             ;; Compare the mark position to the match position.
@@ -37395,55 +38563,57 @@
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_CURSOR:
-;                       {
+                        ((ß CASE) (§ NFA_CURSOR))
+                        (§
                             ((ß boolean result =) (§ (@reg_win != null && @reglnum + @reg_firstlnum == @reg_win.w_cursor.lnum && BDIFF(@reginput, @regline) == @reg_win.w_cursor.col)))
                             (when result
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_VISUAL:
-;                       {
+                        ((ß CASE) (§ NFA_VISUAL))
+                        (§
                             ((ß boolean result =) (§ reg_match_visual()))
                             (when result
                                 ((ß add_here =) (§ true))
                                 ((ß add_state =) (§ thread.state.out0()))
                             )
                             (ß BREAK)
-;                       }
+                        )
 
-;                       case NFA_MOPEN1:
-;                       case NFA_MOPEN2:
-;                       case NFA_MOPEN3:
-;                       case NFA_MOPEN4:
-;                       case NFA_MOPEN5:
-;                       case NFA_MOPEN6:
-;                       case NFA_MOPEN7:
-;                       case NFA_MOPEN8:
-;                       case NFA_MOPEN9:
-;                       case NFA_ZOPEN:
-;                       case NFA_ZOPEN1:
-;                       case NFA_ZOPEN2:
-;                       case NFA_ZOPEN3:
-;                       case NFA_ZOPEN4:
-;                       case NFA_ZOPEN5:
-;                       case NFA_ZOPEN6:
-;                       case NFA_ZOPEN7:
-;                       case NFA_ZOPEN8:
-;                       case NFA_ZOPEN9:
-;                       case NFA_NOPEN:
-;                       case NFA_ZSTART:
+                        ((ß CASE) (§ NFA_MOPEN1))
+                        ((ß CASE) (§ NFA_MOPEN2))
+                        ((ß CASE) (§ NFA_MOPEN3))
+                        ((ß CASE) (§ NFA_MOPEN4))
+                        ((ß CASE) (§ NFA_MOPEN5))
+                        ((ß CASE) (§ NFA_MOPEN6))
+                        ((ß CASE) (§ NFA_MOPEN7))
+                        ((ß CASE) (§ NFA_MOPEN8))
+                        ((ß CASE) (§ NFA_MOPEN9))
+                        ((ß CASE) (§ NFA_ZOPEN))
+                        ((ß CASE) (§ NFA_ZOPEN1))
+                        ((ß CASE) (§ NFA_ZOPEN2))
+                        ((ß CASE) (§ NFA_ZOPEN3))
+                        ((ß CASE) (§ NFA_ZOPEN4))
+                        ((ß CASE) (§ NFA_ZOPEN5))
+                        ((ß CASE) (§ NFA_ZOPEN6))
+                        ((ß CASE) (§ NFA_ZOPEN7))
+                        ((ß CASE) (§ NFA_ZOPEN8))
+                        ((ß CASE) (§ NFA_ZOPEN9))
+                        ((ß CASE) (§ NFA_NOPEN))
+                        ((ß CASE) (§ NFA_ZSTART))
+                        (§
                             ;; These states are only added to be able to bail out when
                             ;; they are added again, nothing is to be done.
                             (ß BREAK)
+                        )
 
-;                       default:    ;; regular character
-;                       {
+                        (ß DEFAULT)    ;; regular character
+                        (§
                             ((ß int c =) (§ thread.state.c))
 
                             ((ß boolean result =) (§ (c == curc)))
@@ -37462,8 +38632,8 @@
                                 ((ß add_off =) (§ clen))
                             )
                             (ß BREAK)
-;                       }
-;                   }
+                        )
+                    )
 
                     (when (non-nil? add_state)
                         ((ß nfa_pim_C pim =) (§ (thread.th_pim.result != NFA_PIM_UNUSED) ? thread.th_pim : null))
@@ -37471,7 +38641,7 @@
                         ;; Handle the postponed invisible match if the match might end
                         ;; without advancing and before the end of the line.
                         (when (and (non-nil? pim) (or (zero? clen) (match_follows add_state, 0)))
-;                           int result;
+                            (ß int result)
                             (cond (== (. pim result) NFA_PIM_TODO)
                             (§
                                 ((ß result =) (§ recursive_regmatch(pim.state, pim, prog, submatch, m, listids)))
@@ -37727,7 +38897,7 @@
     (§
         ((ß int[] col =) (§ { startcol }))
 
-;       nfa_regprog_C prog;
+        (ß nfa_regprog_C prog)
         (cond (nil? @reg_match)
         (§
             ((ß prog =) (§ (nfa_regprog_C)@reg_mmatch.regprog))
@@ -37834,7 +39004,7 @@
             ((ß RETURN) (§ null))
         )
 
-;       nfa_regprog_C prog;
+        (ß nfa_regprog_C prog)
 
         ((ß nfa_regengine.expr =) (§ expr))
         (reset! nfa_re_flags re_flags)
@@ -38247,7 +39417,7 @@
 
         (cond (or (nil? pat) (eos? pat))
         (§
-;           int i;
+            (ß int i)
             (if (== pat_use RE_LAST)
                 ((ß i =) (§ @last_idx))
                 ((ß i =) (§ pat_use))
@@ -38430,8 +39600,8 @@
             ((ß RETURN) (§ 0))
         )
 
-;       boolean found;
-;       long lnum;
+        (ß boolean found)
+        (ß long lnum)
 
         ((ß pos_C start_pos =) (§ §_pos_C()))
         ((ß lpos_C matchpos =) (§ §_lpos_C()))
@@ -38444,7 +39614,7 @@
 ;       {
             ;; When not accepting a match at the start position, set "extra_col" to a non-zero value.
             ;; Don't do that when starting at MAXCOL, since MAXCOL + 1 is zero.
-;           int extra_col;
+            (ß int extra_col)
             (cond (or (non-zero? (& options SEARCH_START)) (== (. pos col) MAXCOL))
             (§
                 ((ß extra_col =) (§ 0))
@@ -38511,7 +39681,7 @@
                         (COPY_lpos endpos, (§ regmatch.endpos[0]))
                         ((ß submatch =) (§ first_submatch(regmatch)))
                         ;; "lnum" may be past end of buffer for "\n\zs".
-;                       Bytes ptr;
+                        (ß Bytes ptr)
                         (if (< (.. buf b_ml ml_line_count) (+ lnum (. matchpos lnum)))
                             ((ß ptr =) (§ u8("")))
                             ((ß ptr =) (§ ml_get_buf(buf, lnum + matchpos.lnum)))
@@ -38534,7 +39704,7 @@
                                 ;; If vi-compatible searching, continue at the end
                                 ;; of the match, otherwise continue one position forward.
 
-;                               int matchcol;
+                                (ß int matchcol)
                                 (cond (non-nil? (vim_strbyte @p_cpo, CPO_SEARCH))
                                 (§
                                     (when (< 1 nmatched)
@@ -38603,7 +39773,7 @@
                                 ;; If vi-compatible searching, continue at the end of the match,
                                 ;; otherwise continue one position forward.
 
-;                               int matchcol;
+                                (ß int matchcol)
                                 (cond (non-nil? (vim_strbyte @p_cpo, CPO_SEARCH))
                                 (§
                                     (if (< 1 nmatched)
@@ -38762,7 +39932,7 @@
 
 (defn- #_int first_submatch [#_regmmatch_C rp]
     (§
-;       int submatch;
+        (ß int submatch)
 
         ((ß FOR) (ß (§ submatch = 1) (§ true) (§ submatch++))
             (if (<= 0 (§ rp.startpos[submatch].lnum))
@@ -38802,7 +39972,7 @@
     ;; dirc: '/' or '?'
     ;; nsec: timeout limit or 0
     (§
-;       int retval;
+        (ß int retval)
 
         ;; A line offset is not remembered, this is vi compatible.
 
@@ -38931,7 +40101,7 @@
                 )
 
                 (when (and (non-zero? (& options SEARCH_ECHO)) (messaging))
-;                   Bytes p;
+                    (ß Bytes p)
                     (if (eos? searchstr)
                         ((ß p =) (§ @spats[@last_idx].pat))
                         ((ß p =) (§ searchstr))
@@ -38939,11 +40109,11 @@
 
                     ((ß Bytes msgbuf =) (§ new Bytes(STRLEN(p) + 40)))
 
-;                   msgbuf.be(0, dirc);
+                    (.be msgbuf 0, dirc)
                     (cond (utf_iscomposing (us_ptr2char p))
                     (§
                         ;; Use a space to draw the composing char on.
-;                       msgbuf.be(1, (byte)' ');
+                        (§ msgbuf.be(1, (byte)' '))
                         (STRCPY (.plus msgbuf 2), p)
                     )
                     :else
@@ -38966,8 +40136,8 @@
                             (§ (p = p.plus(1)).be(-1, (byte)'+'))
                         )
                         (if (or (!= (§ @spats[0].sp_off.off) 0) (§ @spats[0].sp_off.line))
-;                           libC.sprintf(p, u8("%ld"), @spats[0].sp_off.off);
-;                           p.be(0, NUL);
+                            (§ libC.sprintf(p, u8("%ld"), @spats[0].sp_off.off))
+                            (.be p 0, NUL)
                         )
                     )
 
@@ -38993,7 +40163,7 @@
                 (when (and (not (§ @spats[0].sp_off.line)) (!= (§ @spats[0].sp_off.off) 0) (< (. pos col) (- MAXCOL 2)))
                     (cond (< 0 (§ @spats[0].sp_off.off))
                     (§
-;                       long c;
+                        (ß long c)
                         ((ß FOR) (ß (§ c = @spats[0].sp_off.off) (§ c != 0) (§ --c))
                             (if (== (decl pos) -1)
                                 (ß BREAK)
@@ -39006,7 +40176,7 @@
                     )
                     :else
                     (§
-;                       long c;
+                        (ß long c)
                         ((ß FOR) (ß (§ c = @spats[0].sp_off.off) (§ c != 0) (§ c++))
                             (if (== (incl pos) -1)
                                 (ß BREAK)
@@ -39022,7 +40192,7 @@
 ;               int i = searchit(@curwin, @curbuf, pos, (dirc == (byte)'/') ? FORWARD : BACKWARD, searchstr, count, (@spats[0].sp_off.end ? SEARCH_REV : 0) + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG + SEARCH_START + ((pat != null && pat.at(0) == (byte)';') ? 0 : SEARCH_NOOF))), RE_LAST, 0, nsec);
 
                 (if (non-nil? dircp)
-;                   dircp.be(0, dirc);          ;; restore second '/' or '?' for normal_cmd()
+                    (.be dircp 0, dirc)          ;; restore second '/' or '?' for normal_cmd()
                 )
                 (when (zero? i)
                     ((ß retval =) (§ 0))
@@ -39092,7 +40262,7 @@
                 ((ß dirc =) (§ (pat = pat.plus(1)).at(0)))
                 (when (and (!= dirc (byte \?)) (!= dirc (byte \/)))
                     ((ß retval =) (§ 0))
-;                   emsg(u8("E386: Expected '?' or '/'  after ';'"));
+                    (§ emsg(u8("E386: Expected '?' or '/'  after ';'")))
                     (ß BREAK end_do_search)
                 )
                 ((ß pat =) (§ pat.plus(1)))
@@ -39292,7 +40462,7 @@
         ((ß boolean cpo_bsl =) (§ (vim_strbyte(@p_cpo, CPO_MATCHBSL) != null)))   ;; don't recognize backslashes
 
         ;; Direction to search when initc is '/', '*' or '#'.
-;       int dir;
+        (ß int dir)
         (cond (non-zero? (& flags FM_BACKWARD))
         (§
             ((ß dir =) (§ BACKWARD))
@@ -39648,7 +40818,7 @@
                 ;; Watch out for "\\".
 
                 ((ß int @at_start =) (§ do_quotes))       ;; do_quotes value at start position
-;               Bytes p;
+                (ß Bytes p)
                 ((ß FOR) (ß (§ p = linep) (§ p.at(0) != NUL) (§ p = p.plus(1)))
                     (if (BEQ p, (.plus linep (+ (§ @_2_pos.col) (if (§ backwards[0]) 1 0))))
                         (reset! at_start (§ do_quotes & 1)))
@@ -39715,20 +40885,22 @@
             ;;   line or the previous one ends in a '\'.  Complicated, isn't it?
 
             ((ß int c =) (§ us_ptr2char(linep.plus(@_2_pos.col))))
-;           switch (c)
-;           {
-;               case NUL:
+            ((ß SWITCH) (§ c)
+                ((ß CASE) (§ NUL))
+                (§
                     ;; at end of line without trailing backslash, reset inquote
                     (when (or (zero? (. @_2_pos col)) (!= (.at linep (- (. @_2_pos col) 1)) (byte \\)))
                         ((ß inquote =) (§ false))
                         ((ß start_in_quotes =) (§ FALSE))
                     )
                     (ß BREAK)
+                )
 
-;               case (byte)'"':
+                ((ß CASE) (§ (byte)'"'))
+                (§
                     ;; a quote that is preceded with an odd number of backslashes is ignored
                     (when (non-zero? do_quotes)
-;                       int col;
+                        (ß int col)
 
                         ((ß FOR) (ß (§ col = @_2_pos.col - 1) (§ 0 <= col) (§ --col))
                             (if (!= (.at linep col) (byte \\))
@@ -39741,6 +40913,7 @@
                         )
                     )
                     (ß BREAK)
+                )
 
                 ;; If smart matching ('cpoptions' does not contain '%'):
                 ;;   Skip things in single quotes: 'x' or '\x'.  Be careful for single
@@ -39748,7 +40921,8 @@
                 ;;   skipped, there is never a brace in them.
                 ;;   Ignore this when finding matches for `'.
 
-;               case (byte)'\'':
+                ((ß CASE) (§ (byte)'\''))
+                (§
                     (when (and (not cpo_match) (!= (§ initc[0]) (byte \')) (!= (§ findc[0]) (byte \')))
                         (cond (§ backwards[0])
                         (§
@@ -39779,12 +40953,14 @@
                             ))
                         ))
                     )
-                    ;; FALLTHROUGH
+                    (ß FALLTHROUGH)
+                )
 
-;               default:
-
+                (ß DEFAULT)
+                (§
                     ;; Check for match outside of quotes, and inside of
                     ;; quotes when the start is also inside of quotes.
+
                     (when (and (or (not inquote) (== start_in_quotes TRUE)) (or (== c (§ initc[0])) (== c (§ findc[0]))))
                         ((ß int bslcnt =) (§ 0))
 
@@ -39810,7 +40986,8 @@
                         )
                     )
                     (ß BREAK)
-;           }
+                )
+            )
         )
 
         (when (and (== comment_dir BACKWARD) (< 0 count))
@@ -40380,7 +41557,7 @@
     (§
         ((ß pos_C pos =) (§ null))
         ((ß pos_C start_pos =) (§ §_pos_C()))
-;       pos_C end_pos;
+        (ß pos_C end_pos)
         ((ß boolean sol =) (§ false))                    ;; '{' at start of line
 
         ((ß pos_C old_pos =) (§ §_pos_C()))
@@ -40550,7 +41727,7 @@
 (defn- #_int find_prev_quote [#_Bytes line, #_int col_start, #_int quotechar, #_Bytes escape]
     ;; escape: escape characters, can be null
     (§
-;       int n;
+        (ß int n)
 
         (while (§ 0 < col_start)
             (§ --col_start)
@@ -40581,7 +41758,7 @@
     ;; quotechar: Quote character
     (§
         ((ß Bytes line =) (§ ml_get_curline()))
-;       int col_end;
+        (ß int col_end)
         ((ß int col_start =) (§ @curwin.w_cursor.col))
 
         ((ß boolean inclusive =) (§ false))
@@ -40599,7 +41776,7 @@
         )
 
         (when (not vis_empty)
-;           int i;
+            (ß int i)
             ;; Check if the existing selection exactly spans the text inside quotes.
             (cond vis_bef_curs
             (§
@@ -40880,7 +42057,7 @@
         ;; Move to match, except for zero-width matches,
         ;; in which case, we are already on the next match.
         (if (zero? one_char)
-;           searchit(@curwin, @curbuf, pos, (forward ? FORWARD : BACKWARD), @spats[@last_idx].pat, 0, flags | SEARCH_KEEP, RE_SEARCH, 0, null);
+            (§ searchit(@curwin, @curbuf, pos, (forward ? FORWARD : BACKWARD), @spats[@last_idx].pat, 0, flags | SEARCH_KEEP, RE_SEARCH, 0, null))
         )
 
         (if (not @VIsual_active)
@@ -41358,7 +42535,7 @@
         ;; separated by commas, e.g.: "200-210,x,#-178,-"
 
         ((ß FOR) (ß (§ int i = global ? 0 : 3) (§ i <= 3) (§ i++))
-;           Bytes p;
+            (ß Bytes p)
             (cond (zero? i)
             (§
                 ((ß p =) (§ @p_isi))          ;; first round: 'isident'
@@ -41383,7 +42560,7 @@
                     ((ß tilde =) (§ true))
                     ((ß p =) (§ p.plus(1)))
                 )
-;               int c;
+                (ß int c)
                 (cond (asc_isdigit (§ p.at(0)))
                 (§
 ;                   Bytes[] __ = { p }; c = (int)getdigits(__); p = __[0];
@@ -41530,8 +42707,8 @@
         ((ß int i =) (§ 0))
 
         (when (is_special c)      ;; special key code, display as ~@ char
-;           transchar_buf.be(0, (byte)'~');
-;           transchar_buf.be(1, (byte)'@');
+            (.be transchar_buf (§ 0), (§ (byte)'~'))
+            (.be transchar_buf (§ 1), (§ (byte)'@'))
             ((ß i =) (§ 2))
             ((ß c =) (§ char_u(KB_SECOND(c))))
         )
@@ -41539,8 +42716,8 @@
         (cond (or (and (not @chartab_initialized) (<= (byte \space) c) (<= c (byte \~))) (and (< c 256) (vim_isprintc c)))
         (§
             ;; printable character
-;           transchar_buf.be(i, c);
-;           transchar_buf.be(i + 1, NUL);
+            (.be transchar_buf i, c)
+            (§ transchar_buf.be(i + 1, NUL))
         )
         :else
         (§
@@ -41578,10 +42755,10 @@
         )
         (<= c 0x7f)                             ;; 0x00 - 0x1f and 0x7f
         (§
-;           buf.be(0, (byte)'^');
-;           buf.be(1, (byte)(c ^ 0x40));                          ;; DEL displayed as ^?
+            (.be buf (§ 0), (§ (byte)'^'))
+            (§ buf.be(1, (byte)(c ^ 0x40)))                          ;; DEL displayed as ^?
 
-;           buf.be(2, NUL);
+            (.be buf 2, NUL)
         )
         (<= 0x80 c)
         (§
@@ -41589,15 +42766,15 @@
         )
         (and (<= (+ (byte \space) 0x80) c) (<= c (+ (byte \~) 0x80)))    ;; 0xa0 - 0xfe
         (§
-;           buf.be(0, (byte)'|');
-;           buf.be(1, (byte)(c - 0x80));
-;           buf.be(2, NUL);
+            (.be buf (§ 0), (§ (byte)'|'))
+            (§ buf.be(1, (byte)(c - 0x80)))
+            (.be buf 2, NUL)
         )
         :else                                            ;; 0x80 - 0x9f and 0xff
         (§
-;           buf.be(0, (byte)'~');
-;           buf.be(1, (byte)((c - 0x80) ^ 0x40));                 ;; 0xff displayed as ~?
-;           buf.be(2, NUL);
+            (.be buf (§ 0), (§ (byte)'~'))
+            (§ buf.be(1, (byte)((c - 0x80) ^ 0x40)))                 ;; 0xff displayed as ~?
+            (.be buf 2, NUL)
         ))
     ))
 
@@ -41605,15 +42782,15 @@
     (§
         ((ß int i =) (§ 0))
 
-;       buf.be(i, (byte)'<');
+        (.be buf (§ i), (§ (byte)'<'))
         (when (< 0xff c)
-;           buf.be(++i, nr2hex(c >>> 12));
-;           buf.be(++i, nr2hex(c >>> 8));
+            (§ buf.be(++i, nr2hex(c >>> 12)))
+            (§ buf.be(++i, nr2hex(c >>> 8)))
         )
-;       buf.be(++i, nr2hex(c >>> 4));
-;       buf.be(++i, nr2hex(c));
-;       buf.be(++i, (byte)'>');
-;       buf.be(++i, NUL);
+        (§ buf.be(++i, nr2hex(c >>> 4)))
+        (.be buf (§ ++i), (§ nr2hex(c)))
+        (.be buf (§ ++i), (§ (byte)'>'))
+        (.be buf (§ ++i), (§ NUL))
     ))
 
 ;; Convert the lower 4 bits of byte "c" to its hex character.
@@ -42009,7 +43186,7 @@
     (§
         ((ß Bytes p =) (§ ml_get_buf(@curbuf, pos.lnum)))    ;; points to current char
         ((ß Bytes line =) (§ p))                                        ;; start of the line
-;       Bytes posptr;                                          ;; points to char at pos.col
+        (ß Bytes posptr)                                          ;; points to char at pos.col
         (if (== (. pos col) MAXCOL)
             ((ß posptr =) (§ null))                                      ;; continue until the NUL
             ((ß posptr =) (§ p.plus(pos.col)))
@@ -42019,7 +43196,7 @@
         ((ß int ts =) (§ (int)@curbuf.@b_p_ts))
 
         ((ß int[] head =) (§ new int[1]))
-;       int incr;
+        (ß int incr)
 
         ;; This function is used very often, do some speed optimizations.
         ;; When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set use a simple loop.
@@ -43773,7 +44950,7 @@
 (defn- #_int get_digraph [#_boolean cmdline]
     ;; cmdline: true when called from the cmdline
     (§
-;       int c, cc;
+        (ß int c, cc)
 
         (swap! no_mapping inc)
         (swap! allow_keys inc)
@@ -43841,7 +45018,7 @@
 
 (defn- #_int getdigraph [#_int char1, #_int char2, #_boolean meta_char]
     (§
-;       int retval;
+        (ß int retval)
 
         (when (and (§ (retval = getexactdigraph(char1, char2, meta_char)) == char2) (!= char1 char2) (§ (retval = getexactdigraph(char2, char1, meta_char)) == char1))
             ((ß RETURN) (§ char2))
@@ -44287,16 +45464,16 @@
 
                 (when (§ (char_u(p.at(3)) & 0xc0) == 0x80)
                     (when (== len 4)
-;                       return ((p.at(0) & 0x07) << 18) + ((p.at(1) & 0x3f) << 12) + ((p.at(2) & 0x3f) << 6) + (p.at(3) & 0x3f);
+                        ((ß RETURN) (§ ((p.at(0) & 0x07) << 18) + ((p.at(1) & 0x3f) << 12) + ((p.at(2) & 0x3f) << 6) + (p.at(3) & 0x3f))
                     )
 
                     (when (§ (char_u(p.at(4)) & 0xc0) == 0x80)
                         (when (== len 5)
-;                           return ((p.at(0) & 0x03) << 24) + ((p.at(1) & 0x3f) << 18) + ((p.at(2) & 0x3f) << 12) + ((p.at(3) & 0x3f) << 6) + (p.at(4) & 0x3f);
+                            ((ß RETURN) (§ ((p.at(0) & 0x03) << 24) + ((p.at(1) & 0x3f) << 18) + ((p.at(2) & 0x3f) << 12) + ((p.at(3) & 0x3f) << 6) + (p.at(4) & 0x3f))
                         )
 
                         (when (and (§ (char_u(p.at(5)) & 0xc0) == 0x80) (== len 6))
-;                           return ((p.at(0) & 0x01) << 30) + ((p.at(1) & 0x3f) << 24) + ((p.at(2) & 0x3f) << 18) + ((p.at(3) & 0x3f) << 12) + ((p.at(4) & 0x3f) << 6) + (p.at(5) & 0x3f);
+                            ((ß RETURN) (§ ((p.at(0) & 0x01) << 30) + ((p.at(1) & 0x3f) << 24) + ((p.at(2) & 0x3f) << 18) + ((p.at(3) & 0x3f) << 12) + ((p.at(4) & 0x3f) << 6) + (p.at(5) & 0x3f))
                         )
                     )
                 )
@@ -44587,48 +45764,48 @@
 (defn- #_int utf_char2bytes [#_int c, #_Bytes buf]
     (§
         (when (< c 0x80)               ;; 7 bits
-;           buf.be(0, c);
+            (.be buf 0, c)
             ((ß RETURN) (§ 1))
         )
 
         (when (< c 0x800)              ;; 11 bits
-;           buf.be(0, 0xc0 + (c >>> 6));
-;           buf.be(1, 0x80 + (c & 0x3f));
+            (§ buf.be(0, 0xc0 + (c >>> 6)))
+            (§ buf.be(1, 0x80 + (c & 0x3f)))
             ((ß RETURN) (§ 2))
         )
 
         (when (< c 0x10000)            ;; 16 bits
-;           buf.be(0, 0xe0 + (c >>> 12));
-;           buf.be(1, 0x80 + ((c >>> 6) & 0x3f));
-;           buf.be(2, 0x80 + (c & 0x3f));
+            (§ buf.be(0, 0xe0 + (c >>> 12)))
+            (§ buf.be(1, 0x80 + ((c >>> 6) & 0x3f)))
+            (§ buf.be(2, 0x80 + (c & 0x3f)))
             ((ß RETURN) (§ 3))
         )
 
         (when (< c 0x200000)           ;; 21 bits
-;           buf.be(0, 0xf0 + (c >>> 18));
-;           buf.be(1, 0x80 + ((c >>> 12) & 0x3f));
-;           buf.be(2, 0x80 + ((c >>> 6) & 0x3f));
-;           buf.be(3, 0x80 + (c & 0x3f));
+            (§ buf.be(0, 0xf0 + (c >>> 18)))
+            (§ buf.be(1, 0x80 + ((c >>> 12) & 0x3f)))
+            (§ buf.be(2, 0x80 + ((c >>> 6) & 0x3f)))
+            (§ buf.be(3, 0x80 + (c & 0x3f)))
             ((ß RETURN) (§ 4))
         )
 
         (when (< c 0x4000000)          ;; 26 bits
-;           buf.be(0, 0xf8 + (c >>> 24));
-;           buf.be(1, 0x80 + ((c >>> 18) & 0x3f));
-;           buf.be(2, 0x80 + ((c >>> 12) & 0x3f));
-;           buf.be(3, 0x80 + ((c >>> 6) & 0x3f));
-;           buf.be(4, 0x80 + (c & 0x3f));
+            (§ buf.be(0, 0xf8 + (c >>> 24)))
+            (§ buf.be(1, 0x80 + ((c >>> 18) & 0x3f)))
+            (§ buf.be(2, 0x80 + ((c >>> 12) & 0x3f)))
+            (§ buf.be(3, 0x80 + ((c >>> 6) & 0x3f)))
+            (§ buf.be(4, 0x80 + (c & 0x3f)))
             ((ß RETURN) (§ 5))
         )
 
                                     ;; 31 bits
 ;       {
-;           buf.be(0, 0xfc + (c >>> 30));
-;           buf.be(1, 0x80 + ((c >>> 24) & 0x3f));
-;           buf.be(2, 0x80 + ((c >>> 18) & 0x3f));
-;           buf.be(3, 0x80 + ((c >>> 12) & 0x3f));
-;           buf.be(4, 0x80 + ((c >>> 6) & 0x3f));
-;           buf.be(5, 0x80 + (c & 0x3f));
+            (§ buf.be(0, 0xfc + (c >>> 30)))
+            (§ buf.be(1, 0x80 + ((c >>> 24) & 0x3f)))
+            (§ buf.be(2, 0x80 + ((c >>> 18) & 0x3f)))
+            (§ buf.be(3, 0x80 + ((c >>> 12) & 0x3f)))
+            (§ buf.be(4, 0x80 + ((c >>> 6) & 0x3f)))
+            (§ buf.be(5, 0x80 + (c & 0x3f)))
             ((ß RETURN) (§ 6))
 ;       }
     ))
@@ -45594,7 +46771,7 @@
 
 (defn- #_int us__strnicmp [#_Bytes _s1, #_Bytes _s2, #_int _n1, #_int _n2]
     (§
-;       int c1, c2;
+        (ß int c1, c2)
         ((ß Bytes[] s1 =) (§ { _s1 }, s2 = { _s2 }))
         ((ß int[] n1 =) (§ { _n1 }, n2 = { _n2 }))
 
@@ -45707,7 +46884,7 @@
                 ((ß clen =) (§ us_ptr2len(p.plus(i))))
             )
             ;; NUL is stored as NL
-;           libC.sprintf(@ioBuff.plus(rlen), u8("%02x "), (p.at(i) == NL) ? NUL : p.at(i));
+            (§ libC.sprintf(@ioBuff.plus(rlen), u8("%02x "), (p.at(i) == NL) ? NUL : p.at(i)))
             (§ --clen)
             ((ß rlen +=) (§ STRLEN(@ioBuff, rlen)))
             (if (< (- IOSIZE 20) rlen)
@@ -45724,12 +46901,12 @@
             ((ß RETURN) (§ 0))
         )
 
-;       Bytes q;
+        (ß Bytes q)
 
         ;; Skip backwards over trailing bytes: 10xx.xxxx
         ;; Skip backwards again if on a composing char.
         ((ß FOR) (ß (§ q = p) (§ true) (§ q = q.minus(1)))
-;           Bytes s;
+            (ß Bytes s)
             ;; Move 's' to the last byte of this char.
             ((ß FOR) (ß (§ s = q) (§ (char_u(s.at(1)) & 0xc0) == 0x80) (§ s = s.plus(1)))
                 ;
@@ -45763,13 +46940,13 @@
         )
 
         ;; Find the next character that isn't 10xx.xxxx.
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = 0) (§ (char_u(p.at(i)) & 0xc0) == 0x80) (§ i++))
             ;
         )
         (when (< 0 i)
             ;; Check for illegal sequence.
-;           int j;
+            (ß int j)
             ((ß FOR) (ß (§ j = 0) (§ BLT(base, p.minus(j))) (§ j++))
                 (if (§ (char_u(p.at(-j)) & 0xc0) != 0x80)
                     (ß BREAK)
@@ -45791,7 +46968,7 @@
             ((ß RETURN) (§ 0))
         )
 
-;       int i, j;
+        (ß int i, j)
 
         ;; Find the last character that is 10xx.xxxx.
         ((ß FOR) (ß (§ i = 0) (§ (char_u(p.at(i + 1)) & 0xc0) == 0x80) (§ i++))
@@ -46060,8 +47237,8 @@
         ;; If 'preserveindent' and 'expandtab' are both set keep the original
         ;; characters and allocate accordingly.  We will fill the rest with spaces
         ;; after the if (!curbuf.b_p_et) below.
-;       Bytes newline;
-;       Bytes s;
+        (ß Bytes newline)
+        (ß Bytes s)
         (cond (!= orig_char_len -1)
         (§
             ((ß newline =) (§ new Bytes(orig_char_len + size - ind_done + line_len)))
@@ -46371,7 +47548,7 @@
             ((ß FOR) (ß (§ Bytes s = saved_line.plus(@curwin.w_cursor.col)) (§ s.at(0) != NUL) (§ nil))
                 ((ß s =) (§ s.plus(replace_push_mb(s))))
             )
-;           saved_line.be(@curwin.w_cursor.col, NUL);
+            (.be saved_line (§ @curwin.w_cursor.col), (§ NUL))
         )
 
         ((ß Bytes p_extra =) (§ null))              ;; what goes to next line
@@ -46387,7 +47564,7 @@
             )
             ((ß extra_len =) (§ STRLEN(p_extra)))
             ((ß saved_char =) (§ p_extra.at(0)))
-;           p_extra.be(0, NUL);
+            (.be p_extra 0, NUL)
         )
 
         (u_clearline)              ;; cannot do "U" command when adding lines
@@ -46534,7 +47711,7 @@
 
         ;; (State == INSERT || State == REPLACE), only when dir == FORWARD
         (when (non-nil? p_extra)
-;           p_extra.be(0, saved_char);          ;; restore char that NUL replaced
+            (.be p_extra 0, saved_char)          ;; restore char that NUL replaced
 
             ;; When 'ai' set, skip to the first non-blank.
             ;;
@@ -46569,7 +47746,7 @@
 
 ;       theend:
 ;       {
-;           boolean did_append;
+            (ß boolean did_append)
             (cond (or (zero? (& @State VREPLACE_FLAG)) (<= @orig_line_count (. old_cursor lnum)))
             (§
                 (if (not (ml_append (.. @curwin w_cursor lnum), p_extra))
@@ -46644,7 +47821,7 @@
             (when (== dir FORWARD)
                 (when (or trunc_line (non-zero? (& @State INSERT)))
                     ;; truncate current line at cursor
-;                   saved_line.be(@curwin.w_cursor.col, NUL);
+                    (.be saved_line (§ @curwin.w_cursor.col), (§ NUL))
                     ;; Remove trailing white space.
                     (if trunc_line
                         (truncate_spaces saved_line))
@@ -46676,7 +47853,7 @@
             ;; so stop fixthisline() from doing it (via change_indent()) by
             ;; telling it we're in normal INSERT mode.
 
-;           int vreplace_mode;
+            (ß int vreplace_mode)
             (cond (non-zero? (& @State VREPLACE_FLAG))
             (§
                 ((ß vreplace_mode =) (§ @State))          ;; so we know to put things right later
@@ -46858,7 +48035,7 @@
         ;; When "c" is 0x100, 0x200, etc. we don't want to insert a NUL byte.
         ;; Happens for CTRL-Vu9900.
         (if (== (.at buf 0) 0)
-;           buf.be(0, (byte)'\n');
+            (.be buf (§ 0), (§ (byte)'\n'))
         )
 
         (ins_char_bytes buf, n)
@@ -46937,7 +48114,7 @@
 
         ;; Fill with spaces when necessary.
         (while (§ i < newlen)
-;           p.be(i++, (byte)' ');
+            (§ p.be(i++, (byte)' '))
         )
 
         ;; Replace the line in the buffer.
@@ -47097,7 +48274,7 @@
         ((ß long lnum =) (§ @curwin.w_cursor.lnum))
         ((ß int col =) (§ @curwin.w_cursor.col))
 
-;       Bytes newp;
+        (ß Bytes newp)
         (if (zero? col)
             ((ß newp =) (§ STRDUP(u8(""))))
             ((ß newp =) (§ STRNDUP(ml_get(lnum), col)))
@@ -47133,7 +48310,7 @@
             (ß RETURN)
         )
 
-;       long n;
+        (ß long n)
         ((ß FOR) (ß (§ n = 0) (§ n < nlines) (§ nil))
             (if (non-zero? (& (.. @curbuf b_ml ml_flags) ML_EMPTY)) ;; nothing to delete
                 (ß BREAK)
@@ -47347,7 +48524,7 @@
             ;; Create a new entry if a new undo-able change was started
             ;; or we don't have an entry yet.
             (when (or (. @curbuf b_new_change) (zero? (. @curbuf b_changelistlen)))
-;               boolean add;
+                (ß boolean add)
                 (cond (zero? (. @curbuf b_changelistlen))
                 (§
                     ((ß add =) (§ true))
@@ -47536,7 +48713,7 @@
 
 (defn- #_int get_keystroke []
     (§
-;       int c;
+        (ß int c)
 
         ((ß Bytes buf =) (§ null))
 
@@ -47620,7 +48797,7 @@
                 (ß CONTINUE)                   ;; more bytes to get
             )
 
-;           buf.be(buflen <= len[0] ? buflen - 1 : len[0], NUL);
+            (§ buf.be(buflen <= len[0] ? buflen - 1 : len[0], NUL))
             ((ß c =) (§ us_ptr2char(buf)))
 
             (if (== c @intr_char)
@@ -47646,7 +48823,7 @@
             (ß RETURN)
         )
 
-;       long pn;
+        (ß long pn)
         (if (< 0 n)
             ((ß pn =) (§ n))
             ((ß pn =) (§ -n))
@@ -47698,7 +48875,7 @@
         ;; Ignore SIGHUP, because a dropped connection causes a read error, which
         ;; makes Vim exit and then handling SIGHUP causes various reentrance problems.
 
-;       libC.sigset(SIGHUP, /*SIG_IGN*/null);
+        (§ libC.sigset(SIGHUP, /*SIG_IGN*/null))
 
         (windgoto (- (int @Rows) 1), 0)
 
@@ -47862,7 +49039,7 @@
 
         ((ß Bytes line =) (§ ml_get_buf(@curbuf, pos.lnum)))
 
-;       int idx;
+        (ß int idx)
         (cond (<= MAXCOL wcol)
         (§
             ((ß idx =) (§ STRLEN(line) - 1 + (one_more ? 1 : 0)))
@@ -47925,14 +49102,14 @@
                     ((ß Bytes newline =) (§ new Bytes(idx + correct + 1)))
 
                     ((ß FOR) (ß (§ int t = 0) (§ t < idx) (§ t++))
-;                       newline.be(t, line.at(t));
+                        (.be newline (§ t), (§ line.at(t)))
                     )
 
                     ((ß FOR) (ß (§ int t = 0) (§ t < correct) (§ t++))
-;                       newline.be(t + idx, (byte)' ');
+                        (§ newline.be(t + idx, (byte)' '))
                     )
 
-;                   newline.be(idx + correct, NUL);
+                    (§ newline.be(idx + correct, NUL))
 
                     (ml_replace (. pos lnum), newline)
                     (changed_bytes (. pos lnum), idx)
@@ -47955,17 +49132,17 @@
                     ((ß FOR) (ß (§ int t = 0) (§ t < linelen) (§ t++))
                         (cond (!= t idx)
                         (§
-;                           newline.be(s++, line.at(t));
+                            (.be newline (§ s++), (§ line.at(t)))
                         )
                         :else
                         (§
                             ((ß FOR) (ß (§ int v = 0) (§ v < csize) (§ v++))
-;                               newline.be(s++, (byte)' ');
+                                (§ newline.be(s++, (byte)' '))
                             )
                         ))
                     )
 
-;                   newline.be(linelen + csize - 1, NUL);
+                    (§ newline.be(linelen + csize - 1, NUL))
 
                     (ml_replace (. pos lnum), newline)
                     (changed_bytes (. pos lnum), idx)
@@ -48278,7 +49455,7 @@
     (§
         ((ß Bytes s =) (§ new Bytes(len + 1)))
         (STRNCPY s, string, len)
-;       s.be(len, NUL);
+        (.be s len, NUL)
         s
     ))
 
@@ -48325,7 +49502,7 @@
             )
             (§ (p2 = p2.plus(1)).be(-1, p.at(0)))
         )
-;       p2.be(0, NUL);
+        (.be p2 0, NUL)
 
         escaped_string
     ))
@@ -48356,7 +49533,7 @@
 (defn- #_void copy_spaces [#_Bytes s, #_int n]
     (§
         ((ß FOR) (ß (§ int i = 0) (§ i < n) (§ i++))
-;           s.be(i, (byte)' ');
+            (§ s.be(i, (byte)' '))
         )
     ))
 
@@ -48366,7 +49543,7 @@
 (defn- #_void copy_chars [#_Bytes s, #_int n, #_int c]
     (§
         ((ß FOR) (ß (§ int i = 0) (§ i < n) (§ i++))
-;           s.be(i, c);
+            (.be s i, c)
         )
     ))
 
@@ -48376,7 +49553,7 @@
 (defn- #_void vim_strncpy [#_Bytes dst, #_Bytes src, #_int len]
     (§
         (STRNCPY dst, src, len)
-;       dst.be(len, NUL);
+        (.be dst len, NUL)
     ))
 
 ;; Like strcat(), but make sure the result fits in "size" bytes
@@ -48389,7 +49566,7 @@
         (cond (< size (§ dlen + slen + 1))
         (§
             (BCOPY dst, dlen, src, 0, (§ size - dlen - 1))
-;           dst.be(size - 1, NUL);
+            (§ dst.be(size - 1, NUL))
         )
         :else
         (§
@@ -48409,7 +49586,7 @@
 
         ;; skip '.' at start of option part, for 'suffixes'
         (if (== (.at p 0) (byte \.))
-;           buf.be(len++, (p = p.plus(1)).at(-1));
+            (§ buf.be(len++, (p = p.plus(1)).at(-1)))
         )
         (while (§ p.at(0) != NUL && vim_strchr(sep_chars, p.at(0)) == null)
             ;; Skip backslash before a separator character and space.
@@ -48418,11 +49595,11 @@
                 ((ß p =) (§ p.plus(1)))
             )
             (if (< len (- maxlen 1))
-;               buf.be(len++, p.at(0));
+                (.be buf (§ len++), (§ p.at(0)))
             )
             ((ß p =) (§ p.plus(1)))
         )
-;       buf.be(len, NUL);
+        (.be buf len, NUL)
 
         (if (and (non-eos? p) (!= (.at p 0) (byte \,))) ;; skip non-standard separator
             ((ß p =) (§ p.plus(1)))
@@ -48701,25 +49878,72 @@
 
 (defn- #_int handle_x_keys [#_int key]
     (§
-;       switch (key)
-;       {
-;           case K_XUP:     return K_UP;
-;           case K_XDOWN:   return K_DOWN;
-;           case K_XLEFT:   return K_LEFT;
-;           case K_XRIGHT:  return K_RIGHT;
-;           case K_XHOME:   return K_HOME;
-;           case K_ZHOME:   return K_HOME;
-;           case K_XEND:    return K_END;
-;           case K_ZEND:    return K_END;
-;           case K_XF1:     return K_F1;
-;           case K_XF2:     return K_F2;
-;           case K_XF3:     return K_F3;
-;           case K_XF4:     return K_F4;
-;           case K_S_XF1:   return K_S_F1;
-;           case K_S_XF2:   return K_S_F2;
-;           case K_S_XF3:   return K_S_F3;
-;           case K_S_XF4:   return K_S_F4;
-;       }
+        ((ß SWITCH) (§ key)
+            ((ß CASE) (§ K_XUP))
+            (§
+                ((ß RETURN) K_UP)
+            )
+            ((ß CASE) (§ K_XDOWN))
+            (§
+                ((ß RETURN) K_DOWN)
+            )
+            ((ß CASE) (§ K_XLEFT))
+            (§
+                ((ß RETURN) K_LEFT)
+            )
+            ((ß CASE) (§ K_XRIGHT))
+            (§
+                ((ß RETURN) K_RIGHT)
+            )
+            ((ß CASE) (§ K_XHOME))
+            (§
+                ((ß RETURN) K_HOME)
+            )
+            ((ß CASE) (§ K_ZHOME))
+            (§
+                ((ß RETURN) K_HOME)
+            )
+            ((ß CASE) (§ K_XEND))
+            (§
+                ((ß RETURN) K_END)
+            )
+            ((ß CASE) (§ K_ZEND))
+            (§
+                ((ß RETURN) K_END)
+            )
+            ((ß CASE) (§ K_XF1))
+            (§
+                ((ß RETURN) K_F1)
+            )
+            ((ß CASE) (§ K_XF2))
+            (§
+                ((ß RETURN) K_F2)
+            )
+            ((ß CASE) (§ K_XF3))
+            (§
+                ((ß RETURN) K_F3)
+            )
+            ((ß CASE) (§ K_XF4))
+            (§
+                ((ß RETURN) K_F4)
+            )
+            ((ß CASE) (§ K_S_XF1))
+            (§
+                ((ß RETURN) K_S_F1)
+            )
+            ((ß CASE) (§ K_S_XF2))
+            (§
+                ((ß RETURN) K_S_F2)
+            )
+            ((ß CASE) (§ K_S_XF3))
+            (§
+                ((ß RETURN) K_S_F3)
+            )
+            ((ß CASE) (§ K_S_XF4))
+            (§
+                ((ß RETURN) K_S_F4)
+            )
+        )
         key
     ))
 
@@ -48769,13 +49993,13 @@
         ((ß Bytes key__name =) (§ new Bytes(MAX_KEY_NAME_LEN + 1)))
         ((ß int idx =) (§ 0))
 
-;       key__name.be(idx++, (byte)'<');
+        (.be key__name (§ idx++), (§ (byte)'<'))
 
         ;; translate the modifier into a string
         ((ß FOR) (ß (§ int i = 0) (§ i < mod_mask_table.length && mod_mask_table[i].name != (byte)'A') (§ i++))
             (when (§ (modifiers & mod_mask_table[i].mod_mask) == mod_mask_table[i].mod_flag)
-;               key__name.be(idx++, mod_mask_table[i].name);
-;               key__name.be(idx++, (byte)'-');
+                (.be key__name (§ idx++), (§ mod_mask_table[i].name))
+                (.be key__name (§ idx++), (§ (byte)'-'))
             )
         )
 
@@ -48783,10 +50007,10 @@
         (§
             (cond (is_special c)
             (§
-;               key__name.be(idx++, (byte)'t');
-;               key__name.be(idx++, (byte)'_');
-;               key__name.be(idx++, KEY2TERMCAP0(c));
-;               key__name.be(idx++, KEY2TERMCAP1(c));
+                (.be key__name (§ idx++), (§ (byte)'t'))
+                (.be key__name (§ idx++), (§ (byte)'_'))
+                (.be key__name (§ idx++), (§ KEY2TERMCAP0(c)))
+                (.be key__name (§ idx++), (§ KEY2TERMCAP1(c)))
             )
             ;; Not a special key, only modifiers, output directly.
             :else
@@ -48797,13 +50021,13 @@
                 )
                 (vim_isprintc c)
                 (§
-;                   key__name.be(idx++, c);
+                    (.be key__name (§ idx++), (§ c))
                 )
                 :else
                 (§
                     ((ß Bytes s =) (§ transchar(c)))
                     (while (§ s.at(0) != NUL)
-;                       key__name.be(idx++, (s = s.plus(1)).at(-1));
+                        (§ key__name.be(idx++, (s = s.plus(1)).at(-1)))
                     )
                 ))
             ))
@@ -48814,8 +50038,8 @@
             ((ß idx =) (§ STRLEN(key__name)))
         ))
 
-;       key__name.be(idx++, (byte)'>');
-;       key__name.be(idx, NUL);
+        (.be key__name (§ idx++), (§ (byte)'>'))
+        (.be key__name idx, NUL)
 
         key__name
     ))
@@ -49077,7 +50301,7 @@
             ;; Need to create new entry in b_changelist.
             ((ß @curbuf.b_new_change =) (§ true))
 
-;           u_header_C uhp;
+            (ß u_header_C uhp)
             (if (<= 0 (get_undolevel))
                 ((ß uhp =) (§ §_u_header_C()))
                 ((ß uhp =) (§ null))
@@ -49411,8 +50635,8 @@
 
 ;       u_header_C uhp = null;	// %% anno dunno
 
-;       long target;
-;       long closest;
+        (ß long target)
+        (ß long closest)
         ;; "target" is the node below which we want to be.
         ;; Init "closest" to a value we can't reach.
         (cond absolute
@@ -49473,7 +50697,7 @@
 
             (while (§ uhp != null)
                 ((ß uhp.uh_walk =) (§ mark))
-;               long val;
+                (ß long val)
                 (if dosec
                     ((ß val =) (§ uhp.uh_time - @starttime))
                     ((ß val =) (§ uhp.uh_seq))
@@ -49709,7 +50933,7 @@
                 (§
                     ;; Use the first line that actually changed.
                     ;; Avoids that undoing auto-formatting puts the cursor in the previous line.
-;                   int i;
+                    (ß int i)
                     ((ß FOR) (ß (§ i = 0) (§ i < newsize && i < oldsize) (§ i++))
                         (if (non-zero? (§ STRCMP(uep.ue_array[i], ml_get(top + 1 + i))))
                             (ß BREAK)
@@ -49891,7 +51115,7 @@
 
         ((ß @u_oldcount -=) (§ @u_newcount))
 
-;       Bytes msgstr;
+        (ß Bytes msgstr)
         (cond (== @u_oldcount -1)
         (§
             ((ß msgstr =) (§ u8("more line")))
@@ -49918,7 +51142,7 @@
             )
         ))
 
-;       u_header_C uhp;
+        (ß u_header_C uhp)
         (cond (!= (. @curbuf b_u_curhead) null)
         (§
             ;; For ":undo N" we prefer a "after #N" message.
@@ -49943,7 +51167,7 @@
 
         ((ß Bytes msgbuf =) (§ new Bytes(80)))
         (if (nil? uhp)
-;           msgbuf.be(0, NUL);
+            (.be msgbuf 0, NUL)
             (u_add_time msgbuf, (§ msgbuf.size()), (. uhp uh_time)))
 
         ((ß FOR) (ß (§ window_C wp = @firstwin) (§ wp != null) (§ wp = wp.w_next))
@@ -49951,12 +51175,7 @@
                 (redraw_win_later wp, NOT_VALID))
         )
 
-;       smsg(u8("%ld %s; %s #%ld  %s"),
-;               (@u_oldcount < 0) ? -@u_oldcount : @u_oldcount,
-;               msgstr,
-;               did_undo ? u8("before") : u8("after"),
-;               (uhp == null) ? 0 : uhp.uh_seq,
-;               msgbuf);
+        (§ smsg(u8("%ld %s; %s #%ld  %s"), (@u_oldcount < 0) ? -@u_oldcount : @u_oldcount, msgstr, did_undo ? u8("before") : u8("after"), (uhp == null) ? 0 : uhp.uh_seq, msgbuf))
     ))
 
 ;; u_sync: stop adding to the current entry list
@@ -49990,12 +51209,12 @@
             (cond (§ libC._time() - seconds < (60 * 60 * 12))
             (§
                 ;; within 12 hours
-;               libC.strftime(buf, buflen, u8("%H:%M:%S"), curtime);
+                (§ libC.strftime(buf, buflen, u8("%H:%M:%S"), curtime))
             )
             :else
             (§
                 ;; longer ago
-;               libC.strftime(buf, buflen, u8("%Y/%m/%d %H:%M:%S"), curtime);
+                (§ libC.strftime(buf, buflen, u8("%Y/%m/%d %H:%M:%S"), curtime))
             ))
         )
         :else
@@ -50299,8 +51518,8 @@
             (cond (< k 0)
             (§
                 ((ß Bytes name =) (§ new Bytes(2)))
-;               name.be(0, KEY2TERMCAP0(k));
-;               name.be(1, KEY2TERMCAP1(k));
+                (.be name 0, (KEY2TERMCAP0 k))
+                (.be name 1, (KEY2TERMCAP1 k))
 
                 (if (nil? (find_termcode name))
                     (add_termcode name, (§ tcaps[i].bt_seq)))
@@ -50402,7 +51621,7 @@
         (if (== c (byte \newline))      ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
             (out_char (byte \return)))
 
-;       out_buf.be(@out_pos++, c);
+        (.be out_buf (§ @out_pos++), (§ c))
 
         ;; For testing we flush each time.
         (when (or (<= OUT_SIZE @out_pos) (non-zero? @p_wd))
@@ -50417,7 +51636,7 @@
         (if (== c (byte \newline))      ;; turn LF into CR-LF (CRMOD doesn't seem to do this)
             (out_char_nf (byte \return)))
 
-;       out_buf.be(@out_pos++, c);
+        (.be out_buf (§ @out_pos++), (§ c))
 
         (when (<= OUT_SIZE @out_pos)
             (out_flush)
@@ -50426,7 +51645,7 @@
 
 (defn- #_Bytes _addfmt [#_Bytes buf, #_Bytes fmt, #_int val]
     (§
-;       libC.sprintf(buf, fmt, val);
+        (§ libC.sprintf(buf, fmt, val))
         (while (§ buf.at(0) != NUL)
             ((ß buf =) (§ buf.plus(1)))
         )
@@ -50477,25 +51696,30 @@
             )
 
             ((ß b =) (§ (cm = cm.plus(1)).at(-1)))
-;           switch (b)                              ;; % escape
-;           {
-;               case (byte)'d':                           ;; decimal
+            ((ß SWITCH) (§ b)                              ;; % escape
+                ((ß CASE) (§ (byte)'d'))                           ;; decimal
+                (§
                     ((ß p =) (§ _addfmt(p, u8("%d"), row)))
                     ((ß row =) (§ col))
                     (ß BREAK)
+                )
 
-;               case (byte)'2':                           ;; 2 digit decimal
+                ((ß CASE) (§ (byte)'2'))                           ;; 2 digit decimal
+                (§
                     ((ß p =) (§ _addfmt(p, u8("%02d"), row)))
                     ((ß row =) (§ col))
                     (ß BREAK)
+                )
 
-;               case (byte)'3':                           ;; 3 digit decimal
+                ((ß CASE) (§ (byte)'3'))                           ;; 3 digit decimal
+                (§
                     ((ß p =) (§ _addfmt(p, u8("%03d"), row)))
                     ((ß row =) (§ col))
                     (ß BREAK)
+                )
 
-;               case (byte)'>':                           ;; %>xy: if >x, add y
-;               {
+                ((ß CASE) (§ (byte)'>'))                           ;; %>xy: if >x, add y
+                (§
                     ((ß byte x =) (§ (cm = cm.plus(1)).at(-1), y = (cm = cm.plus(1)).at(-1)))
                     (if (> col x)
                         ((ß col +=) (§ y))
@@ -50504,12 +51728,15 @@
                         ((ß row +=) (§ y))
                     )
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'+':                           ;; %+c: add c
+                ((ß CASE) (§ (byte)'+'))                           ;; %+c: add c
+                (§
                     ((ß row +=) (§ (cm = cm.plus(1)).at(-1)))
+                )
 
-;               case (byte)'.':                           ;; print x/y
+                ((ß CASE) (§ (byte)'.'))                           ;; print x/y
+                (§
                                                           ;; these are chars that UNIX hates
                     (when (§ row == (byte)'\t' || row == (byte)'\n' || row == (byte)'\004' || row == (byte)'\000')
                         (§ row++)                      ;; so go to next pos
@@ -50521,52 +51748,65 @@
                     (§ (p = p.plus(1)).be(-1, row))
                     ((ß row =) (§ col))
                     (ß BREAK)
+                )
 
-;               case (byte)'r':                           ;; r: reverse
-;               {
+                ((ß CASE) (§ (byte)'r'))                           ;; r: reverse
+                (§
                     ((ß int r =) (§ row))
                     ((ß row =) (§ col))
                     ((ß col =) (§ r))
                     ((ß reverse =) (§ true))
                     (ß BREAK)
-;               }
+                )
 
-;               case (byte)'i':                           ;; increment (1-origin screen)
+                ((ß CASE) (§ (byte)'i'))                           ;; increment (1-origin screen)
+                (§
                     (§ col++)
                     (§ row++)
                     (ß BREAK)
+                )
 
-;               case (byte)'%':                           ;; %%=% literally
+                ((ß CASE) (§ (byte)'%'))                           ;; %%=% literally
+                (§
                     (§ (p = p.plus(1)).be(-1, (byte)'%'))
                     (ß BREAK)
+                )
 
-;               case (byte)'n':                           ;; magic DM2500 code
+                ((ß CASE) (§ (byte)'n'))                           ;; magic DM2500 code
+                (§
                     ((ß row ^=) (§ 0140))
                     ((ß col ^=) (§ 0140))
                     (ß BREAK)
+                )
 
-;               case (byte)'B':                           ;; bcd encoding
+                ((ß CASE) (§ (byte)'B'))                           ;; bcd encoding
+                (§
                     ((ß row =) (§ ((row / 10) << 4) + (row % 10)))
                     ((ß col =) (§ ((col / 10) << 4) + (col % 10)))
                     (ß BREAK)
+                )
 
-;               case (byte)'D':                           ;; magic Delta Data code
+                ((ß CASE) (§ (byte)'D'))                           ;; magic Delta Data code
+                (§
                     ((ß row -=) (§ 2 * (row & 15)))
                     ((ß col -=) (§ 2 * (col & 15)))
                     (ß BREAK)
+                )
 
-;               case (byte)'p':                           ;; so, what?
-;               {
+                ((ß CASE) (§ (byte)'p'))                           ;; so, what?
+                (§
                     ((ß byte d =) (§ (cm = cm.plus(1)).at(-1)))
                     (if (or (== d (byte \1)) (== d (byte \2)))       ;; ignore %p1 and %p2
                         (ß BREAK)
                     )
-                    ;; FALLTHROUGH
-;               }
+                    (ß FALLTHROUGH)
+                )
 
-;               default:                            ;; unknown escape
+                (ß DEFAULT)                            ;; unknown escape
+                (§
                     ((ß RETURN) (§ u8("OOPS")))
-;           }
+                )
+            )
         )
 
         (when addup                                  ;; add upline
@@ -50604,7 +51844,7 @@
             ))
         )
 
-;       p.be(0, NUL);
+        (.be p 0, NUL)
 
         tgoto_buffer
     ))
@@ -50686,27 +51926,27 @@
 
 (defn- #_void term_windgoto [#_int row, #_int col]
     (§
-;       out_str(_tgoto(@T_CM, col, row));
+        (§ out_str(_tgoto(@T_CM, col, row)))
     ))
 
 (defn- #_void term_cursor_right [#_int i]
     (§
-;       out_str(_tgoto(@T_CRI, 0, i));
+        (§ out_str(_tgoto(@T_CRI, 0, i)))
     ))
 
 (defn- #_void term_append_lines [#_int line_count]
     (§
-;       out_str(_tgoto(@T_CAL, 0, line_count));
+        (§ out_str(_tgoto(@T_CAL, 0, line_count)))
     ))
 
 (defn- #_void term_delete_lines [#_int line_count]
     (§
-;       out_str(_tgoto(@T_CDL, 0, line_count));
+        (§ out_str(_tgoto(@T_CDL, 0, line_count)))
     ))
 
 (defn- #_void term_set_winsize [#_int width, #_int height]
     (§
-;       out_str(_tgoto(@T_CWS, height, width));
+        (§ out_str(_tgoto(@T_CWS, height, width)))
     ))
 
 (defn- #_void term_fg_color [#_int n]
@@ -50743,12 +51983,12 @@
         ;; Also accept "\e[3%dm" for TERMINFO, it is sometimes used.
         (when (§ 8 <= n && 16 <= @t_colors && s.at(0) == ESC && s.at(1) == (byte)'[' && s.at(i) != NUL && (STRCMP(s.plus(i + 1), u8("%p1%dm")) == 0 || STRCMP(s.plus(i + 1), u8("%dm")) == 0) && (s.at(i) == (byte)'3' || s.at(i) == (byte)'4'))
             ((ß Bytes buf =) (§ new Bytes(20)))
-;           libC.sprintf(buf, u8("%s%s%%p1%%dm"), (i == 2) ? u8("\033[") : u8("\233"), (s.at(i) == (byte)'3') ? (16 <= n ? u8("38;5;") : u8("9")) : (16 <= n ? u8("48;5;") : u8("10")));
+            (§ libC.sprintf(buf, u8("%s%s%%p1%%dm"), (i == 2) ? u8("\033[") : u8("\233"), (s.at(i) == (byte)'3') ? (16 <= n ? u8("38;5;") : u8("9")) : (16 <= n ? u8("48;5;") : u8("10"))))
             ((ß s =) (§ buf))
             ((ß n =) (§ (16 <= n) ? n : n - 8))
         )
 
-;       out_str(_tgoto(s, 0, n));
+        (§ out_str(_tgoto(s, 0, n)))
     ))
 
 ;; Make sure we have a valid set or terminal options.
@@ -51072,7 +52312,7 @@
         (cond (§ (@State & REPLACE) == REPLACE)
         (§
             (when (!= @showing_mode REPLACE)
-;               Bytes p;
+                (ß Bytes p)
                 (if (non-eos? @T_CSR)
                     ((ß p =) (§ @T_CSR))                  ;; Replace mode cursor
                     ((ß p =) (§ @T_CSI))                  ;; fall back to Insert mode cursor
@@ -51104,10 +52344,10 @@
 
 (defn- #_void scroll_region_set [#_window_C wp, #_int off]
     (§
-;       out_str(_tgoto(@T_CS, wp.w_winrow + wp.w_height - 1, wp.w_winrow + off));
+        (§ out_str(_tgoto(@T_CS, wp.w_winrow + wp.w_height - 1, wp.w_winrow + off)))
 
         (if (and (non-eos? @T_CSV) (!= (. wp w_width) (int @Columns)))
-;           out_str(_tgoto(@T_CSV, wp.w_wincol + wp.w_width - 1, wp.w_wincol));
+            (§ out_str(_tgoto(@T_CSV, wp.w_wincol + wp.w_width - 1, wp.w_wincol)))
         )
 
         (screen_start)                 ;; don't know where cursor is now
@@ -51117,10 +52357,10 @@
 
 (defn- #_void scroll_region_reset []
     (§
-;       out_str(_tgoto(@T_CS, (int)@Rows - 1, 0));
+        (§ out_str(_tgoto(@T_CS, (int)@Rows - 1, 0)))
 
         (if (non-eos? @T_CSV)
-;           out_str(_tgoto(@T_CSV, (int)@Columns - 1, 0));
+            (§ out_str(_tgoto(@T_CSV, (int)@Columns - 1, 0)))
         )
 
         (screen_start)                 ;; don't know where cursor is now
@@ -51191,7 +52431,7 @@
         ;; Look for existing entry with the same name, it is replaced.
         ;; Look for an existing entry that is alphabetical higher, the new entry is inserted in front of it.
 
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = 0) (§ i < @tc_len) (§ i++))
             (if (< (char_u (§ @termcodes[i].name.at(0))) (char_u (§ name.at(0))))
                 (ß CONTINUE)
@@ -51305,8 +52545,8 @@
         (if @need_gather
             (gather_termleader))
 
-;       Bytes tp;
-;       int len;
+        (ß Bytes tp)
+        (ß int len)
 
         (cond (nil? buf)
         (§
@@ -51335,7 +52575,7 @@
         ;; Skip this position if the character does not appear as the first character in 'term_strings'.
         ;; This speeds up a lot, since most termcodes start with the same character (ESC).
 
-;       Bytes q;
+        (ß Bytes q)
         ((ß FOR) (ß (§ q = termleader) (§ q.at(0) != NUL && q.at(0) != tp.at(0)) (§ q = q.plus(1)))
             ;
         )
@@ -51374,8 +52614,8 @@
                     )
                 )
 
-;               key_name.be(0, @termcodes[idx].name.at(0));
-;               key_name.be(1, @termcodes[idx].name.at(1));
+                (.be key_name (§ 0), (§ @termcodes[idx].name.at(0)))
+                (.be key_name (§ 1), (§ @termcodes[idx].name.at(1)))
                 (ß BREAK)
             )
 
@@ -51403,7 +52643,7 @@
                     :else
                     (§
                         ;; Skip over the digits, the final char must follow.
-;                       int j;
+                        (ß int j)
                         ((ß FOR) (ß (§ j = slen - 2) (§ j < len && asc_isdigit(tp.at(j))) (§ j++))
                             ;
                         )
@@ -51433,8 +52673,8 @@
                         ((ß slen =) (§ j))
                     ))
 
-;                   key_name.be(0, @termcodes[idx].name.at(0));
-;                   key_name.be(1, @termcodes[idx].name.at(1));
+                    (.be key_name (§ 0), (§ @termcodes[idx].name.at(0)))
+                    (.be key_name (§ 1), (§ @termcodes[idx].name.at(1)))
                     (ß BREAK)
                 )
             )
@@ -51460,17 +52700,17 @@
             ;; Need to handle that here to make mappings work.
             ((ß key =) (§ simplify_key(key, modifiers)))
             (when (!= (§ modifiers[0]) 0)
-;               string.be(new_slen++, KB_SPECIAL);
-;               string.be(new_slen++, KS_MODIFIER);
-;               string.be(new_slen++, modifiers[0]);
+                (.be string (§ new_slen++), (§ KB_SPECIAL))
+                (.be string (§ new_slen++), (§ KS_MODIFIER))
+                (.be string (§ new_slen++), (§ modifiers[0]))
             )
         )
 
         ((ß int retval =) (§ 0))
 
         ;; Finally, add the special key code to our string.
-;       key_name.be(0, KEY2TERMCAP0(key));
-;       key_name.be(1, KEY2TERMCAP1(key));
+        (.be key_name 0, (KEY2TERMCAP0 key))
+        (.be key_name 1, (KEY2TERMCAP1 key))
         (cond (== (.at key_name 0) KS_KEY)
         (§
             ;; from ":set <M-b>=xx"
@@ -51483,11 +52723,11 @@
         )
         :else
         (§
-;           string.be(new_slen++, KB_SPECIAL);
-;           string.be(new_slen++, key_name.at(0));
-;           string.be(new_slen++, key_name.at(1));
+            (.be string (§ new_slen++), (§ KB_SPECIAL))
+            (.be string (§ new_slen++), (§ key_name.at(0)))
+            (.be string (§ new_slen++), (§ key_name.at(1)))
         ))
-;       string.be(new_slen, NUL);
+        (.be string new_slen, NUL)
 
         ((ß int extra =) (§ new_slen - slen))
         (cond (nil? buf)
@@ -51535,12 +52775,12 @@
     (§
         ((ß int len =) (§ 0))
 
-;       termleader.be(len, NUL);
+        (.be termleader len, NUL)
 
         ((ß FOR) (ß (§ int i = 0) (§ i < @tc_len) (§ i++))
             (when (nil? (§ vim_strchr(termleader, @termcodes[i].code.at(0))))
-;               termleader.be(len++, @termcodes[i].code.at(0));
-;               termleader.be(len, NUL);
+                (.be termleader (§ len++), (§ @termcodes[i].code.at(0)))
+                (.be termleader len, NUL)
             )
         )
 
@@ -51689,7 +52929,7 @@
         ;; If we can't get any, but there is some in the buffer, just return.
         ;; If we can't get any, and there isn't any in the buffer, we give up and exit Vim.
 
-;       int unconverted;
+        (ß int unconverted)
 
         (cond (non-nil? @fib__rest)
         (§
@@ -51736,8 +52976,8 @@
                 ;; and set the mode to what it was.
                 (settmode TMODE_COOK)
                 ;; Use stderr for stdin, also works for shell commands.
-;               libc.close(0);
-;               libc.dup(2);
+                (§ libc.close(0))
+                (§ libc.dup(2))
                 (settmode m)
             )
             (if (not exit_on_error)
@@ -51755,7 +52995,7 @@
         (cond @got_int
         (§
             ;; Interrupted, pretend a CTRL-C was typed.
-;           inbuf.be(0, 3);
+            (.be inbuf 0, 3)
             (reset! inbufcount 1)
         )
         :else
@@ -52145,7 +53385,7 @@
             ((ß RETURN) (§ false))
         )
 
-;       int c;
+        (ß int c)
         (cond (non-zero? (§ get_real_state() & VISUAL))
         (§
             ((ß c =) (§ (byte)'v'))
@@ -52427,7 +53667,7 @@
                                 (if (§ (wp.w_lines_valid += j) > wp.w_height)
                                     ((ß wp.w_lines_valid =) (§ wp.w_height))
                                 )
-;                               int idx;
+                                (ß int idx)
                                 ((ß FOR) (ß (§ idx = wp.w_lines_valid) (§ 0 <= idx - j) (§ --idx))
                                     (COPY_wline (§ wp.w_lines[idx]), (§ wp.w_lines[idx - j]))
                                 )
@@ -52545,7 +53785,7 @@
 
         ;; check if we are updating or removing the inverted part
         (when (or @VIsual_active (and (!= (. wp w_old_cursor_lnum) 0) (!= type NOT_VALID)))
-;           long from, to;
+            (ß long from, to)
 
             (cond @VIsual_active
             (§
@@ -52783,8 +54023,8 @@
                 (when (and (== lnum mod_top) (!= mod_bot MAXLNUM))
                     ((ß int old_rows =) (§ 0))
                     ((ß int new_rows =) (§ 0))
-;                   int xtra_rows;
-;                   long l;
+                    (ß int xtra_rows)
+                    (ß long l)
 
                     ;; Count the old number of window rows, using w_lines[], which should
                     ;; still contain the sizes for the lines as they are currently displayed.
@@ -52983,7 +54223,7 @@
             (§
                 ;; Last line isn't finished: Display "@@@" at the end.
 
-;               screen_fill(wp.w_winrow + wp.w_height - 1, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width - 3, wp.w_wincol + wp.w_width, (byte)'@', (byte)'@', hl_attr(HLF_AT));
+                (§ screen_fill(wp.w_winrow + wp.w_height - 1, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width - 3, wp.w_wincol + wp.w_width, (byte)'@', (byte)'@', hl_attr(HLF_AT)))
                 (set_empty_rows wp, srow)
                 ((ß wp.w_botline =) (§ lnum))
             )
@@ -53126,7 +54366,7 @@
 
         ((ß int fromcol_prev =) (§ -2))                  ;; start of inverting after cursor
         ((ß boolean noinvcur =) (§ false))               ;; don't invert the cursor
-;       pos_C top, bot;
+        (ß pos_C top, bot)
         ((ß boolean lnum_in_visual_area =) (§ false))
 
         ((ß int char_attr =) (§ 0))                      ;; attributes for next character
@@ -53302,7 +54542,7 @@
         ;; 'nowrap' or 'wrap' and a single line that doesn't fit:
         ;; advance to the first character to be displayed.
 
-;       int v;
+        (ß int v)
         (if @(.. wp w_options wo_wrap)
             ((ß v =) (§ wp.w_skipcol))
             ((ß v =) (§ wp.w_leftcol))
@@ -53381,7 +54621,7 @@
         ((ß matchitem_C mi =) (§ wp.w_match_head))   ;; points to the match list
         ((ß boolean shl_flag =) (§ false))           ;; whether search_hl has been processed
         (while (§ mi != null || !shl_flag)
-;           match_C shl;                    ;; points to search_hl or a match
+            (ß match_C shl)                    ;; points to search_hl or a match
             (cond (not shl_flag)
             (§
                 ((ß shl =) (§ @search_hl))
@@ -53464,7 +54704,7 @@
                         ;; Draw the line number (empty space after wrapping).
                         (cond (== row startrow)
                         (§
-;                           long num;
+                            (ß long num)
                             ((ß Bytes fmt =) (§ u8("%*ld ")))
 
                             (cond (and @(.. wp w_options wo_nu) (not @(.. wp w_options wo_rnu)))
@@ -53483,10 +54723,10 @@
                                 )
                             ))
 
-;                           libC.sprintf(extra, fmt, number_width(wp), num);
+                            (§ libC.sprintf(extra, fmt, number_width(wp), num))
                             (when (< 0 (. wp w_skipcol))
                                 ((ß FOR) (ß (§ p_extra = extra) (§ p_extra.at(0) == (byte)' ') (§ p_extra = p_extra.plus(1)))
-;                                   p_extra.be(0, (byte)'-');
+                                    (.be p_extra (§ 0), (§ (byte)'-'))
                                 )
                             )
                             ((ß p_extra =) (§ extra))
@@ -53595,7 +54835,7 @@
                     ((ß mi =) (§ wp.w_match_head))
                     ((ß shl_flag =) (§ false))
                     (while (§ mi != null || !shl_flag)
-;                       match_C shl;        ;; points to search_hl or a match
+                        (ß match_C shl)        ;; points to search_hl or a match
                         (cond (and (not shl_flag) (or (and (non-nil? mi) (< SEARCH_HL_PRIORITY (. mi priority))) (nil? mi)))
                         (§
                             ((ß shl =) (§ @search_hl))
@@ -53659,7 +54899,7 @@
                     ((ß mi =) (§ wp.w_match_head))
                     ((ß shl_flag =) (§ false))
                     (while (§ mi != null || !shl_flag)
-;                       match_C shl;        ;; points to search_hl or a match
+                        (ß match_C shl)        ;; points to search_hl or a match
                         (cond (and (not shl_flag) (or (and (non-nil? mi) (< SEARCH_HL_PRIORITY (. mi priority))) (nil? mi)))
                         (§
                             ((ß shl =) (§ @search_hl))
@@ -54007,13 +55247,13 @@
                         ((ß c_extra =) (§ NUL))
                         (cond @(.. wp w_options wo_lbr)
                         (§
-;                           Bytes p;
+                            (ß Bytes p)
 
                             ((ß c =) (§ p_extra.at(0)))
                             ((ß p =) (§ new Bytes(n_extra + 1)))
                             (BFILL p, 0, (byte \space), n_extra)
                             (STRNCPY p, (.plus p_extra 1), (- (STRLEN p_extra) 1))
-;                           p.be(n_extra, NUL);
+                            (.be p n_extra, NUL)
                             ((ß p_extra_free =) (§ p_extra = p))
                         )
                         :else
@@ -54166,7 +55406,7 @@
                     :else
                     (§
                         ;; Add a blank character to highlight.
-;                       @screenLines.be(off, (byte)' ');
+                        (§ @screenLines.be(off, (byte)' '))
                         ((ß @screenLinesUC[off] =) (§ 0))
                     ))
                     (when (zero? area_attr)
@@ -54176,7 +55416,7 @@
                         ((ß mi =) (§ wp.w_match_head))
                         ((ß shl_flag =) (§ false))
                         (while (§ mi != null || !shl_flag)
-;                           match_C shl;        ;; points to search_hl or a match
+                            (ß match_C shl)        ;; points to search_hl or a match
                             (cond (and (not shl_flag) (or (and (non-nil? mi) (< SEARCH_HL_PRIORITY (. mi priority))) (nil? mi)))
                             (§
                                 ((ß shl =) (§ @search_hl))
@@ -54247,7 +55487,7 @@
                     )
 
                     (while (§ col < wp.w_width)
-;                       @screenLines.be(off, (byte)' ');
+                        (§ @screenLines.be(off, (byte)' '))
                         ((ß @screenLinesUC[off] =) (§ 0))
                         (§ col++)
                         (if draw_color_col
@@ -54337,12 +55577,12 @@
             (§
                 ;; Store the character.
 
-;               @screenLines.be(off, c);
+                (.be @screenLines off, c)
                 (cond mb_utf8
                 (§
                     ((ß @screenLinesUC[off] =) (§ mb_c))
                     (if (zero? (& c 0xff))
-;                       @screenLines.be(off, 0x80);    ;; avoid storing zero
+                        (.be @screenLines off, 0x80)    ;; avoid storing zero
                     )
                     ((ß FOR) (ß (§ int i = 0) (§ i < @screen_mco) (§ i++))
                         ((ß @screenLinesC[i][off] =) (§ u8cc[i]))
@@ -54370,7 +55610,7 @@
                     (§ off++)
                     (§ col++)
                     ;; UTF-8: Put a 0 in the second screen char.
-;                   @screenLines.be(off, NUL);
+                    (.be @screenLines off, NUL)
                     (§ vcol++)
                     ;; When "tocol" is halfway a character, set it to the end
                     ;; of the character, otherwise highlighting won't stop.
@@ -54603,7 +55843,7 @@
         ((ß boolean redraw_next =) (§ char_needs_redraw(off_from, off_to, endcol - col)))
 
         (while (§ col < endcol)
-;           int char_cells;             ;; 1: normal char; 2: occupies two display cells
+            (ß int char_cells)             ;; 1: normal char; 2: occupies two display cells
             (if (< (+ col 1) endcol)
                 ((ß char_cells =) (§ utf_off2cells(off_from, max_off_from)))
                 ((ß char_cells =) (§ 1))
@@ -54624,7 +55864,7 @@
                     ((ß clear_next =) (§ true))
                 )
 
-;               @screenLines.be(off_to, @screenLines.at(off_from));
+                (.be @screenLines (§ off_to), (§ @screenLines.at(off_from)))
                 ((ß @screenLinesUC[off_to] =) (§ @screenLinesUC[off_from]))
                 (when (!= (§ @screenLinesUC[off_from]) 0)
                     ((ß FOR) (ß (§ int i = 0) (§ i < @screen_mco) (§ i++))
@@ -54632,7 +55872,7 @@
                     )
                 )
                 (if (== char_cells 2)
-;                   @screenLines.be(off_to + 1, @screenLines.at(off_from + 1));
+                    (§ @screenLines.be(off_to + 1, @screenLines.at(off_from + 1)))
                 )
 
                 ;; The bold trick makes a single column of pixels appear in the
@@ -54666,7 +55906,7 @@
         (when clear_next
             ;; Clear the second half of a double-wide character of which
             ;; the left half was overwritten with a single-wide character.
-;           @screenLines.be(off_to, (byte)' ');
+            (§ @screenLines.be(off_to, (byte)' '))
             ((ß @screenLinesUC[off_to] =) (§ 0))
             (screen_char off_to, row, (+ col coloff))
         )
@@ -54691,7 +55931,7 @@
                 ((ß int[] hl =) (§ new int[1]))
                 ((ß int c =) (§ fillchar_vsep(hl)))
                 (when (or (!= (.at @screenLines off_to) c) (!= (§ @screenLinesUC[off_to]) (if (<= 0x80 c) c 0)) (!= (§ @screenAttrs[off_to]) (§ hl[0])))
-;                   @screenLines.be(off_to, c);
+                    (.be @screenLines off_to, c)
                     ((ß @screenAttrs[off_to] =) (§ hl[0]))
                     (cond (<= 0x80 c)
                     (§
@@ -54743,7 +55983,7 @@
             ;; draw the vertical separator right of this window
             ((ß int[] hl =) (§ new int[1]))
             ((ß int c =) (§ fillchar_vsep(hl)))
-;           screen_fill(wp.w_winrow + row, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width, wp.w_wincol + wp.w_width + 1, c, (byte)' ', hl[0]);
+            (§ screen_fill(wp.w_winrow + row, wp.w_winrow + wp.w_height, wp.w_wincol + wp.w_width, wp.w_wincol + wp.w_width + 1, c, (byte)' ', hl[0]))
         )
     ))
 
@@ -54783,7 +56023,7 @@
             ((ß int len =) (§ STRLEN(p)))
 
             (when @(. @curbuf b_changed)
-;               p.be(len++, (byte)' ');
+                (§ p.be(len++, (byte)' '))
                 (STRCPY (.plus p len), (u8 "[+]"))
                 ((ß len +=) (§ 3))
             )
@@ -54804,13 +56044,13 @@
 
                 ;; Find first character that will fit.
                 ;; Going from start to end is much faster for DBCS.
-;               int i;
+                (ß int i)
                 ((ß FOR) (ß (§ i = 0) (§ p.at(i) != NUL && this_ru_col - 1 <= len) (§ i += us_ptr2len_cc(p.plus(i))))
                     ((ß len -=) (§ us_ptr2cells(p.plus(i))))
                 )
                 (when (< 0 i)
                     ((ß p =) (§ p.plus(i - 1)))
-;                   p.be(0, (byte)'<');
+                    (.be p (§ 0), (§ (byte)'<'))
                     (§ len++)
                 )
             ))
@@ -54825,7 +56065,7 @@
         ;; May need to draw the character below the vertical separator.
 
         (when (and (!= (. wp w_vsep_width) 0) (!= (. wp w_status_height) 0) (redrawing))
-;           int fillchar;
+            (ß int fillchar)
             ((ß int[] attr =) (§ new int[1]))
             (if (stl_connected wp)
                 ((ß fillchar =) (§ fillchar_status(attr, wp == @curwin)))
@@ -54865,7 +56105,7 @@
     (§
         ((ß Bytes buf =) (§ new Bytes(MB_MAXBYTES + 1)))
 
-;       buf.be(utf_char2bytes(c, buf), NUL);
+        (§ buf.be(utf_char2bytes(c, buf), NUL))
         (screen_puts buf, row, col, attr)
     ))
 
@@ -54879,11 +56119,11 @@
             ((ß int off =) (§ @lineOffset[row] + col))
 
             ((ß attrp[0] =) (§ @screenAttrs[off]))
-;           bytes.be(0, @screenLines.at(off));
-;           bytes.be(1, NUL);
+            (.be bytes (§ 0), (§ @screenLines.at(off)))
+            (.be bytes 1, NUL)
 
             (if (!= (§ @screenLinesUC[off]) 0)
-;               bytes.be(utfc_char2bytes(off, bytes), NUL);
+                (§ bytes.be(utfc_char2bytes(off, bytes), NUL))
             )
         )
     ))
@@ -54929,7 +56169,7 @@
         ;; When drawing over the right halve of a double-wide char clear out the left halve.
         ;; Only needed in a terminal.
         (when (and (< 0 col) (< col @screenColumns) (§ (mb_fix_col(col, row)) != col))
-;           @screenLines.be(off - 1, (byte)' ');
+            (§ @screenLines.be(off - 1, (byte)' '))
             ((ß @screenAttrs[off - 1] =) (§ 0))
             ((ß @screenLinesUC[off - 1] =) (§ 0))
             ((ß @screenLinesC[0][off - 1] =) (§ 0))
@@ -54947,14 +56187,14 @@
         (while (§ col < @screenColumns && (len < 0 || BDIFF(ptr, text) < len) && ptr.at(0) != NUL)
             ((ß byte c =) (§ ptr.at(0)))
 
-;           int mbyte_blen;
+            (ß int mbyte_blen)
             ;; check if this is the first byte of a multibyte
             (if (< 0 len)
                 ((ß mbyte_blen =) (§ us_ptr2len_cc_len(ptr, BDIFF(text.plus(len), ptr))))
                 ((ß mbyte_blen =) (§ us_ptr2len_cc(ptr)))
             )
 
-;           int u8c;
+            (ß int u8c)
             (if (<= 0 len)
                 ((ß u8c =) (§ us_ptr2char_cc_len(ptr, u8cc, BDIFF(text.plus(len), ptr))))
                 ((ß u8c =) (§ us_ptr2char_cc(ptr, u8cc)))
@@ -55001,7 +56241,7 @@
                     ((ß clear_next_cell =) (§ true))
                 ))
 
-;               @screenLines.be(off, c);
+                (.be @screenLines off, c)
                 ((ß @screenAttrs[off] =) (§ attr))
 
                 (cond (and (< (char_u c) 0x80) (zero? (§ u8cc[0])))
@@ -55019,7 +56259,7 @@
                     )
                 ))
                 (when (== mbyte_cells 2)
-;                   @screenLines.be(off + 1, NUL);
+                    (§ @screenLines.be(off + 1, NUL))
                     ((ß @screenAttrs[off + 1] =) (§ attr))
                 )
                 (screen_char off, row, col)
@@ -55094,7 +56334,7 @@
         ((ß matchitem_C mi =) (§ wp.w_match_head))
         ((ß boolean shl_flag =) (§ false))               ;; whether search_hl has been processed
         (while (§ mi != null || !shl_flag)
-;           match_C shl;                        ;; points to search_hl or a match
+            (ß match_C shl)                        ;; points to search_hl or a match
             (cond (not shl_flag)
             (§
                 ((ß shl =) (§ @search_hl))
@@ -55178,7 +56418,7 @@
             ;;    Break the loop if this is beyond the end of the line.
             ;; 3. Vi compatible searching: continue at end of previous match.
 
-;           int matchcol;
+            (ß int matchcol)
             (cond (zero? (. shl lnum))
             (§
                 ((ß matchcol =) (§ 0))
@@ -55199,7 +56439,7 @@
                 ((ß matchcol =) (§ shl.rmm.endpos[0].col))
             ))
 
-;           long nmatched;
+            (ß long nmatched)
 
             ((ß shl.lnum =) (§ lnum))
             (cond (!= (.. shl rmm regprog) null)
@@ -55356,7 +56596,7 @@
 
         (when (non-zero? @screen_attr)
             (when (< HL_ALL @screen_attr)                   ;; special HL attr.
-;               attrentry_C aep;
+                (ß attrentry_C aep)
 
                 (cond (< 1 @t_colors)
                 (§
@@ -55453,7 +56693,7 @@
 
         ;; Stop highlighting first, so it's easier to move the cursor.
 
-;       int attr;
+        (ß int attr)
         (if (non-zero? @screen_char_attr)
             ((ß attr =) (§ @screen_char_attr))
             ((ß attr =) (§ @screenAttrs[off]))
@@ -55471,7 +56711,7 @@
             ((ß Bytes buf =) (§ new Bytes(MB_MAXBYTES + 1)))
 
             ;; Convert UTF-8 character to bytes and write it.
-;           buf.be(utfc_char2bytes(off, buf), NUL);
+            (§ buf.be(utfc_char2bytes(off, buf), NUL))
 
             (out_str buf)
             (if (< 1 (utf_char2cells (§ @screenLinesUC[off])))
@@ -55515,8 +56755,8 @@
 
 (defn- #_void redraw_block [#_int row, #_int end, #_window_C wp]
     (§
-;       int col;
-;       int width;
+        (ß int col)
+        (ß int width)
 
         (cond (nil? wp)
         (§
@@ -55589,7 +56829,7 @@
                     (screen_start)                 ;; don't know where cursor is now
                     ((ß col =) (§ end_col - col))
                     (while (§ 0 < col--)                   ;; clear chars in "screenLines"
-;                       @screenLines.be(off, (byte)' ');
+                        (§ @screenLines.be(off, (byte)' '))
                         ((ß @screenLinesUC[off] =) (§ 0))
                         ((ß @screenAttrs[off] =) (§ 0))
                         (§ off++)
@@ -55616,7 +56856,7 @@
                             ((ß force_next =) (§ false))
                         ))
                     )
-;                   @screenLines.be(off, c);
+                    (.be @screenLines off, c)
                     (cond (<= 0x80 c)
                     (§
                         ((ß @screenLinesUC[off] =) (§ c))
@@ -55805,7 +57045,7 @@
 
             (reset! must_redraw CLEAR)        ;; need to clear the screen later
             (if doclear
-;               screenclear2();
+                (screenclear2)
             )
 
             (reset! _4_entered false)
@@ -55828,7 +57068,7 @@
     (§
         (check_for_delay false)
         (screenalloc false)             ;; allocate screen buffers if size changed
-;       screenclear2();                 ;; clear the screen
+        (screenclear2)                 ;; clear the screen
     ))
 
 (defn- #_void screenclear2 []
@@ -55943,7 +57183,7 @@
         )
 
         (when (or (!= col @screen_cur_col) (!= row @screen_cur_row))
-;           int cost;
+            (ß int cost)
 
             ;; Check for valid position.
             (if (< row 0)    ;; window without text lines?
@@ -55957,7 +57197,7 @@
             )
 
             ;; check if no cursor movement is allowed in highlight mode
-;           int noinvcurs;
+            (ß int noinvcurs)
             (if (and (non-zero? @screen_attr) (eos? @T_MS))
                 ((ß noinvcurs =) (§ HIGHL_COST))
                 ((ß noinvcurs =) (§ 0))
@@ -55979,8 +57219,8 @@
 
             (cond (and (<= @screen_cur_row row) (< @screen_cur_col (int @Columns)))
             (§
-;               int plan;
-;               int wouldbe_col;
+                (ß int plan)
+                (ß int wouldbe_col)
 
                 ;; If the cursor is in the same row, bigger col, we can use CR or T_LE.
 
@@ -56305,7 +57545,7 @@
             (if (and @scroll_region (or (== (. wp w_width) (int @Columns)) (non-eos? @T_CSV)))
                 (scroll_region_set wp, row))
 
-;           boolean r;
+            (ß boolean r)
             (if del
                 ((ß r =) (§ screen_del_lines(wp.w_winrow + row, 0, line_count, wp.w_height - row, false, wp)))
                 ((ß r =) (§ screen_ins_lines(wp.w_winrow + row, 0, line_count, wp.w_height - row, wp)))
@@ -56399,7 +57639,7 @@
 
         ((ß boolean result_empty =) (§ (end <= row + line_count)))
 
-;       int type;
+        (ß int type)
         (cond (and (non-nil? wp) (!= (. wp w_width) (int @Columns)) (eos? @T_CSV))
         (§
             ((ß type =) (§ USE_REDRAW))
@@ -56561,7 +57801,7 @@
 
         ((ß boolean can_delete =) (§ (@T_DB.at(0) == NUL || can_clear(@T_CE))))
 
-;       int type;
+        (ß int type)
 
         ;; There are six ways to delete lines:
         ;;
@@ -56774,18 +58014,41 @@
                     (msg_puts_attr (u8 " (paste)"), attr))
 
                 (when @VIsual_active
-;                   Bytes p;
+                    (ß Bytes p)
 
                     ;; Don't concatenate separate words to avoid translation problems.
-;                   switch ((@VIsual_select ? 4 : 0) + ((@VIsual_mode == Ctrl_V) ? 2 : 0) + ((@VIsual_mode == (byte)'V') ? 1 : 0))
-;                   {
-;                       case 0: p = u8(" VISUAL"); break;
-;                       case 1: p = u8(" VISUAL LINE"); break;
-;                       case 2: p = u8(" VISUAL BLOCK"); break;
-;                       case 4: p = u8(" SELECT"); break;
-;                       case 5: p = u8(" SELECT LINE"); break;
-;                       default: p = u8(" SELECT BLOCK"); break;
-;                   }
+                    ((ß SWITCH) (§ (@VIsual_select ? 4 : 0) + ((@VIsual_mode == Ctrl_V) ? 2 : 0) + ((@VIsual_mode == (byte)'V') ? 1 : 0))
+                        ((ß CASE) (§ 0))
+                        (§
+                            ((ß p =) (§ u8(" VISUAL")))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ 1))
+                        (§
+                            ((ß p =) (§ u8(" VISUAL LINE")))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ 2))
+                        (§
+                            ((ß p =) (§ u8(" VISUAL BLOCK")))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ 4))
+                        (§
+                            ((ß p =) (§ u8(" SELECT")))
+                            (ß BREAK)
+                        )
+                        ((ß CASE) (§ 5))
+                        (§
+                            ((ß p =) (§ u8(" SELECT LINE")))
+                            (ß BREAK)
+                        )
+                        (ß DEFAULT)
+                        (§
+                            ((ß p =) (§ u8(" SELECT BLOCK")))
+                            (ß BREAK)
+                        )
+                    )
                     (msg_puts_attr p, attr)
                 )
                 (msg_puts_attr (u8 " --"), attr)
@@ -56867,7 +58130,7 @@
 
 (defn- #_int fillchar_status [#_int* attr, #_boolean is_curwin]
     (§
-;       int fill;
+        (ß int fill)
         (cond is_curwin
         (§
             ((ß attr[0] =) (§ hl_attr(HLF_S)))
@@ -56952,7 +58215,7 @@
         (when (§ @redraw_cmdline || always || wp.w_cursor.lnum != wp.w_ru_cursor.lnum || wp.w_cursor.col != wp.w_ru_cursor.col || wp.w_virtcol != wp.w_ru_virtcol || wp.w_cursor.coladd != wp.w_ru_cursor.coladd || wp.w_topline != wp.w_ru_topline || @curbuf.b_ml.ml_line_count != wp.w_ru_line_count || empty_line != wp.w_ru_empty)
             (cursor_off)
 
-;           int row, fillchar, off, width;
+            (ß int row, fillchar, off, width)
             ((ß int[] attr =) (§ new int[1]))
             (cond (!= (. wp w_status_height) 0)
             (§
@@ -57013,14 +58276,14 @@
             ((ß FOR) (ß (§ int i = 0) (§ buffer.at(i) != NUL) (§ i += us_ptr2len_cc(buffer.plus(i))))
                 ((ß ooo +=) (§ us_ptr2cells(buffer.plus(i))))
                 (when (< width (+ this_ru_col ooo))
-;                   buffer.be(i, NUL);
+                    (.be buffer i, NUL)
                     (ß BREAK)
                 )
             )
 
             (screen_puts buffer, row, (+ this_ru_col off), (§ attr[0]))
             ((ß boolean iii =) (§ @redraw_cmdline))
-;           screen_fill(row, row + 1, this_ru_col + off + STRLEN(buffer), off + width, fillchar, fillchar, attr[0]);
+            (§ screen_fill(row, row + 1, this_ru_col + off + STRLEN(buffer), off + width, fillchar, fillchar, attr[0]))
             ;; don't redraw the cmdline because of showing the ruler
             (reset! redraw_cmdline iii)
             (COPY_pos (. wp w_ru_cursor), (. wp w_cursor))
@@ -57037,7 +58300,7 @@
 
 (defn- #_int number_width [#_window_C wp]
     (§
-;       long lnum;
+        (ß long lnum)
         (cond (and @(.. wp w_options wo_rnu) (not @(.. wp w_options wo_nu)))
         (§
             ;; cursor line shows "0"
@@ -57101,12 +58364,12 @@
 
         ((ß long Prenum1 =) (§ (Prenum == 0) ? 1 : Prenum))
 
-;       switch (nchar)
-;       {
+        ((ß SWITCH) (§ nchar)
             ;; split current window in two parts, horizontally
-;           case (byte)'S':
-;           case Ctrl_S:
-;           case (byte)'s':
+            ((ß CASE) (§ (byte)'S'))
+            ((ß CASE) (§ Ctrl_S))
+            ((ß CASE) (§ (byte)'s'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57114,10 +58377,12 @@
                 (reset_VIsual_and_resel)
                 (win_split (int Prenum), 0)
                 (ß BREAK)
+            )
 
             ;; split current window in two parts, vertically
-;           case Ctrl_V:
-;           case (byte)'v':
+            ((ß CASE) (§ Ctrl_V))
+            ((ß CASE) (§ (byte)'v'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57125,26 +58390,32 @@
                 (reset_VIsual_and_resel)
                 (win_split (int Prenum), WSP_VERT)
                 (ß BREAK)
+            )
 
             ;; quit current window
-;           case Ctrl_Q:
-;           case (byte)'q':
+            ((ß CASE) (§ Ctrl_Q))
+            ((ß CASE) (§ (byte)'q'))
+            (§
                 (reset_VIsual_and_resel)
                 (cmd_with_count (u8 "quit"), cbuf, (§ cbuf.size()), Prenum)
                 (do_cmdline_cmd cbuf)
                 (ß BREAK)
+            )
 
             ;; close current window
-;           case Ctrl_C:
-;           case (byte)'c':
+            ((ß CASE) (§ Ctrl_C))
+            ((ß CASE) (§ (byte)'c'))
+            (§
                 (reset_VIsual_and_resel)
                 (cmd_with_count (u8 "close"), cbuf, (§ cbuf.size()), Prenum)
                 (do_cmdline_cmd cbuf)
                 (ß BREAK)
+            )
 
             ;; close all but current window
-;           case Ctrl_O:
-;           case (byte)'o':
+            ((ß CASE) (§ Ctrl_O))
+            ((ß CASE) (§ (byte)'o'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57153,12 +58424,14 @@
                 (cmd_with_count (u8 "only"), cbuf, (§ cbuf.size()), Prenum)
                 (do_cmdline_cmd cbuf)
                 (ß BREAK)
+            )
 
             ;; cursor to next window with wrap around
-;           case Ctrl_W:
-;           case (byte)'w':
+            ((ß CASE) (§ Ctrl_W))
+            ((ß CASE) (§ (byte)'w'))
             ;; cursor to previous window with wrap around
-;           case (byte)'W':
+            ((ß CASE) (§ (byte)'W'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57169,7 +58442,7 @@
                 )
                 :else
                 (§
-;                   window_C wp;
+                    (ß window_C wp)
                     (cond (non-zero? Prenum)                    ;; go to specified window
                     (§
                         ((ß FOR) (ß (§ wp = @firstwin) (§ 0 < --Prenum) (§ nil))
@@ -57199,85 +58472,103 @@
                     (win_goto wp)
                 ))
                 (ß BREAK)
+            )
 
             ;; cursor to window below
-;           case (byte)'j':
-;           case K_DOWN:
-;           case Ctrl_J:
+            ((ß CASE) (§ (byte)'j'))
+            ((ß CASE) (§ K_DOWN))
+            ((ß CASE) (§ Ctrl_J))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
                 (win_goto_ver false, Prenum1)
                 (ß BREAK)
+            )
 
             ;; cursor to window above
-;           case (byte)'k':
-;           case K_UP:
-;           case Ctrl_K:
+            ((ß CASE) (§ (byte)'k'))
+            ((ß CASE) (§ K_UP))
+            ((ß CASE) (§ Ctrl_K))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
                 (win_goto_ver true, Prenum1)
                 (ß BREAK)
+            )
 
             ;; cursor to left window
-;           case (byte)'h':
-;           case K_LEFT:
-;           case Ctrl_H:
-;           case K_BS:
+            ((ß CASE) (§ (byte)'h'))
+            ((ß CASE) (§ K_LEFT))
+            ((ß CASE) (§ Ctrl_H))
+            ((ß CASE) (§ K_BS))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
                 (win_goto_hor true, Prenum1)
                 (ß BREAK)
+            )
 
             ;; cursor to right window
-;           case (byte)'l':
-;           case K_RIGHT:
-;           case Ctrl_L:
+            ((ß CASE) (§ (byte)'l'))
+            ((ß CASE) (§ K_RIGHT))
+            ((ß CASE) (§ Ctrl_L))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
                 (win_goto_hor false, Prenum1)
                 (ß BREAK)
+            )
 
             ;; cursor to top-left window
-;           case (byte)'t':
-;           case Ctrl_T:
+            ((ß CASE) (§ (byte)'t'))
+            ((ß CASE) (§ Ctrl_T))
+            (§
                 (win_goto @firstwin)
                 (ß BREAK)
+            )
 
             ;; cursor to bottom-right window
-;           case (byte)'b':
-;           case Ctrl_B:
+            ((ß CASE) (§ (byte)'b'))
+            ((ß CASE) (§ Ctrl_B))
+            (§
                 (win_goto @lastwin)
                 (ß BREAK)
+            )
 
             ;; cursor to last accessed (previous) window
-;           case (byte)'p':
-;           case Ctrl_P:
+            ((ß CASE) (§ (byte)'p'))
+            ((ß CASE) (§ Ctrl_P))
+            (§
                 (if (nil? @prevwin)
                     (beep_flush)
                     (win_goto @prevwin))
                 (ß BREAK)
+            )
 
             ;; exchange current and next window
-;           case (byte)'x':
-;           case Ctrl_X:
+            ((ß CASE) (§ (byte)'x'))
+            ((ß CASE) (§ Ctrl_X))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
                 (win_exchange Prenum)
                 (ß BREAK)
+            )
 
             ;; rotate windows downwards
-;           case Ctrl_R:
-;           case (byte)'r':
+            ((ß CASE) (§ Ctrl_R))
+            ((ß CASE) (§ (byte)'r'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57285,9 +58576,11 @@
                 (reset_VIsual_and_resel)
                 (win_rotate false, (int Prenum1))
                 (ß BREAK)
+            )
 
             ;; rotate windows upwards
-;           case (byte)'R':
+            ((ß CASE) (§ (byte)'R'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57295,58 +58588,76 @@
                 (reset_VIsual_and_resel)
                 (win_rotate true, (int Prenum1))
                 (ß BREAK)
+            )
 
             ;; move window to the very top/bottom/left/right
-;           case (byte)'K':
-;           case (byte)'J':
-;           case (byte)'H':
-;           case (byte)'L':
+            ((ß CASE) (§ (byte)'K'))
+            ((ß CASE) (§ (byte)'J'))
+            ((ß CASE) (§ (byte)'H'))
+            ((ß CASE) (§ (byte)'L'))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
                 )
-;               win_totop((int)Prenum, ((nchar == (byte)'H' || nchar == (byte)'L') ? WSP_VERT : 0) | ((nchar == (byte)'H' || nchar == (byte)'K') ? WSP_TOP : WSP_BOT));
+                (§ win_totop((int)Prenum, ((nchar == (byte)'H' || nchar == (byte)'L') ? WSP_VERT : 0) | ((nchar == (byte)'H' || nchar == (byte)'K') ? WSP_TOP : WSP_BOT)))
                 (ß BREAK)
+            )
 
             ;; make all windows the same height
-;           case (byte)'=':
+            ((ß CASE) (§ (byte)'='))
+            (§
                 (win_equal null, false, (byte \b))
                 (ß BREAK)
+            )
 
             ;; increase current window height
-;           case (byte)'+':
+            ((ß CASE) (§ (byte)'+'))
+            (§
                 (win_setheight (§ @curwin.w_height + (int)Prenum1))
                 (ß BREAK)
+            )
 
             ;; decrease current window height
-;           case (byte)'-':
+            ((ß CASE) (§ (byte)'-'))
+            (§
                 (win_setheight (§ @curwin.w_height - (int)Prenum1))
                 (ß BREAK)
+            )
 
             ;; set current window height
-;           case Ctrl__:
-;           case (byte)'_':
+            ((ß CASE) (§ Ctrl__))
+            ((ß CASE) (§ (byte)'_'))
+            (§
                 (win_setheight (if (non-zero? Prenum) (int Prenum) 9999))
                 (ß BREAK)
+            )
 
             ;; increase current window width
-;           case (byte)'>':
+            ((ß CASE) (§ (byte)'>'))
+            (§
                 (win_setwidth (§ @curwin.w_width + (int)Prenum1))
                 (ß BREAK)
+            )
 
             ;; decrease current window width
-;           case (byte)'<':
+            ((ß CASE) (§ (byte)'<'))
+            (§
                 (win_setwidth (§ @curwin.w_width - (int)Prenum1))
                 (ß BREAK)
+            )
 
             ;; set current window width
-;           case (byte)'|':
+            ((ß CASE) (§ (byte)'|'))
+            (§
                 (win_setwidth (if (non-zero? Prenum) (int Prenum) 9999))
                 (ß BREAK)
+            )
 
             ;; jump to tag and split window if tag exists (in preview window)
-;           case (byte)']':
-;           case Ctrl_RSB:
+            ((ß CASE) (§ (byte)']'))
+            ((ß CASE) (§ Ctrl_RSB))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57360,14 +58671,18 @@
                 ;; required when "wincmd ]" was used in a function.
                 (do_nv_ident Ctrl_RSB, NUL)
                 (ß BREAK)
+            )
 
-;           case K_KENTER:
-;           case CAR:
+            ((ß CASE) (§ K_KENTER))
+            ((ß CASE) (§ CAR))
+            (§
                 (ß BREAK)
+            )
 
             ;; CTRL-W g extended commands.
-;           case (byte)'g':
-;           case Ctrl_G:
+            ((ß CASE) (§ (byte)'g'))
+            ((ß CASE) (§ Ctrl_G))
+            (§
                 (when (non-zero? @cmdwin_type)
                     (emsg e_cmdwin)
                     (ß BREAK)
@@ -57380,10 +58695,10 @@
                 (swap! no_mapping dec)
                 (swap! allow_keys dec)
                 (add_to_showcmd xchar)
-;               switch (xchar)
-;               {
-;                   case (byte)']':
-;                   case Ctrl_RSB:
+                ((ß SWITCH) (§ xchar)
+                    ((ß CASE) (§ (byte)']'))
+                    ((ß CASE) (§ Ctrl_RSB))
+                    (§
                         ;; keep Visual mode, can select words to use as a tag
                         (if (non-zero? Prenum)
                             (reset! postponed_split (int Prenum))
@@ -57393,17 +58708,23 @@
                         ;; required when "wincmd g}" was used in a function.
                         (do_nv_ident (byte \g), xchar)
                         (ß BREAK)
+                    )
 
-;                   default:
+                    (ß DEFAULT)
+                    (§
                         (beep_flush)
                         (ß BREAK)
-;               }
+                    )
+                )
                 (ß BREAK)
+            )
 
-;           default:
+            (ß DEFAULT)
+            (§
                 (beep_flush)
                 (ß BREAK)
-;       }
+            )
+        )
     ))
 
 (defn- #_void cmd_with_count [#_Bytes cmd, #_Bytes bufp, #_int bufsize, #_long Prenum]
@@ -57447,7 +58768,7 @@
         ((ß boolean do_equal =) (§ false))
         ((ß int oldwin_height =) (§ 0))
 
-;       window_C oldwin;
+        (ß window_C oldwin)
         (cond (non-zero? (& flags WSP_TOP))
         (§
             ((ß oldwin =) (§ @firstwin))
@@ -57471,7 +58792,7 @@
             ((ß need_status =) (§ STATUS_HEIGHT))
         )
 
-;       byte layout;
+        (ß byte layout)
         (cond (non-zero? (& flags WSP_VERT))
         (§
             ((ß layout =) (§ FR_ROW))
@@ -57481,8 +58802,8 @@
             ;; Current window requires at least 1 space.
             ((ß int wmw1 =) (§ (@p_wmw == 0) ? 1 : (int)@p_wmw))
             ((ß int needed =) (§ wmw1 + 1))
-;           int minwidth;
-;           int available;
+            (ß int minwidth)
+            (ß int available)
             (cond (non-zero? (§ flags & (WSP_BOT | WSP_TOP)))
             (§
                 ((ß minwidth =) (§ frame_minwidth(@topframe, NOWIN)))
@@ -57558,8 +58879,8 @@
             ;; Current window requires at least 1 space.
             ((ß int wmh1 =) (§ (@p_wmh == 0) ? 1 : (int)@p_wmh))
             ((ß int needed =) (§ wmh1 + STATUS_HEIGHT))
-;           int minheight;
-;           int available;
+            (ß int minheight)
+            (ß int available)
             (cond (non-zero? (§ flags & (WSP_BOT | WSP_TOP)))
             (§
                 ((ß minheight =) (§ frame_minheight(@topframe, NOWIN) + need_status))
@@ -57668,8 +58989,8 @@
 
         ;; Reorganise the tree of frames to insert the new window.
 
-;       frame_C curfrp;
-;       boolean before;
+        (ß frame_C curfrp)
+        (ß boolean before)
         (cond (non-zero? (§ flags & (WSP_TOP | WSP_BOT)))
         (§
             (cond (or (and (== (. @topframe fr_layout) FR_COL) (zero? (& flags WSP_VERT))) (and (== (. @topframe fr_layout) FR_ROW) (non-zero? (& flags WSP_VERT))))
@@ -57731,7 +59052,7 @@
             ))
         )
 
-;       frame_C frp;
+        (ß frame_C frp)
         (if (nil? new_wp)
             ((ß frp =) (§ wp.w_frame))
             ((ß frp =) (§ new_wp.w_frame))
@@ -57873,7 +59194,7 @@
             (win_equal wp, true, (if (non-zero? (& flags WSP_VERT)) (if (== dir (byte \v)) (byte \b) (byte \h)) (if (== dir (byte \h)) (byte \b) (byte \v)))))
 
         ;; Don't change the window height/width to 'winheight' / 'winwidth' if a size was given.
-;       int i;
+        (ß int i)
         (cond (non-zero? (& flags WSP_VERT))
         (§
             ((ß i =) (§ (int)@p_wiw))
@@ -57953,7 +59274,7 @@
             (ß RETURN)
         )
 
-;       frame_C frp;
+        (ß frame_C frp)
 
         ;; find window to exchange with
 
@@ -58046,7 +59367,7 @@
             (ß RETURN)
         )
 
-;       frame_C frp;
+        (ß frame_C frp)
         ;; Check if all frames in this row/col have one window.
         ((ß FOR) (ß (§ frp = @curwin.w_frame.fr_parent.fr_child) (§ frp != null) (§ frp = frp.fr_next))
             (when (nil? (. frp fr_win))
@@ -58056,7 +59377,7 @@
         )
 
         (while (§ 0 < count--)
-;           window_C wp1, wp2;
+            (ß window_C wp1, wp2)
 
             (cond upwards            ;; first window becomes last window
             (§
@@ -58168,7 +59489,7 @@
     ;; height: new height of frame
     (§
         ((ß int extra_sep =) (§ 0))
-;       int wincount, totwincount = 0;
+        (ß int wincount, totwincount = 0)
         ((ß int next_curwin_size =) (§ 0))
         ((ß int room =) (§ 0))
         ((ß boolean has_next_curwin =) (§ false))
@@ -58266,7 +59587,7 @@
 
             ((ß FOR) (ß (§ frame_C fr = topfr.fr_child) (§ fr != null) (§ fr = fr.fr_next))
                 ((ß wincount =) (§ 1))
-;               int new_size;
+                (ß int new_size)
                 (cond (nil? (. fr fr_next))
                 (§
                     ;; last frame gets all that remains (avoid roundoff error)
@@ -58287,7 +59608,7 @@
                     ((ß int n =) (§ frame_minwidth(fr, NOWIN)))
                     ((ß wincount =) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / ((int)@p_wmw + 1)))
                     ((ß int m =) (§ frame_minwidth(fr, next_curwin)))
-;                   boolean hnc;
+                    (ß boolean hnc)
                     (if has_next_curwin
                         ((ß hnc =) (§ frame_has_win(fr, next_curwin)))
                         ((ß hnc =) (§ false))
@@ -58403,7 +59724,7 @@
 
             ((ß FOR) (ß (§ frame_C fr = topfr.fr_child) (§ fr != null) (§ fr = fr.fr_next))
                 ((ß wincount =) (§ 1))
-;               int new_size;
+                (ß int new_size)
                 (cond (nil? (. fr fr_next))
                 (§
                     ;; last frame gets all that remains (avoid roundoff error)
@@ -58424,7 +59745,7 @@
                     ((ß int n =) (§ frame_minheight(fr, NOWIN)))
                     ((ß wincount =) (§ (n + (fr.fr_next == null ? extra_sep : 0)) / ((int)@p_wmh + 1)))
                     ((ß int m =) (§ frame_minheight(fr, next_curwin)))
-;                   boolean hnc;
+                    (ß boolean hnc)
                     (if has_next_curwin
                         ((ß hnc =) (§ frame_has_win(fr, next_curwin)))
                         ((ß hnc =) (§ false))
@@ -58587,7 +59908,7 @@
                     )
                 )
             )
-;           frame_new_height(frp2, frp2.fr_height + frp_close.fr_height, (frp2 == frp_close.fr_next) ? true : false, false);
+            (§ frame_new_height(frp2, frp2.fr_height + frp_close.fr_height, (frp2 == frp_close.fr_next) ? true : false, false))
             ((ß dirp[0] =) (§ (byte)'v'))
         )
         :else
@@ -58730,7 +60051,7 @@
         )
         (== (. topfrp fr_layout) FR_ROW)
         (§
-;           frame_C frp;
+            (ß frame_C frp)
 ;           do
 ;           {
                 ;; All frames in this row get the same new height.
@@ -58925,7 +60246,7 @@
             ;; Simple case: just one window.
             ((ß window_C wp =) (§ topfrp.fr_win))
             ;; Find out if there are any windows right of this one.
-;           frame_C frp;
+            (ß frame_C frp)
             ((ß FOR) (ß (§ frp = topfrp) (§ frp.fr_parent != null) (§ frp = frp.fr_parent))
                 (if (and (== (.. frp fr_parent fr_layout) FR_ROW) (!= (. frp fr_next) null))
                     (ß BREAK)
@@ -58938,7 +60259,7 @@
         )
         (== (. topfrp fr_layout) FR_COL)
         (§
-;           frame_C frp;
+            (ß frame_C frp)
 ;           do
 ;           {
                 ;; All frames in this column get the same new width.
@@ -59079,7 +60400,7 @@
 
 (defn- #_int frame_minheight [#_frame_C topfrp, #_window_C next_curwin]
     (§
-;       int m;
+        (ß int m)
 
         (cond (!= (. topfrp fr_win) null)
         (§
@@ -59127,7 +60448,7 @@
 (defn- #_int frame_minwidth [#_frame_C topfrp, #_window_C next_curwin]
     ;; next_curwin: use "p_wh" and "p_wiw" for next_curwin
     (§
-;       int m;
+        (ß int m)
 
         (cond (!= (. topfrp fr_win) null)
         (§
@@ -59312,7 +60633,7 @@
 
 ;       end:
         (while (§ 0 < count--)
-;           frame_C nfr;
+            (ß frame_C nfr)
 
             ;; First go upwards in the tree of frames until we find a upwards or downwards neighbor.
 
@@ -59366,7 +60687,7 @@
 
 ;       end:
         (while (§ 0 < count--)
-;           frame_C nfr;
+            (ß frame_C nfr)
 
             ;; First go upwards in the tree of frames until we find a left or right neighbor.
 
@@ -59512,7 +60833,7 @@
 
 (defn- #_void win_append [#_window_C after, #_window_C wp]
     (§
-;       window_C before;
+        (ß window_C before)
         (if (nil? after)      ;; after null is in front of the first
             ((ß before =) (§ @firstwin))
             ((ß before =) (§ after.w_next))
@@ -59849,7 +61170,7 @@
             ;; If that is not enough, takes lines from frames above the current frame.
 
             ((ß FOR) (ß (§ int run = 0) (§ run < 2) (§ run++))
-;               frame_C frp;
+                (ß frame_C frp)
                 (if (zero? run)
                     ((ß frp =) (§ curfrp.fr_next))   ;; 1st run: start with next window
                     ((ß frp =) (§ curfrp.fr_prev))   ;; 2nd run: start with prev window
@@ -60014,7 +61335,7 @@
             ;; If that is not enough, takes lines from frames left of the current frame.
 
             ((ß FOR) (ß (§ int run = 0) (§ run < 2) (§ run++))
-;               frame_C frp;
+                (ß frame_C frp)
                 (if (zero? run)
                     ((ß frp =) (§ curfrp.fr_next))   ;; 1st run: start with next window
                     ((ß frp =) (§ curfrp.fr_prev))   ;; 2nd run: start with prev window
@@ -60378,7 +61699,7 @@
         :else
         (§
             ;; horizontally split window, set status line for last one
-;           frame_C fp;
+            (ß frame_C fp)
             ((ß FOR) (ß (§ fp = fr.fr_child) (§ fp.fr_next != null) (§ fp = fp.fr_next))
                 ;
             )
@@ -60482,8 +61803,8 @@
 
 (defn- #_void comp_botline [#_window_C wp]
     (§
-;       long lnum;
-;       int done;
+        (ß long lnum)
+        (ß int done)
 
         ;; If w_cline_row is valid, start there.
         ;; Otherwise have to start at w_topline.
@@ -61075,14 +62396,14 @@
             ((ß int off_left =) (§ startcol[0] - @curwin.w_leftcol - (int)@p_siso))
             ((ß int off_right =) (§ endcol[0] - (@curwin.w_leftcol + @curwin.w_width - (int)@p_siso) + 1))
             (when (or (< off_left 0) (< 0 off_right))
-;               int diff;
+                (ß int diff)
                 (if (< off_left 0)
                     ((ß diff =) (§ -off_left))
                     ((ß diff =) (§ off_right))
                 )
 
                 ;; When far off or not enough room on either side, put cursor in middle of window.
-;               int new_leftcol;
+                (ß int new_leftcol)
                 (cond (or (zero? @p_ss) (<= (/ textwidth 2) diff) (<= off_left off_right))
                 (§
                     ((ß new_leftcol =) (§ @curwin.w_wcol - extra - textwidth / 2))
@@ -61137,7 +62458,7 @@
                 ((ß p_lines =) (§ plines_win(@curwin, @curwin.w_cursor.lnum, false)))
             )
             (§ --p_lines)
-;           int n;
+            (ß int n)
             (if (§ @curwin.w_wrow + @p_so < p_lines)
                 ((ß n =) (§ @curwin.w_wrow + (int)@p_so))
                 ((ß n =) (§ p_lines))
@@ -61509,7 +62830,7 @@
             )
         )
 
-;       long line_count;
+        (ß long line_count)
         ;; curwin.w_empty_rows is larger, no need to scroll
         (cond (<= scrolled 0)
         (§
@@ -61525,7 +62846,7 @@
         (§
             ((ß line_count =) (§ 0))
             ((ß boff.lnum =) (§ @curwin.w_topline - 1))
-;           int i;
+            (ß int i)
             ((ß FOR) (ß (§ i = 0) (§ i < scrolled && boff.lnum < @curwin.w_botline) (§ nil))
                 (botline_forw boff)
                 ((ß i +=) (§ boff.height))
@@ -62122,7 +63443,7 @@
 
         ;; This is a new combination of colors and font, add an entry.
 
-;       table.ga_grow(1);
+        (§ table.ga_grow(1))
 
         ((ß attrentry_C taep =) (§ table.ga_data[table.ga_len++] = §_attrentry_C()))
 
@@ -62170,7 +63491,7 @@
 (defn- #_int hl_combine_attr [#_int char_attr, #_int prim_attr]
     (§
         ((ß attrentry_C char_aep =) (§ null))
-;       attrentry_C spell_aep;
+        (ß attrentry_C spell_aep)
 
         (if (zero? char_attr)
             ((ß RETURN) (§ prim_attr))
@@ -62257,7 +63578,7 @@
 
 (defn- #_int syn_attr2attr [#_int attr]
     (§
-;       attrentry_C aep;
+        (ß attrentry_C aep)
 
         (if (< 1 @t_colors)
             ((ß aep =) (§ syn_cterm_attr2entry(attr)))
@@ -62347,7 +63668,7 @@
 
         ((ß hl_group_C[] hlt =) (§ @highlight_ga.ga_data))
 
-;       int i;
+        (ß int i)
         ((ß FOR) (ß (§ i = @highlight_ga.ga_len) (§ 0 <= --i) (§ nil))
             (if (and (!= (§ hlt[i].sg_name_u) null) (zero? (§ STRCMP(name_u, hlt[i].sg_name_u))))
                 (ß BREAK)
@@ -62480,7 +63801,7 @@
         ;; Then use the attributes from the 'highlight' option.
 
         ((ß FOR) (ß (§ int i = 0) (§ i < 2) (§ i++))
-;           Bytes p;
+            (ß Bytes p)
             (if (non-zero? i)
                 ((ß p =) (§ @p_hl))
                 ((ß p =) (§ get_highlight_default()))
@@ -62490,7 +63811,7 @@
             )
 
             (while (§ p.at(0) != NUL)
-;               int hlf;
+                (ß int hlf)
                 ((ß FOR) (ß (§ hlf = 0) (§ hlf < HLF_COUNT) (§ hlf++))
                     (if (== (§ hl_flags[hlf]) (.at p 0))
                         (ß BREAK)
@@ -62513,31 +63834,44 @@
                         ((ß RETURN) (§ false))
                     )
 
-;                   switch (p.at(0))
-;                   {
-;                       case (byte)'b':
+                    ((ß SWITCH) (§ p.at(0))
+                        ((ß CASE) (§ (byte)'b'))
+                        (§
                             ((ß attr |=) (§ HL_BOLD))
                             (ß BREAK)
-;                       case (byte)'i':
+                        )
+                        ((ß CASE) (§ (byte)'i'))
+                        (§
                             ((ß attr |=) (§ HL_ITALIC))
                             (ß BREAK)
-;                       case (byte)'-':
-;                       case (byte)'n':                       ;; no highlighting
+                        )
+                        ((ß CASE) (§ (byte)'-'))
+                        ((ß CASE) (§ (byte)'n'))                       ;; no highlighting
+                        (§
                             (ß BREAK)
-;                       case (byte)'r':
+                        )
+                        ((ß CASE) (§ (byte)'r'))
+                        (§
                             ((ß attr |=) (§ HL_INVERSE))
                             (ß BREAK)
-;                       case (byte)'s':
+                        )
+                        ((ß CASE) (§ (byte)'s'))
+                        (§
                             ((ß attr |=) (§ HL_STANDOUT))
                             (ß BREAK)
-;                       case (byte)'u':
+                        )
+                        ((ß CASE) (§ (byte)'u'))
+                        (§
                             ((ß attr |=) (§ HL_UNDERLINE))
                             (ß BREAK)
-;                       case (byte)'c':
+                        )
+                        ((ß CASE) (§ (byte)'c'))
+                        (§
                             ((ß attr |=) (§ HL_UNDERCURL))
                             (ß BREAK)
-;                       case (byte)':':
-;                       {
+                        )
+                        ((ß CASE) (§ (byte)'))':
+                        (§
                             ((ß p =) (§ p.plus(1)))                        ;; highlight group name
                             (if (or (non-zero? attr) (eos? p))      ;; no combinations
                                 ((ß RETURN) (§ false))
@@ -62561,10 +63895,12 @@
                                 ((ß id_S =) (§ syn_get_final_id(id)))
                             ))
                             (ß BREAK)
-;                       }
-;                       default:
+                        )
+                        (ß DEFAULT)
+                        (§
                             ((ß RETURN) (§ false))
-;                   }
+                        )
+                    )
                 )
                 ((ß @highlight_attr[hlf] =) (§ attr))
 
@@ -62592,7 +63928,7 @@
 
         ((ß FOR) (ß (§ int i = 0) (§ i < 9) (§ i++))
             ((ß Bytes userhl =) (§ new Bytes(10)))
-;           libC.sprintf(userhl, u8("User%d"), i + 1);
+            (§ libC.sprintf(userhl, u8("User%d"), i + 1))
 
             ((ß int id =) (§ syn_name2id(userhl)))
             (when (non-zero? id)
@@ -62815,7 +64151,7 @@
 
         ;; Set the default values for the options.
 
-;       set_init_1();
+        (set_init_1)
 
         ;; Don't redraw until much later.
         (swap! redrawingDisabled inc)
@@ -62838,7 +64174,7 @@
         (reset! msg_row @cmdline_row)
         (screenalloc false)                     ;; allocate screen buffers
 
-;       set_init_2();
+        (set_init_2)
 
         (reset! msg_scroll true)
         (reset! no_wait_return TRUE)
