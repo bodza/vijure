@@ -2494,60 +2494,35 @@
 ;; If wtime == -1 wait forever for characters.
 
 (defn- #_int mch-inchar [#_Bytes buf, #_int maxlen, #_long wtime, #_int tb_change_cnt]
-    (§
-        ;; Check if window changed size while we were busy, perhaps the ":set columns=99" command was used.
-        (while @do_resize (handle-resize))
-
+    ;; Check if window changed size while we were busy, perhaps the ":set columns=99" command was used.
+    (while @do_resize (handle-resize))
+    (let-when [#_int n
         (cond (<= 0 wtime)
-        (do
-            (loop-when [] (not (waitForChar wtime))         ;; no character available
-                (if (not @do_resize)                     ;; return if not interrupted by resize
-                    ((ß RETURN) 0)
-                )
-                (handle-resize)
-                (recur)
-            )
-        )
-        :else        ;; wtime == -1
-        (do
+            (loop-when [] (not (waitForChar wtime))                 ;; no character available
+                (if @do_resize (do (handle-resize) (recur)) 0))     ;; return if not interrupted by resize
+        (not (waitForChar @p_ut))
             ;; If there is no character available within 'updatetime' seconds, flush all the swap files to disk.
             ;; Also done when interrupted by SIGWINCH.
-
-            (when (not (waitForChar @p_ut))
-                (when (and (trigger-cursorhold) (<= 3 maxlen) (not (typebuf-changed tb_change_cnt)))
-                    (-> buf (.be 0, KB_SPECIAL) (.be 1, KS_EXTRA) (.be 2, KE_CURSORHOLD))
-                    ((ß RETURN) 3)
-                )
-                (before-blocking)
-            )
-        ))
-
-        (loop []                                 ;; repeat until we got a character
-            (while @do_resize (handle-resize))                       ;; window changed size
-
-            ;; We want to be interrupted by the winch signal
+            (if (and (trigger-cursorhold) (<= 3 maxlen) (not (typebuf-changed tb_change_cnt)))
+                (do (-> buf (.be 0, KB_SPECIAL) (.be 1, KS_EXTRA) (.be 2, KE_CURSORHOLD)) 3)
+                (do (before-blocking) nil)
+            ))
+    ] (nil? n) => n
+        (loop []                                                    ;; repeat until we got a character
+            (while @do_resize (handle-resize))                      ;; window changed size
+            ;; We want to be interrupted by the SIGWINCH signal
             ;; or by an event on the monitored file descriptors.
-
-            (when (not (waitForChar -1))
-                (when @do_resize (handle-resize))                      ;; interrupted by SIGWINCH signal
-                ((ß RETURN) 0)
-            )
-
+            (cond (not (waitForChar -1))
+                (do (when @do_resize (handle-resize)) 0)            ;; interrupted by SIGWINCH signal
             ;; If input was put directly in typeahead buffer bail out here.
-            (if (typebuf-changed tb_change_cnt)
-                ((ß RETURN) 0)
-            )
-
+            (typebuf-changed tb_change_cnt)
+                0
             ;; For some terminals we only get one character at a time.
             ;; We want the get all available characters, so we could keep on trying until none is available.
             ;; For some other terminals this is quite slow, that's why we don't do it.
-
-            ((ß int len =) (read-from-input-buf buf, maxlen))
-            (if (< 0 len)
-                ((ß RETURN) len)
-            )
-            (recur)
-        )
+            :else
+                (let [#_int len (read-from-input-buf buf, maxlen)] (if (< 0 len) len (recur)))
+            ))
     ))
 
 (defn- #_void handle-resize []
