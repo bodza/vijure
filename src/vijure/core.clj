@@ -19726,9 +19726,10 @@
         NFA_UPPER, NFA_NUPPER
     ])
 
-(final Bytes e_nul_found       (u8 "E865: (NFA) Regexp end encountered prematurely"))
-(final Bytes e_misplaced       (u8 "E866: (NFA regexp) Misplaced %c"))
-(final Bytes e_ill_char_class  (u8 "E877: (NFA regexp) Invalid character class: %ld"))
+(final Bytes
+    e_nul_found      (u8 "E865: (NFA) Regexp end encountered prematurely"),
+    e_misplaced      (u8 "E866: (NFA regexp) Misplaced %c"),
+    e_ill_char_class (u8 "E877: (NFA regexp) Invalid character class: %ld"))
 
 ;; re_flags passed to nfa-regcomp()
 (atom! int nfa_re_flags)
@@ -20755,10 +20756,7 @@
           state (assoc state :c c)
           _ ((ß _ =) (.out0 state out0))
           _ ((ß _ =) (.out1 state out1))
-          state (assoc state :val 0)
-          state (assoc state :id (inc (count states)))
-          _ ((ß state.lastlist[0] =) 0)
-          _ ((ß state.lastlist[1] =) 0)]
+          state (assoc state :id (inc (count states)))]
         [(conj states state) state]
     ))
 
@@ -21195,7 +21193,7 @@
                         (let [#_int c (:c state)]
                             (when' (any == c NFA_START_INVISIBLE, NFA_START_INVISIBLE_NEG, NFA_START_INVISIBLE_BEFORE, NFA_START_INVISIBLE_BEFORE_NEG) => pat
                                 ;; Do it directly when what follows is possibly the end of the match.
-                                (let [#_boolean directly
+                                (let [#_boolean directly?
                                         (or (match-follows (.. state (out1) (out0)), 0)
                                             (let [#_int ch_invisible (failure-chance (.out0 state), 0) #_int ch_follows (failure-chance (.. state (out1) (out0)), 0)]
                                                 ;; Postpone when the invisible match is expensive or has a lower chance of failing.
@@ -21208,7 +21206,7 @@
                                                     (< ch_follows ch_invisible)
                                                 ))
                                         )]
-                                    (when' directly => pat ;; switch to the _FIRST state
+                                    (when' directly? => pat ;; switch to the _FIRST state
                                         (update-in pat [:states i :c] inc)
                                     ))
                             ))
@@ -21654,7 +21652,7 @@
                     (let [o'listids (int-array (count (:states pat)))]
                         ;; any value of "nfa_listid" will do
                         [(nfa-save-listids pat, o'listids) o'listids])
-                    ;; First recursive nfa-regmatch() call, switch to the second lastlist entry.
+                    ;; First recursive nfa-regmatch() call, switch to the second "lastlist" entry.
                     ;; Make sure "nfa_listid" is different from a previous recursive call, because some states may still have this ID.
                     (do (swap! nfa_ll_index inc)
                         (when (<= @nfa_listid @nfa_alt_listid)
