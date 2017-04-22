@@ -96,7 +96,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq clearpos lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg msg-trunc-attr msg-may-trunc wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg new-vimoption bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-number-default set-init-2 do-set illegal-char didset-options check-options check-buf-options clear-string-option check-string-option did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt check-win-options check-winopt clear-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-cmdline-info COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline save-cmdline-alloc restore-cmdline-alloc cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor find-ident-at-pos prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-gd nv-screengo nv-scroll-line scroll-redraw nv-zet nv-exmode nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-hat nv-Zet do-nv-ident nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-brace nv-mark nv-findpar nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust cleanup-jumplist copy-jumplist set-last-cursor free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers resetRedobuff cancelRedo appendToRedobuff appendToRedobuffLit appendCharToRedobuff appendNumberToRedobuff stuff-string stuffRedoReadbuff stuffReadbuffLen stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi COPY-soffset new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isIDc vim-iswordc us-iswordb us-iswordp vim-isfilec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-win plines-win-nofold plines-win-col plines-m-win ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit line-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance2 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor-col-win check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-in-table get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode starttermcap stoptermcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-win-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screenalloc screenclear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-init-empty win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight win-setheight-win frame-setheight win-setwidth win-setwidth-win frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width COPY-lineoff comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting changed-window-setting-win set-topline changed-cline-bef-curs changed-cline-bef-curs-win changed-line-abv-curs changed-line-abv-curs-win validate-botline invalidate-botline invalidate-botline-win approximate-botline-win cursor-valid validate-cursor curs-rows validate-virtcol validate-virtcol-win validate-cheight validate-cursor-col win-col-off curwin-col-off win-col-off2 curwin-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY--lpos COPY-regmmatch COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame COPY-llpos ARRAY-llpos asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq clearpos lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg new-vimoption bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-number-default set-init-2 do-set illegal-char didset-options check-options check-buf-options clear-string-option check-string-option did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt check-win-options check-winopt clear-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-cmdline-info COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline save-cmdline-alloc restore-cmdline-alloc cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor find-ident-at-pos prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-gd nv-screengo nv-scroll-line scroll-redraw nv-zet nv-exmode nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-hat nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-brace nv-mark nv-findpar nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust cleanup-jumplist copy-jumplist set-last-cursor free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers resetRedobuff cancelRedo appendToRedobuff appendToRedobuffLit appendCharToRedobuff appendNumberToRedobuff stuff-string stuffRedoReadbuff stuffReadbuffLen stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col get-literal insert-special isspecial insertchar redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright oneleft cursor-up cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc ins-start-select ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si get-nolist-virtcol do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi COPY-soffset new-spat search-regcomp get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls fwd-word bck-word end-word bckend-word skip-chars back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-curline ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isIDc vim-iswordc us-iswordb us-iswordp vim-isfilec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent copy-indent get-breakindent-win cin-is-cinword open-line plines plines-win plines-win-nofold plines-win-col plines-m-win ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char del-chars del-bytes truncate-line del-lines gchar inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush vim-beep prepare-to-exit preserve-exit line-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance getvpos coladvance2 inc-cursor incp incl dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor-col-win check-cursor adjust-cursor-col leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strsave-escaped-ext vim-strup vim-strsave-up copy-spaces copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-in-table get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode starttermcap stoptermcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-win-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl next-search-hl-pos screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screenalloc screenclear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines win-del-lines win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-init-empty win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight win-setheight-win frame-setheight win-setwidth win-setwidth-win frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows clear-matches frame-check-height frame-check-width COPY-lineoff comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting changed-window-setting-win set-topline changed-cline-bef-curs changed-cline-bef-curs-win changed-line-abv-curs changed-line-abv-curs-win validate-botline invalidate-botline invalidate-botline-win approximate-botline-win cursor-valid validate-cursor curs-rows validate-virtcol validate-virtcol-win validate-cheight validate-cursor-col win-col-off curwin-col-off win-col-off2 curwin-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -2074,7 +2074,6 @@
 (atom! Bytes    keep_msg)           ;; msg to be shown after redraw
 (atom! int      keep_msg_attr)      ;; highlight attr for "keep_msg"
 (atom! boolean  keep_msg_more)      ;; "keep_msg" was set by msgmore()
-(atom! boolean  need_fileinfo)      ;; do fileinfo() after redraw
 (atom! boolean  msg_scroll)         ;; msg-start() will scroll
 (atom! boolean  msg_didout)         ;; msg_outstr() was used in line
 (atom! boolean  msg_didany)         ;; msg_outstr() was used at all
@@ -3313,35 +3312,6 @@
 (defn- #_void emsg-invreg [#_int name]
     (emsg2 (u8 "E354: Invalid register name: '%s'"), (transchar name))
     nil)
-
-;; Like msg(), but truncate to a single line when "force" is true.
-;; This truncates in another way as for normal messages.
-;; Careful: The string may be changed by msg-may-trunc()!
-;; Returns a pointer to the printed message, if wait-return() not called.
-
-(defn- #_Bytes msg-trunc-attr [#_Bytes s, #_boolean force, #_int attr]
-    (let [s (msg-may-trunc force, s)]
-        (if (msg-attr s, attr) s nil)
-    ))
-
-;; Check if message "s" should be truncated at the start (for filenames).
-;; Return a pointer to where the truncated message starts.
-;; Note: May change the message by replacing a character with '<'.
-
-(defn- #_Bytes msg-may-trunc [#_boolean force, #_Bytes s]
-    (let [#_int room (dec (+ (* (int (- @Rows @cmdline_row 1)) (int @Cols)) @sc_col))]
-        (if (< room (STRLEN s))
-            (let [#_int cells (mb-string2cells s, -1)]
-                (if (<= cells room)
-                    s
-                    (let [#_int n (loop [cells cells #_int n 0] (if (<= room cells) (recur (- cells (us-ptr2cells (.plus s n))) (+ n (us-ptr2len-cc s, n))) n))]
-                        (.be (.plus s (dec n)) 0, (byte \<))
-                    )
-                )
-            )
-            s
-        )
-    ))
 
 ;; wait for the user to hit a key (normally a return)
 ;; if 'redraw' is true, clear and redraw the screen
@@ -6355,7 +6325,7 @@
 
 ;; ":retab".
 
-(defn- #_void ex-retab [#_exarg_C eap]
+(defn- #_exarg_C ex-retab [#_exarg_C eap]
     (§
         ((ß boolean got_tab =) false)
         ((ß int num_spaces =) 0)
@@ -6472,7 +6442,7 @@
 ;;   ^?         ^H
 ;; not ^?       ^?
 
-(defn- #_void ex-fixdel [#_exarg_C _eap]
+(defn- #_exarg_C ex-fixdel [#_exarg_C _eap]
     (let [#_Bytes code (find-termcode (u8 "kb"))]
         (add-termcode (u8 "kD"), (if (and (non-nil? code) (at? code DEL)) CTRL_H_STR DEL_STR))
         nil
@@ -6492,7 +6462,7 @@
 ;;
 ;; The usual escapes are supported as described in the regexp docs.
 
-(defn- #_void ex-sub [#_exarg_C eap]
+(defn- #_exarg_C ex-sub [#_exarg_C eap]
     (§
         ((ß long i =) 0)
 
@@ -9341,7 +9311,7 @@
             ;; Call the function to execute the command.
 
             ((ß ea.errmsg =) nil)
-;           cmdnames[ea.cmdidx].cmd_func(ea);
+;           ea = cmdnames[ea.cmdidx].cmd_func(ea);
             (if (non-nil? (:errmsg ea))
                 ((ß errormsg =) (:errmsg ea))
             )
@@ -9784,7 +9754,7 @@
 
 ;; ":close": close current window, unless it is the last one
 
-(defn- #_void ex-close [#_exarg_C eap]
+(defn- #_exarg_C ex-close [#_exarg_C eap]
     (cond (non-zero? @cmdwin_type)
         (reset! cmdwin_result Ctrl_C)
     (not (text-locked))
@@ -9807,7 +9777,7 @@
 
 ;; ":only".
 
-(defn- #_void ex-only [#_exarg_C eap]
+(defn- #_exarg_C ex-only [#_exarg_C eap]
     (if (< 0 (:addr_count eap))
         (win-goto (loop [#_window_C win @firstwin n (:line2 eap)] (if (and (< 1 n) (non-nil? (:w_next win))) (recur (:w_next win) (dec n)) win))))
     (close-others true, (:forceit eap))
@@ -9815,7 +9785,7 @@
 
 ;; ":stop" and ":suspend": Suspend Vim.
 
-(defn- #_void ex-stop [#_exarg_C eap]
+(defn- #_exarg_C ex-stop [#_exarg_C eap]
     (windgoto (dec (int @Rows)), 0)
     (out-char (byte \newline))
     (out-flush)
@@ -9830,7 +9800,7 @@
 
 ;; ":syncbind" forces all 'scrollbind' windows to have the same relative offset.
 
-(defn- #_void ex-syncbind [#_exarg_C _eap]
+(defn- #_exarg_C ex-syncbind [#_exarg_C _eap]
     (§
         ((ß window_C save_curwin =) @curwin)
         ((ß long old_linenr =) (:lnum (:w_cursor @curwin)))
@@ -9892,7 +9862,7 @@
 
 ;; ":set"
 
-(defn- #_void ex-set [#_exarg_C eap]
+(defn- #_exarg_C ex-set [#_exarg_C eap]
     (do-set (:arg eap))
     nil)
 
@@ -10170,7 +10140,7 @@
                 (when @km_startsel
                     (cond (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SS))
                     (do
-                        (unshift-special ca)
+                        ((ß ca =) (unshift-special ca))
                         ((ß idx =) (find--command (:cmdchar ca)))
                         (when (< idx 0)
                             ;; Just in case.
@@ -10348,7 +10318,7 @@
                 (cond (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SS))
                 (do
                     (start-selection)
-                    (unshift-special ca)
+                    ((ß ca =) (unshift-special ca))
                     ((ß idx =) (find--command (:cmdchar ca)))
                 )
                 (and (non-zero? (& (:cmd_flags (... nv_cmds idx)) NV_SSS)) (flag? @mod_mask MOD_MASK_SHIFT))
@@ -10362,7 +10332,7 @@
             ;; Call the command function found in the commands table.
 
             ((ß ca.arg =) (:cmd_arg (... nv_cmds idx)))
-;           nv_cmds[idx].cmd_func(ca);
+;           ca = nv_cmds[idx].cmd_func(ca);
 
             ;; If we didn't start or finish an operator, reset oap.regname, unless we need it later.
 
@@ -10372,7 +10342,7 @@
 
             ;; If an operation is pending, handle it...
 
-            (do-pending-operator ca, old_col, false)
+            ((ß ca =) (do-pending-operator ca, old_col, false))
 
             ;; Wait for a moment when a message is displayed that will be overwritten by the mode message.
             ;; In Visual mode and with "^O" in Insert mode, a short message will be
@@ -10474,7 +10444,7 @@
 
 ;; Handle an operator after visual mode or when the movement is finished.
 
-(defn- #_void do-pending-operator [#_cmdarg_C cap, #_int old_col, #_boolean gui_yank]
+(defn- #_cmdarg_C do-pending-operator [#_cmdarg_C cap, #_int old_col, #_boolean gui_yank]
     (§
         ((ß oparg_C oap =) (:oap cap))
 
@@ -11340,7 +11310,7 @@
 
 ;; Remove the shift modifier from a special key.
 
-(defn- #_void unshift-special [#_cmdarg_C cap]
+(defn- #_cmdarg_C unshift-special [#_cmdarg_C cap]
     (§
         ((ß cap.cmdchar =) (condp == (:cmdchar cap)
             K_S_RIGHT K_RIGHT
@@ -11654,7 +11624,7 @@
 ;; Command character that's ignored.
 ;; Used for CTRL-Q and CTRL-S to avoid problems with terminals that use xon/xoff.
 
-(defn- #_void nv-ignore [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-ignore [#_cmdarg_C cap]
     (§
         ((ß cap.retval =) (| (:retval cap) CA_COMMAND_BUSY))      ;; don't call edit() now
         nil
@@ -11663,18 +11633,18 @@
 ;; Command character that doesn't do anything, but unlike nv-ignore()
 ;; does start edit().  Used for "startinsert" executed while starting up.
 
-(defn- #_void nv-nop [#_cmdarg_C _cap]
+(defn- #_cmdarg_C nv-nop [#_cmdarg_C _cap]
     nil)
 
 ;; Command character doesn't exist.
 
-(defn- #_void nv-error [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-error [#_cmdarg_C cap]
     (clearopbeep (:oap cap))
     nil)
 
 ;; CTRL-A and CTRL-X: Add or subtract from letter or number under cursor.
 
-(defn- #_void nv-addsub [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-addsub [#_cmdarg_C cap]
     (when (and (not (checkclearopq (:oap cap))) (do-addsub (:cmdchar cap), (:count1 cap)))
         (prep-redo-cmd cap)
     )
@@ -11682,7 +11652,7 @@
 
 ;; CTRL-F, CTRL-B, etc: Scroll page up or down.
 
-(defn- #_void nv-page [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-page [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
         (if (non-flag? @mod_mask MOD_MASK_CTRL)
             (onepage (:arg cap), (:count1 cap)))
@@ -11831,7 +11801,7 @@
 ;; Handle CTRL-E and CTRL-Y commands: scroll a line up or down.
 ;; cap.arg must be TRUE for CTRL-E.
 
-(defn- #_void nv-scroll-line [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-scroll-line [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
         (scroll-redraw (non-zero? (:arg cap)), (:count1 cap))
     )
@@ -11883,7 +11853,7 @@
 
 ;; Commands that start with "z".
 
-(defn- #_void nv-zet [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-zet [#_cmdarg_C cap]
     (§
         ((ß int nchar =) (:nchar cap))
 
@@ -12092,7 +12062,7 @@
 
 ;; "Q" command.
 
-(defn- #_void nv-exmode [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-exmode [#_cmdarg_C cap]
     ;; Ignore 'Q' in Visual mode, just give a beep.
     (cond @VIsual_active
         (vim-beep)
@@ -12103,11 +12073,11 @@
 
 ;; Handle a ":" command.
 
-(defn- #_void nv-colon [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-colon [#_cmdarg_C cap]
     (§
         (cond @VIsual_active
         (do
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         :else
         (do
@@ -12159,7 +12129,7 @@
 
 ;; Handle CTRL-G command.
 
-(defn- #_void nv-ctrlg [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-ctrlg [#_cmdarg_C cap]
     (cond @VIsual_active  ;; toggle Selection/Visual mode
     (do
         (swap! VIsual_select not)
@@ -12168,29 +12138,29 @@
     (not (checkclearop (:oap cap)))
     (do
         ;; print full name if count given
-        (fileinfo (int (:count0 cap)), true)
+        (fileinfo (int (:count0 cap)))
     ))
     nil)
 
 ;; Handle CTRL-H <Backspace> command.
 
-(defn- #_void nv-ctrlh [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-ctrlh [#_cmdarg_C cap]
     (§
         (cond (and @VIsual_active @VIsual_select)
         (do
             ((ß cap.cmdchar =) (byte \x))  ;; BS key behaves like 'x' in Select mode
-            (v-visop cap)
+            ((ß cap =) (v-visop cap))
         )
         :else
         (do
-            (nv-left cap)
+            ((ß cap =) (nv-left cap))
         ))
         nil
     ))
 
 ;; CTRL-L: clear screen and redraw.
 
-(defn- #_void nv-clear [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-clear [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
         (redraw-later CLEAR)
     )
@@ -12199,7 +12169,7 @@
 ;; CTRL-O: In Select mode: switch to Visual mode for one command.
 ;; Otherwise: Go to older pcmark.
 
-(defn- #_void nv-ctrlo [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-ctrlo [#_cmdarg_C cap]
     (§
         (cond (and @VIsual_active @VIsual_select)
         (do
@@ -12210,14 +12180,14 @@
         :else
         (do
             ((ß cap.count1 =) (- (:count1 cap)))
-            (nv-pcmark cap)
+            ((ß cap =) (nv-pcmark cap))
         ))
         nil
     ))
 
 ;; CTRL-^ command, short for ":e #"
 
-(defn- #_void nv-hat [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-hat [#_cmdarg_C cap]
     (when (not (checkclearopq (:oap cap)))
 ;       buflist_getfile((int)cap.count0, 0, GETF_SETMARK|GETF_ALT, false);
     )
@@ -12225,7 +12195,7 @@
 
 ;; "Z" commands.
 
-(defn- #_void nv-Zet [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-Zet [#_cmdarg_C cap]
     (§
         (when (not (checkclearopq (:oap cap)))
             ((ß SWITCH) (:nchar cap)
@@ -12253,33 +12223,17 @@
         nil
     ))
 
-;; Call nv-ident() as if "c1" was used, with "c2" as next character.
-
-(defn- #_void do-nv-ident [#_int c1, #_int c2]
-    (§
-        ((ß oparg_C oa =) (NEW_oparg_C))
-        ((ß cmdarg_C ca =) (NEW_cmdarg_C))
-
-        ((ß ca.oap =) oa)
-        ((ß ca.cmdchar =) c1)
-        ((ß ca.nchar =) c2)
-        (nv-ident ca)
-        nil
-    ))
-
 ;; Handle the commands that use the word under the cursor.
-;; [g] CTRL-]   :ta to current identifier
 ;; [g] 'K'      run program for current identifier
 ;; [g] '*'      / to current identifier or string
 ;; [g] '#'      ? to current identifier or string
-;;  g  ']'      :tselect for current identifier
 
-(defn- #_void nv-ident [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-ident [#_cmdarg_C cap]
     (§
         ((ß int cmdchar =) (:cmdchar cap))
 
         ((ß boolean g_cmd =) (== cmdchar (byte \g)))
-        (if g_cmd                          ;; "g*", "g#", "g]" and "gCTRL-]"
+        (if g_cmd                                       ;; "g*" and "g#"
             ((ß cmdchar =) (:nchar cap))
         )
 
@@ -12288,12 +12242,12 @@
         )
 
         ((ß Bytes[] a'ident =) (atom (#_Bytes object nil)))
-        ((ß int[] a'n =) (atom (int 0)))
+        ((ß int[] a'count =) (atom (int 0)))
 
-        ;; The "]", "CTRL-]" and "K" commands accept an argument in Visual mode.
+        ;; The "K" command accepts an argument in Visual mode.
 
-        (when (or (== cmdchar (byte \])) (== cmdchar Ctrl_RSB) (== cmdchar (byte \K)))
-            (if (and @VIsual_active (not (get-visual-text cap, a'ident, a'n)))
+        (when (== cmdchar (byte \K))
+            (if (and @VIsual_active (not (get-visual-text cap, a'ident, a'count)))
                 ((ß RETURN) nil)
             )
             (if (checkclearopq (:oap cap))
@@ -12303,8 +12257,8 @@
 
         (when (nil? @a'ident)
             ((ß int type =) (if (or (== cmdchar (byte \*)) (== cmdchar (byte \#))) (| FIND_IDENT FIND_STRING) FIND_IDENT))
-            (reset! a'n (find-ident-under-cursor a'ident, type))
-            (when (zero? @a'n)
+            (reset! a'count (find-ident-under-cursor a'ident, type))
+            (when (zero? @a'count)
                 (clearop (:oap cap))
                 ((ß RETURN) nil)
             )
@@ -12316,14 +12270,9 @@
 
         ((ß Bytes kp =) @(:b_p_kp @curbuf))    ;; value of 'keywordprg'
 
-        ((ß Bytes buf =) (Bytes. (+ (* @a'n 2) 30 (STRLEN kp))))
-        (eos! buf)
+        ((ß Bytes buf =) (Bytes. (+ (* @a'count 2) 30 (STRLEN kp))))
 
-        ((ß boolean tag_cmd =) false)
-
-        ((ß SWITCH) cmdchar
-            ((ß CASE) (byte \*))
-            ((ß CASE) (byte \#))
+        (cond (or (== cmdchar (byte \*)) (== cmdchar (byte \#)))
             (do
                 ;; Put cursor at start of word, makes search skip the word under the cursor.
                 ;; Call setpcmark() first, so "*``" puts the cursor back where it was.
@@ -12334,19 +12283,17 @@
                 (if (and (not g_cmd) (us-iswordp @a'ident))
                     (STRCPY buf, (u8 "\\<")))
                 (reset! no_smartcase true)        ;; don't use 'smartcase' now
-                (ß BREAK)
             )
-
-            ((ß CASE) (byte \K))
+            :else
             (do
                 ;; An external command will probably use an argument starting
                 ;; with "-" as an option.  To avoid trouble we skip the "-".
 
-                (while (and (< 0 @a'n) (at? @a'ident (byte \-)))
+                (while (and (< 0 @a'count) (at? @a'ident (byte \-)))
                     (swap! a'ident plus 1)
-                    (swap! a'n dec)
+                    (swap! a'count dec)
                 )
-                (when (zero? @a'n)
+                (when (zero? @a'count)
                     (emsg e_noident)        ;; found dashes only
                     ((ß RETURN) nil)
                 )
@@ -12358,67 +12305,34 @@
 
                 (if (not-at? kp (byte \:))
                     (STRCAT buf, (u8 "!")))
-                (STRCAT buf, (if (not-at? kp (byte \:)) kp (.plus kp 1)))
+                (STRCAT buf, (if (at? kp (byte \:)) (.plus kp 1) kp))
                 (STRCAT buf, (u8 " "))
-                (ß BREAK)
-            )
-
-            ((ß CASE) (byte \]))
-            (do
-                ((ß tag_cmd =) true)
-                (STRCPY buf, (u8 "ts "))
-                (ß BREAK)
-            )
-
-            (ß DEFAULT)
-            (do
-                ((ß tag_cmd =) true)
-                (if g_cmd
-                    (STRCPY buf, (u8 "tj "))
-                    (.sprintf libC buf, (u8 "%ldta "), (:count0 cap))
-                )
-                (ß BREAK)
             )
         )
 
-        ;; Now grab the chars in the identifier
-
-        (ß Bytes aux)
-        (cond (== cmdchar (byte \*))
-        (do
-            ((ß aux =) (if @p_magic (u8 "/.*~[^$\\") (u8 "/^$\\")))
+        (let [#_Bytes aux
+            (cond
+                (== cmdchar (byte \*)) (if @p_magic (u8 "/.*~[^$\\") (u8 "/^$\\"))
+                (== cmdchar (byte \#)) (if @p_magic (u8 "/?.*~[^$\\") (u8 "/?^$\\"))
+                :else                  (u8 "\\|\"\n*?[")
+            )]
+            ;; now grab the chars in the identifier
+            (loop-if [i (STRLEN buf)] (< 0 @a'count) => (eos! buf i)
+                ;; put a backslash before \ and some others
+                (let [i (if (non-nil? (vim-strchr aux, (.at @a'ident 0))) (do (.be buf i, (byte \\)) (inc i)) i)]
+                    ;; when current byte is part of multibyte character, copy all bytes of the character
+                    (let [i (let [n (dec (us-ptr2len-cc @a'ident))]
+                        (loop-if-recur i (and (< i n) (< 1 @a'count)) (inc i) => i
+                            (.be buf i, (.at @a'ident 0))
+                            (swap! a'ident plus 1)
+                            (swap! a'count dec)
+                        ))]
+                        (.be buf i, (.at @a'ident 0))
+                        (swap! a'ident plus 1)
+                        (swap! a'count dec)
+                        (recur (inc i)))
+                ))
         )
-        (== cmdchar (byte \#))
-        (do
-            ((ß aux =) (if @p_magic (u8 "/?.*~[^$\\") (u8 "/?^$\\")))
-        )
-        tag_cmd
-        (do
-            ((ß aux =) (u8 "\\|\"\n["))
-        )
-        :else
-        (do
-            ((ß aux =) (u8 "\\|\"\n*?["))
-        ))
-
-        ((ß Bytes p =) (.plus buf (STRLEN buf)))
-        (while (<= 0 (swap! a'n dec))
-            ;; put a backslash before \ and some others
-            (if (non-nil? (vim-strchr aux, (.at @a'ident 0)))
-                (.be ((ß p =) (.plus p 1)) -1, (byte \\))
-            )
-
-            ;; When current byte is part of multibyte character, copy all bytes of the character.
-            (let [#_int len (dec (us-ptr2len-cc @a'ident))]
-                (loop [#_int i 0] (when (and (< i len) (<= 1 @a'n))
-                    (.be ((ß p =) (.plus p 1)) -1, (.at (swap! a'ident plus 1) -1))
-                    (swap! a'n dec)
-                    (recur (inc i))
-                )))
-
-            (.be ((ß p =) (.plus p 1)) -1, (.at (swap! a'ident plus 1) -1))
-        )
-        (eos! p)
 
         ;; Execute the command.
 
@@ -12441,7 +12355,7 @@
 ;; Get visually selected text, within one line only.
 ;; Returns false if more than one line selected.
 
-(defn- #_boolean get-visual-text [#_cmdarg_C cap, #_Bytes' a'pp, #_int' a'lenp]
+(defn- #_boolean get-visual-text [#_cmdarg_C cap, #_Bytes' a'start, #_int' a'count]
     (if (!= @VIsual_mode (byte \V))
         (unadjust-for-sel))
 
@@ -12454,24 +12368,24 @@
         (do
             (cond (== @VIsual_mode (byte \V))
             (do
-                (reset! a'pp (ml-get-curline))
-                (reset! a'lenp (STRLEN @a'pp))
+                (reset! a'start (ml-get-curline))
+                (reset! a'count (STRLEN @a'start))
             )
             :else
             (do
                 (cond (ltpos (:w_cursor @curwin), @VIsual)
                 (do
-                    (reset! a'pp (ml-get-pos (:w_cursor @curwin)))
-                    (reset! a'lenp (inc (- (:col @VIsual) (:col (:w_cursor @curwin)))))
+                    (reset! a'start (ml-get-pos (:w_cursor @curwin)))
+                    (reset! a'count (inc (- (:col @VIsual) (:col (:w_cursor @curwin)))))
                 )
                 :else
                 (do
-                    (reset! a'pp (ml-get-pos @VIsual))
-                    (reset! a'lenp (inc (- (:col (:w_cursor @curwin)) (:col @VIsual))))
+                    (reset! a'start (ml-get-pos @VIsual))
+                    (reset! a'count (inc (- (:col (:w_cursor @curwin)) (:col @VIsual))))
                 ))
 
                 ;; Correct the length to include the whole last character.
-                (swap! a'lenp #(+ % (dec (us-ptr2len-cc @a'pp, (dec %)))))
+                (swap! a'count #(+ % (dec (us-ptr2len-cc @a'start, (dec %)))))
             ))
             (reset-VIsual-and-resel)
             true
@@ -12480,7 +12394,7 @@
 
 ;; Handle scrolling command 'H', 'L' and 'M'.
 
-(defn- #_void nv-scroll [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-scroll [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MLINE)
         (setpcmark)
@@ -12513,14 +12427,14 @@
 
 ;; Cursor right commands.
 
-(defn- #_void nv-right [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-right [#_cmdarg_C cap]
     (§
         (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
             ;; <C-Right> and <S-Right> move a word or WORD right
             (if (flag? @mod_mask MOD_MASK_CTRL)
                 ((ß cap.arg =) TRUE)
             )
-            (nv-wordcmd cap)
+            ((ß cap =) (nv-wordcmd cap))
             ((ß RETURN) nil)
         )
 
@@ -12590,14 +12504,14 @@
 ;;
 ;; Returns true when operator end should not be adjusted.
 
-(defn- #_void nv-left [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-left [#_cmdarg_C cap]
     (§
         (when (flag? @mod_mask (| MOD_MASK_SHIFT MOD_MASK_CTRL))
             ;; <C-Left> and <S-Left> move a word or WORD left
             (if (flag? @mod_mask MOD_MASK_CTRL)
                 ((ß cap.arg =) 1)
             )
-            (nv-bck-word cap)
+            ((ß cap =) (nv-bck-word cap))
             ((ß RETURN) nil)
         )
 
@@ -12644,13 +12558,13 @@
 ;; Cursor up commands.
 ;; cap.arg is TRUE for "-": Move cursor to first non-blank.
 
-(defn- #_void nv-up [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-up [#_cmdarg_C cap]
     (§
         (cond (flag? @mod_mask MOD_MASK_SHIFT)
         (do
             ;; <S-Up> is page up
             ((ß cap.arg =) BACKWARD)
-            (nv-page cap)
+            ((ß cap =) (nv-page cap))
         )
         :else
         (do
@@ -12670,13 +12584,13 @@
 ;; Cursor down commands.
 ;; cap.arg is TRUE for CR and "+": Move cursor to first non-blank.
 
-(defn- #_void nv-down [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-down [#_cmdarg_C cap]
     (§
         (cond (flag? @mod_mask MOD_MASK_SHIFT)
         (do
             ;; <S-Down> is page down
             ((ß cap.arg =) FORWARD)
-            (nv-page cap)
+            ((ß cap =) (nv-page cap))
         )
         :else
         (do
@@ -12703,20 +12617,20 @@
 
 ;; <End> command: to end of current line or last line.
 
-(defn- #_void nv-end [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-end [#_cmdarg_C cap]
     (§
         (when (or (non-zero? (:arg cap)) (flag? @mod_mask MOD_MASK_CTRL))    ;; CTRL-END = goto last line
             ((ß cap.arg =) TRUE)
-            (nv-goto cap)
+            ((ß cap =) (nv-goto cap))
             ((ß cap.count1 =) 1)             ;; to end of current line
         )
-        (nv-dollar cap)
+        ((ß cap =) (nv-dollar cap))
         nil
     ))
 
 ;; Handle the "$" command.
 
-(defn- #_void nv-dollar [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-dollar [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) true)
@@ -12737,7 +12651,7 @@
 ;; Implementation of '?' and '/' commands.
 ;; If cap.arg is TRUE, don't set PC mark.
 
-(defn- #_void nv-search [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-search [#_cmdarg_C cap]
     (§
         ((ß oparg_C oap =) (:oap cap))
 
@@ -12745,7 +12659,7 @@
             ;; Translate "g??" to "g?g?".
             ((ß cap.cmdchar =) (byte \g))
             ((ß cap.nchar =) (byte \?))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
             ((ß RETURN) nil)
         )
 
@@ -12763,7 +12677,7 @@
 ;; Handle "N" and "n" commands.
 ;; cap.arg is SEARCH_REV for "N", 0 for "n".
 
-(defn- #_void nv-next [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-next [#_cmdarg_C cap]
     (§
         ((ß pos_C old =) (NEW_pos_C))
         (COPY-pos old, (:w_cursor @curwin))
@@ -12814,7 +12728,7 @@
 ;; cap.arg is BACKWARD for 'F' and 'T', FORWARD for 'f' and 't', TRUE for ',' and FALSE for ';'.
 ;; cap.nchar is NUL for ',' and ';' (repeat the search).
 
-(defn- #_void nv-csearch [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-csearch [#_cmdarg_C cap]
     (§
         ((ß boolean t_cmd =) (or (== (:cmdchar cap) (byte \t)) (== (:cmdchar cap) (byte \T))))
 
@@ -12839,7 +12753,7 @@
             (do
                 (swap! curwin assoc-in [:w_cursor :coladd] 0)
             ))
-            (adjust-for-sel cap)
+            ((ß cap =) (adjust-for-sel cap))
         ))
         nil
     ))
@@ -12847,7 +12761,7 @@
 ;; "[" and "]" commands.
 ;; cap.arg is BACKWARD for "[" and FORWARD for "]".
 
-(defn- #_void nv-brackets [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-brackets [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
@@ -13042,8 +12956,8 @@
                         ((ß cap.cmdchar =) (byte \d))
                         ((ß cap.nchar =) NUL)
                         ((ß cap.oap.regname =) regname)
-                        (nv-operator cap)
-                        (do-pending-operator cap, 0, false)
+                        ((ß cap =) (nv-operator cap))
+                        ((ß cap =) (do-pending-operator cap, 0, false))
                     )
                     (when @VIsual_active
                         (end-visual-mode)
@@ -13068,7 +12982,7 @@
             (if (nil? pos)
                 ((ß pos =) prev_pos)
             )
-            (nv-cursormark cap, (== (:nchar cap) (byte \')), pos)
+            ((ß cap =) (nv-cursormark cap, (== (:nchar cap) (byte \')), pos))
         )
 
         ;; Not a valid cap.nchar.
@@ -13081,7 +12995,7 @@
 
 ;; Handle Normal mode "%" command.
 
-(defn- #_void nv-percent [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-percent [#_cmdarg_C cap]
     (§
         ((ß cap.oap.inclusive =) true)
         (cond (non-zero? (:count0 cap))                ;; {cnt}% : goto {cnt} percentage in file
@@ -13108,7 +13022,7 @@
                     (do
                         (setpcmark)
                         (swap! curwin assoc :w_cursor (assoc pos :coladd 0) :w_set_curswant true)
-                        (adjust-for-sel cap)
+                        ((ß cap =) (adjust-for-sel cap))
                     )
                 ))
         ))
@@ -13118,7 +13032,7 @@
 ;; Handle "(" and ")" commands.
 ;; cap.arg is BACKWARD for "(" and FORWARD for ")".
 
-(defn- #_void nv-brace [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-brace [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.use_reg_one =) true)
@@ -13141,7 +13055,7 @@
 
 ;; "m" command: Mark a position.
 
-(defn- #_void nv-mark [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-mark [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
         (if (not (setmark (:nchar cap)))
             (clearopbeep (:oap cap)))
@@ -13151,7 +13065,7 @@
 ;; "{" and "}" commands.
 ;; cmd.arg is BACKWARD for "{" and FORWARD for "}".
 
-(defn- #_void nv-findpar [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-findpar [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
@@ -13170,25 +13084,25 @@
 
 ;; "u" command: Undo or make lower case.
 
-(defn- #_void nv-undo [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-undo [#_cmdarg_C cap]
     (§
         (cond (or (== (:op_type (:oap cap)) OP_LOWER) @VIsual_active)
         (do
             ;; translate "<Visual>u" to "<Visual>gu" and "guu" to "gugu"
             ((ß cap.cmdchar =) (byte \g))
             ((ß cap.nchar =) (byte \u))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         :else
         (do
-            (nv-kundo cap)
+            ((ß cap =) (nv-kundo cap))
         ))
         nil
     ))
 
 ;; <Undo> command.
 
-(defn- #_void nv-kundo [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-kundo [#_cmdarg_C cap]
     (when (not (checkclearopq (:oap cap)))
         (u-undo (int (:count1 cap)))
         (swap! curwin assoc :w_set_curswant true)
@@ -13197,7 +13111,7 @@
 
 ;; Handle the "r" command.
 
-(defn- #_void nv-replace [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-replace [#_cmdarg_C cap]
     (§
         (if (checkclearop (:oap cap))
             ((ß RETURN) nil)
@@ -13239,7 +13153,7 @@
                     ((ß cap.nchar =) -2)
                 ))
             )
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
             ((ß RETURN) nil)
         )
 
@@ -13299,7 +13213,7 @@
             (stuff-char ESC)
 
             ;; Give 'r' to edit(), to get the redo command right.
-            (invoke-edit cap, true, (byte \r), false)
+            ((ß cap =) (invoke-edit cap, true, (byte \r), false))
         )
         :else
         (do
@@ -13406,7 +13320,7 @@
 
 ;; "R" (cap.arg is FALSE) and "gR" (cap.arg is TRUE).
 
-(defn- #_void nv-Replace [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-Replace [#_cmdarg_C cap]
     (§
         (cond @VIsual_active          ;; "R" is replace lines
         (do
@@ -13414,26 +13328,26 @@
             ((ß cap.nchar =) NUL)
             (reset! VIsual_mode_orig @VIsual_mode) ;; remember original area for gv
             (reset! VIsual_mode (byte \V))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         (not (checkclearopq (:oap cap)))
         (do
             (if (virtual-active)
                 (coladvance (getviscol)))
-            (invoke-edit cap, false, (if (non-zero? (:arg cap)) (byte \V) (byte \R)), false)
+            ((ß cap =) (invoke-edit cap, false, (if (non-zero? (:arg cap)) (byte \V) (byte \R)), false))
         ))
         nil
     ))
 
 ;; "gr".
 
-(defn- #_void nv-vreplace [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-vreplace [#_cmdarg_C cap]
     (§
         (cond @VIsual_active
         (do
             ((ß cap.cmdchar =) (byte \r))
             ((ß cap.nchar =) (:extra_char cap))
-            (nv-replace cap)        ;; do same as "r" in Visual mode for now
+            ((ß cap =) (nv-replace cap))        ;; do same as "r" in Visual mode for now
         )
         (not (checkclearopq (:oap cap)))
         (do
@@ -13444,14 +13358,14 @@
             (stuff-char ESC)
             (if (virtual-active)
                 (coladvance (getviscol)))
-            (invoke-edit cap, true, (byte \v), false)
+            ((ß cap =) (invoke-edit cap, true, (byte \v), false))
         ))
         nil
     ))
 
 ;; Swap case for "~" command, when it does not work like an operator.
 
-(defn- #_void n-swapchar [#_cmdarg_C cap]
+(defn- #_cmdarg_C n-swapchar [#_cmdarg_C cap]
     (§
         (if (checkclearopq (:oap cap))
             ((ß RETURN) nil)
@@ -13511,7 +13425,7 @@
 
 ;; Move cursor to mark.
 
-(defn- #_void nv-cursormark [#_cmdarg_C cap, #_boolean flag, #_pos_C pos]
+(defn- #_cmdarg_C nv-cursormark [#_cmdarg_C cap, #_boolean flag, #_pos_C pos]
     (§
         (cond (not (check-mark pos))
         (do
@@ -13539,7 +13453,7 @@
 
 ;; Handle commands that are operators in Visual mode.
 
-(defn- #_void v-visop [#_cmdarg_C cap]
+(defn- #_cmdarg_C v-visop [#_cmdarg_C cap]
     (§
         ;; Uppercase means linewise, except in block mode,
         ;; then "D" deletes, and "C" replaces till EOL.
@@ -13555,13 +13469,13 @@
             ))
         )
         ((ß cap.cmdchar =) (.at (vim-strchr visop_trans, (:cmdchar cap)) 1))
-        (nv-operator cap)
+        ((ß cap =) (nv-operator cap))
         nil
     ))
 
 ;; "s" and "S" commands.
 
-(defn- #_void nv-subst [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-subst [#_cmdarg_C cap]
     (§
         (cond @VIsual_active  ;; "vs" and "vS" are the same as "vc"
         (do
@@ -13570,18 +13484,18 @@
                 (reset! VIsual_mode (byte \V))
             )
             ((ß cap.cmdchar =) (byte \c))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         :else
         (do
-            (nv-optrans cap)
+            ((ß cap =) (nv-optrans cap))
         ))
         nil
     ))
 
 ;; Abbreviated commands.
 
-(defn- #_void nv-abbrev [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-abbrev [#_cmdarg_C cap]
     (§
         (if (or (== (:cmdchar cap) K_DEL) (== (:cmdchar cap) K_KDEL))
             ((ß cap.cmdchar =) (byte \x))          ;; DEL key behaves like 'x'
@@ -13589,8 +13503,8 @@
 
         ;; in Visual mode these commands are operators
         (if @VIsual_active
-            (v-visop cap)
-            (nv-optrans cap))
+            ((ß cap =) (v-visop cap))
+            ((ß cap =) (nv-optrans cap)))
         nil
     ))
 
@@ -13605,7 +13519,7 @@
 
 ;; Translate a command into another command.
 
-(defn- #_void nv-optrans [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-optrans [#_cmdarg_C cap]
     (§
         (when (not (checkclearopq (:oap cap)))
             ;; In Vi "2D" doesn't delete the next line.
@@ -13615,7 +13529,7 @@
                 (COPY-pos (:op_start (:oap cap)), (:w_cursor @curwin))
                 ((ß cap.oap.op_type =) OP_DELETE)
                 ((ß cap.count1 =) 1)
-                (nv-dollar cap)
+                ((ß cap =) (nv-dollar cap))
                 (reset! finish_op true)
                 (resetRedobuff)
                 (appendCharToRedobuff (byte \D))
@@ -13634,7 +13548,7 @@
 ;; "'" and "`" commands.  Also for "g'" and "g`".
 ;; cap.arg is TRUE for "'" and "g'".
 
-(defn- #_void nv-gomark [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-gomark [#_cmdarg_C cap]
     (§
         ((ß int c =) (if (== (:cmdchar cap) (byte \g)) (:extra_char cap) (:nchar cap)))
 
@@ -13653,7 +13567,7 @@
         )
         :else
         (do
-            (nv-cursormark cap, (non-zero? (:arg cap)), pos)
+            ((ß cap =) (nv-cursormark cap, (non-zero? (:arg cap)), pos))
         ))
 
         ;; May need to clear the coladd that a mark includes.
@@ -13665,7 +13579,7 @@
 
 ;; Handle CTRL-O, CTRL-I, "g;" and "g," commands.
 
-(defn- #_void nv-pcmark [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-pcmark [#_cmdarg_C cap]
     (§
         (ß pos_C pos)
 
@@ -13681,7 +13595,7 @@
             )
             (non-nil? pos)               ;; can jump
             (do
-                (nv-cursormark cap, false, pos)
+                ((ß cap =) (nv-cursormark cap, false, pos))
             )
             (== (:cmdchar cap) (byte \g))
             (do
@@ -13708,7 +13622,7 @@
 
 ;; Handle '"' command.
 
-(defn- #_void nv-regname [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-regname [#_cmdarg_C cap]
     (§
         (if (checkclearop (:oap cap))
             ((ß RETURN) nil)
@@ -13732,7 +13646,7 @@
 ;; Also for "gh", "gH" and "g^H" commands: Always start Select mode, cap.arg is TRUE.
 ;; Handle CTRL-Q just like CTRL-V.
 
-(defn- #_void nv-visual [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-visual [#_cmdarg_C cap]
     (§
         (if (== (:cmdchar cap) Ctrl_Q)
             ((ß cap.cmdchar =) Ctrl_V)
@@ -13826,11 +13740,11 @@
                     ;; With a count select that many characters or lines.
                     (cond (or (== @VIsual_mode (byte \v)) (== @VIsual_mode Ctrl_V))
                     (do
-                        (nv-right cap)
+                        ((ß cap =) (nv-right cap))
                     )
                     (== @VIsual_mode (byte \V))
                     (do
-                        (nv-down cap)
+                        ((ß cap =) (nv-down cap))
                     ))
                 )
             ))
@@ -13887,7 +13801,7 @@
 
 ;; CTRL-W: Window commands
 
-(defn- #_void nv-window [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-window [#_cmdarg_C cap]
     (when (not (checkclearop (:oap cap)))
         (do-window (:nchar cap), (:count0 cap), NUL)
     )
@@ -13895,7 +13809,7 @@
 
 ;; CTRL-Z: Suspend
 
-(defn- #_void nv-suspend [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-suspend [#_cmdarg_C cap]
     (clearop (:oap cap))
     (if @VIsual_active
         (end-visual-mode))              ;; stop Visual mode
@@ -13904,7 +13818,7 @@
 
 ;; Commands starting with "g".
 
-(defn- #_void nv-g-cmd [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-g-cmd [#_cmdarg_C cap]
     (§
         ((ß oparg_C oap =) (:oap cap))
         ((ß boolean flag =) false)
@@ -13915,13 +13829,13 @@
             ((ß CASE) (byte \R))
             (do
                 ((ß cap.arg =) TRUE)
-                (nv-Replace cap)
+                ((ß cap =) (nv-Replace cap))
                 (ß BREAK)
             )
 
             ((ß CASE) (byte \r))
             (do
-                (nv-vreplace cap)
+                ((ß cap =) (nv-vreplace cap))
                 (ß BREAK)
             )
 
@@ -14019,7 +13933,7 @@
             (do
                 ((ß cap.cmdchar =) (+ (:nchar cap) (- (byte \v) (byte \h))))
                 ((ß cap.arg =) TRUE)
-                (nv-visual cap)
+                ((ß cap =) (nv-visual cap))
                 (ß BREAK)
             )
 
@@ -14084,7 +13998,7 @@
 
             ((ß CASE) (byte \J))
             (do
-                (nv-join cap)
+                ((ß cap =) (nv-join cap))
                 (ß BREAK)
             )
 
@@ -14162,7 +14076,7 @@
                         (swap! curwin assoc-in [:w_cursor :col] (dec (:col (:w_cursor @curwin))))
                     )
                     (swap! curwin assoc :w_set_curswant true)
-                    (adjust-for-sel cap)
+                    ((ß cap =) (adjust-for-sel cap))
                 ))
                 (ß BREAK)
             )
@@ -14226,10 +14140,8 @@
             ((ß CASE) (byte \*))
             ((ß CASE) (byte \#))
             ((ß CASE) (char_u POUND))             ;; pound sign (sometimes equal to '#')
-            ((ß CASE) Ctrl_RSB)                  ;; :tag or :tselect for current identifier
-            ((ß CASE) (byte \]))                       ;; :tselect for current identifier
             (do
-                (nv-ident cap)
+                ((ß cap =) (nv-ident cap))
                 (ß BREAK)
             )
 
@@ -14270,7 +14182,7 @@
                     )
                 )
                 ((ß cap.cmdchar =) (byte \i))
-                (nv-edit cap)
+                ((ß cap =) (nv-edit cap))
                 (ß BREAK)
             )
 
@@ -14280,7 +14192,7 @@
             (do
                 (beginline 0)
                 (if (not (checkclearopq oap))
-                    (invoke-edit cap, false, (byte \g), false))
+                    ((ß cap =) (invoke-edit cap, false, (byte \g), false)))
                 (ß BREAK)
             )
 
@@ -14294,7 +14206,7 @@
 
             ((ß CASE) (byte \`))
             (do
-                (nv-gomark cap)
+                ((ß cap =) (nv-gomark cap))
                 (ß BREAK)
             )
 
@@ -14340,7 +14252,7 @@
             ((ß CASE) (byte \g))
             (do
                 ((ß cap.arg =) FALSE)
-                (nv-goto cap)
+                ((ß cap =) (nv-goto cap))
                 (ß BREAK)
             )
 
@@ -14366,7 +14278,7 @@
             ((ß CASE) (byte \?))
             ((ß CASE) (byte \@))
             (do
-                (nv-operator cap)
+                ((ß cap =) (nv-operator cap))
                 (ß BREAK)
             )
 
@@ -14390,7 +14302,7 @@
             ((ß CASE) (byte \p))
             ((ß CASE) (byte \P))
             (do
-                (nv-put cap)
+                ((ß cap =) (nv-put cap))
                 (ß BREAK)
             )
 
@@ -14418,14 +14330,14 @@
 
             ((ß CASE) (byte \,))
             (do
-                (nv-pcmark cap)
+                ((ß cap =) (nv-pcmark cap))
                 (ß BREAK)
             )
 
             ((ß CASE) (byte \;))
             (do
                 ((ß cap.count1 =) (- (:count1 cap)))
-                (nv-pcmark cap)
+                ((ß cap =) (nv-pcmark cap))
                 (ß BREAK)
             )
 
@@ -14450,7 +14362,7 @@
 
 ;; Handle "o" and "O" commands.
 
-(defn- #_void n-opencmd [#_cmdarg_C cap]
+(defn- #_cmdarg_C n-opencmd [#_cmdarg_C cap]
     (§
         ((ß long oldline =) (:lnum (:w_cursor @curwin)))
 
@@ -14462,7 +14374,7 @@
                 (if (non-nil? (vim-strbyte @p_cpo, CPO_HASH))
                     ((ß cap.count1 =) 1)
                 )
-                (invoke-edit cap, false, (:cmdchar cap), true)
+                ((ß cap =) (invoke-edit cap, false, (:cmdchar cap), true))
             )
         )
         nil
@@ -14470,7 +14382,7 @@
 
 ;; "." command: redo last change.
 
-(defn- #_void nv-dot [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-dot [#_cmdarg_C cap]
     (when (not (checkclearopq (:oap cap)))
         ;; If "restart_edit" is true, the last but one command is repeated
         ;; instead of the last command (inserting text).  This is used for
@@ -14483,7 +14395,7 @@
 
 ;; CTRL-R: undo undo
 
-(defn- #_void nv-redo [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-redo [#_cmdarg_C cap]
     (when (not (checkclearopq (:oap cap)))
         (u-redo (int (:count1 cap)))
         (swap! curwin assoc :w_set_curswant true)
@@ -14492,7 +14404,7 @@
 
 ;; Handle "U" command.
 
-(defn- #_void nv-Undo [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-Undo [#_cmdarg_C cap]
     (§
         ;; In Visual mode and typing "gUU" triggers an operator.
         (cond (or (== (:op_type (:oap cap)) OP_UPPER) @VIsual_active)
@@ -14500,7 +14412,7 @@
             ;; translate "gUU" to "gUgU"
             ((ß cap.cmdchar =) (byte \g))
             ((ß cap.nchar =) (byte \U))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         (not (checkclearopq (:oap cap)))
         (do
@@ -14512,22 +14424,22 @@
 
 ;; '~' command: If tilde is not an operator and Visual is off: swap case of a single character.
 
-(defn- #_void nv-tilde [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-tilde [#_cmdarg_C cap]
     (if (and (not @p_to) (not @VIsual_active) (!= (:op_type (:oap cap)) OP_TILDE))
-        (n-swapchar cap)
-        (nv-operator cap))
+        ((ß cap =) (n-swapchar cap))
+        ((ß cap =) (nv-operator cap)))
     nil)
 
 ;; Handle an operator command.
 ;; The actual work is done by do-pending-operator().
 
-(defn- #_void nv-operator [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-operator [#_cmdarg_C cap]
     (§
         ((ß int op_type =) (get-op-type (:cmdchar cap), (:nchar cap)))
 
         (cond (== op_type (:op_type (:oap cap)))     ;; double operator works on lines
         (do
-            (nv-lineop cap)
+            ((ß cap =) (nv-lineop cap))
         )
         (not (checkclearop (:oap cap)))
         (do
@@ -14545,7 +14457,7 @@
 ;; are really an alternate form of "d_" and "y_".  It does accept a count, so
 ;; "d3_" works to delete 3 lines.
 
-(defn- #_void nv-lineop [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-lineop [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MLINE)
         (cond (not (cursor-down (- (:count1 cap) 1), (== (:op_type (:oap cap)) OP_NOP)))
@@ -14566,17 +14478,17 @@
 
 ;; <Home> command.
 
-(defn- #_void nv-home [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-home [#_cmdarg_C cap]
     (§
         ;; CTRL-HOME is like "gg"
         (cond (flag? @mod_mask MOD_MASK_CTRL)
         (do
-            (nv-goto cap)
+            ((ß cap =) (nv-goto cap))
         )
         :else
         (do
             ((ß cap.count0 =) 1)
-            (nv-pipe cap)
+            ((ß cap =) (nv-pipe cap))
         ))
         (reset! ins_at_eol false)     ;; Don't move cursor past eol
                                     ;; (only necessary in a one-character line).
@@ -14585,7 +14497,7 @@
 
 ;; "|" command.
 
-(defn- #_void nv-pipe [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-pipe [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
@@ -14608,7 +14520,7 @@
 ;; Handle back-word command "b" and "B".
 ;; cap.arg is 1 for "B"
 
-(defn- #_void nv-bck-word [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-bck-word [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
@@ -14622,7 +14534,7 @@
 ;; Handle word motion commands "e", "E", "w" and "W".
 ;; cap.arg is TRUE for "E" and "W".
 
-(defn- #_void nv-wordcmd [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-wordcmd [#_cmdarg_C cap]
     (§
         ((ß pos_C startpos =) (NEW_pos_C))
         (COPY-pos startpos, (:w_cursor @curwin))
@@ -14683,7 +14595,7 @@
 
         (if (and (not n) (== (:op_type (:oap cap)) OP_NOP))
             (clearopbeep (:oap cap))
-            (adjust-for-sel cap))
+            ((ß cap =) (adjust-for-sel cap)))
         nil
     ))
 
@@ -14709,7 +14621,7 @@
 ;; "0" and "^" commands.
 ;; cap.arg is the argument for beginline().
 
-(defn- #_void nv-beginline [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-beginline [#_cmdarg_C cap]
     (§
         ((ß cap.oap.motion_type =) MCHAR)
         ((ß cap.oap.inclusive =) false)
@@ -14721,7 +14633,7 @@
 
 ;; In exclusive Visual mode, may include the last character.
 
-(defn- #_void adjust-for-sel [#_cmdarg_C cap]
+(defn- #_cmdarg_C adjust-for-sel [#_cmdarg_C cap]
     (§
         (when (and @VIsual_active (:inclusive (:oap cap)) (at? @p_sel (byte \e)) (!= (gchar) NUL) (ltpos @VIsual, (:w_cursor @curwin)))
             (inc-cursor)
@@ -14759,7 +14671,7 @@
 
 ;; SELECT key in Normal or Visual mode: end of Select mode mapping.
 
-(defn- #_void nv-select [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-select [#_cmdarg_C cap]
     (§
         (cond @VIsual_active
         (do
@@ -14769,7 +14681,7 @@
         (do
             ((ß cap.nchar =) (byte \v))        ;; fake "gv" command
             ((ß cap.arg =) TRUE)
-            (nv-g-cmd cap)
+            ((ß cap =) (nv-g-cmd cap))
         ))
         nil
     ))
@@ -14777,7 +14689,7 @@
 ;; "G", "gg", CTRL-END, CTRL-HOME.
 ;; cap.arg is TRUE for "G".
 
-(defn- #_void nv-goto [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-goto [#_cmdarg_C cap]
     (§
         ((ß long lnum =) (if (non-zero? (:arg cap)) (:ml_line_count (:b_ml @curbuf)) 1))
 
@@ -14803,7 +14715,7 @@
 
 ;; CTRL-\ in Normal mode.
 
-(defn- #_void nv-normal [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-normal [#_cmdarg_C cap]
     (let [key (:nchar cap)]
         (cond (or (== key Ctrl_N) (== key Ctrl_G))
         (do
@@ -14831,7 +14743,7 @@
 ;; ESC in Normal mode: beep, but don't flush buffers.
 ;; Don't even beep if we are canceling a command.
 
-(defn- #_void nv-esc [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-esc [#_cmdarg_C cap]
     (§
         ((ß boolean no_reason =) (and (== (:op_type (:oap cap)) OP_NOP) (== (:opcount cap) 0) (== (:count0 cap) 0) (== (:regname (:oap cap)) 0) (not @p_im)))
 
@@ -14873,7 +14785,7 @@
 
 ;; Handle "A", "a", "I", "i" and <Insert> commands.
 
-(defn- #_void nv-edit [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-edit [#_cmdarg_C cap]
     (§
         ;; <Insert> is equal to "i"
         (if (or (== (:cmdchar cap) K_INS) (== (:cmdchar cap) K_KINS))
@@ -14883,12 +14795,12 @@
         ;; in Visual mode "A" and "I" are an operator
         (cond (and @VIsual_active (or (== (:cmdchar cap) (byte \A)) (== (:cmdchar cap) (byte \I))))
         (do
-            (v-visop cap)
+            ((ß cap =) (v-visop cap))
         )
         ;; in Visual mode and after an operator "a" and "i" are for text objects
         (and (or (== (:cmdchar cap) (byte \a)) (== (:cmdchar cap) (byte \i))) (or (!= (:op_type (:oap cap)) OP_NOP) @VIsual_active))
         (do
-            (nv-object cap)
+            ((ß cap =) (nv-object cap))
         )
         (not (checkclearopq (:oap cap)))
         (do
@@ -14947,14 +14859,14 @@
                 (reset! State save_State)
             )
 
-            (invoke-edit cap, false, (:cmdchar cap), false)
+            ((ß cap =) (invoke-edit cap, false, (:cmdchar cap), false))
         ))
         nil
     ))
 
 ;; Invoke edit() and take care of "restart_edit" and the return value.
 
-(defn- #_void invoke-edit [#_cmdarg_C cap, #_boolean repl, #_int cmd, #_boolean startln]
+(defn- #_cmdarg_C invoke-edit [#_cmdarg_C cap, #_boolean repl, #_int cmd, #_boolean startln]
     ;; repl: "r" or "gr" command
     (§
         ;; Complicated: when the user types "a<C-O>a", we don't want to do Insert mode recursively.
@@ -14976,7 +14888,7 @@
 
 ;; "a" or "i" while an operator is pending or in Visual mode: object motion.
 
-(defn- #_void nv-object [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-object [#_cmdarg_C cap]
     (§
         ;; "ax" = an object: include white space
         ;; "ix" = inner object: exclude white space
@@ -15059,14 +14971,14 @@
 ;; "q" command: Start/stop recording.
 ;; "q:", "q/", "q?": edit command-line in command-line window.
 
-(defn- #_void nv-record [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-record [#_cmdarg_C cap]
     (§
         (cond (== (:op_type (:oap cap)) OP_FORMAT)
         (do
             ;; "gqq" is the same as "gqgq": format line
             ((ß cap.cmdchar =) (byte \g))
             ((ß cap.nchar =) (byte \q))
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         (not (checkclearop (:oap cap)))
         (do
@@ -15087,7 +14999,7 @@
 
 ;; Handle the "@r" command.
 
-(defn- #_void nv-at [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-at [#_cmdarg_C cap]
     (§
         (if (checkclearop (:oap cap))
             ((ß RETURN) nil)
@@ -15109,7 +15021,7 @@
 
 ;; Handle the CTRL-U and CTRL-D commands.
 
-(defn- #_void nv-halfpage [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-halfpage [#_cmdarg_C cap]
     (let [key (:cmdchar cap) lnum (:lnum (:w_cursor @curwin)) last (:ml_line_count (:b_ml @curbuf))]
         (cond
             (or (and (== key Ctrl_U) (== lnum 1)) (and (== key Ctrl_D) (== lnum last)))
@@ -15122,11 +15034,11 @@
 
 ;; Handle "J" or "gJ" command.
 
-(defn- #_void nv-join [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-join [#_cmdarg_C cap]
     (§
         (cond @VIsual_active  ;; join the visual lines
         (do
-            (nv-operator cap)
+            ((ß cap =) (nv-operator cap))
         )
         (not (checkclearop (:oap cap)))
         (do
@@ -15146,7 +15058,7 @@
 
 ;; "P", "gP", "p" and "gp" commands.
 
-(defn- #_void nv-put [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-put [#_cmdarg_C cap]
     (§
         ((ß int regname =) 0)
         ((ß boolean empty =) false)
@@ -15185,8 +15097,8 @@
                 ((ß cap.cmdchar =) (byte \d))
                 ((ß cap.nchar =) NUL)
                 ((ß cap.oap.regname =) NUL)
-                (nv-operator cap)
-                (do-pending-operator cap, 0, false)
+                ((ß cap =) (nv-operator cap))
+                ((ß cap =) (do-pending-operator cap, 0, false))
                 ((ß empty =) (!= (& (:ml_flags (:b_ml @curbuf)) ML_EMPTY) 0))
 
                 ;; delete PUT_LINE_BACKWARD;
@@ -15252,13 +15164,13 @@
 
 ;; "o" and "O" commands.
 
-(defn- #_void nv-open [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-open [#_cmdarg_C cap]
     (if @VIsual_active  ;; switch start and end of visual
         (v-swap-corners (:cmdchar cap))
-        (n-opencmd cap))
+        ((ß cap =) (n-opencmd cap)))
     nil)
 
-(defn- #_void nv-drop [#_cmdarg_C _cap]
+(defn- #_cmdarg_C nv-drop [#_cmdarg_C _cap]
     (do-put (byte \~), BACKWARD, 1, PUT_CURSEND)
     nil)
 
@@ -15266,7 +15178,7 @@
 ;; When waiting for a character for 'updatetime' K_CURSORHOLD is put in the
 ;; input buffer.  "did_cursorhold" is set to avoid retriggering.
 
-(defn- #_void nv-cursorhold [#_cmdarg_C cap]
+(defn- #_cmdarg_C nv-cursorhold [#_cmdarg_C cap]
     (§
         (reset! did_cursorhold true)
         ((ß cap.retval =) (| (:retval cap) CA_COMMAND_BUSY))  ;; don't call edit() now
@@ -15310,7 +15222,6 @@
         (->nv_cmd_C Ctrl_Z,           nv-suspend,     0,                      0               ),
         (->nv_cmd_C ESC,              nv-esc,         0,                      FALSE           ),
         (->nv_cmd_C Ctrl_BSL,         nv-normal,      NV_NCH_ALW,             0               ),
-        (->nv_cmd_C Ctrl_RSB,         nv-ident,       NV_NCW,                 0               ),
         (->nv_cmd_C Ctrl_HAT,         nv-hat,         NV_NCW,                 0               ),
         (->nv_cmd_C Ctrl__,           nv-error,       0,                      0               ),
         (->nv_cmd_C (int \space),     nv-right,       0,                      0               ),
@@ -40949,7 +40860,7 @@
 
 ;; Print info about the current buffer.
 
-(defn- #_void fileinfo [#_int _fullname, #_boolean dont_truncate]
+(defn- #_void fileinfo [#_int _fullname]
     (§
         ((ß Bytes buffer =) (Bytes. IOSIZE))
 
@@ -40982,26 +40893,13 @@
             (col-print (.plus buffer len), (- IOSIZE len), (+ (:col (:w_cursor @curwin)) 1), (+ (:w_virtcol @curwin) 1))
         ))
 
-        (cond dont_truncate
-        (do
-            ;; Temporarily set msg_scroll to avoid the message being truncated.
-            ;; First call msg-start() to get the message in the right place.
-            (msg-start)
-            ((ß boolean m =) @msg_scroll)
-            (reset! msg_scroll true)
-            (msg buffer)
-            (reset! msg_scroll m)
-        )
-        :else
-        (do
-            ((ß p =) (msg-trunc-attr buffer, false, 0))
-            (when (or (non-zero? @restart_edit) (and (non-zero? @msg_scrolled) (not @need_wait_return)))
-                ;; Need to repeat the message after redrawing when:
-                ;; - When restart_edit is set (otherwise there will be a delay before redrawing).
-                ;; - When the screen was scrolled but there is no wait-return prompt.
-                (set-keep-msg p, 0)
-            )
-        ))
+        ;; Temporarily set msg_scroll to avoid the message being truncated.
+        ;; First call msg-start() to get the message in the right place.
+        (msg-start)
+        ((ß boolean m =) @msg_scroll)
+        (reset! msg_scroll true)
+        (msg buffer)
+        (reset! msg_scroll m)
         nil
     ))
 
@@ -56546,68 +56444,9 @@
                 (ß BREAK)
             )
 
-            ;; jump to tag and split window if tag exists (in preview window)
-            ((ß CASE) (byte \]))
-            ((ß CASE) Ctrl_RSB)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                ;; keep Visual mode, can select words to use as a tag
-                (if (non-zero? Prenum)
-                    (reset! postponed_split (int Prenum))
-                    (reset! postponed_split -1))
-
-                ;; Execute the command right here,
-                ;; required when "wincmd ]" was used in a function.
-                (do-nv-ident Ctrl_RSB, NUL)
-                (ß BREAK)
-            )
-
             ((ß CASE) K_KENTER)
             ((ß CASE) CAR)
             (do
-                (ß BREAK)
-            )
-
-            ;; CTRL-W g extended commands.
-            ((ß CASE) (byte \g))
-            ((ß CASE) Ctrl_G)
-            (do
-                (when (non-zero? @cmdwin_type)
-                    (emsg e_cmdwin)
-                    (ß BREAK)
-                )
-                (swap! no_mapping inc)
-                (swap! allow_keys inc)       ;; no mapping for xchar, but allow key codes
-                (if (== xchar NUL)
-                    ((ß xchar =) (plain-vgetc))
-                )
-                (swap! no_mapping dec)
-                (swap! allow_keys dec)
-                (add-to-showcmd xchar)
-                ((ß SWITCH) xchar
-                    ((ß CASE) (byte \]))
-                    ((ß CASE) Ctrl_RSB)
-                    (do
-                        ;; keep Visual mode, can select words to use as a tag
-                        (if (non-zero? Prenum)
-                            (reset! postponed_split (int Prenum))
-                            (reset! postponed_split -1))
-
-                        ;; Execute the command right here,
-                        ;; required when "wincmd g}" was used in a function.
-                        (do-nv-ident (byte \g), xchar)
-                        (ß BREAK)
-                    )
-
-                    (ß DEFAULT)
-                    (do
-                        (beep-flush)
-                        (ß BREAK)
-                    )
-                )
                 (ß BREAK)
             )
 
@@ -61661,9 +61500,6 @@
                 (when (and @need_start_insertmode (goto-im) (not @VIsual_active))
                     (reset! need_start_insertmode false)
                     (stuff-string (u8 "i"))                 ;; start insert mode next
-                    ;; skip the fileinfo message now,
-                    ;; because it would be shown after insert mode finishes!
-                    (reset! need_fileinfo false)
                 )
             )
 
@@ -61729,10 +61565,6 @@
                     ;; msg-attr-keep() will set "keep_msg" to null, must free the string here.
                     ;; Don't reset "keep_msg", msg-attr-keep() uses it to check for duplicates.
                     (msg-attr @keep_msg, @keep_msg_attr)
-                )
-                (when @need_fileinfo          ;; show file info after redraw
-                    (fileinfo 0, false)
-                    (reset! need_fileinfo false)
                 )
 
                 (reset! emsg_on_display false)    ;; can delete error message now
