@@ -42177,45 +42177,41 @@
 ;; have actually changed.  Handle insert/delete character.
 ;; "coloff" gives the first column on the screen for this line.
 ;; "endcol" gives the columns where valid characters are.
-;; "clear_width" is the width of the window.  It's > 0 if the rest of the line
-;; needs to be cleared, negative otherwise.
+;; "clear_width" is the width of the window.
+;;    It's > 0 if the rest of the line needs to be cleared, negative otherwise.
 ;; "rlflag" is true in a rightleft window:
-;;    When true and "clear_width" > 0, clear columns 0 to "endcol"
-;;    When false and "clear_width" > 0, clear columns "endcol" to "clear_width"
+;;    When true and "clear_width" > 0, clear columns 0 to "endcol".
+;;    When false and "clear_width" > 0, clear columns "endcol" to "clear_width".
 
 (defn- #_void screen-line [#_int row, #_int coloff, #_int endcol, #_int clear_width, #_boolean rlflag]
-    (§
-        ((ß int col =) 0)
+    (let [row (min row (dec @Rows)) endcol (min endcol @Cols) ;; check for illegal row and col, just in case
+          #_int off_from (BDIFF @current_ScreenLine, @screenLines)
+          #_int off_to (+ (aget @lineOffset row) coloff)
+          #_int max_off_from (+ off_from @screenCols)
+          #_int max_off_to (+ (aget @lineOffset row) @screenCols)
+          #_int col 0
+          [col off_to off_from endcol]
+            (if rlflag ;; clear rest first, because it's left of the text
+                (let [[col off_to]
+                        (if (< 0 clear_width)
+                            (let [[col off_to]
+                                    (loop-when-recur [col col off_to off_to]
+                                                     (and (<= col endcol) (at? @screenLines off_to (byte \space)) (== (aget @screenAttrs off_to) 0)
+                                                                                                                  (== (aget @screenLinesUC off_to) 0))
+                                                     [(inc col) (inc off_to)]
+                                                  => [col off_to])]
+                                (when (<= col endcol)
+                                    (screen-fill row, (inc row), (+ col coloff), (+ endcol coloff 1), (byte \space), (byte \space), 0))
+                                [col off_to])
+                            [col off_to])
+                      col (inc endcol)]
+                    [col (+ (aget @lineOffset row) col coloff) (+ off_from col) (Math/abs clear_width)])
+                [col off_to off_from endcol])
+    ]
+
         ((ß boolean force =) false)              ;; force update rest of the line
-        ((ß boolean clear_next =) false)
-
-        ;; Check for illegal row and col, just in case.
-        ((ß row =) (min row (dec @Rows)))
-        ((ß endcol =) (min endcol @Cols))
-
-        ((ß int off_from =) (BDIFF @current_ScreenLine, @screenLines))
-        ((ß int off_to =) (+ (aget @lineOffset row) coloff))
-        ((ß int max_off_from =) (+ off_from @screenCols))
-        ((ß int max_off_to =) (+ (aget @lineOffset row) @screenCols))
-
-        (when rlflag
-            ;; Clear rest first, because it's left of the text.
-            (when (< 0 clear_width)
-                (loop-when [] (and (<= col endcol) (at? @screenLines off_to (byte \space)) (== (aget @screenAttrs off_to) 0) (== (aget @screenLinesUC off_to) 0))
-                    ((ß off_to =) (inc off_to))
-                    ((ß col =) (inc col))
-                    (recur)
-                )
-                (if (<= col endcol)
-                    (screen-fill row, (inc row), (+ col coloff), (+ endcol coloff 1), (byte \space), (byte \space), 0))
-            )
-            ((ß col =) (inc endcol))
-            ((ß off_to =) (+ (aget @lineOffset row) col coloff))
-            ((ß off_from =) (+ off_from col))
-            ((ß endcol =) (if (< 0 clear_width) clear_width (- clear_width)))
-        )
-
         ((ß boolean redraw_next =) (char-needs-redraw off_from, off_to, (- endcol col)))
+        ((ß boolean clear_next =) false)
 
         (loop-when [] (< col endcol)
             ((ß int char_cells =) (if (< (inc col) endcol) (utf-off2cells off_from, max_off_from) 1))             ;; 1: normal char; 2: occupies two display cells
@@ -42315,8 +42311,8 @@
                 (aset @lineWraps row false)
             ))
         )
-        nil
-    ))
+    )
+    nil)
 
 ;; Mark all status lines for redraw.
 
@@ -42420,11 +42416,8 @@
 (defn- #_void screen-getbytes [#_int row, #_int col, #_Bytes bytes, #_int' a'attr]
     (when (and (some? @screenLines) (< row @screenRows) (< col @screenCols))
         (let [#_int off (+ (aget @lineOffset row) col)]
-
             (reset! a'attr (aget @screenAttrs off))
-            (.be bytes 0, (.at @screenLines off))
-            (eos! bytes 1)
-
+            (-> bytes (.be 0, (.at @screenLines off)) (eos! 1))
             (when (non-zero? (aget @screenLinesUC off))
                 (eos! bytes (utfc-char2bytes off, bytes)))
         ))
@@ -42435,7 +42428,7 @@
 
 (defn- #_boolean screen-comp-differs [#_int off, #_int* u8cc]
     (loop-when [#_int i 0] (< i @screen_mco) => false
-        (cond (!= (aget (... @screenLinesC i) off) (... u8cc i)) true (zero? (... u8cc i)) false :else (recur (inc i)))
+        (cond (!= (aget (... @screenLinesC i) off) (aget u8cc i)) true (zero? (aget u8cc i)) false :else (recur (inc i)))
     ))
 
 ;; Put string "text" on the screen at position "row" and "col", with
@@ -42450,121 +42443,90 @@
 ;; Like screen-puts(), but output "text[len]".  When "len" is -1 output up to a NUL.
 
 (defn- #_void screen-puts-len [#_Bytes text, #_int textlen, #_int row, #_int col, #_int attr]
-    (§
-        ((ß boolean clear_next_cell =) false)
-        ((ß boolean force_redraw_next =) false)
-
-        (if (or (nil? @screenLines) (<= @screenRows row))       ;; safety check
-            ((ß RETURN) nil)
-        )
-
-        ((ß int off =) (+ (aget @lineOffset row) col))
-
-        ;; When drawing over the right halve of a double-wide char clear out the left halve.
-        ;; Only needed in a terminal.
-        (when (and (< 0 col) (< col @screenCols) (!= (mb-fix-col col, row) col))
-            (.be @screenLines (dec off), (byte \space))
-            (aset @screenAttrs (dec off) 0)
-            (aset @screenLinesUC (dec off) 0)
-            (aset (... @screenLinesC 0) (dec off) 0)
-            ;; redraw the previous cell, make it empty
-            (screen-char (dec off), row, (dec col))
-            ;; force the cell at "col" to be redrawn
-            ((ß force_redraw_next =) true)
-        )
-
-        ((ß Bytes ptr =) text)
-        ((ß int len =) textlen)
-        ((ß int[] u8cc =) (ß new int[MAX_MCO]))
-
-        ((ß int max_off =) (+ (aget @lineOffset row) @screenCols))
-        (loop-when [] (and (< col @screenCols) (or (< len 0) (< (BDIFF ptr, text) len)) (non-eos? ptr))
-            ((ß byte c =) (.at ptr 0))
-
-            ;; check if this is the first byte of a multibyte
-            ((ß int mbyte_blen =) (if (< 0 len) (us-ptr2len-cc-len ptr, (BDIFF (.plus text len), ptr)) (us-ptr2len-cc ptr)))
-
-            ((ß int u8c =) (if (<= 0 len) (us-ptr2char-cc-len ptr, u8cc, (BDIFF (.plus text len), ptr)) (us-ptr2char-cc ptr, u8cc)))
-
-            ((ß int mbyte_cells =) (utf-char2cells u8c))
-
-            (when (< @screenCols (+ col mbyte_cells))
-                ;; Only 1 cell left, but character requires 2 cells:
-                ;; display a '>' in the last column to avoid wrapping.
-                ((ß c =) (byte \>))
-                ((ß mbyte_cells =) 1)
-            )
-
-            ((ß boolean force_redraw_this =) force_redraw_next)
-            ((ß force_redraw_next =) false)
-
-            ((ß boolean need_redraw =) (or (not-at? @screenLines off c) (and (== mbyte_cells 2) (not-at? @screenLines (inc off) 0)) (or (!= (aget @screenLinesUC off) (if (and (< (char_u c) 0x80) (zero? (... u8cc 0))) 0 u8c)) (and (non-zero? (aget @screenLinesUC off)) (screen-comp-differs off, u8cc))) (!= (aget @screenAttrs off) attr)))
-
-            (when (or need_redraw force_redraw_this)
-                ;; The bold trick makes a single row of pixels appear in the next character.
-                ;; When a bold character is removed, the next character should be redrawn too.
-                ;; This happens for our own GUI and for some xterms.
-                (when (and need_redraw (not-at? @screenLines off (byte \space)) @term_is_xterm)
-                    ((ß int n =) (aget @screenAttrs off))
-
-                    ((ß n =) (if (< HL_ALL n) 0 n))
-                    ((ß force_redraw_next =) (or (flag? n HL_BOLD) force_redraw_next))
-                )
-                ;; When at the end of the text and overwriting a two-cell character with
-                ;; a one-cell character, need to clear the next cell.  Also when overwriting
-                ;; the left halve of a two-cell char with the right halve of a two-cell char.
-                ;; Do this only once (utf-off2cells() may return 2 on the right halve).
-                (cond clear_next_cell
-                (do
-                    ((ß clear_next_cell =) false)
-                )
-                (and (if (< len 0) (eos? ptr mbyte_blen) (BLE (.plus text len), (.plus ptr mbyte_blen))) (or (and (== mbyte_cells 1) (< 1 (utf-off2cells off, max_off))) (and (== mbyte_cells 2) (== (utf-off2cells off, max_off) 1) (< 1 (utf-off2cells (inc off), max_off)))))
-                (do
-                    ((ß clear_next_cell =) true)
-                ))
-
-                (.be @screenLines off, c)
-                (aset @screenAttrs off attr)
-
-                (cond (and (< (char_u c) 0x80) (zero? (... u8cc 0)))
-                (do
-                    (aset @screenLinesUC off 0)
-                )
-                :else
-                (do
-                    (aset @screenLinesUC off u8c)
-                    (dotimes [#_int i @screen_mco]
-                        (aset (... @screenLinesC i) off (... u8cc i))
-                        (if (zero? (... u8cc i))
-                            (ß BREAK)
-                        )
-                    )
-                ))
-                (when (== mbyte_cells 2)
-                    (eos! @screenLines (inc off))
-                    (aset @screenAttrs (inc off) attr)
-                )
-                (screen-char off, row, col)
-            )
-
-            ((ß off =) (+ off mbyte_cells))
-            ((ß col =) (+ col mbyte_cells))
-            ((ß ptr =) (.plus ptr mbyte_blen))
-            (when clear_next_cell
-                ;; This only happens at the end, display one space next.
-                ((ß ptr =) (u8 " "))
-                ((ß len =) -1)
-            )
-            (recur)
-        )
-
-        ;; If we detected the next character needs to be redrawn,
-        ;; but the text doesn't extend up to there, update the character here.
-        (when (and force_redraw_next (< col @screenCols))
-            (screen-char off, row, col)
-        )
-        nil
-    ))
+    (when (and (some? @screenLines) (< row @screenRows)) ;; safety check
+        (let [#_int off (+ (aget @lineOffset row) col)
+              ;; When drawing over the right halve of a double-wide char, clear out the left halve.
+              ;; Only needed in a terminal.
+              #_boolean force_next
+                (if (and (< 0 col) (< col @screenCols) (!= (mb-fix-col col, row) col))
+                    (do (.be @screenLines (dec off), (byte \space))
+                        (aset @screenAttrs (dec off) 0)
+                        (aset @screenLinesUC (dec off) 0)
+                        (aset (... @screenLinesC 0) (dec off) 0)
+                        ;; redraw the previous cell, make it empty
+                        (screen-char (dec off), row, (dec col))
+                        ;; force the cell at "col" to be redrawn
+                        true)
+                    false)
+              #_int max_off (+ (aget @lineOffset row) @screenCols)
+              #_int* u8cc (int-array MAX_MCO)
+              [force_next off col]
+                (loop-when [force_next force_next #_boolean clear_next false off off col col #_Bytes s text #_int n textlen]
+                           (and (< col @screenCols) (or (< n 0) (< (BDIFF s, text) n)) (non-eos? s))
+                        => [force_next off col]
+                    (let [#_byte c (.at s 0) ;; check if this is the first byte of a multibyte
+                          #_int blen (if (< 0 n) (us-ptr2len-cc-len s, (BDIFF (.plus text n), s)) (us-ptr2len-cc s))
+                          #_int u8c (if (<= 0 n) (us-ptr2char-cc-len s, u8cc, (BDIFF (.plus text n), s)) (us-ptr2char-cc s, u8cc))
+                          #_int cells (utf-char2cells u8c)
+                          ;; Only 1 cell left, but character requires 2 cells:
+                          ;; display a '>' in the last column to avoid wrapping.
+                          [c cells] (if (< @screenCols (+ col cells)) [(byte \>) 1] [c cells])
+                          #_boolean force_this force_next force_next false
+                          #_boolean need_redraw (or (not-at? @screenLines off c)
+                                                    (and (== cells 2) (not-at? @screenLines (inc off) 0))
+                                                    (or (!= (aget @screenLinesUC off) (if (and (< (char_u c) 0x80) (zero? (aget u8cc 0))) 0 u8c))
+                                                        (and (non-zero? (aget @screenLinesUC off)) (screen-comp-differs off, u8cc)))
+                                                    (!= (aget @screenAttrs off) attr))
+                          [force_next clear_next]
+                            (if (or need_redraw force_this)
+                                ;; The bold trick makes a single row of pixels appear in the next character.
+                                ;; When a bold character is removed, the next character should be redrawn too.
+                                ;; This happens for our own GUI and for some xterms.
+                                (let [force_next
+                                        (if (and need_redraw (not-at? @screenLines off (byte \space)) @term_is_xterm)
+                                            (let [#_int x (aget @screenAttrs off) x (if (< HL_ALL x) 0 x)]
+                                                (or (flag? x HL_BOLD) force_next))
+                                            force_next)
+                                      ;; When at the end of the text and overwriting a two-cell character with
+                                      ;; a one-cell character, need to clear the next cell.  Also when overwriting
+                                      ;; the left halve of a two-cell char with the right halve of a two-cell char.
+                                      ;; Do this only once (utf-off2cells() may return 2 on the right halve).
+                                      clear_next
+                                        (cond clear_next
+                                            false
+                                        (and (if (< n 0) (eos? s blen) (BLE (.plus text n), (.plus s blen)))
+                                             (or (and (== cells 1) (< 1 (utf-off2cells off, max_off)))
+                                                 (and (== cells 2) (== (utf-off2cells off, max_off) 1) (< 1 (utf-off2cells (inc off), max_off)))))
+                                            true
+                                        :else
+                                            clear_next
+                                        )]
+                                    (.be @screenLines off, c)
+                                    (aset @screenAttrs off attr)
+                                    (if (and (< (char_u c) 0x80) (zero? (aget u8cc 0)))
+                                        (aset @screenLinesUC off 0)
+                                        (do (aset @screenLinesUC off u8c)
+                                            (loop-when [#_int i 0] (< i @screen_mco)
+                                                (aset (... @screenLinesC i) off (aget u8cc i))
+                                                (recur-if (non-zero? (aget u8cc i)) [(inc i)]))
+                                        ))
+                                    (when (== cells 2)
+                                        (eos! @screenLines (inc off))
+                                        (aset @screenAttrs (inc off) attr))
+                                    (screen-char off, row, col)
+                                    [force_next clear_next])
+                                [force_next clear_next])
+                          off (+ off cells) col (+ col cells) s (.plus s blen)
+                          ;; This only happens at the end, display one space next.
+                          [s n] (if clear_next [(u8 " ") -1] [s n])]
+                        (recur force_next clear_next off col s n))
+                )]
+            ;; If we detected the next character needs to be redrawn,
+            ;; but the text doesn't extend up to there, update the character here.
+            (when (and force_next (< col @screenCols))
+                (screen-char off, row, col))
+        ))
+    nil)
 
 ;; Prepare for 'hlsearch' highlighting.
 
@@ -42573,8 +42535,7 @@
         (swap! search_hl update :rmm last-pat-prog)
         (swap! search_hl assoc :attr (hl-attr HLF_L))
         ;; Set the time limit to 'redrawtime'.
-        (swap! search_hl assoc :nsec (profile-setlimit @p_rdt))
-    )
+        (swap! search_hl assoc :nsec (profile-setlimit @p_rdt)))
     nil)
 
 ;; Clean up for 'hlsearch' highlighting.
@@ -42729,59 +42690,41 @@
         (when (non-zero? @cterm_normal_fg_bold)
             (out-str @T_ME)
             (reset! screen_attr -1)
-        )
-    )
+        ))
     nil)
 
-;; Put character screenLines["off"] on the screen at position "row" and "col",
-;; using the attributes from screenAttrs["off"].
+;; Put character "screenLines[off]" on the screen at position "row" and "col",
+;; using the attributes from "screenAttrs[off]".
 
 (defn- #_void screen-char [#_int off, #_int row, #_int col]
-    (§
-        ;; Check for illegal values, just in case (could happen just after resizing).
-        (if (or (<= @screenRows row) (<= @screenCols col))
-            ((ß RETURN) nil)
-        )
-
+    ;; Check for illegal values, just in case (could happen just after resizing).
+    (when (and (< row @screenRows) (< col @screenCols))
         ;; Writing at the last cell of the screen may scroll it up.
         ;; Only do it when the "xn" termcap property is set, otherwise
         ;; mark the character invalid (update it when scrolled up).
-        (when (and (eos? @T_XN) (== row (dec @screenRows)) (== col (dec @screenCols)))
+        (if (and (eos? @T_XN) (== row (dec @screenRows)) (== col (dec @screenCols)))
             (aset @screenAttrs off -1)
-            ((ß RETURN) nil)
-        )
-
-        ;; Stop highlighting first, so it's easier to move the cursor.
-
-        ((ß int attr =) (if (non-zero? @screen_char_attr) @screen_char_attr (aget @screenAttrs off)))
-        (when (!= @screen_attr attr)
-            (screen-stop-highlight))
-
-        (windgoto row, col)
-
-        (when (!= @screen_attr attr)
-            (screen-start-highlight attr))
-
-        (cond (non-zero? (aget @screenLinesUC off))
-        (do
-            ((ß Bytes buf =) (Bytes. (inc MB_MAXBYTES)))
-
-            ;; Convert UTF-8 character to bytes and write it.
-            (eos! buf (utfc-char2bytes off, buf))
-
-            (out-str buf)
-            (if (< 1 (utf-char2cells (aget @screenLinesUC off)))
-                (swap! screen_cur_col inc))
-        )
-        :else
-        (do
-            (out-flush-check)
-            (out-char (.at @screenLines off))
-        ))
-
-        (swap! screen_cur_col inc)
-        nil
-    ))
+            ;; Stop highlighting first, so it's easier to move the cursor.
+            (let [#_int attr (if (non-zero? @screen_char_attr) @screen_char_attr (aget @screenAttrs off))]
+                (when (!= @screen_attr attr)
+                    (screen-stop-highlight))
+                (windgoto row, col)
+                (when (!= @screen_attr attr)
+                    (screen-start-highlight attr))
+                (if (non-zero? (aget @screenLinesUC off))
+                    (let [#_Bytes buf (Bytes. (inc MB_MAXBYTES))]
+                        ;; Convert UTF-8 character to bytes and write it.
+                        (eos! buf (utfc-char2bytes off, buf))
+                        (out-str buf)
+                        (when (< 1 (utf-char2cells (aget @screenLinesUC off)))
+                            (swap! screen_cur_col inc)
+                        ))
+                    (do (out-flush-check)
+                        (out-char (.at @screenLines off))
+                    ))
+                (swap! screen_cur_col inc)
+            )))
+    nil)
 
 ;; Draw a rectangle of the screen, inverted when "invert" is true.
 ;; This uses the contents of screenLines[] and doesn't change it.
@@ -42810,116 +42753,84 @@
 ;; Use attributes 'attr'.
 
 (defn- #_void screen-fill [#_int start_row, #_int end_row, #_int start_col, #_int end_col, #_int c1, #_int c2, #_int attr]
-    (§
-        ((ß boolean force_next =) false)
-
-        ((ß end_row =) (min end_row @screenRows))           ;; safety check
-        ((ß end_col =) (min end_col @screenCols))           ;; safety check
-
-        (when (or (nil? @screenLines) (<= end_row start_row) (<= end_col start_col))        ;; nothing to do
-            ((ß RETURN) nil)
-        )
+    (let-when [end_row (min end_row @screenRows) end_col (min end_col @screenCols) ;; safety check
+    ] (and (some? @screenLines) (< start_row end_row) (< start_col end_col)) ;; => nothing to do
 
         ;; it's a "normal" terminal when not in a GUI or cterm
-        ((ß boolean norm_term =) (<= @t_colors 1))
-
-        (loop-when-recur [#_int row start_row] (< row end_row) [(inc row)]
-            ;; When drawing over the right halve of a double-wide char clear out the left halve.
-            ;; When drawing over the left halve of a double wide-char clear out the right halve.
-            ;; Only needed in a terminal.
-            (when (and (< 0 start_col) (!= (mb-fix-col start_col, row) start_col))
-                (screen-puts-len (u8 " "), 1, row, (dec start_col), 0))
-            (when (and (< end_col @screenCols) (!= (mb-fix-col end_col, row) end_col))
-                (screen-puts-len (u8 " "), 1, row, end_col, 0))
-
-            ;; Try to use delete-line termcap code, when no attributes or in a
-            ;; "normal" terminal, where a bold/italic space is just a space.
-
-            ((ß boolean did_delete =) false)
-            (when (and (== c2 (byte \space)) (== end_col @Cols) (can-clear @T_CE) (or (zero? attr) (and norm_term (<= attr HL_ALL) (zero? (& attr (bit-not (| HL_BOLD HL_ITALIC)))))))
-                ;; check if we really need to clear something
-
-                ((ß int col =) (if (!= c1 (byte \space)) (inc start_col) start_col))                      ;; don't clear first char
-
-                ((ß int off =) (+ (aget @lineOffset row) col))
-                ((ß int end_off =) (+ (aget @lineOffset row) end_col))
-
-                ;; skip blanks (used often, keep it fast!)
-                (loop-when [] (and (< off end_off) (at? @screenLines off (byte \space)) (== (aget @screenAttrs off) 0) (== (aget @screenLinesUC off) 0))
-                    ((ß off =) (inc off))
-                    (recur)
-                )
-                (when (< off end_off)                  ;; something to be cleared
-                    ((ß col =) (- off (aget @lineOffset row)))
-                    (screen-stop-highlight)
-                    (term-windgoto row, col)        ;; clear rest of this screen line
-                    (out-str @T_CE)
-                    (screen-start)                 ;; don't know where cursor is now
-                    ((ß col =) (- end_col col))
-                    (loop-when [] (<= 0 ((ß col =) (dec col)))                   ;; clear chars in "screenLines"
-                        (.be @screenLines off, (byte \space))
-                        (aset @screenLinesUC off 0)
-                        (aset @screenAttrs off 0)
-                        ((ß off =) (inc off))
-                        (recur)
-                    )
-                )
-                ((ß did_delete =) true)                  ;; the chars are cleared now
-            )
-
-            ((ß int off =) (+ (aget @lineOffset row) start_col))
-            ((ß int c =) c1)
-            (loop-when-recur [#_int col start_col] (< col end_col) [(inc col)]
-                (when (or (not-at? @screenLines off c) (!= (aget @screenLinesUC off) (if (<= 0x80 c) c 0)) (!= (aget @screenAttrs off) attr) force_next)
-                    ;; The bold trick may make a single row of pixels appear in
-                    ;; the next character.  When a bold character is removed, the
-                    ;; next character should be redrawn too.  This happens for our
-                    ;; own GUI and for some xterms.
-                    (when @term_is_xterm
-                        (cond (and (not-at? @screenLines off (byte \space)) (or (< HL_ALL (aget @screenAttrs off)) (flag? (aget @screenAttrs off) HL_BOLD)))
-                        (do
-                            ((ß force_next =) true)
-                        )
-                        :else
-                        (do
-                            ((ß force_next =) false)
+        (let [#_boolean norm_term (<= @t_colors 1)]
+            (loop-when [#_boolean force_next false #_int row start_row] (< row end_row)
+                ;; When drawing over the right/left halve of a double-wide char, clear out the left/right halve.
+                ;; Only needed in a terminal.
+                (when (and (< 0 start_col) (!= (mb-fix-col start_col, row) start_col))
+                    (screen-puts-len (u8 " "), 1, row, (dec start_col), 0))
+                (when (and (< end_col @screenCols) (!= (mb-fix-col end_col, row) end_col))
+                    (screen-puts-len (u8 " "), 1, row, end_col, 0))
+                ;; Try to use delete-line termcap code, when no attributes or in a
+                ;; "normal" terminal, where a bold/italic space is just a space.
+                (let [#_boolean did_delete
+                        (if (and (== c2 (byte \space)) (== end_col @Cols) (can-clear @T_CE)
+                                 (or (zero? attr) (and norm_term (<= attr HL_ALL) (zero? (& attr (bit-not (| HL_BOLD HL_ITALIC)))))))
+                            ;; check if we really need to clear something
+                            (let [#_int col (if (!= c1 (byte \space)) (inc start_col) start_col)    ;; don't clear first char
+                                  #_int off (+ (aget @lineOffset row) col) #_int end_off (+ (aget @lineOffset row) end_col)
+                                  off (loop-when-recur off                                          ;; skip blanks (used often, keep it fast!)
+                                                       (and (< off end_off) (at? @screenLines off (byte \space)) (== (aget @screenAttrs off) 0) (== (aget @screenLinesUC off) 0))
+                                                       (inc off)
+                                                    => off)]
+                                (when (< off end_off)                                               ;; something to be cleared
+                                    (let [col (- off (aget @lineOffset row))
+                                          _ (screen-stop-highlight)
+                                          _ (term-windgoto row, col)                                ;; clear rest of this screen line
+                                          _ (out-str @T_CE)
+                                          _ (screen-start)                                          ;; don't know where cursor is now
+                                          col (- end_col col)]
+                                        (loop-when [off off col col] (< 0 col)                      ;; clear chars in "screenLines"
+                                            (.be @screenLines off, (byte \space))
+                                            (aset @screenLinesUC off 0)
+                                            (aset @screenAttrs off 0)
+                                            (recur (inc off) (dec col)))
+                                    ))
+                                true)                                                               ;; the chars are cleared now
+                            false)
+                      force_next
+                        (loop-when [force_next force_next #_int off (+ (aget @lineOffset row) start_col) #_int c c1 #_int col start_col] (< col end_col) => force_next
+                            (let-when [force_next
+                                    (if (or (not-at? @screenLines off c) (!= (aget @screenLinesUC off) (if (<= 0x80 c) c 0)) (!= (aget @screenAttrs off) attr) force_next)
+                                        ;; The bold trick may make a single row of pixels appear in the next character.
+                                        ;; When a bold character is removed, the next character should be redrawn too.
+                                        ;; This happens for our own GUI and for some xterms.
+                                        (let [force_next
+                                                (if @term_is_xterm
+                                                    (and (not-at? @screenLines off (byte \space)) (or (< HL_ALL (aget @screenAttrs off)) (flag? (aget @screenAttrs off) HL_BOLD)))
+                                                    force_next
+                                                )]
+                                            (.be @screenLines off, c)
+                                            (if (<= 0x80 c)
+                                                (do (aset @screenLinesUC off c)
+                                                    (aset (... @screenLinesC 0) off 0))
+                                                (aset @screenLinesUC off 0))
+                                            (aset @screenAttrs off attr)
+                                            (when (or (not did_delete) (!= c (byte \space)))
+                                                (screen-char off, row, col))
+                                            force_next)
+                                        force_next)
+                                  off (inc off)
+                                  [c ?] (cond (< start_col col) [c nil] did_delete [c :break] :else [c2 nil])
+                            ] (not ?) => force_next
+                                (recur force_next off c (inc col)))
+                        )]
+                    (when (== end_col @Cols)
+                        (aset @lineWraps row false))
+                    (when (== row (dec @Rows))              ;; overwritten the command line
+                        (reset! redraw_cmdline true)
+                        (when (and (== c1 (byte \space)) (== c2 (byte \space)))
+                            (reset! clear_cmdline false))   ;; command line has been cleared
+                        (when (zero? start_col)
+                            (reset! mode_displayed false)   ;; mode cleared or overwritten
                         ))
-                    )
-                    (.be @screenLines off, c)
-                    (cond (<= 0x80 c)
-                    (do
-                        (aset @screenLinesUC off c)
-                        (aset (... @screenLinesC 0) off 0)
-                    )
-                    :else
-                    (do
-                        (aset @screenLinesUC off 0)
-                    ))
-                    (aset @screenAttrs off attr)
-                    (if (or (not did_delete) (!= c (byte \space)))
-                        (screen-char off, row, col))
-                )
-                ((ß off =) (inc off))
-                (when (== col start_col)
-                    (if did_delete
-                        (ß BREAK)
-                    )
-                    ((ß c =) c2)
-                )
-            )
-            (if (== end_col @Cols)
-                (aset @lineWraps row false)
-            )
-            (when (== row (dec @Rows))                ;; overwritten the command line
-                (reset! redraw_cmdline true)
-                (if (and (== c1 (byte \space)) (== c2 (byte \space)))
-                    (reset! clear_cmdline false))      ;; command line has been cleared
-                (if (zero? start_col)
-                    (reset! mode_displayed false))     ;; mode cleared or overwritten
-            )
-        )
-        nil
-    ))
+                    (recur force_next (inc row)))
+            )))
+    nil)
 
 ;; Check if there should be a delay.
 ;; Used before clearing or redrawing the screen or the command line.
