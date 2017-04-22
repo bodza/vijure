@@ -38239,282 +38239,204 @@
     ;; current: do only frame with current window
     ;; dir: 'v' for vertically, 'h' for horizontally, 'b' for both, 0 for using "p_ead"
     (let [dir (if (zero? dir) (.at @p_ead 0) dir)]
-        (win-equal-rec win, (if (nil? win') win win'), current, @topframe, dir, 0, 0, @Cols, (:fr_height @topframe))
+        (let [[win _] (win-equal-rec win, (if (nil? win') win win'), current, @topframe, dir, 0, 0, @Cols, (:fr_height @topframe))] (reset! topframe _) win)
     ))
 
 ;; Set a frame to a new position and height, spreading the available room equally over contained frames.
 ;; The window "win'" (if not null) should at least get the size from 'winheight' and 'winwidth' if possible.
 
-(defn- #_window_C win-equal-rec [#_window_C win, #_window_C win', #_boolean current, #_frame_C topfr, #_int dir, #_int col, #_int row, #_int width, #_int height]
+(defn- #_[window_C frame_C] win-equal-rec [#_window_C win, #_window_C win', #_boolean current, #_frame_C frame, #_int dir, #_int col, #_int row, #_int width, #_int height]
     ;; win': pointer to current window to be or null
     ;; current: do only frame with current window
-    ;; topfr: frame to set size off
+    ;; frame: frame to set size off
     ;; dir: 'v', 'h' or 'b', see win-equal()
     ;; col: horizontal position for frame
     ;; row: vertical position for frame
     ;; width: new width of frame
     ;; height: new height of frame
-    (§
-        ((ß int extra_sep =) 0)
-        (ß int wincount, totwincount = 0)
-        ((ß int next_curwin_size =) 0)
-        ((ß int room =) 0)
-        ((ß boolean has_next_curwin =) false)
+    (condp == (:fr_layout frame)
+        FR_LEAF
+            (let [frame ;; Set the width/height of this frame, redraw when size or position changes.
+                    (when' (or (!= (:fr_height frame) height) (!= (:w_winrow (:fr_win frame)) row) (!= (:fr_width frame) width) (!= (:w_wincol (:fr_win frame)) col)) => frame
+                        (let [frame
+                                (-> frame
+                                    (assoc-in [:fr_win :w_winrow] row) (frame-new-height height, false, false)
+                                    (assoc-in [:fr_win :w_wincol] col) (frame-new-width  width,  false, false)
+                                )]
+                            (redraw-all-later CLEAR)
+                            frame)
+                    )]
+                [win frame])
 
-        (cond (== (:fr_layout topfr) FR_LEAF)
-        (do
-            ;; Set the width/height of this frame.
-            ;; Redraw when size or position changes
-            (when (or (!= (:fr_height topfr) height) (!= (:w_winrow (:fr_win topfr)) row) (!= (:fr_width topfr) width) (!= (:w_wincol (:fr_win topfr)) col))
-                ((ß topfr =) (assoc-in topfr [:fr_win :w_winrow] row))
-                ((ß topfr =) (frame-new-height topfr, height, false, false))
-                ((ß topfr =) (assoc-in topfr [:fr_win :w_wincol] col))
-                ((ß topfr =) (frame-new-width topfr, width, false, false))
-                (redraw-all-later CLEAR)
-            )
-        )
-        (== (:fr_layout topfr) FR_ROW)
-        (do
-            ((ß topfr =) (assoc topfr :fr_width width))
-            ((ß topfr =) (assoc topfr :fr_height height))
-
-            (when (!= dir (byte \v))                 ;; equalize frame widths
-                ;; Compute the maximum number of windows horizontally in this frame.
-                ((ß int n =) (frame-minwidth topfr, :NOWIN))
-                ;; add one for the rightmost window, it doesn't have a separator
-                ((ß extra_sep =) (if (== (+ col width) @Cols) 1 0))
-                ((ß totwincount =) (/ (+ n extra_sep) (inc (int @p_wmw))))
-                ((ß has_next_curwin =) (frame-has-win topfr, win'))
-
-                ;; Compute width for "win'" window and room available for other windows.
-                ;; "m" is the minimal width when counting "p_wiw" for "win'".
-
-                ((ß int m =) (frame-minwidth topfr, win'))
-                ((ß room =) (- width m))
-                (cond (< room 0)
-                (do
-                    ((ß next_curwin_size =) (+ (int @p_wiw) room))
-                    ((ß room =) 0)
-                )
-                :else
-                (do
-                    ((ß next_curwin_size =) -1)
-                    (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
-                        ;; If 'winfixwidth' set keep the window width if possible.
-                        ;; Watch out for this window being the "win'".
-                        (when (frame-fixed-width fr)
-                            ((ß n =) (frame-minwidth fr, :NOWIN))
-                            ((ß int new_size =) (:fr_width fr))
-                            (cond (frame-has-win fr, win')
-                            (do
-                                ((ß room =) (+ room (- @p_wiw @p_wmw)))
-                                ((ß next_curwin_size =) 0)
-                                ((ß new_size =) (max (int @p_wiw) new_size))
-                            )
+        FR_ROW
+            (let [frame (assoc frame :fr_width width :fr_height height)
+                  [#_int extra #_int total #_boolean next? #_int room #_int size1]
+                    (when' (!= dir (byte \v)) => [0 0 false 0 0] ;; equalize frame widths
+                        ;; Compute the maximum number of windows horizontally in this frame.
+                        (let [#_int n (frame-minwidth frame, :NOWIN)
+                              ;; Add one for the rightmost window, it doesn't have a separator.
+                              extra (if (== (+ col width) @Cols) 1 0)
+                              total (/ (+ n extra) (inc @p_wmw))
+                              next? (frame-has-win frame, win')
+                              ;; Compute width for "win'" window and room available for other windows.
+                              ;; "m" is the minimal width when counting "p_wiw" for "win'".
+                              #_int m (frame-minwidth frame, win')
+                              room (- width m)
+                              [total room size1]
+                                (if (< room 0)
+                                    ;; The room is less then 'winwidth', use all space for the current window.
+                                    [total 0 (+ @p_wiw room)]
+                                    (let [[total room size1]
+                                            (loop-when [total total room room size1 -1 #_frame_C f (:fr_child frame)] (some? f) => [total room size1]
+                                                ;; If 'winfixwidth' set, keep the window width, if possible.
+                                                ;; Watch out for this window being the "win'".
+                                                (let [[total room size1 f]
+                                                        (when' (frame-fixed-width f) => [total room size1 f]
+                                                            (let [#_int n (frame-minwidth f, :NOWIN)
+                                                                  [total room size1 #_int width1]
+                                                                    (if (frame-has-win f, win')
+                                                                        [total (+ room (- @p_wiw @p_wmw)) 0 (max @p_wiw (:fr_width f))]
+                                                                        (let [total (- total (/ (+ n (if (nil? (:fr_next f)) extra 0)) (inc @p_wmw)))]
+                                                                            ;; These windows don't use up room.
+                                                                            [total room size1 (:fr_width f)]
+                                                                        ))
+                                                                  room (- room (- width1 n))
+                                                                  [width1 room]
+                                                                    (when' (< room 0) => [width1 room]
+                                                                        [(+ width1 room) 0]
+                                                                    )]
+                                                                [total room size1 (assoc f :fr_newwidth width1)])
+                                                        )]
+                                                    (recur total room size1 (:fr_next f))
+                                                ))
+                                          [size1 room]
+                                            (when' (== size1 -1) => [size1 room]
+                                                (cond (not next?)
+                                                    [0 room]
+                                                (and (< 1 total) (< @p_wiw (/ (+ room (- total 2)) (dec total))))
+                                                    ;; Can make all windows wider than 'winwidth', spread the room equally.
+                                                    (let [size1 (/ (+ room @p_wiw (* (dec total) @p_wmw) (dec total)) total)]
+                                                        [size1 (- room (- size1 @p_wiw))])
+                                                :else
+                                                    [@p_wiw room])
+                                            )]
+                                        [total room size1])
+                                )]
+                            [extra (if next? (dec total) total) next? room size1]) ;; don't count "win"
+                    )]
+                (loop-when [win win col col width width total total room room size1 size1 #_frame_C f (:fr_child frame)] (some? f) => [win frame]
+                    (let [[size1 room #_int t' #_int width1]
+                            (cond (nil? (:fr_next f))
+                                [size1 room 1 width] ;; last frame gets all that remains (avoid roundoff error)
+                            (== dir (byte \v))
+                                [size1 room 1 (:fr_width f)]
+                            (frame-fixed-width f)
+                                [size1 room 0 (:fr_newwidth f)] ;; doesn't count as a sizeable window
                             :else
-                            (do
-                                ;; These windows don't use up room.
-                                ((ß totwincount =) (- totwincount (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc @p_wmw))))
-                            ))
-                            ((ß room =) (- room (- new_size n)))
-                            (when (< room 0)
-                                ((ß new_size =) (+ new_size room))
-                                ((ß room =) 0)
-                            )
-                            ((ß fr =) (assoc fr :fr_newwidth new_size))
-                        )
-                    )
-                    (when (== next_curwin_size -1)
-                        (cond (not has_next_curwin)
-                        (do
-                            ((ß next_curwin_size =) 0)
-                        )
-                        (and (< 1 totwincount) (< @p_wiw (/ (+ room (- totwincount 2)) (dec totwincount))))
-                        (do
-                            ;; Can make all windows wider than 'winwidth', spread the room equally.
-                            ((ß next_curwin_size =) (/ (+ room (int @p_wiw) (* (dec totwincount) (int @p_wmw)) (dec totwincount)) totwincount))
-                            ((ß room =) (- room (- next_curwin_size @p_wiw)))
-                        )
-                        :else
-                        (do
-                            ((ß next_curwin_size =) (int @p_wiw))
-                        ))
-                    )
+                                ;; Compute the maximum number of horizontal windows in "f".
+                                (let [#_int n (frame-minwidth f, :NOWIN)
+                                      t' (/ (+ n (if (nil? (:fr_next f)) extra 0)) (inc @p_wmw))
+                                      #_int m (frame-minwidth f, win')
+                                      ? (and next? (frame-has-win f, win'))
+                                      t' (if ? (dec t') t') ;; don't count "win'"
+                                      width1 (if (zero? total) room (/ (+ (* t' room) (>>> total 1)) total))
+                                      [size1 width1 room]
+                                        (when' ? => [size1 width1 (- room width1)] ;; add "win'" size
+                                            (let [size1 (- size1 (- @p_wiw (- m n))) width1 (+ width1 size1)]
+                                                [size1 width1 (- room (- width1 size1))])
+                                        )]
+                                    [size1 room t' (+ width1 n)]
+                                ))
+                          [win f] ;; Skip frame that is full width when splitting or closing a window, unless equalizing all frames.
+                            (when' (or (not current) (!= dir (byte \v)) (some? (:fr_parent frame)) (!= width1 (:fr_width f)) (frame-has-win f, win')) => [win f]
+                                (win-equal-rec win, win', current, f, dir, col, row, width1, height))]
+                        (recur win (+ col width1) (- width width1) (- total t') room size1 (:fr_next f)))
                 ))
 
-                ((ß totwincount =) (if has_next_curwin (dec totwincount) totwincount))          ;; don't count "win"
-            )
-
-            (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
-                ((ß wincount =) 1)
-                (ß int new_size)
-                (cond (nil? (:fr_next fr))
-                (do
-                    ;; last frame gets all that remains (avoid roundoff error)
-                    ((ß new_size =) width)
-                )
-                (== dir (byte \v))
-                (do
-                    ((ß new_size =) (:fr_width fr))
-                )
-                (frame-fixed-width fr)
-                (do
-                    ((ß new_size =) (:fr_newwidth fr))
-                    ((ß wincount =) 0)       ;; doesn't count as a sizeable window
-                )
-                :else
-                (do
-                    ;; Compute the maximum number of windows horiz. in "fr".
-                    ((ß int n =) (frame-minwidth fr, :NOWIN))
-                    ((ß wincount =) (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc (int @p_wmw))))
-                    ((ß int m =) (frame-minwidth fr, win'))
-                    ((ß boolean hnc =) (if has_next_curwin (frame-has-win fr, win') false))
-                    ((ß wincount =) (if hnc (dec wincount) wincount))            ;; don't count "win'"
-                    ((ß new_size =) (if (zero? totwincount) room (/ (+ (* wincount room) (>>> totwincount 1)) totwincount)))
-                    (cond hnc            ;; add "win'" size
-                    (do
-                        ((ß next_curwin_size =) (- next_curwin_size (- @p_wiw (- m n))))
-                        ((ß new_size =) (+ new_size next_curwin_size))
-                        ((ß room =) (- room (- new_size next_curwin_size)))
-                    )
-                    :else
-                    (do
-                        ((ß room =) (- room new_size))
-                    ))
-                    ((ß new_size =) (+ new_size n))
-                ))
-
-                ;; Skip frame that is full width when splitting or closing a window,
-                ;; unless equalizing all frames.
-                (if (or (not current) (!= dir (byte \v)) (some? (:fr_parent topfr)) (!= new_size (:fr_width fr)) (frame-has-win fr, win'))
-                    ((ß win =) (win-equal-rec win, win', current, fr, dir, col, row, new_size, height)))
-                ((ß col =) (+ col new_size))
-                ((ß width =) (- width new_size))
-                ((ß totwincount =) (- totwincount wincount))
-            )
-        )
-        :else ;; topfr.fr_layout == FR_COL
-        (do
-            ((ß topfr =) (assoc topfr :fr_width width))
-            ((ß topfr =) (assoc topfr :fr_height height))
-
-            (when (!= dir (byte \h))                 ;; equalize frame heights
-                ;; Compute maximum number of windows vertically in this frame.
-                ((ß int n =) (frame-minheight topfr, :NOWIN))
-                ;; add one for the bottom window if it doesn't have a statusline
-                ((ß extra_sep =) (if (and (== (+ row height) @cmdline_row) (zero? @p_ls)) 1 0))
-                ((ß totwincount =) (/ (+ n extra_sep) (inc (int @p_wmh))))
-                ((ß has_next_curwin =) (frame-has-win topfr, win'))
-
-                ;; Compute height for "win'" window and room available for other windows.
-                ;; "m" is the minimal height when counting "p_wh" for "win'".
-
-                ((ß int m =) (frame-minheight topfr, win'))
-                ((ß room =) (- height m))
-                (cond (< room 0)
-                (do
-                    ;; The room is less then 'winheight', use all space for the current window.
-                    ((ß next_curwin_size =) (+ (int @p_wh) room))
-                    ((ß room =) 0)
-                )
-                :else
-                (do
-                    ((ß next_curwin_size =) -1)
-                    (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
-                        ;; If 'winfixheight' set keep the window height if possible.
-                        ;; Watch out for this window being the "win'".
-                        (when (frame-fixed-height fr)
-                            ((ß n =) (frame-minheight fr, :NOWIN))
-                            ((ß int new_size =) (:fr_height fr))
-                            (cond (frame-has-win fr, win')
-                            (do
-                                ((ß room =) (+ room (- @p_wh @p_wmh)))
-                                ((ß next_curwin_size =) 0)
-                                ((ß new_size =) (max (int @p_wh) new_size))
-                            )
+        FR_COL
+            (let [frame (assoc frame :fr_width width :fr_height height)
+                  [#_int extra #_int total #_boolean next? #_int room #_int size1]
+                    (when' (!= dir (byte \h)) => [0 0 false 0 0] ;; equalize frame heights
+                        ;; Compute maximum number of windows vertically in this frame.
+                        (let [#_int n (frame-minheight frame, :NOWIN)
+                              ;; Add one for the bottom window if it doesn't have a statusline.
+                              extra (if (and (== (+ row height) @cmdline_row) (zero? @p_ls)) 1 0)
+                              total (/ (+ n extra) (inc @p_wmh))
+                              next? (frame-has-win frame, win')
+                              ;; Compute height for "win'" window and room available for other windows.
+                              ;; "m" is the minimal height when counting "p_wh" for "win'".
+                              #_int m (frame-minheight frame, win')
+                              room (- height m)
+                              [total room size1]
+                                (if (< room 0)
+                                    ;; The room is less then 'winheight', use all space for the current window.
+                                    [total 0 (+ @p_wh room)]
+                                    (let [[total room size1]
+                                            (loop-when [total total room room size1 -1 #_frame_C f (:fr_child frame)] (some? f) => [total room size1]
+                                                ;; If 'winfixheight' set, keep the window height, if possible.
+                                                ;; Watch out for this window being the "win'".
+                                                (let [[total room size1 f]
+                                                        (when' (frame-fixed-height f) => [total room size1 f]
+                                                            (let [#_int n (frame-minheight f, :NOWIN)
+                                                                  [total room size1 #_int height1]
+                                                                    (if (frame-has-win f, win')
+                                                                        [total (+ room (- @p_wh @p_wmh)) 0 (max @p_wh (:fr_height f))]
+                                                                        (let [total (- total (/ (+ n (if (nil? (:fr_next f)) extra 0)) (inc @p_wmh)))]
+                                                                            ;; These windows don't use up room.
+                                                                            [total room size1 (:fr_height f)]
+                                                                        ))
+                                                                  room (- room (- height1 n))
+                                                                  [height1 room]
+                                                                    (when' (< room 0) => [height1 room]
+                                                                        [(+ height1 room) 0]
+                                                                    )]
+                                                                [total room size1 (assoc f :fr_newheight height1)])
+                                                        )]
+                                                    (recur total room size1 (:fr_next f))
+                                                ))
+                                          [size1 room]
+                                            (when' (== size1 -1) => [size1 room]
+                                                (cond (not next?)
+                                                    [0 room]
+                                                (and (< 1 total) (< @p_wh (/ (+ room (- total 2)) (dec total))))
+                                                    ;; Can make all windows higher than 'winheight', spread the room equally.
+                                                    (let [size1 (/ (+ room @p_wh (* (dec total) @p_wmh) (dec total)) total)]
+                                                        [size1 (- room (- size1 @p_wh))])
+                                                :else
+                                                    [@p_wh room])
+                                            )]
+                                        [total room size1])
+                                )]
+                            [extra (if next? (dec total) total) next? room size1]) ;; don't count "win"
+                    )]
+                (loop-when [win win row row height height total total room room size1 size1 #_frame_C f (:fr_child frame)] (some? f) => [win frame]
+                    (let [[size1 room #_int t' #_int height1]
+                            (cond (nil? (:fr_next f))
+                                [size1 room 1 height] ;; last frame gets all that remains (avoid roundoff error)
+                            (== dir (byte \h))
+                                [size1 room 1 (:fr_height f)]
+                            (frame-fixed-height f)
+                                [size1 room 0 (:fr_newheight f)] ;; doesn't count as a sizeable window
                             :else
-                            (do
-                                ;; These windows don't use up room.
-                                ((ß totwincount =) (- totwincount (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc @p_wmh))))
-                            ))
-                            ((ß room =) (- room (- new_size n)))
-                            (when (< room 0)
-                                ((ß new_size =) (+ new_size room))
-                                ((ß room =) 0)
-                            )
-                            ((ß fr =) (assoc fr :fr_newheight new_size))
-                        )
-                    )
-                    (when (== next_curwin_size -1)
-                        (cond (not has_next_curwin)
-                        (do
-                            ((ß next_curwin_size =) 0)
-                        )
-                        (and (< 1 totwincount) (< @p_wh (/ (+ room (- totwincount 2)) (dec totwincount))))
-                        (do
-                            ;; Can make all windows higher than 'winheight', spread the room equally.
-                            ((ß next_curwin_size =) (/ (+ room (int @p_wh) (* (dec totwincount) (int @p_wmh)) (dec totwincount)) totwincount))
-                            ((ß room =) (- room (- next_curwin_size @p_wh)))
-                        )
-                        :else
-                        (do
-                            ((ß next_curwin_size =) (int @p_wh))
-                        ))
-                    )
+                                ;; Compute the maximum number of vertical windows in "f".
+                                (let [#_int n (frame-minheight f, :NOWIN)
+                                      t' (/ (+ n (if (nil? (:fr_next f)) extra 0)) (inc @p_wmh))
+                                      #_int m (frame-minheight f, win')
+                                      ? (and next? (frame-has-win f, win'))
+                                      t' (if ? (dec t') t') ;; don't count "win'"
+                                      height1 (if (zero? total) room (/ (+ (* t' room) (>>> total 1)) total))
+                                      [size1 height1 room]
+                                        (when' ? => [size1 height1 (- room height1)] ;; add "win'" size
+                                            (let [size1 (- size1 (- @p_wh (- m n))) height1 (+ height1 size1)]
+                                                [size1 height1 (- room (- height1 size1))])
+                                        )]
+                                    [size1 room t' (+ height1 n)]
+                                ))
+                          [win f] ;; Skip frame that is full height when splitting or closing a window, unless equalizing all frames.
+                            (when' (or (not current) (!= dir (byte \h)) (some? (:fr_parent frame)) (!= height1 (:fr_height f)) (frame-has-win f, win')) => [win f]
+                                (win-equal-rec win, win', current, f, dir, col, row, width, height1))]
+                        (recur win (+ row height1) (- height height1) (- total t') room size1 (:fr_next f)))
                 ))
-
-                ((ß totwincount =) (if has_next_curwin (dec totwincount) totwincount))          ;; don't count "win"
-            )
-
-            (loop-when-recur [#_frame_C fr (:fr_child topfr)] (some? fr) [(:fr_next fr)]
-                ((ß wincount =) 1)
-                (ß int new_size)
-                (cond (nil? (:fr_next fr))
-                (do
-                    ;; last frame gets all that remains (avoid roundoff error)
-                    ((ß new_size =) height)
-                )
-                (== dir (byte \h))
-                (do
-                    ((ß new_size =) (:fr_height fr))
-                )
-                (frame-fixed-height fr)
-                (do
-                    ((ß new_size =) (:fr_newheight fr))
-                    ((ß wincount =) 0)       ;; doesn't count as a sizeable window
-                )
-                :else
-                (do
-                    ;; Compute the maximum number of windows vert. in "fr".
-                    ((ß int n =) (frame-minheight fr, :NOWIN))
-                    ((ß wincount =) (/ (+ n (if (nil? (:fr_next fr)) extra_sep 0)) (inc (int @p_wmh))))
-                    ((ß int m =) (frame-minheight fr, win'))
-                    ((ß boolean hnc =) (if has_next_curwin (frame-has-win fr, win') false))
-                    ((ß wincount =) (if hnc (dec wincount) wincount))            ;; don't count "win'"
-                    ((ß new_size =) (if (zero? totwincount) room (/ (+ (* wincount room) (>>> totwincount 1)) totwincount)))
-                    (cond hnc            ;; add "win'" size
-                    (do
-                        ((ß next_curwin_size =) (- next_curwin_size (- @p_wh (- m n))))
-                        ((ß new_size =) (+ new_size next_curwin_size))
-                        ((ß room =) (- room (- new_size next_curwin_size)))
-                    )
-                    :else
-                    (do
-                        ((ß room =) (- room new_size))
-                    ))
-                    ((ß new_size =) (+ new_size n))
-                ))
-                ;; Skip frame that is full width when splitting or closing a window,
-                ;; unless equalizing all frames.
-                (when (or (not current) (!= dir (byte \h)) (some? (:fr_parent topfr)) (!= new_size (:fr_height fr)) (frame-has-win fr, win'))
-                    ((ß win =) (win-equal-rec win, win', current, fr, dir, col, row, width, new_size))
-                )
-                ((ß row =) (+ row new_size))
-                ((ß height =) (- height new_size))
-                ((ß totwincount =) (- totwincount wincount))
-            )
-        ))
-        win
     ))
 
 ;; Return true if there is only one window.
@@ -38935,39 +38857,39 @@
 (defn- #_window_C frame-fix-height [#_window_C win]
     (assoc-in win [:w_frame :fr_height] (+ (:w_height win) (:w_status_height win))))
 
-;; Compute the minimal height for frame "topfr".
+;; Compute the minimal height for frame "frame".
 ;; Uses the 'winminheight' option.
 ;; When "win'" isn't null, use "p_wh" for this window.
 ;; When "win'" is NOWIN, don't use at least one line for the current window.
 
-(defn- #_int frame-minheight [#_frame_C topfr, #_window_C win']
-    (cond (some? (:fr_win topfr))
-        (if (== (:fr_win topfr) win')
-            (+ @p_wh (:w_status_height (:fr_win topfr)))
-            (let [m (+ @p_wmh (:w_status_height (:fr_win topfr)))] ;; window: minimal height of the window plus status line
-                (if (and (zero? @p_wmh) (== (:fr_win topfr) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one line high
+(defn- #_int frame-minheight [#_frame_C frame, #_window_C win']
+    (cond (some? (:fr_win frame))
+        (if (== (:fr_win frame) win')
+            (+ @p_wh (:w_status_height (:fr_win frame)))
+            (let [m (+ @p_wmh (:w_status_height (:fr_win frame)))] ;; window: minimal height of the window plus status line
+                (if (and (zero? @p_wmh) (== (:fr_win frame) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one line high
             ))
-    (== (:fr_layout topfr) FR_ROW) ;; get the minimal height from each frame in this row
-        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(max (frame-minheight fr, win') m) (:fr_next fr)] => m)
+    (== (:fr_layout frame) FR_ROW) ;; get the minimal height from each frame in this row
+        (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(max (frame-minheight fr, win') m) (:fr_next fr)] => m)
     :else                          ;; add up the minimal heights for all frames in this column
-        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(+ m (frame-minheight fr, win')) (:fr_next fr)] => m)
+        (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(+ m (frame-minheight fr, win')) (:fr_next fr)] => m)
     ))
 
-;; Compute the minimal width for frame "topfr".
+;; Compute the minimal width for frame "frame".
 ;; When "win'" isn't null, use "p_wiw" for this window.
 ;; When "win'" is NOWIN, don't use at least one column for the current window.
 
-(defn- #_int frame-minwidth [#_frame_C topfr, #_window_C win'] ;; win': use "p_wh" and "p_wiw" for win'
-    (cond (some? (:fr_win topfr))
-        (if (== (:fr_win topfr) win')
-            (+ @p_wiw (:w_vsep_width (:fr_win topfr)))
-            (let [m (+ @p_wmw (:w_vsep_width (:fr_win topfr)))] ;; window: minimal width of the window plus separator column
-                (if (and (zero? @p_wmw) (== (:fr_win topfr) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one column wide
+(defn- #_int frame-minwidth [#_frame_C frame, #_window_C win'] ;; win': use "p_wh" and "p_wiw" for win'
+    (cond (some? (:fr_win frame))
+        (if (== (:fr_win frame) win')
+            (+ @p_wiw (:w_vsep_width (:fr_win frame)))
+            (let [m (+ @p_wmw (:w_vsep_width (:fr_win frame)))] ;; window: minimal width of the window plus separator column
+                (if (and (zero? @p_wmw) (== (:fr_win frame) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one column wide
             ))
-    (== (:fr_layout topfr) FR_COL) ;; get the minimal width from each frame in this column
-        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(max (frame-minwidth fr, win') m) (:fr_next fr)] => m)
+    (== (:fr_layout frame) FR_COL) ;; get the minimal width from each frame in this column
+        (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(max (frame-minwidth fr, win') m) (:fr_next fr)] => m)
     :else                          ;; add up the minimal widths for all frames in this row
-        (loop-when-recur [m 0 fr (:fr_child topfr)] (some? fr) [(+ m (frame-minwidth fr, win')) (:fr_next fr)] => m)
+        (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(+ m (frame-minwidth fr, win')) (:fr_next fr)] => m)
     ))
 
 ;; Try to close all windows except current one.
@@ -39721,25 +39643,25 @@
 (defn- #_int min-rows []
     (if (nil? @firstwin) MIN_ROWS (inc (max 0 (frame-minheight @topframe, nil)))))      ;; count the room for the command line
 
-;; Return true if "topfr" and its children are at the right height.
+;; Return true if "frame" and its children are at the right height.
 
-(defn- #_boolean frame-check-height [#_frame_C topfr, #_int height]
-    (if (!= (:fr_height topfr) height)
+(defn- #_boolean frame-check-height [#_frame_C frame, #_int height]
+    (if (!= (:fr_height frame) height)
         false
-        (if (== (:fr_layout topfr) FR_ROW)
-            (loop-when [#_frame_C fr (:fr_child topfr)] (some? fr) => true
+        (if (== (:fr_layout frame) FR_ROW)
+            (loop-when [#_frame_C fr (:fr_child frame)] (some? fr) => true
                 (recur-if (== (:fr_height fr) height) [(:fr_next fr)] => false))
             true
         )
     ))
 
-;; Return true if "topfr" and its children are at the right width.
+;; Return true if "frame" and its children are at the right width.
 
-(defn- #_boolean frame-check-width [#_frame_C topfr, #_int width]
-    (if (!= (:fr_width topfr) width)
+(defn- #_boolean frame-check-width [#_frame_C frame, #_int width]
+    (if (!= (:fr_width frame) width)
         false
-        (if (== (:fr_layout topfr) FR_COL)
-            (loop-when [#_frame_C fr (:fr_child topfr)] (some? fr) => true
+        (if (== (:fr_layout frame) FR_COL)
+            (loop-when [#_frame_C fr (:fr_child frame)] (some? fr) => true
                 (recur-if (== (:fr_width fr) width) [(:fr_next fr)] => false))
             true
         )
