@@ -4307,8 +4307,6 @@
     (§
         ((ß boolean did_show =) false)           ;; already showed one value
 
-        ((ß Bytes errbuf =) (Bytes. 80))
-
         (loop-when-recur arg (non-eos? arg) (skipwhite arg) => true             ;; loop to process all options
             ((ß Bytes errmsg =) nil)
             ((ß Bytes startarg =) arg)      ;; remember for error message
@@ -4474,7 +4472,7 @@
                                 (ß BREAK skip)
                             ))
 
-                            ((ß errmsg =) (set-num-option opt_idx, (ß (long[])varp), value, errbuf, (.size errbuf)))
+                            ((ß errmsg =) (set-num-option opt_idx, (ß (long[])varp), value))
                         )
                         :else                  ;; string
                         (do
@@ -4492,14 +4490,11 @@
                             (do
                                 ((ß arg =) (.plus arg 1))      ;; jump to after the '=' or ':'
 
-                                ;; Set 'keywordprg' to ":echo" if an empty
-                                ;; value was passed to :set by the user.
-                                ;; Misuse errbuf[] for the resulting string.
+                                ;; Set 'keywordprg' to ":echo" if an empty value was passed to :set by the user.
 
                                 (when (and (== varp @(:b_p_kp @curbuf)) (or (eos? arg) (at? arg (byte \space))))
-                                    (STRCPY errbuf, (u8 ":echo"))
                                     ((ß save_arg =) arg)
-                                    ((ß arg =) errbuf)
+                                    ((ß arg =) (u8 ":echo"))
                                 )
 
                                 ((ß Bytes origval =) oldval)
@@ -4561,7 +4556,7 @@
                             ((ß (Bytes)@varp =) newval)
 
                             ;; Handle side effects, and set the global value for ":set" on local options.
-                            ((ß errmsg =) (did-set-string-option opt_idx, (ß (Bytes[])varp), oldval, errbuf))
+                            ((ß errmsg =) (did-set-string-option opt_idx, (ß (Bytes[])varp), oldval))
 
                             ;; If error detected, print the error message.
                             (if (some? errmsg)
@@ -4611,13 +4606,10 @@
         )
     ))
 
-(defn- #_Bytes illegal-char [#_Bytes errbuf, #_int c]
-    (if (nil? errbuf)
-        (u8 "")
-        (do
-;%%         (.sprintf libC errbuf, (u8 "E539: Illegal character <%s>"), (transchar c))
-            errbuf
-        )
+(defn- #_Bytes illegal-char [#_int c]
+    (let [#_Bytes errbuf (Bytes. 80)]
+;%%     (.sprintf libC errbuf, (u8 "E539: Illegal character <%s>"), (transchar c))
+        errbuf
     ))
 
 ;; After setting various option values: recompute variables that depend on option values.
@@ -4652,199 +4644,104 @@
     (check-string-option (:b_p_cinw @curbuf))
     nil)
 
-(defn- #_void clear-string-option [#_Bytes' a'pp] (reset! a'pp EMPTY_OPTION) nil)
-(defn- #_void check-string-option [#_Bytes' a'pp] (when (nil? @a'pp) (reset! a'pp EMPTY_OPTION)) nil)
+(defn- #_void clear-string-option [#_Bytes' a'p] (reset! a'p EMPTY_OPTION) nil)
+(defn- #_void check-string-option [#_Bytes' a'p] (when (nil? @a'p) (reset! a'p EMPTY_OPTION)) nil)
 
 ;; Handle string options that need some action to perform when changed.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes did-set-string-option [#_int opt_idx, #_Bytes* varp, #_Bytes oldval, #_Bytes errbuf]
-    ;; opt_idx: index in vimoptions[] table
-    ;; varp: pointer to the option variable
-    ;; oldval: previous value of the option
-    ;; errbuf: buffer for errors, or null
-    (§
-        ((ß vimoption_C v =) (... vimoptions opt_idx))
+(defn- #_Bytes did-set-string-option [#_int opt_idx, #_Bytes' varp, #_Bytes oldval]
+    (let [a'undo_chartab (atom (boolean false))
+          #_Bytes errmsg
+            (cond (== varp (:wo_briopt (:w_options @curwin))) ;; 'breakindentopt'
+                (when-not (briopt-check @curwin) e_invarg)
 
-        ((ß Bytes errmsg =) nil)
-        ((ß boolean did_chartab =) false)
+            (any == varp p_isi p_isp p_isf (:b_p_isk @curbuf)) ;; 'isident', 'isprint', 'isfname' or 'iskeyword'
+                (when-not (init-chartab true)
+                    (reset! a'undo_chartab true) ;; need to restore it below
+                    e_invarg)
 
-        ;; 'breakindentopt'
-        (cond (== varp (:wo_briopt (:w_options @curwin)))
-        (do
-            ((ß errmsg =) (if (not (briopt-check @curwin)) e_invarg errmsg))
-        )
+            (== varp (:wo_cc (:w_options @curwin))) ;; 'colorcolumn'
+                (check-colorcolumn @curwin)
 
-        ;; 'isident', 'isprint', 'isfname' or 'iskeyword' option: refill chartab[]
-        ;; If the new option is invalid, use old value.
+            (== varp p_hl) ;; 'highlight'
+                (when-not (highlight-changed) e_invarg)
 
-        (any == varp p_isi p_isp p_isf (:b_p_isk @curbuf))
-        (do
-            (when (not (init-chartab true))
-                ((ß did_chartab =) true)     ;; need to restore it below
-                ((ß errmsg =) e_invarg)      ;; error in value
-            )
-        )
+            (== varp (:b_p_nf @curbuf)) ;; 'nrformats'
+                (when-not (check-opt-strings @varp, p_nf_values, true) e_invarg)
 
-        ;; 'colorcolumn'
-        (== varp (:wo_cc (:w_options @curwin)))
-        (do
-            ((ß errmsg =) (check-colorcolumn @curwin))
-        )
+            (== varp p_sbo) ;; 'scrollopt'
+                (when-not (check-opt-strings @p_sbo, p_scbopt_values, true) e_invarg)
 
-        ;; 'highlight'
-        (== varp p_hl)
-        (do
-            ((ß errmsg =) (if (not (highlight-changed)) e_invarg errmsg))  ;; invalid flags
-        )
+            (== varp (:b_p_mps @curbuf)) ;; 'matchpairs'
+                (loop-when [#_Bytes p @varp] (non-eos? p)
+                    (let [p (.plus p (us-ptr2len-cc p))
+                          [#_int x2 p] (if (non-eos? p) [(.at p 0) (.plus p 1)] [-1 p])
+                          [#_int x3 p] (if (non-eos? p) [(us-ptr2char p) (.plus p (us-ptr2len-cc p))] [-1 p])]
+                        (cond (or (!= x2 (byte \:)) (== x3 -1) (and (non-eos? p) (not-at? p (byte \,)))) e_invarg (non-eos? p) (recur (.plus p 1)))
+                    ))
 
-        ;; 'nrformats'
-        (== varp (:b_p_nf @curbuf))
-        (do
-            ((ß errmsg =) (if (not (check-opt-strings (... varp 0), p_nf_values, true)) e_invarg errmsg))
-        )
+            (== varp p_sbr) ;; 'showbreak'
+                (loop-when [#_Bytes s @p_sbr] (non-eos? s)
+                    (recur-if (== (mb-ptr2cells s) 1) [(.plus s (us-ptr2len-cc s))] => (u8 "E595: contains unprintable or wide character")))
 
-        ;; 'scrollopt'
-        (== varp p_sbo)
-        (do
-            ((ß errmsg =) (if (not (check-opt-strings @p_sbo, p_scbopt_values, true)) e_invarg errmsg))
-        )
+            (== varp p_breakat) ;; 'breakat'
+                (do (fill-breakat-flags) nil)
 
-        ;; 'matchpairs'
-        (== varp (:b_p_mps @curbuf))
-        (do
-            (loop-when-recur [#_Bytes p (... varp 0)] (non-eos? p) [(.plus p 1)]
-                ((ß int x2 =) -1)
-                ((ß int x3 =) -1)
+            (== varp p_sel) ;; 'selection'
+                (when (or (eos? @p_sel) (not (check-opt-strings @p_sel, p_sel_values, false))) e_invarg)
 
-                ((ß p =) (if (non-eos? p) (.plus p (us-ptr2len-cc p)) p))
-                (if (non-eos? p)
-                    ((ß x2 =) (.at ((ß p =) (.plus p 1)) -1))
-                )
-                (when (non-eos? p)
-                    ((ß x3 =) (us-ptr2char p))
-                    ((ß p =) (.plus p (us-ptr2len-cc p)))
-                )
-                (when (or (!= x2 (byte \:)) (== x3 -1) (and (non-eos? p) (not-at? p (byte \,))))
-                    ((ß errmsg =) e_invarg)
-                    (ß BREAK)
-                )
-                (if (eos? p)
-                    (ß BREAK)
-                )
-            )
-        )
+            (== varp p_slm) ;; 'selectmode'
+                (when-not (check-opt-strings @p_slm, p_slm_values, true) e_invarg)
 
-        ;; 'showbreak'
-        (== varp p_sbr)
-        (do
-            (loop-when-recur [#_Bytes s @p_sbr] (non-eos? s) [(.plus s (us-ptr2len-cc s))]
-                (when (!= (mb-ptr2cells s) 1)
-                    ((ß errmsg =) (u8 "E595: contains unprintable or wide character"))
-                    (ß BREAK)
-                )
-            )
-        )
+            (== varp p_km) ;; 'keymodel'
+                (if (check-opt-strings @p_km, p_km_values, true)
+                    (do (reset! km_stopsel (some? (vim-strchr @p_km, (byte \o))))
+                        (reset! km_startsel (some? (vim-strchr @p_km, (byte \a))))
+                        nil)
+                    e_invarg)
 
-        ;; 'breakat'
-        (== varp p_breakat)
-        (do
-            (fill-breakat-flags)
-        )
+            (== varp p_dy) ;; 'display'
+                (if (opt-strings-flags @p_dy, p_dy_values, dy_flags, true)
+                    (do (init-chartab true)
+                        nil)
+                    e_invarg)
 
-        ;; 'selection'
-        (== varp p_sel)
-        (do
-            ((ß errmsg =) (if (or (eos? @p_sel) (not (check-opt-strings @p_sel, p_sel_values, false))) e_invarg errmsg))
-        )
+            (== varp p_ead) ;; 'eadirection'
+                (when-not (check-opt-strings @p_ead, p_ead_values, false) e_invarg)
 
-        ;; 'selectmode'
-        (== varp p_slm)
-        (do
-            ((ß errmsg =) (if (not (check-opt-strings @p_slm, p_slm_values, true)) e_invarg errmsg))
-        )
+            (== varp p_bs) ;; 'backspace'
+                (when-not (check-opt-strings @p_bs, p_bs_values, true) e_invarg)
 
-        ;; 'keymodel'
-        (== varp p_km)
-        (do
-            (cond (not (check-opt-strings @p_km, p_km_values, true))
-            (do
-                ((ß errmsg =) e_invarg)
-            )
-            :else
-            (do
-                (reset! km_stopsel (some? (vim-strchr @p_km, (byte \o))))
-                (reset! km_startsel (some? (vim-strchr @p_km, (byte \a))))
-            ))
-        )
+            (== varp p_ve) ;; 'virtualedit'
+                (cond (not (opt-strings-flags @p_ve, p_ve_values, ve_flags, true))
+                    e_invarg
+                (non-zero? (STRCMP @p_ve, oldval))
+                    (do ;; Recompute cursor position in case the new 've' setting changes something.
+                        (validate-virtcol)
+                        (coladvance (:w_virtcol @curwin))
+                        nil
+                    ))
 
-        ;; 'display'
-        (== varp p_dy)
-        (do
-            (if (not (opt-strings-flags @p_dy, p_dy_values, dy_flags, true))
-                ((ß errmsg =) e_invarg)
-                (init-chartab true))
-        )
-
-        ;; 'eadirection'
-        (== varp p_ead)
-        (do
-            ((ß errmsg =) (if (not (check-opt-strings @p_ead, p_ead_values, false)) e_invarg errmsg))
-        )
-
-        ;; 'backspace'
-        (== varp p_bs)
-        (do
-            ((ß errmsg =) (if (not (check-opt-strings @p_bs, p_bs_values, true)) e_invarg errmsg))
-        )
-
-        ;; 'virtualedit'
-        (== varp p_ve)
-        (do
-            (cond (not (opt-strings-flags @p_ve, p_ve_values, ve_flags, true))
-            (do
-                ((ß errmsg =) e_invarg)
-            )
-            (non-zero? (STRCMP @p_ve, oldval))
-            (do
-                ;; Recompute cursor position in case the new 've' setting changes something.
-                (validate-virtcol)
-                (coladvance (:w_virtcol @curwin))
-            ))
-        )
-
-        ;; Options that are a list of flags.
-        :else
-        (do
-            ((ß Bytes p =) (condp == varp p_ww WW_ALL p_cpo CPO_ALL (:wo_cocu (:w_options @curwin)) COCU_ALL nil))
-
-            (when (some? p)
-                (loop-when-recur [#_Bytes s (... varp 0)] (non-eos? s) [(.plus s 1)]
-                    (when (nil? (vim-strchr p, (.at s 0)))
-                        ((ß errmsg =) (illegal-char errbuf, (.at s 0)))
-                        (ß BREAK)
-                    )
-                )
-            )
-        ))
-
+            :else ;; Options that are a list of flags.
+                (let-when [#_Bytes p (condp == varp p_ww WW_ALL p_cpo CPO_ALL (:wo_cocu (:w_options @curwin)) COCU_ALL nil)] (some? p)
+                    (loop-when [#_Bytes s @varp] (non-eos? s)
+                        (recur-if (some? (vim-strchr p, (.at s 0))) [(.plus s 1)] => (illegal-char (.at s 0)))
+                    ))
+            )]
         ;; If error detected, restore the previous value.
-
         (when (some? errmsg)
-            ((ß varp[0] =) oldval)
-
+            (reset! varp oldval)
             ;; When resetting some values, need to act on it.
-
-            (when did_chartab
+            (when @a'undo_chartab
                 (init-chartab true))
             (when (== varp p_hl)
-                (highlight-changed))
-        )
-
-        (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            (swap! curwin assoc :w_set_curswant true))
-        (check-redraw (:flags v))
-
+                (highlight-changed)
+            ))
+        (let [#_vimoption_C v (... vimoptions opt_idx)]
+            (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
+                (swap! curwin assoc :w_set_curswant true))
+            (check-redraw (:flags v)))
         errmsg
     ))
 
@@ -4908,30 +4805,16 @@
 ;; Set the value of a boolean option, and take care of side effects.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes set-bool-option [#_int opt_idx, #_boolean* varp, #_boolean value]
-    ;; opt_idx: index in vimoptions[] table
-    ;; varp: pointer to the option variable
-    ;; value: new value
-    (§
-        ((ß vimoption_C v =) (... vimoptions opt_idx))
+(defn- #_Bytes set-bool-option [#_int opt_idx, #_boolean' varp, #_boolean value]
+    (let [#_boolean old_value @varp _ (reset! varp value)]
 
-        ((ß boolean old_value =) (... varp 0))
-        ((ß varp[0] =) value)                    ;; set the new value
-
-        ;; Handle side effects of changing a bool option.
-
-        ;; when 'paste' is set or reset also change other options
-        (cond (== varp p_paste)
-        (do
+        (cond (== varp p_paste)                             ;; when 'paste' is set or reset, also change other options
             (paste-option-changed)
-        )
 
-        ;; when 'insertmode' is set from an autocommand need to do work here
-        (== varp p_im)
-        (do
+        (== varp p_im)                                      ;; when 'insertmode' is set from an autocommand, need to do work here
             (cond @p_im
             (do
-                (if (non-flag? @State INSERT)
+                (when (non-flag? @State INSERT)
                     (reset! need_start_insertmode true))
                 (reset! stop_insert_mode false)
             )
@@ -4939,74 +4822,52 @@
             (do
                 (reset! need_start_insertmode false)
                 (reset! stop_insert_mode true)
-                (if (and (non-zero? @restart_edit) @mode_displayed)
-                    (reset! clear_cmdline true))   ;; remove "(insert)"
+                (when (and (non-zero? @restart_edit) @mode_displayed)
+                    (reset! clear_cmdline true))            ;; remove "(insert)"
                 (reset! restart_edit 0)
             ))
-        )
 
-        ;; when 'ignorecase' is set or reset and 'hlsearch' is set, redraw
-        (and (== varp p_ic) @p_hls)
-        (do
+        (and (== varp p_ic) @p_hls)                         ;; when 'ignorecase' is set or reset and 'hlsearch' is set, redraw
             (redraw-all-later SOME_VALID)
-        )
 
-        ;; when 'hlsearch' is set or reset: reset no_hlsearch
-        (== varp p_hls)
-        (do
+        (== varp p_hls)                                     ;; when 'hlsearch' is set or reset, reset no_hlsearch
             (reset! no_hlsearch false)
-        )
 
-        ;; when 'scrollbind' is set:
-        ;; snapshot the current position to avoid a jump at the end of normal-cmd()
-        (== varp (:wo_scb (:w_options @curwin)))
-        (do
+        (== varp (:wo_scb (:w_options @curwin)))            ;; when 'scrollbind' is set, snapshot current position to avoid a jump at the end of normal-cmd()
             (when @(:wo_scb (:w_options @curwin))
                 (do-check-scrollbind false)
                 (swap! curwin assoc :w_scbind_pos (:w_topline @curwin))
             )
-        )
 
-        ;; If 'wrap' is set, set w_leftcol to zero.
-        (== varp (:wo_wrap (:w_options @curwin)))
-        (do
+        (== varp (:wo_wrap (:w_options @curwin)))           ;; when 'wrap' is set, set w_leftcol to zero
             (when @(:wo_wrap (:w_options @curwin))
                 (swap! curwin assoc :w_leftcol 0))
-        )
 
         (== varp p_ea)
-        (do
-            (if (and @p_ea (not old_value))
+            (when (and @p_ea (not old_value))
                 (win-equal @curwin, false, 0))
+        )
+
+        (let [#_vimoption_C v (... vimoptions opt_idx)]
+            (comp-col)                                      ;; in case 'ruler' or 'showcmd' changed
+            (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
+                (swap! curwin assoc :w_set_curswant true))
+            (check-redraw (:flags v))
         ))
-
-        ;; End of handling side effects for bool options.
-
-        (comp-col)                     ;; in case 'ruler' or 'showcmd' changed
-        (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            (swap! curwin assoc :w_set_curswant true))
-        (check-redraw (:flags v))
-
-        nil
-    ))
+    nil)
 
 ;; Set the value of a number option, and take care of side effects.
 ;; Returns null for success, or an error message for an error.
 
-(defn- #_Bytes set-num-option [#_int opt_idx, #_long* varp, #_long value, #_Bytes errbuf, #_int errbuflen]
-    ;; opt_idx: index in vimoptions[] table
-    ;; varp: pointer to the option variable
-    ;; value: new value
-    ;; errbuf: buffer for error messages
-    ;; errbuflen: length of "errbuf"
+(defn- #_Bytes set-num-option [#_int opt_idx, #_long' varp, #_long value]
     (§
+        ((ß long old_Rows =) @Rows)             ;; remember old Rows
+        ((ß long old_Cols =) @Cols)             ;; remember old Cols
+        ((ß long old_value =) @varp)
+
+        (reset! varp value)
+
         ((ß Bytes errmsg =) nil)
-        ((ß long old_value =) (... varp 0))
-        ((ß long old_Rows =) @Rows)               ;; remember old Rows
-        ((ß long old_Cols =) @Cols)         ;; remember old Cols
-
-        ((ß varp[0] =) value)
-
         (when (< @(:b_p_sw @curbuf) 0)
             ((ß errmsg =) e_positive)
             (reset! (:b_p_sw @curbuf) @(:b_p_ts @curbuf))
@@ -5026,10 +4887,8 @@
             )
 
             ;; Change window height NOW.
-            (when (!= @lastwin @firstwin)
-                (if (and (== varp p_wh) (< (:w_height @curwin) @p_wh))
-                    (win-setheight @curwin, @p_wh))
-            )
+            (when (and (!= @lastwin @firstwin) (< (:w_height @curwin) @p_wh))
+                (win-setheight @curwin, @p_wh))
         )
 
         ;; 'winminheight'
@@ -5058,8 +4917,8 @@
             )
 
             ;; Change window width NOW.
-            (if (and (!= @lastwin @firstwin) (< (:w_width @curwin) @p_wiw))
-                (win-setwidth @curwin, (int @p_wiw)))
+            (when (and (!= @lastwin @firstwin) (< (:w_width @curwin) @p_wiw))
+                (win-setwidth @curwin, @p_wiw))
         )
 
         ;; 'winminwidth'
@@ -5078,21 +4937,12 @@
 
         ;; (re)set last window status line
         (== varp p_ls)
-        (do
             (last-status false)
-        )
 
         ;; 'maxcombine'
         (== varp p_mco)
         (do
-            (cond (< MAX_MCO @p_mco)
-            (do
-                (reset! p_mco MAX_MCO)
-            )
-            (< @p_mco 0)
-            (do
-                (reset! p_mco 0)
-            ))
+            (swap! p_mco #(max 0 (min % MAX_MCO)))
             (screen-clear)      ;; will re-allocate the screen
         )
 
@@ -5103,13 +4953,13 @@
                 ((ß errmsg =) e_positive)
                 (reset! p_ch 1)
             )
-            ((ß int min =) (min-rows))
-            (when (> @p_ch (inc (- @Rows min)))
-                (reset! p_ch (inc (- @Rows min))))
+            ((ß int n =) (min-rows))
+            (when (> @p_ch (inc (- @Rows n)))
+                (reset! p_ch (inc (- @Rows n))))
 
             ;; Only compute the new window layout when startup has been completed,
             ;; otherwise the frame sizes may be wrong.
-            (if (and (!= @p_ch old_value) @full_screen)
+            (when (and (!= @p_ch old_value) @full_screen)
                 (command-height))
         )
 
@@ -5153,19 +5003,17 @@
         ;; Check the bounds for numeric options here.
 
         (when @full_screen
-            ((ß int min =) (min-rows))
-            (when (< @Rows min)
-                (when (some? errbuf)
-;%%                 (vim_snprintf errbuf, errbuflen, (u8 "E593: Need at least %d lines"), min)
-                    ((ß errmsg =) errbuf)
-                )
-                (reset! Rows min)
+            ((ß int n =) (min-rows))
+            (when (< @Rows n)
+                ((ß Bytes errbuf =) (Bytes. 80))
+;%%             (vim_snprintf errbuf, (.size errbuf), (u8 "E593: Need at least %d lines"), n)
+                ((ß errmsg =) errbuf)
+                (reset! Rows n)
             )
             (when (< @Cols MIN_COLS)
-                (when (some? errbuf)
-;%%                 (vim_snprintf errbuf, errbuflen, (u8 "E594: Need at least %d columns"), MIN_COLS)
-                    ((ß errmsg =) errbuf)
-                )
+                ((ß Bytes errbuf =) (Bytes. 80))
+;%%             (vim_snprintf errbuf, (.size errbuf), (u8 "E594: Need at least %d columns"), MIN_COLS)
+                ((ß errmsg =) errbuf)
                 (reset! Cols MIN_COLS)
             )
         )
@@ -5177,7 +5025,7 @@
             ;; Changing the screen size is not allowed while updating the screen.
             (cond @updating_screen
             (do
-                ((ß varp[0] =) old_value)
+                (reset! varp old_value)
             )
             @full_screen
             (do
@@ -5187,8 +5035,8 @@
             (do
                 ;; Postpone the resizing; check the size and cmdline position for messages.
                 (check-shellsize)
-                (if (and (> @cmdline_row (- @Rows @p_ch)) (< @p_ch @Rows))
-                    (reset! cmdline_row (int (- @Rows @p_ch))))
+                (when (and (< (- @Rows @p_ch) @cmdline_row) (< @p_ch @Rows))
+                    (reset! cmdline_row (- @Rows @p_ch)))
             ))
         )
 
@@ -5216,6 +5064,7 @@
                 (reset! (:wo_scr (:w_options @curwin)) (:w_height @curwin))
             ))
         )
+
         (cond (< @p_hi 0)
         (do
             ((ß errmsg =) e_positive)
@@ -5226,6 +5075,7 @@
             ((ß errmsg =) e_invarg)
             (reset! p_hi 10000)
         ))
+
         (when (or (< @p_re 0) (< 2 @p_re))
             ((ß errmsg =) e_invarg)
             (reset! p_re 0)
@@ -5266,13 +5116,11 @@
             (reset! p_ss 0)
         )
 
-        ((ß vimoption_C v =) (... vimoptions opt_idx))
-
-        (comp-col)                     ;; in case 'columns' or 'ls' changed
-        (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
-            (swap! curwin assoc :w_set_curswant true))
-        (check-redraw (:flags v))
-
+        (let [#_vimoption_C v (... vimoptions opt_idx)]
+            (comp-col)                     ;; in case 'columns' or 'ls' changed
+            (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
+                (swap! curwin assoc :w_set_curswant true))
+            (check-redraw (:flags v)))
         errmsg
     ))
 
@@ -5283,18 +5131,17 @@
     (let [#_boolean doclear (== (& flags P_RCLR) P_RCLR)
           #_boolean all (or (== (& flags P_RALL) P_RALL) doclear)]
 
-        (if (or (flag? flags P_RSTAT) all)      ;; mark all status lines dirty
+        (when (or (flag? flags P_RSTAT) all)      ;; mark all status lines dirty
             (status-redraw-all))
-        (if (or (flag? flags P_RBUF) (flag? flags P_RWIN) all)
+        (when (or (flag? flags P_RBUF) (flag? flags P_RWIN) all)
             (changed-window-setting))
-        (if (flag? flags P_RBUF)
+        (when (flag? flags P_RBUF)
             (redraw-curbuf-later NOT_VALID))
         (cond
             doclear (redraw-all-later CLEAR)
             all (redraw-all-later NOT_VALID)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Find index for option 'arg'.
 ;; Return -1 if not found.
@@ -5532,37 +5379,29 @@
     (opt-strings-flags val, values, nil, list))
 
 ;; Handle an option that can be a range of string values.
-;; Set a flag in "*flagp" for each string present.
+;; Set a flag in "*flags" for each value present.
 ;;
-;; Return true for correct value, false otherwise.
-;; Empty is always OK.
+;; Return false for a malformed "val", true otherwise.
+;; Empty "val" is OK.
 
-(defn- #_boolean opt-strings-flags [#_Bytes val, #_Bytes* values, #_int* flagp, #_boolean list]
+(defn- #_boolean opt-strings-flags [#_Bytes val, #_Bytes* values, #_int' a'flags, #_boolean list?]
     ;; val: new value
     ;; values: array of valid string values
-    ;; list: when true: accept a list of values
-    (§
-        ((ß int new_flags =) 0)
-
-        (loop-when [] (non-eos? val)
-            (loop-when-recur [#_int i 0] true [(inc i)]
-                (if (nil? (... values i))      ;; "val" not found in values[]
-                    ((ß RETURN) false)
-                )
-
-                ((ß int len =) (STRLEN (... values i)))
-                (when (and (zero? (STRNCMP (... values i), val, len)) (or (and list (at? val len (byte \,))) (eos? val len)))
-                    ((ß val =) (.plus val (+ len (if (at? val len (byte \,)) 1 0))))
-                    ((ß new_flags =) (| new_flags (<< 1 i)))
-                    (ß BREAK)                  ;; check next item in "val" list
-                )
-            )
-            (recur)
-        )
-        (if (some? flagp)
-            ((ß flagp[0] =) new_flags)
-        )
-
+    ;; list?: when true: accept a list of values
+    (let-when [#_int flags
+            (loop-when [#_Bytes s val flags 0] (non-eos? s) => flags
+                (let-when [[s flags :as _]
+                        (loop-when [#_int i 0] (some? (... values i)) => nil
+                            (let [#_int n (STRLEN (... values i))]
+                                (if (and (zero? (STRNCMP (... values i), s, n)) (or (and list? (at? s n (byte \,))) (eos? s n)))
+                                    [(.plus s (+ n (if (at? s n (byte \,)) 1 0))) (| flags (<< 1 i))]
+                                    (recur (inc i))
+                                ))
+                        )] (some? _) => nil
+                    (recur s flags))
+            )] (some? flags) => false
+        (when (some? a'flags)
+            (reset! a'flags flags))
         true
     ))
 
@@ -33013,7 +32852,7 @@
 (defn- #_boolean init-chartab [#_boolean global] ;; global: false: only set @curbuf.b_chartab[]
     (let [wide (if (flag? @dy_flags DY_UHEX) (byte 4) (byte 2))]
         (when global
-            (let [cls- #(condp < % (byte \space) wide DEL (inc CT_PRINT_CHAR) 0xa0 wide 256 (inc (+ CT_PRINT_CHAR CT_FNAME_CHAR)))]
+            (let [cls- #(condp > % (byte \space) wide DEL (inc CT_PRINT_CHAR) 0xa0 wide 256 (inc (+ CT_PRINT_CHAR CT_FNAME_CHAR)))]
                 (swap! chartab #(into (empty %) (map cls- %)))
             ))
         (swap! curbuf update :b_chartab #(into (empty %) (map (constantly 0) %)))
