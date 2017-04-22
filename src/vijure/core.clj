@@ -38176,7 +38176,7 @@
             ;; use one row for the status line
             ((ß win =) (win-new-height win, new_size))
             (if (flag? flags (| WSP_TOP WSP_BOT))
-                (frame-new-height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (flag? flags WSP_TOP), false)
+                ((ß curfrp =) (frame-new-height curfrp, (- (:fr_height curfrp) (+ new_size STATUS_HEIGHT)), (flag? flags WSP_TOP), false))
                 ((ß o'win =) (win-new-height o'win, (- o'win_height (+ new_size STATUS_HEIGHT)))))
             (cond before     ;; new window above current one
             (do
@@ -38442,7 +38442,7 @@
             ;; Redraw when size or position changes
             (when (or (!= (:fr_height topfr) height) (!= (:w_winrow (:fr_win topfr)) row) (!= (:fr_width topfr) width) (!= (:w_wincol (:fr_win topfr)) col))
                 ((ß topfr =) (assoc-in topfr [:fr_win :w_winrow] row))
-                (frame-new-height topfr, height, false, false)
+                ((ß topfr =) (frame-new-height topfr, height, false, false))
                 ((ß topfr =) (assoc-in topfr [:fr_win :w_wincol] col))
                 (frame-new-width topfr, width, false, false)
                 (redraw-all-later CLEAR)
@@ -38790,7 +38790,7 @@
                     (recur)
                 )
             )
-            (frame-new-height fr2, (+ (:fr_height fr2) (:fr_height frp_close)), (== fr2 (:fr_next frp_close)), false)
+            ((ß fr2 =) (frame-new-height fr2, (+ (:fr_height fr2) (:fr_height frp_close)), (== fr2 (:fr_next frp_close)), false))
             (reset! a'dir (byte \v))
         )
         :else
@@ -38904,108 +38904,78 @@
         )
     ))
 
-;; Set a new height for a frame.  Recursively sets the height for contained
-;; frames and windows.  Caller must take care of positions.
+;; Set a new height for a frame.
+;; Recursively sets the height for contained frames and windows.
+;; Caller must take care of positions.
 
-(defn- #_void frame-new-height [#_frame_C topfr, #_int height, #_boolean topfirst, #_boolean wfh]
+(defn- #_frame_C frame-new-height [#_frame_C frame, #_int height, #_boolean topfirst, #_boolean wfh]
     ;; topfirst: resize topmost contained frame first
     ;; wfh: obey 'winfixheight' when there is a choice; may cause the height not to be set
-    (§
-        (cond (some? (:fr_win topfr))
-        (do
-            ;; Simple case: just one window.
-            ((ß (:fr_win topfr) =) (win-new-height (:fr_win topfr), (- height (:w_status_height (:fr_win topfr)))))
-        )
-        (== (:fr_layout topfr) FR_ROW)
-        (do
-            (ß frame_C fr)
-            (loop []
-                ;; All frames in this row get the same new height.
-                ((ß fr =) (loop-when-recur [fr (:fr_child topfr)] (some? fr) [(:fr_next fr)] => fr
-                    (frame-new-height fr, height, topfirst, wfh)
-                    (when (< height (:fr_height fr))
-                        ;; Could not fit the windows, make the whole row higher.
-                        ((ß height =) (:fr_height fr))
-                        (ß BREAK)
-                    )
-                ))
-                (recur-if (some? fr) [])
-            )
-        )
-        :else    ;; fr_layout == FR_COL
-        (do
-            ;; Complicated case: resize a column of frames.
-            ;; Resize the bottom frame first, frames above that when needed.
+    (let-when [[frame height ?]
+            (cond (some? (:fr_win frame)) ;; Simple case: just one window.
+                [(assoc frame :fr_win (win-new-height (:fr_win frame), (- height (:w_status_height (:fr_win frame))))) height nil]
 
-            ((ß frame_C fr =) (:fr_child topfr))
-            (when wfh
-                ;; Advance past frames with one window with 'wfh' set.
-                (loop-when [] (frame-fixed-height fr)
-                    ((ß fr =) (:fr_next fr))
-                    (if (nil? fr)
-                        ((ß RETURN) nil)         ;; no frame without 'wfh', give up
-                    )
-                    (recur)
-                )
-            )
-            (when (not topfirst)
-                ;; Find the bottom frame of this column.
-                (loop-when [] (some? (:fr_next fr))
-                    ((ß fr =) (:fr_next fr))
-                    (recur)
-                )
-                (when wfh
-                    ;; Advance back for frames with one window with 'wfh' set.
-                    (loop-when [] (frame-fixed-height fr)
-                        ((ß fr =) (:fr_prev fr))
-                        (recur)
-                    )
-                )
-            )
+            (== (:fr_layout frame) FR_ROW)
+                (let [height ;; All frames in this row get the same new height.
+                        (loop [height height]
+                            (let [[#_frame_C f height]
+                                    (loop-when [f (:fr_child frame)] (some? f) => [f height]
+                                        (let [f (frame-new-height f, height, topfirst, wfh)]
+                                            ;; If could not fit the windows, make the whole row higher.
+                                            (recur-if (<= (:fr_height f) height) [(:fr_next f)] => [f (:fr_height f)]))
+                                    )]
+                                (recur-if (some? f) [height] => height))
+                        )]
+                    [frame height nil])
 
-            ((ß int extra_lines =) (- height (:fr_height topfr)))
-            (cond (< extra_lines 0)
-            (do
-                ;; reduce height of contained frames, bottom or top frame first
-                (loop-when [] (some? fr)
-                    ((ß int h =) (frame-minheight fr, nil))
-                    (cond (< (+ (:fr_height fr) extra_lines) h)
-                    (do
-                        ((ß extra_lines =) (+ extra_lines (- (:fr_height fr) h)))
-                        (frame-new-height fr, h, topfirst, wfh)
-                    )
-                    :else
-                    (do
-                        (frame-new-height fr, (+ (:fr_height fr) extra_lines), topfirst, wfh)
-                        (ß BREAK)
+            :else ;; (== (:fr_layout frame) FR_COL)
+                ;; Complicated case: resize a column of frames.
+                ;; Resize the bottom frame first, then the frames above, when needed.
+                (let-when [#_frame_C f (:fr_child frame)
+                      f (when' wfh => f
+                            ;; Advance past frames with one window with 'wfh' set.
+                            (loop-when f (frame-fixed-height f) => f
+                                (recur-if (some? (:fr_next f)) (:fr_next f) => nil) ;; no frame without 'wfh', give up
+                            ))
+                ] (some? f) => [frame height :abort]
+
+                    (let [f (when' (not topfirst) => f
+                                ;; Find the bottom frame of this column.
+                                (let [f (loop-when-recur f (some? (:fr_next f)) (:fr_next f) => f)]
+                                    (when' wfh => f
+                                        ;; Advance back for frames with one window with 'wfh' set.
+                                        (loop-when-recur f (frame-fixed-height f) (:fr_prev f) => f))
+                                ))
+                          #_int delta (- height (:fr_height frame))]
+                        (cond (< delta 0)
+                            (let [[f height] ;; Reduce height of contained frames, bottom or top frame first.
+                                    (loop-when [f f delta delta height height] (some? f) => [f height]
+                                        (let-when [#_int h' (frame-minheight f, nil)
+                                              [delta f]
+                                                (if (< (+ (:fr_height f) delta) h')
+                                                    [(+ delta (- (:fr_height f) h')) (frame-new-height f, h', topfirst, wfh)]
+                                                    [nil (frame-new-height f, (+ (:fr_height f) delta), topfirst, wfh)])
+                                        ] (some? delta) => [f height]
+
+                                            (let [f (if topfirst
+                                                        (loop-when-recur [f (:fr_next f)] (and wfh (some? f) (frame-fixed-height f)) [(:fr_next f)] => f)
+                                                        (loop-when-recur [f (:fr_prev f)] (and wfh (some? f) (frame-fixed-height f)) [(:fr_prev f)] => f)
+                                                    )]
+                                                ;; Increase "height" if we could not reduce enough frames.
+                                                (recur f delta (if (nil? f) (- height delta) height))
+                                            ))
+                                    )]
+                                [frame height nil])
+                        (< 0 delta)
+                            ;; Increase height of bottom or top frame.
+                            (let [f (frame-new-height f, (+ (:fr_height f) delta), topfirst, wfh)]
+                                [frame height nil])
+                        :else
+                            [frame height nil])
                     ))
-                    (cond topfirst
-                    (do
-                        (loop []
-                            ((ß fr =) (:fr_next fr))
-                            (recur-if (and wfh (some? fr) (frame-fixed-height fr)) [])
-                        )
-                    )
-                    :else
-                    (do
-                        (loop []
-                            ((ß fr =) (:fr_prev fr))
-                            (recur-if (and wfh (some? fr) (frame-fixed-height fr)) [])
-                        )
-                    ))
-                    ;; Increase "height" if we could not reduce enough frames.
-                    ((ß height =) (if (nil? fr) (- height extra_lines) height))
-                    (recur)
-                )
-            )
-            (< 0 extra_lines)
-            (do
-                ;; increase height of bottom or top frame
-                (frame-new-height fr, (+ (:fr_height fr) extra_lines), topfirst, wfh)
-            ))
-        ))
-        ((ß topfr =) (assoc topfr :fr_height height))
-        nil
+            )] (not ?) => frame
+
+        (assoc frame :fr_height height)
     ))
 
 ;; Return true if height of frame "fr" should not be changed because of the 'winfixheight' option.
@@ -39017,13 +38987,11 @@
     (== (:fr_layout fr) FR_ROW)
         (loop-when [fr (:fr_child fr)] (some? fr) => false
             ;; The frame is fixed height if one of the frames in the row is fixed height.
-            (recur-if (not (frame-fixed-height fr)) [(:fr_next fr)] => true)
-        )
+            (recur-if (not (frame-fixed-height fr)) [(:fr_next fr)] => true))
     :else ;; (== (:fr_layout fr) FR_COL)
         (loop-when [fr (:fr_child fr)] (some? fr) => true
             ;; The frame is fixed height if all of the frames in the row are fixed height.
-            (recur-if (frame-fixed-height fr) [(:fr_next fr)] => false)
-        )
+            (recur-if (frame-fixed-height fr) [(:fr_next fr)] => false))
     ))
 
 ;; Return true if width of frame "fr" should not be changed because of the 'winfixwidth' option.
@@ -39035,13 +39003,11 @@
     (== (:fr_layout fr) FR_COL)
         (loop-when [fr (:fr_child fr)] (some? fr) => false
             ;; The frame is fixed width if one of the frames in the row is fixed width.
-            (recur-if (not (frame-fixed-width fr)) [(:fr_next fr)] => true)
-        )
+            (recur-if (not (frame-fixed-width fr)) [(:fr_next fr)] => true))
     :else ;; (== (:fr_layout fr) FR_ROW)
         (loop-when [fr (:fr_child fr)] (some? fr) => true
             ;; The frame is fixed width if all of the frames in the row are fixed width.
-            (recur-if (frame-fixed-width fr) [(:fr_next fr)] => false)
-        )
+            (recur-if (frame-fixed-width fr) [(:fr_next fr)] => false))
     ))
 
 ;; Add a status line to windows at the bottom of "fr".
@@ -39314,100 +39280,68 @@
 
 ;; Move to window above or below "count" times.
 
-(defn- #_window_C win-goto-ver [#_window_C win', #_boolean up, #_long count]
-    (reset! curwin win')
-    (§
-        ((ß frame_C foundfr =) (:w_frame @curwin))
+(defn- #_window_C win-goto-ver [#_window_C win, #_boolean up, #_long count]
+    (let [#_frame_C f0
+            (loop-when [f0 (:w_frame win) count count] (< 0 count) => f0
+                ;; First go upwards in the tree of frames until we find an upwards or downwards neighbor.
+                (let-when [#_frame_C f1
+                        (loop-when [#_frame_C f f0] (!= f @topframe) => nil
+                            (let [f1 (if up (:fr_prev f) (:fr_next f))]
+                                (if (and (== (:fr_layout (:fr_parent f)) FR_COL) (some? f1))
+                                    f1
+                                    (recur (:fr_parent f))
+                                )))
+                ] (some? f1) => f0
 
-;       end:
-        (loop-when [count count] (< 0 count)
-
-            ;; First go upwards in the tree of frames until we find a upwards or downwards neighbor.
-
-            (ß frame_C nfr)
-            (loop [#_frame_C fr foundfr]
-                (if (== fr @topframe)
-                    (ß BREAK end)
-                )
-                ((ß nfr =) (if up (:fr_prev fr) (:fr_next fr)))
-                (if (and (== (:fr_layout (:fr_parent fr)) FR_COL) (some? nfr))
-                    (ß BREAK)
-                )
-                (recur (:fr_parent fr))
-            )
-
-            ;; Now go downwards to find the bottom or top frame in it.
-
-            (loop []
-                (when (== (:fr_layout nfr) FR_LEAF)
-                    ((ß foundfr =) nfr)
-                    (ß BREAK)
-                )
-                ((ß frame_C fr =) (:fr_child nfr))
-                (when (== (:fr_layout nfr) FR_ROW)
-                    ;; Find the frame at the cursor row.
-                    ((ß fr =) (loop-when fr (and (some? (:fr_next fr)) (<= (+ (:w_wincol (frame2win fr)) (:fr_width fr)) (+ (:w_wincol @curwin) (:w_wcol @curwin)))) => fr
-                        (recur (:fr_next fr))
+                    ;; Now go downwards to find the bottom or top frame in it.
+                    (let [f0 (loop-when f1 (!= (:fr_layout f1) FR_LEAF) => f1
+                                (let [#_frame_C f (:fr_child f1)
+                                      f (when' (== (:fr_layout f1) FR_ROW) => f
+                                            (loop-when-recur f ;; Find the frame at the cursor row.
+                                                             (and (some? (:fr_next f)) (<= (+ (:w_wincol (frame2win f)) (:fr_width f)) (+ (:w_wincol win) (:w_wcol win))))
+                                                             (:fr_next f)
+                                                          => f)
+                                        )]
+                                    (recur (if (and (== (:fr_layout f1) FR_COL) up) (loop-when-recur f (some? (:fr_next f)) (:fr_next f) => f) f)))
+                            )]
+                        (recur f0 (dec count))
                     ))
-                )
-                ((ß nfr =) (if (and (== (:fr_layout nfr) FR_COL) up) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr) fr))
-                (recur)
-            )
-            (recur (dec count))
-        )
-
-        (when (some? foundfr)
-            (swap! curwin win-goto (:fr_win foundfr)))
-        @curwin
+            )]
+        (when' (some? f0) => win
+            (win-goto win, (:fr_win f0)))
     ))
 
 ;; Move to window left or right "count" times.
 
-(defn- #_window_C win-goto-hor [#_window_C win', #_boolean left, #_long count]
-    (reset! curwin win')
-    (§
-        ((ß frame_C foundfr =) (:w_frame @curwin))
+(defn- #_window_C win-goto-hor [#_window_C win, #_boolean left, #_long count]
+    (let [#_frame_C f0
+            (loop-when [f0 (:w_frame win) count count] (< 0 count) => f0
+                ;; First go upwards in the tree of frames until we find a left or right neighbor.
+                (let-when [#_frame_C f1
+                        (loop-when [#_frame_C f f0] (!= f @topframe) => nil
+                            (let [f1 (if left (:fr_prev f) (:fr_next f))]
+                                (if (and (== (:fr_layout (:fr_parent f)) FR_ROW) (some? f1))
+                                    f1
+                                    (recur (:fr_parent f))
+                                )))
+                ] (some? f1) => f0
 
-;       end:
-        (loop-when [count count] (< 0 count)
-
-            ;; First go upwards in the tree of frames until we find a left or right neighbor.
-
-            (ß frame_C nfr)
-            (loop [#_frame_C fr foundfr]
-                (if (== fr @topframe)
-                    (ß BREAK end)
-                )
-                ((ß nfr =) (if left (:fr_prev fr) (:fr_next fr)))
-                (if (and (== (:fr_layout (:fr_parent fr)) FR_ROW) (some? nfr))
-                    (ß BREAK)
-                )
-                (recur (:fr_parent fr))
-            )
-
-            ;; Now go downwards to find the leftmost or rightmost frame in it.
-
-            (loop []
-                (when (== (:fr_layout nfr) FR_LEAF)
-                    ((ß foundfr =) nfr)
-                    (ß BREAK)
-                )
-                ((ß frame_C fr =) (:fr_child nfr))
-                (when (== (:fr_layout nfr) FR_COL)
-                    ;; Find the frame at the cursor row.
-                    ((ß fr =) (loop-when fr (and (some? (:fr_next fr)) (<= (+ (:w_winrow (frame2win fr)) (:fr_height fr)) (+ (:w_winrow @curwin) (:w_wrow @curwin)))) => fr
-                        (recur (:fr_next fr))
+                    ;; Now go downwards to find the leftmost or rightmost frame in it.
+                    (let [f0 (loop-when f1 (!= (:fr_layout f1) FR_LEAF) => f1
+                                (let [#_frame_C f (:fr_child f1)
+                                      f (when' (== (:fr_layout f1) FR_COL) => f
+                                            (loop-when-recur f ;; Find the frame at the cursor row.
+                                                             (and (some? (:fr_next f)) (<= (+ (:w_winrow (frame2win f)) (:fr_height f)) (+ (:w_winrow win) (:w_wrow win))))
+                                                             (:fr_next f)
+                                                          => f)
+                                        )]
+                                    (recur (if (and (== (:fr_layout f1) FR_ROW) left) (loop-when-recur f (some? (:fr_next f)) (:fr_next f) => f) f)))
+                            )]
+                        (recur f0 (dec count))
                     ))
-                )
-                ((ß nfr =) (if (and (== (:fr_layout nfr) FR_ROW) left) (loop-when-recur fr (some? (:fr_next fr)) (:fr_next fr) => fr) fr))
-                (recur)
-            )
-            (recur (dec count))
-        )
-
-        (when (some? foundfr)
-            (swap! curwin win-goto (:fr_win foundfr)))
-        @curwin
+            )]
+        (when' (some? f0) => win
+            (win-goto win, (:fr_win f0)))
     ))
 
 ;; Make window "win'" the current window.
@@ -39563,11 +39497,10 @@
         (let [rows (max (frame-minheight @topframe, nil) (- @Rows @p_ch))]
             ;; First try setting the heights of windows with 'winfixheight'.
             ;; If that doesn't result in the right height, forget about that option.
-            (frame-new-height @topframe, rows, false, true)
+            (swap! topframe frame-new-height rows, false, true)
             (when (not (frame-check-height @topframe, rows))
-                (frame-new-height @topframe, rows, false, false))
-
-            (win-comp-pos)              ;; recompute "w_winrow" and "w_wincol"
+                (swap! topframe frame-new-height rows, false, false))
+            (win-comp-pos) ;; recompute "w_winrow" and "w_wincol"
             (compute-cmdrow)
             (reset! ch_used @p_ch)
         ))
@@ -39666,7 +39599,7 @@
         (cond (nil? (:fr_parent cufr)) ;; topframe: can only change the command line
             (let [height (min height (- @Rows @p_ch))]
                 (when (< 0 height)
-                    (frame-new-height cufr, height, false, false)))
+                    ((ß cufr =) (frame-new-height cufr, height, false, false))))
         (== (:fr_layout (:fr_parent cufr)) FR_ROW)
             (let [height (max (frame-minheight (:fr_parent cufr), nil) height)]
                 ;; Row of frames: also need to resize frames left and right of this one.
@@ -39706,7 +39639,7 @@
                             (let [rcmd (min rcmd take)] (swap! topframe update :fr_height + rcmd) (- take rcmd)) take)
                   a'm (atom {:take take :rest rest})]
                 ;; Set the current frame to the new height.
-                (frame-new-height cufr, height, false, false)
+                ((ß cufr =) (frame-new-height cufr, height, false, false))
                 ;; First take lines from the frames after the current frame.
                 ;; If that is not enough, takes lines from frames above the current frame.
                 (doseq [step- [:fr_next :fr_prev]]
@@ -39722,7 +39655,7 @@
                                 (do
                                     (swap! a'm update :rest max (- h (:take @a'm)))
                                     (swap! a'm update :take - (- h (:rest @a'm)))
-                                    (frame-new-height fr, (:rest @a'm), false, false)
+                                    ((ß fr =) (frame-new-height fr, (:rest @a'm), false, false))
                                     (swap! a'm assoc :rest 0)
                                 ))
                             )
@@ -39731,11 +39664,11 @@
                                 (cond (< (- h (:take @a'm)) h0)
                                 (do
                                     (swap! a'm update :take - (- h h0))
-                                    (frame-new-height fr, h0, false, false)
+                                    ((ß fr =) (frame-new-height fr, h0, false, false))
                                 )
                                 :else
                                 (do
-                                    (frame-new-height fr, (- h (:take @a'm)), false, false)
+                                    ((ß fr =) (frame-new-height fr, (- h (:take @a'm)), false, false))
                                     (swap! a'm assoc :take 0)
                                 ))
                             ))
@@ -39961,7 +39894,7 @@
 ;; command-height: called whenever "p_ch" has been changed
 
 (defn- #_void command-height []
-    (let [#_long old_p_ch @ch_used]
+    (let [o'p_ch @ch_used]
         ;; Use the value of "p_ch" that we remembered.  This is needed for when the GUI starts up, we can't be sure in what order things happen.
         (reset! ch_used @p_ch)
         ;; Find bottom frame with width of screen.
@@ -39970,12 +39903,12 @@
                    fr (loop-when-recur fr (and (some? (:fr_prev fr)) (== (:fr_layout fr) FR_LEAF) @(:wo_wfh (:w_options (:fr_win fr)))) (:fr_prev fr) => fr)
                    _ (if (!= @starting NO_SCREEN)
                         (do (reset! cmdline_row (- @Rows @p_ch))
-                            (if (< old_p_ch @p_ch)                ;; "p_ch" got bigger
+                            (if (< o'p_ch @p_ch) ;; "p_ch" got bigger
                                 (do
-                                    (loop-when [#_long ch old_p_ch fr fr] (< ch @p_ch)
+                                    (loop-when [#_long ch o'p_ch fr fr] (< ch @p_ch)
                                         (if (some? fr)
                                             (let [#_int h (min (- (:fr_height fr) (frame-minheight fr, nil)) (- @p_ch ch))]
-                                                (frame-add-height fr, (- h))
+                                                ((ß fr =) (frame-add-height fr, (- h)))
                                                 (recur (+ ch h) (:fr_prev fr)))
                                             (do (emsg e_noroom)
                                                 (reset! p_ch ch)
@@ -39997,7 +39930,8 @@
                                     :_)
                             ))
                         :_)] (some? _)
-            (frame-add-height fr, (- old_p_ch @p_ch))
+
+            ((ß fr =) (frame-add-height fr, (- o'p_ch @p_ch)))
             ;; Recompute window positions.
             (when (!= fr (:w_frame @lastwin))
                 (win-comp-pos))
@@ -40007,18 +39941,13 @@
 ;; Resize frame "fr" to be "n" lines higher (negative for less high).
 ;; Also resize the frames it is contained in.
 
-(defn- #_void frame-add-height [#_frame_C fr, #_int n]
-    (§
-        (frame-new-height fr, (+ (:fr_height fr) n), false, false)
-        (loop []
-            ((ß fr =) (:fr_parent fr))
-            (if (nil? fr)
-                (ß BREAK)
-            )
-            ((ß fr =) (update fr :fr_height + n))
-            (recur)
-        )
-        nil
+(defn- #_frame_C frame-add-height [#_frame_C fr, #_int n]
+    (let [fr (frame-new-height fr, (+ (:fr_height fr) n), false, false)]
+        (loop [#_frame_C f fr]
+            (let [f (:fr_parent f)]
+                (recur-if (some? f) [(update f :fr_height + n)] => nil)
+            ))
+        fr
     ))
 
 ;; Add or remove a status line for the bottom window(s), according to the value of 'laststatus'.
@@ -40058,7 +39987,7 @@
                 ((ß win =) (assoc win :w_status_height 1))
                 (cond (!= fp fr)
                 (do
-                    (frame-new-height fp, (dec (:fr_height fp)), false, false)
+                    ((ß fp =) (frame-new-height fp, (dec (:fr_height fp)), false, false))
                     ((ß win =) (frame-fix-height win))
                     (win-comp-pos)
                 )
