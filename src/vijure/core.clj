@@ -795,15 +795,6 @@
 (final int FORWARD        1)
 (final int BACKWARD       -1)
 
-;; flags for b_flags
-(final int BF_CHECK_RO    0x02)     ;; need to check readonly when loading file into buffer (set by ":e", may be reset by ":buf")
-(final int BF_NEVERLOADED 0x04)     ;; file has never been loaded into buffer, many variables still need to be set
-(final int BF_NOTEDITED   0x08)     ;; set when file name is changed after starting to edit, reset when file is written out
-(final int BF_NEW         0x10)     ;; file didn't exist when editing started
-
-;; Mask to check for flags that prevent normal writing.
-(final int BF_WRITE_MASK  (+ BF_NOTEDITED BF_NEW))
-
 (final int HL_CONTAINED    0x01)    ;; not used on toplevel
 (final int HL_TRANSP       0x02)    ;; has no highlighting
 (final int HL_ONELINE      0x04)    ;; match within one line only
@@ -1643,11 +1634,6 @@
 ;;      The blocks in the free list have no block of memory allocated and
 ;;      the contents of the block in the file (if any) is irrelevant.
 
-;; 'bh_flags':
-(final byte
-    BH_DIRTY    1,
-    BH_LOCKED   2)
-
 (class! #_final block_hdr_C
     [
         (field mf_hashitem_C bh_hashitem    (§_mf_hashitem_C))  ;; header for hash table and key
@@ -1656,8 +1642,6 @@
         (field block_hdr_C  bh_prev)            ;; previous block_hdr in used list
         (field Object       bh_data)            ;; pointer to memory (for used block)
         (field int          bh_page_count)      ;; number of pages in this block
-
-        (field byte         bh_flags)           ;; BH_DIRTY or BH_LOCKED
 
 ;       #_private block_hdr_C()
 ;       {
@@ -1763,10 +1747,7 @@
         (field block_hdr_C  mf_used_first)      ;; mru block_hdr in used list
         (field block_hdr_C  mf_used_last)       ;; lru block_hdr in used list
         (field mf_hashtab_C mf_hash         (§_mf_hashtab_C))   ;; hash lists
-        (field mf_hashtab_C mf_trans        (§_mf_hashtab_C))   ;; trans lists
         (field long         mf_blocknr_max)     ;; highest positive block number + 1
-        (field long         mf_blocknr_min)     ;; lowest negative block number - 1
-        (field long         mf_neg_count)       ;; number of negative blocks numbers
     ])
 
 ;; things used in memline.c
@@ -1817,8 +1798,6 @@
 ;; 'ml_flags':
 (final int ML_EMPTY        1)   ;; empty buffer
 (final int ML_LINE_DIRTY   2)   ;; cached line was changed and allocated
-(final int ML_LOCKED_DIRTY 4)   ;; ml_locked was changed
-(final int ML_LOCKED_POS   8)   ;; ml_locked needs positive block number
 
 ;; The memline structure holds all the information about a memline.
 
@@ -1927,14 +1906,6 @@
         (field boolean      m_expr)         ;; <expr> used, "m_str" is an expression
     ])
 
-;; Used for highlighting in the status line.
-
-(class! #_final stl_hlrec_C
-    [
-        (field Bytes        start)
-        (field int          userhl)         ;; 0: no HL, 1-9: User HL, < 0 for syn ID
-    ])
-
 ;; buffer: structure that holds information about one file
 ;;
 ;; Several windows can share a single Buffer.
@@ -1947,28 +1918,16 @@
 
         (field int          b_nwindows)         ;; nr of windows open on this buffer
 
-        (field int          b_flags)            ;; various BF_ flags
-
-        (atom' boolean      b_changed)          ;; 'modified': Set to true if something in the
-                                                ;; file has been changed and not written out.
+        (atom' boolean      b_changed)          ;; 'modified'
         (field int          b_changedtick)      ;; incremented for each change, also for undo
-
-        (field boolean      b_saving)           ;; Set to true if we are in the middle of saving the buffer.
 
         ;; Changes to a buffer require updating of the display.
         ;; To minimize the work, remember changes made and update everything at once.
 
-        (field boolean      b_mod_set)          ;; true when there are changes since the
-                                                ;; last time the display was updated
+        (field boolean      b_mod_set)          ;; true when there are changes since the last time the display was updated
         (field long         b_mod_top)          ;; topmost lnum that was changed
         (field long         b_mod_bot)          ;; lnum below last changed line, AFTER the change
-        (field long         b_mod_xlines)       ;; number of extra buffer lines inserted;
-                                                ;; negative when lines were deleted
-
-        (field long         b_mtime)            ;; last change time of original file
-        (field long         b_mtime_read)       ;; last change time when reading
-        (field long         b_orig_size)        ;; size of original file in bytes
-        (field int          b_orig_mode)        ;; mode of original file
+        (field long         b_mod_xlines)       ;; number of extra buffer lines inserted; negative when lines were deleted
 
         (field pos_C*       b_namedm)           ;; current named marks (mark.c)
 
@@ -3136,18 +3095,18 @@
 ;       a.coladd = 0;
     ))
 
-;; lineempty() - return true if the line is empty
+;; true if the line is empty
 
 (defn- #_boolean lineempty [#_long lnum]
     (§
 ;       return (ml_get(lnum).at(0) == NUL);
     ))
 
-;; bufempty() - return true if the current buffer is empty
+;; true if the current buffer is empty
 
 (defn- #_boolean bufempty []
     (§
-;       return (@curbuf.b_ml.ml_line_count == 1 && ml_get(1).at(0) == NUL);
+;       return (@curbuf.b_ml.ml_line_count == 1 && lineempty(1));
     ))
 
 ;;; ============================================================================================== VimG
@@ -3932,7 +3891,7 @@
 ;           cursor_on();
 
 ;       out_flush();
-;       ml_close_all();
+
 ;       may_core_dump();
 
 ;       libc.exit(r);
@@ -9294,22 +9253,6 @@
 ;       return (vim_strchr(@p_bs, what) != null);
     ))
 
-;; When "ignore_empty" is true don't consider a new, empty buffer to be changed.
-
-(defn- #_boolean file_ff_differs [#_buffer_C buf, #_boolean ignore_empty]
-    (§
-        ;; In a buffer that was never loaded the options are not valid.
-;       if ((buf.b_flags & BF_NEVERLOADED) != 0)
-;           return false;
-;       if (ignore_empty
-;               && (buf.b_flags & BF_NEW) != 0
-;               && buf.b_ml.ml_line_count == 1
-;               && ml_get_buf(buf, 1, false).at(0) == NUL)
-;           return false;
-
-;       return false;
-    ))
-
 ;; Return the effective shiftwidth value for current buffer,
 ;; using the 'tabstop' value when 'shiftwidth' is zero.
 
@@ -9652,7 +9595,7 @@
 ;       for (extra = 0, l = line1; l <= line2; l++)
 ;       {
 ;           Bytes str = STRDUP(ml_get(l + extra));
-;           ml_append(dest + l - line1, str, 0, false);
+;           ml_append(dest + l - line1, str, 0);
 ;           if (dest < line1)
 ;               extra++;
 ;       }
@@ -9754,7 +9697,7 @@
 ;       {
             ;; need to use STRDUP() because the line will be unlocked within ml_append()
 ;           Bytes p = STRDUP(ml_get(line1));
-;           ml_append(@curwin.w_cursor.lnum, p, 0, false);
+;           ml_append(@curwin.w_cursor.lnum, p, 0);
             ;; situation 2: skip already copied lines
 ;           if (line1 == n)
 ;               line1 = @curwin.w_cursor.lnum;
@@ -9909,7 +9852,7 @@
 ;               theline.be(0, NUL);
 
 ;           did_undo = true;
-;           ml_append(lnum, theline, 0, false);
+;           ml_append(lnum, theline, 0);
 ;           appended_lines_mark(lnum, 1L);
 
 ;           lnum++;
@@ -10749,7 +10692,7 @@
 ;                               if (u_inssub(lnum) == true)     ;; prepare for undo
 ;                               {
 ;                                   p1.be(0, NUL);                  ;; truncate up to the CR
-;                                   ml_append(lnum - 1, new_start, BDIFF(p1, new_start) + 1, false);
+;                                   ml_append(lnum - 1, new_start, BDIFF(p1, new_start) + 1);
 ;                                   mark_adjust(lnum + 1, MAXLNUM, 1L, 0L);
 ;                                   if (@do__ask)
 ;                                       appended_lines(lnum - 1, 1L);
@@ -17098,7 +17041,7 @@
 
 (defn- #_int find_ident_at_pos [#_window_C wp, #_long lnum, #_int startcol, #_Bytes* string, #_int find_type]
     (§
-;       Bytes p = ml_get_buf(@curbuf, lnum, false);
+;       Bytes p = ml_get_buf(@curbuf, lnum);
 
 ;       int col = 0;
 ;       int this_class = 0;
@@ -22869,7 +22812,7 @@
 ;               ml_replace(@curwin.w_cursor.lnum, newp, false);
 ;               if (after_p != null)
 ;               {
-;                   ml_append(@curwin.w_cursor.lnum++, after_p, 0, false);
+;                   ml_append(@curwin.w_cursor.lnum++, after_p, 0);
 ;                   appended_lines_mark(@curwin.w_cursor.lnum, 1L);
 ;                   oap.op_end.lnum++;
 ;               }
@@ -22923,7 +22866,7 @@
 ;                           if (@curwin.w_cursor.lnum == oap.op_end.lnum)
 ;                               getvpos(oap.op_end, end_vcol);
 ;                       }
-;                       ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true).be(@curwin.w_cursor.col, c);
+;                       ml_get_buf(@curbuf, @curwin.w_cursor.lnum).be(@curwin.w_cursor.col, c);
 ;                   }
 ;               }
 ;               else if (@virtual_op != FALSE && @curwin.w_cursor.lnum == oap.op_end.lnum)
@@ -22940,7 +22883,7 @@
 ;                   @curwin.w_cursor.col -= (virtcols + 1);
 ;                   for ( ; 0 <= virtcols; virtcols--)
 ;                   {
-;                       ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true).be(@curwin.w_cursor.col, c);
+;                       ml_get_buf(@curbuf, @curwin.w_cursor.lnum).be(@curwin.w_cursor.col, c);
 ;                       if (incp(@curwin.w_cursor) == -1)
 ;                           break;
 ;                   }
@@ -23119,7 +23062,7 @@
 ;               COPY_pos(@curwin.w_cursor, sp);
 ;           }
 ;           else
-;               ml_get_buf(@curbuf, pos.lnum, true).be(pos.col, nc);
+;               ml_get_buf(@curbuf, pos.lnum).be(pos.col, nc);
 ;           return true;
 ;       }
 ;       return false;
@@ -23806,7 +23749,7 @@
 ;                       break theend;
 
 ;                   Bytes p = STRDUP(ml_get_cursor());
-;                   ml_append(@curwin.w_cursor.lnum, p, 0, false);
+;                   ml_append(@curwin.w_cursor.lnum, p, 0);
 ;                   p = STRNDUP(ml_get_curline(), @curwin.w_cursor.col);
 ;                   ml_replace(@curwin.w_cursor.lnum, p, false);
 ;                   nr_lines++;
@@ -23924,7 +23867,7 @@
                     ;; add a new line
 ;                   if (@curbuf.b_ml.ml_line_count < @curwin.w_cursor.lnum)
 ;                   {
-;                       if (!ml_append(@curbuf.b_ml.ml_line_count, u8(""), 1, false))
+;                       if (!ml_append(@curbuf.b_ml.ml_line_count, u8(""), 1))
 ;                           break;
 ;                       nr_lines++;
 ;                   }
@@ -24122,7 +24065,7 @@
 ;                           STRCPY(newp, y_array[y_size - 1]);
 ;                           STRCAT(newp, p);
                             ;; insert second line
-;                           ml_append(lnum, newp, 0, false);
+;                           ml_append(lnum, newp, 0);
 
 ;                           Bytes oldp = ml_get(lnum);
 ;                           newp = new Bytes(col[0] + yanklen + 1);
@@ -24138,7 +24081,7 @@
 
 ;                       for ( ; i < y_size; i++)
 ;                       {
-;                           if ((y_type != MCHAR || i < y_size - 1) && !ml_append(lnum, y_array[i], 0, false))
+;                           if ((y_type != MCHAR || i < y_size - 1) && !ml_append(lnum, y_array[i], 0))
 ;                               break error;
 ;                           lnum++;
 ;                           nr_lines++;
@@ -24923,7 +24866,7 @@
 
 ;       --@curwin.w_cursor.col;
 ;       @curwin.w_set_curswant = true;
-;       ptr = ml_get_buf(@curbuf, @curwin.w_cursor.lnum, true);
+;       ptr = ml_get_buf(@curbuf, @curwin.w_cursor.lnum);
 
 ;       return true;
     ))
@@ -36298,7 +36241,7 @@
             ;; Must have matched the "\n" in the last line.
 ;           return u8("");
 
-;       return ml_get_buf(@reg_buf, @reg_firstlnum + lnum, false);
+;       return ml_get_buf(@reg_buf, @reg_firstlnum + lnum);
     ))
 
 (atom! regsave_C    behind_pos      (§_regsave_C))
@@ -46262,7 +46205,7 @@
 ;           else if (dir != BACKWARD
 ;               && 1 <= pos.lnum && pos.lnum <= buf.b_ml.ml_line_count && pos.col < MAXCOL - 2)
 ;           {
-;               Bytes ptr = ml_get_buf(buf, pos.lnum, false).plus(pos.col);
+;               Bytes ptr = ml_get_buf(buf, pos.lnum).plus(pos.col);
 ;               if (ptr.at(0) == NUL)
 ;                   extra_col = 1;
 ;               else
@@ -46322,7 +46265,7 @@
 ;                       if (buf.b_ml.ml_line_count < lnum + matchpos.lnum)
 ;                           ptr = u8("");
 ;                       else
-;                           ptr = ml_get_buf(buf, lnum + matchpos.lnum, false);
+;                           ptr = ml_get_buf(buf, lnum + matchpos.lnum);
 
                         ;; Forward search in the first line: match should be after
                         ;; the start position.  If not, continue at the end of the
@@ -46381,7 +46324,7 @@
 
                                 ;; Need to get the line pointer again,
                                 ;; a multi-line search may have made it invalid.
-;                               ptr = ml_get_buf(buf, lnum + matchpos.lnum, false);
+;                               ptr = ml_get_buf(buf, lnum + matchpos.lnum);
 ;                           }
 ;                           if (!match_ok)
 ;                               continue;
@@ -46448,7 +46391,7 @@
 
                                 ;; Need to get the line pointer again,
                                 ;; a multi-line search may have made it invalid.
-;                               ptr = ml_get_buf(buf, lnum + matchpos.lnum, false);
+;                               ptr = ml_get_buf(buf, lnum + matchpos.lnum);
 ;                           }
 
                             ;; If there is only a match after the cursor, skip this match.
@@ -46471,7 +46414,7 @@
 ;                               if (1 < pos.lnum)   ;; just in case
 ;                               {
 ;                                   --pos.lnum;
-;                                   pos.col = STRLEN(ml_get_buf(buf, pos.lnum, false));
+;                                   pos.col = STRLEN(ml_get_buf(buf, pos.lnum));
 ;                               }
 ;                           }
 ;                           else
@@ -46479,7 +46422,7 @@
 ;                               --pos.col;
 ;                               if (pos.lnum <= buf.b_ml.ml_line_count)
 ;                               {
-;                                   ptr = ml_get_buf(buf, pos.lnum, false);
+;                                   ptr = ml_get_buf(buf, pos.lnum);
 ;                                   pos.col -= us_head_off(ptr, ptr.plus(pos.col));
 ;                               }
 ;                           }
@@ -46558,7 +46501,7 @@
 ;       if (pos.lnum > buf.b_ml.ml_line_count)
 ;       {
 ;           pos.lnum = buf.b_ml.ml_line_count;
-;           pos.col = STRLEN(ml_get_buf(buf, pos.lnum, false));
+;           pos.col = STRLEN(ml_get_buf(buf, pos.lnum));
 ;           if (0 < pos.col)
 ;               --pos.col;
 ;       }
@@ -48731,12 +48674,10 @@
 ;; The functions for using a memfile:
 ;;
 ;; mf_open()        open a new or existing memfile
-;; mf_close()       close a memfile
 ;; mf_new()         create a new block in a memfile and lock it
 ;; mf_get()         get an existing block and lock it
 ;; mf_put()         unlock a block, may be marked for writing
 ;; mf_free()        remove a block
-;; mf_trans_del()   may translate negative to positive block number
 
 (defn- #_memfile_C mf_open []
     (§
@@ -48745,42 +48686,21 @@
 ;       mfp.mf_used_first = null;       ;; used list is empty
 ;       mfp.mf_used_last = null;
 ;       mf_hash_init(mfp.mf_hash);
-;       mf_hash_init(mfp.mf_trans);
 
 ;       mfp.mf_blocknr_max = 0;         ;; no file or empty file
-;       mfp.mf_blocknr_min = -1;
-;       mfp.mf_neg_count = 0;
 
 ;       return mfp;
     ))
 
-(defn- #_void mf_close [#_memfile_C mfp]
-    (§
-;       mf_hash_free(mfp.mf_hash);
-;       mf_hash_free(mfp.mf_trans);     ;; free hashtable and its items
-    ))
+;; get new block
 
-;; get a new block
-;;
-;;   negative: true if negative block number desired (data block)
-
-(defn- #_block_hdr_C mf_new [#_memfile_C mfp, #_boolean negative, #_Object data, #_int page_count]
+(defn- #_block_hdr_C mf_new [#_memfile_C mfp, #_Object data, #_int page_count]
     (§
 ;       block_hdr_C hp = mf_alloc_bhdr(mfp, data, page_count);
 
-        ;; Use mf_block_min for a negative number, mf_block_max for a positive number.
-;       if (negative)
-;       {
-;           hp.bh_bnum(mfp.mf_blocknr_min--);
-;           mfp.mf_neg_count++;
-;       }
-;       else
-;       {
-;           hp.bh_bnum(mfp.mf_blocknr_max);
-;           mfp.mf_blocknr_max += page_count;
-;       }
+;       hp.bh_bnum(mfp.mf_blocknr_max);
+;       mfp.mf_blocknr_max += page_count;
 
-;       hp.bh_flags = BH_LOCKED | BH_DIRTY;     ;; new block is always dirty
 ;       hp.bh_page_count = page_count;
 ;       mf_ins_used(mfp, hp);
 ;       mf_ins_hash(mfp, hp);
@@ -48788,13 +48708,11 @@
 ;       return hp;
     ))
 
-;; Get existing block "nr" with "page_count" pages.
-;;
-;; Note: The caller should first check a negative nr with mf_trans_del().
+;; get existing block
 
-(defn- #_block_hdr_C mf_get [#_memfile_C mfp, #_long nr, #_int _page_count]
+(defn- #_block_hdr_C mf_get [#_memfile_C mfp, #_long nr]
     (§
-;       if (mfp.mf_blocknr_max <= nr || nr <= mfp.mf_blocknr_min)   ;; doesn't exist
+;       if (mfp.mf_blocknr_max <= nr || nr <= -1)   ;; doesn't exist
 ;           return null;
 
 ;       block_hdr_C hp = mf_find_hash(mfp, nr);
@@ -48804,7 +48722,6 @@
 ;       mf_rem_used(mfp, hp);           ;; remove from list, insert in front below
 ;       mf_rem_hash(mfp, hp);
 
-;       hp.bh_flags |= BH_LOCKED;
 ;       mf_ins_used(mfp, hp);           ;; put in front of used list
 ;       mf_ins_hash(mfp, hp);           ;; put in front of hash list
 
@@ -48816,18 +48733,9 @@
 ;;   dirty: Block must be written to file later
 ;;   infile: Block should be in file (needed for recovery)
 
-(defn- #_void mf_put [#_memfile_C mfp, #_block_hdr_C hp, #_boolean dirty, #_boolean infile]
+(defn- #_void mf_put [#_memfile_C mfp, #_block_hdr_C hp]
     (§
-;       byte flags = hp.bh_flags;
-
-;       if ((flags & BH_LOCKED) == 0)
-;           emsg(u8("E293: block was not locked"));
-;       flags &= ~BH_LOCKED;
-;       if (dirty)
-;           flags |= BH_DIRTY;
-;       hp.bh_flags = flags;
-;       if (infile)
-;           mf_trans_add(mfp, hp);      ;; may translate negative in positive nr
+        
     ))
 
 ;; block *hp is no longer in used, may put it in the free list of memfile *mfp
@@ -48836,8 +48744,6 @@
     (§
 ;       mf_rem_hash(mfp, hp);       ;; get *hp out of the hash list
 ;       mf_rem_used(mfp, hp);       ;; get *hp out of the used list
-;       if (hp.bh_bnum() < 0)
-;           mfp.mf_neg_count--;
     ))
 
 ;; insert block *hp in front of hashlist of memfile *mfp
@@ -48900,51 +48806,6 @@
 ;       hp.bh_page_count = page_count;
 
 ;       return hp;
-    ))
-
-;; Make block number for *hp positive and add it to the translation list.
-
-(defn- #_void mf_trans_add [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       if (hp.bh_bnum() < 0)
-;       {
-            ;; Get a new number for the block.
-;           long new_bnum = mfp.mf_blocknr_max;
-;           mfp.mf_blocknr_max += hp.bh_page_count;
-
-;           nr_trans_C np = §_nr_trans_C();
-
-;           np.nt_old_bnum(hp.bh_bnum());       ;; adjust number
-;           np.nt_new_bnum = new_bnum;
-
-;           mf_rem_hash(mfp, hp);               ;; remove from old hash list
-;           hp.bh_bnum(new_bnum);
-;           mf_ins_hash(mfp, hp);               ;; insert in new hash list
-
-            ;; Insert "np" into "mf_trans" hashtable with key "np.nt_old_bnum".
-;           mf_hash_add_item(mfp.mf_trans, np.nt_hashitem);
-;       }
-    ))
-
-;; Lookup a translation from the trans lists and delete the entry.
-;;
-;; Return the positive new number when found, the old number when not found.
-
-(defn- #_long mf_trans_del [#_memfile_C mfp, #_long old_nr]
-    (§
-;       mf_hashitem_C mhi = mf_hash_find(mfp.mf_trans, old_nr);
-;       nr_trans_C np = (mhi != null) ? (nr_trans_C)mhi.mhi_data : null;
-
-;       if (np == null)             ;; not found
-;           return old_nr;
-
-;       mfp.mf_neg_count--;
-;       long new_bnum = np.nt_new_bnum;
-
-        ;; remove entry from the trans list
-;       mf_hash_rem_item(mfp.mf_trans, np.nt_hashitem);
-
-;       return new_bnum;
     ))
 
 ;; Implementation of mf_hashtab_C follows.
@@ -49096,8 +48957,7 @@
 ;; has not yet been assigned a place in the file.  When recovering, the lines
 ;; in this data block can be read from the original file.  When the block is
 ;; changed (lines appended/deleted/changed) or when it is flushed it gets a
-;; positive number.  Use mf_trans_del() to get the new number, before calling
-;; mf_get().
+;; positive number.
 
 (final short
     B0_ID   (+ (<< (int \b) 8) (int \0)),             ;; block 0 id
@@ -49207,26 +49067,20 @@
 ;       return ((action & 0x10) != 0);         ;; DEL, INS or FIND
     ))
 
-;; Open a new memline for "buf".
+;; Open a new memline.
 
-(defn- #_void ml_open [#_buffer_C buf]
+(defn- #_memline_C ml_open []
     (§
-        ;; init fields in memline struct
+;       memline_C ml = §_memline_C();
 
-;       buf.b_ml.ml_stack_size = 0;     ;; no stack yet
-;       buf.b_ml.ml_stack = null;       ;; no stack yet
-;       buf.b_ml.ml_stack_top = 0;      ;; nothing in the stack
-;       buf.b_ml.ml_locked = null;      ;; no cached block
-;       buf.b_ml.ml_line_lnum = 0;      ;; no cached line
-;       buf.b_ml.ml_chunksize = null;
-
-        ;; Open the memfile.  No swap file is created yet.
+        ;; open the memfile
 
 ;       memfile_C mfp = mf_open();
 
-;       buf.b_ml.ml_mfp = mfp;
-;       buf.b_ml.ml_flags = ML_EMPTY;
-;       buf.b_ml.ml_line_count = 1;
+;       ml.ml_mfp = mfp;
+;       ml.ml_flags = ML_EMPTY;
+;       ml.ml_line_count = 1;
+
 ;       @curwin.w_nrwidth_line_count = 0;
 
         ;; fill block0 struct and write page 0
@@ -49241,7 +49095,7 @@
         ;; Always sync block number 0 to disk.
         ;; Only works when there's a swapfile, otherwise it's done when the file is created.
 
-;       mf_put(mfp, hp, true, false);
+;       mf_put(mfp, hp);
 
         ;; Fill in root pointer block and write page 1.
 
@@ -49257,11 +49111,11 @@
 ;       pp.pb_pointer[0].pe_bnum = 2;
 ;       pp.pb_pointer[0].pe_page_count = 1;
 ;       pp.pb_pointer[0].pe_line_count = 1; ;; line count after insertion
-;       mf_put(mfp, hp, true, false);
+;       mf_put(mfp, hp);
 
         ;; Allocate first data block and create an empty line 1.
 
-;       hp = ml_new_data(mfp, false, 1);
+;       hp = ml_new_data(mfp, 1);
 ;       if (hp.bh_bnum() != 2)
 ;       {
 ;           emsg(u8("E298: Didn't get block nr 2?"));
@@ -49274,29 +49128,8 @@
 ;       dp.db_free -= 1 + INDEX_SIZE;
 ;       dp.db_line_count = 1;
 ;       dp.db_text.be(dp.db_txt_start, NUL);      ;; empty line
-    ))
 
-;; Close memline for buffer 'buf'.
-
-(defn- #_void ml_close [#_buffer_C buf]
-    (§
-;       if (buf.b_ml.ml_mfp != null)
-;       {
-;           mf_close(buf.b_ml.ml_mfp);
-;           if (buf.b_ml.ml_line_lnum != 0 && (buf.b_ml.ml_flags & ML_LINE_DIRTY) != 0)
-;               buf.b_ml.ml_line_ptr = null;
-;           buf.b_ml.ml_stack = null;
-;           buf.b_ml.ml_chunksize = null;
-;           buf.b_ml.ml_mfp = null;
-;       }
-    ))
-
-;; Close all existing memlines and memfiles.
-;; Only used when exiting.
-
-(defn- #_void ml_close_all []
-    (§
-;       ml_close(@curbuf);
+;       return ml;
     ))
 
 ;; NOTE: The pointer returned by the ml_get_*() functions only remains valid until the next call!
@@ -49311,38 +49144,35 @@
 
 (defn- #_Bytes ml_get [#_long lnum]
     (§
-;       return ml_get_buf(@curbuf, lnum, false);
+;       return ml_get_buf(@curbuf, lnum);
     ))
 
 ;; Return pointer to position "pos".
 
 (defn- #_Bytes ml_get_pos [#_pos_C pos]
     (§
-;       return ml_get_buf(@curbuf, pos.lnum, false).plus(pos.col);
+;       return ml_get_buf(@curbuf, pos.lnum).plus(pos.col);
     ))
 
 ;; Return pointer to cursor line.
 
 (defn- #_Bytes ml_get_curline []
     (§
-;       return ml_get_buf(@curbuf, @curwin.w_cursor.lnum, false);
+;       return ml_get_buf(@curbuf, @curwin.w_cursor.lnum);
     ))
 
 ;; Return pointer to cursor position.
 
 (defn- #_Bytes ml_get_cursor []
     (§
-;       return ml_get_buf(@curbuf, @curwin.w_cursor.lnum, false).plus(@curwin.w_cursor.col);
+;       return ml_get_buf(@curbuf, @curwin.w_cursor.lnum).plus(@curwin.w_cursor.col);
     ))
 
 (atom! int _4_recurse)
 
 ;; Return a pointer to a line in a specific buffer
-;;
-;; "will_change": if true mark the buffer dirty (chars in the line will be changed)
 
-(defn- #_Bytes ml_get_buf [#_buffer_C buf, #_long lnum, #_boolean will_change]
-    ;; will_change: line will be changed
+(defn- #_Bytes ml_get_buf [#_buffer_C buf, #_long lnum]
     (§
 ;       if (buf.b_ml.ml_line_count < lnum)  ;; invalid line number
 ;       {
@@ -49358,11 +49188,9 @@
 ;           STRCPY(@ioBuff, u8("???"));
 ;           return @ioBuff;
 ;       }
+
 ;       if (lnum <= 0)                      ;; pretend line 0 is line 1
 ;           lnum = 1;
-
-;       if (buf.b_ml.ml_mfp == null)        ;; there are no lines
-;           return u8("");
 
         ;; See if it is the same line as requested last time.
         ;; Otherwise may need to flush last used line.
@@ -49398,8 +49226,6 @@
 ;           buf.b_ml.ml_line_lnum = lnum;
 ;           buf.b_ml.ml_flags &= ~ML_LINE_DIRTY;
 ;       }
-;       if (will_change)
-;           buf.b_ml.ml_flags |= (ML_LOCKED_DIRTY | ML_LOCKED_POS);
 
 ;       return buf.b_ml.ml_line_ptr;
     ))
@@ -49415,36 +49241,28 @@
 ;; "line" does not need to be allocated, but can't be another line in a buffer,
 ;; unlocking may make it invalid.
 ;;
-;;   newfile: true when starting to edit a new file
-;;
 ;; Check: The caller of this function should probably also call appended_lines().
 ;;
 ;; return false for failure, true otherwise
 
-(defn- #_boolean ml_append [#_long lnum, #_Bytes line, #_int len, #_boolean newfile]
+(defn- #_boolean ml_append [#_long lnum, #_Bytes line, #_int len]
     ;; lnum: append after this line (can be 0)
     ;; line: text of the new line
     ;; len: length of new line, including NUL, or 0
-    ;; newfile: flag, see above
     (§
-        ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null)
-;           open_buffer();
-
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
 ;           ml_flush_line(@curbuf);
 
-;       return ml_append_int(@curbuf, lnum, line, len, newfile, false);
+;       return ml_append_int(@curbuf, lnum, line, len, false);
     ))
 
-(defn- #_boolean ml_append_int [#_buffer_C buf, #_long lnum, #_Bytes line, #_int len, #_boolean newfile, #_boolean mark]
+(defn- #_boolean ml_append_int [#_buffer_C buf, #_long lnum, #_Bytes line, #_int len, #_boolean mark]
     ;; lnum: append after this line (can be 0)
     ;; line: text of the new line
     ;; len: length of line, including NUL, or 0
-    ;; newfile: flag, see above
     ;; mark: mark the new line
     (§
-;       if (buf.b_ml.ml_line_count < lnum || buf.b_ml.ml_mfp == null) ;; lnum out of range
+;       if (buf.b_ml.ml_line_count < lnum) ;; lnum out of range
 ;           return false;
 
 ;       if (@lowest_marked != 0 && lnum < @lowest_marked)
@@ -49536,12 +49354,6 @@
 ;           BCOPY(dp.db_text, dp.db_index[db_idx + 1], line, 0, len);
 ;           if (mark)
 ;               dp.db_index[db_idx + 1] |= DB_MARKED;
-
-            ;; Mark the block dirty.
-
-;           buf.b_ml.ml_flags |= ML_LOCKED_DIRTY;
-;           if (!newfile)
-;               buf.b_ml.ml_flags |= ML_LOCKED_POS;
 ;       }
 ;       else                                                ;; not enough space in data block
 ;       {
@@ -49592,7 +49404,7 @@
 ;           }
 
 ;           int page_count = (space_needed + MEMFILE_PAGE_SIZE - 1) / MEMFILE_PAGE_SIZE;
-;           block_hdr_C hp_new = ml_new_data(mfp, newfile, page_count);
+;           block_hdr_C hp_new = ml_new_data(mfp, page_count);
 
 ;           block_hdr_C hp_left, hp_right;
 ;           int line_count_left, line_count_right;
@@ -49685,11 +49497,7 @@
             ;; The old one (hp, in ml_locked) gets a positive blocknumber if
             ;; we changed it and we are not editing a new file.
 
-;           if (lines_moved != 0 || in_left)
-;               buf.b_ml.ml_flags |= ML_LOCKED_DIRTY;
-;           if (!newfile && 0 <= db_idx && in_left)
-;               buf.b_ml.ml_flags |= ML_LOCKED_POS;
-;           mf_put(mfp, hp_new, true, false);
+;           mf_put(mfp, hp_new);
 
             ;; flush the old data block
             ;; set ml_locked_lineadd to 0, because the updating of the
@@ -49706,14 +49514,14 @@
 ;           {
 ;               infoptr_C ip = buf.b_ml.ml_stack[stack_idx];
 ;               int pb_idx = ip.ip_index;
-;               if ((hp = mf_get(mfp, ip.ip_bnum, 1)) == null)
+;               if ((hp = mf_get(mfp, ip.ip_bnum)) == null)
 ;                   return false;
 
 ;               ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
 ;               if (pp.pb_id != PTR_ID)
 ;               {
 ;                   emsg(u8("E317: pointer block id wrong 3"));
-;                   mf_put(mfp, hp, false, false);
+;                   mf_put(mfp, hp);
 ;                   return false;
 ;               }
 
@@ -49733,7 +49541,7 @@
 ;                   pp.pb_pointer[pb_idx + 1].pe_bnum = bnum_right;
 ;                   pp.pb_pointer[pb_idx + 1].pe_page_count = page_count_right;
 
-;                   mf_put(mfp, hp, true, false);
+;                   mf_put(mfp, hp);
 ;                   buf.b_ml.ml_stack_top = stack_idx + 1;  ;; truncate stack
 
 ;                   if (lineadd != 0)
@@ -49777,7 +49585,7 @@
 ;                       pp.pb_pointer[0].pe_bnum = hp_new.bh_bnum();
 ;                       pp.pb_pointer[0].pe_line_count = buf.b_ml.ml_line_count;
 ;                       pp.pb_pointer[0].pe_page_count = 1;
-;                       mf_put(mfp, hp, true, false);           ;; release block 1
+;                       mf_put(mfp, hp);           ;; release block 1
 ;                       hp = hp_new;                            ;; new block is to be split
 ;                       pp = pp_new;
 ;                       ip.ip_index = 0;
@@ -49824,8 +49632,8 @@
 ;                   bnum_right = hp_new.bh_bnum();
 ;                   page_count_left = 1;
 ;                   page_count_right = 1;
-;                   mf_put(mfp, hp, true, false);
-;                   mf_put(mfp, hp_new, true, false);
+;                   mf_put(mfp, hp);
+;                   mf_put(mfp, hp_new);
 ;               }
 ;           }
 
@@ -49857,10 +49665,6 @@
     (§
 ;       if (line == null)           ;; just checking...
 ;           return false;
-
-        ;; When starting up, we might still need to create the memfile.
-;       if (@curbuf.b_ml.ml_mfp == null)
-;           open_buffer();
 
 ;       if (copy)
 ;           line = STRDUP(line);
@@ -49953,14 +49757,14 @@
 ;               buf.b_ml.ml_stack_top = 0;              ;; stack is invalid when failing
 ;               infoptr_C ip = buf.b_ml.ml_stack[stack_idx];
 ;               idx = ip.ip_index;
-;               if ((hp = mf_get(mfp, ip.ip_bnum, 1)) == null)
+;               if ((hp = mf_get(mfp, ip.ip_bnum)) == null)
 ;                   return false;
 
 ;               ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
 ;               if (pp.pb_id != PTR_ID)
 ;               {
 ;                   emsg(u8("E317: pointer block id wrong 4"));
-;                   mf_put(mfp, hp, false, false);
+;                   mf_put(mfp, hp);
 ;                   return false;
 ;               }
 ;               count = --pp.pb_count;
@@ -49971,7 +49775,7 @@
 ;                   if (count != idx)                   ;; move entries after the deleted one
 ;                       for (int i = idx; i < count; i++)
 ;                           COPY_ptr_entry(pp.pb_pointer[i], pp.pb_pointer[i + 1]);
-;                   mf_put(mfp, hp, true, false);
+;                   mf_put(mfp, hp);
 
 ;                   buf.b_ml.ml_stack_top = stack_idx; ;; truncate stack
                     ;; fix line count for rest of blocks in the stack
@@ -50002,10 +49806,6 @@
 ;           dp.db_free += line_size + INDEX_SIZE;
 ;           dp.db_txt_start += line_size;
 ;           --dp.db_line_count;
-
-            ;; mark the block dirty and make sure it is in the file (for recovery)
-
-;           buf.b_ml.ml_flags |= (ML_LOCKED_DIRTY | ML_LOCKED_POS);
 ;       }
 
 ;       ml_updatechunk(buf, lnum, line_size, ML_CHNK_DELLINE);
@@ -50017,7 +49817,7 @@
 (defn- #_void ml_setmarked [#_long lnum]
     (§
         ;; invalid line number
-;       if (lnum < 1 || @curbuf.b_ml.ml_line_count < lnum || @curbuf.b_ml.ml_mfp == null)
+;       if (lnum < 1 || @curbuf.b_ml.ml_line_count < lnum)
 ;           return;                     ;; give error message?
 
 ;       if (@lowest_marked == 0 || lnum < @lowest_marked)
@@ -50033,16 +49833,12 @@
 
 ;       data_block_C dp = (data_block_C)hp.bh_data;
 ;       dp.db_index[(int)(lnum - @curbuf.b_ml.ml_locked_low)] |= DB_MARKED;
-;       @curbuf.b_ml.ml_flags |= ML_LOCKED_DIRTY;
     ))
 
 ;; find the first line with its B_MARKED flag set
 
 (defn- #_long ml_firstmarked []
     (§
-;       if (@curbuf.b_ml.ml_mfp == null)
-;           return 0;
-
         ;; The search starts with lowest_marked line.
         ;; This is the last line where a mark was found, adjusted by inserting/deleting lines.
 
@@ -50062,7 +49858,6 @@
 ;               if ((dp.db_index[i] & DB_MARKED) != 0)
 ;               {
 ;                   dp.db_index[i] &= DB_INDEX_MASK;
-;                   @curbuf.b_ml.ml_flags |= ML_LOCKED_DIRTY;
 ;                   @lowest_marked = lnum + 1;
 ;                   return lnum;
 ;               }
@@ -50075,9 +49870,6 @@
 
 (defn- #_void ml_clearmarked []
     (§
-;       if (@curbuf.b_ml.ml_mfp == null)     ;; nothing to do
-;           return;
-
         ;; The search starts with line lowest_marked.
 
 ;       for (long lnum = @lowest_marked; lnum <= @curbuf.b_ml.ml_line_count; )
@@ -50096,7 +49888,6 @@
 ;               if ((dp.db_index[i] & DB_MARKED) != 0)
 ;               {
 ;                   dp.db_index[i] &= DB_INDEX_MASK;
-;                   @curbuf.b_ml.ml_flags |= ML_LOCKED_DIRTY;
 ;               }
 ;       }
 
@@ -50109,7 +49900,7 @@
 
 (defn- #_void ml_flush_line [#_buffer_C buf]
     (§
-;       if (buf.b_ml.ml_line_lnum == 0 || buf.b_ml.ml_mfp == null)
+;       if (buf.b_ml.ml_line_lnum == 0)
 ;           return;                                         ;; nothing to do
 
 ;       if ((buf.b_ml.ml_flags & ML_LINE_DIRTY) != 0)
@@ -50163,7 +49954,6 @@
 
                     ;; copy new line into the data block
 ;                   BCOPY(dp.db_text, start - extra, new_line, 0, new_len);
-;                   buf.b_ml.ml_flags |= (ML_LOCKED_DIRTY | ML_LOCKED_POS);
                     ;; The else case is already covered by the insert and delete.
 ;                   ml_updatechunk(buf, lnum, (long)extra, ML_CHNK_UPDLINE);
 ;               }
@@ -50175,7 +49965,7 @@
                     ;; Don't forget to copy the mark!
 
                     ;; How about handling errors???
-;                   ml_append_int(buf, lnum, new_line, new_len, false, (dp.db_index[idx] & DB_MARKED) != 0);
+;                   ml_append_int(buf, lnum, new_line, new_len, (dp.db_index[idx] & DB_MARKED) != 0);
 ;                   ml_delete_int(buf, lnum, false);
 ;               }
 ;           }
@@ -50190,21 +49980,21 @@
 
 (defn- #_block_hdr_C ml_new_zero [#_memfile_C mfp]
     (§
-;       return mf_new(mfp, false, §_zero_block_C(), 1);
+;       return mf_new(mfp, §_zero_block_C(), 1);
     ))
 
 ;; create a new, empty, pointer block
 
 (defn- #_block_hdr_C ml_new_ptr [#_memfile_C mfp]
     (§
-;       return mf_new(mfp, false, §_ptr_block_C(), 1);
+;       return mf_new(mfp, §_ptr_block_C(), 1);
     ))
 
 ;; create a new, empty, data block
 
-(defn- #_block_hdr_C ml_new_data [#_memfile_C mfp, #_boolean negative, #_int page_count]
+(defn- #_block_hdr_C ml_new_data [#_memfile_C mfp, #_int page_count]
     (§
-;       return mf_new(mfp, negative, new_data_block(page_count), page_count);
+;       return mf_new(mfp, new_data_block(page_count), page_count);
     ))
 
 ;; lookup line 'lnum' in a memline
@@ -50249,8 +50039,7 @@
 ;               return buf.b_ml.ml_locked;
 ;           }
 
-;           mf_put(mfp, buf.b_ml.ml_locked, (buf.b_ml.ml_flags & ML_LOCKED_DIRTY) != 0,
-;                                             (buf.b_ml.ml_flags & ML_LOCKED_POS) != 0);
+;           mf_put(mfp, buf.b_ml.ml_locked);
 ;           buf.b_ml.ml_locked = null;
 
             ;; If lines have been added or deleted in the locked block,
@@ -50298,7 +50087,7 @@
 ;           error_block:
 ;           for ( ; ; )
 ;           {
-;               hp = mf_get(mfp, bnum, page_count);
+;               hp = mf_get(mfp, bnum);
 ;               if (hp == null)
 ;                   break error_noblock;
 
@@ -50318,7 +50107,6 @@
 ;                       buf.b_ml.ml_locked_low = low;
 ;                       buf.b_ml.ml_locked_high = high;
 ;                       buf.b_ml.ml_locked_lineadd = 0;
-;                       buf.b_ml.ml_flags &= ~(ML_LOCKED_DIRTY | ML_LOCKED_POS);
 ;                       return hp;
 ;                   }
 ;               }
@@ -50354,19 +50142,6 @@
 ;                       high = low - 1;
 ;                       low -= t;
 
-                        ;; a negative block number may have been changed
-
-;                       if (bnum < 0)
-;                       {
-;                           long bnum2 = mf_trans_del(mfp, bnum);
-;                           if (bnum != bnum2)
-;                           {
-;                               bnum = bnum2;
-;                               pp.pb_pointer[idx].pe_bnum = bnum;
-;                               dirty = true;
-;                           }
-;                       }
-
 ;                       break;
 ;                   }
 ;               }
@@ -50389,10 +50164,10 @@
 ;                   pp.pb_pointer[idx].pe_line_count++;
 ;                   dirty = true;
 ;               }
-;               mf_put(mfp, hp, dirty, false);
+;               mf_put(mfp, hp);
 ;           }
 
-;           mf_put(mfp, hp, false, false);
+;           mf_put(mfp, hp);
 ;       }
 
         ;; If action is ML_DELETE or ML_INSERT we have to correct the tree for
@@ -50446,39 +50221,21 @@
 ;       for (int idx = buf.b_ml.ml_stack_top - 1; 0 <= idx; --idx)
 ;       {
 ;           infoptr_C ip = buf.b_ml.ml_stack[idx];
-;           block_hdr_C hp = mf_get(mfp, ip.ip_bnum, 1);
+;           block_hdr_C hp = mf_get(mfp, ip.ip_bnum);
 ;           if (hp == null)
 ;               break;
 
 ;           ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
 ;           if (pp.pb_id != PTR_ID)
 ;           {
-;               mf_put(mfp, hp, false, false);
+;               mf_put(mfp, hp);
 ;               emsg(u8("E317: pointer block id wrong 2"));
 ;               break;
 ;           }
 
 ;           pp.pb_pointer[ip.ip_index].pe_line_count += count;
 ;           ip.ip_high += count;
-;           mf_put(mfp, hp, true, false);
-;       }
-    ))
-
-;; Set the flags in the first block of the swap file:
-;; - file is modified or not: buf.b_changed
-
-(defn- #_void ml_setflags [#_buffer_C buf]
-    (§
-;       if (buf.b_ml.ml_mfp == null)
-;           return;
-
-;       for (block_hdr_C hp = buf.b_ml.ml_mfp.mf_used_last; hp != null; hp = hp.bh_prev)
-;       {
-;           if (hp.bh_bnum() == 0)
-;           {
-;               hp.bh_flags |= BH_DIRTY;
-;               break;
-;           }
+;           mf_put(mfp, hp);
 ;       }
     ))
 
@@ -50829,31 +50586,8 @@
 
 ;; The buffer list is a double linked list of all buffers.
 ;; Each buffer can be in one of these states:
-;; never loaded: BF_NEVERLOADED is set, only the file name is valid
-;;   not loaded: b_ml.ml_mfp == null, no memfile allocated
 ;;       hidden: b_nwindows == 0, loaded but not displayed in a window
 ;;       normal: loaded and displayed in a window
-
-;; Open current buffer, that is: open the memfile.
-
-(defn- #_void open_buffer []
-    (§
-;       ml_open(@curbuf);
-
-        ;; mark cursor position as being invalid
-;       @curwin.w_valid = 0;
-
-        ;; if first time loading this buffer, init b_chartab[]
-;       if ((@curbuf.b_flags & BF_NEVERLOADED) != 0)
-;           buf_init_chartab(@curbuf, false);
-
-;       unchanged(@curbuf, false);
-
-        ;; need to set w_topline
-;       @curwin.w_topline = 1;
-
-;       @curbuf.b_flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
-    ))
 
 ;; Close the link to a buffer.
 
@@ -50874,24 +50608,14 @@
 ;           --buf.b_nwindows;
     ))
 
-;; Make buffer not contain a file.
-
-(defn- #_void buf_clear_file [#_buffer_C buf]
-    (§
-;       buf.b_ml.ml_line_count = 1;
-;       unchanged(buf, true);
-;       buf.b_ml.ml_mfp = null;
-;       buf.b_ml.ml_flags = ML_EMPTY;   ;; empty buffer
-    ))
-
 ;; This is the ONLY way to create a new buffer.
 
-(defn- #_buffer_C newBuffer [#_long lnum]
-    ;; lnum: preferred cursor line
+(defn- #_buffer_C newBuffer []
     (§
 ;       buffer_C buf = §_buffer_C();
 
-;       buf.b_ml = §_memline_C();
+;       buf.b_ml = ml_open();
+
 ;       buf.b_namedm = ARRAY_pos(NMARKS);
 ;       buf.b_visual = §_visualinfo_C();
 ;       buf.b_last_cursor = §_pos_C();
@@ -50907,9 +50631,9 @@
 ;       buf_init_chartab(buf, false);
 
 ;       buf.b_u_synced = true;
-;       buf.b_flags = BF_CHECK_RO | BF_NEVERLOADED;
-;       buf_clear_file(buf);
-;       clrallmarks(buf);                           ;; clear marks
+
+;       unchanged(buf);
+;       clrallmarks(buf);
 
 ;       return buf;
     ))
@@ -50925,11 +50649,7 @@
 ;       (p = p.plus(1)).be(-1, (byte)'"');
 ;       vim_strncpy(p, buf_spname(@curbuf), IOSIZE - BDIFF(p, buffer) - 1);
 
-;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s%s%s%s"),
-;               bufIsChanged(@curbuf) ? u8(" [Modified]") : u8(" "),
-;               (@curbuf.b_flags & BF_NOTEDITED) != 0 ? u8("[Not edited]") : u8(""),
-;               (@curbuf.b_flags & BF_NEW) != 0 ? u8("[New file]") : u8(""),
-;               (bufIsChanged(@curbuf) || (@curbuf.b_flags & BF_WRITE_MASK) != 0) ? u8(" ") : u8(""));
+;       vim_snprintf_add(buffer, IOSIZE, u8("\"%s"), bufIsChanged(@curbuf) ? u8(" [Modified] ") : u8(" "));
 
 ;       int n = (int)((@curwin.w_cursor.lnum * 100L) / @curbuf.b_ml.ml_line_count);
 
@@ -51153,7 +50873,7 @@
                     ;; A single '@' (not "@-@"):
                     ;; Decide on letters being ID/printable/keyword chars with
                     ;; standard function isalpha().  This takes care of locale
-                    ;; for single-byte characters).
+                    ;; for single-byte characters.
 
 ;                   if (c == '@')
 ;                   {
@@ -51742,7 +51462,7 @@
 
 (defn- #_void getvcol [#_window_C wp, #_pos_C pos, #_int* start, #_int* cursor, #_int* end]
     (§
-;       Bytes p = ml_get_buf(@curbuf, pos.lnum, false);    ;; points to current char
+;       Bytes p = ml_get_buf(@curbuf, pos.lnum);    ;; points to current char
 ;       Bytes line = p;                                        ;; start of the line
 ;       Bytes posptr;                                          ;; points to char at pos.col
 ;       if (pos.col == MAXCOL)
@@ -51858,7 +51578,7 @@
 ;           int endadd = 0;
 
             ;; Cannot put the cursor on part of a wide character.
-;           Bytes ptr = ml_get_buf(@curbuf, pos.lnum, false);
+;           Bytes ptr = ml_get_buf(@curbuf, pos.lnum);
 ;           if (pos.col < STRLEN(ptr))
 ;           {
 ;               int c = us_ptr2char(ptr.plus(pos.col));
@@ -55694,7 +55414,7 @@
     (§
 ;       if (0 < posp.col || 1 < posp.coladd)
 ;       {
-;           Bytes p = ml_get_buf(buf, posp.lnum, false);
+;           Bytes p = ml_get_buf(buf, posp.lnum);
 ;           posp.col -= us_head_off(p, p.plus(posp.col));
             ;; Reset "coladd" when the cursor would be on the right half of a double-wide character.
 ;           if (posp.coladd == 1
@@ -56484,7 +56204,7 @@
 ;           boolean did_append;
 ;           if ((@State & VREPLACE_FLAG) == 0 || @orig_line_count <= old_cursor.lnum)
 ;           {
-;               if (!ml_append(@curwin.w_cursor.lnum, p_extra, 0, false))
+;               if (!ml_append(@curwin.w_cursor.lnum, p_extra, 0))
 ;                   break theend;
                 ;; Postpone calling changed_lines(), because it would mess up folding with markers.
 ;               mark_adjust(@curwin.w_cursor.lnum + 1, MAXLNUM, 1L, 0L);
@@ -56651,7 +56371,7 @@
 
 (defn- #_int plines_win_nofold [#_window_C wp, #_long lnum]
     (§
-;       Bytes s = ml_get_buf(@curbuf, lnum, false);
+;       Bytes s = ml_get_buf(@curbuf, lnum);
 ;       if (s.at(0) == NUL)     ;; empty line
 ;           return 1;
 
@@ -56689,7 +56409,7 @@
 ;       if (wp.w_width == 0)
 ;           return lines + 1;
 
-;       Bytes line = ml_get_buf(@curbuf, lnum, false);
+;       Bytes line = ml_get_buf(@curbuf, lnum);
 ;       Bytes s = line;
 
 ;       long col = 0;
@@ -57130,7 +56850,6 @@
 ;       if (!@curbuf.@b_changed)
 ;       {
 ;           @curbuf.@b_changed = true;
-;           ml_setflags(@curbuf);
 ;           check_status(@curbuf);
 ;       }
 ;       @curbuf.b_changedtick++;
@@ -57385,21 +57104,19 @@
 ;           @last_cursormoved.lnum = 0;
     ))
 
-;; unchanged() is called when the changed flag must be reset for buffer 'buf'
+;; called when the changed flag must be reset for buffer 'buf'
 
-(defn- #_void unchanged [#_buffer_C buf, #_boolean ff]
-    ;; ff: also reset 'fileformat'
+(defn- #_void unchanged [#_buffer_C buf]
     (§
-;       if (buf.@b_changed || (ff && file_ff_differs(buf, false)))
+;       if (buf.@b_changed)
 ;       {
 ;           buf.@b_changed = false;
-;           ml_setflags(buf);
 ;           check_status(buf);
 ;       }
 ;       buf.b_changedtick++;
     ))
 
-;; check_status: called when the status bars for the buffer 'buf' need to be updated
+;; called when the status bars for buffer 'buf' need to be updated
 
 (defn- #_void check_status [#_buffer_C buf]
     (§
@@ -57673,8 +57390,6 @@
 ;       screen_start();                 ;; don't know where cursor is now
 ;       out_flush();
 
-;       ml_close_all();
-
 ;       out_str(u8("Vim: Finished.\n"));
 
 ;       getout(1);
@@ -57819,7 +57534,7 @@
 ;                       || (@VIsual_active && @p_sel.at(0) != (byte)'o')
 ;                       || ((@ve_flags & VE_ONEMORE) != 0 && wcol < MAXCOL);
 
-;       Bytes line = ml_get_buf(@curbuf, pos.lnum, false);
+;       Bytes line = ml_get_buf(@curbuf, pos.lnum);
 
 ;       int idx;
 ;       if (MAXCOL <= wcol)
@@ -58103,7 +57818,7 @@
 ;       int oldcol = win.w_cursor.col;
 ;       int oldcoladd = win.w_cursor.col + win.w_cursor.coladd;
 
-;       int len = STRLEN(ml_get_buf(@curbuf, win.w_cursor.lnum, false));
+;       int len = STRLEN(ml_get_buf(@curbuf, win.w_cursor.lnum));
 ;       if (len == 0)
 ;           win.w_cursor.col = 0;
 ;       else if (len <= win.w_cursor.col)
@@ -60079,7 +59794,7 @@
 ;               if (empty_buffer && lnum == 0)
 ;                   ml_replace(1, uep.ue_array[i], true);
 ;               else
-;                   ml_append(lnum, uep.ue_array[i], 0, false);
+;                   ml_append(lnum, uep.ue_array[i], 0);
 ;           }
 
             ;; adjust marks
@@ -60122,7 +59837,7 @@
 ;       if ((old_flags & UH_CHANGED) != 0)
 ;           changed();
 ;       else
-;           unchanged(@curbuf, false);
+;           unchanged(@curbuf);
 
         ;; restore marks from before undo/redo
 
@@ -60601,7 +60316,7 @@
 
 (defn- #_boolean bufIsChanged [#_buffer_C buf]
     (§
-;       return (buf.@b_changed || file_ff_differs(buf, true));
+;       return buf.@b_changed;
     ))
 
 ;;; ============================================================================================== VimV
@@ -65486,7 +65201,7 @@
 ;       if (line_attr != 0)
 ;           area_highlighting = true;
 
-;       Bytes line = ml_get_buf(@curbuf, lnum, false); ;; current line
+;       Bytes line = ml_get_buf(@curbuf, lnum); ;; current line
 ;       Bytes ptr = line;                                  ;; current position in "line"
 
         ;; find start of trailing whitespace
@@ -65597,7 +65312,7 @@
 ;           next_search_hl(wp, shl, lnum, v, mi);
 
             ;; Need to get the line again, a multi-line regexp may have made it invalid.
-;           line = ml_get_buf(@curbuf, lnum, false);
+;           line = ml_get_buf(@curbuf, lnum);
 ;           ptr = line.plus(v);
 
 ;           if (shl.lnum != 0 && shl.lnum <= lnum)
@@ -65722,7 +65437,7 @@
 ;                       char_attr = 0; ;; was: hl_attr(HLF_AT);
 ;                       p_extra = null;
 ;                       c_extra = ' ';
-;                       n_extra = get_breakindent_win(wp, ml_get_buf(@curbuf, lnum, false));
+;                       n_extra = get_breakindent_win(wp, ml_get_buf(@curbuf, lnum));
                         ;; Correct end of highlighted area for 'breakindent',
                         ;; required when 'linebreak' is also set.
 ;                       if (tocol[0] == vcol)
@@ -65837,7 +65552,7 @@
 ;                               pos_inprogress = (mi != null && mi.mi_pos.cur != 0);
 
                                 ;; Need to get the line again, a multi-line regexp may have made it invalid.
-;                               line = ml_get_buf(@curbuf, lnum, false);
+;                               line = ml_get_buf(@curbuf, lnum);
 ;                               ptr = line.plus(v);
 
 ;                               if (shl.lnum == lnum)
@@ -67561,7 +67276,7 @@
 ;                   || (shl.rmm.endpos[0].lnum == 0 && shl.rmm.endpos[0].col <= shl.rmm.startpos[0].col))
 ;           {
 ;               matchcol = shl.rmm.startpos[0].col;
-;               Bytes ml = ml_get_buf(shl.buf, lnum, false).plus(matchcol);
+;               Bytes ml = ml_get_buf(shl.buf, lnum).plus(matchcol);
 ;               if (ml.at(0) == NUL)
 ;               {
 ;                   matchcol++;
@@ -69343,7 +69058,7 @@
         ;; Check if not in Insert mode and the line is empty (will show "0-1").
 
 ;       boolean empty_line = false;
-;       if ((@State & INSERT) == 0 && ml_get_buf(@curbuf, wp.w_cursor.lnum, false).at(0) == NUL)
+;       if ((@State & INSERT) == 0 && ml_get_buf(@curbuf, wp.w_cursor.lnum).at(0) == NUL)
 ;           empty_line = true;
 
         ;; Only draw the ruler when something changed.
@@ -71743,9 +71458,15 @@
     (§
 ;       @curwin = newWindow(null);
 
-;       @curbuf = newBuffer(1L);
+;       @curbuf = newBuffer();
 
 ;       @curbuf.b_nwindows = 1;          ;; there is one window
+
+        ;; mark cursor position as being invalid
+;       @curwin.w_valid = 0;
+
+        ;; need to set w_topline
+;       @curwin.w_topline = 1;
 
 ;       win_init_empty(@curwin);
 
