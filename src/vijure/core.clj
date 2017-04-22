@@ -7566,38 +7566,38 @@
 
                                 OP_DELETE
                                     (let [_ (reset! VIsual_reselect false) ;; don't reselect now
-                                          oap (if empty_region?
-                                                (do (beep) (cancel-redo) oap)
-                                                (let [[oap _] (op-delete? oap)] oap)
+                                          [win oap]
+                                            (if empty_region?
+                                                (do (beep) (cancel-redo) [win oap])
+                                                (let [[win oap _] (op-delete? win, oap)] [win oap])
                                             )]
                                         [win cap oap])
 
                                 OP_YANK
-                                    (let [oap (if empty_region?
-                                                (do (beep) (cancel-redo) oap)
-                                                (let [_ (reset! (:wo_lbr (:w_options win)) o'lbr) [oap _] (op-yank? oap, false, true)] oap)
+                                    (let [[win oap]
+                                            (if empty_region?
+                                                (do (beep) (cancel-redo) [win oap])
+                                                (let [_ (reset! (:wo_lbr (:w_options win)) o'lbr) [win oap _] (op-yank? win, oap, false, true)] [win oap])
                                             )]
                                         [(check-cursor-col win) cap oap])
 
                                 OP_CHANGE
-                                    (let [_ (reset! VIsual_reselect false) ;; don't reselect now
-                                          [cap oap]
-                                            (if empty_region?
-                                                (do (beep) (cancel-redo) [cap oap])
-                                                ;; This is a new edit command, not a restart.
-                                                ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
-                                                ;; But do this only once and not when typed and 'insertmode' isn't set.
-                                                (let [o'restart_edit (if (or @p_im (not @keyTyped)) @restart_edit 0) _ (reset! restart_edit 0)
-                                                      ;; Restore linebreak, so that when the user edits, it looks as before.
-                                                      _ (reset! (:wo_lbr (:w_options win)) o'lbr)
-                                                      ;; Reset "finish_op" now, don't want it set inside edit().
-                                                      _ (reset! finish_op false)
-                                                      [oap ?] (op-change? oap) cap (if ? (update cap :retval | CA_COMMAND_BUSY) cap)] ;; will call edit()
-                                                    (when (zero? @restart_edit)
-                                                        (reset! restart_edit o'restart_edit))
-                                                    [cap oap])
-                                            )]
-                                        [win cap oap])
+                                    (do (reset! VIsual_reselect false) ;; don't reselect now
+                                        (if empty_region?
+                                            (do (beep) (cancel-redo) [win cap oap])
+                                            ;; This is a new edit command, not a restart.
+                                            ;; Need to remember it to make 'insertmode' work with mappings for Visual mode.
+                                            ;; But do this only once and not when typed and 'insertmode' isn't set.
+                                            (let [o'restart_edit (if (or @p_im (not @keyTyped)) @restart_edit 0) _ (reset! restart_edit 0)
+                                                  ;; Restore linebreak, so that when the user edits, it looks as before.
+                                                  _ (reset! (:wo_lbr (:w_options win)) o'lbr)
+                                                  ;; Reset "finish_op" now, don't want it set inside edit().
+                                                  _ (reset! finish_op false)
+                                                  [win oap ?] (op-change? win, oap) cap (if ? (update cap :retval | CA_COMMAND_BUSY) cap)] ;; will call edit()
+                                                (when (zero? @restart_edit)
+                                                    (reset! restart_edit o'restart_edit))
+                                                [win cap oap])
+                                        ))
 
                                 OP_INDENT
                                     (let [win (op-reindent win, oap, (ß get_c_indent))]
@@ -11081,12 +11081,12 @@
 ;;
 ;; Return false if undo failed, true otherwise.
 
-(defn- #_[oparg_C boolean] op-delete? [#_oparg_C oap]
+(defn- #_[window_C oparg_C boolean] op-delete? [#_window_C win, #_oparg_C oap]
     (cond (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) ;; nothing to do
-        [oap true]
+        [win oap true]
     ;; Nothing to delete, return here.  Do prepare undo, for op-change().
     (:empty oap)
-        [oap (u-save-cursor)]
+        [win oap (u-save-cursor)]
     :else
         (let-when [o'lmax (line-count @curbuf) o'regname (:regname oap)
               oap (update oap :regname adjust-clip-reg) oap (mb-adjust-opend oap)
@@ -11095,7 +11095,7 @@
               oap (if (and (== (:motion_type oap) MCHAR) (not (:is_VIsual oap)) (not (:block_mode oap)) (< 1 (:line_count oap))
                            (== (:motion_force oap) NUL) (== (:op_type oap) OP_DELETE))
                     (let [#_Bytes s (.plus (ml-get (:lnum (:op_end oap))) (:col (:op_end oap))) s (if (and (non-eos? s) (:inclusive oap)) (.plus s 1) s) s (skipwhite s)]
-                        (if (and (eos? s) (inindent @curwin, 0)) (assoc oap :motion_type MLINE) oap))
+                        (if (and (eos? s) (inindent win, 0)) (assoc oap :motion_type MLINE) oap))
                     oap)
               ;; Check for trying to delete (e.g. "D") in an empty line.  Note:  For the change operator it is ok.
               ? (when (and (== (:motion_type oap) MCHAR) (== (:line_count oap) 1) (== (:op_type oap) OP_DELETE) (eos? (ml-get (:lnum (:op_start oap)))))
@@ -11110,202 +11110,193 @@
                         (do (when (some? (vim-strbyte @p_cpo, CPO_EMPTYREGION))
                                 (beep-flush))
                             :_))
-                )] (not ?) => [oap true]
+                )] (not ?) => [win oap true]
 
             ;; Do a yank of whatever we're about to delete.
             ;; If a yank register was specified, put the deleted text into that register.
             ;; For the black hole register '_' don't yank anything.
-            (let-when [[oap _]
-                    (if (!= (:regname oap) (byte \_))
-                        (let-when [#_boolean done? false
-                              [oap done? _]
+            (let-when [[win oap _]
+                    (when' (!= (:regname oap) (byte \_)) => [win oap nil]
+                        (let-when [[win oap #_boolean done? _]
                                 (cond (zero? (:regname oap))
-                                    [oap done? nil]
+                                    [win oap false nil]
                                 (valid-yank-reg (:regname oap), true) ;; check for read-only register
-                                    (let [_ (get-yank-register (:regname oap), true) [oap ?] (op-yank? oap, true, false)]
-                                        [oap (or ? done?) nil])
+                                    (let [_ (get-yank-register (:regname oap), true) [win oap ?] (op-yank? win, oap, true, false)]
+                                        [win oap ? nil])
                                 :else
-                                    (do (beep-flush) [oap done? true])
-                                )] (nil? _) => [oap _]
+                                    (do (beep-flush) [win oap false true])
+                                )] (nil? _) => [win oap _]
 
                             ;; Put deleted text into register 1 and shift number registers if the
                             ;; delete contains a line break, or when a regname has been specified.
                             ;; Use the register name from before adjust-clip-reg() may have changed it.
-                            (let [[oap done?]
-                                    (if (or (non-zero? o'regname) (== (:motion_type oap) MLINE) (< 1 (:line_count oap)) (:use_reg_one oap))
-                                        (do (loop-when-recur [#_int n 9] (< 1 n) [(dec n)]
-                                                (swap! y_regs assoc n (... @y_regs (dec n))))
-                                            (swap! y_regs update 1 assoc :y_array nil) ;; set register one to empty
-                                            (reset! y_prev (reset! y_curr 1))
-                                            (let [[oap ?] (op-yank? oap, true, false)]
-                                                [oap (or ? done?)]
-                                            ))
-                                        [oap done?])
+                            (let [[win oap done?]
+                                    (when' (or (non-zero? o'regname) (== (:motion_type oap) MLINE) (< 1 (:line_count oap)) (:use_reg_one oap)) => [win oap done?]
+                                        (loop-when-recur [#_int n 9] (< 1 n) [(dec n)]
+                                            (swap! y_regs assoc n (... @y_regs (dec n))))
+                                        (swap! y_regs update 1 assoc :y_array nil) ;; set register one to empty
+                                        (reset! y_prev (reset! y_curr 1))
+                                        (let [[win oap ?] (op-yank? win, oap, true, false)]
+                                            [win oap (or ? done?)]
+                                        ))
                                   ;; Yank into small delete register when no named register specified
                                   ;; and the delete is within one line.
-                                  [oap done?]
-                                    (if (and (zero? (:regname oap)) (!= (:motion_type oap) MLINE) (== (:line_count oap) 1))
+                                  [win oap done?]
+                                    (when' (and (zero? (:regname oap)) (!= (:motion_type oap) MLINE) (== (:line_count oap) 1)) => [win oap done?]
                                         (let [oap (assoc oap :regname (byte \-))
-                                              _ (get-yank-register (:regname oap), true) [oap ?] (op-yank? oap, true, false)]
-                                            [(assoc oap :regname 0) (or ? done?)])
-                                        [oap done?]
+                                              _ (get-yank-register (:regname oap), true) [win oap ?] (op-yank? win, oap, true, false)]
+                                            [win (assoc oap :regname 0) (or ? done?)])
                                     )]
-                                [oap (when (not done?) (emsg e_abort) false)]
+                                [win oap (when (not done?) (emsg e_abort) false)]
                             ))
-                        [oap nil]
-                    )] (nil? _) => [oap _]
+                    )] (nil? _) => [win oap _]
 
-                (let-when [[oap _]
+                (let-when [[win oap _]
                         (cond (:block_mode oap) ;; block mode delete
                             (if (not (u-save (dec (:lnum (:op_start oap))), (inc (:lnum (:op_end oap)))))
-                                [oap false]
-                                (do (loop-when-recur [#_long lnum (:lnum (:w_cursor @curwin))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-                                        (let [#_block_def_C bd (block-prep oap, false, lnum, true)]
-                                            (when (non-zero? (:textlen bd))
-                                                ;; Adjust cursor position for tab replaced by spaces and 'lbr'.
-                                                (when (== lnum (:lnum (:w_cursor @curwin)))
-                                                    (swap! curwin update :w_cursor assoc :col (+ (:textcol bd) (:startspaces bd)) :coladd 0))
-                                                ;; If we delete a TAB, it may be replaced by several characters,
-                                                ;; thus the number of characters may increase!
-                                                (let [#_int n (- (:textlen bd) (:startspaces bd) (:endspaces bd)) ;; number of chars deleted
-                                                      #_Bytes s (ml-get lnum) #_Bytes s' (Bytes. (- (inc (STRLEN s)) n))
-                                                      ;; copy up to deleted part
-                                                      _ (BCOPY s', s, (:textcol bd))
-                                                      ;; insert spaces
-                                                      _ (BFILL s', (:textcol bd), (byte \space), (+ (:startspaces bd) (:endspaces bd)))
-                                                      ;; copy the part after the deleted part
-                                                      s (.plus s (+ (:textcol bd) (:textlen bd)))
-                                                      _ (BCOPY s', (+ (:textcol bd) (:startspaces bd) (:endspaces bd)), s, 0, (inc (STRLEN s)))]
-                                                    ;; replace the line
-                                                    (ml-replace lnum, s')
-                                                ))
-                                        ))
-                                    (swap! curwin check-cursor-col)
-                                    (swap! curbuf changed-lines (:lnum (:w_cursor @curwin)), (:col (:w_cursor @curwin)), (inc (:lnum (:op_end oap))), 0)
-                                    [(assoc oap :line_count 0) nil] ;; no lines deleted
+                                [win oap false]
+                                (let [win (loop-when [win win #_long lnum (:lnum (:w_cursor win))] (<= lnum (:lnum (:op_end oap))) => (check-cursor-col win)
+                                            (let [#_block_def_C bd (block-prep oap, false, lnum, true)
+                                                  win (when' (non-zero? (:textlen bd)) => win
+                                                        ;; Adjust cursor position for tab replaced by spaces and 'lbr'.
+                                                        (let [win (when' (== lnum (:lnum (:w_cursor win))) => win
+                                                                    (update win :w_cursor assoc :col (+ (:textcol bd) (:startspaces bd)) :coladd 0))
+                                                              ;; If we delete a TAB, it may be replaced by several characters,
+                                                              ;; thus the number of characters may increase!
+                                                              #_int n (- (:textlen bd) (:startspaces bd) (:endspaces bd)) ;; number of chars deleted
+                                                              #_Bytes s (ml-get lnum) #_Bytes s' (Bytes. (- (inc (STRLEN s)) n))
+                                                              ;; copy up to deleted part
+                                                              _ (BCOPY s', s, (:textcol bd))
+                                                              ;; insert spaces
+                                                              _ (BFILL s', (:textcol bd), (byte \space), (+ (:startspaces bd) (:endspaces bd)))
+                                                              ;; copy the part after the deleted part
+                                                              s (.plus s (+ (:textcol bd) (:textlen bd)))
+                                                              _ (BCOPY s', (+ (:textcol bd) (:startspaces bd) (:endspaces bd)), s, 0, (inc (STRLEN s)))]
+                                                            ;; replace the line
+                                                            (ml-replace lnum, s')
+                                                            win)
+                                                    )]
+                                                (recur win (inc lnum)))
+                                        )]
+                                    (swap! curbuf changed-lines (:lnum (:w_cursor win)), (:col (:w_cursor win)), (inc (:lnum (:op_end oap))), 0)
+                                    [win (assoc oap :line_count 0) nil] ;; no lines deleted
                                 ))
                         (== (:motion_type oap) MLINE)
                             (if (== (:op_type oap) OP_CHANGE)
                                 ;; Delete the lines except the first one.  Temporarily move the cursor to the next line.
                                 ;; Save the current line number: if the last line is deleted, it may be changed.
-                                (do (when (< 1 (:line_count oap))
-                                        (let [o'lnum (:lnum (:w_cursor @curwin))]
-                                            (swap! curwin update-in [:w_cursor :lnum] inc)
-                                            (swap! curwin del-lines (dec (:line_count oap)), true)
-                                            (swap! curwin assoc-in [:w_cursor :lnum] o'lnum)
-                                        ))
-                                    (if (not (u-save-cursor))
-                                        [oap false]
-                                        (do (if @(:b_p_ai @curbuf)                      ;; don't delete indent
-                                                (do (swap! curwin beginline BL_WHITE)   ;; cursor on first non-white
-                                                    (reset! did_ai true)                ;; delete the indent when ESC hit
-                                                    (reset! ai_col (:col (:w_cursor @curwin))))
-                                                (swap! curwin beginline 0))             ;; cursor in column 0
-                                            (swap! curwin truncate-line false)          ;; delete the rest of the line, leave cursor past last char in line
+                                (let [win (when' (< 1 (:line_count oap)) => win
+                                            (let [o'lnum (:lnum (:w_cursor win))]
+                                                (-> win
+                                                    (update-in [:w_cursor :lnum] inc)
+                                                    (del-lines (dec (:line_count oap)), true)
+                                                    (assoc-in [:w_cursor :lnum] o'lnum)
+                                                ))
+                                        )]
+                                    (when' (u-save-cursor) => [win oap false]
+                                        (let [win (if @(:b_p_ai @curbuf)                        ;; don't delete indent
+                                                    (let [win (beginline win, BL_WHITE)]        ;; cursor on first non-white
+                                                        (reset! did_ai true)                    ;; delete the indent when ESC hit
+                                                        (reset! ai_col (:col (:w_cursor win))))
+                                                    (beginline win, 0))
+                                              win (truncate-line win, false)] ;; delete the rest of the line, leave cursor past last char in line
                                             (when (< 1 (:line_count oap))
-                                                (u-clearline))                          ;; "U" command not possible after "2cc"
-                                            [oap nil])
+                                                (u-clearline)) ;; "U" command not possible after "2cc"
+                                            [win oap nil])
                                     ))
-                                (do (swap! curwin del-lines (:line_count oap), true)
-                                    (swap! curwin beginline (| BL_WHITE BL_FIX))
-                                    (u-clearline)                                       ;; "U" command not possible after "dd"
-                                    [oap nil]
+                                (let [win (-> win (del-lines (:line_count oap), true) (beginline (| BL_WHITE BL_FIX)))]
+                                    (u-clearline) ;; "U" command not possible after "dd"
+                                    [win oap nil]
                                 ))
                         :else
-                            (let-when [[oap _]
-                                    (if (!= @virtual_op FALSE)
+                            (let-when [[win oap _]
+                                    (when' (!= @virtual_op FALSE) => [win oap nil]
                                         ;; For virtualedit: break the tabs that are partly included.
-                                        (let-when [[oap _]
-                                                (if (== (gchar-pos (:op_start oap)) TAB)
+                                        (let-when [[win oap _]
+                                                (when' (== (gchar-pos (:op_start oap)) TAB) => [win oap nil]
                                                     (if (not (u-save-cursor)) ;; save first line for undo
-                                                        [oap false]
-                                                        (let [#_int endcol (if (== (:line_count oap) 1) (getviscol2 @curwin, (:col (:op_end oap)), (:coladd (:op_end oap))) 0)
-                                                              _ (swap! curwin coladvance-force (getviscol2 @curwin, (:col (:op_start oap)), (:coladd (:op_start oap))))
-                                                              oap (assoc oap :op_start (:w_cursor @curwin))
-                                                              oap (if (== (:line_count oap) 1)
-                                                                    (let [_ (swap! curwin coladvance endcol)
-                                                                          oap (update oap :op_end assoc :col (:col (:w_cursor @curwin)) :coladd (:coladd (:w_cursor @curwin)))
-                                                                          _ (swap! curwin assoc :w_cursor (:op_start oap))]
-                                                                        oap)
-                                                                    oap
+                                                        [win oap false]
+                                                        (let [#_int endcol (if (== (:line_count oap) 1) (getviscol2 win, (:col (:op_end oap)), (:coladd (:op_end oap))) 0)
+                                                              win (coladvance-force win, (getviscol2 win, (:col (:op_start oap)), (:coladd (:op_start oap))))
+                                                              oap (assoc oap :op_start (:w_cursor win))
+                                                              [win oap]
+                                                                (when' (== (:line_count oap) 1) => [win oap]
+                                                                    (let [win (coladvance win, endcol)
+                                                                          oap (update oap :op_end assoc :col (:col (:w_cursor win)) :coladd (:coladd (:w_cursor win)))
+                                                                          win (assoc win :w_cursor (:op_start oap))]
+                                                                        [win oap])
                                                                 )]
-                                                            [oap nil]
+                                                            [win oap nil]
                                                         ))
-                                                    [oap nil]
-                                                )] (nil? _) => [oap _]
+                                                )] (nil? _) => [win oap _]
 
                                             ;; Break a tab only when it's included in the area.
-                                            (if (and (== (gchar-pos (:op_end oap)) TAB) (< (:coladd (:op_end oap)) (if (:inclusive oap) 1 0)))
+                                            (when' (and (== (gchar-pos (:op_end oap)) TAB) (< (:coladd (:op_end oap)) (if (:inclusive oap) 1 0))) => [win oap nil]
                                                 (if (not (u-save (dec (:lnum (:op_end oap))), (inc (:lnum (:op_end oap))))) ;; save last line for undo
-                                                    [oap false]
-                                                    (let [_ (swap! curwin assoc :w_cursor (:op_end oap))
-                                                          _ (swap! curwin coladvance-force (getviscol2 @curwin, (:col (:op_end oap)), (:coladd (:op_end oap))))
-                                                          oap (assoc oap :op_end (:w_cursor @curwin))
-                                                          _ (swap! curwin assoc :w_cursor (:op_start oap))]
-                                                        [oap nil]
+                                                    [win oap false]
+                                                    (let [win (assoc win :w_cursor (:op_end oap))
+                                                          win (coladvance-force win, (getviscol2 win, (:col (:op_end oap)), (:coladd (:op_end oap))))
+                                                          oap (assoc oap :op_end (:w_cursor win))
+                                                          win (assoc win :w_cursor (:op_start oap))]
+                                                        [win oap nil]
                                                     ))
-                                                [oap nil]
                                             ))
-                                        [oap nil]
-                                    )] (nil? _) => [oap _]
+                                    )] (nil? _) => [win oap _]
 
                                 (cond (== (:line_count oap) 1) ;; delete characters within one line
                                     (if (not (u-save-cursor)) ;; save line for undo
-                                        [oap false]
+                                        [win oap false]
                                         (let [#_int n (- (inc (- (:col (:op_end oap)) (:col (:op_start oap)))) (if (not (:inclusive oap)) 1 0))
-                                              n (if (!= @virtual_op FALSE)
+                                              [win n]
+                                                (when' (!= @virtual_op FALSE) => [win n]
                                                     ;; fix up things for virtualedit-delete: break the tabs which are going to get in our way
-                                                    (let [#_Bytes s (ml-get (:lnum (:w_cursor @curwin))) #_int len (STRLEN s)
+                                                    (let [#_Bytes s (ml-get (:lnum (:w_cursor win))) #_int len (STRLEN s)
                                                           n (if (and (non-zero? (:coladd (:op_end oap))) (<= (dec len) (:col (:op_end oap)))
                                                                      (not (and (non-zero? (:coladd (:op_start oap))) (<= (dec len) (:col (:op_end oap)))))) (inc n) n)
                                                           ;; Delete at least one char (e.g. when on a control char).
                                                           n (if (and (zero? n) (!= (:coladd (:op_start oap)) (:coladd (:op_end oap)))) 1 n)]
                                                         ;; When deleted a char in the line, reset "coladd".
-                                                        (when (!= (gchar-cursor @curwin) NUL)
-                                                            (swap! curwin assoc-in [:w_cursor :coladd] 0))
-                                                        n)
-                                                    n
+                                                        [(if (!= (gchar-cursor win) NUL) (assoc-in win [:w_cursor :coladd] 0) win) n]
+                                                    ))
+                                              win (if (and (== (:op_type oap) OP_DELETE) (:inclusive oap)
+                                                           (== (:lnum (:op_end oap)) (line-count @curbuf)) (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
+                                                    (del-lines win, 1, false) ;; Special case: gH<Del> deletes the last line.
+                                                    (del-bytes win, n, (== @virtual_op FALSE), (and (== (:op_type oap) OP_DELETE) (not (:is_VIsual oap))))
                                                 )]
-                                            (if (and (== (:op_type oap) OP_DELETE) (:inclusive oap) (== (:lnum (:op_end oap)) (line-count @curbuf))
-                                                                                                    (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
-                                                (swap! curwin del-lines 1, false) ;; Special case: gH<Del> deletes the last line.
-                                                (swap! curwin del-bytes n, (== @virtual_op FALSE), (and (== (:op_type oap) OP_DELETE) (not (:is_VIsual oap)))))
-                                            [oap nil]
+                                            [win oap nil]
                                         ))
                                 :else ;; delete characters between lines
-                                    ;; save deleted and changed lines for undo
-                                    (if (not (u-save (dec (:lnum (:w_cursor @curwin))), (+ (:lnum (:w_cursor @curwin)) (:line_count oap))))
-                                        [oap false]
-                                        (let [#_boolean delete_last_line (== (:lnum (:op_end oap)) (line-count @curbuf))
-                                              _ (swap! curwin truncate-line true) ;; delete from cursor to end of line
-                                              o'cursor (:w_cursor @curwin)
-                                              _ (swap! curwin update-in [:w_cursor :lnum] inc)
-                                              _ (swap! curwin del-lines (- (:line_count oap) 2), false)
-                                              oap (if delete_last_line (assoc-in oap [:op_end :lnum] (line-count @curbuf)) oap)
-                                              #_int n (- (inc (:col (:op_end oap))) (if (not (:inclusive oap)) 1 0))]
-                                            (if (and (:inclusive oap) delete_last_line (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
-                                                (do ;; Special case: gH<Del> deletes the last line.
-                                                    (swap! curwin del-lines 1, false)
-                                                    (swap! curwin assoc :w_cursor o'cursor)
-                                                    (swap! curwin update :w_cursor update :lnum min (line-count @curbuf)))
-                                                (do ;; Delete from start of line until "op_end".
-                                                    (swap! curwin assoc-in [:w_cursor :col] 0)
-                                                    (swap! curwin del-bytes n, (== @virtual_op FALSE), (and (== (:op_type oap) OP_DELETE) (not (:is_VIsual oap))))
-                                                    (swap! curwin assoc :w_cursor o'cursor)
-                                                ))
-                                            (when (< (:lnum (:w_cursor @curwin)) (line-count @curbuf))
-                                                (swap! curwin do-join 2, false, false, false))
-                                            [oap nil]
+                                    (if (not (u-save (dec (:lnum (:w_cursor win))), (+ (:lnum (:w_cursor win)) (:line_count oap)))) ;; save deleted and changed lines for undo
+                                        [win oap false]
+                                        (let [#_boolean delete_last_line? (== (:lnum (:op_end oap)) (line-count @curbuf))
+                                              win (truncate-line win, true) ;; delete from cursor to end of line
+                                              o'cursor (:w_cursor win)
+                                              win (update-in win [:w_cursor :lnum] inc)
+                                              win (del-lines win, (- (:line_count oap) 2), false)
+                                              oap (if delete_last_line? (assoc-in oap [:op_end :lnum] (line-count @curbuf)) oap)
+                                              #_int n (- (inc (:col (:op_end oap))) (if (not (:inclusive oap)) 1 0))
+                                              win (if (and (:inclusive oap) delete_last_line? (< (STRLEN (ml-get (:lnum (:op_end oap)))) n))
+                                                    (-> win ;; Special case: gH<Del> deletes the last line.
+                                                        (del-lines 1, false)
+                                                        (assoc :w_cursor o'cursor)
+                                                        (update :w_cursor update :lnum min (line-count @curbuf)))
+                                                    (-> win ;; Delete from start of line until "op_end".
+                                                        (assoc-in [:w_cursor :col] 0)
+                                                        (del-bytes n, (== @virtual_op FALSE), (and (== (:op_type oap) OP_DELETE) (not (:is_VIsual oap))))
+                                                        (assoc :w_cursor o'cursor)
+                                                    ))
+                                              win (if (< (:lnum (:w_cursor win)) (line-count @curbuf)) (do-join win, 2, false, false, false) win)]
+                                            [win oap nil]
                                         ))
                                 ))
-                        )] (nil? _) => [oap _]
+                        )] (nil? _) => [win oap _]
 
                     (msgmore (- (line-count @curbuf) o'lmax))
                     (swap! curbuf assoc :b_op_start (:op_start oap))
                     (if (:block_mode oap)
                         (swap! curbuf update :b_op_end assoc :lnum (:lnum (:op_end oap)) :col (:col (:op_start oap)))
                         (swap! curbuf assoc :b_op_end (:op_start oap)))
-                    [oap true])
+                    [win oap true])
             ))
     ))
 
@@ -11705,38 +11696,31 @@
 ;;
 ;; Return true if edit() returns because of a CTRL-O command.
 
-(defn- #_[oparg_C boolean] op-change? [#_oparg_C oap]
+(defn- #_[window_C oparg_C boolean] op-change? [#_window_C win, #_oparg_C oap]
     (let-when [#_int l
-            (if (== (:motion_type oap) MLINE)
-                (do (when (and (not @p_paste) @(:b_p_si @curbuf))
-                        (reset! can_si true)) ;; it's like opening a new line, do 'si'
-                    0)
-                (:col (:op_start oap)))
+            (when' (== (:motion_type oap) MLINE) => (:col (:op_start oap))
+                (when (and (not @p_paste) @(:b_p_si @curbuf))
+                    (reset! can_si true)) ;; it's like opening a new line, do 'si'
+                0)
           ;; First delete the text in the region.  In an empty buffer only need to save for undo.
-          [oap _]
-            (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY)
-                [oap (if (not (u-save-cursor)) false nil)]
-                (let [[oap ?] (op-delete? oap)]
-                    [oap (if (not ?) false nil)]
-                ))
-    ] (nil? _) => [oap _]
+          [win oap ?] (if (flag? (:ml_flags (:b_ml @curbuf)) ML_EMPTY) [win oap (u-save-cursor)] (op-delete? win, oap))
+    ] ? => [win oap false]
 
-        (when (and (< (:col (:w_cursor @curwin)) l) (not (lineempty (:lnum (:w_cursor @curwin)))) (== @virtual_op FALSE))
-            (swap! curwin inc-cursor false))
-        ;; check for still on same line (<CR> in inserted text meaningless); skip blank lines too
-        (let [[#_int pre_textlen #_int pre_indent #_int textcol]
-                (if (:block_mode oap)
-                    (do ;; Add spaces before getting the current line length.
-                        (when (and (!= @virtual_op FALSE) (or (< 0 (:coladd (:w_cursor @curwin))) (== (gchar-cursor @curwin) NUL)))
-                            (swap! curwin coladvance-force (getviscol @curwin)))
-                        (let [#_Bytes s (ml-get (:lnum (:op_start oap)))]
-                            [(STRLEN s) (BDIFF (skipwhite s), s) (:col (:w_cursor @curwin))]
-                        ))
-                    [0 0 0])
-              [_ #_boolean retval] (edit? @curwin, NUL, false, 1) _ (reset! curwin _)]
+        (let [win (when' (and (< (:col (:w_cursor win)) l) (not (lineempty (:lnum (:w_cursor win)))) (== @virtual_op FALSE)) => win
+                    (inc-cursor win, false))
+              ;; Check for still on same line (<CR> in inserted text meaningless), skip blank lines too.
+              [win #_int pre_textlen #_int pre_indent #_int textcol]
+                (when' (:block_mode oap) => [win 0 0 0]
+                    ;; Add spaces before getting the current line length.
+                    (let [win (when' (and (!= @virtual_op FALSE) (or (< 0 (:coladd (:w_cursor win))) (== (gchar-cursor win) NUL))) => win
+                                (coladvance-force win, (getviscol win)))
+                          #_Bytes s (ml-get (:lnum (:op_start oap)))]
+                        [win (STRLEN s) (BDIFF (skipwhite s), s) (:col (:w_cursor win))]
+                    ))
+              [win #_boolean retval] (edit? win, NUL, false, 1)]
             ;; In Visual block mode, handle copying the new text to all lines of the block.
             ;; Don't repeat the insert when Insert mode ended with CTRL-C.
-            (if (and (:block_mode oap) (!= (:lnum (:op_start oap)) (:lnum (:op_end oap))) (not @got_int))
+            (when' (and (:block_mode oap) (!= (:lnum (:op_start oap)) (:lnum (:op_end oap))) (not @got_int)) => [win oap retval]
                 ;; Auto-indenting may have changed the indent.
                 ;; If the cursor was past the indent, exclude that indent change from the inserted text.
                 (let [#_Bytes s (ml-get (:lnum (:op_start oap)))
@@ -11745,32 +11729,32 @@
                             (let [#_int i (BDIFF (skipwhite s), s)]
                                 [(+ pre_textlen (- i pre_indent)) (+ textcol (- i pre_indent))])
                             [pre_textlen textcol])
-                      #_int ins_len (- (STRLEN s) pre_textlen)]
-                    (when (< 0 ins_len)
-                        ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the inserted text.
-                        (let [#_Bytes ins_text (STRNDUP (.plus s textcol), ins_len)]
-                            (loop-when-recur [#_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) [(inc lnum)]
-                                (let [#_block_def_C bd (block-prep oap, false, lnum, true)]
-                                    (when (or (not (:is_short bd)) (!= @virtual_op FALSE))
-                                        (let [#_pos_C vpos (->pos_C lnum 0 0)
-                                              ;; If the block starts in virtual space, count the initial "coladd" offset as part of "startspaces".
-                                              vpos (if (:is_short bd) (let [[_ vpos] (getvpos @curwin, vpos, (:start_vcol oap))] (reset! curwin _) vpos) vpos)
-                                              #_Bytes oldp (ml-get lnum)
-                                              #_Bytes newp (Bytes. (+ (STRLEN oldp) (:coladd vpos) ins_len 1))
-                                              _ (BCOPY newp, oldp, (:textcol bd))        #_int i (:textcol bd)
-                                              _ (BFILL newp, i, (byte \space), (:coladd vpos)) i (+ i (:coladd vpos))
-                                              _ (BCOPY newp, i, ins_text, 0, ins_len)          i (+ i ins_len)
-                                              oldp (.plus oldp (:textcol bd))
-                                              _ (BCOPY newp, i, oldp, 0, (inc (STRLEN oldp)))]
-                                            (ml-replace lnum, newp)
-                                        ))
-                                ))
-                            (swap! curwin check-cursor)
-                            (swap! curbuf changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
-                        ))
-                    [oap retval]
-                )
-                [oap retval]
+                      #_int ins_len (- (STRLEN s) pre_textlen)
+                      win (when' (< 0 ins_len) => win
+                            ;; Subsequent calls to ml-get() flush the "s" data - take a copy of the inserted text.
+                            (let [#_Bytes ins_text (STRNDUP (.plus s textcol), ins_len)
+                                  win (loop-when [win win #_long lnum (inc (:lnum (:op_start oap)))] (<= lnum (:lnum (:op_end oap))) => (check-cursor win)
+                                        (let [#_block_def_C bd (block-prep oap, false, lnum, true)
+                                              win (when' (or (not (:is_short bd)) (!= @virtual_op FALSE)) => win
+                                                    (let [#_pos_C vpos (->pos_C lnum 0 0)
+                                                          ;; If the block starts in virtual space, count the initial "coladd" offset as part of "startspaces".
+                                                          [win vpos] (if (:is_short bd) (getvpos win, vpos, (:start_vcol oap)) [win vpos])
+                                                          #_Bytes p (ml-get lnum)
+                                                          #_Bytes t (Bytes. (+ (STRLEN p) (:coladd vpos) ins_len 1))
+                                                          _ (BCOPY t, p, (:textcol bd))           #_int i (:textcol bd)
+                                                          _ (BFILL t, i, (byte \space), (:coladd vpos)) i (+ i (:coladd vpos))
+                                                          _ (BCOPY t, i, ins_text, 0, ins_len)          i (+ i ins_len)
+                                                          p (.plus p (:textcol bd))
+                                                          _ (BCOPY t, i, p, 0, (inc (STRLEN p)))]
+                                                        (ml-replace lnum, t)
+                                                        win)
+                                                )]
+                                            (recur win (inc lnum)))
+                                    )]
+                                (swap! curbuf changed-lines (inc (:lnum (:op_start oap))), 0, (inc (:lnum (:op_end oap))), 0)
+                                win)
+                        )]
+                    [win oap retval])
             ))
     ))
 
@@ -11779,11 +11763,11 @@
 ;;
 ;; Return false for failure, true otherwise.
 
-(defn- #_[oparg_C boolean] op-yank? [#_oparg_C oap, #_boolean deleting, #_boolean mess]
+(defn- #_[window_C oparg_C boolean] op-yank? [#_window_C win, #_oparg_C oap, #_boolean deleting, #_boolean mess]
     (cond (and (non-zero? (:regname oap)) (not (valid-yank-reg (:regname oap), true))) ;; check for read-only register
-        (do (beep-flush) [oap false])
+        (do (beep-flush) [win oap false])
     (== (:regname oap) (byte \_)) ;; black hole: nothing to do
-        [oap true]
+        [win oap true]
     :else
         (let [oap (if (any == (:regname oap) (byte \*) (byte \+)) (assoc oap :regname 0) oap)
               _ (when (not deleting) ;; otherwise op-delete() already called get-yank-register()
@@ -11798,14 +11782,14 @@
                     [y'lines y'type y'end])
               #_yankreg_C reg (->yankreg_C (Bytes* y'lines) y'lines y'type 0)
               reg (if (:block_mode oap) ;; Visual block mode.
-                    (let [#_int n (- (:end_vcol oap) (:start_vcol oap)) n (if (and (== (:w_curswant @curwin) MAXCOL) (< 0 n)) (dec n) n)]
+                    (let [#_int n (- (:end_vcol oap) (:start_vcol oap)) n (if (and (== (:w_curswant win) MAXCOL) (< 0 n)) (dec n) n)]
                         (assoc reg :y_type MBLOCK :y_width n))
                     reg)
               reg (loop-when [reg reg #_int i 0 #_long lnum (:lnum (:op_start oap))] (<= lnum y'end) => reg
                     (let [reg (condp == (:y_type reg)
                                 MBLOCK (yank-copy-line reg, i, (block-prep oap, false, lnum, false))
                                 MLINE  (assoc-in reg [:y_array i] (STRDUP (ml-get lnum)))
-                                MCHAR  (yank-copy-line reg, i, (char-prep @curwin, oap, lnum))
+                                MCHAR  (yank-copy-line reg, i, (char-prep win, oap, lnum))
                             )]
                         (recur reg (inc i) (inc lnum)))
                 )]
@@ -11825,27 +11809,25 @@
                       o'reg (assoc o'reg :y_array a :y_size n)]
                     (swap! y_regs assoc @y_curr o'reg)
                 ))
-            (when @(:wo_rnu (:w_options @curwin))
-                (swap! curwin redraw-later SOME_VALID)) ;; cursor moved to start
-            (when mess ;; Display message about yank?
-                (let [y'lines (if (and (== y'type MCHAR) (not (:block_mode oap)) (== y'lines 1)) 0 y'lines)]
-                    ;; Some versions of Vi use "<=" here, some don't...
-                    (when (< @p_report y'lines)
-                        ;; redisplay now, so message is not deleted
-                        (swap! curwin update-topline-redraw)
-                        (if (== y'lines 1)
-                            (msg (if (:block_mode oap) (u8 "block of 1 line yanked") (u8 "1 line yanked")))
-                            (smsg (if (:block_mode oap) (u8 "block of %ld lines yanked") (u8 "%ld lines yanked")), y'lines)
-                        ))
-                ))
-            ;; Set "'[" and "']" marks.
-            (swap! curbuf assoc :b_op_start (:op_start oap))
-            (swap! curbuf assoc :b_op_end (:op_end oap))
-            (when (and (== y'type MLINE) (not (:block_mode oap)))
-                (swap! curbuf assoc-in [:b_op_start :col] 0)
-                (swap! curbuf assoc-in [:b_op_end :col] MAXCOL))
-            [oap true]
-        )
+            (let [win (if @(:wo_rnu (:w_options win)) (redraw-later win, SOME_VALID) win) ;; cursor moved to start
+                  win (when' mess => win ;; Display message about yank?
+                        (let-when [y'lines (if (and (== y'type MCHAR) (not (:block_mode oap)) (== y'lines 1)) 0 y'lines)] (< @p_report y'lines) => win
+                            ;; redisplay now, so message is not deleted
+                            (let [win (update-topline-redraw win)]
+                                (if (== y'lines 1)
+                                    (msg (if (:block_mode oap) (u8 "block of 1 line yanked") (u8 "1 line yanked")))
+                                    (smsg (if (:block_mode oap) (u8 "block of %ld lines yanked") (u8 "%ld lines yanked")), y'lines))
+                                win
+                            ))
+                    )]
+                ;; Set '[ and '] marks.
+                (swap! curbuf assoc :b_op_start (:op_start oap))
+                (swap! curbuf assoc :b_op_end (:op_end oap))
+                (when (and (== y'type MLINE) (not (:block_mode oap)))
+                    (swap! curbuf assoc-in [:b_op_start :col] 0)
+                    (swap! curbuf assoc-in [:b_op_end :col] MAXCOL))
+                [win oap true]
+            ))
     ))
 
 (defn- #_yankreg_C yank-copy-line [#_yankreg_C reg, #_int i, #_block_def_C bd]
