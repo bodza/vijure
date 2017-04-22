@@ -21325,169 +21325,139 @@
 ;; Return true when the TAB needs to be inserted like a normal character.
 
 (defn- #_boolean ins-tab []
-    (§
-        (if (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
+    (let [et @(:b_p_et @curbuf) ts @(:b_p_ts @curbuf) sw' (get-sw-value) sts @(:b_p_sts @curbuf) sts' (get-sts-value)]
+        (when (and (== @insStart_blank_vcol MAXCOL) (== (:lnum (:w_cursor @curwin)) (:lnum @insStart)))
             (reset! insStart_blank_vcol (get-nolist-virtcol)))
+        (let [#_boolean ind (inindent 0) rep? (flag? @State REPLACE_FLAG) vrep? (flag? @State VREPLACE_FLAG)]
+            (when ind
+                (reset! can_cindent false))
+            ;; When nothing special, insert TAB like a normal character
+            (if (or (and (not et) (not (and @p_sta ind (!= ts sw'))) (zero? sts')) (not (stop-arrow)))
+                true
+                (do (reset! did_ai false) (reset! did_si false) (reset! can_si false) (reset! can_si_back false)
+                    (append-redo (u8 "\t"))
+                    ;; insert tab in indent, use 'shiftwidth' ;; use 'softtabstop' when set ;; otherwise use 'tabstop'
+                    (let [#_int t (cond (and @p_sta ind) sw' (!= sts 0) sts' :else ts) t (- t (% (get-nolist-virtcol) t))]
+                        ;; Insert the first space with ins-char().  It will delete one char in replace mode.
+                        ;; Insert the rest with ins-str().  It will not delete any chars.
+                        ;; For VREPLACE mode, we use ins-char() for all characters.
+                        (ins-char (byte \space))
+                        (loop-when-recur [t (dec t)] (< 0 t) [(dec t)]
+                            (if vrep?
+                                (ins-char (byte \space))
+                                (do (ins-str (u8 " "))
+                                    (when rep?    ;; no char replaced
+                                        (replace-push NUL)))
+                            ))
+                        ;; When 'expandtab' not set: replace spaces with TABs where possible.
+                        (when (and (not et) (or (non-zero? sts') (and @p_sta ind)))
+                            ;; Get the current line.
+                            ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
 
-        ((ß boolean ind =) (inindent 0))
-        (if ind
-            (reset! can_cindent false))
+%%                          (ß pos_C cursor)
+                            (ß Bytes saved_line)
+                            (ß Bytes s)
+                            (cond vrep?
+                            (do
+                                ((ß pos_C vpos =) (:w_cursor @curwin))
+                                ((ß cursor =) vpos)
+                                ((ß saved_line =) (STRDUP (ml-get-curline)))
+                                ((ß s =) (.plus saved_line (:col vpos)))
+                            )
+                            :else
+                            (do
+                                ((ß cursor =) (:w_cursor @curwin))
+                                ((ß saved_line =) nil)
+                                ((ß s =) (ml-get-cursor))
+                            ))
 
-        ;; When nothing special, insert TAB like a normal character
+                            ;; Find first white before the cursor.
+                            ((ß pos_C fpos =) (:w_cursor @curwin))
+                            (loop-when [] (and (< 0 (:col fpos)) (vim-iswhite (.at s -1)))
+                                ((ß fpos.col =) (dec (:col fpos)))
+                                ((ß s =) (.minus s 1))
+                                (recur)
+                            )
 
-        (when (and (not @(:b_p_et @curbuf)) (not (and @p_sta ind (!= @(:b_p_ts @curbuf) (get-sw-value)))) (zero? (get-sts-value)))
-            ((ß RETURN) true)
-        )
+                            ;; In Replace mode, don't change characters before the insert point.
+                            (when (and rep? (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
+                                ((ß s =) (.plus s (- (:col @insStart) (:col fpos))))
+                                ((ß fpos.col =) (:col @insStart))
+                            )
 
-        (if (not (stop-arrow))
-            ((ß RETURN) true)
-        )
+                            ;; compute virtual column numbers of first white and cursor
+                            ((ß int[] a'vcol =) (atom (int)))
+                            (getvcol @curwin, fpos, a'vcol, nil, nil)
+                            ((ß int[] a'want_vcol =) (atom (int)))
+                            (getvcol @curwin, cursor, a'want_vcol, nil, nil)
 
-        (reset! did_ai false)
-        (reset! did_si false)
-        (reset! can_si false)
-        (reset! can_si_back false)
+                            ((ß int change_col =) -1)
+                            ;; Use as many TABs as possible.
+                            ;; Beware of 'breakindent', 'showbreak' and 'linebreak' adding extra virtual columns.
+                            (loop-when [] (vim-iswhite (.at s 0))
+                                ((ß int i =) (lbr-chartabsize nil, (u8 "\t"), @a'vcol))
+                                (if (< @a'want_vcol (+ @a'vcol i))
+                                    (ß BREAK)
+                                )
+                                (when (not-at? s TAB)
+                                    (.be s 0, TAB)
+                                    (when (< change_col 0)
+                                        ((ß change_col =) (:col fpos)) ;; column of first change
+                                        ;; May have to adjust insStart.
+                                        (when (and (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
+                                            (swap! insStart assoc :col (:col fpos)))
+                                    )
+                                )
+                                ((ß fpos.col =) (inc (:col fpos)))
+                                ((ß s =) (.plus s 1))
+                                (swap! a'vcol + i)
+                                (recur)
+                            )
 
-        (append-redo (u8 "\t"))
+                            (when (<= 0 change_col)
+                                ((ß int repl_off =) 0)
+                                ((ß Bytes line =) s)
 
-        ((ß int temp =) (cond
-            (and @p_sta ind)           (int (get-sw-value))         ;; insert tab in indent, use 'shiftwidth'
-            (!= @(:b_p_sts @curbuf) 0) (int (get-sts-value))        ;; use 'softtabstop' when set
-            :else                      (int @(:b_p_ts @curbuf))     ;; otherwise use 'tabstop'
-        ))
-        ((ß temp =) (- temp (% (get-nolist-virtcol) temp)))
+                                ;; Skip over the spaces we need.
+                                (loop-when [] (and (< @a'vcol @a'want_vcol) (at? s (byte \space)))
+                                    (reset! a'vcol (+ @a'vcol (lbr-chartabsize line, s, @a'vcol)))
+                                    ((ß s =) (.plus s 1))
+                                    ((ß repl_off =) (inc repl_off))
+                                    (recur)
+                                )
+                                (when (< @a'want_vcol @a'vcol)
+                                    ;; Must have a char with 'showbreak' just before it.
+                                    ((ß s =) (.minus s 1))
+                                    ((ß repl_off =) (dec repl_off))
+                                )
+                                ((ß fpos.col =) (+ (:col fpos) repl_off))
 
-        ;; Insert the first space with ins-char().  It will delete one char in
-        ;; replace mode.  Insert the rest with ins-str(); it will not delete any
-        ;; chars.  For VREPLACE mode, we use ins-char() for all characters.
+                                ;; Delete following spaces.
+                                ((ß int i =) (- (:col cursor) (:col fpos)))
+                                (when (< 0 i)
+                                    (BCOPY s, 0, s, i, (inc (STRLEN s, i)))
+                                    ;; Correct replace stack.
+                                    (when (and rep? (not vrep?))
+                                        (loop-when-recur [#_int t i] (< 0 t) [(dec t)] (replace-join repl_off))
+                                    )
+                                )
+                                ((ß cursor.col =) (- (:col cursor) i))
 
-        (ins-char (byte \space))
-        (loop-when [] (< 0 ((ß temp =) (dec temp)))
-            (cond (flag? @State VREPLACE_FLAG)
-            (do
-                (ins-char (byte \space))
-            )
-            :else
-            (do
-                (ins-str (u8 " "))
-                (if (flag? @State REPLACE_FLAG)    ;; no char replaced
-                    (replace-push NUL))
+                                ;; In VREPLACE mode, we haven't changed anything yet.  Do it now by
+                                ;; backspacing over the changed spacing and then inserting the new spacing.
+
+                                (when vrep?
+                                    ;; Backspace from real cursor to change_col.
+                                    (backspace-until-column change_col)
+                                    ;; Insert each char in saved_line from changed_col to ptr-cursor.
+                                    (ins-bytes-len (.plus saved_line change_col), (- (:col cursor) change_col))
+                                )
+                            )
+                        )
+
+                        false
+                    ))
             ))
-            (recur)
-        )
-
-        ;; When 'expandtab' not set: Replace spaces by TABs where possible.
-
-        (when (and (not @(:b_p_et @curbuf)) (or (non-zero? (get-sts-value)) (and @p_sta ind)))
-            ;; Get the current line.
-            ;; For VREPLACE mode, don't make real changes yet, just work on a copy of the line.
-
-            ((ß pos_C pos =) (NEW_pos_C))
-            (ß pos_C cursor)
-            ((ß Bytes saved_line =) nil)
-            (ß Bytes ptr)
-            (cond (flag? @State VREPLACE_FLAG)
-            (do
-                (COPY-pos pos, (:w_cursor @curwin))
-                ((ß cursor =) pos)
-                ((ß saved_line =) (STRDUP (ml-get-curline)))
-                ((ß ptr =) (.plus saved_line (:col pos)))
-            )
-            :else
-            (do
-                ((ß ptr =) (ml-get-cursor))
-                ((ß cursor =) (:w_cursor @curwin))
-            ))
-
-            ;; Find first white before the cursor.
-            ((ß pos_C fpos =) (NEW_pos_C))
-            (COPY-pos fpos, (:w_cursor @curwin))
-            (loop-when [] (and (< 0 (:col fpos)) (vim-iswhite (.at ptr -1)))
-                ((ß fpos.col =) (dec (:col fpos)))
-                ((ß ptr =) (.minus ptr 1))
-                (recur)
-            )
-
-            ;; In Replace mode, don't change characters before the insert point.
-            (when (and (flag? @State REPLACE_FLAG) (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
-                ((ß ptr =) (.plus ptr (- (:col @insStart) (:col fpos))))
-                ((ß fpos.col =) (:col @insStart))
-            )
-
-            ;; compute virtual column numbers of first white and cursor
-            ((ß int[] a'vcol =) (atom (int)))
-            (getvcol @curwin, fpos, a'vcol, nil, nil)
-            ((ß int[] a'want_vcol =) (atom (int)))
-            (getvcol @curwin, cursor, a'want_vcol, nil, nil)
-
-            ((ß int change_col =) -1)
-            ;; Use as many TABs as possible.
-            ;; Beware of 'breakindent', 'showbreak' and 'linebreak' adding extra virtual columns.
-            (loop-when [] (vim-iswhite (.at ptr 0))
-                ((ß int i =) (lbr-chartabsize nil, (u8 "\t"), @a'vcol))
-                (if (< @a'want_vcol (+ @a'vcol i))
-                    (ß BREAK)
-                )
-                (when (not-at? ptr TAB)
-                    (.be ptr 0, TAB)
-                    (when (< change_col 0)
-                        ((ß change_col =) (:col fpos)) ;; column of first change
-                        ;; May have to adjust insStart.
-                        (when (and (== (:lnum fpos) (:lnum @insStart)) (< (:col fpos) (:col @insStart)))
-                            (swap! insStart assoc :col (:col fpos)))
-                    )
-                )
-                ((ß fpos.col =) (inc (:col fpos)))
-                ((ß ptr =) (.plus ptr 1))
-                (swap! a'vcol + i)
-                (recur)
-            )
-
-            (when (<= 0 change_col)
-                ((ß int repl_off =) 0)
-                ((ß Bytes line =) ptr)
-
-                ;; Skip over the spaces we need.
-                (loop-when [] (and (< @a'vcol @a'want_vcol) (at? ptr (byte \space)))
-                    (reset! a'vcol (+ @a'vcol (lbr-chartabsize line, ptr, @a'vcol)))
-                    ((ß ptr =) (.plus ptr 1))
-                    ((ß repl_off =) (inc repl_off))
-                    (recur)
-                )
-                (when (< @a'want_vcol @a'vcol)
-                    ;; Must have a char with 'showbreak' just before it.
-                    ((ß ptr =) (.minus ptr 1))
-                    ((ß repl_off =) (dec repl_off))
-                )
-                ((ß fpos.col =) (+ (:col fpos) repl_off))
-
-                ;; Delete following spaces.
-                ((ß int i =) (- (:col cursor) (:col fpos)))
-                (when (< 0 i)
-                    (BCOPY ptr, 0, ptr, i, (inc (STRLEN ptr, i)))
-                    ;; correct replace stack.
-                    (when (and (flag? @State REPLACE_FLAG) (non-flag? @State VREPLACE_FLAG))
-                        ((ß temp =) (loop-when-recur [temp (dec i)] (<= 0 temp) [(dec temp)] => temp
-                            (replace-join repl_off)
-                        ))
-                    )
-                )
-                ((ß cursor.col =) (- (:col cursor) i))
-
-                ;; In VREPLACE mode, we haven't changed anything yet.  Do it now by
-                ;; backspacing over the changed spacing and then inserting the new spacing.
-
-                (when (flag? @State VREPLACE_FLAG)
-                    ;; Backspace from real cursor to change_col.
-                    (backspace-until-column change_col)
-
-                    ;; Insert each char in saved_line from changed_col to ptr-cursor.
-                    (ins-bytes-len (.plus saved_line change_col), (- (:col cursor) change_col))
-                )
-            )
-        )
-
-        false
     ))
 
 ;; Handle CR or NL in insert mode.
@@ -21525,70 +21495,44 @@
 ;; Returns character still to be inserted, or NUL when nothing remaining to be done.
 
 (defn- #_int ins-digraph []
-    (§
-        ((ß boolean did_putchar =) false)
-
-        (reset! pc_status PC_STATUS_UNSET)
+    (reset! pc_status PC_STATUS_UNSET)
+    (let [a'putchar? (atom (boolean false))]
         (when (and (redrawing) (not (char-avail)))
             ;; May need to redraw when no more chars available now.
             (ins-redraw false)
-
             (edit-putchar (byte \?), true)
-            ((ß did_putchar =) true)
-            (add-to-showcmd-c Ctrl_K)
-        )
-
-        ;; Don't map the digraph chars.
-        ;; This also prevents the mode message to be deleted when ESC is hit.
-        (swap! no_mapping inc)
-        (swap! allow_keys inc)
-        ((ß int c =) (plain-vgetc))
-        (swap! no_mapping dec)
-        (swap! allow_keys dec)
-        (when did_putchar
-            ;; When the line fits in 'columns',
-            ;; the '?' is at the start of the next line and will not be removed by the redraw.
-            (edit-unputchar)
-        )
-
-        (when (or (is-special c) (non-zero? @mod_mask))         ;; special key
-            (clear-showcmd)
-            (insert-special c, true, false)
-            ((ß RETURN) NUL)
-        )
-
-        (when (!= c ESC)
-            ((ß did_putchar =) false)
-            (when (and (redrawing) (not (char-avail)))
-                ;; May need to redraw when no more chars available now.
-                (ins-redraw false)
-
-                (when (== (mb-char2cells c) 1)
-                    (ins-redraw false)
-                    (edit-putchar c, true)
-                    ((ß did_putchar =) true)
+            (reset! a'putchar? true)
+            (add-to-showcmd-c Ctrl_K))
+        ;; Don't map the digraph chars.  ;; This also prevents the mode message to be deleted when ESC is hit.
+        (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) #_int c1 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+            ;; When the line fits in 'columns', the '?' is at the start of the next line and will not be removed by the redraw.
+            (when @a'putchar?
+                (edit-unputchar))
+            (cond (or (is-special c1) (non-zero? @mod_mask))         ;; special key
+                (do (clear-showcmd) (insert-special c1, true, false) NUL)
+            (!= c1 ESC)
+                (do (reset! a'putchar? false)
+                    (when (and (redrawing) (not (char-avail)))
+                        ;; May need to redraw when no more chars available now.
+                        (ins-redraw false)
+                        (when (== (mb-char2cells c1) 1)
+                            (ins-redraw false)
+                            (edit-putchar c1, true)
+                            (reset! a'putchar? true))
+                        (add-to-showcmd-c c1))
+                    (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) #_int c2 (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+                        ;; When the line fits in 'columns', the '?' is at the start of the next line and will not be removed by a redraw.
+                        (when @a'putchar?
+                            (edit-unputchar))
+                        (if (!= c2 ESC)
+                            (do (append-redo CTRL_V_STR) (let [c1 (getdigraph c1, c2, true)] (clear-showcmd) c1))
+                            (do (clear-showcmd) NUL)
+                        )
+                    )
                 )
-                (add-to-showcmd-c c)
-            )
-            (swap! no_mapping inc)
-            (swap! allow_keys inc)
-            ((ß int cc =) (plain-vgetc))
-            (swap! no_mapping dec)
-            (swap! allow_keys dec)
-            (when did_putchar
-                ;; When the line fits in 'columns',
-                ;; the '?' is at the start of the next line and will not be removed by a redraw.
-                (edit-unputchar)
-            )
-            (when (!= cc ESC)
-                (append-redo CTRL_V_STR)
-                ((ß c =) (getdigraph c, cc, true))
-                (clear-showcmd)
-                ((ß RETURN) c)
-            )
-        )
-        (clear-showcmd)
-        NUL
+            :else
+                (do (clear-showcmd) NUL)
+            ))
     ))
 
 ;; Handle CTRL-E and CTRL-Y in Insert mode: copy char from other line.
@@ -21625,79 +21569,57 @@
 ;; Used when inserting a "normal" character.
 
 (defn- #_void ins-try-si [#_int c]
-    (§
-        ;; do some very smart indenting when entering '{' or '}'
-
-        (when (or (and (or @did_si @can_si_back) (== c (byte \{))) (and @can_si (== c (byte \}))))
-            (ß pos_C pos)
-
+    ;; do some very smart indenting when entering '{' or '}'
+    (when (or (and (or @did_si @can_si_back) (== c (byte \{))) (and @can_si (== c (byte \}))))
+        (let [a'pos (atom (#_pos_C object))]
             ;; for '}' set indent equal to indent of line containing matching '{'
-
-            (cond (and (== c (byte \})) (some? ((ß pos =) (findmatch nil, (byte \{)))))
-            (do
-                ((ß pos_C old_pos =) (:w_cursor @curwin))
-
-                ;; If the matching '{' has a ')' immediately before it (ignoring
-                ;; white-space), then line up with the start of the line containing
-                ;; the matching '(' if there is one.  This handles the case where
-                ;; an "if (..\n..) {" statement continues over multiple lines.
-
-                ((ß Bytes ptr =) (ml-get (:lnum pos)))
-                ((ß int i =) (:col pos))
-                (when (< 0 i)          ;; skip blanks before '{'
-                    (loop-when [] (and (< 0 ((ß i =) (dec i))) (vim-iswhite (.at ptr i)))
-                        ;
-                        (recur)
-                    )
-                )
-                (swap! curwin update :w_cursor assoc :lnum (:lnum pos) :col i)
-                (when (and (at? ptr i (byte \))) (some? ((ß pos =) (findmatch nil, (byte \()))))
-                    (swap! curwin assoc :w_cursor pos))
-                ((ß i =) (get-indent))
-                (swap! curwin assoc :w_cursor old_pos)
-                (if (flag? @State VREPLACE_FLAG)
-                    (change-indent INDENT_SET, i, false, NUL, true)
-                    (set-indent i, SIN_CHANGED))
-            )
+            (cond (and (== c (byte \})) (some? (reset! a'pos (findmatch nil, (byte \{)))))
+                (let [#_pos_C old_pos (:w_cursor @curwin)
+                      ;; If the matching '{' has a ')' immediately before it (ignoring
+                      ;; white-space), then line up with the start of the line containing
+                      ;; the matching '(' if there is one.  This handles the case where
+                      ;; an "if (..\n..) {" statement continues over multiple lines.
+                      #_Bytes s (ml-get (:lnum @a'pos))
+                      #_int i (:col @a'pos)
+                      i (if (< 0 i) (loop-when-recur [i (dec i)] (and (< 0 i) (vim-iswhite (.at s i))) [(dec i)] => i) i)] ;; skip blanks before '{'
+                    (swap! curwin update :w_cursor assoc :lnum (:lnum @a'pos) :col i)
+                    (when (and (at? s i (byte \))) (some? (reset! a'pos (findmatch nil, (byte \()))))
+                        (swap! curwin assoc :w_cursor @a'pos))
+                    (let [#_int i (get-indent)]
+                        (swap! curwin assoc :w_cursor old_pos)
+                        (if (flag? @State VREPLACE_FLAG)
+                            (change-indent INDENT_SET, i, false, NUL, true)
+                            (set-indent i, SIN_CHANGED))
+                    ))
             (< 0 (:col (:w_cursor @curwin)))
-            (do
-                ;; when inserting '{' after "O" reduce indent,
-                ;; but not more than indent of previous line
-
-                ((ß boolean temp =) true)
-                (when (and (== c (byte \{)) @can_si_back (< 1 (:lnum (:w_cursor @curwin))))
-                    ((ß pos_C old_pos =) (:w_cursor @curwin))
-                    ((ß int i =) (get-indent))
-                    (loop-when [] (< 1 (:lnum (:w_cursor @curwin)))
-                        ((ß Bytes ptr =) (skipwhite (ml-get (ß --@curwin.w_cursor.lnum))))
-
-                        ;; ignore empty lines and lines starting with '#'.
-                        (if (and (not-at? ptr (byte \#)) (non-eos? ptr))
-                            (ß BREAK)
-                        )
-                        (recur)
-                    )
-                    ((ß temp =) (if (<= i (get-indent)) false temp))
-                    (swap! curwin assoc :w_cursor old_pos)
-                )
-                (when temp
-                    (shift-line true, false, 1, true))
-            ))
-        )
-
-        ;; set indent of '#' always to 0
-
-        (when (and (< 0 (:col (:w_cursor @curwin))) @can_si (== c (byte \#)))
-            ;; remember current indent for next line
-            (reset! old_indent (get-indent))
-            (set-indent 0, SIN_CHANGED)
-        )
-
-        ;; Adjust ai_col, the char at this position can be deleted.
-        (when (> @ai_col (:col (:w_cursor @curwin)))
-            (reset! ai_col (:col (:w_cursor @curwin))))
-        nil
-    ))
+                (let [#_boolean shl? true
+                      ;; when inserting '{' after "O" reduce indent,
+                      ;; but not more than indent of previous line
+                      shl? (if (and (== c (byte \{)) @can_si_back (< 1 (:lnum (:w_cursor @curwin))))
+                            (let [#_pos_C old_pos (:w_cursor @curwin)
+                                  #_int i (get-indent)
+                                  _ (loop-when [] (< 1 (:lnum (:w_cursor @curwin)))
+                                        (swap! curwin update-in [:w_cursor :lnum] dec)
+                                        (let [#_Bytes s (skipwhite (ml-get (:lnum (:w_cursor @curwin))))]
+                                            ;; ignore empty lines and lines starting with '#'
+                                            (recur-if (or (at? s (byte \#)) (eos? s)) [])
+                                        ))
+                                  shl? (and (< (get-indent) i) shl?)]
+                                (swap! curwin assoc :w_cursor old_pos)
+                                shl?)
+                            shl?)]
+                    (when shl? (shift-line true, false, 1, true))
+                ))
+        ))
+    ;; set indent of '#' always to 0
+    (when (and (< 0 (:col (:w_cursor @curwin))) @can_si (== c (byte \#)))
+        ;; remember current indent for next line
+        (reset! old_indent (get-indent))
+        (set-indent 0, SIN_CHANGED))
+    ;; Adjust ai_col, the char at this position can be deleted.
+    (when (< (:col (:w_cursor @curwin)) @ai_col)
+        (reset! ai_col (:col (:w_cursor @curwin))))
+    nil)
 
 ;; Get the value that w_virtcol would have when 'list' is off.
 
@@ -23010,137 +22932,59 @@
 ;; Implements the & operator.
 
 (defn- #_Bytes regbranch [#_int' a'fl]
-    (§
-        (reset! a'fl (| WORST HASNL))           ;; Tentatively.
-
-        ((ß Bytes ret =) (regnode BRANCH))
-
+    (reset! a'fl (| WORST HASNL))           ;; Tentatively.
+    (let [#_Bytes ret (regnode BRANCH)]
         (loop [#_Bytes chain nil]
-            ((ß int[] a'flags =) (atom (int)))
-            ((ß Bytes latest =) (regconcat a'flags))
-            (if (nil? latest)
-                ((ß RETURN) nil)
-            )
-
-            ;; If one of the branches has width, the whole thing has.
-            ;; If one of the branches anchors at start-of-line, the whole thing does.
-            ;; If one of the branches uses look-behind, the whole thing does.
-            (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASLOOKBH)))
-            ;; If one of the branches doesn't match a line-break, the whole thing doesn't.
-            (swap! a'fl & (| (bit-not HASNL) (& @a'flags HASNL)))
-            (when (some? chain)
-                (regtail chain, latest))
-            (if (!= (peekchr) (Magic (byte \&)))
-                (ß BREAK)
-            )
-
-            (skipchr)
-            (regtail latest, (regnode END)) ;; operand ends
-            (if @reg_toolong
-                (ß BREAK)
-            )
-
-            (reginsert MATCH, latest)
-            (recur latest)
-        )
-
-        ret
+            (let-when [a'flags (atom (int)) #_Bytes latest (regconcat a'flags)] (some? latest) => nil
+                ;; If one of the branches has width, the whole thing has.
+                ;; If one of the branches anchors at start-of-line, the whole thing does.
+                ;; If one of the branches uses look-behind, the whole thing does.
+                (swap! a'fl | (& @a'flags (| HASWIDTH SPSTART HASLOOKBH)))
+                ;; If one of the branches doesn't match a line-break, the whole thing doesn't.
+                (swap! a'fl & (| (bit-not HASNL) (& @a'flags HASNL)))
+                (when (some? chain)
+                    (regtail chain, latest))
+                (if (!= (peekchr) (Magic (byte \&)))
+                    ret
+                    (do (skipchr)
+                        (regtail latest, (regnode END)) ;; operand ends
+                        (if @reg_toolong
+                            ret
+                            (do
+                                (reginsert MATCH, latest)
+                                (recur latest)
+                            ))
+                    ))
+            ))
     ))
 
 ;; Parse one alternative of an | or & operator.
 ;; Implements the concatenation operator.
 
 (defn- #_Bytes regconcat [#_int' a'fl]
-    (§
-        ((ß Bytes first =) nil)
-        ((ß Bytes chain =) nil)
+    (reset! a'fl WORST)             ;; Tentatively.
+    (let-when [[#_Bytes first :as _]
+            (loop [first nil #_Bytes chain nil]
+                (condp ==? (peekchr)
+                   [NUL (Magic (byte \|)) (Magic (byte \&)) (Magic (byte \)))]                                  [first]
 
-        (reset! a'fl WORST)             ;; Tentatively.
+                    (Magic (byte \Z)) (do (swap! regflags | RF_ICOMBINE) (skipchr-keepstart)                    (recur first chain))
+                    (Magic (byte \c)) (do (swap! regflags | RF_ICASE)    (skipchr-keepstart)                    (recur first chain))
+                    (Magic (byte \C)) (do (swap! regflags | RF_NOICASE)  (skipchr-keepstart)                    (recur first chain))
 
-        (loop-when [#_boolean cont true] cont
-            ((ß SWITCH) (peekchr)
-                ((ß CASE) NUL)
-                ((ß CASE) (Magic (byte \|)))
-                ((ß CASE) (Magic (byte \&)))
-                ((ß CASE) (Magic (byte \))))
-                (do
-                    ((ß cont =) false)
-                    (ß BREAK)
-                )
+                    (Magic (byte \v)) (do (reset! reg_magic MAGIC_ALL)   (skipchr-keepstart) (reset! curchr -1) (recur first chain))
+                    (Magic (byte \m)) (do (reset! reg_magic MAGIC_ON)    (skipchr-keepstart) (reset! curchr -1) (recur first chain))
+                    (Magic (byte \M)) (do (reset! reg_magic MAGIC_OFF)   (skipchr-keepstart) (reset! curchr -1) (recur first chain))
+                    (Magic (byte \V)) (do (reset! reg_magic MAGIC_NONE)  (skipchr-keepstart) (reset! curchr -1) (recur first chain))
 
-                ((ß CASE) (Magic (byte \Z)))
-                (do
-                    (swap! regflags | RF_ICOMBINE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \c)))
-                (do
-                    (swap! regflags | RF_ICASE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \C)))
-                (do
-                    (swap! regflags | RF_NOICASE)
-                    (skipchr-keepstart)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \v)))
-                (do
-                    (reset! reg_magic MAGIC_ALL)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \m)))
-                (do
-                    (reset! reg_magic MAGIC_ON)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \M)))
-                (do
-                    (reset! reg_magic MAGIC_OFF)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                ((ß CASE) (Magic (byte \V)))
-                (do
-                    (reset! reg_magic MAGIC_NONE)
-                    (skipchr-keepstart)
-                    (reset! curchr -1)
-                    (ß BREAK)
-                )
-
-                (ß DEFAULT)
-                (do
-                    ((ß int[] a'flags =) (atom (int)))
-                    ((ß Bytes latest =) (regpiece a'flags))
-                    (if (or (nil? latest) @reg_toolong)
-                        ((ß RETURN) nil)
-                    )
-
-                    (swap! a'fl | (& @a'flags (| HASWIDTH HASNL HASLOOKBH)))
-                    (if (nil? chain)  ;; First piece.
-                        (swap! a'fl | (& @a'flags SPSTART))
-                        (regtail chain, latest))
-                    ((ß chain =) latest)
-                    ((ß first =) (if (nil? first) latest first))
-                    (ß BREAK)
-                )
-            )
-            (recur cont)
-        )
-
+                    (let-when [a'flags (atom (int)) #_Bytes latest (regpiece a'flags)] (and (some? latest) (not @reg_toolong)) => nil
+                        (swap! a'fl | (& @a'flags (| HASWIDTH HASNL HASLOOKBH)))
+                        (if (nil? chain)  ;; First piece.
+                            (swap! a'fl | (& @a'flags SPSTART))
+                            (regtail chain, latest))
+                        (recur (if (some? first) first latest) latest)
+                    ))
+            )] (some? _) => nil
         (if (some? first) first (regnode NOTHING))          ;; Loop ran zero times.
     ))
 
@@ -23153,180 +22997,112 @@
 ;; endmarker role is not redundant.
 
 (defn- #_Bytes regpiece [#_int' a'fl]
-    (§
-        ((ß int[] a'flags =) (atom (int)))
-        ((ß Bytes ret =) (regatom a'flags))
-        (if (nil? ret)
-            ((ß RETURN) nil)
-        )
+    (let-when [a'flags (atom (int)) #_Bytes ret (regatom a'flags)] (some? ret) => nil
+        (let [#_int op (peekchr)]
+            (cond (== (re-multi-type op) NOT_MULTI)
+                (do (reset! a'fl @a'flags) ret)
+            :else
+                (do (reset! a'fl (| WORST SPSTART (& @a'flags (| HASNL HASLOOKBH)))) ;; default flags
+                    (skipchr)
+                    (let-when [_
+                            (condp ==? op
+                                (Magic (byte \*))
+                                    (do (if (flag? @a'flags SIMPLE)
+                                            (reginsert STAR, ret)
+                                            (do ;; Emit x* as (x&|), where & means "self".
+                                                (reginsert BRANCH, ret)             ;; Either x
+                                                (regoptail ret, (regnode BACK))     ;; and loop
+                                                (regoptail ret, ret)                ;; back
+                                                (regtail ret, (regnode BRANCH))     ;; or
+                                                (regtail ret, (regnode NOTHING))    ;; null.
+                                            ))
+                                        :_)
 
-        ((ß int op =) (peekchr))
-        (when (== (re-multi-type op) NOT_MULTI)
-            (reset! a'fl @a'flags)
-            ((ß RETURN) ret)
-        )
+                                (Magic (byte \+))
+                                    (do (if (flag? @a'flags SIMPLE)
+                                            (reginsert PLUS, ret)
+                                            ;; Emit x+ as x(&|), where & means "self".
+                                            (let [#_Bytes next (regnode BRANCH)]    ;; Either
+                                                (regtail ret, next)
+                                                (regtail (regnode BACK), ret)       ;; loop back
+                                                (regtail next, (regnode BRANCH))    ;; or
+                                                (regtail ret, (regnode NOTHING))    ;; null.
+                                            ))
+                                        (reset! a'fl (| WORST HASWIDTH (& @a'flags (| HASNL HASLOOKBH))))
+                                        :_)
 
-        ;; default flags
-        (reset! a'fl (| WORST SPSTART (& @a'flags (| HASNL HASLOOKBH))))
+                                (Magic (byte \@))
+                                    (let [#_int nr (getdecchrs)
+                                          #_int lop (condp == (no-Magic (getchr))
+                                                (byte \=) MATCH                     ;; \@=
+                                                (byte \!) NOMATCH                   ;; \@!
+                                                (byte \>) SUBPAT                    ;; \@>
+                                                (byte \<)
+                                                    (condp == (no-Magic (getchr))
+                                                        (byte \=) BEHIND            ;; \@<=
+                                                        (byte \!) NOBEHIND          ;; \@<!
+                                                        END)
+                                                END)]
+                                        (if (== lop END)
+                                            (do (emsg2 (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                                (reset! rc_did_emsg true)
+                                                nil)
+                                            (do ;; Look behind must match with behind_pos.
+                                                (when (any == lop BEHIND NOBEHIND)
+                                                    (regtail ret, (regnode BHPOS))
+                                                    (swap! a'fl | HASLOOKBH))
+                                                (regtail ret, (regnode END))                ;; operand ends
+                                                (if (any == lop BEHIND NOBEHIND)
+                                                    (reginsert-nr lop, (max 0 nr), ret)     ;; no limit is same as zero limit
+                                                    (reginsert lop, ret))
+                                                :_)
+                                        ))
 
-        (skipchr)
-        ((ß SWITCH) op
-            ((ß CASE) (Magic (byte \*)))
-            (do
-                (cond (flag? @a'flags SIMPLE)
-                (do
-                    (reginsert STAR, ret)
-                )
-                :else
-                (do
-                    ;; Emit x* as (x&|), where & means "self".
-                    (reginsert BRANCH, ret)             ;; Either x
-                    (regoptail ret, (regnode BACK))      ;; and loop
-                    (regoptail ret, ret)                ;; back
-                    (regtail ret, (regnode BRANCH))      ;; or
-                    (regtail ret, (regnode NOTHING))     ;; null.
-                ))
-                (ß BREAK)
-            )
+                               [(Magic (byte \?)) (Magic (byte \=))]
+                                    (do ;; Emit x= as (x|).
+                                        (reginsert BRANCH, ret)                     ;; Either x
+                                        (regtail ret, (regnode BRANCH))             ;; or
+                                        (let [#_Bytes next (regnode NOTHING)]       ;; null.
+                                            (regtail ret, next)
+                                            (regoptail ret, next))
+                                        :_)
 
-            ((ß CASE) (Magic (byte \+)))
-            (do
-                (cond (flag? @a'flags SIMPLE)
-                (do
-                    (reginsert PLUS, ret)
-                )
-                :else
-                (do
-                    ;; Emit x+ as x(&|), where & means "self".
-                    ((ß Bytes next =) (regnode BRANCH))      ;; Either
-                    (regtail ret, next)
-                    (regtail (regnode BACK), ret)        ;; loop back
-                    (regtail next, (regnode BRANCH))     ;; or
-                    (regtail ret, (regnode NOTHING))     ;; null.
-                ))
-                (reset! a'fl (| WORST HASWIDTH (& @a'flags (| HASNL HASLOOKBH))))
-                (ß BREAK)
-            )
-
-            ((ß CASE) (Magic (byte \@)))
-            (do
-                ((ß int lop =) END)
-                ((ß int nr =) (getdecchrs))
-
-                ((ß SWITCH) (no-Magic (getchr))
-                    ((ß CASE) (byte \=))
-                    (do
-                        ((ß lop =) MATCH)                ;; \@=
-                        (ß BREAK)
-                    )
-                    ((ß CASE) (byte \!))
-                    (do
-                        ((ß lop =) NOMATCH)              ;; \@!
-                        (ß BREAK)
-                    )
-                    ((ß CASE) (byte \>))
-                    (do
-                        ((ß lop =) SUBPAT)               ;; \@>
-                        (ß BREAK)
-                    )
-                    ((ß CASE) (byte \<))
-                    (do
-                        ((ß SWITCH) (no-Magic (getchr))
-                            ((ß CASE) (byte \=))
-                            (do
-                                ((ß lop =) BEHIND)       ;; \@<=
-                                (ß BREAK)
-                            )
-                            ((ß CASE) (byte \!))
-                            (do
-                                ((ß lop =) NOBEHIND)     ;; \@<!
-                                (ß BREAK)
-                            )
-                        )
-                        (ß BREAK)
-                    )
-                )
-
-                (when (== lop END)
-                    (emsg2 (u8 "E59: invalid character after %s@"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                    (reset! rc_did_emsg true)
-                    ((ß RETURN) nil)
-                )
-                ;; Look behind must match with behind_pos.
-                (when (any == lop BEHIND NOBEHIND)
-                    (regtail ret, (regnode BHPOS))
-                    (swap! a'fl | HASLOOKBH)
-                )
-                (regtail ret, (regnode END))                 ;; operand ends
-                (cond (any == lop BEHIND NOBEHIND)
-                (do
-                    ((ß nr =) (max 0 nr))                   ;; no limit is same as zero limit
-                    (reginsert-nr lop, nr, ret)
-                )
-                :else
-                (do
-                    (reginsert lop, ret)
-                ))
-                (ß BREAK)
-            )
-
-            ((ß CASE) (Magic (byte \?)))
-            ((ß CASE) (Magic (byte \=)))
-            (do
-                ;; Emit x= as (x|).
-                (reginsert BRANCH, ret)                 ;; Either x
-                (regtail ret, (regnode BRANCH))          ;; or
-                ((ß Bytes next =) (regnode NOTHING))         ;; null.
-                (regtail ret, next)
-                (regoptail ret, next)
-                (ß BREAK)
-            )
-
-            ((ß CASE) (Magic (byte \{)))
-            (do
-                ((ß long[] a'minval =) (atom (long)))
-                ((ß long[] a'maxval =) (atom (long)))
-                (if (not (read-limits a'minval, a'maxval))
-                    ((ß RETURN) nil)
-                )
-
-                (cond (flag? @a'flags SIMPLE)
-                (do
-                    (reginsert BRACE_SIMPLE, ret)
-                    (reginsert-limits BRACE_LIMITS, @a'minval, @a'maxval, ret)
-                )
-                :else
-                (do
-                    (when (<= 10 @num_complex_braces)
-                        (emsg2 (u8 "E60: Too many complex %s{...}s"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
-                        (reset! rc_did_emsg true)
-                        ((ß RETURN) nil)
-                    )
-                    (reginsert (+ BRACE_COMPLEX @num_complex_braces), ret)
-                    (regoptail ret, (regnode BACK))
-                    (regoptail ret, ret)
-                    (reginsert-limits BRACE_LIMITS, @a'minval, @a'maxval, ret)
-                    (swap! num_complex_braces inc)
-                ))
-                (when (and (< 0 @a'minval) (< 0 @a'maxval))
-                    (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
-                (ß BREAK)
-            )
-        )
-
-        (when (!= (re-multi-type (peekchr)) NOT_MULTI)
-            ;; Can't have a multi follow a multi.
-            (if (== (peekchr) (Magic (byte \*)))
-                (.sprintf libC @ioBuff, (u8 "E61: Nested %s*"), (if (<= MAGIC_ON @reg_magic) (u8 "") (u8 "\\")))
-                (.sprintf libC @ioBuff, (u8 "E62: Nested %s%c"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")), (no-Magic (peekchr)))
-            )
-
-            (emsg @ioBuff)
-            (reset! rc_did_emsg true)
-            ((ß RETURN) nil)
-        )
-
-        ret
+                                (Magic (byte \{))
+                                    (let-when [a'minval (atom (long)) a'maxval (atom (long))] (read-limits a'minval, a'maxval) => nil
+                                        (cond (flag? @a'flags SIMPLE)
+                                            (do
+                                                (reginsert BRACE_SIMPLE, ret)
+                                                (reginsert-limits BRACE_LIMITS, @a'minval, @a'maxval, ret)
+                                                (when (and (< 0 @a'minval) (< 0 @a'maxval))
+                                                    (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
+                                                :_)
+                                        (< @num_complex_braces 10)
+                                            (do
+                                                (reginsert (+ BRACE_COMPLEX @num_complex_braces), ret)
+                                                (regoptail ret, (regnode BACK))
+                                                (regoptail ret, ret)
+                                                (reginsert-limits BRACE_LIMITS, @a'minval, @a'maxval, ret)
+                                                (swap! num_complex_braces inc)
+                                                (when (and (< 0 @a'minval) (< 0 @a'maxval))
+                                                    (reset! a'fl (| HASWIDTH (& @a'flags (| HASNL HASLOOKBH)))))
+                                                :_)
+                                        :else
+                                            (do (emsg2 (u8 "E60: Too many complex %s{...}s"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")))
+                                                (reset! rc_did_emsg true)
+                                                nil)
+                                        ))
+                            )] (some? _) => nil
+                        (if (!= (re-multi-type (peekchr)) NOT_MULTI)
+                            (do ;; Can't have a multi follow a multi.
+;%%                             (if (== (peekchr) (Magic (byte \*)))
+;%%                                 (.sprintf libC @ioBuff, (u8 "E61: Nested %s*"), (if (<= MAGIC_ON @reg_magic) (u8 "") (u8 "\\")))
+;%%                                 (.sprintf libC @ioBuff, (u8 "E62: Nested %s%c"), (if (== @reg_magic MAGIC_ALL) (u8 "") (u8 "\\")), (no-Magic (peekchr))))
+                                (emsg @ioBuff)
+                                (reset! rc_did_emsg true)
+                                nil)
+                            ret)
+                    ))
+            ))
     ))
 
 ;; When making changes to "classchars" also change "nfa_classcodes".
@@ -23915,22 +23691,10 @@
     (reset! prev_at_start false)
     nil)
 
-;; Save the current parse state, so that it can be restored and parsing
-;; starts in the same state again.
+;; Save the current parse state, so that it can be restored and parsing starts in the same state again.
 
-(defn- #_void save-parse-state [#_parse_state_C ps]
-    (§
-        ((ß ps.regparse =) @regparse)
-        ((ß ps.prevchr_len =) @prevchr_len)
-        ((ß ps.curchr =) @curchr)
-        ((ß ps.prevchr =) @prevchr)
-        ((ß ps.prevprevchr =) @prevprevchr)
-        ((ß ps.nextchr =) @nextchr)
-        ((ß ps.at_start =) @at_start)
-        ((ß ps.prev_at_start =) @prev_at_start)
-        ((ß ps.regnpar =) @regnpar)
-        nil
-    ))
+(defn- #_parse_state_C save-parse-state []
+    (->parse_state_C @regparse @prevchr_len @curchr @prevchr @prevprevchr @nextchr @at_start @prev_at_start @regnpar))
 
 ;; Restore a previously saved parse state.
 
@@ -29206,8 +28970,7 @@
 (defn- #_boolean nfa-regpiece []
     (§
         ;; Save the current parse state, so that we can use it if <atom>{m,n} is next.
-        ((ß parse_state_C old_state =) (NEW_parse_state_C))
-        (save-parse-state old_state)
+        ((ß parse_state_C old_state =) (save-parse-state))
 
         ;; store current pos in the postfix form, for \{m,n} involving 0s
         ((ß int my_post_start =) @post_index)
@@ -29362,8 +29125,7 @@
                 ;; Ignore previous call to nfa-regatom().
                 (reset! post_index my_post_start)
                 ;; Save parse state after the repeated atom and the \{}.
-                ((ß parse_state_C new_state =) (NEW_parse_state_C))
-                (save-parse-state new_state)
+                ((ß parse_state_C new_state =) (save-parse-state))
 
                 ((ß int quest =) (if greedy NFA_QUEST NFA_QUEST_NONGREEDY))
                 (dotimes [#_int i @a'maxval]
