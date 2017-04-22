@@ -1341,7 +1341,7 @@
         (field pos_C        b_op_start_orig     (NEW_pos_C))    ;; used for "insStart_orig"
         (field pos_C        b_op_end            (NEW_pos_C))
 
-        ;; The following only used in undo.c.
+        ;; the following is only used in undo.c
 
         (field u_header_C   b_u_oldhead)        ;; pointer to oldest header
         (field u_header_C   b_u_newhead)        ;; pointer to newest header; may not be valid if "b_u_curhead" is not null
@@ -29966,7 +29966,7 @@
                         ;; Need to create new entry in "b_changelist".
                         (swap! curbuf assoc :b_new_change true)
 
-                        ((ß u_header_C uhp =) (if (<= 0 (get-undolevels)) (NEW_u_header_C) nil))
+                        ((ß u_header_C uhp =) (if (< (get-undolevels) 0) nil (NEW_u_header_C)))
 
                         ;; If we undid more than we redid, move the entry lists before and including "b_u_curhead" to an alternate branch.
 
@@ -30009,7 +30009,7 @@
                         ;; Save changed and buffer empty flag for undo.
                         ((ß uhp =) (assoc uhp :uh_flags (+ (if @(:b_changed @curbuf) UH_CHANGED 0) (if (:ml_empty (:b_ml @curbuf)) UH_EMPTYBUF 0))))
 
-                        ;; save named marks and Visual marks for undo
+                        ;; Save named marks and Visual marks for undo.
                         (dotimes [#_int i NMARKS]
                             ((ß uhp =) (assoc-in uhp [:uh_namedm i] (... (:b_namedm @curbuf) i)))
                         )
