@@ -77,7 +77,7 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader cmdline_info fmark fragnode frame lpos match memline msgchunk nfa_pim nfa_state oparg pos reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap cmdname decomp digr fmark frag frame hl_group key_name linepos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(backpos btcap cmdname decomp digr fmark frag frame key_name linepos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry)))
 
@@ -108,7 +108,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader ZER0-attrentry COPY-attrentry COPY-wline ARRAY-wline COPY-frame asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption get-highlight-default showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp incl dec-cursor? dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strup vim-strsave-up copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage do-check-cursorbind COPY-hl-group syn-get-sub-char restore-cterm-colors get-attr-entry clear-hl-tables hl-combine-attr syn-attr2attr syn-term-attr2entry syn-cterm-attr2entry set-hl-attr syn-name2id syn-check-group syn-add-group syn-id2attr syn-get-final-id highlight-changed main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite COPY-pos ARRAY-pos MIN1-lpos COPY-lpos ARRAY-lpos COPY-fmark ARRAY-fmark COPY-visualinfo COPY-buffblock COPY-buffheader COPY-wline ARRAY-wline COPY-frame asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 emsg-invreg wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up inc-msg-scrolled store-sb-text may-clear-sb-text clear-sb-text show-sb-text msg-sb-start disp-sb-line t-puts msg-use-printf msg-puts-printf do-more-prompt msg-screen-putchar msg-moremsg repeat-message msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end msg-check give-warning display-confirm-msg bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default set-init-2 do-set illegal-char didset-options did-set-string-option check-colorcolumn set-bool-option set-num-option check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg COPY-histentry ARRAY-histentry getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history clear-hist-entry in-history add-to-history ex-window do-cmdline-cmd do-cmdline current-win-nr do-one-cmd append-command find-command skip-range get-address invalid-range correct-range check-nextcmd ex-close ex-win-close ex-only ex-stop ex-syncbind do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop checkclearopq clearop clearopbeep unshift-special clear-showcmd add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd do-check-scrollbind check-scrollbind nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold COPY-yankreg ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register get-expr-line valid-yank-reg get-yank-register get-register put-register do-record stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete mb-adjust-opend op-replace op-tilde swapchars swapchar op-insert op-change init-yank op-yank yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep do-addsub line-count-info cursor-pos-info setmark setmark-pos setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist free-buff get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty typeahead-noflush flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc safe-vgetc plain-vgetc vpeekc char-avail vungetc vgetorpeek inchar fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal insert-special isspecial insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-ctrl-hat ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start reg regbranch regconcat regpiece regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail initchr save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits COPY-regsave ARRAY-save-se create-regstack create-backpos reg-getline bt-regexec-nl bt-regexec-multi bt-regexec-both make-extmatch regtry reg-prev-class reg-match-visual regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr cleanup-zsubexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal save-se-multi save-se-one save-se restore-se re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub vim-regsub-multi vim-regsub-both nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess MIN1-multipos COPY-multipos ARRAY-multipos COPY--multipos ZER0-linepos COPY-linepos ARRAY-linepos COPY--linepos COPY-regsub COPY-regsubs COPY-nfa-pim COPY-nfa-thread ARRAY-nfa-thread ARRAY-nfa-list copy-pim clear-sub copy-sub copy-sub-off copy-ze-off sub-equal has-state-with-pos pim-equal match-follows state-in-list addstate addstate-here check-char-class match-backref match-zref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regexec-both nfa-regcomp nfa-regexec-nl nfa-regexec-multi vim-regcomp report-re-switch vim-regexec-both vim-regexec-prog vim-regexec vim-regexec-nl vim-regexec-multi new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit first-submatch do-search searchc findmatch check-prevcol findmatchlimit check-linecomment showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word current-block find-next-quote find-prev-quote current-quote current-search is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status ask-yesno get-keystroke msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp incl dec-cursor? dec-cursor decp decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped copy-chars vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state emsg3 emsgn trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevel u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset COPY-termcode ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen conceal-cursor-line conceal-check-cursor-line update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width screen-screencol screen-screenrow do-window cmd-with-count win-split win-split-ins win-init win-valid win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others win-alloc-first newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage do-check-cursorbind restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -999,7 +999,6 @@
 (atom! boolean p_eb)        ;; 'errorbells'
 (atom! boolean p_ek)        ;; 'esckeys'
 (atom! boolean p_gd)        ;; 'gdefault'
-(atom! Bytes   p_hl)        ;; 'highlight'
 (atom! long    p_hi)        ;; 'history'
 (atom! boolean p_hls)       ;; 'hlsearch'
 (atom! boolean p_ic)        ;; 'ignorecase'
@@ -1477,38 +1476,6 @@
 
         (field int          ml_flags)
     ])
-
-;; Structure shared between syntax.c and screen.c.
-
-(class! #_final attrentry_C
-    [
-        (field int          ae_attr)            ;; HL_BOLD, etc.
-        (field Bytes        ae_esc_start)       ;; start escape sequence
-        (field Bytes        ae_esc_stop)        ;; stop escape sequence
-    ;; These colors need to be > 8 bits to hold 256.
-        (field int          ae_fg_color)        ;; foreground color number
-        (field int          ae_bg_color)        ;; background color number
-    ])
-
-(defn- #_void ZER0-attrentry [#_attrentry_C ae]
-    (§
-        ((ß ae =) (assoc ae :ae_attr 0))
-        ((ß ae =) (assoc ae :ae_esc_start nil))
-        ((ß ae =) (assoc ae :ae_esc_stop nil))
-        ((ß ae =) (assoc ae :ae_fg_color 0))
-        ((ß ae =) (assoc ae :ae_bg_color 0))
-        nil
-    ))
-
-(defn- #_void COPY-attrentry [#_attrentry_C ae1, #_attrentry_C ae0]
-    (§
-        ((ß ae1.ae_attr =) (:ae_attr ae0))
-        ((ß ae1.ae_esc_start =) (:ae_esc_start ae0))
-        ((ß ae1.ae_esc_stop =) (:ae_esc_stop ae0))
-        ((ß ae1.ae_fg_color =) (:ae_fg_color ae0))
-        ((ß ae1.ae_bg_color =) (:ae_bg_color ae0))
-        nil
-    ))
 
 ;; Used for the typeahead buffer: typebuf.
 
@@ -2209,8 +2176,6 @@
 (atom! int      must_redraw)                ;; type of redraw necessary
 (atom! boolean  skip_redraw)                ;; skip redraw once
 (atom! boolean  do_redraw)                  ;; extra redraw once
-
-(atom! boolean  need_highlight_changed true)
 
 (atom! int      read_cmd_fd)                ;; fd to read commands from
 
@@ -3998,8 +3963,6 @@
 
 (final int P_CURSWANT      0x2000000)   ;; update curswant required; not needed when there is a redraw flag
 
-(final Bytes HIGHLIGHT_INIT (u8 "8:SpecialKey,@:NonText,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,w:WarningMsg,-:Conceal,!:CursorColumn,.:CursorLine,o:ColorColumn"))
-
 (defn- #_vimoption_C bool-opt [#_Bytes fname, #_Bytes sname, #_long flags, #_"/*boolean[]*/Object" var, #_int indir, #_boolean def]
     (->vimoption_C fname, sname, (| P_BOOL flags), var, indir, def))
 
@@ -4041,7 +4004,6 @@
         (bool-opt (u8 "esckeys"),        (u8 "ek"),        0,                           p_ek,        0,          true),
         (bool-opt (u8 "expandtab"),      (u8 "et"),        0,                           nil,         PV_ET,      false),
         (bool-opt (u8 "gdefault"),       (u8 "gd"),        0,                           p_gd,        0,          false),
-        (utf8-opt (u8 "highlight"),      (u8 "hl"),     (| P_RCLR P_COMMA P_NODUP),     p_hl,        0,          HIGHLIGHT_INIT),
         (long-opt (u8 "history"),        (u8 "hi"),        0,                           p_hi,        0,          50),
         (bool-opt (u8 "hlsearch"),       (u8 "hls"),       P_RALL,                      p_hls,       0,          false),
         (bool-opt (u8 "ignorecase"),     (u8 "ic"),        0,                           p_ic,        0,          false),
@@ -4144,7 +4106,6 @@
     (didset-options)
 
     (fill-breakat-flags)
-    (highlight-changed)
     (init-chartab true)
     (screen-alloc false)
     nil)
@@ -4519,9 +4480,6 @@
             (== varp (:wo_cc (:w_options @curwin))) ;; 'colorcolumn'
                 (check-colorcolumn @curwin)
 
-            (== varp p_hl) ;; 'highlight'
-                (when-not (highlight-changed) e_invarg)
-
             (== varp (:b_p_nf @curbuf)) ;; 'nrformats'
                 (when-not (check-opt-strings @varp, p_nf_values, true) e_invarg)
 
@@ -4590,9 +4548,7 @@
             (reset! varp oldval)
             ;; When resetting some values, need to act on it.
             (when @a'undo_chartab
-                (init-chartab true))
-            (when (== varp p_hl)
-                (highlight-changed)
+                (init-chartab true)
             ))
 
         (when (and (!= (:w_curswant @curwin) MAXCOL) (flag? (:flags v) (| P_CURSWANT P_RALL)))
@@ -4900,12 +4856,7 @@
             ))
     ))
 
-(defn- #_Bytes get-highlight-default []
-    (let [#_vimoption_C v (findoption (u8 "hl"))]
-        (when (some? v) #_Bytes (:def_val v))
-    ))
-
-;; showoneopt: show the value of one option
+;; Show the value of one option.
 
 (defn- #_void showoneopt [#_vimoption_C v]
     (reset! info_message true)
@@ -37019,19 +36970,6 @@
             ))
     q))
 
-;; ASCII lower-to-upper case translation, language independent.
-
-(defn- #_Bytes vim-strup [#_Bytes s]
-    (when (some? s)
-        (loop-when-recur [i 0] (non-eos? s i) [(inc i)] (let [c (.at s i)] (.be s i, (if (<= (byte \a) c (byte \z)) (- c 0x20) c)))))
-    s)
-
-;; Like STRDUP(), but make all characters uppercase.
-;; This uses ASCII lower-to-upper case translation, language independent.
-
-(defn- #_Bytes vim-strsave-up [#_Bytes s]
-    (vim-strup (STRDUP s)))
-
 ;; Copy a character a number of times.
 ;; Does not work for multi-byte characters!
 
@@ -40076,10 +40014,6 @@
         ;; reset cmdline_row now (may have been changed temporarily)
         (compute-cmdrow)
 
-        ;; Check for changed highlighting.
-        (when @need_highlight_changed
-            (highlight-changed))
-
         (when (== type CLEAR)              ;; first clear screen
             (screen-clear)              ;; will reset clear_cmdline
             ((ß type =) NOT_VALID)
@@ -41821,10 +41755,10 @@
                 (cond (and (< 0 @(:wo_cole (:w_options win))) (or (!= win @curwin) (!= lnum (:lnum (:w_cursor win))) (conceal-cursor-line win)) (flag? syntax_flags HL_CONCEAL) (not (and lnum_in_visual_area (== (vim-strchr @(:wo_cocu (:w_options win)), (byte \v)) nil))))
                 (do
                     ((ß char_attr =) conceal_attr)
-                    (cond (and (!= prev_syntax_id @a'syntax_seqnr) (or (!= (syn-get-sub-char) NUL) (== @(:wo_cole (:w_options win)) 1)) (!= @(:wo_cole (:w_options win)) 3))
+                    (cond (and (!= prev_syntax_id @a'syntax_seqnr) (== @(:wo_cole (:w_options win)) 1))
                     (do
                         ;; First time at this concealed item: display one character.
-                        ((ß c =) (cond (!= (syn-get-sub-char) NUL) (syn-get-sub-char) (!= @lcs_conceal NUL) @lcs_conceal :else (byte \space)))
+                        ((ß c =) (if (!= @lcs_conceal NUL) @lcs_conceal (byte \space)))
 
                         ((ß prev_syntax_id =) @a'syntax_seqnr)
 
@@ -42319,7 +42253,7 @@
                 ;; and for some xterms.
                 (when @term_is_xterm
                     ((ß int hl =) (... @screenAttrs off_to))
-                    ((ß hl =) (if (< HL_ALL hl) (syn-attr2attr hl) hl))
+                    ((ß hl =) (if (< HL_ALL hl) 0 hl))
                     ((ß redraw_next =) (or (flag? hl HL_BOLD) redraw_next))
                 )
                 ((ß @screenAttrs[off_to] =) (... @screenAttrs off_from))
@@ -42577,7 +42511,7 @@
                 (when (and need_redraw (not-at? @screenLines off (byte \space)) @term_is_xterm)
                     ((ß int n =) (... @screenAttrs off))
 
-                    ((ß n =) (if (< HL_ALL n) (syn-attr2attr n) n))
+                    ((ß n =) (if (< HL_ALL n) 0 n))
                     ((ß force_redraw_next =) (or (flag? n HL_BOLD) force_redraw_next))
                 )
                 ;; When at the end of the text and overwriting a two-cell character with
@@ -42753,18 +42687,9 @@
 (defn- #_void screen-start-highlight [#_int attr]
     (reset! screen_attr attr)
     (when @full_screen
-        (let [[#_attrentry_C aep attr]
-                (if (< HL_ALL attr)                                  ;; special HL attr.
-                    (let [aep (if (< 1 @t_colors) (syn-cterm-attr2entry attr) (syn-term-attr2entry attr))] [aep (if (some? aep) (:ae_attr aep) 0)])
-                    [nil attr]
-                )]
-
-            (cond (and (flag? attr HL_BOLD) (some? @T_MD))          ;; bold
-                (out-str @T_MD)
-            ;; If the Normal FG color has BOLD attribute and the new HL has a FG color defined, clear BOLD.
-            (and (some? aep) (< 1 @t_colors) (non-zero? (:ae_fg_color aep)) (non-zero? @cterm_normal_fg_bold))
-                (out-str @T_ME))
-
+        (let [attr (if (< HL_ALL attr) 0 attr)]
+            (when (and (flag? attr HL_BOLD) (some? @T_MD))          ;; bold
+                (out-str @T_MD))
             (when (and (flag? attr HL_STANDOUT) (some? @T_SO))      ;; standout
                 (out-str @T_SO))
             (when (and (flag? attr (| HL_UNDERLINE HL_UNDERCURL)) (some? @T_US)) ;; underline or undercurl
@@ -42773,43 +42698,20 @@
                 (out-str @T_CZH))
             (when (and (flag? attr HL_INVERSE) (some? @T_MR))       ;; inverse (reverse)
                 (out-str @T_MR))
-
-            ;; Output the color or start string after bold etc.,
-            ;; in case the bold etc. override the color setting.
-
-            (when (some? aep)
-                (if (< 1 @t_colors)
-                    (do
-                        (when (non-zero? (:ae_fg_color aep)) (term-fg-color (dec (:ae_fg_color aep))))
-                        (when (non-zero? (:ae_bg_color aep)) (term-bg-color (dec (:ae_bg_color aep))))
-                    )
-                    (when (some? (:ae_esc_start aep)) (out-str (:ae_esc_start aep)))
-                ))
         ))
     nil)
 
 (defn- #_void screen-stop-highlight []
     (when (non-zero? @screen_attr)
-        (let [#_boolean me?
-                (and (< HL_ALL @screen_attr) ;; output T_ME code ;; special HL attr.
-                    (let [[#_attrentry_C aep me?]
-                            (if (< 1 @t_colors)
-                                (let [aep (syn-cterm-attr2entry @screen_attr)]
-                                    ;; Assume that t_me restores the original colors!
-                                    [aep (and (some? aep) (or (non-zero? (:ae_fg_color aep)) (non-zero? (:ae_bg_color aep))))])
-                                (let [aep (syn-term-attr2entry @screen_attr)]
-                                    [aep (and (some? aep) (some? (:ae_esc_stop aep)) (or (zero? (STRCMP (:ae_esc_stop aep), @T_ME)) (do (out-str (:ae_esc_stop aep)) false)))])
-                            )]
-                        (reset! screen_attr (if (some? aep) (:ae_attr aep) 0)) ;; did ":syntax clear"
-                        me?))
+        (let [#_boolean me? (and (< HL_ALL @screen_attr) (let [me? false] (reset! screen_attr 0) me?))
               ;; Often all ending-codes are equal to T_ME.
               ;; Avoid outputting the same sequence several times.
               me? (if (flag? @screen_attr HL_STANDOUT)                   (or (zero? (STRCMP @T_SE, @T_ME))  (do (out-str @T_SE) me?))  me?)
               me? (if (flag? @screen_attr (| HL_UNDERLINE HL_UNDERCURL)) (or (zero? (STRCMP @T_UE, @T_ME))  (do (out-str @T_UE) me?))  me?)
               me? (if (flag? @screen_attr HL_ITALIC)                     (or (zero? (STRCMP @T_CZR, @T_ME)) (do (out-str @T_CZR) me?)) me?)]
             (when (or me? (flag? @screen_attr (| HL_BOLD HL_INVERSE)))
-                (out-str @T_ME))
-        )
+                (out-str @T_ME)
+            ))
         (when (< 1 @t_colors) ;; set Normal cterm colors
             (when (non-zero? @cterm_normal_fg_color) (term-fg-color (dec @cterm_normal_fg_color)))
             (when (non-zero? @cterm_normal_bg_color) (term-bg-color (dec @cterm_normal_bg_color)))
@@ -47582,63 +47484,6 @@
 
 ;;; ============================================================================================== VimX
 
-;; syntax.c: code for syntax highlighting ---------------------------------------------------------
-
-;; Structure that stores information about a highlight group.
-;; The ID of a highlight group is also called group ID.
-;; It is the index in the highlight_ga array PLUS ONE.
-
-(class! #_final hl_group_C
-    [
-        (field Bytes        sg_name)            ;; highlight group name
-        (field Bytes        sg_name_u)          ;; uppercase of "sg_name"
-;; for normal terminals
-        (field int          sg_term)            ;; "term=" highlighting attributes
-        (field Bytes        sg_start)           ;; terminal string for start highl
-        (field Bytes        sg_stop)            ;; terminal string for stop highl
-        (field int          sg_term_attr)       ;; screen attr for term mode
-;; for color terminals
-        (field int          sg_cterm)           ;; "cterm=" highlighting attr
-        (field boolean      sg_cterm_bold)      ;; bold attr was set for light color
-        (field int          sg_cterm_fg)        ;; terminal fg color number + 1
-        (field int          sg_cterm_bg)        ;; terminal bg color number + 1
-        (field int          sg_cterm_attr)      ;; screen attr for color term mode
-    ])
-
-(defn- #_void COPY-hl-group [#_hl_group_C sg1, #_hl_group_C sg0]
-    (§
-        ((ß sg1.sg_name =) (:sg_name sg0))
-        ((ß sg1.sg_name_u =) (:sg_name_u sg0))
-        ((ß sg1.sg_term =) (:sg_term sg0))
-        ((ß sg1.sg_start =) (:sg_start sg0))
-        ((ß sg1.sg_stop =) (:sg_stop sg0))
-        ((ß sg1.sg_term_attr =) (:sg_term_attr sg0))
-        ((ß sg1.sg_cterm =) (:sg_cterm sg0))
-        ((ß sg1.sg_cterm_bold =) (:sg_cterm_bold sg0))
-        ((ß sg1.sg_cterm_fg =) (:sg_cterm_fg sg0))
-        ((ß sg1.sg_cterm_bg =) (:sg_cterm_bg sg0))
-        ((ß sg1.sg_cterm_attr =) (:sg_cterm_attr sg0))
-        nil
-    ))
-
-;; highlight groups for 'highlight' option
-(atom! hl_group_C*  highlight_ga    0)
-
-(final int MAX_HL_ID       20000)       ;; maximum value for a highlight ID.
-
-;; An attribute number is the index in attr_table plus ATTR_OFF.
-
-(final int ATTR_OFF (inc HL_ALL))
-
-;; The attributes of the syntax item that has been recognized.
-
-(atom! int current_sub_char)
-
-;; Return conceal substitution character
-
-(defn- #_int syn-get-sub-char []
-    @current_sub_char)
-
 ;; Reset the cterm colors to what they were before Vim was started,
 ;; if possible.  Otherwise reset them to zero.
 
@@ -47648,518 +47493,16 @@
     (reset! cterm_normal_bg_color 0)
     nil)
 
-;; Table with the specifications for an attribute number.
-;; Note that this table is used by ALL buffers.
-;; This is required because the GUI can redraw at any time for any buffer.
-
-(atom! attrentry_C* term_attr_table     0)
-(atom! attrentry_C* cterm_attr_table    0)
-
-(atom! boolean _4_recursive)
-
-;; Return the attr number for a set of colors and font.
-;; Add a new entry to the term_attr_table, cterm_attr_table or gui_attr_table, if the combination is new.
-;; Return 0 for error (no more room).
-
-(defn- #_int get-attr-entry [#_attrentry_C* table, #_attrentry_C aep]
-    (§
-        ;; Try to find an entry with the same specifications.
-
-        (dotimes [#_int i (:ga_len table)]
-            ((ß attrentry_C taep =) (... (:ga_data table) i))
-            (if (and (== (:ae_attr aep) (:ae_attr taep)) (or (and (== table @term_attr_table) (== (nil? (:ae_esc_start aep)) (nil? (:ae_esc_start taep))) (or (nil? (:ae_esc_start aep)) (== (STRCMP (:ae_esc_start aep), (:ae_esc_start taep)) 0)) (== (nil? (:ae_esc_stop aep)) (nil? (:ae_esc_stop taep))) (or (nil? (:ae_esc_stop aep)) (== (STRCMP (:ae_esc_stop aep), (:ae_esc_stop taep)) 0))) (and (== table @cterm_attr_table) (== (:ae_fg_color aep) (:ae_fg_color taep)) (== (:ae_bg_color aep) (:ae_bg_color taep)))))
-                ((ß RETURN) (+ i ATTR_OFF))
-            )
-        )
-
-        ((ß final int MAX_TYPENR =) 65535)
-
-        (when (< MAX_TYPENR (+ (:ga_len table) ATTR_OFF))
-            ;; Running out of attribute entries!
-            ;; Remove all attributes, and compute new ones for all groups.
-            ;; When called recursively, we are really out of numbers.
-
-            (when @_4_recursive
-                (emsg (u8 "E424: Too many different highlighting attributes in use"))
-                ((ß RETURN) 0)
-            )
-            (reset! _4_recursive true)
-
-            (clear-hl-tables)
-
-            (reset! must_redraw CLEAR)
-
-            (dotimes [#_int i (:ga_len @highlight_ga)]
-                (set-hl-attr i)
-            )
-
-            (reset! _4_recursive false)
-        )
-
-        ;; This is a new combination of colors and font, add an entry.
-
-        (.ga_grow table 1)
-
-        ((ß attrentry_C taep =) (ß table.ga_data[table.ga_len++] =) (NEW_attrentry_C))
-
-        ((ß taep =) (assoc taep :ae_attr (:ae_attr aep)))
-        (cond (== table @term_attr_table)
-        (do
-            ((ß taep =) (assoc taep :ae_esc_start (if (nil? (:ae_esc_start aep)) nil (STRDUP (:ae_esc_start aep)))))
-            ((ß taep =) (assoc taep :ae_esc_stop (if (nil? (:ae_esc_stop aep)) nil (STRDUP (:ae_esc_stop aep)))))
-        )
-        (== table @cterm_attr_table)
-        (do
-            ((ß taep =) (assoc taep :ae_fg_color (:ae_fg_color aep)))
-            ((ß taep =) (assoc taep :ae_bg_color (:ae_bg_color aep)))
-        ))
-
-        (+ (dec (:ga_len table)) ATTR_OFF)
-    ))
-
-;; Clear all highlight tables.
-
-(defn- #_void clear-hl-tables []
-    (§
-        (dotimes [#_int i (:ga_len @term_attr_table)]
-            ((ß attrentry_C taep =) (... (:ga_data @term_attr_table) i))
-            ((ß taep =) (assoc taep :ae_esc_start nil))
-            ((ß taep =) (assoc taep :ae_esc_stop nil))
-        )
-        (.ga_clear @term_attr_table)
-        (.ga_clear @cterm_attr_table)
-        nil
-    ))
-
-;; Combine special attributes (e.g., for spelling)
-;; with other attributes (e.g., for syntax highlighting).
+;; Combine attributes.
 ;; "prim_attr" overrules "char_attr".
-;; This creates a new group when required.
-;; Since we expect there to be few spelling mistakes we don't cache the result.
-;; Return the resulting attributes.
 
 (defn- #_int hl-combine-attr [#_int char_attr, #_int prim_attr]
-    (§
-        ((ß attrentry_C char_aep =) nil)
-        (ß attrentry_C spell_aep)
-
-        (if (zero? char_attr)
-            ((ß RETURN) prim_attr)
-        )
-        (if (and (<= char_attr HL_ALL) (<= prim_attr HL_ALL))
-            ((ß RETURN) (| char_attr prim_attr))
-        )
-
-        ((ß attrentry_C new_en =) (NEW_attrentry_C))
-
-        (when (< 1 @t_colors)
-            ((ß char_aep =) (if (< HL_ALL char_attr) (syn-cterm-attr2entry char_attr) char_aep))
-            (cond (some? char_aep)
-            (do
-                (COPY-attrentry new_en, char_aep)
-            )
-            :else
-            (do
-                (ZER0-attrentry new_en)
-                (if (<= char_attr HL_ALL)
-                    ((ß new_en.ae_attr =) char_attr)
-                )
-            ))
-
-            (cond (<= prim_attr HL_ALL)
-            (do
-                ((ß new_en.ae_attr =) (| (:ae_attr new_en) prim_attr))
-            )
-            :else
-            (do
-                ((ß spell_aep =) (syn-cterm-attr2entry prim_attr))
-                (when (some? spell_aep)
-                    ((ß new_en.ae_attr =) (| (:ae_attr new_en) (:ae_attr spell_aep)))
-                    (if (< 0 (:ae_fg_color spell_aep))
-                        ((ß new_en.ae_fg_color =) (:ae_fg_color spell_aep))
-                    )
-                    (if (< 0 (:ae_bg_color spell_aep))
-                        ((ß new_en.ae_bg_color =) (:ae_bg_color spell_aep))
-                    )
-                )
-            ))
-
-            ((ß RETURN) (get-attr-entry @cterm_attr_table, new_en))
-        )
-
-        ((ß char_aep =) (if (< HL_ALL char_attr) (syn-term-attr2entry char_attr) char_aep))
-        (cond (some? char_aep)
-        (do
-            (COPY-attrentry new_en, char_aep)
-        )
-        :else
-        (do
-            (ZER0-attrentry new_en)
-            (if (<= char_attr HL_ALL)
-                ((ß new_en.ae_attr =) char_attr)
-            )
-        ))
-
-        (cond (<= prim_attr HL_ALL)
-        (do
-            ((ß new_en.ae_attr =) (| (:ae_attr new_en) prim_attr))
-        )
-        :else
-        (do
-            ((ß spell_aep =) (syn-term-attr2entry prim_attr))
-            (when (some? spell_aep)
-                ((ß new_en.ae_attr =) (| (:ae_attr new_en) (:ae_attr spell_aep)))
-                (when (some? (:ae_esc_start spell_aep))
-                    ((ß new_en.ae_esc_start =) (:ae_esc_start spell_aep))
-                    ((ß new_en.ae_esc_stop =) (:ae_esc_stop spell_aep))
-                )
-            )
-        ))
-
-        (get-attr-entry @term_attr_table, new_en)
-    ))
-
-;; Get the highlight attributes (HL_BOLD etc.) from an attribute nr.
-;; Only to be used when "attr" > HL_ALL.
-
-(defn- #_int syn-attr2attr [#_int attr]
-    (let [#_attrentry_C aep (if (< 1 @t_colors) (syn-cterm-attr2entry attr) (syn-term-attr2entry attr))]
-        (if (nil? aep) 0 (:ae_attr aep))
-    ))
-
-(defn- #_attrentry_C syn-term-attr2entry [#_int attr]
-    (let [attr (- attr ATTR_OFF)]
-        (if (< attr (:ga_len @term_attr_table)) (... (:ga_data @term_attr_table) attr) nil)
-    ))
-
-(defn- #_attrentry_C syn-cterm-attr2entry [#_int attr]
-    (let [attr (- attr ATTR_OFF)]
-        (if (< attr (:ga_len @cterm_attr_table)) (... (:ga_data @cterm_attr_table) attr) nil)
-    ))
-
-;; Set the attribute numbers for a highlight group.
-;; Called after one of the attributes has changed.
-
-(defn- #_void set-hl-attr [#_int idx]
-    ;; idx: index in array
-    (§
-        ((ß hl_group_C[] hlt =) (:ga_data @highlight_ga))
-        ((ß hl_group_C sgp =) (... hlt idx))
-
-        ;; The "Normal" group doesn't need an attribute number.
-        (if (and (some? (:sg_name_u sgp)) (zero? (STRCMP (:sg_name_u sgp), (u8 "NORMAL"))))
-            ((ß RETURN) nil)
-        )
-
-        ;; For the term mode: If there are other than "normal" highlighting
-        ;; attributes, need to allocate an attr number.
-
-        (cond (and (nil? (:sg_start sgp)) (nil? (:sg_stop sgp)))
-        (do
-            ((ß sgp =) (assoc sgp :sg_term_attr (:sg_term sgp)))
-        )
-        :else
-        (do
-            ((ß attrentry_C at_en =) (NEW_attrentry_C))
-            ((ß at_en.ae_attr =) (:sg_term sgp))
-            ((ß at_en.ae_esc_start =) (:sg_start sgp))
-            ((ß at_en.ae_esc_stop =) (:sg_stop sgp))
-            ((ß sgp =) (assoc sgp :sg_term_attr (get-attr-entry @term_attr_table, at_en)))
-        ))
-
-        ;; For the color term mode: If there are other than "normal"
-        ;; highlighting attributes, need to allocate an attr number.
-
-        (cond (and (zero? (:sg_cterm_fg sgp)) (zero? (:sg_cterm_bg sgp)))
-        (do
-            ((ß sgp =) (assoc sgp :sg_cterm_attr (:sg_cterm sgp)))
-        )
-        :else
-        (do
-            ((ß attrentry_C at_en =) (NEW_attrentry_C))
-            ((ß at_en.ae_attr =) (:sg_cterm sgp))
-            ((ß at_en.ae_fg_color =) (:sg_cterm_fg sgp))
-            ((ß at_en.ae_bg_color =) (:sg_cterm_bg sgp))
-            ((ß sgp =) (assoc sgp :sg_cterm_attr (get-attr-entry @cterm_attr_table, at_en)))
-        ))
-        nil
-    ))
-
-;; Lookup a highlight group name and return it's ID.
-;; If it is not found, 0 is returned.
-
-(defn- #_int syn-name2id [#_Bytes name]
-    (§
-        ((ß Bytes name_u =) (vim-strsave-up name))
-
-        ((ß hl_group_C[] hlt =) (:ga_data @highlight_ga))
-
-        ((ß int i =) (loop-when [i (dec (:ga_len @highlight_ga))] (<= 0 i) => i
-            (if (and (some? (:sg_name_u (... hlt i))) (zero? (STRCMP name_u, (:sg_name_u (... hlt i)))))
-                (ß BREAK)
-            )
-            (recur (dec i))
-        ))
-        (inc i)
-    ))
-
-;; Find highlight group name in the table and return it's ID.
-;; The argument is a pointer to the name and the length of the name.
-;; If it doesn't exist yet, a new entry is created.
-;; Return 0 for failure.
-
-(defn- #_int syn-check-group [#_Bytes pp, #_int len]
-    (let [#_Bytes name (STRNDUP pp, len) #_int id (syn-name2id name)]
-        (if (zero? id) (syn-add-group name) id)
-    ))
-
-;; Add new highlight group and return it's ID.
-;; "name" must be an allocated string, it will be consumed.
-;; Return 0 for failure.
-
-(defn- #_int syn-add-group [#_Bytes name]
-    (§
-        ;; Check that the name is ASCII letters, digits and underscore.
-        (loop-when-recur [#_Bytes p name] (non-eos? p) [(.plus p 1)]
-            (cond (not (vim-isprintc (.at p 0)))
-            (do
-                (emsg (u8 "E669: Unprintable character in group name"))
-                ((ß RETURN) 0)
-            )
-            (and (not (asc-isalnum (.at p 0))) (not-at? p (byte \_)))
-            (do
-                ;; This is an error, but since there previously was no check only give a warning.
-                (msg (u8 "W18: Invalid character in group name"))
-                (ß BREAK)
-            ))
-        )
-
-        (when (<= MAX_HL_ID (:ga_len @highlight_ga))
-            (emsg (u8 "E849: Too many highlight and syntax groups"))
-            ((ß RETURN) 0)
-        )
-
-        ;; Make room for at least one other syntax_highlight entry.
-
-        ((ß hl_group_C[] hlt =) (.ga_grow @highlight_ga 1))
-
-        ((ß hlt[@highlight_ga.ga_len] =) (NEW_hl_group_C))
-        ((ß hlt[@highlight_ga.ga_len].sg_name =) name)
-        ((ß hlt[@highlight_ga.ga_len].sg_name_u =) (vim-strsave-up name))
-
-        (swap! highlight_ga update :ga_len inc)
-
-        (:ga_len @highlight_ga) ;; ID is index plus one
-    ))
-
-;; Translate a group ID to highlight attributes.
-
-(defn- #_int syn-id2attr [#_int hl_id]
-    (let [hl_id (syn-get-final-id hl_id) #_hl_group_C sgp (... (:ga_data @highlight_ga) (dec hl_id))]       ;; index is ID minus one
-        (if (< 1 @t_colors) (:sg_cterm_attr sgp) (:sg_term_attr sgp))
-    ))
-
-;; Translate a group ID to the final group ID (following links).
-
-(defn- #_int syn-get-final-id [#_int hl_id]
-    (if (<= 1 hl_id (:ga_len @highlight_ga))
-        hl_id
-        0                   ;; Can be called from eval!!
-    ))
-
-;; The HL_FLAGS must be in the same order as the HLF_ enums!
-;; When changing this also adjust the default for 'highlight'.
-
-(final int* #_"[/*HLF_COUNT*/]" hl_flags
-    [
-        \8, \@, \e, \i, \l, \m, \M, \n, \N, \r, \s, \S, \c, \t, \v, \w, \-, \!, \., \o
-    ])
-
-;; Translate the 'highlight' option into attributes in highlight_attr[] and
-;; set up the user highlights User1..9.  If FEAT_STL_OPT is in use, a set of
-;; corresponding highlights to use on top of HLF_SNC is computed.
-;; Called only when the 'highlight' option has been changed and upon first
-;; screen redraw after any :highlight command.
-;; Return false when an invalid flag is found in 'highlight'; true otherwise.
-
-(defn- #_boolean highlight-changed []
-    (§
-        ((ß int id_SNC =) -1)
-        ((ß int id_S =) -1)
-
-        (reset! need_highlight_changed false)
-
-        ;; Clear all attributes.
-
-        (dotimes [#_int hlf HLF_COUNT]
-            ((ß @highlight_attr[hlf] =) 0)
-        )
-
-        ;; First set all attributes to their default value.
-        ;; Then use the attributes from the 'highlight' option.
-
-        (dotimes [#_int i 2]
-            ((ß Bytes p =) (if (non-zero? i) @p_hl (get-highlight-default)))
-            (if (nil? p)      ;; just in case
-                (ß CONTINUE)
-            )
-
-            (loop-when [] (non-eos? p)
-                ((ß int hlf =) (loop-when-recur [hlf 0] (< hlf HLF_COUNT) [(inc hlf)] => hlf
-                    (if (== (... hl_flags hlf) (.at p 0))
-                        (ß BREAK)
-                    )
-                ))
-                ((ß p =) (.plus p 1))
-                (if (or (== hlf HLF_COUNT) (eos? p))
-                    ((ß RETURN) false)
-                )
-
-                ;; Allow several hl_flags to be combined, like "bu" for bold-underlined.
-
-                ((ß int attr =) 0)
-                ((ß p =) (loop-when-recur p (and (non-eos? p) (not-at? p (byte \,))) (.plus p 1) => p            ;; parse upto comma
-                    (if (vim-iswhite (.at p 0))           ;; ignore white space
-                        (ß CONTINUE)
-                    )
-
-                    (if (< HL_ALL attr)  ;; Combination with ':' is not allowed.
-                        ((ß RETURN) false)
-                    )
-
-                    (condp ==? (.at p 0)
-                        (byte \b)
-                        (do
-                            ((ß attr =) (| attr HL_BOLD))
-                            (ß BREAK)
-                        )
-                        (byte \i)
-                        (do
-                            ((ß attr =) (| attr HL_ITALIC))
-                            (ß BREAK)
-                        )
-                       [(byte \-) (byte \n)]                      ;; no highlighting
-                        (do
-                            (ß BREAK)
-                        )
-                        (byte \r)
-                        (do
-                            ((ß attr =) (| attr HL_INVERSE))
-                            (ß BREAK)
-                        )
-                        (byte \s)
-                        (do
-                            ((ß attr =) (| attr HL_STANDOUT))
-                            (ß BREAK)
-                        )
-                        (byte \u)
-                        (do
-                            ((ß attr =) (| attr HL_UNDERLINE))
-                            (ß BREAK)
-                        )
-                        (byte \c)
-                        (do
-                            ((ß attr =) (| attr HL_UNDERCURL))
-                            (ß BREAK)
-                        )
-                        (byte \:)
-                        (do
-                            ((ß p =) (.plus p 1))                        ;; highlight group name
-                            (if (or (non-zero? attr) (eos? p))      ;; no combinations
-                                ((ß RETURN) false)
-                            )
-                            ((ß Bytes end =) (vim-strchr p, (byte \,)))
-                            ((ß end =) (if (nil? end) (.plus p (STRLEN p)) end))
-                            ((ß int id =) (syn-check-group p, (BDIFF end, p)))
-                            (if (zero? id)
-                                ((ß RETURN) false)
-                            )
-                            ((ß attr =) (syn-id2attr id))
-                            ((ß p =) (.minus end 1))
-                            (cond (== hlf HLF_SNC)
-                            (do
-                                ((ß id_SNC =) (syn-get-final-id id))
-                            )
-                            (== hlf HLF_S)
-                            (do
-                                ((ß id_S =) (syn-get-final-id id))
-                            ))
-                            (ß BREAK)
-                        )
-                        (ß DEFAULT)
-                        (do
-                            ((ß RETURN) false)
-                        )
-                    )
-                ))
-                ((ß @highlight_attr[hlf] =) attr)
-
-                ((ß p =) (skip-to-option-part p))             ;; skip comma and spaces
-                (recur)
-            )
-        )
-
-        ;; Setup the user highlights
-        ;;
-        ;; Temporarily utilize 10 more hl entries.  Have to be in there
-        ;; simultaneously in case of table overflows in get-attr-entry()
-
-        ((ß hl_group_C[] hlt =) (.ga_grow @highlight_ga 10))
-
-        ((ß int n =) (:ga_len @highlight_ga))
-        (dotimes [#_int i 10]
-            ((ß hlt[n + i] =) (NEW_hl_group_C))
-        )
-
-        ;; Make sure id_S is always valid to simplify code below.
-        (when (zero? id_S)
-            ((ß hlt[n + 9].sg_term =) (... @highlight_attr HLF_S))
-            ((ß id_S =) (+ n 10))
-        )
-
-        (dotimes [#_int i 9]
-            ((ß Bytes userhl =) (Bytes. 10))
-            (.sprintf libC userhl, (u8 "User%d"), (inc i))
-
-            ((ß int id =) (syn-name2id userhl))
-            (when (non-zero? id)
-                (cond (zero? id_SNC)
-                (do
-                    ((ß hlt[n + i].sg_term =) (... @highlight_attr HLF_SNC))
-                    ((ß hlt[n + i].sg_cterm =) (... @highlight_attr HLF_SNC))
-                )
-                :else
-                (do
-                    (COPY-hl-group (... hlt (+ n i)), (... hlt (dec id_SNC)))
-                ))
-
-                ;; Apply difference between UserX and HLF_S to HLF_SNC.
-                ((ß hlt[n + i].sg_term =) (bit-xor (:sg_term (... hlt (+ n i))) (bit-xor (:sg_term (... hlt (dec id))) (:sg_term (... hlt (dec id_S))))))
-                (if (BNE (:sg_start (... hlt (dec id))), (:sg_start (... hlt (dec id_S))))
-                    ((ß hlt[n + i].sg_start =) (:sg_start (... hlt (dec id))))
-                )
-                (if (BNE (:sg_stop (... hlt (dec id))), (:sg_stop (... hlt (dec id_S))))
-                    ((ß hlt[n + i].sg_stop =) (:sg_stop (... hlt (dec id))))
-                )
-                ((ß hlt[n + i].sg_cterm =) (bit-xor (:sg_cterm (... hlt (+ n i))) (bit-xor (:sg_cterm (... hlt (dec id))) (:sg_cterm (... hlt (dec id_S))))))
-                (if (!= (:sg_cterm_fg (... hlt (dec id))) (:sg_cterm_fg (... hlt (dec id_S))))
-                    ((ß hlt[n + i].sg_cterm_fg =) (:sg_cterm_fg (... hlt (dec id))))
-                )
-                (if (!= (:sg_cterm_bg (... hlt (dec id))) (:sg_cterm_bg (... hlt (dec id_S))))
-                    ((ß hlt[n + i].sg_cterm_bg =) (:sg_cterm_bg (... hlt (dec id))))
-                )
-
-                (swap! highlight_ga assoc :ga_len (+ n i 1))
-                (set-hl-attr (+ n i))         ;; at long last we can apply
-            )
-        )
-
-        (swap! highlight_ga assoc :ga_len n)
-        (dotimes [#_int i 10]
-            ((ß hlt[n + i] =) nil)
-        )
-
-        true
+    (cond (zero? char_attr)
+        prim_attr
+    (and (<= char_attr HL_ALL) (<= prim_attr HL_ALL))
+        (| char_attr prim_attr)
+    :else
+        0
     ))
 
 ;;; ============================================================================================== VimY
