@@ -40398,35 +40398,23 @@
 ;; Uses binary search on "table".
 
 (defn- #_int utf-convert [#_int c, #_int* table]
-    (§
-        ((ß int start =) 0)
-        ((ß int entries =) (/ (:length table) 4))
-
-        (loop-when [#_int end entries] (< start end)
-            ;; need to search further
-            ((ß int mid =) (/ (+ start end) 2))
-            (if (< (... table (inc (* 4 mid))) c)
-                ((ß start =) (inc mid))
-                ((ß end =) mid)
-            )
-            (recur end)
-        )
-
-        (when (< start entries)
-            ((ß int i =) (* 4 start))
-            (if (and (<= (... table i) c) (<= c (... table (inc i))) (zero? (% (- c (... table i)) (... table (+ i 2)))))
-                ((ß RETURN) (+ c (... table (+ i 3))))
-            )
-        )
-
-        c
+    (let [start 0 entries (/ (:length table) 4)
+          start (loop-when [start start end entries] (< start end) => start
+                    (let [mid (/ (+ start end) 2)] (if (< (... table (inc (* 4 mid))) c) (recur (inc mid) end) (recur start mid)))
+                )]
+        (if (< start entries)
+            (let [i (* 4 start)]
+                (if (and (<= (... table i) c) (<= c (... table (inc i))) (zero? (% (- c (... table i)) (... table (+ i 2)))))
+                    (+ c (... table (+ i 3)))
+                    c
+                ))
+            c)
     ))
 
 ;; The following tables are built by tools/unicode.vim.
 ;; They must be in numeric order, because we use binary search.
-;; An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
-;; range from 0x41 to 0x5a inclusive, stepping by 1, are changed to
-;; folded/upper/lower by adding 32.
+;; An entry such as {0x41,0x5a,1,32} means that Unicode characters in the range from 0x41 to 0x5a inclusive,
+;; stepping by 1, are changed to folded/upper/lower by adding 32.
 
 (final int* foldCase
     [
@@ -42467,37 +42455,25 @@
 ;; Answer 'y' or 'n'.
 
 (defn- #_int ask-yesno [#_Bytes q, #_boolean direct]
-    (§
-        ((ß int c =) (byte \space))
-
-        ((ß int save_State =) @State)
-
-        (if @exiting                ;; put terminal in raw mode for this question
+    (let [_ @State]
+        (when @exiting                          ;; put terminal in raw mode for this question
             (settmode TMODE_RAW))
-
         (swap! no_wait_return inc)
-        (reset! State CONFIRM)            ;; mouse behaves like with :confirm
+        (reset! State CONFIRM)                  ;; mouse behaves like with :confirm
         (swap! no_mapping inc)
-        (swap! allow_keys inc)               ;; no mapping here, but recognize keys
-
-        (loop-when [] (and (!= c (byte \y)) (!= c (byte \n)))
-            ;; same highlighting as for wait-return
-            (smsg-attr (hl-attr HLF_R), (u8 "%s (y/n)?"), q)
-
-            ((ß c =) (if direct (get-keystroke) (plain-vgetc)))
-            ((ß c =) (if (any == c Ctrl_C ESC) (byte \n) c))
-
-            (msg-putchar c)         ;; show what you typed
-            (out-flush)
-            (recur)
-        )
-
-        (swap! no_wait_return dec)
-        (reset! State save_State)
-        (swap! no_mapping dec)
-        (swap! allow_keys dec)
-
-        c
+        (swap! allow_keys inc)                  ;; no mapping here, but recognize keys
+        (let [#_int c (loop-when [c (byte \space)] (and (!= c (byte \y)) (!= c (byte \n))) => c
+                        (smsg-attr (hl-attr HLF_R), (u8 "%s (y/n)?"), q) ;; same highlighting as for wait-return
+                        (let [c (if direct (get-keystroke) (plain-vgetc)) c (if (any == c Ctrl_C ESC) (byte \n) c)]
+                            (msg-putchar c)     ;; show what you typed
+                            (out-flush)
+                            (recur c))
+                    )]
+            (swap! no_wait_return dec)
+            (reset! State _)
+            (swap! no_mapping dec)
+            (swap! allow_keys dec)
+        c)
     ))
 
 ;; Get a key stroke directly from the user.
@@ -42604,40 +42580,23 @@
     ))
 
 (defn- #_void msgmore [#_long n]
-    (§
-        (if (not (messaging))        ;; 'lazyredraw' set, don't do messages now
-            ((ß RETURN) nil)
-        )
-
-        ;; We don't want to overwrite another important message, but do overwrite
-        ;; a previous "more lines" or "fewer lines" message, so that "5dd" and
-        ;; then "put" reports the last action.
-
-        (if (and (some? @keep_msg) (not @keep_msg_more))
-            ((ß RETURN) nil)
-        )
-
-        ((ß long pn =) (if (< 0 n) n (- n)))
-
-        (when (< @p_report pn)
-            ((ß Bytes msg_buf =) (Bytes. MSG_BUF_LEN))
-            (cond (== pn 1)
-            (do
-                (vim-strncpy msg_buf, (if (< 0 n) (u8 "1 more line") (u8 "1 line less")), (dec MSG_BUF_LEN))
-            )
-            :else
-            (do
-;%%             (vim_snprintf msg_buf, MSG_BUF_LEN, (if (< 0 n) (u8 "%ld more lines") (u8 "%ld fewer lines")), pn)
-            ))
-            (if @got_int
-                (vim-strcat msg_buf, (u8 " (Interrupted)"), MSG_BUF_LEN))
-            (when (msg msg_buf)
-                (set-keep-msg msg_buf, 0)
-                (reset! keep_msg_more true)
-            )
-        )
-        nil
-    ))
+    ;; We don't want to overwrite another important message,
+    ;; but do overwrite a previous "more lines" or "fewer lines" message,
+    ;; so that "5dd" and then "put" reports the last action.
+    (when (and (messaging) (or (nil? @keep_msg) @keep_msg_more))
+        (let-when [#_long pn (if (< 0 n) n (- n))] (< @p_report pn)
+            (let [#_Bytes buf (Bytes. MSG_BUF_LEN)]
+                (if (== pn 1)
+                    (vim-strncpy buf, (if (< 0 n) (u8 "1 more line") (u8 "1 line less")), (dec MSG_BUF_LEN))
+;%%                 (vim_snprintf buf, MSG_BUF_LEN, (if (< 0 n) (u8 "%ld more lines") (u8 "%ld fewer lines")), pn)
+                )
+                (when @got_int
+                    (vim-strcat buf, (u8 " (Interrupted)"), MSG_BUF_LEN))
+                (when (msg buf)
+                    (set-keep-msg buf, 0)
+                    (reset! keep_msg_more true))
+            )))
+    nil)
 
 ;; flush map and typeahead buffers and give a warning for an error
 
@@ -43166,55 +43125,32 @@
 (defn- #_Bytes vim-strsave-escaped [#_Bytes string, #_Bytes esc_chars]
     (vim-strsave-escaped-ext string, esc_chars, (byte \\)))
 
-;; Same as vim-strsave-escaped().
-;; Escape the characters with "cc".
-
 (defn- #_Bytes vim-strsave-escaped-ext [#_Bytes string, #_Bytes esc_chars, #_int cc]
-    (§
-        ;; First count the number of backslashes required.
-        ;; Then allocate the memory and insert them.
-
-        ((ß int length =) 1)                         ;; count the trailing NUL
-        (loop-when-recur [#_Bytes p string] (non-eos? p) [(.plus p 1)]
-            ((ß int l =) (us-ptr2len-cc p))
-            (when (< 1 l)
-                ((ß length =) (+ length l))                    ;; count a multibyte char
-                ((ß p =) (.plus p (dec l)))
-                (ß CONTINUE)
-            )
-            ((ß length =) (if (some? (vim-strchr esc_chars, (.at p 0))) (inc length) length))                       ;; count a backslash
-            ((ß length =) (inc length))                           ;; count an ordinary char
-        )
-
-        ((ß Bytes escaped_string =) (Bytes. length))
-
-        ((ß Bytes p2 =) escaped_string)
-        (loop-when-recur [#_Bytes p string] (non-eos? p) [(.plus p 1)]
-            ((ß int l =) (us-ptr2len-cc p))
-            (when (< 1 l)
-                (BCOPY p2, p, l)
-                ((ß p2 =) (.plus p2 l))
-                ((ß p =) (.plus p (dec l)))                     ;; skip multibyte char
-                (ß CONTINUE)
-            )
-            (if (some? (vim-strchr esc_chars, (.at p 0)))
-                (.be ((ß p2 =) (.plus p2 1)) -1, cc)
-            )
-            (.be ((ß p2 =) (.plus p2 1)) -1, (.at p 0))
-        )
-        (eos! p2)
-
-        escaped_string
-    ))
+    ;; First count the number of backslashes required, then allocate the memory and insert them.
+    (let [#_int n (loop-when [#_Bytes s string n 1] (non-eos? s) => n                                       ;; count the trailing NUL
+                    (let [#_int l (us-ptr2len-cc s)
+                          [s n] (if (< 1 l)
+                                    [(.plus s l) (+ n l)]                                                   ;; count a multibyte char
+                                    [(.plus s 1) (+ n (if (some? (vim-strchr esc_chars, (.at s 0))) 2 1))]  ;; count a 'cc' + an ordinary char
+                                )]
+                        (recur s n)
+                    ))
+          #_Bytes q (Bytes. n)]
+        (loop-when [#_Bytes s string #_Bytes p q] (non-eos? s) => (eos! p)
+            (let [#_int l (us-ptr2len-cc s)
+                  [s p] (if (< 1 l)
+                            (do (BCOPY p, s, l) [(.plus s l) (.plus p l)])
+                            (let [p (if (some? (vim-strchr esc_chars, (.at s 0))) (do (.be p 0, cc) (.plus p 1)) p)] (.be p 0, (.at s 0)) [(.plus s 1) (.plus p 1)])
+                        )]
+                (recur s p)
+            ))
+    q))
 
 ;; ASCII lower-to-upper case translation, language independent.
 
 (defn- #_Bytes vim-strup [#_Bytes s]
     (when (some? s)
-        (loop-when-recur [#_int i 0] (non-eos? s i) [(inc i)]
-            (let [#_int c (.at s i)]
-                (.be s i, (if (<= (byte \a) c (byte \z)) (- c 0x20) c)))
-        ))
+        (loop-when-recur [i 0] (non-eos? s i) [(inc i)] (let [c (.at s i)] (.be s i, (if (<= (byte \a) c (byte \z)) (- c 0x20) c)))))
     s)
 
 ;; Like STRDUP(), but make all characters uppercase.
@@ -43226,18 +43162,16 @@
 ;; copy a space a number of times
 
 (defn- #_void copy-spaces [#_Bytes s, #_int n]
-    (dotimes [#_int i n]
-        (.be s i, (byte \space))
-    )
+    (dotimes [i n]
+        (.be s i, (byte \space)))
     nil)
 
 ;; Copy a character a number of times.
 ;; Does not work for multi-byte characters!
 
 (defn- #_void copy-chars [#_Bytes s, #_int n, #_int c]
-    (dotimes [#_int i n]
-        (.be s i, c)
-    )
+    (dotimes [i n]
+        (.be s i, c))
     nil)
 
 ;; Like strncpy(), but always terminate the result with one NUL.
@@ -43256,9 +43190,8 @@
         (if (< size (+ dlen slen 1))
             (do (BCOPY dst, dlen, src, 0, (- size dlen 1)) (eos! dst (dec size)))
             (STRCPY (.plus dst dlen), src)
-        )
-        nil
-    ))
+        ))
+    nil)
 
 ;; Isolate one part of a string option where parts are separated with "sep_chars".
 ;; The part is copied into "buf[maxlen]".
@@ -43266,32 +43199,20 @@
 ;; The length is returned.
 
 (defn- #_int copy-option-part [#_Bytes' a'option, #_Bytes buf, #_int maxlen, #_Bytes sep_chars]
-    (§
-        ((ß int len =) 0)
-        ((ß Bytes p =) @a'option)
-
-        ;; skip '.' at start of option part, for 'suffixes'
-        (if (at? p (byte \.))
-            (.be buf (ß len++), (.at ((ß p =) (.plus p 1)) -1))
-        )
-        (loop-when [] (and (non-eos? p) (nil? (vim-strchr sep_chars, (.at p 0))))
-            ;; Skip backslash before a separator character and space.
-
-            ((ß p =) (if (and (at? p (byte \\)) (some? (vim-strchr sep_chars, (.at p 1)))) (.plus p 1) p))
-            (if (< len (dec maxlen))
-                (.be buf (ß len++), (.at p 0))
-            )
-            ((ß p =) (.plus p 1))
-            (recur)
-        )
-        (eos! buf len)
-
-        ((ß p =) (if (and (non-eos? p) (not-at? p (byte \,))) (.plus p 1) p)) ;; skip non-standard separator
-        ((ß p =) (skip-to-option-part p)) ;; "p" points to next file name
-
-        (reset! a'option p)
-        len
-    ))
+    (let [s @a'option n 0
+          ;; skip '.' at start of option part, for 'suffixes'
+          [s n] (if (at? s (byte \.)) (do (.be buf n, (.at s 0)) [(.plus s 1) (inc n)]) [s n])
+          [s n] (loop-when [s s n n] (and (non-eos? s) (nil? (vim-strchr sep_chars, (.at s 0)))) => [s n]
+                    ;; skip backslash before a separator character and space
+                    (let [s (if (and (at? s (byte \\)) (some? (vim-strchr sep_chars, (.at s 1)))) (.plus s 1) s)
+                          n (if (< n (dec maxlen)) (do (.be buf n, (.at s 0)) (inc n)) n)]
+                        (recur (.plus s 1) n)
+                    ))
+          _ (eos! buf n)
+          s (if (and (non-eos? s) (not-at? s (byte \,))) (.plus s 1) s) ;; skip non-standard separator
+          s (skip-to-option-part s)]
+        (reset! a'option s)
+    n))
 
 ;; Version of strchr() and strrchr() that handle unsigned char strings
 ;; with characters from 128 to 255 correctly.  It also doesn't return
@@ -43660,14 +43581,8 @@
 ;; Return the index when found, -1 when not found.
 
 (defn- #_int find-special-key-in-table [#_int c]
-    (§
-        (dotimes [#_int i (:length key_names_table)]
-            (if (== (:key (... key_names_table i)) c)
-                ((ß RETURN) i)
-            )
-        )
-
-        -1
+    (loop-when [i 0] (< i (:length key_names_table)) => -1
+        (recur-if (!= (:key (... key_names_table i)) c) [(inc i)] => i)
     ))
 
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
@@ -43687,8 +43602,7 @@
 ;; This is not in message.c to avoid a warning for prototypes.
 
 (defn- #_boolean emsg3 [#_Bytes s, #_Bytes a1, #_Bytes a2]
-    (if (emsg-not-now)
-        true            ;; no error messages at the moment
+    (or (emsg-not-now) ;; no error messages at the moment
         (do
 ;%%         (vim_snprintf @ioBuff, IOSIZE, s, a1, a2)
             (emsg @ioBuff)
@@ -43699,8 +43613,7 @@
 ;; This is not in message.c to avoid a warning for prototypes.
 
 (defn- #_boolean emsgn [#_Bytes s, #_long n]
-    (if (emsg-not-now)
-        true            ;; no error messages at the moment
+    (or (emsg-not-now) ;; no error messages at the moment
         (do
 ;%%         (vim_snprintf @ioBuff, IOSIZE, s, n)
             (emsg @ioBuff)
@@ -43712,14 +43625,8 @@
 ;; Return true if the CursorHold event can be triggered.
 
 (defn- #_boolean trigger-cursorhold []
-    (§
-        (when (and (not @did_cursorhold) (ß hamis) (not @Recording) (zero? (:tb_len @typebuf)))
-            ((ß int state =) (get-real-state))
-            (if (or (== state NORMAL_BUSY) (flag? state INSERT))
-                ((ß RETURN) true)
-            )
-        )
-        false
+    (let [miez? false]
+        (and (not @did_cursorhold) miez? (not @Recording) (zero? (:tb_len @typebuf)) (let [state (get-real-state)] (or (== state NORMAL_BUSY) (flag? state INSERT))))
     ))
 
 ;;; ============================================================================================== VimU
@@ -44737,34 +44644,24 @@
 ;; Put the timestamp of an undo header in "buf[buflen]" in a nice format.
 
 (defn- #_void u-add-time [#_Bytes buf, #_int buflen, #_long seconds]
-    (§
-        (cond (<= 100 (- (._time libC) seconds))
-        (do
-            ((ß tm_C curtime =) (._localtime libC seconds))
-            (cond (< (- (._time libC) seconds) (* 60 60 12))
-            (do
+    (§ if (<= 100 (- (._time libC) seconds))
+        (let [#_tm_C curtime (._localtime libC seconds)]
+            (if (< (- (._time libC) seconds) (* 60 60 12))
                 ;; within 12 hours
                 (.strftime libC buf, buflen, (u8 "%H:%M:%S"), curtime)
-            )
-            :else
-            (do
                 ;; longer ago
                 (.strftime libC buf, buflen, (u8 "%Y/%m/%d %H:%M:%S"), curtime)
             ))
-        )
-        :else
-        (do
-;%%         (vim_snprintf buf, buflen, (u8 "%ld seconds ago"), (- (._time libC) seconds))
-        ))
-        nil
-    ))
+;%%     (vim_snprintf buf, buflen, (u8 "%ld seconds ago"), (- (._time libC) seconds))
+    )
+    nil)
 
 ;; Get pointer to last added entry.
 ;; If it's not valid, give an error message and return null.
 
 (defn- #_u_entry_C u-get-headentry []
     (let [ent (-> @curbuf :b_u_newhead :uh_entry)]
-        (if (nil? ent)
+        (when (nil? ent)
             (emsg (u8 "E439: undo list corrupt")))
         ent
     ))
@@ -44893,31 +44790,22 @@
 ;; We also allow the cursor to be in another line.
 
 (defn- #_void u-undoline []
-    (§
-        (when (or (nil? (:b_u_line_ptr @curbuf)) (< (:ml_line_count (:b_ml @curbuf)) (:b_u_line_lnum @curbuf)))
+    (let [uln (:b_u_line_lnum @curbuf)]
+        (if (or (nil? (:b_u_line_ptr @curbuf)) (< (:ml_line_count (:b_ml @curbuf)) uln))
             (beep-flush)
-            ((ß RETURN) nil)
-        )
-
-        ;; first save the line for the 'u' command
-        (if (not (u-savecommon (dec (:b_u_line_lnum @curbuf)), (inc (:b_u_line_lnum @curbuf)), 0, false))
-            ((ß RETURN) nil)
-        )
-
-        ((ß Bytes oldp =) (STRDUP (ml-get (:b_u_line_lnum @curbuf))))
-
-        (ml-replace (:b_u_line_lnum @curbuf), (:b_u_line_ptr @curbuf))
-        (changed-bytes (:b_u_line_lnum @curbuf), 0)
-        (swap! curbuf assoc :b_u_line_ptr oldp)
-
-        ((ß int t =) (:b_u_line_colnr @curbuf))
-        (when (== (:lnum (:w_cursor @curwin)) (:b_u_line_lnum @curbuf))
-            (swap! curbuf assoc :b_u_line_colnr (:col (:w_cursor @curwin))))
-        (swap! curwin assoc-in [:w_cursor :col] t)
-        (swap! curwin assoc-in [:w_cursor :lnum] (:b_u_line_lnum @curbuf))
-        (check-cursor-col)
-        nil
-    ))
+            (when (u-savecommon (dec uln), (inc uln), 0, false)
+                (let [#_Bytes s (STRDUP (ml-get uln))]
+                    (ml-replace uln, (:b_u_line_ptr @curbuf))
+                    (changed-bytes uln, 0)
+                    (swap! curbuf assoc :b_u_line_ptr s)
+                    (let [#_int swp (:b_u_line_colnr @curbuf)]
+                        (when (== (:lnum (:w_cursor @curwin)) uln)
+                            (swap! curbuf assoc :b_u_line_colnr (:col (:w_cursor @curwin))))
+                        (swap! curwin update :w_cursor assoc :lnum uln :col swp)
+                        (check-cursor-col))
+                ))
+        ))
+    nil)
 
 ;;; ============================================================================================== VimV
 
@@ -45346,33 +45234,15 @@
 ;;  nnn is the number of milliseconds to delay, and may be a decimal fraction (nnn.mmm).
 ;;  In case an asterisk is given, the delay is to be multiplied by "_affcnt".
 
-(defn- #_int _tputs [#_Bytes s, #_int _affcnt]
-    ;; s: string to print
-    ;; affcnt: number of lines affected
-    (§
-        ((ß int i =) 0)
-
-        (when (asc-isdigit (.at s i))
-            (loop-when [] (asc-isdigit (.at s ((ß i =) (inc i))))
-                ;
-                (recur)
-            )
-            (when (at? s i (byte \.))
-                (loop-when [] (asc-isdigit (.at s ((ß i =) (inc i))))
-                    ;
-                    (recur)
-                )
-            )
-            ((ß i =) (if (at? s i (byte \*)) (inc i) i))
-        )
-
-        (loop-when [] (non-eos? s i)
-            (out-char-nf (.at s (ß i++)))
-            (recur)
-        )
-
-        0
-    ))
+(defn- #_int _tputs [#_Bytes s, #_int _affcnt] ;; affcnt: number of lines affected
+    (let [i 0 i (if (asc-isdigit (.at s i))
+                    (let [i                         (loop-when-recur [i (inc i)] (asc-isdigit (.at s i)) [(inc i)] => i)
+                          i (if (at? s i (byte \.)) (loop-when-recur [i (inc i)] (asc-isdigit (.at s i)) [(inc i)] => i) i)
+                          i (if (at? s i (byte \*)) (inc i) i)]
+                        i) i)]
+        (loop-when-recur i (non-eos? s i) (inc i)
+            (out-char-nf (.at s i))))
+    0)
 
 ;; A never-padding out-str:
 ;; use this whenever you don't want to run the string through tputs.
@@ -45384,17 +45254,13 @@
 
 (defn- #_void out-str-nf [#_Bytes s]
     ;; avoid terminal strings being split up
-    (if (< (- OUT_SIZE 20) @out_pos)
+    (when (< (- OUT_SIZE 20) @out_pos)
         (out-flush))
-
     (loop-when-recur [#_int i 0] (non-eos? s i) [(inc i)]
-        (out-char-nf (.at s i))
-    )
-
+        (out-char-nf (.at s i)))
     ;; For testing we write one string at a time.
     (when (non-zero? @p_wd)
-        (out-flush)
-    )
+        (out-flush))
     nil)
 
 ;; out-str(s): Put a character string a byte at a time into the output buffer.
@@ -45404,15 +45270,12 @@
 (defn- #_void out-str [#_Bytes s]
     (when (and (some? s) (non-eos? s))
         ;; avoid terminal strings being split up
-        (if (< (- OUT_SIZE 20) @out_pos)
+        (when (< (- OUT_SIZE 20) @out_pos)
             (out-flush))
-
         (_tputs s, 1)
-
         ;; For testing we write one string at a time.
-        (if (non-zero? @p_wd)
-            (out-flush))
-    )
+        (when (non-zero? @p_wd)
+            (out-flush)))
     nil)
 
 ;; cursor positioning using termcap parser
@@ -45440,21 +45303,18 @@
     nil)
 
 (defn- #_void term-color [#_Bytes s, #_int n]
-    (§
-        ((ß int i =) 2)  ;; index in s just after <Esc>[
-
-        ;; Special handling of 16 colors, because termcap can't handle it.
-        ;; Also accept "\e[3%dm" for TERMINFO, it is sometimes used.
-        (when (and (<= 8 n) (<= 16 @t_colors) (at? s ESC) (at? s 1 (byte \[)) (non-eos? s i) (or (== (STRCMP (.plus s (inc i)), (u8 "%p1%dm")) 0) (== (STRCMP (.plus s (inc i)), (u8 "%dm")) 0)) (or (at? s i (byte \3)) (at? s i (byte \4))))
-            ((ß Bytes buf =) (Bytes. 20))
-            (.sprintf libC buf, (u8 "%s%s%%p1%%dm"), (if (== i 2) (u8 "\033[") (u8 "\233")), (if (at? s i (byte \3)) (if (<= 16 n) (u8 "38;5;") (u8 "9")) (if (<= 16 n) (u8 "48;5;") (u8 "10"))))
-            ((ß s =) buf)
-            ((ß n =) (if (<= 16 n) n (- n 8)))
-        )
-
-        (out-str (_tgoto s, 0, n))
-        nil
-    ))
+    (let [#_int i 2 ;; index in s just after <Esc>[
+          ;; Special handling of 16 colors, because termcap can't handle it.
+          ;; Also accept "\e[3%dm" for TERMINFO, it is sometimes used.
+          [s n] (if (and (<= 8 n) (<= 16 @t_colors) (at? s ESC) (at? s 1 (byte \[)) (non-eos? s i) (or (== (STRCMP (.plus s (inc i)), (u8 "%p1%dm")) 0) (== (STRCMP (.plus s (inc i)), (u8 "%dm")) 0)) (or (at? s i (byte \3)) (at? s i (byte \4))))
+                    (let [#_Bytes buf (Bytes. 20)]
+;%%                     (.sprintf libC buf, (u8 "%s%s%%p1%%dm"), (if (== i 2) (u8 "\033[") (u8 "\233")), (if (at? s i (byte \3)) (if (<= 16 n) (u8 "38;5;") (u8 "9")) (if (<= 16 n) (u8 "48;5;") (u8 "10"))))
+                        [buf (if (<= 16 n) n (- n 8))]
+                    )
+                    [s n]
+                )]
+        (out-str (_tgoto s, 0, n)))
+    nil)
 
 ;; Make sure we have a valid set or terminal options.
 ;; Replace all entries that are null by EMPTY_OPTION.
@@ -45464,7 +45324,7 @@
 
     ;; MUST have "cm": cursor motion.
 
-    (if (eos? @T_CM)
+    (when (eos? @T_CM)
         (emsg (u8 "E437: terminal capability \"cm\" required")))
 
     ;; If "cs" defined, use a scroll region, it's faster.
@@ -45475,17 +45335,17 @@
 
     (when pairs
         ;; TP goes to normal mode for TI (invert) and TB (bold).
-        (if (eos? @T_ME)
+        (when (eos? @T_ME)
             (reset! T_ME (reset! T_MR (reset! T_MD EMPTY_OPTION))))
-        (if (or (eos? @T_SO) (eos? @T_SE))
+        (when (or (eos? @T_SO) (eos? @T_SE))
             (reset! T_SO (reset! T_SE EMPTY_OPTION)))
-        (if (or (eos? @T_US) (eos? @T_UE))
+        (when (or (eos? @T_US) (eos? @T_UE))
             (reset! T_US (reset! T_UE EMPTY_OPTION)))
-        (if (or (eos? @T_CZH) (eos? @T_CZR))
+        (when (or (eos? @T_CZH) (eos? @T_CZR))
             (reset! T_CZH (reset! T_CZR EMPTY_OPTION)))
 
         ;; T_VE is needed even though T_VI is not defined.
-        (if (eos? @T_VE)
+        (when (eos? @T_VE)
             (reset! T_VI EMPTY_OPTION))
 
         ;; If 'mr' or 'me' is not defined use 'so' and 'se'.
@@ -45519,7 +45379,7 @@
         )
 
         ;; If 'Sb' and 'AB' are not defined, reset "Co".
-        (if (and (eos? @T_CSB) (eos? @T_CAB))
+        (when (and (eos? @T_CSB) (eos? @T_CAB))
             (reset! T_CCO EMPTY_OPTION))
     )
 
