@@ -41,9 +41,9 @@
 
 (def- frag_C* object*)
 
-(def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
+(def- C (map #(symbol (str % "_C")) '(barray buffblock buffer buffheader clipboard cmdline_info cmdmod fmark fragnode frame lpos mapblock match matchitem memline msgchunk nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset termios timeval typebuf u_entry u_header u_link visualinfo window winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr fmark frag frame hl_group key_name linepos llpos lpos modmasktable multipos nfa_state nfa_thread nv_cmd pos save_se signalinfo spat tasave tcname termcode typebuf vimoption wline yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
@@ -1590,97 +1590,6 @@
 (final int UH_CHANGED  0x01)            ;; "b_changed" flag before undo/after redo
 (final int UH_EMPTYBUF 0x02)            ;; buffer was empty
 
-;; mf_hashtab_C is a chained hashtable with blocknr_C key and arbitrary
-;; structures as items.  This is an intrusive data structure: we require
-;; that items begin with mf_hashitem_C which contains the key and linked
-;; list pointers.  List of items in each bucket is doubly-linked.
-
-(class! #_final mf_hashitem_C
-    [
-        (field mf_hashitem_C    mhi_next)
-        (field mf_hashitem_C    mhi_prev)
-        (field long             mhi_key)
-        (field Object           mhi_data)
-    ])
-
-(defn- #_mf_hashitem_C* ARRAY_mf_hashitem [#_int n]
-    (vec (repeatedly n §_mf_hashitem_C)))
-
-(final int MHT_INIT_SIZE 64)
-
-(class! #_final mf_hashtab_C
-    [
-        (field int              mht_mask)       ;; mask used for hash value (nr of items in array is "mht_mask" + 1)
-        (field int              mht_count)      ;; number of items inserted into hashtable
-        (field mf_hashitem_C*   mht_buckets)
-    ])
-
-(defn- #_void ZER0_mf_hashtab [#_mf_hashtab_C mht]
-    (§
-;       mht.mht_mask = 0;
-;       mht.mht_count = 0;
-;       mht.mht_buckets = null;
-    ))
-
-;; For each (previously) used block in the memfile there is one block header.
-;;
-;; The block may be linked in the used list OR in the free list.
-;; The used blocks are also kept in hash lists.
-;;
-;; The used list is a doubly linked list, most recently used block first.
-;;      The blocks in the used list have a block of memory allocated.
-;; The hash lists are used to quickly find a block in the used list.
-;; The free list is a single linked list, not sorted.
-;;      The blocks in the free list have no block of memory allocated and
-;;      the contents of the block in the file (if any) is irrelevant.
-
-(class! #_final block_hdr_C
-    [
-        (field mf_hashitem_C bh_hashitem    (§_mf_hashitem_C))  ;; header for hash table and key
-
-        (field block_hdr_C  bh_next)            ;; next block_hdr in free or used list
-        (field block_hdr_C  bh_prev)            ;; previous block_hdr in used list
-        (field Object       bh_data)            ;; pointer to memory (for used block)
-        (field int          bh_page_count)      ;; number of pages in this block
-
-;       #_private block_hdr_C()
-;       {
-;           bh_hashitem.mhi_data = this;
-;       }
-
-;       long bh_bnum()
-;       {
-;           return bh_hashitem.mhi_key; ;; block number, part of bh_hashitem
-;       }
-
-;       void bh_bnum(long bnum)
-;       {
-;           bh_hashitem.mhi_key = bnum;
-;       }
-    ])
-
-;; When a block with a negative number is flushed to the file, it gets a positive number.
-;; Because the reference to the block is still the negative number,
-;; we remember the translation to the new positive number in the double linked trans lists.
-;; The structure is the same as the hash lists.
-
-(class! #_final nr_trans_C
-    [
-        (field mf_hashitem_C nt_hashitem    (§_mf_hashitem_C))  ;; header for hash table and key
-
-        (field long         nt_new_bnum)    ;; new (positive) number
-
-;       #_private nr_trans_C()
-;       {
-;           nt_hashitem.mhi_data = this;
-;       }
-
-;       void nt_old_bnum(long bnum)
-;       {
-;           nt_hashitem.mhi_key = bnum;     ;; old (negative) number
-;       }
-    ])
-
 ;; structure used to store one block of the stuff/redo/recording buffers
 
 (class! #_final buffblock_C
@@ -1742,38 +1651,7 @@
 ;       cm1.keeppatterns = cm0.keeppatterns;
     ))
 
-(class! #_final memfile_C
-    [
-        (field block_hdr_C  mf_used_first)      ;; mru block_hdr in used list
-        (field block_hdr_C  mf_used_last)       ;; lru block_hdr in used list
-        (field mf_hashtab_C mf_hash         (§_mf_hashtab_C))   ;; hash lists
-        (field long         mf_blocknr_max)     ;; highest positive block number + 1
-    ])
-
 ;; things used in memline.c
-
-;; When searching for a specific line, we remember what blocks in the tree
-;; are the branches leading to that block.  This is stored in ml_stack.  Each
-;; entry is a pointer to info in a block (may be data block or pointer block)
-
-(class! #_final infoptr_C
-    [
-        (field long         ip_bnum)            ;; block number
-        (field long         ip_low)             ;; lowest lnum in this block
-        (field long         ip_high)            ;; highest lnum in this block
-        (field int          ip_index)           ;; index for block with current lnum
-    ])
-
-(defn- #_void COPY_infoptr [#_infoptr_C ip1, #_infoptr_C ip0]
-    (§
-;       ip1.ip_bnum = ip0.ip_bnum;
-;       ip1.ip_low = ip0.ip_low;
-;       ip1.ip_high = ip0.ip_high;
-;       ip1.ip_index = ip0.ip_index;
-    ))
-
-(defn- #_infoptr_C* ARRAY_infoptr [#_int n]
-    (vec (repeatedly n §_infoptr_C)))
 
 (class! #_final chunksize_C
     [
@@ -1805,21 +1683,12 @@
     [
         (field long         ml_line_count)      ;; number of lines in the buffer
 
-        (field memfile_C    ml_mfp)             ;; pointer to associated memfile
+        (field data_block_C ml_data)
 
         (field int          ml_flags)
 
-        (field infoptr_C*   ml_stack)           ;; stack of pointer blocks (array of IPTRs)
-        (field int          ml_stack_top)       ;; current top in ml_stack
-        (field int          ml_stack_size)      ;; total number of entries in ml_stack
-
         (field long         ml_line_lnum)       ;; line number of cached line, 0 if not valid
         (field Bytes        ml_line_ptr)        ;; pointer to cached line
-
-        (field block_hdr_C  ml_locked)          ;; block used by last ml_get()
-        (field long         ml_locked_low)      ;; first line in ml_locked
-        (field long         ml_locked_high)     ;; last line in ml_locked
-        (field int          ml_locked_lineadd)  ;; number of lines inserted in ml_locked
 
         (field chunksize_C* ml_chunksize)
         (field int          ml_numchunks)
@@ -1909,8 +1778,6 @@
 ;; buffer: structure that holds information about one file
 ;;
 ;; Several windows can share a single Buffer.
-;; A buffer is unallocated if there is no memfile for it.
-;; A buffer is new if the associated file has never been loaded yet.
 
 (class! #_final buffer_C
     [
@@ -9872,8 +9739,7 @@
             ;; (when eap.line2 pointed to the end of the buffer and nothing was appended)
             ;; "end" is set to lnum when something has been appended,
             ;; otherwise it is the same than "start"
-;       @curbuf.b_op_start.lnum =
-;               (eap.line2 < @curbuf.b_ml.ml_line_count) ? eap.line2 + 1 : @curbuf.b_ml.ml_line_count;
+;       @curbuf.b_op_start.lnum = (eap.line2 < @curbuf.b_ml.ml_line_count) ? eap.line2 + 1 : @curbuf.b_ml.ml_line_count;
 ;       if (eap.cmdidx != CMD_append)
 ;           --@curbuf.b_op_start.lnum;
 ;       @curbuf.b_op_end.lnum = (eap.line2 < lnum) ? lnum : @curbuf.b_op_start.lnum;
@@ -31053,8 +30919,7 @@
 ;           long lnum = @curwin.w_cursor.lnum;
             ;; This fails if the cursor is already in the last line
             ;; or would move beyond the last line and '-' is in 'cpoptions'.
-;           if (@curbuf.b_ml.ml_line_count <= lnum
-;                   || (@curbuf.b_ml.ml_line_count < lnum + n && vim_strbyte(@p_cpo, CPO_MINUS) != null))
+;           if (@curbuf.b_ml.ml_line_count <= lnum || (@curbuf.b_ml.ml_line_count < lnum + n && vim_strbyte(@p_cpo, CPO_MINUS) != null))
 ;               return false;
 ;           if (@curbuf.b_ml.ml_line_count <= lnum + n)
 ;               lnum = @curbuf.b_ml.ml_line_count;
@@ -48645,385 +48510,18 @@
 ;       return (p.at(0) == NUL);
     ))
 
-;; memfile.c: Contains the functions for handling blocks of memory which can
-;; be stored in a file.  This is the implementation of a sort of virtual memory.
-;;
-;; A memfile consists of a sequence of blocks.  The blocks numbered from 0
-;; upwards have been assigned a place in the actual file.  The block number
-;; is equal to the page number in the file.
-;;
-;; The blocks with negative numbers are currently in memory only.  They can be
-;; assigned a place in the file when too much memory is being used.  At that
-;; moment they get a new, positive, number.  A list is used for translation of
-;; negative to positive numbers.
-;;
-;; The size of a block is a multiple of a page size, normally the page size of
-;; the device the file is on. Most blocks are 1 page long.  A block of multiple
-;; pages is used for a line that does not fit in a single page.
-;;
-;; Each block can be in memory and/or in a file.  The block stays in memory
-;; as long as it is locked.  If it is no longer locked it can be swapped out to
-;; the file.  It is only written to the file if it has been changed.
-;;
-;; Under normal operation the file is created when opening the memory file and
-;; deleted when closing the memory file.  Only with recovery an existing memory
-;; file is opened.
+;; memline.c: Contains the functions for appending, deleting and changing the
+;; text lines.  The memfile functions are used to store the information in
+;; blocks of memory.
 
 (final int MEMFILE_PAGE_SIZE 4096)  ;; default page size
 
-;; The functions for using a memfile:
-;;
-;; mf_open()        open a new or existing memfile
-;; mf_new()         create a new block in a memfile and lock it
-;; mf_get()         get an existing block and lock it
-;; mf_put()         unlock a block, may be marked for writing
-;; mf_free()        remove a block
-
-(defn- #_memfile_C mf_open []
-    (§
-;       memfile_C mfp = §_memfile_C();
-
-;       mfp.mf_used_first = null;       ;; used list is empty
-;       mfp.mf_used_last = null;
-;       mf_hash_init(mfp.mf_hash);
-
-;       mfp.mf_blocknr_max = 0;         ;; no file or empty file
-
-;       return mfp;
-    ))
-
-;; get new block
-
-(defn- #_block_hdr_C mf_new [#_memfile_C mfp, #_Object data, #_int page_count]
-    (§
-;       block_hdr_C hp = mf_alloc_bhdr(mfp, data, page_count);
-
-;       hp.bh_bnum(mfp.mf_blocknr_max);
-;       mfp.mf_blocknr_max += page_count;
-
-;       hp.bh_page_count = page_count;
-;       mf_ins_used(mfp, hp);
-;       mf_ins_hash(mfp, hp);
-
-;       return hp;
-    ))
-
-;; get existing block
-
-(defn- #_block_hdr_C mf_get [#_memfile_C mfp, #_long nr]
-    (§
-;       if (mfp.mf_blocknr_max <= nr || nr <= -1)   ;; doesn't exist
-;           return null;
-
-;       block_hdr_C hp = mf_find_hash(mfp, nr);
-;       if (hp == null)                                 ;; not in the hash list
-;           return null;
-
-;       mf_rem_used(mfp, hp);           ;; remove from list, insert in front below
-;       mf_rem_hash(mfp, hp);
-
-;       mf_ins_used(mfp, hp);           ;; put in front of used list
-;       mf_ins_hash(mfp, hp);           ;; put in front of hash list
-
-;       return hp;
-    ))
-
-;; release the block *hp
-;;
-;;   dirty: Block must be written to file later
-;;   infile: Block should be in file (needed for recovery)
-
-(defn- #_void mf_put [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-        
-    ))
-
-;; block *hp is no longer in used, may put it in the free list of memfile *mfp
-
-(defn- #_void mf_free [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       mf_rem_hash(mfp, hp);       ;; get *hp out of the hash list
-;       mf_rem_used(mfp, hp);       ;; get *hp out of the used list
-    ))
-
-;; insert block *hp in front of hashlist of memfile *mfp
-
-(defn- #_void mf_ins_hash [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       mf_hash_add_item(mfp.mf_hash, hp.bh_hashitem);
-    ))
-
-;; remove block *hp from hashlist of memfile list *mfp
-
-(defn- #_void mf_rem_hash [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       mf_hash_rem_item(mfp.mf_hash, hp.bh_hashitem);
-    ))
-
-;; look in hash lists of memfile *mfp for block header with number 'nr'
-
-(defn- #_block_hdr_C mf_find_hash [#_memfile_C mfp, #_long nr]
-    (§
-;       mf_hashitem_C mhi = mf_hash_find(mfp.mf_hash, nr);
-
-;       return (mhi != null) ? (block_hdr_C)mhi.mhi_data : null;
-    ))
-
-;; insert block *hp in front of used list of memfile *mfp
-
-(defn- #_void mf_ins_used [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       hp.bh_next = mfp.mf_used_first;
-;       mfp.mf_used_first = hp;
-;       hp.bh_prev = null;
-;       if (hp.bh_next == null)     ;; list was empty, adjust last pointer
-;           mfp.mf_used_last = hp;
-;       else
-;           hp.bh_next.bh_prev = hp;
-    ))
-
-;; remove block *hp from used list of memfile *mfp
-
-(defn- #_void mf_rem_used [#_memfile_C mfp, #_block_hdr_C hp]
-    (§
-;       if (hp.bh_next == null)     ;; last block in used list
-;           mfp.mf_used_last = hp.bh_prev;
-;       else
-;           hp.bh_next.bh_prev = hp.bh_prev;
-;       if (hp.bh_prev == null)     ;; first block in used list
-;           mfp.mf_used_first = hp.bh_next;
-;       else
-;           hp.bh_prev.bh_next = hp.bh_next;
-    ))
-
-;; Allocate a block header and a block of memory for it.
-
-(defn- #_block_hdr_C mf_alloc_bhdr [#_memfile_C _mfp, #_Object data, #_int page_count]
-    (§
-;       block_hdr_C hp = §_block_hdr_C();
-
-;       hp.bh_data = data;
-;       hp.bh_page_count = page_count;
-
-;       return hp;
-    ))
-
-;; Implementation of mf_hashtab_C follows.
-
-;; The number of buckets in the hashtable is increased by a factor of MHT_GROWTH_FACTOR
-;; when the average number of items per bucket exceeds (2 ^ MHT_LOG_LOAD_FACTOR).
-
-(final int MHT_LOG_LOAD_FACTOR 6)
-(final int MHT_GROWTH_FACTOR   2)   ;; must be a power of two
-
-;; Initialize an empty hash table.
-
-(defn- #_void mf_hash_init [#_mf_hashtab_C mht]
-    (§
-;       ZER0_mf_hashtab(mht);
-;       mht.mht_buckets = ARRAY_mf_hashitem(MHT_INIT_SIZE);
-;       mht.mht_mask = MHT_INIT_SIZE - 1;
-    ))
-
-;; Free the array of a hash table.  Does not free the items it contains!
-;; The hash table must not be used again without another mf_hash_init() call.
-
-(defn- #_void mf_hash_free [#_mf_hashtab_C mht]
-    (§
-;       mht.mht_buckets = null;
-    ))
-
-;; Find "key" in hashtable "mht".
-;; Returns a pointer to a mf_hashitem_C or null if the item was not found.
-
-(defn- #_mf_hashitem_C mf_hash_find [#_mf_hashtab_C mht, #_long key]
-    (§
-;       mf_hashitem_C mhi = mht.mht_buckets[(int)(key & mht.mht_mask)];
-
-;       while (mhi != null && mhi.mhi_key != key)
-;           mhi = mhi.mhi_next;
-
-;       return mhi;
-    ))
-
-;; Add item "mhi" to hashtable "mht".
-;; "mhi" must not be null.
-
-(defn- #_void mf_hash_add_item [#_mf_hashtab_C mht, #_mf_hashitem_C mhi]
-    (§
-;       int i = (int)(mhi.mhi_key & mht.mht_mask);
-
-;       mhi.mhi_next = mht.mht_buckets[i];
-;       mhi.mhi_prev = null;
-;       if (mhi.mhi_next != null)
-;           mhi.mhi_next.mhi_prev = mhi;
-;       mht.mht_buckets[i] = mhi;
-
-;       mht.mht_count++;
-
-        ;; Grow hashtable when we have more than (2 ^ MHT_LOG_LOAD_FACTOR) items per bucket on average.
-
-;       if (mht.mht_mask < (mht.mht_count >>> MHT_LOG_LOAD_FACTOR))
-;           mf_hash_grow(mht);
-    ))
-
-;; Remove item "mhi" from hashtable "mht".
-;; "mhi" must not be null and must have been inserted into "mht".
-
-(defn- #_void mf_hash_rem_item [#_mf_hashtab_C mht, #_mf_hashitem_C mhi]
-    (§
-;       if (mhi.mhi_prev == null)
-;           mht.mht_buckets[(int)(mhi.mhi_key & mht.mht_mask)] = mhi.mhi_next;
-;       else
-;           mhi.mhi_prev.mhi_next = mhi.mhi_next;
-
-;       if (mhi.mhi_next != null)
-;           mhi.mhi_next.mhi_prev = mhi.mhi_prev;
-
-;       mht.mht_count--;
-
-        ;; We could shrink the table here, but it typically takes little memory, so why bother?
-    ))
-
-;; Increase number of buckets in the hashtable by MHT_GROWTH_FACTOR and rehash items.
-
-(defn- #_void mf_hash_grow [#_mf_hashtab_C mht]
-    (§
-;       mf_hashitem_C[] buckets = new mf_hashitem_C[(mht.mht_mask + 1) * MHT_GROWTH_FACTOR];
-
-;       int shift = 0;
-;       while ((mht.mht_mask >>> shift) != 0)
-;           shift++;
-
-;       for (int i = 0; i <= mht.mht_mask; i++)
-;       {
-            ;; Traverse the items in the i-th original bucket and move them into MHT_GROWTH_FACTOR new buckets,
-            ;; preserving their relative order within each new bucket.  Preserving the order is important
-            ;; because mf_get() tries to keep most recently used items at the front of each bucket.
-            ;;
-            ;; Here we strongly rely on the fact the hashes are computed modulo a power of two.
-
-;           mf_hashitem_C[] tails = new mf_hashitem_C[MHT_GROWTH_FACTOR];
-
-;           for (mf_hashitem_C mhi = mht.mht_buckets[i]; mhi != null; mhi = mhi.mhi_next)
-;           {
-;               int j = (int)((mhi.mhi_key >>> shift) & (MHT_GROWTH_FACTOR - 1));
-;               if (tails[j] == null)
-;               {
-;                   buckets[i + (j << shift)] = mhi;
-;                   tails[j] = mhi;
-;                   mhi.mhi_prev = null;
-;               }
-;               else
-;               {
-;                   tails[j].mhi_next = mhi;
-;                   mhi.mhi_prev = tails[j];
-;                   tails[j] = mhi;
-;               }
-;           }
-
-;           for (int j = 0; j < MHT_GROWTH_FACTOR; j++)
-;               if (tails[j] != null)
-;                   tails[j].mhi_next = null;
-;       }
-
-;       mht.mht_buckets = buckets;
-;       mht.mht_mask = (mht.mht_mask + 1) * MHT_GROWTH_FACTOR - 1;
-    ))
-
-;; memline.c: Contains the functions for appending, deleting and changing the
-;; text lines.  The memfile functions are used to store the information in
-;; blocks of memory, backed up by a file.  The structure of the information is
-;; a tree.  The root of the tree is a pointer block.  The leaves of the tree
-;; are data blocks.  In between may be several layers of pointer blocks,
-;; forming branches.
-;;
-;; Three types of blocks are used:
-;; - Block nr 0 contains information for recovery.
-;; - Pointer blocks contain list of pointers to other blocks.
-;; - Data blocks contain the actual text.
-;;
-;; Block nr 0 contains the block0 structure (see below).
-;;
-;; Block nr 1 is the first pointer block.  It is the root of the tree.
-;; Other pointer blocks are branches.
-;;
-;; If a line is too big to fit in a single page, the block containing that
-;; line is made big enough to hold the line.  It may span several pages.
-;; Otherwise all blocks are one page.
-;;
-;; A data block that was filled when starting to edit a file and was not
-;; changed since then, can have a negative block number.  This means that it
-;; has not yet been assigned a place in the file.  When recovering, the lines
-;; in this data block can be read from the original file.  When the block is
-;; changed (lines appended/deleted/changed) or when it is flushed it gets a
-;; positive number.
-
-(final short
-    B0_ID   (+ (<< (int \b) 8) (int \0)),             ;; block 0 id
-    DATA_ID (+ (<< (int \d) 8) (int \a)),             ;; data block id
-    PTR_ID  (+ (<< (int \p) 8) (int \t)))             ;; pointer block id
-
-;; Block zero holds all info about the swap file.
-
-(class! #_final zero_block_C
-    [
-        (field short    b0_id   B0_ID)      ;; ID for block 0: B0_ID
-    ])
-
-;; Pointer to a block, used in a pointer block.
-
-(class! #_final ptr_entry_C
-    [
-        (field long     pe_bnum)            ;; block number
-        (field long     pe_line_count)      ;; number of lines in this branch
-        (field int      pe_page_count)      ;; number of pages in block pe_bnum
-    ])
-
-(defn- #_void COPY_ptr_entry [#_ptr_entry_C pe1, #_ptr_entry_C pe0]
-    (§
-;       pe1.pe_bnum = pe0.pe_bnum;
-;       pe1.pe_line_count = pe0.pe_line_count;
-;       pe1.pe_page_count = pe0.pe_page_count;
-    ))
-
-(defn- #_ptr_entry_C* ARRAY_ptr_entry [#_int n]
-    (vec (repeatedly n §_ptr_entry_C)))
-
-(defn- #_void COPY__ptr_entry [#_ptr_entry_C* a1, #_ptr_entry_C* a0, #_int n]
-    (§
-;       for (int i = 0; i < n; i++)
-;           COPY_ptr_entry(a1[i], a0[i]);
-    ))
-
-;; A pointer block contains a list of branches in the tree.
-
-(class! #_final ptr_block_C
-    [
-        (field short    pb_id           PTR_ID)                     ;; ID for pointer block: PTR_ID
-        (field int      pb_count        0)                          ;; number of pointers in this block
-        (field int      pb_count_max    (/ MEMFILE_PAGE_SIZE 8))    ;; maximum value for pb_count
-        (field ptr_entry_C* pb_pointer  (ARRAY_ptr_entry #_pb_count_max (/ MEMFILE_PAGE_SIZE 8)))   ;; array of pointers to blocks
-    ])
-
-(defn- #_void COPY_ptr_block [#_ptr_block_C pb1, #_ptr_block_C pb0]
-    (§
-;       pb1.pb_id = pb0.pb_id;
-;       pb1.pb_count = pb0.pb_count;
-;       pb1.pb_count_max = pb0.pb_count_max;
-;       COPY__ptr_entry(pb1.pb_pointer, pb0.pb_pointer, pb0.pb_count_max);
-    ))
-
-;; A data block is a leaf in the tree.
-;;
 ;; The text of the lines is at the end of the block.  The text of the first line
 ;; in the block is put at the end, the text of the second line in front of it,
 ;; etc.  Thus the order of the lines is the opposite of the line number.
 
 (class! #_final data_block_C
     [
-        (field short    db_id)          ;; ID for data block: DATA_ID
-        (field int      db_free)        ;; free space available
         (field int      db_txt_start)   ;; byte where text starts
         (field int      db_txt_end)     ;; byte just after data block
         (field int      db_line_count)  ;; number of lines in this block
@@ -49043,11 +48541,9 @@
 (final int! DB_MARKED       (<< 1 (dec (* INDEX_SIZE 8))))
 (final int! DB_INDEX_MASK   (bit-not DB_MARKED))
 
-(final int STACK_INCR      5)       ;; nr of entries added to ml_stack at a time
-
-(defn- #_data_block_C new_data_block [#_int page_count]
-    (let [bs (* page_count MEMFILE_PAGE_SIZE) is (/ bs INDEX_SIZE)]
-        (->data_block_C DATA_ID bs bs bs 0 #_"sic!" (int* is) #_"sic!" (Bytes. bs))))
+(defn- #_data_block_C new_data_block []
+    (let [bs MEMFILE_PAGE_SIZE is (/ bs INDEX_SIZE)]
+        (->data_block_C bs bs 0 #_"sic!" (int* is) #_"sic!" (Bytes. bs))))
 
 ;; The line number where the first mark may be is remembered.
 ;; If it is 0 there are no marks at all.
@@ -49055,77 +48551,24 @@
 
 (atom! long lowest_marked)
 
-;; arguments for ml_find_line()
-
-(final int ML_DELETE       0x11)        ;; delete line
-(final int ML_INSERT       0x12)        ;; insert line
-(final int ML_FIND         0x13)        ;; just find the line
-(final int ML_FLUSH        0x02)        ;; flush locked block
-
-(defn- #_boolean ml_simple [#_int action]
-    (§
-;       return ((action & 0x10) != 0);         ;; DEL, INS or FIND
-    ))
-
 ;; Open a new memline.
 
 (defn- #_memline_C ml_open []
     (§
 ;       memline_C ml = §_memline_C();
 
-        ;; open the memfile
-
-;       memfile_C mfp = mf_open();
-
-;       ml.ml_mfp = mfp;
 ;       ml.ml_flags = ML_EMPTY;
 ;       ml.ml_line_count = 1;
 
 ;       @curwin.w_nrwidth_line_count = 0;
 
-        ;; fill block0 struct and write page 0
-
-;       block_hdr_C hp = ml_new_zero(mfp);
-;       if (hp.bh_bnum() != 0)
-;       {
-;           emsg(u8("E298: Didn't get block nr 0?"));
-;           getout(2);
-;       }
-
-        ;; Always sync block number 0 to disk.
-        ;; Only works when there's a swapfile, otherwise it's done when the file is created.
-
-;       mf_put(mfp, hp);
-
-        ;; Fill in root pointer block and write page 1.
-
-;       hp = ml_new_ptr(mfp);
-;       if (hp.bh_bnum() != 1)
-;       {
-;           emsg(u8("E298: Didn't get block nr 1?"));
-;           getout(2);
-;       }
-
-;       ptr_block_C pp = (ptr_block_C)hp.bh_data;
-;       pp.pb_count = 1;
-;       pp.pb_pointer[0].pe_bnum = 2;
-;       pp.pb_pointer[0].pe_page_count = 1;
-;       pp.pb_pointer[0].pe_line_count = 1; ;; line count after insertion
-;       mf_put(mfp, hp);
-
         ;; Allocate first data block and create an empty line 1.
 
-;       hp = ml_new_data(mfp, 1);
-;       if (hp.bh_bnum() != 2)
-;       {
-;           emsg(u8("E298: Didn't get block nr 2?"));
-;           getout(2);
-;       }
+;       data_block_C dp = new_data_block();
 
-;       data_block_C dp = (data_block_C)hp.bh_data;
+;       ml.ml_data = dp;
 
 ;       dp.db_index[0] = --dp.db_txt_start;     ;; at end of block
-;       dp.db_free -= 1 + INDEX_SIZE;
 ;       dp.db_line_count = 1;
 ;       dp.db_text.be(dp.db_txt_start, NUL);      ;; empty line
 
@@ -49194,35 +48637,14 @@
 
         ;; See if it is the same line as requested last time.
         ;; Otherwise may need to flush last used line.
-        ;; Don't use the last used line when 'swapfile' is reset, need to load all blocks.
 
 ;       if (buf.b_ml.ml_line_lnum != lnum)
 ;       {
 ;           ml_flush_line(buf);
 
-            ;; Find the data block containing the line.
-            ;; This also fills the stack with the blocks from the root to the data
-            ;; block and releases any locked block.
+;           data_block_C dp = buf.b_ml.ml_data;
 
-;           block_hdr_C hp = ml_find_line(buf, lnum, ML_FIND);
-;           if (hp == null)
-;           {
-;               if (@_4_recurse == 0)
-;               {
-                    ;; Avoid giving this message for a recursive call,
-                    ;; may happen when the GUI redraws part of the text.
-;                   @_4_recurse++;
-;                   emsgn(u8("E316: ml_get: cannot find line %ld"), lnum);
-;                   --@_4_recurse;
-;               }
-
-;               STRCPY(@ioBuff, u8("???"));
-;               return @ioBuff;
-;           }
-
-;           data_block_C dp = (data_block_C)hp.bh_data;
-
-;           buf.b_ml.ml_line_ptr = dp.db_text.plus(dp.db_index[(int)(lnum - buf.b_ml.ml_locked_low)] & DB_INDEX_MASK);
+;           buf.b_ml.ml_line_ptr = dp.db_text.plus(dp.db_index[(int)(lnum - 1)] & DB_INDEX_MASK);
 ;           buf.b_ml.ml_line_lnum = lnum;
 ;           buf.b_ml.ml_flags &= ~ML_LINE_DIRTY;
 ;       }
@@ -49253,14 +48675,13 @@
 ;       if (@curbuf.b_ml.ml_line_lnum != 0)
 ;           ml_flush_line(@curbuf);
 
-;       return ml_append_int(@curbuf, lnum, line, len, false);
+;       return ml_append_int(@curbuf, lnum, line, len);
     ))
 
-(defn- #_boolean ml_append_int [#_buffer_C buf, #_long lnum, #_Bytes line, #_int len, #_boolean mark]
+(defn- #_boolean ml_append_int [#_buffer_C buf, #_long lnum, #_Bytes line, #_int len]
     ;; lnum: append after this line (can be 0)
     ;; line: text of the new line
     ;; len: length of line, including NUL, or 0
-    ;; mark: mark the new line
     (§
 ;       if (buf.b_ml.ml_line_count < lnum) ;; lnum out of range
 ;           return false;
@@ -49272,15 +48693,7 @@
 ;           len = STRLEN(line) + 1;                ;; space needed for the text
 ;       int space_needed = len + INDEX_SIZE;            ;; space needed for new line (text + index)
 
-;       memfile_C mfp = buf.b_ml.ml_mfp;
-
-        ;; Find the data block containing the previous line.
-        ;; This also fills the stack with the blocks from the root to the data block.
-        ;; This also releases any locked block.
-
-;       block_hdr_C hp = ml_find_line(buf, (lnum == 0) ? 1 : lnum, ML_INSERT);
-;       if (hp == null)
-;           return false;
+;       data_block_C dp = buf.b_ml.ml_data;
 
 ;       buf.b_ml.ml_flags &= ~ML_EMPTY;
 
@@ -49288,363 +48701,40 @@
 ;       if (lnum == 0)                                      ;; got line one instead, correct db_idx
 ;           db_idx = -1;                                    ;; careful, it is negative!
 ;       else
-;           db_idx = (int)(lnum - buf.b_ml.ml_locked_low);
+;           db_idx = (int)(lnum - 1);
 
 ;       int line_count;                                     ;; number of indexes in current block
         ;; get line count before the insertion
-;       line_count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low);
-
-;       data_block_C dp = (data_block_C)hp.bh_data;
-
-        ;; If
-        ;; - there is not enough room in the current block
-        ;; - appending to the last line in the block
-        ;; - not appending to the last line in the file
-        ;; insert in front of the next block.
-
-;       if (dp.db_free < space_needed && db_idx == line_count - 1 && lnum < buf.b_ml.ml_line_count)
-;       {
-            ;; Now that the line is not going to be inserted in the block that we expected,
-            ;; the line count has to be adjusted in the pointer blocks by using ml_locked_lineadd.
-
-;           --buf.b_ml.ml_locked_lineadd;
-;           --buf.b_ml.ml_locked_high;
-
-;           hp = ml_find_line(buf, lnum + 1, ML_INSERT);
-;           if (hp == null)
-;               return false;
-
-;           db_idx = -1;                                    ;; careful, it is negative!
-            ;; get line count before the insertion
-;           line_count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low);
-
-;           dp = (data_block_C)hp.bh_data;
-;       }
+;       line_count = (int)buf.b_ml.ml_line_count;
 
 ;       buf.b_ml.ml_line_count++;
 
-;       if (space_needed <= dp.db_free)                     ;; enough room in data block
+        ;; Insert new line in existing data block, or in data block allocated above.
+
+;       dp.db_txt_start -= len;
+;       dp.db_line_count++;
+
+        ;; move the text of the lines that follow to the front
+        ;; adjust the indexes of the lines that follow
+
+;       if (db_idx + 1 < line_count)                    ;; if there are following lines
 ;       {
-            ;; Insert new line in existing data block, or in data block allocated above.
+            ;; 'over' is the start of the previous line.
+            ;; This will become the character just after the new line.
 
-;           dp.db_txt_start -= len;
-;           dp.db_free -= space_needed;
-;           dp.db_line_count++;
-
-            ;; move the text of the lines that follow to the front
-            ;; adjust the indexes of the lines that follow
-
-;           if (db_idx + 1 < line_count)                    ;; if there are following lines
-;           {
-                ;; 'over' is the start of the previous line.
-                ;; This will become the character just after the new line.
-
-;               int from = dp.db_txt_start + len;
-;               int over = (db_idx < 0) ? dp.db_txt_end : (dp.db_index[db_idx] & DB_INDEX_MASK);
-;               BCOPY(dp.db_text, dp.db_txt_start, dp.db_text, from, over - from);
-;               for (int i = line_count; db_idx < --i; )
-;                   dp.db_index[i + 1] = dp.db_index[i] - len;
-;               dp.db_index[db_idx + 1] = over - len;
-;           }
-;           else                                            ;; add line at the end
-;               dp.db_index[db_idx + 1] = dp.db_txt_start;
-
-            ;; copy the text into the block
-
-;           BCOPY(dp.db_text, dp.db_index[db_idx + 1], line, 0, len);
-;           if (mark)
-;               dp.db_index[db_idx + 1] |= DB_MARKED;
+;           int from = dp.db_txt_start + len;
+;           int over = (db_idx < 0) ? dp.db_txt_end : (dp.db_index[db_idx] & DB_INDEX_MASK);
+;           BCOPY(dp.db_text, dp.db_txt_start, dp.db_text, from, over - from);
+;           for (int i = line_count; db_idx < --i; )
+;               dp.db_index[i + 1] = dp.db_index[i] - len;
+;           dp.db_index[db_idx + 1] = over - len;
 ;       }
-;       else                                                ;; not enough space in data block
-;       {
-            ;; If there is not enough room we have to create a new data block
-            ;; and copy some lines into it.  Then we have to insert an entry
-            ;; in the pointer block.  If this pointer block also is full,
-            ;; we go up another block, and so on, up to the root if necessary.
-            ;; The line counts in the pointer blocks have already been adjusted
-            ;; by ml_find_line().
+;       else                                            ;; add line at the end
+;           dp.db_index[db_idx + 1] = dp.db_txt_start;
 
-;           int lines_moved;
-;           int data_moved = 0;
-;           int total_moved = 0;
-;           boolean in_left;
+        ;; copy the text into the block
 
-            ;; We are going to allocate a new data block.  Depending on the
-            ;; situation it will be put to the left or right of the existing
-            ;; block.  If possible we put the new line in the left block and move
-            ;; the lines after it to the right block.  Otherwise the new line is
-            ;; also put in the right block.  This method is more efficient when
-            ;; inserting a lot of lines at one place.
-
-;           if (db_idx < 0)                         ;; left block is new, right block is existing
-;           {
-;               lines_moved = 0;
-;               in_left = true;                     ;; space_needed does not change
-;           }
-;           else                                    ;; left block is existing, right block is new
-;           {
-;               lines_moved = line_count - db_idx - 1;
-;               if (lines_moved == 0)               ;; put new line in right block
-;                   in_left = false;                ;; space_needed does not change
-;               else
-;               {
-;                   data_moved = (dp.db_index[db_idx] & DB_INDEX_MASK) - dp.db_txt_start;
-;                   total_moved = data_moved + lines_moved * INDEX_SIZE;
-;                   if (space_needed <= dp.db_free + total_moved)
-;                   {
-;                       in_left = true;             ;; put new line in left block
-;                       space_needed = total_moved;
-;                   }
-;                   else
-;                   {
-;                       in_left = false;            ;; put new line in right block
-;                       space_needed += total_moved;
-;                   }
-;               }
-;           }
-
-;           int page_count = (space_needed + MEMFILE_PAGE_SIZE - 1) / MEMFILE_PAGE_SIZE;
-;           block_hdr_C hp_new = ml_new_data(mfp, page_count);
-
-;           block_hdr_C hp_left, hp_right;
-;           int line_count_left, line_count_right;
-;           if (db_idx < 0)         ;; left block is new
-;           {
-;               hp_left = hp_new;
-;               hp_right = hp;
-;               line_count_left = 0;
-;               line_count_right = line_count;
-;           }
-;           else                    ;; right block is new
-;           {
-;               hp_left = hp;
-;               hp_right = hp_new;
-;               line_count_left = line_count;
-;               line_count_right = 0;
-;           }
-;           data_block_C dp_left = (data_block_C)hp_left.bh_data;
-;           data_block_C dp_right = (data_block_C)hp_right.bh_data;
-;           long bnum_left = hp_left.bh_bnum();
-;           long bnum_right = hp_right.bh_bnum();
-;           int page_count_left = hp_left.bh_page_count;
-;           int page_count_right = hp_right.bh_page_count;
-
-            ;; May move the new line into the right/new block.
-
-;           if (!in_left)
-;           {
-;               dp_right.db_txt_start -= len;
-;               dp_right.db_free -= len + INDEX_SIZE;
-;               dp_right.db_index[0] = dp_right.db_txt_start;
-;               if (mark)
-;                   dp_right.db_index[0] |= DB_MARKED;
-
-;               BCOPY(dp_right.db_text, dp_right.db_txt_start, line, 0, len);
-;               line_count_right++;
-;           }
-
-            ;; may move lines from the left/old block to the right/new one.
-
-;           if (lines_moved != 0)
-;           {
-;               dp_right.db_txt_start -= data_moved;
-;               dp_right.db_free -= total_moved;
-;               BCOPY(dp_right.db_text, dp_right.db_txt_start, dp_left.db_text, dp_left.db_txt_start, data_moved);
-;               int offset = dp_right.db_txt_start - dp_left.db_txt_start;
-;               dp_left.db_txt_start += data_moved;
-;               dp_left.db_free += total_moved;
-
-                ;; update indexes in the new block
-
-;               for (int from = db_idx + 1, to = line_count_right; from < line_count_left; from++, to++)
-;                   dp_right.db_index[to] = dp.db_index[from] + offset;
-;               line_count_right += lines_moved;
-;               line_count_left -= lines_moved;
-;           }
-
-            ;; May move the new line into the left (old or new) block.
-
-;           if (in_left)
-;           {
-;               dp_left.db_txt_start -= len;
-;               dp_left.db_free -= len + INDEX_SIZE;
-;               dp_left.db_index[line_count_left] = dp_left.db_txt_start;
-;               if (mark)
-;                   dp_left.db_index[line_count_left] |= DB_MARKED;
-;               BCOPY(dp_left.db_text, dp_left.db_txt_start, line, 0, len);
-;               line_count_left++;
-;           }
-
-;           long lnum_left, lnum_right;
-;           if (db_idx < 0)         ;; left block is new
-;           {
-;               lnum_left = lnum + 1;
-;               lnum_right = 0;
-;           }
-;           else                    ;; right block is new
-;           {
-;               lnum_left = 0;
-;               if (in_left)
-;                   lnum_right = lnum + 2;
-;               else
-;                   lnum_right = lnum + 1;
-;           }
-;           dp_left.db_line_count = line_count_left;
-;           dp_right.db_line_count = line_count_right;
-
-            ;; release the two data blocks
-            ;; The new one (hp_new) already has a correct blocknumber.
-            ;; The old one (hp, in ml_locked) gets a positive blocknumber if
-            ;; we changed it and we are not editing a new file.
-
-;           mf_put(mfp, hp_new);
-
-            ;; flush the old data block
-            ;; set ml_locked_lineadd to 0, because the updating of the
-            ;; pointer blocks is done below
-
-;           int lineadd = buf.b_ml.ml_locked_lineadd;
-;           buf.b_ml.ml_locked_lineadd = 0;
-;           ml_find_line(buf, 0, ML_FLUSH);             ;; flush data block
-
-            ;; update pointer blocks for the new data block
-
-;           int stack_idx;
-;           for (stack_idx = buf.b_ml.ml_stack_top - 1; 0 <= stack_idx; --stack_idx)
-;           {
-;               infoptr_C ip = buf.b_ml.ml_stack[stack_idx];
-;               int pb_idx = ip.ip_index;
-;               if ((hp = mf_get(mfp, ip.ip_bnum)) == null)
-;                   return false;
-
-;               ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
-;               if (pp.pb_id != PTR_ID)
-;               {
-;                   emsg(u8("E317: pointer block id wrong 3"));
-;                   mf_put(mfp, hp);
-;                   return false;
-;               }
-
-                ;; TODO: If the pointer block is full and we are adding at the end,
-                ;; try to insert in front of the next block.
-
-                ;; block not full, add one entry
-;               if (pp.pb_count < pp.pb_count_max)
-;               {
-;                   for (int i = pp.pb_count; pb_idx + 1 <= --i; )
-;                       COPY_ptr_entry(pp.pb_pointer[i + 1], pp.pb_pointer[i]);
-;                   pp.pb_count++;
-;                   pp.pb_pointer[pb_idx].pe_line_count = line_count_left;
-;                   pp.pb_pointer[pb_idx].pe_bnum = bnum_left;
-;                   pp.pb_pointer[pb_idx].pe_page_count = page_count_left;
-;                   pp.pb_pointer[pb_idx + 1].pe_line_count = line_count_right;
-;                   pp.pb_pointer[pb_idx + 1].pe_bnum = bnum_right;
-;                   pp.pb_pointer[pb_idx + 1].pe_page_count = page_count_right;
-
-;                   mf_put(mfp, hp);
-;                   buf.b_ml.ml_stack_top = stack_idx + 1;  ;; truncate stack
-
-;                   if (lineadd != 0)
-;                   {
-;                       --buf.b_ml.ml_stack_top;
-                        ;; fix line count for rest of blocks in the stack
-;                       ml_lineadd(buf, lineadd);
-                                                            ;; fix stack itself
-;                       buf.b_ml.ml_stack[buf.b_ml.ml_stack_top].ip_high += lineadd;
-;                       buf.b_ml.ml_stack_top++;
-;                   }
-
-                    ;; We are finished, break the loop here.
-
-;                   break;
-;               }
-;               else                        ;; pointer block full
-;               {
-;                   ptr_block_C pp_new;
-
-                    ;; split the pointer block
-                    ;; allocate a new pointer block
-                    ;; move some of the pointer into the new block
-                    ;; prepare for updating the parent block
-
-;                   for ( ; ; )             ;; do this twice when splitting block 1
-;                   {
-;                       hp_new = ml_new_ptr(mfp);
-;                       pp_new = (ptr_block_C)hp_new.bh_data;
-
-;                       if (hp.bh_bnum() != 1)
-;                           break;
-
-                        ;; if block 1 becomes full the tree is given an extra level
-                        ;; The pointers from block 1 are moved into the new block.
-                        ;; block 1 is updated to point to the new block
-                        ;; then continue to split the new block
-
-;                       COPY_ptr_block(pp_new, pp);
-;                       pp.pb_count = 1;
-;                       pp.pb_pointer[0].pe_bnum = hp_new.bh_bnum();
-;                       pp.pb_pointer[0].pe_line_count = buf.b_ml.ml_line_count;
-;                       pp.pb_pointer[0].pe_page_count = 1;
-;                       mf_put(mfp, hp);           ;; release block 1
-;                       hp = hp_new;                            ;; new block is to be split
-;                       pp = pp_new;
-;                       ip.ip_index = 0;
-;                       stack_idx++;                            ;; do block 1 again later
-;                   }
-
-                    ;; Move the pointers after the current one to the new block.
-                    ;; If there are none, the new entry will be in the new block.
-
-;                   total_moved = pp.pb_count - pb_idx - 1;
-;                   if (total_moved != 0)
-;                   {
-;                       for (int i = 0; i < total_moved; i++)
-;                           COPY_ptr_entry(pp_new.pb_pointer[i], pp.pb_pointer[pb_idx + 1 + i]);
-;                       pp_new.pb_count = total_moved;
-;                       pp.pb_count -= total_moved - 1;
-;                       pp.pb_pointer[pb_idx + 1].pe_bnum = bnum_right;
-;                       pp.pb_pointer[pb_idx + 1].pe_line_count = line_count_right;
-;                       pp.pb_pointer[pb_idx + 1].pe_page_count = page_count_right;
-;                   }
-;                   else
-;                   {
-;                       pp_new.pb_count = 1;
-;                       pp_new.pb_pointer[0].pe_bnum = bnum_right;
-;                       pp_new.pb_pointer[0].pe_line_count = line_count_right;
-;                       pp_new.pb_pointer[0].pe_page_count = page_count_right;
-;                   }
-;                   pp.pb_pointer[pb_idx].pe_bnum = bnum_left;
-;                   pp.pb_pointer[pb_idx].pe_line_count = line_count_left;
-;                   pp.pb_pointer[pb_idx].pe_page_count = page_count_left;
-;                   lnum_left = 0;
-;                   lnum_right = 0;
-
-                    ;; recompute line counts
-
-;                   line_count_right = 0;
-;                   for (int i = 0; i < pp_new.pb_count; i++)
-;                       line_count_right += pp_new.pb_pointer[i].pe_line_count;
-;                   line_count_left = 0;
-;                   for (int i = 0; i < pp.pb_count; i++)
-;                       line_count_left += pp.pb_pointer[i].pe_line_count;
-
-;                   bnum_left = hp.bh_bnum();
-;                   bnum_right = hp_new.bh_bnum();
-;                   page_count_left = 1;
-;                   page_count_right = 1;
-;                   mf_put(mfp, hp);
-;                   mf_put(mfp, hp_new);
-;               }
-;           }
-
-            ;; Safety check: fallen out of for loop?
-
-;           if (stack_idx < 0)
-;           {
-;               emsg(u8("E318: Updated too many blocks?"));
-;               buf.b_ml.ml_stack_top = 0;      ;; invalidate stack
-;           }
-;       }
+;       BCOPY(dp.db_text, dp.db_index[db_idx + 1], line, 0, len);
 
         ;; The line was inserted below 'lnum'.
 ;       ml_updatechunk(buf, lnum + 1, (long)len, ML_CHNK_ADDLINE);
@@ -49714,23 +48804,11 @@
 ;           return b;
 ;       }
 
-        ;; Find the data block containing the line.
-        ;; This also fills the stack with the blocks from the root to the data block.
-        ;; This also releases any locked block.
-
-;       memfile_C mfp = buf.b_ml.ml_mfp;
-;       if (mfp == null)
-;           return false;
-
-;       block_hdr_C hp = ml_find_line(buf, lnum, ML_DELETE);
-;       if (hp == null)
-;           return false;
-
-;       data_block_C dp = (data_block_C)hp.bh_data;
+;       data_block_C dp = buf.b_ml.ml_data;
 
         ;; compute line count before the delete; number of entries in block
-;       int count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low + 2);
-;       int idx = (int)(lnum - buf.b_ml.ml_locked_low);
+;       int count = (int)buf.b_ml.ml_line_count;
+;       int idx = (int)(lnum - 1);
 
 ;       --buf.b_ml.ml_line_count;
 
@@ -49745,52 +48823,8 @@
         ;; Then we have to remove the entry, pointing to this data block, from the pointer block.
         ;; If this pointer block also becomes empty, we go up another block, and so on,
         ;; up to the root if necessary.
-        ;; The line counts in the pointer blocks have already been adjusted by ml_find_line().
 
-;       if (count == 1)
-;       {
-;           mf_free(mfp, hp);                           ;; free the data block
-;           buf.b_ml.ml_locked = null;
-
-;           for (int stack_idx = buf.b_ml.ml_stack_top - 1; 0 <= stack_idx; --stack_idx)
-;           {
-;               buf.b_ml.ml_stack_top = 0;              ;; stack is invalid when failing
-;               infoptr_C ip = buf.b_ml.ml_stack[stack_idx];
-;               idx = ip.ip_index;
-;               if ((hp = mf_get(mfp, ip.ip_bnum)) == null)
-;                   return false;
-
-;               ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
-;               if (pp.pb_id != PTR_ID)
-;               {
-;                   emsg(u8("E317: pointer block id wrong 4"));
-;                   mf_put(mfp, hp);
-;                   return false;
-;               }
-;               count = --pp.pb_count;
-;               if (count == 0)                         ;; the pointer block becomes empty!
-;                   mf_free(mfp, hp);
-;               else
-;               {
-;                   if (count != idx)                   ;; move entries after the deleted one
-;                       for (int i = idx; i < count; i++)
-;                           COPY_ptr_entry(pp.pb_pointer[i], pp.pb_pointer[i + 1]);
-;                   mf_put(mfp, hp);
-
-;                   buf.b_ml.ml_stack_top = stack_idx; ;; truncate stack
-                    ;; fix line count for rest of blocks in the stack
-;                   if (buf.b_ml.ml_locked_lineadd != 0)
-;                   {
-;                       ml_lineadd(buf, buf.b_ml.ml_locked_lineadd);
-;                       buf.b_ml.ml_stack[buf.b_ml.ml_stack_top].ip_high += buf.b_ml.ml_locked_lineadd;
-;                   }
-;                   buf.b_ml.ml_stack_top++;
-
-;                   break;
-;               }
-;           }
-;       }
-;       else
+;       if (count != 1)
 ;       {
             ;; delete the text by moving the next lines forwards
 
@@ -49803,7 +48837,6 @@
 ;           for (int i = idx; i < count - 1; i++)
 ;               dp.db_index[i] = dp.db_index[i + 1] + line_size;
 
-;           dp.db_free += line_size + INDEX_SIZE;
 ;           dp.db_txt_start += line_size;
 ;           --dp.db_line_count;
 ;       }
@@ -49823,16 +48856,9 @@
 ;       if (@lowest_marked == 0 || lnum < @lowest_marked)
 ;           @lowest_marked = lnum;
 
-        ;; find the data block containing the line
-        ;; This also fills the stack with the blocks from the root to the data block.
-        ;; This also releases any locked block.
+;       data_block_C dp = @curbuf.b_ml.ml_data;
 
-;       block_hdr_C hp = ml_find_line(@curbuf, lnum, ML_FIND);
-;       if (hp == null)
-;           return;                     ;; give error message?
-
-;       data_block_C dp = (data_block_C)hp.bh_data;
-;       dp.db_index[(int)(lnum - @curbuf.b_ml.ml_locked_low)] |= DB_MARKED;
+;       dp.db_index[(int)(lnum - 1)] |= DB_MARKED;
     ))
 
 ;; find the first line with its B_MARKED flag set
@@ -49844,17 +48870,9 @@
 
 ;       for (long lnum = @lowest_marked; lnum <= @curbuf.b_ml.ml_line_count; )
 ;       {
-            ;; Find the data block containing the line.
-            ;; This also fills the stack with the blocks from the root
-            ;; to the data block and releases any locked block.
+;           data_block_C dp = @curbuf.b_ml.ml_data;
 
-;           block_hdr_C hp = ml_find_line(@curbuf, lnum, ML_FIND);
-;           if (hp == null)
-;               return 0;               ;; give error message?
-
-;           data_block_C dp = (data_block_C)hp.bh_data;
-
-;           for (int i = (int)(lnum - @curbuf.b_ml.ml_locked_low); lnum <= @curbuf.b_ml.ml_locked_high; i++, lnum++)
+;           for (int i = (int)(lnum - 1); lnum <= @curbuf.b_ml.ml_line_count; i++, lnum++)
 ;               if ((dp.db_index[i] & DB_MARKED) != 0)
 ;               {
 ;                   dp.db_index[i] &= DB_INDEX_MASK;
@@ -49874,17 +48892,9 @@
 
 ;       for (long lnum = @lowest_marked; lnum <= @curbuf.b_ml.ml_line_count; )
 ;       {
-            ;; Find the data block containing the line.
-            ;; This also fills the stack with the blocks from the root
-            ;; to the data block and releases any locked block.
+;           data_block_C dp = @curbuf.b_ml.ml_data;
 
-;           block_hdr_C hp = ml_find_line(@curbuf, lnum, ML_FIND);
-;           if (hp == null)
-;               return;                         ;; give error message?
-
-;           data_block_C dp = (data_block_C)hp.bh_data;
-
-;           for (int i = (int)(lnum - @curbuf.b_ml.ml_locked_low); lnum <= @curbuf.b_ml.ml_locked_high; i++, lnum++)
+;           for (int i = (int)(lnum - 1); lnum <= @curbuf.b_ml.ml_line_count; i++, lnum++)
 ;               if ((dp.db_index[i] & DB_MARKED) != 0)
 ;               {
 ;                   dp.db_index[i] &= DB_INDEX_MASK;
@@ -49914,329 +48924,45 @@
 ;           long lnum = buf.b_ml.ml_line_lnum;
 ;           Bytes new_line = buf.b_ml.ml_line_ptr;
 
-;           block_hdr_C hp = ml_find_line(buf, lnum, ML_FIND);
-;           if (hp == null)
-;               emsgn(u8("E320: Cannot find line %ld"), lnum);
-;           else
+;           data_block_C dp = buf.b_ml.ml_data;
+
+;           int idx = (int)(lnum - 1);
+;           int start = (dp.db_index[idx] & DB_INDEX_MASK);
+;           int old_len;
+;           if (idx == 0)                               ;; line is last in block
+;               old_len = dp.db_txt_end - start;
+;           else                                        ;; text of previous line follows
+;               old_len = (dp.db_index[idx - 1] & DB_INDEX_MASK) - start;
+;           int new_len = STRLEN(new_line) + 1;
+;           int extra = new_len - old_len;              ;; negative if lines gets smaller
+
+            ;; if new line fits in data block, replace directly
+
+            ;; if the length changes and there are following lines
+;           int count = (int)buf.b_ml.ml_line_count;
+;           if (extra != 0 && idx < count - 1)
 ;           {
-;               data_block_C dp = (data_block_C)hp.bh_data;
+                ;; move text of following lines
+;               BCOPY(dp.db_text, dp.db_txt_start - extra, dp.db_text, dp.db_txt_start, start - dp.db_txt_start);
 
-;               int idx = (int)(lnum - buf.b_ml.ml_locked_low);
-;               int start = (dp.db_index[idx] & DB_INDEX_MASK);
-;               int old_len;
-;               if (idx == 0)                               ;; line is last in block
-;                   old_len = dp.db_txt_end - start;
-;               else                                        ;; text of previous line follows
-;                   old_len = (dp.db_index[idx - 1] & DB_INDEX_MASK) - start;
-;               int new_len = STRLEN(new_line) + 1;
-;               int extra = new_len - old_len;              ;; negative if lines gets smaller
-
-                ;; if new line fits in data block, replace directly
-
-;               if (extra <= dp.db_free)
-;               {
-                    ;; if the length changes and there are following lines
-;                   int count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low + 1);
-;                   if (extra != 0 && idx < count - 1)
-;                   {
-                        ;; move text of following lines
-;                       BCOPY(dp.db_text, dp.db_txt_start - extra, dp.db_text, dp.db_txt_start, start - dp.db_txt_start);
-
-                        ;; adjust pointers of this and following lines
-;                       for (int i = idx + 1; i < count; i++)
-;                           dp.db_index[i] -= extra;
-;                   }
-;                   dp.db_index[idx] -= extra;
-
-                    ;; adjust free space
-;                   dp.db_free -= extra;
-;                   dp.db_txt_start -= extra;
-
-                    ;; copy new line into the data block
-;                   BCOPY(dp.db_text, start - extra, new_line, 0, new_len);
-                    ;; The else case is already covered by the insert and delete.
-;                   ml_updatechunk(buf, lnum, (long)extra, ML_CHNK_UPDLINE);
-;               }
-;               else
-;               {
-                    ;; Cannot do it in one data block: Delete and append.
-                    ;; Append first, because ml_delete_int() cannot delete the last line
-                    ;; in a buffer, which causes trouble for a buffer that has only one line.
-                    ;; Don't forget to copy the mark!
-
-                    ;; How about handling errors???
-;                   ml_append_int(buf, lnum, new_line, new_len, (dp.db_index[idx] & DB_MARKED) != 0);
-;                   ml_delete_int(buf, lnum, false);
-;               }
+                ;; adjust pointers of this and following lines
+;               for (int i = idx + 1; i < count; i++)
+;                   dp.db_index[i] -= extra;
 ;           }
+;           dp.db_index[idx] -= extra;
+
+            ;; adjust free space
+;           dp.db_txt_start -= extra;
+
+            ;; copy new line into the data block
+;           BCOPY(dp.db_text, start - extra, new_line, 0, new_len);
+            ;; The else case is already covered by the insert and delete.
+;           ml_updatechunk(buf, lnum, (long)extra, ML_CHNK_UPDLINE);
 
 ;           @_1_entered = false;
 ;       }
 
 ;       buf.b_ml.ml_line_lnum = 0;
-    ))
-
-;; create a new, empty, zero block
-
-(defn- #_block_hdr_C ml_new_zero [#_memfile_C mfp]
-    (§
-;       return mf_new(mfp, §_zero_block_C(), 1);
-    ))
-
-;; create a new, empty, pointer block
-
-(defn- #_block_hdr_C ml_new_ptr [#_memfile_C mfp]
-    (§
-;       return mf_new(mfp, §_ptr_block_C(), 1);
-    ))
-
-;; create a new, empty, data block
-
-(defn- #_block_hdr_C ml_new_data [#_memfile_C mfp, #_int page_count]
-    (§
-;       return mf_new(mfp, new_data_block(page_count), page_count);
-    ))
-
-;; lookup line 'lnum' in a memline
-;;
-;;   action: if ML_DELETE or ML_INSERT the line count is updated while searching
-;;           if ML_FLUSH only flush a locked block
-;;           if ML_FIND just find the line
-;;
-;; If the block was found it is locked and put in ml_locked.
-;; The stack is updated to lead to the locked block.  The ip_high field in
-;; the stack is updated to reflect the last line in the block AFTER the
-;; insert or delete, also if the pointer block has not been updated yet.
-;; But if ml_locked != null ml_locked_lineadd must be added to ip_high.
-;;
-;; return: null for failure, pointer to block header otherwise
-
-(defn- #_block_hdr_C ml_find_line [#_buffer_C buf, #_long lnum, #_int action]
-    (§
-;       memfile_C mfp = buf.b_ml.ml_mfp;
-
-        ;; If there is a locked block check if the wanted line is in it.
-        ;; If not, flush and release the locked block.
-        ;; Don't do this for ML_INSERT_SAME, because the stack need to be updated.
-        ;; Don't do this for ML_FLUSH, because we want to flush the locked block.
-        ;; Don't do this when 'swapfile' is reset, we want to load all the blocks.
-
-;       if (buf.b_ml.ml_locked != null)
-;       {
-;           if (ml_simple(action) && buf.b_ml.ml_locked_low <= lnum && lnum <= buf.b_ml.ml_locked_high)
-;           {
-                ;; remember to update pointer blocks and stack later
-;               if (action == ML_INSERT)
-;               {
-;                   buf.b_ml.ml_locked_lineadd++;
-;                   buf.b_ml.ml_locked_high++;
-;               }
-;               else if (action == ML_DELETE)
-;               {
-;                   --buf.b_ml.ml_locked_lineadd;
-;                   --buf.b_ml.ml_locked_high;
-;               }
-;               return buf.b_ml.ml_locked;
-;           }
-
-;           mf_put(mfp, buf.b_ml.ml_locked);
-;           buf.b_ml.ml_locked = null;
-
-            ;; If lines have been added or deleted in the locked block,
-            ;; need to update the line count in pointer blocks.
-
-;           if (buf.b_ml.ml_locked_lineadd != 0)
-;               ml_lineadd(buf, buf.b_ml.ml_locked_lineadd);
-;       }
-
-;       if (action == ML_FLUSH)                         ;; nothing else to do
-;           return null;
-
-;       long bnum = 1;                                  ;; start at the root of the tree
-;       int page_count = 1;
-;       long low = 1;
-;       long high = buf.b_ml.ml_line_count;
-
-;       if (action == ML_FIND)                          ;; first try stack entries
-;       {
-;           int top;
-;           for (top = buf.b_ml.ml_stack_top - 1; 0 <= top; --top)
-;           {
-;               infoptr_C ip = buf.b_ml.ml_stack[top];
-;               if (ip.ip_low <= lnum && lnum <= ip.ip_high)
-;               {
-;                   bnum = ip.ip_bnum;
-;                   low = ip.ip_low;
-;                   high = ip.ip_high;
-;                   buf.b_ml.ml_stack_top = top;        ;; truncate stack at prev entry
-;                   break;
-;               }
-;           }
-;           if (top < 0)
-;               buf.b_ml.ml_stack_top = 0;              ;; not found, start at the root
-;       }
-;       else        ;; ML_DELETE or ML_INSERT
-;           buf.b_ml.ml_stack_top = 0;                  ;; start at the root
-
-;       error_noblock:
-;       {
-;           block_hdr_C hp;
-
-            ;; search downwards in the tree until a data block is found
-
-;           error_block:
-;           for ( ; ; )
-;           {
-;               hp = mf_get(mfp, bnum);
-;               if (hp == null)
-;                   break error_noblock;
-
-                ;; update high for insert/delete
-
-;               if (action == ML_INSERT)
-;                   high++;
-;               else if (action == ML_DELETE)
-;                   --high;
-
-;               if (hp.bh_data instanceof data_block_C)
-;               {
-;                   data_block_C dp = (data_block_C)hp.bh_data;
-;                   if (dp.db_id == DATA_ID)                    ;; data block
-;                   {
-;                       buf.b_ml.ml_locked = hp;
-;                       buf.b_ml.ml_locked_low = low;
-;                       buf.b_ml.ml_locked_high = high;
-;                       buf.b_ml.ml_locked_lineadd = 0;
-;                       return hp;
-;                   }
-;               }
-
-;               ptr_block_C pp = (ptr_block_C)hp.bh_data;           ;; must be pointer block
-;               if (pp.pb_id != PTR_ID)
-;               {
-;                   emsg(u8("E317: pointer block id wrong"));
-;                   break error_block;
-;               }
-
-;               int top = ml_add_stack(buf);
-;               if (top < 0)                                ;; add new entry to stack
-;                   break error_block;
-
-;               infoptr_C ip = buf.b_ml.ml_stack[top];
-;               ip.ip_bnum = bnum;
-;               ip.ip_low = low;
-;               ip.ip_high = high;
-;               ip.ip_index = -1;                           ;; index not known yet
-
-;               boolean dirty = false;
-;               int idx;
-;               for (idx = 0; idx < pp.pb_count; idx++)
-;               {
-;                   long t = pp.pb_pointer[idx].pe_line_count;
-
-;                   if (lnum < (low += t))
-;                   {
-;                       ip.ip_index = idx;
-;                       bnum = pp.pb_pointer[idx].pe_bnum;
-;                       page_count = pp.pb_pointer[idx].pe_page_count;
-;                       high = low - 1;
-;                       low -= t;
-
-;                       break;
-;                   }
-;               }
-;               if (pp.pb_count <= idx)         ;; past the end: something wrong!
-;               {
-;                   if (buf.b_ml.ml_line_count < lnum)
-;                       emsgn(u8("E322: line number out of range: %ld past the end"), lnum - buf.b_ml.ml_line_count);
-
-;                   else
-;                       emsgn(u8("E323: line count wrong in block %ld"), bnum);
-;                   break error_block;
-;               }
-;               if (action == ML_DELETE)
-;               {
-;                   pp.pb_pointer[idx].pe_line_count--;
-;                   dirty = true;
-;               }
-;               else if (action == ML_INSERT)
-;               {
-;                   pp.pb_pointer[idx].pe_line_count++;
-;                   dirty = true;
-;               }
-;               mf_put(mfp, hp);
-;           }
-
-;           mf_put(mfp, hp);
-;       }
-
-        ;; If action is ML_DELETE or ML_INSERT we have to correct the tree for
-        ;; the incremented/decremented line counts, because there won't be a line
-        ;; inserted/deleted after all.
-
-;       if (action == ML_DELETE)
-;           ml_lineadd(buf, 1);
-;       else if (action == ML_INSERT)
-;           ml_lineadd(buf, -1);
-;       buf.b_ml.ml_stack_top = 0;
-;       return null;
-    ))
-
-;; add an entry to the info pointer stack
-;;
-;; return -1 for failure, number of the new entry otherwise
-
-(defn- #_int ml_add_stack [#_buffer_C buf]
-    (§
-;       int top = buf.b_ml.ml_stack_top;
-
-        ;; may have to increase the stack size
-;       if (top == buf.b_ml.ml_stack_size)
-;       {
-;           infoptr_C[] newstack = ARRAY_infoptr(buf.b_ml.ml_stack_size + STACK_INCR);
-
-;           for (int i = 0; i < top; i++)
-;               COPY_infoptr(newstack[i], buf.b_ml.ml_stack[i]);
-;           buf.b_ml.ml_stack = newstack;
-;           buf.b_ml.ml_stack_size += STACK_INCR;
-;       }
-
-;       buf.b_ml.ml_stack_top++;
-;       return top;
-    ))
-
-;; Update the pointer blocks on the stack for inserted/deleted lines.
-;; The stack itself is also updated.
-;;
-;; When a insert/delete line action fails, the line is not inserted/deleted,
-;; but the pointer blocks have already been updated.  That is fixed here by
-;; walking through the stack.
-;;
-;; Count is the number of lines added, negative if lines have been deleted.
-
-(defn- #_void ml_lineadd [#_buffer_C buf, #_int count]
-    (§
-;       memfile_C mfp = buf.b_ml.ml_mfp;
-
-;       for (int idx = buf.b_ml.ml_stack_top - 1; 0 <= idx; --idx)
-;       {
-;           infoptr_C ip = buf.b_ml.ml_stack[idx];
-;           block_hdr_C hp = mf_get(mfp, ip.ip_bnum);
-;           if (hp == null)
-;               break;
-
-;           ptr_block_C pp = (ptr_block_C)hp.bh_data; ;; must be pointer block
-;           if (pp.pb_id != PTR_ID)
-;           {
-;               mf_put(mfp, hp);
-;               emsg(u8("E317: pointer block id wrong 2"));
-;               break;
-;           }
-
-;           pp.pb_pointer[ip.ip_index].pe_line_count += count;
-;           ip.ip_high += count;
-;           mf_put(mfp, hp);
-;       }
     ))
 
 (final int MLCS_MAXL 800)   ;; max no of lines in chunk
@@ -50249,7 +48975,6 @@
 
 ;; Keep information for finding byte offset of a line, updtype may be one of:
 ;; ML_CHNK_ADDLINE: Add len to parent chunk, possibly splitting it.
-;;         Careful: ML_CHNK_ADDLINE may cause ml_find_line() to be called.
 ;; ML_CHNK_DELLINE: Subtract len from parent chunk, possibly deleting it.
 ;; ML_CHNK_UPDLINE: Add len to parent chunk, as a signed entity.
 
@@ -50331,19 +49056,12 @@
 ;               int linecnt = 0;
 ;               while (curline < buf.b_ml.ml_line_count && linecnt < MLCS_MINL)
 ;               {
-;                   block_hdr_C hp = ml_find_line(buf, curline, ML_FIND);
-;                   if (hp == null)
-;                   {
-;                       buf.b_ml.ml_usedchunks = -1;
-;                       return;
-;                   }
-
-;                   data_block_C dp = (data_block_C)hp.bh_data;
+;                   data_block_C dp = buf.b_ml.ml_data;
 
                     ;; number of entries in block
-;                   int count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low + 1);
-;                   int idx = (int)(curline - buf.b_ml.ml_locked_low);
-;                   curline = buf.b_ml.ml_locked_high + 1;
+;                   int count = (int)buf.b_ml.ml_line_count;
+;                   int idx = (int)(curline - 1);
+;                   curline = buf.b_ml.ml_line_count + 1;
 ;                   int text_end;
 ;                   if (idx == 0)       ;; first line in block, text at the end
 ;                       text_end = dp.db_txt_end;
@@ -50374,8 +49092,7 @@
 ;               return;
 ;           }
 
-;           if (MLCS_MINL <= chunks[curix].mlcs_numlines
-;                   && curix == buf.b_ml.ml_usedchunks - 1 && buf.b_ml.ml_line_count - line <= 1)
+;           if (MLCS_MINL <= chunks[curix].mlcs_numlines && curix == buf.b_ml.ml_usedchunks - 1 && buf.b_ml.ml_line_count - line <= 1)
 ;           {
                 ;; We are in the last chunk and it is cheap to crate a new one after this.
                 ;; Do it now to avoid the loop above later on.
@@ -50392,14 +49109,7 @@
                     ;; Line is just prior to last, move count for last.
                     ;; This is the common case when loading a new file.
 
-;                   block_hdr_C hp = ml_find_line(buf, buf.b_ml.ml_line_count, ML_FIND);
-;                   if (hp == null)
-;                   {
-;                       buf.b_ml.ml_usedchunks = -1;
-;                       return;
-;                   }
-
-;                   data_block_C dp = (data_block_C)hp.bh_data;
+;                   data_block_C dp = buf.b_ml.ml_data;
 
 ;                   int rest;
 ;                   if (dp.db_line_count == 1)
@@ -50421,8 +49131,7 @@
 ;           chunks[curix].mlcs_numlines--;
 ;           @ml_upd_lastbuf = null;          ;; Force recalc of curix & curline.
 
-;           if (curix < buf.b_ml.ml_usedchunks - 1
-;                   && chunks[curix].mlcs_numlines + chunks[curix + 1].mlcs_numlines <= MLCS_MINL)
+;           if (curix < buf.b_ml.ml_usedchunks - 1 && chunks[curix].mlcs_numlines + chunks[curix + 1].mlcs_numlines <= MLCS_MINL)
 ;           {
 ;               curix++;
 ;           }
@@ -50433,8 +49142,7 @@
 ;                   COPY_chunksize(chunks[i], chunks[i + 1]);
 ;               return;
 ;           }
-;           else if (curix == 0 || (10 < chunks[curix].mlcs_numlines
-;                   && MLCS_MINL < chunks[curix].mlcs_numlines + chunks[curix - 1].mlcs_numlines))
+;           else if (curix == 0 || (10 < chunks[curix].mlcs_numlines && MLCS_MINL < chunks[curix].mlcs_numlines + chunks[curix - 1].mlcs_numlines))
 ;           {
 ;               return;
 ;           }
@@ -50493,15 +49201,11 @@
 ;           if (buf.b_ml.ml_line_count < curline)
 ;               return -1;
 
-;           block_hdr_C hp = ml_find_line(buf, curline, ML_FIND);
-;           if (hp == null)
-;               return -1;
-
-;           data_block_C dp = (data_block_C)hp.bh_data;
+;           data_block_C dp = buf.b_ml.ml_data;
 
             ;; number of entries in block
-;           int count = (int)(buf.b_ml.ml_locked_high - buf.b_ml.ml_locked_low + 1);
-;           int idx = (int)(curline - buf.b_ml.ml_locked_low);
+;           int count = (int)buf.b_ml.ml_line_count;
+;           int idx = (int)(curline - 1);
 ;           int start_idx = idx;
 ;           int text_end;
 ;           if (idx == 0)                           ;; first line in block, text at the end
@@ -50545,7 +49249,7 @@
 
 ;               return curline;
 ;           }
-;           curline = buf.b_ml.ml_locked_high + 1;
+;           curline = buf.b_ml.ml_line_count + 1;
 ;       }
 
 ;       return size;
@@ -56126,8 +54830,7 @@
 ;                   {
 ;                       boolean was_backslashed = false;
 
-;                       while ((s.at(0) == (byte)'#' || was_backslashed)
-;                           && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
+;                       while ((s.at(0) == (byte)'#' || was_backslashed) && @curwin.w_cursor.lnum < @curbuf.b_ml.ml_line_count)
 ;                       {
 ;                           was_backslashed = (s.at(0) != NUL && s.at(STRLEN(s) - 1) == '\\');
 ;                           s = ml_get(++@curwin.w_cursor.lnum);
@@ -73903,8 +72606,7 @@
             ;; is on the screen and the topline is 'scrolloff' lines from the last line.
 
 ;           if (dir == FORWARD
-;                   ? (@curbuf.b_ml.ml_line_count - @p_so <= @curwin.w_topline
-;                       && @curbuf.b_ml.ml_line_count < @curwin.w_botline)
+;                   ? (@curbuf.b_ml.ml_line_count - @p_so <= @curwin.w_topline && @curbuf.b_ml.ml_line_count < @curwin.w_botline)
 ;                   : (@curwin.w_topline == 1))
 ;           {
 ;               beep_flush();
