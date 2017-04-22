@@ -18101,10 +18101,10 @@
             nr)
     ))
 
-;; read-limits - Read two integers to be taken as a minimum and maximum.
-;; If the first character is '-', then the range is reversed.
-;; Should end with 'end'.  If minval is missing, zero is default,
-;; if maxval is missing, a very big number is the default.
+;; Read two integers to be taken as minimum and maximum values.
+;; If the first character is '-', the range is reversed.
+;; If "minval" is missing, the default is zero.
+;; If "maxval" is missing, the default is a very big number.
 
 (defn- #_boolean read-limits [#_long' a'min, #_long' a'max]
     (let [#_boolean reverse (at? @regparse (byte \-))
@@ -18125,7 +18125,7 @@
             (do ;; Reverse the range if there was a '-', or make sure it is in the right order otherwise.
                 (when (or (and (not reverse) (< @a'max @a'min)) (and reverse (< @a'min @a'max)))
                     (let [_ @a'min] (reset! a'min @a'max) (reset! a'max _)))
-                (skipchr)          ;; let's be friends with the lexer again
+                (skipchr) ;; let's be friends with the lexer again
                 true)
         )
     ))
@@ -26413,16 +26413,9 @@
 ;; Open a new memline.
 
 (defn- #_memline_C ml-open []
-    (§
-        ((ß memline_C ml =) (NEW_memline_C))
-
-        ((ß ml =) (assoc ml :ml_flags ML_EMPTY))
-        ((ß ml =) (assoc ml :ml_line_count 1))
-
+    (let [#_memline_C ml (-> (NEW_memline_C) (assoc :ml_flags ML_EMPTY :ml_line_count 1))]
         ;; Create an empty line 1.
-
 ;       %% insert @0 (u8 "")
-
         ml
     ))
 
@@ -32485,7 +32478,7 @@
             (when (== size 1)
                 ((ß [win u_entry_C uep] =) (u-get-headentry? win))
                 ((ß u_entry_C prev_uep =) nil)
-                (dotimes [#_int i 10]
+                (loop-when-recur [#_int i 0] (< i 10) [(inc i)]
                     (if (nil? uep)
                         (ß BREAK)
                     )
@@ -33171,25 +33164,24 @@
 ;; It is called only when "b_u_synced" is false.
 
 (defn- #_window_C u-getbot [#_window_C win]
-    (§
-        (let-when [[win #_u_entry_C uep] (u-get-headentry? win)] (some? uep) ;; check for corrupt undo list
-            (let [uep (:uh_getbot_entry (:b_u_newhead @curbuf))]
-                (when (some? uep)
-                    (let [lmax (line-count @curbuf)]
-                        ;; the new "ue_bot" is computed from the number of lines that has been
-                        ;; inserted (0 - deleted) since calling u-save().  This is equal to the
-                        ;; old line count subtracted from the current line count.
-                        ((ß uep =) (assoc uep :ue_bot (+ (:ue_top uep) (:ue_size uep) 1 (- lmax (:ue_lcount uep)))))
-                        (when-not (<= 1 (:ue_bot uep) lmax)
-                            ((ß win =) (emsg win, (u8 "E440: undo line missing")))
-                            ;; assume all lines deleted, will get all the old lines back without deleting the current ones
-                            ((ß uep =) (assoc uep :ue_bot (inc (:ue_top uep))))
-                        )
+    (let-when [[win #_u_entry_C uep] (u-get-headentry? win)] (some? uep) => win ;; check for corrupt undo list
+        (let [uep (:uh_getbot_entry (:b_u_newhead @curbuf))
+              win (when' (some? uep) => win
+                    (let [lmax (line-count @curbuf)
+                          ;; The new "ue_bot" is computed from the number of lines that has been inserted (0 - deleted) since calling u-save().
+                          ;; This is equal to the old line count subtracted from the current line count.
+                          uep (assoc uep :ue_bot (+ (:ue_top uep) (:ue_size uep) 1 (- lmax (:ue_lcount uep))))
+                          [win uep]
+                            (when' (not (<= 1 (:ue_bot uep) lmax)) => [win uep]
+                                ;; Assume all lines deleted, will get all the old lines back without deleting the current ones.
+                                [(emsg win, (u8 "E440: undo line missing")) (assoc uep :ue_bot (inc (:ue_top uep)))]
+                            )]
+;                       %% poor "uep" !!
                         (swap! curbuf assoc-in [:b_u_newhead :uh_getbot_entry] nil)
-                    ))
-                (swap! curbuf assoc :b_u_synced true)
-            ))
-        win
+                        win)
+                )]
+            (swap! curbuf assoc :b_u_synced true)
+            win)
     ))
 
 ;; Free one header "uhp" and its entry list and adjust the pointers.
