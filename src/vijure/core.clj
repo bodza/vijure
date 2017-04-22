@@ -128,7 +128,6 @@
     ))
 
 (final Bytes
-    CTRL_F_STR (u8 "\006")
     CTRL_H_STR (u8 "\010")
     CTRL_V_STR (u8 "\026"))
 
@@ -952,7 +951,6 @@
 
 (atom! Bytes   p_bs)        ;; 'backspace'
 (atom! Bytes   p_breakat)   ;; 'breakat'
-(atom! Bytes   p_cedit)     ;; 'cedit'
 (atom! long    p_ch)        ;; 'cmdheight'
 (atom! long    p_cwh)       ;; 'cmdwinheight'
 (atom! Bytes   p_cpo)       ;; 'cpoptions'
@@ -2345,7 +2343,7 @@
 (atom! boolean  km_stopsel)
 (atom! boolean  km_startsel)
 
-(atom! int      cedit_key   -1)         ;; key value of 'cedit' option
+(atom! int      cedit_key   Ctrl_F)     ;; key value of 'cedit' option
 (atom! int      cmdwin_type)            ;; type of cmdline window or 0
 (atom! int      cmdwin_result)          ;; result of cmdline window or 0
 
@@ -3190,8 +3188,8 @@
 ;           tnew.c_lflag(tnew.c_lflag() & ~(ECHO));
 
         ;; A signal may cause tcsetattr() to fail (e.g., SIGCONT).  Retry a few times.
-;       for (int n = 10; libc.tcsetattr(@read_cmd_fd, TCSANOW, tnew) == -1 && libC.errno() == EINTR && 0 < n; )
-;           --n;
+;       for (int n = 10; libc.tcsetattr(@read_cmd_fd, TCSANOW, tnew) == -1 && libC.errno() == EINTR && 0 < n; --n)
+;           ;
 
 ;       @curr_tmode = tmode;
     ))
@@ -3229,7 +3227,6 @@
 ;; Try to get the current window size:
 ;; 1. with an ioctl(), most accurate method
 ;; 2. from the environment variables LINES and COLUMNS
-;; 3. from the termcap
 ;; 4. keep using the old values
 ;; Return true when size could be determined, false otherwise.
 
@@ -3239,10 +3236,6 @@
 ;       long columns = 0;
 
         ;; 1. try using an ioctl.  It is the most accurate method.
-        ;;
-        ;; Try using TIOCGWINSZ first, some systems that have it also define
-        ;; TIOCGSIZE but don't have a struct ttysize.
-
 ;       {
 ;           int fd = 1;
 
@@ -4979,16 +4972,10 @@
 ;       return new_vimoption(fname, sname, P_STRING | flags, var, indir, def);
     ))
 
-(defn- #_vimoption_C term_opt [#_Bytes fname, #_Bytes* var]
-    (§
-;       return utf8_opt(fname, null, P_RALL, var, 0, u8(""));
-    ))
-
 ;; vimoptions[] are initialized here.
 ;;
 ;; The order of the options MUST be alphabetic for ":set all" and findoption().
 ;; All option names MUST start with a lowercase letter (for findoption()).
-;; Exception: "t_" options are at the end.
 
 (final vimoption_C* vimoptions
     [
@@ -4997,7 +4984,6 @@
         (utf8_opt (u8 "breakat"),        (u8 "brk"),    (| P_RALL P_FLAGLIST),          p_breakat,   0,         (u8 " \t!@*-+;:,./?")),
         (bool_opt (u8 "breakindent"),    (u8 "bri"),       P_RWIN,                      null,        PV_BRI,     false),
         (utf8_opt (u8 "breakindentopt"), (u8 "briopt"), (| P_RBUF P_COMMA P_NODUP),     null,        PV_BRIOPT, (u8 "")),
-        (utf8_opt (u8 "cedit"),           null,            0,                           p_cedit,     0,          CTRL_F_STR),
         (utf8_opt (u8 "cinwords"),       (u8 "cinw"),   (| P_COMMA P_NODUP),            null,        PV_CINW,   (u8 "if,else,while,do,for,switch")),
         (long_opt (u8 "cmdheight"),      (u8 "ch"),        P_RALL,                      p_ch,        0,          1),
         (long_opt (u8 "cmdwinheight"),   (u8 "cwh"),       0,                           p_cwh,       0,          7),
@@ -5098,58 +5084,6 @@
         (bool_opt (u8 "wrap"),            null,            P_RWIN,                      null,        PV_WRAP,    true),
         (bool_opt (u8 "wrapscan"),       (u8 "ws"),        0,                           p_ws,        0,          true),
         (long_opt (u8 "writedelay"),     (u8 "wd"),        0,                           p_wd,        0,          0),
-
-        ;; terminal output codes
-
-        (term_opt (u8 "t_AB"), T_CAB),
-        (term_opt (u8 "t_AF"), T_CAF),
-        (term_opt (u8 "t_AL"), T_CAL),
-        (term_opt (u8 "t_al"), T_AL),
-        (term_opt (u8 "t_bc"), T_BC),
-        (term_opt (u8 "t_cd"), T_CD),
-        (term_opt (u8 "t_ce"), T_CE),
-        (term_opt (u8 "t_cl"), T_CL),
-        (term_opt (u8 "t_cm"), T_CM),
-        (term_opt (u8 "t_Co"), T_CCO),
-        (term_opt (u8 "t_cs"), T_CS),
-        (term_opt (u8 "t_CV"), T_CSV),
-        (term_opt (u8 "t_ut"), T_UT),
-        (term_opt (u8 "t_da"), T_DA),
-        (term_opt (u8 "t_db"), T_DB),
-        (term_opt (u8 "t_DL"), T_CDL),
-        (term_opt (u8 "t_dl"), T_DL),
-        (term_opt (u8 "t_ke"), T_KE),
-        (term_opt (u8 "t_ks"), T_KS),
-        (term_opt (u8 "t_le"), T_LE),
-        (term_opt (u8 "t_md"), T_MD),
-        (term_opt (u8 "t_me"), T_ME),
-        (term_opt (u8 "t_mr"), T_MR),
-        (term_opt (u8 "t_ms"), T_MS),
-        (term_opt (u8 "t_nd"), T_ND),
-        (term_opt (u8 "t_op"), T_OP),
-        (term_opt (u8 "t_RI"), T_CRI),
-        (term_opt (u8 "t_Sb"), T_CSB),
-        (term_opt (u8 "t_Sf"), T_CSF),
-        (term_opt (u8 "t_se"), T_SE),
-        (term_opt (u8 "t_so"), T_SO),
-        (term_opt (u8 "t_sr"), T_SR),
-        (term_opt (u8 "t_te"), T_TE),
-        (term_opt (u8 "t_ti"), T_TI),
-        (term_opt (u8 "t_ue"), T_UE),
-        (term_opt (u8 "t_us"), T_US),
-        (term_opt (u8 "t_vb"), T_VB),
-        (term_opt (u8 "t_ve"), T_VE),
-        (term_opt (u8 "t_vi"), T_VI),
-        (term_opt (u8 "t_vs"), T_VS),
-        (term_opt (u8 "t_WS"), T_CWS),
-        (term_opt (u8 "t_SI"), T_CSI),
-        (term_opt (u8 "t_EI"), T_CEI),
-        (term_opt (u8 "t_SR"), T_CSR),
-        (term_opt (u8 "t_xn"), T_XN),
-        (term_opt (u8 "t_ZH"), T_CZH),
-        (term_opt (u8 "t_ZR"), T_CZR)
-
-        ;; terminal key codes are not in here
     ])
 
 (final Bytes*
@@ -5218,7 +5152,7 @@
 
 (defn- #_void set_options_default []
     (§
-;       for (int i = 0; i < vimoptions.length && !istermoption(vimoptions[i]); i++)
+;       for (int i = 0; i < vimoptions.length; i++)
 ;           set_option_default(i);
 
         ;; The 'scroll' option must be computed for all windows.
@@ -5258,9 +5192,6 @@
 ;       boolean did_show = false;           ;; already showed one value
 
 ;       Bytes errbuf = new Bytes(80);
-;       Bytes key_name = new Bytes(2);
-
-;       Object varp = null;                 ;; pointer to variable for current option
 
 ;       for ( ; arg.at(0) != NUL; arg = skipwhite(arg))             ;; loop to process all options
 ;       {
@@ -5281,54 +5212,27 @@
 
 ;           skip:
 ;           {
-;               int nextchar;           ;; next non-white char after option name
-;               int opt_idx;
-;               int len;
-
-                ;; find end of name
-;               int key = 0;
 ;               if (arg.at(0) == (byte)'<')
 ;               {
-;                   nextchar = 0;
-;                   opt_idx = -1;
-                    ;; look out for <t_>;>
-;                   if (arg.at(1) == (byte)'t' && arg.at(2) == (byte)'_' && arg.at(3) != NUL && arg.at(4) != NUL)
-;                       len = 5;
-;                   else
-;                   {
-;                       len = 1;
-;                       while (arg.at(len) != NUL && arg.at(len) != (byte)'>')
-;                           len++;
-;                   }
-;                   if (arg.at(len) != (byte)'>')
-;                   {
-;                       errmsg = e_invarg;
-;                       break skip;
-;                   }
-;                   arg.be(len, NUL);                           ;; put NUL after name
-;                   if (arg.at(1) == (byte)'t' && arg.at(2) == (byte)'_') ;; could be term code
-;                       opt_idx = findoption(arg.plus(1));
-;                   arg.be(len++, (byte)'>');                   ;; restore '>'
-;                   if (opt_idx == -1)
-;                       key = find_key_option(arg.plus(1));
+;                   errmsg = e_invarg;
+;                   break skip;
 ;               }
-;               else
+
+;               int nextchar;           ;; next non-white char after option name
+
+                ;; find end of name
+;               int len = 0;
+;               while (asc_isalnum(arg.at(len)) || arg.at(len) == (byte)'_')
+;                   len++;
+;               nextchar = arg.at(len);
+;               arg.be(len, NUL);                           ;; put NUL after name
+;               int opt_idx = findoption(arg);
+;               arg.be(len, nextchar);                      ;; restore nextchar
+
+;               if (opt_idx == -1)      ;; found a mismatch: skip
 ;               {
-;                   len = 0;
-
-                    ;; The two characters after "t_" may not be alphanumeric.
-
-;                   if (arg.at(0) == (byte)'t' && arg.at(1) == (byte)'_' && arg.at(2) != NUL && arg.at(3) != NUL)
-;                       len = 4;
-;                   else
-;                       while (asc_isalnum(arg.at(len)) || arg.at(len) == (byte)'_')
-;                           len++;
-;                   nextchar = arg.at(len);
-;                   arg.be(len, NUL);                           ;; put NUL after name
-;                   opt_idx = findoption(arg);
-;                   arg.be(len, nextchar);                      ;; restore nextchar
-;                   if (opt_idx == -1)
-;                       key = find_key_option(arg);
+;                   errmsg = u8("E518: Unknown option");
+;                   break skip;
 ;               }
 
                 ;; remember character after option name
@@ -5338,58 +5242,17 @@
 ;               while (vim_iswhite(arg.at(len)))
 ;                   len++;
 
-;               boolean adding = false;             ;; "opt+=arg"
-;               boolean prepending = false;         ;; "opt^=arg"
-;               boolean removing = false;           ;; "opt-=arg"
-
-;               if (arg.at(len) != NUL && arg.at(len + 1) == (byte)'=')
-;               {
-;                   if (arg.at(len) == (byte)'+')
-;                   {
-;                       adding = true;              ;; "+="
-;                       len++;
-;                   }
-;                   else if (arg.at(len) == (byte)'^')
-;                   {
-;                       prepending = true;          ;; "^="
-;                       len++;
-;                   }
-;                   else if (arg.at(len) == (byte)'-')
-;                   {
-;                       removing = true;            ;; "-="
-;                       len++;
-;                   }
-;               }
 ;               nextchar = arg.at(len);
 
-;               if (opt_idx == -1 && key == 0)      ;; found a mismatch: skip
+;               if (nextchar != NUL && arg.at(len + 1) == (byte)'=')
 ;               {
-;                   errmsg = u8("E518: Unknown option");
+;                   errmsg = e_invarg;
 ;                   break skip;
 ;               }
 
-;               long flags;             ;; flags for current option
-;               if (0 <= opt_idx)
-;               {
-;                   vimoption_C v = vimoptions[opt_idx];
+;               vimoption_C v = vimoptions[opt_idx];
 
-;                   flags = v.flags;
-;                   varp = get_varp(v);
-;               }
-;               else
-;               {
-;                   flags = P_STRING;
-;                   if (key < 0)
-;                   {
-;                       key_name.be(0, KEY2TERMCAP0(key));
-;                       key_name.be(1, KEY2TERMCAP1(key));
-;                   }
-;                   else
-;                   {
-;                       key_name.be(0, KS_KEY);
-;                       key_name.be(1, (byte)(key & 0xff));
-;                   }
-;               }
+;               Object varp = get_varp(v);
 
 ;               if (vim_strchr(u8("?=:!&<"), nextchar) != null)
 ;               {
@@ -5404,7 +5267,7 @@
                 ;; allow '=' and ':' as MSDOS command.com allows
                 ;; only one '=' character per "set" command line
 
-;               if (nextchar == '?' || (prefix == 1 && vim_strchr(u8("=:&<"), nextchar) == null && (flags & P_BOOL) == 0))
+;               if (nextchar == '?' || (prefix == 1 && vim_strchr(u8("=:&<"), nextchar) == null && (v.flags & P_BOOL) == 0))
 ;               {
                     ;; print value
 ;                   if (did_show)
@@ -5414,27 +5277,15 @@
 ;                       gotocmdline(true);      ;; cursor at status line
 ;                       did_show = true;        ;; remember that we did a line
 ;                   }
-;                   if (0 <= opt_idx)
-;                   {
-;                       showoneopt(vimoptions[opt_idx]);
-;                   }
-;                   else
-;                   {
-;                       Bytes p = find_termcode(key_name);
-;                       if (p == null)
-;                       {
-;                           errmsg = u8("E846: Key code not set");
-;                           break skip;
-;                       }
-;                       else
-;                           show_one_termcode(key_name, p, true);
-;                   }
+
+;                   showoneopt(v);
+
 ;                   if (nextchar != '?' && nextchar != NUL && !vim_iswhite(afterchar))
 ;                       errmsg = e_trailing;
 ;               }
 ;               else
 ;               {
-;                   if ((flags & P_BOOL) != 0)          ;; boolean
+;                   if ((v.flags & P_BOOL) != 0)          ;; boolean
 ;                   {
 ;                       if (nextchar == '=' || nextchar == ':' || nextchar == '<')
 ;                       {
@@ -5450,7 +5301,7 @@
 ;                       if (nextchar == '!')
 ;                           value = !(boolean)@varp;
 ;                       else if (nextchar == '&')
-;                           value = (boolean)vimoptions[opt_idx].def_val;
+;                           value = (boolean)v.def_val;
 ;                       else
 ;                       {
                             ;; ":set invopt": invert
@@ -5477,7 +5328,7 @@
 ;                           break skip;
 ;                       }
 
-;                       if ((flags & P_NUM) != 0)       ;; numeric
+;                       if ((v.flags & P_NUM) != 0)       ;; numeric
 ;                       {
 ;                           long value;
 
@@ -5491,7 +5342,7 @@
 ;                           arg = arg.plus(1);
 ;                           if (nextchar == '&')
 ;                           {
-;                               value = (long)vimoptions[opt_idx].def_val;
+;                               value = (long)v.def_val;
 ;                           }
 ;                           else if (arg.at(0) == (byte)'-' || asc_isdigit(arg.at(0)))
 ;                           {
@@ -5511,16 +5362,9 @@
 ;                               break skip;
 ;                           }
 
-;                           if (adding)
-;                               value = (long)@varp + value;
-;                           if (prepending)
-;                               value = (long)@varp * value;
-;                           if (removing)
-;                               value = (long)@varp - value;
-
 ;                           errmsg = set_num_option(opt_idx, (long[])varp, value, errbuf, errbuf.size());
 ;                       }
-;                       else if (0 <= opt_idx)                  ;; string
+;                       else                  ;; string
 ;                       {
 ;                           Bytes save_arg = null;
 
@@ -5529,7 +5373,7 @@
 ;                           Bytes oldval = (Bytes)@varp;
 ;                           if (nextchar == '&')    ;; set to default val
 ;                           {
-;                               newval = (Bytes)vimoptions[opt_idx].def_val;
+;                               newval = (Bytes)v.def_val;
 
 ;                               if (newval == null)
 ;                                   newval = EMPTY_OPTION;
@@ -5553,11 +5397,7 @@
 
 ;                               Bytes origval = oldval;
 
-                                ;; get a bit too much
-;                               int newlen = STRLEN(arg) + 1;
-;                               if (adding || prepending || removing)
-;                                   newlen += STRLEN(origval) + 1;
-;                               newval = new Bytes(newlen);
+;                               newval = new Bytes(STRLEN(arg) + 1);
 ;                               Bytes s = newval;
 
                                 ;; Copy the string, skip over escaped chars.
@@ -5582,17 +5422,17 @@
                                 ;; Locate newval[] in origval[] when removing it
                                 ;; and when adding to avoid duplicates.
 ;                               int i = 0;
-;                               if (removing || (flags & P_NODUP) != 0)
+;                               if ((v.flags & P_NODUP) != 0)
 ;                               {
 ;                                   i = STRLEN(newval);
 ;                                   int bs = 0;
 ;                                   for (s = origval; s.at(0) != NUL; s = s.plus(1))
 ;                                   {
-;                                       if (((flags & P_COMMA) == 0
+;                                       if (((v.flags & P_COMMA) == 0
 ;                                                   || BEQ(s, origval)
 ;                                                   || (s.at(-1) == (byte)',' && (bs & 1) == 0))
 ;                                               && STRNCMP(s, newval, i) == 0
-;                                               && ((flags & P_COMMA) == 0
+;                                               && ((v.flags & P_COMMA) == 0
 ;                                                   || s.at(i) == (byte)','
 ;                                                   || s.at(i) == NUL))
 ;                                           break;
@@ -5604,67 +5444,13 @@
 ;                                       else
 ;                                           bs = 0;
 ;                                   }
-
-                                    ;; do not add if already there
-;                                   if ((adding || prepending) && s.at(0) != NUL)
-;                                   {
-;                                       prepending = false;
-;                                       adding = false;
-;                                       STRCPY(newval, origval);
-;                                   }
 ;                               }
 
-                                ;; concatenate the two strings; add a ',' if needed
-;                               if (adding || prepending)
-;                               {
-;                                   boolean comma = ((flags & P_COMMA) != 0 && origval.at(0) != NUL && newval.at(0) != NUL);
-;                                   if (adding)
-;                                   {
-;                                       i = STRLEN(origval);
-;                                       BCOPY(newval, i + (comma ? 1 : 0), newval, 0, STRLEN(newval) + 1);
-;                                       BCOPY(newval, origval, i);
-;                                   }
-;                                   else
-;                                   {
-;                                       i = STRLEN(newval);
-;                                       BCOPY(newval, i + (comma ? 1 : 0), origval, 0, STRLEN(origval) + 1);
-;                                   }
-;                                   if (comma)
-;                                       newval.be(i, (byte)',');
-;                               }
-
-                                ;; Remove newval[] from origval[].
-                                ;; (Note: "i" has been set above and is used here).
-;                               if (removing)
-;                               {
-;                                   STRCPY(newval, origval);
-;                                   if (s.at(0) != NUL)
-;                                   {
-                                        ;; may need to remove a comma
-;                                       if ((flags & P_COMMA) != 0)
-;                                       {
-;                                           if (BEQ(s, origval))
-;                                           {
-                                                ;; include comma after string
-;                                               if (s.at(i) == (byte)',')
-;                                                   i++;
-;                                           }
-;                                           else
-;                                           {
-                                                ;; include comma before string
-;                                               s = s.minus(1);
-;                                               i++;
-;                                           }
-;                                       }
-;                                       BCOPY(newval, BDIFF(s, origval), s, i, STRLEN(s, i) + 1);
-;                                   }
-;                               }
-
-;                               if ((flags & P_FLAGLIST) != 0)
+;                               if ((v.flags & P_FLAGLIST) != 0)
 ;                               {
                                     ;; Remove flags that appear twice.
 ;                                   for (s = newval; s.at(0) != NUL; s = s.plus(1))
-;                                       if (((flags & P_COMMA) == 0 || s.at(0) != (byte)',') && vim_strbyte(s.plus(1), s.at(0)) != null)
+;                                       if (((v.flags & P_COMMA) == 0 || s.at(0) != (byte)',') && vim_strbyte(s.plus(1), s.at(0)) != null)
 ;                                       {
 ;                                           BCOPY(s, 0, s, 1, STRLEN(s, 1) + 1);
 ;                                           s = s.minus(1);
@@ -5684,29 +5470,6 @@
                             ;; If error detected, print the error message.
 ;                           if (errmsg != null)
 ;                               break skip;
-;                       }
-;                       else            ;; key code option
-;                       {
-;                           if (nextchar == '&')
-;                           {
-;                               if (add_termcap_entry(key_name, true) == false)
-;                                   errmsg = u8("E522: Not found in termcap");
-;                           }
-;                           else
-;                           {
-;                               arg = arg.plus(1); ;; jump to after the '=' or ':'
-;                               Bytes p;
-;                               for (p = arg; p.at(0) != NUL && !vim_iswhite(p.at(0)); p = p.plus(1))
-;                                   if (p.at(0) == (byte)'\\' && p.at(1) != NUL)
-;                                       p = p.plus(1);
-;                               nextchar = p.at(0);
-;                               p.be(0, NUL);
-;                               add_termcode(key_name, arg);
-;                               p.be(0, nextchar);
-;                           }
-;                           if (@full_screen)
-;                               ttest(false);
-;                           redraw_all_later(CLEAR);
 ;                       }
 ;                   }
 ;               }
@@ -5761,37 +5524,6 @@
 ;       return errbuf;
     ))
 
-;; Convert a key name or ctrl into a key value.
-;; Used for 'wildchar' and 'cedit' options.
-
-(defn- #_int parse_key [#_Bytes arg]
-    (§
-;       if (arg.at(0) == (byte)'<')
-;           return find_key_option(arg.plus(1));
-;       if (arg.at(0) == (byte)'^')
-;           return ctrl_key(arg.at(1));
-
-;       return char_u(arg.at(0));
-    ))
-
-;; Check value of 'cedit' and set cedit_key.
-;; Returns null if value is OK, error message otherwise.
-
-(defn- #_Bytes check_cedit []
-    (§
-;       if (@p_cedit.at(0) == NUL)
-;           @cedit_key = -1;
-;       else
-;       {
-;           int key = parse_key(@p_cedit);
-;           if (vim_isprintc(key))
-;               return e_invarg;
-;           @cedit_key = key;
-;       }
-
-;       return null;
-    ))
-
 ;; After setting various option values: recompute variables that depend on option values.
 
 (defn- #_void didset_options []
@@ -5802,8 +5534,6 @@
 ;       opt_strings_flags(@p_dy, p_dy_values, dy_flags, true);
 ;       opt_strings_flags(@p_ve, p_ve_values, ve_flags, true);
 
-        ;; set cedit_key
-;       check_cedit();
 ;       briopt_check(@curwin);
     ))
 
@@ -5811,9 +5541,9 @@
 
 (defn- #_void check_options []
     (§
-;       for (int opt_idx = 0; opt_idx < vimoptions.length; opt_idx++)
-;           if ((vimoptions[opt_idx].flags & P_STRING) != 0)
-;               check_string_option((Bytes[])get_varp(vimoptions[opt_idx]));
+;       for (int i = 0; i < vimoptions.length; i++)
+;           if ((vimoptions[i].flags & P_STRING) != 0)
+;               check_string_option((Bytes[])get_varp(vimoptions[i]));
     ))
 
 ;; Check string options in a buffer for null value.
@@ -5921,38 +5651,6 @@
 ;               }
 ;               if (p.at(0) == NUL)
 ;                   break;
-;           }
-;       }
-
-        ;; 'cedit'
-;       else if (varp == p_cedit)
-;       {
-;           errmsg = check_cedit();
-;       }
-
-        ;; terminal options
-;       else if (istermoption(v) && @full_screen)
-;       {
-            ;; ":set t_Co=0" and ":set t_Co=1" do ":set t_Co="
-;           if (varp == T_CCO)
-;           {
-;               int colors = libC.atoi(@T_CCO);
-
-                ;; Only reinitialize colors if t_Co value has really changed to
-                ;; avoid expensive reload of colorscheme if t_Co is set to the
-                ;; same value multiple times.
-;               if (colors != @t_colors)
-;               {
-;                   @t_colors = colors;
-;                   if (@t_colors <= 1)
-;                       @T_CCO = EMPTY_OPTION;
-;               }
-;           }
-;           ttest(false);
-;           if (varp == T_ME)
-;           {
-;               out_str(@T_ME);
-;               redraw_later(CLEAR);
 ;           }
 ;       }
 
@@ -6569,29 +6267,6 @@
 ;       return (Bytes)vimoptions[i].def_val;
     ))
 
-;; Translate a string like "t_xx", "<t_xx>" or "<S-Tab>" to a key number.
-
-(defn- #_int find_key_option [#_Bytes _arg]
-    (§
-;       Bytes[] arg = { _arg };
-;       int key;
-
-        ;; Don't use get_special_key_code() for t_xx, we don't want it to call add_termcap_entry().
-
-;       if (arg[0].at(0) == (byte)'t' && arg[0].at(1) == (byte)'_' && arg[0].at(2) != NUL && arg[0].at(3) != NUL)
-;           key = TERMCAP2KEY(arg[0].at(2), arg[0].at(3));
-;       else
-;       {
-;           arg[0] = arg[0].minus(1);                      ;; put "arg" at the '<'
-;           int[] modifiers = { 0 };
-;           key = find_special_key(arg, modifiers, true, true);
-;           if (modifiers[0] != 0)              ;; can't handle modifiers here
-;               key = 0;
-;       }
-
-;       return key;
-    ))
-
 ;; showoneopt: show the value of one option
 
 (defn- #_void showoneopt [#_vimoption_C v]
@@ -6627,66 +6302,6 @@
 ;       }
 
 ;       @info_message = false;
-    ))
-
-;; Clear all the terminal options.
-;; If the option has been allocated, free the memory.
-;; Terminal options are never hidden or indirect.
-
-(defn- #_void clear_termoptions []
-    (§
-        ;; Reset a few things before clearing the old options.  This may cause
-        ;; outputting a few things that the terminal doesn't understand, but the
-        ;; screen will be cleared later, so this is OK.
-
-;       stoptermcap();                  ;; stop termcap mode
-
-;       free_termoptions();
-    ))
-
-(defn- #_void free_termoptions []
-    (§
-;       for (int i = 0; i < vimoptions.length; i++)
-;           if (istermoption(vimoptions[i]))
-;           {
-;               ((Bytes[])vimoptions[i].var)[0] = EMPTY_OPTION;
-;               vimoptions[i].def_val = EMPTY_OPTION;
-;           }
-
-;       clear_termcodes();
-    ))
-
-;; Free the string for one term option, if it was allocated.
-;; Set the string to EMPTY_OPTION and clear allocated flag.
-;; "var" points to the option value.
-
-(defn- #_void free_one_termoption [#_Bytes* varp]
-    (§
-;       for (int i = 0; i < vimoptions.length; i++)
-;           if (vimoptions[i].var == varp)
-;           {
-;               ((Bytes[])vimoptions[i].var)[0] = EMPTY_OPTION;
-;               break;
-;           }
-    ))
-
-;; Set the terminal option defaults to the current value.
-;; Used after setting the terminal name.
-
-(defn- #_void set_term_defaults []
-    (§
-;       for (int i = 0; i < vimoptions.length; i++)
-;       {
-;           if (istermoption(vimoptions[i]) && vimoptions[i].def_val != ((Bytes[])vimoptions[i].var)[0])
-;               vimoptions[i].def_val = ((Bytes[])vimoptions[i].var)[0];
-;       }
-    ))
-
-;; return true if 'v' starts with 't_'
-
-(defn- #_boolean istermoption [#_vimoption_C v]
-    (§
-;       return (v.fullname.at(0) == (byte)'t' && v.fullname.at(1) == (byte)'_');
     ))
 
 ;; Compute columns for ruler and shown command. 'sc_col' is also used to
@@ -48906,20 +48521,6 @@
         (->key_name_C K_CURSORHOLD,     (u8 "CursorHold")      ),
     ])
 
-;; Return the modifier mask bit (MOD_MASK_*) which corresponds to the given
-;; modifier name ('S' for Shift, 'C' for Ctrl etc).
-
-(defn- #_int name_to_mod_mask [#_int c]
-    (§
-;       c = asc_toupper(c);
-
-;       for (int i = 0; i < mod_mask_table.length; i++)
-;           if (mod_mask_table[i].name == c)
-;               return mod_mask_table[i].mod_flag;
-
-;       return 0;
-    ))
-
 ;; Check if if there is a special key code for "key" that includes the modifiers specified.
 
 (defn- #_int simplify_key [#_int key, #_int* modifiers]
@@ -49068,154 +48669,6 @@
 ;       return key__name;
     ))
 
-;; Try translating a <> name at (*srcp)[], return the key and modifiers.
-;; srcp is advanced to after the <> name.
-;; returns 0 if there is no match.
-
-(defn- #_int find_special_key [#_Bytes* srcp, #_int* modp, #_boolean keycode, #_boolean keep_x_key]
-    ;; keycode: prefer key code, e.g. K_DEL instead of DEL
-    ;; keep_x_key: don't translate xHome to Home key
-    (§
-;       Bytes src = srcp[0];
-;       if (src.at(0) != (byte)'<')
-;           return 0;
-
-        ;; Find end of modifier list.
-;       Bytes last_dash = src;
-;       Bytes bp;
-;       for (bp = src.plus(1); bp.at(0) == (byte)'-' || vim_isIDc(bp.at(0)); bp = bp.plus(1))
-;       {
-;           if (bp.at(0) == (byte)'-')
-;           {
-;               last_dash = bp;
-;               if (bp.at(1) != NUL)
-;               {
-;                   int l = us_ptr2len_cc(bp.plus(1));
-;                   if (bp.at(l + 1) == (byte)'>')
-;                       bp = bp.plus(l);    ;; anything accepted, like <C-?>
-;               }
-;           }
-;           if (bp.at(0) == (byte)'t' && bp.at(1) == (byte)'_' && bp.at(2) != NUL && bp.at(3) != NUL)
-;               bp = bp.plus(3);    ;; skip t_xx, xx may be '-' or '>'
-;           else if (STRNCASECMP(bp, u8("char-"), 5) == 0)
-;           {
-;               int[] l = new int[1];
-;               vim_str2nr(bp.plus(5), null, l, TRUE, TRUE, null);
-;               bp = bp.plus(l[0] + 5);
-;               break;
-;           }
-;       }
-
-;       if (bp.at(0) == (byte)'>')     ;; found matching '>'
-;       {
-;           Bytes end_of_name = bp.plus(1);
-
-            ;; Which modifiers are given?
-;           int[] modifiers = { 0 };
-;           for (bp = src.plus(1); BLT(bp, last_dash); bp = bp.plus(1))
-;           {
-;               if (bp.at(0) != (byte)'-')
-;               {
-;                   int bit = name_to_mod_mask(bp.at(0));
-;                   if (bit == 0x0)
-;                       break;      ;; Illegal modifier name
-;                   modifiers[0] |= bit;
-;               }
-;           }
-
-            ;; Legal modifier name.
-
-;           if (BLE(last_dash, bp))
-;           {
-;               int key;
-;               if (STRNCASECMP(last_dash.plus(1), u8("char-"), 5) == 0 && asc_isdigit(last_dash.at(6)))
-;               {
-                    ;; <Char-123> or <Char-033> or <Char-0x33>
-;                   long[] n = new long[1];
-;                   vim_str2nr(last_dash.plus(6), null, null, TRUE, TRUE, n);
-;                   final long roof = 0x7fffffffL;
-;                   if (n[0] < 0 || roof < n[0])
-;                       n[0] = 0;
-;                   key = (int)n[0];
-;               }
-;               else
-;               {
-                    ;; Modifier with single letter, or special key name.
-
-;                   int l = us_ptr2len_cc(last_dash.plus(1));
-;                   if (modifiers[0] != 0 && last_dash.at(l + 1) == (byte)'>')
-;                       key = us_ptr2char(last_dash.plus(1));
-;                   else
-;                   {
-;                       key = get_special_key_code(last_dash.plus(1));
-;                       if (!keep_x_key)
-;                           key = handle_x_keys(key);
-;                   }
-;               }
-
-                ;; get_special_key_code() may return NUL for invalid special key name.
-
-;               if (key != NUL)
-;               {
-                    ;; Only use a modifier when there is no special key code that
-                    ;; includes the modifier.
-
-;                   key = simplify_key(key, modifiers);
-
-;                   if (!keycode)
-;                   {
-                        ;; don't want keycode, use single byte code
-;                       if (key == K_BS)
-;                           key = BS;
-;                       else if (key == K_DEL || key == K_KDEL)
-;                           key = DEL;
-;                   }
-
-                    ;; Normal Key with modifier: Try to make a single byte code.
-
-;                   if (!is_special(key))
-;                       key = extract_modifiers(key, modifiers);
-
-;                   modp[0] = modifiers[0];
-;                   srcp[0] = end_of_name;
-;                   return key;
-;               }
-;           }
-;       }
-
-;       return 0;
-    ))
-
-;; Try to include modifiers in the key.
-;; Changes "Shift-a" to 'A', "Alt-A" to 0xc0, etc.
-
-(defn- #_int extract_modifiers [#_int key, #_int* modp]
-    (§
-;       int modifiers = modp[0];
-
-;       if ((modifiers & MOD_MASK_SHIFT) != 0 && asc_isalpha(key))
-;       {
-;           key = asc_toupper(key);
-;           modifiers &= ~MOD_MASK_SHIFT;
-;       }
-;       if ((modifiers & MOD_MASK_CTRL) != 0 && (('?' <= key && key <= '_') || asc_isalpha(key)))
-;       {
-;           key = ctrl_key((byte)key);
-;           modifiers &= ~MOD_MASK_CTRL;
-            ;; <C-@> is <Nul>
-;           if (key == 0)
-;               key = K_ZERO;
-;       }
-;       if ((modifiers & MOD_MASK_ALT) != 0 && key < 0x80)  ;; avoid creating a lead byte
-;       {
-;           key |= 0x80;
-;           modifiers &= ~MOD_MASK_ALT;                     ;; remove the META modifier
-;       }
-
-;       modp[0] = modifiers;
-;       return key;
-    ))
-
 ;; Try to find key "c" in the special key table.
 ;; Return the index when found, -1 when not found.
 
@@ -49226,41 +48679,6 @@
 ;               return i;
 
 ;       return -1;
-    ))
-
-;; Find the special key with the given name (the given string does not have to
-;; end with NUL, the name is assumed to end before the first non-idchar).
-;; If the name starts with "t_" the next two characters are interpreted as a termcap name.
-;; Return the key code, or 0 if not found.
-
-(defn- #_int get_special_key_code [#_Bytes name]
-    (§
-        ;; If it's <t_xx> we get the code for xx from the termcap
-
-;       if (name.at(0) == (byte)'t' && name.at(1) == (byte)'_' && name.at(2) != NUL && name.at(3) != NUL)
-;       {
-;           Bytes string = new Bytes(3);
-
-;           string.be(0, name.at(2));
-;           string.be(1, name.at(3));
-;           string.be(2, NUL);
-
-;           if (add_termcap_entry(string, false) == true)
-;               return TERMCAP2KEY(name.at(2), name.at(3));
-;       }
-;       else
-;           for (int i = 0; i < key_names_table.length; i++)
-;           {
-;               Bytes key_name = key_names_table[i].name;
-;               int j;
-;               for (j = 0; vim_isIDc(name.at(j)) && key_name.at(j) != NUL; j++)
-;                   if (asc_tolower(key_name.at(j)) != asc_tolower(name.at(j)))
-;                       break;
-;               if (!vim_isIDc(name.at(j)) && key_name.at(j) == NUL)
-;                   return key_names_table[i].key;
-;           }
-
-;       return 0;
     ))
 
 ;; VISUAL, SELECTMODE and OP_PENDING State are never set, they are equal to
@@ -50589,14 +50007,8 @@
 
 ;; term.c: functions for controlling the terminal -------------------------------------------------
 
-;; Here are the builtin termcap entries.  They are not stored as complete
-;; structures with all entries, as such a structure is too big.
-;;
-;; Each termcap is a list of btcap_C structures.  It always starts with KS_NAME,
-;; which separates the entries.  See parse_builtin_tcap() for all details.
+;; Each termcap is a list of btcap_C structures.
 ;; 'bt_key' is either a KS_xxx code (>= 0), or a K_xxx code.
-;;
-;; Entries marked with "guessed" may be wrong.
 
 (class! #_final btcap_C
     [
@@ -50604,91 +50016,86 @@
         (field Bytes    bt_seq)
     ])
 
-(defn- #_final #_btcap_C tcap [#_int key, #_Bytes seq]
-    (§
-;       return new btcap_C(key, seq);
-    ))
-
 (final btcap_C* xterm_tcaps
     [
-        (tcap KS_NAME,      (u8 "xterm")                ),
+        (->btcap_C KS_NAME,      (u8 "xterm")                ),
 
-        (tcap KS_CE,        (u8 "\033[K")               ),
-        (tcap KS_AL,        (u8 "\033[L")               ),
-        (tcap KS_CAL,       (u8 "\033[%p1%dL")          ),
-        (tcap KS_DL,        (u8 "\033[M")               ),
-        (tcap KS_CDL,       (u8 "\033[%p1%dM")          ),
-        (tcap KS_CS,        (u8 "\033[%i%p1%d;%p2%dr")  ),
-        (tcap KS_CL,        (u8 "\033[H\033[2J")        ),
-        (tcap KS_CD,        (u8 "\033[J")               ),
-        (tcap KS_ME,        (u8 "\033[m")               ),
-        (tcap KS_MR,        (u8 "\033[7m")              ),
-        (tcap KS_MD,        (u8 "\033[1m")              ),
-        (tcap KS_UE,        (u8 "\033[m")               ),
-        (tcap KS_US,        (u8 "\033[4m")              ),
-        (tcap KS_MS,        (u8 "y")                    ),
-        (tcap KS_UT,        (u8 "y")                    ),
-        (tcap KS_LE,        (u8 "\b")                   ),
-        (tcap KS_CM,        (u8 "\033[%i%p1%d;%p2%dH")  ),
-        (tcap KS_SR,        (u8 "\033M")                ),
-        (tcap KS_CRI,       (u8 "\033[%p1%dC")          ),
-        (tcap KS_KS,        (u8 "\033[?1h\033=")        ),
-        (tcap KS_KE,        (u8 "\033[?1l\033>")        ),
-        (tcap KS_TI,        (u8 "\0337\033[?47h")       ),
-        (tcap KS_TE,        (u8 "\033[2J\033[?47l\0338")),
-        (tcap KS_CWS,       (u8 "\033[8;%p1%d;%p2%dt")  ),
+        (->btcap_C KS_CE,        (u8 "\033[K")               ),
+        (->btcap_C KS_AL,        (u8 "\033[L")               ),
+        (->btcap_C KS_CAL,       (u8 "\033[%p1%dL")          ),
+        (->btcap_C KS_DL,        (u8 "\033[M")               ),
+        (->btcap_C KS_CDL,       (u8 "\033[%p1%dM")          ),
+        (->btcap_C KS_CS,        (u8 "\033[%i%p1%d;%p2%dr")  ),
+        (->btcap_C KS_CL,        (u8 "\033[H\033[2J")        ),
+        (->btcap_C KS_CD,        (u8 "\033[J")               ),
+        (->btcap_C KS_ME,        (u8 "\033[m")               ),
+        (->btcap_C KS_MR,        (u8 "\033[7m")              ),
+        (->btcap_C KS_MD,        (u8 "\033[1m")              ),
+        (->btcap_C KS_UE,        (u8 "\033[m")               ),
+        (->btcap_C KS_US,        (u8 "\033[4m")              ),
+        (->btcap_C KS_MS,        (u8 "y")                    ),
+        (->btcap_C KS_UT,        (u8 "y")                    ),
+        (->btcap_C KS_LE,        (u8 "\b")                   ),
+        (->btcap_C KS_CM,        (u8 "\033[%i%p1%d;%p2%dH")  ),
+        (->btcap_C KS_SR,        (u8 "\033M")                ),
+        (->btcap_C KS_CRI,       (u8 "\033[%p1%dC")          ),
+        (->btcap_C KS_KS,        (u8 "\033[?1h\033=")        ),
+        (->btcap_C KS_KE,        (u8 "\033[?1l\033>")        ),
+        (->btcap_C KS_TI,        (u8 "\0337\033[?47h")       ),
+        (->btcap_C KS_TE,        (u8 "\033[2J\033[?47l\0338")),
+        (->btcap_C KS_CWS,       (u8 "\033[8;%p1%d;%p2%dt")  ),
 
-        (tcap K_UP,         (u8 "\033O*A")              ),
-        (tcap K_DOWN,       (u8 "\033O*B")              ),
-        (tcap K_RIGHT,      (u8 "\033O*C")              ),
-        (tcap K_LEFT,       (u8 "\033O*D")              ),
+        (->btcap_C K_UP,         (u8 "\033O*A")              ),
+        (->btcap_C K_DOWN,       (u8 "\033O*B")              ),
+        (->btcap_C K_RIGHT,      (u8 "\033O*C")              ),
+        (->btcap_C K_LEFT,       (u8 "\033O*D")              ),
         ;; An extra set of cursor keys for vt100 mode.
-        (tcap K_XUP,        (u8 "\033[1;*A")            ),
-        (tcap K_XDOWN,      (u8 "\033[1;*B")            ),
-        (tcap K_XRIGHT,     (u8 "\033[1;*C")            ),
-        (tcap K_XLEFT,      (u8 "\033[1;*D")            ),
+        (->btcap_C K_XUP,        (u8 "\033[1;*A")            ),
+        (->btcap_C K_XDOWN,      (u8 "\033[1;*B")            ),
+        (->btcap_C K_XRIGHT,     (u8 "\033[1;*C")            ),
+        (->btcap_C K_XLEFT,      (u8 "\033[1;*D")            ),
         ;; An extra set of function keys for vt100 mode.
-        (tcap K_XF1,        (u8 "\033O*P")              ),
-        (tcap K_XF2,        (u8 "\033O*Q")              ),
-        (tcap K_XF3,        (u8 "\033O*R")              ),
-        (tcap K_XF4,        (u8 "\033O*S")              ),
-        (tcap K_F1,         (u8 "\033[11;*~")           ),
-        (tcap K_F2,         (u8 "\033[12;*~")           ),
-        (tcap K_F3,         (u8 "\033[13;*~")           ),
-        (tcap K_F4,         (u8 "\033[14;*~")           ),
-        (tcap K_F5,         (u8 "\033[15;*~")           ),
-        (tcap K_F6,         (u8 "\033[17;*~")           ),
-        (tcap K_F7,         (u8 "\033[18;*~")           ),
-        (tcap K_F8,         (u8 "\033[19;*~")           ),
-        (tcap K_F9,         (u8 "\033[20;*~")           ),
-        (tcap K_F10,        (u8 "\033[21;*~")           ),
-        (tcap K_F11,        (u8 "\033[23;*~")           ),
-        (tcap K_F12,        (u8 "\033[24;*~")           ),
-        (tcap K_S_TAB,      (u8 "\033[Z")               ),
-        (tcap K_HELP,       (u8 "\033[28;*~")           ),
-        (tcap K_UNDO,       (u8 "\033[26;*~")           ),
-        (tcap K_INS,        (u8 "\033[2;*~")            ),
-        (tcap K_HOME,       (u8 "\033[1;*H")            ),
-     ;; (tcap K_S_HOME,     (u8 "\033O2H")              ),
-     ;; (tcap K_C_HOME,     (u8 "\033O5H")              ),
-        (tcap K_KHOME,      (u8 "\033[1;*~")            ),
-        (tcap K_XHOME,      (u8 "\033O*H")              ),      ;; other Home
-        (tcap K_ZHOME,      (u8 "\033[7;*~")            ),      ;; other Home
-        (tcap K_END,        (u8 "\033[1;*F")            ),
-     ;; (tcap K_S_END,      (u8 "\033O2F")              ),
-     ;; (tcap K_C_END,      (u8 "\033O5F")              ),
-        (tcap K_KEND,       (u8 "\033[4;*~")            ),
-        (tcap K_XEND,       (u8 "\033O*F")              ),      ;; other End
-        (tcap K_ZEND,       (u8 "\033[8;*~")            ),
-        (tcap K_PAGEUP,     (u8 "\033[5;*~")            ),
-        (tcap K_PAGEDOWN,   (u8 "\033[6;*~")            ),
-        (tcap K_KPLUS,      (u8 "\033O*k")              ),      ;; keypad plus
-        (tcap K_KMINUS,     (u8 "\033O*m")              ),      ;; keypad minus
-        (tcap K_KDIVIDE,    (u8 "\033O*o")              ),      ;; keypad /
-        (tcap K_KMULTIPLY,  (u8 "\033O*j")              ),      ;; keypad *
-        (tcap K_KENTER,     (u8 "\033O*M")              ),      ;; keypad Enter
-        (tcap K_KPOINT,     (u8 "\033O*n")              ),      ;; keypad .
-        (tcap K_KDEL,       (u8 "\033[3;*~")            ),      ;; keypad Del
+        (->btcap_C K_XF1,        (u8 "\033O*P")              ),
+        (->btcap_C K_XF2,        (u8 "\033O*Q")              ),
+        (->btcap_C K_XF3,        (u8 "\033O*R")              ),
+        (->btcap_C K_XF4,        (u8 "\033O*S")              ),
+        (->btcap_C K_F1,         (u8 "\033[11;*~")           ),
+        (->btcap_C K_F2,         (u8 "\033[12;*~")           ),
+        (->btcap_C K_F3,         (u8 "\033[13;*~")           ),
+        (->btcap_C K_F4,         (u8 "\033[14;*~")           ),
+        (->btcap_C K_F5,         (u8 "\033[15;*~")           ),
+        (->btcap_C K_F6,         (u8 "\033[17;*~")           ),
+        (->btcap_C K_F7,         (u8 "\033[18;*~")           ),
+        (->btcap_C K_F8,         (u8 "\033[19;*~")           ),
+        (->btcap_C K_F9,         (u8 "\033[20;*~")           ),
+        (->btcap_C K_F10,        (u8 "\033[21;*~")           ),
+        (->btcap_C K_F11,        (u8 "\033[23;*~")           ),
+        (->btcap_C K_F12,        (u8 "\033[24;*~")           ),
+        (->btcap_C K_S_TAB,      (u8 "\033[Z")               ),
+        (->btcap_C K_HELP,       (u8 "\033[28;*~")           ),
+        (->btcap_C K_UNDO,       (u8 "\033[26;*~")           ),
+        (->btcap_C K_INS,        (u8 "\033[2;*~")            ),
+        (->btcap_C K_HOME,       (u8 "\033[1;*H")            ),
+     ;; (->btcap_C K_S_HOME,     (u8 "\033O2H")              ),
+     ;; (->btcap_C K_C_HOME,     (u8 "\033O5H")              ),
+        (->btcap_C K_KHOME,      (u8 "\033[1;*~")            ),
+        (->btcap_C K_XHOME,      (u8 "\033O*H")              ),      ;; other Home
+        (->btcap_C K_ZHOME,      (u8 "\033[7;*~")            ),      ;; other Home
+        (->btcap_C K_END,        (u8 "\033[1;*F")            ),
+     ;; (->btcap_C K_S_END,      (u8 "\033O2F")              ),
+     ;; (->btcap_C K_C_END,      (u8 "\033O5F")              ),
+        (->btcap_C K_KEND,       (u8 "\033[4;*~")            ),
+        (->btcap_C K_XEND,       (u8 "\033O*F")              ),      ;; other End
+        (->btcap_C K_ZEND,       (u8 "\033[8;*~")            ),
+        (->btcap_C K_PAGEUP,     (u8 "\033[5;*~")            ),
+        (->btcap_C K_PAGEDOWN,   (u8 "\033[6;*~")            ),
+        (->btcap_C K_KPLUS,      (u8 "\033O*k")              ),      ;; keypad plus
+        (->btcap_C K_KMINUS,     (u8 "\033O*m")              ),      ;; keypad minus
+        (->btcap_C K_KDIVIDE,    (u8 "\033O*o")              ),      ;; keypad /
+        (->btcap_C K_KMULTIPLY,  (u8 "\033O*j")              ),      ;; keypad *
+        (->btcap_C K_KENTER,     (u8 "\033O*M")              ),      ;; keypad Enter
+        (->btcap_C K_KPOINT,     (u8 "\033O*n")              ),      ;; keypad .
+        (->btcap_C K_KDEL,       (u8 "\033[3;*~")            ),      ;; keypad Del
     ])
 
 (atom! boolean need_gather)                     ;; need to fill termleader[]
@@ -50702,11 +50109,12 @@
 
 ;       for (int i = 1; i < tcaps.length; i++)
 ;       {
-;           if (tcaps[i].bt_key < 0)
+;           int k = tcaps[i].bt_key;
+;           if (k < 0)
 ;           {
 ;               Bytes name = new Bytes(2);
-;               name.be(0, KEY2TERMCAP0(tcaps[i].bt_key));
-;               name.be(1, KEY2TERMCAP1(tcaps[i].bt_key));
+;               name.be(0, KEY2TERMCAP0(k));
+;               name.be(1, KEY2TERMCAP1(k));
 
 ;               if (find_termcode(name) == null)
 ;                   add_termcode(name, tcaps[i].bt_seq);
@@ -50714,9 +50122,9 @@
 ;           else ;; KS_xx entry
 ;           {
                 ;; Only set the value if it wasn't set yet.
-;               if (term_strings[tcaps[i].bt_key][0] == null || term_strings[tcaps[i].bt_key][0] == EMPTY_OPTION)
+;               if (term_strings[k][0] == null || term_strings[k][0] == EMPTY_OPTION)
 ;               {
-;                   term_strings[tcaps[i].bt_key][0] = tcaps[i].bt_seq;
+;                   term_strings[k][0] = tcaps[i].bt_seq;
 ;               }
 ;           }
 ;       }
@@ -50729,23 +50137,28 @@
 (defn- #_void set_term []
     (§
 ;       out_flush();
-;       clear_termoptions();            ;; clear old options
+
+        ;; Reset a few things before clearing the old options.  This may cause
+        ;; outputting a few things that the terminal doesn't understand, but the
+        ;; screen will be cleared later, so this is OK.
+
+;       stoptermcap();                  ;; stop termcap mode
+
+;       clear_termcodes();
 ;       parse_builtin_tcap();
 
         ;; Any "stty" settings override the default for t_kb from the termcap.
-        ;; Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
 
 ;       get_stty();
 
         ;; If the termcap has no entry for 'bs' and/or 'del' and the ioctl()
         ;; also didn't work, use the default CTRL-H.
         ;; The default for t_kD is DEL, unless t_kb is DEL.
-        ;; The vim_strsave'd strings are probably lost forever, well it's only two bytes.
-        ;; Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
 
 ;       Bytes bs_p = find_termcode(u8("kb"));
 ;       if (bs_p == null || bs_p.at(0) == NUL)
 ;           add_termcode(u8("kb"), (bs_p = CTRL_H_STR));
+
 ;       Bytes del_p = find_termcode(u8("kD"));
 ;       if ((del_p == null || del_p.at(0) == NUL) && (bs_p == null || bs_p.at(0) != DEL))
 ;           add_termcode(u8("kD"), DEL_STR);
@@ -50753,7 +50166,6 @@
 ;       ttest(true);                ;; make sure we have a valid set of terminal codes
 
 ;       @full_screen = true;             ;; we can use termcap codes from now on
-;       set_term_defaults();            ;; use current values as defaults
 
         ;; Initialize the terminal with the appropriate termcap codes.
 
@@ -50762,42 +50174,13 @@
 ;           starttermcap();             ;; may change terminal mode
 ;       }
 
-;       int width = 80, height = 24;    ;; most terminals are 24 lines
-
-;       set_shellsize(width, height, false);    ;; may change Rows
+;       set_shellsize(80, 24, false);    ;; may change Rows
 
 ;       if (@starting != NO_SCREEN)
 ;       {
 ;           if (@scroll_region)
 ;               scroll_region_reset();          ;; in case Rows changed
 ;       }
-    ))
-
-;; Get a string entry from the termcap and add it to the list of termcodes.
-;; Used for <t_xx> special keys.
-;; Give an error message for failure when not sourcing.
-;; If force given, replace an existing entry.
-;; Return false if the entry was not found, true if the entry was added.
-
-(defn- #_boolean add_termcap_entry [#_Bytes name, #_boolean force]
-    (§
-;       if (!force && find_termcode(name) != null)      ;; it's already there
-;           return true;
-
-;       btcap_C[] tcaps = xterm_tcaps;
-
-;       int key = TERMCAP2KEY(name.at(0), name.at(1));
-
-;       for (int i = 1; i < tcaps.length; i++)
-;           if (tcaps[i].bt_key == key)
-;           {
-;               add_termcode(name, tcaps[i].bt_seq);
-;               return true;
-;           }
-
-;       emsg2(u8("E436: No \"%s\" entry in termcap"), name);
-
-;       return false;
     ))
 
 ;; the number of calls to ui_write is reduced by using the buffer "out_buf"
@@ -51243,12 +50626,11 @@
 
             ;; If 'Sb' and 'AB' are not defined, reset "Co".
 ;           if (@T_CSB.at(0) == NUL && @T_CAB.at(0) == NUL)
-;               free_one_termoption(T_CCO);
+;               @T_CCO = EMPTY_OPTION;
 ;       }
 
 ;       @need_gather = true;
 
-        ;; Set t_colors to the value of t_Co.
 ;       @t_colors = libC.atoi(@T_CCO);
     ))
 
@@ -51952,53 +51334,6 @@
 ;           }
 
 ;       @need_gather = false;
-    ))
-
-;; Show one termcode entry.
-;; Output goes into ioBuff[].
-
-(defn- #_int show_one_termcode [#_Bytes name, #_Bytes code, #_boolean printit]
-    (§
-;       if ('~' < char_u(name.at(0)))
-;       {
-;           @ioBuff.be(0, (byte)' ');
-;           @ioBuff.be(1, (byte)' ');
-;           @ioBuff.be(2, (byte)' ');
-;           @ioBuff.be(3, (byte)' ');
-;       }
-;       else
-;       {
-;           @ioBuff.be(0, (byte)'t');
-;           @ioBuff.be(1, (byte)'_');
-;           @ioBuff.be(2, name.at(0));
-;           @ioBuff.be(3, name.at(1));
-;       }
-;       @ioBuff.be(4, (byte)' ');
-
-;       Bytes p = get_special_key_name(TERMCAP2KEY(name.at(0), name.at(1)), 0);
-;       if (p.at(1) != (byte)'t')
-;           STRCPY(@ioBuff.plus(5), p);
-;       else
-;           @ioBuff.be(5, NUL);
-
-;       int len = STRLEN(@ioBuff);
-;       do
-;       {
-;           @ioBuff.be(len++, (byte)' ');
-;       } while (len < 17);
-;       @ioBuff.be(len, NUL);
-;       len += (code != null) ? mb_string2cells(code, -1) : 4;
-
-;       if (printit)
-;       {
-;           msg_puts(@ioBuff);
-;           if (code != null)
-;               msg_outtrans(code);
-;           else
-;               msg_puts(u8("NULL"));
-;       }
-
-;       return len;
     ))
 
 ;; ui.c: functions that handle the user interface.
@@ -56807,9 +56142,7 @@
         ;; If the terminal can set a scroll region, use that.
         ;; Always do this in a vertically split window.  This will redraw from
         ;; screenLines[] when t_CV isn't defined.  That's faster than using win_line().
-        ;; Don't use a scroll region when we are going to redraw the text, writing
-        ;; a character in the lower right corner of the scroll region causes a
-        ;; scroll-up in the DJGPP version.
+        ;; Don't use a scroll region when we are going to redraw the text.
 
 ;       if (@scroll_region || wp.w_width != (int)@Columns)
 ;       {
