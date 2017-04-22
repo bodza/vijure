@@ -40280,301 +40280,220 @@
             o'got_int @got_int _ (reset! got_int false)
 
             lmax (line-count @curbuf)
-        ]
-
-            ((ß boolean didline =) false)            ;; if true, we finished the last line
-            ((ß boolean eof =) false)                ;; if true, we hit the end of the file
+            a'idx (atom (int 0))
+            a'row (atom (int 0))                    ;; current window row to display
+            a'srow (atom (int 0))                   ;; starting row of the current line
+            a'lnum (atom (long (:w_topline win)))   ;; first line shown in window
 
             ;; Update all the window rows.
 
-            ((ß int idx =) 0)                    ;; first entry in w_lines[].wl_size
-            ((ß int row =) 0)                    ;; current window row to display
-            ((ß int srow =) 0)                   ;; starting row of the current line
-            ((ß long lnum =) (:w_topline win))       ;; first line shown in window
-            (loop []
-                ;; stop updating when reached the end of the window
-                ;; (check for _past_ the end of the window is at the end of the loop)
-                (when (== row (:w_height win))
-                    ((ß didline =) true)
-                    (ß BREAK)
-                )
-
-                ;; stop updating when hit the end of the file
-                (when (< lmax lnum)
-                    ((ß eof =) true)
-                    (ß BREAK)
-                )
-
-                ;; Remember the starting row of the line that is going to be dealt with.
-                ;; It is used further down when the line doesn't fit.
-                ((ß srow =) row)
-
-                ;; Update a line when it is in an area that needs updating,
-                ;; when it has changes or w_lines[idx] is invalid.
-                ;; "bot_start" may be halfway a wrapped line after using win-del-lines(),
-                ;; check if the current line includes it.
-                ;; When syntax folding is being used, the saved syntax states will
-                ;; already have been updated, we can't see where the syntax state is
-                ;; the same again, just update until the end of the window.
-
-                ;; match in fixed position might need redraw if lines were inserted or deleted
-                (cond (or (< row @a'top_end) (and (<= @a'mid_start row) (< row @a'mid_end)) @a'top_to_mod (<= (:w_lines_valid win) idx) (< @a'bot_start (+ row (:wl_size (... (:w_lines win) idx)))) (and (!= @a'mod_top 0) (or (== lnum @a'mod_top) (and (<= @a'mod_top lnum) (< lnum @a'mod_bot)))))
-                (do
-                    ((ß @a'top_to_mod =) (if (== lnum @a'mod_top) false @a'top_to_mod))
-
-                    ;; When at start of changed lines:
-                    ;; may scroll following lines up or down to minimize redrawing.
-                    ;; Don't do this when the change continues until the end.
-
-                    (when (and (== lnum @a'mod_top) (!= @a'mod_bot MAXLNUM))
-                        ((ß int old_rows =) 0)
-                        ((ß int new_rows =) 0)
-                        (ß int xtra_rows)
-
-                        ;; Count the old number of window rows, using w_lines[], which should
-                        ;; still contain the sizes for the lines as they are currently displayed.
-
-                        ((ß int i =) (loop-when-recur [i idx] (< i (:w_lines_valid win)) [(inc i)] => i
-                            ;; Only valid lines have a meaningful wl_lnum.
-                            ;; Invalid lines are part of the changed area.
-                            (if (and (:wl_valid (... (:w_lines win) i)) (== (:wl_lnum (... (:w_lines win) i)) @a'mod_bot))
-                                (ß BREAK)
-                            )
-                            ((ß old_rows =) (+ old_rows (:wl_size (... (:w_lines win) i))))
-                        ))
-
-                        (cond (<= (:w_lines_valid win) i)
-                        (do
-                            ;; We can't find a valid line below the changed lines,
-                            ;; need to redraw until the end of the window.
-                            ;; Inserting/deleting lines has no use.
-                            ((ß @a'bot_start =) 0)
-                        )
-                        :else
-                        (do
-                            ;; Able to count old number of rows:
-                            ;; count new window rows, and may insert/delete lines.
-                            ((ß int j =) idx)
-                            (loop-when-recur [#_long l lnum] (< l @a'mod_bot) [(inc l)]
-                                ((ß new_rows =) (+ new_rows (plines win, l, true)))
-                                ((ß j =) (inc j))
-                                (when (< (- (:w_height win) row 2) new_rows)
-                                    ;; it's getting too much, must redraw the rest
-                                    ((ß new_rows =) 9999)
-                                    (ß BREAK)
-                                )
-                            )
-                            ((ß xtra_rows =) (- new_rows old_rows))
-                            (cond (< xtra_rows 0)
-                            (do
-                                ;; May scroll text up.
-                                ;; If there is not enough remaining text or scrolling fails,
-                                ;; must redraw the rest.
-                                ;; If scrolling works,
-                                ;; must redraw the text below the scrolled text.
-                                (cond (<= (- (:w_height win) 2) (- row xtra_rows))
-                                (do
-                                    ((ß @a'mod_bot =) MAXLNUM)
-                                )
-                                :else
-                                (do
-                                    (check-for-delay false)
-                                    ((ß [win ?] =) (win-del-lines? win, row, (- xtra_rows), false, false))
-                                    (if (not ?)
-                                        ((ß @a'mod_bot =) MAXLNUM)
-                                        ((ß @a'bot_start =) (+ (:w_height win) xtra_rows))
-                                    )
-                                ))
-                            )
-                            (< 0 xtra_rows)
-                            (do
-                                ;; May scroll text down.
-                                ;; If there is not enough remaining text of scrolling fails,
-                                ;; must redraw the rest.
-                                (cond (<= (- (:w_height win) 2) (+ row xtra_rows))
-                                (do
-                                    ((ß @a'mod_bot =) MAXLNUM)
-                                )
-                                :else
-                                (do
-                                    (check-for-delay false)
-                                    ((ß [win ?] =) (win-ins-lines? win, (+ row old_rows), xtra_rows, false, false))
-                                    (cond (not ?)
-                                    (do
-                                        ((ß @a'mod_bot =) MAXLNUM)
-                                    )
-                                    (< (+ row old_rows) @a'top_end)
-                                    (do
-                                        ;; Scrolled the part at the top that requires updating down.
-                                        ((ß @a'top_end =) (+ @a'top_end xtra_rows))
-                                    ))
-                                ))
-                            ))
-
-                            ;; When not updating the rest, may need to move w_lines[] entries.
-                            (when (and (!= @a'mod_bot MAXLNUM) (!= i j))
-                                (cond (< j i)
-                                (do
-                                    ;; move entries in w_lines[] upwards
-                                    ((ß int x =) (loop [x (+ row new_rows)]
-                                        ;; stop at last valid entry in w_lines[]
-                                        (when (<= (:w_lines_valid win) i)
-                                            ((ß win =) (assoc win :w_lines_valid j))
-                                            (ß BREAK)
-                                        )
-                                        (COPY-wline (... (:w_lines win) j), (... (:w_lines win) i))
-                                        ;; stop at a line that won't fit
-                                        (when (< (:w_height win) (+ x (:wl_size (... (:w_lines win) j))))
-                                            ((ß win =) (assoc win :w_lines_valid (inc j)))
-                                            (ß BREAK)
-                                        )
-                                        ((ß x =) (+ x (:wl_size (... (:w_lines win) j))))
-                                        ((ß j =) (inc j))
-                                        ((ß i =) (inc i))
-                                        (recur x)
-                                    ))
-                                    ((ß @a'bot_start =) (min @a'bot_start x))
-                                )
-                                :else ;; j > i
-                                (do
-                                    ;; move entries in w_lines[] downwards
-                                    ((ß j =) (- j i))
-                                    ((ß win =) (update win :w_lines_valid + j))
-                                    ((ß win =) (update win :w_lines_valid min (:w_height win)))
-                                    ((ß i =) (loop-when-recur [i (:w_lines_valid win)] (<= idx (- i j)) [(dec i)] => i
-                                        (COPY-wline (... (:w_lines win) i), (... (:w_lines win) (- i j)))
-                                    ))
-
-                                    ;; The w_lines[] entries for inserted lines are now invalid,
-                                    ;; but wl_size may be used above.
-                                    ;; Reset to zero.
-                                    (loop-when-recur i (<= idx i) (dec i)
-                                        ((ß win.w_lines[i].wl_size =) 0)
-                                        ((ß win.w_lines[i].wl_valid =) false)
-                                    )
-                                ))
-                            )
-                        ))
-                    )
-
-                    (cond (and (< idx (:w_lines_valid win)) (:wl_valid (... (:w_lines win) idx)) (== (:wl_lnum (... (:w_lines win) idx)) lnum) (< (:w_topline win) lnum) (non-flag? @dy_flags DY_LASTLINE) (< (:w_height win) (+ srow (:wl_size (... (:w_lines win) idx)))))
-                    (do
-                        ;; This line is not going to fit.
-                        ;; Don't draw anything here, will draw "@  " lines below.
-                        ((ß row =) (inc (:w_height win)))
-                    )
+            [win eol? eof?] ;; "eol?": we finished the last line ;; "eof?": we hit the end of the file
+                (loop []
+                    ;; stop updating when reached the end of the window
+                    ;; (check for *past* the end of the window is at the end of the loop)
+                    (cond (== @a'row (:w_height win))
+                        [win true false]
+                    ;; stop updating when hit the end of the file
+                    (< lmax @a'lnum)
+                        [win false true]
                     :else
-                    (do
-                        (prepare-search-hl win, lnum)
+                        ;; Remember the starting row of the line that is going to be dealt with.
+                        ;; It is used further down when the line doesn't fit.
+                        (let-when [_ (reset! a'srow @a'row)
+                              ;; Update a line when it is in an area that needs updating, when it has changes or w_lines[idx] is invalid.
+                              ;; "bot_start" may be halfway a wrapped line after using win-del-lines(), check if the current line includes it.
+                              ;; Match in fixed position might need redraw if lines were inserted or deleted.
+                              [win ?]
+                                (cond (or (< @a'row @a'top_end)
+                                          (and (<= @a'mid_start @a'row) (< @a'row @a'mid_end))
+                                          @a'top_to_mod
+                                          (<= (:w_lines_valid win) @a'idx)
+                                          (< @a'bot_start (+ @a'row (:wl_size (... (:w_lines win) @a'idx))))
+                                          (and (!= @a'mod_top 0) (or (== @a'lnum @a'mod_top) (and (<= @a'mod_top @a'lnum) (< @a'lnum @a'mod_bot)))))
+                                    (let [_ (reset! a'top_to_mod (if (== @a'lnum @a'mod_top) false @a'top_to_mod))
+                                          ;; When at start of changed lines: may scroll following lines up or down to minimize redrawing.
+                                          ;; Don't do this when the change continues until the end.
+                                          win (if (and (== @a'lnum @a'mod_top) (!= @a'mod_bot MAXLNUM))
+                                                ;; Count the old number of window rows, using w_lines[], which should
+                                                ;; still contain the sizes for the lines as they are currently displayed.
+                                                (let [[#_int old_rows #_int i]
+                                                        (loop-when [old_rows 0 i @a'idx] (< i (:w_lines_valid win)) => [old_rows i]
+                                                            (let [wli (... (:w_lines win) i)]
+                                                                ;; Only valid lines have a meaningful wl_lnum.
+                                                                ;; Invalid lines are part of the changed area.
+                                                                (if (and (:wl_valid wli) (== (:wl_lnum wli) @a'mod_bot))
+                                                                    [old_rows i]
+                                                                    (recur (+ old_rows (:wl_size wli)) (inc i))
+                                                                ))
+                                                        )]
+                                                    (cond (<= (:w_lines_valid win) i)
+                                                        ;; We can't find a valid line below the changed lines,
+                                                        ;; need to redraw until the end of the window.
+                                                        ;; Inserting/deleting lines has no use.
+                                                        (do (reset! a'bot_start 0) win)
+                                                    :else
+                                                        ;; Able to count old number of rows:
+                                                        ;; count new window rows, and may insert/delete lines.
+                                                        (let [[#_int new_rows #_int j]
+                                                                (loop-when [new_rows 0 j @a'idx #_long l @a'lnum] (< l @a'mod_bot) => [new_rows j]
+                                                                    (let [new_rows (+ new_rows (plines win, l, true))]
+                                                                        (if (< (- (:w_height win) @a'row 2) new_rows)
+                                                                            [9999 (inc j)] ;; it's getting too much, must redraw the rest
+                                                                            (recur new_rows (inc j) (inc l))
+                                                                        )))
+                                                            #_int xtra_rows (- new_rows old_rows)
+                                                            win (cond (< xtra_rows 0)
+                                                                    ;; May scroll text up.
+                                                                    ;; If there is not enough remaining text or scrolling fails, must redraw the rest.
+                                                                    ;; If scrolling works, must redraw the text below the scrolled text.
+                                                                    (cond (<= (- (:w_height win) 2) (- @a'row xtra_rows))
+                                                                        (do (reset! a'mod_bot MAXLNUM) win)
+                                                                    :else
+                                                                        (let [_ (check-for-delay false)
+                                                                              [win ?] (win-del-lines? win, @a'row, (- xtra_rows), false, false)]
+                                                                            (if (not ?)
+                                                                                (reset! a'mod_bot MAXLNUM)
+                                                                                (reset! a'bot_start (+ (:w_height win) xtra_rows)))
+                                                                            win
+                                                                        ))
+                                                                (< 0 xtra_rows)
+                                                                    ;; May scroll text down.
+                                                                    ;; If there is not enough remaining text of scrolling fails, must redraw the rest.
+                                                                    (cond (<= (- (:w_height win) 2) (+ @a'row xtra_rows))
+                                                                        (do (reset! a'mod_bot MAXLNUM) win)
+                                                                    :else
+                                                                        (let [_ (check-for-delay false)
+                                                                              [win ?] (win-ins-lines? win, (+ @a'row old_rows), xtra_rows, false, false)]
+                                                                            (cond (not ?)
+                                                                                (reset! a'mod_bot MAXLNUM)
+                                                                            (< (+ @a'row old_rows) @a'top_end)
+                                                                                ;; Scrolled the part at the top that requires updating down.
+                                                                                (reset! a'top_end (+ @a'top_end xtra_rows)))
+                                                                            win
+                                                                        ))
+                                                                :else
+                                                                    win
+                                                                )]
+                                                            ;; When not updating the rest, may need to move w_lines[] entries.
+                                                            (cond (or (== @a'mod_bot MAXLNUM) (== i j))
+                                                                win
+                                                            (< j i) ;; move entries in w_lines[] upwards
+                                                                (let [[win #_int x]
+                                                                        (loop-when [win win x (+ @a'row new_rows) j j i i] (< i (:w_lines_valid win))
+                                                                                => [(assoc win :w_lines_valid j) x] ;; stop at last valid entry in w_lines[]
+                                                                            (§ (ß win =) (COPY-wline (... (:w_lines win) j), (... (:w_lines win) i)))
+                                                                            (if (< (:w_height win) (+ x (:wl_size (... (:w_lines win) j))))
+                                                                                [(assoc win :w_lines_valid (inc j)) x] ;; stop at a line that won't fit
+                                                                                (recur win (+ x (:wl_size (... (:w_lines win) j))) (inc j) (inc i)))
+                                                                        )]
+                                                                    (swap! a'bot_start min x)
+                                                                    win)
+                                                            :else ;; (< i j) ;; move entries in w_lines[] downwards
+                                                                (let [j (- j i)
+                                                                      win (update win :w_lines_valid + j) win (update win :w_lines_valid min (:w_height win))
+                                                                      [win i]
+                                                                        (loop-when-recur [win win i (:w_lines_valid win)] (<= @a'idx (- i j)) [win (dec i)] => [win i]
+                                                                            (§ (ß win =) (COPY-wline (... (:w_lines win) i), (... (:w_lines win) (- i j))))
+                                                                        )]
+                                                                    ;; The w_lines[] entries for inserted lines are now invalid, but wl_size may be used above.
+                                                                    ;; Reset to zero.
+                                                                    (loop-when-recur [win win i i]
+                                                                                     (<= @a'idx i)
+                                                                                     [(update-in win [:w_lines i] assoc :wl_size 0, :wl_valid false) (dec i)]
+                                                                                  => win))
+                                                            ))
+                                                    ))
+                                                win)
+                                          win (let [wli (... (:w_lines win) @a'idx)]
+                                                (if (and (< @a'idx (:w_lines_valid win)) (:wl_valid wli)
+                                                         (== (:wl_lnum wli) @a'lnum) (< (:w_topline win) @a'lnum)
+                                                         (non-flag? @dy_flags DY_LASTLINE) (< (:w_height win) (+ @a'srow (:wl_size wli))))
+                                                    ;; This line is not going to fit.
+                                                    ;; Don't draw anything here, will draw "@  " lines below.
+                                                    (do (reset! a'row (inc (:w_height win)))
+                                                        win)
+                                                    ;; Display one line.
+                                                    (let [_ (prepare-search-hl win, @a'lnum) [win _] (win-line win, @a'lnum, @a'srow, (:w_height win)) _ (reset! a'row _)]
+                                                        win)
+                                                ))
+                                          win (update-in win [:w_lines @a'idx] assoc :wl_lnum @a'lnum, :wl_valid true)]
+                                        (if (< (:w_height win) @a'row) ;; *past* end of screen
+                                            ;; we may need the size of that too long line later on
+                                            (let [win (assoc-in win [:w_lines @a'idx :wl_size] (plines win, @a'lnum, true))]
+                                                (swap! a'idx inc)
+                                                [win :break])
+                                            (let [win (assoc-in win [:w_lines @a'idx :wl_size] (- @a'row @a'srow))]
+                                                (swap! a'idx inc)
+                                                (swap! a'lnum inc)
+                                                [win nil])
+                                        ))
+                                :else
+                                    (do ;; This line does not need updating, advance to the next one.
+                                        (swap! a'row + (:wl_size (... (:w_lines win) @a'idx)))
+                                        (swap! a'idx inc)
+                                        (if (< (:w_height win) @a'row) ;; *past* end of screen
+                                            [win :break]
+                                            (do (swap! a'lnum inc) [win nil])
+                                        ))
+                                )] (not ?) => [win false false]
 
-                        ;; Display one line.
+                            (if (< lmax @a'lnum) [win false true] (recur))
+                        )))
 
-                        ((ß [win row] =) (win-line win, lnum, srow, (:w_height win)))
+              ;; End of loop over all window lines.
+              win (update win :w_lines_valid max @a'idx)
+              ;; If we didn't hit the end of the file, and we didn't finish the last line we were working on, then the line didn't fit.
+              win (assoc win :w_empty_rows 0)
+              win (cond (and (not eof?) (not eol?))
+                    (cond (== @a'lnum (:w_topline win))
+                        ;; Single line that does not fit!
+                        ;; Don't overwrite it, it can be edited.
+                        (assoc win :w_botline (inc @a'lnum))
+                    (flag? @dy_flags DY_LASTLINE) ;; 'display' has "lastline"
+                        ;; Last line isn't finished: display "@@@" at the end.
+                        (do (screen-fill (- (+ (:w_winrow win) (:w_height win)) 1), (+ (:w_winrow win) (:w_height win)),
+                                         (- (+ (:w_wincol win) (:w_width win)) 3), (+ (:w_wincol win) (:w_width win)), (byte \@), (byte \@), (hl-attr HLF_AT))
+                            (-> win
+                                (set-empty-rows @a'srow)
+                                (assoc :w_botline @a'lnum)
+                            ))
+                    :else
+                        (-> win
+                            (win-draw-end (byte \@), (byte \space), @a'srow, (:w_height win), HLF_AT)
+                            (assoc :w_botline @a'lnum)
+                        ))
+                :else
+                    (let [_ (draw-vsep-win win, @a'row) win (assoc win :w_botline (if eof? (inc lmax) @a'lnum))]
+                        ;; Make sure the rest of the screen is blank: put '~'s on rows that aren't part of the file.
+                        (win-draw-end win, (byte \~), (byte \space), @a'row, (:w_height win), HLF_AT)
                     ))
 
-                    ((ß win.w_lines[idx].wl_lnum =) lnum)
-                    ((ß win.w_lines[idx].wl_valid =) true)
-                    (when (< (:w_height win) row)              ;; past end of screen
-                        ;; we may need the size of that too long line later on
-                        ((ß win.w_lines[idx].wl_size =) (plines win, lnum, true))
-                        ((ß idx =) (inc idx))
-                        (ß BREAK)
-                    )
-                    ((ß win.w_lines[idx].wl_size =) (- row srow))
-                    ((ß idx =) (inc idx))
-                    ((ß lnum =) (inc lnum))
-                )
-                :else
-                (do
-                    ;; This line does not need updating, advance to the next one.
-                    ((ß row =) (+ row (:wl_size (... (:w_lines win) (ß idx++)))))
-                    (if (< (:w_height win) row)              ;; past end of screen
-                        (ß BREAK)
-                    )
-                    ((ß lnum =) (inc lnum))
-                ))
+              ;; Reset the type of redrawing required, the window has been updated.
+              win (assoc win :w_redr_type 0)
 
-                (when (< lmax lnum)
-                    ((ß eof =) true)
-                    (ß BREAK)
-                )
-                (recur)
-            )
+              ;; There is a trick with "w_botline".  If we invalidate it on each change that might modify it,
+              ;; this will cause a lot of expensive calls to plines() in update-topline() each time.
+              ;; Therefore the value of "w_botline" is often approximated, and this value is used to compute
+              ;; the value of "w_topline".  If the value of "w_botline" was wrong, check that the value of
+              ;; "w_topline" is correct (cursor is on the visible part of the text).  If it's not, we need to
+              ;; redraw again.  Mostly this just means scrolling up a few lines, so it doesn't look too bad.
+              ;; Only do this for the current window (where changes are relevant).
+              win (update win :w_valid | VALID_BOTLINE)
+              win (if (and (== win @curwin) (!= (:w_botline win) o'botline) (not recursive?))
+                    (let [win (-> win (update :w_valid & (bit-not VALID_TOPLINE)) (update-topline))] ;; may invalidate "w_botline" again
+                        (if (non-zero? @must_redraw)
+                            ;; Don't update for changes in buffer again.
+                            (let [? (:b_mod_set @curbuf) _ (swap! curbuf assoc :b_mod_set false)
+                                  win (win-update win, true)]
+                                (reset! must_redraw 0)
+                                (swap! curbuf assoc :b_mod_set ?)
+                                win)
+                            win
+                        ))
+                    win
+                )]
 
-            ;; End of loop over all window lines.
-
-            ((ß win =) (update win :w_lines_valid max idx))
-
-            ;; If we didn't hit the end of the file, and we didn't finish the last
-            ;; line we were working on, then the line didn't fit.
-
-            ((ß win =) (assoc win :w_empty_rows 0))
-            (cond (and (not eof) (not didline))
-            (do
-                (cond (== lnum (:w_topline win))
-                (do
-                    ;; Single line that does not fit!
-                    ;; Don't overwrite it, it can be edited.
-
-                    ((ß win =) (assoc win :w_botline (inc lnum)))
-                )
-                (flag? @dy_flags DY_LASTLINE)     ;; 'display' has "lastline"
-                (do
-                    ;; Last line isn't finished: Display "@@@" at the end.
-
-                    (screen-fill (- (+ (:w_winrow win) (:w_height win)) 1), (+ (:w_winrow win) (:w_height win)), (- (+ (:w_wincol win) (:w_width win)) 3), (+ (:w_wincol win) (:w_width win)), (byte \@), (byte \@), (hl-attr HLF_AT))
-                    ((ß win =) (set-empty-rows win, srow))
-                    ((ß win =) (assoc win :w_botline lnum))
-                )
-                :else
-                (do
-                    ((ß win =) (win-draw-end win, (byte \@), (byte \space), srow, (:w_height win), HLF_AT))
-                    ((ß win =) (assoc win :w_botline lnum))
-                ))
-            )
-            :else
-            (do
-                (draw-vsep-win win, row)
-                (cond eof                                ;; we hit the end of the file
-                (do
-                    ((ß win =) (assoc win :w_botline (inc lmax)))
-                )
-                :else
-                (do
-                    ((ß win =) (assoc win :w_botline lnum))
-                ))
-
-                ;; Make sure the rest of the screen is blank,
-                ;; put '~'s on rows that aren't part of the file.
-                ((ß win =) (win-draw-end win, (byte \~), (byte \space), row, (:w_height win), HLF_AT))
-            ))
-
-            ;; Reset the type of redrawing required, the window has been updated.
-            ((ß win =) (assoc win :w_redr_type 0))
-
-            ;; There is a trick with "w_botline".  If we invalidate it on each change that might modify it,
-            ;; this will cause a lot of expensive calls to plines() in update-topline() each time.
-            ;; Therefore the value of "w_botline" is often approximated, and this value is used to compute
-            ;; the value of "w_topline".  If the value of "w_botline" was wrong, check that the value of
-            ;; "w_topline" is correct (cursor is on the visible part of the text).  If it's not, we need to
-            ;; redraw again.  Mostly this just means scrolling up a few lines, so it doesn't look too bad.
-            ;; Only do this for the current window (where changes are relevant).
-
-            ((ß win =) (update win :w_valid | VALID_BOTLINE))
-            (when (and (== win @curwin) (!= (:w_botline win) o'botline) (not recursive?))
-                ((ß win =) (update win :w_valid & (bit-not VALID_TOPLINE)))
-                ((ß win =) (update-topline win))   ;; may invalidate "w_botline" again
-                (when (non-zero? @must_redraw)
-                    ;; Don't update for changes in buffer again.
-                    ((ß boolean b =) (:b_mod_set @curbuf))
-                    (swap! curbuf assoc :b_mod_set false)
-                    ((ß win =) (win-update win, true))
-                    (reset! must_redraw 0)
-                    (swap! curbuf assoc :b_mod_set b)
-                )
-            )
-
-            ;; restore got_int, unless CTRL-C was hit while redrawing
+            ;; Restore "got_int", unless CTRL-C was hit while redrawing.
             (when (not @got_int)
                 (reset! got_int o'got_int))
             win
