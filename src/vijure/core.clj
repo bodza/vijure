@@ -2194,11 +2194,6 @@
     fill_stlnc  \space,
     fill_vert   \|)
 
-;; Characters from 'listchars' option.
-(atom! int
-    lcs_eol     \$,
-    lcs_ext     NUL)
-
 ;; Whether 'keymodel' contains "stopsel" and "startsel".
 (atom! boolean  km_stopsel)
 (atom! boolean  km_startsel)
@@ -40883,13 +40878,12 @@
               a'fromcol (atom (int -10))                            ;; start/end of inverting
               a'tocol (atom (int MAXCOL))
               a'noinvcur (atom (boolean false))                     ;; don't invert the cursor
-              a'area_highlighting (atom (boolean false))            ;; Visual or incsearch highlighting in this line
+              a'area_highlighting (atom (boolean false))            ;; Visual or 'incsearch' highlighting in this line
               a'attr_highlighting (atom (int 0))                    ;; attributes for area highlighting
               a'n_skip (atom (int 0))                               ;; nr of chars to skip for 'nowrap'
               a'need_showbreak (atom (boolean false))
               a'fromcol_prev (atom (int -2))                        ;; start of inverting after cursor
               a'search_attr (atom (int 0))                          ;; attributes desired by 'hlsearch'
-              a'line_attr (atom (int 0))                            ;; attribute for the whole line
               a'row (atom (int startrow))                           ;; row in the window, excl. "w_winrow"
               a'screen_row (atom (int (+ @a'row (:w_winrow win))))  ;; row on the screen, incl. "w_winrow"
 
@@ -40947,7 +40941,6 @@
                     (reset! a'area_highlighting true)
                     (reset! a'attr_highlighting (hl-attr HLF_I))
                 ))
-            (reset! a'area_highlighting (or (non-zero? @a'line_attr) @a'area_highlighting))
 
             (let [a'line (atom (#_Bytes object (ml-get lnum))) a's (atom (#_Bytes object @a'line))]
                 ;; 'nowrap' or 'wrap' and a single line that doesn't fit:
@@ -41022,15 +41015,11 @@
                             shl
                         )]
                     (reset! search_hl shl))
-                ;; Cursor line highlighting for 'cursorline' in the current window.
-                ;; Not when Visual mode is active, because it's not clear what is selected then.
-                (when (and wo_cul (== lnum (:lnum (:w_cursor win))) (not (and (== win @curwin) @VIsual_active)))
-                    (reset! a'line_attr (hl-attr HLF_CUL))
-                    (reset! a'area_highlighting true))
 
-                (let [a'lcs_eol_one (atom (int @lcs_eol))           ;; "lcs_eol" until it's been used
+                (let [a'over_eol (atom (boolean false))
                       a'vcol_sbr (atom (int -1))                    ;; virtual column after 'showbreak'
                       a'vcol_prev (atom (int -1))                   ;; "vcol" of previous character
+                      a'line_attr (atom (int 0))                    ;; attribute for the whole line
                       a'char_attr (atom (int 0))                    ;; attributes for next character
                       a'attr_pri (atom (boolean false))             ;; "char_attr" has priority
                       a'area_attr (atom (int 0))                    ;; attributes desired by highlighting
@@ -41043,10 +41032,8 @@
                       a'saved_p_extra (atom (#_Bytes object nil))
                       a'saved_c_extra (atom (int NUL))
                       a'saved_char_attr (atom (int 0))
-                      a'n_attr (atom (int 0))                       ;; chars with special attr
-                      a'saved_attr2 (atom (int 0))                  ;; "char_attr" saved for "n_attr"
-                      a'n_attr3 (atom (int 0))                      ;; chars with overruling special attr
-                      a'saved_attr3 (atom (int 0))                  ;; "char_attr" saved for "n_attr3"
+                      a'n_attr2 (atom (int 0))                      ;; chars with special attr
+                      a'saved_attr2 (atom (int 0))                  ;; "char_attr" saved for "n_attr2"
                       a'eol_hl_off (atom (int 0))                   ;; 1 if highlighted char after EOL
                       a'multi_attr (atom (int 0))                   ;; attributes desired by multi-byte
                       #_int* u8cc (int-array MAX_MCO)               ;; composing UTF-8 chars
@@ -41056,8 +41043,13 @@
                       a'off (atom (int (BDIFF @current_ScreenLine, @screenLines))) ;; offset in screenLines/screenAttrs
                       a'draw_state (atom (int WL_START))]           ;; what to draw next
 
-                    ;; Repeat for the whole displayed line.
+                    ;; Cursor line highlighting for 'cursorline' in the current window.
+                    ;; Not when Visual mode is active, because it's not clear what is selected then.
+                    (when (and wo_cul (== lnum (:lnum (:w_cursor win))) (not (and (== win @curwin) @VIsual_active)))
+                        (reset! a'line_attr (hl-attr HLF_CUL))
+                        (reset! a'area_highlighting true))
 
+                    ;; Repeat for the whole displayed line.
                     (loop []
 
                         ;; Skip this quickly when working on the text.
@@ -41232,7 +41224,6 @@
                         ;; "p_extra" must end in a NUL to avoid us-ptr2len-cc() reading past "p_extra[n_extra]".
 
                         (let [[#_int c #_int mb_c #_boolean mb_utf8] ;; decoded multi-byte character ;; screen char is UTF-8 char
-                        ]
                                 (cond (< 0 @a'n_extra)
                                     (if (!= @a'c_extra NUL)
                                         (do (reset! a'n_extra (dec @a'n_extra))
@@ -41282,7 +41273,7 @@
                                                     (reset! a'p_extra s)
                                                     (reset! a'c_extra NUL)
                                                     (when (and (zero? @a'area_attr) (zero? @a'search_attr))
-                                                        (reset! a'n_attr (inc @a'n_extra))
+                                                        (reset! a'n_attr2 (inc @a'n_extra))
                                                         (reset! a'extra_attr (hl-attr HLF_8))
                                                         (reset! a'saved_attr2 @a'char_attr)) ;; save current attr
                                                     [c mb_c (<= 0x80 c)])
@@ -41307,7 +41298,7 @@
                                                 (do (reset! a'n_extra 1)
                                                     (reset! a'c_extra MB_FILLER_CHAR)
                                                     (when (and (zero? @a'area_attr) (zero? @a'search_attr))
-                                                        (reset! a'n_attr (inc @a'n_extra))
+                                                        (reset! a'n_attr2 (inc @a'n_extra))
                                                         (reset! a'extra_attr (hl-attr HLF_AT))
                                                         (reset! a'saved_attr2 @a'char_attr)) ;; save current attr
                                                     [(byte \space) (byte \space) false])
@@ -41331,126 +41322,81 @@
                                             )]
 
                                         ;; Handling of non-printable characters.
+                                        (cond (flag? (... @chartab (& c 0xff)) CT_PRINT_CHAR)
+                                            [c mb_c mb_utf8]
 
-                                        (when (zero? (& (... @chartab (& c 0xff)) CT_PRINT_CHAR))
-                                            ;; When getting a character from the file, we may have to turn it
-                                            ;; into something else on the way to putting it into "screenLines".
-
-                                            (cond (== c TAB)
-                                            (do
-                                                ((ß int tab_len =) 0)
-                                                ((ß int vcol_adjusted =) @a'vcol) ;; removed showbreak length
-                                                ;; Only adjust the "tab_len" when at the first column
-                                                ;; after the showbreak value was drawn.
-                                                ((ß vcol_adjusted =) (if (and (non-eos? @p_sbr) (== @a'vcol @a'vcol_sbr) wo_wrap) (- @a'vcol (us-charlen @p_sbr)) vcol_adjusted))
+                                        (== c TAB)
+                                            (let [#_int vcol' (if (and (non-eos? @p_sbr) (== @a'vcol @a'vcol_sbr) wo_wrap) (- @a'vcol (us-charlen @p_sbr)) @a'vcol)
+                                                  ts @(:b_p_ts @curbuf)]
                                                 ;; tab amount depends on current column
-                                                ((ß tab_len =) (- (int @(:b_p_ts @curbuf)) (% vcol_adjusted (int @(:b_p_ts @curbuf))) 1))
+                                                (reset! a'n_extra (- ts (% vcol' ts) 1))
+                                                ;; Tab alignment should be identical regardless of 'conceallevel' value.
+                                                ;; So tab compensates of all previous concealed characters, and thus resets "vcol_off" accumulated so far in the line.
+                                                ;; Note that the tab can be longer than 'tabstop' when there are concealed characters.
+                                                (reset! a'n_extra (+ @a'n_extra @a'vcol_off))
+                                                (reset! a'vcol (- @a'vcol @a'vcol_off))
+                                                (reset! a'vcol_off 0)
+                                                (reset! a'c_extra (byte \space))
+                                            [(byte \space) mb_c false]) ;; don't draw as UTF-8
 
-                                                ;; tab amount depends on current column
-                                                ((ß @a'n_extra =) tab_len)
-
-                                                ;; Tab alignment should be identical regardless of
-                                                ;; 'conceallevel' value.  So tab compensates of all
-                                                ;; previous concealed characters, and thus resets
-                                                ;; "vcol_off" accumulated so far in the
-                                                ;; line.  Note that the tab can be longer than
-                                                ;; 'tabstop' when there are concealed characters.
-
-                                                ((ß @a'n_extra =) (+ @a'n_extra @a'vcol_off))
-                                                ((ß @a'vcol =) (- @a'vcol @a'vcol_off))
-                                                ((ß @a'vcol_off =) 0)
-
-                                                ((ß mb_utf8 =) false)                    ;; don't draw as UTF-8
-
-                                                ((ß @a'c_extra =) (byte \space))
-                                                ((ß c =) (byte \space))
-                                            )
-                                            (and (== c NUL) (and (or (<= 0 @a'fromcol) (<= 0 @a'fromcol_prev)) (< @a'vcol @a'tocol) (!= @VIsual_mode Ctrl_V) (< @a'col (:w_width win)) (not (and @a'noinvcur (== lnum (:lnum (:w_cursor win))) (== @a'vcol (:w_virtcol win))))) (<= 0 @a'lcs_eol_one))
-                                            (do
-                                                ;; Display a '$' after the line or highlight an extra character if the line break is included.
-
-                                                ;; For a diff line the highlighting continues after the "$".
-                                                (when (zero? @a'line_attr)
-                                                    ;; In virtualedit, visual selections may extend beyond end of line.
-                                                    (cond (and @a'area_highlighting (virtual-active) (!= @a'tocol MAXCOL) (< @a'vcol @a'tocol))
-                                                    (do
-                                                        ((ß @a'n_extra =) 0)
-                                                    )
-                                                    :else
-                                                    (do
-                                                        ((ß @a'p_extra =) (u8 ""))
-                                                        ((ß @a'n_extra =) 1)
-                                                        ((ß @a'c_extra =) NUL)
-                                                    ))
-                                                )
-                                                ((ß c =) (byte \space))
-                                                ((ß @a'lcs_eol_one =) -1)
-                                                ((ß @a's =) (.minus @a's 1))                 ;; put it back at the NUL
-                                                (when (not @a'attr_pri)
-                                                    ((ß @a'extra_attr =) (hl-attr HLF_AT))
-                                                    ((ß @a'n_attr =) 1)
-                                                )
-                                                ((ß mb_c =) c)
-                                                (cond (< 1 (utf-char2len c))
-                                                (do
-                                                    ((ß mb_utf8 =) true)
-                                                    ((ß u8cc[0] =) 0)
-                                                    ((ß c =) 0xc0)
-                                                )
-                                                :else
-                                                (do
-                                                    ((ß mb_utf8 =) false)                ;; don't draw as UTF-8
+                                        (!= c NUL)
+                                            (do (reset! a'p_extra (transchar c))
+                                                (reset! a'c_extra NUL)
+                                                (let [c (if wo_lbr
+                                                            (do (reset! a'n_extra (if (zero? @a'n_extra) (dec (mb-byte2cells (byte c))) @a'n_extra))
+                                                                (let [s @a'p_extra c (.at s 0) n @a'n_extra p (Bytes. (inc n))]
+                                                                    (BFILL p, 0, (byte \space), n)
+                                                                    (STRNCPY p, (.plus s 1), (dec (STRLEN s)))
+                                                                    (reset! a'p_extra (eos! p n))
+                                                                    c
+                                                                ))
+                                                            (do (reset! a'n_extra (dec (mb-byte2cells (byte c))))
+                                                                (reset! a'p_extra (.plus @a'p_extra 1))
+                                                                (.at @a'p_extra -1))
+                                                        )]
+                                                    (when (not @a'attr_pri)
+                                                        (reset! a'n_attr2 (inc @a'n_extra))
+                                                        (reset! a'extra_attr (hl-attr HLF_8))
+                                                        (reset! a'saved_attr2 @a'char_attr)) ;; save current attr
+                                                    [c mb_c false] ;; don't draw as UTF-8
                                                 ))
-                                            )
-                                            (!= c NUL)
-                                            (do
-                                                ((ß @a'p_extra =) (transchar c))
-                                                ((ß @a'n_extra =) (if (zero? @a'n_extra) (dec (mb-byte2cells (byte c))) @a'n_extra))
-                                                ((ß @a'c_extra =) NUL)
-                                                (cond wo_lbr
-                                                (do
-                                                    (ß Bytes p)
 
-                                                    ((ß c =) (.at @a'p_extra 0))
-                                                    ((ß p =) (Bytes. (inc @a'n_extra)))
-                                                    (BFILL p, 0, (byte \space), @a'n_extra)
-                                                    (STRNCPY p, (.plus @a'p_extra 1), (dec (STRLEN @a'p_extra)))
-                                                    (eos! p @a'n_extra)
-                                                    ((ß @a'p_extra =) p)
-                                                )
-                                                :else
-                                                (do
-                                                    ((ß @a'n_extra =) (dec (mb-byte2cells (byte c))))
-                                                    ((ß c =) (.at ((ß @a'p_extra =) (.plus @a'p_extra 1)) -1))
-                                                ))
-                                                (when (not @a'attr_pri)
-                                                    ((ß @a'n_attr =) (inc @a'n_extra))
-                                                    ((ß @a'extra_attr =) (hl-attr HLF_8))
-                                                    ((ß @a'saved_attr2 =) @a'char_attr)        ;; save current attr
-                                                )
-                                                ((ß mb_utf8 =) false)                    ;; don't draw as UTF-8
-                                            )
-                                            (and @VIsual_active (any == @VIsual_mode Ctrl_V (byte \v)) (virtual-active) (!= @a'tocol MAXCOL) (< @a'vcol @a'tocol) (< @a'col (:w_width win)))
-                                            (do
-                                                ((ß c =) (byte \space))
-                                                ((ß @a's =) (.minus @a's 1))                             ;; put it back at the NUL
-                                            )
-                                            (and (!= @a'line_attr 0) (< @a'col (:w_width win)))
-                                            (do
+                                        :else ;; (== c NUL)
+                                            (cond (and (or (<= 0 @a'fromcol) (<= 0 @a'fromcol_prev)) (< @a'vcol @a'tocol) (!= @VIsual_mode Ctrl_V) (< @a'col (:w_width win))
+                                                       (not (and @a'noinvcur (== lnum (:lnum (:w_cursor win))) (== @a'vcol (:w_virtcol win)))) (not @a'over_eol))
+                                                (do (when (zero? @a'line_attr)
+                                                        ;; In virtualedit, visual selections may extend beyond end of line.
+                                                        (if (and @a'area_highlighting (virtual-active) (!= @a'tocol MAXCOL) (< @a'vcol @a'tocol))
+                                                            (reset! a'n_extra 0)
+                                                            (do (reset! a'p_extra (u8 ""))
+                                                                (reset! a'n_extra 1)
+                                                                (reset! a'c_extra NUL))
+                                                        ))
+                                                    (reset! a'over_eol true)
+                                                    (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                    (when (not @a'attr_pri)
+                                                        (reset! a'extra_attr (hl-attr HLF_AT))
+                                                        (reset! a'n_attr2 1))
+                                                [(byte \space) (byte \space) false]) ;; don't draw as UTF-8
+
+                                            (and @VIsual_active (any == @VIsual_mode Ctrl_V (byte \v)) (virtual-active)
+                                                                (!= @a'tocol MAXCOL) (< @a'vcol @a'tocol) (< @a'col (:w_width win)))
+                                                (do (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                    [(byte \space) mb_c mb_utf8])
+
+                                            (and (non-zero? @a'line_attr) (< @a'col (:w_width win)))
                                                 ;; Highlight until the right side of the window.
-                                                ((ß c =) (byte \space))
-                                                ((ß @a's =) (.minus @a's 1))                             ;; put it back at the NUL
+                                                (do (reset! a's (.minus @a's 1)) ;; put it back at the NUL
+                                                    ;; Remember we do the char for line highlighting.
+                                                    (reset! a'did_line_attr (inc @a'did_line_attr))
+                                                    ;; Don't do search HL for the rest of the line.
+                                                    (reset! a'char_attr (if (and (non-zero? @a'line_attr) (== @a'char_attr @a'search_attr) (< 0 @a'col)) @a'line_attr @a'char_attr))
+                                                [(byte \space) mb_c mb_utf8])
 
-                                                ;; Remember we do the char for line highlighting.
-                                                ((ß @a'did_line_attr =) (inc @a'did_line_attr))
-
-                                                ;; don't do search HL for the rest of the line
-                                                ((ß @a'char_attr =) (if (and (non-zero? @a'line_attr) (== @a'char_attr @a'search_attr) (< 0 @a'col)) @a'line_attr @a'char_attr))
-                                            ))
-                                        )
-                                        [c mb_c mb_utf8]
-                                    )
-                                )
+                                            :else
+                                                [c mb_c mb_utf8])
+                                        ))
+                                )]
 
                             ;; In the cursor line and we may be concealing characters:
                             ;; correct the cursor column when we reach its position.
@@ -41460,7 +41406,7 @@
                             )
 
                             ;; Don't override visual selection highlighting.
-                            ((ß @a'char_attr =) (if (and (< 0 @a'n_attr) (== @a'draw_state WL_LINE) (not @a'attr_pri)) @a'extra_attr @a'char_attr))
+                            ((ß @a'char_attr =) (if (and (< 0 @a'n_attr2) (== @a'draw_state WL_LINE) (not @a'attr_pri)) @a'extra_attr @a'char_attr))
 
                             ;; At end of the text line or just after the last character.
 
@@ -41475,7 +41421,7 @@
 
                                 ((ß boolean prevcol_hl_flag =) (== prevcol (:startcol @search_hl)))
 
-                                (when (and (== @lcs_eol @a'lcs_eol_one) (or (and (!= @a'area_attr 0) (== @a'vcol @a'fromcol) (or (!= @VIsual_mode Ctrl_V) (== lnum (:lnum @VIsual_cursor)) (== lnum (:lnum (:w_cursor @curwin)))) (== c NUL)) (and prevcol_hl_flag (<= @a'did_line_attr 1))))
+                                (when (and (not @a'over_eol) (or (and (!= @a'area_attr 0) (== @a'vcol @a'fromcol) (or (!= @VIsual_mode Ctrl_V) (== lnum (:lnum @VIsual_cursor)) (== lnum (:lnum (:w_cursor @curwin)))) (== c NUL)) (and prevcol_hl_flag (<= @a'did_line_attr 1))))
 
                                     ((ß int n =) (if (<= (:w_width win) @a'col) -1 0))
 
@@ -41519,7 +41465,7 @@
                                 ;; check if line ends before left margin
                                 ((ß @a'vcol =) (max (- (+ v @a'col) (win-col-off win)) @a'vcol))
 
-                                ((ß @a'draw_color_col =) (if @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci) @a'draw_color_col))
+                                ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
 
                                 (when (or (and wo_cuc (<= (- @a'vcol @a'vcol_off @a'eol_hl_off) (:w_virtcol win)) (< (:w_virtcol win) (+ (* (:w_width win) (inc (- @a'row startrow))) v)) (!= lnum (:lnum (:w_cursor win)))) @a'draw_color_col)
                                     ((ß int rightmost_vcol =) 0)
@@ -41536,7 +41482,7 @@
                                         (.be @screenLines @a'off, (byte \space))
                                         (aset @screenLinesUC @a'off 0)
                                         ((ß @a'col =) (inc @a'col))
-                                        ((ß @a'draw_color_col =) (if @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci) @a'draw_color_col))
+                                        ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
 
                                         (cond (and wo_cuc (== (- @a'vcol @a'vcol_off) (:w_virtcol win)))
                                         (do
@@ -41576,25 +41522,8 @@
                                 (ß BREAK)
                             )
 
-                            ;; line continues beyond line end
-                            (when (and (!= @lcs_ext NUL) (not wo_wrap) (== @a'col (dec (:w_width win))) (or (non-eos? @a's) (and (non-zero? @a'n_extra) (or (!= @a'c_extra NUL) (non-eos? @a'p_extra)))))
-                                ((ß c =) @lcs_ext)
-                                ((ß @a'char_attr =) (hl-attr HLF_AT))
-                                ((ß mb_c =) c)
-                                (cond (< 1 (utf-char2len c))
-                                (do
-                                    ((ß mb_utf8 =) true)
-                                    ((ß u8cc[0] =) 0)
-                                    ((ß c =) 0xc0)
-                                )
-                                :else
-                                (do
-                                    ((ß mb_utf8 =) false)
-                                ))
-                            )
-
                             ;; advance to the next 'colorcolumn'
-                            ((ß @a'draw_color_col =) (if @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci) @a'draw_color_col))
+                            ((ß @a'draw_color_col =) (and @a'draw_color_col (advance-color-col (- @a'vcol @a'vcol_off), color_cols, a'cci)))
 
                             ;; Highlight the cursor column if 'cursorcolumn' is set.
                             ;; But don't highlight the cursor position itself.
@@ -41674,28 +41603,21 @@
 
                             ((ß @a'char_attr =) (if (<= 0 vcol_save_attr) vcol_save_attr @a'char_attr))
 
-                            ;; restore attributes after "predeces" in 'listchars'
-                            (if (and (< WL_NR @a'draw_state) (< 0 @a'n_attr3) (zero? ((ß @a'n_attr3 =) (dec @a'n_attr3))))
-                                ((ß @a'char_attr =) @a'saved_attr3)
-                            )
-
-                            ;; restore attributes after last 'listchars' or 'number' char
-                            (if (and (< 0 @a'n_attr) (== @a'draw_state WL_LINE) (zero? ((ß @a'n_attr =) (dec @a'n_attr))))
+                            ;; restore attributes after last 'number' char
+                            (if (and (< 0 @a'n_attr2) (== @a'draw_state WL_LINE) (zero? ((ß @a'n_attr2 =) (dec @a'n_attr2))))
                                 ((ß @a'char_attr =) @a'saved_attr2)
                             )
 
-                            ;; At end of screen line and there is more to come:
-                            ;; display the line so far.
-                            ;; If there is no more to display it is caught above.
+                            ;; At end of screen line when there is more to come: display the line so far.
+                            ;; It is caught above when there is no more to display.
 
                             (when (and (<= (:w_width win) @a'col) (or (non-eos? @a's) (and (non-zero? @a'n_extra) (or (!= @a'c_extra NUL) (non-eos? @a'p_extra)))))
                                 (screen-line @a'screen_row, (:w_wincol win), @a'col, (:w_width win), false)
                                 ((ß @a'row =) (inc @a'row))
                                 ((ß @a'screen_row =) (inc @a'screen_row))
 
-                                ;; When not wrapping and finished diff lines, or when displayed
-                                ;; '$' and highlighting until last column, break here.
-                                (if (or (not wo_wrap) (== @a'lcs_eol_one -1))
+                                ;; When not wrapping and finished diff lines, or when displayed '$' and highlighting until last column, break here.
+                                (if (or (not wo_wrap) @a'over_eol)
                                     (ß BREAK)
                                 )
 
