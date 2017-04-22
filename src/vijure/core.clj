@@ -113,7 +113,7 @@
 
 #_(final Bytes VIMVERSION (u8 "VIM - Vi IMproved 7.4.692"))
 
-(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep? msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc plain-vgetc vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
+(declare alphaOrd lowerOrd upperOrd rot13 ctrl-key is-special TERMCAP2KEY KEY2TERMCAP0 KEY2TERMCAP1 KB-SECOND KB-THIRD toSpecial vim-iswhite ARRAY-pos ARRAY-lpos ARRAY-wline asc-islower asc-isupper asc-isalpha asc-isalnum asc-iscntrl asc-isgraph asc-isprint asc-ispunct hl-attr ltpos eqpos ltoreq lineempty bufempty mch-write mch-inchar? handle-resize mch-delay sig-winch catch-sigint catch-sigpwr may-core-dump deathtrap mch-suspend mch-init set-signals catch-int-signal reset-signals catch-signals vim-handle-signal exit-scroll mch-exit mch-settmode get-stty mch-get-shellsize mch-set-shellsize mch-new-shellsize mch-breakcheck waitForChar realWaitForChar msg msg-attr msg-attr-keep? msg-strtrunc trunc-string smsg smsg-attr emsg-not-now emsg emsg2 wait-return hit-return-msg set-keep-msg msg-start msg-starthere msg-putchar msg-putchar-attr msg-outtrans msg-outtrans-attr msg-outtrans-len msg-outtrans-len-attr screen-puts-mbyte msg-puts msg-puts-title msg-puts-attr msg-puts-attr-len msg-puts-display msg-scroll-up t-puts msg-use-printf msg-puts-printf msg-screen-putchar msg-check-screen msg-clr-eos msg-clr-eos-force msg-clr-cmdline msg-end? msg-check give-warning bool-opt long-opt utf8-opt set-init-1 set-option-default set-options-default do-set? illegal-char didset-options did-set-string-option? check-colorcolumn? set-bool-option? set-num-option? check-redraw findoption showoneopt comp-col get-varp win-copy-options copy-winopt paste-option-changed fill-breakat-flags check-opt-strings opt-strings-flags can-bs get-sw-value get-sts-value find-mps-values briopt-check? do-ascii linelen ex-retab ex-fixdel ex-sub do-sub-msg getcmdline text-locked text-locked-msg cmdline-charsize set-cmdspos set-cmdspos-cursor correct-cmdspos getexline alloc-cmdbuff realloc-cmdbuff draw-cmdline putcmdline unputcmdline put-on-cmdline save-cmdline restore-cmdline cmdline-paste cmdline-paste-str redrawcmdline redrawcmdprompt redrawcmd compute-cmdrow cursorcmd gotocmdline hist-char2type init-history in-history add-to-history ex-window? do-cmdline-cmd do-cmdline? current-win-nr do-one-cmd append-command find-command skip-range get-address? invalid-range correct-range ex-close ex-win-close ex-only ex-stop do-sleep ex-set eval-to-string profile-setlimit profile-passed-limit find--command normal-cmd do-pending-operator op-colon op-function check-visual-highlight end-visual-mode reset-VIsual-and-resel reset-VIsual find-ident-under-cursor prep-redo-cmd prep-redo checkclearop? checkclearopq? clearop' clearopbeep' clearop clearopbeep unshift-special clear-showcmd add-to-showcmd? add-to-showcmd add-to-showcmd-c del-from-showcmd push-showcmd pop-showcmd display-showcmd nv-ignore nv-nop nv-error nv-addsub nv-page nv-screengo nv-scroll-line scroll-redraw nv-zet nv-colon nv-ctrlg nv-ctrlh nv-clear nv-ctrlo nv-Zet nv-ident get-visual-text? nv-scroll nv-right nv-left nv-up nv-down nv-end nv-dollar nv-search nv-next normal-search? nv-csearch nv-brackets nv-percent nv-mark nv-undo nv-kundo nv-replace v-swap-corners nv-Replace nv-vreplace n-swapchar nv-cursormark v-visop nv-subst nv-abbrev nv-optrans nv-gomark nv-pcmark nv-regname nv-visual start-selection may-start-select n-start-visual-mode nv-window nv-suspend nv-g-cmd n-opencmd nv-dot nv-redo nv-Undo nv-tilde nv-operator nv-lineop nv-home nv-pipe nv-bck-word nv-wordcmd adjust-cursor nv-beginline adjust-for-sel unadjust-for-sel? nv-select nv-goto nv-normal nv-esc nv-edit invoke-edit nv-object nv-record nv-at nv-halfpage nv-join nv-put nv-open nv-drop nv-cursorhold ARRAY-yankreg get-op-type op-on-lines get-op-char get-extra-op-char op-shift shift-line shift-block block-insert op-reindent get-expr-register? get-expr-line valid-yank-reg get-yank-register get-register put-register do-record? stuff-yank do-execreg put-reedit-in-typebuf put-in-typebuf insert-reg stuffescaped get-spec-reg cmdline-paste-reg adjust-clip-reg may-get-selection op-delete? mb-adjust-opend op-replace? op-tilde swapchars swapchar op-insert op-change? op-yank? yank-copy-line do-put adjust-cursor-eol do-join? do-join block-prep char-prep do-addsub line-count-info cursor-pos-info set-mark? setpcmark checkpcmark movemark movechangelist getmark getnextmark check-mark one-adjust one-adjust-nodel mark-adjust col-adjust mark-col-adjust dedupe-jumplist copy-jumplist get-buffcont get-recorded get-inserted add-buff add-num-buff add-char-buff read-readbuf read-readbuffers start-stuff stuff-empty flush-buffers reset-redo cancel-redo append-redo append-redo-lit append-redo-char append-redo-number stuff-string stuff-redo stuff-redo-len stuff-char stuff-num init-redo read-redo start-redo start-redo-ins stop-redo-ins init-typebuf ins-typebuf ins-char-typebuf typebuf-changed del-typebuf gotchars may-sync-undo before-blocking updatescript vgetc? vflush safe-vgetc plain-vgetc vpeekc? char-avail vungetc vgetorpeek? inchar? fix-input-buffer input-available vim-strsave-escape-special vim-unescape-special edit? ins-redraw ins-ctrl-v edit-putchar edit-unputchar change-indent truncate-spaces backspace-until-column del-char-after-col? del-char-after-col get-literal? insert-special isspecial? insert-char redo-literal start-arrow stop-arrow stop-insert set-last-insert add-char2buf beginline oneright? oneright oneleft? oneleft cursor-up? cursor-up cursor-down? cursor-down stuff-inserted get-last-insert get-last-insert-save replace-push replace-push-mb replace-pop replace-join replace-pop-ins mb-replace-pop-ins replace-flush replace-do-bs ins-reg ins-ctrl-g ins-esc? ins-start-select? ins-insert ins-ctrl-o ins-shift ins-del ins-bs-one ins-bs? ins-left ins-home ins-end ins-s-left ins-right ins-s-right ins-up ins-pageup ins-down ins-pagedown ins-drop ins-tab? ins-eol? ins-eol ins-digraph ins-copychar ins-ctrl-ey ins-try-si do-insert-char-pre with-nl Magic un-Magic is-Magic no-Magic toggle-Magic re-op re-next operand operand-min operand-max operand-cmp re-multi-type backslash-trans get-char-class init-class-tab ri-digit ri-hex ri-octal ri-word ri-head ri-alpha ri-lower ri-upper ri-white re-multiline re-lookbehind get-equi-class reg-equi-class get-coll-element get-cpo-flags skip-anyof skip-regexp bt-regcomp regcomp-start bt-reg bt-regbranch bt-regconcat bt-regpiece bt-regatom do-multibyte use-multibytecode regnode regc regmbc reginsert reginsert-nr reginsert-limits re-put-long regtail regoptail init-parse-state save-parse-state restore-parse-state peekchr skipchr skipchr-keepstart getchr ungetchr gethexchrs getdecchrs getoctchrs coll-get-char read-limits create-regstack create-backpos reg-getline bt-regexec-multi bt-regtry reg-prev-class reg-match-visual bt-regmatch push-regitem pop-regitem drop-regbehind drop-regstar regrepeat regnext prog-magic-wrong cleanup-subexpr save-subexpr restore-subexpr reg-nextchar reg-nextline reg-save reg-restore reg-save-equal re-num-cmp match-with-backref re-mult-next mb-decompose cstrncmp cstrchr regtilde vim-regsub nfa-regcomp-start nfa-get-reganch nfa-get-regstart nfa-get-match-text grow-post-array nfa-recognize-char-class emc1 emc2 nfa-emit-equi-class nfa-regatom nfa-do-multibyte nfa-regpiece nfa-regconcat nfa-regbranch nfa-reg re2post alloc-state nfa-max-width COPY-frag alloc-frag fr-single fr-patch fr-append new-nfa-stack st-push st-pop st-error post2nfa nfa-postprocess new-regsubs ARRAY-nfa-thread ARRAY-nfa-list copy-sub-off copy-ze-off sub-equal pim-equal has-state-with-pos match-follows state-in-list addstate addstate-here check-char-class match-backref nfa-save-listids nfa-restore-listids nfa-re-num-cmp recursive-regmatch failure-chance skip-to-start find-match-text nfa-regmatch nfa-regtry nfa-regcomp nfa-regexec-multi vim-regcomp report-re-switch vim-regexec new-spat search-regcomp? get-search-pat save-re-pat ignorecase pat-has-uppercase last-search-pat last-pat-prog searchit? first-submatch do-search? searchc? findmatch findmatchlimit check-prevcol showmatch cls-cursor fwd-word? fwd-word bck-word? bck-word end-word? end-word bckend-word? bckend-word skip-chars? back-in-line current-word? current-block? find-next-quote find-prev-quote current-quote? current-search? is-one-char linewhite ml-open ml-get ml-get-pos ml-get-cursor ml-append ml-replace ml-delete close-buffer newBuffer fileinfo col-print get-rel-pos set-chartab reset-chartab get-chartab init-chartab trans-characters transchar transchar-byte transchar-nonprint transchar-hex nr2hex mb-byte2cells mb-char2cells mb-ptr2cells mb-string2cells chartabsize linetabsize linetabsize-col win-linetabsize vim-isidentc vim-iswordc us-iswordb us-iswordp vim-isfnamec vim-isprintc lbr-chartabsize lbr-chartabsize-adv win-lbr-chartabsize win-nolbr-chartabsize in-win-border getvcol getvcol-nolist getvvcol getvcols skipwhite skipdigits asc-isdigit asc-isodigit asc-isxdigit getdigits vim-str2nr hex2nr digr do-digraph get-digraph? getexactdigraph getdigraph us-byte2len mb-byte2len us-get-class intable utf-char2cells us-ptr2cells us-string2cells utf-off2cells us-ptr2char us-safe-read-char-adv us-ptr2char-adv us-ptr2char-cc us-ptr2char-cc-len utfc-char2bytes us-ptr2len us-ptr2len-len us-ptr2len-cc us-ptr2len-cc-len utf-char2len utf-char2bytes utf-iscomposing utf-printable utf-class utf-convert utf-fold utf-tolower utf-toupper utf-islower utf-isupper us--strnicmp us-strnicmp show-utf8 us-head-off us-off-next us-tail-off utf-find-illegal mb-adjust-pos us-ptr-back us-prevptr us-charlen mb-lefthalve mb-fix-col get-indent get-indent-str set-indent? set-indent copy-indent get-breakindent cin-is-cinword open-line? plines plines-nowrap plines-col plines-many ins-bytes ins-bytes-len ins-char ins-char-bytes ins-str del-char? del-char del-chars? del-chars del-bytes? del-bytes truncate-line del-lines gchar-pos gchar-cursor inindent skip-to-option-part changed changed-bytes changed-one-line appended-lines appended-lines-mark deleted-lines deleted-lines-mark changed-lines changed-lines-buf changed-common unchanged check-status get-keystroke? msgmore beep-flush beep prepare-to-exit preserve-exit slow-breakcheck fast-breakcheck goto-im virtual-active getviscol getviscol2 coladvance-force coladvance? coladvance getvpos coladvance3 inc-cursor? inc-cursor incp? incp incl? incl dec-cursor? dec-cursor decp? decp decl? decl get-cursor-rel-lnum check-cursor-lnum check-cursor-col check-cursor adjust-cursor-col leftcol-changed? leftcol-changed STRDUP STRNDUP vim-strsave-escaped vim-strncpy vim-strcat copy-option-part vim-strchr vim-strbyte vim-strrchr vim-isspace simplify-key handle-x-keys get-special-key-name find-special-key-name get-real-state trigger-cursorhold u-save-cursor u-save u-savesub u-inssub u-savedel undo-allowed get-undolevels u-savecommon u-undo u-redo u-doit undo-time u-undoredo u-undo-end u-sync u-add-time u-get-headentry u-getbot u-freeheader u-freebranch u-freeentries u-saveline u-clearline u-undoline parse-builtin-tcap set-term out-flush out-flush-check out-char out-char-nf _addfmt _tgoto _tputs out-str-nf out-str term-windgoto term-cursor-right term-append-lines term-delete-lines term-set-winsize term-fg-color term-bg-color term-color ttest check-shellsize limit-screen-size win-new-shellsize shell-resized set-shellsize settmode start-termcap stop-termcap swapping-screen scroll-start cursor-on cursor-off term-cursor-shape scroll-region-set scroll-region-reset ARRAY-termcode clear-termcodes add-termcode termcode-star find-termcode del-termcode del-termcode-idx check-termcode gather-termleader ui-write ui-inchar? ui-delay ui-suspend ui-get-shellsize ui-set-shellsize ui-new-shellsize ui-breakcheck is-input-buf-full is-input-buf-empty read-from-input-buf fill-input-buf ui-cursor-shape check-col check-row redraw-later redraw-later-clear redraw-all-later redraw-curbuf-later redraw-winline update-curbuf update-screen update-single-line win-update win-draw-end advance-color-col win-line comp-char-differs char-needs-redraw screen-line status-redraw-all redraw-statuslines draw-vsep-win win-redr-status stl-connected screen-putchar screen-getbytes screen-comp-differs screen-puts screen-puts-len start-search-hl end-search-hl init-search-hl prepare-search-hl next-search-hl screen-start-highlight screen-stop-highlight reset-cterm-colors screen-char screen-draw-rectangle redraw-block screen-fill check-for-delay screen-valid screen-alloc screen-clear screenclear2 lineclear lineinvalid linecopy can-clear screen-start windgoto setcursor win-ins-lines? win-del-lines? win-do-lines win-rest-invalid screen-ins-lines screen-del-lines showmode? showmode msg-pos-mode unshowmode fillchar-status fillchar-vsep redrawing messaging showruler win-redr-ruler number-width? screen-screencol screen-screenrow do-window cmd-with-count win-split? win-split win-split-ins? win-split-ins win-init win-exchange win-rotate win-totop win-equal win-equal-rec one-window win-close? win-free-mem winframe-remove' win-altframe frame2win frame-has-win frame-new-height frame-fixed-height frame-fixed-width frame-add-statusline frame-new-width frame-add-vsep frame-fix-width frame-fix-height frame-minheight frame-minwidth close-others newFrame win-init-size win-goto win-goto-ver win-goto-hor win-enter win-enter-ext newWindow win-free win-append win-remove frame-append frame-insert frame-remove win-alloc-lines win-free-lines shell-new-rows shell-new-columns win-comp-pos frame-comp-pos win-setheight frame-setheight win-setwidth frame-setwidth win-setminheight win-setminwidth set-fraction win-new-height win-new-width win-comp-scroll command-height frame-add-height last-status last-status-rec min-rows frame-check-height frame-check-width comp-botline redraw-for-cursorline update-topline-redraw update-topline scrolljump-value check-top-offset update-curswant check-cursor-moved changed-window-setting set-topline changed-cline-bef-curs changed-line-abv-curs validate-botline invalidate-botline approximate-botline validate-cursor curs-rows validate-virtcol validate-cheight validate-cursor-col win-col-off win-col-off2 curs-columns scrolldown scrollup topline-back botline-forw scroll-cursor-top set-empty-rows scroll-cursor-bot scroll-cursor-halfway cursor-correct onepage? onepage get-scroll-overlap halfpage restore-cterm-colors hl-combine-attr main-loop getout)
 
 ;;; ============================================================================================== VimC
 
@@ -3955,14 +3955,12 @@
                     p_wmh ;; 'winminheight'
                         (do (when (< @p_wmh 0)      (reset! p_wmh 0)      (reset! a'errmsg e_positive))
                             (when (< @p_wh @p_wmh)  (reset! p_wmh @p_wh)  (reset! a'errmsg e_winheight))
-                            (win-setminheight)
-                            win)
+                            (win-setminheight win))
 
                     p_wmw ;; 'winminwidth'
                         (do (when (< @p_wmw 0)      (reset! p_wmw 0)      (reset! a'errmsg e_positive))
                             (when (< @p_wiw @p_wmw) (reset! p_wmw @p_wiw) (reset! a'errmsg e_winwidth))
-                            (win-setminheight)
-                            win)
+                            (win-setminwidth win))
 
                     p_hi ;; 'history'
                         (do (cond
@@ -6639,24 +6637,20 @@
 ;; ":close": close current window, unless it is the last one
 
 (defn- #_[window_C exarg_C] ex-close [#_window_C win, #_exarg_C eap]
-    (let [win (cond (non-zero? @cmdwin_type)
-                (do (reset! cmdwin_result Ctrl_C)
-                    win)
-            (not (text-locked))
-                (let [win (if (zero? (:addr_count eap)) win (loop-when-recur [w @firstwin n 1] (and (some? w) (!= n (:line2 eap))) [(:w_next w) (inc n)] => (or w @lastwin)))]
-                    (ex-win-close win, (:forceit eap)))
-            :else
-                win
-            )]
+    (cond (non-zero? @cmdwin_type)
+        (do (reset! cmdwin_result Ctrl_C) [win eap])
+    (not (text-locked))
+        (let [#_window_C w (if (zero? (:addr_count eap)) win (loop-when-recur [w @firstwin n 1] (and (some? w) (!= n (:line2 eap))) [(:w_next w) (inc n)] => (or w @lastwin)))]
+            [(ex-win-close win, w, (:forceit eap)) eap])
+    :else
         [win eap]
     ))
 
-;; Close window "win" and take care of handling closing the last window for a modified buffer.
+;; Close window "win'" and take care of handling closing the last window for a modified buffer.
 
-(defn- #_window_C ex-win-close [#_window_C win, #_boolean forceit]
+(defn- #_window_C ex-win-close [#_window_C win, #_window_C win', #_boolean forceit]
     (let-when [able? (or (not @(:b_changed @curbuf)) (< 1 (:b_nwindows @curbuf)))] (or able? forceit) => (do (emsg e_nowrtmsg) win)
-        (win-close win, able?)
-        (ß @curwin)
+        (let [[win _] (win-close? win, win', able?)] win)
     ))
 
 ;; ":only".
@@ -38400,44 +38394,37 @@
 ;; Return true if there is only one window.
 
 (defn- #_boolean one-window []
-    (loop-when [#_boolean seen_one false #_window_C win @firstwin] (some? win) => true
-        (recur-if (not seen_one) [true (:w_next win)] => false)
+    (loop-when [? false #_window_C w @firstwin] (some? w) => true
+        (recur-if (not ?) [true (:w_next w)] => false)
     ))
 
-;; Close window "win".
-;; If "_unload" is true related buffer may be unloaded.
+;; Close window "win'".
+;; If "_unload" is true, related buffer may be unloaded.
 ;;
 ;; Returns false when the window was not closed.
 
-(defn- #_boolean win-close [#_window_C win, #_boolean _unload]
+(defn- #_[window_C boolean] win-close? [#_window_C win, #_window_C win', #_boolean _unload]
     (cond (one-window)
-        (do (emsg (u8 "E444: Cannot close last window")) false)
+        (do (emsg (u8 "E444: Cannot close last window")) [win false])
     (== @firstwin @lastwin)
-        false
+        [win false]
     :else
-        (do ;; Close the link to the buffer.
-            (close-buffer win)
-            ;; Free the memory used for the window and get the window that received the screen space.
-            (let [a'dir (atom (int)) #_window_C win' (win-free-mem win, a'dir) #_boolean close_curwin (:w_focused win)]
-                ;; Make sure "curwin" isn't invalid.
-                ;; It can cause severe trouble when printing an error message.
-                ;; For win-equal() "curbuf" needs to be valid too.
-                (when close_curwin
-                    (reset! curwin win'))
-
-                (if (and @p_ea (or (at? @p_ead (byte \b)) (at? @p_ead @a'dir)))
-                    (swap! curwin win-equal nil, true, @a'dir)
-                    (win-comp-pos))
-
-                (when close_curwin
-                    (swap! curwin win-enter-ext win', true))
-
-                ;; If last window has a status line now and we don't want one, remove the status line.
-                (last-status false)
-
-                (redraw-all-later NOT_VALID)
-                true
-            ))
+        (let [? (:w_focused win')
+              ;; Close the link to the buffer.
+              _ (close-buffer win')
+              ;; Free the memory used for the window and get the window that received the screen space.
+              a'dir (atom (int)) win' (win-free-mem win', a'dir)
+              ;; Make sure "curwin" isn't invalid.
+              ;; It can cause severe trouble when printing an error message.
+              ;; For win-equal() "curbuf" needs to be valid too.
+              win (if ? win' win)
+              win (when' (and @p_ea (any == (.at @p_ead 0) (byte \b) @a'dir)) => (do (win-comp-pos) win)
+                    (win-equal win, nil, true, @a'dir))
+              win (if ? (win-enter-ext win, win', true) win)
+              ;; If last window has a status line now and we don't want one, remove the status line.
+              _ (last-status false)]
+            (redraw-all-later NOT_VALID)
+            [win true])
     ))
 
 ;; Free the memory used for a window.
@@ -38546,8 +38533,8 @@
     (if (== @firstwin @lastwin)
         (:w_frame @curwin)
         (let [#_frame_C fr (:w_frame win)
-              #_boolean b (if (and (some? (:fr_parent fr)) (== (:fr_layout (:fr_parent fr)) FR_ROW)) @p_spr @p_sb)]
-            (if (or (and (not b) (some? (:fr_next fr))) (nil? (:fr_prev fr)))
+              ? (if (and (some? (:fr_parent fr)) (== (:fr_layout (:fr_parent fr)) FR_ROW)) @p_spr @p_sb)]
+            (if (or (and (not ?) (some? (:fr_next fr))) (nil? (:fr_prev fr)))
                 (:fr_next fr)
                 (:fr_prev fr)
             ))
@@ -38825,7 +38812,7 @@
         (if (== (:fr_win frame) win')
             (+ @p_wh (:w_status_height (:fr_win frame)))
             (let [m (+ @p_wmh (:w_status_height (:fr_win frame)))] ;; window: minimal height of the window plus status line
-                (if (and (zero? @p_wmh) (== (:fr_win frame) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one line high
+                (if (and (zero? @p_wmh) (:w_focused (:fr_win frame)) (nil? win')) (inc m) m) ;; current window is minimal one line high
             ))
     (== (:fr_layout frame) FR_ROW) ;; get the minimal height from each frame in this row
         (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(max (frame-minheight fr, win') m) (:fr_next fr)] => m)
@@ -38842,7 +38829,7 @@
         (if (== (:fr_win frame) win')
             (+ @p_wiw (:w_vsep_width (:fr_win frame)))
             (let [m (+ @p_wmw (:w_vsep_width (:fr_win frame)))] ;; window: minimal width of the window plus separator column
-                (if (and (zero? @p_wmw) (== (:fr_win frame) @curwin) (nil? win')) (inc m) m) ;; current window is minimal one column wide
+                (if (and (zero? @p_wmw) (:w_focused (:fr_win frame)) (nil? win')) (inc m) m) ;; current window is minimal one column wide
             ))
     (== (:fr_layout frame) FR_COL) ;; get the minimal width from each frame in this column
         (loop-when-recur [m 0 fr (:fr_child frame)] (some? fr) [(max (frame-minwidth fr, win') m) (:fr_next fr)] => m)
@@ -38859,7 +38846,7 @@
             (let-when [#_window_C w' (:w_next w)] (!= w win) ;; don't close current window
                 ;; Check if it's allowed to abandon this window.
                 (let-when [changed @(:b_changed @curbuf)] (or (not changed) (< 1 (:b_nwindows @curbuf)) forceit)
-                    (win-close w, (not changed)))
+                    ((ß win =) (win-close? win, w, (not changed))))
                 (recur w')
             ))
         (when (and message (!= @lastwin @firstwin))
@@ -38975,7 +38962,9 @@
                     (reset! prevwin win)                    ;; remember for CTRL-W p
                     (assoc win :w_redr_status true))
 
-              win (reset! curwin win')
+              win (assoc win :w_focused false)
+              win (§ reset! curwin win')
+              win (assoc win :w_focused true)
 
               win (check-cursor win)
               win (when' (not (virtual-active)) => win
@@ -38984,18 +38973,13 @@
               win (assoc win :w_redr_status true)
               win (when' (non-zero? @restart_edit) => win
                     (redraw-later win, VALID))              ;; causes status line redraw
+
+              wops (:w_options win)
               ;; set window height to desired minimal value
-              win (cond (and (< (:w_height win) @p_wh) (not @(:wo_wfh (:w_options win))))
-                    (win-setheight win, @p_wh)
-                (zero? (:w_height win))
-                    (win-setheight win, 1)
-                :else
-                    win
-                )]
-            ;; set window width to desired minimal value
-            (when' (and (< (:w_width win) @p_wiw) (not @(:wo_wfw (:w_options win)))) => win
-                (win-setwidth win, @p_wiw)
-            ))
+              win (cond (and (< (:w_height win) @p_wh) (not @(:wo_wfh wops))) (win-setheight win, @p_wh) (zero? (:w_height win)) (win-setheight win, 1) :else win)
+              ;; set window width to desired minimal value
+              win (cond (and (< (:w_width win) @p_wiw) (not @(:wo_wfw wops))) (win-setwidth win, @p_wiw)                                                :else win)]
+        win)
     ))
 
 ;; Allocate a window structure and link it in the window list.
@@ -39155,7 +39139,7 @@
 (defn- #_window_C win-setheight [#_window_C win, #_int height]
     ;; Always keep current window at least one line high, even when 'winminheight' is zero.
     (let [height (if (:w_focused win) (max 1 @p_wmh height) height)
-          _ (frame-setheight (:w_frame win), (+ height (:w_status_height win)))
+          win (update win :w_frame frame-setheight (+ height (:w_status_height win)))
           #_int row (win-comp-pos)] ;; recompute the window positions
         ;; If there is extra space created between the last window and the command line, clear it.
         (when (and @full_screen (zero? @msg_scrolled) (< row @cmdline_row))
@@ -39179,56 +39163,56 @@
 ;; Check for the minimal height of the FR_ROW frame.
 ;; At the top level we can also use change the command line height.
 
-(defn- #_void frame-setheight [#_frame_C cufr, #_int height]
-    (when (!= (:fr_height cufr) height)
-        (cond (nil? (:fr_parent cufr)) ;; topframe: can only change the command line
-            (let [height (min height (- @Rows @p_ch))]
-                (when (< 0 height)
-                    ((ß cufr =) (frame-new-height cufr, height, false, false))))
-        (== (:fr_layout (:fr_parent cufr)) FR_ROW)
-            (let [height (max (frame-minheight (:fr_parent cufr), nil) height)]
+(defn- #_frame_C frame-setheight [#_frame_C frame, #_int height]
+    (when' (!= (:fr_height frame) height) => frame
+        (cond (nil? (:fr_parent frame)) ;; topframe can only change the command line
+            (let-when [height (min height (- @Rows @p_ch))] (< 0 height) => frame
+                (frame-new-height frame, height, false, false))
+
+        (== (:fr_layout (:fr_parent frame)) FR_ROW)
+            (let [height (max (frame-minheight (:fr_parent frame), nil) height)]
                 ;; Row of frames: also need to resize frames left and right of this one.
                 ;; First check for the minimal height of these.
-                (frame-setheight (:fr_parent cufr), height))
+                (update frame :fr_parent frame-setheight height))
+
         :else
             ;; Column of frames: try to change only frames in this column.
             ;; Do this twice:
-            ;; 1: compute room available, if it's not enough try resizing the containing frame.
+            ;; 1: compute room available; if it's not enough, try resizing the containing frame.
             ;; 2: compute the room available and adjust the height to it.
             ;; Try not to reduce the height of a window with 'winfixheight' set.
-            (let [[#_int room #_int rest #_int rcmd height] ;; room: total number of lines available ;; rcmd: lines available from cmdline
-                    (loop-when [ro 0 re 0 rc 0 height height #_int run 1] (<= run 2) => [ro re rc height]
-                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent cufr))] (some? fr) => [ro re]
-                                (let [re (if (and (!= fr cufr) (some? (:fr_win fr)) @(:wo_wfh (:w_options (:fr_win fr)))) (+ re (:fr_height fr)) re)
-                                      ro (+ ro (:fr_height fr)) ro (if (!= fr cufr) (- ro (frame-minheight fr, nil)) ro)]
+            (let [[frame #_int room #_int rest #_int rcmd height] ;; room: total number of lines available ;; rcmd: lines available from cmdline
+                    (loop-when [frame frame ro 0 re 0 rc 0 height height #_int run 1] (<= run 2) => [frame ro re rc height]
+                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent frame))] (some? fr) => [ro re]
+                                (let [re (if (and (!= fr frame) (some? (:fr_win fr)) @(:wo_wfh (:w_options (:fr_win fr)))) (+ re (:fr_height fr)) re)
+                                      ro (+ ro (:fr_height fr)) ro (if (!= fr frame) (- ro (frame-minheight fr, nil)) ro)]
                                     (recur ro re (:fr_next fr))
                                 ))
-                              rc (if (== (:fr_width cufr) @Cols) (max 0 (- (- @Rows @p_ch) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin)))) 0)]
+                              rc (if (== (:fr_width frame) @Cols) (max 0 (- (- @Rows @p_ch) (+ (:w_winrow @lastwin) (:w_height @lastwin) (:w_status_height @lastwin)))) 0)]
                             (cond (<= height (+ ro rc))
-                                [ro re rc height]
-                            (or (== run 2) (== (:fr_width cufr) @Cols))
-                                [ro re rc (min height (+ ro rc))]
+                                [frame ro re rc height]
+                            (or (== run 2) (== (:fr_width frame) @Cols))
+                                [frame ro re rc (min height (+ ro rc))]
                             :else
-                            (do
-                                (frame-setheight (:fr_parent cufr), (- (+ height (frame-minheight (:fr_parent cufr), :NOWIN)) @p_wmh 1))
-                                (recur ro re rc height (inc run))
-                            ))
+                                (let [frame (update frame :fr_parent #(frame-setheight %, (- (+ height (frame-minheight %, :NOWIN)) @p_wmh 1)))]
+                                    (recur frame ro re rc height (inc run))
+                                ))
                         ))
                   ;; Compute the number of lines we will take from others frames (can be negative!).
-                  #_int take (- height (:fr_height cufr))
+                  #_int take (- height (:fr_height frame))
                   ;; If there is not enough room, also reduce the height of a window with 'winfixheight' set.
                   rest (min rest (- (+ room rcmd) height))
                   ;; If there is only a 'winfixheight' window and making the window smaller, need to make the other window taller.
-                  rest (if (and (< take 0) (< (- room (:fr_height cufr)) rest)) 0 rest)
+                  rest (if (and (< take 0) (< (- room (:fr_height frame)) rest)) 0 rest)
                   take (if (and (< 0 take) (< 0 rcmd)) ;; use lines from cmdline first
                             (let [rcmd (min rcmd take)] (swap! topframe update :fr_height + rcmd) (- take rcmd)) take)
-                  a'm (atom {:take take :rest rest})]
-                ;; Set the current frame to the new height.
-                ((ß cufr =) (frame-new-height cufr, height, false, false))
+                  a'm (atom {:take take :rest rest})
+                  ;; Set the current frame to the new height.
+                  frame (frame-new-height frame, height, false, false)]
                 ;; First take lines from the frames after the current frame.
-                ;; If that is not enough, takes lines from frames above the current frame.
+                ;; If that is not enough, take lines from frames above the current frame.
                 (doseq [step- [:fr_next :fr_prev]]
-                    (loop-when [#_frame_C fr (step- cufr)] (and (some? fr) (non-zero? (:take @a'm)))
+                    (loop-when [#_frame_C fr (step- frame)] (and (some? fr) (non-zero? (:take @a'm)))
                         (let [#_int h0 (frame-minheight fr, nil) h (:fr_height fr)]
                             (cond (and (< 0 (:rest @a'm)) (some? (:fr_win fr)) @(:wo_wfh (:w_options (:fr_win fr))))
                             (do
@@ -39258,17 +39242,17 @@
                                 ))
                             ))
                             (recur (step- fr))
-                        ))
-                ))
-        ))
-    nil)
+                        )))
+                frame
+            ))
+    ))
 
 ;; Set the window width of window "win" and take care of repositioning other windows to fit around it.
 
 (defn- #_window_C win-setwidth [#_window_C win, #_int width]
     ;; Always keep current window at least one column wide, even when 'winminwidth' is zero.
-    (let [width (if (:w_focused win) (max 1 @p_wmw width) width)]
-        (frame-setwidth (:w_frame win), (+ width (:w_vsep_width win)))
+    (let [width (if (:w_focused win) (max 1 @p_wmw width) width)
+          win (update win :w_frame frame-setwidth (+ width (:w_vsep_width win)))]
         (win-comp-pos) ;; recompute the window positions
         (redraw-all-later NOT_VALID)
         win
@@ -39276,52 +39260,53 @@
 
 ;; Set the width of a frame to "width"
 ;; and take care that all frames and windows inside it are resized.
-;; Also resize frames above and below if they are in the same FR_ROW frame.
+;; Also resize frames above and below if they are in the same FR_COL frame.
 ;;
 ;; Strategy is similar to frame-setheight().
 
-(defn- #_void frame-setwidth [#_frame_C cufr, #_int width]
-    (when (and (!= (:fr_width cufr) width) (some? (:fr_parent cufr))) ;; if topframe: can't change width
-        (cond (== (:fr_layout (:fr_parent cufr)) FR_COL)
-            (let [width (max (frame-minwidth (:fr_parent cufr), nil) width)]
+(defn- #_frame_C frame-setwidth [#_frame_C frame, #_int width]
+    (when' (and (!= (:fr_width frame) width) (some? (:fr_parent frame))) => frame ;; topframe can't change width
+        (cond (== (:fr_layout (:fr_parent frame)) FR_COL)
+            (let [width (max (frame-minwidth (:fr_parent frame), nil) width)]
                 ;; Column of frames: also need to resize frames above and below of this one.
                 ;; First check for the minimal width of these.
-                (frame-setwidth (:fr_parent cufr), width))
+                (update frame :fr_parent frame-setwidth width))
+
         :else
             ;; Row of frames: try to change only frames in this row.
             ;; Do this twice:
-            ;; 1: compute room available, if it's not enough try resizing the containing frame.
+            ;; 1: compute room available; if it's not enough, try resizing the containing frame.
             ;; 2: compute the room available and adjust the width to it.
-            (let [[#_int room #_int rest width] ;; room: total number of lines available
-                    (loop-when [ro 0 re 0 width width #_int run 1] (<= run 2) => [ro re width]
-                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent cufr))] (some? fr) => [ro re]
-                                (let [re (if (and (!= fr cufr) (some? (:fr_win fr)) @(:wo_wfw (:w_options (:fr_win fr)))) (+ re (:fr_width fr)) re)
-                                      ro (+ ro (:fr_width fr)) ro (if (!= fr cufr) (- ro (frame-minwidth fr, nil)) ro)]
+            ;; Try not to reduce the width of a window with 'winfixwidth' set.
+            (let [[frame #_int room #_int rest width] ;; room: total number of lines available
+                    (loop-when [frame frame ro 0 re 0 width width #_int run 1] (<= run 2) => [frame ro re width]
+                        (let [[ro re] (loop-when [ro 0 re 0 #_frame_C fr (:fr_child (:fr_parent frame))] (some? fr) => [ro re]
+                                (let [re (if (and (!= fr frame) (some? (:fr_win fr)) @(:wo_wfw (:w_options (:fr_win fr)))) (+ re (:fr_width fr)) re)
+                                      ro (+ ro (:fr_width fr)) ro (if (!= fr frame) (- ro (frame-minwidth fr, nil)) ro)]
                                     (recur ro re (:fr_next fr))
                                 ))]
                             (cond (<= width ro)
-                                [ro re width]
-                            (or (== run 2) (<= (- @Rows @p_ch) (:fr_height cufr)))
-                                [ro re (min width ro)]
+                                [frame ro re width]
+                            (or (== run 2) (<= (- @Rows @p_ch) (:fr_height frame)))
+                                [frame ro re (min width ro)]
                             :else
-                            (do
-                                (frame-setwidth (:fr_parent cufr), (- (+ width (frame-minwidth (:fr_parent cufr), :NOWIN)) @p_wmw 1))
-                                (recur ro re width (inc run))
-                            ))
+                                (let [frame (update frame :fr_parent #(frame-setwidth %, (- (+ width (frame-minwidth %, :NOWIN)) @p_wmw 1)))]
+                                    (recur frame ro re width (inc run))
+                                ))
                         ))
                   ;; Compute the number of lines we will take from others frames (can be negative!).
-                  #_int take (- width (:fr_width cufr))
+                  #_int take (- width (:fr_width frame))
                   ;; If there is not enough room, also reduce the width of a window with 'winfixwidth' set.
                   rest (min rest (- room width))
                   ;; If there is only a 'winfixwidth' window and making the window smaller, need to make the other window narrower.
-                  rest (if (and (< take 0) (< (- room (:fr_width cufr)) rest)) 0 rest)
+                  rest (if (and (< take 0) (< (- room (:fr_width frame)) rest)) 0 rest)
                   a'm (atom {:take take :rest rest})
                   ;; Set the current frame to the new width.
-                  cufr (frame-new-width cufr, width, false, false)]
+                  frame (frame-new-width frame, width, false, false)]
                 ;; First take lines from the frames right of the current frame.
-                ;; If that is not enough, takes lines from frames left of the current frame.
+                ;; If that is not enough, take lines from frames left of the current frame.
                 (doseq [step- [:fr_next :fr_prev]]
-                    (loop-when [#_frame_C fr (step- cufr)] (and (some? fr) (non-zero? (:take @a'm)))
+                    (loop-when [#_frame_C fr (step- frame)] (and (some? fr) (non-zero? (:take @a'm)))
                         (let [#_int w0 (frame-minwidth fr, nil) w (:fr_width fr)]
                             (cond (and (< 0 (:rest @a'm)) (some? (:fr_win fr)) @(:wo_wfw (:w_options (:fr_win fr))))
                             (do
@@ -39351,21 +39336,23 @@
                                 ))
                             ))
                             (recur (step- fr))
-                        ))
-                ))
-        ))
-    nil)
+                        )))
+                frame
+            ))
+    ))
 
 ;; Check 'winminheight' for a valid value.
 ;; TODO: handle vertical splits
 
-(defn- #_void win-setminheight []
+(defn- #_window_C win-setminheight [#_window_C win]
     (loop-when-recur [mess true]
-                     (and (pos? @p_wmh) (neg? (loop-when-recur [room (- @p_wh) win @firstwin] (some? win) [(+ room (- (:w_height win) @p_wmh)) (:w_next win)] => room)))
+                     (and (pos? @p_wmh) (neg? (loop-when-recur [room (- @p_wh) #_window_C w @firstwin] (some? w) [(+ room (- (:w_height w) @p_wmh)) (:w_next w)] => room)))
                      [false]
         (swap! p_wmh dec)
         (when mess (emsg e_noroom)))
-    nil)
+    win)
+
+(def- win-setminwidth win-setminheight)
 
 (final long FRACTION_MULT 16384)
 
@@ -39381,7 +39368,7 @@
 (defn- #_window_C win-new-height [#_window_C win, #_int height]
     ;; Don't want a negative height.  Happens when splitting a tiny window.  Will equalize heights soon to fix it.
     (let-when [#_int prev_height (:w_height win) height (max 0 height)] (!= (:w_height win) height) => win ;; nothing to do
-        (let-when [[win _]
+        (let-when [[win ?]
             (if (< 0 (:w_height win))
                 ;; When setting 'laststatus', this may call win-new-height() recursively.
                 (let [win (if (:w_focused win) (validate-cursor win) win)] ;; "w_wrow" needs to be valid
@@ -39390,7 +39377,7 @@
                         [(if (!= (:w_wrow win) (:w_prev_fraction_row win)) (set-fraction win) win) true]
                     ))
                 [win true])
-        ] _ => win ;; Recursive call already changed the size, bail out here to avoid the following to mess things up.
+        ] ? => win ;; Recursive call already changed the size, bail out here to avoid the following to mess things up.
 
             (let [win (assoc win :w_height height, :w_skipcol 0)
                   win ;; Don't change "w_topline" when height is zero.
@@ -39523,16 +39510,16 @@
         ))
     nil)
 
-;; Resize frame "fr" to be "n" lines higher (negative for less high).
+;; Resize "frame" to be "lines" higher (negative for less high).
 ;; Also resize the frames it is contained in.
 
-(defn- #_frame_C frame-add-height [#_frame_C fr, #_int n]
-    (let [fr (frame-new-height fr, (+ (:fr_height fr) n), false, false)]
-        (loop [#_frame_C f fr]
+(defn- #_frame_C frame-add-height [#_frame_C frame, #_int lines]
+    (let [frame (frame-new-height frame, (+ (:fr_height frame) lines), false, false)]
+        (loop [#_frame_C f frame]
             (let [f (:fr_parent f)]
-                (recur-if (some? f) [(update f :fr_height + n)] => nil)
+                (recur-if (some? f) [(update f :fr_height + lines)] => nil)
             ))
-        fr
+        frame
     ))
 
 ;; Add or remove a status line for the bottom window(s), according to the value of 'laststatus'.
@@ -39595,30 +39582,26 @@
 ;; Return the minimal number of rows that is needed on the screen to display the current number of windows.
 
 (defn- #_int min-rows []
-    (if (nil? @firstwin) MIN_ROWS (inc (max 0 (frame-minheight @topframe, nil)))))      ;; count the room for the command line
+    (if (some? @firstwin) (inc (max 0 (frame-minheight @topframe, nil))) MIN_ROWS)) ;; count the room for the command line
 
 ;; Return true if "frame" and its children are at the right height.
 
 (defn- #_boolean frame-check-height [#_frame_C frame, #_int height]
-    (if (!= (:fr_height frame) height)
-        false
-        (if (== (:fr_layout frame) FR_ROW)
-            (loop-when [#_frame_C fr (:fr_child frame)] (some? fr) => true
-                (recur-if (== (:fr_height fr) height) [(:fr_next fr)] => false))
-            true
-        )
+    (and (== (:fr_height frame) height)
+        (when' (== (:fr_layout frame) FR_ROW) => true
+            (loop-when [#_frame_C f (:fr_child frame)] (some? f) => true
+                (recur-if (== (:fr_height f) height) [(:fr_next f)] => false)
+            ))
     ))
 
 ;; Return true if "frame" and its children are at the right width.
 
 (defn- #_boolean frame-check-width [#_frame_C frame, #_int width]
-    (if (!= (:fr_width frame) width)
-        false
-        (if (== (:fr_layout frame) FR_COL)
-            (loop-when [#_frame_C fr (:fr_child frame)] (some? fr) => true
-                (recur-if (== (:fr_width fr) width) [(:fr_next fr)] => false))
-            true
-        )
+    (and (== (:fr_width frame) width)
+        (when' (== (:fr_layout frame) FR_COL) => true
+            (loop-when [#_frame_C f (:fr_child frame)] (some? f) => true
+                (recur-if (== (:fr_width f) width) [(:fr_next f)] => false)
+            ))
     ))
 
 ;; move.c: Functions for moving the cursor and scrolling text.
