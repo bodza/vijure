@@ -21356,11 +21356,13 @@
 (atom! long     bl_maxval)
 
 (final int
-    RA_FAIL 1,            ;; something failed, abort
-    RA_CONT 2,            ;; continue in inner loop
-    RA_BREAK 3,           ;; break inner loop
-    RA_MATCH 4,           ;; successful match
-    RA_NOMATCH 5)         ;; didn't match
+    RA_NIL      0,      ;; didn't match
+    RA_FAIL     1,      ;; something failed, abort
+    RA_JUMP     2,      ;; (reg-nextline) + RA_CONT
+    RA_STEP     3,      ;; (reg-nextchar) + RA_CONT
+    RA_CONT     4,      ;; continue in inner loop
+    RA_BREAK    5,      ;; break inner loop
+    RA_MATCH    6)      ;; successful match
 
 ;; regmatch - main matching routine
 ;;
@@ -21410,32 +21412,31 @@
                 ;; Check for character class with NL added.
                 (cond (and (not @reg_line_lbr) (with-nl op) (nil? @reg_match) (eos? @reginput) (<= @reglnum @reg_maxline))
                 (do
-                    (reg-nextline)
-                    (fast-breakcheck)
+                    ((ß status =) RA_JUMP)
                 )
                 (and @reg_line_lbr (with-nl op) (at? @reginput (byte \newline)))
                 (do
-                    (reg-nextchar)
+                    ((ß status =) RA_STEP)
                 )
                 :else
                 (let [op (if (with-nl op) (- op ADD_NL) op) #_int c (us-ptr2char @reginput)]
                     ((ß status =) (condp ==? op
                         RE_BOL
-                            (if (BNE @reginput, @regline) RA_NOMATCH status)
+                            (if (BNE @reginput, @regline) RA_NIL status)
 
                         RE_EOL
-                            (if (!= c NUL) RA_NOMATCH status)
+                            (if (!= c NUL) RA_NIL status)
 
                         ;; We're not at the beginning of the file when below the first line where we started,
                         ;; not at the start of the line or we didn't start at the first line of the buffer.
                         RE_BOF
-                            (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NOMATCH status)
+                            (if (or (non-zero? @reglnum) (BNE @reginput, @regline) (and (nil? @reg_match) (< 1 @reg_firstlnum))) RA_NIL status)
 
                         RE_EOF
-                            (if (or (!= @reglnum @reg_maxline) (!= c NUL)) RA_NOMATCH status)
+                            (if (or (!= @reglnum @reg_maxline) (!= c NUL)) RA_NIL status)
 
                         RE_CURSOR ;; compare the cursor position to the match position
-                            (if (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NOMATCH status)
+                            (if (or (!= (+ @reglnum @reg_firstlnum) (:lnum (:w_cursor @curwin))) (!= (BDIFF @reginput, @regline) (:col (:w_cursor @curwin)))) RA_NIL status)
 
                         RE_MARK ;; compare the mark position to the match position
                             (let [#_int mark (.at (operand scan) 0) #_int cmp (.at (operand scan) 1) #_pos_C pos (getmark mark, false)]
@@ -21445,251 +21446,61 @@
                                                 (any == cmp (byte \<) (byte \>))
                                                 (if (< (:col pos) (BDIFF @reginput, @regline)) (!= cmp (byte \>)) (!= cmp (byte \<))))
                                             (if (< (:lnum pos) (+ @reglnum @reg_firstlnum)) (!= cmp (byte \>)) (!= cmp (byte \<)))))
-                                    RA_NOMATCH status
+                                    RA_NIL status
                                 ))
 
                         RE_VISUAL
-                            (if (not (reg-match-visual)) RA_NOMATCH status)
+                            (if (not (reg-match-visual)) RA_NIL status)
 
-                        RE_LNUM
-                            (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan))) RA_NOMATCH status)
-
-                        RE_COL
-                            (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan)) RA_NOMATCH status)
-
-                        RE_VCOL
-                            (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NOMATCH status)
+                        RE_LNUM     (if (or (some? @reg_match) (not (re-num-cmp (+ @reglnum @reg_firstlnum), scan)))                    RA_NIL status)
+                        RE_COL      (if (not (re-num-cmp (inc (BDIFF @reginput, @regline)), scan))                                      RA_NIL status)
+                        RE_VCOL     (if (not (re-num-cmp (inc (win-linetabsize @curwin, @regline, (BDIFF @reginput, @regline))), scan)) RA_NIL status)
 
                         RE_BOW ;; \<word; reginput points to w
                             (if (== c NUL) ;; can't match at end of line
-                                RA_NOMATCH
+                                RA_NIL
                                 (let [#_int cls (us-get-class @reginput)]
                                     ;; not on a word at all ;; previous char is in same word
-                                    (if (or (<= cls 1) (== (reg-prev-class) cls)) RA_NOMATCH status)
+                                    (if (or (<= cls 1) (== (reg-prev-class) cls)) RA_NIL status)
                                 ))
 
                         RE_EOW ;; word\>; reginput points after d
                             (if (BEQ @reginput, @regline) ;; can't match at start of line
-                                RA_NOMATCH
+                                RA_NIL
                                 (let [#_int cls' (reg-prev-class)]
-                                    (if (any == cls' (us-get-class @reginput) 0 1) RA_NOMATCH status)
+                                    (if (any == cls' (us-get-class @reginput) 0 1) RA_NIL status)
                                 ))
 
                         ANY ;; does not match new lines
-                        (do
-                            (if (== c NUL)
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
+                            (if (== c NUL) RA_NIL RA_STEP)
 
-                        IDENT
-                        (do
-                            (if (not (vim-isidentc c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
+                        IDENT   (if                                     (not (vim-isidentc c))                        RA_NIL RA_STEP)
+                        SIDENT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))                       RA_NIL RA_STEP)
+                        KWORD   (if                                     (not (us-iswordp @reginput))                  RA_NIL RA_STEP)
+                        SKWORD  (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput)))                 RA_NIL RA_STEP)
+                        FNAME   (if                                     (not (vim-isfnamec c))                        RA_NIL RA_STEP)
+                        SFNAME  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))                       RA_NIL RA_STEP)
+                        PRINT   (if                                     (not (vim-isprintc (us-ptr2char @reginput)))  RA_NIL RA_STEP)
+                        SPRINT  (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc (us-ptr2char @reginput)))) RA_NIL RA_STEP)
 
-                        SIDENT
-                        (do
-                            (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isidentc c)))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        KWORD
-                        (do
-                            (if (not (us-iswordp @reginput))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        SKWORD
-                        (do
-                            (if (or (asc-isdigit (.at @reginput 0)) (not (us-iswordp @reginput)))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        FNAME
-                        (do
-                            (if (not (vim-isfnamec c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        SFNAME
-                        (do
-                            (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isfnamec c)))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        PRINT
-                        (do
-                            (if (not (vim-isprintc (us-ptr2char @reginput)))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        SPRINT
-                        (do
-                            (if (or (asc-isdigit (.at @reginput 0)) (not (vim-isprintc (us-ptr2char @reginput))))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        WHITE
-                        (do
-                            (if (not (vim-iswhite c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NWHITE
-                        (do
-                            (if (or (== c NUL) (vim-iswhite c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        DIGIT
-                        (do
-                            (if (not (ri-digit c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NDIGIT
-                        (do
-                            (if (or (== c NUL) (ri-digit c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        HEX
-                        (do
-                            (if (not (ri-hex c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NHEX
-                        (do
-                            (if (or (== c NUL) (ri-hex c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        OCTAL
-                        (do
-                            (if (not (ri-octal c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NOCTAL
-                        (do
-                            (if (or (== c NUL) (ri-octal c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        WORD
-                        (do
-                            (if (not (ri-word c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NWORD
-                        (do
-                            (if (or (== c NUL) (ri-word c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        HEAD
-                        (do
-                            (if (not (ri-head c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NHEAD
-                        (do
-                            (if (or (== c NUL) (ri-head c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        ALPHA
-                        (do
-                            (if (not (ri-alpha c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NALPHA
-                        (do
-                            (if (or (== c NUL) (ri-alpha c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        LOWER
-                        (do
-                            (if (not (ri-lower c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NLOWER
-                        (do
-                            (if (or (== c NUL) (ri-lower c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        UPPER
-                        (do
-                            (if (not (ri-upper c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
-
-                        NUPPER
-                        (do
-                            (if (or (== c NUL) (ri-upper c))
-                                ((ß status =) RA_NOMATCH)
-                                (reg-nextchar))
-                            (ß BREAK) status
-                        )
+                        WHITE   (if           (not (vim-iswhite c)) RA_NIL RA_STEP)
+                        NWHITE  (if (or (== c NUL) (vim-iswhite c)) RA_NIL RA_STEP)
+                        DIGIT   (if           (not (ri-digit c))    RA_NIL RA_STEP)
+                        NDIGIT  (if (or (== c NUL) (ri-digit c))    RA_NIL RA_STEP)
+                        HEX     (if           (not (ri-hex c))      RA_NIL RA_STEP)
+                        NHEX    (if (or (== c NUL) (ri-hex c))      RA_NIL RA_STEP)
+                        OCTAL   (if           (not (ri-octal c))    RA_NIL RA_STEP)
+                        NOCTAL  (if (or (== c NUL) (ri-octal c))    RA_NIL RA_STEP)
+                        WORD    (if           (not (ri-word c))     RA_NIL RA_STEP)
+                        NWORD   (if (or (== c NUL) (ri-word c))     RA_NIL RA_STEP)
+                        HEAD    (if           (not (ri-head c))     RA_NIL RA_STEP)
+                        NHEAD   (if (or (== c NUL) (ri-head c))     RA_NIL RA_STEP)
+                        ALPHA   (if           (not (ri-alpha c))    RA_NIL RA_STEP)
+                        NALPHA  (if (or (== c NUL) (ri-alpha c))    RA_NIL RA_STEP)
+                        LOWER   (if           (not (ri-lower c))    RA_NIL RA_STEP)
+                        NLOWER  (if (or (== c NUL) (ri-lower c))    RA_NIL RA_STEP)
+                        UPPER   (if           (not (ri-upper c))    RA_NIL RA_STEP)
+                        NUPPER  (if (or (== c NUL) (ri-upper c))    RA_NIL RA_STEP)
 
                         EXACTLY
                         (do
@@ -21697,7 +21508,7 @@
                             ;; Inline the first byte, for speed.
                             (cond (and (not-at? opnd (.at @reginput 0)) (not @ireg_ic))
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             )
                             (eos? opnd)
                             (do
@@ -21714,16 +21525,16 @@
                                 (do
                                     ;; Need to match first byte again for multi-byte.
                                     (reset! a'len (STRLEN opnd))
-                                    ((ß status =) (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NOMATCH status))
+                                    ((ß status =) (if (non-zero? (cstrncmp opnd, @reginput, a'len)) RA_NIL status))
                                 ))
                                 ;; Check for following composing character, unless %C follows (skips over all composing chars).
-                                (when (and (!= status RA_NOMATCH) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
+                                (when (and (!= status RA_NIL) (utf-iscomposing (us-ptr2char @reginput, @a'len)) (not @ireg_icombine) (!= (re-op next) RE_COMPOSING))
                                     ;; This code makes a composing character get ignored,
                                     ;; which is the correct behavior (sometimes)
                                     ;; for voweled Hebrew texts.
-                                    ((ß status =) RA_NOMATCH)
+                                    ((ß status =) RA_NIL)
                                 )
-                                (if (!= status RA_NOMATCH)
+                                (if (!= status RA_NIL)
                                     (swap! reginput plus @a'len))
                             ))
                             (ß BREAK) status
@@ -21733,15 +21544,15 @@
                         (do
                             (cond (== c NUL)
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             )
                             (== (nil? (cstrchr (operand scan), c)) (== op ANYOF))
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             )
                             :else
                             (do
-                                (reg-nextchar)
+                                ((ß status =) RA_STEP)
                             ))
                             (ß BREAK) status
                         )
@@ -21752,7 +21563,7 @@
                             ;; Safety check (just in case 'encoding' was changed since compiling the program).
                             ((ß int len =) (us-ptr2len-cc opnd))
                             (when (< len 2)
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                                 (ß BREAK) status
                             )
                             ((ß int opndc =) (us-ptr2char opnd))
@@ -21760,7 +21571,7 @@
                             (do
                                 ;; When only a composing char is given match at any
                                 ;; position where that composing char appears.
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                                 (loop-when-recur [#_int i 0] (non-eos? @reginput i) [(+ i (us-ptr2len @reginput, i))]
                                     ((ß int inpc =) (us-ptr2char @reginput, i))
                                     (cond (not (utf-iscomposing inpc))
@@ -21782,7 +21593,7 @@
                             (do
                                 (dotimes [#_int i len]
                                     (when (not-at? opnd i (.at @reginput i))
-                                        ((ß status =) RA_NOMATCH)
+                                        ((ß status =) RA_NIL)
                                         (ß BREAK)
                                     )
                                 )
@@ -21829,10 +21640,10 @@
                             (reg-save-equal (:bp_pos (... bpp i)))
                             (do
                                 ;; Still at same position as last time, fail.
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             ))
 
-                            (when (and (!= status RA_FAIL) (!= status RA_NOMATCH))
+                            (when (and (!= status RA_FAIL) (!= status RA_NIL))
                                 (reg-save (:bp_pos (... bpp i)), @backpos))
 
                             (ß BREAK) status
@@ -21977,7 +21788,7 @@
                                 (do
                                     ;; Compare current input with back-ref in the same line.
                                     (reset! a'len (BDIFF (... @reg_endp no), (... @reg_startp no)))
-                                    ((ß status =) (if (non-zero? (cstrncmp (... @reg_startp no), @reginput, a'len)) RA_NOMATCH status))
+                                    ((ß status =) (if (non-zero? (cstrncmp (... @reg_startp no), @reginput, a'len)) RA_NIL status))
                                 ))
                             )
                             :else                            ;; Multi-line regexp
@@ -21993,7 +21804,7 @@
                                     (do
                                         ;; Compare back-ref within the current line.
                                         (reset! a'len (- (:col (... @reg_endpos no)) (:col (... @reg_startpos no))))
-                                        ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... @reg_startpos no))), @reginput, a'len)) RA_NOMATCH status))
+                                        ((ß status =) (if (non-zero? (cstrncmp (.plus @regline (:col (... @reg_startpos no))), @reginput, a'len)) RA_NIL status))
                                     )
                                     :else
                                     (do
@@ -22026,7 +21837,7 @@
                             (do
                                 ((ß int[] a'len =) (atom (int (STRLEN (... (:matches @re_extmatch_in) no)))))
                                 (if (non-zero? (cstrncmp (... (:matches @re_extmatch_in) no), @reginput, a'len))
-                                    ((ß status =) RA_NOMATCH)
+                                    ((ß status =) RA_NIL)
                                     (swap! reginput plus @a'len))
                             )
                             :else
@@ -22206,7 +22017,7 @@
                             )
                             :else
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             ))
 
                             (ß BREAK) status
@@ -22268,11 +22079,11 @@
                         (do
                             (cond (nil? @reg_match)
                             (do
-                                ((ß status =) (if (or (!= (:col (:rs_pos @behind_pos)) (BDIFF @reginput, @regline)) (!= (:lnum (:rs_pos @behind_pos)) @reglnum)) RA_NOMATCH status))
+                                ((ß status =) (if (or (!= (:col (:rs_pos @behind_pos)) (BDIFF @reginput, @regline)) (!= (:lnum (:rs_pos @behind_pos)) @reglnum)) RA_NIL status))
                             )
                             (BNE (:rs_ptr @behind_pos), @reginput)
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             ))
                             (ß BREAK) status
                         )
@@ -22281,16 +22092,15 @@
                         (do
                             (cond (and (or (!= c NUL) (some? @reg_match) (< @reg_maxline @reglnum) @reg_line_lbr) (or (!= c (byte \newline)) (not @reg_line_lbr)))
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             )
                             @reg_line_lbr
                             (do
-                                (reg-nextchar)
+                                ((ß status =) RA_STEP)
                             )
                             :else
                             (do
-                                (reg-nextline)
-                                (fast-breakcheck)
+                                ((ß status =) RA_JUMP)
                             ))
                             (ß BREAK) status
                         )
@@ -22309,7 +22119,18 @@
                     ))
                 ))
 
-                ;; If we can't continue sequentially, break the inner loop.
+                (when (== status RA_JUMP)
+                    (reg-nextline)
+                    (fast-breakcheck)
+                    ((ß status =) RA_CONT)
+                )
+
+                (when (== status RA_STEP)
+                    (reg-nextchar)
+                    ((ß status =) RA_CONT)
+                )
+
+                ;; Can't continue sequentially, break the inner loop.
                 (if (!= status RA_CONT)
                     (ß BREAK)
                 )
@@ -22337,7 +22158,7 @@
                     RS_MOPEN
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ((ß @reg_startp[rip.rs_no] =) (restore-se (:rs_sesave rip), (... @reg_startpos (:rs_no rip)), (... @reg_startp (:rs_no rip))))
                         )
                         ((ß scan =) (pop-regitem))
@@ -22347,7 +22168,7 @@
                     RS_ZOPEN
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ((ß reg_startzp[rip.rs_no] =) (restore-se (:rs_sesave rip), (... reg_startzpos (:rs_no rip)), (... reg_startzp (:rs_no rip))))
                         )
                         ((ß scan =) (pop-regitem))
@@ -22357,7 +22178,7 @@
                     RS_MCLOSE
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ((ß @reg_endp[rip.rs_no] =) (restore-se (:rs_sesave rip), (... @reg_endpos (:rs_no rip)), (... @reg_endp (:rs_no rip))))
                         )
                         ((ß scan =) (pop-regitem))
@@ -22367,7 +22188,7 @@
                     RS_ZCLOSE
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ((ß reg_endzp[rip.rs_no] =) (restore-se (:rs_sesave rip), (... reg_endzpos (:rs_no rip)), (... reg_endzp (:rs_no rip))))
                         )
                         ((ß scan =) (pop-regitem))
@@ -22391,7 +22212,7 @@
                             (cond (or (nil? scan) (!= (re-op scan) BRANCH))
                             (do
                                 ;; no more branches, didn't find a match
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                                 ((ß scan =) (pop-regitem))
                             )
                             :else
@@ -22408,7 +22229,7 @@
                     RS_BRCPLX_MORE
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             (reg-restore (:rs_regsave rip), @backpos)
                             (swap! brace_count update (:rs_no rip) dec)       ;; decrement match count
                         )
@@ -22419,7 +22240,7 @@
                     RS_BRCPLX_LONG
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ;; There was no match, but we did find enough matches.
                             (reg-restore (:rs_regsave rip), @backpos)
                             (swap! brace_count update (:rs_no rip) dec)
@@ -22434,12 +22255,12 @@
                     RS_BRCPLX_SHORT
                     (do
                         ;; Pop the state.  Restore pointers when there is no match.
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ;; There was no match, try to match one more item.
                             (reg-restore (:rs_regsave rip), @backpos)
                         )
                         ((ß scan =) (pop-regitem))
-                        (when (== status RA_NOMATCH)
+                        (when (== status RA_NIL)
                             ((ß scan =) (operand scan))
                             ((ß status =) RA_CONT)
                         )
@@ -22451,9 +22272,9 @@
                         ;; Pop the state.  If the operand matches for NOMATCH or
                         ;; doesn't match for MATCH/SUBPAT, we fail.  Otherwise backup,
                         ;; except for SUBPAT, and continue with the next item.
-                        (cond (== status (if (== (:rs_no rip) NOMATCH) RA_MATCH RA_NOMATCH))
+                        (cond (== status (if (== (:rs_no rip) NOMATCH) RA_MATCH RA_NIL))
                         (do
-                            ((ß status =) RA_NOMATCH)
+                            ((ß status =) RA_NIL)
                         )
                         :else
                         (do
@@ -22468,7 +22289,7 @@
 
                     RS_BEHIND1
                     (do
-                        (cond (== status RA_NOMATCH)
+                        (cond (== status RA_NIL)
                         (do
                             ((ß scan =) (pop-regitem))
                             (drop-regbehind)
@@ -22515,7 +22336,7 @@
                             (do
                                 ;; But we didn't want a match.  Need to restore the subexpr,
                                 ;; because what follows matched, so they have been set.
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                                 (restore-subexpr (ß (regbehind_C)vip))
                             ))
                             ((ß scan =) (pop-regitem))
@@ -22570,7 +22391,7 @@
                                 (when (== status RA_MATCH)
                                     ;; We did match, so subexpr may have been changed,
                                     ;; need to restore them for the next try.
-                                    ((ß status =) RA_NOMATCH)
+                                    ((ß status =) RA_NIL)
                                     (restore-subexpr (ß (regbehind_C)vip))
                                 )
                             )
@@ -22588,7 +22409,7 @@
                                     ;; We do want a proper match.  Need to restore the subexpr
                                     ;; if we had a match, because they may have been set.
                                     (when (== status RA_MATCH)
-                                        ((ß status =) RA_NOMATCH)
+                                        ((ß status =) RA_NIL)
                                         (restore-subexpr (ß (regbehind_C)vip))
                                     )
                                 ))
@@ -22658,7 +22479,7 @@
                             )
                             :else
                             (do
-                                ((ß status =) RA_NOMATCH)
+                                ((ß status =) RA_NIL)
                             ))
 
                             ;; If it could match, try it.
@@ -22674,7 +22495,7 @@
                             ;; Failed.
                             ((ß scan =) (pop-regitem))
                             (drop-regstar)
-                            ((ß status =) RA_NOMATCH)
+                            ((ß status =) RA_NIL)
                         )
                         (ß BREAK)
                     )
@@ -23071,7 +22892,7 @@
     ))
 
 ;; Check whether a backreference matches.
-;; Returns RA_FAIL, RA_NOMATCH or RA_MATCH.
+;; Returns RA_FAIL, RA_NIL or RA_MATCH.
 ;; If "len" is not null, it is set to the byte length of the match in the last line.
 
 (defn- #_int match-with-backref [#_long start_lnum, #_int start_col, #_long end_lnum, #_int end_col, #_int' a'len]
@@ -23094,7 +22915,7 @@
         ;; Get the line to compare with.
         (let-when [#_Bytes p (reg-getline lnum)
                    a'n (atom (int (if (== lnum end_lnum) (- end_col col) (STRLEN p, col))))
-        ] (zero? (cstrncmp (.plus p col), @reginput, a'n)) => RA_NOMATCH ;; doesn't match
+        ] (zero? (cstrncmp (.plus p col), @reginput, a'n)) => RA_NIL ;; doesn't match
             (when (some? a'len)
                 (swap! a'len + @a'n))
             (cond (== lnum end_lnum) ;; match and at end
@@ -23102,7 +22923,7 @@
                 ;; Note that regline may now point to a copy of the line, that should not matter.
                 RA_MATCH
             (<= @reg_maxline @reglnum) ;; text too short
-                RA_NOMATCH
+                RA_NIL
             :else ;; Advance to next line.
                 (do (reg-nextline)
                     (when (some? a'len)
