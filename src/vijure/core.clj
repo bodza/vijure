@@ -43,11 +43,11 @@
 
 (def- C (map #(symbol (str % "_C")) '(barray block_hdr buffblock buffer buffheader clipboard cmdline_info cmdmod except expand file fmark fragnode frame hashtab lpos mapblock match matchitem memfile memline mf_hashitem mf_hashtab msgchunk msg_hist msglist nfa_pim nfa_state oparg pos posmatch reg_extmatch regmatch regmmatch regprog regsave regsub regsubs save_se soffset tabpage termios timeval typebuf u_entry u_header u_link visualinfo window wininfo winopt yankreg)))
 
-(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname command_complete decomp digr expgen file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
+(def- C* (map #(symbol (str % "_C*")) '(attrentry backpos btcap charstab chunksize cmdmods cmdname decomp digr file frag frame hashitem hl_group infoptr key_name linepos llpos lpos mf_hashitem modmasktable mousetable msglist multipos nfa_state nfa_thread nv_cmd pos ptr_entry save_se signalinfo spat tasave tcname termcode typebuf vimoption wline xfmark yankreg)))
 
 (def- C** (map #(symbol (str % "_C**")) '(histentry mapblock)))
 
-(def- F (map #(symbol (str % "_F")) '(ex_func expfun getline nv_func)))
+(def- F (map #(symbol (str % "_F")) '(ex_func getline nv_func)))
 
 (let [I '(byte byte! byte* byte** short short* int int! int* long maybean) O (concat '(Bytes Object) C) O* (concat '(Bytes* Bytes*') C*)
       T (merge (zipmap I I) (zipmap O (repeat 'object)) (zipmap O* (repeat 'object*)))]
@@ -880,18 +880,9 @@
 ;; values for xp_context when doing command line completion
 
 (final int
-    EXPAND_UNSUCCESSFUL     -2,
     EXPAND_OK               -1,
     EXPAND_NOTHING           0,
-    EXPAND_COMMANDS          1,
-    EXPAND_SETTINGS          4,
-    EXPAND_BOOL_SETTINGS     5,
-    EXPAND_OLD_SETTING       7,
-    EXPAND_BUFFERS           9,
-    EXPAND_MAPPINGS         16,
-    EXPAND_EXPRESSION       20,
-    EXPAND_HISTORY          41,
-    EXPAND_SYNTIME          43)
+    EXPAND_BUFFERS           9)
 
 ;; Values for exmode_active (0 is no exmode).
 (final int EXMODE_NORMAL      1)
@@ -2298,16 +2289,9 @@
         (field Bytes        xp_pattern)         ;; start of item to expand
         (field int          xp_pattern_len)     ;; bytes in "xp_pattern" before cursor
         (field Bytes        xp_arg)             ;; completion function
-        (field int          xp_backslash)       ;; one of the XP_BS_ values
         (field int          xp_numfiles)        ;; number of files found by file name completion
         (field Bytes*       xp_files)           ;; list of files
-        (field Bytes        xp_line)            ;; text being completed
-        (field int          xp_col)             ;; cursor position in line
     ])
-
-;; values for xp_backslash
-(final int XP_BS_NONE 0)    ;; nothing special for backslashes
-(final int XP_BS_ONE  1)    ;; uses one backslash before a space
 
 ;; Command modifiers ":vertical", ":browse", ":confirm" and ":hide" set a flag.
 ;; This needs to be saved for recursive commands, put them in a structure for easy manipulation.
@@ -4441,10 +4425,7 @@
 ;       parse_command_name(params);
 
         ;; Process the command line arguments.
-
 ;       command_line_scan(params);
-
-;       Bytes fname = null;                ;; file name from command line
 
         ;; Don't redraw until much later.
 ;       @redrawingDisabled++;
@@ -10429,7 +10410,7 @@
                                         ;; file name characters are not removed, and keep
                                         ;; backslash at start, for "\\machine\path", but
                                         ;; do remove it for "\\\\machine\\path".
-                                        ;; The reverse is found in expandOldSetting().
+                                        ;; The reverse is found in expandOldSetting().
 
 ;                                       while (arg.at(0) != NUL && !vim_iswhite(arg.at(0)))
 ;                                       {
@@ -13162,343 +13143,6 @@
 (defn- #_void set_imsearch_global []
     (§
 ;       @p_imsearch = @curbuf.@b_p_imsearch;
-    ))
-
-(atom! int      expand_option_idx       -1)
-(final Bytes    expand_option_name      (Bytes. (byte-array [ (byte \t), (byte \_), NUL, NUL, NUL ])))
-(atom! int      expand_option_flags)
-
-(defn- #_void set_context_in_set_cmd [#_expand_C xp, #_Bytes arg, #_int opt_flags]
-    ;; opt_flags: OPT_GLOBAL and/or OPT_LOCAL
-    (§
-;       @expand_option_flags = opt_flags;
-
-;       xp.xp_context = EXPAND_SETTINGS;
-;       if (arg.at(0) == NUL)
-;       {
-;           xp.xp_pattern = arg;
-;           return;
-;       }
-;       Bytes p = arg.plus(STRLEN(arg) - 1);
-;       if (p.at(0) == (byte)' ' && p.at(-1) != (byte)'\\')
-;       {
-;           xp.xp_pattern = p.plus(1);
-;           return;
-;       }
-;       while (BLT(arg, p))
-;       {
-;           Bytes s = p;
-            ;; count number of backslashes before ' ' or ','
-;           if (p.at(0) == (byte)' ' || p.at(0) == (byte)',')
-;           {
-;               while (BLT(arg, s) && s.at(-1) == (byte)'\\')
-;                   s = s.minus(1);
-;           }
-            ;; break at a space with an even number of backslashes
-;           if (p.at(0) == (byte)' ' && (BDIFF(p, s) & 1) == 0)
-;           {
-;               p = p.plus(1);
-;               break;
-;           }
-;           p = p.minus(1);
-;       }
-;       if (STRNCMP(p, u8("no"), 2) == 0 && STRNCMP(p, u8("novice"), 6) != 0)
-;       {
-;           xp.xp_context = EXPAND_BOOL_SETTINGS;
-;           p = p.plus(2);
-;       }
-;       if (STRNCMP(p, u8("inv"), 3) == 0)
-;       {
-;           xp.xp_context = EXPAND_BOOL_SETTINGS;
-;           p = p.plus(3);
-;       }
-;       xp.xp_pattern = arg = p;
-
-;       int nextchar;
-;       boolean is_term_option = false;
-;       int opt_idx = 0;
-;       long flags = 0;
-
-;       if (arg.at(0) == (byte)'<')
-;       {
-;           while (p.at(0) != (byte)'>')
-;               if ((p = p.plus(1)).at(-1) == NUL)      ;; expand terminal option name
-;                   return;
-;           int key = get_special_key_code(arg.plus(1));
-;           if (key == 0)               ;; unknown name
-;           {
-;               xp.xp_context = EXPAND_NOTHING;
-;               return;
-;           }
-;           nextchar = (p = p.plus(1)).at(0);
-;           is_term_option = true;
-;           expand_option_name.be(2, KEY2TERMCAP0(key));
-;           expand_option_name.be(3, KEY2TERMCAP1(key));
-;       }
-;       else
-;       {
-;           if (p.at(0) == (byte)'t' && p.at(1) == (byte)'_')
-;           {
-;               p = p.plus(2);
-;               if (p.at(0) != NUL)
-;                   p = p.plus(1);
-;               if (p.at(0) == NUL)
-;                   return;             ;; expand option name
-;               nextchar = (p = p.plus(1)).at(0);
-;               is_term_option = true;
-;               expand_option_name.be(2, p.at(-2));
-;               expand_option_name.be(3, p.at(-1));
-;           }
-;           else
-;           {
-                ;; Allow * wildcard.
-;               while (asc_isalnum(p.at(0)) || p.at(0) == (byte)'_' || p.at(0) == (byte)'*')
-;                   p = p.plus(1);
-;               if (p.at(0) == NUL)
-;                   return;
-;               nextchar = p.at(0);
-;               p.be(0, NUL);
-;               opt_idx = findoption(arg);
-;               p.be(0, nextchar);
-;               if (opt_idx == -1 || vimoptions[opt_idx].var == null)
-;               {
-;                   xp.xp_context = EXPAND_NOTHING;
-;                   return;
-;               }
-;               flags = vimoptions[opt_idx].@flags;
-;               if ((flags & P_BOOL) != 0)
-;               {
-;                   xp.xp_context = EXPAND_NOTHING;
-;                   return;
-;               }
-;           }
-;       }
-        ;; handle "-=" and "+="
-;       if ((nextchar == '-' || nextchar == '+' || nextchar == '^') && p.at(1) == (byte)'=')
-;       {
-;           p = p.plus(1);
-;           nextchar = '=';
-;       }
-;       if ((nextchar != '=' && nextchar != ':') || xp.xp_context == EXPAND_BOOL_SETTINGS)
-;       {
-;           xp.xp_context = EXPAND_UNSUCCESSFUL;
-;           return;
-;       }
-;       if (xp.xp_context != EXPAND_BOOL_SETTINGS && p.at(1) == NUL)
-;       {
-;           xp.xp_context = EXPAND_OLD_SETTING;
-;           if (is_term_option)
-;               @expand_option_idx = -1;
-;           else
-;               @expand_option_idx = opt_idx;
-;           xp.xp_pattern = p.plus(1);
-;           return;
-;       }
-;       xp.xp_context = EXPAND_NOTHING;
-;       if (is_term_option || (flags & P_NUM) != 0)
-;           return;
-
-;       xp.xp_pattern = p.plus(1);
-
-        ;; For an option that is a list of file names, find the start of the last file name.
-;       for (p = arg.plus(STRLEN(arg) - 1); BLT(xp.xp_pattern, p); p = p.minus(1))
-;       {
-            ;; count number of backslashes before ' ' or ','
-;           if (p.at(0) == (byte)' ' || p.at(0) == (byte)',')
-;           {
-;               Bytes s = p;
-;               while (BLT(xp.xp_pattern, s) && s.at(-1) == (byte)'\\')
-;                   s = s.minus(1);
-;               if (p.at(0) == (byte)',' && (flags & P_COMMA) != 0 && (BDIFF(p, s) & 1) == 0)
-;               {
-;                   xp.xp_pattern = p.plus(1);
-;                   break;
-;               }
-;           }
-;       }
-    ))
-
-(final Bytes* es__names [ (u8 "all"), (u8 "termcap") ])
-
-(defn- #_boolean expandSettings [#_expand_C xp, #_regmatch_C regmatch, #_int* num_file, #_Bytes** file]
-    (§
-;       int num_normal = 0;     ;; Nr of matching non-term-code settings
-;       int num_term = 0;       ;; Nr of matching terminal code settings
-;       int count = 0;
-;       Bytes name_buf = new Bytes(MAX_KEY_NAME_LEN);
-
-;       boolean ic = regmatch.rm_ic;    ;; remember the ignore-case flag
-
-        ;; do this loop twice:
-        ;; loop == 0: count the number of matching options
-        ;; loop == 1: copy the matching options into allocated memory
-
-;       for (int loop = 0; loop <= 1; loop++)
-;       {
-;           Bytes str;
-
-;           regmatch.rm_ic = ic;
-;           if (xp.xp_context != EXPAND_BOOL_SETTINGS)
-;           {
-;               for (int match = 0; match < es__names.length; match++)
-;                   if (vim_regexec(regmatch, es__names[match], 0))
-;                   {
-;                       if (loop == 0)
-;                           num_normal++;
-;                       else
-;                           file[0][count++] = STRDUP(es__names[match]);
-;                   }
-;           }
-;           for (int opt_idx = 0; (str = vimoptions[opt_idx].fullname) != null; opt_idx++)
-;           {
-;               if (vimoptions[opt_idx].var == null)
-;                   continue;
-;               if (xp.xp_context == EXPAND_BOOL_SETTINGS && (vimoptions[opt_idx].@flags & P_BOOL) == 0)
-;                   continue;
-;               boolean is_term_opt = istermoption(vimoptions[opt_idx]);
-;               if (is_term_opt && 0 < num_normal)
-;                   continue;
-;               boolean match = false;
-;               if (vim_regexec(regmatch, str, 0)
-;                       || (vimoptions[opt_idx].shortname != null
-;                               && vim_regexec(regmatch, vimoptions[opt_idx].shortname, 0)))
-;                   match = true;
-;               else if (is_term_opt)
-;               {
-;                   name_buf.be(0, (byte)'<');
-;                   name_buf.be(1, (byte)'t');
-;                   name_buf.be(2, (byte)'_');
-;                   name_buf.be(3, str.at(2));
-;                   name_buf.be(4, str.at(3));
-;                   name_buf.be(5, (byte)'>');
-;                   name_buf.be(6, NUL);
-;                   if (vim_regexec(regmatch, name_buf, 0))
-;                   {
-;                       match = true;
-;                       str = name_buf;
-;                   }
-;               }
-;               if (match)
-;               {
-;                   if (loop == 0)
-;                   {
-;                       if (is_term_opt)
-;                           num_term++;
-;                       else
-;                           num_normal++;
-;                   }
-;                   else
-;                       file[0][count++] = STRDUP(str);
-;               }
-;           }
-
-            ;; Check terminal key codes, these are not in the option table.
-
-;           if (xp.xp_context != EXPAND_BOOL_SETTINGS  && num_normal == 0)
-;           {
-;               for (int opt_idx = 0; (str = get_termcode(opt_idx)) != null; opt_idx++)
-;               {
-;                   if (!asc_isprint(str.at(0)) || !asc_isprint(str.at(1)))
-;                       continue;
-
-;                   name_buf.be(0, (byte)'t');
-;                   name_buf.be(1, (byte)'_');
-;                   name_buf.be(2, str.at(0));
-;                   name_buf.be(3, str.at(1));
-;                   name_buf.be(4, NUL);
-
-;                   boolean match = false;
-;                   if (vim_regexec(regmatch, name_buf, 0))
-;                       match = true;
-;                   else
-;                   {
-;                       name_buf.be(0, (byte)'<');
-;                       name_buf.be(1, (byte)'t');
-;                       name_buf.be(2, (byte)'_');
-;                       name_buf.be(3, str.at(0));
-;                       name_buf.be(4, str.at(1));
-;                       name_buf.be(5, (byte)'>');
-;                       name_buf.be(6, NUL);
-
-;                       if (vim_regexec(regmatch, name_buf, 0))
-;                           match = true;
-;                   }
-;                   if (match)
-;                   {
-;                       if (loop == 0)
-;                           num_term++;
-;                       else
-;                           file[0][count++] = STRDUP(name_buf);
-;                   }
-;               }
-
-                ;; Check special key names.
-
-;               regmatch.rm_ic = true;          ;; ignore case here
-;               for (int opt_idx = 0; (str = get_key_name(opt_idx)) != null; opt_idx++)
-;               {
-;                   name_buf.be(0, (byte)'<');
-;                   STRCPY(name_buf.plus(1), str);
-;                   STRCAT(name_buf, u8(">"));
-
-;                   if (vim_regexec(regmatch, name_buf, 0))
-;                   {
-;                       if (loop == 0)
-;                           num_term++;
-;                       else
-;                           file[0][count++] = STRDUP(name_buf);
-;                   }
-;               }
-;           }
-;           if (loop == 0)
-;           {
-;               if (0 < num_normal)
-;                   num_file[0] = num_normal;
-;               else if (0 < num_term)
-;                   num_file[0] = num_term;
-;               else
-;                   return true;
-;               file[0] = new Bytes[num_file[0]];
-;           }
-;       }
-
-;       return true;
-    ))
-
-(defn- #_boolean expandOldSetting [#_int* num_file, #_Bytes** file]
-    (§
-;       num_file[0] = 0;
-;       file[0] = new Bytes[1];
-
-;       Bytes var = null;
-
-        ;; For a terminal key code expand_option_idx is < 0.
-
-;       if (@expand_option_idx < 0)
-;       {
-;           var = find_termcode(expand_option_name.plus(2));
-;           if (var == null)
-;               @expand_option_idx = findoption(expand_option_name);
-;       }
-
-;       if (0 <= @expand_option_idx)
-;       {
-            ;; put string of option value in nameBuff
-;           option_value2string(vimoptions[@expand_option_idx], @expand_option_flags);
-;           var = @nameBuff;
-;       }
-;       else if (var == null)
-;           var = u8("");
-
-        ;; A backslash is required before some characters.
-        ;; This is the reverse of what happens in do_set().
-
-;       Bytes buf = vim_strsave_escaped(var, escape_chars);
-
-;       file[0][0] = buf;
-;       num_file[0] = 1;
-
-;       return true;
     ))
 
 ;; Get the value for the numeric or string option *opp in a nice format into nameBuff[].
@@ -17573,7 +17217,6 @@
 ;           set_cmdspos();
 ;       }
 ;       xpc.xp_context = EXPAND_NOTHING;
-;       xpc.xp_backslash = XP_BS_NONE;
 
 ;       if (@ccline.input_fn)
 ;       {
@@ -17694,7 +17337,7 @@
 ;           {
 ;               expandOne(xpc, null, null, 0, WILD_FREE);
 ;               did_wild_list = false;
-;                   xpc.xp_context = EXPAND_NOTHING;
+;               xpc.xp_context = EXPAND_NOTHING;
 ;               wim_index = 0;
 ;           }
 
@@ -18288,9 +17931,8 @@
 ;                               if (did_incsearch && !eqpos(@curwin.w_cursor, old_cursor))
 ;                               {
 ;                                   c = gchar_cursor();
-                                    ;; If 'ignorecase' and 'smartcase' are set and the
-                                    ;; command line has no uppercase characters, convert
-                                    ;; the character to lowercase
+                                    ;; If 'ignorecase' and 'smartcase' are set and the command line
+                                    ;; has no uppercase characters, convert the character to lowercase.
 ;                                   if (@p_ic && @p_scs && !pat_has_uppercase(@ccline.cmdbuff))
 ;                                       c = utf_tolower(c);
 ;                                   if (c != NUL)
@@ -19121,8 +18763,7 @@
 
 ;       if (@ccline.xpc != null
 ;               && @ccline.xpc.xp_pattern != null
-;               && @ccline.xpc.xp_context != EXPAND_NOTHING
-;               && @ccline.xpc.xp_context != EXPAND_UNSUCCESSFUL)
+;               && @ccline.xpc.xp_context != EXPAND_NOTHING)
 ;       {
 ;           int i = BDIFF(@ccline.xpc.xp_pattern, p);
 
@@ -19561,13 +19202,8 @@
     ;; escape: if true, escape the returned matches
     (§
 ;       if (xp.xp_numfiles == -1)
-;           set_expand_context(xp);
+;           xp.xp_context = EXPAND_NOTHING;
 
-;       if (xp.xp_context == EXPAND_UNSUCCESSFUL)
-;       {
-;           beep_flush();
-;           return true;        ;; something illegal on command line
-;       }
 ;       if (xp.xp_context == EXPAND_NOTHING)
 ;       {
             ;; Caller can use the character as a normal char instead.
@@ -19634,11 +19270,6 @@
 ;       redrawcmd();
 ;       cursorcmd();
 
-        ;; When expanding a ":map" command and no matches are found,
-        ;; assume that the key is supposed to be inserted literally.
-;       if (xp.xp_context == EXPAND_MAPPINGS && p2 == null)
-;           return false;
-
 ;       if (xp.xp_numfiles <= 0 && p2 == null)
 ;           beep_flush();
 ;       else if (xp.xp_numfiles == 1)
@@ -19680,7 +19311,7 @@
 ;; options = WILD_ESCAPE:           put backslash before special chars
 ;; options = WILD_ICASE:            ignore case for files
 ;;
-;; The variables xp.xp_context and xp.xp_backslash must have been set!
+;; The variable xp.xp_context must have been set!
 
 (defn- #_Bytes expandOne [#_expand_C xp, #_Bytes str, #_Bytes orig, #_int options, #_int mode]
     ;; orig: allocated copy of original of expanded string
@@ -19844,11 +19475,9 @@
     (§
 ;       xp.xp_pattern = null;
 ;       xp.xp_pattern_len = 0;
-;       xp.xp_backslash = XP_BS_NONE;
 ;       xp.xp_numfiles = -1;
 ;       xp.xp_files = null;
 ;       xp.xp_arg = null;
-;       xp.xp_line = null;
     ))
 
 ;; Cleanup an expand structure after use.
@@ -19881,7 +19510,6 @@
 ;                   if (str.at(0) == (byte)'\\' && str.at(1) == (byte)'~' && files[i].at(0) == (byte)'~')
 ;                       files[i] = escape_fname(files[i]);
 ;               }
-;               xp.xp_backslash = XP_BS_NONE;
 
                 ;; If the first file starts with a '+' escape it.
                 ;; Otherwise it could be seen as "+cmd".
@@ -19925,21 +19553,17 @@
 
 (defn- #_int showmatches [#_expand_C xp]
     (§
+;       if (xp.xp_numfiles == -1)
+;       {
+;           xp.xp_context = EXPAND_NOTHING;
+;           return EXPAND_NOTHING;
+;       }
+
 ;       int[] num_files = new int[1];
 ;       Bytes[][] files_found = new Bytes[1][];
 
-;       if (xp.xp_numfiles == -1)
-;       {
-;           set_expand_context(xp);
-;           int i = expand_cmdline(xp, @ccline.cmdbuff, @ccline.cmdpos, num_files, files_found);
-;           if (i != EXPAND_OK)
-;               return i;
-;       }
-;       else
-;       {
-;           num_files[0] = xp.xp_numfiles;
-;           files_found[0] = xp.xp_files;
-;       }
+;       num_files[0] = xp.xp_numfiles;
+;       files_found[0] = xp.xp_files;
 
 ;       @msg_didany = false;             ;; lines_left will be set
 ;       msg_start();                    ;; prepare for paging
@@ -20075,128 +19699,16 @@
 ;;                          the command line (ends at the cursor).
 ;;  xp.xp_context          The type of thing to expand.  Will be one of:
 ;;
-;;  EXPAND_UNSUCCESSFUL     Used sometimes when there is something illegal
-;;                          on the command line, like an unknown command.
-;;                          Caller should beep.
 ;;  EXPAND_NOTHING          Unrecognised context for completion, use char
 ;;                          like a normal char, rather than for completion.
 ;;                          e.g. :s/^I/
-;;  EXPAND_COMMANDS         Cursor is still touching the command, so complete it.
 ;;  EXPAND_BUFFERS          Complete file names for :buf and :sbuf commands.
-;;  EXPAND_SETTINGS         Complete variable names.  e.g. :set d^I
-;;  EXPAND_BOOL_SETTINGS    Complete boolean variables only,  e.g. :set no^I
-;;  EXPAND_MAPPINGS         Complete mapping and abbreviation names,
-;;                          e.g. :unmap a^I , :cunab x^I
-;;  EXPAND_EXPRESSION       Complete internal or user defined function/variable
-;;                          names in expressions, e.g. :while s^I
-
-(defn- #_void set_expand_context [#_expand_C xp]
-    (§
-        ;; only expansion for ':', '>' and '=' command-lines
-;       if (@ccline.cmdfirstc != ':' && @ccline.cmdfirstc != '>' && @ccline.cmdfirstc != '=' && !@ccline.input_fn)
-;       {
-;           xp.xp_context = EXPAND_NOTHING;
-;           return;
-;       }
-;       set_cmd_context(xp, @ccline.cmdbuff, @ccline.cmdlen, @ccline.cmdpos);
-    ))
-
-(defn- #_void set_cmd_context [#_expand_C xp, #_Bytes str, #_int len, #_int col]
-    ;; str: start of command line
-    ;; len: length of command line (excl. NUL)
-    ;; col: position of cursor
-    (§
-;       int old_char = NUL;
-
-;       if (col < len)
-;           old_char = str.at(col);
-;       str.be(col, NUL);
-;       Bytes nextcomm = str;
-
-;       if (@ccline.cmdfirstc == '=')
-;       {
-            ;; pass CMD_SIZE because there is no real command
-;           set_context_for_expression(xp, str, CMD_SIZE);
-;       }
-;       else if (@ccline.input_fn)
-;       {
-;           xp.xp_context = @ccline.xp_context;
-;           xp.xp_pattern = @ccline.cmdbuff;
-;           xp.xp_arg = @ccline.xp_arg;
-;       }
-;       else
-;           while (nextcomm != null)
-;               nextcomm = set_one_cmd_context(xp, nextcomm);
-
-        ;; Store the string here so that call_user_expand_func() can get to them easily.
-;       xp.xp_line = str;
-;       xp.xp_col = col;
-
-;       str.be(col, old_char);
-    ))
-
-;; Expand the command line "str" from context "xp".
-;; "xp" must have been set by set_cmd_context().
-;; xp.xp_pattern points into "str", to where the text that is to be expanded starts.
-;; Returns EXPAND_UNSUCCESSFUL when there is something illegal before the cursor.
-;; Returns EXPAND_NOTHING when there is nothing to expand, might insert the
-;; key that triggered expansion literally.
-;; Returns EXPAND_OK otherwise.
-
-(defn- #_int expand_cmdline [#_expand_C xp, #_Bytes str, #_int col, #_int* matchcount, #_Bytes** matches]
-    ;; str: start of command line
-    ;; col: position of cursor
-    ;; matchcount: return: nr of matches
-    ;; matches: return: array of pointers to matches
-    (§
-;       Bytes file_str = null;
-;       int options = WILD_ADD_SLASH|WILD_SILENT;
-
-;       if (xp.xp_context == EXPAND_UNSUCCESSFUL)
-;       {
-;           beep_flush();
-;           return EXPAND_UNSUCCESSFUL;     ;; Something illegal on command line
-;       }
-;       if (xp.xp_context == EXPAND_NOTHING)
-;       {
-            ;; Caller can use the character as a normal char instead.
-;           return EXPAND_NOTHING;
-;       }
-
-        ;; add star to file name, or convert to regexp if not exp. files.
-;       xp.xp_pattern_len = BDIFF(str.plus(col), xp.xp_pattern);
-;       file_str = addstar(xp.xp_pattern, xp.xp_pattern_len, xp.xp_context);
-;       if (file_str == null)
-;           return EXPAND_UNSUCCESSFUL;
-
-;       if (@p_wic)
-;           options += WILD_ICASE;
-
-        ;; find all files that match the description
-;       if (expandFromContext(xp, file_str, matchcount, matches, options) == false)
-;       {
-;           matchcount[0] = 0;
-;           matches[0] = null;
-;       }
-
-;       return EXPAND_OK;
-    ))
-
-(class! #_final expgen_C
-    [
-        (field int          context)
-        (field expfun_F     func)
-        (field boolean      ic)
-        (field boolean      escaped)
-    ])
 
 ;; Do the expansion based on xp.xp_context and "pat".
 
 (defn- #_boolean expandFromContext [#_expand_C xp, #_Bytes pat, #_int* num_file, #_Bytes** file, #_int options]
     ;; options: EW_ flags
     (§
-;       boolean ret;
-
 ;       int flags = EW_DIR;                     ;; include directories
 ;       if ((options & WILD_LIST_NOTFOUND) != 0)
 ;           flags |= EW_NOTFOUND;
@@ -20210,8 +19722,6 @@
 ;       file[0] = new Bytes[] { u8("") };
 ;       num_file[0] = 0;
 
-;       if (xp.xp_context == EXPAND_OLD_SETTING)
-;           return expandOldSetting(num_file, file);
 ;       if (xp.xp_context == EXPAND_BUFFERS)
 ;           return expandBufnames(pat, num_file, file, options);
 
@@ -20223,83 +19733,7 @@
         ;; set ignore-case according to "p_ic", "p_scs" and "pat"
 ;       regmatch.rm_ic = ignorecase(pat);
 
-;       if (xp.xp_context == EXPAND_SETTINGS || xp.xp_context == EXPAND_BOOL_SETTINGS)
-;           ret = expandSettings(xp, regmatch, num_file, file);
-;       else if (xp.xp_context == EXPAND_MAPPINGS)
-;           ret = expandMappings(regmatch, num_file, file);
-;       else
-;       {
-            ;; Find a context in the table and call the expandGeneric()
-            ;; with the right function to do the expansion.
-
-;           ret = false;
-;           for (int i = 0; i < expgen_tab.length; i++)
-;               if (expgen_tab[i].context == xp.xp_context)
-;               {
-;                   if (expgen_tab[i].ic)
-;                       regmatch.rm_ic = true;
-;                   ret = expandGeneric(xp, regmatch, num_file, file, expgen_tab[i].func, expgen_tab[i].escaped);
-;                   break;
-;               }
-;       }
-
-;       return ret;
-    ))
-
-;; Expand a list of names.
-;;
-;; Generic function for command line completion.  It calls a function to
-;; obtain strings, one by one.  The strings are matched against a regexp
-;; program.  Matching strings are copied into an array, which is returned.
-;;
-;; Returns true.
-
-(defn- #_boolean expandGeneric [#_expand_C xp, #_regmatch_C regmatch, #_int* num_file, #_Bytes** file, #_expfun_F func, #_boolean escaped]
-    ;; func: returns a string from the list
-    (§
-;       int count = 0;
-
-        ;; do this loop twice:
-        ;; round == 0: count the number of matching names
-        ;; round == 1: copy the matching names into allocated memory
-
-;       for (int round = 0; round <= 1; round++)
-;       {
-;           for (int i = 0; ; i++)
-;           {
-;               Bytes str = func(xp, i);
-;               if (str == null)            ;; end of list
-;                   break;
-;               if (str.at(0) == NUL)       ;; skip empty strings
-;                   continue;
-
-;               if (vim_regexec(regmatch, str, 0))
-;               {
-;                   if (round != 0)
-;                   {
-;                       if (escaped)
-;                           str = vim_strsave_escaped(str, u8(" \t\\."));
-;                       else
-;                           str = STRDUP(str);
-;                       file[0][count] = str;
-;                   }
-;                   count++;
-;               }
-;           }
-;           if (round == 0)
-;           {
-;               if (count == 0)
-;                   return true;
-;               num_file[0] = count;
-;               file[0] = new Bytes[count];
-;               count = 0;
-;           }
-;       }
-
-        ;; Sort the results.
-;       sort_strings(file[0], num_file[0]);
-
-;       return true;
+;       return false;
     ))
 
 ;; Command line history stuff
@@ -20326,30 +19760,6 @@
     [
         (u8 "cmd"), (u8 "search"), (u8 "expr"), (u8 "input"), null
     ])
-
-(final Bytes ha__compl  (Bytes. 2))
-
-;; Function given to expandGeneric() to obtain the possible
-;; first arguments of the ":history command.
-
-(defn- #_Bytes get_history_arg [#_expand_C _xp, #_int idx]
-    (§
-;       Bytes short_names = u8(":=@>?/");
-;       int slen = STRLEN(short_names);
-;       int hlen = history_names.length - 1;
-
-;       if (idx < slen)
-;       {
-;           ha__compl.be(0, short_names.at(idx));
-;           return ha__compl;
-;       }
-;       if (idx < slen + hlen)
-;           return history_names[idx - slen];
-;       if (idx == slen + hlen)
-;           return u8("all");
-
-;       return null;
-    ))
 
 ;; init_history() - Initialize the command line history.
 ;; Also used to re-allocate the history when the size changes.
@@ -22904,355 +22314,6 @@
 ;       return (ea.cmdidx == CMD_SIZE) ? 0 : (full[0] ? 2 : 1);
     ))
 
-;; This is all pretty much copied from do_one_cmd(), with all the extra stuff
-;; we don't need/want deleted.  Maybe this could be done better if we didn't
-;; repeat all this stuff.  The only problem is that they may not stay
-;; perfectly compatible with each other, but then the command line syntax
-;; probably won't change that much.
-
-(defn- #_Bytes set_one_cmd_context [#_expand_C xp, #_Bytes buff]
-    ;; buff: buffer for command string
-    (§
-;       Bytes retval = null;
-
-;       int len = 0;
-;       boolean forceit = false;
-;       boolean usefilter = false;          ;; filter instead of file name
-
-;       expandInit(xp);
-;       xp.xp_pattern = buff;
-;       xp.xp_context = EXPAND_COMMANDS;    ;; default until we get past command
-
-        ;; 1. Skip comment lines and leading space, colons or bars.
-
-;       Bytes cmd;
-;       for (cmd = buff; vim_strbyte(u8(" \t:|"), cmd.at(0)) != null; cmd = cmd.plus(1))
-        ;
-;       xp.xp_pattern = cmd;
-
-;       if (cmd.at(0) == NUL)
-;           return null;
-;       if (cmd.at(0) == (byte)'"')                    ;; ignore comment lines
-;       {
-;           xp.xp_context = EXPAND_NOTHING;
-;           return null;
-;       }
-
-        ;; 3. Skip over the range to find the command.
-
-;       { int[] __ = { xp.xp_context }; cmd = skip_range(cmd, __); xp.xp_context = __[0]; }
-;       xp.xp_pattern = cmd;
-;       if (cmd.at(0) == NUL)
-;           return null;
-;       if (cmd.at(0) == (byte)'"')
-;       {
-;           xp.xp_context = EXPAND_NOTHING;
-;           return null;
-;       }
-
-;       if (cmd.at(0) == (byte)'|' || cmd.at(0) == (byte)'\n')
-;           return cmd.plus(1);                 ;; there's another command
-
-;       exarg_C ea = §_exarg_C();
-;       ea.argt = 0;
-
-;       Bytes p;
-
-        ;; Isolate the command and search for it in the command table.
-        ;; Exceptions:
-        ;; - the 'k' command can directly be followed by any character,
-        ;;   but do accept "keepmarks", "keepalt" and "keepjumps".
-        ;; - the 's' command can be followed directly by 'c', 'g', 'i', 'I' or 'r'.
-
-;       if (cmd.at(0) == (byte)'k' && cmd.at(1) != (byte)'e')
-;       {
-;           ea.cmdidx = CMD_k;
-;           p = cmd.plus(1);
-;       }
-;       else
-;       {
-;           p = cmd;
-;           while (asc_isalpha(p.at(0)) || p.at(0) == (byte)'*')        ;; allow * wild card
-;               p = p.plus(1);
-            ;; check for non-alpha command
-;           if (BEQ(p, cmd) && vim_strbyte(u8("@*!=><&~#"), p.at(0)) != null)
-;               p = p.plus(1);
-            ;; for python 3.x: ":py3*" commands completion
-;           if (cmd.at(0) == (byte)'p' && cmd.at(1) == (byte)'y' && BEQ(p, cmd.plus(2)) && p.at(0) == (byte)'3')
-;           {
-;               p = p.plus(1);
-;               while (asc_isalpha(p.at(0)) || p.at(0) == (byte)'*')
-;                   p = p.plus(1);
-;           }
-;           len = BDIFF(p, cmd);
-
-;           if (len == 0)
-;           {
-;               xp.xp_context = EXPAND_UNSUCCESSFUL;
-;               return retval;
-;           }
-
-;           for (ea.cmdidx = 0; ea.cmdidx < CMD_SIZE; ea.cmdidx++)
-;               if (STRNCMP(cmdnames[ea.cmdidx].cmd_name, cmd, len) == 0)
-;                   break;
-
-;           if ('A' <= cmd.at(0) && cmd.at(0) <= 'Z')
-;               while (asc_isalnum(p.at(0)) || p.at(0) == (byte)'*')    ;; allow * wild card
-;                   p = p.plus(1);
-;       }
-
-;       int[] compl = { EXPAND_NOTHING };
-
-        ;; If the cursor is touching the command, and it ends in an alpha-numeric
-        ;; character, complete the command name.
-
-;       if (p.at(0) == NUL && asc_isalnum(p.at(-1)))
-;           return retval;
-
-;       if (ea.cmdidx == CMD_SIZE)
-;       {
-;           if (cmd.at(0) == (byte)'s' && vim_strbyte(u8("cgriI"), cmd.at(1)) != null)
-;           {
-;               ea.cmdidx = CMD_substitute;
-;               p = cmd.plus(1);
-;           }
-;           else if ('A' <= cmd.at(0) && cmd.at(0) <= 'Z')
-;           {
-;               ea.cmd = cmd;
-;           }
-;       }
-;       if (ea.cmdidx == CMD_SIZE)
-;       {
-            ;; Not still touching the command and it was an illegal one.
-;           xp.xp_context = EXPAND_UNSUCCESSFUL;
-;           return retval;
-;       }
-
-;       xp.xp_context = EXPAND_NOTHING;     ;; default now that we're past command
-
-;       if (p.at(0) == (byte)'!')                      ;; forced commands
-;       {
-;           forceit = true;
-;           p = p.plus(1);
-;       }
-
-        ;; 6. Parse arguments.
-
-;       ea.argt = cmdnames[ea.cmdidx].cmd_argt;
-
-;       Bytes arg = skipwhite(p);
-
-;       if (ea.cmdidx == CMD_write || ea.cmdidx == CMD_update)
-;       {
-;           if (arg.at(0) == (byte)'>')                        ;; append
-;           {
-;               if ((arg = arg.plus(1)).at(0) == (byte)'>')
-;                   arg = arg.plus(1);
-;               arg = skipwhite(arg);
-;           }
-;           else if (arg.at(0) == (byte)'!' && ea.cmdidx == CMD_write) ;; :w !filter
-;           {
-;               arg = arg.plus(1);
-;               usefilter = true;
-;           }
-;       }
-
-;       if (ea.cmdidx == CMD_read)
-;       {
-;           usefilter = forceit;                    ;; :r! filter if forced
-;           if (arg.at(0) == (byte)'!')                        ;; :r !filter
-;           {
-;               arg = arg.plus(1);
-;               usefilter = true;
-;           }
-;       }
-
-;       if (ea.cmdidx == CMD_lshift || ea.cmdidx == CMD_rshift)
-;       {
-;           while (arg.at(0) == cmd.at(0))          ;; allow any number of '>' or '<'
-;               arg = arg.plus(1);
-;           arg = skipwhite(arg);
-;       }
-
-        ;; Does command allow "+command"?
-;       if ((ea.argt & EDITCMD) != 0 && !usefilter && arg.at(0) == (byte)'+')
-;       {
-            ;; Check if we're in the +command.
-;           p = arg.plus(1);
-;           arg = skip_cmd_arg(arg, false);
-
-            ;; Still touching the command after '+'?
-;           if (arg.at(0) == NUL)
-;               return p;
-
-            ;; Skip space(s) after +command to get to the real argument.
-;           arg = skipwhite(arg);
-;       }
-
-;       if ((ea.argt & EXTRA) == 0 && arg.at(0) != NUL && vim_strbyte(u8("|\""), arg.at(0)) == null) ;; no arguments allowed
-;           return retval;
-
-        ;; Find start of last argument (argument just before cursor):
-;       p = buff;
-;       xp.xp_pattern = p;
-;       len = STRLEN(buff);
-;       while (p.at(0) != NUL && BLT(p, buff.plus(len)))
-;       {
-;           if (p.at(0) == (byte)' ' || p.at(0) == TAB)
-;           {
-                ;; argument starts after a space
-;               xp.xp_pattern = (p = p.plus(1));
-;           }
-;           else
-;           {
-;               if (p.at(0) == (byte)'\\' && p.at(1) != NUL)
-;                   p = p.plus(1); ;; skip over escaped character
-;               p = p.plus(us_ptr2len_cc(p));
-;           }
-;       }
-
-        ;; 7. Switch on command name.
-
-;       switch (ea.cmdidx)
-;       {
-            ;; Command modifiers: return the argument.
-            ;; Also for commands with an argument that is a command.
-;           case CMD_aboveleft:
-;           case CMD_belowright:
-;           case CMD_botright:
-;           case CMD_browse:
-;           case CMD_confirm:
-;           case CMD_hide:
-;           case CMD_keepalt:
-;           case CMD_keepjumps:
-;           case CMD_keepmarks:
-;           case CMD_keeppatterns:
-;           case CMD_leftabove:
-;           case CMD_lockmarks:
-;           case CMD_rightbelow:
-;           case CMD_sandbox:
-;           case CMD_silent:
-;           case CMD_tab:
-;           case CMD_topleft:
-;           case CMD_verbose:
-;           case CMD_vertical:
-;               return arg;
-
-        ;; All completion for the +cmdline_compl feature goes here.
-
-;           case CMD_global:
-;           case CMD_vglobal:
-;           {
-;               byte delim = arg.at(0);
-;               if (delim != NUL)
-;                   arg = arg.plus(1);
-;               while (arg.at(0) != NUL && arg.at(0) != delim)
-;               {
-;                   if (arg.at(0) == (byte)'\\' && arg.at(1) != NUL)
-;                       arg = arg.plus(1);
-;                   arg = arg.plus(1);
-;               }
-;               if (arg.at(0) != NUL)
-;                   return arg.plus(1);
-;               break;
-;           }
-
-;           case CMD_and:
-;           case CMD_substitute:
-;           {
-;               byte delim = arg.at(0);
-;               if (delim != NUL)
-;               {
-                    ;; skip "from" part
-;                   arg = arg.plus(1);
-;                   arg = skip_regexp(arg, delim, @p_magic, null);
-;               }
-                ;; skip "to" part
-;               while (arg.at(0) != NUL && arg.at(0) != delim)
-;               {
-;                   if (arg.at(0) == (byte)'\\' && arg.at(1) != NUL)
-;                       arg = arg.plus(1);
-;                   arg = arg.plus(1);
-;               }
-;               if (arg.at(0) != NUL)  ;; skip delimiter
-;                   arg = arg.plus(1);
-;               while (arg.at(0) != NUL && vim_strbyte(u8("|\"#"), arg.at(0)) == null)
-;                   arg = arg.plus(1);
-;               if (arg.at(0) != NUL)
-;                   return arg;
-;               break;
-;           }
-
-;           case CMD_set:
-;               set_context_in_set_cmd(xp, arg, 0);
-;               break;
-
-;           case CMD_setglobal:
-;               set_context_in_set_cmd(xp, arg, OPT_GLOBAL);
-;               break;
-
-;           case CMD_setlocal:
-;               set_context_in_set_cmd(xp, arg, OPT_LOCAL);
-;               break;
-
-;           case CMD_bdelete:
-;           case CMD_bwipeout:
-;           case CMD_bunload:
-;               while ((xp.xp_pattern = vim_strchr(arg, ' ')) != null)
-;                   arg = xp.xp_pattern.plus(1);
-                ;; FALLTHROUGH
-
-;           case CMD_buffer:
-;           case CMD_sbuffer:
-;           case CMD_checktime:
-;               xp.xp_context = EXPAND_BUFFERS;
-;               xp.xp_pattern = arg;
-;               break;
-
-;           case CMD_map:       case CMD_noremap:
-;           case CMD_nmap:      case CMD_nnoremap:
-;           case CMD_vmap:      case CMD_vnoremap:
-;           case CMD_omap:      case CMD_onoremap:
-;           case CMD_imap:      case CMD_inoremap:
-;           case CMD_cmap:      case CMD_cnoremap:
-;           case CMD_lmap:      case CMD_lnoremap:
-;           case CMD_smap:      case CMD_snoremap:
-;           case CMD_xmap:      case CMD_xnoremap:
-;               return set_context_in_map_cmd(xp, cmd, arg, forceit, false, false, ea.cmdidx);
-
-;           case CMD_unmap:
-;           case CMD_nunmap:
-;           case CMD_vunmap:
-;           case CMD_ounmap:
-;           case CMD_iunmap:
-;           case CMD_cunmap:
-;           case CMD_lunmap:
-;           case CMD_sunmap:
-;           case CMD_xunmap:
-;               return set_context_in_map_cmd(xp, cmd, arg, forceit, false, true, ea.cmdidx);
-
-;           case CMD_abbreviate:    case CMD_noreabbrev:
-;           case CMD_cabbrev:       case CMD_cnoreabbrev:
-;           case CMD_iabbrev:       case CMD_inoreabbrev:
-;               return set_context_in_map_cmd(xp, cmd, arg, forceit, true, false, ea.cmdidx);
-
-;           case CMD_unabbreviate:
-;           case CMD_cunabbrev:
-;           case CMD_iunabbrev:
-;               return set_context_in_map_cmd(xp, cmd, arg, forceit, true, true, ea.cmdidx);
-
-;           case CMD_history:
-;               xp.xp_context = EXPAND_HISTORY;
-;               xp.xp_pattern = arg;
-;               break;
-
-;           default:
-;               break;
-;       }
-
-;       return retval;
-    ))
-
 ;; skip a range specifier of the form: addr [,addr] [;addr] ..
 ;;
 ;; Backslashed delimiters after / or ? will be skipped, and commands will
@@ -23901,20 +22962,6 @@
 ;       return (c == NUL || c == '|' || c == '"' || c == '\n');
     ))
 
-;; Return the next command, after the first '|' or '\n'.
-;; Return null if not found.
-
-(defn- #_Bytes find_nextcmd [#_Bytes p]
-    (§
-;       while (p.at(0) != (byte)'|' && p.at(0) != (byte)'\n')
-;       {
-;           if (p.at(0) == NUL)
-;               return null;
-;           p = p.plus(1);
-;       }
-;       return p.plus(1);
-    ))
-
 ;; Check if *p is a separator between Ex commands.
 ;; Return null if it isn't, (p + 1) if it is.
 
@@ -23926,35 +22973,6 @@
 ;       else
 ;           return null;
     ))
-
-;; Function given to expandGeneric() to obtain the list of command names.
-
-(defn- #_Bytes get_command_name [#_expand_C _xp, #_int idx]
-    (§
-;       if (idx < CMD_SIZE)
-;           return cmdnames[idx].cmd_name;
-    ))
-
-(class! #_final command_complete_C
-    [
-        (field int      expand)
-        (field Bytes    name)
-    ])
-
-;; List of names for completion for ":command" with the EXPAND_ flag.
-;; Must be alphabetical for completion.
-
-(final command_complete_C* command_complete
-    [
-        (->command_complete_C EXPAND_BUFFERS,      (u8 "buffer")    ),
-        (->command_complete_C EXPAND_COMMANDS,     (u8 "command")   ),
-        (->command_complete_C EXPAND_EXPRESSION,   (u8 "expression")),
-        (->command_complete_C EXPAND_HISTORY,      (u8 "history")   ),
-        (->command_complete_C EXPAND_MAPPINGS,     (u8 "mapping")   ),
-        (->command_complete_C EXPAND_SETTINGS,     (u8 "option")    ),
-
-        (->command_complete_C 0,                   null             )
-    ])
 
 ;; Call this function if we thought we were going to exit, but we won't
 ;; (because of an error).  May need to restore the terminal mode.
@@ -26066,82 +25084,6 @@
 ;       --@textlock;
 
 ;       return retval;
-    ))
-
-(defn- #_void set_context_for_expression [#_expand_C xp, #_Bytes arg, #_int cmdidx]
-    (§
-;       boolean got_eq = false;
-
-;       xp.xp_context = EXPAND_EXPRESSION;
-
-;       while ((xp.xp_pattern = STRPBRK(arg, u8("\"'+-*/%.=!?~|&$([<>,#"))) != null)
-;       {
-;           byte c = xp.xp_pattern.at(0);
-;           if (c == '&')
-;           {
-;               c = xp.xp_pattern.at(1);
-;               if (c == '&')
-;               {
-;                   xp.xp_pattern = xp.xp_pattern.plus(1);
-;                   xp.xp_context = EXPAND_EXPRESSION;
-;               }
-;               else if (c != ' ')
-;               {
-;                   xp.xp_context = EXPAND_SETTINGS;
-;                   if ((c == 'l' || c == 'g') && xp.xp_pattern.at(2) == (byte)':')
-;                       xp.xp_pattern = xp.xp_pattern.plus(2);
-;               }
-;           }
-;           else if (c == '=')
-;           {
-;               got_eq = true;
-;               xp.xp_context = EXPAND_EXPRESSION;
-;           }
-;           else
-;           {
-;               if (c == '"')           ;; string
-;               {
-;                   while ((c = (xp.xp_pattern = xp.xp_pattern.plus(1)).at(0)) != NUL && c != '"')
-;                       if (c == '\\' && xp.xp_pattern.at(1) != NUL)
-;                           xp.xp_pattern = xp.xp_pattern.plus(1);
-;                   xp.xp_context = EXPAND_NOTHING;
-;               }
-;               else if (c == '\'')     ;; literal string
-;               {
-                    ;; Trick: '' is like stopping and starting a literal string.
-;                   while ((c = (xp.xp_pattern = xp.xp_pattern.plus(1)).at(0)) != NUL && c != '\'')
-;                       /* skip */;
-;                   xp.xp_context = EXPAND_NOTHING;
-;               }
-;               else if (c == '|')
-;               {
-;                   if (xp.xp_pattern.at(1) == (byte)'|')
-;                   {
-;                       xp.xp_pattern = xp.xp_pattern.plus(1);
-;                       xp.xp_context = EXPAND_EXPRESSION;
-;                   }
-;                   else
-;                       xp.xp_context = EXPAND_COMMANDS;
-;               }
-;               else
-;                   xp.xp_context = EXPAND_EXPRESSION;
-;           }
-
-;           arg = xp.xp_pattern;
-;           if (arg.at(0) != NUL)
-;               while ((c = (arg = arg.plus(1)).at(0)) != NUL && (c == ' ' || c == '\t'))
-;                   /* skip */;
-;       }
-
-;       xp.xp_pattern = arg;
-    ))
-
-;; Function given to expandGeneric() to obtain the list of internal
-;; or user defined variable or function names.
-
-(defn- #_Bytes get_expr_name [#_expand_C xp, #_int idx]
-    (§
-;       return null;
     ))
 
 ;; Put the time "msec" past now in "tm".
@@ -42468,7 +41410,7 @@
 (defn- #_boolean map_to_exists_mode [#_Bytes rhs, #_int mode, #_boolean abbr]
     (§
         ;; Do it twice: once for global maps and once for local maps.
-;       for (boolean @expand_buffer = false; !@expand_buffer; @expand_buffer = true)
+;       for (boolean expand_buffer = false; !expand_buffer; expand_buffer = true)
 ;       {
 ;           for (int hash = 0; hash < 256; hash++)
 ;           {
@@ -42478,12 +41420,12 @@
 ;               {
 ;                   if (0 < hash)           ;; there is only one abbr list
 ;                       break;
-;                   if (@expand_buffer)
+;                   if (expand_buffer)
 ;                       mp = @curbuf.@b_first_abbr;
 ;                   else
 ;                       mp = first_abbr[0];
 ;               }
-;               else if (@expand_buffer)
+;               else if (expand_buffer)
 ;                   mp = @curbuf.b_maphash[hash][0];
 ;               else
 ;                   mp = maphash[hash][0];
@@ -42497,189 +41439,6 @@
 ;       }
 
 ;       return false;
-    ))
-
-;; Used below when expanding mapping/abbreviation names.
-
-(atom! int      expand_mapmodes)
-(atom! boolean  expand_isabbrev)
-(atom! boolean  expand_buffer)
-
-;; Work out what to complete when doing command line completion of mapping
-;; or abbreviation names.
-
-(defn- #_Bytes set_context_in_map_cmd [#_expand_C xp, #_Bytes _cmd, #_Bytes arg, #_boolean forceit, #_boolean isabbrev, #_boolean isunmap, #_int cmdidx]
-    ;; forceit: true if '!' given
-    ;; isabbrev: true if abbreviation
-    ;; isunmap: true if unmap/unabbrev command
-    (§
-;       Bytes[] cmd = { _cmd };
-
-;       if (forceit && cmdidx != CMD_map && cmdidx != CMD_unmap)
-;           xp.xp_context = EXPAND_NOTHING;
-;       else
-;       {
-;           if (isunmap)
-;               @expand_mapmodes = get_map_mode(cmd, forceit || isabbrev);
-;           else
-;           {
-;               @expand_mapmodes = INSERT + CMDLINE;
-;               if (!isabbrev)
-;                   @expand_mapmodes += VISUAL + SELECTMODE + NORMAL + OP_PENDING;
-;           }
-;           @expand_isabbrev = isabbrev;
-;           xp.xp_context = EXPAND_MAPPINGS;
-;           @expand_buffer = false;
-;           for ( ; ; )
-;           {
-;               if (STRNCMP(arg, u8("<buffer>"), 8) == 0)
-;               {
-;                   @expand_buffer = true;
-;                   arg = skipwhite(arg.plus(8));
-;                   continue;
-;               }
-;               if (STRNCMP(arg, u8("<unique>"), 8) == 0)
-;               {
-;                   arg = skipwhite(arg.plus(8));
-;                   continue;
-;               }
-;               if (STRNCMP(arg, u8("<nowait>"), 8) == 0)
-;               {
-;                   arg = skipwhite(arg.plus(8));
-;                   continue;
-;               }
-;               if (STRNCMP(arg, u8("<silent>"), 8) == 0)
-;               {
-;                   arg = skipwhite(arg.plus(8));
-;                   continue;
-;               }
-;               if (STRNCMP(arg, u8("<script>"), 8) == 0)
-;               {
-;                   arg = skipwhite(arg.plus(8));
-;                   continue;
-;               }
-;               if (STRNCMP(arg, u8("<expr>"), 6) == 0)
-;               {
-;                   arg = skipwhite(arg.plus(6));
-;                   continue;
-;               }
-;               break;
-;           }
-;           xp.xp_pattern = arg;
-;       }
-
-;       return null;
-    ))
-
-;; Find all mapping/abbreviation names that match regexp 'prog'.
-;; For command line expansion of ":[un]map" and ":[un]abbrev" in all modes.
-;; Return true if matches found, false otherwise.
-
-(defn- #_boolean expandMappings [#_regmatch_C regmatch, #_int* num_file, #_Bytes** file]
-    (§
-;       num_file[0] = 0;                  ;; return values in case of FAIL
-;       file[0] = null;
-
-;       int count = 0;	// %% red.
-
-        ;; round == 1: Count the matches.
-        ;; round == 2: Build the array to keep the matches.
-
-;       for (int round = 1; round <= 2; round++)
-;       {
-;           count = 0;
-
-;           for (int i = 0; i < 6; i++)
-;           {
-;               Bytes p;
-
-;               if (i == 0)
-;                   p = u8("<silent>");
-;               else if (i == 1)
-;                   p = u8("<unique>");
-;               else if (i == 2)
-;                   p = u8("<script>");
-;               else if (i == 3)
-;                   p = u8("<expr>");
-;               else if (i == 4 && !@expand_buffer)
-;                   p = u8("<buffer>");
-;               else if (i == 5)
-;                   p = u8("<nowait>");
-;               else
-;                   continue;
-
-;               if (vim_regexec(regmatch, p, 0))
-;               {
-;                   if (round == 1)
-;                       count++;
-;                   else
-;                       file[0][count++] = STRDUP(p);
-;               }
-;           }
-
-;           for (int hash = 0; hash < 256; hash++)
-;           {
-;               mapblock_C mp;
-
-;               if (@expand_isabbrev)
-;               {
-;                   if (0 < hash)   ;; only one abbrev list
-;                       break;
-;                   mp = first_abbr[0];
-;               }
-;               else if (@expand_buffer)
-;                   mp = @curbuf.b_maphash[hash][0];
-;               else
-;                   mp = maphash[hash][0];
-
-;               for ( ; mp != null; mp = mp.m_next)
-;               {
-;                   if ((mp.m_mode & @expand_mapmodes) != 0)
-;                   {
-;                       Bytes p = translate_mapping(mp.m_keys);
-;                       if (p != null && vim_regexec(regmatch, p, 0))
-;                       {
-;                           if (round == 1)
-;                               count++;
-;                           else
-;                           {
-;                               file[0][count++] = p;
-;                               p = null;
-;                           }
-;                       }
-;                   }
-;               }
-;           }
-
-;           if (count == 0)                 ;; no match found
-;               break;
-
-;           if (round == 1)
-;               file[0] = new Bytes[count];
-;       }
-
-;       if (1 < count)
-;       {
-            ;; Sort the matches.
-;           sort_strings(file[0], count);
-
-            ;; Remove multiple entries.
-;           Bytes[] pp = file[0];
-
-;           for (int i1 = 0, i2 = 1; i2 < count; )
-;           {
-;               if (STRCMP(pp[i1], pp[i2]) != 0)
-;                   pp[++i1] = pp[i2++];
-;               else
-;               {
-;                   pp[i2++] = null;
-;                   count--;
-;               }
-;           }
-;       }
-
-;       num_file[0] = count;
-;       return (count != 0);
     ))
 
 ;; Check for an abbreviation.
@@ -106702,13 +105461,6 @@
         (->cmdname_C (u8 "@"),             ex_at,            (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "Print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN MODIFY),                                ADDR_LINES),
-    ])
-
-(final expgen_C* expgen_tab
-    [
-        (->expgen_C EXPAND_COMMANDS,       get_command_name,       false, true),
-        (->expgen_C EXPAND_HISTORY,        get_history_arg,        true,  true),
-        (->expgen_C EXPAND_EXPRESSION,     get_expr_name,          false, true),
     ])
 
 ;;; ============================================================================================== VimZ
