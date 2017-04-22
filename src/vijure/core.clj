@@ -2572,36 +2572,27 @@
     nil)
 
 (defn- #_void mch-delay [#_long msec, #_boolean ignoreinput]
-    (§
-        (cond ignoreinput
-        (do
-            ;; Go to cooked mode without echo, to allow SIGINT interrupting us here.
+    (if ignoreinput
+        (do ;; Go to cooked mode without echo, to allow SIGINT interrupting us here.
             ;; But we don't want QUIT to kill us (CTRL-\ used in a shell may produce SIGQUIT).
             (reset! in_mch_delay true)
-            ((ß int old_tmode =) @curr_tmode)
-            (if (== @curr_tmode TMODE_RAW)
-                (settmode TMODE_SLEEP))
+            (let [#_int _ @curr_tmode]
+                (when (== @curr_tmode TMODE_RAW)
+                    (settmode TMODE_SLEEP))
+                ;; Everybody sleeps in a different way...
+                ;; Prefer nanosleep(), some versions of usleep() can only sleep up to one second.
+                (§
+                    ((ß timespec_C ts =) (new timespec_C))
 
-            ;; Everybody sleeps in a different way...
-            ;; Prefer nanosleep(), some versions of usleep() can only sleep up to one second.
-
-;           {
-                ((ß timespec_C ts =) (new timespec_C))
-
-                (.tv_sec ts (/ msec 1000))
-                (.tv_nsec ts (* (% msec 1000) 1000000))
-                (.nanosleep libc ts, nil)
-;           }
-
-            (settmode old_tmode)
-            (reset! in_mch_delay false)
-        )
-        :else
-        (do
-            (waitForChar msec)
-        ))
-        nil
-    ))
+                    (.tv_sec ts (/ msec 1000))
+                    (.tv_nsec ts (* (% msec 1000) 1000000))
+                    (.nanosleep libc ts, nil)
+                )
+                (settmode _)
+                (reset! in_mch_delay false)
+            ))
+        (waitForChar msec))
+    nil)
 
 ;; We need correct prototypes for a signal function, otherwise mean compilers
 ;; will barf when the second argument to sigset() is ``wrong''.
@@ -3153,95 +3144,56 @@
 ;; Returns an allocated string or null when no truncating is done.
 
 (defn- #_Bytes msg-strtrunc [#_Bytes s]
-    (§
-        ((ß Bytes buf =) nil)
-
-        ;; May truncate message to avoid a hit-return prompt.
-        (when (and (not @msg_scroll) (not @need_wait_return))
-            ((ß int len =) (mb-string2cells s))
-            ((ß int room =) (if (non-zero? @msg_scrolled)
-                ;; Use all the columns.
-                (dec (* (- @Rows @msg_row) @Cols))
-                ;; Use up to 'showcmd' column.
-                (dec (+ (* (- @Rows @msg_row 1) @Cols) @sc_col))
-            ))
-            (when (< 0 room len)
+    ;; May truncate message to avoid a hit-return prompt.
+    (when (and (not @msg_scroll) (not @need_wait_return))
+        (let [m (if (non-zero? @msg_scrolled)
+                (dec    (* (- @Rows @msg_row)   @Cols)) ;; Use all the columns.
+                (dec (+ (* (- @Rows @msg_row 1) @Cols) @sc_col)))] ;; Use up to 'showcmd' column.
+            (when (< 0 m (mb-string2cells s))
                 ;; may have up to 18 bytes per cell (6 per char, up to two composing chars)
-                ((ß len =) (* (+ room 2) 18))
-                ((ß buf =) (Bytes. len))
-                (trunc-string s, buf, room, len)
-            )
-        )
-
-        buf
+                (let [n (* (+ m 2) 18) buf (Bytes. n)]
+                    (trunc-string s, buf, m, n)
+                    buf)
+            ))
     ))
 
 ;; Truncate a string "s" to "buf" with cell width "room".
 ;; "s" and "buf" may be equal.
 
 (defn- #_void trunc-string [#_Bytes s, #_Bytes buf, #_int room, #_int buflen]
-    (§
-        ((ß room =) (- room 3))
-
-        ((ß int half =) (/ room 2))
-        ((ß int len =) 0)
-
-        (ß int e)
-
-        ;; First part: Start of the string.
-        ((ß FOR) (ß ((ß e =) 0) (and (< len half) (< e buflen)) ((ß e =) (inc e)))
-            (when (eos? s e)
-                ;; text fits without truncating!
-                (eos! buf e)
-                ((ß RETURN) nil)
-            )
-
-            ((ß int n =) (mb-ptr2cells s, e))
-            (if (<= half (+ len n))
-                (ß BREAK)
-            )
-            ((ß len =) (+ len n))
-            (.be buf e, (.at s e))
-
-            ((ß FOR) (ß ((ß n =) (us-ptr2len-cc s, e)) (< 0 ((ß n =) (dec n))) nil)
-                (if (== ((ß e =) (inc e)) buflen)
-                    (ß BREAK)
-                )
-                (.be buf e, (.at s e))
-            )
-        )
-
-        ;; Last part: End of the string.
-        ((ß int i =) e)
-
-        ;; For UTF-8 we can go backwards easily.
-        ((ß half =) ((ß i =) (STRLEN s)))
-        (while true
-            ((ß half =) (loop [half half] (let [half (- half (us-head-off s, (.plus s (dec half))) 1)]
-                (recur-if (and (utf-iscomposing (us-ptr2char s, half)) (< 0 half)) half => half)
+    (let-when [room (- room 3) #_int half (/ room 2)
+          [#_int len #_int e :as _]
+            (loop-when [len 0 e 0] (and (< len half) (< e buflen)) => [len e]
+                (if (eos? s e)
+                    (do (eos! buf e) nil) ;; text fits without truncating!
+                    (let [#_int n (mb-ptr2cells s, e)]
+                        (if (<= half (+ len n))
+                            [len e]
+                            (let [len (+ len n)]
+                                (.be buf e, (.at s e))
+                                (let [e (loop-when [e e #_int n (dec (us-ptr2len-cc s, e))] (< 0 n) => e
+                                            (let [e (inc e)] (if (< e buflen) (do (.be buf e, (.at s e)) (recur e (dec n))) e))
+                                        )]
+                                    (recur len (inc e))
+                                ))
+                        ))
+                ))] (some? _)
+        (let [#_int i ;; For UTF-8 we can go backwards easily.
+                (loop [half (STRLEN s) len len i half]
+                    (let [half (loop [half half] (let [half (- half (us-head-off s, (.plus s (dec half))) 1)]
+                            (recur-if (and (utf-iscomposing (us-ptr2char s, half)) (< 0 half)) half => half)))
+                          #_int n (mb-ptr2cells s, half)]
+                        (if (< room (+ len n)) i (recur half (+ len n) half))
+                    ))]
+            ;; Set the middle and copy the last part.
+            (if (< (+ e 3) buflen)
+                (let [#_int len (min (inc (STRLEN s, i)) (- buflen e 3 1))]
+                    (BCOPY buf, e, (u8 "..."), 0, 3)
+                    (BCOPY buf, (+ e 3), s, i, len)
+                    (eos! buf (dec (+ e 3 len))))
+                (eos! buf (dec e))     ;; make sure it is truncated
             )))
-            ((ß int n =) (mb-ptr2cells s, half))
-            (if (< room (+ len n))
-                (ß BREAK)
-            )
-            ((ß len =) (+ len n))
-            ((ß i =) half)
-        )
-
-        ;; Set the middle and copy the last part.
-        (cond (< (+ e 3) buflen)
-        (do
-            (BCOPY buf, e, (u8 "..."), 0, 3)
-            ((ß len =) (min (inc (STRLEN s, i)) (- buflen e 3 1)))
-            (BCOPY buf, (+ e 3), s, i, len)
-            (eos! buf (dec (+ e 3 len)))
-        )
-        :else
-        (do
-            (eos! buf (dec e))     ;; make sure it is truncated
-        ))
-        nil
-    ))
+    nil)
 
 (defn- #_final #_boolean smsg [#_Bytes s, #_Object... args]
     (smsg-attr 0, s, args))
@@ -3994,32 +3946,22 @@
 
 ;; Print a message when there is no valid screen.
 
-(defn- #_void msg-puts-printf [#_Bytes str, #_int maxlen]
-    (§
-        (loop-when-recur [#_Bytes s str] (and (non-eos? s) (or (< maxlen 0) (< (BDIFF s, str) maxlen))) [(.plus s 1)]
-            ((ß Bytes buf =) (Bytes. 4))
-            ((ß Bytes p =) buf)
-
-            ;; NL --> CR NL translation (for Unix, not for "--version")
-            (if (and (at? s (byte \newline)) (not @info_message))
-                (.be ((ß p =) (.plus p 1)) -1, (byte \return))
-            )
-            (.be ((ß p =) (.plus p 1)) -1, (.at s 0))
-            (eos! p)
-            (if @info_message   ;; informative message, not an error
-                (.fprintf libC stdout, (u8 "%s"), buf)
-                (.fprintf libC stderr, (u8 "%s"), buf)
-            )
-
-            ;; primitive way to compute the current column
-            (if (or (at? s (byte \return)) (at? s (byte \newline)))
-                (reset! msg_col 0)
-                (swap! msg_col inc))
-        )
-
-        (reset! msg_didout true)      ;; assume that line is not empty
-        nil
-    ))
+(defn- #_void msg-puts-printf [#_Bytes s, #_int maxlen]
+    (let [#_Bytes buf (Bytes. 3)]
+        (loop-when-recur [#_int i 0] (and (non-eos? s i) (or (< maxlen 0) (< i maxlen))) [(inc i)]
+            (let [#_int n 0 ;; NL --> CR NL translation (for Unix, not for "--version")
+                  n (if (and (at? s i (byte \newline)) (not @info_message)) (do (.be buf n, (byte \return)) (inc n)) n)]
+                (-> buf (.be n, (.at s i)) (eos! (inc n)))
+;%%             (if @info_message   ;; informative message, not an error
+;%%                 (.fprintf libC stdout, (u8 "%s"), buf)
+;%%                 (.fprintf libC stderr, (u8 "%s"), buf))
+                ;; primitive way to compute the current column
+                (if (or (at? s i (byte \return)) (at? s i (byte \newline)))
+                    (reset! msg_col 0)
+                    (swap! msg_col inc))
+            )))
+    (reset! msg_didout true)      ;; assume that line is not empty
+    nil)
 
 ;; Show the more-prompt and handle the user response.
 ;; This takes care of scrolling back and displaying previously displayed text.
@@ -5783,34 +5725,27 @@
 ;; Return -1 if not found.
 
 (defn- #_int findoption [#_Bytes arg]
-    (§
-        (if (<= (byte \a) (.at arg 0) (byte \z))
-
-            (dotimes [#_int opt_idx (:length vimoptions)]
-                ((ß Bytes s =) (:fullname (... vimoptions opt_idx)))
-                (if (zero? (STRCMP arg, s))                             ;; match full name
-                    ((ß RETURN) opt_idx)
-                )
+    (if (<= (byte \a) (.at arg 0) (byte \z))
+        (or
+            ;; match full name
+            (loop-when [#_int i 0] [< i (:length vimoptions)] => nil
+                (let [#_Bytes s (:fullname (... vimoptions i))] (if (zero? (STRCMP arg, s)) i (recur (inc i))))
             )
-
-            (dotimes [#_int opt_idx (:length vimoptions)]
-                ((ß Bytes s =) (:shortname (... vimoptions opt_idx)))
-                (if (and (some? s) (zero? (STRCMP arg, s)))          ;; match short name
-                    ((ß RETURN) opt_idx)
-                )
+            ;; match short name
+            (loop-when [#_int i 0] [< i (:length vimoptions)] => nil
+                (let [#_Bytes s (:shortname (... vimoptions i))] (if (and (some? s) (zero? (STRCMP arg, s))) i (recur (inc i))))
             )
+            -1
         )
         -1
     ))
 
 (defn- #_Bytes get-highlight-default []
-    (§
-        ((ß int i =) (findoption (u8 "hl")))
+    (let [#_int i (findoption (u8 "hl"))]
         (if (< i 0)
-            ((ß RETURN) nil)
+            nil
+            #_Bytes (:def_val (... vimoptions i))
         )
-
-        (ß (Bytes)vimoptions[i].def_val)
     ))
 
 ;; showoneopt: show the value of one option
@@ -56822,54 +56757,35 @@
         (swap! curwin update :w_valid | VALID_TOPLINE))
     nil)
 
-;; Recompute topline to put the cursor halfway the window
+;; Recompute topline to put the cursor halfway the window.
 ;; If "atend" is true, also put it halfway at the end of the file.
 
 (defn- #_void scroll-cursor-halfway [#_boolean atend]
-    (§
-        ((ß lineoff_C loff =) (NEW_lineoff_C))
-        ((ß lineoff_C boff =) (NEW_lineoff_C))
-
-        ((ß loff.lnum =) (ß boff.lnum =) (:lnum (:w_cursor @curwin)))
-        ((ß int used =) (plines (:lnum loff)))
-        ((ß long topline =) (:lnum loff))
-
-        ((ß FOR) (ß ((ß int above =) (ß 0, below = 0)) (< 1 topline) nil)
-            (when (<= below above)         ;; add a line below the cursor first
-                (cond (< (:lnum boff) (:ml_line_count (:b_ml @curbuf)))
-                (do
-                    ((ß boff =) (botline-forw boff))
-                    ((ß used =) (+ used (:height boff)))
-                    (if (< (:w_height @curwin) used)
-                        (ß BREAK)
-                    )
-                    ((ß below =) (+ below (:height boff)))
-                )
-                :else
-                (do
-                    ((ß below =) (inc below))            ;; count a "~" line
-                    (if atend
-                        ((ß used =) (inc used))
-                    )
-                ))
-            )
-
-            (when (< above below)          ;; add a line above the cursor
-                ((ß loff =) (topline-back loff))
-                ((ß used =) (if (== (:height loff) MAXCOL) MAXCOL (+ used (:height loff))))
-                (if (< (:w_height @curwin) used)
-                    (ß BREAK)
-                )
-                ((ß above =) (+ above (:height loff)))
-                ((ß topline =) (:lnum loff))
-            )
-        )
-
+    (let [cln (:lnum (:w_cursor @curwin)) lmax (:ml_line_count (:b_ml @curbuf))
+          #_long topline
+            (loop-when [#_int above 0, #_int below 0, loff (->lineoff_C cln 0), boff (->lineoff_C cln 0), #_int used (plines cln), topline cln] (< 1 topline) => topline
+                (let-when [[below boff used :as _]
+                        (if (<= below above)         ;; add a line below the cursor first
+                            (if (< (:lnum boff) lmax)
+                                (let [boff (botline-forw boff) used (+ used (:height boff))]
+                                    (if (< (:w_height @curwin) used)
+                                        nil
+                                        [(+ below (:height boff)) boff used]))
+                                [(inc below) boff (if atend (inc used) used)]) ;; count a "~" line
+                            [below boff used])] (some? _) => topline
+                    (let-when [[above loff used topline :as _]
+                            (if (< above below)          ;; add a line above the cursor
+                                (let [loff (topline-back loff) used (if (== (:height loff) MAXCOL) MAXCOL (+ used (:height loff)))]
+                                    (if (< (:w_height @curwin) used)
+                                        nil
+                                        [(+ above (:height loff)) loff used (:lnum loff)]))
+                                [above loff used topline])] (some? _) => topline
+                        (recur above below loff boff used topline)
+                    )))]
         (swap! curwin assoc :w_topline topline)
         (swap! curwin update :w_valid & (bit-not (| VALID_WROW VALID_CROW VALID_BOTLINE VALID_BOTLINE_AP)))
-        (swap! curwin update :w_valid | VALID_TOPLINE)
-        nil
-    ))
+        (swap! curwin update :w_valid | VALID_TOPLINE))
+    nil)
 
 ;; Correct the cursor position so that it is in a part of the screen at least
 ;; 'so' lines from the top and bottom, if possible.
