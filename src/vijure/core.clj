@@ -9371,7 +9371,7 @@
                                         [win cap oap])
 
                                 OP_INDENT
-                                    (do (§ (op-reindent oap, (ß get_c_indent)))
+                                    (do (§ op-reindent oap, (ß get_c_indent))
                                         [win cap oap])
 
                                 OP_FILTER
@@ -10005,207 +10005,127 @@
 
 ;; Commands that start with "z".
 
-(defn- #_cmdarg_C nv-zet [#_cmdarg_C cap]
-    (§
-        ((ß int nchar =) (:nchar cap))
+(defn- #_cmdarg_C nv-zet [#_cmdarg_C cap]
+    (if (checkclearop (:oap cap))
+        cap
+        (let-when [nchar (:nchar cap)
+              [cap nchar]
+                (if (asc-isdigit nchar) ;; "z123{nchar}": edit the count before obtaining {nchar}
+                    (loop [n (- nchar (byte \0))]
+                        ;; no mapping for nchar, but allow key codes
+                        (let [_ (swap! no_mapping inc) _ (swap! allow_keys inc) nchar (plain-vgetc) _ (swap! no_mapping dec) _ (swap! allow_keys dec)]
+                            (add-to-showcmd nchar)
+                            (cond
+                                (any == nchar K_DEL K_KDEL)                       (recur (/ n 10))
+                                (asc-isdigit nchar)                               (recur (+ (* n 10) (- nchar (byte \0))))
+                                (== nchar CAR)                                    (do (win-setheight @curwin, n) [cap nil])
+                                (any == nchar (byte \l) (byte \h) K_LEFT K_RIGHT) [(update cap :count1 #(if (non-zero? n) (* n %) %)) nchar]
+                                :else                                             (do (clearopbeep (:oap cap)) [cap nil]))
+                        ))
+                    [cap nchar]
+                )] (some? nchar) => cap
 
-;       dozet:
-        (when (asc-isdigit nchar)
-            ;; "z123{nchar}": edit the count before obtaining {nchar}
+            (let [win @curwin
+                  ;; For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":  If line number given, set cursor.
+                  win (if (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor win))))
+                        (-> win
+                            (setpcmark)
+                            (assoc-in [:w_cursor :lnum] (min (:count0 cap) (line-count @curbuf)))
+                            (check-cursor-col))
+                        win)
+                  -t- (fn [win cap y? x?]
+                        (let [win (if (and y? (zero? (:count0 cap))) ;; No count given: put cursor at the line below screen.
+                                    (let [win (validate-botline win)] (assoc-in win [:w_cursor :lnum] (min (:w_botline win) (line-count @curbuf))))
+                                    win)
+                              win (if (or y? x?) (beginline win, (| BL_WHITE BL_FIX)) win)]
+                            [(-> win (scroll-cursor-top 0, true) (redraw-later VALID)) cap]
+                        ))
+                  -z- (fn [win cap z?]
+                        (let [win (if z? (beginline win, (| BL_WHITE BL_FIX)) win)]
+                            [(-> win (scroll-cursor-halfway true) (redraw-later VALID)) cap]
+                        ))
+                  -b- (fn [win cap y? x?]
+                        (let [win (cond (not y?)
+                                    win
+                                (zero? (:count0 cap))
+                                    (assoc-in win, [:w_cursor :lnum] (max 1 (- (:w_topline win) 1)))
+                                :else
+                                    ;; Strange Vi behavior:
+                                    ;; <count>z^ finds line at top of window when <count> is at bottom of window,
+                                    ;; and puts that one at bottom of window.
+                                    (let [win (scroll-cursor-bot win, 0, true)]
+                                        (assoc-in win, [:w_cursor :lnum] (:w_topline win))
+                                    ))
+                              win (if (or y? x?) (beginline win, (| BL_WHITE BL_FIX)) win)]
+                            [(-> win (scroll-cursor-bot 0, true) (redraw-later VALID)) cap]
+                        ))
+                  -h- (fn [win cap z?]
+                        (let [cap (if z? (update cap :count1 * (/ (:w_width win) 2)) cap)
+                              win (if (not @(:wo_wrap (:w_options win)))
+                                    (let [win (assoc win :w_leftcol (max 0 (- (:w_leftcol win) (:count1 cap))))]
+                                        (leftcol-changed win))
+                                    win
+                                )]
+                            [win cap]
+                        ))
+                  -l- (fn [win cap z?]
+                        (let [cap (if z? (update cap :count1 * (/ (:w_width win) 2)) cap)
+                              win (if (not @(:wo_wrap (:w_options win)))
+                                    (let [win (update win :w_leftcol + (:count1 cap))]
+                                        (leftcol-changed win))
+                                    win
+                                )]
+                            [win cap]
+                        ))
+                  [win cap]
+                    (condp ==? nchar
 
-            (if (checkclearop (:oap cap))
-                ((ß RETURN) nil)
-            )
+                        (byte \+)           (-t- win, cap, :y?, :x?)            ;; put cursor at top of screen
+                       [NL CAR K_KENTER]    (-t- win, cap, nil, :x?)
+                        (byte \t)           (-t- win, cap, nil, nil)
 
-            (loop [#_long n (- nchar (byte \0))]
-                (swap! no_mapping inc)
-                (swap! allow_keys inc)   ;; no mapping for nchar, but allow key codes
-                ((ß nchar =) (plain-vgetc))
-                (swap! no_mapping dec)
-                (swap! allow_keys dec)
+                        (byte \.)           (-z- win, cap, :z?)                 ;; put cursor in middle of screen
+                        (byte \z)           (-z- win, cap, nil)
 
-                (add-to-showcmd nchar)
+                        (byte \^)           (-b- win, cap, :y?, :x?)            ;; put cursor at bottom of screen
+                        (byte \-)           (-b- win, cap, nil, :x?)
+                        (byte \b)           (-b- win, cap, nil, nil)
 
-                (cond (any == nchar K_DEL K_KDEL)
-                (do
-                    ((ß n =) (/ n 10))
-                )
-                (asc-isdigit nchar)
-                (do
-                    ((ß n =) (+ (* n 10) (- nchar (byte \0))))
-                )
-                (== nchar CAR)
-                (do
-                    (win-setheight @curwin, n)
-                    (ß BREAK)
-                )
-                (any == nchar (byte \l) (byte \h) K_LEFT K_RIGHT)
-                (do
-                    ((ß cap =) (assoc cap :count1 (if (non-zero? n) (* n (:count1 cap)) (:count1 cap))))
-                    (ß BREAK dozet)
-                )
-                :else
-                (do
-                    (clearopbeep (:oap cap))
-                    (ß BREAK)
-                ))
-                (recur n)
-            )
+                        (byte \H)           (-h- win, cap, :z?)                 ;; scroll screen right half-page
+                       [(byte \h) K_LEFT]   (-h- win, cap, nil)                 ;; scroll screen to the right
 
-            ((ß cap =) (assoc-in cap [:oap :op_type] OP_NOP))
-            ((ß RETURN) nil)
-        )
+                        (byte \L)           (-l- win, cap, :z?)                 ;; scroll screen left half-page
+                       [(byte \l) K_RIGHT]  (-l- win, cap, nil)                 ;; scroll screen to the left
 
-        (if (checkclearop (:oap cap))
-            ((ß RETURN) nil)
-        )
+                        (byte \s)                                               ;; scroll screen, cursor at the start
+                            (let [win (if (not @(:wo_wrap (:w_options win)))
+                                        (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), a'col, nil, nil)
+                                              _ (reset! a'col (max 0 (- @a'col @p_siso)))]
+                                            (if (!= (:w_leftcol win) @a'col)
+                                                (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
+                                                win
+                                            ))
+                                        win
+                                    )]
+                                [win cap])
 
-        ;; For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":
-        ;; If line number given, set cursor.
+                        (byte \e)                                               ;; scroll screen, cursor at the end
+                            (let [win (if (not @(:wo_wrap (:w_options win)))
+                                        (let [a'col (atom (int)) _ (getvcol win, (:w_cursor win), nil, nil, a'col)
+                                            n (- (:w_width win) (win-col-off win))
+                                            _ (reset! a'col (max 0 (inc (+ @a'col (- @p_siso n)))))]
+                                            (if (!= (:w_leftcol win) @a'col)
+                                                (-> win (assoc :w_leftcol @a'col) (redraw-later NOT_VALID))
+                                                win
+                                            ))
+                                        win
+                                    )]
+                                [win cap])
 
-        (when (and (some? (vim-strchr (u8 "+\r\nt.z^-b"), nchar)) (non-zero? (:count0 cap)) (!= (:count0 cap) (:lnum (:w_cursor @curwin))))
-            (swap! curwin setpcmark)
-            (swap! curwin assoc-in [:w_cursor :lnum] (min (:count0 cap) (line-count @curbuf)))
-            (swap! curwin check-cursor-col)
-        )
-
-        (condp ==? nchar
-            (byte \+)   ;; "z+", "z<CR>" and "zt": put cursor at top of screen
-            (do
-                (when (zero? (:count0 cap))
-                    ;; No count given: put cursor at the line below screen.
-                    (swap! curwin validate-botline) ;; make sure "w_botline" is valid
-                    (swap! curwin assoc-in [:w_cursor :lnum] (min (:w_botline @curwin) (line-count @curbuf)))
-                )
-                (ß FALLTHROUGH)
-            )
-
-           [NL CAR K_KENTER]
-            (do
-                (swap! curwin beginline (| BL_WHITE BL_FIX))
-                (ß FALLTHROUGH)
-            )
-
-            (byte \t)
-            (do
-                (swap! curwin scroll-cursor-top 0, true)
-                (swap! curwin redraw-later VALID)
-                (ß BREAK)
-            )
-
-            (byte \.)   ;; "z." and "zz": put cursor in middle of screen
-            (do
-                (swap! curwin beginline (| BL_WHITE BL_FIX))
-                (ß FALLTHROUGH)
-            )
-
-            (byte \z)
-            (do
-                (swap! curwin scroll-cursor-halfway true)
-                (swap! curwin redraw-later VALID)
-                (ß BREAK)
-            )
-
-            (byte \^)   ;; "z^", "z-" and "zb": put cursor at bottom of screen
-            (do
-                ;; Strange Vi behavior:
-                ;; <count>z^ finds line at top of window when <count> is at bottom of window,
-                ;; and puts that one at bottom of window.
-                (cond (non-zero? (:count0 cap))
-                (do
-                    (swap! curwin scroll-cursor-bot 0, true)
-                    (swap! curwin assoc-in [:w_cursor :lnum] (:w_topline @curwin))
-                )
-                (== (:w_topline @curwin) 1)
-                (do
-                    (swap! curwin assoc-in [:w_cursor :lnum] 1)
-                )
-                :else
-                (do
-                    (swap! curwin assoc-in [:w_cursor :lnum] (dec (:w_topline @curwin)))
-                ))
-                (ß FALLTHROUGH)
-            )
-
-            (byte \-)
-            (do
-                (swap! curwin beginline (| BL_WHITE BL_FIX))
-                (ß FALLTHROUGH)
-            )
-
-            (byte \b)
-            (do
-                (swap! curwin scroll-cursor-bot 0, true)
-                (swap! curwin redraw-later VALID)
-                (ß BREAK)
-            )
-
-            (byte \H)   ;; "zH" - scroll screen right half-page
-            (do
-                ((ß cap =) (update cap :count1 * (/ (:w_width @curwin) 2)))
-                (ß FALLTHROUGH)
-            )
-
-           [(byte \h) K_LEFT]   ;; "zh" - scroll screen to the right
-            (do
-                (when (not @(:wo_wrap (:w_options @curwin)))
-                    (swap! curwin assoc :w_leftcol (max 0 (- (:w_leftcol @curwin) (int (:count1 cap)))))
-                    (swap! curwin leftcol-changed)
-                )
-                (ß BREAK)
-            )
-
-            (byte \L)   ;; "zL" - scroll screen left half-page
-            (do
-                ((ß cap =) (update cap :count1 * (/ (:w_width @curwin) 2)))
-                (ß FALLTHROUGH)
-            )
-
-           [(byte \l) K_RIGHT]   ;; "zl" - scroll screen to the left
-            (do
-                (when (not @(:wo_wrap (:w_options @curwin)))
-                    ;; scroll the window left
-                    (swap! curwin update :w_leftcol + (int (:count1 cap)))
-                    (swap! curwin leftcol-changed)
-                )
-                (ß BREAK)
-            )
-
-            (byte \s)   ;; "zs" - scroll screen, cursor at the start
-            (do
-                (when (not @(:wo_wrap (:w_options @curwin)))
-                    ((ß int[] a'col =) (atom (int)))
-                    (getvcol @curwin, (:w_cursor @curwin), a'col, nil, nil)
-                    (reset! a'col (if (< @p_siso (long @a'col)) (- @a'col @p_siso) 0))
-                    (when (!= (:w_leftcol @curwin) @a'col)
-                        (swap! curwin assoc :w_leftcol @a'col)
-                        (swap! curwin redraw-later NOT_VALID)
-                    )
-                )
-                (ß BREAK)
-            )
-
-            (byte \e)   ;; "ze" - scroll screen, cursor at the end
-            (do
-                (when (not @(:wo_wrap (:w_options @curwin)))
-                    ((ß int[] a'col =) (atom (int)))
-                    (getvcol @curwin, (:w_cursor @curwin), nil, nil, a'col)
-                    ((ß long n =) (- (:w_width @curwin) (win-col-off @curwin)))
-                    (reset! a'col (if (< (+ (long @a'col) @p_siso) n) 0 (+ @a'col (inc (- @p_siso n)))))
-                    (when (!= (:w_leftcol @curwin) @a'col)
-                        (swap! curwin assoc :w_leftcol @a'col)
-                        (swap! curwin redraw-later NOT_VALID)
-                    )
-                )
-                (ß BREAK)
-            )
-
-            (do
-                (clearopbeep (:oap cap))
-                (ß BREAK)
-            )
-        )
-        nil
+                        (do (clearopbeep (:oap cap)) [win cap])
+                    )]
+                (do (reset! curwin win) cap)
+            ))
     ))
 
 ;; Handle a ":" command.
@@ -10214,29 +10134,30 @@
     (if @VIsual_active
         (nv-operator cap)
         (let [cap (if (!= (:op_type (:oap cap)) OP_NOP)
-                    (update cap :oap assoc :motion_type MCHAR :inclusive false) ;; using ":" as a movement is characterwise exclusive
-                    (do
-                        (when (non-zero? (:count0 cap)) ;; translate "count:" into ":.,.+(count - 1)"
+                    ;; using ":" as a movement is characterwise exclusive
+                    (update cap :oap assoc :motion_type MCHAR :inclusive false)
+                    (do ;; translate "count:" into ":.,.+(count - 1)"
+                        (when (non-zero? (:count0 cap))
                             (stuff-char (byte \.))
-                            (when (< 1 (:count0 cap)) (stuff-string (u8 ",.+")) (stuff-num (dec (:count0 cap)))))
-                        cap
-                    ))]
+                            (when (< 1 (:count0 cap))
+                                (stuff-string (u8 ",.+"))
+                                (stuff-num (dec (:count0 cap)))
+                            ))
+                    cap)
+                )]
             ;; When typing, don't type below an old message.
-            (if @keyTyped
+            (when @keyTyped
                 (compute-cmdrow))
-            (let [#_boolean _ @p_im
-                  #_boolean cmd_result (do-cmdline nil, true, (if (!= (:op_type (:oap cap)) OP_NOP) DOCMD_KEEPLINE 0))] ;; get a command line and execute it
+            (let [o'im @p_im ? (do-cmdline nil, true, (if (!= (:op_type (:oap cap)) OP_NOP) DOCMD_KEEPLINE 0))] ;; get a command line and execute it
                 ;; If 'insertmode' changed, enter or exit Insert mode.
-                (when (!= @p_im _)
+                (when (!= @p_im o'im)
                     (reset! restart_edit (if @p_im (byte \i) 0)))
                 (let [start (:op_start (:oap cap)) lmax (line-count @curbuf)]
-                    (cond (not cmd_result)
+                    (cond (not ?)
                         (clearop (:oap cap)) ;; the Ex command failed, do not execute the operator
                     (and (!= (:op_type (:oap cap)) OP_NOP) (or (< lmax (:lnum start)) (< (STRLEN (ml-get (:lnum start))) (:col start)) @did_emsg))
-                        (clearopbeep (:oap cap)) ;; the start of the operator has become invalid by the Ex command
-                    )
-                    cap
-                )
+                        (clearopbeep (:oap cap))) ;; the start of the operator has become invalid by the Ex command
+                cap)
             ))
     ))
 
