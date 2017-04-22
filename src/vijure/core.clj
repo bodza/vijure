@@ -938,7 +938,6 @@
     CPO_INSEND      \H,  ;; "I" inserts before last blank in line
     CPO_INDENT      \I,  ;; remove auto-indent more often
     CPO_JOINSP      \j,  ;; only use two spaces for join after '.'
-    CPO_KOFFSET     \K,  ;; don't wait for key code in mappings
     CPO_LITERAL     \l,  ;; take char after backslash in [] literal
     CPO_LISTWM      \L,  ;; 'list' changes wrapmargin
     CPO_SHOWMATCH   \m,
@@ -969,7 +968,7 @@
 
 ;; default values for Vim, Vi and POSIX
 (final Bytes CPO_VIM  (u8 "c"))
-(final Bytes CPO_ALL  (u8 "cDEHIjKlLmMnoqruvwxXy$!%*->#|/\\;"))
+(final Bytes CPO_ALL  (u8 "cDEHIjlLmMnoqruvwxXy$!%*->#|/\\;"))
 
 ;; characters for "p_ww" option:
 (final Bytes WW_ALL   (u8 "bshl<>[],~"))
@@ -2017,76 +2016,70 @@
     CMD_changes 4,
     CMD_close 5,
     CMD_copy 6,
-    CMD_delete 7,
-    CMD_delmarks 8,
-    CMD_digraphs 9,
-    CMD_earlier 10,
-    CMD_fixdel 11,
-    CMD_global 12,
-    CMD_history 13,
-    CMD_join 14,
-    CMD_jumps 15,
-    CMD_k 16,
-    CMD_keepmarks 17,
-    CMD_keepjumps 18,
-    CMD_keeppatterns 19,
-    CMD_list 20,
-    CMD_later 21,
-    CMD_leftabove 22,
-    CMD_lockmarks 23,
-    CMD_move 24,
-    CMD_mark 25,
-    CMD_marks 26,
-    CMD_nohlsearch 27,
-
-    CMD_number 29,
-    CMD_only 30,
-    CMD_print 31,
-    CMD_put 32,
-    CMD_redo 33,
-    CMD_redraw 34,
-    CMD_redrawstatus 35,
-    CMD_registers 36,
-    CMD_resize 37,
-    CMD_retab 38,
-    CMD_rightbelow 39,
-    CMD_substitute 40,
-    CMD_set 41,
-    CMD_silent 42,
-    CMD_smagic 43,
-    CMD_snomagic 44,
-    CMD_split 45,
-    CMD_stop 46,
-    CMD_startinsert 47,
-    CMD_startgreplace 48,
-    CMD_startreplace 49,
-    CMD_stopinsert 50,
-    CMD_suspend 51,
-    CMD_syncbind 52,
-    CMD_t 53,
-    CMD_topleft 54,
-    CMD_undo 55,
-    CMD_undojoin 56,
-    CMD_undolist 57,
-    CMD_unsilent 58,
-    CMD_vglobal 59,
-    CMD_verbose 60,
-    CMD_vertical 61,
-    CMD_vsplit 62,
-    CMD_wincmd 63,
-    CMD_yank 64,
-    CMD_z 65,
+    CMD_delmarks 7,
+    CMD_digraphs 8,
+    CMD_earlier 9,
+    CMD_fixdel 10,
+    CMD_global 11,
+    CMD_history 12,
+    CMD_join 13,
+    CMD_jumps 14,
+    CMD_k 15,
+    CMD_keepmarks 16,
+    CMD_keepjumps 17,
+    CMD_keeppatterns 18,
+    CMD_list 19,
+    CMD_later 20,
+    CMD_leftabove 21,
+    CMD_lockmarks 22,
+    CMD_move 23,
+    CMD_mark 24,
+    CMD_marks 25,
+    CMD_nohlsearch 26,
+    CMD_number 27,
+    CMD_only 28,
+    CMD_print 29,
+    CMD_put 30,
+    CMD_redo 31,
+    CMD_redraw 32,
+    CMD_redrawstatus 33,
+    CMD_registers 34,
+    CMD_resize 35,
+    CMD_retab 36,
+    CMD_rightbelow 37,
+    CMD_substitute 38,
+    CMD_set 39,
+    CMD_silent 40,
+    CMD_smagic 41,
+    CMD_snomagic 42,
+    CMD_split 43,
+    CMD_stop 44,
+    CMD_startinsert 45,
+    CMD_startgreplace 46,
+    CMD_startreplace 47,
+    CMD_stopinsert 48,
+    CMD_suspend 49,
+    CMD_syncbind 50,
+    CMD_t 51,
+    CMD_topleft 52,
+    CMD_undo 53,
+    CMD_undojoin 54,
+    CMD_undolist 55,
+    CMD_unsilent 56,
+    CMD_vglobal 57,
+    CMD_verbose 58,
+    CMD_vertical 59,
+    CMD_vsplit 60,
+    CMD_z 61,
 
 ;; commands that don't start with a lowercase letter
 
-    CMD_pound 66,
-    CMD_and 67,
-    CMD_lshift 68,
-    CMD_equal 69,
-    CMD_rshift 70,
-    CMD_tilde 71,
+    CMD_pound 62,
+    CMD_and 63,
+    CMD_equal 64,
+    CMD_tilde 65,
 
-    CMD_SIZE 72)     ;; MUST be after all real commands!
+    CMD_SIZE 66)     ;; MUST be after all real commands!
 
 ;; Arguments used for Ex commands.
 
@@ -2105,7 +2098,6 @@
         (field long         line2)          ;; the second line number or count
         (field int          addr_type)      ;; type of the count/range
         (field int          flags)          ;; extra flags after count: EXFLAG_
-        (field int          amount)         ;; number of '>' or '<' for shift command
         (field int          regname)        ;; register name (NUL if none)
         (field Bytes        errmsg)         ;; returned error message
     ])
@@ -2332,8 +2324,6 @@
 
 (atom! int      textlock)               ;; non-zero when changing text and jumping to another window or buffer is not allowed
 
-(atom! boolean  silent_mode)            ;; set to true when "-s" commandline argument used for ex
-
 (atom! pos_C    VIsual      (§_pos_C))  ;; start position of active Visual selection
 (atom! boolean  VIsual_active)          ;; whether Visual mode is active
 (atom! boolean  VIsual_select)          ;; whether Select mode is active
@@ -2525,8 +2515,6 @@
 ;; don't use 'hlsearch' temporarily
 (atom! boolean  no_hlsearch)
 
-(atom! boolean  typebuf_was_filled)     ;; received text from client or from feedkeys()
-
 (atom! boolean  term_is_xterm)          ;; xterm-like 'term'
 
 ;; Set to TRUE when an operator is being executed with virtual editing,
@@ -2686,12 +2674,8 @@
 
 ;       check_tty(params);
 
-;       if (!@silent_mode)
-;       {
-;           termcapinit(params.term);           ;; set terminal name and get terminal
-                                                ;; capabilities (will set full_screen)
-;           screen_start();                     ;; don't know where cursor is now
-;       }
+;       termcapinit(params.term);               ;; set terminal name and get terminal capabilities (will set full_screen)
+;       screen_start();                         ;; don't know where cursor is now
 
         ;; Set the default values for the options that use Rows and Columns.
 
@@ -3347,8 +3331,6 @@
 
 (defn- #_void exit_scroll []
     (§
-;       if (@silent_mode)
-;           return;
 ;       if (@newline_on_exit || @msg_didout)
 ;       {
 ;           if (msg_use_printf())
@@ -4819,21 +4801,18 @@
     (§
 ;       for (Bytes s = str; s.at(0) != NUL && (maxlen < 0 || BDIFF(s, str) < maxlen); s = s.plus(1))
 ;       {
-;           if (!(@silent_mode && @p_verbose == 0))
-;           {
-;               Bytes buf = new Bytes(4);
-;               Bytes p = buf;
+;           Bytes buf = new Bytes(4);
+;           Bytes p = buf;
 
-                ;; NL --> CR NL translation (for Unix, not for "--version")
-;               if (s.at(0) == (byte)'\n' && !@info_message)
-;                   (p = p.plus(1)).be(-1, (byte)'\r');
-;               (p = p.plus(1)).be(-1, s.at(0));
-;               p.be(0, NUL);
-;               if (@info_message)   ;; informative message, not an error
-;                   libC.fprintf(stdout, u8("%s"), buf);
-;               else
-;                   libC.fprintf(stderr, u8("%s"), buf);
-;           }
+            ;; NL --> CR NL translation (for Unix, not for "--version")
+;           if (s.at(0) == (byte)'\n' && !@info_message)
+;               (p = p.plus(1)).be(-1, (byte)'\r');
+;           (p = p.plus(1)).be(-1, s.at(0));
+;           p.be(0, NUL);
+;           if (@info_message)   ;; informative message, not an error
+;               libC.fprintf(stdout, u8("%s"), buf);
+;           else
+;               libC.fprintf(stderr, u8("%s"), buf);
 
             ;; primitive way to compute the current column
 ;           if (s.at(0) == (byte)'\r' || s.at(0) == (byte)'\n')
@@ -6013,10 +5992,6 @@
 
 ;                                       Bytes origval = oldval;
 
-                                        ;; Copy the new string into allocated memory.
-                                        ;; Can't use set_string_option_direct(),
-                                        ;; because we need to remove the backslashes.
-
                                         ;; get a bit too much
 ;                                       int newlen = STRLEN(arg) + 1;
 ;                                       if (adding || prepending || removing)
@@ -6025,11 +6000,6 @@
 ;                                       Bytes s = newval;
 
                                         ;; Copy the string, skip over escaped chars.
-                                        ;; For MS-DOS and WIN32 backslashes before normal
-                                        ;; file name characters are not removed, and keep
-                                        ;; backslash at start, for "\\machine\path", but
-                                        ;; do remove it for "\\\\machine\\path".
-                                        ;; The reverse is found in expandOldSetting().
 
 ;                                       while (arg.at(0) != NUL && !vim_iswhite(arg.at(0)))
 ;                                       {
@@ -6220,18 +6190,6 @@
 ;           }
 ;       }
 
-;       if (@silent_mode && did_show)
-;       {
-            ;; After displaying option values in silent mode.
-;           @silent_mode = false;
-;           @info_message = true;
-;           msg_putchar('\n');
-;           cursor_on();                ;; msg_start() switches it off
-;           out_flush();
-;           @silent_mode = true;
-;           @info_message = false;
-;       }
-
 ;       return true;
     ))
 
@@ -6323,19 +6281,14 @@
     ))
 
 ;; Set a string option to a new value (without checking the effect).
-;; If ("opt_idx" == -1) "name" is used, otherwise "opt_idx" is used.
 
-(defn- #_void set_string_option_direct [#_Bytes name, #_int opt_idx, #_Bytes val]
+(defn- #_void set_string_option_direct [#_Bytes name, #_Bytes val]
     (§
-;       if (opt_idx == -1)                      ;; use name
+;       int opt_idx = findoption(name);
+;       if (opt_idx < 0)                    ;; not found (should not happen)
 ;       {
-;           opt_idx = findoption(name);
-;           if (opt_idx < 0)                    ;; not found (should not happen)
-;           {
-;               emsg2(e_intern2, u8("set_string_option_direct()"));
-;               emsg2(u8("For option %s"), name);
-;               return;
-;           }
+;           emsg2(u8("E355: Unknown option: %s"), name);
+;           return;
 ;       }
 
 ;       vimoption_C v = vimoptions[opt_idx];
@@ -7386,9 +7339,6 @@
 
 (defn- #_void showoneopt [#_vimoption_C v]
     (§
-;       boolean save_silent = @silent_mode;
-
-;       @silent_mode = false;
 ;       @info_message = true;
 
 ;       Object varp = get_varp(v);
@@ -7406,7 +7356,6 @@
 ;           msg_outtrans(@nameBuff);
 ;       }
 
-;       @silent_mode = save_silent;
 ;       @info_message = false;
     ))
 
@@ -8244,23 +8193,13 @@
 ;       msg_prt_line(ml_get(lnum), list);
     ))
 
-;; Print a text line.  Also in silent mode ("ex -s").
+;; Print a text line.
 
 (defn- #_void print_line [#_long lnum, #_boolean use_number, #_boolean list]
     (§
-;       boolean save_silent = @silent_mode;
-
 ;       msg_start();
-;       @silent_mode = false;
 ;       @info_message = true;
 ;       print_line_no_prefix(lnum, use_number, list);
-;       if (save_silent)
-;       {
-;           msg_putchar('\n');
-;           cursor_on();            ;; msg_start() switches it off
-;           out_flush();
-;           @silent_mode = save_silent;
-;       }
 ;       @info_message = false;
     ))
 
@@ -11715,10 +11654,6 @@
 ;                   ea.addr_type = cmdnames[ea.cmdidx].cmd_addr_type;
 ;               else
 ;                   ea.addr_type = ADDR_LINES;
-
-                ;; :wincmd range depends on the argument.
-;               if (ea.cmdidx == CMD_wincmd && p != null)
-;                   get_wincmd_addr_type(skipwhite(p), ea);
 ;           }
 
 ;           long lnum;
@@ -11966,17 +11901,6 @@
 
 ;           ea.arg = skipwhite(p);
 
-;           if (ea.cmdidx == CMD_lshift || ea.cmdidx == CMD_rshift)
-;           {
-;               ea.amount = 1;
-;               while (ea.arg.at(0) == ea.cmd.at(0))            ;; count number of '>' or '<'
-;               {
-;                   ea.arg = ea.arg.plus(1);
-;                   ea.amount++;
-;               }
-;               ea.arg = skipwhite(ea.arg);
-;           }
-
             ;; Check for <newline> to end a shell command.
             ;; Also do this for ":global".
             ;; Any others?
@@ -12112,7 +12036,6 @@
 ;                   case CMD_topleft:
 ;                   case CMD_verbose:
 ;                   case CMD_vertical:
-;                   case CMD_wincmd:
 ;                       break;
 
 ;                   default:
@@ -12895,7 +12818,7 @@
 ;               ctrl_o.be(0, Ctrl_O);
 ;               ctrl_o.be(1, NUL);
 
-;               ins_typebuf(ctrl_o, 0, true);
+;               ins_typebuf(ctrl_o);
 ;           }
 ;       }
     ))
@@ -12919,85 +12842,6 @@
 ;           ui_delay(1000 < msec - done ? 1000 : msec - done, true);
 ;           ui_breakcheck();
 ;       }
-    ))
-
-(defn- #_void ex_wincmd [#_exarg_C eap]
-    (§
-;       int xchar = NUL;
-;       Bytes p;
-
-;       if (eap.arg.at(0) == (byte)'g' || eap.arg.at(0) == Ctrl_G)
-;       {
-                ;; CTRL-W g and CTRL-W CTRL-G have an extra command character.
-;           if (eap.arg.at(1) == NUL)
-;           {
-;               emsg(e_invarg);
-;               return;
-;           }
-;           xchar = eap.arg.at(1);
-;           p = eap.arg.plus(2);
-;       }
-;       else
-;           p = eap.arg.plus(1);
-
-;       eap.nextcmd = check_nextcmd(p);
-;       p = skipwhite(p);
-;       if (p.at(0) != NUL && p.at(0) != (byte)'"' && eap.nextcmd == null)
-;           emsg(e_invarg);
-;       else if (!eap.skip)
-;       {
-                ;; Pass flags on for ":vertical wincmd ]".
-;           @postponed_split_flags = @cmdmod.split;
-;           do_window(eap.arg.at(0), (0 < eap.addr_count) ? eap.line2 : 0, xchar);
-;           @postponed_split_flags = 0;
-;       }
-    ))
-
-;; Handle command that work like operators: ":delete", ":yank", ":>" and ":<".
-
-(defn- #_void ex_operators [#_exarg_C eap]
-    (§
-;       oparg_C oa = §_oparg_C();
-
-;       oa.regname = eap.regname;
-;       oa.op_start.lnum = eap.line1;
-;       oa.op_end.lnum = eap.line2;
-;       oa.line_count = eap.line2 - eap.line1 + 1;
-;       oa.motion_type = MLINE;
-;       @virtual_op = FALSE;
-
-;       if (eap.cmdidx != CMD_yank)     ;; position cursor for undo
-;       {
-;           setpcmark();
-;           @curwin.w_cursor.lnum = eap.line1;
-;           beginline(BL_SOL | BL_FIX);
-;       }
-
-;       if (@VIsual_active)
-;           end_visual_mode();
-
-;       switch (eap.cmdidx)
-;       {
-;           case CMD_delete:
-;               oa.op_type = OP_DELETE;
-;               op_delete(oa);
-;               break;
-
-;           case CMD_yank:
-;               oa.op_type = OP_YANK;
-;               op_yank(oa, false, true);
-;               break;
-
-;           default:    ;; CMD_rshift or CMD_lshift
-;               if (eap.cmdidx == CMD_rshift)
-;                   oa.op_type = OP_RSHIFT;
-;               else
-;                   oa.op_type = OP_LSHIFT;
-;               op_shift(oa, false, eap.amount);
-;               break;
-;       }
-;       @virtual_op = MAYBE;
-;       ex_may_print(eap);
     ))
 
 ;; ":put".
@@ -19619,11 +19463,11 @@
 ;       {
             ;; insert NL between lines and after last line if type is MLINE
 ;           if (@y_current.y_type == MLINE || i < @y_current.y_size - 1)
-;               ins_typebuf(u8("\n"), 0, true);
+;               ins_typebuf(u8("\n"));
 
 ;           Bytes escaped = vim_strsave_escape_special(@y_current.y_array[i]);
 
-;           ins_typebuf(escaped, 0, true);
+;           ins_typebuf(escaped);
 ;       }
 
 ;       @execReg = true;         ;; disable the 'q' command
@@ -19652,7 +19496,7 @@
 ;               buf.be(1, NUL);
 ;           }
 
-;           ins_typebuf(buf, 0, true);
+;           ins_typebuf(buf);
 ;           @restart_edit = NUL;
 ;       }
     ))
@@ -19666,16 +19510,16 @@
 ;       put_reedit_in_typebuf();
 
 ;       if (colon)
-;           ins_typebuf(u8("\n"), 0, true);
+;           ins_typebuf(u8("\n"));
 
 ;       Bytes p = (esc) ? vim_strsave_escape_special(s) : s;
 ;       if (p == null)
 ;           return false;
 
-;       ins_typebuf(p, 0, true);
+;       ins_typebuf(p);
 
 ;       if (colon)
-;           ins_typebuf(u8(":"), 0, true);
+;           ins_typebuf(u8(":"));
 
 ;       return true;
     ))
@@ -23578,9 +23422,6 @@
 ;;  the middle for typeahead and
 ;;  room for new characters (which needs to be 3 * MAXMAPLEN).
 
-(final int TYPELEN_INIT    (* 5 (+ MAXMAPLEN 3)))
-(final Bytes    typebuf_init    (Bytes. TYPELEN_INIT))  ;; initial typebuf.tb_buf
-
 (atom! int      last_recorded_len)          ;; number of last recorded chars
 
 ;; Free and clear a buffer.
@@ -24134,15 +23975,15 @@
 ;       @block_redo = false;
     ))
 
-;; Initialize typebuf.tb_buf to point to typebuf_init.
-;; calloc() cannot be used here: In out-of-memory situations it would
-;; be impossible to type anything.
+(final int TYPELEN_INIT    (* 5 (+ MAXMAPLEN 3)))
+
+;; Initialize typebuf.
 
 (defn- #_void init_typebuf []
     (§
 ;       if (@typebuf.tb_buf == null)
 ;       {
-;           @typebuf.tb_buf = typebuf_init;
+;           @typebuf.tb_buf = (Bytes. TYPELEN_INIT);
 ;           @typebuf.tb_buflen = TYPELEN_INIT;
 ;           @typebuf.tb_len = 0;
 ;           @typebuf.tb_off = 0;
@@ -24150,11 +23991,9 @@
 ;       }
     ))
 
-;; Insert a string in position 'offset' in the typeahead buffer.
-;;
-;; If nottyped is true, the string does not return keyTyped (don't use when offset is non-zero!).
+;; Insert a string in the typeahead buffer.
 
-(defn- #_void ins_typebuf [#_Bytes str, #_int offset, #_boolean nottyped]
+(defn- #_void ins_typebuf [#_Bytes str]
     (§
 ;       init_typebuf();
 ;       if (++@typebuf.tb_change_cnt == 0)
@@ -24164,7 +24003,7 @@
 
         ;; Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
 
-;       if (offset == 0 && addlen <= @typebuf.tb_off)
+;       if (addlen <= @typebuf.tb_off)
 ;       {
 ;           @typebuf.tb_off -= addlen;
 ;           BCOPY(@typebuf.tb_buf, @typebuf.tb_off, str, 0, addlen);
@@ -24182,16 +24021,15 @@
 ;           Bytes newbuf = new Bytes(newlen);
 ;           @typebuf.tb_buflen = newlen;
 
-            ;; copy the old chars, before the insertion point
-;           BCOPY(newbuf, newoff, @typebuf.tb_buf, @typebuf.tb_off, offset);
             ;; copy the new chars
-;           BCOPY(newbuf, newoff + offset, str, 0, addlen);
+;           BCOPY(newbuf, newoff, str, 0, addlen);
             ;; copy the old chars, after the insertion point, including the NUL at the end
-;           BCOPY(newbuf, newoff + offset + addlen, @typebuf.tb_buf, @typebuf.tb_off + offset, @typebuf.tb_len - offset + 1);
-;           @typebuf.tb_buf = newbuf;
+;           BCOPY(newbuf, newoff + addlen, @typebuf.tb_buf, @typebuf.tb_off, @typebuf.tb_len + 1);
 
+;           @typebuf.tb_buf = newbuf;
 ;           @typebuf.tb_off = newoff;
 ;       }
+
 ;       @typebuf.tb_len += addlen;
     ))
 
@@ -24215,7 +24053,7 @@
 ;           buf.be(utf_char2bytes(c, buf), NUL);
 ;       }
 
-;       ins_typebuf(buf, 0, !@keyTyped);
+;       ins_typebuf(buf);
     ))
 
 ;; Return true if the typeahead buffer was changed (while waiting for a character to arrive).
@@ -24227,38 +24065,33 @@
 (defn- #_boolean typebuf_changed [#_int tb_change_cnt]
     ;; tb_change_cnt: old value of typebuf.tb_change_cnt
     (§
-;       return (tb_change_cnt != 0 && (@typebuf.tb_change_cnt != tb_change_cnt || @typebuf_was_filled));
+;       return (tb_change_cnt != 0 && @typebuf.tb_change_cnt != tb_change_cnt);
     ))
 
-;; remove "len" characters from typebuf.tb_buf[typebuf.tb_off + offset]
+;; remove "len" characters from typebuf.tb_buf[typebuf.tb_off]
 
-(defn- #_void del_typebuf [#_int len, #_int offset]
+(defn- #_void del_typebuf [#_int len]
     (§
 ;       if (len == 0)
 ;           return;         ;; nothing to do
 
 ;       @typebuf.tb_len -= len;
 
-;       if (offset == 0 && 3 * MAXMAPLEN + 3 <= @typebuf.tb_buflen - (@typebuf.tb_off + len))
+;       if (3 * MAXMAPLEN + 3 <= @typebuf.tb_buflen - (@typebuf.tb_off + len))
 ;           @typebuf.tb_off += len;
 ;       else
 ;       {
-;           int i = @typebuf.tb_off + offset;
+;           int i = @typebuf.tb_off;
 
             ;; Leave some extra room at the end to avoid reallocation.
 
 ;           if (MAXMAPLEN < @typebuf.tb_off)
-;           {
-;               BCOPY(@typebuf.tb_buf, MAXMAPLEN, @typebuf.tb_buf, @typebuf.tb_off, offset);
 ;               @typebuf.tb_off = MAXMAPLEN;
-;           }
+
             ;; adjust typebuf.tb_buf (include the NUL at the end)
-;           BCOPY(@typebuf.tb_buf, @typebuf.tb_off + offset, @typebuf.tb_buf, i + len, @typebuf.tb_len - offset + 1);
+;           BCOPY(@typebuf.tb_buf, @typebuf.tb_off, @typebuf.tb_buf, i + len, @typebuf.tb_len + 1);
 ;       }
 
-        ;; Reset the flag that text received from a client or from feedkeys()
-        ;; was inserted in the typeahead buffer.
-;       @typebuf_was_filled = false;
 ;       if (++@typebuf.tb_change_cnt == 0)
 ;           @typebuf.tb_change_cnt = 1;
     ))
@@ -24274,10 +24107,10 @@
 ;       if (@Recording)
 ;           @last_recorded_len += len;
 
-;       for (int todo = len; 0 < todo--; )
+;       for (int i = 0; i < len; i++)
 ;       {
             ;; Handle one byte at a time; no translation to be done.
-;           byte c = (chars = chars.plus(1)).at(-1);
+;           byte c = chars.at(i);
 ;           updatescript(c);
 
 ;           if (@Recording)
@@ -24673,7 +24506,7 @@
 
 ;                       if ((@no_mapping == 0 || @allow_keys != 0) && !timedout)
 ;                       {
-;                           keylen = check_termcode(1, null, 0, null);
+;                           keylen = check_termcode(null, 0, null);
 
                             ;; When getting a partial match, but the last characters were not typed,
                             ;; don't wait for a typed character to complete the termcode.
@@ -24694,7 +24527,7 @@
                                 ;; write char to script file(s)
 ;                               gotchars(@typebuf.tb_buf.plus(@typebuf.tb_off), 1);
 
-;                               del_typebuf(1, 0);
+;                               del_typebuf(1);
 ;                           }
 ;                           break;          ;; got character, break for loop
 ;                       }
@@ -24796,7 +24629,7 @@
 ;                   @typebuf.tb_len += len;
 
                     ;; buffer full, don't map
-;                   if (0 + MAXMAPLEN <= @typebuf.tb_len)
+;                   if (MAXMAPLEN <= @typebuf.tb_len)
 ;                   {
 ;                       timedout = true;
 ;                       continue;
@@ -24826,8 +24659,7 @@
 ;                       if ((@State & (NORMAL | INSERT)) != 0 && @State != HITRETURN)
 ;                       {
                             ;; this looks nice when typing a dead character map
-;                           if ((@State & INSERT) != 0
-;                               && mb_ptr2cells(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len - 1)) == 1)
+;                           if ((@State & INSERT) != 0 && mb_ptr2cells(@typebuf.tb_buf.plus(@typebuf.tb_off + @typebuf.tb_len - 1)) == 1)
 ;                           {
 ;                               edit_putchar(@typebuf.tb_buf.at(@typebuf.tb_off + @typebuf.tb_len - 1), false);
 ;                               setcursor();    ;; put cursor back where it belongs
@@ -25034,13 +24866,10 @@
     ))
 
 ;; Return true when bytes are in the input buffer or in the typeahead buffer.
-;; Normally the input buffer would be sufficient, but the server_to_input_buf()
-;; or feedkeys() may insert characters in the typeahead buffer while we are
-;; waiting for input to arrive.
 
 (defn- #_boolean input_available []
     (§
-;       return (!is_input_buf_empty() || @typebuf_was_filled);
+;       return !is_input_buf_empty();
     ))
 
 ;; Escape KB_SPECIAL so that the result can be put in the typeahead buffer.
@@ -51042,7 +50871,7 @@
 ;               waited++;                   ;; keep track of the waiting time
 
             ;; Incomplete termcode and not timed out yet: get more characters.
-;           n = check_termcode(1, buf, buflen, len);
+;           n = check_termcode(buf, buflen, len);
 ;           if (n < 0 && (!@p_ttimeout || waited * 100 < (@p_ttm < 0 ? @p_tm : @p_ttm)))
 ;               continue;
 
@@ -54216,21 +54045,8 @@
 ;       else
 ;           nr_colors.be(0, NUL);
 
-;       set_string_option_direct(u8("t_Co"), -1, nr_colors);
+;       set_string_option_direct(u8("t_Co"), nr_colors);
     ))
-
-(final Bytes* key_names
-    [
-        ;; Do this one first, it may cause a screen redraw.
-        (u8 "Co"),
-        (u8 "ku"), (u8 "kd"), (u8 "kr"), (u8 "kl"),
-        (u8 "#2"), (u8 "#4"), (u8 "%i"), (u8 "*7"),
-        (u8 "k1"), (u8 "k2"), (u8 "k3"), (u8 "k4"), (u8 "k5"), (u8 "k6"),
-        (u8 "k7"), (u8 "k8"), (u8 "k9"), (u8 "k;"), (u8 "F1"), (u8 "F2"),
-        (u8 "%1"), (u8 "&8"), (u8 "kb"), (u8 "kI"), (u8 "kD"), (u8 "kh"),
-        (u8 "@7"), (u8 "kP"), (u8 "kN"), (u8 "K1"), (u8 "K3"), (u8 "K4"), (u8 "K5"), (u8 "kB"),
-        null
-    ])
 
 ;; Set terminal options for terminal "term".
 ;; Return true if terminal 'term' was found in a termcap, false otherwise.
@@ -54239,10 +54055,6 @@
 
 (defn- #_boolean set_termname [#_Bytes term]
     (§
-        ;; In silent mode (ex -s) we don't use the 'term' option.
-;       if (@silent_mode)
-;           return true;
-
 ;       if (STRNCMP(term, u8("builtin_"), 8) == 0)
 ;           term = term.plus(8);
 
@@ -54271,7 +54083,7 @@
 ;               out_flush();
 ;               ui_delay(2000, true);
 ;           }
-;           set_string_option_direct(u8("term"), -1, term);
+;           set_string_option_direct(u8("term"), term);
 ;           libc.fflush(stderr);
 ;       }
 ;       out_flush();
@@ -54377,7 +54189,7 @@
 ;       if (term == null || term.at(0) == NUL)
 ;           term = DEFAULT_TERM;
 
-;       set_string_option_direct(u8("term"), -1, term);
+;       set_string_option_direct(u8("term"), term);
 
         ;; Set the default terminal name.
 ;       set_string_default(u8("term"), term);
@@ -55304,7 +55116,7 @@
     ))
 
 ;; Check if typebuf.tb_buf[] contains a terminal key code.
-;; Check from typebuf.tb_buf[typebuf.tb_off] to typebuf.tb_buf[typebuf.tb_off + max_offset].
+;; Check at typebuf.tb_buf[typebuf.tb_off].
 ;; Return 0 for no match, -1 for partial match, > 0 for full match.
 ;; Return KEYLEN_REMOVED when a key code was deleted.
 ;; With a match, the match is removed, the replacement code is inserted in
@@ -55312,238 +55124,214 @@
 ;; When "buf" is not null, buf[bufsize] is used instead of typebuf.tb_buf[].
 ;; "buflen" is then the length of the string in buf[] and is updated for inserts and deletes.
 
-(defn- #_int check_termcode [#_int max_offset, #_Bytes buf, #_int bufsize, #_int* buflen]
+(defn- #_int check_termcode [#_Bytes buf, #_int bufsize, #_int* buflen]
     (§
-;       int retval = 0;
-
-;       boolean cpo_koffset = (vim_strbyte(@p_cpo, CPO_KOFFSET) != null);
-
         ;; Speed up the checks for terminal codes by gathering all first bytes used in termleader[].
         ;; Often this is just a single <Esc>.
 
 ;       if (@need_gather)
 ;           gather_termleader();
 
+;       Bytes tp;
+;       int len;
+
+;       if (buf == null)
+;       {
+;           if (@typebuf.tb_len <= 0)
+;               return 0;
+;           tp = @typebuf.tb_buf.plus(@typebuf.tb_off);
+;           len = @typebuf.tb_len;      ;; length of the input
+;       }
+;       else
+;       {
+;           if (buflen[0] <= 0)
+;               return 0;
+;           tp = buf;
+;           len = buflen[0];
+;       }
+
+        ;; Don't check characters after KB_SPECIAL, those are already
+        ;; translated terminal chars (avoid translating ~@^Hx).
+
+;       if (tp.at(0) == KB_SPECIAL)        ;; there are always 2 extra characters
+;           return 0;
+
+        ;; Skip this position if the character does not appear as the first character in 'term_strings'.
+        ;; This speeds up a lot, since most termcodes start with the same character (ESC).
+
+;       Bytes q;
+;       for (q = termleader; q.at(0) != NUL && q.at(0) != tp.at(0); q = q.plus(1))
+            ;
+;       if (q.at(0) == NUL)
+;           return 0;
+
+        ;; Skip this position if "p_ek" is not set and *tp is an ESC and we are in Insert mode.
+
+;       if (tp.at(0) == ESC && !@p_ek && (@State & INSERT) != 0)
+;           return 0;
+
+;       Bytes key_name = new Bytes(2);
+;       int[] modifiers = { 0 };      ;; no modifiers yet
+
 ;       int slen = 0;
 
-        ;; Check at several positions in typebuf.tb_buf[], to catch something like "x<Up>"
-        ;; that can be mapped.  Stop at max_offset, because characters after that cannot be
-        ;; used for mapping, and with @r commands typebuf.tb_buf[] can become very long.
-        ;; This is used often, KEEP IT FAST!
-
-;       for (int offset = 0; offset < max_offset; offset++)
+;       for (int idx = 0; idx < @tc_len; idx++)
 ;       {
-;           Bytes tp;
-;           int len;
+;           slen = @termcodes[idx].len;
 
-;           if (buf == null)
+;           if (STRNCMP(@termcodes[idx].code, tp, (len < slen) ? len : slen) == 0)
 ;           {
-;               if (@typebuf.tb_len <= offset)
-;                   break;
-;               tp = @typebuf.tb_buf.plus(@typebuf.tb_off + offset);
-;               len = @typebuf.tb_len - offset;      ;; length of the input
-;           }
-;           else
-;           {
-;               if (buflen[0] <= offset)
-;                   break;
-;               tp = buf.plus(offset);
-;               len = buflen[0] - offset;
-;           }
+;               if (len < slen)             ;; got a partial sequence
+;                   return -1;              ;; need to get more chars
 
-            ;; Don't check characters after KB_SPECIAL, those are already
-            ;; translated terminal chars (avoid translating ~@^Hx).
+                ;; When found a keypad key, check if there is another key that matches and use that one.
+                ;; This makes <Home> to be found instead of <kHome> when they produce the same key code.
 
-;           if (tp.at(0) == KB_SPECIAL)
-;           {
-;               offset += 2;        ;; there are always 2 extra characters
-;               continue;
-;           }
-
-            ;; Skip this position if the character does not appear as the first character in 'term_strings'.
-            ;; This speeds up a lot, since most termcodes start with the same character (ESC).
-
-;           Bytes q;
-;           for (q = termleader; q.at(0) != NUL && q.at(0) != tp.at(0); q = q.plus(1))
-                ;
-;           if (q.at(0) == NUL)
-;               continue;
-
-            ;; Skip this position if "p_ek" is not set and *tp is an ESC and we are in Insert mode.
-
-;           if (tp.at(0) == ESC && !@p_ek && (@State & INSERT) != 0)
-;               continue;
-
-;           Bytes key_name = new Bytes(2);
-;           int[] modifiers = { 0 };      ;; no modifiers yet
-
-;           int idx;
-;           for (idx = 0; idx < @tc_len; idx++)
-;           {
-                ;; Ignore the entry if we are not at the start of typebuf.tb_buf[]
-                ;; and there are not enough characters to make a match.
-                ;; But only when the 'K' flag is in 'cpoptions'.
-
-;               slen = @termcodes[idx].len;
-;               if (cpo_koffset && offset != 0 && len < slen)
-;                   continue;
-
-;               if (STRNCMP(@termcodes[idx].code, tp, (len < slen) ? len : slen) == 0)
+;               if (@termcodes[idx].name.at(0) == (byte)'K' && asc_isdigit(@termcodes[idx].name.at(1)))
 ;               {
-;                   if (len < slen)             ;; got a partial sequence
-;                       return -1;              ;; need to get more chars
+;                   for (int j = idx + 1; j < @tc_len; j++)
+;                       if (@termcodes[j].len == slen && STRNCMP(@termcodes[idx].code, @termcodes[j].code, slen) == 0)
+;                       {
+;                           idx = j;
+;                           break;
+;                       }
+;               }
 
-                    ;; When found a keypad key, check if there is another key that matches and use that one.
-                    ;; This makes <Home> to be found instead of <kHome> when they produce the same key code.
+;               key_name.be(0, @termcodes[idx].name.at(0));
+;               key_name.be(1, @termcodes[idx].name.at(1));
+;               break;
+;           }
 
-;                   if (@termcodes[idx].name.at(0) == (byte)'K' && asc_isdigit(@termcodes[idx].name.at(1)))
+            ;; Check for code with modifier, like xterm uses:
+            ;; <Esc>[123;*X (modslen == slen - 3), also <Esc>O*X and <M-O>*X (modslen == slen - 2).
+            ;; When there is a modifier the * matches a number.
+            ;; When there is no modifier the ;* or * is omitted.
+
+;           if (0 < @termcodes[idx].modlen)
+;           {
+;               int modslen = @termcodes[idx].modlen;
+
+;               if (STRNCMP(@termcodes[idx].code, tp, (len < modslen) ? len : modslen) == 0)
+;               {
+;                   if (len <= modslen)     ;; got a partial sequence
+;                       return -1;          ;; need to get more chars
+
+;                   if (tp.at(modslen) == @termcodes[idx].code.at(slen - 1))
+;                       slen = modslen + 1; ;; no modifiers
+;                   else if (tp.at(modslen) != (byte)';' && modslen == slen - 3)
+;                       continue;   ;; no match
+;                   else
 ;                   {
-;                       for (int j = idx + 1; j < @tc_len; j++)
-;                           if (@termcodes[j].len == slen && STRNCMP(@termcodes[idx].code, @termcodes[j].code, slen) == 0)
-;                           {
-;                               idx = j;
-;                               break;
-;                           }
+                        ;; Skip over the digits, the final char must follow.
+;                       int j;
+;                       for (j = slen - 2; j < len && asc_isdigit(tp.at(j)); j++)
+                            ;
+;                       j++;
+;                       if (len < j)        ;; got a partial sequence
+;                           return -1;      ;; need to get more chars
+;                       if (tp.at(j - 1) != @termcodes[idx].code.at(slen - 1))
+;                           continue;       ;; no match
+
+                        ;; Match!  Convert modifier bits.
+;                       int n = libC.atoi(tp.plus(slen - 2)) - 1;
+;                       if ((n & 1) != 0)
+;                           modifiers[0] |= MOD_MASK_SHIFT;
+;                       if ((n & 2) != 0)
+;                           modifiers[0] |= MOD_MASK_ALT;
+;                       if ((n & 4) != 0)
+;                           modifiers[0] |= MOD_MASK_CTRL;
+;                       if ((n & 8) != 0)
+;                           modifiers[0] |= MOD_MASK_META;
+
+;                       slen = j;
 ;                   }
 
 ;                   key_name.be(0, @termcodes[idx].name.at(0));
 ;                   key_name.be(1, @termcodes[idx].name.at(1));
 ;                   break;
 ;               }
-
-                ;; Check for code with modifier, like xterm uses:
-                ;; <Esc>[123;*X (modslen == slen - 3), also <Esc>O*X and <M-O>*X (modslen == slen - 2).
-                ;; When there is a modifier the * matches a number.
-                ;; When there is no modifier the ;* or * is omitted.
-
-;               if (0 < @termcodes[idx].modlen)
-;               {
-;                   int modslen = @termcodes[idx].modlen;
-;                   if (cpo_koffset && offset != 0 && len < modslen)
-;                       continue;
-
-;                   if (STRNCMP(@termcodes[idx].code, tp, (len < modslen) ? len : modslen) == 0)
-;                   {
-;                       if (len <= modslen)     ;; got a partial sequence
-;                           return -1;          ;; need to get more chars
-
-;                       if (tp.at(modslen) == @termcodes[idx].code.at(slen - 1))
-;                           slen = modslen + 1; ;; no modifiers
-;                       else if (tp.at(modslen) != (byte)';' && modslen == slen - 3)
-;                           continue;   ;; no match
-;                       else
-;                       {
-                            ;; Skip over the digits, the final char must follow.
-;                           int j;
-;                           for (j = slen - 2; j < len && asc_isdigit(tp.at(j)); j++)
-                                ;
-;                           j++;
-;                           if (len < j)        ;; got a partial sequence
-;                               return -1;      ;; need to get more chars
-;                           if (tp.at(j - 1) != @termcodes[idx].code.at(slen - 1))
-;                               continue;       ;; no match
-
-                            ;; Match!  Convert modifier bits.
-;                           int n = libC.atoi(tp.plus(slen - 2)) - 1;
-;                           if ((n & 1) != 0)
-;                               modifiers[0] |= MOD_MASK_SHIFT;
-;                           if ((n & 2) != 0)
-;                               modifiers[0] |= MOD_MASK_ALT;
-;                           if ((n & 4) != 0)
-;                               modifiers[0] |= MOD_MASK_CTRL;
-;                           if ((n & 8) != 0)
-;                               modifiers[0] |= MOD_MASK_META;
-
-;                           slen = j;
-;                       }
-
-;                       key_name.be(0, @termcodes[idx].name.at(0));
-;                       key_name.be(1, @termcodes[idx].name.at(1));
-;                       break;
-;                   }
-;               }
 ;           }
-
-;           if (key_name.at(0) == NUL)
-;               continue;           ;; no match at this position, try next one
-
-            ;; We only get here when we have a complete termcode match.
-
-            ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
-
-;           int key = handle_x_keys(TERMCAP2KEY(key_name.at(0), key_name.at(1)));
-
-;           Bytes string = new Bytes(MAX_KEY_CODE_LEN + 1);
-
-            ;; Add any modifier codes to our string.
-
-;           int new_slen = 0;           ;; length of what will replace the termcode
-;           if (modifiers[0] != 0)
-;           {
-                ;; Some keys have the modifier included.
-                ;; Need to handle that here to make mappings work.
-;               key = simplify_key(key, modifiers);
-;               if (modifiers[0] != 0)
-;               {
-;                   string.be(new_slen++, KB_SPECIAL);
-;                   string.be(new_slen++, KS_MODIFIER);
-;                   string.be(new_slen++, modifiers[0]);
-;               }
-;           }
-
-            ;; Finally, add the special key code to our string.
-;           key_name.be(0, KEY2TERMCAP0(key));
-;           key_name.be(1, KEY2TERMCAP1(key));
-;           if (key_name.at(0) == KS_KEY)
-;           {
-                ;; from ":set <M-b>=xx"
-;               new_slen += utf_char2bytes(char_u(key_name.at(1)), string.plus(new_slen));
-;           }
-;           else if (new_slen == 0 && key_name.at(0) == KS_EXTRA && key_name.at(1) == KE_IGNORE)
-;           {
-                ;; Do not put K_IGNORE into the buffer, do return KEYLEN_REMOVED to indicate what happened.
-;               retval = KEYLEN_REMOVED;
-;           }
-;           else
-;           {
-;               string.be(new_slen++, KB_SPECIAL);
-;               string.be(new_slen++, key_name.at(0));
-;               string.be(new_slen++, key_name.at(1));
-;           }
-;           string.be(new_slen, NUL);
-
-;           int extra = new_slen - slen;
-;           if (buf == null)
-;           {
-;               if (extra < 0)
-                    ;; remove matched chars, taking care of noremap
-;                   del_typebuf(-extra, offset);
-;               else if (0 < extra)
-                    ;; insert the extra space we need
-;                   ins_typebuf(string.plus(slen), offset, false);
-
-;               BCOPY(@typebuf.tb_buf, @typebuf.tb_off + offset, string, 0, new_slen);
-;           }
-;           else
-;           {
-;               if (extra < 0)
-                    ;; remove matched characters
-;                   BCOPY(buf, offset, buf, offset - extra, buflen[0] + offset + extra);
-;               else if (0 < extra)
-;               {
-                    ;; Insert the extra space we need.  If there is insufficient space return -1.
-;                   if (bufsize <= buflen[0] + extra + new_slen)
-;                       return -1;
-;                   BCOPY(buf, offset + extra, buf, offset, buflen[0] - offset);
-;               }
-;               BCOPY(buf, offset, string, 0, new_slen);
-;               buflen[0] += extra + new_slen;
-;           }
-
-;           return (retval != 0) ? retval : len + extra + offset;
 ;       }
 
-;       return 0;                       ;; no match found
+;       if (key_name.at(0) == NUL)
+;           return 0;               ;; no match found
+
+        ;; We only get here when we have a complete termcode match.
+
+        ;; Change <xHome> to <Home>, <xUp> to <Up>, etc.
+
+;       int key = handle_x_keys(TERMCAP2KEY(key_name.at(0), key_name.at(1)));
+
+;       Bytes string = new Bytes(MAX_KEY_CODE_LEN + 1);
+
+        ;; Add any modifier codes to our string.
+
+;       int new_slen = 0;           ;; length of what will replace the termcode
+;       if (modifiers[0] != 0)
+;       {
+            ;; Some keys have the modifier included.
+            ;; Need to handle that here to make mappings work.
+;           key = simplify_key(key, modifiers);
+;           if (modifiers[0] != 0)
+;           {
+;               string.be(new_slen++, KB_SPECIAL);
+;               string.be(new_slen++, KS_MODIFIER);
+;               string.be(new_slen++, modifiers[0]);
+;           }
+;       }
+
+;       int retval = 0;
+
+        ;; Finally, add the special key code to our string.
+;       key_name.be(0, KEY2TERMCAP0(key));
+;       key_name.be(1, KEY2TERMCAP1(key));
+;       if (key_name.at(0) == KS_KEY)
+;       {
+            ;; from ":set <M-b>=xx"
+;           new_slen += utf_char2bytes(char_u(key_name.at(1)), string.plus(new_slen));
+;       }
+;       else if (new_slen == 0 && key_name.at(0) == KS_EXTRA && key_name.at(1) == KE_IGNORE)
+;       {
+            ;; Do not put K_IGNORE into the buffer, do return KEYLEN_REMOVED to indicate what happened.
+;           retval = KEYLEN_REMOVED;
+;       }
+;       else
+;       {
+;           string.be(new_slen++, KB_SPECIAL);
+;           string.be(new_slen++, key_name.at(0));
+;           string.be(new_slen++, key_name.at(1));
+;       }
+;       string.be(new_slen, NUL);
+
+;       int extra = new_slen - slen;
+;       if (buf == null)
+;       {
+;           if (extra < 0)
+                ;; remove matched chars, taking care of noremap
+;               del_typebuf(-extra);
+;           else if (0 < extra)
+                ;; insert the extra space we need
+;               ins_typebuf(string.plus(slen));
+
+;           BCOPY(@typebuf.tb_buf, @typebuf.tb_off, string, 0, new_slen);
+;       }
+;       else
+;       {
+;           if (extra < 0)
+                ;; remove matched characters
+;               BCOPY(buf, 0, buf, -extra, buflen[0] + extra);
+;           else if (0 < extra)
+;           {
+                ;; Insert the extra space we need.  If there is insufficient space return -1.
+;               if (bufsize <= buflen[0] + extra + new_slen)
+;                   return -1;
+;               BCOPY(buf, extra, buf, 0, buflen[0]);
+;           }
+;           BCOPY(buf, 0, string, 0, new_slen);
+;           buflen[0] += extra + new_slen;
+;       }
+
+;       return (retval != 0) ? retval : len + extra;
     ))
 
 ;; Gather the first characters in the terminal key codes into a string.
@@ -55685,11 +55473,7 @@
 
 (defn- #_void ui_write [#_Bytes s, #_int len]
     (§
-        ;; Don't output anything in silent mode ("ex -s") unless 'verbose' set.
-;       if (!(@silent_mode && @p_verbose == 0))
-;       {
-;           mch_write(s, len);
-;       }
+;       mch_write(s, len);
     ))
 
 ;; ui_inchar(): low level input function.
@@ -55895,8 +55679,13 @@
 ;           if (!exit_on_error)
 ;               return;
 ;       }
+
 ;       if (len <= 0 && !@got_int)
-;           read_error_exit();
+;       {
+;           STRCPY(@ioBuff, u8("Vim: Error reading input, exiting...\n"));
+;           preserve_exit();
+;       }
+
 ;       if (0 < len)
 ;           @did_read_something = true;
 ;       if (@got_int)
@@ -55928,17 +55717,6 @@
 ;               @inbufcount++;
 ;           }
 ;       }
-    ))
-
-;; Exit because of an input read error.
-
-(defn- #_void read_error_exit []
-    (§
-;       if (@silent_mode)    ;; Normal way to exit for "ex -s"
-;           getout(0);
-
-;       STRCPY(@ioBuff, u8("Vim: Error reading input, exiting...\n"));
-;       preserve_exit();
     ))
 
 ;; May update the shape of the cursor.
@@ -61866,85 +61644,6 @@
 ;       }
     ))
 
-;; Figure out the address type for ":wnncmd".
-
-(defn- #_void get_wincmd_addr_type [#_Bytes arg, #_exarg_C eap]
-    (§
-;       switch (arg.at(0))
-;       {
-;           case 'S':
-;           case Ctrl_S:
-;           case 's':
-;           case Ctrl_N:
-;           case 'n':
-;           case 'j':
-;           case Ctrl_J:
-;           case 'k':
-;           case Ctrl_K:
-;           case 'T':
-;           case Ctrl_R:
-;           case 'r':
-;           case 'R':
-;           case 'K':
-;           case 'J':
-;           case '+':
-;           case '-':
-;           case Ctrl__:
-;           case '_':
-;           case '|':
-;           case ']':
-;           case Ctrl_RSB:
-;           case 'g':
-;           case Ctrl_G:
-;           case Ctrl_V:
-;           case 'v':
-;           case 'h':
-;           case Ctrl_H:
-;           case 'l':
-;           case Ctrl_L:
-;           case 'H':
-;           case 'L':
-;           case '>':
-;           case '<':
-                ;; window size or any count
-;               eap.addr_type = ADDR_LINES;
-;               break;
-
-;           case Ctrl_HAT:
-;           case '^':
-                ;; buffer number
-;               eap.addr_type = ADDR_BUFFERS;
-;               break;
-
-;           case Ctrl_Q:
-;           case 'q':
-;           case Ctrl_C:
-;           case 'c':
-;           case Ctrl_O:
-;           case 'o':
-;           case Ctrl_W:
-;           case 'w':
-;           case 'W':
-;           case 'x':
-;           case Ctrl_X:
-                ;; window number
-;               eap.addr_type = ADDR_WINDOWS;
-;               break;
-
-;           case 't':
-;           case Ctrl_T:
-;           case 'b':
-;           case Ctrl_B:
-;           case 'p':
-;           case Ctrl_P:
-;           case '=':
-;           case CAR:
-                ;; no count
-;               eap.addr_type = 0;
-;               break;
-;       }
-    ))
-
 (defn- #_void cmd_with_count [#_Bytes cmd, #_Bytes bufp, #_int bufsize, #_long Prenum]
     (§
 ;       int len = STRLEN(cmd);
@@ -67117,7 +66816,6 @@
         (->cmdname_C (u8 "changes"),       ex_changes,          CMDWIN,                                                    ADDR_LINES),
         (->cmdname_C (u8 "close"),         ex_close,         (| BANG RANGE NOTADR COUNT CMDWIN),                           ADDR_WINDOWS),
         (->cmdname_C (u8 "copy"),          ex_copymove,      (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "delete"),        ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "delmarks"),      ex_delmarks,      (| BANG EXTRA CMDWIN),                                        ADDR_LINES),
         (->cmdname_C (u8 "digraphs"),      ex_digraphs,      (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "earlier"),       ex_later,         (| EXTRA NOSPC CMDWIN),                                       ADDR_LINES),
@@ -67138,7 +66836,6 @@
         (->cmdname_C (u8 "mark"),          ex_mark,          (| RANGE WORD1 CMDWIN),                                       ADDR_LINES),
         (->cmdname_C (u8 "marks"),         ex_marks,         (| EXTRA CMDWIN),                                             ADDR_LINES),
         (->cmdname_C (u8 "nohlsearch"),    ex_nohlsearch,       CMDWIN,                                                    ADDR_LINES),
-
         (->cmdname_C (u8 "number"),        ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "only"),          ex_only,          (| BANG NOTADR RANGE COUNT),                                  ADDR_WINDOWS),
         (->cmdname_C (u8 "print"),         ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
@@ -67173,17 +66870,13 @@
         (->cmdname_C (u8 "verbose"),       ex_wrongmodifier, (| NEEDARG RANGE NOTADR EXTRA CMDWIN),                        ADDR_LINES),
         (->cmdname_C (u8 "vertical"),      ex_wrongmodifier, (| NEEDARG EXTRA),                                            ADDR_LINES),
         (->cmdname_C (u8 "vsplit"),        ex_splitview,     (| BANG RANGE NOTADR),                                        ADDR_LINES),
-        (->cmdname_C (u8 "wincmd"),        ex_wincmd,        (| NEEDARG WORD1 RANGE NOTADR),                               ADDR_WINDOWS),
-        (->cmdname_C (u8 "yank"),          ex_operators,     (| RANGE REGSTR COUNT CMDWIN),                                ADDR_LINES),
         (->cmdname_C (u8 "z"),             ex_z,             (| RANGE EXTRA EXFLAGS CMDWIN),                               ADDR_LINES),
 
         ;; commands that don't start with a lowercase letter
 
         (->cmdname_C (u8 "#"),             ex_print,         (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "&"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
-        (->cmdname_C (u8 "<"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "="),             ex_equal,         (| RANGE DFLALL EXFLAGS CMDWIN),                              ADDR_LINES),
-        (->cmdname_C (u8 ">"),             ex_operators,     (| RANGE COUNT EXFLAGS CMDWIN),                               ADDR_LINES),
         (->cmdname_C (u8 "~"),             ex_sub,           (| RANGE EXTRA CMDWIN),                                       ADDR_LINES),
     ])
 
